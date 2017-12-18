@@ -110,11 +110,10 @@ namespace DefenseShields.Station
             
             Entity.Components.TryGet<Sandbox.Game.EntityComponents.MyResourceSinkComponent>(out Sink);
             Sink.SetRequiredInputFuncByType(PowerDefinitionId, CalcRequiredPower);
-            NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-            //Entity.NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
-            NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-            //Entity.NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-            //m_objectBuilder = objectBuilder;  
+            this.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+            this.NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+            this.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
+            this.NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
 
             _cblock = (IMyCubeBlock)Entity;
             _ublock = Entity as IMyOreDetector; 
@@ -127,13 +126,9 @@ namespace DefenseShields.Station
         #endregion
 
         #region Simulation
-        public void UpdateOnceBeforeFrame(MyObjectBuilder_EntityBase objectBuilder)
+        /*public override void UpdateOnceBeforeFrame()
         {
-            NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-            // Check all/any of this is required
-            //m_objectBuilder = objectBuilder;
-            //InitResourceSink();
-
+            this.NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
 
             _cblock = (IMyCubeBlock)Entity;
             _ublock = Entity as IMyOreDetector;
@@ -141,11 +136,10 @@ namespace DefenseShields.Station
             _tblock = Entity as IMyTerminalBlock;
             _animblock = Entity as MyCubeBlock;
 
-        }
+        }*/
 
         public override void UpdateBeforeSimulation()
         {
-            NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             try
             {
                 if (_anim_init)
@@ -215,7 +209,6 @@ namespace DefenseShields.Station
 
         public override void UpdateAfterSimulation()
         {
-            NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             try
             {
                 if (!_anim_init)
@@ -231,7 +224,7 @@ namespace DefenseShields.Station
                     }
                     else
                     {
-                        NeedsUpdate = MyEntityUpdateEnum.NONE;
+                        //this.NeedsUpdate = MyEntityUpdateEnum.NONE;
                     }
                     return;
                 }
