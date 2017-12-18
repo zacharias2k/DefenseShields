@@ -80,7 +80,7 @@ namespace DefenseShields.Station
         #region Init
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
-            //base.Init(objectBuilder);
+            base.Init(objectBuilder);
             
             Entity.Components.TryGet<MyResourceSinkComponent>(out Sink);
             Sink.SetRequiredInputFuncByType(PowerDefinitionId, CalcRequiredPower);
