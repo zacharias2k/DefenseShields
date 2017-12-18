@@ -29,32 +29,6 @@ namespace DefenseShields.Station
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OreDetector), false, new string[] { "StationDefenseShield" })]
     class DefenseShields : MyGameLogicComponent
     {
-        /*public static HashSet<DefenseShields> ShieldList = new HashSet<DefenseShields>();
-
-        static public bool IsProtected(Vector3D position, IMyCubeBlock transporterBlock)
-        {
-            foreach (var scrambler in ShieldList)
-            {
-                var scramblerBlock = scrambler._cblock;
-                bool friendlyScrambler = transporterBlock.GetUserRelationToOwner(scramblerBlock.OwnerId).IsFriendly();
-                    
-                if (scrambler.IsProtecting(position) && !friendlyScrambler)
-                {   
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public bool IsProtecting(Vector3D postion)
-        {
-            if (((IMyFunctionalBlock)_cblock).IsWorking && ((IMyFunctionalBlock)_cblock).IsFunctional)
-            {
-                return Math.Pow(GetRadius(), 2) > (_cblock.GetPosition() - postion).LengthSquared();
-            }
-            return false;
-        }*/
-
         #region Setup
         public bool Initialized = true;
         private bool _anim_init = false;
@@ -81,8 +55,8 @@ namespace DefenseShields.Station
         private MyEntitySubpart subpart_Rotor;
         public RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> Slider;
         public RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> Ellipsoid;
-        public Sandbox.Game.EntityComponents.MyResourceSinkComponent Sink;
-        public MyDefinitionId PowerDefinitionId = new VRage.Game.MyDefinitionId(typeof(VRage.Game.ObjectBuilders.Definitions.MyObjectBuilder_GasProperties), "Electricity");
+        public MyResourceSinkComponent Sink;
+        public MyDefinitionId PowerDefinitionId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
         private readonly List<MyEntitySubpart> subparts_Arms = new List<MyEntitySubpart>();
         private readonly List<MyEntitySubpart> subparts_Reflectors = new List<MyEntitySubpart>();
@@ -106,15 +80,14 @@ namespace DefenseShields.Station
         #region Init
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
-            base.Init(objectBuilder);
+            //base.Init(objectBuilder);
             
-            Entity.Components.TryGet<Sandbox.Game.EntityComponents.MyResourceSinkComponent>(out Sink);
+            Entity.Components.TryGet<MyResourceSinkComponent>(out Sink);
             Sink.SetRequiredInputFuncByType(PowerDefinitionId, CalcRequiredPower);
-            NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-            //Entity.NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
-            NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-            //Entity.NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-            //m_objectBuilder = objectBuilder;  
+            this.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+            this.NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+            this.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
+            //this.NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
 
             _cblock = (IMyCubeBlock)Entity;
             _ublock = Entity as IMyOreDetector; 
@@ -127,25 +100,8 @@ namespace DefenseShields.Station
         #endregion
 
         #region Simulation
-        public void UpdateOnceBeforeFrame(MyObjectBuilder_EntityBase objectBuilder)
-        {
-            NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-            // Check all/any of this is required
-            //m_objectBuilder = objectBuilder;
-            //InitResourceSink();
-
-
-            _cblock = (IMyCubeBlock)Entity;
-            _ublock = Entity as IMyOreDetector;
-            _fblock = Entity as IMyFunctionalBlock;
-            _tblock = Entity as IMyTerminalBlock;
-            _animblock = Entity as MyCubeBlock;
-
-        }
-
         public override void UpdateBeforeSimulation()
         {
-            NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             try
             {
                 if (_anim_init)
@@ -204,6 +160,8 @@ namespace DefenseShields.Station
         {
             if (Initialized)
             {
+                this.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
+                Logging.writeLine(String.Format("{0} - Create UI {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _count));
                 CreateUI();
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo(); //Check
@@ -215,7 +173,6 @@ namespace DefenseShields.Station
 
         public override void UpdateAfterSimulation()
         {
-            NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             try
             {
                 if (!_anim_init)
@@ -231,9 +188,8 @@ namespace DefenseShields.Station
                     }
                     else
                     {
-                        NeedsUpdate = MyEntityUpdateEnum.NONE;
+                        this.NeedsUpdate = MyEntityUpdateEnum.NONE;
                     }
-                    return;
                 }
             }
             catch (Exception e)
@@ -241,14 +197,6 @@ namespace DefenseShields.Station
                 Logging.writeLine(String.Format("{0} - Exception in UpdateAfterSimulation in loop {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _count));
             }
         }
-
-        /*
-        public override void UpdateAfterSimulation100()
-        {
-            this.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
-            //_tblock.RefreshCustomInfo(); //Check
-        }
-        */
         #endregion
 
         #region Block Animation
@@ -266,8 +214,6 @@ namespace DefenseShields.Station
                 WorldMatrix = Entity.WorldMatrix;
                 WorldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
 
-                //sphere_max = new BoundingSphereD(WorldMatrix.Translation, Math.Max(_depth, Math.Max(_height, _width)));
-                //_tblock.PropertiesChanged += Generator_PropertiesChanged;
                 Entity.TryGetSubpart("Rotor", out subpart_Rotor);
 
                 for (int i = 1; i < 9; i++)
