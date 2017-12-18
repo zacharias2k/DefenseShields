@@ -27,7 +27,7 @@ namespace DefenseShields.Station
 {
     #region Main Class
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OreDetector), false, new string[] { "StationDefenseShield" })]
-    class DefenseShields : GameLogicComponent
+    class DefenseShields : MyGameLogicComponent
     {
         /*public static HashSet<DefenseShields> ShieldList = new HashSet<DefenseShields>();
 
@@ -110,9 +110,9 @@ namespace DefenseShields.Station
             
             Entity.Components.TryGet<Sandbox.Game.EntityComponents.MyResourceSinkComponent>(out Sink);
             Sink.SetRequiredInputFuncByType(PowerDefinitionId, CalcRequiredPower);
-            this.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+            NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             //Entity.NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
-            Entity.NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+            NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             //Entity.NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             //m_objectBuilder = objectBuilder;  
 
@@ -129,7 +129,7 @@ namespace DefenseShields.Station
         #region Simulation
         public void UpdateOnceBeforeFrame(MyObjectBuilder_EntityBase objectBuilder)
         {
-            this.NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+            NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             // Check all/any of this is required
             //m_objectBuilder = objectBuilder;
             //InitResourceSink();
@@ -145,6 +145,7 @@ namespace DefenseShields.Station
 
         public override void UpdateBeforeSimulation()
         {
+            NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             try
             {
                 if (_anim_init)
@@ -214,6 +215,7 @@ namespace DefenseShields.Station
 
         public override void UpdateAfterSimulation()
         {
+            NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             try
             {
                 if (!_anim_init)
@@ -229,7 +231,7 @@ namespace DefenseShields.Station
                     }
                     else
                     {
-                        this.NeedsUpdate = MyEntityUpdateEnum.NONE;
+                        NeedsUpdate = MyEntityUpdateEnum.NONE;
                     }
                     return;
                 }
