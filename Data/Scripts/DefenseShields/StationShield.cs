@@ -684,12 +684,15 @@ namespace DefenseShields.Station
                             try
                             {
                                 if (block is IMyCockpit)
-                                Logging.writeLine(string.Format("{0} - found cockpit {1}", DateTime.Now, block));
-                                var cockpit = GetCockpit(block);
-                                Logging.writeLine(string.Format("{0} - found cockpit {1}", DateTime.Now, block));
-                                if (cockpit.IsMainCockpit && cockpit.IsUnderControl)
                                 {
-                                    Logging.writeLine(string.Format("{0} - main cockpit and is undercontrol {1}", DateTime.Now, block));
+                                    Logging.writeLine(string.Format("{0} - found cockpit {1}", DateTime.Now, block));
+                                    var cockpit = GetCockpit(block);
+                                    //Logging.writeLine(string.Format("{0} - found cockpit {1}", DateTime.Now, block));
+                                    if (cockpit.IsMainCockpit && cockpit.IsUnderControl)
+                                    {
+                                        Logging.writeLine(string.Format("{0} - main cockpit and is undercontrol {1}",
+                                            DateTime.Now, block));
+                                    }
                                 }
                             }
                             catch (Exception ex)
