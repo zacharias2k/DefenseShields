@@ -499,7 +499,7 @@ namespace DefenseShields.Station
                 if (grid != null)
                 {
                     if (_gridwebbed) return;
-                    List<long> owners = grid.BigOwners;
+                    //List<long> owners = grid.BigOwners;
                     /*if (owners.Count > 0)
                     {
                         var relations = _tblock.GetUserRelationToOwner(owners.Last());
