@@ -669,7 +669,7 @@ namespace DefenseShields.Station
                         {
                             var relations = _tblock.GetUserRelationToOwner(owners[0]);
                             Logging.writeLine(String.Format("{0} - gridEffect: relations for grid {1} matched and were {2} in loop {3}", DateTime.Now, grid, relations, _count));
-                            Logging.writeLine(String.Format("{0} - gridEffect: count 1: {1}", DateTime.Now, relations));
+                            Logging.writeLine(String.Format("{0} - gridEffect: count 1: {1}", DateTime.Now, _tblock.GetUserRelationToOwner(owners[1])));
 
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
