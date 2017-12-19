@@ -500,7 +500,7 @@ namespace DefenseShields.Station
                     List<long> owners = grid.BigOwners;
                     if (owners.Count > 0)
                     {
-                        var relations = _tblock.GetUserRelationToOwner(owners[1]);
+                        var relations = _tblock.GetUserRelationToOwner(owners[0]);
                         if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
                             relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
                             return;
@@ -677,7 +677,7 @@ namespace DefenseShields.Station
                         */
                         if (owners.Count > 0)
                         {
-                            var relations = _tblock.GetUserRelationToOwner(owners[1]);
+                            var relations = _tblock.GetUserRelationToOwner(owners[0]);
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
                                 relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
                                 return;
@@ -690,7 +690,7 @@ namespace DefenseShields.Station
                         grid.Physics.LinearVelocity = vel;
                         MyVisualScriptLogicProvider.CreateExplosion(grid.GetPosition(), 100, 0);
                         //var player = MyAPIGateway.Players.GetPlayerControllingEntity(grid);
-                        grid.Delete();
+                        grid.Close();
                     }
                     catch (Exception ex)
                     {
