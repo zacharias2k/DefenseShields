@@ -502,7 +502,7 @@ namespace DefenseShields.Station
                     List<long> owners = grid.BigOwners;
                     if (owners.Count > 0)
                     {
-                        var relations = _tblock.GetUserRelationToOwner(owners[0]);
+                        var relations = _tblock.GetUserRelationToOwner(owners[1]);
                         if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
                             relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
                             return;
