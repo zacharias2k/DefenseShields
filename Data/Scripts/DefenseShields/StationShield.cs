@@ -19,6 +19,7 @@ using VRage.Utils;
 using VRage.Game.Entity;
 using VRage;
 using System.Linq;
+using System.Linq.Expressions;
 using Sandbox.Game.Entities;
 using IMyCockpit = Sandbox.ModAPI.Ingame.IMyCockpit;
 using TExtensions = Sandbox.ModAPI.Interfaces.TerminalPropertyExtensions;
@@ -669,19 +670,27 @@ namespace DefenseShields.Station
                         if (owners.Count > 0)
                         {
                             var relations = _tblock.GetUserRelationToOwner(owners[0]);
-                            Logging.writeLine(String.Format("{0} - gridEffect: relations for grid {1} matched and were {2} in loop {3}", DateTime.Now, grid, relations, _count));
-
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
                         Logging.writeLine(String.Format("{0} - gridEffect: relations count for grid {1} was {2} with count {3} in loop {4}", DateTime.Now, grid, owners.Count, _count));
                         List<IMySlimBlock> blockList = new List<IMySlimBlock>();
                         grid.GetBlocks(blockList);
                         foreach (var block in blockList)
-                        {
-                            if (block is IMyShipController)
-                                Logging.writeLine(String.Format("{0} - grid's {1} control block is: {2}", DateTime.Now, grid, block));
-                            return;
-                        }
+                            try
+                            {
+                                if (block == null) continue;
+                                var cockpit = block as IMyCockpit;
+                                if (cockpit == null) return;
+                                if (cockpit.IsMainCockpit && cockpit.IsUnderControl)
+                                {
+                                    Logging.writeLine(String.Format("{0} - found cockpit {1}", DateTime.Now, block));
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Logging.writeLine(String.Format("{0} - Exception in cockpit detect", DateTime.Now));
+                                Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
+                            }
                         var vel = grid.Physics.LinearVelocity;
                         vel.SetDim(0, -2f);
                         vel.SetDim(1, 20f);
