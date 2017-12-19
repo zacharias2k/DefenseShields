@@ -665,7 +665,7 @@ namespace DefenseShields.Station
                     try
                     {
                         if (_inHash.Count == 0)
-                            Logging.writeLine(String.Format(
+                            Logging.writeLine(string.Format(
                                 "!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, _count));
 
                         if (grid == _tblock.CubeGrid || _inHash.Contains(grid)) return;
@@ -684,17 +684,18 @@ namespace DefenseShields.Station
                             try
                             {
                                 if (block == null) continue;
-                                var cockpit = block as IMyCockpit;
+                                var cockpit = GetCockpit(block);
                                 if (cockpit == null) return;
+                                Logging.writeLine(string.Format("{0} - found cockpit {1}", DateTime.Now, block));
                                 if (cockpit.IsMainCockpit && cockpit.IsUnderControl)
                                 {
-                                    Logging.writeLine(String.Format("{0} - found cockpit {1}", DateTime.Now, block));
+                                    Logging.writeLine(string.Format("{0} - main cockpit and is undercontrol {1}", DateTime.Now, block));
                                 }
                             }
                             catch (Exception ex)
                             {
-                                Logging.writeLine(String.Format("{0} - Exception in cockpit detect", DateTime.Now));
-                                Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
+                                Logging.writeLine(string.Format("{0} - Exception in cockpit detect", DateTime.Now));
+                                Logging.writeLine(string.Format("{0} - {1}", DateTime.Now, ex));
                             }
                         /*
                         var vel = grid.Physics.LinearVelocity;
@@ -708,13 +709,18 @@ namespace DefenseShields.Station
                     }
                     catch (Exception ex)
                     {
-                        Logging.writeLine(String.Format("{0} - Exception in gridEffects", DateTime.Now));
-                        Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
+                        Logging.writeLine(string.Format("{0} - Exception in gridEffects", DateTime.Now));
+                        Logging.writeLine(string.Format("{0} - {1}", DateTime.Now, ex));
                     }
                 }
 
             });
             _gridwebbed = false;
+        }
+
+        private static IMyCockpit GetCockpit(IMySlimBlock block)
+        {
+            return block as IMyCockpit;
         }
     }
     #endregion
