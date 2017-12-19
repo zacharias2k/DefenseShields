@@ -675,13 +675,23 @@ namespace DefenseShields.Station
                         }
                         Logging.writeLine(String.Format("{0} - gridEffect: relations count for grid {1} was {2} with count {3} in loop {4}", DateTime.Now, grid, owners.Count, _count));
                         Logging.writeLine(String.Format("{0} - gridEffect: Closing grid {1} in loop {2}", DateTime.Now, grid, _count));
+                        List<IMySlimBlock> blockList = new List<IMySlimBlock>();
+                        grid.GetBlocks(blockList);
+                        foreach (var block in blockList)
+                        {
+                            if (block == null) return;
+                            var cockPit = (IMyCockpit) block;
+                            cockPit.RemovePilot();
+                            return;
+                        }
                         var vel = grid.Physics.LinearVelocity;
                         vel.SetDim(0, -2f);
                         vel.SetDim(1, 20f);
                         vel.SetDim(2, -2f);
                         grid.Physics.LinearVelocity = vel;
                         MyVisualScriptLogicProvider.CreateExplosion(grid.GetPosition(), 100, 0);
-                        //var player = MyAPIGateway.Players.GetPlayerControllingEntity(grid);
+                       //var player = MyAPIGateway.Players.GetPlayerControllingEntity(grid);
+                        MyAPIGateway.Players.RemoveControlledEntity(grid);
                         //grid.Close();
                     }
                     catch (Exception ex)
