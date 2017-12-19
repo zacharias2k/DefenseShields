@@ -499,14 +499,14 @@ namespace DefenseShields.Station
                 if (grid != null)
                 {
                     if (_gridwebbed) return;
-                    //List<long> owners = grid.BigOwners;
-                    /*if (owners.Count > 0)
+                    List<long> owners = grid.BigOwners;
+                    if (owners.Count > 0)
                     {
-                        var relations = _tblock.GetUserRelationToOwner(owners.Last());
+                        var relations = _tblock.GetUserRelationToOwner(0);
                         if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
                             relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
                             return;
-                    }*/
+                    }
                     _gridwebbed = true; 
                     return;
                 }
