@@ -665,7 +665,8 @@ namespace DefenseShields.Station
 
                         if (grid == _tblock.CubeGrid || _inHash.Contains(grid)) return;
                         List<long> owners = grid.BigOwners;
-                        if (owners.Count <= 0)
+                        /*
+                        if (owners.Count == 0)
                         {
                             var checkrelations = _tblock.GetUserRelationToOwner(owners[0]);
                             Logging.writeLine(String.Format(
@@ -673,6 +674,7 @@ namespace DefenseShields.Station
                                 grid, owners.Count, checkrelations));
                             return;
                         }
+                        */
                         if (owners.Count > 0)
                         {
                             var relations = _tblock.GetUserRelationToOwner(owners[0]);
