@@ -670,7 +670,7 @@ namespace DefenseShields.Station
 
                         if (grid == _tblock.CubeGrid || _inHash.Contains(grid)) return;
                         Logging.writeLine(string.Format("{0} - passing grid: {1}", DateTime.Now, grid.CustomName));
-                        if (grid.CustomName == null) return;
+                        if (grid.CustomName == "FieldGenerator") return;
                         List<long> owners = grid.BigOwners;
                         if (owners.Count > 0)
                         {
@@ -834,7 +834,7 @@ namespace DefenseShields.Station
             ZMirroxPlane = null,
             PersistentFlags = MyPersistentEntityFlags2.InScene,
             Name = "ArtificialCubeGrid",
-            DisplayName = "fieldgen",
+            DisplayName = "FieldGenerator",
             CreatePhysics = false,
             DestructibleBlocks = true,
             PositionAndOrientation = new MyPositionAndOrientation(Vector3D.Zero, Vector3D.Forward, Vector3D.Up),
@@ -846,7 +846,6 @@ namespace DefenseShields.Station
                         EntityId = 0,
                         BlockOrientation = EntityOrientation,
                         SubtypeName = "",
-                        Name = "field",
                         Min = Vector3I.Zero,
                         Owner = 0,
                         ShareMode = MyOwnershipShareModeEnum.None,
