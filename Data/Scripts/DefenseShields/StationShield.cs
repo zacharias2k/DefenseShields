@@ -682,7 +682,7 @@ namespace DefenseShields.Station
                                 relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
                                 return;
                         }
-                        Logging.writeLine(String.Format("{0} - gridEffect: Closing grid {1} in loop {2}", DateTime.Now, grid, _count));
+                        Logging.writeLine(String.Format("{0} - gridEffect: Deleting grid {1} in loop {2}", DateTime.Now, grid, _count));
                         var vel = grid.Physics.LinearVelocity;
                         vel.SetDim(0, -2f);
                         vel.SetDim(1, 20f);
@@ -690,7 +690,7 @@ namespace DefenseShields.Station
                         grid.Physics.LinearVelocity = vel;
                         MyVisualScriptLogicProvider.CreateExplosion(grid.GetPosition(), 100, 0);
                         //var player = MyAPIGateway.Players.GetPlayerControllingEntity(grid);
-                        grid.Close();
+                        grid.Delete();
                     }
                     catch (Exception ex)
                     {
