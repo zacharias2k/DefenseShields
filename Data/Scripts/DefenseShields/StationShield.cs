@@ -666,8 +666,8 @@ namespace DefenseShields.Station
                                 "!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, _count));
 
                         if (grid == _tblock.CubeGrid || _inHash.Contains(grid)) return;
-                        
-                        var relations = _tblock.GetUserRelationToOwner(0);
+
+                        var relations = _tblock.GetPlayerRelationToOwner();
                         if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         Logging.writeLine(String.Format("{0} - gridEffect: relations count for grid {1} was {2} with count {3} in loop {4}", DateTime.Now, grid, _count));
                         List<IMySlimBlock> blockList = new List<IMySlimBlock>();
