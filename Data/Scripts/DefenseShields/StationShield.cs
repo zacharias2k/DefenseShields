@@ -676,8 +676,8 @@ namespace DefenseShields.Station
                             var relations = _tblock.GetUserRelationToOwner(owners[0]);
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
-                        //Logging.writeLine(String.Format("{0} - gridEffect: grid {1} in loop {4}", DateTime.Now, grid, _count));
                         Logging.writeLine(string.Format("{0} - Gridname: {1}", DateTime.Now, grid));
+                        /*
                         List<IMySlimBlock> blockList = new List<IMySlimBlock>();
                         grid.GetBlocks(blockList);
                         foreach (var block in blockList)
@@ -686,13 +686,13 @@ namespace DefenseShields.Station
                             if (block.FatBlock != null) continue;
                             //Logging.writeLine(string.Format("{0} - Blockname: {1}", DateTime.Now, block));
                         }
+                        */
                         var vel = grid.Physics.LinearVelocity;
                         vel.SetDim(0, -2f);
                         vel.SetDim(1, 20f);
                         vel.SetDim(2, -2f);
                         grid.Physics.LinearVelocity = vel;
                         MyVisualScriptLogicProvider.CreateExplosion(grid.GetPosition(), 100, 0);
-                        
                         grid.Delete();
                     }
                     catch (Exception ex)
