@@ -500,12 +500,12 @@ namespace DefenseShields.Station
                     List<long> owners = grid.BigOwners;
                     if (owners.Count > 0)
                     {
-                        var relations = _tblock.GetUserRelationToOwner(owners[0]);
+                        var relations = _tblock.GetUserRelationToOwner(owners[1]);
                         if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
                             relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
                             return;
                     }
-                    _gridwebbed = true; // Something is oddly broken with this loop
+                    _gridwebbed = true; 
                     return;
                 }
                 if (_shotwebbed) return;
@@ -677,7 +677,7 @@ namespace DefenseShields.Station
                         */
                         if (owners.Count > 0)
                         {
-                            var relations = _tblock.GetUserRelationToOwner(owners[0]);
+                            var relations = _tblock.GetUserRelationToOwner(owners[1]);
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
                                 relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
                                 return;
