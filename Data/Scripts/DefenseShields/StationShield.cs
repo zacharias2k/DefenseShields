@@ -669,7 +669,7 @@ namespace DefenseShields.Station
                                 "!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, _count));
 
                         if (grid == _tblock.CubeGrid || _inHash.Contains(grid)) return;
-                        Logging.writeLine(string.Format("{0} - passing grid: {1}", DateTime.Now, grid.DisplayName));
+                        Logging.writeLine(string.Format("{0} - passing grid: {1}", DateTime.Now, grid.Name));
                         List<long> owners = grid.BigOwners;
                         if (owners.Count > 0)
                         {
@@ -833,7 +833,7 @@ namespace DefenseShields.Station
             ZMirroxPlane = null,
             PersistentFlags = MyPersistentEntityFlags2.InScene,
             Name = "ArtificialCubeGrid",
-            DisplayName = "",
+            DisplayName = "test",
             CreatePhysics = false,
             DestructibleBlocks = true,
             PositionAndOrientation = new MyPositionAndOrientation(Vector3D.Zero, Vector3D.Forward, Vector3D.Up),
@@ -844,7 +844,8 @@ namespace DefenseShields.Station
                     {
                         EntityId = 0,
                         BlockOrientation = EntityOrientation,
-                        SubtypeName = "test",
+                        SubtypeName = "",
+                        Name = "test",
                         Min = Vector3I.Zero,
                         Owner = 0,
                         ShareMode = MyOwnershipShareModeEnum.None,
