@@ -669,7 +669,7 @@ namespace DefenseShields.Station
                                 "!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, _count));
 
                         if (grid == _tblock.CubeGrid || _inHash.Contains(grid)) return;
-                        Logging.writeLine(string.Format("{0} - passing grid: {1}", DateTime.Now, grid.CustomName));
+                        Logging.writeLine(string.Format("{0} - passing grid: {1}", DateTime.Now, grid.));
                         List<long> owners = grid.BigOwners;
                         if (owners.Count > 0)
                         {
@@ -849,7 +849,7 @@ namespace DefenseShields.Station
                     {
                         EntityId = 0,
                         BlockOrientation = EntityOrientation,
-                        SubtypeName = "",
+                        SubtypeName = "test",
                         Min = Vector3I.Zero,
                         Owner = 0,
                         ShareMode = MyOwnershipShareModeEnum.None,
