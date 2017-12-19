@@ -680,33 +680,18 @@ namespace DefenseShields.Station
                         List<IMySlimBlock> blockList = new List<IMySlimBlock>();
                         grid.GetBlocks(blockList);
                         foreach (var block in blockList)
-                            try
-                            {
-                                if (block.FatBlock is null) continue;
-                                {
-                                    Logging.writeLine(string.Format("{0} - found cockpit {1}", DateTime.Now, block));
-                                    var cockpit = GetCockpit(block);
-                                    //Logging.writeLine(string.Format("{0} - found cockpit {1}", DateTime.Now, block));
-                                    if (cockpit.IsMainCockpit && cockpit.IsUnderControl)
-                                    {
-                                        Logging.writeLine(string.Format("{0} - main cockpit and is undercontrol {1}",
-                                            DateTime.Now, block));
-                                    }
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                Logging.writeLine(string.Format("{0} - Exception in cockpit detect", DateTime.Now));
-                                Logging.writeLine(string.Format("{0} - {1}", DateTime.Now, ex));
-                            }
-                        /*
+                        {
+                            if (block != null) continue;
+                            if (block.FatBlock != null) continue;
+                            Logging.writeLine(string.Format("{0} - Blockname: {1}", DateTime.Now, block));
+        }
                         var vel = grid.Physics.LinearVelocity;
                         vel.SetDim(0, -2f);
                         vel.SetDim(1, 20f);
                         vel.SetDim(2, -2f);
                         grid.Physics.LinearVelocity = vel;
                         MyVisualScriptLogicProvider.CreateExplosion(grid.GetPosition(), 100, 0);
-                        */
+                        
                         //grid.Delete();
                     }
                     catch (Exception ex)
