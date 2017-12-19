@@ -669,7 +669,7 @@ namespace DefenseShields.Station
                                 "!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, _count));
 
                         if (grid == _tblock.CubeGrid || _inHash.Contains(grid)) return;
-                        Logging.writeLine(string.Format("{0} - passing grid: {1}", DateTime.Now, grid.Name));
+                        Logging.writeLine(string.Format("{0} - passing grid: {1}", DateTime.Now, grid.CustomName));
                         List<long> owners = grid.BigOwners;
                         if (owners.Count > 0)
                         {
@@ -684,7 +684,7 @@ namespace DefenseShields.Station
                         {
                             if (block == null) continue;
                             if (block.FatBlock != null) continue;
-                            Logging.writeLine(string.Format("{0} - Blockname: {1}", DateTime.Now, block));
+                            //Logging.writeLine(string.Format("{0} - Blockname: {1}", DateTime.Now, block));
                         }
                         Logging.writeLine(string.Format("{0} - Gridname: {1}", DateTime.Now, grid));
                         var vel = grid.Physics.LinearVelocity;
@@ -705,11 +705,6 @@ namespace DefenseShields.Station
 
             });
             _gridwebbed = false;
-        }
-
-        private static IMyCockpit GetCockpit(IMySlimBlock block)
-        {
-            return block as IMyCockpit;
         }
     }
     #endregion
