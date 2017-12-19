@@ -667,6 +667,7 @@ namespace DefenseShields.Station
                         if (_inHash.Count == 0) Logging.writeLine(string.Format("!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, _count));
 
                         Logging.writeLine(string.Format("{0} - passing grid - Name: {1}", DateTime.Now, ent.DisplayName));
+                        Logging.writeLine(string.Format("{0} - passing grid - Name: {1}", DateTime.Now, _tblock.DisplayName));
                         if (grid == _tblock.CubeGrid || _inHash.Contains(grid) || grid.DisplayName == "FieldGenerator") return;
                         Logging.writeLine(string.Format("{0} - passing grid - CustomName: {1}", DateTime.Now, grid.CustomName));
                         List<long> owners = grid.BigOwners;
