@@ -682,7 +682,7 @@ namespace DefenseShields.Station
                         grid.Physics.LinearVelocity = vel;
                         MyVisualScriptLogicProvider.CreateExplosion(grid.GetPosition(), 100, 0);
                         //var player = MyAPIGateway.Players.GetPlayerControllingEntity(grid);
-                        grid.Close();
+                        //grid.Close();
                     }
                     catch (Exception ex)
                     {
