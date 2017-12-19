@@ -669,6 +669,7 @@ namespace DefenseShields.Station
                         List<long> owners = grid.BigOwners;
                         if (owners.Count > 0)
                         {
+                            Logging.writeLine(String.Format("{0} - test", DateTime.Now));
                             var relations = _tblock.GetUserRelationToOwner(owners[0]);
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
