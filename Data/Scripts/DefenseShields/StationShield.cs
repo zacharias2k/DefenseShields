@@ -684,7 +684,8 @@ namespace DefenseShields.Station
                             if (block != null) continue;
                             if (block.FatBlock != null) continue;
                             Logging.writeLine(string.Format("{0} - Blockname: {1}", DateTime.Now, block));
-        }
+                        }
+                        Logging.writeLine(string.Format("{0} - Gridname: {1}", DateTime.Now, grid));
                         var vel = grid.Physics.LinearVelocity;
                         vel.SetDim(0, -2f);
                         vel.SetDim(1, 20f);
