@@ -704,7 +704,7 @@ namespace DefenseShields.Station
                         vel.SetDim(2, -2f);
                         grid.Physics.LinearVelocity = vel;
                         MyVisualScriptLogicProvider.CreateExplosion(grid.GetPosition(), 100, 0);
-                        grid.Close();
+                        grid.Delete();
                     }
                     catch (Exception ex)
                     {
