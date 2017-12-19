@@ -668,7 +668,7 @@ namespace DefenseShields.Station
 
                         Logging.writeLine(string.Format("{0} - passing grid - Name: {1}", DateTime.Now, ent.DisplayName));
                         Logging.writeLine(string.Format("{0} - passing grid - Name: {1}", DateTime.Now, _tblock.CubeGrid.DisplayName));
-                        if (grid == _tblock.CubeGrid || _inHash.Contains(grid) || grid.DisplayName == "FieldGenerator") return;
+                        if (grid == _tblock.CubeGrid || _inHash.Contains(grid) || grid.Name == "ArtificialCubeGrid") return;
                         Logging.writeLine(string.Format("{0} - passing grid - CustomName: {1}", DateTime.Now, grid.CustomName));
                         List<long> owners = grid.BigOwners;
                         if (owners.Count > 0)
