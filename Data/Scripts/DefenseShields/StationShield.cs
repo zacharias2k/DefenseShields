@@ -658,9 +658,9 @@ namespace DefenseShields.Station
             Logging.writeLine(String.Format("{0} - gridEffect: loop is v3 {1}", DateTime.Now, _count));
             MyAPIGateway.Parallel.ForEach(gridList, ent =>
             {
-                if (ent == null) return;
+                if (ent == null || _inHash.Contains(ent) || ent.Transparent) return;
                 var grid = ent as IMyCubeGrid;
-                if (grid != null && _insideReady == true)
+                if (grid != null && _insideReady && Detect(ref ent))
                 {
                     try
                     {
