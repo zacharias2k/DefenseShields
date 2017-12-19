@@ -674,9 +674,9 @@ namespace DefenseShields.Station
                         if (owners.Count > 0)
                         {
                             var relations = _tblock.GetUserRelationToOwner(owners[0]);
-                            if (relations == MyRelationsBetweenPlayerAndBlock.Owner ) return;
+                            if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
-                        Logging.writeLine(String.Format("{0} - gridEffect: grid {1} relation-count is {2} in loop {4}", DateTime.Now, grid, owners.Count, _count));
+                        //Logging.writeLine(String.Format("{0} - gridEffect: grid {1} relation-count is {2} in loop {4}", DateTime.Now, grid, owners.Count, _count));
                         /*List<IMySlimBlock> blockList = new List<IMySlimBlock>();
                         grid.GetBlocks(blockList);
                         
