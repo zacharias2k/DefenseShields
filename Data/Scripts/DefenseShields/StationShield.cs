@@ -669,7 +669,7 @@ namespace DefenseShields.Station
                         List<long> owners = grid.BigOwners;
                         if (owners.Count > 0)
                         {
-                            var relations = _tblock.GetUserRelationToOwner(owners[0]);
+                            var relations = _tblock.GetUserRelationToOwner(owners[1]);
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
                         Logging.writeLine(String.Format("{0} - gridEffect: relations count for grid {1} was {2} with count {3} in loop {4}", DateTime.Now, grid, owners.Count, _count));
