@@ -683,9 +683,7 @@ namespace DefenseShields.Station
                         foreach (var block in blockList)
                             try
                             {
-                                if (block == null) continue;
                                 var cockpit = GetCockpit(block);
-                                if (cockpit == null) return;
                                 Logging.writeLine(string.Format("{0} - found cockpit {1}", DateTime.Now, block));
                                 if (cockpit.IsMainCockpit && cockpit.IsUnderControl)
                                 {
