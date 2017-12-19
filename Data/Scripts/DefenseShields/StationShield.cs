@@ -652,7 +652,7 @@ namespace DefenseShields.Station
             MyAPIGateway.Entities.GetEntities(gridHash, ent => gridsphere.Intersects(ent.WorldAABB) && Detect(ref ent) && !_inHash.Contains(ent) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock)
             && !(ent is IMyFloatingObject) && !(ent is MyHandToolBase) && ent != _tblock.CubeGrid && ent != AnimShield && !ent.Transparent && !(ent is IMyWelder)
             && !(ent is IMyHandDrill) && !(ent is IMyAngleGrinder) && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag));
-            Logging.writeLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now, _count));
+            Logging.writeLine(String.Format("{0} - gridEffect: loop is v2 {1}", DateTime.Now, _count));
             MyAPIGateway.Parallel.ForEach(gridHash, ent =>
             {
                 if (ent == null) return;
@@ -667,7 +667,7 @@ namespace DefenseShields.Station
 
                         if (grid == _tblock.CubeGrid || _inHash.Contains(grid)) return;
                         
-                        List<long> owners = grid.BigOwners;
+                        //List<long> owners = grid.BigOwners;
                         /*
                         if (owners.Count > 0)
                         {
@@ -675,7 +675,7 @@ namespace DefenseShields.Station
                             var relations = _tblock.GetUserRelationToOwner(owners.Last());
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }*/
-                        Logging.writeLine(String.Format("{0} - gridEffect: relations count for grid {1} was {2} with count {3} in loop {4}", DateTime.Now, grid, owners.Count, _count));
+                        //Logging.writeLine(String.Format("{0} - gridEffect: relations count for grid {1} was {2} with count {3} in loop {4}", DateTime.Now, grid, owners.Count, _count));
                         List<IMySlimBlock> blockList = new List<IMySlimBlock>();
                         grid.GetBlocks(blockList);
                         foreach (var block in blockList)
