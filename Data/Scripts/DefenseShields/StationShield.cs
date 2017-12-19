@@ -679,11 +679,11 @@ namespace DefenseShields.Station
                         //Logging.writeLine(String.Format("{0} - gridEffect: grid {1} in loop {4}", DateTime.Now, grid, _count));
                         List<IMySlimBlock> blockList = new List<IMySlimBlock>();
                         grid.GetBlocks(blockList);
-                        
                         foreach (var block in blockList)
                             try
                             {
-                                if (block is IMyFunctionalBlock)
+                                IMySlimBlock slim = (IMySlimBlock)block;
+                                if (block.FatBlock is null) continue;
                                 {
                                     Logging.writeLine(string.Format("{0} - found cockpit {1}", DateTime.Now, block));
                                     var cockpit = GetCockpit(block);
