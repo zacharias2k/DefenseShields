@@ -457,7 +457,7 @@ namespace DefenseShields.Station
                 _inHash.Clear();
                 BoundingSphereD insphere = new BoundingSphereD(pos, _range - 13.3f);
                 MyAPIGateway.Entities.GetEntities(_inHash, ent => insphere.Intersects(ent.WorldAABB) && Detect(ref ent) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock)
-                && !(ent is IMyFloatingObject) && !(ent is MyHandToolBase) && ent != _tblock.CubeGrid && ent != AnimShield && !ent.Transparent && !(ent is IMyCharacter)
+                && !(ent is IMyFloatingObject) && !(ent is MyHandToolBase) && ent != AnimShield && !ent.Transparent && !(ent is IMyCharacter)
                 && !(ent is IMyWelder) && !(ent is IMyHandDrill) && !(ent is IMyAngleGrinder) && !(ent is IMyAutomaticRifleGun) && !(ent is IMyInventoryBag));
                 MyAPIGateway.Parallel.ForEach(_inHash, outent =>
                 {
@@ -500,13 +500,13 @@ namespace DefenseShields.Station
                 {
                     if (_gridwebbed) return;
                     List<long> owners = grid.BigOwners;
-                    if (owners.Count > 0)
+                    /*if (owners.Count > 0)
                     {
                         var relations = _tblock.GetUserRelationToOwner(owners.Last());
                         if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
                             relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
                             return;
-                    }
+                    }*/
                     _gridwebbed = true; 
                     return;
                 }
@@ -570,7 +570,7 @@ namespace DefenseShields.Station
                 if (playerent == null) return;
                 if (playerent is IMyCharacter)
                     try
-                    {
+                    {   
                         var dude = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;
                         var relationship = _tblock.GetUserRelationToOwner(dude);
                         if (relationship != MyRelationsBetweenPlayerAndBlock.Owner &&
@@ -666,13 +666,15 @@ namespace DefenseShields.Station
                                 "!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, _count));
 
                         if (grid == _tblock.CubeGrid || _inHash.Contains(grid)) return;
+                        
                         List<long> owners = grid.BigOwners;
+                        /*
                         if (owners.Count > 0)
                         {
                             Logging.writeLine(String.Format("{0} - test", DateTime.Now));
                             var relations = _tblock.GetUserRelationToOwner(owners.Last());
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
-                        }
+                        }*/
                         Logging.writeLine(String.Format("{0} - gridEffect: relations count for grid {1} was {2} with count {3} in loop {4}", DateTime.Now, grid, owners.Count, _count));
                         List<IMySlimBlock> blockList = new List<IMySlimBlock>();
                         grid.GetBlocks(blockList);
