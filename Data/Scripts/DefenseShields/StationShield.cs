@@ -677,6 +677,7 @@ namespace DefenseShields.Station
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
                         //Logging.writeLine(String.Format("{0} - gridEffect: grid {1} in loop {4}", DateTime.Now, grid, _count));
+                        Logging.writeLine(string.Format("{0} - Gridname: {1}", DateTime.Now, grid));
                         List<IMySlimBlock> blockList = new List<IMySlimBlock>();
                         grid.GetBlocks(blockList);
                         foreach (var block in blockList)
