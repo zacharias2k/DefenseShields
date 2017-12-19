@@ -844,6 +844,7 @@ namespace DefenseShields.Station
                         EntityId = 0,
                         BlockOrientation = EntityOrientation,
                         SubtypeName = "",
+                        Name = "Field",
                         Min = Vector3I.Zero,
                         Owner = 0,
                         ShareMode = MyOwnershipShareModeEnum.None,
