@@ -667,13 +667,8 @@ namespace DefenseShields.Station
 
                         if (grid == _tblock.CubeGrid || _inHash.Contains(grid)) return;
                         
-                        List<long> owners = grid.BigOwners;
-                        if (owners.Count.Equals(1))
-                        {
-                            Logging.writeLine(String.Format("{0} - equals 1", DateTime.Now));
-                            var relations = _tblock.GetUserRelationToOwner(1);
-                            if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
-                        }
+                        var relations = _tblock.GetUserRelationToOwner(0);
+                        if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         Logging.writeLine(String.Format("{0} - gridEffect: relations count for grid {1} was {2} with count {3} in loop {4}", DateTime.Now, grid, _count));
                         List<IMySlimBlock> blockList = new List<IMySlimBlock>();
                         grid.GetBlocks(blockList);
