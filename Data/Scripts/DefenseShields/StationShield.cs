@@ -683,7 +683,7 @@ namespace DefenseShields.Station
                         foreach (var block in blockList)
                             try
                             {
-                                if (block is IMyCockpit)
+                                if (block is IMyFunctionalBlock)
                                 {
                                     Logging.writeLine(string.Format("{0} - found cockpit {1}", DateTime.Now, block));
                                     var cockpit = GetCockpit(block);
