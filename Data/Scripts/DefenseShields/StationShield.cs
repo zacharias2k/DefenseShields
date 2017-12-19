@@ -682,7 +682,6 @@ namespace DefenseShields.Station
                         foreach (var block in blockList)
                             try
                             {
-                                IMySlimBlock slim = (IMySlimBlock)block;
                                 if (block.FatBlock is null) continue;
                                 {
                                     Logging.writeLine(string.Format("{0} - found cockpit {1}", DateTime.Now, block));
