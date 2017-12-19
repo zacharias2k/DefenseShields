@@ -16,7 +16,6 @@ using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game.Components;
 using VRage.ModAPI;
 using VRage.Utils;
-using SpaceEngineers.Game.ModAPI;
 using VRage.Game.Entity;
 using VRage;
 using System.Linq;
@@ -37,7 +36,7 @@ namespace DefenseShields.Station
         private float _width = 50f;
         private float _height = 50f;
         private float _depth = 50f; 
-        private int time;
+        private int _time;
         private int _count;
         private int _playertime;
         private bool _playerwebbed = false;
@@ -94,8 +93,6 @@ namespace DefenseShields.Station
             _fblock = Entity as IMyFunctionalBlock;
             _tblock = Entity as IMyTerminalBlock;
             _animblock = Entity as MyCubeBlock;
-            Logging.init("debugdevelop.log");
-            Logging.writeLine(String.Format("{0} - Logging Started", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
         }
         #endregion
 
@@ -113,8 +110,8 @@ namespace DefenseShields.Station
                     {
                         //Color change for on =-=-=-=-
                         subpart_Rotor.SetEmissiveParts("Emissive", Color.White, 1);
-                        time += 1;
-                        Matrix temp1 = Matrix.CreateRotationY(0.1f * time);
+                        _time += 1;
+                        Matrix temp1 = Matrix.CreateRotationY(0.1f * _time);
                         temp1.Translation = subpart_Rotor.PositionComp.LocalMatrix.Translation;
                         subpart_Rotor.PositionComp.LocalMatrix = temp1;
                         if (anim_step < 1f)
@@ -150,9 +147,10 @@ namespace DefenseShields.Station
                 if (_playerwebbed) MyAPIGateway.Parallel.Do(playerEffects);
                 if (_count++ == 59 || _count == 159) _count = 0;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Logging.writeLine(String.Format("{0} - Exception in UpdateBeforeSimulation in loop {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _count));
+                Logging.writeLine(String.Format("{0} - Exception in UpdateBeforeSimulation", DateTime.Now));
+                Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
             }
         }
 
@@ -192,9 +190,10 @@ namespace DefenseShields.Station
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Logging.writeLine(String.Format("{0} - Exception in UpdateAfterSimulation in loop {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _count));
+                Logging.writeLine(String.Format("{0} - Exception in UpdateAfterSimulation", DateTime.Now));
+                Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
             }
         }
         #endregion
@@ -262,9 +261,10 @@ namespace DefenseShields.Station
 
                 _anim_init = true;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Logging.writeLine(String.Format("{0} - Exception in BlockAnimation in loop {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _count));
+                Logging.writeLine(String.Format("{0} - Exception in BlockAnimation", DateTime.Now));
+                Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
             }
         }
         #endregion
@@ -409,7 +409,11 @@ namespace DefenseShields.Station
                     showRange(info.Size);
                 }
             }
-            catch (Exception ex) { }
+            catch (Exception ex)
+            {
+                Logging.writeLine(String.Format("{0} - Exception in getPoke", DateTime.Now));
+                Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
+            }
         }
 
         public void showRange(float size)
@@ -523,16 +527,25 @@ namespace DefenseShields.Station
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
 
             BoundingSphereD shotsphere = new BoundingSphereD(pos, _range);
-            MyAPIGateway.Entities.GetEntities(shotHash,
-                ent => shotsphere.Intersects(ent.WorldAABB) && ent is IMyMeteor && Detect(ref ent)  || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo"));
+            MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && ent is IMyMeteor && Detect(ref ent)  || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo"));
 
             MyAPIGateway.Parallel.ForEach(shotHash, shotent =>
             {
                 if (shotent == null) return;
-                Logging.writeLine(String.Format("{0} - shotEffect ent found: {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, _count));
-                if (shotent is MyMeteor || shotent.ToString().Contains("Missile") || shotent.ToString().Contains("Torpedo"))
+                try
                 {
-                    shotent.Close();
+                    Logging.writeLine(String.Format("{0} - shotEffect ent found: {1} in loop {2}",
+                        DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, _count));
+                    if (shotent is MyMeteor || shotent.ToString().Contains("Missile") ||
+                        shotent.ToString().Contains("Torpedo"))
+                    {
+                        shotent.Close();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logging.writeLine(String.Format("{0} - Exception in shotEffects", DateTime.Now));
+                    Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
                 }
             });
             _shotwebbed = false;
@@ -558,19 +571,24 @@ namespace DefenseShields.Station
                     {
                         var dude = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;
                         var relationship = _tblock.GetUserRelationToOwner(dude);
-                        if (relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
+                        if (relationship != MyRelationsBetweenPlayerAndBlock.Owner &&
+                            relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
                         {
-                            Logging.writeLine(String.Format("{0} - playerEffect: Enemy {1} detected at loop {2} - relationship: {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent, _count, relationship));
+                            Logging.writeLine(String.Format(
+                                "{0} - playerEffect: Enemy {1} detected at loop {2} - relationship: {3}",
+                                DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent, _count, relationship));
                             string s = playerent.ToString();
                             if (s.Equals("Space_Wolf"))
                             {
-                                Logging.writeLine(String.Format("{0} - playerEffect: Killing {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent));
-                                ((IMyCharacter)playerent).Kill();
+                                Logging.writeLine(String.Format("{0} - playerEffect: Killing {1} ",
+                                    DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent));
+                                ((IMyCharacter) playerent).Kill();
                                 return;
                             }
                             if (MyAPIGateway.Session.Player.Character.Equals(playerent))
                             {
-                                if (MyAPIGateway.Session.Player.Character.EnabledDamping) MyAPIGateway.Session.Player.Character.SwitchDamping();
+                                if (MyAPIGateway.Session.Player.Character.EnabledDamping)
+                                    MyAPIGateway.Session.Player.Character.SwitchDamping();
                             }
                             if (MyVisualScriptLogicProvider.GetPlayersEnergyLevel(dude) > 0.5f)
                             {
@@ -597,14 +615,15 @@ namespace DefenseShields.Station
                                         if (playerCurrentSpeed == new Vector3D(0, 0, 0))
                                         {
 
-                                            playerCurrentSpeed = (Vector3D)MyUtils.GetRandomVector3Normalized();
+                                            playerCurrentSpeed = (Vector3D) MyUtils.GetRandomVector3Normalized();
 
                                         }
 
                                         Vector3D speedDir = Vector3D.Normalize(playerCurrentSpeed);
                                         int randomSpeed = rnd.Next(10, 20);
-                                        Vector3D additionalSpeed = speedDir * (double)randomSpeed;
-                                        MyVisualScriptLogicProvider.SetPlayersSpeed(playerCurrentSpeed + additionalSpeed, dude);
+                                        Vector3D additionalSpeed = speedDir * (double) randomSpeed;
+                                        MyVisualScriptLogicProvider.SetPlayersSpeed(
+                                            playerCurrentSpeed + additionalSpeed, dude);
                                     }
 
                                 }
@@ -612,7 +631,11 @@ namespace DefenseShields.Station
                         }
                         else if (!_inHash.Contains(playerent)) _inHash.Add(playerent);
                     }
-                    catch (Exception ex) { }
+                    catch (Exception ex)
+                    {
+                        Logging.writeLine(String.Format("{0} - Exception in playerEffects", DateTime.Now));
+                        Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
+                    }
             });
             _playerwebbed = false;
         }
@@ -622,44 +645,58 @@ namespace DefenseShields.Station
         public void gridEffects()
         {
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
+            HashSet<IMyEntity> gridHash = new HashSet<IMyEntity>();
             BoundingSphereD gridsphere = new BoundingSphereD(pos, _range);
-            List<IMyEntity> gridList = MyAPIGateway.Entities.GetEntitiesInSphere(ref gridsphere);
+            MyAPIGateway.Entities.GetEntities(gridHash, ent => gridsphere.Intersects(ent.WorldAABB) && Detect(ref ent) && !_inHash.Contains(ent) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock)
+            && !(ent is IMyFloatingObject) && !(ent is MyHandToolBase) && ent != _tblock.CubeGrid && ent != AnimShield && !ent.Transparent && !(ent is IMyWelder)
+            && !(ent is IMyHandDrill) && !(ent is IMyAngleGrinder) && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag));
             Logging.writeLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now, _count));
-            MyAPIGateway.Parallel.ForEach(gridList, ent =>
+            MyAPIGateway.Parallel.ForEach(gridHash, ent =>
             {
-                if (ent == null || ent is IMyVoxelMap || ent.ToString().Contains("MyEntity") || ent is IMyCharacter ||
-                    ent is IMyCubeBlock || ent.ToString().Contains("MyPlanet")) return;
-
-                if (Detect(ref ent) == false) return;
+                if (ent == null) return;
                 var grid = ent as IMyCubeGrid;
                 if (grid != null && _insideReady == true)
                 {
-                    if (_inHash.Count == 0) Logging.writeLine(String.Format("!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, _count));
+                    try
+                    {
+                        if (_inHash.Count == 0)
+                            Logging.writeLine(String.Format(
+                                "!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, _count));
 
-                    if (grid == _tblock.CubeGrid || _inHash.Contains(grid)) return;
-                    List<long> owners = grid.BigOwners;
-                    if (owners.Count <= 0)
-                    {
-                        var checkrelations = _tblock.GetUserRelationToOwner(owners[0]);
-                        Logging.writeLine(String.Format("!!!!!Alert!!!!! {0} - gridEffet: {1} owner count of {2} relation of {3}", DateTime.Now, grid, owners.Count, checkrelations));
-                        return;
-                    }
-                    if (owners.Count > 0)
-                    {
-                        var relations = _tblock.GetUserRelationToOwner(owners[0]);
-                        if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
-                            relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
+                        if (grid == _tblock.CubeGrid || _inHash.Contains(grid)) return;
+                        List<long> owners = grid.BigOwners;
+                        if (owners.Count <= 0)
+                        {
+                            var checkrelations = _tblock.GetUserRelationToOwner(owners[0]);
+                            Logging.writeLine(String.Format(
+                                "!!!!!Alert!!!!! {0} - gridEffet: {1} owner count of {2} relation of {3}", DateTime.Now,
+                                grid, owners.Count, checkrelations));
                             return;
+                        }
+                        if (owners.Count > 0)
+                        {
+                            var relations = _tblock.GetUserRelationToOwner(owners[0]);
+                            if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
+                                relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
+                                return;
+                        }
+                        Logging.writeLine(String.Format("{0} - gridEffect: Closing grid {1} in loop {2}", DateTime.Now, grid, _count));
+                        var vel = grid.Physics.LinearVelocity;
+                        vel.SetDim(0, -2f);
+                        vel.SetDim(1, 20f);
+                        vel.SetDim(2, -2f);
+                        grid.Physics.LinearVelocity = vel;
+                        MyVisualScriptLogicProvider.CreateExplosion(grid.GetPosition(), 100, 0);
+                        //var player = MyAPIGateway.Players.GetPlayerControllingEntity(grid);
+                        grid.Close();
                     }
-                    Logging.writeLine(String.Format("{0} - gridEffect: deleting grid {1} in loop {2}", DateTime.Now, grid, _count));
-                    var vel = grid.Physics.LinearVelocity;
-                    vel.SetDim(0, -2f);
-                    vel.SetDim(1, 20f);
-                    vel.SetDim(2, -2f);
-                    grid.Physics.LinearVelocity = vel;
-                    MyVisualScriptLogicProvider.CreateExplosion(grid.GetPosition(), 100, 0);
-                    grid.Delete();
+                    catch (Exception ex)
+                    {
+                        Logging.writeLine(String.Format("{0} - Exception in gridEffects", DateTime.Now));
+                        Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
+                    }
                 }
+
             });
             _gridwebbed = false;
         }
@@ -713,8 +750,10 @@ namespace DefenseShields.Station
                 builder.Append(distanceString);
                 block.RefreshCustomInfo();
             }
-            catch
+            catch (Exception ex)
             {
+                Logging.writeLine(String.Format("{0} - Exception in Writer", DateTime.Now));
+                Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
             }
         }
 
@@ -763,6 +802,8 @@ namespace DefenseShields.Station
             }
             catch (Exception ex)
             {
+                Logging.writeLine(String.Format("{0} - Exception in Spawn", DateTime.Now));
+                Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
                 return null;
             }
         }
@@ -834,6 +875,8 @@ namespace DefenseShields.Station
 
         public static void Init()
         {
+            Logging.init("debugdevelop.log");
+            Logging.writeLine(String.Format("{0} - Logging Started", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
             MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, checkDamage);
             _isInit = true;
         }
