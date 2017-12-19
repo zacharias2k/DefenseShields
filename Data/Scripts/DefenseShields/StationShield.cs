@@ -667,7 +667,7 @@ namespace DefenseShields.Station
 
                         if (grid == _tblock.CubeGrid || _inHash.Contains(grid)) return;
                         List<long> owners = grid.BigOwners;
-                        if (owners.Count > 0)
+                        if (owners.Count > 1)
                         {
                             var relations = _tblock.GetUserRelationToOwner(owners[1]);
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
