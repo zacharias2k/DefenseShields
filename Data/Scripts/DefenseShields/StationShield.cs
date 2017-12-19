@@ -665,24 +665,16 @@ namespace DefenseShields.Station
 
                         if (grid == _tblock.CubeGrid || _inHash.Contains(grid)) return;
                         List<long> owners = grid.BigOwners;
-                        /*
-                        if (owners.Count == 0)
-                        {
-                            var checkrelations = _tblock.GetUserRelationToOwner(owners[0]);
-                            Logging.writeLine(String.Format(
-                                "!!!!!Alert!!!!! {0} - gridEffet: {1} owner count of {2} relation of {3}", DateTime.Now,
-                                grid, owners.Count, checkrelations));
-                            return;
-                        }
-                        */
                         if (owners.Count > 0)
                         {
                             var relations = _tblock.GetUserRelationToOwner(owners[0]);
-                            if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
-                                relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
-                                return;
+                            Logging.writeLine(String.Format("{0} - gridEffect: relations for grid {1} matched and were {2} in loop {3}", DateTime.Now, grid, relations, _count));
+                            Logging.writeLine(String.Format("{0} - gridEffect: count 1: {1}", DateTime.Now, relations));
+
+                            if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
-                        Logging.writeLine(String.Format("{0} - gridEffect: Deleting grid {1} in loop {2}", DateTime.Now, grid, _count));
+                        Logging.writeLine(String.Format("{0} - gridEffect: relations count for grid {1} was {2} with count {3} in loop {4}", DateTime.Now, grid, owners.Count, _count));
+                        Logging.writeLine(String.Format("{0} - gridEffect: Closing grid {1} in loop {2}", DateTime.Now, grid, _count));
                         var vel = grid.Physics.LinearVelocity;
                         vel.SetDim(0, -2f);
                         vel.SetDim(1, 20f);
