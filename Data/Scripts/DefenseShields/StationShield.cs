@@ -671,7 +671,7 @@ namespace DefenseShields.Station
                         if (owners.Count.Equals(1))
                         {
                             Logging.writeLine(String.Format("{0} - equals 1", DateTime.Now));
-                            var relations = _tblock.GetUserRelationToOwner(owners.Last());
+                            var relations = _tblock.GetUserRelationToOwner(0);
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
                         Logging.writeLine(String.Format("{0} - gridEffect: relations count for grid {1} was {2} with count {3} in loop {4}", DateTime.Now, grid, _count));
