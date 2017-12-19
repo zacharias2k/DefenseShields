@@ -20,6 +20,7 @@ using VRage.Game.Entity;
 using VRage;
 using System.Linq;
 using Sandbox.Game.Entities;
+using IMyCockpit = Sandbox.ModAPI.Ingame.IMyCockpit;
 using TExtensions = Sandbox.ModAPI.Interfaces.TerminalPropertyExtensions;
 
 namespace DefenseShields.Station
@@ -677,9 +678,8 @@ namespace DefenseShields.Station
                         grid.GetBlocks(blockList);
                         foreach (var block in blockList)
                         {
-                            if (block == null) return;
-                            var cockPit = (IMyCockpit) block;
-                            cockPit.RemovePilot();
+                            if (block is IMyShipController)
+                                Logging.writeLine(String.Format("{0} - grid's {1} control block is: {2}", DateTime.Now, grid, block));
                             return;
                         }
                         var vel = grid.Physics.LinearVelocity;
@@ -688,9 +688,7 @@ namespace DefenseShields.Station
                         vel.SetDim(2, -2f);
                         grid.Physics.LinearVelocity = vel;
                         MyVisualScriptLogicProvider.CreateExplosion(grid.GetPosition(), 100, 0);
-                       //var player = MyAPIGateway.Players.GetPlayerControllingEntity(grid);
-                        MyAPIGateway.Players.RemoveControlledEntity(grid);
-                        //grid.Close();
+                        grid.Delete();
                     }
                     catch (Exception ex)
                     {
