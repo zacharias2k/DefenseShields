@@ -664,13 +664,11 @@ namespace DefenseShields.Station
                 {
                     try
                     {
-                        if (_inHash.Count == 0)
-                            Logging.writeLine(string.Format(
-                                "!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, _count));
+                        if (_inHash.Count == 0) Logging.writeLine(string.Format("!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, _count));
 
-                        if (grid == _tblock.CubeGrid || _inHash.Contains(grid)) return;
-                        Logging.writeLine(string.Format("{0} - passing grid: {1}", DateTime.Now, grid.CustomName));
-                        if (grid.CustomName == "FieldGenerator") return;
+                        Logging.writeLine(string.Format("{0} - passing grid - Name: {1}", DateTime.Now, grid.Name));
+                        if (grid == _tblock.CubeGrid || _inHash.Contains(grid) || grid.CustomName == "FieldGenerator") return;
+                        Logging.writeLine(string.Format("{0} - passing grid - CustomName: {1}", DateTime.Now, grid.CustomName));
                         List<long> owners = grid.BigOwners;
                         if (owners.Count > 0)
                         {
@@ -687,7 +685,6 @@ namespace DefenseShields.Station
                             if (block.FatBlock != null) continue;
                             //Logging.writeLine(string.Format("{0} - Blockname: {1}", DateTime.Now, block));
                         }
-                        Logging.writeLine(string.Format("{0} - Gridname: {1}", DateTime.Now, grid));
                         var vel = grid.Physics.LinearVelocity;
                         vel.SetDim(0, -2f);
                         vel.SetDim(1, 20f);
