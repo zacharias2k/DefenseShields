@@ -163,11 +163,10 @@ namespace DefenseShields.Station
                     CreateUI();
                 }
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
-                //_tblock.RefreshCustomInfo(); //Check
                 Initialized = false;
 
             }
-            _tblock.RefreshCustomInfo(); //Check
+            _tblock.RefreshCustomInfo(); 
             //ShieldList.Add(this);
         }
 
@@ -690,7 +689,6 @@ namespace DefenseShields.Station
             string title,
             bool defaultValue = true) : base(block, internalName, title, defaultValue)
         {
-            block.RefreshCustomInfo();
         }
         public override void Setter(IMyTerminalBlock block, bool newState)
         {
@@ -698,9 +696,7 @@ namespace DefenseShields.Station
 
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
-            block.RefreshCustomInfo();
             shield.Sink.Update();
-            block.RefreshCustomInfo();
         }
     }
 
@@ -716,7 +712,6 @@ namespace DefenseShields.Station
             float standard = 10.0f)            
             : base(block, internalName, title, min, max, standard)
         {
-            block.RefreshCustomInfo();
         }
 
         public override void Writer(IMyTerminalBlock block, StringBuilder builder)
@@ -740,9 +735,7 @@ namespace DefenseShields.Station
             base.Setter(block, value);
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
-            block.RefreshCustomInfo();
             shield.Sink.Update();
-            block.RefreshCustomInfo();
         }
 
         public override void Setter(IMyTerminalBlock block, float value)
@@ -752,9 +745,7 @@ namespace DefenseShields.Station
             //shieldNetwork.MessageUtils.SendMessageToAll(message);
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
-            block.RefreshCustomInfo();
             shield.Sink.Update();
-            block.RefreshCustomInfo();
         }
     }
     #endregion
