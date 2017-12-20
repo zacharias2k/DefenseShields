@@ -27,7 +27,7 @@ namespace DefenseShields.Control
             InternalName = internalName + Definition.SubtypeId;
             Title = title;
         }
-
+        /*
         public void CreateUI()
         {
             var controls = new List<IMyTerminalControl>();
@@ -38,7 +38,7 @@ namespace DefenseShields.Control
                 OnCreateUI();
             }
         }
-
+        */
         public virtual void OnCreateUI()
         {
         }
