@@ -259,7 +259,7 @@ namespace DefenseShields.Station
                 TExtensions.SetValueBool(_tblock, "ShowOnHUD", true);
                 AnimShield.Render.Visible = _fblock.ShowOnHUD;
 
-                _anim_init = true;
+                //_anim_init = true;
             }
             catch (Exception ex)
             {
@@ -689,6 +689,7 @@ namespace DefenseShields.Station
             string title,
             bool defaultValue = true) : base(block, internalName, title, defaultValue)
         {
+            block.RefreshCustomInfo();
         }
         public override void Setter(IMyTerminalBlock block, bool newState)
         {
@@ -697,7 +698,7 @@ namespace DefenseShields.Station
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
             shield.Sink.Update();
-            block.RefreshCustomInfo();
+            //block.RefreshCustomInfo();
         }
     }
 
@@ -713,6 +714,7 @@ namespace DefenseShields.Station
             float standard = 10.0f)            
             : base(block, internalName, title, min, max, standard)
         {
+            block.RefreshCustomInfo();
         }
 
         public override void Writer(IMyTerminalBlock block, StringBuilder builder)
