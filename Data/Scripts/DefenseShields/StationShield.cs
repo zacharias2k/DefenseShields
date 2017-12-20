@@ -144,7 +144,6 @@ namespace DefenseShields.Station
                 if (_gridwebbed) MyAPIGateway.Parallel.Do(gridEffects);
                 if (_playerwebbed) MyAPIGateway.Parallel.Do(playerEffects);
                 if (_count++ == 59 || _count == 159) _count = 0;
-                _anim_init = false;
             }
             catch (Exception ex)
             {
@@ -179,8 +178,7 @@ namespace DefenseShields.Station
                 {
                     if (_ublock.BlockDefinition.SubtypeId == "StationDefenseShield")
                     {
-                        if (!_ublock.IsFunctional)
-                            return;
+                        if (!_ublock.IsFunctional) return;
                         AnimShield = Utils.Spawn("LargeField", "", true, false, false, false, false, _animblock.IDModule.Owner); // removed IDmodule.Owner validate still wroks
                         BlockAnimation();
 
