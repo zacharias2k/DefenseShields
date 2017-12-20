@@ -166,6 +166,7 @@ namespace DefenseShields.Station
                 Initialized = false;
 
             }
+            Logging.writeLine(String.Format("{0} - Updating CustomInfo {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _count));
             ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
             _tblock.RefreshCustomInfo();
             ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
