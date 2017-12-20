@@ -678,7 +678,8 @@ namespace DefenseShields.Station
                         var dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid).IdentityId;
                         var gridpos = grid.GetPosition();
                         MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
-                        MyVisualScriptLogicProvider.SetPlayersPosition(dude, gridpos);
+                        var player = MyVisualScriptLogicProvider.GetPlayersEntityName(dude);
+                        MyVisualScriptLogicProvider.SetEntityPosition(player, gridpos);
                         //MyVisualScriptLogicProvider.SetPlayersHealth(dude, -100);
                         //grid.Delete();
                     }
