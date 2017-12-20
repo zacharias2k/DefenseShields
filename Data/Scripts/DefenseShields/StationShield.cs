@@ -163,11 +163,10 @@ namespace DefenseShields.Station
                     CreateUI();
                 }
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
+                _tblock.RefreshCustomInfo(); //Check
                 Initialized = false;
 
             }
-            _tblock.RefreshCustomInfo();
-            Logging.writeLine(String.Format("{0} - Updating CustomInfo {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _count));
             //ShieldList.Add(this);
         }
 
@@ -698,6 +697,7 @@ namespace DefenseShields.Station
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
             shield.Sink.Update();
+            block.RefreshCustomInfo();
         }
     }
 
@@ -722,6 +722,7 @@ namespace DefenseShields.Station
                 builder.Clear();
                 var distanceString = Getter(block).ToString("0") + "m";
                 builder.Append(distanceString);
+                block.RefreshCustomInfo();
             }
             catch (Exception ex)
             {
@@ -746,6 +747,8 @@ namespace DefenseShields.Station
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
             shield.Sink.Update();
+            
+            
         }
     }
     #endregion
