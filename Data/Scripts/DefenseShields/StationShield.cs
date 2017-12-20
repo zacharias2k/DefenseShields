@@ -161,7 +161,6 @@ namespace DefenseShields.Station
             {
                 this.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
                 Logging.writeLine(String.Format("{0} - Create UI {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _count));
-                BlockAnimation();
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo(); //Check
                 Initialized = false;
