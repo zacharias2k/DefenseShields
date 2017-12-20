@@ -157,13 +157,12 @@ namespace DefenseShields.Station
             {
                 //this.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
                 Logging.WriteLine(String.Format("{0} - Create UI {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-                _tblock.RefreshCustomInfo();
                 if (!DefenseShieldsBase.ControlsLoaded)
                 {
                     CreateUi();
                 }
-                ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
-                _tblock.RefreshCustomInfo(); 
+                //((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
+                //_tblock.RefreshCustomInfo(); 
                 Initialized = false;
 
             }
@@ -697,7 +696,7 @@ namespace DefenseShields.Station
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
             shield.Sink.Update();
-            block.RefreshCustomInfo();
+            //block.RefreshCustomInfo();
         }
     }
 
@@ -722,7 +721,7 @@ namespace DefenseShields.Station
                 builder.Clear();
                 var distanceString = Getter(block).ToString("0") + "m";
                 builder.Append(distanceString);
-                block.RefreshCustomInfo();
+                //block.RefreshCustomInfo();
             }
             catch (Exception ex)
             {
