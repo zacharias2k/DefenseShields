@@ -166,7 +166,9 @@ namespace DefenseShields.Station
                 Initialized = false;
 
             }
-            _tblock.RefreshCustomInfo(); 
+            ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
+            _tblock.RefreshCustomInfo();
+            ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
             //ShieldList.Add(this);
         }
 
