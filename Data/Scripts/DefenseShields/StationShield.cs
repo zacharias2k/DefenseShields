@@ -459,7 +459,6 @@ namespace DefenseShields.Station
                 && !(ent is IMyWelder) && !(ent is IMyHandDrill) && !(ent is IMyAngleGrinder) && !(ent is IMyAutomaticRifleGun) && !(ent is IMyInventoryBag));
                 MyAPIGateway.Parallel.ForEach(_inHash, outent =>
                 {
-                    //Logging.writeLine(String.Format("{0} - inEntity: {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), outent, _count));
                     var grid = outent as IMyCubeGrid;
                     if (grid != null)
                     {
@@ -483,16 +482,13 @@ namespace DefenseShields.Station
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
                     var relationship = _tblock.GetUserRelationToOwner(dude);
-                    if (relationship != MyRelationsBetweenPlayerAndBlock.Owner &&
-                        relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
+                    if (relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
                     {
                         _playerwebbed = true;
                         return;
                     }
                     return;
                 }
-                //Logging.writeLine(String.Format("{0} - webEffect: {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, _count));
-
                 var grid = webent as IMyCubeGrid;
                 if (grid != null)
                 {
@@ -525,7 +521,6 @@ namespace DefenseShields.Station
         {
             HashSet<IMyEntity> shotHash = new HashSet<IMyEntity>();
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
-
             BoundingSphereD shotsphere = new BoundingSphereD(pos, _range);
             MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && ent is IMyMeteor && Detect(ref ent)  || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo"));
 
@@ -560,7 +555,6 @@ namespace DefenseShields.Station
             HashSet<IMyEntity> playerHash = new HashSet<IMyEntity>();
             Random rnd = new Random();
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
-
             BoundingSphereD playersphere = new BoundingSphereD(pos, _range);
             MyAPIGateway.Entities.GetEntities(playerHash, ent => playersphere.Intersects(ent.WorldAABB) && ent is IMyCharacter && Detect(ref ent));
             MyAPIGateway.Parallel.ForEach(playerHash, playerent =>
@@ -678,10 +672,8 @@ namespace DefenseShields.Station
                         var dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid).IdentityId;
                         var gridpos = grid.GetPosition();
                         MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
-                        var player = MyVisualScriptLogicProvider.GetPlayersEntityName(dude);
-                        MyVisualScriptLogicProvider.SetEntityPosition(player, gridpos);
-                        //MyVisualScriptLogicProvider.SetPlayersHealth(dude, -100);
-                        //grid.Delete();
+                        MyVisualScriptLogicProvider.SetPlayersHealth(dude, -100);
+                        grid.Delete();
                     }
                     catch (Exception ex)
                     {
@@ -702,8 +694,7 @@ namespace DefenseShields.Station
         public RefreshCheckbox(IMyTerminalBlock block,
             string internalName,
             string title,
-            bool defaultValue = true)
-            : base(block, internalName, title, defaultValue)
+            bool defaultValue = true) : base(block, internalName, title, defaultValue)
         {
             //CreateUI(); //Check
         }
@@ -804,6 +795,7 @@ namespace DefenseShields.Station
         //OBJECTBUILDERS
         private static readonly MyObjectBuilder_CubeGrid CubeGridBuilder = new MyObjectBuilder_CubeGrid()
         {
+            
             EntityId = 0,
             GridSizeEnum = MyCubeSize.Large,
             IsStatic = true,
