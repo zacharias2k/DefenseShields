@@ -161,7 +161,7 @@ namespace DefenseShields.Station
                 {
                     CreateUi();
                 }
-                //((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
+                ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo(); 
                 Initialized = false;
 
