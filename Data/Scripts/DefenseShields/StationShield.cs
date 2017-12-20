@@ -679,7 +679,7 @@ namespace DefenseShields.Station
                         var gridpos = grid.GetPosition();
                         MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
                         MyVisualScriptLogicProvider.SetPlayersPosition(dude, gridpos);
-                        MyVisualScriptLogicProvider.SetPlayersHealth(dude, -100);
+                        //MyVisualScriptLogicProvider.SetPlayersHealth(dude, -100);
                         grid.Delete();
                     }
                     catch (Exception ex)
