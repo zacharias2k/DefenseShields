@@ -676,12 +676,9 @@ namespace DefenseShields.Station
                                 relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
                         var dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid).IdentityId;
+                        var gridpos = grid.GetPosition();
+                        MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
                         MyVisualScriptLogicProvider.SetPlayersHealth(dude, -100);
-                        var vel = grid.Physics.LinearVelocity;
-                        vel.SetDim(0, -2f);
-                        vel.SetDim(1, 20f);
-                        vel.SetDim(2, -2f);
-                        grid.Physics.LinearVelocity = vel;
                         grid.Delete();
                     }
                     catch (Exception ex)
