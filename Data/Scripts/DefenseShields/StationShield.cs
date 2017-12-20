@@ -699,6 +699,7 @@ namespace DefenseShields.Station
             if (shield == null) { return; }
             block.RefreshCustomInfo();
             shield.Sink.Update();
+            block.RefreshCustomInfo();
             //block.RefreshCustomInfo();
         }
     }
@@ -741,6 +742,7 @@ namespace DefenseShields.Station
             if (shield == null) { return; }
             block.RefreshCustomInfo();
             shield.Sink.Update();
+            block.RefreshCustomInfo();
         }
 
         public override void Setter(IMyTerminalBlock block, float value)
@@ -752,8 +754,7 @@ namespace DefenseShields.Station
             if (shield == null) { return; }
             block.RefreshCustomInfo();
             shield.Sink.Update();
-            
-            
+            block.RefreshCustomInfo();
         }
     }
     #endregion
