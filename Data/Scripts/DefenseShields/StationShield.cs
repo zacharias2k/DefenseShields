@@ -690,7 +690,7 @@ namespace DefenseShields.Station
             string title,
             bool defaultValue = true) : base(block, internalName, title, defaultValue)
         {
-            //block.RefreshCustomInfo();
+            block.RefreshCustomInfo();
         }
         public override void Setter(IMyTerminalBlock block, bool newState)
         {
@@ -701,7 +701,6 @@ namespace DefenseShields.Station
             block.RefreshCustomInfo();
             shield.Sink.Update();
             block.RefreshCustomInfo();
-            //block.RefreshCustomInfo();
         }
     }
 
@@ -717,7 +716,7 @@ namespace DefenseShields.Station
             float standard = 10.0f)            
             : base(block, internalName, title, min, max, standard)
         {
-            //block.RefreshCustomInfo();
+            block.RefreshCustomInfo();
         }
 
         public override void Writer(IMyTerminalBlock block, StringBuilder builder)
@@ -727,7 +726,7 @@ namespace DefenseShields.Station
                 builder.Clear();
                 var distanceString = Getter(block).ToString("0") + "m";
                 builder.Append(distanceString);
-                //block.RefreshCustomInfo();
+                block.RefreshCustomInfo();
             }
             catch (Exception ex)
             {
