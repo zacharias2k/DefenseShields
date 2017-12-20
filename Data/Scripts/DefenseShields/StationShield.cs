@@ -166,10 +166,8 @@ namespace DefenseShields.Station
                 Initialized = false;
 
             }
-            Logging.writeLine(String.Format("{0} - Updating CustomInfo {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _count));
-            ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
             _tblock.RefreshCustomInfo();
-            ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
+            Logging.writeLine(String.Format("{0} - Updating CustomInfo {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _count));
             //ShieldList.Add(this);
         }
 
@@ -724,7 +722,6 @@ namespace DefenseShields.Station
                 builder.Clear();
                 var distanceString = Getter(block).ToString("0") + "m";
                 builder.Append(distanceString);
-                block.RefreshCustomInfo();
             }
             catch (Exception ex)
             {
