@@ -255,7 +255,7 @@ namespace DefenseShields.Station
                     temp4.Translation = temp3.PositionComp.LocalMatrix.Translation;
                     matrix_Reflectors_On.Add(temp4);
                 }
-                //Scale = new Vector3(_depth / 150f, _height / 150f, _width / 150f); //Might not need
+                Scale = new Vector3(_depth / 150f, _height / 150f, _width / 150f); //Might not need
                 TExtensions.SetValueBool(_tblock, "ShowOnHUD", true);
                 AnimShield.Render.Visible = _fblock.ShowOnHUD;
 
@@ -294,7 +294,7 @@ namespace DefenseShields.Station
             stringBuilder.Clear();
             stringBuilder.Append("Required Power: " + shield.CalcRequiredPower().ToString("0.00") + "MW");
 
-            //AnimShield.Render.Visible = _fblock.ShowOnHUD; //Might not need
+            AnimShield.Render.Visible = _fblock.ShowOnHUD; //Might not need
             _range = GetRadius();
             if (Ellipsoid.Getter(block).Equals(true))
             {
