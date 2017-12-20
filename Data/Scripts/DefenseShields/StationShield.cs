@@ -158,7 +158,7 @@ namespace DefenseShields.Station
         {
             if (Initialized)
             {
-                this.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
+                //this.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
                 Logging.writeLine(String.Format("{0} - Create UI {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _count));
                 if (!DefenseShieldsBase.ControlsLoaded)
                 {
