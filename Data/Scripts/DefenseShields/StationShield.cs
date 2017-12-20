@@ -46,8 +46,6 @@ namespace DefenseShields.Station
         private bool _insideReady = false;
         private ushort _modID = 50099;
 
-
-
         private MatrixD WorldMatrix;
         private Vector3D Scale;
         private BoundingSphereD sphere_min;
@@ -163,7 +161,7 @@ namespace DefenseShields.Station
             {
                 this.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
                 Logging.writeLine(String.Format("{0} - Create UI {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _count));
-                CreateUI();
+                BlockAnimation();
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo(); //Check
                 Initialized = false;
@@ -382,7 +380,6 @@ namespace DefenseShields.Station
         #endregion
 
         #region Server-client comms
-
         [ProtoContract(UseProtoMembersOnly = true)]
         public class Poke
         {
@@ -441,7 +438,6 @@ namespace DefenseShields.Station
             float y = Vector3Extensions.Project(WorldMatrix.Left, ent.GetPosition() - WorldMatrix.Translation).AbsMax();
             float z = Vector3Extensions.Project(WorldMatrix.Up, ent.GetPosition() - WorldMatrix.Translation).AbsMax();
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
-            //Logging.writeLine(String.Format("{0} - Entity: {1} x:{2} y:{3} z:{4} in loop {5} - Detect {6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, _count, detect));
             if (detect > 1) return false;
             return true;
         }
