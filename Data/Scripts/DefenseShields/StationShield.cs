@@ -144,8 +144,7 @@ namespace DefenseShields.Station
                 if (_gridwebbed) MyAPIGateway.Parallel.Do(gridEffects);
                 if (_playerwebbed) MyAPIGateway.Parallel.Do(playerEffects);
                 if (_count++ == 59 || _count == 159) _count = 0;
-                if (_oddeven == 0) _oddeven = 1;
-                else _oddeven = 0;
+                _anim_init = false;
             }
             catch (Exception ex)
             {
@@ -159,7 +158,6 @@ namespace DefenseShields.Station
             if (Initialized)
             {
                 //this.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
-                _anim_init = false;
                 Logging.writeLine(String.Format("{0} - Create UI {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _count));
                 if (!DefenseShieldsBase.ControlsLoaded)
                 {
