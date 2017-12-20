@@ -697,8 +697,9 @@ namespace DefenseShields.Station
 
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
-            shield.Sink.Update();
             block.RefreshCustomInfo();
+            shield.Sink.Update();
+            //block.RefreshCustomInfo();
         }
     }
 
@@ -714,7 +715,7 @@ namespace DefenseShields.Station
             float standard = 10.0f)            
             : base(block, internalName, title, min, max, standard)
         {
-            block.RefreshCustomInfo();
+            //block.RefreshCustomInfo();
         }
 
         public override void Writer(IMyTerminalBlock block, StringBuilder builder)
@@ -738,6 +739,7 @@ namespace DefenseShields.Station
             base.Setter(block, value);
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
+            block.RefreshCustomInfo();
             shield.Sink.Update();
         }
 
@@ -748,6 +750,7 @@ namespace DefenseShields.Station
             //shieldNetwork.MessageUtils.SendMessageToAll(message);
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
+            block.RefreshCustomInfo();
             shield.Sink.Update();
             
             
