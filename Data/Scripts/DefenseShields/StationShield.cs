@@ -20,7 +20,6 @@ using VRage.Game.Entity;
 using VRage;
 using System.Linq;
 using Sandbox.Game.Entities;
-//using IMyCockpit = Sandbox.ModAPI.Ingame.IMyCockpit;
 using TExtensions = Sandbox.ModAPI.Interfaces.TerminalPropertyExtensions;
 
 namespace DefenseShields.Station
@@ -165,7 +164,6 @@ namespace DefenseShields.Station
                 {
                     CreateUI();
                 }
-                //CreateUI();
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo(); //Check
                 Initialized = false;
@@ -694,7 +692,6 @@ namespace DefenseShields.Station
             string title,
             bool defaultValue = true) : base(block, internalName, title, defaultValue)
         {
-            //CreateUI(); //Check
         }
         public override void Setter(IMyTerminalBlock block, bool newState)
         {
@@ -719,7 +716,6 @@ namespace DefenseShields.Station
             float standard = 10.0f)            
             : base(block, internalName, title, min, max, standard)
         {
-            //CreateUI();
         }
 
         public override void Writer(IMyTerminalBlock block, StringBuilder builder)
@@ -838,7 +834,7 @@ namespace DefenseShields.Station
     public class DefenseShieldsBase : MySessionComponentBase
     {
         public static bool _isInit;
-        private static List<DefenseShields> BulletShields = new List<DefenseShields>(); // check that BulletShields -- never updated -- error goes away
+        private static List<DefenseShields> BulletShields = new List<DefenseShields>(); // check 
         public static bool ControlsLoaded;
 
         // Initialisation

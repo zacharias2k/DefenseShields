@@ -44,7 +44,6 @@ namespace DefenseShields.Control
         {
             var slider = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlSlider, T>(InternalName);
             slider.Visible = ShowControl;
-            //slider.SetLogLimits(Min, Max);
             slider.SetLimits(Min, Max);
             slider.Getter = Getter;
             slider.Setter = Setter;
