@@ -161,6 +161,7 @@ namespace DefenseShields.Station
             {
                 this.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
                 Logging.writeLine(String.Format("{0} - Create UI {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _count));
+                //CreateUI();
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo(); //Check
                 Initialized = false;
@@ -713,6 +714,7 @@ namespace DefenseShields.Station
             float standard = 10.0f)            
             : base(block, internalName, title, min, max, standard)
         {
+            CreateUI();
         }
 
         public override void Writer(IMyTerminalBlock block, StringBuilder builder)
