@@ -19,14 +19,12 @@ using VRage.Utils;
 using VRage.Game.Entity;
 using VRage;
 using System.Linq;
-using System.Linq.Expressions;
 using Sandbox.Game.Entities;
-using IMyCockpit = Sandbox.ModAPI.Ingame.IMyCockpit;
+//using IMyCockpit = Sandbox.ModAPI.Ingame.IMyCockpit;
 using TExtensions = Sandbox.ModAPI.Interfaces.TerminalPropertyExtensions;
 
 namespace DefenseShields.Station
 {
-    #region Main Class
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OreDetector), false, new string[] { "StationDefenseShield" })]
     class DefenseShields : MyGameLogicComponent
     {
@@ -664,36 +662,26 @@ namespace DefenseShields.Station
                 {
                     try
                     {
-                        if (_inHash.Count == 0) Logging.writeLine(string.Format("!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, _count));
+                        if (_inHash.Count == 0)
+                            Logging.writeLine(string.Format("!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, _count));
 
                         Logging.writeLine(string.Format("{0} - passing grid - Name: {1}", DateTime.Now, ent.DisplayName));
-                        Logging.writeLine(string.Format("{0} - passing grid - Name: {1}", DateTime.Now, _tblock.CubeGrid.DisplayName));
                         if (grid == _tblock.CubeGrid || _inHash.Contains(grid) || grid.DisplayName == "FieldGenerator") return;
                         Logging.writeLine(string.Format("{0} - passing grid - CustomName: {1}", DateTime.Now, grid.CustomName));
                         List<long> owners = grid.BigOwners;
                         if (owners.Count > 0)
                         {
                             var relations = _tblock.GetUserRelationToOwner(owners[0]);
-                            if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
+                            if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
+                                relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
-                        Logging.writeLine(string.Format("{0} - Gridname: {1}", DateTime.Now, grid));
-                        
-                        List<IMySlimBlock> blockList = new List<IMySlimBlock>();
-                        grid.GetBlocks(blockList);
-                        foreach (var block in blockList)
-                        {
-                            if (block == null) continue;
-                            if (block.FatBlock == null) continue;
-                            Logging.writeLine(string.Format("{0} - Blockname: {1}", DateTime.Now, block.FatBlock.Name));
-                            if (block.FatBlock != null)
-                                Logging.writeLine(string.Format("{0} - Blockname: {1}", DateTime.Now, block.FatBlock.DisplayName));
-                        }
+                        var dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid).IdentityId;
+                        MyVisualScriptLogicProvider.SetPlayersHealth(dude, -100);
                         var vel = grid.Physics.LinearVelocity;
                         vel.SetDim(0, -2f);
                         vel.SetDim(1, 20f);
                         vel.SetDim(2, -2f);
                         grid.Physics.LinearVelocity = vel;
-                        MyVisualScriptLogicProvider.CreateExplosion(grid.GetPosition(), 100, 0);
                         grid.Delete();
                     }
                     catch (Exception ex)
@@ -707,8 +695,6 @@ namespace DefenseShields.Station
             _gridwebbed = false;
         }
     }
-    #endregion
-
     #endregion
 
     #region Controls Class
