@@ -161,6 +161,10 @@ namespace DefenseShields.Station
             {
                 this.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
                 Logging.writeLine(String.Format("{0} - Create UI {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _count));
+                if (!DefenseShieldsBase.ControlsLoaded)
+                {
+                    CreateUI();
+                }
                 //CreateUI();
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo(); //Check
@@ -362,6 +366,7 @@ namespace DefenseShields.Station
 
         public void CreateUI()
         {
+            DefenseShieldsBase.ControlsLoaded = true;
             RemoveOreUI();
 
             
@@ -689,7 +694,7 @@ namespace DefenseShields.Station
             string title,
             bool defaultValue = true) : base(block, internalName, title, defaultValue)
         {
-            CreateUI(); //Check
+            //CreateUI(); //Check
         }
         public override void Setter(IMyTerminalBlock block, bool newState)
         {
@@ -714,7 +719,7 @@ namespace DefenseShields.Station
             float standard = 10.0f)            
             : base(block, internalName, title, min, max, standard)
         {
-            CreateUI();
+            //CreateUI();
         }
 
         public override void Writer(IMyTerminalBlock block, StringBuilder builder)
