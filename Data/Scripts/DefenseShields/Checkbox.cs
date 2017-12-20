@@ -32,6 +32,7 @@ namespace DefenseShields.Control
             {
                 MyAPIGateway.Utilities.SetVariable<bool>(block.EntityId.ToString() + InternalName, defaultValue);
             }
+            CreateUI();
         }
 
         public override void OnCreateUI()

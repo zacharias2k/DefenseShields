@@ -37,7 +37,7 @@ namespace DefenseShields.Control
             Min = min;
             Max = max;
             Standard = standard;
-           // CreateUI();
+            CreateUI();
         }
 
         public override void OnCreateUI()
