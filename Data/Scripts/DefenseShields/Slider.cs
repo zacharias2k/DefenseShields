@@ -37,10 +37,10 @@ namespace DefenseShields.Control
             Min = min;
             Max = max;
             Standard = standard;
-            CreateUI();
+            CreateUi();
         }
 
-        public override void OnCreateUI()
+        public override void OnCreateUi()
         {
             var slider = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlSlider, T>(InternalName);
             slider.Visible = ShowControl;

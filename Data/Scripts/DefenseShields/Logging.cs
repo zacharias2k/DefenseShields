@@ -7,37 +7,37 @@ namespace DefenseShields
 {
     public class Logging
     {
-        private static Logging INSTANCE = null;
-        private TextWriter file = null;
-        private string fileName = "";
+        private static Logging _instance = null;
+        private TextWriter _file = null;
+        private string _fileName = "";
 
         private Logging()
         {
         }
 
-        private static Logging getInstance()
+        private static Logging GetInstance()
         {
-            if (Logging.INSTANCE == null)
+            if (Logging._instance == null)
             {
-                Logging.INSTANCE = new Logging();
+                Logging._instance = new Logging();
             }
 
-            return INSTANCE;
+            return _instance;
         }
 
-        public static bool init(string name)
+        public static bool Init(string name)
         {
 
             bool output = false;
 
-            if (getInstance().file == null)
+            if (GetInstance()._file == null)
             {
 
                 try
                 {
                     MyAPIGateway.Utilities.ShowNotification(name, 5000);
-                    getInstance().fileName = name;
-                    getInstance().file = MyAPIGateway.Utilities.WriteFileInLocalStorage(name, typeof(Logging));
+                    GetInstance()._fileName = name;
+                    GetInstance()._file = MyAPIGateway.Utilities.WriteFileInLocalStorage(name, typeof(Logging));
                     output = true;
                 }
                 catch (Exception e)
@@ -53,14 +53,14 @@ namespace DefenseShields
             return output;
         }
 
-        public static void writeLine(string text)
+        public static void WriteLine(string text)
         {
             try
             {
-                if (getInstance().file != null)
+                if (GetInstance()._file != null)
                 {
-                    getInstance().file.WriteLine(text);
-                    getInstance().file.Flush();
+                    GetInstance()._file.WriteLine(text);
+                    GetInstance()._file.Flush();
                 }
             }
             catch (Exception e)
@@ -68,14 +68,14 @@ namespace DefenseShields
             }
         }
 
-        public static void close()
+        public static void Close()
         {
             try
             {
-                if (getInstance().file != null)
+                if (GetInstance()._file != null)
                 {
-                    getInstance().file.Flush();
-                    getInstance().file.Close();
+                    GetInstance()._file.Flush();
+                    GetInstance()._file.Close();
                 }
             }
             catch (Exception e)

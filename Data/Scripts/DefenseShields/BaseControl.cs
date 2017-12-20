@@ -28,18 +28,18 @@ namespace DefenseShields.Control
             Title = title;
         }
         
-        public void CreateUI()
+        public void CreateUi()
         {
             var controls = new List<IMyTerminalControl>();
             MyAPIGateway.TerminalControls.GetControls<T>(out controls);
             var control = controls.Find((x) => x.Id.ToString() == InternalName);
             if (control == null)
             {
-                OnCreateUI();
+                OnCreateUi();
             }
         }
         
-        public virtual void OnCreateUI()
+        public virtual void OnCreateUi()
         {
         }
 

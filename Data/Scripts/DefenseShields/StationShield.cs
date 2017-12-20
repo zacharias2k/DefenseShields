@@ -29,49 +29,48 @@ namespace DefenseShields.Station
     {
         #region Setup
         public bool Initialized = true;
-        private bool _anim_init = false;
-        private float anim_step = 0f;
+        private bool _animInit;
+        private float _animStep;
         private float _range =50f;
         private float _width = 50f;
         private float _height = 50f;
         private float _depth = 50f; 
         private int _time;
-        public int _count;
-        public int _oddeven;
+        public int Count;
         private int _playertime;
-        private bool _playerwebbed = false;
-        private bool _gridwebbed = false;
-        private bool _shotwebbed = false;
-        private bool _insideReady = false;
-        private ushort _modID = 50099;
+        private bool _playerwebbed;
+        private bool _gridwebbed;
+        private bool _shotwebbed;
+        private bool _insideReady;
+        private ushort _modId = 50099;
 
-        private MatrixD WorldMatrix;
-        private Vector3D Scale;
-        private BoundingSphereD sphere_min;
-        private BoundingSphereD sphere_max;
-        private MyEntitySubpart subpart_Rotor;
+        private MatrixD _worldMatrix;
+        private Vector3D _scale;
+        private BoundingSphereD _sphereMin;
+        private BoundingSphereD _sphereMax;
+        private MyEntitySubpart _subpartRotor;
         public RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> Slider;
         public RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> Ellipsoid;
         public MyResourceSinkComponent Sink;
         public MyDefinitionId PowerDefinitionId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
-        private readonly List<MyEntitySubpart> subparts_Arms = new List<MyEntitySubpart>();
-        private readonly List<MyEntitySubpart> subparts_Reflectors = new List<MyEntitySubpart>();
-        private List<Matrix> matrix_Arms_Off = new List<Matrix>();
-        private List<Matrix> matrix_Arms_On = new List<Matrix>();
-        private List<Matrix> matrix_Reflectors_Off = new List<Matrix>();
-        private List<Matrix> matrix_Reflectors_On = new List<Matrix>();
+        private readonly List<MyEntitySubpart> _subpartsArms = new List<MyEntitySubpart>();
+        private readonly List<MyEntitySubpart> _subpartsReflectors = new List<MyEntitySubpart>();
+        private List<Matrix> _matrixArmsOff = new List<Matrix>();
+        private List<Matrix> _matrixArmsOn = new List<Matrix>();
+        private List<Matrix> _matrixReflectorsOff = new List<Matrix>();
+        private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
-        public HashSet<IMyEntity> _inHash = new HashSet<IMyEntity>();
+        public HashSet<IMyEntity> InHash = new HashSet<IMyEntity>();
 
         public static readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
 
-        protected IMyOreDetector _ublock; //change to _oblock
+        protected IMyOreDetector Ublock; //change to _oblock
         private IMyFunctionalBlock _fblock;
         private IMyTerminalBlock _tblock;
         private IMyCubeBlock _cblock;
         private MyCubeBlock _animblock;
-        private IMyEntity AnimShield;
+        private IMyEntity _animShield;
         #endregion
 
         #region Init
@@ -87,7 +86,7 @@ namespace DefenseShields.Station
             //this.NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
 
             _cblock = (IMyCubeBlock)Entity;
-            _ublock = Entity as IMyOreDetector; 
+            Ublock = Entity as IMyOreDetector; 
             _fblock = Entity as IMyFunctionalBlock;
             _tblock = Entity as IMyTerminalBlock;
             _animblock = Entity as MyCubeBlock;
@@ -99,56 +98,56 @@ namespace DefenseShields.Station
         {
             try
             {
-                if (_anim_init)
+                if (_animInit)
                 {
-                    WorldMatrix = Entity.WorldMatrix;
-                    WorldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
+                    _worldMatrix = Entity.WorldMatrix;
+                    _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
                     //Animations
                     if (_fblock.Enabled && _fblock.IsFunctional && _cblock.IsWorking)
                     {
                         //Color change for on =-=-=-=-
-                        subpart_Rotor.SetEmissiveParts("Emissive", Color.White, 1);
+                        _subpartRotor.SetEmissiveParts("Emissive", Color.White, 1);
                         _time += 1;
                         Matrix temp1 = Matrix.CreateRotationY(0.1f * _time);
-                        temp1.Translation = subpart_Rotor.PositionComp.LocalMatrix.Translation;
-                        subpart_Rotor.PositionComp.LocalMatrix = temp1;
-                        if (anim_step < 1f)
+                        temp1.Translation = _subpartRotor.PositionComp.LocalMatrix.Translation;
+                        _subpartRotor.PositionComp.LocalMatrix = temp1;
+                        if (_animStep < 1f)
                         {
-                            anim_step += 0.05f;
+                            _animStep += 0.05f;
                         }
                     }
                     else
                     {
                         //Color change for off =-=-=-=-
-                        subpart_Rotor.SetEmissiveParts("Emissive", Color.Black + new Color(15, 15, 15, 5), 0);
-                        if (anim_step > 0f)
+                        _subpartRotor.SetEmissiveParts("Emissive", Color.Black + new Color(15, 15, 15, 5), 0);
+                        if (_animStep > 0f)
                         {
-                            anim_step -= 0.05f;
+                            _animStep -= 0.05f;
                         }
                     }
                     for (int i = 0; i < 8; i++)
                     {
                         if (i < 4)
                         {
-                            subparts_Reflectors[i].PositionComp.LocalMatrix = Matrix.Slerp(matrix_Reflectors_Off[i], matrix_Reflectors_On[i], anim_step);
+                            _subpartsReflectors[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixReflectorsOff[i], _matrixReflectorsOn[i], _animStep);
                         }
-                        subparts_Arms[i].PositionComp.LocalMatrix = Matrix.Slerp(matrix_Arms_Off[i], matrix_Arms_On[i], anim_step);
+                        _subpartsArms[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixArmsOff[i], _matrixArmsOn[i], _animStep);
                     }
-                    MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(WorldMatrix.GetOrientation()), WorldMatrix.Translation, Scale);
-                    AnimShield.SetWorldMatrix(matrix);
+                    MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
+                    _animShield.SetWorldMatrix(matrix);
                 }
-                if (!MyAPIGateway.Utilities.IsDedicated) showRange(_range); //Check
-                else sendPoke(_range); //Check
-                MyAPIGateway.Parallel.StartBackground(webEffects);
-                if (_shotwebbed) MyAPIGateway.Parallel.Do(shotEffects);
-                if (_gridwebbed) MyAPIGateway.Parallel.Do(gridEffects);
-                if (_playerwebbed) MyAPIGateway.Parallel.Do(playerEffects);
-                if (_count++ == 59 || _count == 159) _count = 0;
+                if (!MyAPIGateway.Utilities.IsDedicated) ShowRange(_range); //Check
+                else SendPoke(_range); //Check
+                MyAPIGateway.Parallel.StartBackground(WebEffects);
+                if (_shotwebbed) MyAPIGateway.Parallel.Do(ShotEffects);
+                if (_gridwebbed) MyAPIGateway.Parallel.Do(GridEffects);
+                if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
+                if (Count++ == 59 || Count == 159) Count = 0;
             }
             catch (Exception ex)
             {
-                Logging.writeLine(String.Format("{0} - Exception in UpdateBeforeSimulation", DateTime.Now));
-                Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
+                Logging.WriteLine(String.Format("{0} - Exception in UpdateBeforeSimulation", DateTime.Now));
+                Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now, ex));
             }
         }
 
@@ -157,10 +156,10 @@ namespace DefenseShields.Station
             if (Initialized)
             {
                 //this.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
-                Logging.writeLine(String.Format("{0} - Create UI {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _count));
+                Logging.WriteLine(String.Format("{0} - Create UI {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                 if (!DefenseShieldsBase.ControlsLoaded)
                 {
-                    CreateUI();
+                    CreateUi();
                 }
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo(); //Check
@@ -174,15 +173,15 @@ namespace DefenseShields.Station
         {
             try
             {
-                if (!_anim_init)
+                if (!_animInit)
                 {
-                    if (_ublock.BlockDefinition.SubtypeId == "StationDefenseShield")
+                    if (Ublock.BlockDefinition.SubtypeId == "StationDefenseShield")
                     {
-                        if (!_ublock.IsFunctional) return;
-                        AnimShield = Utils.Spawn("LargeField", "", true, false, false, false, false, _animblock.IDModule.Owner); // removed IDmodule.Owner validate still wroks
+                        if (!Ublock.IsFunctional) return;
+                        _animShield = Utils.Spawn("LargeField", "", true, false, false, false, false, _animblock.IDModule.Owner); // removed IDmodule.Owner validate still wroks
                         BlockAnimation();
 
-                        _anim_init = true;
+                        _animInit = true;
                     }
                     else
                     {
@@ -192,8 +191,8 @@ namespace DefenseShields.Station
             }
             catch (Exception ex)
             {
-                Logging.writeLine(String.Format("{0} - Exception in UpdateAfterSimulation", DateTime.Now));
-                Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
+                Logging.WriteLine(String.Format("{0} - Exception in UpdateAfterSimulation", DateTime.Now));
+                Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now, ex));
             }
         }
         #endregion
@@ -203,23 +202,23 @@ namespace DefenseShields.Station
         {
             try
             {
-                anim_step = 0f;
+                _animStep = 0f;
 
-                matrix_Arms_Off = new List<Matrix>();
-                matrix_Arms_On = new List<Matrix>();
-                matrix_Reflectors_Off = new List<Matrix>();
-                matrix_Reflectors_On = new List<Matrix>();
+                _matrixArmsOff = new List<Matrix>();
+                _matrixArmsOn = new List<Matrix>();
+                _matrixReflectorsOff = new List<Matrix>();
+                _matrixReflectorsOn = new List<Matrix>();
 
-                WorldMatrix = Entity.WorldMatrix;
-                WorldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
+                _worldMatrix = Entity.WorldMatrix;
+                _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
 
-                Entity.TryGetSubpart("Rotor", out subpart_Rotor);
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
 
                 for (int i = 1; i < 9; i++)
                 {
                     MyEntitySubpart temp1;
-                    subpart_Rotor.TryGetSubpart("ArmT" + i.ToString(), out temp1);
-                    matrix_Arms_Off.Add(temp1.PositionComp.LocalMatrix);
+                    _subpartRotor.TryGetSubpart("ArmT" + i.ToString(), out temp1);
+                    _matrixArmsOff.Add(temp1.PositionComp.LocalMatrix);
                     Matrix temp2 = temp1.PositionComp.LocalMatrix.GetOrientation();
                     switch (i)
                     {
@@ -241,30 +240,30 @@ namespace DefenseShields.Station
                             break;
                     }
                     temp2.Translation = temp1.PositionComp.LocalMatrix.Translation;
-                    matrix_Arms_On.Add(temp2);
-                    subparts_Arms.Add(temp1);
+                    _matrixArmsOn.Add(temp2);
+                    _subpartsArms.Add(temp1);
                 }
 
                 for (int i = 0; i < 4; i++)
                 {
                     MyEntitySubpart temp3;
-                    subparts_Arms[i].TryGetSubpart("Reflector", out temp3);
-                    subparts_Reflectors.Add(temp3);
-                    matrix_Reflectors_Off.Add(temp3.PositionComp.LocalMatrix);
+                    _subpartsArms[i].TryGetSubpart("Reflector", out temp3);
+                    _subpartsReflectors.Add(temp3);
+                    _matrixReflectorsOff.Add(temp3.PositionComp.LocalMatrix);
                     Matrix temp4 = temp3.PositionComp.LocalMatrix * Matrix.CreateFromAxisAngle(temp3.PositionComp.LocalMatrix.Forward, -(float)Math.PI / 3);
                     temp4.Translation = temp3.PositionComp.LocalMatrix.Translation;
-                    matrix_Reflectors_On.Add(temp4);
+                    _matrixReflectorsOn.Add(temp4);
                 }
-                Scale = new Vector3(_depth / 150f, _height / 150f, _width / 150f); //Might not need
+                _scale = new Vector3(_depth / 150f, _height / 150f, _width / 150f); 
                 TExtensions.SetValueBool(_tblock, "ShowOnHUD", true);
-                AnimShield.Render.Visible = _fblock.ShowOnHUD;
+                _animShield.Render.Visible = _fblock.ShowOnHUD;
 
                 //_anim_init = true;
             }
             catch (Exception ex)
             {
-                Logging.writeLine(String.Format("{0} - Exception in BlockAnimation", DateTime.Now));
-                Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
+                Logging.WriteLine(String.Format("{0} - Exception in BlockAnimation", DateTime.Now));
+                Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now, ex));
             }
         }
         #endregion
@@ -294,7 +293,7 @@ namespace DefenseShields.Station
             stringBuilder.Clear();
             stringBuilder.Append("Required Power: " + shield.CalcRequiredPower().ToString("0.00") + "MW");
 
-            //AnimShield.Render.Visible = _fblock.ShowOnHUD; 
+            _animShield.Render.Visible = _fblock.ShowOnHUD; 
             _range = GetRadius();
             if (Ellipsoid.Getter(block).Equals(true))
             {
@@ -308,7 +307,7 @@ namespace DefenseShields.Station
                 _height = _range;
                 _depth = _range;
             }
-            Scale = new Vector3(_depth / 150f, _height / 150f, _width / 150f); 
+            _scale = new Vector3(_depth / 150f, _height / 150f, _width / 150f); 
         }
         #endregion
 
@@ -339,7 +338,7 @@ namespace DefenseShields.Station
         #endregion
 
         #region Create UI
-        void RemoveOreUI()
+        void RemoveOreUi()
         {
             List<IMyTerminalAction> actions = new List<IMyTerminalAction>();
             MyAPIGateway.TerminalControls.GetActions<Sandbox.ModAPI.Ingame.IMyOreDetector>(out actions);
@@ -359,10 +358,10 @@ namespace DefenseShields.Station
             return block.BlockDefinition.SubtypeName.Contains("OreDetector");
         }
 
-        public void CreateUI()
+        public void CreateUi()
         {
             DefenseShieldsBase.ControlsLoaded = true;
-            RemoveOreUI();
+            RemoveOreUi();
 
             
             Ellipsoid = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>((IMyTerminalBlock)_cblock,
@@ -383,40 +382,40 @@ namespace DefenseShields.Station
         [ProtoContract(UseProtoMembersOnly = true)]
         public class Poke
         {
-            [ProtoMember(1)] public ushort ModID;
+            [ProtoMember(1)] public ushort ModId;
             [ProtoMember(2)]
             public float Size { get; set; }
         }
 
-        public void sendPoke(float size)
+        public void SendPoke(float size)
         {
             bool sent;
             Poke info = new Poke();
-            info.ModID = _modID;
+            info.ModId = _modId;
             info.Size = size;
-            sent = MyAPIGateway.Multiplayer.SendMessageToOthers(_modID, MyAPIGateway.Utilities.SerializeToBinary(info), true);
+            sent = MyAPIGateway.Multiplayer.SendMessageToOthers(_modId, MyAPIGateway.Utilities.SerializeToBinary(info), true);
         }
 
-        public void getPoke(byte[] data)
+        public void GetPoke(byte[] data)
         {
             var message = MyAPIGateway.Utilities.SerializeFromBinary<Poke>(data);
             Poke info = new Poke();
             try
             {
                 info = message;
-                if (info.ModID == _modID)
+                if (info.ModId == _modId)
                 {
-                    showRange(info.Size);
+                    ShowRange(info.Size);
                 }
             }
             catch (Exception ex)
             {
-                Logging.writeLine(String.Format("{0} - Exception in getPoke", DateTime.Now));
-                Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
+                Logging.WriteLine(String.Format("{0} - Exception in getPoke", DateTime.Now));
+                Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now, ex));
             }
         }
 
-        public void showRange(float size)
+        public void ShowRange(float size)
         {
             Color colour;
             var relations = _tblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId);
@@ -424,7 +423,7 @@ namespace DefenseShields.Station
                colour = Color.FromNonPremultiplied(0, 60, 0, 64);
             else
                 colour = Color.FromNonPremultiplied(1, 0, 0, 52);
-            MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Build new");
+            MyStringId rangeGridResourceId = MyStringId.GetOrCompute("Build new");
             var matrix = _tblock.WorldMatrix;
             //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, size, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
         }
@@ -434,9 +433,9 @@ namespace DefenseShields.Station
         #region Detect intersection
         private bool Detect(ref IMyEntity ent)
         {
-            float x = Vector3Extensions.Project(WorldMatrix.Forward, ent.GetPosition() - WorldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(WorldMatrix.Left, ent.GetPosition() - WorldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(WorldMatrix.Up, ent.GetPosition() - WorldMatrix.Translation).AbsMax();
+            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             if (detect > 1) return false;
             return true;
@@ -445,23 +444,23 @@ namespace DefenseShields.Station
 
         #region Webing effects
 
-        public void webEffects()
+        public void WebEffects()
         {
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
-            if (_count == 0)
+            if (Count == 0)
             {
                 _insideReady = false;
-                _inHash.Clear();
+                InHash.Clear();
                 BoundingSphereD insphere = new BoundingSphereD(pos, _range - 13.3f);
-                MyAPIGateway.Entities.GetEntities(_inHash, ent => insphere.Intersects(ent.WorldAABB) && Detect(ref ent) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock)
-                && !(ent is IMyFloatingObject) && !(ent is MyHandToolBase) && ent != AnimShield && !ent.Transparent && !(ent is IMyCharacter)
+                MyAPIGateway.Entities.GetEntities(InHash, ent => insphere.Intersects(ent.WorldAABB) && Detect(ref ent) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock)
+                && !(ent is IMyFloatingObject) && !(ent is MyHandToolBase) && ent != _animShield && !ent.Transparent && !(ent is IMyCharacter)
                 && !(ent is IMyWelder) && !(ent is IMyHandDrill) && !(ent is IMyAngleGrinder) && !(ent is IMyAutomaticRifleGun) && !(ent is IMyInventoryBag));
-                MyAPIGateway.Parallel.ForEach(_inHash, outent =>
+                MyAPIGateway.Parallel.ForEach(InHash, outent =>
                 {
                     var grid = outent as IMyCubeGrid;
                     if (grid != null)
                     {
-                        if (!_inHash.Contains(outent)) _inHash.Add(outent);
+                        if (!InHash.Contains(outent)) InHash.Add(outent);
                     }
                 });
                 _insideReady = true;
@@ -469,15 +468,15 @@ namespace DefenseShields.Station
             }
             HashSet<IMyEntity> webHash = new HashSet<IMyEntity>();
             BoundingSphereD websphere = new BoundingSphereD(pos, _range);
-            MyAPIGateway.Entities.GetEntities(webHash, ent => websphere.Intersects(ent.WorldAABB) && Detect(ref ent) && !_inHash.Contains(ent) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock)
-            && !(ent is IMyFloatingObject) && !(ent is MyHandToolBase) && ent != _tblock.CubeGrid && ent != AnimShield && !ent.Transparent && !(ent is IMyWelder)
+            MyAPIGateway.Entities.GetEntities(webHash, ent => websphere.Intersects(ent.WorldAABB) && Detect(ref ent) && !InHash.Contains(ent) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock)
+            && !(ent is IMyFloatingObject) && !(ent is MyHandToolBase) && ent != _tblock.CubeGrid && ent != _animShield && !ent.Transparent && !(ent is IMyWelder)
             && !(ent is IMyHandDrill) && !(ent is IMyAngleGrinder) && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag));
 
             MyAPIGateway.Parallel.ForEach(webHash, webent =>
             {
                 if (webent == null) return;
 
-                if (webent is IMyCharacter && _count == 14 || _count == 29 || _count == 44 || _count == 59)
+                if (webent is IMyCharacter && Count == 14 || Count == 29 || Count == 44 || Count == 59)
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
                     var relationship = _tblock.GetUserRelationToOwner(dude);
@@ -508,7 +507,7 @@ namespace DefenseShields.Station
                 {
                     _shotwebbed = true;
                 }
-                Logging.writeLine(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
+                Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
             });
         }
 
@@ -516,7 +515,7 @@ namespace DefenseShields.Station
 
         #region shot effects
 
-        public void shotEffects()
+        public void ShotEffects()
         {
             HashSet<IMyEntity> shotHash = new HashSet<IMyEntity>();
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
@@ -528,8 +527,8 @@ namespace DefenseShields.Station
                 if (shotent == null) return;
                 try
                 {
-                    Logging.writeLine(String.Format("{0} - shotEffect ent found: {1} in loop {2}",
-                        DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, _count));
+                    Logging.WriteLine(String.Format("{0} - shotEffect ent found: {1} in loop {2}",
+                        DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, Count));
                     if (shotent is MyMeteor || shotent.ToString().Contains("Missile") ||
                         shotent.ToString().Contains("Torpedo"))
                     {
@@ -538,8 +537,8 @@ namespace DefenseShields.Station
                 }
                 catch (Exception ex)
                 {
-                    Logging.writeLine(String.Format("{0} - Exception in shotEffects", DateTime.Now));
-                    Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
+                    Logging.WriteLine(String.Format("{0} - Exception in shotEffects", DateTime.Now));
+                    Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now, ex));
                 }
             });
             _shotwebbed = false;
@@ -549,7 +548,7 @@ namespace DefenseShields.Station
 
         #region player effects
 
-        public void playerEffects()
+        public void PlayerEffects()
         {
             HashSet<IMyEntity> playerHash = new HashSet<IMyEntity>();
             Random rnd = new Random();
@@ -567,13 +566,13 @@ namespace DefenseShields.Station
                         if (relationship != MyRelationsBetweenPlayerAndBlock.Owner &&
                             relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
                         {
-                            Logging.writeLine(String.Format(
+                            Logging.WriteLine(String.Format(
                                 "{0} - playerEffect: Enemy {1} detected at loop {2} - relationship: {3}",
-                                DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent, _count, relationship));
+                                DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent, Count, relationship));
                             string s = playerent.ToString();
                             if (s.Equals("Space_Wolf"))
                             {
-                                Logging.writeLine(String.Format("{0} - playerEffect: Killing {1} ",
+                                Logging.WriteLine(String.Format("{0} - playerEffect: Killing {1} ",
                                     DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent));
                                 ((IMyCharacter) playerent).Kill();
                                 return;
@@ -622,12 +621,12 @@ namespace DefenseShields.Station
                                 }
                             }
                         }
-                        else if (!_inHash.Contains(playerent)) _inHash.Add(playerent);
+                        else if (!InHash.Contains(playerent)) InHash.Add(playerent);
                     }
                     catch (Exception ex)
                     {
-                        Logging.writeLine(String.Format("{0} - Exception in playerEffects", DateTime.Now));
-                        Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
+                        Logging.WriteLine(String.Format("{0} - Exception in playerEffects", DateTime.Now));
+                        Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now, ex));
                     }
             });
             _playerwebbed = false;
@@ -635,26 +634,26 @@ namespace DefenseShields.Station
         #endregion
 
         #region Grid effects
-        public void gridEffects()
+        public void GridEffects()
         {
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             BoundingSphereD gridsphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere);
-            Logging.writeLine(String.Format("{0} - gridEffect: loop is v3 {1}", DateTime.Now, _count));
+            Logging.WriteLine(String.Format("{0} - gridEffect: loop is v3 {1}", DateTime.Now, Count));
             MyAPIGateway.Parallel.ForEach(gridList, ent =>
             {
-                if (ent == null || _inHash.Contains(ent) || ent.Transparent) return;
+                if (ent == null || InHash.Contains(ent) || ent.Transparent) return;
                 var grid = ent as IMyCubeGrid;
                 if (grid != null && _insideReady && Detect(ref ent))
                 {
                     try
                     {
-                        if (_inHash.Count == 0)
-                            Logging.writeLine(string.Format("!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, _count));
+                        if (InHash.Count == 0)
+                            Logging.WriteLine(string.Format("!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, Count));
 
-                        Logging.writeLine(string.Format("{0} - passing grid - Name: {1}", DateTime.Now, ent.DisplayName));
-                        if (grid == _tblock.CubeGrid || _inHash.Contains(grid) || grid.DisplayName == "FieldGenerator") return;
-                        Logging.writeLine(string.Format("{0} - passing grid - CustomName: {1}", DateTime.Now, grid.CustomName));
+                        Logging.WriteLine(string.Format("{0} - passing grid - Name: {1}", DateTime.Now, ent.DisplayName));
+                        if (grid == _tblock.CubeGrid || InHash.Contains(grid) || grid.DisplayName == "FieldGenerator") return;
+                        Logging.WriteLine(string.Format("{0} - passing grid - CustomName: {1}", DateTime.Now, grid.CustomName));
                         List<long> owners = grid.BigOwners;
                         if (owners.Count > 0)
                         {
@@ -670,8 +669,8 @@ namespace DefenseShields.Station
                     }
                     catch (Exception ex)
                     {
-                        Logging.writeLine(string.Format("{0} - Exception in gridEffects", DateTime.Now));
-                        Logging.writeLine(string.Format("{0} - {1}", DateTime.Now, ex));
+                        Logging.WriteLine(string.Format("{0} - Exception in gridEffects", DateTime.Now));
+                        Logging.WriteLine(string.Format("{0} - {1}", DateTime.Now, ex));
                     }
                 }
 
@@ -726,8 +725,8 @@ namespace DefenseShields.Station
             }
             catch (Exception ex)
             {
-                Logging.writeLine(String.Format("{0} - Exception in Writer", DateTime.Now));
-                Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
+                Logging.WriteLine(String.Format("{0} - Exception in Writer", DateTime.Now));
+                Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now, ex));
             }
         }
 
@@ -757,7 +756,7 @@ namespace DefenseShields.Station
     public class Utils
     {
         //SPAWN METHOD
-        public static IMyEntity Spawn(string subtypeId, string name = "", bool isVisible = true, bool hasPhysics = false, bool isStatic = false, bool toSave = false, bool destructible = false, long OwnerId = 0)
+        public static IMyEntity Spawn(string subtypeId, string name = "", bool isVisible = true, bool hasPhysics = false, bool isStatic = false, bool toSave = false, bool destructible = false, long ownerId = 0)
         {
             try
             {
@@ -776,8 +775,8 @@ namespace DefenseShields.Station
             }
             catch (Exception ex)
             {
-                Logging.writeLine(String.Format("{0} - Exception in Spawn", DateTime.Now));
-                Logging.writeLine(String.Format("{0} - {1}", DateTime.Now, ex));
+                Logging.WriteLine(String.Format("{0} - Exception in Spawn", DateTime.Now));
+                Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now, ex));
                 return null;
             }
         }
@@ -830,44 +829,44 @@ namespace DefenseShields.Station
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation | MyUpdateOrder.AfterSimulation)]
     public class DefenseShieldsBase : MySessionComponentBase
     {
-        public static bool _isInit;
-        private static List<DefenseShields> BulletShields = new List<DefenseShields>(); // check 
+        public static bool IsInit;
+        private static List<DefenseShields> _bulletShields = new List<DefenseShields>(); // check 
         public static bool ControlsLoaded;
 
         // Initialisation
 
         protected override void UnloadData()
         {
-            Logging.writeLine("Logging stopped.");
-            Logging.close();
+            Logging.WriteLine("Logging stopped.");
+            Logging.Close();
         }
 
         public override void UpdateBeforeSimulation()
         {
-            if (_isInit) return;
+            if (IsInit) return;
             if (MyAPIGateway.Multiplayer.IsServer && MyAPIGateway.Utilities.IsDedicated) Init();
             else if (MyAPIGateway.Session.Player != null) Init();
         }
 
         public static void Init()
         {
-            Logging.init("debugdevelop.log");
-            Logging.writeLine(String.Format("{0} - Logging Started", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
-            MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, checkDamage);
-            _isInit = true;
+            Logging.Init("debugdevelop.log");
+            Logging.WriteLine(String.Format("{0} - Logging Started", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
+            MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
+            IsInit = true;
         }
 
         // Prevent damage by bullets fired from outside zone.
 
-        public static void checkDamage(object block, ref MyDamageInformation info)
+        public static void CheckDamage(object block, ref MyDamageInformation info)
         {
             if (info.Type == MyDamageType.Deformation) // move below, modify match Type to 
             {
             }
 
-            if (BulletShields.Count == 0 || info.Type != MyDamageType.Bullet) return;
+            if (_bulletShields.Count == 0 || info.Type != MyDamageType.Bullet) return;
 
-            DefenseShields generator = BulletShields[0];
+            DefenseShields generator = _bulletShields[0];
             IMyEntity ent = block as IMyEntity;
             var slimBlock = block as IMySlimBlock;
             if (slimBlock != null) ent = slimBlock.CubeGrid as IMyEntity;
@@ -875,8 +874,8 @@ namespace DefenseShields.Station
             if (dude != null) ent = dude as IMyEntity;
             if (ent == null) return;
             bool isProtected = false;
-            foreach (var shield in BulletShields)
-                if (shield._inHash.Contains(ent))
+            foreach (var shield in _bulletShields)
+                if (shield.InHash.Contains(ent))
                 {
                     isProtected = true;
                     generator = shield;
@@ -884,7 +883,7 @@ namespace DefenseShields.Station
             if (!isProtected) return;
             IMyEntity attacker;
             if (!MyAPIGateway.Entities.TryGetEntityById(info.AttackerId, out attacker)) return;
-            if (generator._inHash.Contains(attacker)) return;
+            if (generator.InHash.Contains(attacker)) return;
             info.Amount = 0f;
         }
     }
