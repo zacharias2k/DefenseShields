@@ -37,7 +37,8 @@ namespace DefenseShields.Station
         private float _height = 50f;
         private float _depth = 50f; 
         private int _time;
-        private int _count;
+        public int _count;
+        public int _oddeven;
         private int _playertime;
         private bool _playerwebbed = false;
         private bool _gridwebbed = false;
@@ -146,6 +147,8 @@ namespace DefenseShields.Station
                 if (_gridwebbed) MyAPIGateway.Parallel.Do(gridEffects);
                 if (_playerwebbed) MyAPIGateway.Parallel.Do(playerEffects);
                 if (_count++ == 59 || _count == 159) _count = 0;
+                if (_oddeven == 0) _oddeven = 1;
+                else _oddeven = 0;
             }
             catch (Exception ex)
             {
@@ -641,12 +644,6 @@ namespace DefenseShields.Station
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             BoundingSphereD gridsphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere);
-            /*
-            HashSet<IMyEntity> gridHash = new HashSet<IMyEntity>();
-            BoundingSphereD gridsphere = new BoundingSphereD(pos, _range);
-            MyAPIGateway.Entities.GetEntities(gridHash, ent => gridsphere.Intersects(ent.WorldAABB) && Detect(ref ent) && !_inHash.Contains(ent) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock)
-            && !(ent is IMyFloatingObject) && !(ent is MyHandToolBase) && ent != _tblock.CubeGrid && ent != AnimShield && !ent.Transparent && !(ent is IMyWelder)
-            && !(ent is IMyHandDrill) && !(ent is IMyAngleGrinder) && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag)); */
             Logging.writeLine(String.Format("{0} - gridEffect: loop is v3 {1}", DateTime.Now, _count));
             MyAPIGateway.Parallel.ForEach(gridList, ent =>
             {
@@ -696,7 +693,7 @@ namespace DefenseShields.Station
             string title,
             bool defaultValue = true) : base(block, internalName, title, defaultValue)
         {
-            //CreateUI(); //Check
+            CreateUI(); //Check
         }
         public override void Setter(IMyTerminalBlock block, bool newState)
         {

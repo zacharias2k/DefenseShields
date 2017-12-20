@@ -27,8 +27,6 @@ namespace DefenseShields.Control
             : base(block, internalName, title)
         {
             DefaultValue = defaultValue;
-            CreateUI(); // Check This was not here and instead was in the RefreshCheckBox class... not sure why  // Maybe fails on first use?
-
             bool temp;
             if (!MyAPIGateway.Utilities.GetVariable<bool>(block.EntityId.ToString() + InternalName, out temp))
             {
