@@ -294,7 +294,7 @@ namespace DefenseShields.Station
             stringBuilder.Clear();
             stringBuilder.Append("Required Power: " + shield.CalcRequiredPower().ToString("0.00") + "MW");
 
-            AnimShield.Render.Visible = _fblock.ShowOnHUD; //Might not need
+            //AnimShield.Render.Visible = _fblock.ShowOnHUD; 
             _range = GetRadius();
             if (Ellipsoid.Getter(block).Equals(true))
             {
