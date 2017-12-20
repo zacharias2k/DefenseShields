@@ -163,10 +163,11 @@ namespace DefenseShields.Station
                     CreateUI();
                 }
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
-                _tblock.RefreshCustomInfo(); //Check
+                //_tblock.RefreshCustomInfo(); //Check
                 Initialized = false;
 
             }
+            _tblock.RefreshCustomInfo(); //Check
             //ShieldList.Add(this);
         }
 
