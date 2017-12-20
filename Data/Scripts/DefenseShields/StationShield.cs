@@ -19,6 +19,7 @@ using VRage.Utils;
 using VRage.Game.Entity;
 using VRage;
 using System.Linq;
+using System.Reflection;
 using Sandbox.Game.Entities;
 using TExtensions = Sandbox.ModAPI.Interfaces.TerminalPropertyExtensions;
 
@@ -28,6 +29,7 @@ namespace DefenseShields.Station
     class DefenseShields : MyGameLogicComponent
     {
         #region Setup
+
         public bool Initialized = true;
         private bool _animInit;
         private float _animStep;
@@ -65,7 +67,7 @@ namespace DefenseShields.Station
 
         public static readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
 
-        protected IMyOreDetector Ublock; //change to _oblock
+        private IMyOreDetector _oblock; 
         private IMyFunctionalBlock _fblock;
         private IMyTerminalBlock _tblock;
         private IMyCubeBlock _cblock;
@@ -86,7 +88,7 @@ namespace DefenseShields.Station
             //this.NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
 
             _cblock = (IMyCubeBlock)Entity;
-            Ublock = Entity as IMyOreDetector; 
+            _oblock = Entity as IMyOreDetector; 
             _fblock = Entity as IMyFunctionalBlock;
             _tblock = Entity as IMyTerminalBlock;
             _animblock = Entity as MyCubeBlock;
@@ -98,6 +100,7 @@ namespace DefenseShields.Station
         {
             try
             {
+
                 if (_animInit)
                 {
                     _worldMatrix = Entity.WorldMatrix;
@@ -155,18 +158,12 @@ namespace DefenseShields.Station
         {
             if (Initialized)
             {
-                //this.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
                 Logging.WriteLine(String.Format("{0} - Create UI {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-                if (!DefenseShieldsBase.ControlsLoaded)
-                {
-                    CreateUi();
-                }
+                CreateUi();
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
-                _tblock.RefreshCustomInfo(); 
                 Initialized = false;
 
             }
-            //ShieldList.Add(this);
         }
 
         public override void UpdateAfterSimulation()
@@ -175,10 +172,10 @@ namespace DefenseShields.Station
             {
                 if (!_animInit)
                 {
-                    if (Ublock.BlockDefinition.SubtypeId == "StationDefenseShield")
+                    if (_oblock.BlockDefinition.SubtypeId == "StationDefenseShield")
                     {
-                        if (!Ublock.IsFunctional) return;
-                        _animShield = Utils.Spawn("LargeField", "", true, false, false, false, false, _animblock.IDModule.Owner); // removed IDmodule.Owner validate still wroks
+                        if (!_oblock.IsFunctional) return;
+                        _animShield = Utils.Spawn("LargeField", "", true, false, false, false, false, _animblock.IDModule.Owner); 
                         BlockAnimation();
 
                         _animInit = true;
@@ -316,7 +313,6 @@ namespace DefenseShields.Station
         {
             try
             {
-                //DefenseShields.ShieldList.Remove(this);
             }
             catch
             {
@@ -328,7 +324,6 @@ namespace DefenseShields.Station
         {
             try
             {
-                //DefenseShields.ShieldList.Remove(this);
             }
             catch
             {
@@ -454,7 +449,7 @@ namespace DefenseShields.Station
                 BoundingSphereD insphere = new BoundingSphereD(pos, _range - 13.3f);
                 MyAPIGateway.Entities.GetEntities(InHash, ent => insphere.Intersects(ent.WorldAABB) && Detect(ref ent) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock)
                 && !(ent is IMyFloatingObject) && !(ent is MyHandToolBase) && ent != _animShield && !ent.Transparent && !(ent is IMyCharacter)
-                && !(ent is IMyWelder) && !(ent is IMyHandDrill) && !(ent is IMyAngleGrinder) && !(ent is IMyAutomaticRifleGun) && !(ent is IMyInventoryBag));
+                && !(ent is IMyWelder) && !(ent is IMyHandDrill) && !(ent is IMyAngleGrinder) && !(ent is IMyAutomaticRifleGun) && !(ent is IMyInventoryBag) && ent.DisplayName != "FieldGenerator");
                 MyAPIGateway.Parallel.ForEach(InHash, outent =>
                 {
                     var grid = outent as IMyCubeGrid;
@@ -470,7 +465,7 @@ namespace DefenseShields.Station
             BoundingSphereD websphere = new BoundingSphereD(pos, _range);
             MyAPIGateway.Entities.GetEntities(webHash, ent => websphere.Intersects(ent.WorldAABB) && Detect(ref ent) && !InHash.Contains(ent) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock)
             && !(ent is IMyFloatingObject) && !(ent is MyHandToolBase) && ent != _tblock.CubeGrid && ent != _animShield && !ent.Transparent && !(ent is IMyWelder)
-            && !(ent is IMyHandDrill) && !(ent is IMyAngleGrinder) && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag));
+            && !(ent is IMyHandDrill) && !(ent is IMyAngleGrinder) && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag) && ent.DisplayName != "FieldGenerator");
 
             MyAPIGateway.Parallel.ForEach(webHash, webent =>
             {
@@ -661,10 +656,13 @@ namespace DefenseShields.Station
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
                                 relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
-                        var dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid).IdentityId;
+                        var dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid).IdentityId; // This throw exception if no player in grid.
                         var gridpos = grid.GetPosition();
                         MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
+                        if (dude > 100)
+                        {
                         MyVisualScriptLogicProvider.SetPlayersHealth(dude, -100);
+                        }
                         grid.Delete();
                     }
                     catch (Exception ex)
@@ -692,11 +690,10 @@ namespace DefenseShields.Station
         public override void Setter(IMyTerminalBlock block, bool newState)
         {
             base.Setter(block, newState);
-
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
             shield.Sink.Update();
-            //block.RefreshCustomInfo();
+            block.RefreshCustomInfo();
         }
     }
 
@@ -721,7 +718,7 @@ namespace DefenseShields.Station
                 builder.Clear();
                 var distanceString = Getter(block).ToString("0") + "m";
                 builder.Append(distanceString);
-                //block.RefreshCustomInfo();
+                block.RefreshCustomInfo();
             }
             catch (Exception ex)
             {
@@ -746,8 +743,6 @@ namespace DefenseShields.Station
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
             shield.Sink.Update();
-            
-            
         }
     }
     #endregion
