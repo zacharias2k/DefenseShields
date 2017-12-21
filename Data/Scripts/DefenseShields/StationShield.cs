@@ -486,6 +486,7 @@ namespace DefenseShields.Station
                 var grid = webent as IMyCubeGrid;
                 if (grid != null)
                 {
+                    Logging.WriteLine(string.Format("{0} - passing grid - Name: {1}", DateTime.Now, grid.DisplayName));
                     if (_gridwebbed) return;
                     List<long> owners = grid.BigOwners;
                     if (owners.Count > 0)
@@ -635,7 +636,7 @@ namespace DefenseShields.Station
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             BoundingSphereD gridsphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere);
-            Logging.WriteLine(String.Format("{0} - gridEffect: loop is v3 {1}", DateTime.Now, Count));
+            Logging.WriteLine(String.Format("{0} - gridEffect: loop is v4 {1}", DateTime.Now, Count));
             foreach (var ent in gridList)
                 //MyAPIGateway.Parallel.ForEach(gridList, ent =>
             {
@@ -646,16 +647,10 @@ namespace DefenseShields.Station
                 {
                     try
                     {
-                        if (InHash.Count == 0)
-                            Logging.WriteLine(string.Format(
-                                "!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, Count));
-
-                        Logging.WriteLine(
-                            string.Format("{0} - passing grid - Name: {1}", DateTime.Now, ent.DisplayName));
-                        if (grid == _tblock.CubeGrid || InHash.Contains(grid) ||
-                            grid.DisplayName == "FieldGenerator") return;
-                        Logging.WriteLine(string.Format("{0} - passing grid - CustomName: {1}", DateTime.Now,
-                            grid.CustomName));
+                        if (InHash.Count == 0) Logging.WriteLine(string.Format("!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, Count));
+                        Logging.WriteLine(string.Format("{0} - passing grid - Name: {1}", DateTime.Now, ent.DisplayName));
+                        if (grid == _tblock.CubeGrid || InHash.Contains(grid) || grid.DisplayName == "FieldGenerator") return;
+                        Logging.WriteLine(string.Format("{0} - passing grid - CustomName: {1}", DateTime.Now, grid.CustomName));
                         List<long> owners = grid.BigOwners;
                         if (owners.Count > 0)
                         {
