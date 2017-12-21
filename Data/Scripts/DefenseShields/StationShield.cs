@@ -143,8 +143,7 @@ namespace DefenseShields.Station
                 else SendPoke(_range); //Check
                 MyAPIGateway.Parallel.StartBackground(WebEffects);
                 if (_shotwebbed) MyAPIGateway.Parallel.Do(ShotEffects);
-                //if (_gridwebbed) MyAPIGateway.Parallel.Do(GridEffects);
-                if (_gridwebbed) GridEffects();
+                if (_gridwebbed) MyAPIGateway.Parallel.Do(GridEffects);
                 if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
                 if (Count++ == 59 || Count == 159) Count = 0;
             }
@@ -486,7 +485,6 @@ namespace DefenseShields.Station
                 var grid = webent as IMyCubeGrid;
                 if (grid != null)
                 {
-                    Logging.WriteLine(string.Format("{0} - passing grid - Name: {1}", DateTime.Now, grid.DisplayName));
                     if (_gridwebbed) return;
                     List<long> owners = grid.BigOwners;
                     if (owners.Count > 0)
@@ -496,6 +494,7 @@ namespace DefenseShields.Station
                             relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
                             return;
                     }
+                    Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.DisplayName));
                     _gridwebbed = true; 
                     return;
                 }
@@ -636,18 +635,17 @@ namespace DefenseShields.Station
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             BoundingSphereD gridsphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere);
-            Logging.WriteLine(String.Format("{0} - gridEffect: loop is v4 {1}", DateTime.Now, Count));
-            foreach (var ent in gridList)
-                //MyAPIGateway.Parallel.ForEach(gridList, ent =>
+            Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now, Count));
+            MyAPIGateway.Parallel.ForEach(gridList, ent =>
             {
                 if (ent == null || InHash.Contains(ent) || ent.Transparent) return;
                 var grid = ent as IMyCubeGrid;
-                var myEntity = ent;
-                if (grid != null && _insideReady && Detect(ref myEntity))
+                if (grid != null && _insideReady && Detect(ref ent))
                 {
                     try
                     {
                         if (InHash.Count == 0) Logging.WriteLine(string.Format("!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, Count));
+
                         Logging.WriteLine(string.Format("{0} - passing grid - Name: {1}", DateTime.Now, ent.DisplayName));
                         if (grid == _tblock.CubeGrid || InHash.Contains(grid) || grid.DisplayName == "FieldGenerator") return;
                         Logging.WriteLine(string.Format("{0} - passing grid - CustomName: {1}", DateTime.Now, grid.CustomName));
@@ -659,10 +657,10 @@ namespace DefenseShields.Station
                                 relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
                         long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId;
-                        if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long) dude, -100);
+                        if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long)dude, -100);
                         var gridpos = grid.GetPosition();
                         MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
-                        grid.Close();
+                        //grid.Delete();
                     }
                     catch (Exception ex)
                     {
@@ -671,8 +669,7 @@ namespace DefenseShields.Station
                     }
                 }
 
-                //});
-            }
+            });
             _gridwebbed = false;
         }
     }
