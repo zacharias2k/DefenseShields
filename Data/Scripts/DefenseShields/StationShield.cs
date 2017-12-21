@@ -145,7 +145,7 @@ namespace DefenseShields.Station
                     else
                         colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
                     MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
-                    MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 300f, ref colour, MySimpleObjectRasterizer.SolidAndWireframe, 20, null, RangeGridResourceId, 0.25f, -1);
+                    MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 300f, ref colour, MySimpleObjectRasterizer.SolidAndWireframe, 2, null, RangeGridResourceId, 0.25f, -1);
                     // end shield draw
                 }
                 if (Count % 3 == 0)
