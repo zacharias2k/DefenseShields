@@ -29,7 +29,6 @@ namespace DefenseShields.Station
     class DefenseShields : MyGameLogicComponent
     {
         #region Setup
-
         public bool Initialized = true;
         private bool _animInit;
         private float _animStep;
@@ -72,7 +71,6 @@ namespace DefenseShields.Station
         private IMyTerminalBlock _tblock;
         private IMyCubeBlock _cblock;
         private MyCubeBlock _animblock;
-        private IMyEntity _animShield;
         #endregion
 
         #region Init
@@ -140,7 +138,6 @@ namespace DefenseShields.Station
                     var colour = Color.FromNonPremultiplied(100, 20, 214, 90);
                     MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
                     MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 300f, ref colour, MySimpleObjectRasterizer.SolidAndWireframe, 20, null, RangeGridResourceId, 0.25f, -1);
-                    //_animShield.SetWorldMatrix(matrix);
                 }
                 if (!MyAPIGateway.Utilities.IsDedicated) ShowRange(_range); //Check
                 else SendPoke(_range); //Check
@@ -178,7 +175,6 @@ namespace DefenseShields.Station
                     if (_oblock.BlockDefinition.SubtypeId == "StationDefenseShield")
                     {
                         if (!_oblock.IsFunctional) return;
-                        //_animShield = Utils.Spawn("LargeField", "", true, false, false, false, false, _animblock.IDModule.Owner); 
                         BlockAnimation();
 
                         _animInit = true;
@@ -255,8 +251,6 @@ namespace DefenseShields.Station
                     _matrixReflectorsOn.Add(temp4);
                 }
                 _scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f); 
-                //TExtensions.SetValueBool(_tblock, "ShowOnHUD", true);
-                //_animShield.Render.Visible = _fblock.ShowOnHUD;
 
                 //_anim_init = true;
             }
@@ -293,7 +287,6 @@ namespace DefenseShields.Station
             stringBuilder.Clear();
             stringBuilder.Append("Required Power: " + shield.CalcRequiredPower().ToString("0.00") + "MW");
 
-            //_animShield.Render.Visible = _fblock.ShowOnHUD; 
             _range = GetRadius();
             if (Ellipsoid.Getter(block).Equals(true))
             {
@@ -451,7 +444,7 @@ namespace DefenseShields.Station
                 InHash.Clear();
                 BoundingSphereD insphere = new BoundingSphereD(pos, _range - 13.3f);
                 MyAPIGateway.Entities.GetEntities(InHash, ent => insphere.Intersects(ent.WorldAABB) && Detect(ref ent) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock)
-                && !(ent is IMyFloatingObject) && !(ent is MyHandToolBase) && ent != _animShield && !ent.Transparent && !(ent is IMyCharacter)
+                && !(ent is IMyFloatingObject) && !(ent is MyHandToolBase) && !(ent is IMyCharacter)
                 && !(ent is IMyWelder) && !(ent is IMyHandDrill) && !(ent is IMyAngleGrinder) && !(ent is IMyAutomaticRifleGun) && !(ent is IMyInventoryBag) && ent.DisplayName != "FieldGenerator");
                 MyAPIGateway.Parallel.ForEach(InHash, outent =>
                 {
@@ -467,7 +460,7 @@ namespace DefenseShields.Station
             HashSet<IMyEntity> webHash = new HashSet<IMyEntity>();
             BoundingSphereD websphere = new BoundingSphereD(pos, _range);
             MyAPIGateway.Entities.GetEntities(webHash, ent => websphere.Intersects(ent.WorldAABB) && Detect(ref ent) && !InHash.Contains(ent) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock)
-            && !(ent is IMyFloatingObject) && !(ent is MyHandToolBase) && ent != _tblock.CubeGrid && ent != _animShield && !ent.Transparent && !(ent is IMyWelder)
+            && !(ent is IMyFloatingObject) && !(ent is MyHandToolBase) && ent != _tblock.CubeGrid && !(ent is IMyWelder)
             && !(ent is IMyHandDrill) && !(ent is IMyAngleGrinder) && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag) && ent.DisplayName != "FieldGenerator");
 
             MyAPIGateway.Parallel.ForEach(webHash, webent =>
@@ -641,7 +634,7 @@ namespace DefenseShields.Station
             Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now, Count));
             MyAPIGateway.Parallel.ForEach(gridList, ent =>
             {
-                if (ent == null || InHash.Contains(ent) || ent.Transparent) return;
+                if (ent == null || InHash.Contains(ent)) return;
                 var grid = ent as IMyCubeGrid;
                 if (grid != null && _insideReady && Detect(ref ent))
                 {
@@ -747,6 +740,7 @@ namespace DefenseShields.Station
     }
     #endregion
 
+    /*
     #region Cube+subparts Class
     public class Utils
     {
@@ -818,6 +812,7 @@ namespace DefenseShields.Station
         };
     }
     #endregion
+    */
 
     #region Session+protection Class
 
