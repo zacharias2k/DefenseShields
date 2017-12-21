@@ -38,6 +38,7 @@ namespace DefenseShields.Station
         private float _depth = 50f; 
         private int _time;
         public int Count;
+        private int _colourRand = 32;
         private int _playertime;
         private bool _playerwebbed;
         private bool _gridwebbed;
@@ -45,6 +46,7 @@ namespace DefenseShields.Station
         private bool _insideReady;
         private ushort _modId = 50099;
 
+        private static Random _random = new Random();
         private MatrixD _worldMatrix;
         private Vector3D _scale;
         private BoundingSphereD _sphereMin;
@@ -138,6 +140,12 @@ namespace DefenseShields.Station
                     var colour = Color.FromNonPremultiplied(100, 20, 214, 90);
                     MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
                     MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 300f, ref colour, MySimpleObjectRasterizer.SolidAndWireframe, 20, null, RangeGridResourceId, 0.25f, -1);
+                }
+                if (Count % 3 == 0)
+                {
+                    _colourRand += (16 - _random.Next(1, 32));
+                    if (_colourRand < 0) _colourRand = 0;
+                    else if (_colourRand > 64) _colourRand = 64;
                 }
                 if (!MyAPIGateway.Utilities.IsDedicated) ShowRange(_range); //Check
                 else SendPoke(_range); //Check
