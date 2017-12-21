@@ -139,7 +139,7 @@ namespace DefenseShields.Station
                     MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Build new");
                     var colour = Color.FromNonPremultiplied(100, 20, 214, 90);
                     MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
-                    MySimpleObjectDraw.DrawTransparentSphere(ref matrix, _range * .5f, ref colour, MySimpleObjectRasterizer.SolidAndWireframe, 20, null, RangeGridResourceId, 0.25f, -1);
+                    MySimpleObjectDraw.DrawTransparentSphere(ref matrix, _range, ref colour, MySimpleObjectRasterizer.SolidAndWireframe, 20, null, RangeGridResourceId, 0.25f, -1);
                     //_animShield.SetWorldMatrix(matrix);
                 }
                 if (!MyAPIGateway.Utilities.IsDedicated) ShowRange(_range); //Check
@@ -254,7 +254,7 @@ namespace DefenseShields.Station
                     temp4.Translation = temp3.PositionComp.LocalMatrix.Translation;
                     _matrixReflectorsOn.Add(temp4);
                 }
-                _scale = new Vector3(_depth / 150f, _height / 150f, _width / 150f); 
+                _scale = new Vector3(_depth / 75f, _height / 75f, _width / 75f); 
                 //TExtensions.SetValueBool(_tblock, "ShowOnHUD", true);
                 //_animShield.Render.Visible = _fblock.ShowOnHUD;
 
@@ -307,7 +307,7 @@ namespace DefenseShields.Station
                 _height = _range;
                 _depth = _range;
             }
-            _scale = new Vector3(_depth / 150f, _height / 150f, _width / 150f); 
+            _scale = new Vector3(_depth / 75f, _height / 75f, _width / 75f); 
         }
         #endregion
 
