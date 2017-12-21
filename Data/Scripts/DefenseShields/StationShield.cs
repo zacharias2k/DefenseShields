@@ -139,7 +139,7 @@ namespace DefenseShields.Station
                     MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Build new");
                     var colour = Color.FromNonPremultiplied(0, 60, 0, 64);
                     MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
-                    MySimpleObjectDraw.DrawTransparentSphere(ref matrix, _range, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
+                    MySimpleObjectDraw.DrawTransparentSphere(ref matrix, _range/2, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
                     //_animShield.SetWorldMatrix(matrix);
                 }
                 if (!MyAPIGateway.Utilities.IsDedicated) ShowRange(_range); //Check
