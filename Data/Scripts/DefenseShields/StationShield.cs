@@ -254,7 +254,7 @@ namespace DefenseShields.Station
                     temp4.Translation = temp3.PositionComp.LocalMatrix.Translation;
                     _matrixReflectorsOn.Add(temp4);
                 }
-                _scale = new Vector3(_depth / 75f, _height / 75f, _width / 75f); 
+                _scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f); 
                 //TExtensions.SetValueBool(_tblock, "ShowOnHUD", true);
                 //_animShield.Render.Visible = _fblock.ShowOnHUD;
 
@@ -307,7 +307,7 @@ namespace DefenseShields.Station
                 _height = _range;
                 _depth = _range;
             }
-            _scale = new Vector3(_depth / 75f, _height / 75f, _width / 75f); 
+            _scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f); 
         }
         #endregion
 
