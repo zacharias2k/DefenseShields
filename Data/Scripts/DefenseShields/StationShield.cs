@@ -136,8 +136,11 @@ namespace DefenseShields.Station
                         }
                         _subpartsArms[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixArmsOff[i], _matrixArmsOn[i], _animStep);
                     }
+                    MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Build new");
+                    var colour = Color.FromNonPremultiplied(0, 60, 0, 64);
                     MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
-                    _animShield.SetWorldMatrix(matrix);
+                    MySimpleObjectDraw.DrawTransparentSphere(ref matrix, _range, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
+                    //_animShield.SetWorldMatrix(matrix);
                 }
                 if (!MyAPIGateway.Utilities.IsDedicated) ShowRange(_range); //Check
                 else SendPoke(_range); //Check
