@@ -656,17 +656,6 @@ namespace DefenseShields.Station
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
                                 relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
-/*                        try
-                        {
-                            long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId; 
-                            if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long) dude, -100);
-                        }
-                        catch (Exception ex)
-                        {
-                            Logging.WriteLine(string.Format("{0} - Exception in gridEffects - player detect", DateTime.Now));
-                            Logging.WriteLine(string.Format("{0} - {1}", DateTime.Now, ex));
-                        }
-*/
                         long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId;
                         if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long)dude, -100);
                         var gridpos = grid.GetPosition();
