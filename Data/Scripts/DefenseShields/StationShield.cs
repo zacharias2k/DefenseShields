@@ -136,10 +136,17 @@ namespace DefenseShields.Station
                         }
                         _subpartsArms[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixArmsOff[i], _matrixArmsOn[i], _animStep);
                     }
+                    // Draw shield
                     MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Build new");
-                    var colour = Color.FromNonPremultiplied(100, 20, 214, 90);
+                    Color colour;
+                    var relations = _tblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId);
+                    if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
+                        colour = Color.FromNonPremultiplied(16, 255 - _colourRand, 16 + _colourRand, 72);
+                    else
+                        colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
                     MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
                     MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 300f, ref colour, MySimpleObjectRasterizer.SolidAndWireframe, 20, null, RangeGridResourceId, 0.25f, -1);
+                    // end shield draw
                 }
                 if (Count % 3 == 0)
                 {
