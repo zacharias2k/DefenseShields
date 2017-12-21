@@ -178,7 +178,7 @@ namespace DefenseShields.Station
                     if (_oblock.BlockDefinition.SubtypeId == "StationDefenseShield")
                     {
                         if (!_oblock.IsFunctional) return;
-                        _animShield = Utils.Spawn("LargeField", "", true, false, false, false, false, _animblock.IDModule.Owner); 
+                        //_animShield = Utils.Spawn("LargeField", "", true, false, false, false, false, _animblock.IDModule.Owner); 
                         BlockAnimation();
 
                         _animInit = true;
@@ -255,8 +255,8 @@ namespace DefenseShields.Station
                     _matrixReflectorsOn.Add(temp4);
                 }
                 _scale = new Vector3(_depth / 150f, _height / 150f, _width / 150f); 
-                TExtensions.SetValueBool(_tblock, "ShowOnHUD", true);
-                _animShield.Render.Visible = _fblock.ShowOnHUD;
+                //TExtensions.SetValueBool(_tblock, "ShowOnHUD", true);
+                //_animShield.Render.Visible = _fblock.ShowOnHUD;
 
                 //_anim_init = true;
             }
@@ -293,7 +293,7 @@ namespace DefenseShields.Station
             stringBuilder.Clear();
             stringBuilder.Append("Required Power: " + shield.CalcRequiredPower().ToString("0.00") + "MW");
 
-            _animShield.Render.Visible = _fblock.ShowOnHUD; 
+            //_animShield.Render.Visible = _fblock.ShowOnHUD; 
             _range = GetRadius();
             if (Ellipsoid.Getter(block).Equals(true))
             {
