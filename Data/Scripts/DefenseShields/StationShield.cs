@@ -656,16 +656,19 @@ namespace DefenseShields.Station
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
                                 relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
-                        try
+/*                        try
                         {
-                            var dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid).IdentityId; // This throw exception if no player in grid.
-                            MyVisualScriptLogicProvider.SetPlayersHealth(dude, -100);
+                            long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId; 
+                            if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long) dude, -100);
                         }
                         catch (Exception ex)
                         {
                             Logging.WriteLine(string.Format("{0} - Exception in gridEffects - player detect", DateTime.Now));
                             Logging.WriteLine(string.Format("{0} - {1}", DateTime.Now, ex));
                         }
+*/
+                        long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId;
+                        if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long)dude, -100);
                         var gridpos = grid.GetPosition();
                         MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
                         grid.Delete();
