@@ -660,7 +660,7 @@ namespace DefenseShields.Station
                         if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long)dude, -100);
                         var gridpos = grid.GetPosition();
                         MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
-                        grid.Delete();
+                        grid.Close();
                     }
                     catch (Exception ex)
                     {
