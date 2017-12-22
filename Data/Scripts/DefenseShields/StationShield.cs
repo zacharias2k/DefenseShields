@@ -463,10 +463,8 @@ namespace DefenseShields.Station
                 foreach (var outent in _inList)
                     //MyAPIGateway.Parallel.ForEach(_inList, outent =>
                 {
-                    var grid = outent as IMyCubeGrid;
                     var myEntity = outent;
-                    Logging.WriteLine(String.Format("{0} - in detection {1} at {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), outent.DisplayName, Count));
-                    if (grid != null && Detectin(ref myEntity))
+                    if (Detectin(ref myEntity))
                     {
                         if (!_inList.Contains(outent)) _inList.Add(outent);
                     }
