@@ -465,9 +465,9 @@ namespace DefenseShields.Station
                 {
                     var grid = outent as IMyCubeGrid;
                     var myEntity = outent;
+                    Logging.WriteLine(String.Format("{0} - in detection {1} at {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), outent.DisplayName, Count));
                     if (grid != null && Detectin(ref myEntity))
                     {
-                        Logging.WriteLine(String.Format("{0} - adding to in list {1} at {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), outent.DisplayName, Count));
                         if (!_inList.Contains(outent)) _inList.Add(outent);
                     }
                 }
