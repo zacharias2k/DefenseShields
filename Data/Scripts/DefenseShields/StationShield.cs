@@ -426,8 +426,20 @@ namespace DefenseShields.Station
 
         #endregion
 
-        #region Detect intersection
-        private bool Detect(ref IMyEntity ent)
+        #region Detect innersphere intersection
+        private bool Detectin(ref IMyEntity ent)
+        {
+            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float detect = (x * x) / (_width -13.3f * _width - 13.3f) + (y * y) / (_depth - 13.3f * _depth - 13.3f) + (z * z) / (_height - 13.3f * _height - 13.3f);
+            if (detect > 1) return false;
+            return true;
+        }
+        #endregion
+
+        #region Detect outter intersection
+        private bool Detectout(ref IMyEntity ent)
         {
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
@@ -453,7 +465,7 @@ namespace DefenseShields.Station
                 {
                     var grid = outent as IMyCubeGrid;
                     var myEntity = outent;
-                    if (grid != null && Detect(ref myEntity))
+                    if (grid != null && Detectin(ref myEntity))
                     {
                         Logging.WriteLine(String.Format("{0} - adding to in list {1} at {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), outent.DisplayName, Count));
                         if (!_inList.Contains(outent)) _inList.Add(outent);
@@ -469,26 +481,13 @@ namespace DefenseShields.Station
             foreach (var webent in webList)
                 //MyAPIGateway.Parallel.ForEach(webList, webent =>
             {
-                if (_insideReady == false)
-                    Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}",
-                        DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
+                if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                 var myEntity = webent;
-                if (webent == null || _inList.Contains(webent) || !Detect(ref myEntity)) return;
+                if (webent == null || !Detectout(ref myEntity)) return;
+                Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
 
-                if (webent is IMyCharacter && Count == 14 || Count == 29 || Count == 44 || Count == 59)
-                {
-                    var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
-                    var relationship = _tblock.GetUserRelationToOwner(dude);
-                    if (relationship != MyRelationsBetweenPlayerAndBlock.Owner &&
-                        relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
-                    {
-                        _playerwebbed = true;
-                        return;
-                    }
-                    return;
-                }
                 var grid = webent as IMyCubeGrid;
-                if (grid != null)
+                if (grid != null && !_inList.Contains(grid))
                 {
                     if (_gridwebbed) return;
                     List<long> owners = grid.BigOwners;
@@ -504,17 +503,31 @@ namespace DefenseShields.Station
                     _gridwebbed = true;
                     return;
                 }
+                if (webent is IMyCharacter)
+                    if (Count == 14 || Count == 29 || Count == 44 || Count == 59)
+                    {
+                        var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
+                        var relationship = _tblock.GetUserRelationToOwner(dude);
+                        if (relationship != MyRelationsBetweenPlayerAndBlock.Owner &&
+                            relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
+                        {
+                            _playerwebbed = true;
+                            return;
+                        }
+                        return;
+                    }
+                    else
+                    {
+                        return;
+                    }
                 if (_shotwebbed) return;
-                if (webent is IMyMeteor || webent.ToString().Contains("Missile") ||
-                    webent.ToString().Contains("Torpedo"))
+                if (webent is IMyMeteor || webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
                 {
                     _shotwebbed = true;
                 }
-                Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}",
-                    DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName,
-                    webent.Name));
+                Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
             }
-        //});
+            //});
         }
 
         #endregion
@@ -526,7 +539,7 @@ namespace DefenseShields.Station
             HashSet<IMyEntity> shotHash = new HashSet<IMyEntity>();
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             BoundingSphereD shotsphere = new BoundingSphereD(pos, _range);
-            MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && ent is IMyMeteor && Detect(ref ent)  || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo"));
+            MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && ent is IMyMeteor && Detectout(ref ent)  || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo"));
 
             MyAPIGateway.Parallel.ForEach(shotHash, shotent =>
             {
@@ -549,7 +562,6 @@ namespace DefenseShields.Station
             });
             _shotwebbed = false;
         }
-
         #endregion
 
         #region player effects
@@ -560,7 +572,7 @@ namespace DefenseShields.Station
             Random rnd = new Random();
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             BoundingSphereD playersphere = new BoundingSphereD(pos, _range);
-            MyAPIGateway.Entities.GetEntities(playerHash, ent => playersphere.Intersects(ent.WorldAABB) && ent is IMyCharacter && Detect(ref ent));
+            MyAPIGateway.Entities.GetEntities(playerHash, ent => playersphere.Intersects(ent.WorldAABB) && ent is IMyCharacter && Detectin(ref ent));
             MyAPIGateway.Parallel.ForEach(playerHash, playerent =>
             {
                 if (playerent == null) return;
@@ -650,7 +662,7 @@ namespace DefenseShields.Station
             {
                 if (ent == null || _inList.Contains(ent)) return;
                 var grid = ent as IMyCubeGrid;
-                if (grid != null && _insideReady && Detect(ref ent))
+                if (grid != null && _insideReady && Detectout(ref ent))
                 {
                     try
                     {
