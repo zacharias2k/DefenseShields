@@ -452,7 +452,7 @@ namespace DefenseShields.Station
                     var grid = outent as IMyCubeGrid;
                     if (grid != null && Detect(ref outent))
                     {
-                        Logging.WriteLine(String.Format("{0} - adding to in list {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), outent.DisplayName));
+                        //Logging.WriteLine(String.Format("{0} - adding to in list {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), outent.DisplayName));
                         if (!_inList.Contains(outent)) _inList.Add(outent);
                     }
                 });
