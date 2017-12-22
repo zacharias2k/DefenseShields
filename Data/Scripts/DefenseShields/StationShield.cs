@@ -144,8 +144,8 @@ namespace DefenseShields.Station
                 }
                 if (!MyAPIGateway.Utilities.IsDedicated) ShowRange(_range); //Check
                 else SendPoke(_range); //Check
-                if (Initialized == false && Count <60) MyAPIGateway.Parallel.StartBackground(WebEffects);
-                //if (Initialized == false && Count < 60) WebEffects();
+                //if (Initialized == false && Count <60) MyAPIGateway.Parallel.StartBackground(WebEffects);
+                if (Initialized == false && Count < 60) WebEffects();
                 if (_shotwebbed) MyAPIGateway.Parallel.Do(ShotEffects);
                 if (_gridwebbed) MyAPIGateway.Parallel.Do(GridEffects);
                 if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
@@ -427,7 +427,7 @@ namespace DefenseShields.Station
         #endregion
 
         #region Detect innersphere intersection
-        private bool Detectin(ref IMyEntity ent)
+        private bool Detectin(IMyEntity ent)
         {
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
@@ -443,7 +443,7 @@ namespace DefenseShields.Station
         #endregion
 
         #region Detect outter intersection
-        private bool Detectout(ref IMyEntity ent)
+        private bool Detectout(IMyEntity ent)
         {
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
@@ -468,29 +468,26 @@ namespace DefenseShields.Station
                 _insideReady = false;
                 BoundingSphereD insphere = new BoundingSphereD(pos, _range - 13.3f);
                 _inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
-                //foreach (var outent in _inList)
-                    MyAPIGateway.Parallel.ForEach(_inList, outent =>
+                foreach (var outent in _inList)
+                    //MyAPIGateway.Parallel.ForEach(_inList, outent =>
                 {
-                    //var myEntity = outent;
-                    //if (Detectin(ref myEntity))
-                    if (Detectin(ref outent))
+                    if (Detectin(outent))
                     {
                         if (!_inList.Contains(outent)) _inList.Add(outent);
                     }
-                //}
-                });
+                }
+                //});
                 _insideReady = true;
 
             }
 
             BoundingSphereD websphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
-            foreach (var webent in webList)
-                //MyAPIGateway.Parallel.ForEach(webList, webent =>
+            //foreach (var webent in webList)
+                MyAPIGateway.Parallel.ForEach(webList, webent =>
                 {
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-                var myEntity = webent;
-                if (webent == null || !Detectout(ref myEntity)) return;
+                if (webent == null || !Detectout(webent)) return;
 
                 if (webent is IMyCharacter)
                     if (Count == 14 || Count == 29 || Count == 44 || Count == 59)
@@ -534,8 +531,8 @@ namespace DefenseShields.Station
                     _shotwebbed = true;
                 }
                 Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
-            }
-            //});
+            //}
+            });
         }
 
         #endregion
@@ -547,7 +544,7 @@ namespace DefenseShields.Station
             HashSet<IMyEntity> shotHash = new HashSet<IMyEntity>();
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             BoundingSphereD shotsphere = new BoundingSphereD(pos, _range);
-            MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && ent is IMyMeteor && Detectout(ref ent)  || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo"));
+            MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && ent is IMyMeteor && Detectout(ent)  || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo"));
 
             MyAPIGateway.Parallel.ForEach(shotHash, shotent =>
             {
@@ -658,7 +655,7 @@ namespace DefenseShields.Station
             {
                 if (ent == null || _inList.Contains(ent)) return;
                 var grid = ent as IMyCubeGrid;
-                if (grid != null && _insideReady && Detectout(ref ent))
+                if (grid != null && _insideReady && Detectout(ent))
                 {
                     try
                     {
