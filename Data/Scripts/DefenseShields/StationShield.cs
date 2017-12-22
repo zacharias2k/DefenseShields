@@ -144,8 +144,8 @@ namespace DefenseShields.Station
                 }
                 if (!MyAPIGateway.Utilities.IsDedicated) ShowRange(_range); //Check
                 else SendPoke(_range); //Check
-                //if (Initialized == false && Count <60) MyAPIGateway.Parallel.StartBackground(WebEffects);
-                if (Initialized == false && Count < 60) WebEffects();
+                if (Initialized == false && Count <60) MyAPIGateway.Parallel.StartBackground(WebEffects);
+                //if (Initialized == false && Count < 60) WebEffects();
                 if (_shotwebbed) MyAPIGateway.Parallel.Do(ShotEffects);
                 if (_gridwebbed) MyAPIGateway.Parallel.Do(GridEffects);
                 if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
@@ -455,8 +455,7 @@ namespace DefenseShields.Station
                     var myEntity = outent;
                     if (grid != null && Detect(ref myEntity))
                     {
-                        Logging.WriteLine(String.Format("{0} - adding to in list {1}",
-                            DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), outent.DisplayName));
+                        Logging.WriteLine(String.Format("{0} - adding to in list {1} at {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), outent.DisplayName, Count));
                         if (!_inList.Contains(outent)) _inList.Add(outent);
                     }
                 }
