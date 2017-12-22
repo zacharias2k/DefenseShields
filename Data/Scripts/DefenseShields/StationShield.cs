@@ -567,37 +567,27 @@ namespace DefenseShields.Station
 
         public void PlayerEffects()
         {
-            HashSet<IMyEntity> playerHash = new HashSet<IMyEntity>();
             Random rnd = new Random();
-            var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
-            BoundingSphereD playersphere = new BoundingSphereD(pos, _range);
-            MyAPIGateway.Entities.GetEntities(playerHash, ent => playersphere.Intersects(ent.WorldAABB) && ent is IMyCharacter && Detectin(ref ent));
-            MyAPIGateway.Parallel.ForEach(playerHash, playerent =>
+            MyAPIGateway.Parallel.ForEach(_inList, playerent =>
             {
-                if (playerent == null) return;
-                if (playerent is IMyCharacter)
+                if (!(playerent is IMyCharacter) && _inList.Contains(playerent)) return;
                     try
                     {   
                         var dude = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;
                         var relationship = _tblock.GetUserRelationToOwner(dude);
-                        if (relationship != MyRelationsBetweenPlayerAndBlock.Owner &&
-                            relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
+                        if (relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
                         {
-                            Logging.WriteLine(String.Format(
-                                "{0} - playerEffect: Enemy {1} detected at loop {2} - relationship: {3}",
-                                DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent, Count, relationship));
+                            Logging.WriteLine(String.Format("{0} - playerEffect: Enemy {1} detected at loop {2} - relationship: {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent, Count, relationship));
                             string s = playerent.ToString();
                             if (s.Equals("Space_Wolf"))
                             {
-                                Logging.WriteLine(String.Format("{0} - playerEffect: Killing {1} ",
-                                    DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent));
+                                Logging.WriteLine(String.Format("{0} - playerEffect: Killing {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent));
                                 ((IMyCharacter) playerent).Kill();
                                 return;
                             }
                             if (MyAPIGateway.Session.Player.Character.Equals(playerent))
                             {
-                                if (MyAPIGateway.Session.Player.Character.EnabledDamping)
-                                    MyAPIGateway.Session.Player.Character.SwitchDamping();
+                                if (MyAPIGateway.Session.Player.Character.EnabledDamping) MyAPIGateway.Session.Player.Character.SwitchDamping();
                             }
                             if (MyVisualScriptLogicProvider.GetPlayersEnergyLevel(dude) > 0.5f)
                             {
@@ -631,14 +621,12 @@ namespace DefenseShields.Station
                                         Vector3D speedDir = Vector3D.Normalize(playerCurrentSpeed);
                                         int randomSpeed = rnd.Next(10, 20);
                                         Vector3D additionalSpeed = speedDir * (double) randomSpeed;
-                                        MyVisualScriptLogicProvider.SetPlayersSpeed(
-                                            playerCurrentSpeed + additionalSpeed, dude);
+                                        MyVisualScriptLogicProvider.SetPlayersSpeed(playerCurrentSpeed + additionalSpeed, dude);
                                     }
 
                                 }
                             }
                         }
-                        else if (!_inList.Contains(playerent)) _inList.Add(playerent);
                     }
                     catch (Exception ex)
                     {
