@@ -468,16 +468,17 @@ namespace DefenseShields.Station
                 _insideReady = false;
                 BoundingSphereD insphere = new BoundingSphereD(pos, _range - 13.3f);
                 _inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
-                foreach (var outent in _inList)
-                    //MyAPIGateway.Parallel.ForEach(_inList, outent =>
+                //foreach (var outent in _inList)
+                    MyAPIGateway.Parallel.ForEach(_inList, outent =>
                 {
-                    var myEntity = outent;
-                    if (Detectin(ref myEntity))
+                    //var myEntity = outent;
+                    //if (Detectin(ref myEntity))
+                    if (Detectin(ref outent))
                     {
                         if (!_inList.Contains(outent)) _inList.Add(outent);
                     }
-                }
-                //});
+                //}
+                });
                 _insideReady = true;
 
             }
