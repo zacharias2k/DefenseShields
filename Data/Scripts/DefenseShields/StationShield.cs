@@ -482,7 +482,6 @@ namespace DefenseShields.Station
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                 var myEntity = webent;
                 if (webent == null || !Detectout(ref myEntity)) return;
-                Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
 
                 if (webent is IMyCharacter)
                     if (Count == 14 || Count == 29 || Count == 44 || Count == 59)
@@ -502,6 +501,7 @@ namespace DefenseShields.Station
                         return;
                     }
                 if (_inList.Contains(webent)) return;
+                Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
                 var grid = webent as IMyCubeGrid;
                 if (grid != null)
                 {
