@@ -452,7 +452,7 @@ namespace DefenseShields.Station
                     var grid = outent as IMyCubeGrid;
                     if (grid != null && Detect(ref outent))
                     {
-                        //Logging.WriteLine(String.Format("{0} - adding to in list {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), outent.DisplayName));
+                        Logging.WriteLine(String.Format("{0} - adding to in list {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), outent.DisplayName));
                         if (!_inList.Contains(outent)) _inList.Add(outent);
                     }
                 });
@@ -465,7 +465,6 @@ namespace DefenseShields.Station
             MyAPIGateway.Parallel.ForEach(webList, webent =>
             {
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-                return;
                 if (webent == null || _inList.Contains(webent) || !Detect(ref webent)) return;
 
                 if (webent is IMyCharacter && Count == 14 || Count == 29 || Count == 44 || Count == 59)
