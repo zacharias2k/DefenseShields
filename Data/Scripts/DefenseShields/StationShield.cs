@@ -480,29 +480,12 @@ namespace DefenseShields.Station
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
             foreach (var webent in webList)
                 //MyAPIGateway.Parallel.ForEach(webList, webent =>
-            {
+                {
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                 var myEntity = webent;
                 if (webent == null || !Detectout(ref myEntity)) return;
                 Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
 
-                var grid = webent as IMyCubeGrid;
-                if (grid != null && !_inList.Contains(grid))
-                {
-                    if (_gridwebbed) return;
-                    List<long> owners = grid.BigOwners;
-                    if (owners.Count > 0)
-                    {
-                        var relations = _tblock.GetUserRelationToOwner(0);
-                        if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
-                            relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
-                            return;
-                    }
-                    Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}",
-                        DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.DisplayName));
-                    _gridwebbed = true;
-                    return;
-                }
                 if (webent is IMyCharacter)
                     if (Count == 14 || Count == 29 || Count == 44 || Count == 59)
                     {
@@ -520,6 +503,24 @@ namespace DefenseShields.Station
                     {
                         return;
                     }
+                if (_inList.Contains(webent)) return;
+                var grid = webent as IMyCubeGrid;
+                if (grid != null)
+                {
+                    if (_gridwebbed) return;
+                    List<long> owners = grid.BigOwners;
+                    if (owners.Count > 0)
+                    {
+                        var relations = _tblock.GetUserRelationToOwner(0);
+                        if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
+                            relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
+                            return;
+                    }
+                    Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}",
+                        DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.DisplayName));
+                    _gridwebbed = true;
+                    return;
+                }
                 if (_shotwebbed) return;
                 if (webent is IMyMeteor || webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
                 {
@@ -669,7 +670,7 @@ namespace DefenseShields.Station
                         if (_inList.Count == 0) Logging.WriteLine(string.Format("!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, Count));
 
                         Logging.WriteLine(string.Format("{0} - passing grid - Name: {1}", DateTime.Now, ent.DisplayName));
-                        if (grid == _tblock.CubeGrid || _inList.Contains(grid) || grid.DisplayName == "FieldGenerator") return;
+                        if (grid == _tblock.CubeGrid) return;
                         Logging.WriteLine(string.Format("{0} - passing grid - CustomName: {1}", DateTime.Now, grid.CustomName));
                         List<long> owners = grid.BigOwners;
                         if (owners.Count > 0)
