@@ -447,31 +447,40 @@ namespace DefenseShields.Station
                 _insideReady = false;
                 BoundingSphereD insphere = new BoundingSphereD(pos, _range - 13.3f);
                 _inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
-                MyAPIGateway.Parallel.ForEach(_inList, outent =>
+                foreach (var outent in _inList)
+                    //MyAPIGateway.Parallel.ForEach(_inList, outent =>
                 {
                     var grid = outent as IMyCubeGrid;
-                    if (grid != null && Detect(ref outent))
+                    var myEntity = outent;
+                    if (grid != null && Detect(ref myEntity))
                     {
-                        Logging.WriteLine(String.Format("{0} - adding to in list {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), outent.DisplayName));
+                        Logging.WriteLine(String.Format("{0} - adding to in list {1}",
+                            DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), outent.DisplayName));
                         if (!_inList.Contains(outent)) _inList.Add(outent);
                     }
-                });
+                }
+                //});
                 _insideReady = true;
 
             }
 
             BoundingSphereD websphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
-            MyAPIGateway.Parallel.ForEach(webList, webent =>
+            foreach (var webent in webList)
+                //MyAPIGateway.Parallel.ForEach(webList, webent =>
             {
-                if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-                if (webent == null || _inList.Contains(webent) || !Detect(ref webent)) return;
+                if (_insideReady == false)
+                    Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}",
+                        DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
+                var myEntity = webent;
+                if (webent == null || _inList.Contains(webent) || !Detect(ref myEntity)) return;
 
                 if (webent is IMyCharacter && Count == 14 || Count == 29 || Count == 44 || Count == 59)
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
                     var relationship = _tblock.GetUserRelationToOwner(dude);
-                    if (relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
+                    if (relationship != MyRelationsBetweenPlayerAndBlock.Owner &&
+                        relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
                     {
                         _playerwebbed = true;
                         return;
@@ -490,17 +499,22 @@ namespace DefenseShields.Station
                             relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
                             return;
                     }
-                    Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.DisplayName));
-                    _gridwebbed = true; 
+                    Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}",
+                        DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.DisplayName));
+                    _gridwebbed = true;
                     return;
                 }
                 if (_shotwebbed) return;
-                if (webent is IMyMeteor || webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
+                if (webent is IMyMeteor || webent.ToString().Contains("Missile") ||
+                    webent.ToString().Contains("Torpedo"))
                 {
                     _shotwebbed = true;
                 }
-                Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
-            });
+                Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}",
+                    DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName,
+                    webent.Name));
+            }
+        //});
         }
 
         #endregion
