@@ -471,12 +471,12 @@ namespace DefenseShields.Station
                 _inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
                 MyAPIGateway.Parallel.ForEach(_inList, outent =>
                 {
-                    if (outent is IMyMeteor) return;
-                    if (outent.ToString().Contains("MyMeteor")) return;
-                    //if (Detectin(outent))
-                    //{
+                    if (outent is MyMeteor) return;
+                    if (outent.ToString().Contains("MyMeteor") || outent is IMyMeteor) return;
+                    if (Detectin(outent))
+                    {
                         if (!_inList.Contains(outent)) _inList.Add(outent);
-                    //}
+                    }
                 });
                 _insideReady = true;
             }
