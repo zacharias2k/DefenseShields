@@ -513,7 +513,7 @@ namespace DefenseShields.Station
                         return;
                     }
                 if (_inHash.Contains(webent)) return;
-                Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
+                //Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
                 var grid = webent as IMyCubeGrid;
                 if (grid != null)
                 {
