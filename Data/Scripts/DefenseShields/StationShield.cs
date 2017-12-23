@@ -426,7 +426,7 @@ namespace DefenseShields.Station
             //_worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
             //_worldMatrix.Translation += Entity.WorldMatrix.Up;
             var m = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
-            var m2 = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
+            var m2 = MatrixD.Rescale(_worldMatrix3, new Vector3D(_width, _height, _depth));
             //var c = Color.Blue * 0.5f;
             MySimpleObjectDraw.DrawTransparentSphere(ref m2, 1f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, MyStringId.GetOrCompute("Square"));
             //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, _range, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
