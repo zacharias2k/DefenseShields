@@ -487,50 +487,52 @@ namespace DefenseShields.Station
                 MyAPIGateway.Parallel.ForEach(webList, webent =>
                 {
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-                    if (webent == null) return;
-                    if (!Detectout(webent)) return;
-                    //if (webent == null) return;
-
-                    if (webent is IMyCharacter)
-                    if (Count == 14 || Count == 29 || Count == 44 || Count == 59)
+                if (webent == null) return;
+                if (Detectout(webent))
                     {
-                        var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
-                        var relationship = _tblock.GetUserRelationToOwner(dude);
-                        if (relationship != MyRelationsBetweenPlayerAndBlock.Owner &&
-                            relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
+                        if (webent is IMyCharacter)
+                            if (Count == 14 || Count == 29 || Count == 44 || Count == 59)
+                            {
+                                var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
+                                var relationship = _tblock.GetUserRelationToOwner(dude);
+                                if (relationship != MyRelationsBetweenPlayerAndBlock.Owner &&
+                                    relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
+                                {
+                                    _playerwebbed = true;
+                                    return;
+                                }
+                                return;
+                            }
+                            else
+                            {
+                                return;
+                            }
+                        if (_inList.Contains(webent)) return;
+                        Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
+                        var grid = webent as IMyCubeGrid;
+                        if (grid != null)
                         {
-                            _playerwebbed = true;
+                            if (_gridwebbed) return;
+                            List<long> owners = grid.BigOwners;
+                            if (owners.Count > 0)
+                            {
+                                var relations = _tblock.GetUserRelationToOwner(0);
+                                if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
+                                    return;
+                            }
+                            Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.DisplayName));
+                            _gridwebbed = true;
                             return;
                         }
-                        return;
+                        if (_shotwebbed) return;
+                        if (webent is IMyMeteor || webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
+                        {
+                            _shotwebbed = true;
+                        }
+                        Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent));
                     }
-                    else
-                    {
-                        return;
-                    }
-                if (_inList.Contains(webent)) return;
-                Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
-                var grid = webent as IMyCubeGrid;
-                if (grid != null)
-                {
-                    if (_gridwebbed) return;
-                    List<long> owners = grid.BigOwners;
-                    if (owners.Count > 0)
-                    {
-                        var relations = _tblock.GetUserRelationToOwner(0);
-                        if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
-                            return;
-                    }
-                    Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.DisplayName));
-                    _gridwebbed = true;
-                    return;
-                }
-                if (_shotwebbed) return;
-                if (webent is IMyMeteor || webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
-                {
-                    _shotwebbed = true;
-                }
-                Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent));
+
+
             //}
             });
         }
