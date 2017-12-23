@@ -444,7 +444,7 @@ namespace DefenseShields.Station
                 Logging.WriteLine(String.Format("{0} - {1} within-t-boundary cords: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect));
                 return false;
             }
-            Logging.WriteLine(String.Format("{0} - {1} within-f-boundary cords: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect));
+            //Logging.WriteLine(String.Format("{0} - {1} within-f-boundary cords: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect));
             return true;
         }
         #endregion
