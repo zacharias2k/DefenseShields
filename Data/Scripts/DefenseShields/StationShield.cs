@@ -469,73 +469,57 @@ namespace DefenseShields.Station
                 _insideReady = false;
                 BoundingSphereD insphere = new BoundingSphereD(_detectMatrix.Translation, _range - 13.3f);
                 _inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
-                foreach (var outent in _inList)
-                    //MyAPIGateway.Parallel.ForEach(_inList, outent =>
+                MyAPIGateway.Parallel.ForEach(_inList, outent =>
                 {
                     if (Detectin(outent))
                     {
                         if (!_inList.Contains(outent)) _inList.Add(outent);
                     }
-                }
-                //});
+                });
                 _insideReady = true;
-
             }
 
             BoundingSphereD websphere = new BoundingSphereD(_detectMatrix.Translation, _range);
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
-            foreach (var webent in webList)
-                //MyAPIGateway.Parallel.ForEach(webList, webent =>
+            MyAPIGateway.Parallel.ForEach(webList, webent =>
                 {
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                 if (webent == null || !Detectout(webent)) return;
-
-                if (webent is IMyCharacter)
-                    if (Count == 14 || Count == 29 || Count == 44 || Count == 59)
+                if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
+                if (webent is IMyCharacter && Count == 14 || Count == 29 || Count == 44 || Count == 59)
+                {
+                    var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
+                    var relationship = _tblock.GetUserRelationToOwner(dude);
+                    if (relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
                     {
-                        var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
-                        var relationship = _tblock.GetUserRelationToOwner(dude);
-                        if (relationship != MyRelationsBetweenPlayerAndBlock.Owner &&
-                            relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
-                        {
-                            _playerwebbed = true;
-                            return;
-                        }
+                        _playerwebbed = true;
                         return;
                     }
-                    else
-                    {
-                        return;
-                    }
-                if (_inList.Contains(webent)) return;
+                    return;
+                }
+                if (webent is IMyCharacter || _inList.Contains(webent)) return;
                 Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
                 var grid = webent as IMyCubeGrid;
-                if (grid != null)
+                if (grid != null && !_gridwebbed && Detectout(webent))
                 {
-                    if (_gridwebbed) return;
                     List<long> owners = grid.BigOwners;
                     if (owners.Count > 0)
                     {
                         var relations = _tblock.GetUserRelationToOwner(0);
-                        if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
-                            relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
-                            return;
+                        if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                     }
-                    Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}",
-                        DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.DisplayName));
+                    Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.DisplayName));
                     _gridwebbed = true;
                     return;
                 }
                 if (_shotwebbed) return;
-                if (webent is IMyMeteor || webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
+                if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
                 {
                     _shotwebbed = true;
                 }
                 Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
-            }
-            //});
+            });
         }
-
         #endregion
 
         #region shot effects
@@ -544,17 +528,15 @@ namespace DefenseShields.Station
         {
             HashSet<IMyEntity> shotHash = new HashSet<IMyEntity>();
             BoundingSphereD shotsphere = new BoundingSphereD(_detectMatrix.Translation, _range);
-            MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && ent is IMyMeteor && Detectout(ent)  || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo"));
+            MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && (ent is IMyMeteor || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo")) && Detectout(ent));
 
             MyAPIGateway.Parallel.ForEach(shotHash, shotent =>
             {
                 if (shotent == null) return;
                 try
                 {
-                    Logging.WriteLine(String.Format("{0} - shotEffect ent found: {1} in loop {2}",
-                        DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, Count));
-                    if (shotent is MyMeteor || shotent.ToString().Contains("Missile") ||
-                        shotent.ToString().Contains("Torpedo"))
+                    Logging.WriteLine(String.Format("{0} - shotEffect ent found: {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, Count));
+                    if (shotent is IMyMeteor || shotent.ToString().Contains("Missile") || shotent.ToString().Contains("Torpedo"))
                     {
                         shotent.Close();
                     }
@@ -576,7 +558,7 @@ namespace DefenseShields.Station
             Random rnd = new Random();
             MyAPIGateway.Parallel.ForEach(_inList, playerent =>
             {
-                if (!(playerent is IMyCharacter) && _inList.Contains(playerent)) return;
+                if (!(playerent is IMyCharacter)) return;
                     try
                     {   
                         var dude = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;
