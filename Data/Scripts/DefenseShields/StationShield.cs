@@ -49,8 +49,8 @@ namespace DefenseShields.Station
 
         private static Random _random = new Random();
         //private MatrixD _worldMatrix;
-        private MatrixD _worldMatrix;
-        //private MatrixD _detectMatrix = MatrixD.Identity;
+        //private MatrixD _worldMatrix;
+        private MatrixD _worldMatrix = MatrixD.Identity;
         //private Vector3D _scale;
         private BoundingSphereD _sphereMin;
         private BoundingSphereD _sphereMax;
