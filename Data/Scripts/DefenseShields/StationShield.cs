@@ -102,8 +102,8 @@ namespace DefenseShields.Station
 
                 if (_animInit)
                 {
-                    //_worldMatrix = Entity.WorldMatrix;
-                    //_worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
+                    _worldMatrix = Entity.WorldMatrix;
+                    _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
                     //Animations
                     if (_fblock.Enabled && _fblock.IsFunctional && _cblock.IsWorking)
                     {
@@ -212,7 +212,7 @@ namespace DefenseShields.Station
                 _worldMatrix = Entity.WorldMatrix;
                 _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
 
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                //Entity.TryGetSubpart("Rotor", out _subpartRotor);
 
                 for (int i = 1; i < 9; i++)
                 {
