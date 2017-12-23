@@ -49,6 +49,7 @@ namespace DefenseShields.Station
 
         private static Random _random = new Random();
         private MatrixD _worldMatrix;
+        private MatrixD _worldMatrix2;
         private Vector3D _scale;
         private BoundingSphereD _sphereMin;
         private BoundingSphereD _sphereMax;
@@ -465,7 +466,7 @@ namespace DefenseShields.Station
         public void WebEffects()
         {
             var pos = _cblock.GetPosition();
-            _worldMatrix.Translation = pos;
+            _worldMatrix2.Translation = pos;
             {
                 _inList.Clear();
                 _insideReady = false;
@@ -546,7 +547,7 @@ namespace DefenseShields.Station
         {
             HashSet<IMyEntity> shotHash = new HashSet<IMyEntity>();
             var pos = _cblock.GetPosition();
-            _worldMatrix.Translation = pos;
+            _worldMatrix2.Translation = pos;
             BoundingSphereD shotsphere = new BoundingSphereD(pos, _range);
             MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && ent is IMyMeteor && Detectout(ent)  || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo"));
 
@@ -652,7 +653,7 @@ namespace DefenseShields.Station
         public void GridEffects()
         {
             var pos = _cblock.GetPosition();
-            _worldMatrix.Translation = pos;
+            _worldMatrix2.Translation = pos;
             BoundingSphereD gridsphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere);
             Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now, Count));
