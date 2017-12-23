@@ -101,11 +101,11 @@ namespace DefenseShields.Station
         {
             try
             {
-
+                /*
                 if (_animInit)
                 {
-                    //_worldMatrix = Entity.WorldMatrix;
-                    //_worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
+                    _worldMatrix = Entity.WorldMatrix;
+                    _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
                     //Animations
                     if (_fblock.Enabled && _fblock.IsFunctional && _cblock.IsWorking)
                     {
@@ -138,6 +138,7 @@ namespace DefenseShields.Station
                         _subpartsArms[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixArmsOff[i], _matrixArmsOn[i], _animStep);
                     }
                 }
+                */
                 if (Count % 3 == 0)
                 {
                     _colourRand += (16 - _random.Next(1, 32));
@@ -181,7 +182,7 @@ namespace DefenseShields.Station
                     if (_oblock.BlockDefinition.SubtypeId == "StationDefenseShield")
                     {
                         if (!_oblock.IsFunctional) return;
-                        BlockAnimation();
+                        //BlockAnimation();
 
                         _animInit = true;
                     }
@@ -477,7 +478,6 @@ namespace DefenseShields.Station
         public void WebEffects()
         {
             var pos = _cblock.GetPosition();
-            _worldMatrix2.Translation = pos;
             {
                 _inList.Clear();
                 _insideReady = false;
@@ -558,7 +558,6 @@ namespace DefenseShields.Station
         {
             HashSet<IMyEntity> shotHash = new HashSet<IMyEntity>();
             var pos = _cblock.GetPosition();
-            _worldMatrix2.Translation = pos;
             BoundingSphereD shotsphere = new BoundingSphereD(pos, _range);
             MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && ent is IMyMeteor && Detectout(ent)  || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo"));
 
@@ -664,7 +663,6 @@ namespace DefenseShields.Station
         public void GridEffects()
         {
             var pos = _cblock.GetPosition();
-            _worldMatrix2.Translation = pos;
             BoundingSphereD gridsphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere);
             Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now, Count));
