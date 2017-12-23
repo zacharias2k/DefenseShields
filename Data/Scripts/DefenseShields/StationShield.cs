@@ -460,7 +460,7 @@ namespace DefenseShields.Station
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             if (detect > 1)
             {
-                Logging.WriteLine(String.Format("{0} - {1} beyond-t-boundary cords: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect));
+                if (detect >8 || detect >1.2) Logging.WriteLine(String.Format("{0} - {1} beyond-t-boundary cords: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect));
                 return false;
             }
             Logging.WriteLine(String.Format("{0} - {1} beyond-f-boundary cords: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect));
