@@ -66,6 +66,8 @@ namespace DefenseShields.Station
         private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
         public List<IMyEntity> _inList = new List<IMyEntity>();
+        public HashSet<IMyEntity> _inHash = new HashSet<IMyEntity>();
+
 
         public static readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
 
@@ -464,16 +466,18 @@ namespace DefenseShields.Station
         {
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             {
-                _inList.Clear();
+                _inHash.Clear();
                 _insideReady = false;
                 BoundingSphereD insphere = new BoundingSphereD(pos, _range - 13.3f);
-                _inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
-                foreach (var outent in _inList)
+                //_inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
+                MyAPIGateway.Entities.GetEntities(_inHash,
+                    ent => insphere.Intersects(ent.WorldAABB) && ent is IMyMeteor && Detectout(ent));
+                foreach (var outent in _inHash)
                     //MyAPIGateway.Parallel.ForEach(_inList, outent =>
                 {
                     //if (Detectin(outent))
                     //{
-                        if (!_inList.Contains(outent)) _inList.Add(outent);
+                        if (!_inHash.Contains(outent)) _inHash.Add(outent);
                     //}
                 }
                 //});
@@ -507,7 +511,7 @@ namespace DefenseShields.Station
                     {
                         return;
                     }
-                if (_inList.Contains(webent)) return;
+                if (_inHash.Contains(webent)) return;
                 Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
                 var grid = webent as IMyCubeGrid;
                 if (grid != null)
@@ -573,9 +577,9 @@ namespace DefenseShields.Station
         public void PlayerEffects()
         {
             Random rnd = new Random();
-            MyAPIGateway.Parallel.ForEach(_inList, playerent =>
+            MyAPIGateway.Parallel.ForEach(_inHash, playerent =>
             {
-                if (!(playerent is IMyCharacter) && _inList.Contains(playerent)) return;
+                if (!(playerent is IMyCharacter) && _inHash.Contains(playerent)) return;
                     try
                     {   
                         var dude = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;
@@ -652,7 +656,7 @@ namespace DefenseShields.Station
             Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now, Count));
             MyAPIGateway.Parallel.ForEach(gridList, ent =>
             {
-                if (ent == null || _inList.Contains(ent)) return;
+                if (ent == null || _inHash.Contains(ent)) return;
                 var grid = ent as IMyCubeGrid;
                 //if (grid != null && _insideReady && Detectout(ent))
                 if (!_insideReady) Logging.WriteLine(string.Format("!!!!!Alert!!!!! {0} - Inside is not ready! {1}", DateTime.Now, Count));
@@ -660,7 +664,7 @@ namespace DefenseShields.Station
                 {
                     try
                     {
-                        if (_inList.Count == 0) Logging.WriteLine(string.Format("!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, Count));
+                        if (_inHash.Count == 0) Logging.WriteLine(string.Format("!!!!!Alert!!!!! {0} - gridEffect: _inHash empty in loop {1}", DateTime.Now, Count));
 
                         Logging.WriteLine(string.Format("{0} - passing grid - Name: {1}", DateTime.Now, ent.DisplayName));
                         if (grid == _tblock.CubeGrid) return;
