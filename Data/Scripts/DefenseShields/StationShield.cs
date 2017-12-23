@@ -473,10 +473,10 @@ namespace DefenseShields.Station
                 {
                     if (outent is IMyMeteor) return;
                     if (outent.ToString().Contains("MyMeteor")) return;
-                    if (Detectin(outent))
-                    {
+                    //if (Detectin(outent))
+                    //{
                         if (!_inList.Contains(outent)) _inList.Add(outent);
-                    }
+                    //}
                 });
                 _insideReady = true;
             }
@@ -530,7 +530,7 @@ namespace DefenseShields.Station
         {
             HashSet<IMyEntity> shotHash = new HashSet<IMyEntity>();
             BoundingSphereD shotsphere = new BoundingSphereD(_detectMatrix.Translation, _range);
-            MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && (ent is IMyMeteor || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo")));
+            MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && (ent is IMyMeteor || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo")) && Detectout(ent));
 
             MyAPIGateway.Parallel.ForEach(shotHash, shotent =>
             {
