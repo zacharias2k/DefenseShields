@@ -48,7 +48,8 @@ namespace DefenseShields.Station
         private ushort _modId = 50099;
 
         private static Random _random = new Random();
-        private MatrixD _worldMatrix;
+        private MatrixD _worldMatrix = MatrixD.Identity;
+        //private MatrixD _worldMatrix;
         private MatrixD _worldMatrix2;
         private MatrixD _worldMatrix3;
         private Vector3D _scale;
@@ -421,8 +422,10 @@ namespace DefenseShields.Station
                 colour = Color.FromNonPremultiplied(16, 255 - _colourRand, 16 + _colourRand, 72);
             else
                 colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
+            var pos = MyAPIGateway.Session.ControlledObject.Entity.GetPosition();
+            _worldMatrix.Translation = pos;
             //MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
-            _worldMatrix = Entity.WorldMatrix.GetOrientation();
+            //_worldMatrix = Entity.WorldMatrix.GetOrientation();
             //_worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
             //_worldMatrix.Translation += Entity.WorldMatrix.Up;
             //var m = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
