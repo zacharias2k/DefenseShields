@@ -483,12 +483,12 @@ namespace DefenseShields.Station
 
             BoundingSphereD websphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
-           foreach (var webent in webList)
-                //MyAPIGateway.Parallel.ForEach(webList, webent =>
+            //foreach (var webent in webList)
+                MyAPIGateway.Parallel.ForEach(webList, webent =>
                 {
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-                    if (webent == null || Detectout(webent) == false) return;
-                    //if (webent == null) return;
+                    //if (webent == null || Detectout(webent) == false) return;
+                    if (webent == null) return;
 
                     if (webent is IMyCharacter)
                     if (Count == 14 || Count == 29 || Count == 44 || Count == 59)
@@ -530,8 +530,8 @@ namespace DefenseShields.Station
                     _shotwebbed = true;
                 }
                 Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent));
-            }
-            //});
+            //}
+            });
         }
 
         #endregion
