@@ -517,12 +517,10 @@ namespace DefenseShields.Station
                     if (owners.Count > 0)
                     {
                         var relations = _tblock.GetUserRelationToOwner(0);
-                        if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
-                            relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
+                        if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
                             return;
                     }
-                    Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}",
-                        DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.DisplayName));
+                    Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.DisplayName));
                     _gridwebbed = true;
                     return;
                 }
@@ -531,7 +529,7 @@ namespace DefenseShields.Station
                 {
                     _shotwebbed = true;
                 }
-                Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
+                //Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
             //}
             });
         }
