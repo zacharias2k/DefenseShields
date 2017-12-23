@@ -48,9 +48,7 @@ namespace DefenseShields.Station
         private ushort _modId = 50099;
 
         private static Random _random = new Random();
-        //private MatrixD _worldMatrix;
         private MatrixD _worldMatrix = MatrixD.Identity;
-        private MatrixD _worldMatrix2;
         private Vector3D _scale;
         private BoundingSphereD _sphereMin;
         private BoundingSphereD _sphereMax;
@@ -446,9 +444,9 @@ namespace DefenseShields.Station
         #region Detect outter intersection
         private bool Detectout(IMyEntity ent)
         {
-            float x = Vector3Extensions.Project(_worldMatrix2.Forward, ent.GetPosition() - _worldMatrix2.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix2.Left, ent.GetPosition() - _worldMatrix2.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_worldMatrix2.Up, ent.GetPosition() - _worldMatrix2.Translation).AbsMax();
+            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             if (detect > 1)
             {
