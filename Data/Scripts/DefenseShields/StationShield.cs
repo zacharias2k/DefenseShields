@@ -437,7 +437,7 @@ namespace DefenseShields.Station
             float detect = (x * x) / (_width -13.3f * _width - 13.3f) + (y * y) / (_depth - 13.3f * _depth - 13.3f) + (z * z) / (_height - 13.3f * _height - 13.3f);
             if (detect > 1)
             {
-                if (detect > 8 || detect < 1) Logging.WriteLine(String.Format("{0} - {1} beyond-i-boundary cords: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect));
+                Logging.WriteLine(String.Format("{0} - {1} beyond-i-boundary cords: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect));
                 return false;
             }
             return true;
