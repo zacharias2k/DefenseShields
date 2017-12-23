@@ -102,7 +102,7 @@ namespace DefenseShields.Station
 
                 if (_animInit)
                 {
-                    _worldMatrix = Entity.WorldMatrix;
+                    //_worldMatrix = Entity.WorldMatrix;
                     _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
                     //Animations
                     if (_fblock.Enabled && _fblock.IsFunctional && _cblock.IsWorking)
