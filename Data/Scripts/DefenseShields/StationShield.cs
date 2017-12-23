@@ -485,10 +485,10 @@ namespace DefenseShields.Station
                 foreach (var outent in _inList)
                     //MyAPIGateway.Parallel.ForEach(_inList, outent =>
                 {
-                    if (Detectin(outent))
-                    {
+                    //if (Detectin(outent))
+                    //{
                         if (!_inList.Contains(outent)) _inList.Add(outent);
-                    }
+                    //}
                 }
                 //});
                 _insideReady = true;
@@ -520,7 +520,8 @@ namespace DefenseShields.Station
                     {
                         return;
                     }
-                if (_inList.Contains(webent) || !Detectout(webent)) return;
+                //if (_inList.Contains(webent) || !Detectout(webent)) return;
+                if (_inList.Contains(webent)) return;
                 Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
                 var grid = webent as IMyCubeGrid;
                 if (grid != null)
@@ -536,13 +537,13 @@ namespace DefenseShields.Station
                     }
                     Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}",
                         DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.DisplayName));
-                    _gridwebbed = true;
+                    //_gridwebbed = true;
                     return;
                 }
                 if (_shotwebbed) return;
                 if (webent is IMyMeteor || webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
                 {
-                    _shotwebbed = true;
+                    //_shotwebbed = true;
                 }
                 Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
             }
