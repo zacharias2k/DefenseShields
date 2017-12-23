@@ -50,9 +50,8 @@ namespace DefenseShields.Station
         private static Random _random = new Random();
         //private MatrixD _worldMatrix;
         private MatrixD _worldMatrix;
-        private MatrixD _detectMatrix;
-        //private MatrixD _worldMatrix = MatrixD.Identity;
-        private Vector3D _scale;
+        //private MatrixD _detectMatrix = MatrixD.Identity;
+        //private Vector3D _scale;
         private BoundingSphereD _sphereMin;
         private BoundingSphereD _sphereMax;
         private MyEntitySubpart _subpartRotor;
@@ -94,8 +93,6 @@ namespace DefenseShields.Station
             _oblock = Entity as IMyOreDetector; 
             _fblock = Entity as IMyFunctionalBlock;
             _tblock = Entity as IMyTerminalBlock;
-            _detectMatrix = Entity.WorldMatrix;
-            //_detectMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
 
         }
         #endregion
@@ -260,7 +257,7 @@ namespace DefenseShields.Station
                     temp4.Translation = temp3.PositionComp.LocalMatrix.Translation;
                     _matrixReflectorsOn.Add(temp4);
                 }
-                _scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f);
+                //_scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f);
             }
             catch (Exception ex)
             {
@@ -308,7 +305,7 @@ namespace DefenseShields.Station
                 _height = _range;
                 _depth = _range;
             }
-            _scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f); 
+            //_scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f); 
         }
         #endregion
 
@@ -424,7 +421,8 @@ namespace DefenseShields.Station
                 colour = Color.FromNonPremultiplied(16, 255 - _colourRand, 16 + _colourRand, 72);
             else
                 colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
-            MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_detectMatrix.GetOrientation()), _detectMatrix.Translation, _scale);
+            var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
+            //MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_detectMatrix.GetOrientation()), _detectMatrix.Translation, _scale);
             MySimpleObjectDraw.DrawTransparentSphere(ref matrix, _range, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
             // end shield draw
         }
@@ -434,9 +432,9 @@ namespace DefenseShields.Station
         #region Detect innersphere intersection
         private bool Detectin(IMyEntity ent)
         {
-            float x = Vector3Extensions.Project(_detectMatrix.Forward, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_detectMatrix.Left, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_detectMatrix.Up, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
+            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float detect = (x * x) / (_width -13.3f * _width - 13.3f) + (y * y) / (_depth - 13.3f * _depth - 13.3f) + (z * z) / (_height - 13.3f * _height - 13.3f);
             if (detect > 1)
             {
@@ -450,9 +448,9 @@ namespace DefenseShields.Station
         #region Detect outter intersection
         private bool Detectout(IMyEntity ent)
         {
-            float x = Vector3Extensions.Project(_detectMatrix.Forward, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_detectMatrix.Left, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_detectMatrix.Up, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
+            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             if (detect > 1)
             {
