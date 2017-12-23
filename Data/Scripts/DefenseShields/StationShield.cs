@@ -470,7 +470,7 @@ namespace DefenseShields.Station
                 _insideReady = false;
                 BoundingSphereD insphere = new BoundingSphereD(pos, _range - 13.3f);
                 //_inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
-                MyAPIGateway.Entities.GetEntities(_inHash, ent => insphere.Intersects(ent.WorldAABB) && Detectin(ent) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock)
+                MyAPIGateway.Entities.GetEntities(_inHash, ent => insphere.Intersects(ent.WorldAABB) && Detectin(ent) && !(ent is IMyVoxelMap)  && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock)
                 && !(ent is IMyFloatingObject) && !(ent is MyHandToolBase) && !(ent is IMyCharacter) && !(ent is IMyWelder) && !(ent is IMyHandDrill) && !(ent is IMyAngleGrinder) 
                 && !(ent is IMyAutomaticRifleGun) && !(ent is IMyInventoryBag));
                 foreach (var outent in _inHash)
