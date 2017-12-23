@@ -81,6 +81,9 @@ namespace DefenseShields.Station
         #region Init
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
+            var pos = MyAPIGateway.Session.ControlledObject.Entity.GetPosition();
+            _worldMatrix.Translation = pos;
+
             base.Init(objectBuilder);
             
             Entity.Components.TryGet<MyResourceSinkComponent>(out Sink);
@@ -171,9 +174,6 @@ namespace DefenseShields.Station
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo();
                 Initialized = false;
-                var pos = MyAPIGateway.Session.ControlledObject.Entity.GetPosition();
-                _worldMatrix.Translation = pos;
-
             }
         }
 
