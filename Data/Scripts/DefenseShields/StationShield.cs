@@ -81,9 +81,6 @@ namespace DefenseShields.Station
         #region Init
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
-            var pos = MyAPIGateway.Session.ControlledObject.Entity.GetPosition();
-            _worldMatrix.Translation = pos;
-
             base.Init(objectBuilder);
             
             Entity.Components.TryGet<MyResourceSinkComponent>(out Sink);
@@ -174,6 +171,7 @@ namespace DefenseShields.Station
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo();
                 Initialized = false;
+                _worldMatrix = Entity.WorldMatrix;
             }
         }
 
@@ -427,7 +425,7 @@ namespace DefenseShields.Station
                 colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
 
             //MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
-            //_worldMatrix = Entity.WorldMatrix.GetOrientation();
+            //_worldMatrix = Entity.WorldMatrix;
             //_worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
             //_worldMatrix.Translation += Entity.WorldMatrix.Up;
             //var m = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
