@@ -51,6 +51,7 @@ namespace DefenseShields.Station
         //private MatrixD _worldMatrix;
         //private MatrixD _worldMatrix;
         private MatrixD _worldMatrix = MatrixD.Identity;
+        private MatrixD _animMatrix;
         //private Vector3D _scale;
         private BoundingSphereD _sphereMin;
         private BoundingSphereD _sphereMax;
@@ -105,8 +106,8 @@ namespace DefenseShields.Station
 
                 if (_animInit)
                 {
-                    _worldMatrix = Entity.WorldMatrix;
-                    _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
+                    _animMatrix = Entity.WorldMatrix;
+                    _animMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
                     //Animations
                     if (_fblock.Enabled && _fblock.IsFunctional && _cblock.IsWorking)
                     {
@@ -212,8 +213,8 @@ namespace DefenseShields.Station
                 _matrixReflectorsOff = new List<Matrix>();
                 _matrixReflectorsOn = new List<Matrix>();
 
-                _worldMatrix = Entity.WorldMatrix;
-                _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
+                _animMatrix = Entity.WorldMatrix;
+                _animMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
 
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
 
