@@ -495,9 +495,14 @@ namespace DefenseShields.Station
 
             }
 
+            //BoundingSphereD websphere = new BoundingSphereD(pos, _range);
+            //List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
+            HashSet<IMyEntity> webHash = new HashSet<IMyEntity>();
             BoundingSphereD websphere = new BoundingSphereD(pos, _range);
-            List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
-            foreach (var webent in webList)
+            MyAPIGateway.Entities.GetEntities(webHash, ent => websphere.Intersects(ent.WorldAABB) && !_inList.Contains(ent) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock)
+            && !(ent is IMyFloatingObject) && !(ent is MyHandToolBase) && ent != _tblock.CubeGrid && !(ent is IMyWelder)
+            && !(ent is IMyHandDrill) && !(ent is IMyAngleGrinder) && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag) && ent.DisplayName != "FieldGenerator");
+                foreach (var webent in webHash)
                 //MyAPIGateway.Parallel.ForEach(webList, webent =>
                 {
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
