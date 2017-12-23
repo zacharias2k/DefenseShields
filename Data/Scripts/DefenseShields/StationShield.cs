@@ -50,8 +50,8 @@ namespace DefenseShields.Station
         private static Random _random = new Random();
         private MatrixD _worldMatrix = MatrixD.Identity;
         //private MatrixD _worldMatrix;
-        private MatrixD _worldMatrix2;
-        private MatrixD _worldMatrix3;
+        //private MatrixD _worldMatrix2;
+        //private MatrixD _worldMatrix3;
         private Vector3D _scale;
         private BoundingSphereD _sphereMin;
         private BoundingSphereD _sphereMax;
@@ -148,7 +148,8 @@ namespace DefenseShields.Station
                 }
                 if (!MyAPIGateway.Utilities.IsDedicated) ShowRange(_range); //Check
                 else SendPoke(_range); //Check
-                if (Initialized == false && Count <60) MyAPIGateway.Parallel.StartBackground(WebEffects);
+                //if (Initialized == false && Count <60) MyAPIGateway.Parallel.StartBackground(WebEffects);
+                if (Initialized == false && Count < 60) WebEffects();
                 if (_shotwebbed) MyAPIGateway.Parallel.Do(ShotEffects);
                 if (_gridwebbed) MyAPIGateway.Parallel.Do(GridEffects);
                 if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
