@@ -151,7 +151,7 @@ namespace DefenseShields.Station
                 if (_shotwebbed) MyAPIGateway.Parallel.Do(ShotEffects);
                 if (_gridwebbed) MyAPIGateway.Parallel.Do(GridEffects);
                 if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
-                if (Count++ == 59 || Count == 599) Count = 0;
+                if (Count++ == 59 || Count == 299) Count = 0;
             }
             catch (Exception ex)
             {
