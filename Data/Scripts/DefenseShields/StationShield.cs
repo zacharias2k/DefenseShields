@@ -422,7 +422,7 @@ namespace DefenseShields.Station
             else
                 colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
             //MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
-            _worldMatrix = Entity.GetWorldMatrixNormalizedInv();
+            _worldMatrix = Entity.WorldMatrix.GetOrientation();
             //_worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
             //_worldMatrix.Translation += Entity.WorldMatrix.Up;
             //var m = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
