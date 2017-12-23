@@ -421,8 +421,7 @@ namespace DefenseShields.Station
             //MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
             var m = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
             var c = Color.Blue * 0.5f;
-            MySimpleObjectDraw.DrawTransparentSphere(ref m, 1f, ref c, MySimpleObjectRasterizer.Solid, 24,
-                MyStringId.GetOrCompute("Square"));
+            MySimpleObjectDraw.DrawTransparentSphere(ref m, _range, ref c, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
             //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, _range, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
             // end shield draw
         }
