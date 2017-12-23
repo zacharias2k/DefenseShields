@@ -531,7 +531,7 @@ namespace DefenseShields.Station
         {
             HashSet<IMyEntity> shotHash = new HashSet<IMyEntity>();
             BoundingSphereD shotsphere = new BoundingSphereD(_detectMatrix.Translation, _range);
-            MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && (ent is IMyMeteor || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo")) && Detectout(ent));
+            MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && Detectout(ent) && (ent is IMyMeteor || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo")));
 
             MyAPIGateway.Parallel.ForEach(shotHash, shotent =>
             {
