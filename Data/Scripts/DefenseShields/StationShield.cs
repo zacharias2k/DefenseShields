@@ -471,10 +471,10 @@ namespace DefenseShields.Station
                 foreach (var outent in _inList)
                     //MyAPIGateway.Parallel.ForEach(_inList, outent =>
                 {
-                    if (Detectin(outent))
-                    {
+                    //if (Detectin(outent))
+                    //{
                         if (!_inList.Contains(outent)) _inList.Add(outent);
-                    }
+                    //}
                 }
                 //});
                 _insideReady = true;
