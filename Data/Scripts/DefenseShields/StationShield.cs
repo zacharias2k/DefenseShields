@@ -488,7 +488,7 @@ namespace DefenseShields.Station
             MyAPIGateway.Parallel.ForEach(webList, webent =>
                 {
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-                if (webent == null || !Detectout(webent) || webent.ToString().Contains("MyMeteor") || webent is MyMeteor || webent is IMyMeteor) return;
+                if (webent == null || webent.ToString().Contains("MyMeteor") || webent is MyMeteor || webent is IMyMeteor || !Detectout(webent)) return;
                 if (webent == null) return;
                 if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
                 if (webent is IMyCharacter && Count == 14 || Count == 29 || Count == 44 || Count == 59)
