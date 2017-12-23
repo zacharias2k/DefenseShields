@@ -99,7 +99,7 @@ namespace DefenseShields.Station
         {
             try
             {
-
+                /*
                 if (_animInit)
                 {
                     _worldMatrix = Entity.WorldMatrix;
@@ -136,6 +136,7 @@ namespace DefenseShields.Station
                         _subpartsArms[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixArmsOff[i], _matrixArmsOn[i], _animStep);
                     }
                 }
+                */
                 if (Count % 3 == 0)
                 {
                     _colourRand += (16 - _random.Next(1, 32));
