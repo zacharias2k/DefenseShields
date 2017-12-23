@@ -171,6 +171,8 @@ namespace DefenseShields.Station
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo();
                 Initialized = false;
+                var pos = MyAPIGateway.Session.ControlledObject.Entity.GetPosition();
+                _worldMatrix.Translation = pos;
 
             }
         }
@@ -423,8 +425,7 @@ namespace DefenseShields.Station
                 colour = Color.FromNonPremultiplied(16, 255 - _colourRand, 16 + _colourRand, 72);
             else
                 colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
-            var pos = MyAPIGateway.Session.ControlledObject.Entity.GetPosition();
-            _worldMatrix.Translation = pos;
+
             //MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
             //_worldMatrix = Entity.WorldMatrix.GetOrientation();
             //_worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
