@@ -66,8 +66,6 @@ namespace DefenseShields.Station
         private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
         public List<IMyEntity> _inList = new List<IMyEntity>();
-        public HashSet<IMyEntity> _inHash = new HashSet<IMyEntity>();
-
 
         public static readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
 
@@ -146,8 +144,7 @@ namespace DefenseShields.Station
                 }
                 if (!MyAPIGateway.Utilities.IsDedicated) ShowRange(_range); //Check
                 else SendPoke(_range); //Check
-                //if (Initialized == false && Count <60) MyAPIGateway.Parallel.StartBackground(WebEffects);
-                if (Initialized == false && Count < 60) WebEffects();
+                if (Initialized == false && Count <60) MyAPIGateway.Parallel.StartBackground(WebEffects);
                 if (_shotwebbed) MyAPIGateway.Parallel.Do(ShotEffects);
                 if (_gridwebbed) MyAPIGateway.Parallel.Do(GridEffects);
                 if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
@@ -434,12 +431,8 @@ namespace DefenseShields.Station
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float detect = (x * x) / ((_width - 13.3f) * (_width - 13.3f)) + (y * y) / ((_depth - 13.3f) * (_depth - 13.3f)) + (z * z) / ((_height - 13.3f) * (_height - 13.3f));
-            if (detect > 1)
-            {
-                if (detect > 8 || detect < 2) Logging.WriteLine(String.Format("{0} - {1} beyond-o-boundary cords: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
-                return false;
-            }
+            float detect = (x * x) / (_width -13.3f * _width - 13.3f) + (y * y) / (_depth - 13.3f * _depth - 13.3f) + (z * z) / (_height - 13.3f * _height - 13.3f);
+            if (detect > 1) return false;
             return true;
         }
         #endregion
@@ -451,11 +444,7 @@ namespace DefenseShields.Station
             float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
-            if (detect > 1)
-            {
-                if (detect > 8 || detect <2)Logging.WriteLine(String.Format("{0} - {1} beyond-o-boundary cords: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
-                return false;
-            }
+            if (detect > 1) return false;
             return true;
         }
         #endregion
@@ -466,19 +455,16 @@ namespace DefenseShields.Station
         {
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             {
-                _inHash.Clear();
+                _inList.Clear();
                 _insideReady = false;
                 BoundingSphereD insphere = new BoundingSphereD(pos, _range - 13.3f);
-                //_inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
-                MyAPIGateway.Entities.GetEntities(_inHash, ent => insphere.Intersects(ent.WorldAABB) && Detectin(ent) && !(ent is IMyCubeBlock)
-                && !(ent is IMyFloatingObject) && !(ent is MyHandToolBase) && !(ent is IMyCharacter) && !(ent is IMyWelder) && !(ent is IMyHandDrill) && !(ent is IMyAngleGrinder) 
-                && !(ent is IMyAutomaticRifleGun) && !(ent is IMyInventoryBag));
-                foreach (var outent in _inHash)
+                _inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
+                foreach (var outent in _inList)
                     //MyAPIGateway.Parallel.ForEach(_inList, outent =>
                 {
                     if (Detectin(outent))
                     {
-                        if (!_inHash.Contains(outent)) _inHash.Add(outent);
+                        if (!_inList.Contains(outent)) _inList.Add(outent);
                     }
                 }
                 //});
@@ -488,14 +474,14 @@ namespace DefenseShields.Station
 
             BoundingSphereD websphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
-            //foreach (var webent in webList)
-                MyAPIGateway.Parallel.ForEach(webList, webent =>
+            foreach (var webent in webList)
+                //MyAPIGateway.Parallel.ForEach(webList, webent =>
                 {
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-                    //if (webent == null || !Detectout(webent)) return;
-                    if (webent == null) return;
+                var myEntity = webent;
+                if (webent == null || !Detectout(webent)) return;
 
-                    if (webent is IMyCharacter)
+                if (webent is IMyCharacter)
                     if (Count == 14 || Count == 29 || Count == 44 || Count == 59)
                     {
                         var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
@@ -512,8 +498,8 @@ namespace DefenseShields.Station
                     {
                         return;
                     }
-                if (_inHash.Contains(webent)) return;
-                //Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
+                if (_inList.Contains(webent)) return;
+                Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
                 var grid = webent as IMyCubeGrid;
                 if (grid != null)
                 {
@@ -522,10 +508,12 @@ namespace DefenseShields.Station
                     if (owners.Count > 0)
                     {
                         var relations = _tblock.GetUserRelationToOwner(0);
-                        if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
+                        if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
+                            relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
                             return;
                     }
-                    Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.DisplayName));
+                    Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}",
+                        DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.DisplayName));
                     _gridwebbed = true;
                     return;
                 }
@@ -534,9 +522,9 @@ namespace DefenseShields.Station
                 {
                     _shotwebbed = true;
                 }
-                Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent));
-            //}
-            });
+                //Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
+            }
+            //});
         }
 
         #endregion
@@ -578,9 +566,9 @@ namespace DefenseShields.Station
         public void PlayerEffects()
         {
             Random rnd = new Random();
-            MyAPIGateway.Parallel.ForEach(_inHash, playerent =>
+            MyAPIGateway.Parallel.ForEach(_inList, playerent =>
             {
-                if (!(playerent is IMyCharacter) && _inHash.Contains(playerent)) return;
+                if (!(playerent is IMyCharacter) && _inList.Contains(playerent)) return;
                     try
                     {   
                         var dude = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;
@@ -657,15 +645,13 @@ namespace DefenseShields.Station
             Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now, Count));
             MyAPIGateway.Parallel.ForEach(gridList, ent =>
             {
-                if (ent == null || _inHash.Contains(ent)) return;
+                if (ent == null || _inList.Contains(ent)) return;
                 var grid = ent as IMyCubeGrid;
-                //if (grid != null && _insideReady && Detectout(ent))
-                if (!_insideReady) Logging.WriteLine(string.Format("!!!!!Alert!!!!! {0} - Inside is not ready! {1}", DateTime.Now, Count));
-                if (grid != null && _insideReady)
+                if (grid != null && _insideReady && Detectout(ent))
                 {
                     try
                     {
-                        if (_inHash.Count == 0) Logging.WriteLine(string.Format("!!!!!Alert!!!!! {0} - gridEffect: _inHash empty in loop {1}", DateTime.Now, Count));
+                        if (_inList.Count == 0) Logging.WriteLine(string.Format("!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, Count));
 
                         Logging.WriteLine(string.Format("{0} - passing grid - Name: {1}", DateTime.Now, ent.DisplayName));
                         if (grid == _tblock.CubeGrid) return;
