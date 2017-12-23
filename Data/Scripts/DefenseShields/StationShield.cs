@@ -422,24 +422,22 @@ namespace DefenseShields.Station
             else
                 colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
             //MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
-            _worldMatrix = Entity.WorldMatrix;
+            _worldMatrix = Entity.LocalMatrix;
             //_worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
             //_worldMatrix.Translation += Entity.WorldMatrix.Up;
-            var m = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
-            var m2 = MatrixD.Rescale(_worldMatrix3, new Vector3D(_width, _height, _depth));
+            //var m = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
+            //var m2 = MatrixD.Rescale(_worldMatrix3, new Vector3D(_width, _height, _depth));
             //var c = Color.Blue * 0.5f;
-            MySimpleObjectDraw.DrawTransparentSphere(ref m2, 1f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, MyStringId.GetOrCompute("Square"));
+            //MySimpleObjectDraw.DrawTransparentSphere(ref m2, 1f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, MyStringId.GetOrCompute("Square"));
             //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, _range, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
             // end shield draw
         }
 
         #endregion
-
+        /*
         #region Detect innersphere intersection
         private bool Detectin(IMyEntity ent)
         {
-            //var pos = _cblock.GetPosition();
-            //_worldMatrix3.Translation = pos;
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
@@ -453,12 +451,10 @@ namespace DefenseShields.Station
             return true;
         }
         #endregion
-
+        */
         #region Detect outter intersection
         private bool Detectout(IMyEntity ent)
         {
-            //var pos = _cblock.GetPosition();
-            //_worldMatrix3.Translation = pos;
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
