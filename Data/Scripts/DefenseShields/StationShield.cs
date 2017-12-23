@@ -49,7 +49,8 @@ namespace DefenseShields.Station
 
         private static Random _random = new Random();
         private MatrixD _worldMatrix;
-        private Vector3D _scale;
+        MatrixD _detectMatrix = MatrixD.Identity;
+        //private Vector3D _scale;
         private BoundingSphereD _sphereMin;
         private BoundingSphereD _sphereMax;
         private MyEntitySubpart _subpartRotor;
@@ -254,7 +255,7 @@ namespace DefenseShields.Station
                     temp4.Translation = temp3.PositionComp.LocalMatrix.Translation;
                     _matrixReflectorsOn.Add(temp4);
                 }
-                _scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f);
+                //_scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f);
             }
             catch (Exception ex)
             {
@@ -302,7 +303,7 @@ namespace DefenseShields.Station
                 _height = _range;
                 _depth = _range;
             }
-            _scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f); 
+            //_scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f); 
         }
         #endregion
 
@@ -410,17 +411,17 @@ namespace DefenseShields.Station
 
         public void ShowRange(float size)
         {
-            // Draw shield
-            MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Build new");
             Color colour;
             var relations = _tblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId);
             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
                 colour = Color.FromNonPremultiplied(16, 255 - _colourRand, 16 + _colourRand, 72);
             else
                 colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
-            MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
-            MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 300f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
-            // end shield draw
+            var matrix = MatrixD.Rescale(_detectMatrix, new Vector3D(_width, _height, _depth));
+            MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
+            //MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Build new");
+            //MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
+            //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 300f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
         }
 
         #endregion
@@ -428,16 +429,16 @@ namespace DefenseShields.Station
         #region Detect innersphere intersection
         private bool Detectin(IMyEntity ent)
         {
-            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float x = Vector3Extensions.Project(_detectMatrix.Forward, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_detectMatrix.Left, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_detectMatrix.Up, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
             float detect = (x * x) / (_width -13.3f * _width - 13.3f) + (y * y) / (_depth - 13.3f * _depth - 13.3f) + (z * z) / (_height - 13.3f * _height - 13.3f);
             if (detect > 1)
             {
-                Logging.WriteLine(String.Format("{0} - {1} in-t: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
+                if (detect >9) Logging.WriteLine(String.Format("{0} - {1} in-t: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
                 return false;
             }
-            Logging.WriteLine(String.Format("{0} - {1} in-f: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
+            //Logging.WriteLine(String.Format("{0} - {1} in-f: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
             return true;
         }
         #endregion
@@ -445,16 +446,16 @@ namespace DefenseShields.Station
         #region Detect outter intersection
         private bool Detectout(IMyEntity ent)
         {
-            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float x = Vector3Extensions.Project(_detectMatrix.Forward, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_detectMatrix.Left, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_detectMatrix.Up, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             if (detect > 1)
             {
-                Logging.WriteLine(String.Format("{0} - {1} out-t: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
+                if (detect > 9) Logging.WriteLine(String.Format("{0} - {1} out-t: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
                 return false;
             }
-            Logging.WriteLine(String.Format("{0} - {1} out-f: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
+            //Logging.WriteLine(String.Format("{0} - {1} out-f: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
             return true;
         }
         #endregion
@@ -463,11 +464,10 @@ namespace DefenseShields.Station
 
         public void WebEffects()
         {
-            var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             {
                 _inList.Clear();
                 _insideReady = false;
-                BoundingSphereD insphere = new BoundingSphereD(pos, _range - 13.3f);
+                BoundingSphereD insphere = new BoundingSphereD(_detectMatrix.Translation, _range - 13.3f);
                 _inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
                 foreach (var outent in _inList)
                     //MyAPIGateway.Parallel.ForEach(_inList, outent =>
@@ -482,7 +482,7 @@ namespace DefenseShields.Station
 
             }
 
-            BoundingSphereD websphere = new BoundingSphereD(pos, _range);
+            BoundingSphereD websphere = new BoundingSphereD(_detectMatrix.Translation, _range);
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
             foreach (var webent in webList)
                 //MyAPIGateway.Parallel.ForEach(webList, webent =>
@@ -543,8 +543,7 @@ namespace DefenseShields.Station
         public void ShotEffects()
         {
             HashSet<IMyEntity> shotHash = new HashSet<IMyEntity>();
-            var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
-            BoundingSphereD shotsphere = new BoundingSphereD(pos, _range);
+            BoundingSphereD shotsphere = new BoundingSphereD(_detectMatrix.Translation, _range);
             MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && ent is IMyMeteor && Detectout(ent)  || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo"));
 
             MyAPIGateway.Parallel.ForEach(shotHash, shotent =>
@@ -648,8 +647,7 @@ namespace DefenseShields.Station
         #region Grid effects
         public void GridEffects()
         {
-            var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
-            BoundingSphereD gridsphere = new BoundingSphereD(pos, _range);
+            BoundingSphereD gridsphere = new BoundingSphereD(_detectMatrix.Translation, _range);
             List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere);
             Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now, Count));
             MyAPIGateway.Parallel.ForEach(gridList, ent =>
