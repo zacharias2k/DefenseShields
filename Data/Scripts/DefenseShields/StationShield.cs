@@ -91,6 +91,7 @@ namespace DefenseShields.Station
             _oblock = Entity as IMyOreDetector; 
             _fblock = Entity as IMyFunctionalBlock;
             _tblock = Entity as IMyTerminalBlock;
+            _worldMatrix = Entity.WorldMatrix;
         }
         #endregion
 
