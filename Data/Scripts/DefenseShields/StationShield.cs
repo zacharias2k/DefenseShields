@@ -433,11 +433,11 @@ namespace DefenseShields.Station
         #region Detect innersphere intersection
         private bool Detectin(IMyEntity ent)
         {
-            var pos = _cblock.GetPosition();
-            _worldMatrix3.Translation = pos;
-            float x = Vector3Extensions.Project(_worldMatrix3.Forward, ent.GetPosition() - _worldMatrix3.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix3.Left, ent.GetPosition() - _worldMatrix3.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_worldMatrix3.Up, ent.GetPosition() - _worldMatrix3.Translation).AbsMax();
+            //var pos = _cblock.GetPosition();
+            //_worldMatrix3.Translation = pos;
+            float x = Vector3Extensions.Project(_worldMatrix2.Forward, ent.GetPosition() - _worldMatrix2.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_worldMatrix2.Left, ent.GetPosition() - _worldMatrix2.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_worldMatrix2.Up, ent.GetPosition() - _worldMatrix2.Translation).AbsMax();
             float detect = (x * x) / (_width -13.3f * _width - 13.3f) + (y * y) / (_depth - 13.3f * _depth - 13.3f) + (z * z) / (_height - 13.3f * _height - 13.3f);
             if (detect > 1)
             {
@@ -451,11 +451,11 @@ namespace DefenseShields.Station
         #region Detect outter intersection
         private bool Detectout(IMyEntity ent)
         {
-            var pos = _cblock.GetPosition();
-            _worldMatrix3.Translation = pos;
-            float x = Vector3Extensions.Project(_worldMatrix3.Forward, ent.GetPosition() - _worldMatrix3.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix3.Left, ent.GetPosition() - _worldMatrix3.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_worldMatrix3.Up, ent.GetPosition() - _worldMatrix3.Translation).AbsMax();
+            //var pos = _cblock.GetPosition();
+            //_worldMatrix3.Translation = pos;
+            float x = Vector3Extensions.Project(_worldMatrix2.Forward, ent.GetPosition() - _worldMatrix2.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_worldMatrix2.Left, ent.GetPosition() - _worldMatrix2.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_worldMatrix2.Up, ent.GetPosition() - _worldMatrix2.Translation).AbsMax();
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             if (detect > 1)
             {
