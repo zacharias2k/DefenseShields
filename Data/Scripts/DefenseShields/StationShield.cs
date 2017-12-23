@@ -48,7 +48,10 @@ namespace DefenseShields.Station
         private ushort _modId = 50099;
 
         private static Random _random = new Random();
-        private MatrixD _worldMatrix = MatrixD.Identity;
+        //private MatrixD _worldMatrix;
+        private MatrixD _worldMatrix;
+        private MatrixD _detectMatrix;
+        //private MatrixD _worldMatrix = MatrixD.Identity;
         private Vector3D _scale;
         private BoundingSphereD _sphereMin;
         private BoundingSphereD _sphereMax;
@@ -428,9 +431,9 @@ namespace DefenseShields.Station
         #region Detect innersphere intersection
         private bool Detectin(IMyEntity ent)
         {
-            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float x = Vector3Extensions.Project(_detectMatrix.Forward, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_detectMatrix.Left, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_detectMatrix.Up, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
             float detect = (x * x) / (_width -13.3f * _width - 13.3f) + (y * y) / (_depth - 13.3f * _depth - 13.3f) + (z * z) / (_height - 13.3f * _height - 13.3f);
             if (detect > 1)
             {
@@ -444,9 +447,9 @@ namespace DefenseShields.Station
         #region Detect outter intersection
         private bool Detectout(IMyEntity ent)
         {
-            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float x = Vector3Extensions.Project(_detectMatrix.Forward, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_detectMatrix.Left, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_detectMatrix.Up, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             if (detect > 1)
             {
@@ -766,80 +769,6 @@ namespace DefenseShields.Station
         }
     }
     #endregion
-
-    /*
-    #region Cube+subparts Class
-    public class Utils
-    {
-        //SPAWN METHOD
-        public static IMyEntity Spawn(string subtypeId, string name = "", bool isVisible = true, bool hasPhysics = false, bool isStatic = false, bool toSave = false, bool destructible = false, long ownerId = 0)
-        {
-            try
-            {
-                CubeGridBuilder.Name = name;
-                CubeGridBuilder.CubeBlocks[0].SubtypeName = subtypeId;
-                CubeGridBuilder.CreatePhysics = hasPhysics;
-                CubeGridBuilder.IsStatic = isStatic;
-                CubeGridBuilder.DestructibleBlocks = destructible;
-                IMyEntity ent = MyAPIGateway.Entities.CreateFromObjectBuilder(CubeGridBuilder);
-
-                ent.Flags &= ~EntityFlags.Save;
-                ent.Visible = isVisible;
-                MyAPIGateway.Entities.AddEntity(ent, true);
-
-                return ent;
-            }
-            catch (Exception ex)
-            {
-                Logging.WriteLine(String.Format("{0} - Exception in Spawn", DateTime.Now));
-                Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now, ex));
-                return null;
-            }
-        }
-
-        private static readonly SerializableBlockOrientation EntityOrientation = new SerializableBlockOrientation(Base6Directions.Direction.Forward, Base6Directions.Direction.Up);
-
-        //OBJECTBUILDERS
-        private static readonly MyObjectBuilder_CubeGrid CubeGridBuilder = new MyObjectBuilder_CubeGrid()
-        {
-            
-            EntityId = 0,
-            GridSizeEnum = MyCubeSize.Large,
-            IsStatic = true,
-            Skeleton = new List<BoneInfo>(),
-            LinearVelocity = Vector3.Zero,
-            AngularVelocity = Vector3.Zero,
-            ConveyorLines = new List<MyObjectBuilder_ConveyorLine>(),
-            BlockGroups = new List<MyObjectBuilder_BlockGroup>(),
-            Handbrake = false,
-            XMirroxPlane = null,
-            YMirroxPlane = null,
-            ZMirroxPlane = null,
-            PersistentFlags = MyPersistentEntityFlags2.InScene,
-            Name = "ArtificialCubeGrid",
-            DisplayName = "FieldGenerator",
-            CreatePhysics = false,
-            DestructibleBlocks = true,
-            PositionAndOrientation = new MyPositionAndOrientation(Vector3D.Zero, Vector3D.Forward, Vector3D.Up),
-
-            CubeBlocks = new List<MyObjectBuilder_CubeBlock>()
-                {
-                    new MyObjectBuilder_CubeBlock()
-                    {
-                        EntityId = 0,
-                        BlockOrientation = EntityOrientation,
-                        SubtypeName = "",
-                        Name = "Field",
-                        Min = Vector3I.Zero,
-                        Owner = 0,
-                        ShareMode = MyOwnershipShareModeEnum.None,
-                        DeformationRatio = 0,
-                    }
-                }
-        };
-    }
-    #endregion
-    */
 
     #region Session+protection Class
 
