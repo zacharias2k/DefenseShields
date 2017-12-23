@@ -26,7 +26,7 @@ using TExtensions = Sandbox.ModAPI.Interfaces.TerminalPropertyExtensions;
 
 namespace DefenseShields.Station
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OreDetector), false, new string[] { "TC_LargeShieldGenerator" })]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OreDetector), false, new string[] { "StationDefenseShield" })]
     class DefenseShields : MyGameLogicComponent
     {
         #region Setup
@@ -179,7 +179,7 @@ namespace DefenseShields.Station
                     if (_oblock.BlockDefinition.SubtypeId == "StationDefenseShield")
                     {
                         if (!_oblock.IsFunctional) return;
-                        BlockAnimation();
+                        //BlockAnimation();
 
                         _animInit = true;
                     }
