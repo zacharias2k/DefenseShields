@@ -95,6 +95,8 @@ namespace DefenseShields.Station
             _fblock = Entity as IMyFunctionalBlock;
             _tblock = Entity as IMyTerminalBlock;
             _detectMatrix = Entity.WorldMatrix;
+            _detectMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
+
         }
         #endregion
 
