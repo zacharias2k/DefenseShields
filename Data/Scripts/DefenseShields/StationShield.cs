@@ -490,7 +490,7 @@ namespace DefenseShields.Station
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                 if (webent == null) return;
                 if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
-                if (!Detectout(webent)) return;
+                if (webent is MyMeteor || !Detectout(webent)) return;
                 if (webent is IMyCharacter && Count == 14 || Count == 29 || Count == 44 || Count == 59)
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
