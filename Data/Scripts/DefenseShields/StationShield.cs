@@ -199,7 +199,7 @@ namespace DefenseShields.Station
             }
         }
         #endregion
-
+/*
         #region Block Animation
         public void BlockAnimation()
         {
@@ -266,7 +266,7 @@ namespace DefenseShields.Station
             }
         }
         #endregion
-
+*/
         #region Update Power+Range
         float GetRadius()
         {
