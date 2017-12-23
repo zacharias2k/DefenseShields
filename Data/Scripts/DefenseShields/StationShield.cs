@@ -487,7 +487,7 @@ namespace DefenseShields.Station
                 MyAPIGateway.Parallel.ForEach(webList, webent =>
                 {
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-                    //if (webent == null || !Detectout(webent)) return;
+                    if (webent == null || !Detectout(webent)) return;
                     if (webent == null) return;
 
                     if (webent is IMyCharacter)
@@ -529,7 +529,7 @@ namespace DefenseShields.Station
                 {
                     _shotwebbed = true;
                 }
-                //Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
+                Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent));
             //}
             });
         }
