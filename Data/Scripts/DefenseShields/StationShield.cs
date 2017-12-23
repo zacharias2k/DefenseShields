@@ -471,6 +471,7 @@ namespace DefenseShields.Station
                 _inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
                 MyAPIGateway.Parallel.ForEach(_inList, outent =>
                 {
+                    if (outent is IMyMeteor) return;
                     if (Detectin(outent))
                     {
                         if (!_inList.Contains(outent)) _inList.Add(outent);
