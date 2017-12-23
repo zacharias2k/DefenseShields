@@ -464,7 +464,7 @@ namespace DefenseShields.Station
 
         public void WebEffects()
         {
-            var pos = MyAPIGateway.Session.ControlledObject.Entity.GetPosition();
+            var pos = _cblock.GetPosition();
             _worldMatrix.Translation = pos;
             {
                 _inList.Clear();
@@ -545,7 +545,7 @@ namespace DefenseShields.Station
         public void ShotEffects()
         {
             HashSet<IMyEntity> shotHash = new HashSet<IMyEntity>();
-            var pos = MyAPIGateway.Session.ControlledObject.Entity.GetPosition();
+            var pos = _cblock.GetPosition();
             _worldMatrix.Translation = pos;
             BoundingSphereD shotsphere = new BoundingSphereD(pos, _range);
             MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && ent is IMyMeteor && Detectout(ent)  || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo"));
@@ -651,7 +651,7 @@ namespace DefenseShields.Station
         #region Grid effects
         public void GridEffects()
         {
-            var pos = MyAPIGateway.Session.ControlledObject.Entity.GetPosition();
+            var pos = _cblock.GetPosition();
             _worldMatrix.Translation = pos;
             BoundingSphereD gridsphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere);
