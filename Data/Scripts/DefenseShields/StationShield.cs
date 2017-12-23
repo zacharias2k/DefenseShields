@@ -48,11 +48,8 @@ namespace DefenseShields.Station
         private ushort _modId = 50099;
 
         private static Random _random = new Random();
-        //private MatrixD _worldMatrix;
-        //private MatrixD _worldMatrix;
-        private MatrixD _worldMatrix = MatrixD.Identity;
-        private MatrixD _animMatrix;
-        //private Vector3D _scale;
+        private MatrixD _worldMatrix;
+        private Vector3D _scale;
         private BoundingSphereD _sphereMin;
         private BoundingSphereD _sphereMax;
         private MyEntitySubpart _subpartRotor;
@@ -94,7 +91,6 @@ namespace DefenseShields.Station
             _oblock = Entity as IMyOreDetector; 
             _fblock = Entity as IMyFunctionalBlock;
             _tblock = Entity as IMyTerminalBlock;
-
         }
         #endregion
 
@@ -106,8 +102,8 @@ namespace DefenseShields.Station
 
                 if (_animInit)
                 {
-                    //_animMatrix = Entity.WorldMatrix;
-                    //_animMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
+                    //_worldMatrix = Entity.WorldMatrix;
+                    //_worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
                     //Animations
                     if (_fblock.Enabled && _fblock.IsFunctional && _cblock.IsWorking)
                     {
@@ -213,8 +209,8 @@ namespace DefenseShields.Station
                 _matrixReflectorsOff = new List<Matrix>();
                 _matrixReflectorsOn = new List<Matrix>();
 
-                //_animMatrix = Entity.WorldMatrix;
-                //_animMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
+                //_worldMatrix = Entity.WorldMatrix;
+                //_worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
 
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
 
@@ -258,7 +254,7 @@ namespace DefenseShields.Station
                     temp4.Translation = temp3.PositionComp.LocalMatrix.Translation;
                     _matrixReflectorsOn.Add(temp4);
                 }
-                //_scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f);
+                _scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f);
             }
             catch (Exception ex)
             {
@@ -306,7 +302,7 @@ namespace DefenseShields.Station
                 _height = _range;
                 _depth = _range;
             }
-            //_scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f); 
+            _scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f); 
         }
         #endregion
 
@@ -422,9 +418,8 @@ namespace DefenseShields.Station
                 colour = Color.FromNonPremultiplied(16, 255 - _colourRand, 16 + _colourRand, 72);
             else
                 colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
-            var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
-            //MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_detectMatrix.GetOrientation()), _detectMatrix.Translation, _scale);
-            MySimpleObjectDraw.DrawTransparentSphere(ref matrix, _range / 300f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
+            MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
+            MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 300f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
             // end shield draw
         }
 
@@ -439,7 +434,7 @@ namespace DefenseShields.Station
             float detect = (x * x) / (_width -13.3f * _width - 13.3f) + (y * y) / (_depth - 13.3f * _depth - 13.3f) + (z * z) / (_height - 13.3f * _height - 13.3f);
             if (detect > 1)
             {
-                Logging.WriteLine(String.Format("{0} - {1} beyond-i-boundary cords: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect));
+                if (detect > 8 || detect < 1) Logging.WriteLine(String.Format("{0} - {1} beyond-i-boundary cords: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect));
                 return false;
             }
             return true;
@@ -466,7 +461,7 @@ namespace DefenseShields.Station
 
         public void WebEffects()
         {
-            var pos = _oblock.CubeGrid.GridIntegerToWorld(_oblock.Position);
+            var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             {
                 _inList.Clear();
                 _insideReady = false;
@@ -546,7 +541,7 @@ namespace DefenseShields.Station
         public void ShotEffects()
         {
             HashSet<IMyEntity> shotHash = new HashSet<IMyEntity>();
-            var pos = _oblock.CubeGrid.GridIntegerToWorld(_oblock.Position);
+            var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             BoundingSphereD shotsphere = new BoundingSphereD(pos, _range);
             MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && ent is IMyMeteor && Detectout(ent)  || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo"));
 
@@ -651,7 +646,7 @@ namespace DefenseShields.Station
         #region Grid effects
         public void GridEffects()
         {
-            var pos = _oblock.CubeGrid.GridIntegerToWorld(_oblock.Position);
+            var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             BoundingSphereD gridsphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere);
             Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now, Count));
@@ -771,6 +766,80 @@ namespace DefenseShields.Station
         }
     }
     #endregion
+
+    /*
+    #region Cube+subparts Class
+    public class Utils
+    {
+        //SPAWN METHOD
+        public static IMyEntity Spawn(string subtypeId, string name = "", bool isVisible = true, bool hasPhysics = false, bool isStatic = false, bool toSave = false, bool destructible = false, long ownerId = 0)
+        {
+            try
+            {
+                CubeGridBuilder.Name = name;
+                CubeGridBuilder.CubeBlocks[0].SubtypeName = subtypeId;
+                CubeGridBuilder.CreatePhysics = hasPhysics;
+                CubeGridBuilder.IsStatic = isStatic;
+                CubeGridBuilder.DestructibleBlocks = destructible;
+                IMyEntity ent = MyAPIGateway.Entities.CreateFromObjectBuilder(CubeGridBuilder);
+
+                ent.Flags &= ~EntityFlags.Save;
+                ent.Visible = isVisible;
+                MyAPIGateway.Entities.AddEntity(ent, true);
+
+                return ent;
+            }
+            catch (Exception ex)
+            {
+                Logging.WriteLine(String.Format("{0} - Exception in Spawn", DateTime.Now));
+                Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now, ex));
+                return null;
+            }
+        }
+
+        private static readonly SerializableBlockOrientation EntityOrientation = new SerializableBlockOrientation(Base6Directions.Direction.Forward, Base6Directions.Direction.Up);
+
+        //OBJECTBUILDERS
+        private static readonly MyObjectBuilder_CubeGrid CubeGridBuilder = new MyObjectBuilder_CubeGrid()
+        {
+            
+            EntityId = 0,
+            GridSizeEnum = MyCubeSize.Large,
+            IsStatic = true,
+            Skeleton = new List<BoneInfo>(),
+            LinearVelocity = Vector3.Zero,
+            AngularVelocity = Vector3.Zero,
+            ConveyorLines = new List<MyObjectBuilder_ConveyorLine>(),
+            BlockGroups = new List<MyObjectBuilder_BlockGroup>(),
+            Handbrake = false,
+            XMirroxPlane = null,
+            YMirroxPlane = null,
+            ZMirroxPlane = null,
+            PersistentFlags = MyPersistentEntityFlags2.InScene,
+            Name = "ArtificialCubeGrid",
+            DisplayName = "FieldGenerator",
+            CreatePhysics = false,
+            DestructibleBlocks = true,
+            PositionAndOrientation = new MyPositionAndOrientation(Vector3D.Zero, Vector3D.Forward, Vector3D.Up),
+
+            CubeBlocks = new List<MyObjectBuilder_CubeBlock>()
+                {
+                    new MyObjectBuilder_CubeBlock()
+                    {
+                        EntityId = 0,
+                        BlockOrientation = EntityOrientation,
+                        SubtypeName = "",
+                        Name = "Field",
+                        Min = Vector3I.Zero,
+                        Owner = 0,
+                        ShareMode = MyOwnershipShareModeEnum.None,
+                        DeformationRatio = 0,
+                    }
+                }
+        };
+    }
+    #endregion
+    */
 
     #region Session+protection Class
 
