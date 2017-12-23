@@ -471,10 +471,10 @@ namespace DefenseShields.Station
                 foreach (var outent in _inList)
                     //MyAPIGateway.Parallel.ForEach(_inList, outent =>
                 {
-                    if (Detectin(outent))
-                    {
+                    //if (Detectin(outent))
+                    //{
                         if (!_inList.Contains(outent)) _inList.Add(outent);
-                    }
+                    //}
                 }
                 //});
                 _insideReady = true;
@@ -487,9 +487,10 @@ namespace DefenseShields.Station
                 MyAPIGateway.Parallel.ForEach(webList, webent =>
                 {
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-                if (webent == null || !Detectout(webent)) return;
+                    //if (webent == null || !Detectout(webent)) return;
+                    if (webent == null) return;
 
-                if (webent is IMyCharacter)
+                    if (webent is IMyCharacter)
                     if (Count == 14 || Count == 29 || Count == 44 || Count == 59)
                     {
                         var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
@@ -655,7 +656,9 @@ namespace DefenseShields.Station
             {
                 if (ent == null || _inList.Contains(ent)) return;
                 var grid = ent as IMyCubeGrid;
-                if (grid != null && _insideReady && Detectout(ent))
+                //if (grid != null && _insideReady && Detectout(ent))
+                if (!_insideReady) Logging.WriteLine(string.Format("!!!!!Alert!!!!! {0} - Inside is not ready! {1}", DateTime.Now, Count));
+                if (grid != null && _insideReady)
                 {
                     try
                     {
