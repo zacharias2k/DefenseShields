@@ -110,9 +110,9 @@ namespace DefenseShields.Station
                         //Color change for on =-=-=-=-
                         _subpartRotor.SetEmissiveParts("Emissive", Color.White, 1);
                         _time += 1;
-                        //Matrix temp1 = Matrix.CreateRotationY(0.1f * _time);
-                        //temp1.Translation = _subpartRotor.PositionComp.LocalMatrix.Translation;
-                        //_subpartRotor.PositionComp.LocalMatrix = temp1;
+                        Matrix temp1 = Matrix.CreateRotationY(0.1f * _time);
+                        temp1.Translation = _subpartRotor.PositionComp.LocalMatrix.Translation;
+                        _subpartRotor.PositionComp.LocalMatrix = temp1;
                         if (_animStep < 1f)
                         {
                             _animStep += 0.05f;
@@ -131,9 +131,9 @@ namespace DefenseShields.Station
                     {
                         if (i < 4)
                         {
-                            //_subpartsReflectors[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixReflectorsOff[i], _matrixReflectorsOn[i], _animStep);
+                            _subpartsReflectors[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixReflectorsOff[i], _matrixReflectorsOn[i], _animStep);
                         }
-                        //_subpartsArms[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixArmsOff[i], _matrixArmsOn[i], _animStep);
+                        _subpartsArms[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixArmsOff[i], _matrixArmsOn[i], _animStep);
                     }
                 }
                 if (Count % 3 == 0)
@@ -204,13 +204,13 @@ namespace DefenseShields.Station
             {
                 _animStep = 0f;
 
-                //_matrixArmsOff = new List<Matrix>();
-                //_matrixArmsOn = new List<Matrix>();
-                //_matrixReflectorsOff = new List<Matrix>();
-                //_matrixReflectorsOn = new List<Matrix>();
+                _matrixArmsOff = new List<Matrix>();
+                _matrixArmsOn = new List<Matrix>();
+                _matrixReflectorsOff = new List<Matrix>();
+                _matrixReflectorsOn = new List<Matrix>();
 
-                //_worldMatrix = Entity.WorldMatrix;
-                //_worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
+               // _worldMatrix = Entity.WorldMatrix;
+               // _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
 
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
 
@@ -218,41 +218,41 @@ namespace DefenseShields.Station
                 {
                     MyEntitySubpart temp1;
                     _subpartRotor.TryGetSubpart("ArmT" + i.ToString(), out temp1);
-                    //_matrixArmsOff.Add(temp1.PositionComp.LocalMatrix);
-                    //Matrix temp2 = temp1.PositionComp.LocalMatrix.GetOrientation();
+                    _matrixArmsOff.Add(temp1.PositionComp.LocalMatrix);
+                    Matrix temp2 = temp1.PositionComp.LocalMatrix.GetOrientation();
                     switch (i)
                     {
                         case 1:
                         case 5:
-                            //temp2 *= Matrix.CreateRotationZ(0.98f);
+                            temp2 *= Matrix.CreateRotationZ(0.98f);
                             break;
                         case 2:
                         case 6:
-                            //temp2 *= Matrix.CreateRotationX(-0.98f);
+                            temp2 *= Matrix.CreateRotationX(-0.98f);
                             break;
                         case 3:
                         case 7:
-                            //temp2 *= Matrix.CreateRotationZ(-0.98f);
+                            temp2 *= Matrix.CreateRotationZ(-0.98f);
                             break;
                         case 4:
                         case 8:
-                            //temp2 *= Matrix.CreateRotationX(0.98f); ;
+                            temp2 *= Matrix.CreateRotationX(0.98f); ;
                             break;
                     }
-                    //temp2.Translation = temp1.PositionComp.LocalMatrix.Translation;
-                    //_matrixArmsOn.Add(temp2);
-                    //_subpartsArms.Add(temp1);
+                    temp2.Translation = temp1.PositionComp.LocalMatrix.Translation;
+                    _matrixArmsOn.Add(temp2);
+                    _subpartsArms.Add(temp1);
                 }
 
                 for (int i = 0; i < 4; i++)
                 {
                     MyEntitySubpart temp3;
-                    //_subpartsArms[i].TryGetSubpart("Reflector", out temp3);
-                    //_subpartsReflectors.Add(temp3);
-                    //_matrixReflectorsOff.Add(temp3.PositionComp.LocalMatrix);
-                    //Matrix temp4 = temp3.PositionComp.LocalMatrix * Matrix.CreateFromAxisAngle(temp3.PositionComp.LocalMatrix.Forward, -(float)Math.PI / 3);
-                   // temp4.Translation = temp3.PositionComp.LocalMatrix.Translation;
-                    //_matrixReflectorsOn.Add(temp4);
+                    _subpartsArms[i].TryGetSubpart("Reflector", out temp3);
+                    _subpartsReflectors.Add(temp3);
+                    _matrixReflectorsOff.Add(temp3.PositionComp.LocalMatrix);
+                    Matrix temp4 = temp3.PositionComp.LocalMatrix * Matrix.CreateFromAxisAngle(temp3.PositionComp.LocalMatrix.Forward, -(float)Math.PI / 3);
+                    temp4.Translation = temp3.PositionComp.LocalMatrix.Translation;
+                    _matrixReflectorsOn.Add(temp4);
                 }
                 _scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f);
             }
@@ -418,8 +418,8 @@ namespace DefenseShields.Station
                 colour = Color.FromNonPremultiplied(16, 255 - _colourRand, 16 + _colourRand, 72);
             else
                 colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
-            //MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
-            //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 300f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
+            MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
+            MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 300f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
             // end shield draw
         }
 
