@@ -49,7 +49,7 @@ namespace DefenseShields.Station
 
         private static Random _random = new Random();
         private MatrixD _worldMatrix;
-        //MatrixD _detectMatrix = MatrixD.Identity;
+        MatrixD _detectMatrix = MatrixD.Identity;
         //private Vector3D _scale;
         private BoundingSphereD _sphereMin;
         private BoundingSphereD _sphereMax;
@@ -105,8 +105,8 @@ namespace DefenseShields.Station
 
                 if (_animInit)
                 {
-                    _worldMatrix = Entity.WorldMatrix;
-                    _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
+                    //_worldMatrix = Entity.WorldMatrix;
+                    //_worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
                     //Animations
                     if (_fblock.Enabled && _fblock.IsFunctional && _cblock.IsWorking)
                     {
@@ -212,8 +212,8 @@ namespace DefenseShields.Station
                 _matrixReflectorsOff = new List<Matrix>();
                 _matrixReflectorsOn = new List<Matrix>();
 
-                _worldMatrix = Entity.WorldMatrix;
-                _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
+                //_worldMatrix = Entity.WorldMatrix;
+                //_worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
 
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
 
@@ -419,7 +419,8 @@ namespace DefenseShields.Station
                 colour = Color.FromNonPremultiplied(16, 255 - _colourRand, 16 + _colourRand, 72);
             else
                 colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
-            var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
+            _detectMatrix = Entity.WorldMatrix;
+            var matrix = MatrixD.Rescale(_detectMatrix, new Vector3D(_width, _height, _depth));
             MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
             //MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Build new");
             //MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
@@ -431,9 +432,9 @@ namespace DefenseShields.Station
         #region Detect innersphere intersection
         private bool Detectin(IMyEntity ent)
         {
-            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float x = Vector3Extensions.Project(_detectMatrix.Forward, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_detectMatrix.Left, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_detectMatrix.Up, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
             float detect = (x * x) / (_width -13.3f * _width - 13.3f) + (y * y) / (_depth - 13.3f * _depth - 13.3f) + (z * z) / (_height - 13.3f * _height - 13.3f);
             if (detect < 1)
             {
