@@ -518,6 +518,7 @@ namespace DefenseShields.Station
                         if (Detectgridedge(grid, abs))
                             if (!_inList.Contains(outent))
                             {
+                                Logging.WriteLine(String.Format("{0} - {1} added to inside sphere: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, Count));
                                 _inList.Add(outent);
                                 return;
                             }
