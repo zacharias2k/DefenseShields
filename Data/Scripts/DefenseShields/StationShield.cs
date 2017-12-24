@@ -502,7 +502,6 @@ namespace DefenseShields.Station
 
         public void WebEffects()
         {
-            Logging.WriteLine(String.Format("{0} - begin Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             {
                 _inList.Clear();
@@ -516,6 +515,7 @@ namespace DefenseShields.Station
                     {
                         var grid = outent as IMyCubeGrid;
                         if (grid == _tblock.CubeGrid) return;
+                        Logging.WriteLine(String.Format("{0} - begin Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                         double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - insphere.Center) * 2);
                         if (Detectgridedge(grid, abs))
                             if (!_inList.Contains(outent))
