@@ -420,10 +420,9 @@ namespace DefenseShields.Station
             //var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
             //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
             _scale = new Vector3(_depth, _height, _width);
-            MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Build new");
+            MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Square");
             MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
-            //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
-            MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, null, RangeGridResourceId);
+            MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
         }
 
         #endregion
