@@ -560,6 +560,7 @@ namespace DefenseShields.Station
                 }
                 if (webent is IMyCharacter) return;
                 if (_inList.Contains(webent)) return;
+                Logging.WriteLine(String.Format("{0} - Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                 var grid = webent as IMyCubeGrid;
                 if (grid == _tblock.CubeGrid) return;
                 Logging.WriteLine(String.Format("{0} - Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
