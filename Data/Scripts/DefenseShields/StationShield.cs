@@ -521,11 +521,17 @@ namespace DefenseShields.Station
                 var grid = webent as IMyCubeGrid;
                 if (grid != null && !_gridwebbed && Detectedge(grid))
                 {
+                    Logging.WriteLine(String.Format("{0} - {1} found grid: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, Count));
                     List<long> owners = grid.BigOwners;
                     if (owners.Count > 0)
                     {
                         var relations = _tblock.GetUserRelationToOwner(0);
-                        if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
+                        if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
+                            relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
+                        {
+                            Logging.WriteLine(String.Format("{0} - {1} friendly grid: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, Count));
+                            return;
+                        }
                     }
                     Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.DisplayName));
                     _gridwebbed = true;
