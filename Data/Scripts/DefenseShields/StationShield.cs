@@ -45,7 +45,7 @@ namespace DefenseShields.Station
         private float _inDepth;
         private float _inRange;
         private int _time;
-        public int Count = 60;
+        public int Count = -1;
         private int _colourRand = 32;
         private int _playertime;
         private bool _playerwebbed;
@@ -145,6 +145,7 @@ namespace DefenseShields.Station
                         _subpartsArms[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixArmsOff[i], _matrixArmsOn[i], _animStep);
                     }
                 }
+                if (Count++ == 59) Count = 0;
                 if (Count % 3 == 0)
                 {
                     _colourRand += (16 - _random.Next(1, 32));
@@ -157,7 +158,6 @@ namespace DefenseShields.Station
                 if (_shotwebbed) MyAPIGateway.Parallel.Do(ShotEffects);
                 if (_gridwebbed) MyAPIGateway.Parallel.Do(GridEffects);
                 if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
-                if (Count++ == 59 || Count == 299) Count = 0;
             }
             catch (Exception ex)
             {
@@ -298,6 +298,7 @@ namespace DefenseShields.Station
             stringBuilder.Append("Required Power: " + shield.CalcRequiredPower().ToString("0.00") + "MW");
 
             _range = GetRadius();
+            Logging.WriteLine(String.Format("{0} - Range set to {1}", DateTime.Now, _range));
             if (Ellipsoid.Getter(block).Equals(true))
             {
                 _width = _range * 0.5f;
@@ -422,7 +423,9 @@ namespace DefenseShields.Station
                 Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now, ex));
             }
         }
+        #endregion
 
+        #region Sphere Draw+RanageSet
         public void ShowRange(float size)
         {
             Color colour;
@@ -479,9 +482,9 @@ namespace DefenseShields.Station
         #region Detect grid edge intersection
         private bool Detectgridedge(IMyCubeGrid grid, double abs)
         {
-            float x = Vector3Extensions.Project(_worldMatrix.Forward, grid.GetPosition() - _worldMatrix.Translation).AbsMin();
-            float y = Vector3Extensions.Project(_worldMatrix.Left, grid.GetPosition() - _worldMatrix.Translation).AbsMin();
-            float z = Vector3Extensions.Project(_worldMatrix.Up, grid.GetPosition() - _worldMatrix.Translation).AbsMin();
+            float x = Vector3Extensions.Project(_worldMatrix.Forward, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_worldMatrix.Left, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_worldMatrix.Up, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
             //float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             if (detect <= 1)
