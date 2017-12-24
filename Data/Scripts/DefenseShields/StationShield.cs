@@ -681,6 +681,7 @@ namespace DefenseShields.Station
                         //long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId;
                         //var gridpos = grid.GetPosition();
                         //MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
+                        /*
                         List<IMySlimBlock> victimList = new List<IMySlimBlock>();
                         grid.GetBlocks(victimList);
                         foreach (var block in victimList)
@@ -690,8 +691,9 @@ namespace DefenseShields.Station
                                 victim.DoDamage(99999, MyDamageType.Fire, false);
                             }
                             catch (Exception ex) { }
+                            */
                         //if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long)dude, -100);
-                        //grid.Delete();
+                        grid.Delete();
                     }
                     catch (Exception ex)
                     {
