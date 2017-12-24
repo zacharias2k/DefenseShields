@@ -503,10 +503,10 @@ namespace DefenseShields.Station
                 {
                     //if (outent is MyMeteor) return;
                     if (outent is IMyMeteor || outent.ToString().Contains("MyMeteor")) return;
-                    if (Detectin(outent))
-                    {
+                    //if (Detectin(outent))
+                    //{
                         if (!_inList.Contains(outent)) _inList.Add(outent);
-                    }
+                    //}
                 });
                 _insideReady = true;
             }
