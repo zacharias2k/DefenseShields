@@ -662,7 +662,7 @@ namespace DefenseShields.Station
             {
                 if (ent == null || _inList.Contains(ent)) return;
                 var grid = ent as IMyCubeGrid;
-                if (grid != null && _insideReady && Detectedge(ent))
+                if (grid != null && _insideReady && !Detectedge(ent))
                 {
                     try
                     {
