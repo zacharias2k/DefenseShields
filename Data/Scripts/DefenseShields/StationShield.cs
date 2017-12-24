@@ -491,9 +491,13 @@ namespace DefenseShields.Station
                 _insideReady = true;
             }
 
+            /*BoundingSphereD websphere = new BoundingSphereD(_worldMatrix.Translation, _range);
+            List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);*/
+            HashSet<IMyEntity> webHash = new HashSet<IMyEntity>();
             BoundingSphereD websphere = new BoundingSphereD(_worldMatrix.Translation, _range);
-            List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
-            MyAPIGateway.Parallel.ForEach(webList, webent =>
+            MyAPIGateway.Entities.GetEntities(webHash, ent => websphere.Intersects(ent.WorldAABB) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock) && !(ent is IMyFloatingObject) 
+            && !(ent is IMyEngineerToolBase) && ent != _tblock.CubeGrid && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag));
+            MyAPIGateway.Parallel.ForEach(webHash, webent =>
                 {
 
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
@@ -513,14 +517,6 @@ namespace DefenseShields.Station
                 }
                 if (webent is IMyCharacter) return;
                 if (_inList.Contains(webent)) return;
-                if (webent == MyAPIGateway.Entities.GetIntersectionWithSphere(ref websphere))
-                {
-                    Logging.WriteLine(String.Format("{0} - {1} true {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
-                }
-                else
-                {
-                    Logging.WriteLine(String.Format("{0} - {1} false {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
-                }
                 Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
                 var grid = webent as IMyCubeGrid;
                 if (grid != null && !_gridwebbed && Detectedge(grid))
