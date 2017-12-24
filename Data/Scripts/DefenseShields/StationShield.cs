@@ -510,9 +510,9 @@ namespace DefenseShields.Station
             MyAPIGateway.Parallel.ForEach(_inList, outent =>
             {
                 if (outent is IMyMeteor || outent.ToString().Contains("MyMeteor")) return;
-                if (outent is IMyCubeGrid)
+                var grid = (IMyCubeGrid) outent;
+                if (grid != null)
                 {
-                    var grid = (IMyCubeGrid) outent;
                     if (grid == _tblock.CubeGrid) return;
                     double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - insphere.Center) * 2);
                     if (Detectgridedge(grid, abs))
