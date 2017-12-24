@@ -519,7 +519,7 @@ namespace DefenseShields.Station
                 if (_inList.Contains(webent)) return;
                 Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
                 var grid = webent as IMyCubeGrid;
-                if (grid != null && !_gridwebbed && Detectedge(grid))
+                if (grid != null && !_gridwebbed && !Detectedge(grid))
                 {
                     Logging.WriteLine(String.Format("{0} - {1} found grid: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, Count));
                     List<long> owners = grid.BigOwners;
