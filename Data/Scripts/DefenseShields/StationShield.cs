@@ -514,6 +514,7 @@ namespace DefenseShields.Station
                     if (outent is IMyCubeGrid)
                     {
                         var grid = outent as IMyCubeGrid;
+                        if (grid == _tblock.CubeGrid) return;
                         double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - insphere.Center) * 2);
                         if (Detectgridedge(grid, abs))
                             if (!_inList.Contains(outent))
@@ -540,7 +541,7 @@ namespace DefenseShields.Station
             MyAPIGateway.Entities.GetEntities(webHash, ent => websphere.Intersects(ent.WorldAABB) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock) && !(ent is IMyFloatingObject) 
             && !(ent is IMyEngineerToolBase) && ent != _tblock.CubeGrid && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag));*/
             MyAPIGateway.Parallel.ForEach(webList, webent =>
-                {
+            {
 
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
@@ -561,30 +562,30 @@ namespace DefenseShields.Station
                 if (_inList.Contains(webent)) return;
                 Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
                 var grid = webent as IMyCubeGrid;
-                    if (grid != null)
+                if (grid == _tblock.CubeGrid) return;
+                if (grid != null)
+                {
+                    //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - websphere.Center) * 2);
+                    double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - websphere.Center) * 2);
+                    if (Detectgridedge(grid, abs))
                     {
-                        //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - websphere.Center) * 2);
-                        double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - websphere.Center) * 2);
-                        if (Detectgridedge(grid, abs))
+                        Logging.WriteLine(String.Format("{0} - {1} found grid: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
+                        List<long> owners = grid.BigOwners;
+                        if (owners.Count > 0)
                         {
-                            Logging.WriteLine(String.Format("{0} - {1} found grid: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
-                            List<long> owners = grid.BigOwners;
-                            if (owners.Count > 0)
+                            var relations = _tblock.GetUserRelationToOwner(0);
+                            if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
                             {
-                                var relations = _tblock.GetUserRelationToOwner(0);
-                                if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
-                                    relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
-                                {
-                                    Logging.WriteLine(String.Format("{0} - {1} friendly grid: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
-                                    return;
-                                }
+                                Logging.WriteLine(String.Format("{0} - {1} friendly grid: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
+                                return;
                             }
+                        }
                             Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName));
                             _gridwebbed = true;
                             return;
-                        }
                     }
-                    if (_shotwebbed) return;
+                }
+                if (_shotwebbed) return;
                 if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo")) //&& Detectedge(webent))
                 {
                     _shotwebbed = true;
