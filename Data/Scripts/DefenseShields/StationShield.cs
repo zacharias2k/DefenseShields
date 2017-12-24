@@ -520,7 +520,7 @@ namespace DefenseShields.Station
                         Logging.WriteLine(String.Format("{0} - begin Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                         if (_inList.Contains(grid)) return;
                         Logging.WriteLine(String.Format("{0} - {1} added to inside sphere: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
-                        _inList.Add(grid);
+                        //_inList.Add(grid);
                         return;
                     }
                     return;
