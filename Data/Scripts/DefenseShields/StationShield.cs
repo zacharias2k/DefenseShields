@@ -491,13 +491,13 @@ namespace DefenseShields.Station
                 _insideReady = true;
             }
 
-            BoundingSphereD websphere = new BoundingSphereD(_worldMatrix.Translation, _range);
-            List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
-            /*HashSet<IMyEntity> webHash = new HashSet<IMyEntity>();
+            /*BoundingSphereD websphere = new BoundingSphereD(_worldMatrix.Translation, _range);
+            List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);*/
+            HashSet<IMyEntity> webHash = new HashSet<IMyEntity>();
             BoundingSphereD websphere = new BoundingSphereD(_worldMatrix.Translation, _range);
             MyAPIGateway.Entities.GetEntities(webHash, ent => websphere.Intersects(ent.WorldAABB) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock) && !(ent is IMyFloatingObject) 
-            && !(ent is IMyEngineerToolBase) && ent != _tblock.CubeGrid && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag)); */
-            MyAPIGateway.Parallel.ForEach(webList, webent =>
+            && !(ent is IMyEngineerToolBase) && ent != _tblock.CubeGrid && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag));
+            MyAPIGateway.Parallel.ForEach(webHash, webent =>
                 {
 
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
@@ -651,14 +651,14 @@ namespace DefenseShields.Station
         #region Grid effects
         public void GridEffects()
         {
-            BoundingSphereD gridsphere = new BoundingSphereD(_worldMatrix.Translation, _range);
-            List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere); 
-            /*HashSet<IMyEntity> gridHash = new HashSet<IMyEntity>();
+            /*BoundingSphereD gridsphere = new BoundingSphereD(_worldMatrix.Translation, _range);
+            List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere); */
+            HashSet<IMyEntity> gridHash = new HashSet<IMyEntity>();
             BoundingSphereD websphere = new BoundingSphereD(_worldMatrix.Translation, _range);
             MyAPIGateway.Entities.GetEntities(gridHash, ent => websphere.Intersects(ent.WorldAABB) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock) && !(ent is IMyFloatingObject)
             && !(ent is IMyEngineerToolBase) && ent != _tblock.CubeGrid && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag));
-            Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now, Count)); */
-            MyAPIGateway.Parallel.ForEach(gridList, ent =>
+            Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now, Count));
+            MyAPIGateway.Parallel.ForEach(gridHash, ent =>
             {
                 if (ent == null || _inList.Contains(ent)) return;
                 var grid = ent as IMyCubeGrid;
