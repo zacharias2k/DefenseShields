@@ -699,11 +699,10 @@ namespace DefenseShields.Station
                     {
                         try
                         {
-                            if (_inList.Count == 0) Logging.WriteLine(string.Format("!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, Count));
+                            if (_inList.Count == 0) Logging.WriteLine(string.Format("!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
 
-                            Logging.WriteLine(string.Format("{0} - passing grid - Name: {1} in loop {2}", DateTime.Now, ent.DisplayName, Count));
                             if (grid == _tblock.CubeGrid) return;
-                            Logging.WriteLine(string.Format("{0} - passing grid - CustomName: {1} in loop {2}", DateTime.Now, grid.CustomName, Count));
+                            Logging.WriteLine(string.Format("{0} - passing grid - CustomName: {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
                             List<long> owners = grid.BigOwners;
                             if (owners.Count > 0)
                             {
@@ -714,12 +713,12 @@ namespace DefenseShields.Station
                             //var gridpos = grid.GetPosition();
                             //MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
                             //if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long)dude, -100);
-                            Logging.WriteLine(string.Format("{0} - deleting grid {1} in loop {2}", DateTime.Now,grid.CustomName, Count));
+                            Logging.WriteLine(string.Format("{0} - deleting grid {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
                             grid.Delete();
                         }
                         catch (Exception ex)
                         {
-                            Logging.WriteLine(string.Format("{0} - Exception in gridEffects", DateTime.Now));
+                            Logging.WriteLine(string.Format("{0} - Exception in gridEffects", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
                             Logging.WriteLine(string.Format("{0} - {1}", DateTime.Now, ex));
                         }
                     }
