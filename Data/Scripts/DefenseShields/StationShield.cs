@@ -490,8 +490,8 @@ namespace DefenseShields.Station
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                 if (webent == null) return;
                 if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
-                if (webent is IMyMeteor || !Detectout(webent)) return;
-                if (webent is IMyCharacter && Count == 14 || Count == 29 || Count == 44 || Count == 59)
+                if (webent is IMyMeteor) return;
+                if (webent is IMyCharacter && (Count == 14 || Count == 29 || Count == 44 || Count == 59) && Detectout(webent))
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
                     var relationship = _tblock.GetUserRelationToOwner(dude);
@@ -502,7 +502,8 @@ namespace DefenseShields.Station
                     }
                     return;
                 }
-                if (webent is IMyCharacter || _inList.Contains(webent)) return;
+                if (webent is IMyCharacter) return;
+                if (_inList.Contains(webent)) return;
                 Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
                 var grid = webent as IMyCubeGrid;
                 if (grid != null && !_gridwebbed && Detectout(webent))
@@ -518,7 +519,7 @@ namespace DefenseShields.Station
                     return;
                 }
                 if (_shotwebbed) return;
-                if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
+                if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo") && Detectout(webent))
                 {
                     _shotwebbed = true;
                 }
