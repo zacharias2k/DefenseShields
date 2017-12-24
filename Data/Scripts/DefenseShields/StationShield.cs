@@ -668,9 +668,9 @@ namespace DefenseShields.Station
                     {
                         if (_inList.Count == 0) Logging.WriteLine(string.Format("!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now, Count));
 
-                        Logging.WriteLine(string.Format("{0} - passing grid - Name: {1}", DateTime.Now, ent.DisplayName));
+                        Logging.WriteLine(string.Format("{0} - passing grid - Name: {1} in loop {2}", DateTime.Now, ent.DisplayName, Count));
                         if (grid == _tblock.CubeGrid) return;
-                        Logging.WriteLine(string.Format("{0} - passing grid - CustomName: {1}", DateTime.Now, grid.CustomName));
+                        Logging.WriteLine(string.Format("{0} - passing grid - CustomName: {1} in loop {2}", DateTime.Now, grid.CustomName, Count));
                         List<long> owners = grid.BigOwners;
                         if (owners.Count > 0)
                         {
@@ -693,6 +693,7 @@ namespace DefenseShields.Station
                             catch (Exception ex) { }
                             */
                         //if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long)dude, -100);
+                        Logging.WriteLine(string.Format("{0} - deleting grid: {1} in loop {2}", DateTime.Now, grid.CustomName, Count));
                         grid.Delete();
                     }
                     catch (Exception ex)
