@@ -501,7 +501,7 @@ namespace DefenseShields.Station
                     }
                     return;
                 }
-                if (webent is IMyCharacter) return;
+                if (webent is IMyCharacter || webent is IMyEngineerToolBase) return;
                 if (_inList.Contains(webent)) return;
                 Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
                 var grid = webent as IMyCubeGrid;
