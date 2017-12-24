@@ -44,6 +44,7 @@ namespace DefenseShields.Station
         private float _inHeight;
         private float _inDepth;
         private float _inRange;
+        private readonly float _inOutSpace = 15f;
         private int _time;
         public int Count = -1;
         private int _colourRand = 32;
@@ -304,20 +305,20 @@ namespace DefenseShields.Station
                 _width = _range * 0.5f;
                 _height = _range * 0.35f;
                 _depth = _range;
-                _inDepth = _depth - 13.3f;
-                _inHeight = _height - 13.3f;
-                _inWidth = _width - 13.3f;
-                _inRange = _range - 13.3f;
+                _inDepth = _depth - _inOutSpace;
+                _inHeight = _height - _inOutSpace;
+                _inWidth = _width - _inOutSpace;
+                _inRange = _range - _inOutSpace;
             }
             else
             {
                 _width = _range;
                 _height = _range;
                 _depth = _range;
-                _inDepth = _depth - 13.3f;
-                _inHeight = _height - 13.3f;
-                _inWidth = _width - 13.3f;
-                _inRange = _range - 13.3f;
+                _inDepth = _depth - _inOutSpace;
+                _inHeight = _height - _inOutSpace;
+                _inWidth = _width - _inOutSpace;
+                _inRange = _range - _inOutSpace;
             }
         }
         #endregion
@@ -436,8 +437,8 @@ namespace DefenseShields.Station
                 colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
             //var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
             //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
-            _edgeVectors = new Vector3(_depth + 10f, _height + 10f, _width + 10f);
-            _inVectors = new Vector3(_inDepth + 10f, _inHeight + 10f, _inWidth + 10f);
+            _edgeVectors = new Vector3(_depth + _inOutSpace, _height + _inOutSpace, _width + _inOutSpace);
+            _inVectors = new Vector3(_inDepth + _inOutSpace, _inHeight + _inOutSpace, _inWidth + _inOutSpace);
             MatrixD edgeMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _edgeVectors);
             MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, null, MyStringId.GetOrCompute("Build new"), 0.25f, -1);
             MatrixD inMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _inVectors);
