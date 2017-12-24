@@ -518,7 +518,7 @@ namespace DefenseShields.Station
                         if (Detectgridedge(grid, abs))
                             if (!_inList.Contains(outent))
                             {
-                                Logging.WriteLine(String.Format("{0} - {1} added to inside sphere: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, Count));
+                                Logging.WriteLine(String.Format("{0} - {1} added to inside sphere: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
                                 _inList.Add(outent);
                                 return;
                             }
@@ -567,7 +567,7 @@ namespace DefenseShields.Station
                         double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - websphere.Center) * 2);
                         if (Detectgridedge(grid, abs))
                         {
-                            Logging.WriteLine(String.Format("{0} - {1} found grid: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, Count));
+                            Logging.WriteLine(String.Format("{0} - {1} found grid: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
                             List<long> owners = grid.BigOwners;
                             if (owners.Count > 0)
                             {
@@ -575,11 +575,11 @@ namespace DefenseShields.Station
                                 if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
                                     relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
                                 {
-                                    Logging.WriteLine(String.Format("{0} - {1} friendly grid: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, Count));
+                                    Logging.WriteLine(String.Format("{0} - {1} friendly grid: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
                                     return;
                                 }
                             }
-                            Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.DisplayName));
+                            Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName));
                             _gridwebbed = true;
                             return;
                         }
