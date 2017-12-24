@@ -514,15 +514,13 @@ namespace DefenseShields.Station
                 {
                     var grid = outent as IMyCubeGrid;
                     if (grid == _tblock.CubeGrid) return;
-                    Logging.WriteLine(String.Format("{0} - begin Count: {1}",
-                        DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
+                    Logging.WriteLine(String.Format("{0} - begin Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                     double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - insphere.Center) * 2);
                     if (Detectgridedge(grid, abs))
-                        if (!_inList.Contains(outent))
+                        if (!_inList.Contains(grid))
                         {
-                            Logging.WriteLine(String.Format("{0} - {1} added to inside sphere: {2}",
-                                DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
-                            _inList.Add(outent);
+                            Logging.WriteLine(String.Format("{0} - {1} added to inside sphere: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
+                            _inList.Add(grid);
                             return;
                         }
                         else return;
