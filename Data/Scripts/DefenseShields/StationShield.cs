@@ -502,16 +502,15 @@ namespace DefenseShields.Station
             {
                 _inList.Clear();
                 _insideReady = false;
-                BoundingSphereD insphere = new BoundingSphereD(pos, _inRange);
+                BoundingSphereD insphere = new BoundingSphereD(pos, _inRange * 0.5f);
                 _inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
                 MyAPIGateway.Parallel.ForEach(_inList, outent =>
                 {
-                    //if (outent is MyMeteor) return;
                     if (outent is IMyMeteor || outent.ToString().Contains("MyMeteor")) return;
-                    //if (Detectin(outent))
-                    //{
-                        //if (!_inList.Contains(outent)) _inList.Add(outent);
-                    //}
+                    if (Detectin(outent))
+                    {
+                        if (!_inList.Contains(outent)) _inList.Add(outent);
+                    }
                 });
                 _insideReady = true;
             }
@@ -529,7 +528,7 @@ namespace DefenseShields.Station
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
                 if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
                 if (webent is IMyMeteor) return;
-                if (webent is IMyCharacter && (Count == 14 || Count == 29 || Count == 44 || Count == 59)) //&& Detectedge(webent))
+                if (webent is IMyCharacter && (Count == 14 || Count == 29 || Count == 44 || Count == 59) && Detectedge(webent))
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
                     var relationship = _tblock.GetUserRelationToOwner(dude);
