@@ -36,7 +36,10 @@ namespace DefenseShields.Station
         private float _range =50f;
         private float _width = 50f;
         private float _height = 50f;
-        private float _depth = 50f; 
+        private float _depth = 50f;
+        private float _inWidth = 36.7f;
+        private float _inHeight = 36.7f;
+        private float _inDepth = 36.7f;
         private int _time;
         public int Count = 60;
         private int _colourRand = 32;
@@ -50,7 +53,8 @@ namespace DefenseShields.Station
         private static Random _random = new Random();
         private MatrixD _worldMatrix;
         //MatrixD _detectMatrix = MatrixD.Identity;
-        private Vector3D _scale;
+        private Vector3D _edgeVectors;
+        private Vector3D _inVectors;
         private BoundingSphereD _sphereMin;
         private BoundingSphereD _sphereMax;
         private MyEntitySubpart _subpartRotor;
@@ -92,8 +96,6 @@ namespace DefenseShields.Station
             _oblock = Entity as IMyOreDetector; 
             _fblock = Entity as IMyFunctionalBlock;
             _tblock = Entity as IMyTerminalBlock;
-
-            //_detectMatrix = Entity.WorldMatrix;
         }
         #endregion
 
@@ -419,9 +421,15 @@ namespace DefenseShields.Station
                 colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
             //var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
             //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
-            _scale = new Vector3(_depth, _height, _width);
-            MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
-            MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, null, MyStringId.GetOrCompute("Build new"), 0.25f, -1);
+            _edgeVectors = new Vector3(_depth, _height, _width);
+            _inDepth = _depth - 13.3f;
+            _inHeight = _height - 13.3f;
+            _inWidth = _width - 13.3f;
+            _inVectors = new Vector3(_inDepth, _inHeight, _inWidth);
+            MatrixD edgeMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _edgeVectors);
+            MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, null, MyStringId.GetOrCompute("Build new"), 0.25f, -1);
+            MatrixD inMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _inVectors);
+            MySimpleObjectDraw.DrawTransparentSphere(ref inMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, null, MyStringId.GetOrCompute("Build new"), 0.25f, -1);
         }
 
         #endregion
@@ -443,8 +451,8 @@ namespace DefenseShields.Station
         }
         #endregion
 
-        #region Detect outter intersection
-        private bool Detectout(IMyEntity ent)
+        #region Detect edge intersection
+        private bool Detectedge(IMyEntity ent)
         {
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
@@ -452,10 +460,10 @@ namespace DefenseShields.Station
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             if (detect < 1)
             {
-                Logging.WriteLine(String.Format("{0} - {1} out-t: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
+                Logging.WriteLine(String.Format("{0} - {1} edge-t: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
                 return true;
             }
-            //Logging.WriteLine(String.Format("{0} - {1} out-f: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
+            //Logging.WriteLine(String.Format("{0} - {1} edge-f: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
             return false;
         }
         #endregion
@@ -489,7 +497,7 @@ namespace DefenseShields.Station
                 if (webent == null) return;
                 if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
                 if (webent is IMyMeteor) return;
-                if (webent is IMyCharacter && (Count == 14 || Count == 29 || Count == 44 || Count == 59) && Detectout(webent))
+                if (webent is IMyCharacter && (Count == 14 || Count == 29 || Count == 44 || Count == 59) && Detectedge(webent))
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
                     var relationship = _tblock.GetUserRelationToOwner(dude);
@@ -504,7 +512,7 @@ namespace DefenseShields.Station
                 if (_inList.Contains(webent)) return;
                 Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
                 var grid = webent as IMyCubeGrid;
-                if (grid != null && !_gridwebbed && Detectout(webent))
+                if (grid != null && !_gridwebbed && Detectedge(webent))
                 {
                     List<long> owners = grid.BigOwners;
                     if (owners.Count > 0)
@@ -517,7 +525,7 @@ namespace DefenseShields.Station
                     return;
                 }
                 if (_shotwebbed) return;
-                if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo") && Detectout(webent))
+                if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo") && Detectedge(webent))
                 {
                     _shotwebbed = true;
                 }
@@ -536,7 +544,7 @@ namespace DefenseShields.Station
 
             MyAPIGateway.Parallel.ForEach(shotHash, shotent =>
             {
-                if (shotent == null || !Detectout(shotent)) return;
+                if (shotent == null || !Detectedge(shotent)) return;
                 try
                 {
                     Logging.WriteLine(String.Format("{0} - shotEffect ent found: {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, Count));
@@ -637,7 +645,7 @@ namespace DefenseShields.Station
             {
                 if (ent == null || _inList.Contains(ent)) return;
                 var grid = ent as IMyCubeGrid;
-                if (grid != null && _insideReady && Detectout(ent))
+                if (grid != null && _insideReady && Detectedge(ent))
                 {
                     try
                     {
