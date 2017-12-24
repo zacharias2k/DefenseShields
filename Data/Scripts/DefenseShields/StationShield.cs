@@ -424,9 +424,9 @@ namespace DefenseShields.Station
             //var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
             //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
             _edgeVectors = new Vector3(_depth, _height, _width);
-            _inDepth = _depth - 13.3f;
-            _inHeight = _height - 13.3f;
-            _inWidth = _width - 13.3f;
+            _inDepth = _depth - 24.3f;
+            _inHeight = _height - 24.3f;
+            _inWidth = _width - 24.3f;
             _inVectors = new Vector3(_inDepth, _inHeight, _inWidth);
             MatrixD edgeMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _edgeVectors);
             MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, null, MyStringId.GetOrCompute("Build new"), 0.25f, -1);
@@ -442,7 +442,7 @@ namespace DefenseShields.Station
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float detect = (x * x) / (_width -24.3f * _width - 24.3f) + (y * y) / (_depth - 24.3f * _depth - 24.3f) + (z * z) / (_height - 24.3f * _height - 24.3f);
+            float detect = (x * x) / (_inWidth  * _inWidth) + (y * y) / (_inDepth * _inDepth) + (z * z) / (_inHeight * _inHeight);
             if (detect < 1)
             {
                 //if (detect > 12 || detect <1.01) Logging.WriteLine(String.Format("{0} - {1} in-t: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
