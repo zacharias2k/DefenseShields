@@ -494,7 +494,7 @@ namespace DefenseShields.Station
             MyAPIGateway.Parallel.ForEach(webList, webent =>
                 {
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-                if (webent == null) return;
+                if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
                 if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
                 if (webent is IMyMeteor) return;
                 if (webent is IMyCharacter && (Count == 14 || Count == 29 || Count == 44 || Count == 59) && Detectedge(webent))
@@ -508,7 +508,7 @@ namespace DefenseShields.Station
                     }
                     return;
                 }
-                if (webent is IMyCharacter || webent is IMyEngineerToolBase) return;
+                if (webent is IMyCharacter) return;
                 if (_inList.Contains(webent)) return;
                 Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
                 var grid = webent as IMyCubeGrid;
