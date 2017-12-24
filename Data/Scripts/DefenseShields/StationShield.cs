@@ -472,9 +472,9 @@ namespace DefenseShields.Station
         #endregion
 
         #region Detect grid edge intersection
-        private bool Detectgridedge(IMyCubeGrid grid)
+        private bool Detectgridedge(BoundingSphere gridsphere, IMyCubeGrid grid)
         {
-            BoundingSphereD gridsphere = new BoundingSphereD(_worldMatrix.Translation, _range);
+            //BoundingSphereD gridsphere = new BoundingSphereD(_worldMatrix.Translation, _range);
             var abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - gridsphere.Center) * 2);
             float x = Vector3Extensions.Project(_worldMatrix.Forward, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
@@ -682,7 +682,7 @@ namespace DefenseShields.Station
             {
                 if (ent == null || _inList.Contains(ent)) return;
                 var grid = ent as IMyCubeGrid;
-                if (grid != null && _insideReady && !Detectgridedge(grid))
+                if (grid != null && _insideReady && !Detectgridedge(gridsphere, grid))
                 {
                     try
                     {
