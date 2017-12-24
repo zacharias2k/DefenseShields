@@ -546,7 +546,7 @@ namespace DefenseShields.Station
                     if (grid != null)
                     {
                         //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - websphere.Center) * 2);
-                        double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Size - websphere.Center) * 2);
+                        double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Extents - websphere.Center) * 2);
                         if (Detectgridedge(grid, abs))
                         {
                             Logging.WriteLine(String.Format("{0} - {1} found grid: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, Count));
@@ -696,7 +696,7 @@ namespace DefenseShields.Station
                 if (grid != null)
                 {
                     //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - gridsphere.Center) * 2);
-                    double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Size - gridsphere.Center) * 2);
+                    double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Extents - gridsphere.Center) * 2);
                     if (Detectgridedge(grid, abs))
                     {
                         try
