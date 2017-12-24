@@ -457,7 +457,8 @@ namespace DefenseShields.Station
         #region Detect edge intersection
         private bool Detectedge(IMyEntity ent)
         {
-            var test = ent.GetSmallestDistanceBetweenCameraAndBoundingSphere();
+            BoundingSphereD websphere = new BoundingSphereD(_worldMatrix.Translation, _range);
+            var test = ent.GetIntersectionWithSphere(ref websphere);
             Logging.WriteLine(String.Format("{0} - e:{1} testing: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, test));
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
