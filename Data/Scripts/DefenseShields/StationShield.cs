@@ -20,6 +20,8 @@ using VRage.Game.Entity;
 using VRage;
 using System.Linq;
 using System.Reflection;
+using BulletXNA.BulletCollision;
+using Sandbox.Engine.Utils;
 using Sandbox.Game.Entities;
 using VRage.Game.ModAPI.Interfaces;
 using TExtensions = Sandbox.ModAPI.Interfaces.TerminalPropertyExtensions;
@@ -493,6 +495,7 @@ namespace DefenseShields.Station
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
             MyAPIGateway.Parallel.ForEach(webList, webent =>
                 {
+
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
                 if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
@@ -510,6 +513,14 @@ namespace DefenseShields.Station
                 }
                 if (webent is IMyCharacter) return;
                 if (_inList.Contains(webent)) return;
+                if (webent == MyAPIGateway.Entities.GetIntersectionWithSphere(ref websphere))
+                {
+                    Logging.WriteLine(String.Format("{0} - {1} true {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
+                }
+                else
+                {
+                    Logging.WriteLine(String.Format("{0} - {1} false {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
+                }
                 Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
                 var grid = webent as IMyCubeGrid;
                 if (grid != null && !_gridwebbed && Detectedge(grid))
