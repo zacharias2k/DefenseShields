@@ -474,7 +474,6 @@ namespace DefenseShields.Station
         #region Detect grid edge intersection
         private bool Detectgridedge(BoundingSphere gridsphere, IMyCubeGrid grid)
         {
-            //BoundingSphereD gridsphere = new BoundingSphereD(_worldMatrix.Translation, _range);
             var abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - gridsphere.Center) * 2);
             float x = Vector3Extensions.Project(_worldMatrix.Forward, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
@@ -494,10 +493,11 @@ namespace DefenseShields.Station
 
         public void WebEffects()
         {
+            var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             {
                 _inList.Clear();
                 _insideReady = false;
-                BoundingSphereD insphere = new BoundingSphereD(_worldMatrix.Translation, _range - 13.3f);
+                BoundingSphereD insphere = new BoundingSphereD(pos, _range - 13.3f);
                 _inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
                 MyAPIGateway.Parallel.ForEach(_inList, outent =>
                 {
@@ -511,10 +511,10 @@ namespace DefenseShields.Station
                 _insideReady = true;
             }
 
-            BoundingSphereD websphere = new BoundingSphereD(_worldMatrix.Translation, _range);
+            BoundingSphereD websphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
             /*HashSet<IMyEntity> webHash = new HashSet<IMyEntity>();
-            BoundingSphereD websphere = new BoundingSphereD(_worldMatrix.Translation, _range);
+            BoundingSphereD websphere = new BoundingSphereD(pos, _range);
             MyAPIGateway.Entities.GetEntities(webHash, ent => websphere.Intersects(ent.WorldAABB) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock) && !(ent is IMyFloatingObject) 
             && !(ent is IMyEngineerToolBase) && ent != _tblock.CubeGrid && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag));*/
             MyAPIGateway.Parallel.ForEach(webList, webent =>
@@ -571,8 +571,9 @@ namespace DefenseShields.Station
 
         public void ShotEffects()
         {
+            var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             HashSet<IMyEntity> shotHash = new HashSet<IMyEntity>();
-            BoundingSphereD shotsphere = new BoundingSphereD(_worldMatrix.Translation, _range);
+            BoundingSphereD shotsphere = new BoundingSphereD(pos, _range);
             MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && ent is IMyMeteor || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo"));
 
             MyAPIGateway.Parallel.ForEach(shotHash, shotent =>
@@ -671,10 +672,11 @@ namespace DefenseShields.Station
         #region Grid effects
         public void GridEffects()
         {
-            BoundingSphereD gridsphere = new BoundingSphereD(_worldMatrix.Translation, _range);
+            var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
+            BoundingSphereD gridsphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere); 
             /*HashSet<IMyEntity> gridHash = new HashSet<IMyEntity>();
-            BoundingSphereD websphere = new BoundingSphereD(_worldMatrix.Translation, _range);
+            BoundingSphereD websphere = new BoundingSphereD(pos, _range);
             MyAPIGateway.Entities.GetEntities(gridHash, ent => websphere.Intersects(ent.WorldAABB) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock) && !(ent is IMyFloatingObject)
             && !(ent is IMyEngineerToolBase) && ent != _tblock.CubeGrid && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag));*/
             Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now, Count));
