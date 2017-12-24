@@ -23,6 +23,7 @@ using System.Reflection;
 using BulletXNA.BulletCollision;
 using Sandbox.Engine.Utils;
 using Sandbox.Game.Entities;
+using Sandbox.Gui;
 using VRage.Game.ModAPI.Interfaces;
 using TExtensions = Sandbox.ModAPI.Interfaces.TerminalPropertyExtensions;
 
@@ -424,9 +425,9 @@ namespace DefenseShields.Station
             //var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
             //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
             _edgeVectors = new Vector3(_depth, _height, _width);
-            _inDepth = _depth - 24.3f;
-            _inHeight = _height - 24.3f;
-            _inWidth = _width - 24.3f;
+            _inDepth = _depth - 13.3f;
+            _inHeight = _height - 13.3f;
+            _inWidth = _width - 13.3f;
             _inVectors = new Vector3(_inDepth, _inHeight, _inWidth);
             MatrixD edgeMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _edgeVectors);
             MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, null, MyStringId.GetOrCompute("Build new"), 0.25f, -1);
@@ -456,6 +457,8 @@ namespace DefenseShields.Station
         #region Detect edge intersection
         private bool Detectedge(IMyEntity ent)
         {
+            var test = ent.GetSmallestDistanceBetweenCameraAndBoundingSphere();
+            Logging.WriteLine(String.Format("{0} - e:{1} testing: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, test));
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
@@ -477,7 +480,7 @@ namespace DefenseShields.Station
             {
                 _inList.Clear();
                 _insideReady = false;
-                BoundingSphereD insphere = new BoundingSphereD(_worldMatrix.Translation, _range - 24.3f);
+                BoundingSphereD insphere = new BoundingSphereD(_worldMatrix.Translation, _range - 13.3f);
                 _inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
                 MyAPIGateway.Parallel.ForEach(_inList, outent =>
                 {
@@ -491,13 +494,13 @@ namespace DefenseShields.Station
                 _insideReady = true;
             }
 
-            /*BoundingSphereD websphere = new BoundingSphereD(_worldMatrix.Translation, _range);
-            List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);*/
-            HashSet<IMyEntity> webHash = new HashSet<IMyEntity>();
+            BoundingSphereD websphere = new BoundingSphereD(_worldMatrix.Translation, _range);
+            List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
+            /*HashSet<IMyEntity> webHash = new HashSet<IMyEntity>();
             BoundingSphereD websphere = new BoundingSphereD(_worldMatrix.Translation, _range);
             MyAPIGateway.Entities.GetEntities(webHash, ent => websphere.Intersects(ent.WorldAABB) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock) && !(ent is IMyFloatingObject) 
-            && !(ent is IMyEngineerToolBase) && ent != _tblock.CubeGrid && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag));
-            MyAPIGateway.Parallel.ForEach(webHash, webent =>
+            && !(ent is IMyEngineerToolBase) && ent != _tblock.CubeGrid && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag));*/
+            MyAPIGateway.Parallel.ForEach(webList, webent =>
                 {
 
                 if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
@@ -651,14 +654,14 @@ namespace DefenseShields.Station
         #region Grid effects
         public void GridEffects()
         {
-            /*BoundingSphereD gridsphere = new BoundingSphereD(_worldMatrix.Translation, _range);
-            List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere); */
-            HashSet<IMyEntity> gridHash = new HashSet<IMyEntity>();
+            BoundingSphereD gridsphere = new BoundingSphereD(_worldMatrix.Translation, _range);
+            List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere); 
+            /*HashSet<IMyEntity> gridHash = new HashSet<IMyEntity>();
             BoundingSphereD websphere = new BoundingSphereD(_worldMatrix.Translation, _range);
             MyAPIGateway.Entities.GetEntities(gridHash, ent => websphere.Intersects(ent.WorldAABB) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock) && !(ent is IMyFloatingObject)
-            && !(ent is IMyEngineerToolBase) && ent != _tblock.CubeGrid && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag));
+            && !(ent is IMyEngineerToolBase) && ent != _tblock.CubeGrid && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag));*/
             Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now, Count));
-            MyAPIGateway.Parallel.ForEach(gridHash, ent =>
+            MyAPIGateway.Parallel.ForEach(gridList, ent =>
             {
                 if (ent == null || _inList.Contains(ent)) return;
                 var grid = ent as IMyCubeGrid;
