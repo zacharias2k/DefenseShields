@@ -36,14 +36,14 @@ namespace DefenseShields.Station
         public bool Initialized = true;
         private bool _animInit;
         private float _animStep;
-        private float _range = 50f;
-        private float _width = 50f;
-        private float _height = 50f;
-        private float _depth = 50f;
-        private float _inWidth = 36.7f;
-        private float _inHeight = 36.7f;
-        private float _inDepth = 36.7f;
-        private float _inRange = 36.7f;
+        private float _range;
+        private float _width;
+        private float _height;
+        private float _depth;
+        private float _inWidth;
+        private float _inHeight;
+        private float _inDepth;
+        private float _inRange;
         private int _time;
         public int Count = 60;
         private int _colourRand = 32;
@@ -480,17 +480,17 @@ namespace DefenseShields.Station
         #region Detect grid edge intersection
         private bool Detectgridedge(BoundingSphere gridsphere, IMyCubeGrid grid)
         {
-            var abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - gridsphere.Center) * 2);
+            //var abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - gridsphere.Center) * 2);
             float x = Vector3Extensions.Project(_worldMatrix.Forward, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
             float z = Vector3Extensions.Project(_worldMatrix.Up, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             if (detect < 1)
             {
-                Logging.WriteLine(String.Format("{0} - {1} edge-t: x:{2} y:{3} z:{4} d:{5} abs:{6} l:{7}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, x, y, z, detect, abs, Count));
+                Logging.WriteLine(String.Format("{0} - {1} edge-t: x:{2} y:{3} z:{4} d:{5} abs:{6} l:{7}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, x, y, z, detect, detect, Count));
                 return true;
             }
-            Logging.WriteLine(String.Format("{0} - {1} edge-f: x:{2} y:{3} z:{4} d:{5} abs:{6} l:{7}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, x, y, z, detect, abs, Count));
+            Logging.WriteLine(String.Format("{0} - {1} edge-f: x:{2} y:{3} z:{4} d:{5} abs:{6} l:{7}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, x, y, z, detect, detect, Count));
             return false;
         }
         #endregion
@@ -584,7 +584,7 @@ namespace DefenseShields.Station
 
             MyAPIGateway.Parallel.ForEach(shotHash, shotent =>
             {
-                if (shotent == null || !Detectedge(shotent)) return;
+                if (shotent == null || Detectedge(shotent)) return;
                 try
                 {
                     Logging.WriteLine(String.Format("{0} - shotEffect ent found: {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, Count));
