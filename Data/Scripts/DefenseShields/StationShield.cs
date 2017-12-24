@@ -36,13 +36,14 @@ namespace DefenseShields.Station
         public bool Initialized = true;
         private bool _animInit;
         private float _animStep;
-        private float _range =50f;
+        private float _range = 50f;
         private float _width = 50f;
         private float _height = 50f;
         private float _depth = 50f;
         private float _inWidth = 36.7f;
         private float _inHeight = 36.7f;
         private float _inDepth = 36.7f;
+        private float _inRange = 36.7f;
         private int _time;
         public int Count = 60;
         private int _colourRand = 32;
@@ -302,12 +303,20 @@ namespace DefenseShields.Station
                 _width = _range * 0.5f;
                 _height = _range * 0.35f;
                 _depth = _range;
+                _inDepth = _depth - 13.3f;
+                _inHeight = _height - 13.3f;
+                _inWidth = _width - 13.3f;
+                _inRange = _range - 13.3f;
             }
             else
             {
                 _width = _range;
                 _height = _range;
                 _depth = _range;
+                _inDepth = _depth - 13.3f;
+                _inHeight = _height - 13.3f;
+                _inWidth = _width - 13.3f;
+                _inRange = _range - 13.3f;
             }
         }
         #endregion
@@ -425,9 +434,6 @@ namespace DefenseShields.Station
             //var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
             //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
             _edgeVectors = new Vector3(_depth, _height, _width);
-            _inDepth = _depth - 13.3f;
-            _inHeight = _height - 13.3f;
-            _inWidth = _width - 13.3f;
             _inVectors = new Vector3(_inDepth, _inHeight, _inWidth);
             MatrixD edgeMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _edgeVectors);
             MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, null, MyStringId.GetOrCompute("Build new"), 0.25f, -1);
@@ -497,7 +503,7 @@ namespace DefenseShields.Station
             {
                 _inList.Clear();
                 _insideReady = false;
-                BoundingSphereD insphere = new BoundingSphereD(pos, _range - 13.3f);
+                BoundingSphereD insphere = new BoundingSphereD(pos, _inRange);
                 _inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
                 MyAPIGateway.Parallel.ForEach(_inList, outent =>
                 {
