@@ -438,10 +438,10 @@ namespace DefenseShields.Station
             if (detect < 1)
             {
                 //if (detect > 12 || detect <1.01) Logging.WriteLine(String.Format("{0} - {1} in-t: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
-                return false;
+                return true;
             }
             //Logging.WriteLine(String.Format("{0} - {1} in-f: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
-            return true;
+            return false;
         }
         #endregion
 
@@ -475,7 +475,7 @@ namespace DefenseShields.Station
                 {
                     //if (outent is MyMeteor) return;
                     if (outent is IMyMeteor || outent.ToString().Contains("MyMeteor")) return;
-                    if (Detectout(outent))
+                    if (Detectin(outent))
                     {
                         if (!_inList.Contains(outent)) _inList.Add(outent);
                     }
