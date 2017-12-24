@@ -547,6 +547,7 @@ namespace DefenseShields.Station
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
                 if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
                 if (webent is IMyMeteor) return;
+                Logging.WriteLine(String.Format("{0} - Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                 if (webent is IMyCharacter && (Count == 14 || Count == 29 || Count == 44 || Count == 59) && Detectedge(webent))
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
@@ -558,7 +559,6 @@ namespace DefenseShields.Station
                     }
                     return;
                 }
-                Logging.WriteLine(String.Format("{0} - Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                 if (webent is IMyCharacter) return;
                 if (_inList.Contains(webent)) return;
                 var grid = webent as IMyCubeGrid;
