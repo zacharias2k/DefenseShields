@@ -50,7 +50,7 @@ namespace DefenseShields.Station
         private static Random _random = new Random();
         private MatrixD _worldMatrix;
         //MatrixD _detectMatrix = MatrixD.Identity;
-        //private Vector3D _scale;
+        private Vector3D _scale;
         private BoundingSphereD _sphereMin;
         private BoundingSphereD _sphereMax;
         private MyEntitySubpart _subpartRotor;
@@ -257,7 +257,7 @@ namespace DefenseShields.Station
                     temp4.Translation = temp3.PositionComp.LocalMatrix.Translation;
                     _matrixReflectorsOn.Add(temp4);
                 }
-                //_scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f);
+                _scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f);
             }
             catch (Exception ex)
             {
@@ -305,7 +305,7 @@ namespace DefenseShields.Station
                 _height = _range;
                 _depth = _range;
             }
-            //_scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f); 
+            _scale = new Vector3(_depth / 300f, _height / 300f, _width / 300f); 
         }
         #endregion
 
@@ -419,11 +419,11 @@ namespace DefenseShields.Station
                 colour = Color.FromNonPremultiplied(16, 255 - _colourRand, 16 + _colourRand, 72);
             else
                 colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
-            var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
-            MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
-            //MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Build new");
-            //MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
-            //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 300f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
+            //var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
+            //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
+            MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Build new");
+            MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
+            MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 300f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
         }
 
         #endregion
