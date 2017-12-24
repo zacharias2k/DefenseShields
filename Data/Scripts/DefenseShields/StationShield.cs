@@ -49,7 +49,7 @@ namespace DefenseShields.Station
 
         private static Random _random = new Random();
         private MatrixD _worldMatrix;
-        MatrixD _detectMatrix = MatrixD.Identity;
+        //MatrixD _detectMatrix = MatrixD.Identity;
         //private Vector3D _scale;
         private BoundingSphereD _sphereMin;
         private BoundingSphereD _sphereMax;
@@ -93,7 +93,7 @@ namespace DefenseShields.Station
             _fblock = Entity as IMyFunctionalBlock;
             _tblock = Entity as IMyTerminalBlock;
 
-            _detectMatrix = Entity.WorldMatrix;
+            //_detectMatrix = Entity.WorldMatrix;
         }
         #endregion
 
@@ -419,7 +419,7 @@ namespace DefenseShields.Station
                 colour = Color.FromNonPremultiplied(16, 255 - _colourRand, 16 + _colourRand, 72);
             else
                 colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
-            var matrix = MatrixD.Rescale(_detectMatrix, new Vector3D(_width, _height, _depth));
+            var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
             MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
             //MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Build new");
             //MatrixD matrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _scale);
@@ -431,9 +431,9 @@ namespace DefenseShields.Station
         #region Detect innersphere intersection
         private bool Detectin(IMyEntity ent)
         {
-            float x = Vector3Extensions.Project(_detectMatrix.Forward, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_detectMatrix.Left, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_detectMatrix.Up, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
+            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float detect = (x * x) / (_width -13.3f * _width - 13.3f) + (y * y) / (_depth - 13.3f * _depth - 13.3f) + (z * z) / (_height - 13.3f * _height - 13.3f);
             if (detect > 1)
             {
@@ -448,9 +448,9 @@ namespace DefenseShields.Station
         #region Detect outter intersection
         private bool Detectout(IMyEntity ent)
         {
-            float x = Vector3Extensions.Project(_detectMatrix.Forward, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_detectMatrix.Left, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_detectMatrix.Up, ent.GetPosition() - _detectMatrix.Translation).AbsMax();
+            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             if (detect > 1)
             {
@@ -469,7 +469,7 @@ namespace DefenseShields.Station
             {
                 _inList.Clear();
                 _insideReady = false;
-                BoundingSphereD insphere = new BoundingSphereD(_detectMatrix.Translation, _range - 13.3f);
+                BoundingSphereD insphere = new BoundingSphereD(_worldMatrix.Translation, _range - 13.3f);
                 _inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
                 MyAPIGateway.Parallel.ForEach(_inList, outent =>
                 {
@@ -483,7 +483,7 @@ namespace DefenseShields.Station
                 _insideReady = true;
             }
 
-            BoundingSphereD websphere = new BoundingSphereD(_detectMatrix.Translation, _range);
+            BoundingSphereD websphere = new BoundingSphereD(_worldMatrix.Translation, _range);
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
             MyAPIGateway.Parallel.ForEach(webList, webent =>
                 {
@@ -534,7 +534,7 @@ namespace DefenseShields.Station
             //HashSet<IMyEntity> shotHash = new HashSet<IMyEntity>();
             //BoundingSphereD shotsphere = new BoundingSphereD(_detectMatrix.Translation, _range);
             //MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && (ent is IMyMeteor || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo")) && Detectout(ent));
-            BoundingSphereD shotsphere = new BoundingSphereD(_detectMatrix.Translation, _range);
+            BoundingSphereD shotsphere = new BoundingSphereD(_worldMatrix.Translation, _range);
             var shotbox = BoundingBoxD.CreateFromSphere(shotsphere);
             List<IMyEntity> shotList = MyAPIGateway.Entities.GetTopMostEntitiesInBox(ref shotbox);
 
@@ -634,7 +634,7 @@ namespace DefenseShields.Station
         #region Grid effects
         public void GridEffects()
         {
-            BoundingSphereD gridsphere = new BoundingSphereD(_detectMatrix.Translation, _range);
+            BoundingSphereD gridsphere = new BoundingSphereD(_worldMatrix.Translation, _range);
             List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere);
             Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now, Count));
             MyAPIGateway.Parallel.ForEach(gridList, ent =>
