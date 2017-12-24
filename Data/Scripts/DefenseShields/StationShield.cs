@@ -420,7 +420,7 @@ namespace DefenseShields.Station
             else
                 colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
             _detectMatrix = Entity.WorldMatrix;
-            _worldMatrix.Translation += Entity.WorldMatrix.Up;
+            _detectMatrix.Translation += Entity.WorldMatrix.Up;
             var matrix = MatrixD.Rescale(_detectMatrix, new Vector3D(_width, _height, _depth));
             MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
             //MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Build new");
