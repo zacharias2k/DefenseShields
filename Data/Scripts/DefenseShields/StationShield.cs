@@ -531,20 +531,20 @@ namespace DefenseShields.Station
 
         public void ShotEffects()
         {
-            HashSet<IMyEntity> shotHash = new HashSet<IMyEntity>();
+            //HashSet<IMyEntity> shotHash = new HashSet<IMyEntity>();
+            //BoundingSphereD shotsphere = new BoundingSphereD(_detectMatrix.Translation, _range);
+            //MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && (ent is IMyMeteor || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo")) && Detectout(ent));
             BoundingSphereD shotsphere = new BoundingSphereD(_detectMatrix.Translation, _range);
-            MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && (ent is IMyMeteor || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo")) && Detectout(ent));
+            var shotbox = BoundingBoxD.CreateFromSphere(shotsphere);
+            List<IMyEntity> shotList = MyAPIGateway.Entities.GetTopMostEntitiesInBox(ref shotbox);
 
-            MyAPIGateway.Parallel.ForEach(shotHash, shotent =>
+            MyAPIGateway.Parallel.ForEach(shotList, shotent =>
             {
-                if (shotent == null) return;
+                if (!(shotent is IMyMeteor) || shotent.ToString().Contains("Missile") || shotent.ToString().Contains("Torpedo") || Detectout(shotent)) return;
                 try
                 {
                     Logging.WriteLine(String.Format("{0} - shotEffect ent found: {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, Count));
-                    if (shotent is IMyMeteor || shotent.ToString().Contains("Missile") || shotent.ToString().Contains("Torpedo"))
-                    {
-                        shotent.Close();
-                    }
+                    shotent.Close();
                 }
                 catch (Exception ex)
                 {
