@@ -475,7 +475,7 @@ namespace DefenseShields.Station
                 {
                     //if (outent is MyMeteor) return;
                     if (outent is IMyMeteor || outent.ToString().Contains("MyMeteor")) return;
-                    if (Detectin(outent))
+                    if (!Detectout(outent))
                     {
                         if (!_inList.Contains(outent)) _inList.Add(outent);
                     }
