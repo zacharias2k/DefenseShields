@@ -502,6 +502,7 @@ namespace DefenseShields.Station
 
         public void WebEffects()
         {
+            Logging.WriteLine(String.Format("{0} - begin Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             {
                 _inList.Clear();
