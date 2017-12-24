@@ -463,10 +463,10 @@ namespace DefenseShields.Station
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             if (detect < 1)
             {
-                Logging.WriteLine(String.Format("{0} - {1} edge-t: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
+                //Logging.WriteLine(String.Format("{0} - {1} edge-t: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
                 return true;
             }
-            Logging.WriteLine(String.Format("{0} - {1} edge-f: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
+            //Logging.WriteLine(String.Format("{0} - {1} edge-f: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
             return false;
         }
         #endregion
@@ -539,7 +539,7 @@ namespace DefenseShields.Station
                 if (_inList.Contains(webent)) return;
                 Logging.WriteLine(String.Format("{0} - {1} is intersecting in loop: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent, Count));
                 var grid = webent as IMyCubeGrid;
-                if (grid != null && !_gridwebbed && !Detectedge(grid))
+                if (grid != null && !_gridwebbed && !Detectgridedge(websphere, grid))
                 {
                     Logging.WriteLine(String.Format("{0} - {1} found grid: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, Count));
                     List<long> owners = grid.BigOwners;
