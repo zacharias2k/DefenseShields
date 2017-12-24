@@ -457,9 +457,6 @@ namespace DefenseShields.Station
         #region Detect edge intersection
         private bool Detectedge(IMyEntity ent)
         {
-            BoundingSphereD websphere = new BoundingSphereD(_worldMatrix.Translation, _range);
-            var test = ent.GetIntersectionWithSphere(ref websphere);
-            Logging.WriteLine(String.Format("{0} - e:{1} testing: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, test));
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
@@ -470,6 +467,25 @@ namespace DefenseShields.Station
                 return true;
             }
             Logging.WriteLine(String.Format("{0} - {1} edge-f: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
+            return false;
+        }
+        #endregion
+
+        #region Detect grid edge intersection
+        private bool Detectgridedge(IMyCubeGrid grid)
+        {
+            BoundingSphereD gridsphere = new BoundingSphereD(_worldMatrix.Translation, _range);
+            var abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - gridsphere.Center) * 2);
+            float x = Vector3Extensions.Project(_worldMatrix.Forward, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_worldMatrix.Left, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_worldMatrix.Up, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
+            if (detect < 1)
+            {
+                Logging.WriteLine(String.Format("{0} - {1} edge-t: x:{2} y:{3} z:{4} d:{5} abs:{6} l:{7}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, x, y, z, detect, abs, Count));
+                return true;
+            }
+            Logging.WriteLine(String.Format("{0} - {1} edge-f: x:{2} y:{3} z:{4} d:{5} abs:{6} l:{7}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, x, y, z, detect, abs, Count));
             return false;
         }
         #endregion
@@ -666,7 +682,7 @@ namespace DefenseShields.Station
             {
                 if (ent == null || _inList.Contains(ent)) return;
                 var grid = ent as IMyCubeGrid;
-                if (grid != null && _insideReady && !Detectedge(ent))
+                if (grid != null && _insideReady && !Detectgridedge(grid))
                 {
                     try
                     {
