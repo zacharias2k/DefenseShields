@@ -442,7 +442,7 @@ namespace DefenseShields.Station
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float detect = (x * x) / (_width -13.3f * _width - 13.3f) + (y * y) / (_depth - 13.3f * _depth - 13.3f) + (z * z) / (_height - 13.3f * _height - 13.3f);
+            float detect = (x * x) / (_width -24.3f * _width - 24.3f) + (y * y) / (_depth - 24.3f * _depth - 24.3f) + (z * z) / (_height - 24.3f * _height - 24.3f);
             if (detect < 1)
             {
                 //if (detect > 12 || detect <1.01) Logging.WriteLine(String.Format("{0} - {1} in-t: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
@@ -477,7 +477,7 @@ namespace DefenseShields.Station
             {
                 _inList.Clear();
                 _insideReady = false;
-                BoundingSphereD insphere = new BoundingSphereD(_worldMatrix.Translation, _range - 13.3f);
+                BoundingSphereD insphere = new BoundingSphereD(_worldMatrix.Translation, _range - 24.3f);
                 _inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
                 MyAPIGateway.Parallel.ForEach(_inList, outent =>
                 {
