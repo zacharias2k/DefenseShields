@@ -524,7 +524,7 @@ namespace DefenseShields.Station
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
                 if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
                 if (webent is IMyMeteor) return;
-                if (webent is IMyCharacter && (Count == 14 || Count == 29 || Count == 44 || Count == 59) && Detectedge(webent))
+                if (webent is IMyCharacter && (Count == 14 || Count == 29 || Count == 44 || Count == 59)) //&& Detectedge(webent))
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
                     var relationship = _tblock.GetUserRelationToOwner(dude);
@@ -558,7 +558,7 @@ namespace DefenseShields.Station
                     return;
                 }
                 if (_shotwebbed) return;
-                if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo") && Detectedge(webent))
+                if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo")) //&& Detectedge(webent))
                 {
                     _shotwebbed = true;
                 }
