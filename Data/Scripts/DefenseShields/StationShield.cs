@@ -51,7 +51,9 @@ namespace DefenseShields.Station
         private int _playertime;
         private bool _playerwebbed;
         private bool _gridwebbed;
+        private bool _gridlocked;
         private bool _shotwebbed;
+        private bool _shotlocked;
         public bool _insideReady;
         private ushort _modId = 50099;
 
@@ -156,8 +158,8 @@ namespace DefenseShields.Station
                 if (!MyAPIGateway.Utilities.IsDedicated) ShowRange(_range); //Check
                 else SendPoke(_range); //Check
                 if (Count <60) MyAPIGateway.Parallel.StartBackground(WebEffects);
-                if (_shotwebbed) MyAPIGateway.Parallel.Do(ShotEffects);
-                if (_gridwebbed) MyAPIGateway.Parallel.Do(GridEffects);
+                if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
+                if (_gridwebbed && !_gridlocked) MyAPIGateway.Parallel.Do(GridEffects);
                 if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
             }
             catch (Exception ex)
@@ -562,7 +564,7 @@ namespace DefenseShields.Station
                 if (webent is IMyCharacter) return;
                 if (_inList.Contains(webent)) return;
                 var grid = webent as IMyCubeGrid;
-                if (grid == _tblock.CubeGrid) return;
+                if (grid == _tblock.CubeGrid || _gridwebbed) return;
                 if (grid != null)
                 {
                     Logging.WriteLine(String.Format("{0} - WebEffect-grid {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
@@ -600,6 +602,7 @@ namespace DefenseShields.Station
 
         public void ShotEffects()
         {
+            _shotlocked = true;
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             HashSet<IMyEntity> shotHash = new HashSet<IMyEntity>();
             BoundingSphereD shotsphere = new BoundingSphereD(pos, _range);
@@ -620,6 +623,7 @@ namespace DefenseShields.Station
                 }
             });
             _shotwebbed = false;
+            _shotlocked = false;
         }
         #endregion
 
@@ -701,6 +705,7 @@ namespace DefenseShields.Station
         #region Grid effects
         public void GridEffects()
         {
+            _gridlocked = true;
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             BoundingSphereD gridsphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere); 
@@ -746,6 +751,7 @@ namespace DefenseShields.Station
 
             });
             _gridwebbed = false;
+            _gridlocked = false;
         }
     }
     #endregion
