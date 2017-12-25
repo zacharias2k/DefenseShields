@@ -116,7 +116,7 @@ namespace DefenseShields.Station
             {
                 if (_animInit)
                 {
-                    if (_subpartRotor.Closed.Equals(true))
+                    if (_subpartRotor.Closed.Equals(true) && !Initialized && _cblock.IsWorking)
                     {
                         BlockAnimationReset();
                     }
@@ -195,7 +195,6 @@ namespace DefenseShields.Station
             _subpartRotor.Subparts.Clear();
             _subpartsArms.Clear();
             _subpartsReflectors.Clear();
-            BlockAnimation();
             BlockAnimationInit();
         }
 
