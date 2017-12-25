@@ -119,9 +119,9 @@ namespace DefenseShields.Station
                 if (_subpartRotor.Closed.Equals(true))
                 {
                     Logging.WriteLine(String.Format("{0} - Resetting BlockAnimation in loop {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-                    _subpartRotor.Subparts.Clear();
+                    //_subpartRotor.Subparts.Clear();
                     _subpartsArms.Clear();
-                    //Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                    Entity.TryGetSubpart("Rotor", out _subpartRotor);
                     //BlockAnimation();
                 }
 
