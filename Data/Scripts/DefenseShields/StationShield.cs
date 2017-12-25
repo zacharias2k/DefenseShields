@@ -120,7 +120,7 @@ namespace DefenseShields.Station
                     {
                         BlockAnimationReset();
                     }
-                    BlockAnimation();
+                    //BlockAnimation();
                 }
                 if (Count++ == 59) Count = 0;
                 if (Count % 3 == 0)
@@ -195,7 +195,7 @@ namespace DefenseShields.Station
             _subpartRotor.Subparts.Clear();
             _subpartsArms.Clear();
             _subpartsReflectors.Clear();
-            //BlockAnimationInit();
+            BlockAnimationInit();
         }
 
         public void BlockAnimationInit()
