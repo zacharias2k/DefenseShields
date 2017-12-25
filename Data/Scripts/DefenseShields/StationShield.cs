@@ -610,35 +610,33 @@ namespace DefenseShields.Station
             List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere);
             MyAPIGateway.Parallel.ForEach(gridList, grident =>
             {
-                if ((grident is IMyCubeGrid grid) && !_inHash.Contains(grid))
+                if ((!(grident is IMyCubeGrid grid)) || _inHash.Contains(grid)) return;
+                Logging.WriteLine(String.Format("{0} - grid: {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
+                if (grid == _tblock.CubeGrid) return;
+                try
                 {
-                    Logging.WriteLine(String.Format("{0} - grid: {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
-                    if (grid == _tblock.CubeGrid) return;
-                    try
+                    List<long> owners = grid.BigOwners;
+                    if (owners.Count > 0)
                     {
-                        List<long> owners = grid.BigOwners;
-                        if (owners.Count > 0)
-                        {
-                            var relations = _tblock.GetUserRelationToOwner(owners[0]);
-                            //Logging.WriteLine(String.Format("{0} - grid: {1} tblock: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, owners.Count, relations, relations == MyRelationsBetweenPlayerAndBlock.Owner, relations == MyRelationsBetweenPlayerAndBlock.FactionShare));
-                            if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
-                        }
-                        if (Detectgridedge(grid))
-                        {
-                            //long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId;
-                            //if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long)dude, -100);
-                            var gridpos = grid.GetPosition();
-                            MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
-                            Logging.WriteLine(string.Format("{0} - gridEffect: deleting grid {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
-                            grid.Delete();
-                        }
+                        var relations = _tblock.GetUserRelationToOwner(owners[0]);
+                        //Logging.WriteLine(String.Format("{0} - grid: {1} tblock: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, owners.Count, relations, relations == MyRelationsBetweenPlayerAndBlock.Owner, relations == MyRelationsBetweenPlayerAndBlock.FactionShare));
+                        if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
+                    }
+                    if (Detectgridedge(grid))
+                    {
+                        //long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId;
+                        //if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long)dude, -100);
+                        var gridpos = grid.GetPosition();
+                        MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
+                        Logging.WriteLine(string.Format("{0} - gridEffect: deleting grid {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
+                        grid.Delete();
+                    }
 
-                    }
-                    catch (Exception ex)
-                    {
-                        Logging.WriteLine(string.Format("{0} - Exception in gridEffects", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
-                        Logging.WriteLine(string.Format("{0} - {1}", DateTime.Now, ex));
-                    }
+                }
+                catch (Exception ex)
+                {
+                    Logging.WriteLine(string.Format("{0} - Exception in gridEffects", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
+                    Logging.WriteLine(string.Format("{0} - {1}", DateTime.Now, ex));
                 }
             });
             _gridwebbed = false;
