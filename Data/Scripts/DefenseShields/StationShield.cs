@@ -506,8 +506,8 @@ namespace DefenseShields.Station
             _inList.Clear();
             _insideReady = false;
             BoundingSphereD insphere = new BoundingSphereD(pos, _inRange * 0.5f);
-            _inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
-            MyAPIGateway.Parallel.ForEach(_inList, outent =>
+            List<IMyEntity> inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
+            MyAPIGateway.Parallel.ForEach(inList, outent =>
             {
                 if (outent is IMyMeteor || outent.ToString().Contains("MyMeteor")) return;
                 var grid = outent as IMyCubeGrid;
@@ -531,7 +531,7 @@ namespace DefenseShields.Station
                 }
                 if (Detectin(outent))
                 {
-                    //if (!_inList.Contains(outent)) _inList.Add(outent);
+                    if (!_inList.Contains(outent)) _inList.Add(outent);
                 }
             });
             _insideReady = true;
