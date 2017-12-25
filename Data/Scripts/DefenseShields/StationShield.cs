@@ -52,7 +52,7 @@ namespace DefenseShields.Station
         private bool _playerwebbed;
         private bool _gridwebbed;
         private bool _shotwebbed;
-        public bool _insideReady;
+        public bool _insideReady = true;
         private ushort _modId = 50099;
 
         private static Random _random = new Random();
