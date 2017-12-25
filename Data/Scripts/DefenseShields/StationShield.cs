@@ -222,14 +222,9 @@ namespace DefenseShields.Station
         #region Block Animation
         public void BlockAnimation()
         {
-            if (_subpartRotor.MarkedForClose)
-            {
-                Logging.WriteLine(String.Format("closed"));
-
-            }
-            //Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.Closed));
+            Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Entity.TryGetSubpart("Rotor", out _subpartRotor)));
             //Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.MarkedForClose));
-            //Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.Subparts.Values));
+           // Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.Subparts.Values));
 
             try
             {
