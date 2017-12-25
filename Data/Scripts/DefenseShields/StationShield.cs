@@ -119,6 +119,7 @@ namespace DefenseShields.Station
                 if (_subpartRotor.Closed.Equals(true))
                 {
                     Logging.WriteLine(String.Format("{0} - Resetting BlockAnimation in loop {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
+                    _subpartRotor.Subparts.Clear();
                     Entity.TryGetSubpart("Rotor", out _subpartRotor);
                 }
 
@@ -247,10 +248,6 @@ namespace DefenseShields.Station
         #region Block Animation
         public void BlockAnimation()
         {
-            //Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Entity.TryGetSubpart("Rotor", out _subpartRotor)));
-            //Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.MarkedForClose));
-           // Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.Subparts.Values));
-
             try
             {
                 _animStep = 0f;
