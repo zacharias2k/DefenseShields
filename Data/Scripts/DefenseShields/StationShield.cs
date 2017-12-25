@@ -709,7 +709,7 @@ namespace DefenseShields.Station
             BoundingSphereD websphere = new BoundingSphereD(pos, _range);
             MyAPIGateway.Entities.GetEntities(gridHash, ent => websphere.Intersects(ent.WorldAABB) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock) && !(ent is IMyFloatingObject)
             && !(ent is IMyEngineerToolBase) && ent != _tblock.CubeGrid && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag));*/
-            Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
+            //Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
             MyAPIGateway.Parallel.ForEach(gridList, ent =>
             {
                 if (ent == null || _inList.Contains(ent)) return;
