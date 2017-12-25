@@ -46,7 +46,7 @@ namespace DefenseShields.Station
         private float _inRange;
         private readonly float _inOutSpace = 15f;
         private int _time;
-        public int Count = 60;
+        public int Count = -1;
         private int _colourRand = 32;
         private int _playertime;
         private bool _playerwebbed;
