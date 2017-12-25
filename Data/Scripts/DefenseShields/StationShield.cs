@@ -553,8 +553,8 @@ namespace DefenseShields.Station
                 if (webent is IMyCharacter && (Count == 14 || Count == 29 || Count == 44 || Count == 59) && Detectedge(webent))
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
-                    var relationship = _tblock.GetUserRelationToOwner(dude);
-                    if (relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
+                    var playerrelationship = _tblock.GetUserRelationToOwner(dude);
+                    if (playerrelationship != MyRelationsBetweenPlayerAndBlock.Owner && playerrelationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
                     {
                         _playerwebbed = true;
                         return;
@@ -578,7 +578,7 @@ namespace DefenseShields.Station
                         {
                             var relations = _tblock.GetUserRelationToOwner(0);
                             Logging.WriteLine(String.Format("{0} - grid: {1} tblock: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, owners.Count, relations, relations == MyRelationsBetweenPlayerAndBlock.Owner, relations == MyRelationsBetweenPlayerAndBlock.FactionShare));
-                            if (relations != MyRelationsBetweenPlayerAndBlock.Owner || relations != MyRelationsBetweenPlayerAndBlock.FactionShare) return;
+                            if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
                         Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName));
                         _gridwebbed = true;
@@ -730,7 +730,7 @@ namespace DefenseShields.Station
                             if (owners.Count > 0)
                             {
                                 var relations = _tblock.GetUserRelationToOwner(owners[0]);
-                                if (relations != MyRelationsBetweenPlayerAndBlock.Owner || relations != MyRelationsBetweenPlayerAndBlock.FactionShare) return;
+                                if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                             }
                             //long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId;
                             //var gridpos = grid.GetPosition();
