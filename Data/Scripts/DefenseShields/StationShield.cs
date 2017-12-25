@@ -504,7 +504,7 @@ namespace DefenseShields.Station
                 List<IMyEntity> inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
                 MyAPIGateway.Parallel.ForEach(inList, inent =>
                 {
-                    //if (!(inent is IMyCubeGrid) || !(inent is IMyCharacter)) return;
+                    if (!(inent is IMyCubeGrid) || !(inent is IMyCharacter)) return;
 
                     if (Detectin(inent))
                     {
