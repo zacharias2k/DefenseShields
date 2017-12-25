@@ -505,6 +505,7 @@ namespace DefenseShields.Station
         public void WebEffects()
         {
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
+            /*
             if (Count == 0)
             {
                 _inList.Clear();
@@ -537,7 +538,7 @@ namespace DefenseShields.Station
                     }
                 });
             }
-
+            */
 
             BoundingSphereD websphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
@@ -548,8 +549,8 @@ namespace DefenseShields.Station
             MyAPIGateway.Parallel.ForEach(webList, webent =>
             {
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
-                if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
-                if (webent is IMyMeteor) return;
+                //if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
+                //if (webent is IMyMeteor) return;
                 /*
                 if (webent is IMyCharacter && (Count == 14 || Count == 29 || Count == 44 || Count == 59) && Detectedge(webent))
                 {
