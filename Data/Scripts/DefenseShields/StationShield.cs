@@ -538,11 +538,8 @@ namespace DefenseShields.Station
                 }
                 
                 if (webent is IMyCharacter) return;
-                if (_inHash.Contains(webent))
-                {
-                    Logging.WriteLine(String.Format("{0} - {1} is inside returning", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent));
-                    return;
-                }
+                if (_inHash.Contains(webent)) return;
+
                 var grid = webent as IMyCubeGrid;
                 if (grid == _tblock.CubeGrid || _gridwebbed) return;
                 if (grid != null)
