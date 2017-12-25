@@ -570,9 +570,9 @@ namespace DefenseShields.Station
                 {
                     //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - websphere.Center) * 2);
                     double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - websphere.Center) * 2);
-                    if (Detectgridedge(grid, abs))
+                    if (Detectgridedge(gridd, abs))
                     {
-                        List<long> owners = gridd.BigOwners;
+                        List<long> owners = grid.BigOwners;
                         if (owners.Count > 0)
                         {
                             var relations = _tblock.GetUserRelationToOwner(0);
