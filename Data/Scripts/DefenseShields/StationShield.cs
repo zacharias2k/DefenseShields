@@ -483,19 +483,19 @@ namespace DefenseShields.Station
         #endregion
 
         #region Detect grid edge intersection
-        private bool Detectgridedge(IMyCubeGrid test, double abs)
+        private bool Detectgridedge(IMyCubeGrid grid, double abs)
         {
-            float x = Vector3Extensions.Project(_worldMatrix.Forward, test.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix.Left, test.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_worldMatrix.Up, test.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float x = Vector3Extensions.Project(_worldMatrix.Forward, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_worldMatrix.Left, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_worldMatrix.Up, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
             //float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             if (detect <= 1)
             {
-                Logging.WriteLine(String.Format("{0} - {1} grid-t - d:{2} abs:{3} l:{4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), test.CustomName, detect, abs, Count));
+                Logging.WriteLine(String.Format("{0} - {1} grid-t - d:{2} abs:{3} l:{4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, detect, abs, Count));
                 return true;
             }
-            Logging.WriteLine(String.Format("{0} - {1} grid-f - d:{2} abs:{3} l:{4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), test.CustomName, detect, abs, Count));
+            Logging.WriteLine(String.Format("{0} - {1} grid-f - d:{2} abs:{3} l:{4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, detect, abs, Count));
             return false;
         }
         #endregion
