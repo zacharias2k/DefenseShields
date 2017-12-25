@@ -116,10 +116,10 @@ namespace DefenseShields.Station
         {
             try
             {
-                if (Entity.TryGetSubpart("Rotor", out _subpartRotor) == false)
-                {
-                    //Logging.WriteLine(String.Format("{0} - subpart rotor {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Entity.TryGetSubpart("Rotor", out _subpartRotor)));
-                }
+                Logging.WriteLine(String.Format("{0} - subpart Arm {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.Closed.Equals(true)));
+                //if (Entity.TryGetSubpart("Rotor", out _subpartRotor))
+                //{
+                //}
                 /*
                 for (int i = 1; i < 9; i++)
                 {
