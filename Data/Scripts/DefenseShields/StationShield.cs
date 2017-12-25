@@ -503,38 +503,41 @@ namespace DefenseShields.Station
         public void WebEffects()
         {
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
-            _inList.Clear();
-            _insideReady = false;
-            BoundingSphereD insphere = new BoundingSphereD(pos, _inRange * 0.5f);
-            List<IMyEntity> inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
-            MyAPIGateway.Parallel.ForEach(inList, outent =>
+            if (Count == 0)
             {
-                if (outent is IMyMeteor || outent.ToString().Contains("MyMeteor")) return;
-                var grid = outent as IMyCubeGrid;
-                if (grid != null)
+                _insideReady = false;
+                _inList.Clear();
+                BoundingSphereD insphere = new BoundingSphereD(pos, _inRange * 0.5f);
+                List<IMyEntity> inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
+                MyAPIGateway.Parallel.ForEach(inList, outent =>
                 {
-                    if (grid == _tblock.CubeGrid) return;
-                    double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - insphere.Center) * 2);
-                    if (Detectgridedge(grid, abs))
+                    if (outent is IMyMeteor || outent.ToString().Contains("MyMeteor")) return;
+                    var grid = outent as IMyCubeGrid;
+                    if (grid != null)
                     {
-                        Logging.WriteLine(String.Format("{0} - begin Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-                        if (_inList.Contains(grid))
+                        if (grid == _tblock.CubeGrid) return;
+                        double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - insphere.Center) * 2);
+                        if (Detectgridedge(grid, abs))
                         {
-                            Logging.WriteLine(String.Format("{0} - {1} not added to inside sphere: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
+                            Logging.WriteLine(String.Format("{0} - begin Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
+                            if (_inList.Contains(grid))
+                            {
+                                Logging.WriteLine(String.Format("{0} - {1} not added to inside sphere: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
+                                return;
+                            }
+                            Logging.WriteLine(String.Format("{0} - {1} added to inside sphere: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
+                            _inList.Add(grid);
                             return;
                         }
-                        Logging.WriteLine(String.Format("{0} - {1} added to inside sphere: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
-                        _inList.Add(grid);
                         return;
                     }
-                    return;
-                }
-                if (Detectin(outent))
-                {
-                    if (!_inList.Contains(outent)) _inList.Add(outent);
-                }
-            });
-            _insideReady = true;
+                    if (Detectin(outent))
+                    {
+                        if (!_inList.Contains(outent)) _inList.Add(outent);
+                    }
+                });
+                _insideReady = true;
+            }
 
             BoundingSphereD websphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
