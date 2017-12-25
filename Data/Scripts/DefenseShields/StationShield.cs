@@ -714,13 +714,13 @@ namespace DefenseShields.Station
                 var grid = ent as IMyCubeGrid;
                 if (grid != null)
                 {
+                    if (grid == _tblock.CubeGrid) return;
                     //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - gridsphere.Center) * 2);
                     double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - gridsphere.Center) * 2);
                     if (Detectgridedge(grid, abs))
                     {
                         try
                         {
-                            if (grid == _tblock.CubeGrid) return;
                             Logging.WriteLine(string.Format("{0} - passing grid - CustomName: {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
                             List<long> owners = grid.BigOwners;
                             if (owners.Count > 0)
