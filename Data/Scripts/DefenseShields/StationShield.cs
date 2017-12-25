@@ -562,21 +562,20 @@ namespace DefenseShields.Station
                 if (_inList.Contains(webent)) return;
                 var grid = webent as IMyCubeGrid;
                 if (grid == _tblock.CubeGrid) return;
-                Logging.WriteLine(String.Format("{0} - Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                 if (grid != null)
                 {
                     //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - websphere.Center) * 2);
                     double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - websphere.Center) * 2);
                     if (Detectgridedge(grid, abs))
                     {
-                        Logging.WriteLine(String.Format("{0} - {1} found grid: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
+                        Logging.WriteLine(String.Format("{0} - webEffect: {1} found grid: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
                         List<long> owners = grid.BigOwners;
                         if (owners.Count > 0)
                         {
                             var relations = _tblock.GetUserRelationToOwner(0);
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
                             {
-                                Logging.WriteLine(String.Format("{0} - {1} friendly grid: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
+                                Logging.WriteLine(String.Format("{0} - {1} webEffect-grid ignoring friendly {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
                                 return;
                             }
                         }
@@ -721,7 +720,7 @@ namespace DefenseShields.Station
                     {
                         try
                         {
-                            Logging.WriteLine(string.Format("{0} - passing grid - CustomName: {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
+                            Logging.WriteLine(string.Format("{0} - gridEffect: passing grid: {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
                             List<long> owners = grid.BigOwners;
                             if (owners.Count > 0)
                             {
@@ -732,7 +731,7 @@ namespace DefenseShields.Station
                             //var gridpos = grid.GetPosition();
                             //MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
                             //if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long)dude, -100);
-                            Logging.WriteLine(string.Format("{0} - deleting grid {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
+                            Logging.WriteLine(string.Format("{0} - gridEffect: deleting grid {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
                             grid.Delete();
                         }
                         catch (Exception ex)
