@@ -550,6 +550,7 @@ namespace DefenseShields.Station
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
                 if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
                 if (webent is IMyMeteor) return;
+                /*
                 if (webent is IMyCharacter && (Count == 14 || Count == 29 || Count == 44 || Count == 59) && Detectedge(webent))
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
@@ -561,14 +562,15 @@ namespace DefenseShields.Station
                     }
                     return;
                 }
-                if (webent is IMyCharacter) return;
-                if (_inList.Contains(webent)) return;
+                */
+                //if (webent is IMyCharacter) return;
+                //if (_inList.Contains(webent)) return;
                 var grid = webent as IMyCubeGrid;
-                if (grid == _tblock.CubeGrid || _gridwebbed) return;
+                //if (grid == _tblock.CubeGrid || _gridwebbed) return;
                 if (grid != null)
                 {
                     //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - websphere.Center) * 2);
-                    double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - websphere.Center) * 2);
+                    //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - websphere.Center) * 2);
                     //if (Detectgridedge(grid, abs))
                     //{
                         List<long> owners = grid.BigOwners;
