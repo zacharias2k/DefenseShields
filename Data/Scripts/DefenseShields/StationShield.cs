@@ -502,6 +502,7 @@ namespace DefenseShields.Station
 
         public void WebEffects()
         {
+            _insideReady = false;
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             if (Count == 0)
             {
