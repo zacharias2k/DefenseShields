@@ -503,25 +503,8 @@ namespace DefenseShields.Station
                 List<IMyEntity> inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
                 MyAPIGateway.Parallel.ForEach(inList, outent =>
                 {
-                    if (outent is IMyMeteor || outent.ToString().Contains("MyMeteor")) return;
-                    var grid = outent as IMyCubeGrid;
-                    if (grid != null)
-                    {
-                        if (grid == _tblock.CubeGrid) return;
-                        double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - insphere.Center) * 2);
-                        if (Detectgridedge(grid, abs))
-                        {
-                            if (_inList.Contains(grid))
-                            {
-                                Logging.WriteLine(String.Format("{0} - {1} not added to inside sphere: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
-                                return;
-                            }
-                            Logging.WriteLine(String.Format("{0} - {1} added to inside sphere: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
-                            _inList.Add(grid);
-                            return;
-                        }
-                        return;
-                    }
+                    if (!(outent is IMyCubeGrid) || !(outent is IMyCharacter)) return;
+
                     if (Detectin(outent))
                     {
                         if (!_inList.Contains(outent)) _inList.Add(outent);
