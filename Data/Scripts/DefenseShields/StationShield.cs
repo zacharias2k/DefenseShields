@@ -569,7 +569,7 @@ namespace DefenseShields.Station
                 if (grid != null)
                 {
                     //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - websphere.Center) * 2);
-                    double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - websphere.Center) * 2);
+                    double abs = Math.Abs(gridd.WorldAABB.HalfExtents.Dot(gridd.WorldAABB.Max - websphere.Center) * 2);
                     if (Detectgridedge(gridd, abs))
                     {
                         List<long> owners = grid.BigOwners;
