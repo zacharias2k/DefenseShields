@@ -676,7 +676,7 @@ namespace DefenseShields.Station
             List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere); 
             MyAPIGateway.Parallel.ForEach(gridList, grident =>
             {
-                if (!(grident is IMyCubeGrid)) return; //|| _inHash.Contains(grident)) return;
+                if (!(grident is IMyCubeGrid) || _inHash.Contains(grident)) return;
                 var grid = (IMyCubeGrid) grident;
                 {
                     Logging.WriteLine(String.Format("{0} - grid: {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
