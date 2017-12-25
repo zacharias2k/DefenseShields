@@ -514,6 +514,7 @@ namespace DefenseShields.Station
                     var grid = outent as IMyCubeGrid;
                     if (grid != null)
                     {
+                        if (grid == _tblock.CubeGrid) return;
                         double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - insphere.Center) * 2);
                         if (Detectgridedge(grid, abs))
                         {
@@ -719,8 +720,6 @@ namespace DefenseShields.Station
                     {
                         try
                         {
-                            if (_inList.Count == 0) Logging.WriteLine(string.Format("!!!!!Alert!!!!! {0} - gridEffect: _inList empty in loop {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-
                             if (grid == _tblock.CubeGrid) return;
                             Logging.WriteLine(string.Format("{0} - passing grid - CustomName: {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
                             List<long> owners = grid.BigOwners;
