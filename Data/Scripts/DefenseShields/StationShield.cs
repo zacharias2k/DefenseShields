@@ -476,7 +476,7 @@ namespace DefenseShields.Station
             return false;
         }
 
-        private bool Detectgridedge(IMyCubeGrid grid, double abs)
+        private bool Detectgridedge(IMyCubeGrid grid)
         {
             float x = Vector3Extensions.Project(_worldMatrix.Forward, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
@@ -484,10 +484,10 @@ namespace DefenseShields.Station
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             if (detect <= 1)
             {
-                Logging.WriteLine(String.Format("{0} - {1} grid-t - d:{2} abs:{3} l:{4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, detect, abs, Count));
+                Logging.WriteLine(String.Format("{0} - {1} grid-t - d:{2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, detect, Count));
                 return true;
             }
-            Logging.WriteLine(String.Format("{0} - {1} grid-f - d:{2} abs:{3} l:{4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, detect, abs, Count));
+            Logging.WriteLine(String.Format("{0} - {1} grid-f - d:{2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, detect, Count));
             return false;
         }
         #endregion
@@ -504,21 +504,13 @@ namespace DefenseShields.Station
                 MyAPIGateway.Parallel.ForEach(inList, inent =>
                 {
                     if (!(inent is IMyCubeGrid) && !(inent is IMyCharacter)) return;
-                    if (Detectin(inent))
-                    {
-                        Logging.WriteLine(String.Format("{0} - {1} added to inside", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), inent));
-                        _inHash.Add(inent);
-                    }
+                    if (Detectin(inent)) _inHash.Add(inent);
                 });
             }
-            
 
+            _gridwebbed = true;
             BoundingSphereD websphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
-            /*HashSet<IMyEntity> webHash = new HashSet<IMyEntity>();
-            BoundingSphereD websphere = new BoundingSphereD(pos, _range);
-            MyAPIGateway.Entities.GetEntities(webHash, ent => websphere.Intersects(ent.WorldAABB) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock) && !(ent is IMyFloatingObject) 
-            && !(ent is IMyEngineerToolBase) && ent != _tblock.CubeGrid && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag));*/
             MyAPIGateway.Parallel.ForEach(webList, webent =>
             {
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
@@ -552,8 +544,8 @@ namespace DefenseShields.Station
                         if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                     }
                     //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - websphere.Center) * 2);
-                    double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - websphere.Center) * 2);
-                    if (Detectgridedge(grid, abs))
+                    //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - websphere.Center) * 2);
+                    if (Detectgridedge(grid))
                     {
                         Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName));
                         _gridwebbed = true;
@@ -682,31 +674,24 @@ namespace DefenseShields.Station
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             BoundingSphereD gridsphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere); 
-            /*HashSet<IMyEntity> gridHash = new HashSet<IMyEntity>();
-            BoundingSphereD websphere = new BoundingSphereD(pos, _range);
-            MyAPIGateway.Entities.GetEntities(gridHash, ent => websphere.Intersects(ent.WorldAABB) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock) && !(ent is IMyFloatingObject)
-            && !(ent is IMyEngineerToolBase) && ent != _tblock.CubeGrid && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag));*/
-            //Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-            MyAPIGateway.Parallel.ForEach(gridList, ent =>
+            MyAPIGateway.Parallel.ForEach(gridList, grident =>
             {
-                if (ent == null || _inHash.Contains(ent)) return;
-                var grid = ent as IMyCubeGrid;
-                if (grid != null)
+                if (!(grident is IMyCubeGrid) || _inHash.Contains(grident)) return;
+                var grid = (IMyCubeGrid) grident;
                 {
+                    Logging.WriteLine(String.Format("{0} - grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName));
                     if (grid == _tblock.CubeGrid) return;
-                    //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - gridsphere.Center) * 2);
-                    double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - gridsphere.Center) * 2);
-                    if (Detectgridedge(grid, abs))
+                    try
                     {
-                        try
+                        List<long> owners = grid.BigOwners;
+                        if (owners.Count > 0)
                         {
-                            List<long> owners = grid.BigOwners;
-                            if (owners.Count > 0)
-                            {
-                                var relations = _tblock.GetUserRelationToOwner(owners[0]);
-                                //Logging.WriteLine(String.Format("{0} - grid: {1} tblock: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, owners.Count, relations, relations == MyRelationsBetweenPlayerAndBlock.Owner, relations == MyRelationsBetweenPlayerAndBlock.FactionShare));
-                                if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
-                            }
+                            var relations = _tblock.GetUserRelationToOwner(owners[0]);
+                            //Logging.WriteLine(String.Format("{0} - grid: {1} tblock: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, owners.Count, relations, relations == MyRelationsBetweenPlayerAndBlock.Owner, relations == MyRelationsBetweenPlayerAndBlock.FactionShare));
+                            if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
+                        }
+                        if (Detectgridedge(grid))
+                        {
                             //long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId;
                             //if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long)dude, -100);
                             var gridpos = grid.GetPosition();
@@ -714,11 +699,12 @@ namespace DefenseShields.Station
                             Logging.WriteLine(string.Format("{0} - gridEffect: deleting grid {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
                             grid.Delete();
                         }
-                        catch (Exception ex)
-                        {
-                            Logging.WriteLine(string.Format("{0} - Exception in gridEffects", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
-                            Logging.WriteLine(string.Format("{0} - {1}", DateTime.Now, ex));
-                        }
+
+                    }
+                    catch (Exception ex)
+                    {
+                        Logging.WriteLine(string.Format("{0} - Exception in gridEffects", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
+                        Logging.WriteLine(string.Format("{0} - {1}", DateTime.Now, ex));
                     }
                 }
 
