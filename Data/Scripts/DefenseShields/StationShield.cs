@@ -19,6 +19,15 @@ using VRage.Utils;
 using VRage.Game.Entity;
 using System.Linq;
 using VRage.Collections;
+using SpaceEngineers.Game.ModAPI;
+using VRage;
+using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Character;
+using VRage.Game.ModAPI.Interfaces;
+using Sandbox.Definitions;
+using Sandbox.Common;
+using Sandbox.Engine;
+using Sandbox.Engine.Multiplayer;
 
 namespace DefenseShields.Station
 {
@@ -58,8 +67,8 @@ namespace DefenseShields.Station
         //MatrixD _detectMatrix = MatrixD.Identity;
         private Vector3D _edgeVectors;
         private Vector3D _inVectors;
-        private BoundingSphereD _sphereMin;
-        private BoundingSphereD _sphereMax;
+        //private BoundingSphereD _sphereMin;
+        //private BoundingSphereD _sphereMax;
         private MyEntitySubpart _subpartRotor;
         public RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> Slider;
         public RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> Ellipsoid;
@@ -73,7 +82,6 @@ namespace DefenseShields.Station
         private List<Matrix> _matrixReflectorsOff = new List<Matrix>();
         private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
-        //public List<IMyEntity> _inList = new List<IMyEntity>();
         public MyConcurrentHashSet<IMyEntity> _inHash = new MyConcurrentHashSet<IMyEntity>();
 
         public static readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
@@ -111,6 +119,7 @@ namespace DefenseShields.Station
 
                 if (_animInit)
                 {
+                    Logging.WriteLine(String.Format("{0} - _animInit is true", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
                     _worldMatrix = Entity.WorldMatrix;
                     _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
                     //Animations
@@ -213,6 +222,10 @@ namespace DefenseShields.Station
         #region Block Animation
         public void BlockAnimation()
         {
+            Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.Closed));
+            Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.MarkedForClose));
+            Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.Subparts.Values));
+
             try
             {
                 _animStep = 0f;
@@ -516,7 +529,6 @@ namespace DefenseShields.Station
         public void WebEffects()
         {
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
-            _gridwebbed = true;
 
             BoundingSphereD websphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
@@ -613,7 +625,6 @@ namespace DefenseShields.Station
                 var grid = grident as IMyCubeGrid;
                 if ((grid != null) && !_inHash.Contains(grid))
                 {
-                    Logging.WriteLine(String.Format("{0} - grid: {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
                     if (grid == _tblock.CubeGrid) return;
                     try
                     {
