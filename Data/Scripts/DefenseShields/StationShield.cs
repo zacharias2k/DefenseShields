@@ -154,11 +154,14 @@ namespace DefenseShields.Station
                 }
                 if (!MyAPIGateway.Utilities.IsDedicated) ShowRange(_range); //Check
                 else SendPoke(_range); //Check
-                if (Count == 0) MyAPIGateway.Parallel.Do(InHashBuilder);
-                MyAPIGateway.Parallel.StartBackground(WebEffects);
-                if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
-                if (_gridwebbed && !_gridlocked) MyAPIGateway.Parallel.Do(GridEffects);
-                if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
+                if (!Initialized && _cblock.IsWorking)
+                {
+                    if (Count == 0) MyAPIGateway.Parallel.Do(InHashBuilder);
+                    MyAPIGateway.Parallel.StartBackground(WebEffects);
+                    if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
+                    if (_gridwebbed && !_gridlocked) MyAPIGateway.Parallel.Do(GridEffects);
+                    if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
+                }
             }
             catch (Exception ex)
             {
