@@ -122,8 +122,8 @@ namespace DefenseShields.Station
                     _subpartRotor.Subparts.Clear();
                     _subpartsArms.Clear();
                     _subpartsReflectors.Clear();
-                    Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                   //BlockAnimation();
+                    //Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                   BlockAnimation();
                 }
 
                 //if (Entity.TryGetSubpart("Rotor", out _subpartRotor))
