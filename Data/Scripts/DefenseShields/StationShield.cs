@@ -577,16 +577,18 @@ namespace DefenseShields.Station
                         if (owners.Count > 0)
                         {
                             var relations = _tblock.GetUserRelationToOwner(0);
+                            Logging.WriteLine(String.Format("{0} - grid: {1} tblock: {2} {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, owners.Count, relations));
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
                             {
                                 Logging.WriteLine(String.Format("{0} - {1} webEffect-grid ignoring friendly {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
                                 return;
                             }
                         }
-                            Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName));
-                            _gridwebbed = true;
-                            return;
+                        Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName));
+                        _gridwebbed = true;
+                        return;
                     }
+                    return;
                 }
                 if (_shotwebbed) return;
                 if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo")) //&& Detectedge(webent))
@@ -713,7 +715,7 @@ namespace DefenseShields.Station
             BoundingSphereD websphere = new BoundingSphereD(pos, _range);
             MyAPIGateway.Entities.GetEntities(gridHash, ent => websphere.Intersects(ent.WorldAABB) && !(ent is IMyVoxelBase) && !(ent is IMyCubeBlock) && !(ent is IMyFloatingObject)
             && !(ent is IMyEngineerToolBase) && ent != _tblock.CubeGrid && !(ent is IMyAutomaticRifleGun) && !(Entity is IMyInventoryBag));*/
-            Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now, Count));
+            Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
             MyAPIGateway.Parallel.ForEach(gridList, ent =>
             {
                 if (ent == null || _inList.Contains(ent)) return;
