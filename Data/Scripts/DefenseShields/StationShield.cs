@@ -119,7 +119,6 @@ namespace DefenseShields.Station
 
                 if (_animInit)
                 {
-                    Logging.WriteLine(String.Format("{0} - _animInit is true", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
                     _worldMatrix = Entity.WorldMatrix;
                     _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
                     //Animations
@@ -202,6 +201,7 @@ namespace DefenseShields.Station
                     {
                         if (!_oblock.IsFunctional) return;
                         BlockAnimation();
+                        Logging.WriteLine(String.Format("{0} - BlockAnimation {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
 
                         _animInit = true;
                     }
