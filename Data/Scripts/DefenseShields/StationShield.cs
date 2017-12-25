@@ -466,36 +466,36 @@ namespace DefenseShields.Station
         #endregion
 
         #region Detect edge intersection
-        private bool Detectedge(IMyEntity entd)
+        private bool Detectedge(IMyEntity ent)
         {
-            float x = Vector3Extensions.Project(_worldMatrix.Forward, entd.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix.Left, entd.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_worldMatrix.Up, entd.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             if (detect <= 1)
             {
-                Logging.WriteLine(String.Format("{0} - {1} edge-t - d:{2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), entd, detect, Count));
+                Logging.WriteLine(String.Format("{0} - {1} edge-t - d:{2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, detect, Count));
                 return true;
             }
-            if (detect <= 1.1) Logging.WriteLine(String.Format("{0} - {1} edge-f - d:{2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), entd, detect, Count));
+            if (detect <= 1.1) Logging.WriteLine(String.Format("{0} - {1} edge-f - d:{2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, detect, Count));
             return false;
         }
         #endregion
 
         #region Detect grid edge intersection
-        private bool Detectgridedge(IMyCubeGrid gridd, double abs)
+        private bool Detectgridedge(IMyCubeGrid grid, double abs)
         {
-            float x = Vector3Extensions.Project(_worldMatrix.Forward, gridd.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix.Left, gridd.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_worldMatrix.Up, gridd.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float x = Vector3Extensions.Project(_worldMatrix.Forward, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_worldMatrix.Left, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_worldMatrix.Up, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
             //float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             if (detect <= 1)
             {
-                Logging.WriteLine(String.Format("{0} - {1} grid-t - d:{2} abs:{3} l:{4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), gridd.CustomName, detect, abs, Count));
+                Logging.WriteLine(String.Format("{0} - {1} grid-t - d:{2} abs:{3} l:{4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, detect, abs, Count));
                 return true;
             }
-            Logging.WriteLine(String.Format("{0} - {1} grid-f - d:{2} abs:{3} l:{4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), gridd.CustomName, detect, abs, Count));
+            Logging.WriteLine(String.Format("{0} - {1} grid-f - d:{2} abs:{3} l:{4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, detect, abs, Count));
             return false;
         }
         #endregion
@@ -564,6 +564,7 @@ namespace DefenseShields.Station
                 if (webent is IMyCharacter) return;
                 if (_inList.Contains(webent)) return;
                 var grid = webent as IMyCubeGrid;
+                var gridd = webent as IMyCubeGrid;
                 if (grid == _tblock.CubeGrid || _gridwebbed) return;
                 if (grid != null)
                 {
@@ -571,7 +572,7 @@ namespace DefenseShields.Station
                     double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - websphere.Center) * 2);
                     if (Detectgridedge(grid, abs))
                     {
-                        List<long> owners = grid.BigOwners;
+                        List<long> owners = gridd.BigOwners;
                         if (owners.Count > 0)
                         {
                             var relations = _tblock.GetUserRelationToOwner(0);
