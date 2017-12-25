@@ -500,12 +500,11 @@ namespace DefenseShields.Station
             if (Count == 0)
             {
                 _inHash.Clear();
-                Logging.WriteLine(String.Format("{0} - {1} {2} {3} {4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _inRange, _inDepth, _inHeight, _inWidth));
                 BoundingSphereD insphere = new BoundingSphereD(pos, _inRange);
                 List<IMyEntity> inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
                 MyAPIGateway.Parallel.ForEach(inList, inent =>
                 {
-                    if (!(inent is IMyCubeGrid) || !(inent is IMyCharacter)) return;
+                    //if (!(inent is IMyCubeGrid) || !(inent is IMyCharacter)) return;
 
                     if (Detectin(inent))
                     {
