@@ -222,8 +222,8 @@ namespace DefenseShields.Station
         #region Block Animation
         public void BlockAnimation()
         {
-            Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.Closed));
-            Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.MarkedForClose));
+            //Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.Closed));
+            //Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.MarkedForClose));
             //Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.Subparts.Values));
 
             try
