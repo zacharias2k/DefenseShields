@@ -37,7 +37,7 @@ namespace DefenseShields.Station
         private float _inRange;
         private readonly float _inOutSpace = 15f;
 
-        public int Count = -1;
+        public int Count = -301;
         private int _colourRand = 32;
         private int _time;
         private int _playertime;
@@ -156,7 +156,7 @@ namespace DefenseShields.Station
                 else SendPoke(_range); //Check
                 if (!Initialized && _cblock.IsWorking)
                 {
-                    if (Count == 0) MyAPIGateway.Parallel.Do(InHashBuilder);
+                    if (Count <= 0) MyAPIGateway.Parallel.Do(InHashBuilder);
                     MyAPIGateway.Parallel.StartBackground(WebEffects);
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
                     if (_gridwebbed && !_gridlocked) MyAPIGateway.Parallel.Do(GridEffects);
