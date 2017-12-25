@@ -154,7 +154,7 @@ namespace DefenseShields.Station
                 }
                 if (!MyAPIGateway.Utilities.IsDedicated) ShowRange(_range); //Check
                 else SendPoke(_range); //Check
-                if (Count == 0) MyAPIGateway.Parallel.Do(InHashBuilder);
+                if (Count == 0) MyAPIGateway.Parallel.StartBackground(InHashBuilder);
                 MyAPIGateway.Parallel.StartBackground(WebEffects);
                 if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
                 if (_gridwebbed && !_gridlocked) MyAPIGateway.Parallel.Do(GridEffects);
