@@ -404,14 +404,14 @@ namespace DefenseShields.Station
             Ellipsoid = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>((IMyTerminalBlock)_cblock,
                 "Ellipsoid",
                 "Switch to Ellipsoid",
-                true);
+                false);
             
             Slider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>((IMyFunctionalBlock)_cblock,
                 "RadiusSlider",
                 "Shield Size",
                 50,
                 300,
-                50);
+                300);
         }
         #endregion
 
