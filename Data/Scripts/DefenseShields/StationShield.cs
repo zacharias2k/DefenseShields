@@ -503,7 +503,6 @@ namespace DefenseShields.Station
         public void WebEffects()
         {
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
-            _insideReady = false;
             if (Count == 0)
             {
                 _inList.Clear();
@@ -519,7 +518,6 @@ namespace DefenseShields.Station
                         double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - insphere.Center) * 2);
                         if (Detectgridedge(grid, abs))
                         {
-                            Logging.WriteLine(String.Format("{0} - begin Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                             if (_inList.Contains(grid))
                             {
                                 Logging.WriteLine(String.Format("{0} - {1} not added to inside sphere: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
@@ -537,7 +535,6 @@ namespace DefenseShields.Station
                     }
                 });
             }
-            _insideReady = true;
 
             BoundingSphereD websphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
@@ -548,7 +545,6 @@ namespace DefenseShields.Station
             MyAPIGateway.Parallel.ForEach(webList, webent =>
             {
                 Logging.WriteLine(String.Format("{0} - Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-                if (_insideReady == false) Logging.WriteLine(String.Format("{0} - HOW CAN THIS BE! -Count: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
                 if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
                 if (webent is IMyMeteor) return;
