@@ -116,10 +116,10 @@ namespace DefenseShields.Station
             {
                 if (_animInit)
                 {
-                    if (_subpartRotor.Closed.Equals(true))
-                    {
-                        BlockAnimationReset();
-                    }
+                    //if (_subpartRotor.Closed.Equals(true))
+                    //{
+                    //    BlockAnimationReset();
+                    //}
                     BlockAnimation();
                 }
                 if (Count++ == 59) Count = 0;
