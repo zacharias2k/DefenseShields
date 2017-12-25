@@ -67,8 +67,6 @@ namespace DefenseShields.Station
         //MatrixD _detectMatrix = MatrixD.Identity;
         private Vector3D _edgeVectors;
         private Vector3D _inVectors;
-        //private BoundingSphereD _sphereMin;
-        //private BoundingSphereD _sphereMax;
         private MyEntitySubpart _subpartRotor;
         public RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> Slider;
         public RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> Ellipsoid;
@@ -116,71 +114,13 @@ namespace DefenseShields.Station
         {
             try
             {
-                if (_subpartRotor.Closed.Equals(true))
-                {
-                    Logging.WriteLine(String.Format("{0} - Resetting BlockAnimation in loop {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-                    _subpartRotor.Subparts.Clear();
-                    _subpartsArms.Clear();
-                    _subpartsReflectors.Clear();
-                    //Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                   BlockAnimation();
-                }
-
-                //if (Entity.TryGetSubpart("Rotor", out _subpartRotor))
-                //{
-                //}
-                /*
-                for (int i = 1; i < 9; i++)
-                {
-                    MyEntitySubpart temp1;
-                    Logging.WriteLine(String.Format("{0} - subpart Arm {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.TryGetSubpart("ArmT" + i.ToString(), out temp1)));
-                    _subpartRotor.Subparts.Clear();
-                    //Logging.WriteLine(String.Format("{0} - subpart Arm {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), temp1.TryGetSubpart("ArmT" + i.ToString(), out _subpartRotor)));
-                }
-                for (int i = 0; i < 4; i++)
-                {
-                    MyEntitySubpart temp3;
-                    Logging.WriteLine(String.Format("{0} - subpart Reflector {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartsArms[i].TryGetSubpart("Reflector", out temp3)));
-                    _subpartsArms[i].Subparts.Clear();
-                    //Logging.WriteLine(String.Format("{0} - subpart Reflector {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), temp3.TryGetSubpart("ArmT" + i.ToString(), out _subpartRotor)));
-
-                }
-                */
                 if (_animInit)
                 {
-                    _worldMatrix = Entity.WorldMatrix;
-                    _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
-                    //Animations
-                    if (_fblock.Enabled && _fblock.IsFunctional && _cblock.IsWorking)
+                    if (_subpartRotor.Closed.Equals(true))
                     {
-                        //Color change for on =-=-=-=-
-                        _subpartRotor.SetEmissiveParts("Emissive", Color.White, 1);
-                        _time += 1;
-                        Matrix temp1 = Matrix.CreateRotationY(0.1f * _time);
-                        temp1.Translation = _subpartRotor.PositionComp.LocalMatrix.Translation;
-                        _subpartRotor.PositionComp.LocalMatrix = temp1;
-                        if (_animStep < 1f)
-                        {
-                            _animStep += 0.05f;
-                        }
+                        BlockAnimationReset();
                     }
-                    else
-                    {
-                        //Color change for off =-=-=-=-
-                        _subpartRotor.SetEmissiveParts("Emissive", Color.Black + new Color(15, 15, 15, 5), 0);
-                        if (_animStep > 0f)
-                        {
-                            _animStep -= 0.05f;
-                        }
-                    }
-                    for (int i = 0; i < 8; i++)
-                    {
-                        if (i < 4)
-                        {
-                            _subpartsReflectors[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixReflectorsOff[i], _matrixReflectorsOn[i], _animStep);
-                        }
-                        _subpartsArms[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixArmsOff[i], _matrixArmsOn[i], _animStep);
-                    }
+                    BlockAnimation();
                 }
                 if (Count++ == 59) Count = 0;
                 if (Count % 3 == 0)
@@ -229,7 +169,7 @@ namespace DefenseShields.Station
                     if (_oblock.BlockDefinition.SubtypeId == "StationDefenseShield")
                     {
                         if (!_oblock.IsFunctional) return;
-                        BlockAnimation();
+                        BlockAnimationInit();
                         Logging.WriteLine(String.Format("{0} - BlockAnimation {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
 
                         _animInit = true;
@@ -249,7 +189,16 @@ namespace DefenseShields.Station
         #endregion
 
         #region Block Animation
-        public void BlockAnimation()
+        public void BlockAnimationReset()
+        {
+            Logging.WriteLine(String.Format("{0} - Resetting BlockAnimation in loop {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
+            _subpartRotor.Subparts.Clear();
+            _subpartsArms.Clear();
+            _subpartsReflectors.Clear();
+            BlockAnimationInit();
+        }
+
+        public void BlockAnimationInit()
         {
             try
             {
@@ -310,6 +259,43 @@ namespace DefenseShields.Station
             {
                 Logging.WriteLine(String.Format("{0} - Exception in BlockAnimation", DateTime.Now));
                 Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now, ex));
+            }
+        }
+
+        public void BlockAnimation()
+        {
+            _worldMatrix = Entity.WorldMatrix;
+            _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
+            //Animations
+            if (_fblock.Enabled && _fblock.IsFunctional && _cblock.IsWorking)
+            {
+                //Color change for on =-=-=-=-
+                _subpartRotor.SetEmissiveParts("Emissive", Color.White, 1);
+                _time += 1;
+                Matrix temp1 = Matrix.CreateRotationY(0.1f * _time);
+                temp1.Translation = _subpartRotor.PositionComp.LocalMatrix.Translation;
+                _subpartRotor.PositionComp.LocalMatrix = temp1;
+                if (_animStep < 1f)
+                {
+                    _animStep += 0.05f;
+                }
+            }
+            else
+            {
+                //Color change for off =-=-=-=-
+                _subpartRotor.SetEmissiveParts("Emissive", Color.Black + new Color(15, 15, 15, 5), 0);
+                if (_animStep > 0f)
+                {
+                    _animStep -= 0.05f;
+                }
+            }
+            for (int i = 0; i < 8; i++)
+            {
+                if (i < 4)
+                {
+                    _subpartsReflectors[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixReflectorsOff[i], _matrixReflectorsOn[i], _animStep);
+                }
+                _subpartsArms[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixArmsOff[i], _matrixArmsOn[i], _animStep);
             }
         }
         #endregion
