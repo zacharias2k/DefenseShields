@@ -503,8 +503,7 @@ namespace DefenseShields.Station
                 List<IMyEntity> inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
                 MyAPIGateway.Parallel.ForEach(inList, inent =>
                 {
-                    if ((!(inent is IMyCubeGrid)) || (!(inent is IMyCharacter))) return;
-
+                    if (!(inent is IMyCubeGrid) && !(inent is IMyCharacter)) return;
                     if (Detectin(inent))
                     {
                         Logging.WriteLine(String.Format("{0} - {1} added to inside", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), inent));
