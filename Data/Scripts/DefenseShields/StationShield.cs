@@ -116,9 +116,18 @@ namespace DefenseShields.Station
         {
             try
             {
-                //Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Entity.TryGetSubpart("Rotor", out _subpartRotor)));
-                //Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.MarkedForClose));
-                //Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.Subparts.Values));
+                Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Entity.TryGetSubpart("Rotor", out _subpartRotor)));
+
+                for (int i = 1; i < 9; i++)
+                {
+                    MyEntitySubpart temp1;
+                    _subpartRotor.TryGetSubpart("ArmT" + i.ToString(), out temp1);
+                }
+                for (int i = 0; i < 4; i++)
+                {
+                    MyEntitySubpart temp3;
+                    _subpartsArms[i].TryGetSubpart("Reflector", out temp3);
+                }
                 if (_animInit)
                 {
                     _worldMatrix = Entity.WorldMatrix;
