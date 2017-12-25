@@ -534,6 +534,7 @@ namespace DefenseShields.Station
                         if (!_inList.Contains(outent)) _inList.Add(outent);
                     }
                 });
+                return;
             }
 
             BoundingSphereD websphere = new BoundingSphereD(pos, _range);
