@@ -154,6 +154,7 @@ namespace DefenseShields.Station
                 }
                 if (!MyAPIGateway.Utilities.IsDedicated) ShowRange(_range); //Check
                 else SendPoke(_range); //Check
+                if (Count == 0) MyAPIGateway.Parallel.Do(InHashBuilder);
                 MyAPIGateway.Parallel.StartBackground(WebEffects);
                 if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
                 if (_gridwebbed && !_gridlocked) MyAPIGateway.Parallel.Do(GridEffects);
@@ -492,23 +493,28 @@ namespace DefenseShields.Station
         }
         #endregion
 
+        #region Build inside HashSet
+        public void InHashBuilder()
+        {
+            var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
+            BoundingSphereD insphere = new BoundingSphereD(pos, _inRange);
+            List<IMyEntity> inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
+
+            _inHash.Clear();
+            MyAPIGateway.Parallel.ForEach(inList, inent =>
+            {
+                if (!(inent is IMyCubeGrid) && !(inent is IMyCharacter)) return;
+                if (Detectin(inent)) _inHash.Add(inent);
+            });
+        }
+        #endregion
+
         #region Webing effects
         public void WebEffects()
         {
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
-            if (Count == 0)
-            {
-                _inHash.Clear();
-                BoundingSphereD insphere = new BoundingSphereD(pos, _inRange);
-                List<IMyEntity> inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
-                MyAPIGateway.Parallel.ForEach(inList, inent =>
-                {
-                    if (!(inent is IMyCubeGrid) && !(inent is IMyCharacter)) return;
-                    if (Detectin(inent)) _inHash.Add(inent);
-                });
-            }
-
             _gridwebbed = true;
+
             BoundingSphereD websphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
             MyAPIGateway.Parallel.ForEach(webList, webent =>
