@@ -610,8 +610,7 @@ namespace DefenseShields.Station
             List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere);
             MyAPIGateway.Parallel.ForEach(gridList, grident =>
             {
-                if (!(grident is IMyCubeGrid) && _inHash.Contains(grident)) return;
-                var grid = (IMyCubeGrid)grident;
+                if ((grident is IMyCubeGrid grid) && !_inHash.Contains(grid))
                 {
                     Logging.WriteLine(String.Format("{0} - grid: {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
                     if (grid == _tblock.CubeGrid) return;
@@ -641,7 +640,6 @@ namespace DefenseShields.Station
                         Logging.WriteLine(string.Format("{0} - {1}", DateTime.Now, ex));
                     }
                 }
-
             });
             _gridwebbed = false;
             _gridlocked = false;
