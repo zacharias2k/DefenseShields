@@ -18,6 +18,7 @@ using VRage.ModAPI;
 using VRage.Utils;
 using VRage.Game.Entity;
 using System.Linq;
+using VRage.Collections;
 
 namespace DefenseShields.Station
 {
@@ -72,7 +73,8 @@ namespace DefenseShields.Station
         private List<Matrix> _matrixReflectorsOff = new List<Matrix>();
         private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
-        public List<IMyEntity> _inList = new List<IMyEntity>();
+        //public List<IMyEntity> _inList = new List<IMyEntity>();
+        public MyConcurrentHashSet<IMyEntity> _inHash = new MyConcurrentHashSet<IMyEntity>();
 
         public static readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
 
@@ -497,17 +499,18 @@ namespace DefenseShields.Station
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             if (Count == 0)
             {
-                _inList.Clear();
+                _inHash.Clear();
                 Logging.WriteLine(String.Format("{0} - {1} {2} {3} {4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _inRange, _inDepth, _inHeight, _inWidth));
                 BoundingSphereD insphere = new BoundingSphereD(pos, _inRange);
                 List<IMyEntity> inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
-                MyAPIGateway.Parallel.ForEach(inList, outent =>
+                MyAPIGateway.Parallel.ForEach(inList, inent =>
                 {
-                    if (!(outent is IMyCubeGrid) || !(outent is IMyCharacter)) return;
+                    if (!(inent is IMyCubeGrid) || !(inent is IMyCharacter)) return;
 
-                    if (Detectin(outent))
+                    if (Detectin(inent))
                     {
-                        if (!_inList.Contains(outent)) _inList.Add(outent);
+                        Logging.WriteLine(String.Format("{0} - {1} added to inside", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), inent));
+                        _inHash.Add(inent);
                     }
                 });
             }
@@ -538,7 +541,11 @@ namespace DefenseShields.Station
                 }
                 
                 if (webent is IMyCharacter) return;
-                if (_inList.Contains(webent)) return;
+                if (_inHash.Contains(webent))
+                {
+                    Logging.WriteLine(String.Format("{0} - {1} is inside returning", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent));
+                    return;
+                }
                 var grid = webent as IMyCubeGrid;
                 if (grid == _tblock.CubeGrid || _gridwebbed) return;
                 if (grid != null)
@@ -604,7 +611,7 @@ namespace DefenseShields.Station
         public void PlayerEffects()
         {
             Random rnd = new Random();
-            MyAPIGateway.Parallel.ForEach(_inList, playerent =>
+            MyAPIGateway.Parallel.ForEach(_inHash, playerent =>
             {
                 if (!(playerent is IMyCharacter)) return;
                     try
@@ -688,7 +695,7 @@ namespace DefenseShields.Station
             //Logging.WriteLine(String.Format("{0} - gridEffect: loop is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
             MyAPIGateway.Parallel.ForEach(gridList, ent =>
             {
-                if (ent == null || _inList.Contains(ent)) return;
+                if (ent == null || _inHash.Contains(ent)) return;
                 var grid = ent as IMyCubeGrid;
                 if (grid != null)
                 {
@@ -848,7 +855,7 @@ namespace DefenseShields.Station
             if (ent == null) return;
             bool isProtected = false;
             foreach (var shield in _bulletShields)
-                if (shield._inList.Contains(ent))
+                if (shield._inHash.Contains(ent))
                 {
                     isProtected = true;
                     generator = shield;
@@ -856,7 +863,7 @@ namespace DefenseShields.Station
             if (!isProtected) return;
             IMyEntity attacker;
             if (!MyAPIGateway.Entities.TryGetEntityById(info.AttackerId, out attacker)) return;
-            if (generator._inList.Contains(attacker)) return;
+            if (generator._inHash.Contains(attacker)) return;
             info.Amount = 0f;
         }
     }
