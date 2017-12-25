@@ -146,7 +146,7 @@ namespace DefenseShields.Station
                         _subpartsArms[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixArmsOff[i], _matrixArmsOn[i], _animStep);
                     }
                 }
-                if (Count++ == 59 || Count++ == 239) Count = 0;
+                if (Count++ == 59) Count = 0;
                 if (Count % 3 == 0)
                 {
                     _colourRand += (16 - _random.Next(1, 32));
@@ -534,8 +534,8 @@ namespace DefenseShields.Station
                         if (!_inList.Contains(outent)) _inList.Add(outent);
                     }
                 });
-                return;
             }
+
 
             BoundingSphereD websphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
