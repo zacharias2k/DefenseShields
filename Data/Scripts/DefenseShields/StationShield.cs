@@ -116,7 +116,7 @@ namespace DefenseShields.Station
         {
             try
             {
-                Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Entity.TryGetSubpart("Rotor", out _subpartRotor)));
+                //Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Entity.TryGetSubpart("Rotor", out _subpartRotor)));
                 //Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.MarkedForClose));
                 //Logging.WriteLine(String.Format("{0} - subpart {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.Subparts.Values));
                 if (_animInit)
