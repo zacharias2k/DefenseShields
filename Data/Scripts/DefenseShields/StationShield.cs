@@ -129,7 +129,7 @@ namespace DefenseShields.Station
                     if (_colourRand < 0) _colourRand = 0;
                     else if (_colourRand > 64) _colourRand = 64;
                 }
-                if (!MyAPIGateway.Utilities.IsDedicated) ShowRange(_range); //Check
+                if (!MyAPIGateway.Utilities.IsDedicated) DrawShield(_range); //Check
                 else SendPoke(_range); //Check
                 if (!Initialized && _cblock.IsWorking)
                 {
@@ -442,7 +442,7 @@ namespace DefenseShields.Station
                 info = message;
                 if (info.ModId == _modId)
                 {
-                    ShowRange(info.Size);
+                    DrawShield(info.Size);
                 }
             }
             catch (Exception ex)
@@ -453,23 +453,27 @@ namespace DefenseShields.Station
         }
         #endregion
 
-        #region Sphere Draw
-        public void ShowRange(float size)
+        #region Draw Shield
+        public void DrawShield(float size)
         {
-            Color colour;
-            var relations = _tblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId);
-            if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
-                colour = Color.FromNonPremultiplied(16, 255 - _colourRand, 16 + _colourRand, 72);
-            else
-                colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
-            //var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
-            //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
-            _edgeVectors = new Vector3(_depth, _height, _width);
-            _inVectors = new Vector3(_inDepth, _inHeight, _inWidth);
-            MatrixD edgeMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _edgeVectors);
-            MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, null, MyStringId.GetOrCompute("Build new"), 0.25f, -1);
-            MatrixD inMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _inVectors);
-            MySimpleObjectDraw.DrawTransparentSphere(ref inMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, null, MyStringId.GetOrCompute("Build new"), 0.25f, -1);
+            if (!Initialized && _cblock.IsWorking)
+            {
+                Color colour;
+                var relations = _tblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId);
+                if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
+                    colour = Color.FromNonPremultiplied(16, 255 - _colourRand, 16 + _colourRand, 72);
+                else
+                    colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
+                //var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
+                //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
+                _edgeVectors = new Vector3(_depth, _height, _width);
+                _inVectors = new Vector3(_inDepth, _inHeight, _inWidth);
+                MatrixD edgeMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _edgeVectors);
+                MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, null, MyStringId.GetOrCompute("Build new"), 0.25f, -1);
+                MatrixD inMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _inVectors);
+                MySimpleObjectDraw.DrawTransparentSphere(ref inMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, null, MyStringId.GetOrCompute("Build new"), 0.25f, -1);
+            }
+
         }
         #endregion
 
