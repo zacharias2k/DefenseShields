@@ -514,7 +514,6 @@ namespace DefenseShields.Station
                     var grid = outent as IMyCubeGrid;
                     if (grid != null)
                     {
-                        if (grid == _tblock.CubeGrid) return;
                         double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - insphere.Center) * 2);
                         if (Detectgridedge(grid, abs))
                         {
