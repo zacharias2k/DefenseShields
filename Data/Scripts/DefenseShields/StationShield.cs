@@ -483,19 +483,19 @@ namespace DefenseShields.Station
         #endregion
 
         #region Detect grid edge intersection
-        private bool Detectgridedge(IMyCubeGrid grid, double abs)
+        private bool Detectgridedge(IMyCubeGrid test, double abs)
         {
-            float x = Vector3Extensions.Project(_worldMatrix.Forward, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix.Left, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_worldMatrix.Up, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float x = Vector3Extensions.Project(_worldMatrix.Forward, test.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_worldMatrix.Left, test.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_worldMatrix.Up, test.GetPosition() - _worldMatrix.Translation).AbsMax();
             //float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
             if (detect <= 1)
             {
-                Logging.WriteLine(String.Format("{0} - {1} grid-t - d:{2} abs:{3} l:{4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, detect, abs, Count));
+                Logging.WriteLine(String.Format("{0} - {1} grid-t - d:{2} abs:{3} l:{4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), test.CustomName, detect, abs, Count));
                 return true;
             }
-            Logging.WriteLine(String.Format("{0} - {1} grid-f - d:{2} abs:{3} l:{4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, detect, abs, Count));
+            Logging.WriteLine(String.Format("{0} - {1} grid-f - d:{2} abs:{3} l:{4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), test.CustomName, detect, abs, Count));
             return false;
         }
         #endregion
@@ -570,8 +570,8 @@ namespace DefenseShields.Station
                     Logging.WriteLine(String.Format("{0} - WebEffect-grid {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                     //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - websphere.Center) * 2);
                     double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - websphere.Center) * 2);
-                    //if (Detectgridedge(grid, abs))
-                    //{
+                    if (Detectgridedge(grid, abs))
+                    {
                         Logging.WriteLine(String.Format("{0} - webEffect: {1} found grid: {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
                         List<long> owners = grid.BigOwners;
                         if (owners.Count > 0)
@@ -583,8 +583,8 @@ namespace DefenseShields.Station
                         Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName));
                         _gridwebbed = true;
                         return;
-                    //}
-                    //return;
+                    }
+                    return;
                 }
                 if (_shotwebbed) return;
                 if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo")) //&& Detectedge(webent))
