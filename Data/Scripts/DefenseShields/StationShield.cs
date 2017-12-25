@@ -17,15 +17,7 @@ using VRage.Game.Components;
 using VRage.ModAPI;
 using VRage.Utils;
 using VRage.Game.Entity;
-using VRage;
 using System.Linq;
-using System.Reflection;
-using BulletXNA.BulletCollision;
-using Sandbox.Engine.Utils;
-using Sandbox.Game.Entities;
-using Sandbox.Gui;
-using VRage.Game.ModAPI.Interfaces;
-using TExtensions = Sandbox.ModAPI.Interfaces.TerminalPropertyExtensions;
 
 namespace DefenseShields.Station
 {
@@ -33,8 +25,6 @@ namespace DefenseShields.Station
     class DefenseShields : MyGameLogicComponent
     {
         #region Setup
-        public bool Initialized = true;
-        private bool _animInit;
         private float _animStep;
         private float _range;
         private float _width;
@@ -45,16 +35,21 @@ namespace DefenseShields.Station
         private float _inDepth;
         private float _inRange;
         private readonly float _inOutSpace = 15f;
-        private int _time;
+
         public int Count = -1;
         private int _colourRand = 32;
+        private int _time;
         private int _playertime;
+
+        public bool Initialized = true;
+        private bool _animInit;
         private bool _playerwebbed;
         private bool _gridwebbed;
         private bool _gridlocked;
         private bool _shotwebbed;
         private bool _shotlocked;
         public bool _insideReady;
+
         private ushort _modId = 50099;
 
         private static Random _random = new Random();
@@ -157,7 +152,7 @@ namespace DefenseShields.Station
                 }
                 if (!MyAPIGateway.Utilities.IsDedicated) ShowRange(_range); //Check
                 else SendPoke(_range); //Check
-                if (Count <60) MyAPIGateway.Parallel.StartBackground(WebEffects);
+                MyAPIGateway.Parallel.StartBackground(WebEffects);
                 if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
                 if (_gridwebbed && !_gridlocked) MyAPIGateway.Parallel.Do(GridEffects);
                 if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
@@ -448,7 +443,7 @@ namespace DefenseShields.Station
         }
         #endregion
 
-        #region Detect innersphere intersection
+        #region Detection Methods
         private bool Detectin(IMyEntity ent)
         {
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
@@ -463,9 +458,7 @@ namespace DefenseShields.Station
             Logging.WriteLine(String.Format("{0} - {1} in-f - d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, detect, Count));
             return false;
         }
-        #endregion
 
-        #region Detect edge intersection
         private bool Detectedge(IMyEntity ent)
         {
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
@@ -480,9 +473,7 @@ namespace DefenseShields.Station
             if (detect <= 1.1) Logging.WriteLine(String.Format("{0} - {1} edge-f - d:{2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, detect, Count));
             return false;
         }
-        #endregion
 
-        #region Detect grid edge intersection
         private bool Detectgridedge(IMyCubeGrid grid, double abs)
         {
             float x = Vector3Extensions.Project(_worldMatrix.Forward, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
@@ -501,14 +492,14 @@ namespace DefenseShields.Station
         #endregion
 
         #region Webing effects
-
         public void WebEffects()
         {
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
             if (Count == 0)
             {
                 _inList.Clear();
-                BoundingSphereD insphere = new BoundingSphereD(pos, _inRange * 0.5f);
+                Logging.WriteLine(String.Format("{0} - {1} {2} {3} {4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _inRange, _inDepth, _inHeight, _inWidth));
+                BoundingSphereD insphere = new BoundingSphereD(pos, _inRange);
                 List<IMyEntity> inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
                 MyAPIGateway.Parallel.ForEach(inList, outent =>
                 {
@@ -733,9 +724,9 @@ namespace DefenseShields.Station
                                 if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                             }
                             //long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId;
-                            //var gridpos = grid.GetPosition();
-                            //MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
                             //if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long)dude, -100);
+                            var gridpos = grid.GetPosition();
+                            MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
                             Logging.WriteLine(string.Format("{0} - gridEffect: deleting grid {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
                             grid.Delete();
                         }
