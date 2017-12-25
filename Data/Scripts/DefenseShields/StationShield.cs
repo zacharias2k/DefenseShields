@@ -564,13 +564,12 @@ namespace DefenseShields.Station
                 if (webent is IMyCharacter) return;
                 if (_inList.Contains(webent)) return;
                 var grid = webent as IMyCubeGrid;
-                var gridd = webent as IMyCubeGrid;
                 if (grid == _tblock.CubeGrid || _gridwebbed) return;
                 if (grid != null)
                 {
                     //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - websphere.Center) * 2);
-                    double abs = Math.Abs(gridd.WorldAABB.HalfExtents.Dot(gridd.WorldAABB.Max - websphere.Center) * 2);
-                    if (Detectgridedge(gridd, abs))
+                    double abs = 1; //= Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - websphere.Center) * 2);
+                    if (Detectgridedge(grid, abs))
                     {
                         List<long> owners = grid.BigOwners;
                         if (owners.Count > 0)
