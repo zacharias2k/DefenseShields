@@ -46,13 +46,13 @@ namespace DefenseShields.Station
         private float _inRange;
         private readonly float _inOutSpace = 15f;
         private int _time;
-        public int Count = -1;
+        public int Count = 60;
         private int _colourRand = 32;
         private int _playertime;
         private bool _playerwebbed;
         private bool _gridwebbed;
         private bool _shotwebbed;
-        public bool _insideReady = true;
+        public bool _insideReady;
         private ushort _modId = 50099;
 
         private static Random _random = new Random();
@@ -146,7 +146,7 @@ namespace DefenseShields.Station
                         _subpartsArms[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixArmsOff[i], _matrixArmsOn[i], _animStep);
                     }
                 }
-                if (Count++ == 59) Count = 0;
+                if (Count++ == 59 || Count++ == 179 ) Count = 0;
                 if (Count % 3 == 0)
                 {
                     _colourRand += (16 - _random.Next(1, 32));
