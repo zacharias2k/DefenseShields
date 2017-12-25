@@ -565,6 +565,7 @@ namespace DefenseShields.Station
                 if (grid == _tblock.CubeGrid) return;
                 if (grid != null)
                 {
+                    Logging.WriteLine(String.Format("{0} - WebEffect-grid {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                     //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - websphere.Center) * 2);
                     double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - websphere.Center) * 2);
                     if (Detectgridedge(grid, abs))
