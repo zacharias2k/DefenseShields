@@ -578,11 +578,7 @@ namespace DefenseShields.Station
                         {
                             var relations = _tblock.GetUserRelationToOwner(0);
                             Logging.WriteLine(String.Format("{0} - grid: {1} tblock: {2} {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, owners.Count, relations));
-                            if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
-                            {
-                                Logging.WriteLine(String.Format("{0} - {1} webEffect-grid ignoring friendly {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
-                                return;
-                            }
+                            if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
                         Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName));
                         _gridwebbed = true;
