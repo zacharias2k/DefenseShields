@@ -122,13 +122,13 @@ namespace DefenseShields.Station
                 {
                     MyEntitySubpart temp1;
                     Logging.WriteLine(String.Format("{0} - subpart Arm {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartRotor.TryGetSubpart("ArmT" + i.ToString(), out temp1)));
-                    Logging.WriteLine(String.Format("{0} - subpart Arm {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), temp1.TryGetSubpart("ArmT" + i.ToString(), out temp1)));
+                    Logging.WriteLine(String.Format("{0} - subpart Arm {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), temp1.TryGetSubpart("ArmT" + i.ToString(), out _subpartRotor)));
                 }
                 for (int i = 0; i < 4; i++)
                 {
                     MyEntitySubpart temp3;
                     Logging.WriteLine(String.Format("{0} - subpart Reflector {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _subpartsArms[i].TryGetSubpart("Reflector", out temp3)));
-                   Logging.WriteLine(String.Format("{0} - subpart Reflector {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), temp3.TryGetSubpart("ArmT" + i.ToString(), out temp3)));
+                    Logging.WriteLine(String.Format("{0} - subpart Reflector {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), temp3.TryGetSubpart("ArmT" + i.ToString(), out _subpartRotor)));
 
                 }
                 if (_animInit)
