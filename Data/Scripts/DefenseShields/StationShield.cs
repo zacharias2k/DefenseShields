@@ -45,7 +45,7 @@ namespace DefenseShields.Station
         private float _inDepth;
         private float _inRange;
         private float _recharge;
-        private float _power;
+        private float _power = 0.0001f;
         private float _absorb;
         private float _shotdmg = 1f;
         private float _bulletdmg = 0.1f;
