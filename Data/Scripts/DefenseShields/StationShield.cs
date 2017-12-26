@@ -155,14 +155,14 @@ namespace DefenseShields.Station
                     CalcRequiredPower();
                     _tblock.GameLogic.GetAs<DefenseShields>().Sink.Update();
                 }
-                if (_playerkill || _playercount == 239)
+                if (_playerkill || _playercount == 598)
                 {
                     if (_playerkill) _playercount = -1;
                     _playerkill = false;
                     if (_playerKillList.Count > 0) PlayerKill();
 
                 }
-                if (_closegrids || _gridcount == 59 || _gridcount == 179 ||_gridcount == 599)
+                if (_closegrids || _gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419 || _gridcount == 599)
                 {
                     if (_closegrids) _gridcount = -1;
                     _closegrids = false;
@@ -825,15 +825,15 @@ namespace DefenseShields.Station
                         grid.Physics.LinearVelocity = vel;
                     }
                 }
-                if (_gridcount != 59 && _gridcount != 179 && _gridcount != 599) return;
+                if (_gridcount == -1) return;
                 foreach (var grident in _gridCloseHash)
                 {
                     var grid = grident as IMyCubeGrid;
                     if (grid == null) return;
-                    if (_gridcount == 59 || _gridcount == 179)
+                    if (_gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419)
                     {
                         var gridpos = grid.GetPosition();
-                        MyVisualScriptLogicProvider.CreateExplosion(gridpos, 300, 25);
+                        MyVisualScriptLogicProvider.CreateExplosion(gridpos, _gridcount, _gridcount);
                     }
                     else
                     {
@@ -856,7 +856,7 @@ namespace DefenseShields.Station
         {
             try
             {
-                if (_playercount != 239) return;
+                if (_playercount != 598) return;
                 foreach (long playerid in _playerKillList)
                 {
                     if (playerid != null)
