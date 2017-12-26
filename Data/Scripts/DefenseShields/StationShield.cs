@@ -813,7 +813,6 @@ namespace DefenseShields.Station
                 Logging.WriteLine(String.Format("{0} pre-1stloop {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _gridCloseHash.Count));
                 foreach (var grident in _gridCloseHash)
                 {
-                    /*
                     var grid = grident as IMyCubeGrid;
                     if (grid == null) return;
                     var gridpos = grid.GetPosition();
@@ -823,7 +822,7 @@ namespace DefenseShields.Station
                     vel.SetDim(1, (int)((float)vel.GetDim(1) * 0.5f));
                     vel.SetDim(2, (int)((float)vel.GetDim(2) * 0.5f));
                     grid.Physics.LinearVelocity = vel;
-                    */
+                    
                 }
             }
             
