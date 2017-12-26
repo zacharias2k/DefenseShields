@@ -325,7 +325,7 @@ namespace DefenseShields.Station
         public float CalcRequiredPower()
         {
 
-            if (!Initialized && _cblock.IsWorking)
+            if (!Initialized)
             {
                 if (_absorb >= 0.1)
                 {
