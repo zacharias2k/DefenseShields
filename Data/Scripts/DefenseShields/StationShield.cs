@@ -101,7 +101,6 @@ namespace DefenseShields.Station
         {
             base.Init(objectBuilder);
 
-            _absorbed += 1f;
             Entity.Components.TryGet<MyResourceSinkComponent>(out Sink);
             Sink.SetRequiredInputFuncByType(PowerDefinitionId, CalcRequiredPower);
 
