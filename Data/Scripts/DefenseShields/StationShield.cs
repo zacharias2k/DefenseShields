@@ -821,9 +821,9 @@ namespace DefenseShields.Station
                         var gridpos = grid.GetPosition();
                         MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 9999);
                         var vel = grid.Physics.LinearVelocity;
-                        vel.SetDim(0, (int) ((float) vel.GetDim(0) * -0.5f));
-                        vel.SetDim(1, (int) ((float) vel.GetDim(1) * -0.5f));
-                        vel.SetDim(2, (int) ((float) vel.GetDim(2) * -0.5f));
+                        vel.SetDim(0, (int) ((float) vel.GetDim(0) * -1.5f));
+                        vel.SetDim(1, (int) ((float) vel.GetDim(1) * -1.5f));
+                        vel.SetDim(2, (int) ((float) vel.GetDim(2) * -1.5f));
                         grid.Physics.LinearVelocity = vel;
                     }
                 }
@@ -863,7 +863,7 @@ namespace DefenseShields.Station
                         Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent));
                         var playerpos = playerent.GetPosition();
                         Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerpos));
-                        MyVisualScriptLogicProvider.CreateExplosion(playerpos, 35, 5000);
+                        MyVisualScriptLogicProvider.CreateExplosion(playerpos, 35, 9999);
                         playerent.Kill();
                     }
                 }
