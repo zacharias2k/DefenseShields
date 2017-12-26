@@ -100,9 +100,11 @@ namespace DefenseShields.Station
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
             base.Init(objectBuilder);
-            
+
+            _absorbed += 1f;
             Entity.Components.TryGet<MyResourceSinkComponent>(out Sink);
             Sink.SetRequiredInputFuncByType(PowerDefinitionId, CalcRequiredPower);
+
             this.NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             this.NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             this.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
@@ -145,7 +147,7 @@ namespace DefenseShields.Station
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
                     if (_gridwebbed && !_gridlocked) MyAPIGateway.Parallel.Do(GridEffects);
                     if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
-                    if (Count == 29) CalcRequiredPower();
+                    if (Count == 29  && _absorbed > 0) CalcRequiredPower();
                 }
             }
             catch (Exception ex)
@@ -334,7 +336,6 @@ namespace DefenseShields.Station
                     _absorbed = _absorbed - _draining;
                     _absorbed = _absorbed - _absorbed;
                     _draining = 0f;
-                    Logging.WriteLine(String.Format("{0} - Absorbed is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _absorbed));
                     _power = _draining + 1f;
                 }
             }
