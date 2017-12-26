@@ -44,9 +44,13 @@ namespace DefenseShields.Station
         private float _inHeight;
         private float _inDepth;
         private float _inRange;
-        private float _draining;
+        private float _recharge;
         private float _power;
-        private float _absorbed;
+        private float _absorb;
+        private float _shotdmg = 1f;
+        private float _bulletdmg = 0.1f;
+        private float _massdmg = 0.01f;
+
 
 
         private readonly float _inOutSpace = 15f;
@@ -146,7 +150,7 @@ namespace DefenseShields.Station
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
                     if (_gridwebbed && !_gridlocked) MyAPIGateway.Parallel.Do(GridEffects);
                     if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
-                    if (Count == 29 && _absorbed > 0)
+                    if (Count == 29 && _absorb > 0)
                     {
                         CalcRequiredPower();
                         _tblock.GameLogic.GetAs<DefenseShields>().Sink.Update();
@@ -169,7 +173,7 @@ namespace DefenseShields.Station
                 CreateUi();
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo();
-                _absorbed = 100f;
+                _absorb = 150f;
                 Initialized = false;
 
             }
@@ -326,23 +330,20 @@ namespace DefenseShields.Station
 
             if (!Initialized && _cblock.IsWorking)
             {
-                float sustaincost;
-                //power = (float)(4.0 * Math.PI * Math.Pow(radius, 3) / 3.0 / 1000.0 / 1000.0);
-                if (_absorbed >= 0.1)
+                if (_absorb >= 0.1)
                 {
-                    _absorbed = _absorbed - _draining;
-                    _draining = _absorbed / 10f;
-                    Logging.WriteLine(String.Format("{0} - Amount shield has absorbed {1}MW and draining {2}MW this cycle", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _absorbed, _draining));
+                    _absorb = _absorb - _recharge;
+                    _recharge = _absorb / 10f;
                 }
-                else if (_absorbed < 0.1f)
+                else if (_absorb < 0.1f)
                 {
-                    _draining = 0f;
-                    _absorbed = 0f;
+                    _recharge = 0f;
+                    _absorb = 0f;
                 }
                 var radius = Slider.Getter((IMyFunctionalBlock)_cblock);
-                sustaincost = radius * 0.01f;
-                _power = _draining + sustaincost;
-                Logging.WriteLine(String.Format("{0} - Sustain cost is {1}MW this and recharge cost is {2}MW", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), sustaincost, _draining));
+                var sustaincost = radius * 0.01f;
+                _power = _recharge + sustaincost;
+                Logging.WriteLine(String.Format("{0} - Sustain cost is {1}MW this and recharge cost is {2}MW", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), sustaincost, _recharge));
                 return _power;
             }
             _power = 0.0001f;
@@ -644,8 +645,8 @@ namespace DefenseShields.Station
                 if (shotent == null || !Detectedge(shotent)) return;
                 try
                 {
-                    _absorbed += 10;
-                    Logging.WriteLine(String.Format("{0} - shotEffect: {1} Shield Strike for {2} energy in loop {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, _absorbed, Count));
+                    _absorb += _shotdmg;
+                    Logging.WriteLine(String.Format("{0} - shotEffect: {1} Shield Strike for {2} energy in loop {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, _shotdmg, Count));
                     shotent.Close();
                 }
                 catch (Exception ex)
@@ -686,8 +687,10 @@ namespace DefenseShields.Station
                             //long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId;
                             //if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long)dude, -100);
                             var gridpos = grid.GetPosition();
+                            var gridmass = grid.Physics.Mass;
                             MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
-                            Logging.WriteLine(string.Format("{0} - gridEffect: deleting grid {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, Count));
+                            _absorb += _massdmg * gridmass;
+                            Logging.WriteLine(String.Format("{0} - gridEffect: {1} Shield Strike for {2} energy in loop {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, _massdmg, Count));
                             grid.Delete();
                         }
 
