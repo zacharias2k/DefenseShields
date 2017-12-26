@@ -330,9 +330,9 @@ namespace DefenseShields.Station
                     _draining = _absorbed / 10f;
                     Logging.WriteLine(String.Format("{0} - Amount shield has absorbed {1}MW and draining {2}MW this cycle", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _absorbed, _draining));
                 }
-                else if (_absorbed < 0.01f)
+                else if (_absorbed < 0.1f)
                 {
-                    _draining = 0.0001f;
+                    _draining = 0f;
                     _absorbed = 0f;
                 }
                 var radius = Slider.Getter((IMyFunctionalBlock)_cblock);
