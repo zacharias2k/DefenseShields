@@ -44,11 +44,13 @@ namespace DefenseShields.Station
         private float _inHeight;
         private float _inDepth;
         private float _inRange;
+        private float _draining = 0f;
+
         private readonly float _inOutSpace = 15f;
 
         public int Count = -301;
         public int GenCount = -1;
-        public int Absorb = 0;
+        private int _absorbed = 0;
         private int _colourRand = 32;
         private int _time;
         private int _playertime;
@@ -318,10 +320,12 @@ namespace DefenseShields.Station
             {
                 //var radius = Slider.Getter((IMyFunctionalBlock)_cblock);
                 //power = (float)(4.0 * Math.PI * Math.Pow(radius, 3) / 3.0 / 1000.0 / 1000.0);
-                if (Absorb > 1)
+                if (_absorbed > 1)
                 {
-                    Logging.WriteLine(String.Format("{0} - Absorb is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Absorb));
-                    power += (Absorb / 60f);
+                    _draining = (_absorbed / 60f);
+                    _absorbed = (int) (_absorbed - _draining);
+                    Logging.WriteLine(String.Format("{0} - Absorbed is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _absorbed));
+                    power += (_absorbed / 60f);
                 }
             }
             Logging.WriteLine(String.Format("{0} - Power sinking is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), power));
@@ -624,8 +628,8 @@ namespace DefenseShields.Station
                 if (shotent == null || !Detectedge(shotent)) return;
                 try
                 {
-                    Absorb += 1000;
-                    Logging.WriteLine(String.Format("{0} - shotEffect: {1} Shield Strike for {2} energy in loop {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, Absorb, Count));
+                    _absorbed += 1000;
+                    Logging.WriteLine(String.Format("{0} - shotEffect: {1} Shield Strike for {2} energy in loop {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, _absorbed, Count));
                     shotent.Close();
                 }
                 catch (Exception ex)
