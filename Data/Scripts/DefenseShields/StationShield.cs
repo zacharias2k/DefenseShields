@@ -826,13 +826,23 @@ namespace DefenseShields.Station
                         grid.Physics.LinearVelocity = vel;
                     }
                 }
-                if (_gridcount != 599) return;
+                if (_gridcount != 179 || _gridcount != 599) return;
                 foreach (var grident in _gridCloseHash)
                 {
                     var grid = grident as IMyCubeGrid;
-                    grid?.Close();
+                    if (grid == null) return;
+                    if (_gridcount == 179)
+                    {
+                        var gridpos = grid.GetPosition();
+                        MyVisualScriptLogicProvider.CreateExplosion(gridpos, 100, 0);
+                    }
+                    else
+                    {
+                        grid.Close();
+                    }
                 }
-                _gridCloseHash.Clear();
+                if (_gridcount != 599) return;
+                    _gridCloseHash.Clear();
             }
             catch (Exception ex)
             {
