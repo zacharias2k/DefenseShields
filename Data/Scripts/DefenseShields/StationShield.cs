@@ -822,7 +822,7 @@ namespace DefenseShields.Station
                     grid.Physics.LinearVelocity = vel;
                 });
             }
-            if (GenCount != 599) return;
+            if (_gridcount != 599) return;
             MyAPIGateway.Parallel.ForEach(_gridCloseHash, grident =>
             {
                 var grid = grident as IMyCubeGrid;
