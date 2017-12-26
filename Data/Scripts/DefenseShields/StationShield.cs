@@ -166,7 +166,7 @@ namespace DefenseShields.Station
                 {
                     if (_closegrids) _gridcount = -1;
                     _closegrids = false;
-                    //if (_gridCloseHash.Count > 0) GridClose();
+                    if (_gridCloseHash.Count > 0) GridClose();
                 }
                 if (!Initialized && _cblock.IsWorking)
                 {
@@ -823,6 +823,7 @@ namespace DefenseShields.Station
                     grid.Physics.LinearVelocity = vel;
                 });
             }
+            /*
             if (_gridcount != 599) return;
             MyAPIGateway.Parallel.ForEach(_gridCloseHash, grident =>
             {
@@ -830,7 +831,9 @@ namespace DefenseShields.Station
                 grid?.Close();
             });
             _gridCloseHash.Clear();
+            */
         }
+        
         #endregion
 
         #region Kill flagged players
