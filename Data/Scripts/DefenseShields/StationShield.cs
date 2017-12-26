@@ -162,7 +162,7 @@ namespace DefenseShields.Station
                     if (_playerKillList.Count > 0) PlayerKill();
 
                 }
-                if (_closegrids || _gridcount == 119 || _gridcount == 179 ||_gridcount == 599)
+                if (_closegrids || _gridcount == 59 || _gridcount == 179 ||_gridcount == 599)
                 {
                     if (_closegrids) _gridcount = -1;
                     _closegrids = false;
@@ -825,15 +825,15 @@ namespace DefenseShields.Station
                         grid.Physics.LinearVelocity = vel;
                     }
                 }
-                if (_gridcount != 119 && _gridcount != 179 && _gridcount != 599) return;
+                if (_gridcount != 59 && _gridcount != 179 && _gridcount != 599) return;
                 foreach (var grident in _gridCloseHash)
                 {
                     var grid = grident as IMyCubeGrid;
                     if (grid == null) return;
-                    if (_gridcount == 119 || _gridcount == 179)
+                    if (_gridcount == 59 || _gridcount == 179)
                     {
                         var gridpos = grid.GetPosition();
-                        MyVisualScriptLogicProvider.CreateExplosion(gridpos, 300, 0);
+                        MyVisualScriptLogicProvider.CreateExplosion(gridpos, 300, 50);
                     }
                     else
                     {
