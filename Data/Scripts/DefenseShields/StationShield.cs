@@ -322,7 +322,6 @@ namespace DefenseShields.Station
             //float power = 0.0001f;
             if (!Initialized && _cblock.IsWorking)
             {
-                //var radius = Slider.Getter((IMyFunctionalBlock)_cblock);
                 //power = (float)(4.0 * Math.PI * Math.Pow(radius, 3) / 3.0 / 1000.0 / 1000.0);
                 if (_absorbed >= 2)
                 {
@@ -338,8 +337,12 @@ namespace DefenseShields.Station
                     _draining = 0f;
                     _power = _draining + 1f;
                 }
+                var radius = Slider.Getter((IMyFunctionalBlock)_cblock);
+                _power = _power * radius * 0.01f;
+                Logging.WriteLine(String.Format("{0} - Power sinking is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _power));
+                return _power;
             }
-            Logging.WriteLine(String.Format("{0} - Power sinking is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _power));
+            _power = 0f;
             return _power;
         }
 
