@@ -49,7 +49,7 @@ namespace DefenseShields.Station
         private float _absorb;
         private float _shotdmg = 1f;
         private float _bulletdmg = 0.1f;
-        private float _massdmg = 0.01f;
+        private float _massdmg = 1f;
 
 
 
@@ -690,7 +690,7 @@ namespace DefenseShields.Station
                             var gridmass = grid.Physics.Mass;
                             MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
                             _absorb += _massdmg * gridmass;
-                            Logging.WriteLine(String.Format("{0} - gridEffect: {1} Shield Strike for {2} energy in loop {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, _massdmg, Count));
+                            Logging.WriteLine(String.Format("{0} - gridEffect: {1} Shield Strike by a {2}kT grid, absorbing {3}MW of energy in loop {4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, gridmass, _massdmg, Count));
                             grid.Delete();
                         }
 
