@@ -856,8 +856,8 @@ namespace DefenseShields.Station
                     if (playerid != null)
                     {
                         Logging.WriteLine(String.Format("{0} player kill {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerid, _playercount));
-                        var player = MyAPIGateway.Entities.GetEntityById(playerid);
-                        if (player == null) continue;
+                        var playerentid = MyVisualScriptLogicProvider.GetPlayersEntityId(playerid);
+                        var player = MyAPIGateway.Entities.GetEntityById(playerentid);
                         Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), player));
                         var playerent = (IMyCharacter) player;
                         Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent));
