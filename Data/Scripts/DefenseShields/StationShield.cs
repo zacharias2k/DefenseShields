@@ -323,8 +323,8 @@ namespace DefenseShields.Station
                 //power = (float)(4.0 * Math.PI * Math.Pow(radius, 3) / 3.0 / 1000.0 / 1000.0);
                 if (_absorbed > 1)
                 {
-                    _draining = _absorbed * 10f / 100;
                     _absorbed = (int) (_absorbed - _draining);
+                    _draining = _absorbed / 10f;
                     Logging.WriteLine(String.Format("{0} - Absorbed is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _absorbed));
                     _power = _draining + 1f;
                 }
