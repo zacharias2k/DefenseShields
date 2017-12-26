@@ -857,8 +857,11 @@ namespace DefenseShields.Station
                     {
                         Logging.WriteLine(String.Format("{0} player kill {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerid, _playercount));
                         var player = MyAPIGateway.Entities.GetEntityById(playerid);
+                        Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), player));
                         var playerent = (IMyCharacter) player;
+                        Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent));
                         var playerpos = playerent.GetPosition();
+                        Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerpos));
                         MyVisualScriptLogicProvider.CreateExplosion(playerpos, 35, 5000);
                         playerent.Kill();
                     }
