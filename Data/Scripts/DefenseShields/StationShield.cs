@@ -354,7 +354,6 @@ namespace DefenseShields.Station
             stringBuilder.Append("Required Power: " + shield.CalcRequiredPower().ToString("0.00") + "MW");
 
             _range = GetRadius();
-            Logging.WriteLine(String.Format("{0} - Range set to {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _range));
             if (Ellipsoid.Getter(block).Equals(true))
             {
                 _width = _range * 0.5f;

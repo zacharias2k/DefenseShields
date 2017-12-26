@@ -50,7 +50,6 @@ namespace DefenseShields.Control
             
             bool value = DefaultValue;
             MyAPIGateway.Utilities.GetVariable<bool>(block.EntityId.ToString() + InternalName, out value);
-            Logging.WriteLine(String.Format("{0} - Checkbox value is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), value));
             return value;
         }
 
