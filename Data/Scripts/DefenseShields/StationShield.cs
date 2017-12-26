@@ -162,14 +162,12 @@ namespace DefenseShields.Station
                     if (_playerKillList.Count > 0) PlayerKill();
 
                 }
-                /*
                 if (_closegrids || _gridcount == 599)
                 {
                     if (_closegrids) _gridcount = -1;
                     _closegrids = false;
-                    if (_gridCloseHash.Count > 0) GridClose();
+                    //if (_gridCloseHash.Count > 0) GridClose();
                 }
-                */
                 if (!Initialized && _cblock.IsWorking)
                 {
                     if (Count <= 0) MyAPIGateway.Parallel.Do(InHashBuilder);
@@ -816,13 +814,13 @@ namespace DefenseShields.Station
                 {
                     var grid = grident as IMyCubeGrid;
                     if (grid == null) return;
-                    //var gridpos = grid.GetPosition();
-                    //MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 5000);
-                    //var vel = grid.Physics.LinearVelocity;
-                    //vel.SetDim(0, (int)((float)vel.GetDim(0) * 0.5f));
-                    //vel.SetDim(1, (int)((float)vel.GetDim(1) * 0.5f));
-                    //vel.SetDim(2, (int)((float)vel.GetDim(2) * 0.5f));
-                    //grid.Physics.LinearVelocity = vel;
+                    var gridpos = grid.GetPosition();
+                    MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 5000);
+                    var vel = grid.Physics.LinearVelocity;
+                    vel.SetDim(0, (int)((float)vel.GetDim(0) * 0.5f));
+                    vel.SetDim(1, (int)((float)vel.GetDim(1) * 0.5f));
+                    vel.SetDim(2, (int)((float)vel.GetDim(2) * 0.5f));
+                    grid.Physics.LinearVelocity = vel;
                 });
             }
             if (_gridcount != 599) return;
