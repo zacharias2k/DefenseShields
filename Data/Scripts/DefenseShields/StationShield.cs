@@ -141,6 +141,7 @@ namespace DefenseShields.Station
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
                     if (_gridwebbed && !_gridlocked) MyAPIGateway.Parallel.Do(GridEffects);
                     if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
+                    if (Count == 29) CalcRequiredPower();
                 }
             }
             catch (Exception ex)
@@ -317,13 +318,10 @@ namespace DefenseShields.Station
             {
                 //ar radius = Slider.Getter((IMyFunctionalBlock)_cblock);
                 //power = (float)(4.0 * Math.PI * Math.Pow(radius, 3) / 3.0 / 1000.0 / 1000.0);
-                if (Count == 29)
+                if (Absorb > 1)
                 {
-                    if (Absorb > 1)
-                    {
-                        Logging.WriteLine(String.Format("{0} - Absorb is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Absorb));
-                        power -= (Absorb / 60f);
-                    }
+                    Logging.WriteLine(String.Format("{0} - Absorb is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Absorb));
+                    power -= (Absorb / 60f);
                 }
             }
             Logging.WriteLine(String.Format("{0} - Power sinking is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), power));
