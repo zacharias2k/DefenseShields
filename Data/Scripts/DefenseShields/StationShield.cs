@@ -808,51 +808,68 @@ namespace DefenseShields.Station
         #region Close flagged grids
         public void GridClose()
         {
-            if (_gridcount == -1)
+            try
             {
-                Logging.WriteLine(String.Format("{0} pre-1stloop {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _gridCloseHash.Count));
+                if (_gridcount == -1)
+                {
+                    Logging.WriteLine(String.Format("{0} pre-1stloop {1} {2}",
+                        DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _gridCloseHash.Count));
+                    foreach (var grident in _gridCloseHash)
+                    {
+                        var grid = grident as IMyCubeGrid;
+                        if (grid == null) return;
+                        var gridpos = grid.GetPosition();
+                        MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 9999);
+                        var vel = grid.Physics.LinearVelocity;
+                        vel.SetDim(0, (int) ((float) vel.GetDim(0) * -0.5f));
+                        vel.SetDim(1, (int) ((float) vel.GetDim(1) * -0.5f));
+                        vel.SetDim(2, (int) ((float) vel.GetDim(2) * -0.5f));
+                        grid.Physics.LinearVelocity = vel;
+                    }
+                }
+                if (_gridcount != 599) return;
+                Logging.WriteLine(String.Format("{0} pre-2ndloop {1} {2}",
+                    DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _gridCloseHash.Count));
                 foreach (var grident in _gridCloseHash)
                 {
                     var grid = grident as IMyCubeGrid;
-                    if (grid == null) return;
-                    var gridpos = grid.GetPosition();
-                    MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 9999);
-                    var vel = grid.Physics.LinearVelocity;
-                    vel.SetDim(0, (int)((float)vel.GetDim(0) * 1.0f));
-                    vel.SetDim(1, (int)((float)vel.GetDim(1) * 1.0f));
-                    vel.SetDim(2, (int)((float)vel.GetDim(2) * 1.0f));
-                    grid.Physics.LinearVelocity = vel;
-                    
+                    grid?.Close();
                 }
+                _gridCloseHash.Clear();
             }
-            
-            if (_gridcount != 599) return;
-            Logging.WriteLine(String.Format("{0} pre-2ndloop {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _gridCloseHash.Count));
-            foreach (var grident in _gridCloseHash)
+            catch (Exception ex)
             {
-                var grid = grident as IMyCubeGrid;
-                grid?.Close();
+                Logging.WriteLine(String.Format("{0} - Exception in gridClose", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
+                Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ex));
             }
-            _gridCloseHash.Clear();
         }
-        
         #endregion
 
         #region Kill flagged players
         public void PlayerKill()
         {
-            if (_playercount != 239) return;
-            MyAPIGateway.Parallel.ForEach(_playerKillList, playerent =>
+            try
             {
-                if (playerent != null)
+                if (_playercount != 239) return;
+                foreach (var playerid in _playerKillList)
                 {
-                    Logging.WriteLine(String.Format("{0} player kill {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent, _playercount));
-                    var player = MyAPIGateway.Entities.GetEntityById(playerent);
-                    var playerpos = player.GetPosition();
-                    MyVisualScriptLogicProvider.CreateExplosion(playerpos, 35, 5000);
+                    if (playerid != null)
+                    {
+                        Logging.WriteLine(String.Format("{0} player kill {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerid, _playercount));
+                        var player = MyAPIGateway.Entities.GetEntityById(playerid);
+                        var playerent = (IMyCharacter) player;
+                        var playerpos = playerent.GetPosition();
+                        MyVisualScriptLogicProvider.CreateExplosion(playerpos, 35, 5000);
+                        playerent.Kill();
+                    }
                 }
-            });
-            _playerKillList.Clear();
+                _playerKillList.Clear();
+            }
+            catch (Exception ex)
+            {
+                Logging.WriteLine(String.Format("{0} - Exception in playerKill", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
+                Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ex));
+            }
         }
         #endregion
     }
