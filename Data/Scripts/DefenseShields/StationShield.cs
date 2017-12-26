@@ -811,8 +811,7 @@ namespace DefenseShields.Station
             {
                 if (_gridcount == -1)
                 {
-                    Logging.WriteLine(String.Format("{0} pre-1stloop {1} {2}",
-                        DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _gridCloseHash.Count));
+                    Logging.WriteLine(String.Format("{0} pre-1stloop {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _gridCloseHash.Count));
                     foreach (var grident in _gridCloseHash)
                     {
                         var grid = grident as IMyCubeGrid;
@@ -833,6 +832,7 @@ namespace DefenseShields.Station
                     if (grid == null) return;
                     if (_gridcount == 119)
                     {
+                        Logging.WriteLine(String.Format("{0} 119 loop {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _gridCloseHash.Count));
                         var gridpos = grid.GetPosition();
                         MyVisualScriptLogicProvider.CreateExplosion(gridpos, 100, 0);
                     }
