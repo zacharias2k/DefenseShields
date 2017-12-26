@@ -146,7 +146,11 @@ namespace DefenseShields.Station
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
                     if (_gridwebbed && !_gridlocked) MyAPIGateway.Parallel.Do(GridEffects);
                     if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
-                    if (Count == 29  && _absorbed > 0) CalcRequiredPower();
+                    if (Count == 29 && _absorbed > 0)
+                    {
+                        CalcRequiredPower();
+                        _tblock.GameLogic.GetAs<DefenseShields>().Sink.Update();
+                    }
 
                 }
             }
@@ -338,7 +342,6 @@ namespace DefenseShields.Station
                 sustaincost = radius * 0.01f;
                 _power = _draining + sustaincost;
                 Logging.WriteLine(String.Format("{0} - Sustain cost is {1}MW this and recharge cost is {2}MW", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), sustaincost, _draining));
-                _tblock.RefreshCustomInfo();
                 return _power;
             }
             _power = 0.0001f;
@@ -789,7 +792,7 @@ namespace DefenseShields.Station
             base.Setter(block, newState);
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
-            //shield.Sink.Update();
+            shield.Sink.Update();
             block.RefreshCustomInfo();
         }
     }
@@ -829,7 +832,7 @@ namespace DefenseShields.Station
             base.Setter(block, value);
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
-            //shield.Sink.Update();
+            shield.Sink.Update();
         }
 
         public override void Setter(IMyTerminalBlock block, float value)
@@ -839,7 +842,7 @@ namespace DefenseShields.Station
             //shieldNetwork.MessageUtils.SendMessageToAll(message);
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
-            //shield.Sink.Update();
+            shield.Sink.Update();
         }
     }
     #endregion
