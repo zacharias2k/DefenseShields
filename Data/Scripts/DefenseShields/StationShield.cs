@@ -45,7 +45,7 @@ namespace DefenseShields.Station
         private float _inDepth;
         private float _inRange;
         private float _draining;
-        private float _power = 1f;
+        private float _power;
         private float _absorbed;
 
 
