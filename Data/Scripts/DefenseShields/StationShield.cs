@@ -330,6 +330,7 @@ namespace DefenseShields.Station
                 }
                 else if (_absorbed > 1)
                 {
+                    _absorbed = _absorbed - _absorbed;
                     _power = _absorbed;
                 }
                 else
