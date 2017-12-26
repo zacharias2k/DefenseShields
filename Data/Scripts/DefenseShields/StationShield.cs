@@ -833,7 +833,7 @@ namespace DefenseShields.Station
                     if (_gridcount == 59 || _gridcount == 179)
                     {
                         var gridpos = grid.GetPosition();
-                        MyVisualScriptLogicProvider.CreateExplosion(gridpos, 100, 25);
+                        MyVisualScriptLogicProvider.CreateExplosion(gridpos, 300, 25);
                     }
                     else
                     {
