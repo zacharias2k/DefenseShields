@@ -325,7 +325,7 @@ namespace DefenseShields.Station
                     _draining = (_absorbed / 60f);
                     _absorbed = (int) (_absorbed - _draining);
                     Logging.WriteLine(String.Format("{0} - Absorbed is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _absorbed));
-                    power += (_absorbed / 60f);
+                    power += (_absorbed);
                 }
             }
             Logging.WriteLine(String.Format("{0} - Power sinking is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), power));
