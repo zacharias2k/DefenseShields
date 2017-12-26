@@ -45,7 +45,7 @@ namespace DefenseShields.Station
         private float _inDepth;
         private float _inRange;
         private float _draining = 0f;
-        private float _power = 0f;
+        private float _power = 1f;
 
         private readonly float _inOutSpace = 15f;
 
@@ -328,6 +328,7 @@ namespace DefenseShields.Station
                     Logging.WriteLine(String.Format("{0} - Absorbed is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _absorbed));
                     _power = (_draining);
                 }
+                else _power = 1f;
             }
             Logging.WriteLine(String.Format("{0} - Power sinking is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _power));
             return _power;
