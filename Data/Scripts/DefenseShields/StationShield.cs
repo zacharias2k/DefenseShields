@@ -335,7 +335,7 @@ namespace DefenseShields.Station
                     _absorbed = 0f;
                 }
                 var radius = Slider.Getter((IMyFunctionalBlock)_cblock);
-                sustaincost = radius * 0.001f;
+                sustaincost = radius * 0.01f;
                 _power = _draining + sustaincost;
                 Logging.WriteLine(String.Format("{0} - Sustain cost is {1}MW this and recharge cost is {2}MW", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), sustaincost, _draining));
                 if (_absorbed < 0.001f) _draining = 0;
