@@ -338,7 +338,7 @@ namespace DefenseShields.Station
                 sustaincost = radius * 0.01f;
                 _power = _draining + sustaincost;
                 Logging.WriteLine(String.Format("{0} - Sustain cost is {1}MW this and recharge cost is {2}MW", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), sustaincost, _draining));
-                _tblock.GameLogic.GetAs<DefenseShields>().Sink.Update();
+                _tblock.RefreshCustomInfo();
                 return _power;
             }
             _power = 0.0001f;
