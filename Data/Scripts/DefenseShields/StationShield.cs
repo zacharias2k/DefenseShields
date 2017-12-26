@@ -94,7 +94,7 @@ namespace DefenseShields.Station
         private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
         public MyConcurrentHashSet<IMyEntity> _inHash = new MyConcurrentHashSet<IMyEntity>();
-        public MyConcurrentHashSet<IMyEntity> _gridCloseHash = new MyConcurrentHashSet<IMyEntity>();
+        public HashSet<IMyEntity> _gridCloseHash = new HashSet<IMyEntity>();
         private List<long?> _playerKillList = new List<long?>();
 
 
@@ -811,7 +811,7 @@ namespace DefenseShields.Station
             if (_gridcount == -1)
             {
                 Logging.WriteLine(String.Format("{0} pre-1stloop {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _gridCloseHash.Count));
-                MyAPIGateway.Parallel.ForEach(_gridCloseHash, grident =>
+                foreach (var grident in _gridCloseHash)
                 {
                     /*
                     var grid = grident as IMyCubeGrid;
@@ -824,18 +824,17 @@ namespace DefenseShields.Station
                     vel.SetDim(2, (int)((float)vel.GetDim(2) * 0.5f));
                     grid.Physics.LinearVelocity = vel;
                     */
-                });
+                }
             }
             
             if (_gridcount != 599) return;
             Logging.WriteLine(String.Format("{0} pre-2ndloop {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _gridCloseHash.Count));
-            MyAPIGateway.Parallel.ForEach(_gridCloseHash, grident =>
+            foreach (var grident in _gridCloseHash)
             {
                 var grid = grident as IMyCubeGrid;
                 grid?.Close();
-            });
+            }
             _gridCloseHash.Clear();
-            
         }
         
         #endregion
