@@ -630,7 +630,7 @@ namespace DefenseShields.Station
                 if (shotent == null || !Detectedge(shotent)) return;
                 try
                 {
-                    _absorbed += 1000;
+                    _absorbed += 10;
                     Logging.WriteLine(String.Format("{0} - shotEffect: {1} Shield Strike for {2} energy in loop {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, _absorbed, Count));
                     shotent.Close();
                 }
