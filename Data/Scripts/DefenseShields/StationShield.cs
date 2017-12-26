@@ -814,12 +814,12 @@ namespace DefenseShields.Station
                 {
                     var grid = grident as IMyCubeGrid;
                     if (grid == null) return;
-                    var gridpos = grid.GetPosition();
-                    MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 5000);
+                    //var gridpos = grid.GetPosition();
+                    //MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 5000);
                     var vel = grid.Physics.LinearVelocity;
-                    vel.SetDim(0, -2f);
-                    vel.SetDim(1, 20f);
-                    vel.SetDim(2, -2f);
+                    vel.SetDim(0, (int)((float)vel.GetDim(0) * 0.5f));
+                    vel.SetDim(1, (int)((float)vel.GetDim(1) * 0.5f));
+                    vel.SetDim(2, (int)((float)vel.GetDim(2) * 0.5f));
                     grid.Physics.LinearVelocity = vel;
                 });
             }
