@@ -708,7 +708,6 @@ namespace DefenseShields.Station
                                 _playerKillList.Add(dude);
                                 _playerkill = true;
                             }
-
                             _closegrids = true;
                             _gridCloseHash.Add(grid);
                         }
