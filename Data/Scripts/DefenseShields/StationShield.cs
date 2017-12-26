@@ -701,19 +701,14 @@ namespace DefenseShields.Station
                             float griddmg = grid.Physics.Mass * _massdmg;
                             _absorb += griddmg;
                             Logging.WriteLine(String.Format("{0} - gridEffect: {1} Shield Strike by a {2}kilo grid, absorbing {3}MW of energy in loop {4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, (griddmg / _massdmg), griddmg, Count));
-                            var vel = grid.Physics.LinearVelocity;
-                            vel.SetDim(0, -2f);
-                            vel.SetDim(1, 20f);
-                            vel.SetDim(2, -2f);
-                            grid.Physics.LinearVelocity = vel;
+
                             long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId;
                             if (dude != null)
                             {
                                 _playerKillList.Add(dude);
                                 _playerkill = true;
                             }
-                            var gridpos = grid.GetPosition();
-                            MyVisualScriptLogicProvider.CreateExplosion(gridpos, 100, 0);
+
                             _closegrids = true;
                             _gridCloseHash.Add(grid);
                         }
@@ -809,6 +804,22 @@ namespace DefenseShields.Station
         #region Close flagged grids
         public void GridClose()
         {
+            if (GenCount == -1)
+            {
+                MyAPIGateway.Parallel.ForEach(_gridCloseHash, grident =>
+                {
+                    var grid = grident as IMyCubeGrid;
+                    if (grid == null) return;
+                    var gridpos = grid.GetPosition();
+                    MyVisualScriptLogicProvider.CreateExplosion(gridpos, 100, 0);
+                    var vel = grid.Physics.LinearVelocity;
+                    vel.SetDim(0, -2f);
+                    vel.SetDim(1, 20f);
+                    vel.SetDim(2, -2f);
+                    grid.Physics.LinearVelocity = vel;
+                });
+                return;
+            }
             if (GenCount != 599) return;
             MyAPIGateway.Parallel.ForEach(_gridCloseHash, grident =>
             {
@@ -822,12 +833,14 @@ namespace DefenseShields.Station
         #region Kill flagged players
         public void PlayerKill()
         {
-            if (GenCount != 499) return;
+            if (GenCount != 239) return;
             MyAPIGateway.Parallel.ForEach(_playerKillList, playerent =>
             {
                 if (playerent != null)
                 {
-                    MyVisualScriptLogicProvider.SetPlayersHealth((long) playerent, -100);
+                    var player = MyAPIGateway.Entities.GetEntityById(playerent);
+                    var playerpos = player.GetPosition();
+                    MyVisualScriptLogicProvider.CreateExplosion(playerpos, 35, 5000);
                 }
             });
             _playerKillList.Clear();
