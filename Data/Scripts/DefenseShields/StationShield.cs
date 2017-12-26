@@ -34,9 +34,10 @@ using DefenseShields.Base;
 namespace DefenseShields.Station
 {
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OreDetector), false, new string[] { "StationDefenseShield" })]
-    public class DefenseShields : MyGameLogicComponent 
+    public class DefenseShields : MyGameLogicComponent
     {
         #region Setup
+        private float _animStep;
         private float _range;
         private float _width;
         private float _height;
@@ -51,8 +52,6 @@ namespace DefenseShields.Station
         private float _shotdmg = 1f;
         private float _bulletdmg = 0.1f;
         private float _massdmg = 0.0025f;
-        public float _animStep;
-
 
         private readonly float _inOutSpace = 15f;
 
@@ -60,9 +59,8 @@ namespace DefenseShields.Station
         public int _playercount = 600;
         public int _gridcount = 600;
         private int _colourRand = 32;
+        private int _time;
         private int _playertime;
-        public int _time;
-
 
         public bool Initialized = true;
         private bool _animInit;
@@ -80,38 +78,35 @@ namespace DefenseShields.Station
         private ushort _modId = 50099;
 
         private static Random _random = new Random();
-        public MatrixD _worldMatrix;
+        private MatrixD _worldMatrix;
         //MatrixD _detectMatrix = MatrixD.Identity;
         private Vector3D _edgeVectors;
         private Vector3D _inVectors;
+        private MyEntitySubpart _subpartRotor;
         public RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> Slider;
         public RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> Ellipsoid;
         public MyResourceSinkComponent Sink;
         public MyDefinitionId PowerDefinitionId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
-        public MyEntitySubpart _subpartRotor;
+
+        private readonly List<MyEntitySubpart> _subpartsArms = new List<MyEntitySubpart>();
+        private readonly List<MyEntitySubpart> _subpartsReflectors = new List<MyEntitySubpart>();
+        private List<Matrix> _matrixArmsOff = new List<Matrix>();
+        private List<Matrix> _matrixArmsOn = new List<Matrix>();
+        private List<Matrix> _matrixReflectorsOff = new List<Matrix>();
+        private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
         public MyConcurrentHashSet<IMyEntity> _inHash = new MyConcurrentHashSet<IMyEntity>();
         public HashSet<IMyEntity> _gridCloseHash = new HashSet<IMyEntity>();
         private List<long?> _playerKillList = new List<long?>();
 
-        public readonly List<MyEntitySubpart> _subpartsArms = new List<MyEntitySubpart>();
-        public readonly List<MyEntitySubpart> _subpartsReflectors = new List<MyEntitySubpart>();
-        public List<Matrix> _matrixArmsOff = new List<Matrix>();
-        public List<Matrix> _matrixArmsOn = new List<Matrix>();
-        public List<Matrix> _matrixReflectorsOff = new List<Matrix>();
-        public List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
         public static readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
 
         private IMyOreDetector _oblock; 
-        public IMyFunctionalBlock _fblock;
+        private IMyFunctionalBlock _fblock;
         private IMyTerminalBlock _tblock;
-        public IMyCubeBlock _cblock;
-
+        private IMyCubeBlock _cblock;
         #endregion
-
-        public virtual void BlockAnimationReset() { }
-        public virtual void BlockAnimationInit() { }
 
         #region Init
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
@@ -134,18 +129,17 @@ namespace DefenseShields.Station
         #endregion
 
         #region Simulation
-
         public override void UpdateBeforeSimulation()
         {
             try
             {
                 if (_animInit)
                 {
-                    //if (_subpartRotor.Closed.Equals(true) && !Initialized && _cblock.IsWorking)
-                    //{
-                    //    BlockAnimationReset();
-                    //}
-                    BlockAnimations();
+                    if (_subpartRotor.Closed.Equals(true) && !Initialized && _cblock.IsWorking)
+                    {
+                        BlockAnimationReset();
+                    }
+                    BlockAnimation();
                 }
                 if (_playercount < 600) _playercount++;
                 if (_gridcount < 600) _gridcount++;
@@ -234,8 +228,81 @@ namespace DefenseShields.Station
         }
         #endregion
 
-        #region Animation
-        public void BlockAnimations()
+        #region Block Animation
+        public void BlockAnimationReset()
+        {
+            Logging.WriteLine(String.Format("{0} - Resetting BlockAnimation in loop {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
+            _subpartRotor.Subparts.Clear();
+            _subpartsArms.Clear();
+            _subpartsReflectors.Clear();
+            BlockAnimationInit();
+        }
+
+        public void BlockAnimationInit()
+        {
+            try
+            {
+                _animStep = 0f;
+
+                _matrixArmsOff = new List<Matrix>();
+                _matrixArmsOn = new List<Matrix>();
+                _matrixReflectorsOff = new List<Matrix>();
+                _matrixReflectorsOn = new List<Matrix>();
+
+                _worldMatrix = Entity.WorldMatrix;
+                _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
+
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
+
+                for (int i = 1; i < 9; i++)
+                {
+                    MyEntitySubpart temp1;
+                    _subpartRotor.TryGetSubpart("ArmT" + i.ToString(), out temp1);
+                    _matrixArmsOff.Add(temp1.PositionComp.LocalMatrix);
+                    Matrix temp2 = temp1.PositionComp.LocalMatrix.GetOrientation();
+                    switch (i)
+                    {
+                        case 1:
+                        case 5:
+                            temp2 *= Matrix.CreateRotationZ(0.98f);
+                            break;
+                        case 2:
+                        case 6:
+                            temp2 *= Matrix.CreateRotationX(-0.98f);
+                            break;
+                        case 3:
+                        case 7:
+                            temp2 *= Matrix.CreateRotationZ(-0.98f);
+                            break;
+                        case 4:
+                        case 8:
+                            temp2 *= Matrix.CreateRotationX(0.98f); ;
+                            break;
+                    }
+                    temp2.Translation = temp1.PositionComp.LocalMatrix.Translation;
+                    _matrixArmsOn.Add(temp2);
+                    _subpartsArms.Add(temp1);
+                }
+
+                for (int i = 0; i < 4; i++)
+                {
+                    MyEntitySubpart temp3;
+                    _subpartsArms[i].TryGetSubpart("Reflector", out temp3);
+                    _subpartsReflectors.Add(temp3);
+                    _matrixReflectorsOff.Add(temp3.PositionComp.LocalMatrix);
+                    Matrix temp4 = temp3.PositionComp.LocalMatrix * Matrix.CreateFromAxisAngle(temp3.PositionComp.LocalMatrix.Forward, -(float)Math.PI / 3);
+                    temp4.Translation = temp3.PositionComp.LocalMatrix.Translation;
+                    _matrixReflectorsOn.Add(temp4);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logging.WriteLine(String.Format("{0} - Exception in BlockAnimation", DateTime.Now));
+                Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now, ex));
+            }
+        }
+
+        public void BlockAnimation()
         {
             _worldMatrix = Entity.WorldMatrix;
             _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
