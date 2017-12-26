@@ -141,6 +141,11 @@ namespace DefenseShields.Station
                 }
                 if (!MyAPIGateway.Utilities.IsDedicated) DrawShield(_range); //Check
                 else SendPoke(_range); //Check
+                if (Count == 29 && _absorb > 0)
+                {
+                    CalcRequiredPower();
+                    _tblock.GameLogic.GetAs<DefenseShields>().Sink.Update();
+                }
                 if (!Initialized && _cblock.IsWorking)
                 {
                     if (Count <= 0) MyAPIGateway.Parallel.Do(InHashBuilder);
@@ -148,12 +153,6 @@ namespace DefenseShields.Station
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
                     if (_gridwebbed && !_gridlocked) MyAPIGateway.Parallel.Do(GridEffects);
                     if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
-                    if (Count == 29 && _absorb > 0)
-                    {
-                        CalcRequiredPower();
-                        _tblock.GameLogic.GetAs<DefenseShields>().Sink.Update();
-                    }
-
                 }
             }
             catch (Exception ex)
@@ -344,7 +343,6 @@ namespace DefenseShields.Station
                 Logging.WriteLine(String.Format("{0} - Sustain cost is {1}MW this and recharge cost is {2}MW", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), sustaincost, _recharge));
                 return _power;
             }
-            _power = 0.0001f;
             return _power;
         }
 
