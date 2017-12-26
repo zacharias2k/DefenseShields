@@ -825,7 +825,7 @@ namespace DefenseShields.Station
                         grid.Physics.LinearVelocity = vel;
                     }
                 }
-                if (_gridcount != 119 || _gridcount != 599) return;
+                if (_gridcount != 119 && _gridcount != 599) return;
                 foreach (var grident in _gridCloseHash)
                 {
                     var grid = grident as IMyCubeGrid;
