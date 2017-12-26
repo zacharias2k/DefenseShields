@@ -136,7 +136,7 @@ namespace DefenseShields.Station
                     }
                     BlockAnimation();
                 }
-                if (GenCount++ == 599) GenCount = 0;
+                if (GenCount < 600) GenCount++;
                 if (Count++ == 59) Count = 0;
                 if (Count % 3 == 0)
                 {
@@ -151,13 +151,15 @@ namespace DefenseShields.Station
                     CalcRequiredPower();
                     _tblock.GameLogic.GetAs<DefenseShields>().Sink.Update();
                 }
-                if (_playerkill)
+                if (_playerkill || GenCount == 299)
                 {
+                    if (_playerkill) GenCount = -1;
                     _playerkill = false;
                     PlayerKill();
                 }
-                if (_closegrids)
+                if (_closegrids || GenCount == 599)
                 {
+                    if (_closegrids) GenCount = -1;
                     _closegrids = false;
                     GridClose();
                 }
@@ -807,17 +809,20 @@ namespace DefenseShields.Station
         #region Close flagged grids
         public void GridClose()
         {
+            if (GenCount != 599) return;
             MyAPIGateway.Parallel.ForEach(_gridCloseHash, grident =>
             {
                 var grid = grident as IMyCubeGrid;
                 grid?.Close();
             });
+            _gridCloseHash.Clear();
         }
         #endregion
 
         #region Kill flagged players
         public void PlayerKill()
         {
+            if (GenCount != 499) return;
             MyAPIGateway.Parallel.ForEach(_playerKillList, playerent =>
             {
                 if (playerent != null)
@@ -825,6 +830,7 @@ namespace DefenseShields.Station
                     MyVisualScriptLogicProvider.SetPlayersHealth((long) playerent, -100);
                 }
             });
+            _playerKillList.Clear();
         }
         #endregion
     }
