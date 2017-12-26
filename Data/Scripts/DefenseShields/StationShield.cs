@@ -165,7 +165,6 @@ namespace DefenseShields.Station
                 CreateUi();
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo();
-                CalcRequiredPower();
                 Initialized = false;
 
             }
@@ -339,6 +338,7 @@ namespace DefenseShields.Station
                 sustaincost = radius * 0.01f;
                 _power = _draining + sustaincost;
                 Logging.WriteLine(String.Format("{0} - Sustain cost is {1}MW this and recharge cost is {2}MW", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), sustaincost, _draining));
+                _tblock.GameLogic.GetAs<DefenseShields>().Sink.Update();
                 return _power;
             }
             _power = 0.0001f;
@@ -789,7 +789,7 @@ namespace DefenseShields.Station
             base.Setter(block, newState);
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
-            shield.Sink.Update();
+            //shield.Sink.Update();
             block.RefreshCustomInfo();
         }
     }
@@ -829,7 +829,7 @@ namespace DefenseShields.Station
             base.Setter(block, value);
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
-            shield.Sink.Update();
+            //shield.Sink.Update();
         }
 
         public override void Setter(IMyTerminalBlock block, float value)
@@ -839,7 +839,7 @@ namespace DefenseShields.Station
             //shieldNetwork.MessageUtils.SendMessageToAll(message);
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
-            shield.Sink.Update();
+            //shield.Sink.Update();
         }
     }
     #endregion
