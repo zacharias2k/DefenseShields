@@ -100,9 +100,9 @@ namespace DefenseShields.Station
 
         #endregion
 
-        public virtual void BlockAnimationReset(MatrixD _worldMatrix) { }
-        public virtual void BlockAnimations(MatrixD _worldMatrix) { }
-        public virtual void BlockAnimationInit(MatrixD _worldMatrix) { }
+        public virtual void BlockAnimationReset(ref MatrixD _worldMatrix) { }
+        public virtual void BlockAnimations(ref MatrixD _worldMatrix) { }
+        public virtual void BlockAnimationInit(ref MatrixD _worldMatrix) { }
 
         #region Init
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
@@ -134,9 +134,9 @@ namespace DefenseShields.Station
                 {
                     if (_subpartRotor.Closed.Equals(true) && !Initialized && _cblock.IsWorking)
                     {
-                        BlockAnimationReset(_worldMatrix);
+                        BlockAnimationReset(ref _worldMatrix);
                     }
-                    BlockAnimations(_worldMatrix);
+                    BlockAnimations(ref _worldMatrix);
                 }
                 if (_playercount < 600) _playercount++;
                 if (_gridcount < 600) _gridcount++;
@@ -206,7 +206,7 @@ namespace DefenseShields.Station
                     if (_oblock.BlockDefinition.SubtypeId == "StationDefenseShield")
                     {
                         if (!_oblock.IsFunctional) return;
-                        BlockAnimationInit(_worldMatrix);
+                        BlockAnimationInit(ref _worldMatrix);
                         Logging.WriteLine(String.Format("{0} - BlockAnimation {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
 
                         _animInit = true;

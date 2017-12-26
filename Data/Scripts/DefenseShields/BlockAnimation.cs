@@ -29,7 +29,7 @@ namespace DefenseShields.BlockAnimation
             BlockAnimationInit(_worldMatrix);
         }
 
-        public override void BlockAnimationInit(MatrixD _worldMatrix)
+        public void BlockAnimationInit(MatrixD _worldMatrix)
         {
             try
             {
@@ -93,7 +93,7 @@ namespace DefenseShields.BlockAnimation
             }
         }
 
-        public override void BlockAnimations(MatrixD _worldMatrix)
+        public void BlockAnimations(MatrixD _worldMatrix)
         {
             _worldMatrix = Entity.WorldMatrix;
             _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
