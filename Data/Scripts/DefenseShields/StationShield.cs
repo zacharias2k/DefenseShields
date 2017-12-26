@@ -148,6 +148,7 @@ namespace DefenseShields.Station
                     if (_gridwebbed && !_gridlocked) MyAPIGateway.Parallel.Do(GridEffects);
                     if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
                     if (Count == 29  && _absorbed > 0) CalcRequiredPower();
+
                 }
             }
             catch (Exception ex)
@@ -323,22 +324,21 @@ namespace DefenseShields.Station
             {
                 float sustaincost;
                 //power = (float)(4.0 * Math.PI * Math.Pow(radius, 3) / 3.0 / 1000.0 / 1000.0);
-                if (_absorbed >= 1)
+                if (_absorbed >= 0.1)
                 {
                     _absorbed = _absorbed - _draining;
                     _draining = _absorbed / 10f;
                     Logging.WriteLine(String.Format("{0} - Amount shield has absorbed {1}MW and draining {2}MW this cycle", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _absorbed, _draining));
                 }
-                else if (_absorbed < 1f)
+                else if (_absorbed < 0.01f)
                 {
-                    _draining = _absorbed;
+                    _draining = 0.0001f;
                     _absorbed = 0f;
                 }
                 var radius = Slider.Getter((IMyFunctionalBlock)_cblock);
                 sustaincost = radius * 0.01f;
                 _power = _draining + sustaincost;
                 Logging.WriteLine(String.Format("{0} - Sustain cost is {1}MW this and recharge cost is {2}MW", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), sustaincost, _draining));
-                if (_absorbed < 0.001f) _draining = 0;
                 return _power;
             }
             _power = 0.0001f;
