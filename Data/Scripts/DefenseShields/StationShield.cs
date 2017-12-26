@@ -731,7 +731,6 @@ namespace DefenseShields.Station
         #endregion
 
         #region player effects
-
         public void PlayerEffects()
         {
             Random rnd = new Random();
@@ -828,8 +827,6 @@ namespace DefenseShields.Station
                     }
                 }
                 if (_gridcount != 599) return;
-                Logging.WriteLine(String.Format("{0} pre-2ndloop {1} {2}",
-                    DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _gridCloseHash.Count));
                 foreach (var grident in _gridCloseHash)
                 {
                     var grid = grident as IMyCubeGrid;
@@ -855,15 +852,11 @@ namespace DefenseShields.Station
                 {
                     if (playerid != null)
                     {
-                        Logging.WriteLine(String.Format("{0} player kill {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerid, _playercount));
                         var playerentid = MyVisualScriptLogicProvider.GetPlayersEntityId(playerid);
                         var player = MyAPIGateway.Entities.GetEntityById(playerentid);
-                        Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), player));
                         var playerent = (IMyCharacter) player;
-                        Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent));
                         var playerpos = playerent.GetPosition();
-                        Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerpos));
-                        MyVisualScriptLogicProvider.CreateExplosion(playerpos, 35, 9999);
+                        MyVisualScriptLogicProvider.CreateExplosion(playerpos, 20, 9999);
                         playerent.Kill();
                     }
                 }
