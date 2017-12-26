@@ -797,8 +797,8 @@ namespace DefenseShields.Station
                     }
                     catch (Exception ex)
                     {
-                        Logging.WriteLine(String.Format("{0} - Exception in playerEffects", DateTime.Now));
-                        Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now, ex));
+                        Logging.WriteLine(String.Format("{0} - Exception in playerEffects", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
+                        Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ex));
                     }
             });
             _playerwebbed = false;
@@ -810,6 +810,7 @@ namespace DefenseShields.Station
         {
             if (_gridcount == -1)
             {
+                Logging.WriteLine(String.Format("{0} pre-1stloop {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _gridCloseHash.Count));
                 MyAPIGateway.Parallel.ForEach(_gridCloseHash, grident =>
                 {
                     /*
@@ -827,6 +828,7 @@ namespace DefenseShields.Station
             }
             
             if (_gridcount != 599) return;
+            Logging.WriteLine(String.Format("{0} pre-2ndloop {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _gridCloseHash.Count));
             MyAPIGateway.Parallel.ForEach(_gridCloseHash, grident =>
             {
                 var grid = grident as IMyCubeGrid;
