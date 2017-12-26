@@ -54,7 +54,7 @@ namespace DefenseShields.Station
         private readonly float _inOutSpace = 15f;
 
         public int Count = -301;
-        public int GenCount = -1;
+        public int GenCount;
         private int _colourRand = 32;
         private int _time;
         private int _playertime;
@@ -810,7 +810,7 @@ namespace DefenseShields.Station
                     var grid = grident as IMyCubeGrid;
                     if (grid == null) return;
                     var gridpos = grid.GetPosition();
-                    MyVisualScriptLogicProvider.CreateExplosion(gridpos, 100, 0);
+                    //MyVisualScriptLogicProvider.CreateExplosion(gridpos, 100, 0);
                     var vel = grid.Physics.LinearVelocity;
                     vel.SetDim(0, -2f);
                     vel.SetDim(1, 20f);
