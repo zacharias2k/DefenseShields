@@ -49,7 +49,7 @@ namespace DefenseShields.Station
         private float _absorb;
         private float _shotdmg = 1f;
         private float _bulletdmg = 0.1f;
-        private float _massdmg = 0.01f;
+        private float _massdmg = 0.0025f;
 
         private readonly float _inOutSpace = 15f;
 
