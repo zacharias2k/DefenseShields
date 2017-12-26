@@ -44,14 +44,15 @@ namespace DefenseShields.Station
         private float _inHeight;
         private float _inDepth;
         private float _inRange;
-        private float _draining = 0f;
+        private float _draining;
         private float _power = 1f;
+        private float _absorbed;
+
 
         private readonly float _inOutSpace = 15f;
 
         public int Count = -301;
         public int GenCount = -1;
-        private int _absorbed = 0;
         private int _colourRand = 32;
         private int _time;
         private int _playertime;
@@ -323,12 +324,12 @@ namespace DefenseShields.Station
                 //power = (float)(4.0 * Math.PI * Math.Pow(radius, 3) / 3.0 / 1000.0 / 1000.0);
                 if (_absorbed > 1)
                 {
-                    _absorbed = (int) (_absorbed - _draining);
+                    _absorbed = _absorbed - _draining;
                     _draining = _absorbed / 10f;
                     Logging.WriteLine(String.Format("{0} - Absorbed is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _absorbed));
                     _power = _draining + 1f;
                 }
-                else if (_absorbed <1f)
+                else if (_absorbed < 1f)
                 {
                     _draining = _absorbed;
                     Logging.WriteLine(String.Format("{0} - Absorbed is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _absorbed));
