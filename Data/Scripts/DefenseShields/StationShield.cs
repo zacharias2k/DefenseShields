@@ -133,9 +133,9 @@ namespace DefenseShields.Station
                 {
                     if (_subpartRotor.Closed.Equals(true) && !Initialized && _cblock.IsWorking)
                     {
-                        BlockAnimationReset(_worldMatrix);
+                        //BlockAnimationReset(_worldMatrix);
                     }
-                    BlockAnimations(_worldMatrix);
+                    //BlockAnimations(_worldMatrix);
                 }
                 if (_playercount < 600) _playercount++;
                 if (_gridcount < 600) _gridcount++;

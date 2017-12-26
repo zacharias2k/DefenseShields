@@ -12,7 +12,6 @@ namespace DefenseShields.BlockAnimation
 
         private int _time;
 
-
         private readonly List<MyEntitySubpart> _subpartsArms = new List<MyEntitySubpart>();
         private readonly List<MyEntitySubpart> _subpartsReflectors = new List<MyEntitySubpart>();
         private List<Matrix> _matrixArmsOff = new List<Matrix>();
