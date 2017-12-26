@@ -161,7 +161,7 @@ namespace DefenseShields.Station
                     _playerkill = false;
                     PlayerKill();
                 }
-                if (_closegrids || _gridcount == 599)
+                if (_closegrids && _gridcount == 599)
                 {
                     if (_closegrids) _gridcount = -1;
                     _closegrids = false;
@@ -617,7 +617,7 @@ namespace DefenseShields.Station
                 if (_inHash.Contains(webent)) return;
 
                 var grid = webent as IMyCubeGrid;
-                if (grid == _tblock.CubeGrid || _gridwebbed) return;
+                if (grid == _tblock.CubeGrid || _gridwebbed || _gridCloseHash.Contains(grid)) return;
                 if (grid != null)
                 {
                     List<long> owners = grid.BigOwners;
@@ -814,7 +814,7 @@ namespace DefenseShields.Station
                     var grid = grident as IMyCubeGrid;
                     if (grid == null) return;
                     var gridpos = grid.GetPosition();
-                    MyVisualScriptLogicProvider.CreateExplosion(gridpos, 100, 0);
+                    MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 5000);
                     var vel = grid.Physics.LinearVelocity;
                     vel.SetDim(0, -2f);
                     vel.SetDim(1, 20f);
