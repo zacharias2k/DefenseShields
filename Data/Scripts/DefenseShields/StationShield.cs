@@ -54,7 +54,8 @@ namespace DefenseShields.Station
         private readonly float _inOutSpace = 15f;
 
         public int Count = -301;
-        public int GenCount;
+        public int _playercount = 600;
+        public int _gridcount = 600;
         private int _colourRand = 32;
         private int _time;
         private int _playertime;
@@ -68,6 +69,8 @@ namespace DefenseShields.Station
         private bool _shotlocked;
         private bool _closegrids;
         private bool _playerkill;
+        private bool _pkilllock;
+        private bool _gcloselock;
         public bool _insideReady;
 
         private ushort _modId = 50099;
@@ -136,7 +139,8 @@ namespace DefenseShields.Station
                     }
                     BlockAnimation();
                 }
-                if (GenCount < 600) GenCount++;
+                if (_playercount < 600) _playercount++;
+                if (_gridcount < 600) _gridcount++;
                 if (Count++ == 59) Count = 0;
                 if (Count % 3 == 0)
                 {
@@ -151,15 +155,15 @@ namespace DefenseShields.Station
                     CalcRequiredPower();
                     _tblock.GameLogic.GetAs<DefenseShields>().Sink.Update();
                 }
-                if (_playerkill || GenCount == 299)
+                if (_playerkill || _playercount == 299)
                 {
-                    if (_playerkill) GenCount = -1;
+                    if (_playerkill) _playercount = -1;
                     _playerkill = false;
                     PlayerKill();
                 }
-                if (_closegrids || GenCount == 599)
+                if (_closegrids || _gridcount == 599)
                 {
-                    if (_closegrids) GenCount = -1;
+                    if (_closegrids) _gridcount = -1;
                     _closegrids = false;
                     GridClose();
                 }
@@ -803,7 +807,7 @@ namespace DefenseShields.Station
         #region Close flagged grids
         public void GridClose()
         {
-            if (GenCount == -1)
+            if (_gridcount == -1)
             {
                 MyAPIGateway.Parallel.ForEach(_gridCloseHash, grident =>
                 {
@@ -817,7 +821,6 @@ namespace DefenseShields.Station
                     vel.SetDim(2, -2f);
                     grid.Physics.LinearVelocity = vel;
                 });
-                return;
             }
             if (GenCount != 599) return;
             MyAPIGateway.Parallel.ForEach(_gridCloseHash, grident =>
@@ -832,7 +835,7 @@ namespace DefenseShields.Station
         #region Kill flagged players
         public void PlayerKill()
         {
-            if (GenCount != 239) return;
+            if (_playercount != 239) return;
             MyAPIGateway.Parallel.ForEach(_playerKillList, playerent =>
             {
                 if (playerent != null)
