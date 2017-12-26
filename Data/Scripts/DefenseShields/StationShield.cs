@@ -851,12 +851,13 @@ namespace DefenseShields.Station
             try
             {
                 if (_playercount != 239) return;
-                foreach (var playerid in _playerKillList)
+                foreach (long playerid in _playerKillList)
                 {
                     if (playerid != null)
                     {
                         Logging.WriteLine(String.Format("{0} player kill {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerid, _playercount));
                         var player = MyAPIGateway.Entities.GetEntityById(playerid);
+                        if (player == null) continue;
                         Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), player));
                         var playerent = (IMyCharacter) player;
                         Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent));
