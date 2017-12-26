@@ -342,7 +342,7 @@ namespace DefenseShields.Station
                 Logging.WriteLine(String.Format("{0} - Power sinking is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _power));
                 return _power;
             }
-            _power = 0f;
+            _power = 1f;
             return _power;
         }
 
