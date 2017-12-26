@@ -45,6 +45,7 @@ namespace DefenseShields.Station
         private float _inDepth;
         private float _inRange;
         private float _draining = 0f;
+        private float _power = 0f;
 
         private readonly float _inOutSpace = 15f;
 
@@ -315,7 +316,7 @@ namespace DefenseShields.Station
         public float CalcRequiredPower()
         {
 
-            float power = 0.0001f;
+            //float power = 0.0001f;
             if (!Initialized && _cblock.IsWorking)
             {
                 //var radius = Slider.Getter((IMyFunctionalBlock)_cblock);
@@ -325,11 +326,11 @@ namespace DefenseShields.Station
                     _draining = (_absorbed / 10f);
                     _absorbed = (int) (_absorbed - _draining);
                     Logging.WriteLine(String.Format("{0} - Absorbed is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _absorbed));
-                    power += (_absorbed / 10f);
+                    _power = (_draining);
                 }
             }
-            Logging.WriteLine(String.Format("{0} - Power sinking is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), power));
-            return power;
+            Logging.WriteLine(String.Format("{0} - Power sinking is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _power));
+            return _power;
         }
 
         void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
