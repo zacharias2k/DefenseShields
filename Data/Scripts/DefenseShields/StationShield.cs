@@ -141,10 +141,10 @@ namespace DefenseShields.Station
             {
                 if (_animInit)
                 {
-                    if (_subpartRotor.Closed.Equals(true) && !Initialized && _cblock.IsWorking)
-                    {
-                        BlockAnimationReset();
-                    }
+                    //if (_subpartRotor.Closed.Equals(true) && !Initialized && _cblock.IsWorking)
+                    //{
+                    //    BlockAnimationReset();
+                    //}
                     BlockAnimations();
                 }
                 if (_playercount < 600) _playercount++;
