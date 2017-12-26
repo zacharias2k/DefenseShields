@@ -66,6 +66,7 @@ namespace DefenseShields.Station
         private bool _gridlocked;
         private bool _shotwebbed;
         private bool _shotlocked;
+        private bool _closegrids;
         public bool _insideReady;
 
         private ushort _modId = 50099;
@@ -89,6 +90,8 @@ namespace DefenseShields.Station
         private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
         public MyConcurrentHashSet<IMyEntity> _inHash = new MyConcurrentHashSet<IMyEntity>();
+        public MyConcurrentHashSet<IMyEntity> _gridCloseHash = new MyConcurrentHashSet<IMyEntity>();
+
 
         public static readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
 
@@ -680,14 +683,21 @@ namespace DefenseShields.Station
                         }
                         if (Detectgridedge(grid))
                         {
-                            //long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId;
-                            //if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long)dude, -100);
-                            var gridpos = grid.GetPosition();
+
                             float griddmg = grid.Physics.Mass * _massdmg;
-                            MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
                             _absorb += griddmg;
                             Logging.WriteLine(String.Format("{0} - gridEffect: {1} Shield Strike by a {2}kilo grid, absorbing {3}MW of energy in loop {4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, (griddmg / _massdmg), griddmg, Count));
-                            grid.Delete();
+                            var vel = grid.Physics.LinearVelocity;
+                            vel.SetDim(0, -2f);
+                            vel.SetDim(1, 20f);
+                            vel.SetDim(2, -2f);
+                            grid.Physics.LinearVelocity = vel;
+                            long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId;
+                            if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long)dude, -100);
+                            var gridpos = grid.GetPosition();
+                            MyVisualScriptLogicProvider.CreateExplosion(gridpos, 100, 0);
+                            _closegrids = true;
+                            _gridCloseHash.Add(grid);
                         }
 
                     }
@@ -775,6 +785,17 @@ namespace DefenseShields.Station
                     }
             });
             _playerwebbed = false;
+        }
+        #endregion
+
+        #region Close flagged grids
+        public void GridClose()
+        {
+            MyAPIGateway.Parallel.ForEach(_gridCloseHash, grident =>
+            {
+                var grid = grident as IMyCubeGrid;
+                grid?.Close();
+            });
         }
         #endregion
     }
