@@ -162,7 +162,7 @@ namespace DefenseShields.Station
                     if (_playerKillList.Count > 0) PlayerKill();
 
                 }
-                if (_closegrids || _gridcount == 599)
+                if (_closegrids || _gridcount == 179 || _gridcount == 599)
                 {
                     if (_closegrids) _gridcount = -1;
                     _closegrids = false;
