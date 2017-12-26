@@ -51,8 +51,6 @@ namespace DefenseShields.Station
         private float _bulletdmg = 0.1f;
         private float _massdmg = 0.01f;
 
-
-
         private readonly float _inOutSpace = 15f;
 
         public int Count = -301;
@@ -687,10 +685,10 @@ namespace DefenseShields.Station
                             //long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId;
                             //if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long)dude, -100);
                             var gridpos = grid.GetPosition();
-                            float gridmass = grid.Physics.Mass;
+                            float griddmg = grid.Physics.Mass * _massdmg;
                             MyVisualScriptLogicProvider.CreateExplosion(gridpos, 0, 0);
-                            _absorb += _massdmg * gridmass;
-                            Logging.WriteLine(String.Format("{0} - gridEffect: {1} Shield Strike by a {2}kilo grid, absorbing {3}MW of energy in loop {4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, (gridmass * _massdmg), _massdmg, Count));
+                            _absorb += griddmg;
+                            Logging.WriteLine(String.Format("{0} - gridEffect: {1} Shield Strike by a {2}kilo grid, absorbing {3}MW of energy in loop {4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, (griddmg / _massdmg), griddmg, Count));
                             grid.Delete();
                         }
 
