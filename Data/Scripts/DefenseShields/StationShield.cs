@@ -187,9 +187,9 @@ namespace DefenseShields.Station
             if (Initialized)
             {
                 Logging.WriteLine(String.Format("{0} - Create UI {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-                CreateUi();
-                //((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
-                //_tblock.RefreshCustomInfo();
+                //CreateUi();
+                ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
+                _tblock.RefreshCustomInfo();
                 _absorb = 150f;
                 Initialized = false;
 
