@@ -159,13 +159,14 @@ namespace DefenseShields.Station
                 {
                     if (_playerkill) _playercount = -1;
                     _playerkill = false;
-                    PlayerKill();
+                    if (_playerKillList.Count > 0) PlayerKill();
+
                 }
                 if (_closegrids || _gridcount == 599)
                 {
                     if (_closegrids) _gridcount = -1;
                     _closegrids = false;
-                    GridClose();
+                    if (_gridCloseHash.Count > 0) GridClose();
                 }
                 if (!Initialized && _cblock.IsWorking)
                 {
@@ -687,7 +688,7 @@ namespace DefenseShields.Station
             MyAPIGateway.Parallel.ForEach(gridList, grident =>
             {
                 var grid = grident as IMyCubeGrid;
-                if ((grid != null) && !_inHash.Contains(grid))
+                if ((grid != null) && !_inHash.Contains(grid) && !_gridCloseHash.Contains(grid))
                 {
                     if (grid == _tblock.CubeGrid) return;
                     try
