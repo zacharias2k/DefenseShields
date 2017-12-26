@@ -155,7 +155,7 @@ namespace DefenseShields.Station
                     CalcRequiredPower();
                     _tblock.GameLogic.GetAs<DefenseShields>().Sink.Update();
                 }
-                if (_playerkill || _playercount == 299)
+                if (_playerkill || _playercount == 239)
                 {
                     if (_playerkill) _playercount = -1;
                     _playerkill = false;
@@ -816,11 +816,11 @@ namespace DefenseShields.Station
                     var grid = grident as IMyCubeGrid;
                     if (grid == null) return;
                     var gridpos = grid.GetPosition();
-                    MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 5000);
+                    MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 9999);
                     var vel = grid.Physics.LinearVelocity;
-                    vel.SetDim(0, (int)((float)vel.GetDim(0) * 0.5f));
-                    vel.SetDim(1, (int)((float)vel.GetDim(1) * 0.5f));
-                    vel.SetDim(2, (int)((float)vel.GetDim(2) * 0.5f));
+                    vel.SetDim(0, (int)((float)vel.GetDim(0) * 1.0f));
+                    vel.SetDim(1, (int)((float)vel.GetDim(1) * 1.0f));
+                    vel.SetDim(2, (int)((float)vel.GetDim(2) * 1.0f));
                     grid.Physics.LinearVelocity = vel;
                     
                 }
@@ -846,6 +846,7 @@ namespace DefenseShields.Station
             {
                 if (playerent != null)
                 {
+                    Logging.WriteLine(String.Format("{0} player kill {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent, _playercount));
                     var player = MyAPIGateway.Entities.GetEntityById(playerent);
                     var playerpos = player.GetPosition();
                     MyVisualScriptLogicProvider.CreateExplosion(playerpos, 35, 5000);
