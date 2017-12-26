@@ -832,9 +832,8 @@ namespace DefenseShields.Station
                     if (grid == null) return;
                     if (_gridcount == 119)
                     {
-                        Logging.WriteLine(String.Format("{0} 119 loop {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _gridCloseHash.Count));
                         var gridpos = grid.GetPosition();
-                        MyVisualScriptLogicProvider.CreateExplosion(gridpos, 100, 0);
+                        MyVisualScriptLogicProvider.CreateExplosion(gridpos, 300, 0);
                     }
                     else
                     {
