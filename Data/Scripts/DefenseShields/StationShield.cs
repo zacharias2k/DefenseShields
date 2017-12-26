@@ -839,7 +839,7 @@ namespace DefenseShields.Station
                     if (_gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419)
                     {
                         var gridpos = grid.GetPosition();
-                        MyVisualScriptLogicProvider.CreateExplosion(gridpos, 250, _gridcount);
+                        MyVisualScriptLogicProvider.CreateExplosion(gridpos, _gridcount / 2f, _gridcount * 2);
                         return;
                     }
                     if (_gridcount == 598)
@@ -871,7 +871,7 @@ namespace DefenseShields.Station
                         var player = MyAPIGateway.Entities.GetEntityById(playerentid);
                         var playerent = (IMyCharacter) player;
                         var playerpos = playerent.GetPosition();
-                        MyVisualScriptLogicProvider.CreateExplosion(playerpos, 20, 9999);
+                        MyVisualScriptLogicProvider.CreateExplosion(playerpos, 10, 1000);
                         playerent.Kill();
                     }
                 }
