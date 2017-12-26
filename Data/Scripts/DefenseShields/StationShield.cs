@@ -319,27 +319,24 @@ namespace DefenseShields.Station
         public float CalcRequiredPower()
         {
 
-            //float power = 0.0001f;
             if (!Initialized && _cblock.IsWorking)
             {
+                float sustaincost;
                 //power = (float)(4.0 * Math.PI * Math.Pow(radius, 3) / 3.0 / 1000.0 / 1000.0);
                 if (_absorbed >= 2)
                 {
                     _absorbed = _absorbed - _draining;
                     _draining = _absorbed / 10f;
-                    Logging.WriteLine(String.Format("{0} - Absorbed is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _absorbed));
-                    _power = _draining + 1f;
+                    Logging.WriteLine(String.Format("{0} - Amount shield has absorbed {1}MW and draining {2}MW this cycle", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _absorbed, _draining));
                 }
                 else if (_absorbed < 2f)
                 {
-                    _absorbed = _absorbed - _draining;
-                    _absorbed = _absorbed - _absorbed;
-                    _draining = 0f;
-                    _power = _draining + 1f;
+                    _absorbed = 0f;
                 }
                 var radius = Slider.Getter((IMyFunctionalBlock)_cblock);
-                _power = _power * radius * 0.01f;
-                Logging.WriteLine(String.Format("{0} - Power sinking is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _power));
+                sustaincost = radius * 0.01f;
+                _power = _draining + sustaincost;
+                Logging.WriteLine(String.Format("{0} - Sustain cost is {1}MW this and recharge cost is {2}MW", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), sustaincost, _draining));
                 return _power;
             }
             _power = 0.0001f;
