@@ -19,8 +19,6 @@ namespace DefenseShields.BlockAnimation
         private List<Matrix> _matrixReflectorsOff = new List<Matrix>();
         private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
-        private IMyFunctionalBlock _fblock;
-
         #region Block Animation
         public void BlockAnimationReset()
         {
@@ -95,7 +93,7 @@ namespace DefenseShields.BlockAnimation
             }
         }
 
-        public void BlockAnimations(MatrixD _worldMatrix)
+        public override void BlockAnimations(MatrixD _worldMatrix)
         {
             _worldMatrix = Entity.WorldMatrix;
             _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
