@@ -51,6 +51,8 @@ namespace DefenseShields.Station
         private float _shotdmg = 1f;
         private float _bulletdmg = 0.1f;
         private float _massdmg = 0.0025f;
+        public float _animStep;
+
 
         private readonly float _inOutSpace = 15f;
 
@@ -59,6 +61,8 @@ namespace DefenseShields.Station
         public int _gridcount = 600;
         private int _colourRand = 32;
         private int _playertime;
+        public int _time;
+
 
         public bool Initialized = true;
         private bool _animInit;
@@ -90,6 +94,12 @@ namespace DefenseShields.Station
         public HashSet<IMyEntity> _gridCloseHash = new HashSet<IMyEntity>();
         private List<long?> _playerKillList = new List<long?>();
 
+        public readonly List<MyEntitySubpart> _subpartsArms = new List<MyEntitySubpart>();
+        public readonly List<MyEntitySubpart> _subpartsReflectors = new List<MyEntitySubpart>();
+        public List<Matrix> _matrixArmsOff = new List<Matrix>();
+        public List<Matrix> _matrixArmsOn = new List<Matrix>();
+        public List<Matrix> _matrixReflectorsOff = new List<Matrix>();
+        public List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
         public static readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
 
@@ -100,9 +110,8 @@ namespace DefenseShields.Station
 
         #endregion
 
-        public virtual void BlockAnimationReset(ref MatrixD _worldMatrix) { }
-        public virtual void BlockAnimations(ref MatrixD _worldMatrix) { }
-        public virtual void BlockAnimationInit(ref MatrixD _worldMatrix) { }
+        public virtual void BlockAnimationReset() { }
+        public virtual void BlockAnimationInit() { }
 
         #region Init
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
@@ -134,9 +143,9 @@ namespace DefenseShields.Station
                 {
                     if (_subpartRotor.Closed.Equals(true) && !Initialized && _cblock.IsWorking)
                     {
-                        BlockAnimationReset(ref _worldMatrix);
+                        BlockAnimationReset();
                     }
-                    BlockAnimations(ref _worldMatrix);
+                    BlockAnimations();
                 }
                 if (_playercount < 600) _playercount++;
                 if (_gridcount < 600) _gridcount++;
@@ -206,7 +215,7 @@ namespace DefenseShields.Station
                     if (_oblock.BlockDefinition.SubtypeId == "StationDefenseShield")
                     {
                         if (!_oblock.IsFunctional) return;
-                        BlockAnimationInit(ref _worldMatrix);
+                        BlockAnimationInit();
                         Logging.WriteLine(String.Format("{0} - BlockAnimation {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
 
                         _animInit = true;
@@ -225,7 +234,44 @@ namespace DefenseShields.Station
         }
         #endregion
 
-       
+        #region Animation
+        public void BlockAnimations()
+        {
+            _worldMatrix = Entity.WorldMatrix;
+            _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
+            //Animations
+            if (_fblock.Enabled && _fblock.IsFunctional && _cblock.IsWorking)
+            {
+                //Color change for on =-=-=-=-
+                _subpartRotor.SetEmissiveParts("Emissive", Color.White, 1);
+                _time += 1;
+                Matrix temp1 = Matrix.CreateRotationY(0.1f * _time);
+                temp1.Translation = _subpartRotor.PositionComp.LocalMatrix.Translation;
+                _subpartRotor.PositionComp.LocalMatrix = temp1;
+                if (_animStep < 1f)
+                {
+                    _animStep += 0.05f;
+                }
+            }
+            else
+            {
+                //Color change for off =-=-=-=-
+                _subpartRotor.SetEmissiveParts("Emissive", Color.Black + new Color(15, 15, 15, 5), 0);
+                if (_animStep > 0f)
+                {
+                    _animStep -= 0.05f;
+                }
+            }
+            for (int i = 0; i < 8; i++)
+            {
+                if (i < 4)
+                {
+                    _subpartsReflectors[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixReflectorsOff[i], _matrixReflectorsOn[i], _animStep);
+                }
+                _subpartsArms[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixArmsOff[i], _matrixArmsOn[i], _animStep);
+            }
+        }
+        #endregion
 
         #region Update Power+Range
         float GetRadius()

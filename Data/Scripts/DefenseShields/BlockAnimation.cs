@@ -8,28 +8,20 @@ namespace DefenseShields.BlockAnimation
 {
     public class BlockAnimation : Station.DefenseShields
     {
-        private float _animStep;
 
-        private int _time;
 
-        private readonly List<MyEntitySubpart> _subpartsArms = new List<MyEntitySubpart>();
-        private readonly List<MyEntitySubpart> _subpartsReflectors = new List<MyEntitySubpart>();
-        private List<Matrix> _matrixArmsOff = new List<Matrix>();
-        private List<Matrix> _matrixArmsOn = new List<Matrix>();
-        private List<Matrix> _matrixReflectorsOff = new List<Matrix>();
-        private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
-        #region Block Animation
-        public void BlockAnimationReset()
+
+        public override void BlockAnimationReset()
         {
             Logging.WriteLine(String.Format("{0} - Resetting BlockAnimation in loop {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
             _subpartRotor.Subparts.Clear();
             _subpartsArms.Clear();
             _subpartsReflectors.Clear();
-            BlockAnimationInit(_worldMatrix);
+            BlockAnimationInit();
         }
 
-        public void BlockAnimationInit(MatrixD _worldMatrix)
+        public void BlockAnimationInit()
         {
             try
             {
@@ -93,42 +85,6 @@ namespace DefenseShields.BlockAnimation
             }
         }
 
-        public void BlockAnimations(MatrixD _worldMatrix)
-        {
-            _worldMatrix = Entity.WorldMatrix;
-            _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
-            //Animations
-            if (_fblock.Enabled && _fblock.IsFunctional && _cblock.IsWorking)
-            {
-                //Color change for on =-=-=-=-
-                _subpartRotor.SetEmissiveParts("Emissive", Color.White, 1);
-                _time += 1;
-                Matrix temp1 = Matrix.CreateRotationY(0.1f * _time);
-                temp1.Translation = _subpartRotor.PositionComp.LocalMatrix.Translation;
-                _subpartRotor.PositionComp.LocalMatrix = temp1;
-                if (_animStep < 1f)
-                {
-                    _animStep += 0.05f;
-                }
-            }
-            else
-            {
-                //Color change for off =-=-=-=-
-                _subpartRotor.SetEmissiveParts("Emissive", Color.Black + new Color(15, 15, 15, 5), 0);
-                if (_animStep > 0f)
-                {
-                    _animStep -= 0.05f;
-                }
-            }
-            for (int i = 0; i < 8; i++)
-            {
-                if (i < 4)
-                {
-                    _subpartsReflectors[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixReflectorsOff[i], _matrixReflectorsOn[i], _animStep);
-                }
-                _subpartsArms[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixArmsOff[i], _matrixArmsOn[i], _animStep);
-            }
-        }
-        #endregion
+
     }
 }
