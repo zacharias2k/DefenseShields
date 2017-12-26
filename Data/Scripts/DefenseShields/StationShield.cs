@@ -644,7 +644,7 @@ namespace DefenseShields.Station
                 try
                 {
                     _absorb += _shotdmg;
-                    Logging.WriteLine(String.Format("{0} - shotEffect: {1} Shield Strike for {2} energy in loop {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, _shotdmg, Count));
+                    Logging.WriteLine(String.Format("{0} - shotEffect: Shield absorbed {1}MW of energy from {2} in loop {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, _shotdmg, Count));
                     shotent.Close();
                 }
                 catch (Exception ex)
@@ -894,9 +894,9 @@ namespace DefenseShields.Station
             DefenseShields generator = _bulletShields[0];
             IMyEntity ent = block as IMyEntity;
             var slimBlock = block as IMySlimBlock;
-            if (slimBlock != null) ent = slimBlock.CubeGrid as IMyEntity;
+            if (slimBlock != null) ent = slimBlock.CubeGrid;
             var dude = block as IMyCharacter;
-            if (dude != null) ent = dude as IMyEntity;
+            if (dude != null) ent = dude;
             if (ent == null) return;
             bool isProtected = false;
             foreach (var shield in _bulletShields)
