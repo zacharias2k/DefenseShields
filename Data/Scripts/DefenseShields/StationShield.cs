@@ -67,6 +67,7 @@ namespace DefenseShields.Station
         private bool _shotwebbed;
         private bool _shotlocked;
         private bool _closegrids;
+        private bool _playerkill;
         public bool _insideReady;
 
         private ushort _modId = 50099;
@@ -91,6 +92,7 @@ namespace DefenseShields.Station
 
         public MyConcurrentHashSet<IMyEntity> _inHash = new MyConcurrentHashSet<IMyEntity>();
         public MyConcurrentHashSet<IMyEntity> _gridCloseHash = new MyConcurrentHashSet<IMyEntity>();
+        private List<long?> _playerKillList = new List<long?>();
 
 
         public static readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
@@ -148,6 +150,16 @@ namespace DefenseShields.Station
                 {
                     CalcRequiredPower();
                     _tblock.GameLogic.GetAs<DefenseShields>().Sink.Update();
+                }
+                if (_playerkill)
+                {
+                    _playerkill = false;
+                    PlayerKill();
+                }
+                if (_closegrids)
+                {
+                    _closegrids = false;
+                    GridClose();
                 }
                 if (!Initialized && _cblock.IsWorking)
                 {
@@ -693,7 +705,11 @@ namespace DefenseShields.Station
                             vel.SetDim(2, -2f);
                             grid.Physics.LinearVelocity = vel;
                             long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId;
-                            if (dude != null) MyVisualScriptLogicProvider.SetPlayersHealth((long)dude, -100);
+                            if (dude != null)
+                            {
+                                _playerKillList.Add(dude);
+                                _playerkill = true;
+                            }
                             var gridpos = grid.GetPosition();
                             MyVisualScriptLogicProvider.CreateExplosion(gridpos, 100, 0);
                             _closegrids = true;
@@ -795,6 +811,19 @@ namespace DefenseShields.Station
             {
                 var grid = grident as IMyCubeGrid;
                 grid?.Close();
+            });
+        }
+        #endregion
+
+        #region Kill flagged players
+        public void PlayerKill()
+        {
+            MyAPIGateway.Parallel.ForEach(_playerKillList, playerent =>
+            {
+                if (playerent != null)
+                {
+                    MyVisualScriptLogicProvider.SetPlayersHealth((long) playerent, -100);
+                }
             });
         }
         #endregion
