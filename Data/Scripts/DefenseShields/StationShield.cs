@@ -856,7 +856,7 @@ namespace DefenseShields.Station
         {
             try
             {
-                if (_playercount != 598) return;
+                if (_playercount != 479) return;
                 foreach (long playerid in _playerKillList)
                 {
                     if (playerid != null)
