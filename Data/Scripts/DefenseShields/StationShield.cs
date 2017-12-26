@@ -812,6 +812,7 @@ namespace DefenseShields.Station
             {
                 MyAPIGateway.Parallel.ForEach(_gridCloseHash, grident =>
                 {
+                    /*
                     var grid = grident as IMyCubeGrid;
                     if (grid == null) return;
                     var gridpos = grid.GetPosition();
@@ -821,9 +822,10 @@ namespace DefenseShields.Station
                     vel.SetDim(1, (int)((float)vel.GetDim(1) * 0.5f));
                     vel.SetDim(2, (int)((float)vel.GetDim(2) * 0.5f));
                     grid.Physics.LinearVelocity = vel;
+                    */
                 });
             }
-            /*
+            
             if (_gridcount != 599) return;
             MyAPIGateway.Parallel.ForEach(_gridCloseHash, grident =>
             {
@@ -831,7 +833,7 @@ namespace DefenseShields.Station
                 grid?.Close();
             });
             _gridCloseHash.Clear();
-            */
+            
         }
         
         #endregion
