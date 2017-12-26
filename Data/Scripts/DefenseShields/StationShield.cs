@@ -47,6 +47,8 @@ namespace DefenseShields.Station
         private readonly float _inOutSpace = 15f;
 
         public int Count = -301;
+        public int GenCount = -1;
+        public int Absorb = 0;
         private int _colourRand = 32;
         private int _time;
         private int _playertime;
@@ -122,6 +124,7 @@ namespace DefenseShields.Station
                     }
                     BlockAnimation();
                 }
+                if (GenCount++ == 599) GenCount = 0;
                 if (Count++ == 59) Count = 0;
                 if (Count % 3 == 0)
                 {
@@ -614,7 +617,8 @@ namespace DefenseShields.Station
                 if (shotent == null || !Detectedge(shotent)) return;
                 try
                 {
-                    Logging.WriteLine(String.Format("{0} - shotEffect ent found: {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, Count));
+                    Absorb += 1000;
+                    Logging.WriteLine(String.Format("{0} - shotEffect: {1} Shield Strike for {2} energy in loop {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, Absorb, Count));
                     shotent.Close();
                 }
                 catch (Exception ex)
