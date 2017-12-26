@@ -136,7 +136,7 @@ namespace DefenseShields.Station
                     }
                     BlockAnimation();
                 }
-                if (GenCount < 600 && GenCount != -1) GenCount++;
+                if (GenCount < 600) GenCount++;
                 if (Count++ == 59) Count = 0;
                 if (Count % 3 == 0)
                 {
