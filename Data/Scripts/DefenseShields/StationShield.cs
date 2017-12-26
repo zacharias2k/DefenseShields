@@ -136,7 +136,7 @@ namespace DefenseShields.Station
                     }
                     BlockAnimation();
                 }
-                if (GenCount < 600) GenCount++;
+                if (GenCount < 600 && GenCount != -1) GenCount++;
                 if (Count++ == 59) Count = 0;
                 if (Count % 3 == 0)
                 {
@@ -810,7 +810,7 @@ namespace DefenseShields.Station
                     var grid = grident as IMyCubeGrid;
                     if (grid == null) return;
                     var gridpos = grid.GetPosition();
-                    //MyVisualScriptLogicProvider.CreateExplosion(gridpos, 100, 0);
+                    MyVisualScriptLogicProvider.CreateExplosion(gridpos, 100, 0);
                     var vel = grid.Physics.LinearVelocity;
                     vel.SetDim(0, -2f);
                     vel.SetDim(1, 20f);
