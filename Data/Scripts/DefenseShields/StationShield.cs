@@ -165,14 +165,14 @@ namespace DefenseShields.Station
                 {
                     if (_playerkill) _playercount = -1;
                     _playerkill = false;
-                    if (_playerKillList.Count > 0) PlayerKill();
+                    if (_playerKillList.Count > 0) PlayerKill(_playercount, _playerkill);
 
                 }
                 if (_closegrids || _gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419 || _gridcount == 598 ||_gridcount == 599)
                 {
                     if (_closegrids) _gridcount = -1;
                     _closegrids = false;
-                    if (_gridCloseHash.Count > 0) GridClose();
+                    if (_gridCloseHash.Count > 0) GridClose(_gridcount, _closegrids);
                 }
                 if (!Initialized && _cblock.IsWorking)
                 {
