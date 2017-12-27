@@ -543,11 +543,24 @@ namespace DefenseShields.Station
             List<IMyEntity> inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
 
             _inHash.Clear();
-            MyAPIGateway.Parallel.ForEach(inList, inent =>
+            try
             {
-                if (!(inent is IMyCubeGrid) && !(inent is IMyCharacter)) return;
-                if (oDetectin.Detectin(inent)) _inHash.Add(inent);
-            });
+                MyAPIGateway.Parallel.ForEach(inList, inent =>
+                {
+                    if (!(inent is IMyCubeGrid) && !(inent is IMyCharacter)) return;
+                    if (oDetectin.Detectin(inent))
+                    {
+                        Logging.WriteLine(String.Format("{0} - oDetectin was true", DateTime.Now));
+                        _inHash.Add(inent);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Logging.WriteLine(String.Format("{0} - Exception in InHashBuilder", DateTime.Now));
+                Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now, ex));
+            }
+
         }
         #endregion
 
