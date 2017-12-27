@@ -12,7 +12,7 @@ namespace DefenseShields.Destroy
     class DestroyEntity : Station.DefenseShields
     {
         #region Close flagged grids
-        public override void GridClose()
+        public override void GridClose(int _gridcount, bool gridclose)
         {
             try
             {
@@ -65,7 +65,7 @@ namespace DefenseShields.Destroy
         #endregion
 
         #region Kill flagged players
-        public override void PlayerKill()
+        public override void PlayerKill(int _playercount, bool _playerkill)
         {
             try
             {

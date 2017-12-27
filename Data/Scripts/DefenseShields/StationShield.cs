@@ -128,8 +128,8 @@ namespace DefenseShields.Station
         }
         #endregion
 
-        public virtual void PlayerKill() { }
-        public virtual void GridClose() { }
+        public virtual void PlayerKill(int _playercount, bool _playerkill) { }
+        public virtual void GridClose(int _gridcount, bool _closegrids) { }
 
 
         #region Simulation
