@@ -117,9 +117,9 @@ namespace DefenseShields.Station
         public interface IDetectedge { bool Detectedge(); }
         public interface IDetectgridedge { bool Detectgridedge(); }
 
-        public IntersectEnt oDetectin = new IntersectEnt();
-        public IntersectEnt oDetectedge = new IntersectEnt();
-        public IntersectEnt oDetectgridedge = new IntersectEnt();
+        public IntersectEnt oDetectin;// bool;// IntersectEnt();
+        public IntersectEnt oDetectedge;// = new IntersectEnt();
+        public IntersectEnt oDetectgridedge;// = new IntersectEnt();
         #endregion
 
         #region Init
