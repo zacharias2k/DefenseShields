@@ -31,6 +31,7 @@ using Sandbox.Engine.Multiplayer;
 
 using DefenseShields.Base;
 using DefenseShields.Destroy;
+using DefenseShields.Intersect;
 
 namespace DefenseShields.Station
 {
@@ -39,14 +40,14 @@ namespace DefenseShields.Station
     {
         #region Setup
         private float _animStep;
-        private float _range;
-        private float _width;
-        private float _height;
-        private float _depth;
-        private float _inWidth;
-        private float _inHeight;
-        private float _inDepth;
-        private float _inRange;
+        public float _range;
+        public float _width;
+        public float _height;
+        public float _depth;
+        public float _inWidth;
+        public float _inHeight;
+        public float _inDepth;
+        public float _inRange;
         private float _recharge;
         private float _power = 0.0001f;
         private float _absorb;
@@ -79,7 +80,7 @@ namespace DefenseShields.Station
         private ushort _modId = 50099;
 
         private static Random _random = new Random();
-        private MatrixD _worldMatrix;
+        protected MatrixD _worldMatrix;
         //MatrixD _detectMatrix = MatrixD.Identity;
         private Vector3D _edgeVectors;
         private Vector3D _inVectors;
@@ -109,6 +110,18 @@ namespace DefenseShields.Station
         private IMyCubeBlock _cblock;
         #endregion
 
+        #region public interfaces and their objects
+        public interface IPlayerKill { void PlayerKill(); }
+        public interface IGridClose { void GridClose(); }
+        public interface IDetectin { bool Detectin(); }
+        public interface IDetectedge { bool Detectedge(); }
+        public interface IDetectgridedge { bool Detectgridedge(); }
+
+        public IntersectEnt oDetect = new IntersectEnt();
+       // public IntersectEnt oDetectedge = new IntersectEnt();
+        //public IntersectEnt oDetectgridedge = new IntersectEnt();
+        #endregion
+
         #region Init
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
@@ -128,10 +141,6 @@ namespace DefenseShields.Station
             _tblock = Entity as IMyTerminalBlock;
         }
         #endregion
-
-        public interface IPlayerKill{ void PlayerKill(); }
-        public interface IGridClose { void GridClose(); }
-
 
         #region Simulation
         public override void UpdateBeforeSimulation()
@@ -409,23 +418,15 @@ namespace DefenseShields.Station
         #region Cleanup
         public override void Close()
         {
-            try
-            {
-            }
-            catch
-            {
-            }
+            try{}
+            catch{}
             base.Close();
         }
 
         public override void MarkForClose()
         {
-            try
-            {
-            }
-            catch
-            {
-            }
+            try {}
+            catch {}
             base.MarkForClose();
         }
         #endregion
@@ -534,53 +535,6 @@ namespace DefenseShields.Station
         }
         #endregion
 
-        #region Detection Methods
-        private bool Detectin(IMyEntity ent)
-        {
-            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float detect = (x * x) / (_inWidth  * _inWidth) + (y * y) / (_inDepth * _inDepth) + (z * z) / (_inHeight * _inHeight);
-            if (detect <= 1)
-            {
-                //Logging.WriteLine(String.Format("{0} - {1} in-t: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
-                return true;
-            }
-            //Logging.WriteLine(String.Format("{0} - {1} in-f - d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, detect, Count));
-            return false;
-        }
-
-        private bool Detectedge(IMyEntity ent)
-        {
-            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
-            if (detect <= 1)
-            {
-                //Logging.WriteLine(String.Format("{0} - {1} edge-t - d:{2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, detect, Count));
-                return true;
-            }
-            //if (detect <= 1.1) Logging.WriteLine(String.Format("{0} - {1} edge-f - d:{2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, detect, Count));
-            return false;
-        }
-
-        private bool Detectgridedge(IMyCubeGrid grid)
-        {
-            float x = Vector3Extensions.Project(_worldMatrix.Forward, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix.Left, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_worldMatrix.Up, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
-            if (detect <= 1)
-            {
-                Logging.WriteLine(String.Format("{0} - {1} grid-t - d:{2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, detect, Count));
-                return true;
-            }
-            Logging.WriteLine(String.Format("{0} - {1} grid-f - d:{2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, detect, Count));
-            return false;
-        }
-        #endregion
-
         #region Build inside HashSet
         public void InHashBuilder()
         {
@@ -592,7 +546,7 @@ namespace DefenseShields.Station
             MyAPIGateway.Parallel.ForEach(inList, inent =>
             {
                 if (!(inent is IMyCubeGrid) && !(inent is IMyCharacter)) return;
-                if (Detectin(inent)) _inHash.Add(inent);
+                if (oDetect.Detectin(inent)) _inHash.Add(inent);
             });
         }
         #endregion
@@ -610,7 +564,7 @@ namespace DefenseShields.Station
                 if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
                 if (webent is IMyMeteor) return;
                 
-                if (webent is IMyCharacter && (Count == 14 || Count == 29 || Count == 44 || Count == 59) && Detectedge(webent))
+                if (webent is IMyCharacter && (Count == 14 || Count == 29 || Count == 44 || Count == 59) && oDetect.Detectedge(webent))
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
                     var playerrelationship = _tblock.GetUserRelationToOwner(dude);
@@ -638,7 +592,7 @@ namespace DefenseShields.Station
                     }
                     //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - websphere.Center) * 2);
                     //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - websphere.Center) * 2);
-                    if (Detectgridedge(grid))
+                    if (oDetect.Detectedge(grid))
                     {
                         Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName));
                         _gridwebbed = true;
@@ -668,7 +622,7 @@ namespace DefenseShields.Station
 
             MyAPIGateway.Parallel.ForEach(shotHash, shotent =>
             {
-                if (shotent == null || !Detectedge(shotent)) return;
+                if (shotent == null || !oDetect.Detectedge(shotent)) return;
                 try
                 {
                     _absorb += _shotdmg;
@@ -708,7 +662,7 @@ namespace DefenseShields.Station
                             //Logging.WriteLine(String.Format("{0} - grid: {1} tblock: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, owners.Count, relations, relations == MyRelationsBetweenPlayerAndBlock.Owner, relations == MyRelationsBetweenPlayerAndBlock.FactionShare));
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
-                        if (Detectgridedge(grid))
+                        if (oDetect.Detectgridedge(grid))
                         {
 
                             float griddmg = grid.Physics.Mass * _massdmg;
