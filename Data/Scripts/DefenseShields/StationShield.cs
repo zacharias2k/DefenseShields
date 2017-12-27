@@ -30,6 +30,7 @@ using Sandbox.Engine;
 using Sandbox.Engine.Multiplayer;
 
 using DefenseShields.Base;
+using DefenseShields.Destroy;
 
 namespace DefenseShields.Station
 {
@@ -96,8 +97,8 @@ namespace DefenseShields.Station
         private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
         public MyConcurrentHashSet<IMyEntity> _inHash = new MyConcurrentHashSet<IMyEntity>();
-        public HashSet<IMyEntity> _gridCloseHash = new HashSet<IMyEntity>();
-        public List<long?> _playerKillList = new List<long?>();
+        public static HashSet<IMyEntity> _gridCloseHash = new HashSet<IMyEntity>();
+        public static List<long?> _playerKillList = new List<long?>();
 
 
         public static readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
@@ -128,8 +129,8 @@ namespace DefenseShields.Station
         }
         #endregion
 
-        public virtual void PlayerKill(int _playercount, bool _playerkill) { }
-        public virtual void GridClose(int _gridcount, bool _closegrids) { }
+        public interface IPlayerKill{ void PlayerKill(); }
+        public interface IGridClose { void GridClose(); }
 
 
         #region Simulation
@@ -165,14 +166,14 @@ namespace DefenseShields.Station
                 {
                     if (_playerkill) _playercount = -1;
                     _playerkill = false;
-                    if (_playerKillList.Count > 0) PlayerKill(_playercount, _playerkill);
+                    if (_playerKillList.Count > 0) DestroyEntity.PlayerKill(_playercount);
 
                 }
                 if (_closegrids || _gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419 || _gridcount == 598 ||_gridcount == 599)
                 {
                     if (_closegrids) _gridcount = -1;
                     _closegrids = false;
-                    if (_gridCloseHash.Count > 0) GridClose(_gridcount, _closegrids);
+                    if (_gridCloseHash.Count > 0) DestroyEntity.GridClose(_gridcount);
                 }
                 if (!Initialized && _cblock.IsWorking)
                 {
