@@ -78,7 +78,6 @@ namespace DefenseShields.Station
 
         private ushort _modId = 50099;
 
-        MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Build new");
         private static Random _random = new Random();
         private MatrixD _worldMatrix;
         //MatrixD _detectMatrix = MatrixD.Identity;
@@ -100,6 +99,8 @@ namespace DefenseShields.Station
         public MyConcurrentHashSet<IMyEntity> _inHash = new MyConcurrentHashSet<IMyEntity>();
         public static HashSet<IMyEntity> _gridCloseHash = new HashSet<IMyEntity>();
         public static List<long?> _playerKillList = new List<long?>();
+
+        readonly MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Build new");
 
 
         public static readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
