@@ -106,7 +106,7 @@ namespace DefenseShields.Station
         private IMyOreDetector _oblock; 
         private IMyFunctionalBlock _fblock;
         private IMyTerminalBlock _tblock;
-        private IMyCubeBlock _cblock;
+        private MyCubeBlock _cblock;
         #endregion
 
         #region Init
@@ -122,7 +122,7 @@ namespace DefenseShields.Station
             this.NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
             //this.NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
 
-            _cblock = (IMyCubeBlock)Entity;
+            _cblock = (MyCubeBlock)Entity;
             _oblock = Entity as IMyOreDetector; 
             _fblock = Entity as IMyFunctionalBlock;
             _tblock = Entity as IMyTerminalBlock;
@@ -515,7 +515,8 @@ namespace DefenseShields.Station
                 _edgeVectors = new Vector3(_depth, _height, _width);
                 //_inVectors = new Vector3(_inDepth, _inHeight, _inWidth);
                 MatrixD edgeMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _edgeVectors);
-                MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 6, null, MyStringId.GetOrCompute("Build new"), 0.25f, -1);
+                Utils.Spawn("LargeField", "", true, false, false, false, false, _cblock.IDModule.Owner);
+                //MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 6, null, MyStringId.GetOrCompute("Build new"), 0.25f, -1);
                 //MatrixD inMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _inVectors);
                 //MySimpleObjectDraw.DrawTransparentSphere(ref inMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, null, MyStringId.GetOrCompute("Build new"), 0.25f, -1);
                 //var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
@@ -802,7 +803,76 @@ namespace DefenseShields.Station
             _playerwebbed = false;
         }
         #endregion
-
-
     }
- }
+    #region Cube+subparts Class
+    public class Utils
+    {
+        //SPAWN METHOD
+        public static IMyEntity Spawn(string subtypeId, string name = "", bool isVisible = true, bool hasPhysics = false, bool isStatic = false, bool toSave = false, bool destructible = false, long ownerId = 0)
+        {
+            try
+            {
+                CubeGridBuilder.Name = name;
+                CubeGridBuilder.CubeBlocks[0].SubtypeName = subtypeId;
+                CubeGridBuilder.CreatePhysics = hasPhysics;
+                CubeGridBuilder.IsStatic = isStatic;
+                CubeGridBuilder.DestructibleBlocks = destructible;
+                IMyEntity ent = MyAPIGateway.Entities.CreateFromObjectBuilder(CubeGridBuilder);
+
+                ent.Flags &= ~EntityFlags.Save;
+                ent.Visible = isVisible;
+                MyAPIGateway.Entities.AddEntity(ent, true);
+
+                return ent;
+            }
+            catch (Exception ex)
+            {
+                Logging.WriteLine(String.Format("{0} - Exception in Spawn", DateTime.Now));
+                Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now, ex));
+                return null;
+            }
+        }
+
+        private static readonly SerializableBlockOrientation EntityOrientation = new SerializableBlockOrientation(Base6Directions.Direction.Forward, Base6Directions.Direction.Up);
+
+        //OBJECTBUILDERS
+        private static readonly MyObjectBuilder_CubeGrid CubeGridBuilder = new MyObjectBuilder_CubeGrid()
+        {
+
+            EntityId = 0,
+            GridSizeEnum = MyCubeSize.Large,
+            IsStatic = true,
+            Skeleton = new List<BoneInfo>(),
+            LinearVelocity = Vector3.Zero,
+            AngularVelocity = Vector3.Zero,
+            ConveyorLines = new List<MyObjectBuilder_ConveyorLine>(),
+            BlockGroups = new List<MyObjectBuilder_BlockGroup>(),
+            Handbrake = false,
+            XMirroxPlane = null,
+            YMirroxPlane = null,
+            ZMirroxPlane = null,
+            PersistentFlags = MyPersistentEntityFlags2.InScene,
+            Name = "ArtificialCubeGrid",
+            DisplayName = "FieldGenerator",
+            CreatePhysics = false,
+            DestructibleBlocks = true,
+            PositionAndOrientation = new MyPositionAndOrientation(Vector3D.Zero, Vector3D.Forward, Vector3D.Up),
+
+            CubeBlocks = new List<MyObjectBuilder_CubeBlock>()
+                {
+                    new MyObjectBuilder_CubeBlock()
+                    {
+                        EntityId = 0,
+                        BlockOrientation = EntityOrientation,
+                        SubtypeName = "",
+                        Name = "Field",
+                        Min = Vector3I.Zero,
+                        Owner = 0,
+                        ShareMode = MyOwnershipShareModeEnum.None,
+                        DeformationRatio = 0,
+                    }
+                }
+        };
+    }
+    #endregion
+}
