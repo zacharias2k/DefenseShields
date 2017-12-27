@@ -623,28 +623,22 @@ namespace DefenseShields.Station
                     return;
                 }
                 
-                if (webent is IMyCharacter) return;
-                if (_inHash.Contains(webent)) return;
+                if (webent is IMyCharacter || _inHash.Contains(webent)) return;
 
                 var grid = webent as IMyCubeGrid;
-                if (grid == _tblock.CubeGrid || _gridwebbed || _gridCloseHash.Contains(grid)) return;
-                if (grid != null)
+                if (grid == _tblock.CubeGrid || _gridwebbed || _gridCloseHash.Contains(grid) || grid == null) return;
+
+                List<long> owners = grid.BigOwners;
+                if (owners.Count > 0)
                 {
-                    List<long> owners = grid.BigOwners;
-                    if (owners.Count > 0)
-                    {
-                        var relations = _tblock.GetUserRelationToOwner(owners[0]);
-                        //Logging.WriteLine(String.Format("{0} - grid: {1} tblock: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, owners.Count, relations, relations == MyRelationsBetweenPlayerAndBlock.Owner, relations == MyRelationsBetweenPlayerAndBlock.FactionShare));
-                        if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
-                    }
-                    //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - websphere.Center) * 2);
-                    //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - websphere.Center) * 2);
-                    if (Detectgridedge(grid))
-                    {
-                        Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName));
-                        _gridwebbed = true;
-                        return;
-                    }
+                    var relations = _tblock.GetUserRelationToOwner(owners[0]);
+                    //Logging.WriteLine(String.Format("{0} - grid: {1} tblock: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, owners.Count, relations, relations == MyRelationsBetweenPlayerAndBlock.Owner, relations == MyRelationsBetweenPlayerAndBlock.FactionShare));
+                    if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
+                }
+                if (Detectgridedge(grid))
+                {
+                    Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName));
+                    _gridwebbed = true;
                     return;
                 }
                 if (_shotwebbed) return;
@@ -652,7 +646,7 @@ namespace DefenseShields.Station
                 {
                     _shotwebbed = true;
                 }
-                Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
+                //Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
             });
         }
         #endregion
