@@ -548,7 +548,7 @@ namespace DefenseShields.Station
                 MyAPIGateway.Parallel.ForEach(inList, inent =>
                 {
                     if (!(inent is IMyCubeGrid) && !(inent is IMyCharacter)) return;
-                    if (oDetectin.Detectin(inent))
+                    if (oDetectin.Detectin(ref inent))
                     {
                         Logging.WriteLine(String.Format("{0} - oDetectin was true", DateTime.Now));
                         _inHash.Add(inent);
@@ -577,7 +577,7 @@ namespace DefenseShields.Station
                 if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
                 if (webent is IMyMeteor) return;
                 
-                if (webent is IMyCharacter && (Count == 14 || Count == 29 || Count == 44 || Count == 59) && oDetectedge.Detectedge(webent))
+                if (webent is IMyCharacter && (Count == 14 || Count == 29 || Count == 44 || Count == 59) && oDetectedge.Detectedge(ref webent))
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
                     var playerrelationship = _tblock.GetUserRelationToOwner(dude);
@@ -605,7 +605,7 @@ namespace DefenseShields.Station
                     }
                     //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Center - websphere.Center) * 2);
                     //double abs = Math.Abs(grid.WorldAABB.HalfExtents.Dot(grid.WorldAABB.Max - websphere.Center) * 2);
-                    if (oDetectedge.Detectedge(grid))
+                    if (oDetectedge.Detectgridedge(ref grid))
                     {
                         Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName));
                         _gridwebbed = true;
@@ -635,7 +635,7 @@ namespace DefenseShields.Station
 
             MyAPIGateway.Parallel.ForEach(shotHash, shotent =>
             {
-                if (shotent == null || !oDetectedge.Detectedge(shotent)) return;
+                if (shotent == null || !oDetectedge.Detectedge(ref shotent)) return;
                 try
                 {
                     _absorb += _shotdmg;
@@ -675,7 +675,7 @@ namespace DefenseShields.Station
                             //Logging.WriteLine(String.Format("{0} - grid: {1} tblock: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, owners.Count, relations, relations == MyRelationsBetweenPlayerAndBlock.Owner, relations == MyRelationsBetweenPlayerAndBlock.FactionShare));
                             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                         }
-                        if (oDetectgridedge.Detectgridedge(grid))
+                        if (oDetectgridedge.Detectgridedge(ref grid))
                         {
 
                             float griddmg = grid.Physics.Mass * _massdmg;

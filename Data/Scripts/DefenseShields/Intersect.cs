@@ -9,7 +9,7 @@ namespace DefenseShields.Intersect
     public class IntersectEnt : Station.DefenseShields
     {
         #region Detection Methods
-        public bool Detectin(IMyEntity ent)
+        public bool Detectin(ref IMyEntity ent)
         {
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
@@ -24,7 +24,7 @@ namespace DefenseShields.Intersect
             return false;
         }
 
-        public bool Detectedge(IMyEntity ent)
+        public bool Detectedge(ref IMyEntity ent)
         {
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
@@ -39,7 +39,7 @@ namespace DefenseShields.Intersect
             return false;
         }
 
-        public bool Detectgridedge(IMyCubeGrid grid)
+        public bool Detectgridedge(ref IMyCubeGrid grid)
         {
             float x = Vector3Extensions.Project(_worldMatrix.Forward, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
