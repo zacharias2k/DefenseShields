@@ -78,6 +78,7 @@ namespace DefenseShields.Station
 
         private ushort _modId = 50099;
 
+        MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Build new");
         private static Random _random = new Random();
         private MatrixD _worldMatrix;
         //MatrixD _detectMatrix = MatrixD.Identity;
@@ -216,7 +217,7 @@ namespace DefenseShields.Station
                         if (!_oblock.IsFunctional) return;
                         BlockAnimationInit();
                         Logging.WriteLine(String.Format("{0} - BlockAnimation {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
-                        Shield = Utils.Spawn("LargeField", "", true, false, false, false, false, _cblock.IDModule.Owner);
+                        //Shield = Utils.Spawn("LargeField", "", true, false, false, false, false, _cblock.IDModule.Owner);
                         _animInit = true;
                     }
                     else
@@ -411,7 +412,7 @@ namespace DefenseShields.Station
         {
             try
             {
-                MyAPIGateway.Entities.RemoveEntity(Shield);
+                //MyAPIGateway.Entities.RemoveEntity(Shield);
             }
             catch{}
             base.Close();
@@ -421,7 +422,7 @@ namespace DefenseShields.Station
         {
             try
             {
-                MyAPIGateway.Entities.RemoveEntity(Shield);
+                //MyAPIGateway.Entities.RemoveEntity(Shield);
             }
             catch {}
             base.MarkForClose();
@@ -510,7 +511,7 @@ namespace DefenseShields.Station
         #region Draw Shield
         public void DrawShield(float size)
         {
-            //var wiredraw = 1 << Mathf.Clamp((int) (5 * _range / Math.Sqrt(_cblock.WorldMatrix.Translation.Length(MyAPIGateway.Session.Camera.Position)), 1, 5));
+            //var wiredraw = 1 << Math.Clamp((int) (5 * _range / Math.Sqrt(_cblock.WorldMatrix.Translation.Length(MyAPIGateway.Session.Camera.Position)), 1, 5));
             if (!Initialized && _cblock.IsWorking)
             {
                 Color colour;
@@ -523,8 +524,8 @@ namespace DefenseShields.Station
                 _edgeVectors = new Vector3(_depth, _height, _width);
                 //_inVectors = new Vector3(_inDepth, _inHeight, _inWidth);
                 MatrixD edgeMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _edgeVectors);
-                Shield.SetWorldMatrix(edgeMatrix);
-                //MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, MyStringId.GetOrCompute("Build new"), 0.25f, -1);
+                //Shield.SetWorldMatrix(edgeMatrix);
+                MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
                 //MatrixD inMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _inVectors);
                 //MySimpleObjectDraw.DrawTransparentSphere(ref inMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, null, MyStringId.GetOrCompute("Build new"), 0.25f, -1);
                 //var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
