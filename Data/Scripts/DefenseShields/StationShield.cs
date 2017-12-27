@@ -31,12 +31,6 @@ using Sandbox.Engine.Multiplayer;
 
 using DefenseShields.Base;
 using DefenseShields.Destroy;
-using UnityEngine;
-using VRageRender;
-using Color = VRageMath.Color;
-using Quaternion = VRageMath.Quaternion;
-using Random = System.Random;
-using Vector3 = VRageMath.Vector3;
 
 namespace DefenseShields.Station
 {
