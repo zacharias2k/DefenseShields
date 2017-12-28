@@ -686,18 +686,17 @@ namespace DefenseShields.Station
         #region player effects
         public void PlayerEffects()
         {
-            _playerwebbed = false;
-            return;
             Random rnd = new Random();
             MyAPIGateway.Parallel.ForEach(_inHash, playerent =>
             {
                 if (!(playerent is IMyCharacter)) return;
-                    try
+                try
+                {
+                    var playerid = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;
+                    var relationship = _tblock.GetUserRelationToOwner(playerid);
+                    if (relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
                     {
-                        var playerid = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;
-                        var relationship = _tblock.GetUserRelationToOwner(playerid);
-                        if (relationship == MyRelationsBetweenPlayerAndBlock.Owner || relationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
-                        var character = (IMyCharacter) playerent;
+                        var character = (IMyCharacter)playerent;
                         var npcname = character.ToString();
                         Logging.WriteLine(String.Format("{0} - playerEffect: Enemy {1} detected at loop {2} - relationship: {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character, Count, relationship));
                         if (npcname.Equals("Space_Wolf"))
@@ -739,11 +738,13 @@ namespace DefenseShields.Station
                         character.Physics.SetSpeeds(playerCurrentSpeed, additionalSpeed);
                         //MyVisualScriptLogicProvider.SetPlayersSpeed(playerCurrentSpeed + additionalSpeed, playerid);
                     }
-                    catch (Exception ex)
-                    {
-                        Logging.WriteLine(String.Format("{0} - Exception in playerEffects", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
-                        Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ex));
-                    }
+
+                }
+                catch (Exception ex)
+                {
+                    Logging.WriteLine(String.Format("{0} - Exception in playerEffects", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
+                    Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ex));
+                }
             });
             _playerwebbed = false;
         }
