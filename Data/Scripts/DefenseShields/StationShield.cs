@@ -644,9 +644,9 @@ namespace DefenseShields.Station
                     Logging.WriteLine(String.Format("{0} - gridEffect: {1} Shield Strike by a {2}kilo grid, absorbing {3}MW of energy in loop {4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, (griddmg / _massdmg), griddmg, Count));
 
                     var vel = grid.Physics.LinearVelocity;
-                    vel.SetDim(0, (int)((float)vel.GetDim(0) * -2.5f));
-                    vel.SetDim(1, (int)((float)vel.GetDim(1) * -2.5f));
-                    vel.SetDim(2, (int)((float)vel.GetDim(2) * -2.5f));
+                    vel.SetDim(0, (int)((float)vel.GetDim(0) * -3.5f));
+                    vel.SetDim(1, (int)((float)vel.GetDim(1) * -3.5f));
+                    vel.SetDim(2, (int)((float)vel.GetDim(2) * -3.5f));
                     grid.Physics.LinearVelocity = vel;
 
                     _closegrids = true;
