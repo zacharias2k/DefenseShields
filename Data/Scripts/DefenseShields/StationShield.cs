@@ -182,7 +182,7 @@ namespace DefenseShields.Station
                     if (Count <= 0) MyAPIGateway.Parallel.Do(InHashBuilder);
                     MyAPIGateway.Parallel.StartBackground(WebEntities);
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
-                    if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
+                    if (_playerwebbed) PlayerEffects();
                 }
             }
             catch (Exception ex)
@@ -704,6 +704,7 @@ namespace DefenseShields.Station
         #region player effects
         public void PlayerEffects()
         {
+            _playerwebbed = false;
             Random rnd = new Random();
             MyAPIGateway.Parallel.ForEach(_inHash, playerent =>
             {
@@ -760,7 +761,6 @@ namespace DefenseShields.Station
                     Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ex));
                 }
             });
-            _playerwebbed = false;
         }
         #endregion
     }
