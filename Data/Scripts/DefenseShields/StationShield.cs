@@ -171,7 +171,7 @@ namespace DefenseShields.Station
                     if (_destroyPlayerHash.Count > 0) DestroyEntity.PlayerKill(_playercount);
 
                 }
-                if (_closegrids || _gridcount == 0 || _gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419 ||_gridcount == 599)
+                if (_closegrids || _gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419 || _gridcount == 479||_gridcount == 599)
                 {
                     if (_closegrids) _gridcount = -1;
                     _closegrids = false;
@@ -643,16 +643,8 @@ namespace DefenseShields.Station
                     _absorb += griddmg;
                     Logging.WriteLine(String.Format("{0} - gridEffect: {1} Shield Strike by a {2}kilo grid, absorbing {3}MW of energy in loop {4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, (griddmg / _massdmg), griddmg, Count));
 
-                    _destroyGridHash.Add(grid);
-
-                    var vel = grid.Physics.LinearVelocity;
-                    vel.SetDim(0, (int)((float)vel.GetDim(0) * -3.5f));
-                    vel.SetDim(1, (int)((float)vel.GetDim(1) * -3.5f));
-                    vel.SetDim(2, (int)((float)vel.GetDim(2) * -3.5f));
-                    grid.Physics.LinearVelocity = vel;
-                    Logging.WriteLine(String.Format("{0} - vel is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), vel));
-
                     _closegrids = true;
+                    _destroyGridHash.Add(grid);
 
                     //var playerentid = MyVisualScriptLogicProvider.GetPlayersEntityId(playerid);
                     //var player = MyAPIGateway.Entities.GetEntityById(playerentid);

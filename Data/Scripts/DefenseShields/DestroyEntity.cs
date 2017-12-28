@@ -11,7 +11,7 @@ namespace DefenseShields.Destroy
         {
             try
             {
-                if (_gridcount == -1 || _gridcount == 0)
+                if (_gridcount == -1 || _gridcount == 58)
                 {
                     Logging.WriteLine(String.Format("{0} pre-1stloop {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _destroyGridHash.Count));
                     foreach (var grident in _destroyGridHash)
@@ -21,30 +21,30 @@ namespace DefenseShields.Destroy
 
                         if (_gridcount == -1)
                         {
-                            /*
+                            
                             var vel = grid.Physics.LinearVelocity;
                             vel.SetDim(0, (int)((float)vel.GetDim(0) * -1.5f));
                             vel.SetDim(1, (int)((float)vel.GetDim(1) * -1.5f));
                             vel.SetDim(2, (int)((float)vel.GetDim(2) * -1.5f));
                             grid.Physics.LinearVelocity = vel;
-                            */
+                            
                         }
                         else
                         {
                             var gridpos = grid.GetPosition();
-                            //MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 9999);
+                            MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 9999);
                         }
                     }
                 }
 
-                if (_gridcount < 59) return;
+                if (_gridcount < 178) return;
 
                 foreach (var grident in _destroyGridHash)
                 {
                     var grid = grident as IMyCubeGrid;
                     if (grid == null) continue;
                     Logging.WriteLine(String.Format("{0} passed continue check - l:{1} grids:{2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _destroyGridHash.Count));
-                    if (_gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419)
+                    if (_gridcount == 179 || _gridcount == 299 || _gridcount == 419 || _gridcount == 479)
                     {
                         Logging.WriteLine(String.Format("{0} inside grid destory {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _destroyGridHash.Count));
                         var gridpos = grid.GetPosition();
