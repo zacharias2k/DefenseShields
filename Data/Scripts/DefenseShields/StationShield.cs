@@ -686,13 +686,14 @@ namespace DefenseShields.Station
         #region player effects
         public void PlayerEffects()
         {
+            _playerwebbed = false;
+            return;
             Random rnd = new Random();
             MyAPIGateway.Parallel.ForEach(_inHash, playerent =>
             {
                 if (!(playerent is IMyCharacter)) return;
                     try
                     {
-                        return;
                         var playerid = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;
                         var relationship = _tblock.GetUserRelationToOwner(playerid);
                         if (relationship == MyRelationsBetweenPlayerAndBlock.Owner || relationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
