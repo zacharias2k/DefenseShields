@@ -706,26 +706,32 @@ namespace DefenseShields.Station
         {
             _playerwebbed = false;
             Random rnd = new Random();
-            MyAPIGateway.Parallel.ForEach(_inHash, playerent =>
+            //MyAPIGateway.Parallel.ForEach(_inHash, playerent =>
+            foreach (var playerent in _inHash)
             {
                 if (!(playerent is IMyCharacter)) return;
                 try
                 {
                     var playerid = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;
                     var relationship = _tblock.GetUserRelationToOwner(playerid);
-                    if (relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
+                    if (relationship != MyRelationsBetweenPlayerAndBlock.Owner &&
+                        relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
                     {
                         var character = playerent as IMyCharacter;
                         var npcname = character.ToString();
-                        Logging.WriteLine(String.Format("{0} - playerEffect: Enemy {1} detected at loop {2} - relationship: {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character, Count, relationship));
+                        Logging.WriteLine(String.Format(
+                            "{0} - playerEffect: Enemy {1} detected at loop {2} - relationship: {3}",
+                            DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character, Count, relationship));
                         if (npcname.Equals("Space_Wolf"))
                         {
-                            Logging.WriteLine(String.Format("{0} - playerEffect: Killing {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
+                            Logging.WriteLine(String.Format("{0} - playerEffect: Killing {1} ",
+                                DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
                             character.Kill();
                             return;
                         }
                         if (character.EnabledDamping) character.SwitchDamping();
-                        if (character.SuitEnergyLevel > 0.5f) MyVisualScriptLogicProvider.SetPlayersEnergyLevel(playerid, 0.49f);
+                        if (character.SuitEnergyLevel > 0.5f)
+                            MyVisualScriptLogicProvider.SetPlayersEnergyLevel(playerid, 0.49f);
                         if (MyVisualScriptLogicProvider.IsPlayersJetpackEnabled(playerid))
                         {
                             _playertime++;
@@ -743,12 +749,13 @@ namespace DefenseShields.Station
                                     Vector3D playerCurrentSpeed = MyVisualScriptLogicProvider.GetPlayersSpeed(playerid);
                                     if (playerCurrentSpeed == new Vector3D(0, 0, 0))
                                     {
-                                        playerCurrentSpeed = (Vector3D)MyUtils.GetRandomVector3Normalized();
+                                        playerCurrentSpeed = (Vector3D) MyUtils.GetRandomVector3Normalized();
                                     }
                                     Vector3D speedDir = Vector3D.Normalize(playerCurrentSpeed);
                                     int randomSpeed = rnd.Next(10, 20);
-                                    Vector3D additionalSpeed = speedDir * (double)randomSpeed;
-                                    MyVisualScriptLogicProvider.SetPlayersSpeed(playerCurrentSpeed + additionalSpeed, playerid);
+                                    Vector3D additionalSpeed = speedDir * (double) randomSpeed;
+                                    MyVisualScriptLogicProvider.SetPlayersSpeed(playerCurrentSpeed + additionalSpeed,
+                                        playerid);
                                 }
 
                             }
@@ -757,10 +764,12 @@ namespace DefenseShields.Station
                 }
                 catch (Exception ex)
                 {
-                    Logging.WriteLine(String.Format("{0} - Exception in playerEffects", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
+                    Logging.WriteLine(String.Format("{0} - Exception in playerEffects",
+                        DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
                     Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ex));
                 }
-            });
+                //});
+            }
         }
         #endregion
     }
