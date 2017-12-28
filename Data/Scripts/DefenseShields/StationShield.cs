@@ -97,8 +97,6 @@ namespace DefenseShields.Station
         private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
         public MyConcurrentHashSet<IMyEntity> _inHash = new MyConcurrentHashSet<IMyEntity>();
-        public MyConcurrentHashSet<IMyEntity> _inHash2 = new MyConcurrentHashSet<IMyEntity>();
-
         public static HashSet<IMyEntity> _destroyGridHash = new HashSet<IMyEntity>();
         public static HashSet<IMyEntity> _destroyPlayerHash = new HashSet<IMyEntity>();
 
@@ -598,8 +596,7 @@ namespace DefenseShields.Station
                     _inHash.Add(inent);
                 }
             });
-            HashSet<IMyEntity> _inHash2 = new HashSet<IMyEntity>(_inHash);
-            Logging.WriteLine(String.Format("{0} - inHash {1} {2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _inHash.Count, _inHash2.Count, Count));
+            Logging.WriteLine(String.Format("{0} - inHash {1} l:{2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _inHash.Count, Count));
         }
         #endregion
 
@@ -645,6 +642,12 @@ namespace DefenseShields.Station
                     float griddmg = grid.Physics.Mass * _massdmg;
                     _absorb += griddmg;
                     Logging.WriteLine(String.Format("{0} - gridEffect: {1} Shield Strike by a {2}kilo grid, absorbing {3}MW of energy in loop {4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, (griddmg / _massdmg), griddmg, Count));
+
+                    var vel = grid.Physics.LinearVelocity;
+                    vel.SetDim(0, (int)((float)vel.GetDim(0) * -2.5f));
+                    vel.SetDim(1, (int)((float)vel.GetDim(1) * -2.5f));
+                    vel.SetDim(2, (int)((float)vel.GetDim(2) * -2.5f));
+                    grid.Physics.LinearVelocity = vel;
 
                     _closegrids = true;
                     _destroyGridHash.Add(grid);
