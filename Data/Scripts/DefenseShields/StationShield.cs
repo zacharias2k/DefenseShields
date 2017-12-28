@@ -706,15 +706,21 @@ namespace DefenseShields.Station
                             return;
                         }
                         if (character.EnabledDamping) character.SwitchDamping();
+                        Logging.WriteLine(String.Format("{0} - playerEffect: passed switchdamping {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
                         if (character.SuitEnergyLevel > 0.5f) MyVisualScriptLogicProvider.SetPlayersEnergyLevel(playerid, 0.49f);
+                        Logging.WriteLine(String.Format("{0} - playerEffect: passed set energy {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
+
                         if (!MyVisualScriptLogicProvider.IsPlayersJetpackEnabled(playerid)) return;
+                        Logging.WriteLine(String.Format("{0} - playerEffect: passed jetpack check {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
 
                         _playertime++;
                         var explodeRollChance = rnd.Next(0 - _playertime, _playertime);
                         if (explodeRollChance <= 666) return;
+                        Logging.WriteLine(String.Format("{0} - playerEffect: passed explode roll {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
 
                         _playertime = 0;
                         if (!(MyVisualScriptLogicProvider.GetPlayersHydrogenLevel(playerid) > 0.01f)) return;
+                        Logging.WriteLine(String.Format("{0} - playerEffect: Hydrogen check {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
 
                         var characterpos = character.GetPosition();
                         MyVisualScriptLogicProvider.SetPlayersHydrogenLevel(playerid, 0.01f);
@@ -724,6 +730,7 @@ namespace DefenseShields.Station
                         var playerCurrentSpeed = MyVisualScriptLogicProvider.GetPlayersSpeed(playerid);
                         if (playerCurrentSpeed == new Vector3D(0, 0, 0))
                         {
+                            Logging.WriteLine(String.Format("{0} - playerEffect: passed currentspeed check {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
                             playerCurrentSpeed = MyUtils.GetRandomVector3Normalized();
                         }
                         var speedDir = Vector3D.Normalize(playerCurrentSpeed);
@@ -731,7 +738,7 @@ namespace DefenseShields.Station
                         var additionalSpeed = speedDir * randomSpeed;
                         character.Physics.SetSpeeds(playerCurrentSpeed, additionalSpeed);
                         //MyVisualScriptLogicProvider.SetPlayersSpeed(playerCurrentSpeed + additionalSpeed, playerid);
-                }
+                    }
                 catch (Exception ex)
                     {
                         Logging.WriteLine(String.Format("{0} - Exception in playerEffects", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
