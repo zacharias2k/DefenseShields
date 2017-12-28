@@ -695,7 +695,7 @@ namespace DefenseShields.Station
                         var playerid = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;
                         var relationship = _tblock.GetUserRelationToOwner(playerid);
                         if (relationship == MyRelationsBetweenPlayerAndBlock.Owner || relationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
-
+                        return;
                         var character = (IMyCharacter) playerent;
                         var npcname = character.ToString();
                         Logging.WriteLine(String.Format("{0} - playerEffect: Enemy {1} detected at loop {2} - relationship: {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character, Count, relationship));
@@ -705,11 +705,10 @@ namespace DefenseShields.Station
                             character.Kill();
                             return;
                         }
-                        //if (character.EnabledDamping) character.SwitchDamping();
+                        if (character.EnabledDamping) character.SwitchDamping();
                         Logging.WriteLine(String.Format("{0} - playerEffect: passed switchdamping {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
                         if (character.SuitEnergyLevel > 0.5f) MyVisualScriptLogicProvider.SetPlayersEnergyLevel(playerid, 0.49f);
                         Logging.WriteLine(String.Format("{0} - playerEffect: passed set energy {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
-                        return;
                         if (!MyVisualScriptLogicProvider.IsPlayersJetpackEnabled(playerid)) return;
                         Logging.WriteLine(String.Format("{0} - playerEffect: passed jetpack check {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
 
@@ -739,7 +738,7 @@ namespace DefenseShields.Station
                         character.Physics.SetSpeeds(playerCurrentSpeed, additionalSpeed);
                         //MyVisualScriptLogicProvider.SetPlayersSpeed(playerCurrentSpeed + additionalSpeed, playerid);
                     }
-                catch (Exception ex)
+                    catch (Exception ex)
                     {
                         Logging.WriteLine(String.Format("{0} - Exception in playerEffects", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
                         Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ex));
