@@ -35,7 +35,7 @@ namespace DefenseShields.Destroy
                     }
                 }
 
-                if (_gridcount < 59 || _gridcount > 419) return;
+                if (_gridcount < 59) return;
 
                 foreach (var grident in _destroyGridHash)
                 {
