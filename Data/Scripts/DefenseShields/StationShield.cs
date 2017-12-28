@@ -757,83 +757,81 @@ namespace DefenseShields.Station
             _shotwebbed = false;
             _shotlocked = false;
         }
-
         #endregion
 
         #region player effects
-
         public void PlayerEffects()
         {
-            try
+            Random rnd = new Random();
+            MyAPIGateway.Parallel.ForEach(_inHash, playerent =>
             {
-                Random rnd = new Random();
-                MyAPIGateway.Parallel.ForEach(_inHash, playerent =>
+                if (!(playerent is IMyCharacter)) return;
+                try
                 {
-                    if (playerent is IMyCharacter)
+                    var dude = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;
+                    var relationship = _tblock.GetUserRelationToOwner(dude);
+                    if (relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
                     {
-                        Logging.WriteLine(String.Format("{0} - playerEffect: Enemy {1} detected at loop {2} - relationship: {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent, Count));
-                        var playerid = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;
-                        var relationship = _tblock.GetUserRelationToOwner(playerid);
-                        if (relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
+                        Logging.WriteLine(String.Format("{0} - playerEffect: Enemy {1} detected at loop {2} - relationship: {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent, Count, relationship));
+                        string s = playerent.ToString();
+                        if (s.Equals("Space_Wolf"))
                         {
-
-                            var character = (IMyCharacter) playerent;
-
-                            var npcname = character.ToString();
-                            Logging.WriteLine(String.Format("{0} - playerEffect: Enemy {1} detected at loop {2} - relationship: {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character, Count, relationship));
-                            if (npcname.Equals("Space_Wolf"))
-                            {
-                                Logging.WriteLine(String.Format("{0} - playerEffect: Killing {1} ",DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
-                                character.Kill();
-                                return;
-                            }
-                            if (character.EnabledDamping) character.SwitchDamping();
-                            Logging.WriteLine(String.Format("{0} - playerEffect: passed switchdamping {1} ",DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
-                            if (character.SuitEnergyLevel > 0.5f)
-                                MyVisualScriptLogicProvider.SetPlayersEnergyLevel(playerid, 0.49f);
-                            Logging.WriteLine(String.Format("{0} - playerEffect: passed set energy {1} ",DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
-                            if (!MyVisualScriptLogicProvider.IsPlayersJetpackEnabled(playerid)) return;
-                            Logging.WriteLine(String.Format("{0} - playerEffect: passed jetpack check {1} ",DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
-
+                            Logging.WriteLine(String.Format("{0} - playerEffect: Killing {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent));
+                            ((IMyCharacter)playerent).Kill();
+                            return;
+                        }
+                        if (MyAPIGateway.Session.Player.Character.Equals(playerent))
+                        {
+                            if (MyAPIGateway.Session.Player.Character.EnabledDamping) MyAPIGateway.Session.Player.Character.SwitchDamping();
+                        }
+                        if (MyVisualScriptLogicProvider.GetPlayersEnergyLevel(dude) > 0.5f)
+                        {
+                            MyVisualScriptLogicProvider.SetPlayersEnergyLevel(dude, 0.49f);
+                        }
+                        if (MyVisualScriptLogicProvider.IsPlayersJetpackEnabled(dude))
+                        {
                             _playertime++;
-                            var explodeRollChance = rnd.Next(0 - _playertime, _playertime);
-                            if (explodeRollChance <= 666) return;
-                            Logging.WriteLine(String.Format("{0} - playerEffect: passed explode roll {1} ",DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
-
-                            _playertime = 0;
-                            if (!(MyVisualScriptLogicProvider.GetPlayersHydrogenLevel(playerid) > 0.01f)) return;
-                            Logging.WriteLine(String.Format("{0} - playerEffect: Hydrogen check {1} ",DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
-
-                            var characterpos = character.GetPosition();
-                            MyVisualScriptLogicProvider.SetPlayersHydrogenLevel(playerid, 0.01f);
-                            MyVisualScriptLogicProvider.CreateExplosion(characterpos, 0, 0);
-                            var characterhealth = MyVisualScriptLogicProvider.GetPlayersHealth(playerid);
-                            MyVisualScriptLogicProvider.SetPlayersHealth(playerid, characterhealth - 50f);
-                            var playerCurrentSpeed = MyVisualScriptLogicProvider.GetPlayersSpeed(playerid);
-                            if (playerCurrentSpeed == new Vector3D(0, 0, 0))
+                            int explodeRollChance = rnd.Next(0 - _playertime, _playertime);
+                            if (explodeRollChance > 666)
                             {
-                                Logging.WriteLine(String.Format("{0} - playerEffect: passed currentspeed check {1} ",DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
-                                playerCurrentSpeed = MyUtils.GetRandomVector3Normalized();
+                                _playertime = 0;
+
+                                if (MyVisualScriptLogicProvider.GetPlayersHydrogenLevel(dude) > 0.01f)
+                                {
+                                    var dudepos = MyAPIGateway.Players.GetPlayerControllingEntity(playerent);
+                                    MyVisualScriptLogicProvider.SetPlayersHydrogenLevel(dude, 0.01f);
+                                    MyVisualScriptLogicProvider.CreateExplosion(dudepos.GetPosition(), 0, 0);
+                                    float dudehealth = MyVisualScriptLogicProvider.GetPlayersHealth(dude);
+                                    MyVisualScriptLogicProvider.SetPlayersHealth(dude, dudehealth - 50f);
+
+                                    Vector3D playerCurrentSpeed = MyVisualScriptLogicProvider.GetPlayersSpeed(dude);
+
+                                    if (playerCurrentSpeed == new Vector3D(0, 0, 0))
+                                    {
+
+                                        playerCurrentSpeed = (Vector3D)MyUtils.GetRandomVector3Normalized();
+
+                                    }
+
+                                    Vector3D speedDir = Vector3D.Normalize(playerCurrentSpeed);
+                                    int randomSpeed = rnd.Next(10, 20);
+                                    Vector3D additionalSpeed = speedDir * (double)randomSpeed;
+                                    MyVisualScriptLogicProvider.SetPlayersSpeed(playerCurrentSpeed + additionalSpeed, dude);
+                                }
+
                             }
-                            var speedDir = Vector3D.Normalize(playerCurrentSpeed);
-                            var randomSpeed = rnd.Next(10, 20);
-                            var additionalSpeed = speedDir * randomSpeed;
-                            character.Physics.SetSpeeds(playerCurrentSpeed, additionalSpeed);
-                            //MyVisualScriptLogicProvider.SetPlayersSpeed(playerCurrentSpeed + additionalSpeed, playerid);
                         }
                     }
-
-                });
-                _playerwebbed = false;
-            }
-            catch (Exception ex)
-            {
-                Logging.WriteLine(String.Format("{0} - Exception in playerEffects", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
-                Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ex));
-            }
-
-            #endregion
+                }
+                catch (Exception ex)
+                {
+                    Logging.WriteLine(String.Format("{0} - Exception in playerEffects", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
+                    Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ex));
+                }
+            });
+            _playerwebbed = false;
         }
+        #endregion
     }
 
     #region Cube+subparts Class
