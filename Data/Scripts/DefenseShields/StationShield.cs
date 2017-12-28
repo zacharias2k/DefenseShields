@@ -704,10 +704,9 @@ namespace DefenseShields.Station
         #region player effects
         public void PlayerEffects()
         {
-            _playerwebbed = false;
             Random rnd = new Random();
-            MyAPIGateway.Parallel.ForEach(_inHash, playerent =>
-            //foreach (var playerent in _inHash)
+            //MyAPIGateway.Parallel.ForEach(_inHash, playerent =>
+            foreach (var playerent in _inHash)
             {
                 if (!(playerent is IMyCharacter)) return;
                 try
@@ -729,7 +728,7 @@ namespace DefenseShields.Station
                             character.Kill();
                             return;
                         }
-                        if (character.EnabledDamping) character.SwitchDamping();
+                        if (character.EnabledDamping == true) character.SwitchDamping();
                         if (character.SuitEnergyLevel > 0.5f)
                             MyVisualScriptLogicProvider.SetPlayersEnergyLevel(playerid, 0.49f);
                         if (MyVisualScriptLogicProvider.IsPlayersJetpackEnabled(playerid))
@@ -768,8 +767,9 @@ namespace DefenseShields.Station
                         DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
                     Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ex));
                 }
-                });
-            //}
+                //});
+            }
+            _playerwebbed = false;
         }
         #endregion
     }
