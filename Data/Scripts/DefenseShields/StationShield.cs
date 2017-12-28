@@ -594,9 +594,9 @@ namespace DefenseShields.Station
                 if (inent is IMyCubeGrid || inent is IMyCharacter && Detectin(inent))
                 {
                     _inHash.Add(inent);
-                    Logging.WriteLine(String.Format("{0} - inHash {1} l:{2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _inHash.Count, Count));
                 }
             });
+            Logging.WriteLine(String.Format("{0} - inHash {1} l:{2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _inHash.Count, Count));
         }
         #endregion
 
