@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Sandbox.Game;
-using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 
 namespace DefenseShields.Destroy
@@ -16,43 +11,45 @@ namespace DefenseShields.Destroy
         {
             try
             {
-                if (_gridcount == 599)
+                if (_gridcount == -1 || _gridcount == 0)
                 {
-                    _gridCloseHash.Clear();
-                    return;
-                }
-                if (_gridcount == -1)
-                {
-                    Logging.WriteLine(String.Format("{0} pre-1stloop {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _gridCloseHash.Count));
-                    foreach (var grident in _gridCloseHash)
+                    Logging.WriteLine(String.Format("{0} pre-1stloop {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _destroyEntityHash.Count));
+                    foreach (var grident in _destroyEntityHash)
                     {
                         var grid = grident as IMyCubeGrid;
-                        if (grid == null) return;
-                        var gridpos = grid.GetPosition();
-                        MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 9999);
-                        var vel = grid.Physics.LinearVelocity;
-                        vel.SetDim(0, (int)((float)vel.GetDim(0) * -1.5f));
-                        vel.SetDim(1, (int)((float)vel.GetDim(1) * -1.5f));
-                        vel.SetDim(2, (int)((float)vel.GetDim(2) * -1.5f));
-                        grid.Physics.LinearVelocity = vel;
+                        if (grid == null) continue;
+
+                        if (_gridcount == -1)
+                        {
+                            var vel = grid.Physics.LinearVelocity;
+                            vel.SetDim(0, (int)((float)vel.GetDim(0) * -1.5f));
+                            vel.SetDim(1, (int)((float)vel.GetDim(1) * -1.5f));
+                            vel.SetDim(2, (int)((float)vel.GetDim(2) * -1.5f));
+                            grid.Physics.LinearVelocity = vel;
+                        }
+                        else
+                        {
+                            var gridpos = grid.GetPosition();
+                            MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 9999);
+                        }
                     }
                 }
-                if (_gridcount == -1 || _gridcount == 599) return;
 
-                foreach (var grident in _gridCloseHash)
+                if (_gridcount < 59 || _gridcount > 419) return;
+
+                foreach (var grident in _destroyEntityHash)
                 {
                     var grid = grident as IMyCubeGrid;
-                    if (grid == null) return;
+                    if (grid == null) continue;
                     if (_gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419)
                     {
                         var gridpos = grid.GetPosition();
                         MyVisualScriptLogicProvider.CreateExplosion(gridpos, _gridcount / 2f, _gridcount * 2);
-                        return;
                     }
-                    if (_gridcount == 598)
+                    if (_gridcount == 599)
                     {
                         grid.Close();
-                        return;
+                        _destroyEntityHash.Remove(grident);
                     }
                 }
             }
@@ -70,22 +67,15 @@ namespace DefenseShields.Destroy
             try
             {
                 if (_playercount != 479) return;
-                foreach (var identityId in _playerKillList)
+                foreach (var ent in _destroyEntityHash)
                 {
-                    if (identityId != null)
-                    {
-                        var playerid = (long) identityId;
-                        {
-                            var playerentid = MyVisualScriptLogicProvider.GetPlayersEntityId(playerid);
-                            var player = MyAPIGateway.Entities.GetEntityById(playerentid);
-                            var playerent = (IMyCharacter)player;
-                            var playerpos = playerent.GetPosition();
-                            MyVisualScriptLogicProvider.CreateExplosion(playerpos, 10, 1000);
-                            playerent.Kill();
-                        }
-                    }
+                    var playerent = ent as IMyCharacter;
+                    if (playerent == null) continue;
+                    var playerpos = playerent.GetPosition();
+                    MyVisualScriptLogicProvider.CreateExplosion(playerpos, 10, 1000);
+                    playerent.Kill();
+                    _destroyEntityHash.Remove(ent);
                 }
-                _playerKillList.Clear();
             }
             catch (Exception ex)
             {

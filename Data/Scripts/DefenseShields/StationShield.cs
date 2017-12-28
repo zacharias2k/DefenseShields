@@ -97,8 +97,7 @@ namespace DefenseShields.Station
         private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
         public MyConcurrentHashSet<IMyEntity> _inHash = new MyConcurrentHashSet<IMyEntity>();
-        public static HashSet<IMyEntity> _gridCloseHash = new HashSet<IMyEntity>();
-        public static List<long?> _playerKillList = new List<long?>();
+        public static HashSet<IMyEntity> _destroyEntityHash = new HashSet<IMyEntity>();
 
         readonly MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Build new");
 
@@ -168,21 +167,20 @@ namespace DefenseShields.Station
                 {
                     if (_playerkill) _playercount = -1;
                     _playerkill = false;
-                    if (_playerKillList.Count > 0) DestroyEntity.PlayerKill(_playercount);
+                    if (_destroyEntityHash.Count > 0) DestroyEntity.PlayerKill(_playercount);
 
                 }
-                if (_closegrids || _gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419 || _gridcount == 598 ||_gridcount == 599)
+                if (_closegrids || _gridcount == 0 || _gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419 ||_gridcount == 599)
                 {
                     if (_closegrids) _gridcount = -1;
                     _closegrids = false;
-                    if (_gridCloseHash.Count > 0) DestroyEntity.GridClose(_gridcount);
+                    if (_destroyEntityHash.Count > 0) DestroyEntity.GridClose(_gridcount);
                 }
                 if (!Initialized && _cblock.IsWorking)
                 {
                     if (Count <= 0) MyAPIGateway.Parallel.Do(InHashBuilder);
-                    MyAPIGateway.Parallel.StartBackground(WebEffects);
+                    MyAPIGateway.Parallel.StartBackground(WebEntities);
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
-                    if (_gridwebbed && !_gridlocked) MyAPIGateway.Parallel.Do(GridEffects);
                     if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
                 }
             }
@@ -536,21 +534,6 @@ namespace DefenseShields.Station
         #endregion
 
         #region Detection Methods
-        private bool Detectin(IMyEntity ent)
-        {
-            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float detect = (x * x) / (_inWidth  * _inWidth) + (y * y) / (_inDepth * _inDepth) + (z * z) / (_inHeight * _inHeight);
-            if (detect <= 1)
-            {
-                //Logging.WriteLine(String.Format("{0} - {1} in-t: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
-                return true;
-            }
-            //Logging.WriteLine(String.Format("{0} - {1} in-f - d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, detect, Count));
-            return false;
-        }
-
         private bool Detectedge(IMyEntity ent)
         {
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
@@ -593,13 +576,13 @@ namespace DefenseShields.Station
             MyAPIGateway.Parallel.ForEach(inList, inent =>
             {
                 if (!(inent is IMyCubeGrid) && !(inent is IMyCharacter)) return;
-                if (Detectin(inent)) _inHash.Add(inent);
+                if (Detectedge(inent)) _inHash.Add(inent);
             });
         }
         #endregion
 
-        #region Webing effects
-        public void WebEffects()
+        #region Web and dispatch all intersecting entities
+        public void WebEntities()
         {
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
 
@@ -626,7 +609,7 @@ namespace DefenseShields.Station
                 if (webent is IMyCharacter || _inHash.Contains(webent)) return;
 
                 var grid = webent as IMyCubeGrid;
-                if (grid == _tblock.CubeGrid || _gridwebbed || _gridCloseHash.Contains(grid) || grid == null) return;
+                if (grid == _tblock.CubeGrid || _gridwebbed || _destroyEntityHash.Contains(grid) || grid == null) return;
 
                 List<long> owners = grid.BigOwners;
                 if (owners.Count > 0)
@@ -637,14 +620,32 @@ namespace DefenseShields.Station
                 }
                 if (Detectgridedge(grid))
                 {
-                    Logging.WriteLine(String.Format("{0} - webEffect-grid: pass grid: {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName));
-                    _gridwebbed = true;
+                    float griddmg = grid.Physics.Mass * _massdmg;
+                    _absorb += griddmg;
+                    Logging.WriteLine(String.Format("{0} - gridEffect: {1} Shield Strike by a {2}kilo grid, absorbing {3}MW of energy in loop {4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, (griddmg / _massdmg), griddmg, Count));
+
+                    _closegrids = true;
+                    _destroyEntityHash.Add(grid);
+
+                    //var playerentid = MyVisualScriptLogicProvider.GetPlayersEntityId(playerid);
+                    //var player = MyAPIGateway.Entities.GetEntityById(playerentid);
+                    //var playerent = (IMyCharacter)player;
+                    //long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId;
+                    var playerchar = MyAPIGateway.Players.GetPlayerControllingEntity(grid).Character;
+                    if (playerchar != null)
+                    {
+                        _destroyEntityHash.Add(playerchar);
+                        _playerkill = true;
+                    }
                     return;
                 }
                 if (_shotwebbed) return;
-                if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo")) //&& Detectedge(webent))
+                if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo")) 
                 {
-                    _shotwebbed = true;
+                    if (Detectedge(webent))
+                    {
+                        _shotwebbed = true;
+                    }
                 }
                 //Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
             });
@@ -681,58 +682,6 @@ namespace DefenseShields.Station
         }
         #endregion
 
-        #region Grid effects
-        public void GridEffects()
-        {
-            _gridlocked = true;
-            var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
-            BoundingSphereD gridsphere = new BoundingSphereD(pos, _range);
-            List<IMyEntity> gridList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref gridsphere);
-            MyAPIGateway.Parallel.ForEach(gridList, grident =>
-            {
-                var grid = grident as IMyCubeGrid;
-                if ((grid != null) && !_inHash.Contains(grid) && !_gridCloseHash.Contains(grid))
-                {
-                    if (grid == _tblock.CubeGrid) return;
-                    try
-                    {
-                        List<long> owners = grid.BigOwners;
-                        if (owners.Count > 0)
-                        {
-                            var relations = _tblock.GetUserRelationToOwner(owners[0]);
-                            //Logging.WriteLine(String.Format("{0} - grid: {1} tblock: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, owners.Count, relations, relations == MyRelationsBetweenPlayerAndBlock.Owner, relations == MyRelationsBetweenPlayerAndBlock.FactionShare));
-                            if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
-                        }
-                        if (Detectgridedge(grid))
-                        {
-
-                            float griddmg = grid.Physics.Mass * _massdmg;
-                            _absorb += griddmg;
-                            Logging.WriteLine(String.Format("{0} - gridEffect: {1} Shield Strike by a {2}kilo grid, absorbing {3}MW of energy in loop {4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, (griddmg / _massdmg), griddmg, Count));
-
-                            long? dude = MyAPIGateway.Players.GetPlayerControllingEntity(grid)?.IdentityId;
-                            if (dude != null)
-                            {
-                                _playerKillList.Add(dude);
-                                _playerkill = true;
-                            }
-                            _closegrids = true;
-                            _gridCloseHash.Add(grid);
-                        }
-
-                    }
-                    catch (Exception ex)
-                    {
-                        Logging.WriteLine(string.Format("{0} - Exception in gridEffects", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
-                        Logging.WriteLine(string.Format("{0} - {1}", DateTime.Now, ex));
-                    }
-                }
-            });
-            _gridwebbed = false;
-            _gridlocked = false;
-        }
-        #endregion
-
         #region player effects
         public void PlayerEffects()
         {
@@ -741,63 +690,48 @@ namespace DefenseShields.Station
             {
                 if (!(playerent is IMyCharacter)) return;
                     try
-                    {   
-                        var dude = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;
-                        var relationship = _tblock.GetUserRelationToOwner(dude);
-                        if (relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
+                    {
+                        var playerid = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;
+                        var relationship = _tblock.GetUserRelationToOwner(playerid);
+                        if (relationship == MyRelationsBetweenPlayerAndBlock.Owner || relationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
+
+                        var character = (IMyCharacter) playerent;
+                        var npcname = character.ToString();
+                        Logging.WriteLine(String.Format("{0} - playerEffect: Enemy {1} detected at loop {2} - relationship: {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character, Count, relationship));
+                        if (npcname.Equals("Space_Wolf"))
                         {
-                            Logging.WriteLine(String.Format("{0} - playerEffect: Enemy {1} detected at loop {2} - relationship: {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent, Count, relationship));
-                            string s = playerent.ToString();
-                            if (s.Equals("Space_Wolf"))
-                            {
-                                Logging.WriteLine(String.Format("{0} - playerEffect: Killing {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent));
-                                ((IMyCharacter) playerent).Kill();
-                                return;
-                            }
-                            if (MyAPIGateway.Session.Player.Character.Equals(playerent))
-                            {
-                                if (MyAPIGateway.Session.Player.Character.EnabledDamping) MyAPIGateway.Session.Player.Character.SwitchDamping();
-                            }
-                            if (MyVisualScriptLogicProvider.GetPlayersEnergyLevel(dude) > 0.5f)
-                            {
-                                MyVisualScriptLogicProvider.SetPlayersEnergyLevel(dude, 0.49f);
-                            }
-                            if (MyVisualScriptLogicProvider.IsPlayersJetpackEnabled(dude))
-                            {
-                                _playertime++;
-                                int explodeRollChance = rnd.Next(0 - _playertime, _playertime);
-                                if (explodeRollChance > 666)
-                                {
-                                    _playertime = 0;
-
-                                    if (MyVisualScriptLogicProvider.GetPlayersHydrogenLevel(dude) > 0.01f)
-                                    {
-                                        var dudepos = MyAPIGateway.Players.GetPlayerControllingEntity(playerent);
-                                        MyVisualScriptLogicProvider.SetPlayersHydrogenLevel(dude, 0.01f);
-                                        MyVisualScriptLogicProvider.CreateExplosion(dudepos.GetPosition(), 0, 0);
-                                        float dudehealth = MyVisualScriptLogicProvider.GetPlayersHealth(dude);
-                                        MyVisualScriptLogicProvider.SetPlayersHealth(dude, dudehealth - 50f);
-
-                                        Vector3D playerCurrentSpeed = MyVisualScriptLogicProvider.GetPlayersSpeed(dude);
-
-                                        if (playerCurrentSpeed == new Vector3D(0, 0, 0))
-                                        {
-
-                                            playerCurrentSpeed = (Vector3D) MyUtils.GetRandomVector3Normalized();
-
-                                        }
-
-                                        Vector3D speedDir = Vector3D.Normalize(playerCurrentSpeed);
-                                        int randomSpeed = rnd.Next(10, 20);
-                                        Vector3D additionalSpeed = speedDir * (double) randomSpeed;
-                                        MyVisualScriptLogicProvider.SetPlayersSpeed(playerCurrentSpeed + additionalSpeed, dude);
-                                    }
-
-                                }
-                            }
+                            Logging.WriteLine(String.Format("{0} - playerEffect: Killing {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
+                            character.Kill();
+                            return;
                         }
-                    }
-                    catch (Exception ex)
+                        if (character.EnabledDamping) character.SwitchDamping();
+                        if (character.SuitEnergyLevel > 0.5f) MyVisualScriptLogicProvider.SetPlayersEnergyLevel(playerid, 0.49f);
+                        if (!MyVisualScriptLogicProvider.IsPlayersJetpackEnabled(playerid)) return;
+
+                        _playertime++;
+                        var explodeRollChance = rnd.Next(0 - _playertime, _playertime);
+                        if (explodeRollChance <= 666) return;
+
+                        _playertime = 0;
+                        if (!(MyVisualScriptLogicProvider.GetPlayersHydrogenLevel(playerid) > 0.01f)) return;
+
+                        var characterpos = character.GetPosition();
+                        MyVisualScriptLogicProvider.SetPlayersHydrogenLevel(playerid, 0.01f);
+                        MyVisualScriptLogicProvider.CreateExplosion(characterpos, 0, 0);
+                        var characterhealth = MyVisualScriptLogicProvider.GetPlayersHealth(playerid);
+                        MyVisualScriptLogicProvider.SetPlayersHealth(playerid, characterhealth - 50f);
+                        var playerCurrentSpeed = MyVisualScriptLogicProvider.GetPlayersSpeed(playerid);
+                        if (playerCurrentSpeed == new Vector3D(0, 0, 0))
+                        {
+                            playerCurrentSpeed = MyUtils.GetRandomVector3Normalized();
+                        }
+                        var speedDir = Vector3D.Normalize(playerCurrentSpeed);
+                        var randomSpeed = rnd.Next(10, 20);
+                        var additionalSpeed = speedDir * randomSpeed;
+                        character.Physics.SetSpeeds(playerCurrentSpeed, additionalSpeed);
+                        //MyVisualScriptLogicProvider.SetPlayersSpeed(playerCurrentSpeed + additionalSpeed, playerid);
+                }
+                catch (Exception ex)
                     {
                         Logging.WriteLine(String.Format("{0} - Exception in playerEffects", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
                         Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ex));
