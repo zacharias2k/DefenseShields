@@ -697,6 +697,7 @@ namespace DefenseShields.Station
                     if (relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
                     {
                         var character = (IMyCharacter)playerent;
+                        /*
                         var npcname = character.ToString();
                         Logging.WriteLine(String.Format("{0} - playerEffect: Enemy {1} detected at loop {2} - relationship: {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character, Count, relationship));
                         if (npcname.Equals("Space_Wolf"))
@@ -705,6 +706,7 @@ namespace DefenseShields.Station
                             character.Kill();
                             return;
                         }
+                        */
                         if (character.EnabledDamping) character.SwitchDamping();
                         Logging.WriteLine(String.Format("{0} - playerEffect: passed switchdamping {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
                         if (character.SuitEnergyLevel > 0.5f) MyVisualScriptLogicProvider.SetPlayersEnergyLevel(playerid, 0.49f);
