@@ -13,8 +13,8 @@ namespace DefenseShields.Destroy
             {
                 if (_gridcount == -1 || _gridcount == 0)
                 {
-                    Logging.WriteLine(String.Format("{0} pre-1stloop {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _destroyEntityHash.Count));
-                    foreach (var grident in _destroyEntityHash)
+                    Logging.WriteLine(String.Format("{0} pre-1stloop {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _destroyGridHash.Count));
+                    foreach (var grident in _destroyGridHash)
                     {
                         var grid = grident as IMyCubeGrid;
                         if (grid == null) continue;
@@ -37,7 +37,7 @@ namespace DefenseShields.Destroy
 
                 if (_gridcount < 59 || _gridcount > 419) return;
 
-                foreach (var grident in _destroyEntityHash)
+                foreach (var grident in _destroyGridHash)
                 {
                     var grid = grident as IMyCubeGrid;
                     if (grid == null) continue;
@@ -49,7 +49,7 @@ namespace DefenseShields.Destroy
                     if (_gridcount == 599)
                     {
                         grid.Close();
-                        _destroyEntityHash.Remove(grid);
+                        _destroyGridHash.Remove(grid);
                     }
                 }
             }
@@ -67,14 +67,14 @@ namespace DefenseShields.Destroy
             try
             {
                 if (_playercount != 479) return;
-                foreach (var ent in _destroyEntityHash)
+                foreach (var ent in _destroyPlayerHash)
                 {
                     if (!(ent is IMyCharacter)) continue;
                     var playerent = (IMyCharacter)ent;
                     var playerpos = playerent.GetPosition();
                     MyVisualScriptLogicProvider.CreateExplosion(playerpos, 10, 1000);
                     playerent.Kill();
-                    _destroyEntityHash.Remove(playerent);
+                    _destroyPlayerHash.Remove(playerent);
                 }
             }
             catch (Exception ex)

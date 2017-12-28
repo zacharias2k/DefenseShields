@@ -97,7 +97,8 @@ namespace DefenseShields.Station
         private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
         public MyConcurrentHashSet<IMyEntity> _inHash = new MyConcurrentHashSet<IMyEntity>();
-        public static HashSet<IMyEntity> _destroyEntityHash = new HashSet<IMyEntity>();
+        public static HashSet<IMyEntity> _destroyGridHash = new HashSet<IMyEntity>();
+        public static HashSet<IMyEntity> _destroyPlayerHash = new HashSet<IMyEntity>();
 
         readonly MyStringId RangeGridResourceId = MyStringId.GetOrCompute("Build new");
 
@@ -167,14 +168,14 @@ namespace DefenseShields.Station
                 {
                     if (_playerkill) _playercount = -1;
                     _playerkill = false;
-                    if (_destroyEntityHash.Count > 0) DestroyEntity.PlayerKill(_playercount);
+                    if (_destroyPlayerHash.Count > 0) DestroyEntity.PlayerKill(_playercount);
 
                 }
                 if (_closegrids || _gridcount == 0 || _gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419 ||_gridcount == 599)
                 {
                     if (_closegrids) _gridcount = -1;
                     _closegrids = false;
-                    if (_destroyEntityHash.Count > 0) DestroyEntity.GridClose(_gridcount);
+                    if (_destroyGridHash.Count > 0) DestroyEntity.GridClose(_gridcount);
                 }
                 if (!Initialized && _cblock.IsWorking)
                 {
@@ -609,7 +610,7 @@ namespace DefenseShields.Station
                 if (webent is IMyCharacter || _inHash.Contains(webent)) return;
 
                 var grid = webent as IMyCubeGrid;
-                if (grid == _tblock.CubeGrid || _gridwebbed || _destroyEntityHash.Contains(grid) || grid == null) return;
+                if (grid == _tblock.CubeGrid || _gridwebbed || _destroyGridHash.Contains(grid) || grid == null) return;
 
                 List<long> owners = grid.BigOwners;
                 if (owners.Count > 0)
@@ -625,7 +626,7 @@ namespace DefenseShields.Station
                     Logging.WriteLine(String.Format("{0} - gridEffect: {1} Shield Strike by a {2}kilo grid, absorbing {3}MW of energy in loop {4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, (griddmg / _massdmg), griddmg, Count));
 
                     _closegrids = true;
-                    _destroyEntityHash.Add(grid);
+                    _destroyGridHash.Add(grid);
 
                     //var playerentid = MyVisualScriptLogicProvider.GetPlayersEntityId(playerid);
                     //var player = MyAPIGateway.Entities.GetEntityById(playerentid);
@@ -634,7 +635,7 @@ namespace DefenseShields.Station
                     var playerchar = MyAPIGateway.Players.GetPlayerControllingEntity(grid).Character;
                     if (playerchar != null)
                     {
-                        _destroyEntityHash.Add(playerchar);
+                        _destroyPlayerHash.Add(playerchar);
                         _playerkill = true;
                     }
                     return;
