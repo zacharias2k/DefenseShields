@@ -41,13 +41,16 @@ namespace DefenseShields.Destroy
                 {
                     var grid = grident as IMyCubeGrid;
                     if (grid == null) continue;
+                    Logging.WriteLine(String.Format("{0} passed continue check - l:{1} grids:{2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _destroyGridHash.Count));
                     if (_gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419)
                     {
+                        Logging.WriteLine(String.Format("{0} inside grid destory {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _destroyGridHash.Count));
                         var gridpos = grid.GetPosition();
                         MyVisualScriptLogicProvider.CreateExplosion(gridpos, _gridcount / 2f, _gridcount * 2);
                     }
                     if (_gridcount == 599)
                     {
+                        Logging.WriteLine(String.Format("{0} closing {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.DisplayName, _gridcount));
                         grid.Close();
                     }
                 }
