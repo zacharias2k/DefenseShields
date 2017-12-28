@@ -647,9 +647,9 @@ namespace DefenseShields.Station
                     _destroyGridHash.Add(grid);
 
                     var vel = grid.Physics.LinearVelocity;
-                    vel.SetDim(0, (int)((float)vel.GetDim(0) * -10f));
-                    vel.SetDim(1, (int)((float)vel.GetDim(1) * -10f));
-                    vel.SetDim(2, (int)((float)vel.GetDim(2) * -10f));
+                    vel.SetDim(0, (int)((float)vel.GetDim(0) * -4f));
+                    vel.SetDim(1, (int)((float)vel.GetDim(1) * -4f));
+                    vel.SetDim(2, (int)((float)vel.GetDim(2) * -4f));
                     grid.Physics.LinearVelocity = vel;
 
                     //var playerentid = MyVisualScriptLogicProvider.GetPlayersEntityId(playerid);
