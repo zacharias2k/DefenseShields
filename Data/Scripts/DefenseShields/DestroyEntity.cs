@@ -69,8 +69,7 @@ namespace DefenseShields.Destroy
                 if (_playercount != 479) return;
                 foreach (var ent in _destroyEntityHash)
                 {
-                    var playerent = ent as IMyCharacter;
-                    if (playerent == null) continue;
+                    if (!(ent is IMyCharacter playerent)) continue;
                     var playerpos = playerent.GetPosition();
                     MyVisualScriptLogicProvider.CreateExplosion(playerpos, 10, 1000);
                     playerent.Kill();

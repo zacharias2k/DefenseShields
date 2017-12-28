@@ -668,7 +668,7 @@ namespace DefenseShields.Station
                 try
                 {
                     _absorb += _shotdmg;
-                    Logging.WriteLine(String.Format("{0} - shotEffect: Shield absorbed {1}MW of energy from {2} in loop {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), shotent, _shotdmg, Count));
+                    Logging.WriteLine(String.Format("{0} - shotEffect: Shield absorbed {1}MW of energy from {2} in loop {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _shotdmg, shotent, Count));
                     shotent.Close();
                 }
                 catch (Exception ex)
