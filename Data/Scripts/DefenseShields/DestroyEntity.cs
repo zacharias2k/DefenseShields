@@ -11,7 +11,7 @@ namespace DefenseShields.Destroy
         {
             try
             {
-                if (_gridcount == -1 || _gridcount == 58)
+                if (_gridcount == -1 || _gridcount == 0)
                 {
                     Logging.WriteLine(String.Format("{0} pre-1stloop {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _destroyGridHash.Count));
                     foreach (var grident in _destroyGridHash)
@@ -35,14 +35,14 @@ namespace DefenseShields.Destroy
                     }
                 }
 
-                if (_gridcount < 178) return;
+                if (_gridcount < 59) return;
 
                 foreach (var grident in _destroyGridHash)
                 {
                     var grid = grident as IMyCubeGrid;
                     if (grid == null) continue;
                     Logging.WriteLine(String.Format("{0} passed continue check - l:{1} grids:{2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _destroyGridHash.Count));
-                    if (_gridcount == 179 || _gridcount == 299 || _gridcount == 419 || _gridcount == 479)
+                    if (_gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419)
                     {
                         Logging.WriteLine(String.Format("{0} inside grid destory {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _destroyGridHash.Count));
                         var gridpos = grid.GetPosition();
