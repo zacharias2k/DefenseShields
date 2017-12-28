@@ -171,7 +171,7 @@ namespace DefenseShields.Station
                     if (_destroyPlayerHash.Count > 0) DestroyEntity.PlayerKill(_playercount);
 
                 }
-                if (_closegrids || _gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419 || _gridcount == 479||_gridcount == 599)
+                if (_closegrids)// || _gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419 || _gridcount == 479||_gridcount == 599)
                 {
                     if (_closegrids) _gridcount = -1;
                     _closegrids = false;

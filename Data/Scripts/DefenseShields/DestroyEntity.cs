@@ -30,7 +30,7 @@ namespace DefenseShields.Destroy
                         else
                         {
                             var gridpos = grid.GetPosition();
-                            MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 9999);
+                            M//yVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 9999);
                         }
                     }
                 }
@@ -46,7 +46,7 @@ namespace DefenseShields.Destroy
                     {
                         Logging.WriteLine(String.Format("{0} inside grid destory {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _destroyGridHash.Count));
                         var gridpos = grid.GetPosition();
-                        MyVisualScriptLogicProvider.CreateExplosion(gridpos, _gridcount / 2f, _gridcount * 2);
+                        //MyVisualScriptLogicProvider.CreateExplosion(gridpos, _gridcount / 2f, _gridcount * 2);
                     }
                     if (_gridcount == 599)
                     {
