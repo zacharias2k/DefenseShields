@@ -692,12 +692,14 @@ namespace DefenseShields.Station
                 if (!(playerent is IMyCharacter)) return;
                 try
                 {
+                    Logging.WriteLine(String.Format("{0} - playerEffect: Enemy {1} detected at loop {2} - relationship: {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), playerent, Count));
+                    _playerwebbed = false;
+                    return;
                     var playerid = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;
                     var relationship = _tblock.GetUserRelationToOwner(playerid);
                     if (relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
                     {
-                        _playerwebbed = false;
-                        return;
+
                         var character = (IMyCharacter)playerent;
                         
                         var npcname = character.ToString();
