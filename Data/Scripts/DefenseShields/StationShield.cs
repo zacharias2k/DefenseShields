@@ -601,7 +601,7 @@ namespace DefenseShields.Station
                     var playerrelationship = _tblock.GetUserRelationToOwner(dude);
                     if (playerrelationship != MyRelationsBetweenPlayerAndBlock.Owner && playerrelationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
                     {
-                        _playerwebbed = true;
+                        //_playerwebbed = true;
                         return;
                     }
                     return;
