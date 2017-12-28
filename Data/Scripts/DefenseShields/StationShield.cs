@@ -535,6 +535,21 @@ namespace DefenseShields.Station
         #endregion
 
         #region Detection Methods
+        private bool Detectin(IMyEntity ent)
+        {
+            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float detect = (x * x) / (_inWidth * _inWidth) + (y * y) / (_inDepth * _inDepth) + (z * z) / (_inHeight * _inHeight);
+            if (detect <= 1)
+            {
+                //Logging.WriteLine(String.Format("{0} - {1} in-t: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
+                return true;
+            }
+            //Logging.WriteLine(String.Format("{0} - {1} in-f - d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, detect, Count));
+            return false;
+        }
+
         private bool Detectedge(IMyEntity ent)
         {
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
@@ -577,7 +592,7 @@ namespace DefenseShields.Station
             MyAPIGateway.Parallel.ForEach(inList, inent =>
             {
                 if (!(inent is IMyCubeGrid) && !(inent is IMyCharacter)) return;
-                if (Detectedge(inent)) _inHash.Add(inent);
+                if (Detectin(inent)) _inHash.Add(inent);
             });
         }
         #endregion
@@ -601,7 +616,7 @@ namespace DefenseShields.Station
                     var playerrelationship = _tblock.GetUserRelationToOwner(dude);
                     if (playerrelationship != MyRelationsBetweenPlayerAndBlock.Owner && playerrelationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
                     {
-                        //_playerwebbed = true;
+                        _playerwebbed = true;
                         return;
                     }
                     return;
