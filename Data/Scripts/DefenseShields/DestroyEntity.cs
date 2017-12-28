@@ -54,7 +54,7 @@ namespace DefenseShields.Destroy
                         grid.Close();
                     }
                 }
-                _destroyGridHash.Clear();
+                if (_gridcount == 599) _destroyGridHash.Clear();
             }
             catch (Exception ex)
             {
