@@ -49,7 +49,7 @@ namespace DefenseShields.Destroy
                     if (_gridcount == 599)
                     {
                         grid.Close();
-                        _destroyEntityHash.Remove(grident);
+                        _destroyEntityHash.Remove(grid);
                     }
                 }
             }
@@ -74,7 +74,7 @@ namespace DefenseShields.Destroy
                     var playerpos = playerent.GetPosition();
                     MyVisualScriptLogicProvider.CreateExplosion(playerpos, 10, 1000);
                     playerent.Kill();
-                    _destroyEntityHash.Remove(ent);
+                    _destroyEntityHash.Remove(playerent);
                 }
             }
             catch (Exception ex)
