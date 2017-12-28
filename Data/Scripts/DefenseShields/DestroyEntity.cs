@@ -76,7 +76,7 @@ namespace DefenseShields.Destroy
                     var playerent = (IMyCharacter)ent;
                     var playerpos = playerent.GetPosition();
                     MyVisualScriptLogicProvider.CreateExplosion(playerpos, 10, 1000);
-                    playerent.Kill();
+                    //playerent.Kill();
                 }
                 _destroyPlayerHash.Clear();
             }
