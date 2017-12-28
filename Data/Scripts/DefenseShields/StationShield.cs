@@ -628,7 +628,7 @@ namespace DefenseShields.Station
                 if (webent is IMyCharacter || _inHash.Contains(webent)) return;
 
                 var grid = webent as IMyCubeGrid;
-                if (grid == _tblock.CubeGrid || _gridwebbed || _destroyGridHash.Contains(grid) || grid == null) return;
+                if (grid == _tblock.CubeGrid || _gridwebbed || grid == null) return;
 
                 List<long> owners = grid.BigOwners;
                 if (owners.Count > 0)
