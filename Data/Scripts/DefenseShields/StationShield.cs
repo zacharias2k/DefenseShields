@@ -596,7 +596,8 @@ namespace DefenseShields.Station
                     _inHash.Add(inent);
                 }
             });
-            Logging.WriteLine(String.Format("{0} - inHash {1} l:{2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _inHash.Count, Count));
+            HashSet<IMyEntity> _inHash2 = new HashSet<IMyEntity>(_inHash);
+            Logging.WriteLine(String.Format("{0} - inHash {1} {2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _inHash.Count, _inHash2, Count));
         }
         #endregion
 
@@ -704,7 +705,7 @@ namespace DefenseShields.Station
         #region player effects
         public void PlayerEffects()
         {
-            Random rnd = new Random();
+            var rnd = new Random();
             //MyAPIGateway.Parallel.ForEach(_inHash, playerent =>
             foreach (var playerent in _inHash)
             {
@@ -713,28 +714,24 @@ namespace DefenseShields.Station
                 {
                     var playerid = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;
                     var relationship = _tblock.GetUserRelationToOwner(playerid);
-                    if (relationship != MyRelationsBetweenPlayerAndBlock.Owner &&
-                        relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
+                    if (relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
                     {
                         var character = playerent as IMyCharacter;
                         var npcname = character.ToString();
-                        Logging.WriteLine(String.Format(
-                            "{0} - playerEffect: Enemy {1} detected at loop {2} - relationship: {3}",
-                            DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character, Count, relationship));
+                        Logging.WriteLine(String.Format("{0} - playerEffect: Enemy {1} detected at loop {2} - relationship: {3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character, Count, relationship));
                         if (npcname.Equals("Space_Wolf"))
                         {
-                            Logging.WriteLine(String.Format("{0} - playerEffect: Killing {1} ",
-                                DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
+                            Logging.WriteLine(String.Format("{0} - playerEffect: Killing {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
                             character.Kill();
                             return;
                         }
-                        if (character.EnabledDamping == true) character.SwitchDamping();
+                        if (character.EnabledDamping) character.SwitchDamping();
                         if (character.SuitEnergyLevel > 0.5f)
                             MyVisualScriptLogicProvider.SetPlayersEnergyLevel(playerid, 0.49f);
                         if (MyVisualScriptLogicProvider.IsPlayersJetpackEnabled(playerid))
                         {
                             _playertime++;
-                            int explodeRollChance = rnd.Next(0 - _playertime, _playertime);
+                            var explodeRollChance = rnd.Next(0 - _playertime, _playertime);
                             if (explodeRollChance > 666)
                             {
                                 _playertime = 0;
@@ -743,20 +740,18 @@ namespace DefenseShields.Station
                                     var characterpos = character.GetPosition();
                                     MyVisualScriptLogicProvider.SetPlayersHydrogenLevel(playerid, 0.01f);
                                     MyVisualScriptLogicProvider.CreateExplosion(characterpos, 0, 0);
-                                    float characterhealth = MyVisualScriptLogicProvider.GetPlayersHealth(playerid);
+                                    var characterhealth = MyVisualScriptLogicProvider.GetPlayersHealth(playerid);
                                     MyVisualScriptLogicProvider.SetPlayersHealth(playerid, characterhealth - 50f);
-                                    Vector3D playerCurrentSpeed = MyVisualScriptLogicProvider.GetPlayersSpeed(playerid);
+                                    var playerCurrentSpeed = MyVisualScriptLogicProvider.GetPlayersSpeed(playerid);
                                     if (playerCurrentSpeed == new Vector3D(0, 0, 0))
                                     {
-                                        playerCurrentSpeed = (Vector3D) MyUtils.GetRandomVector3Normalized();
+                                        playerCurrentSpeed = MyUtils.GetRandomVector3Normalized();
                                     }
-                                    Vector3D speedDir = Vector3D.Normalize(playerCurrentSpeed);
-                                    int randomSpeed = rnd.Next(10, 20);
-                                    Vector3D additionalSpeed = speedDir * (double) randomSpeed;
-                                    MyVisualScriptLogicProvider.SetPlayersSpeed(playerCurrentSpeed + additionalSpeed,
-                                        playerid);
+                                    var speedDir = Vector3D.Normalize(playerCurrentSpeed);
+                                    var randomSpeed = rnd.Next(10, 20);
+                                    var additionalSpeed = speedDir * randomSpeed;
+                                    MyVisualScriptLogicProvider.SetPlayersSpeed(playerCurrentSpeed + additionalSpeed, playerid);
                                 }
-
                             }
                         }
                     }
