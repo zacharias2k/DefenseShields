@@ -21,13 +21,11 @@ namespace DefenseShields.Destroy
 
                         if (_gridcount == -1)
                         {
-                            
                             var vel = grid.Physics.LinearVelocity;
                             vel.SetDim(0, (int)((float)vel.GetDim(0) * -1.5f));
                             vel.SetDim(1, (int)((float)vel.GetDim(1) * -1.5f));
                             vel.SetDim(2, (int)((float)vel.GetDim(2) * -1.5f));
                             grid.Physics.LinearVelocity = vel;
-                            
                         }
                         else
                         {
