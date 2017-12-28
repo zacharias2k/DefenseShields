@@ -32,7 +32,7 @@ namespace DefenseShields.Destroy
                         else
                         {
                             var gridpos = grid.GetPosition();
-                            MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 9999);
+                            //MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 9999);
                         }
                     }
                 }
