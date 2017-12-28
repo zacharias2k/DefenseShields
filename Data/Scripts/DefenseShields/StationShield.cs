@@ -148,7 +148,7 @@ namespace DefenseShields.Station
                     }
                     BlockAnimation();
                 }
-                if (_playercount < 600) _playercount++;
+                //if (_playercount < 600) _playercount++;
                 if (_gridcount < 600) _gridcount++;
                 if (Count++ == 59) Count = 0;
                 if (Count % 3 == 0)

@@ -41,7 +41,8 @@ namespace DefenseShields.Destroy
                         }
                     }
                 }
-
+                _destroyPlayerHash.Clear();
+                return;
                 if (_gridcount < 59) return;
 
                 foreach (var grident in _destroyGridHash)
