@@ -599,7 +599,7 @@ namespace DefenseShields.Station
                 }
             });
             HashSet<IMyEntity> _inHash2 = new HashSet<IMyEntity>(_inHash);
-            Logging.WriteLine(String.Format("{0} - inHash {1} {2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _inHash.Count, _inHash2, Count));
+            Logging.WriteLine(String.Format("{0} - inHash {1} {2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _inHash.Count, _inHash2.Count, Count));
         }
         #endregion
 
