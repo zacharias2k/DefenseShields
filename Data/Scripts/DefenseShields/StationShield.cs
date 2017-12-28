@@ -182,7 +182,7 @@ namespace DefenseShields.Station
                     if (Count <= 0) MyAPIGateway.Parallel.Do(InHashBuilder);
                     MyAPIGateway.Parallel.StartBackground(WebEntities);
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
-                    if (_playerwebbed) PlayerEffects();
+                    if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
                 }
             }
             catch (Exception ex)
@@ -613,7 +613,7 @@ namespace DefenseShields.Station
                 if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
                 if (webent is IMyMeteor) return;
                 
-                if (webent is IMyCharacter && (Count == 14 || Count == 29 || Count == 44 || Count == 59) && Detectedge(webent))
+                if (webent is IMyCharacter && (Count == 2 || Count == 17 || Count == 32 || Count == 47) && Detectedge(webent))
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
                     var playerrelationship = _tblock.GetUserRelationToOwner(dude);
