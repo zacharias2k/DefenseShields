@@ -148,7 +148,7 @@ namespace DefenseShields.Station
                     }
                     BlockAnimation();
                 }
-                //if (_playercount < 600) _playercount++;
+                if (_playercount < 600) _playercount++;
                 if (_gridcount < 600) _gridcount++;
                 if (Count++ == 59) Count = 0;
                 if (Count % 3 == 0)
@@ -171,7 +171,7 @@ namespace DefenseShields.Station
                     if (_destroyPlayerHash.Count > 0) DestroyEntity.PlayerKill(_playercount);
 
                 }
-                if (_closegrids)// || _gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419 || _gridcount == 479||_gridcount == 599)
+                if (_closegrids || _gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419 || _gridcount == 479|| _gridcount == 599)
                 {
                     if (_closegrids) _gridcount = -1;
                     _closegrids = false;
@@ -628,7 +628,7 @@ namespace DefenseShields.Station
                 if (webent is IMyCharacter || _inHash.Contains(webent)) return;
 
                 var grid = webent as IMyCubeGrid;
-                if (grid == _tblock.CubeGrid || _gridwebbed || grid == null) return;
+                if (grid == _tblock.CubeGrid || _gridwebbed || _destroyGridHash.Contains(grid) || grid == null) return;
 
                 List<long> owners = grid.BigOwners;
                 if (owners.Count > 0)
@@ -647,9 +647,9 @@ namespace DefenseShields.Station
                     _destroyGridHash.Add(grid);
 
                     var vel = grid.Physics.LinearVelocity;
-                    vel.SetDim(0, (int)((float)vel.GetDim(0) * -6f));
-                    vel.SetDim(1, (int)((float)vel.GetDim(1) * -6f));
-                    vel.SetDim(2, (int)((float)vel.GetDim(2) * -6f));
+                    vel.SetDim(0, (int)((float)vel.GetDim(0) * -8.0f));
+                    vel.SetDim(1, (int)((float)vel.GetDim(1) * -8.0f));
+                    vel.SetDim(2, (int)((float)vel.GetDim(2) * -8.10));
                     grid.Physics.LinearVelocity = vel;
 
                     //var playerentid = MyVisualScriptLogicProvider.GetPlayersEntityId(playerid);

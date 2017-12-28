@@ -41,8 +41,6 @@ namespace DefenseShields.Destroy
                         }
                     }
                 }
-                _destroyPlayerHash.Clear();
-                return;
                 if (_gridcount < 59) return;
 
                 foreach (var grident in _destroyGridHash)
@@ -83,7 +81,7 @@ namespace DefenseShields.Destroy
                     if (!(ent is IMyCharacter)) continue;
                     var playerent = (IMyCharacter)ent;
                     var playerpos = playerent.GetPosition();
-                    MyVisualScriptLogicProvider.CreateExplosion(playerpos, 10, 1000);
+                    //MyVisualScriptLogicProvider.CreateExplosion(playerpos, 10, 1000);
                     //playerent.Kill();
                 }
                 _destroyPlayerHash.Clear();
