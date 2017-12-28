@@ -650,6 +650,7 @@ namespace DefenseShields.Station
                     vel.SetDim(1, (int)((float)vel.GetDim(1) * -3.5f));
                     vel.SetDim(2, (int)((float)vel.GetDim(2) * -3.5f));
                     grid.Physics.LinearVelocity = vel;
+                    Logging.WriteLine(String.Format("{0} - vel is {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), vel));
 
                     _closegrids = true;
 
