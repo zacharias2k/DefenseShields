@@ -97,6 +97,8 @@ namespace DefenseShields.Station
         private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
         public MyConcurrentHashSet<IMyEntity> _inHash = new MyConcurrentHashSet<IMyEntity>();
+        public MyConcurrentHashSet<IMyEntity> _inHash2 = new MyConcurrentHashSet<IMyEntity>();
+
         public static HashSet<IMyEntity> _destroyGridHash = new HashSet<IMyEntity>();
         public static HashSet<IMyEntity> _destroyPlayerHash = new HashSet<IMyEntity>();
 
