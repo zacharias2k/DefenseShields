@@ -705,7 +705,7 @@ namespace DefenseShields.Station
                             character.Kill();
                             return;
                         }
-                        if (character.EnabledDamping) character.SwitchDamping();
+                        //if (character.EnabledDamping) character.SwitchDamping();
                         Logging.WriteLine(String.Format("{0} - playerEffect: passed switchdamping {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
                         if (character.SuitEnergyLevel > 0.5f) MyVisualScriptLogicProvider.SetPlayersEnergyLevel(playerid, 0.49f);
                         Logging.WriteLine(String.Format("{0} - playerEffect: passed set energy {1} ", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), character));
