@@ -26,7 +26,10 @@ namespace DefenseShields.Destroy
                             vel.SetDim(1, (int) ((float) vel.GetDim(1) * 0.05f));
                             vel.SetDim(2, (int) ((float) vel.GetDim(2) * 0.05f));
                             grid.Physics.LinearVelocity = vel;
-                            _destroyGridHash.Remove(grid);
+                            lock (_destroyGridHash)
+                            {
+                                _destroyGridHash.Remove(grid);
+                            }
                         }
                     }
                 }
