@@ -52,10 +52,15 @@ namespace DefenseShields.Base
 
             var generator = _bulletShields[0];
             var ent = block as IMyEntity;
-            var slimBlock = block as IMySlimBlock;
-            if (slimBlock != null) ent = slimBlock.CubeGrid;
-            var dude = block as IMyCharacter;
-            if (dude != null) ent = dude;
+            switch (block)
+            {
+                case IMySlimBlock slimBlock:
+                    ent = slimBlock.CubeGrid;
+                    break;
+                case IMyCharacter dude:
+                    ent = dude;
+                    break;
+            }
             if (ent == null) return;
             var isProtected = false;
             foreach (var shield in _bulletShields)
