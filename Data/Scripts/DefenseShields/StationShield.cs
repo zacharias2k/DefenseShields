@@ -578,8 +578,7 @@ namespace DefenseShields.Station
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
                 if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
                 if (webent is IMyMeteor) return;
-                //if (webent is IMyMeteor && Detectedge(webent, 0f)) _shotwebbed = true;
-
+                
                 if (webent is IMyCharacter && (Count == 2 || Count == 17 || Count == 32 || Count == 47) && Detectedge(webent, 0f))
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
@@ -691,7 +690,7 @@ namespace DefenseShields.Station
                         Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - playerEffect: Enemy {character} detected at loop {Count} - relationship: {relationship}");
                         if (npcname.Equals("Space_Wolf"))
                         {
-                            Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - playerEffect: Killing {character} ");
+                            Logging.WriteLine(                                $"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - playerEffect: Killing {character} ");
                             character.Kill();
                             return;
                         }
