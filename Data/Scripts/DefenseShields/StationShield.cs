@@ -179,7 +179,6 @@ namespace DefenseShields.Station
                 {
                     //if (_closegrids) _gridcount = -1;
                     _closegrids = false;
-                    Logging.WriteLine(String.Format("{0} - Create UI {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), Count));
                     DestroyEntity.GridClose(_gridcount);
                     /*lock (_destroyGridHash)
                     {
@@ -191,8 +190,7 @@ namespace DefenseShields.Station
                 {
                     if (Count == 1)
                     {
-                        InHashBuilder();
-
+                        InCacheBuilder();
                     }
                     if (Count == 0) MyAPIGateway.Parallel.Do(InHashBuilder);
                     MyAPIGateway.Parallel.StartBackground(WebEntities);
