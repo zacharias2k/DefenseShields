@@ -11,7 +11,7 @@ namespace DefenseShields.Destroy
         {
             try
             {
-                if (_gridcount == -1 || _gridcount == 0)
+                //if (_gridcount == -1 || _gridcount == 0)
                 {
                     lock (_destroyGridHash)
                     {
@@ -20,20 +20,20 @@ namespace DefenseShields.Destroy
                             var grid = grident as IMyCubeGrid;
                             if (grid == null) continue;
 
-                            if (_gridcount == -1)
-                            {
+                            //if (_gridcount == -1)
+                            //{
                                 var gridpos = grid.GetPosition();
-                                MyVisualScriptLogicProvider.CreateExplosion(gridpos, 1f, 1000);
+                                MyVisualScriptLogicProvider.CreateExplosion(gridpos, 5f, 200);
                                 var vel = grid.Physics.LinearVelocity;
-                                vel.SetDim(0, (int)((float)vel.GetDim(0) * 0.05f));
-                                vel.SetDim(1, (int)((float)vel.GetDim(1) * 0.05f));
-                                vel.SetDim(2, (int)((float)vel.GetDim(2) * 0.05f));
+                                vel.SetDim(0, (int)((float)vel.GetDim(0) * 0.01f));
+                                vel.SetDim(1, (int)((float)vel.GetDim(1) * 0.01f));
+                                vel.SetDim(2, (int)((float)vel.GetDim(2) * 0.01f));
                                 grid.Physics.LinearVelocity = vel;
-                            }
+                            //}
                         }
                         _destroyGridHash.Clear();
                     }
-                }
+                //}
                 /*
                 var vel = grid.Physics.LinearVelocity;
                 vel.SetDim(0, (int)0f);
