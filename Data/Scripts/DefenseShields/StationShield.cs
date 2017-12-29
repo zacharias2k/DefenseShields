@@ -171,7 +171,7 @@ namespace DefenseShields.Station
                 if (!Initialized && _cblock.IsWorking)
                 {
                     if (Count <= 0) MyAPIGateway.Parallel.Do(InHashBuilder);
-                    if (Count >= 0) MyAPIGateway.Parallel.StartBackground(WebEntities);
+                    MyAPIGateway.Parallel.StartBackground(WebEntities);
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
                     if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
                 }
@@ -576,22 +576,19 @@ namespace DefenseShields.Station
             MyAPIGateway.Parallel.ForEach(webList, webent =>
             {
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
-                if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
-                if (webent is IMyMeteor) return;
-                //if (webent is IMyMeteor && Detectedge(webent, 0f)) webent.Close();
+                //if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
+                //if (webent is IMyMeteor) return;
+                if (webent is IMyMeteor && Detectedge(webent, 0f)) webent.Close();
 
                 if (webent is IMyCharacter && (Count == 2 || Count == 17 || Count == 32 || Count == 47) && Detectedge(webent, 0f))
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
                     var playerrelationship = _tblock.GetUserRelationToOwner(dude);
-                    if (playerrelationship != MyRelationsBetweenPlayerAndBlock.Owner && playerrelationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
-                    {
-                        _playerwebbed = true;
-                        return;
-                    }
+                    if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner || playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
+                    _playerwebbed = true;
                     return;
                 }
-
+                
                 if (webent is IMyCharacter || InHash.Contains(webent)) return;
 
                 var grid = webent as IMyCubeGrid;
