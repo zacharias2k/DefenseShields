@@ -61,7 +61,6 @@ namespace DefenseShields.Station
         public bool Initialized = true;
         private bool _animInit;
         private bool _playerwebbed;
-        private bool _gridwebbed;
         private bool _shotwebbed;
         private bool _shotlocked;
         private bool _closegrids;
@@ -592,7 +591,7 @@ namespace DefenseShields.Station
                 if (webent is IMyCharacter || InHash.Contains(webent)) return;
 
                 var grid = webent as IMyCubeGrid;
-                if (grid == _tblock.CubeGrid || _gridwebbed || DestroyGridHash.Contains(grid) || grid == null) return;
+                if (grid == _tblock.CubeGrid || DestroyGridHash.Contains(grid) || grid == null) return;
 
                 List<long> owners = grid.BigOwners;
                 if (owners.Count > 0)
