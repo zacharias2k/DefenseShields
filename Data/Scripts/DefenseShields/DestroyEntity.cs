@@ -13,23 +13,26 @@ namespace DefenseShields.Destroy
             {
                 if (_gridcount == -1 || _gridcount == 0)
                 {
-                    foreach (var grident in _destroyGridHash)
+                    lock (_destroyGridHash)
                     {
-                        var grid = grident as IMyCubeGrid;
-                        if (grid == null) continue;
-
-                        if (_gridcount == -1)
+                        foreach (var grident in _destroyGridHash)
                         {
-                            var gridpos = grid.GetPosition();
-                            MyVisualScriptLogicProvider.CreateExplosion(gridpos, 1f, 1000);
-                            var vel = grid.Physics.LinearVelocity;
-                            vel.SetDim(0, (int) ((float) vel.GetDim(0) * 0.05f));
-                            vel.SetDim(1, (int) ((float) vel.GetDim(1) * 0.05f));
-                            vel.SetDim(2, (int) ((float) vel.GetDim(2) * 0.05f));
-                            grid.Physics.LinearVelocity = vel;
+                            var grid = grident as IMyCubeGrid;
+                            if (grid == null) continue;
+
+                            if (_gridcount == -1)
+                            {
+                                var gridpos = grid.GetPosition();
+                                MyVisualScriptLogicProvider.CreateExplosion(gridpos, 1f, 1000);
+                                var vel = grid.Physics.LinearVelocity;
+                                vel.SetDim(0, (int)((float)vel.GetDim(0) * 0.05f));
+                                vel.SetDim(1, (int)((float)vel.GetDim(1) * 0.05f));
+                                vel.SetDim(2, (int)((float)vel.GetDim(2) * 0.05f));
+                                grid.Physics.LinearVelocity = vel;
+                            }
                         }
+                        _destroyGridHash.Clear();
                     }
-                    _destroyGridHash.Clear();
                 }
                 /*
                 var vel = grid.Physics.LinearVelocity;
