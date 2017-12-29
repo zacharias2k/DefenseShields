@@ -35,7 +35,7 @@ namespace DefenseShields.Base
         public static void Init()
         {
             Logging.Init("debugdevelop.log");
-            Logging.WriteLine(String.Format("{0} - Logging Started", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
+            Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - Logging Started");
             MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
             IsInit = true;
         }
@@ -50,24 +50,28 @@ namespace DefenseShields.Base
 
             if (_bulletShields.Count == 0 || info.Type != MyDamageType.Bullet) return;
 
-            Station.DefenseShields generator = _bulletShields[0];
-            IMyEntity ent = block as IMyEntity;
-            var slimBlock = block as IMySlimBlock;
-            if (slimBlock != null) ent = slimBlock.CubeGrid;
-            var dude = block as IMyCharacter;
-            if (dude != null) ent = dude;
+            var generator = _bulletShields[0];
+            var ent = block as IMyEntity;
+            switch (block)
+            {
+                case IMySlimBlock slimBlock:
+                    ent = slimBlock.CubeGrid;
+                    break;
+                case IMyCharacter dude:
+                    ent = dude;
+                    break;
+            }
             if (ent == null) return;
-            bool isProtected = false;
+            var isProtected = false;
             foreach (var shield in _bulletShields)
-                if (shield._inCacheHash.Contains(ent))
+                if (shield.InHash.Contains(ent))
                 {
                     isProtected = true;
                     generator = shield;
                 }
             if (!isProtected) return;
-            IMyEntity attacker;
-            if (!MyAPIGateway.Entities.TryGetEntityById(info.AttackerId, out attacker)) return;
-            if (generator._inCacheHash.Contains(attacker)) return;
+            if (!MyAPIGateway.Entities.TryGetEntityById(info.AttackerId, out var attacker)) return;
+            if (generator.InHash.Contains(attacker)) return;
             info.Amount = 0f;
         }
     }

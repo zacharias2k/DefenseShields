@@ -48,8 +48,8 @@ namespace DefenseShields
             }
             catch (Exception ex)
             {
-                Logging.WriteLine(String.Format("{0} - Exception in Writer", DateTime.Now));
-                Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now, ex));
+                Logging.WriteLine($"{DateTime.Now} - Exception in Writer");
+                Logging.WriteLine($"{DateTime.Now} - {ex}");
             }
         }
 

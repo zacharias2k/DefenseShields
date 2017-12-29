@@ -11,69 +11,61 @@ namespace DefenseShields.Destroy
         {
             try
             {
-                //if (_gridcount == -1 || _gridcount == 0)
+                if (_gridcount == -1 || _gridcount == 0)
                 {
-                    lock (_destroyGridHash)
+                    Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} pre-1stloop {_gridcount} {DestroyGridHash.Count}");
+                    foreach (var grident in DestroyGridHash)
                     {
-                        foreach (var grident in _destroyGridHash)
+                        var grid = grident as IMyCubeGrid;
+                        if (grid == null) continue;
+
+                        if (_gridcount == -1)
                         {
-                            var grid = grident as IMyCubeGrid;
-                            if (grid == null) continue;
-
-                            //if (_gridcount == -1)
-                            //{
-                                var gridpos = grid.GetPosition();
-                                MyVisualScriptLogicProvider.CreateExplosion(gridpos, 5f, 200);
-                                var vel = grid.Physics.LinearVelocity;
-                                vel.SetDim(0, (int)((float)vel.GetDim(0) * 0.01f));
-                                vel.SetDim(1, (int)((float)vel.GetDim(1) * 0.01f));
-                                vel.SetDim(2, (int)((float)vel.GetDim(2) * 0.01f));
-                                grid.Physics.LinearVelocity = vel;
-                            //}
+                            /*
+                            var vel = grid.Physics.LinearVelocity;
+                            vel.SetDim(0, (int)((float)vel.GetDim(0) * 1.0f));
+                            vel.SetDim(1, (int)((float)vel.GetDim(1) * 1.0f));
+                            vel.SetDim(2, (int)((float)vel.GetDim(2) * 1.0f));
+                            grid.Physics.LinearVelocity = vel;
+                            */
+                            var vel = grid.Physics.LinearVelocity;
+                            vel.SetDim(0, (int) 0f);
+                            vel.SetDim(1, (int) 0f);
+                            vel.SetDim(2, (int) 0f);
+                            grid.Physics.LinearVelocity = vel;
                         }
-                        _destroyGridHash.Clear();
+                        else
+                        {
+                            var gridpos = grid.GetPosition();
+                            //MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 9999);
+                        }
                     }
-                //}
-                /*
-                var vel = grid.Physics.LinearVelocity;
-                vel.SetDim(0, (int)0f);
-                vel.SetDim(1, (int)0f);
-                vel.SetDim(2, (int)0f);
-                grid.Physics.LinearVelocity = vel;
-                */
-                /*
-            }
-            else
-            {
-                var gridpos = grid.GetPosition();
-                //MyVisualScriptLogicProvider.CreateExplosion(gridpos, 30, 9999);
-            }
-        }
-    }
-    if (_gridcount < 59) return;
+                }
+                if (_gridcount < 59) return;
 
-    foreach (var grident in _destroyGridHash)
-    {
-        var grid = grident as IMyCubeGrid;
-        if (grid == null) continue;
-        if (_gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419)
-        {
-            Logging.WriteLine(String.Format("{0} inside grid destory {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _destroyGridHash.Count));
-            var gridpos = grid.GetPosition();
-            //MyVisualScriptLogicProvider.CreateExplosion(gridpos, _gridcount / 2f, _gridcount * 2);
-        }
-        if (_gridcount == 599)
-        {
-            grid.Close();
-        }
-    }
-    if (_gridcount == 599) _destroyGridHash.Clear();
-    
+                foreach (var grident in DestroyGridHash)
+                {
+                    var grid = grident as IMyCubeGrid;
+                    if (grid == null) continue;
+                    Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} passed continue check - l:{_gridcount} grids:{DestroyGridHash.Count}");
+                    if (_gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419)
+                    {
+                        Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} inside grid destory {_gridcount} {DestroyGridHash.Count}");
+                        var gridpos = grid.GetPosition();
+                        //MyVisualScriptLogicProvider.CreateExplosion(gridpos, _gridcount / 2f, _gridcount * 2);
+                    }
+                    if (_gridcount == 599)
+                    {
+                        Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} closing {grid.DisplayName} in loop {_gridcount}");
+                        grid.Close();
+                    }
+                }
+                if (_gridcount == 599) DestroyGridHash.Clear();
             }
             catch (Exception ex)
             {
-                Logging.WriteLine(String.Format("{0} - Exception in gridClose", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
-                Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ex));
+                Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - Exception in gridClose");
+                Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - {ex}");
             }
         }
         #endregion
@@ -84,24 +76,22 @@ namespace DefenseShields.Destroy
             try
             {
                 if (_playercount != 479) return;
-                foreach (var ent in _destroyPlayerHash)
+                foreach (var ent in DestroyPlayerHash)
                 {
                     if (!(ent is IMyCharacter)) continue;
                     var playerent = (IMyCharacter)ent;
                     var playerpos = playerent.GetPosition();
                     //MyVisualScriptLogicProvider.CreateExplosion(playerpos, 10, 1000);
                     //playerent.Kill();
-                */}
-                _destroyPlayerHash.Clear();
+                }
+                DestroyPlayerHash.Clear();
             }
             catch (Exception ex)
             {
-                Logging.WriteLine(String.Format("{0} - Exception in playerKill", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
-                Logging.WriteLine(String.Format("{0} - {1}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ex));
+                Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - Exception in playerKill");
+                Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - {ex}");
             }
         }
         #endregion
-        
     }
-    
 }
