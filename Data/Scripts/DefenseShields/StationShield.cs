@@ -128,8 +128,11 @@ namespace DefenseShields.Station
         }
         #endregion
 
+        #region Interfaces
         public interface IPlayerKill { void PlayerKill(); }
         public interface IGridClose { void GridClose(); }
+        public interface IEnemyDetect { void EnemyDetect(); }
+        #endregion
 
         #region Simulation
         public override void UpdateBeforeSimulation()
