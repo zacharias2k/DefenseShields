@@ -18,8 +18,8 @@ namespace DefenseShields.Destroy
                         var grid = grident as IMyCubeGrid;
                         if (grid == null) continue;
 
-                        if (_gridcount == -1)
-                        {
+                        //if (_gridcount == -1)
+                        //{
 
                             var vel = grid.Physics.LinearVelocity;
                             vel.SetDim(0, (int) ((float) vel.GetDim(0) * 0.05f));
@@ -32,7 +32,7 @@ namespace DefenseShields.Destroy
                                 _destroyGridHash.Remove(grid);
                                 Logging.WriteLine(String.Format("{0} - test2 _destroyGridHash", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
                             }
-                        }
+                        //}
                     }
                 }
                 /*
