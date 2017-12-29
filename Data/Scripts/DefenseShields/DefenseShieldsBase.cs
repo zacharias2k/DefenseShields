@@ -65,7 +65,8 @@ namespace DefenseShields.Base
                     generator = shield;
                 }
             if (!isProtected) return;
-            if (!MyAPIGateway.Entities.TryGetEntityById(info.AttackerId, out var attacker)) return;
+            IMyEntity attacker;
+            if (!MyAPIGateway.Entities.TryGetEntityById(info.AttackerId, out attacker)) return;
             if (generator.InHash.Contains(attacker)) return;
             info.Amount = 0f;
         }
