@@ -13,7 +13,6 @@ namespace DefenseShields.Destroy
             {
                 if (_gridcount == -1 || _gridcount == 0)
                 {
-                    Logging.WriteLine(String.Format("{0} pre-1stloop {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _destroyGridHash.Count));
                     foreach (var grident in _destroyGridHash)
                     {
                         var grid = grident as IMyCubeGrid;
@@ -29,9 +28,9 @@ namespace DefenseShields.Destroy
                             grid.Physics.LinearVelocity = vel;
                             */
                             var vel = grid.Physics.LinearVelocity;
-                            vel.SetDim(0, (int) 0f);
-                            vel.SetDim(1, (int) 0f);
-                            vel.SetDim(2, (int) 0f);
+                            vel.SetDim(0, (int)0f);
+                            vel.SetDim(1, (int)0f);
+                            vel.SetDim(2, (int)0f);
                             grid.Physics.LinearVelocity = vel;
                         }
                         else
@@ -47,7 +46,6 @@ namespace DefenseShields.Destroy
                 {
                     var grid = grident as IMyCubeGrid;
                     if (grid == null) continue;
-                    Logging.WriteLine(String.Format("{0} passed continue check - l:{1} grids:{2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _destroyGridHash.Count));
                     if (_gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419)
                     {
                         Logging.WriteLine(String.Format("{0} inside grid destory {1} {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _gridcount, _destroyGridHash.Count));
@@ -56,7 +54,6 @@ namespace DefenseShields.Destroy
                     }
                     if (_gridcount == 599)
                     {
-                        Logging.WriteLine(String.Format("{0} closing {1} in loop {2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.DisplayName, _gridcount));
                         grid.Close();
                     }
                 }

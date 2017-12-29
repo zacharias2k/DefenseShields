@@ -43,17 +43,12 @@ namespace DefenseShields.Station
         private float _width;
         private float _height;
         private float _depth;
-        private float _inWidth;
-        private float _inHeight;
-        private float _inDepth;
-        private float _inRange;
         private float _recharge;
-        private float _power = 0.0001f;
         private float _absorb;
-        private float _shotdmg = 1f;
-        private float _bulletdmg = 0.1f;
-        private float _massdmg = 0.0025f;
-
+        private float _power = 0.0001f;
+        private readonly float _shotdmg = 1f;
+        private readonly float _bulletdmg = 0.1f;
+        private readonly float _massdmg = 0.0025f;
         private readonly float _inOutSpace = 15f;
 
         public int Count = -301;
@@ -97,6 +92,7 @@ namespace DefenseShields.Station
         private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
         public MyConcurrentHashSet<IMyEntity> _inHash = new MyConcurrentHashSet<IMyEntity>();
+        public MyConcurrentHashSet<IMyEntity> _inCacheHash = new MyConcurrentHashSet<IMyEntity>();
         public static HashSet<IMyEntity> _destroyGridHash = new HashSet<IMyEntity>();
         public static HashSet<IMyEntity> _destroyPlayerHash = new HashSet<IMyEntity>();
 
@@ -105,7 +101,7 @@ namespace DefenseShields.Station
 
         public static readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
 
-        private IMyOreDetector _oblock; 
+        private IMyOreDetector _oblock;
         private IMyFunctionalBlock _fblock;
         private IMyTerminalBlock _tblock;
         private MyCubeBlock _cblock;
@@ -126,13 +122,13 @@ namespace DefenseShields.Station
             //this.NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
 
             _cblock = (MyCubeBlock)Entity;
-            _oblock = Entity as IMyOreDetector; 
+            _oblock = Entity as IMyOreDetector;
             _fblock = Entity as IMyFunctionalBlock;
             _tblock = Entity as IMyTerminalBlock;
         }
         #endregion
 
-        public interface IPlayerKill{ void PlayerKill(); }
+        public interface IPlayerKill { void PlayerKill(); }
         public interface IGridClose { void GridClose(); }
 
         #region Simulation
@@ -171,7 +167,7 @@ namespace DefenseShields.Station
                     if (_destroyPlayerHash.Count > 0) DestroyEntity.PlayerKill(_playercount);
 
                 }
-                if (_closegrids || _gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419 || _gridcount == 479|| _gridcount == 599)
+                if (_closegrids || _gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419 || _gridcount == 479 || _gridcount == 599)
                 {
                     if (_closegrids) _gridcount = -1;
                     _closegrids = false;
@@ -179,7 +175,12 @@ namespace DefenseShields.Station
                 }
                 if (!Initialized && _cblock.IsWorking)
                 {
-                    if (Count <= 0) MyAPIGateway.Parallel.Do(InHashBuilder);
+                    if (Count == 1)
+                    {
+                        InHashBuilder();
+
+                    }
+                    if (Count == 0) MyAPIGateway.Parallel.Do(InHashBuilder);
                     MyAPIGateway.Parallel.StartBackground(WebEntities);
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
                     if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
@@ -389,20 +390,12 @@ namespace DefenseShields.Station
                 _width = _range * 0.5f;
                 _height = _range * 0.35f;
                 _depth = _range;
-                _inDepth = _depth - _inOutSpace;
-                _inHeight = _height - _inOutSpace;
-                _inWidth = _width - _inOutSpace;
-                _inRange = _range - _inOutSpace;
             }
             else
             {
                 _width = _range;
                 _height = _range;
                 _depth = _range;
-                _inDepth = _depth - _inOutSpace;
-                _inHeight = _height - _inOutSpace;
-                _inWidth = _width - _inOutSpace;
-                _inRange = _range - _inOutSpace;
             }
         }
         #endregion
@@ -414,7 +407,7 @@ namespace DefenseShields.Station
             {
                 //MyAPIGateway.Entities.RemoveEntity(Shield);
             }
-            catch{}
+            catch { }
             base.Close();
         }
 
@@ -424,7 +417,7 @@ namespace DefenseShields.Station
             {
                 //MyAPIGateway.Entities.RemoveEntity(Shield);
             }
-            catch {}
+            catch { }
             base.MarkForClose();
         }
         #endregion
@@ -455,12 +448,12 @@ namespace DefenseShields.Station
             DefenseShieldsBase.ControlsLoaded = true;
             RemoveOreUi();
 
-            
+
             Ellipsoid = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>((IMyTerminalBlock)_cblock,
                 "Ellipsoid",
                 "Switch to Ellipsoid",
                 false);
-            
+
             Slider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>((IMyFunctionalBlock)_cblock,
                 "RadiusSlider",
                 "Shield Size",
@@ -522,40 +515,22 @@ namespace DefenseShields.Station
                     colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
 
                 _edgeVectors = new Vector3(_depth, _height, _width);
-                //_inVectors = new Vector3(_inDepth, _inHeight, _inWidth);
                 MatrixD edgeMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _edgeVectors);
                 //Shield.SetWorldMatrix(edgeMatrix);
                 MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, RangeGridResourceId, 0.25f, -1);
-                //MatrixD inMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _inVectors);
-                //MySimpleObjectDraw.DrawTransparentSphere(ref inMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, null, MyStringId.GetOrCompute("Build new"), 0.25f, -1);
                 //var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
                 //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
             }
         }
         #endregion
 
-        #region Detection Methods
-        private bool Detectin(IMyEntity ent)
+        #region Detect Intersection
+        private bool Detectedge(IMyEntity ent, float f)
         {
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float detect = (x * x) / (_inWidth * _inWidth) + (y * y) / (_inDepth * _inDepth) + (z * z) / (_inHeight * _inHeight);
-            if (detect <= 1)
-            {
-                //Logging.WriteLine(String.Format("{0} - {1} in-t: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
-                return true;
-            }
-            //Logging.WriteLine(String.Format("{0} - {1} in-f - d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, detect, Count));
-            return false;
-        }
-
-        private bool Detectedge(IMyEntity ent)
-        {
-            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
+            float detect = (x * x) / ((_width - f) * (_width - f)) + (y * y) / ((_depth - f) * (_depth - f)) + (z * z) / ((_height - f) * (_height - f));
             if (detect <= 1)
             {
                 //Logging.WriteLine(String.Format("{0} - {1} edge-t - d:{2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, detect, Count));
@@ -564,39 +539,33 @@ namespace DefenseShields.Station
             //if (detect <= 1.1) Logging.WriteLine(String.Format("{0} - {1} edge-f - d:{2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, detect, Count));
             return false;
         }
-
-        private bool Detectgridedge(IMyCubeGrid grid)
-        {
-            float x = Vector3Extensions.Project(_worldMatrix.Forward, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix.Left, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(_worldMatrix.Up, grid.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float detect = (x * x) / (_width * _width) + (y * y) / (_depth * _depth) + (z * z) / (_height * _height);
-            if (detect <= 1)
-            {
-                Logging.WriteLine(String.Format("{0} - {1} grid-t - d:{2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, detect, Count));
-                return true;
-            }
-            Logging.WriteLine(String.Format("{0} - {1} grid-f - d:{2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, detect, Count));
-            return false;
-        }
         #endregion
 
-        #region Build inside HashSet
-        public void InHashBuilder()
+        #region Build inside HashSet and Cache
+        public void InHashBuilder() // Runs in Count 0
         {
             var pos = _tblock.CubeGrid.GridIntegerToWorld(_tblock.Position);
-            BoundingSphereD insphere = new BoundingSphereD(pos, _inRange);
+            BoundingSphereD insphere = new BoundingSphereD(pos, _range - _inOutSpace);
             List<IMyEntity> inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
 
             _inHash.Clear();
             MyAPIGateway.Parallel.ForEach(inList, inent =>
             {
-                if (inent is IMyCubeGrid || inent is IMyCharacter && Detectin(inent))
+                if (inent is IMyCubeGrid || inent is IMyCharacter && Detectedge(inent, _inOutSpace))
                 {
                     _inHash.Add(inent);
                 }
             });
-            Logging.WriteLine(String.Format("{0} - inHash {1} l:{2}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _inHash.Count, Count));
+        }
+
+        public void InCacheBuilder() // Runs early during Count 1, after InHashBuilder()
+        {
+            _inCacheHash.Clear();
+            MyAPIGateway.Parallel.ForEach(_inHash, ent =>
+            {
+                _inCacheHash.Add(ent);
+            });
+            Logging.WriteLine(String.Format("{0} - inHash {1} _inCacheHash {2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _inHash.Count, _inCacheHash.Count, Count));
         }
         #endregion
 
@@ -610,10 +579,10 @@ namespace DefenseShields.Station
             MyAPIGateway.Parallel.ForEach(webList, webent =>
             {
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
-                if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
+                if (webent is IMyMeteor && !_shotwebbed) _shotwebbed = true;
                 if (webent is IMyMeteor) return;
-                
-                if (webent is IMyCharacter && (Count == 2 || Count == 17 || Count == 32 || Count == 47) && Detectedge(webent))
+
+                if (webent is IMyCharacter && (Count == 2 || Count == 17 || Count == 32 || Count == 47) && Detectedge(webent, 0f))
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
                     var playerrelationship = _tblock.GetUserRelationToOwner(dude);
@@ -624,8 +593,8 @@ namespace DefenseShields.Station
                     }
                     return;
                 }
-                
-                if (webent is IMyCharacter || _inHash.Contains(webent)) return;
+
+                if (webent is IMyCharacter || _inCacheHash.Contains(webent)) return;
 
                 var grid = webent as IMyCubeGrid;
                 if (grid == _tblock.CubeGrid || _gridwebbed || _destroyGridHash.Contains(grid) || grid == null) return;
@@ -637,7 +606,7 @@ namespace DefenseShields.Station
                     //Logging.WriteLine(String.Format("{0} - grid: {1} tblock: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, owners.Count, relations, relations == MyRelationsBetweenPlayerAndBlock.Owner, relations == MyRelationsBetweenPlayerAndBlock.FactionShare));
                     if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                 }
-                if (Detectgridedge(grid))
+                if (Detectedge(grid, 0f))
                 {
                     float griddmg = grid.Physics.Mass * _massdmg;
                     _absorb += griddmg;
@@ -647,9 +616,9 @@ namespace DefenseShields.Station
                     _destroyGridHash.Add(grid);
 
                     var vel = grid.Physics.LinearVelocity;
-                    vel.SetDim(0, (int)((float)vel.GetDim(0) * -8.0f));
-                    vel.SetDim(1, (int)((float)vel.GetDim(1) * -8.0f));
-                    vel.SetDim(2, (int)((float)vel.GetDim(2) * -8.10));
+                    vel.SetDim(0, (int)(vel.GetDim(0) * -8.0f));
+                    vel.SetDim(1, (int)(vel.GetDim(1) * -8.0f));
+                    vel.SetDim(2, (int)(vel.GetDim(2) * -8.0f));
                     grid.Physics.LinearVelocity = vel;
 
                     //var playerentid = MyVisualScriptLogicProvider.GetPlayersEntityId(playerid);
@@ -665,9 +634,9 @@ namespace DefenseShields.Station
                     return;
                 }
                 if (_shotwebbed) return;
-                if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo")) 
+                if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
                 {
-                    if (Detectedge(webent))
+                    if (Detectedge(webent, 0f))
                     {
                         _shotwebbed = true;
                     }
@@ -689,7 +658,7 @@ namespace DefenseShields.Station
 
             MyAPIGateway.Parallel.ForEach(shotHash, shotent =>
             {
-                if (shotent == null || !Detectedge(shotent)) return;
+                if (shotent == null || !Detectedge(shotent, 0f)) return;
                 try
                 {
                     _absorb += _shotdmg;
@@ -711,8 +680,8 @@ namespace DefenseShields.Station
         public void PlayerEffects()
         {
             var rnd = new Random();
-            //MyAPIGateway.Parallel.ForEach(_inHash, playerent =>
-            foreach (var playerent in _inHash)
+            //MyAPIGateway.Parallel.ForEach(_inCacheHash, playerent =>
+            foreach (var playerent in _inCacheHash)
             {
                 if (!(playerent is IMyCharacter)) return;
                 try

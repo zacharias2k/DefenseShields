@@ -59,7 +59,7 @@ namespace DefenseShields.Base
             if (ent == null) return;
             bool isProtected = false;
             foreach (var shield in _bulletShields)
-                if (shield._inHash.Contains(ent))
+                if (shield._inCacheHash.Contains(ent))
                 {
                     isProtected = true;
                     generator = shield;
@@ -67,7 +67,7 @@ namespace DefenseShields.Base
             if (!isProtected) return;
             IMyEntity attacker;
             if (!MyAPIGateway.Entities.TryGetEntityById(info.AttackerId, out attacker)) return;
-            if (generator._inHash.Contains(attacker)) return;
+            if (generator._inCacheHash.Contains(attacker)) return;
             info.Amount = 0f;
         }
     }
