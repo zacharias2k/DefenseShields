@@ -179,7 +179,10 @@ namespace DefenseShields.Station
                 {
                     if (_closegrids) _gridcount = -1;
                     _closegrids = false;
-                    if (_destroyGridHash.Count > 0) DestroyEntity.GridClose(_gridcount);
+                    lock (_destroyGridHash)
+                    {
+                        if (_destroyGridHash.Count > 0) DestroyEntity.GridClose(_gridcount);
+                    }
                 }
                 if (!Initialized && _cblock.IsWorking)
                 {
@@ -619,7 +622,7 @@ namespace DefenseShields.Station
                 if (webent is IMyCharacter || _inCacheHash.Contains(webent)) return;
 
                 var grid = webent as IMyCubeGrid;
-                if (grid == _tblock.CubeGrid || _gridwebbed || _destroyGridHash.Contains(grid) || grid == null) return;
+                if (grid == _tblock.CubeGrid || _gridwebbed || grid == null) return;
 
                 List<long> owners = grid.BigOwners;
                 if (owners.Count > 0)
