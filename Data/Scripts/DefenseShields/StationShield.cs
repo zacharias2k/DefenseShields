@@ -635,7 +635,11 @@ namespace DefenseShields.Station
                     Logging.WriteLine(String.Format("{0} - gridEffect: {1} Shield Strike by a {2}kilo grid, absorbing {3}MW of energy in loop {4}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid, (griddmg / _massdmg), griddmg, Count));
 
                     _closegrids = true;
-                    _destroyGridHash.Add(grid);
+                    lock (_destroyGridHash)
+                    {
+                        _destroyGridHash.Add(grid);
+
+                    }
                     //var dist = Vector3D.Distance(ent.GetPosition(), sphere.Center);
                     //var test = Vector4.
                     var vel = grid.Physics.LinearVelocity;
