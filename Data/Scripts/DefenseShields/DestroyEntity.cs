@@ -20,18 +20,24 @@ namespace DefenseShields.Destroy
 
                         if (_gridcount == -1)
                         {
+
+                            var vel = grid.Physics.LinearVelocity;
+                            vel.SetDim(0, (int) ((float) vel.GetDim(0) * -0.3f));
+                            vel.SetDim(1, (int) ((float) vel.GetDim(1) * -0.3f));
+                            vel.SetDim(2, (int) ((float) vel.GetDim(2) * -0.3f));
+                            grid.Physics.LinearVelocity = vel;
+                            _destroyGridHash.Clear();
+                        }
+                    }
+                }
+                /*
+                var vel = grid.Physics.LinearVelocity;
+                vel.SetDim(0, (int)0f);
+                vel.SetDim(1, (int)0f);
+                vel.SetDim(2, (int)0f);
+                grid.Physics.LinearVelocity = vel;
+                */
                             /*
-                            var vel = grid.Physics.LinearVelocity;
-                            vel.SetDim(0, (int)((float)vel.GetDim(0) * 1.0f));
-                            vel.SetDim(1, (int)((float)vel.GetDim(1) * 1.0f));
-                            vel.SetDim(2, (int)((float)vel.GetDim(2) * 1.0f));
-                            grid.Physics.LinearVelocity = vel;
-                            */
-                            var vel = grid.Physics.LinearVelocity;
-                            vel.SetDim(0, (int)0f);
-                            vel.SetDim(1, (int)0f);
-                            vel.SetDim(2, (int)0f);
-                            grid.Physics.LinearVelocity = vel;
                         }
                         else
                         {
@@ -58,6 +64,7 @@ namespace DefenseShields.Destroy
                     }
                 }
                 if (_gridcount == 599) _destroyGridHash.Clear();
+                */
             }
             catch (Exception ex)
             {

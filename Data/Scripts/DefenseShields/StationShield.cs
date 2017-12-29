@@ -31,6 +31,11 @@ using Sandbox.Engine.Multiplayer;
 
 using DefenseShields.Base;
 using DefenseShields.Destroy;
+using UnityEngine;
+using Color = VRageMath.Color;
+using Quaternion = VRageMath.Quaternion;
+using Random = System.Random;
+using Vector3 = VRageMath.Vector3;
 
 namespace DefenseShields.Station
 {
@@ -571,7 +576,21 @@ namespace DefenseShields.Station
             Logging.WriteLine(String.Format("{0} - inHash {1} _inCacheHash {2} l:{3}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), _inHash.Count, _inCacheHash.Count, Count));
         }
         #endregion
-
+        /*
+        public void RepelGrid()
+        {
+            foreach (var ent in _inHash)
+            {
+                var grid = ent as IMyCubeGrid;
+                if (grid == null) continue;
+                var direction = Vector3D.Normalize(_tblock.Physics.Center - grid.PositionComp.GetPosition());
+                Wrapper.BeginGameAction(() => grid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -direction * grid.Physics.LinearVelocity.Length() * grid.Physics.Mass * 10, grid.Physics.CenterOfMassWorld, null));
+                var d = grid.WorldAABB.Center - thingRepellingYou;
+                var v = d * repulsionVelocity / d.Length();
+                grid.Physics.AddForce((v - grid.Physics.LinearVelocity) * grid.Physics.Mass / MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS);
+            }
+        }
+        */
         #region Web and dispatch all intersecting entities
         public void WebEntities()
         {
@@ -617,7 +636,8 @@ namespace DefenseShields.Station
 
                     _closegrids = true;
                     _destroyGridHash.Add(grid);
-
+                    //var dist = Vector3D.Distance(ent.GetPosition(), sphere.Center);
+                    //var test = Vector4.
                     var vel = grid.Physics.LinearVelocity;
                     vel.SetDim(0, (int)(vel.GetDim(0) * -8.0f));
                     vel.SetDim(1, (int)(vel.GetDim(1) * -8.0f));
@@ -631,8 +651,8 @@ namespace DefenseShields.Station
                     var playerchar = MyAPIGateway.Players.GetPlayerControllingEntity(grid).Character;
                     if (playerchar != null)
                     {
-                        _destroyPlayerHash.Add(playerchar);
-                        _playerkill = true;
+                        //_destroyPlayerHash.Add(playerchar);
+                        //_playerkill = true;
                     }
                     return;
                 }
