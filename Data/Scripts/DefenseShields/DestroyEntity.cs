@@ -21,7 +21,7 @@ namespace DefenseShields.Destroy
                         if (_gridcount == -1)
                         {
                             var gridpos = grid.GetPosition();
-                            MyVisualScriptLogicProvider.CreateExplosion(gridpos, 2.5f, 1000);
+                            MyVisualScriptLogicProvider.CreateExplosion(gridpos, 1f, 1000);
                             var vel = grid.Physics.LinearVelocity;
                             vel.SetDim(0, (int) ((float) vel.GetDim(0) * 0.05f));
                             vel.SetDim(1, (int) ((float) vel.GetDim(1) * 0.05f));
