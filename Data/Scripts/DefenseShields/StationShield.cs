@@ -171,7 +171,7 @@ namespace DefenseShields.Station
                 if (!Initialized && _cblock.IsWorking)
                 {
                     if (Count <= 0) MyAPIGateway.Parallel.Do(InHashBuilder);
-                    MyAPIGateway.Parallel.StartBackground(WebEntities);
+                    if (Count >= 0) MyAPIGateway.Parallel.StartBackground(WebEntities);
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
                     if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
                 }
