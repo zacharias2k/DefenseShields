@@ -576,9 +576,9 @@ namespace DefenseShields.Station
             MyAPIGateway.Parallel.ForEach(webList, webent =>
             {
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
-                //if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
-                //if (webent is IMyMeteor) return;
-                if (webent is IMyMeteor && Detectedge(webent, 0f)) _shotwebbed = true;
+                if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
+                if (webent is IMyMeteor) return;
+                //if (webent is IMyMeteor && Detectedge(webent, 0f)) _shotwebbed = true;
 
                 if (webent is IMyCharacter && (Count == 2 || Count == 17 || Count == 32 || Count == 47) && Detectedge(webent, 0f))
                 {
