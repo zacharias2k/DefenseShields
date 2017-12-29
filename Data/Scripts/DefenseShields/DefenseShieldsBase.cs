@@ -35,7 +35,7 @@ namespace DefenseShields.Base
         public static void Init()
         {
             Logging.Init("debugdevelop.log");
-            Logging.WriteLine($"{DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")} - Logging Started");
+            Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - Logging Started");
             MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
             IsInit = true;
         }
@@ -50,14 +50,14 @@ namespace DefenseShields.Base
 
             if (_bulletShields.Count == 0 || info.Type != MyDamageType.Bullet) return;
 
-            Station.DefenseShields generator = _bulletShields[0];
-            IMyEntity ent = block as IMyEntity;
+            var generator = _bulletShields[0];
+            var ent = block as IMyEntity;
             var slimBlock = block as IMySlimBlock;
             if (slimBlock != null) ent = slimBlock.CubeGrid;
             var dude = block as IMyCharacter;
             if (dude != null) ent = dude;
             if (ent == null) return;
-            bool isProtected = false;
+            var isProtected = false;
             foreach (var shield in _bulletShields)
                 if (shield.InHash.Contains(ent))
                 {
