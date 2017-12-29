@@ -517,6 +517,19 @@ namespace DefenseShields.Station
         #region Detect Intersection
         private bool Detectedge(IMyEntity ent, float f)
         {
+            /*
+            var direction = Vector3D.Normalize(entity.Center() - sphere.Center);
+            Vector3D velocity = entity.Physics.LinearVelocity;
+            if (Vector3D.IsZero(velocity))
+            velocity += direction;
+            Vector3D forceDir = Vector3D.Reflect(Vector3D.Normalize(velocity), direction);
+            entity.Physics.SetSpeeds(velocity * forceDir, entity.Physics.AngularVelocity);
+            var dist = Vector3D.Distance(ent.GetPosition(), sphere.Center);
+
+            var d = Physics.CenterOfMass - thingRepellingYou;
+            var v = d * repulsionVelocity / d.Length();
+            Physics.AddForce((v - Physics.LinearVelocity) * physics.Mass / MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS);
+            */
             float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
