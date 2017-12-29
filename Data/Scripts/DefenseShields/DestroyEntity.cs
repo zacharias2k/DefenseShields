@@ -68,7 +68,7 @@ namespace DefenseShields.Destroy
         }
     }
     if (_gridcount == 599) _destroyGridHash.Clear();
-    */
+    
             }
             catch (Exception ex)
             {
@@ -91,7 +91,7 @@ namespace DefenseShields.Destroy
                     var playerpos = playerent.GetPosition();
                     //MyVisualScriptLogicProvider.CreateExplosion(playerpos, 10, 1000);
                     //playerent.Kill();
-                }
+                */}
                 _destroyPlayerHash.Clear();
             }
             catch (Exception ex)
@@ -101,5 +101,7 @@ namespace DefenseShields.Destroy
             }
         }
         #endregion
+        
     }
+    
 }
