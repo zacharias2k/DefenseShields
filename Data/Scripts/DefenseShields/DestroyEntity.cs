@@ -28,6 +28,7 @@ namespace DefenseShields.Destroy
                             grid.Physics.LinearVelocity = vel;
                             lock (_destroyGridHash)
                             {
+                                Logging.WriteLine(String.Format("{0} - test _destroyGridHash", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
                                 _destroyGridHash.Remove(grid);
                             }
                         }
