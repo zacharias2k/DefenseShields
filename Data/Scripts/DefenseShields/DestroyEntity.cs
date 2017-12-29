@@ -11,7 +11,9 @@ namespace DefenseShields.Destroy
         {
             try
             {
-                if (_gridcount == -1 || _gridcount == 0)
+                //if (_gridcount == -1 || _gridcount == 0)
+                //{
+                lock (_destroyGridHash)
                 {
                     foreach (var grident in _destroyGridHash)
                     {
@@ -21,20 +23,21 @@ namespace DefenseShields.Destroy
                         //if (_gridcount == -1)
                         //{
 
-                            var vel = grid.Physics.LinearVelocity;
-                            vel.SetDim(0, (int) ((float) vel.GetDim(0) * 0.05f));
-                            vel.SetDim(1, (int) ((float) vel.GetDim(1) * 0.05f));
-                            vel.SetDim(2, (int) ((float) vel.GetDim(2) * 0.05f));
-                            grid.Physics.LinearVelocity = vel;
-                            lock (_destroyGridHash)
-                            {
-                                Logging.WriteLine(String.Format("{0} - test _destroyGridHash", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
-                                _destroyGridHash.Remove(grid);
-                                Logging.WriteLine(String.Format("{0} - test2 _destroyGridHash", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
-                            }
+                        var vel = grid.Physics.LinearVelocity;
+                        vel.SetDim(0, (int) ((float) vel.GetDim(0) * 0.05f));
+                        vel.SetDim(1, (int) ((float) vel.GetDim(1) * 0.05f));
+                        vel.SetDim(2, (int) ((float) vel.GetDim(2) * 0.05f));
+                        grid.Physics.LinearVelocity = vel;
+                        lock (_destroyGridHash)
+                        {
+                            Logging.WriteLine(String.Format("{0} - test _destroyGridHash", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
+                            _destroyGridHash.Remove(grid);
+                            Logging.WriteLine(String.Format("{0} - test2 _destroyGridHash", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff")));
+                        }
                         //}
                     }
                 }
+                //}
                 /*
                 var vel = grid.Physics.LinearVelocity;
                 vel.SetDim(0, (int)0f);
