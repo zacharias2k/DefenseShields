@@ -584,11 +584,14 @@ namespace DefenseShields.Station
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
                     var playerrelationship = _tblock.GetUserRelationToOwner(dude);
-                    if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner || playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
-                    _playerwebbed = true;
+                    if (playerrelationship != MyRelationsBetweenPlayerAndBlock.Owner && playerrelationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
+                    {
+                        _playerwebbed = true;
+                        return;
+                    }
                     return;
                 }
-                
+
                 if (webent is IMyCharacter || InHash.Contains(webent)) return;
 
                 var grid = webent as IMyCubeGrid;
