@@ -31,7 +31,7 @@ using Sandbox.Engine.Multiplayer;
 
 using DefenseShields.Base;
 using DefenseShields.Destroy;
-using UnityEngine;
+//using UnityEngine;
 using Color = VRageMath.Color;
 using Quaternion = VRageMath.Quaternion;
 using Random = System.Random;
