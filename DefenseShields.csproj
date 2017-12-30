@@ -1,0 +1,124 @@
+﻿<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{190EC63B-2497-43D2-8815-068029583085}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <NoStandardLibraries>false</NoStandardLibraries>
+    <AssemblyName>ClassLibrary</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RootNamespace>DefenseShields</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include=".gitattributes" />
+    <Content Include=".gitignore" />
+    <Content Include="Audio\RealBlockGravityGenEnd3d.wav" />
+    <Content Include="Audio\RealBlockGravityGenLoop3d.wav" />
+    <Content Include="Audio\RealBlockGravityGenStart3d.wav" />
+    <Content Include="Textures\Arm_cm.dds" />
+    <Content Include="Textures\Arm_ng.dds" />
+    <Content Include="Textures\base_cm.dds" />
+    <Content Include="Textures\base_ng.dds" />
+    <Content Include="Textures\Colourable_ADD.dds" />
+    <Content Include="Textures\EMISSIVE_add.dds" />
+    <Content Include="Textures\EMISSIVE_cm.dds" />
+    <Content Include="Textures\EMISSIVE_ng.dds" />
+    <Content Include="Textures\GUI\Icons\Icon.dds" />
+    <Content Include="Textures\Metal_cm.dds" />
+    <Content Include="Textures\Metal_ng.dds" />
+    <Content Include="Textures\Panel_add.dds" />
+    <Content Include="Textures\Panel_cm.dds" />
+    <Content Include="Textures\Panel_ng.dds" />
+    <Content Include="Textures\Rotor_add.dds" />
+    <Content Include="Textures\Rotor_cm.dds" />
+    <Content Include="Textures\Rotor_ng.dds" />
+    <Content Include="Textures\Void.dds" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".git\config" />
+    <None Include=".git\description" />
+    <None Include=".git\HEAD" />
+    <None Include=".git\hooks\applypatch-msg.sample" />
+    <None Include=".git\hooks\commit-msg.sample" />
+    <None Include=".git\hooks\post-update.sample" />
+    <None Include=".git\hooks\pre-applypatch.sample" />
+    <None Include=".git\hooks\pre-commit.sample" />
+    <None Include=".git\hooks\pre-push.sample" />
+    <None Include=".git\hooks\pre-rebase.sample" />
+    <None Include=".git\hooks\pre-receive.sample" />
+    <None Include=".git\hooks\prepare-commit-msg.sample" />
+    <None Include=".git\hooks\update.sample" />
+    <None Include=".git\index" />
+    <None Include=".git\info\exclude" />
+    <None Include=".git\logs\HEAD" />
+    <None Include=".git\logs\refs\heads\master" />
+    <None Include=".git\logs\refs\remotes\origin\HEAD" />
+    <None Include=".git\objects\pack\pack-97dd5c6ecf524f10168f5678ddb75d2df5c920c0.idx" />
+    <None Include=".git\objects\pack\pack-97dd5c6ecf524f10168f5678ddb75d2df5c920c0.pack" />
+    <None Include=".git\packed-refs" />
+    <None Include=".git\refs\heads\master" />
+    <None Include=".git\refs\remotes\origin\HEAD" />
+    <None Include=".vs\DefenseShields\v15\.suo" />
+    <None Include=".vs\ProjectSettings.json" />
+    <None Include=".vs\slnx.sqlite" />
+    <None Include=".vs\VSWorkspaceState.json" />
+    <None Include="Audio\ShieldHitNormalHigh.xwm" />
+    <None Include="Data\Audio.sbc" />
+    <None Include="Data\StationShield.sbc" />
+    <None Include="Data\Tm.sbc" />
+    <None Include="Models\GeneratorArm_Large.mwm" />
+    <None Include="Models\GeneratorBase_Large.mwm" />
+    <None Include="Models\GeneratorBase_Large_Constr1.mwm" />
+    <None Include="Models\GeneratorBotArm_Large.mwm" />
+    <None Include="Models\GeneratorReflector_Large.mwm" />
+    <None Include="Models\GeneratorRotor_Large.mwm" />
+    <None Include="Models\LargeField.mwm" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Data\Scripts\DefenseShields\BaseControl.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Checkbox.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Controls.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseShieldsBase.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DestroyEntity.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Logging.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Slider.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\StationShield.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include=".git\objects\info\" />
+    <Folder Include=".git\refs\tags\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSHARP.Targets" />
+  <ProjectExtensions>
+    <VisualStudio AllowExistingFolder="true" />
+  </ProjectExtensions>
+</Project>
