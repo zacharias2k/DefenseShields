@@ -6,7 +6,9 @@ using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 
-namespace DefenseShields.Base
+using DefenseShields.Support;
+
+namespace DefenseShields
 {
     #region Session+protection Class
 
@@ -21,8 +23,8 @@ namespace DefenseShields.Base
 
         protected override void UnloadData()
         {
-            Logging.WriteLine("Logging stopped.");
-            Logging.Close();
+            Log.Line("Logging stopped.");
+            Log.Close();
         }
 
         public override void UpdateBeforeSimulation()
@@ -34,8 +36,8 @@ namespace DefenseShields.Base
 
         public static void Init()
         {
-            Logging.Init("debugdevelop.log");
-            Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - Logging Started");
+            Log.Init("debugdevelop.log");
+            Log.Line($" Logging Started");
             MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
             IsInit = true;
         }

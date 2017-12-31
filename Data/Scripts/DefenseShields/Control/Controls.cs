@@ -48,8 +48,6 @@ namespace DefenseShields
             }
             catch (Exception ex)
             {
-                Logging.WriteLine($"{DateTime.Now} - Exception in Writer");
-                Logging.WriteLine($"{DateTime.Now} - {ex}");
             }
         }
 

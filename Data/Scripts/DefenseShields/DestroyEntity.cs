@@ -1,8 +1,9 @@
 ﻿using System;
 using Sandbox.Game;
 using VRage.Game.ModAPI;
+using DefenseShields.Support;
 
-namespace DefenseShields.Destroy
+namespace DefenseShields
 {
     class DestroyEntity : Station.DefenseShields
     {
@@ -13,7 +14,6 @@ namespace DefenseShields.Destroy
             {
                 if (_gridcount == -1 || _gridcount == 0)
                 {
-                    Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} pre-1stloop {_gridcount} {DestroyGridHash.Count}");
                     foreach (var grident in DestroyGridHash)
                     {
                         var grid = grident as IMyCubeGrid;
@@ -47,16 +47,16 @@ namespace DefenseShields.Destroy
                 {
                     var grid = grident as IMyCubeGrid;
                     if (grid == null) continue;
-                    Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} passed continue check - l:{_gridcount} grids:{DestroyGridHash.Count}");
+                    Log.Line($"passed continue check - l:{_gridcount} grids:{DestroyGridHash.Count}");
                     if (_gridcount == 59 || _gridcount == 179 || _gridcount == 299 || _gridcount == 419)
                     {
-                        Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} inside grid destory {_gridcount} {DestroyGridHash.Count}");
+                        Log.Line($"inside grid destory {_gridcount} {DestroyGridHash.Count}");
                         var gridpos = grid.GetPosition();
                         //MyVisualScriptLogicProvider.CreateExplosion(gridpos, _gridcount / 2f, _gridcount * 2);
                     }
                     if (_gridcount == 599)
                     {
-                        Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} closing {grid.DisplayName} in loop {_gridcount}");
+                        Log.Line($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} closing {grid.DisplayName} in loop {_gridcount}");
                         grid.Close();
                     }
                 }
@@ -64,8 +64,8 @@ namespace DefenseShields.Destroy
             }
             catch (Exception ex)
             {
-                Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - Exception in gridClose");
-                Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - {ex}");
+                Log.Line($" Exception in gridClose");
+                Log.Line($" {ex}");
             }
         }
         #endregion
@@ -88,8 +88,8 @@ namespace DefenseShields.Destroy
             }
             catch (Exception ex)
             {
-                Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - Exception in playerKill");
-                Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - {ex}");
+                Log.Line($" Exception in playerKill");
+                Log.Line($" {ex}");
             }
         }
         #endregion

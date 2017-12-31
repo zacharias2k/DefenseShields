@@ -29,8 +29,7 @@ using Sandbox.Common;
 using Sandbox.Engine;
 using Sandbox.Engine.Multiplayer;
 
-using DefenseShields.Base;
-using DefenseShields.Destroy;
+using DefenseShields.Support;
 
 namespace DefenseShields.Station
 {
@@ -178,8 +177,8 @@ namespace DefenseShields.Station
             }
             catch (Exception ex)
             {
-                Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - Exception in UpdateBeforeSimulation");
-                Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - {ex}");
+                Log.Line($" Exception in UpdateBeforeSimulation");
+                Log.Line($" {ex}");
             }
         }
 
@@ -187,7 +186,7 @@ namespace DefenseShields.Station
         {
             if (Initialized)
             {
-                Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - Create UI {Count}");
+                Log.Line($" Create UI {Count}");
                 CreateUi();
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo();
@@ -207,7 +206,7 @@ namespace DefenseShields.Station
                     {
                         if (!_oblock.IsFunctional) return;
                         BlockAnimationInit();
-                        Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - BlockAnimation {Count}");
+                        Log.Line($" BlockAnimation {Count}");
                         //Shield = Utils.Spawn("LargeField", "", true, false, false, false, false, _cblock.IDModule.Owner);
                         _animInit = true;
                     }
@@ -219,8 +218,8 @@ namespace DefenseShields.Station
             }
             catch (Exception ex)
             {
-                Logging.WriteLine($"{DateTime.Now} - Exception in UpdateAfterSimulation");
-                Logging.WriteLine($"{DateTime.Now} - {ex}");
+                Log.Line($"Exception in UpdateAfterSimulation");
+                Log.Line($"{ex}");
             }
         }
         #endregion
@@ -228,8 +227,7 @@ namespace DefenseShields.Station
         #region Block Animation
         public void BlockAnimationReset()
         {
-            Logging.WriteLine(
-                $"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - Resetting BlockAnimation in loop {Count}");
+            Log.Line($" Resetting BlockAnimation in loop {Count}");
             _subpartRotor.Subparts.Clear();
             _subpartsArms.Clear();
             _subpartsReflectors.Clear();
@@ -295,8 +293,8 @@ namespace DefenseShields.Station
             }
             catch (Exception ex)
             {
-                Logging.WriteLine($"{DateTime.Now} - Exception in BlockAnimation");
-                Logging.WriteLine($"{DateTime.Now} - {ex}");
+                Log.Line($" Exception in BlockAnimation");
+                Log.Line($"{ex}");
             }
         }
 
@@ -362,7 +360,7 @@ namespace DefenseShields.Station
                 var radius = Slider.Getter((IMyFunctionalBlock)_cblock);
                 var sustaincost = radius * 0.01f;
                 _power = _recharge + sustaincost;
-                //Logging.WriteLine(String.Format("{0} - Sustain cost is {1}MW this and recharge cost is {2}MW", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), sustaincost, _recharge));
+                //Log.Line(String.Format("{0} - Sustain cost is {1}MW this and recharge cost is {2}MW", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), sustaincost, _recharge));
                 return _power;
             }
             return _power;
@@ -486,8 +484,8 @@ namespace DefenseShields.Station
             }
             catch (Exception ex)
             {
-                Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - Exception in getPoke");
-                Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - {ex}");
+                Log.Line($" Exception in getPoke");
+                Log.Line($" {ex}");
             }
         }
         #endregion
@@ -523,10 +521,10 @@ namespace DefenseShields.Station
             float detect = (x * x) / ((_width - f) * (_width - f)) + (y * y) / ((_depth - f) * (_depth - f)) + (z * z) / ((_height - f) * (_height - f));
             if (detect <= 1)
             {
-                //Logging.WriteLine(String.Format("{0} - {1} in-t: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
+                //Log.Line(String.Format("{0} - {1} in-t: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
                 return true;
             }
-            //Logging.WriteLine(String.Format("{0} - {1} in-f - d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, detect, Count));
+            //Log.Line(String.Format("{0} - {1} in-f - d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, detect, Count));
             return false;
         }
         #endregion
@@ -549,7 +547,7 @@ namespace DefenseShields.Station
                     }
                 }
             });
-            Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - inHash {InHash.Count} l:{Count}");
+            //Log.Line($" inHash {InHash.Couno st} l:{Count}");
         }
         #endregion
 
@@ -585,14 +583,14 @@ namespace DefenseShields.Station
                 if (owners.Count > 0)
                 {
                     var relations = _tblock.GetUserRelationToOwner(owners[0]);
-                    //Logging.WriteLine(String.Format("{0} - grid: {1} tblock: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, owners.Count, relations, relations == MyRelationsBetweenPlayerAndBlock.Owner, relations == MyRelationsBetweenPlayerAndBlock.FactionShare));
+                    //Log.Line(String.Format("{0} - grid: {1} tblock: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, owners.Count, relations, relations == MyRelationsBetweenPlayerAndBlock.Owner, relations == MyRelationsBetweenPlayerAndBlock.FactionShare));
                     if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                 }
                 if (Detectedge(grid, 0f))
                 {
                     float griddmg = grid.Physics.Mass * Massdmg;
                     _absorb += griddmg;
-                    Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - gridEffect: {grid} Shield Strike by a {(griddmg / Massdmg)}kilo grid, absorbing {griddmg}MW of energy in loop {Count}");
+                    Log.Line($" gridEffect: {grid} Shield Strike by a {(griddmg / Massdmg)}kilo grid, absorbing {griddmg}MW of energy in loop {Count}");
 
                     _closegrids = true;
                     DestroyGridHash.Add(grid);
@@ -631,7 +629,7 @@ namespace DefenseShields.Station
                         _shotwebbed = true;
                     }
                 }
-                //Logging.WriteLine(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
+                //Log.Line(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
             });
         }
         #endregion
@@ -652,14 +650,13 @@ namespace DefenseShields.Station
                 try
                 {
                     _absorb += Shotdmg;
-                    Logging.WriteLine(
-                        $"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - shotEffect: Shield absorbed {Shotdmg}MW of energy from {shotent} in loop {Count}");
+                    Log.Line($"shotEffect: Shield absorbed {Shotdmg}MW of energy from {shotent} in loop {Count}");
                     shotent.Close();
                 }
                 catch (Exception ex)
                 {
-                    Logging.WriteLine($"{DateTime.Now} - Exception in shotEffects");
-                    Logging.WriteLine($"{DateTime.Now} - {ex}");
+                    Log.Line($"Exception in shotEffects");
+                    Log.Line($"{ex}");
                 }
             });
             _shotwebbed = false;
@@ -683,10 +680,10 @@ namespace DefenseShields.Station
                     {
                         var character = playerent as IMyCharacter;
                         var npcname = character.ToString();
-                        Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - playerEffect: Enemy {character} detected at loop {Count} - relationship: {relationship}");
+                        Log.Line($" playerEffect: Enemy {character} detected at loop {Count} - relationship: {relationship}");
                         if (npcname.Equals("Space_Wolf"))
                         {
-                            Logging.WriteLine(                                $"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - playerEffect: Killing {character} ");
+                            Log.Line($"playerEffect: Killing {character}");
                             character.Kill();
                             return;
                         }
@@ -722,8 +719,8 @@ namespace DefenseShields.Station
                 }
                 catch (Exception ex)
                 {
-                    Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - Exception in playerEffects");
-                    Logging.WriteLine($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - {ex}");
+                    Log.Line($" Exception in playerEffects");
+                    Log.Line($" {ex}");
                 }
                 //});
             }
@@ -731,75 +728,4 @@ namespace DefenseShields.Station
         }
         #endregion
     }
-    #region Cube+subparts Class
-    public class Utils
-    {
-        //SPAWN METHOD
-        public static IMyEntity Spawn(string subtypeId, string name = "", bool isVisible = true, bool hasPhysics = false, bool isStatic = false, bool toSave = false, bool destructible = false, long ownerId = 0)
-        {
-            try
-            {
-                CubeGridBuilder.Name = name;
-                CubeGridBuilder.CubeBlocks[0].SubtypeName = subtypeId;
-                CubeGridBuilder.CreatePhysics = hasPhysics;
-                CubeGridBuilder.IsStatic = isStatic;
-                CubeGridBuilder.DestructibleBlocks = destructible;
-                var ent = MyAPIGateway.Entities.CreateFromObjectBuilder(CubeGridBuilder);
-
-                ent.Flags &= ~EntityFlags.Save;
-                ent.Visible = isVisible;
-                MyAPIGateway.Entities.AddEntity(ent, true);
-
-                return ent;
-            }
-            catch (Exception ex)
-            {
-                Logging.WriteLine($"{DateTime.Now} - Exception in Spawn");
-                Logging.WriteLine($"{DateTime.Now} - {ex}");
-                return null;
-            }
-        }
-
-        private static readonly SerializableBlockOrientation EntityOrientation = new SerializableBlockOrientation(Base6Directions.Direction.Forward, Base6Directions.Direction.Up);
-
-        //OBJECTBUILDERS
-        private static readonly MyObjectBuilder_CubeGrid CubeGridBuilder = new MyObjectBuilder_CubeGrid()
-        {
-
-            EntityId = 0,
-            GridSizeEnum = MyCubeSize.Large,
-            IsStatic = true,
-            Skeleton = new List<BoneInfo>(),
-            LinearVelocity = Vector3.Zero,
-            AngularVelocity = Vector3.Zero,
-            ConveyorLines = new List<MyObjectBuilder_ConveyorLine>(),
-            BlockGroups = new List<MyObjectBuilder_BlockGroup>(),
-            Handbrake = false,
-            XMirroxPlane = null,
-            YMirroxPlane = null,
-            ZMirroxPlane = null,
-            PersistentFlags = MyPersistentEntityFlags2.InScene,
-            Name = "ArtificialCubeGrid",
-            DisplayName = "FieldGenerator",
-            CreatePhysics = false,
-            DestructibleBlocks = true,
-            PositionAndOrientation = new MyPositionAndOrientation(Vector3D.Zero, Vector3D.Forward, Vector3D.Up),
-
-            CubeBlocks = new List<MyObjectBuilder_CubeBlock>()
-                {
-                    new MyObjectBuilder_CubeBlock()
-                    {
-                        EntityId = 0,
-                        BlockOrientation = EntityOrientation,
-                        SubtypeName = "",
-                        Name = "Field",
-                        Min = Vector3I.Zero,
-                        Owner = 0,
-                        ShareMode = MyOwnershipShareModeEnum.None,
-                        DeformationRatio = 0,
-                    }
-                }
-        };
-    }
-    #endregion
 }

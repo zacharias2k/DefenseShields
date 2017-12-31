@@ -1,25 +1,24 @@
 ﻿using System;
 using System.IO;
 using Sandbox.ModAPI;
-using VRageRender;
 
-namespace DefenseShields
+namespace DefenseShields.Support
 {
-    public class Logging
+    public class Log
     {
-        private static Logging _instance = null;
+        private static Log _instance = null;
         private TextWriter _file = null;
         private string _fileName = "";
 
-        private Logging()
+        private Log()
         {
         }
 
-        private static Logging GetInstance()
+        private static Log GetInstance()
         {
-            if (Logging._instance == null)
+            if (Log._instance == null)
             {
-                Logging._instance = new Logging();
+                Log._instance = new Log();
             }
 
             return _instance;
@@ -37,7 +36,7 @@ namespace DefenseShields
                 {
                     MyAPIGateway.Utilities.ShowNotification(name, 5000);
                     GetInstance()._fileName = name;
-                    GetInstance()._file = MyAPIGateway.Utilities.WriteFileInLocalStorage(name, typeof(Logging));
+                    GetInstance()._file = MyAPIGateway.Utilities.WriteFileInLocalStorage(name, typeof(Log));
                     output = true;
                 }
                 catch (Exception e)
@@ -53,13 +52,14 @@ namespace DefenseShields
             return output;
         }
 
-        public static void WriteLine(string text)
+        public static void Line(string text)
         {
             try
             {
                 if (GetInstance()._file != null)
                 {
-                    GetInstance()._file.WriteLine(text);
+                    var time = $"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} - ";
+                    GetInstance()._file.WriteLine(time + text);
                     GetInstance()._file.Flush();
                 }
             }
