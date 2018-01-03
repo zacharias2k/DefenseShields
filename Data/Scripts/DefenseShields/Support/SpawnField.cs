@@ -101,7 +101,6 @@ namespace DefenseShields.Support
             };
             List<Vector3> points = new List<Vector3>(12 * (1 << (lods - 1)));
             int[][] index = new int[lods][];
-            points.AddRange(data);
             index[0] = new int[]
             {
                 0, 4, 1, 0, 9, 4, 9, 5, 4, 4, 5, 8, 4, 8, 1,

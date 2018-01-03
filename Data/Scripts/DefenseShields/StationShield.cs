@@ -68,6 +68,7 @@ namespace DefenseShields.Station
         private const ushort ModId = 50099;
 
         private static readonly Random Random = new Random();
+        private static Icosphere Sphere = new Icosphere(6);
         private MatrixD _worldMatrix;
         //MatrixD _detectMatrix = MatrixD.Identity;
         private Vector3D _edgeVectors;
@@ -192,12 +193,12 @@ namespace DefenseShields.Station
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo();
                 _absorb = 150f;
-                Shield = SpawnField.Utils.Spawn("LargeField", "", true, false, false, false, false, _cblock.IDModule.Owner);
-                //_edgeVectors = new Vector3(_depth / 150f, _height / 150f, _width / 150f);
-                //MatrixD edgeMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _edgeVectors);
+                _edgeVectors = new Vector3(_depth / 150f, _height / 150f, _width / 150f);
+                MatrixD edgeMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _edgeVectors);
                 //Shield.SetWorldMatrix(edgeMatrix);
-                //var colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
-                //Icosphere.Draw(edgeMatrix, _range, 1, colour, _rangeGridResourceId, null, 1);
+                var colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
+                //Sphere.Draw(edgeMatrix, _range, 1, colour, _rangeGridResourceId, null, 1);
+                Sphere.Draw(edgeMatrix, _range, 1, colour, _rangeGridResourceId, null, 1);
                 Initialized = false;
 
             }
@@ -511,7 +512,7 @@ namespace DefenseShields.Station
 
                 _edgeVectors = new Vector3(_depth / 150f, _height / 150f, _width / 150f);
                 MatrixD edgeMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _edgeVectors);
-                Shield.SetWorldMatrix(edgeMatrix);
+                //Shield.SetWorldMatrix(edgeMatrix);
                 //MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, _rangeGridResourceId, 0.25f, -1);
                 //var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
                 //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
