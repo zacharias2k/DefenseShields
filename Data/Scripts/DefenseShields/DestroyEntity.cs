@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using Sandbox.Game;
 using VRage.Game.ModAPI;
 using DefenseShields.Support;
+using Sandbox.Game.Entities;
+using VRage.Game;
 
 namespace DefenseShields
 {
@@ -32,7 +35,20 @@ namespace DefenseShields
                             vel.SetDim(0, (int) 0f);
                             vel.SetDim(1, (int) 0f);
                             vel.SetDim(2, (int) 0f);
-                            grid.Physics.LinearVelocity = vel;
+                            //grid.Physics.LinearVelocity = vel;
+                            List<IMySlimBlock> slimBlocks = new List<IMySlimBlock>();
+                            grid.GetBlocks(slimBlocks);
+
+                            foreach (var block in slimBlocks)
+                            {
+                                //var ent = block.FatBlock as MyEntity;
+                                if (block.FatBlock is MyReactor)
+                                {
+                                    Log.Line($"{grid} - {block} - Destroy?");
+                                    //grid.RemoveBlock(block);
+                                    //block.DoDamage(3500, MyDamageType.Environment, true /*, hit, 0*/);
+                                }
+                            }
                         }
                         else
                         {
@@ -57,7 +73,7 @@ namespace DefenseShields
                     if (_gridcount == 599)
                     {
                         Log.Line($"{DateTime.Now:MM-dd-yy_HH-mm-ss-fff} closing {grid.DisplayName} in loop {_gridcount}");
-                        grid.Close();
+                        //grid.Close();
                     }
                 }
                 if (_gridcount == 599) DestroyGridHash.Clear();

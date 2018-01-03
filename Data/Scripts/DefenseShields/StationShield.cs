@@ -68,6 +68,7 @@ namespace DefenseShields.Station
         private const ushort ModId = 50099;
 
         private static readonly Random Random = new Random();
+        private static Icosphere Sphere = new Icosphere(6);
         private MatrixD _worldMatrix;
         //MatrixD _detectMatrix = MatrixD.Identity;
         private Vector3D _edgeVectors;
@@ -170,7 +171,8 @@ namespace DefenseShields.Station
                 if (!Initialized && _cblock.IsWorking)
                 {
                     if (Count <= 0) MyAPIGateway.Parallel.Do(InHashBuilder);
-                    MyAPIGateway.Parallel.StartBackground(WebEntities);
+                    //MyAPIGateway.Parallel.StartBackground(WebEntities);
+                    WebEntities();
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
                     if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
                 }
@@ -191,6 +193,12 @@ namespace DefenseShields.Station
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo();
                 _absorb = 150f;
+                _edgeVectors = new Vector3(_depth / 150f, _height / 150f, _width / 150f);
+                MatrixD edgeMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _edgeVectors);
+                //Shield.SetWorldMatrix(edgeMatrix);
+                var colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
+                //Sphere.Draw(edgeMatrix, _range, 1, colour, _rangeGridResourceId, null, 1);
+                Sphere.Draw(edgeMatrix, _range, 1, colour, _rangeGridResourceId, null, 1);
                 Initialized = false;
 
             }
@@ -207,7 +215,6 @@ namespace DefenseShields.Station
                         if (!_oblock.IsFunctional) return;
                         BlockAnimationInit();
                         Log.Line($" BlockAnimation {Count}");
-                        //Shield = Utils.Spawn("LargeField", "", true, false, false, false, false, _cblock.IDModule.Owner);
                         _animInit = true;
                     }
                     else
@@ -394,7 +401,7 @@ namespace DefenseShields.Station
         {
             try
             {
-                //MyAPIGateway.Entities.RemoveEntity(Shield);
+                MyAPIGateway.Entities.RemoveEntity(Shield);
             }
             catch{}
             base.Close();
@@ -404,7 +411,7 @@ namespace DefenseShields.Station
         {
             try
             {
-                //MyAPIGateway.Entities.RemoveEntity(Shield);
+                MyAPIGateway.Entities.RemoveEntity(Shield);
             }
             catch {}
             base.MarkForClose();
@@ -502,10 +509,11 @@ namespace DefenseShields.Station
                     colour = Color.FromNonPremultiplied(16, 255 - _colourRand, 16 + _colourRand, 72);
                 else
                     colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
-                _edgeVectors = new Vector3(_depth, _height, _width);																	
+
+                _edgeVectors = new Vector3(_depth / 150f, _height / 150f, _width / 150f);
                 MatrixD edgeMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _edgeVectors);
                 //Shield.SetWorldMatrix(edgeMatrix);
-                MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, _rangeGridResourceId, 0.25f, -1);
+                //MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, _rangeGridResourceId, 0.25f, -1);
                 //var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
                 //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
             }
@@ -558,22 +566,26 @@ namespace DefenseShields.Station
 
             var websphere = new BoundingSphereD(pos, _range);
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
-            MyAPIGateway.Parallel.ForEach(webList, webent =>
+           // MyAPIGateway.Parallel.ForEach(webList, webent =>
+            foreach (var webent in webList)
             {
-                if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
-                if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
+                if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject ||
+                    webent is IMyEngineerToolBase) return;
+                if (webent is IMyMeteor && !_shotwebbed) _shotwebbed = true;
                 if (webent is IMyMeteor) return;
                 //if (webent is IMyMeteor && Detectedge(webent, 0f)) webent.Close();
 
-                if (webent is IMyCharacter && (Count == 2 || Count == 17 || Count == 32 || Count == 47) && Detectedge(webent, 0f))
+                if (webent is IMyCharacter && (Count == 2 || Count == 17 || Count == 32 || Count == 47) &&
+                    Detectedge(webent, 0f))
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
                     var playerrelationship = _tblock.GetUserRelationToOwner(dude);
-                    if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner || playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
+                    if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner ||
+                        playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                     _playerwebbed = true;
                     return;
                 }
-                
+
                 if (webent is IMyCharacter || InHash.Contains(webent)) return;
 
                 var grid = webent as IMyCubeGrid;
@@ -584,22 +596,30 @@ namespace DefenseShields.Station
                 {
                     var relations = _tblock.GetUserRelationToOwner(owners[0]);
                     //Log.Line(String.Format("{0} - grid: {1} tblock: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, owners.Count, relations, relations == MyRelationsBetweenPlayerAndBlock.Owner, relations == MyRelationsBetweenPlayerAndBlock.FactionShare));
-                    if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
+                    if (relations == MyRelationsBetweenPlayerAndBlock.Owner ||
+                        relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                 }
+
                 if (Detectedge(grid, 0f))
                 {
                     float griddmg = grid.Physics.Mass * Massdmg;
                     _absorb += griddmg;
-                    Log.Line($" gridEffect: {grid} Shield Strike by a {(griddmg / Massdmg)}kilo grid, absorbing {griddmg}MW of energy in loop {Count}");
+                    Log.Line($"gridEffect: {grid} Shield Strike by a {(griddmg / Massdmg)}kilo grid, absorbing {griddmg}MW of energy in loop {Count}");
 
-                    _closegrids = true;
-                    DestroyGridHash.Add(grid);
+                    //_closegrids = true;
+                    //DestroyGridHash.Add(grid);
 
                     var vel = grid.Physics.LinearVelocity;
-                    vel.SetDim(0, (int)((float)vel.GetDim(0) * -8.0f));
-                    vel.SetDim(1, (int)((float)vel.GetDim(1) * -8.0f));
-                    vel.SetDim(2, (int)((float)vel.GetDim(2) * -8.0f));
-                    grid.Physics.LinearVelocity = vel;
+                    vel.SetDim(0, (float) ((float) vel.GetDim(0) * -0.0f));
+                    vel.SetDim(1, (float) ((float) vel.GetDim(1) * -0.0f));
+                    vel.SetDim(2, (float) ((float) vel.GetDim(2) * -0.0f));
+                    var x = grid.WorldMatrix.Translation.X;
+                    var y = grid.WorldMatrix.Translation.Y;
+                    var z = grid.WorldMatrix.Translation.Z;
+
+                    var gridVectors = new Vector3(x, y, z);
+                    //MatrixD gridMatrix = MatrixD.Identity.Translation.Cross(x);
+                    //grid.SetWorldMatrix(gridMatrix);
                     /*
                     var direction = Vector3D.Normalize(grid.Center() - grid.Center);
                     Vector3D velocity = grid.Physics.LinearVelocity;
@@ -619,18 +639,22 @@ namespace DefenseShields.Station
                         DestroyPlayerHash.Add(playerchar);
                         _playerkill = true;
                     }
+
                     return;
                 }
+
                 if (_shotwebbed) return;
-                if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo")) 
+                if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
                 {
                     if (Detectedge(webent, 0f))
                     {
                         _shotwebbed = true;
                     }
                 }
+
                 //Log.Line(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
-            });
+                //});
+            }
         }
         #endregion
 
