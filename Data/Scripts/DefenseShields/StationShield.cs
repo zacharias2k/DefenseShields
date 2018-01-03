@@ -207,7 +207,7 @@ namespace DefenseShields.Station
                         if (!_oblock.IsFunctional) return;
                         BlockAnimationInit();
                         Log.Line($" BlockAnimation {Count}");
-                        //Shield = Utils.Spawn("LargeField", "", true, false, false, false, false, _cblock.IDModule.Owner);
+                        Shield = SpawnField.Utils.Spawn("LargeField", "", true, false, false, false, false, _cblock.IDModule.Owner);
                         _animInit = true;
                     }
                     else
@@ -502,10 +502,10 @@ namespace DefenseShields.Station
                     colour = Color.FromNonPremultiplied(16, 255 - _colourRand, 16 + _colourRand, 72);
                 else
                     colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
-                _edgeVectors = new Vector3(_depth, _height, _width);																	
+                _edgeVectors = new Vector3(_depth / 150, _height / 150, _width / 150);																	
                 MatrixD edgeMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _edgeVectors);
-                //Shield.SetWorldMatrix(edgeMatrix);
-                MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, _rangeGridResourceId, 0.25f, -1);
+                Shield.SetWorldMatrix(edgeMatrix);
+                //MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, _rangeGridResourceId, 0.25f, -1);
                 //var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
                 //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
             }
