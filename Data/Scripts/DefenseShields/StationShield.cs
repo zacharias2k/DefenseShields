@@ -191,6 +191,7 @@ namespace DefenseShields.Station
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo();
                 _absorb = 150f;
+                Shield = SpawnField.Utils.Spawn("LargeField", "", true, false, false, false, false, _cblock.IDModule.Owner);
                 Initialized = false;
 
             }
@@ -207,7 +208,6 @@ namespace DefenseShields.Station
                         if (!_oblock.IsFunctional) return;
                         BlockAnimationInit();
                         Log.Line($" BlockAnimation {Count}");
-                        Shield = SpawnField.Utils.Spawn("LargeField", "", true, false, false, false, false, _cblock.IDModule.Owner);
                         _animInit = true;
                     }
                     else
