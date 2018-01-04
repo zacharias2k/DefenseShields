@@ -510,7 +510,6 @@ namespace DefenseShields.Station
                 var edgeMatrix2 = MatrixD.Rescale(_worldMatrix, new Vector3D(_width / 150, _height / 150, _depth / 150));
                 Shield.SetWorldMatrix(edgeMatrix2);
                 _sphere.Draw(edgeMatrix1, 1f, 3, colour, LocalImpact, _faceId, _lineId, -1);
-                LocalImpact = new Vector3D(0,0,0);
 
 
                 //MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, _rangeGridResourceId, 0.25f, -1);
@@ -529,7 +528,10 @@ namespace DefenseShields.Station
             float detect = (x * x) / ((_width - f) * (_width - f)) + (y * y) / ((_depth - f) * (_depth - f)) + (z * z) / ((_height - f) * (_height - f));
             if (detect <= 1)
             {
-                //Log.Line(String.Format("{0} - {1} in-t: x:{2} y:{3} z:{4} d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, x, y, z, detect, Count));
+                if (ent is IMyCharacter)
+                {
+                    Log.Line($"Entity:{ent} x:{x} y:{y} z:{z} d:{detect} c:{Count}");
+                }
                 return true;
             }
             //Log.Line(String.Format("{0} - {1} in-f - d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, detect, Count));
@@ -680,7 +682,7 @@ namespace DefenseShields.Station
             //MyAPIGateway.Parallel.ForEach(_inHash, playerent =>
             foreach (var playerent in InHash)
             {
-                if (!(playerent is IMyCharacter)) return;
+                if (!(playerent is IMyCharacter)) continue;
                 try
                 {
                     var playerid = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;

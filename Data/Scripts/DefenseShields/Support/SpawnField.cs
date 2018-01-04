@@ -146,9 +146,9 @@ namespace DefenseShields.Support
                 var impactFactor = 1 - (Vector3D.Dot(localImpact, fnorm) + 1) / 2;
 
                 if (faceMaterial.HasValue)
-                    if (impactFactor > .9f)
+                    if (impactFactor != 0.5)
                     {
-                        Log.Line($"impactFactor:{impactFactor} - localImpact:{localImpact} - color:{colour1}");
+                        Log.Line($"{impactFactor} - {localImpact} - {i}");
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
                             _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
                             (v0 + v1 + v2) / 3, colour1);
@@ -156,7 +156,7 @@ namespace DefenseShields.Support
                     else
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
                             _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
-                            (v0 + v1 + v2) / 3, color);
+                            (v0 + v1 + v2) / 3, colour2);
                 if (lineMaterial.HasValue && lineThickness > 0)
                 {
                     MySimpleObjectDraw.DrawLine(v0, v1, lineMaterial, ref color, lineThickness);
