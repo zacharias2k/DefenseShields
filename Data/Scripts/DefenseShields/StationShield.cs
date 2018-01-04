@@ -67,10 +67,12 @@ namespace DefenseShields.Station
 
         private const ushort ModId = 50099;
 
+        private readonly Icosphere _sphere = new Icosphere(4);
+        protected Vector3D LocalImpact;
+
         private static readonly Random Random = new Random();
         private MatrixD _worldMatrix;
         //MatrixD _detectMatrix = MatrixD.Identity;
-        private Vector3D _edgeVectors;
         private MyEntitySubpart _subpartRotor;
         public RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> Slider;
         public RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> Ellipsoid;
@@ -88,7 +90,8 @@ namespace DefenseShields.Station
         public static HashSet<IMyEntity> DestroyGridHash = new HashSet<IMyEntity>();
         public static HashSet<IMyEntity> DestroyPlayerHash = new HashSet<IMyEntity>();
 
-        private readonly MyStringId _rangeGridResourceId = MyStringId.GetOrCompute("Build new");
+        private readonly MyStringId _faceId = MyStringId.GetOrCompute("Build new");
+        private readonly MyStringId _lineId = MyStringId.GetOrCompute("Square");
 
 
         public static readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
@@ -143,7 +146,7 @@ namespace DefenseShields.Station
                 if (Count++ == 59) Count = 0;
                 if (Count % 3 == 0)
                 {
-                    _colourRand += (16 - Random.Next(1, 32));
+                    _colourRand += (16 - Random.Next(1, 60));
                     if (_colourRand < 0) _colourRand = 0;
                     else if (_colourRand > 64) _colourRand = 64;
                 }
@@ -499,12 +502,17 @@ namespace DefenseShields.Station
                 Color colour;
                 var relations = _tblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId);
                 if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
-                    colour = Color.FromNonPremultiplied(16, 255 - _colourRand, 16 + _colourRand, 72);
+                    //colour = Color.FromNonPremultiplied(16, 255 - _colourRand, 16 + _colourRand, 72);
+                    colour = Color.FromNonPremultiplied(0, 0, 255 - _colourRand, 24);
                 else
                     colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
-                _edgeVectors = new Vector3(_depth / 150, _height / 150, _width / 150);																	
-                MatrixD edgeMatrix = MatrixD.CreateFromTransformScale(Quaternion.CreateFromRotationMatrix(_worldMatrix.GetOrientation()), _worldMatrix.Translation, _edgeVectors);
-                Shield.SetWorldMatrix(edgeMatrix);
+                var edgeMatrix1 = MatrixD.Rescale(_worldMatrix, new Vector3D(_width - 1f, _height - 1f, _depth - -1f));
+                var edgeMatrix2 = MatrixD.Rescale(_worldMatrix, new Vector3D(_width / 150, _height / 150, _depth / 150));
+                Shield.SetWorldMatrix(edgeMatrix2);
+                _sphere.Draw(edgeMatrix1, 1f, 3, colour, LocalImpact, _faceId, _lineId, -1);
+                LocalImpact = new Vector3D(0,0,0);
+
+
                 //MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, _rangeGridResourceId, 0.25f, -1);
                 //var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
                 //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
@@ -571,6 +579,7 @@ namespace DefenseShields.Station
                     var playerrelationship = _tblock.GetUserRelationToOwner(dude);
                     if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner || playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                     _playerwebbed = true;
+                    LocalImpact = webent.GetPosition();
                     return;
                 }
                 
