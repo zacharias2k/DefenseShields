@@ -117,18 +117,20 @@ namespace DefenseShields.Support
             _vertexBuffer = points.ToArray();
         }
 
-        public void Draw(MatrixD matrix, float radius, int lod, Vector4 color, Vector3D WorldImpactPosition, MatrixD detectMatrix, MyStringId? faceMaterial = null, MyStringId? lineMaterial = null, float lineThickness = -1f)
+        public void Draw(MatrixD matrix, float radius, int lod, int count, bool enemy, Vector3D worldImpactPosition, MatrixD detectMatrix, MyStringId? faceMaterial = null, MyStringId? lineMaterial = null, float lineThickness = -1f)
         {
             var ix = _indexBuffer[lod];
-
             Random Random = new Random();
-            int _colourRand = 0;
-            _colourRand += (0 - Random.Next(1, 128));
             Color colour1;
             Color colour2;
-            colour1 = Color.FromNonPremultiplied(255, 0, 0, 24);
-            colour2 = Color.FromNonPremultiplied(0, 255, 0, 24);
+            Vector4 color;
+            int _colourRand = 0;
+            if (count % 9 == 0) _colourRand += (0 - Random.Next(1, 32));
 
+            colour1 = Color.FromNonPremultiplied(255 - _colourRand, 0, 0, 24);
+            colour2 = Color.FromNonPremultiplied(0, 0, 255 - _colourRand, 24);
+            if (enemy) color = colour1;
+            else color = colour2;
 
             for (var i = 0; i < ix.Length - 2; i += 3)
             {
@@ -143,15 +145,15 @@ namespace DefenseShields.Support
                 // 0 close to impact, 1 far from impact
                 var fnorm = (_vertexBuffer[i0] + _vertexBuffer[i1] + _vertexBuffer[i2]);
                 fnorm.Normalize();
-                var localImpact = Vector3D.Transform(WorldImpactPosition, MatrixD.Invert(detectMatrix));
+                var localImpact = Vector3D.Transform(worldImpactPosition, MatrixD.Invert(detectMatrix));
                 localImpact.Normalize();
                 var impactFactor = 1 - (Vector3D.Dot(localImpact, fnorm) + 1) / 2;
 
 
                 if (faceMaterial.HasValue)
-                    if (impactFactor < 0.001 && impactFactor > 0.0001)
+                    if (impactFactor > 0.0003 && impactFactor < 0.0005 && !worldImpactPosition.Equals(new Vector3D(0, 0, 0)))
                     {
-                        //Log.Line($"{impactFactor} - {localImpact} - {i}");
+                        Log.Line($"{impactFactor} - {localImpact} - {i}");
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
                             _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
                             (v0 + v1 + v2) / 3, colour1);
@@ -159,7 +161,7 @@ namespace DefenseShields.Support
                     else
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
                             _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
-                            (v0 + v1 + v2) / 3, color);
+                            (v0 + v1 + v2) / 3, colour2);
                 if (lineMaterial.HasValue && lineThickness > 0)
                 {
                     MySimpleObjectDraw.DrawLine(v0, v1, lineMaterial, ref color, lineThickness);

@@ -70,7 +70,7 @@ namespace DefenseShields.Station
         private const ushort ModId = 50099;
 
         private readonly Icosphere _sphere = new Icosphere(4);
-        protected Vector3D WorldImpactPosition = new Vector3D(9999f, 9999f, 9999f);
+        protected Vector3D WorldImpactPosition = new Vector3D(0, 0, 0);
 
         private static readonly Random Random = new Random();
         private MatrixD _worldMatrix;
@@ -147,13 +147,7 @@ namespace DefenseShields.Station
                 if (Playercount < 600) Playercount++;
                 if (Gridcount < 600) Gridcount++;
                 if (Count++ == 59) Count = 0;
-                if (_impact == Count) WorldImpactPosition = new Vector3D(9999f, 9999f, 9999f);
-                if (Count % 3 == 0)
-                {
-                    _colourRand += (16 - Random.Next(1, 60));
-                    if (_colourRand < 0) _colourRand = 0;
-                    else if (_colourRand > 64) _colourRand = 64;
-                }
+                if (_impact == Count) WorldImpactPosition = new Vector3D(0, 0, 0);
                 if (!MyAPIGateway.Utilities.IsDedicated) DrawShield(_range); //Check
                 else SendPoke(_range); //Check
                 if (Count == 29 && _absorb > 0)
@@ -503,27 +497,23 @@ namespace DefenseShields.Station
             //var wiredraw = 1 << Math.Clamp((int) (5 * _range / Math.Sqrt(_cblock.WorldMatrix.Translation.Length(MyAPIGateway.Session.Camera.Position)), 1, 5));
             if (!Initialized && _cblock.IsWorking)
             {
-                Color colour;
                 var relations = _tblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId);
-                if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare)
-                    //colour = Color.FromNonPremultiplied(16, 255 - _colourRand, 16 + _colourRand, 72);
-                    colour = Color.FromNonPremultiplied(0, 0, 255 - _colourRand, 24);
-                else
-                    colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
+                bool Enemy;
+                if (relations == MyRelationsBetweenPlayerAndBlock.Owner || 
+                    relations == MyRelationsBetweenPlayerAndBlock.FactionShare) Enemy = false;
+                else Enemy = true;
                 var edgeMatrix1 = MatrixD.Rescale(_worldMatrix, new Vector3D(_width - 1f, _height - 1f, _depth - -1f));
                 var edgeMatrix2 = MatrixD.Rescale(_worldMatrix, new Vector3D(_width / 150, _height / 150, _depth / 150));
                 detectMatrix = edgeMatrix2;
                 Shield.SetWorldMatrix(edgeMatrix2);
-                _sphere.Draw(edgeMatrix1, 1f, 3, colour, WorldImpactPosition, detectMatrix, _faceId, _lineId, -1);
-                //MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, _rangeGridResourceId, 0.25f, -1);
-                //var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
-                //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
+                _sphere.Draw(edgeMatrix1, 1f, 3, Count, Enemy, WorldImpactPosition, detectMatrix, _faceId, _lineId, -1);
             }
         }
         #endregion
 
-        private void ImpactTimer()
+        private void ImpactTimer(IMyEntity ent)
         {
+            WorldImpactPosition = ent.GetPosition();
             if (Count != 0) _impact = Count - 1;
             else _impact = 59;
         }
@@ -537,16 +527,16 @@ namespace DefenseShields.Station
             float detect = (x * x) / ((_width - f) * (_width - f)) + (y * y) / ((_depth - f) * (_depth - f)) + (z * z) / ((_height - f) * (_height - f));
             if (detect <= 1)
             {
-                if (ent is IMyCharacter)
+                /*if (ent is IMyCharacter)
                 {
                     Log.Line($"Entity:{ent} x:{x} y:{y} z:{z} d:{detect} c:{Count}");
-                }
+                }*/
                 return true;
             }
-            if (ent is IMyCharacter)
+            /*if (ent is IMyCharacter)
             {
                 Log.Line($"Entity:{ent} x:{x} y:{y} z:{z} d:{detect} c:{Count}");
-            }
+            }*/
             return false;
         }
         #endregion
@@ -593,8 +583,7 @@ namespace DefenseShields.Station
                     var playerrelationship = _tblock.GetUserRelationToOwner(dude);
                     if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner || playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                     _playerwebbed = true;
-                    ImpactTimer();
-                    WorldImpactPosition = webent.GetPosition();
+                    ImpactTimer(webent);
                 }
                 
                 if (webent is IMyCharacter || InHash.Contains(webent)) return;
@@ -611,7 +600,7 @@ namespace DefenseShields.Station
                 }
                 if (Detectedge(grid, 0f))
                 {
-                    ImpactTimer();
+                    ImpactTimer(grid);
                     float griddmg = grid.Physics.Mass * Massdmg;
                     _absorb += griddmg;
                     Log.Line($" gridEffect: {grid} Shield Strike by a {(griddmg / Massdmg)}kilo grid, absorbing {griddmg}MW of energy in loop {Count}");
@@ -650,7 +639,7 @@ namespace DefenseShields.Station
                 {
                     if (Detectedge(webent, 0f))
                     {
-                        ImpactTimer();
+                        ImpactTimer(webent);
                         _shotwebbed = true;
                     }
                 }
@@ -674,7 +663,7 @@ namespace DefenseShields.Station
                 if (shotent == null || !Detectedge(shotent, 0f)) return;
                 try
                 {
-                    ImpactTimer();
+                    ImpactTimer(shotent);
                     _absorb += Shotdmg;
                     Log.Line($"shotEffect: Shield absorbed {Shotdmg}MW of energy from {shotent} in loop {Count}");
                     shotent.Close();
@@ -713,7 +702,7 @@ namespace DefenseShields.Station
                             character.Kill();
                             return;
                         }
-                        ImpactTimer();
+                        ImpactTimer(playerent);
                         if (character.EnabledDamping) character.SwitchDamping();
                         if (character.SuitEnergyLevel > 0.5f) MyVisualScriptLogicProvider.SetPlayersEnergyLevel(playerid, 0.49f);
                         if (MyVisualScriptLogicProvider.IsPlayersJetpackEnabled(playerid))
