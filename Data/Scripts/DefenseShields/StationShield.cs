@@ -56,6 +56,7 @@ namespace DefenseShields.Station
         private int _colourRand = 32;
         private int _time;
         private int _playertime;
+        private int _impact;
 
         public bool Initialized = true;
         private bool _animInit;
@@ -64,14 +65,16 @@ namespace DefenseShields.Station
         private bool _shotlocked;
         private bool _closegrids;
         private bool _playerkill;
+        private bool _voxCreated;
 
         private const ushort ModId = 50099;
 
         private readonly Icosphere _sphere = new Icosphere(4);
-        protected Vector3D LocalImpact;
+        protected Vector3D WorldImpactPosition = new Vector3D(9999f, 9999f, 9999f);
 
         private static readonly Random Random = new Random();
         private MatrixD _worldMatrix;
+        public MatrixD detectMatrix;
         //MatrixD _detectMatrix = MatrixD.Identity;
         private MyEntitySubpart _subpartRotor;
         public RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> Slider;
@@ -144,6 +147,7 @@ namespace DefenseShields.Station
                 if (Playercount < 600) Playercount++;
                 if (Gridcount < 600) Gridcount++;
                 if (Count++ == 59) Count = 0;
+                if (_impact == Count) WorldImpactPosition = new Vector3D(9999f, 9999f, 9999f);
                 if (Count % 3 == 0)
                 {
                     _colourRand += (16 - Random.Next(1, 60));
@@ -508,10 +512,9 @@ namespace DefenseShields.Station
                     colour = Color.FromNonPremultiplied(255 - _colourRand, 80 + _colourRand, 16, 72);
                 var edgeMatrix1 = MatrixD.Rescale(_worldMatrix, new Vector3D(_width - 1f, _height - 1f, _depth - -1f));
                 var edgeMatrix2 = MatrixD.Rescale(_worldMatrix, new Vector3D(_width / 150, _height / 150, _depth / 150));
+                detectMatrix = edgeMatrix2;
                 Shield.SetWorldMatrix(edgeMatrix2);
-                _sphere.Draw(edgeMatrix1, 1f, 3, colour, LocalImpact, _faceId, _lineId, -1);
-
-
+                _sphere.Draw(edgeMatrix1, 1f, 3, colour, WorldImpactPosition, detectMatrix, _faceId, _lineId, -1);
                 //MySimpleObjectDraw.DrawTransparentSphere(ref edgeMatrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 20, null, _rangeGridResourceId, 0.25f, -1);
                 //var matrix = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
                 //MySimpleObjectDraw.DrawTransparentSphere(ref matrix, 1f, ref colour, MySimpleObjectRasterizer.Solid, 24, MyStringId.GetOrCompute("Square"));
@@ -519,11 +522,17 @@ namespace DefenseShields.Station
         }
         #endregion
 
+        private void ImpactTimer()
+        {
+            if (Count != 0) _impact = Count - 1;
+            else _impact = 59;
+        }
+
         #region Detect Intersection
         private bool Detectedge(IMyEntity ent, float f)
         {
-            float x = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float x = Vector3Extensions.Project(_worldMatrix.Left, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(_worldMatrix.Forward, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float z = Vector3Extensions.Project(_worldMatrix.Up, ent.GetPosition() - _worldMatrix.Translation).AbsMax();
             float detect = (x * x) / ((_width - f) * (_width - f)) + (y * y) / ((_depth - f) * (_depth - f)) + (z * z) / ((_height - f) * (_height - f));
             if (detect <= 1)
@@ -534,7 +543,10 @@ namespace DefenseShields.Station
                 }
                 return true;
             }
-            //Log.Line(String.Format("{0} - {1} in-f - d:{5} l:{6}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), ent, detect, Count));
+            if (ent is IMyCharacter)
+            {
+                Log.Line($"Entity:{ent} x:{x} y:{y} z:{z} d:{detect} c:{Count}");
+            }
             return false;
         }
         #endregion
@@ -581,8 +593,8 @@ namespace DefenseShields.Station
                     var playerrelationship = _tblock.GetUserRelationToOwner(dude);
                     if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner || playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                     _playerwebbed = true;
-                    LocalImpact = webent.GetPosition();
-                    return;
+                    ImpactTimer();
+                    WorldImpactPosition = webent.GetPosition();
                 }
                 
                 if (webent is IMyCharacter || InHash.Contains(webent)) return;
@@ -599,6 +611,7 @@ namespace DefenseShields.Station
                 }
                 if (Detectedge(grid, 0f))
                 {
+                    ImpactTimer();
                     float griddmg = grid.Physics.Mass * Massdmg;
                     _absorb += griddmg;
                     Log.Line($" gridEffect: {grid} Shield Strike by a {(griddmg / Massdmg)}kilo grid, absorbing {griddmg}MW of energy in loop {Count}");
@@ -637,6 +650,7 @@ namespace DefenseShields.Station
                 {
                     if (Detectedge(webent, 0f))
                     {
+                        ImpactTimer();
                         _shotwebbed = true;
                     }
                 }
@@ -660,6 +674,7 @@ namespace DefenseShields.Station
                 if (shotent == null || !Detectedge(shotent, 0f)) return;
                 try
                 {
+                    ImpactTimer();
                     _absorb += Shotdmg;
                     Log.Line($"shotEffect: Shield absorbed {Shotdmg}MW of energy from {shotent} in loop {Count}");
                     shotent.Close();
@@ -691,13 +706,14 @@ namespace DefenseShields.Station
                     {
                         var character = playerent as IMyCharacter;
                         var npcname = character.ToString();
-                        Log.Line($" playerEffect: Enemy {character} detected at loop {Count} - relationship: {relationship}");
+                        //Log.Line($" playerEffect: Enemy {character} detected at loop {Count} - relationship: {relationship}");
                         if (npcname.Equals("Space_Wolf"))
                         {
                             Log.Line($"playerEffect: Killing {character}");
                             character.Kill();
                             return;
                         }
+                        ImpactTimer();
                         if (character.EnabledDamping) character.SwitchDamping();
                         if (character.SuitEnergyLevel > 0.5f) MyVisualScriptLogicProvider.SetPlayersEnergyLevel(playerid, 0.49f);
                         if (MyVisualScriptLogicProvider.IsPlayersJetpackEnabled(playerid))

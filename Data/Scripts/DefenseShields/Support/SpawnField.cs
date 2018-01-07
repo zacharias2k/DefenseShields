@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Game;
@@ -116,8 +117,7 @@ namespace DefenseShields.Support
             _vertexBuffer = points.ToArray();
         }
 
-        public void Draw(MatrixD matrix, float radius, int lod, Vector4 color, Vector3D localImpact ,MyStringId? faceMaterial = null, 
-            MyStringId? lineMaterial = null, float lineThickness = -1f)
+        public void Draw(MatrixD matrix, float radius, int lod, Vector4 color, Vector3D WorldImpactPosition, MatrixD detectMatrix, MyStringId? faceMaterial = null, MyStringId? lineMaterial = null, float lineThickness = -1f)
         {
             var ix = _indexBuffer[lod];
 
@@ -143,12 +143,15 @@ namespace DefenseShields.Support
                 // 0 close to impact, 1 far from impact
                 var fnorm = (_vertexBuffer[i0] + _vertexBuffer[i1] + _vertexBuffer[i2]);
                 fnorm.Normalize();
+                var localImpact = Vector3D.Transform(WorldImpactPosition, MatrixD.Invert(detectMatrix));
+                localImpact.Normalize();
                 var impactFactor = 1 - (Vector3D.Dot(localImpact, fnorm) + 1) / 2;
 
+
                 if (faceMaterial.HasValue)
-                    if (impactFactor != 0.5)
+                    if (impactFactor < 0.001 && impactFactor > 0.0001)
                     {
-                        Log.Line($"{impactFactor} - {localImpact} - {i}");
+                        //Log.Line($"{impactFactor} - {localImpact} - {i}");
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
                             _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
                             (v0 + v1 + v2) / 3, colour1);
@@ -156,7 +159,7 @@ namespace DefenseShields.Support
                     else
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
                             _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
-                            (v0 + v1 + v2) / 3, colour2);
+                            (v0 + v1 + v2) / 3, color);
                 if (lineMaterial.HasValue && lineThickness > 0)
                 {
                     MySimpleObjectDraw.DrawLine(v0, v1, lineMaterial, ref color, lineThickness);
