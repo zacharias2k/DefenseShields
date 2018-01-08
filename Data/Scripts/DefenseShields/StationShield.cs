@@ -53,7 +53,6 @@ namespace DefenseShields.Station
         public int Count = -301;
         public int Playercount = 600;
         public int Gridcount = 600;
-        private int _colourRand = 32;
         private int _time;
         private int _playertime;
         private int _impact;
@@ -65,16 +64,14 @@ namespace DefenseShields.Station
         private bool _shotlocked;
         private bool _closegrids;
         private bool _playerkill;
-        private bool _voxCreated;
 
         private const ushort ModId = 50099;
 
         private readonly Icosphere _sphere = new Icosphere(4);
         protected Vector3D WorldImpactPosition = new Vector3D(0, 0, 0);
 
-        private static readonly Random Random = new Random();
         private MatrixD _worldMatrix;
-        public MatrixD detectMatrix;
+        public MatrixD DetectMatrix;
         //MatrixD _detectMatrix = MatrixD.Identity;
         private MyEntitySubpart _subpartRotor;
         public RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> Slider;
@@ -103,7 +100,7 @@ namespace DefenseShields.Station
         private IMyFunctionalBlock _fblock;
         private IMyTerminalBlock _tblock;
         private MyCubeBlock _cblock;
-        private IMyEntity Shield;
+        private IMyEntity _shield;
         #endregion
 
         #region Init
@@ -192,7 +189,7 @@ namespace DefenseShields.Station
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo();
                 _absorb = 150f;
-                Shield = SpawnField.Utils.Spawn("LargeField", "", true, false, false, false, false, _cblock.IDModule.Owner);
+                _shield = SpawnField.Utils.Spawn("LargeField", "", true, false, false, false, false, _cblock.IDModule.Owner);
                 Initialized = false;
 
             }
@@ -498,15 +495,15 @@ namespace DefenseShields.Station
             if (!Initialized && _cblock.IsWorking)
             {
                 var relations = _tblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId);
-                bool Enemy;
+                bool enemy;
                 if (relations == MyRelationsBetweenPlayerAndBlock.Owner || 
-                    relations == MyRelationsBetweenPlayerAndBlock.FactionShare) Enemy = false;
-                else Enemy = true;
+                    relations == MyRelationsBetweenPlayerAndBlock.FactionShare) enemy = false;
+                else enemy = true;
                 var edgeMatrix1 = MatrixD.Rescale(_worldMatrix, new Vector3D(_width - 1f, _height - 1f, _depth - -1f));
                 var edgeMatrix2 = MatrixD.Rescale(_worldMatrix, new Vector3D(_width / 150, _height / 150, _depth / 150));
-                detectMatrix = edgeMatrix2;
-                Shield.SetWorldMatrix(edgeMatrix2);
-                _sphere.Draw(edgeMatrix1, 1f, 3, Count, Enemy, WorldImpactPosition, detectMatrix, _faceId, _lineId, -1);
+                DetectMatrix = edgeMatrix2;
+                _shield.SetWorldMatrix(edgeMatrix2);
+                _sphere.Draw(edgeMatrix1, 1f, 3, Count, enemy, WorldImpactPosition, DetectMatrix, _faceId, _lineId, -1);
             }
         }
         #endregion
@@ -527,13 +524,10 @@ namespace DefenseShields.Station
             float detect = (x * x) / ((_width - f) * (_width - f)) + (y * y) / ((_depth - f) * (_depth - f)) + (z * z) / ((_height - f) * (_height - f));
             if (detect <= 1)
             {
-                /*if (ent is IMyCharacter)
-                {
-                    Log.Line($"Entity:{ent} x:{x} y:{y} z:{z} d:{detect} c:{Count}");
-                }*/
+                Log.Line($"Entity:{ent} x:{x} y:{y} z:{z} d:{detect} c:{Count}");
                 return true;
             }
-            /*if (ent is IMyCharacter)
+            /*if (detect <= 2.4 || detect > 10)
             {
                 Log.Line($"Entity:{ent} x:{x} y:{y} z:{z} d:{detect} c:{Count}");
             }*/
@@ -573,10 +567,15 @@ namespace DefenseShields.Station
             MyAPIGateway.Parallel.ForEach(webList, webent =>
             {
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
-                if (webent is IMyMeteor  && !_shotwebbed) _shotwebbed = true;
-                if (webent is IMyMeteor) return;
-                //if (webent is IMyMeteor && Detectedge(webent, 0f)) webent.Close();
-
+                if (webent is IMyMeteor  || webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
+                {
+                    if (_shotwebbed) return;
+                    if (Detectedge(webent, 0f))
+                    {
+                        _shotwebbed = true;
+                    }
+                    return;
+                }
                 if (webent is IMyCharacter && (Count == 2 || Count == 17 || Count == 32 || Count == 47) && Detectedge(webent, 0f))
                 {
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
@@ -634,16 +633,7 @@ namespace DefenseShields.Station
                     }
                     return;
                 }
-                if (_shotwebbed) return;
-                if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo")) 
-                {
-                    if (Detectedge(webent, 0f))
-                    {
-                        ImpactTimer(webent);
-                        _shotwebbed = true;
-                    }
-                }
-                //Log.Line(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
+                Log.Line(String.Format("{0} - webEffect unmatched: {1} {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), webent.GetFriendlyName(), webent.DisplayName, webent.Name));
             });
         }
         #endregion

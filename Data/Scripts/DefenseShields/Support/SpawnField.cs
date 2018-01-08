@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Game;
@@ -89,6 +88,11 @@ namespace DefenseShields.Support
     {
         private readonly Vector3[] _vertexBuffer;
         private readonly int[][] _indexBuffer;
+        private static readonly Random Random = new Random();
+        private int _colourRand1 = 255;
+        private int _colourRand2 = 0;
+
+
 
         public Icosphere(int lods)
         {
@@ -120,17 +124,39 @@ namespace DefenseShields.Support
         public void Draw(MatrixD matrix, float radius, int lod, int count, bool enemy, Vector3D worldImpactPosition, MatrixD detectMatrix, MyStringId? faceMaterial = null, MyStringId? lineMaterial = null, float lineThickness = -1f)
         {
             var ix = _indexBuffer[lod];
-            Random Random = new Random();
-            Color colour1;
-            Color colour2;
-            Vector4 color;
-            int _colourRand = 0;
-            if (count % 9 == 0) _colourRand += (0 - Random.Next(1, 32));
+            /*if (_colourRand1 - _colourRand2 > 180 || _colourRand1 - _colourRand2 < 100)
+            {
+                Log.Line($"{_colourRand1} - {_colourRand2} - {_colourRand1 - _colourRand2}");
+            }*/
+            if (count == 0)
+            {
+                _colourRand1 = Random.Next(144, 172);
+                _colourRand2 = Random.Next(1, 64);
+            }
 
-            colour1 = Color.FromNonPremultiplied(255 - _colourRand, 0, 0, 24);
-            colour2 = Color.FromNonPremultiplied(0, 0, 255 - _colourRand, 24);
-            if (enemy) color = colour1;
-            else color = colour2;
+            if (count % 6 == 0)
+            {
+                _colourRand1 += Random.Next(1, 32);
+                _colourRand2 += Random.Next(1, 32);
+                if (_colourRand1 - _colourRand2 < 80) _colourRand1 = _colourRand2 + 112;
+                if (_colourRand1 - _colourRand2 > 200) _colourRand1 = _colourRand2 + 168;
+
+            }
+
+            var cv1 = 0;
+            var cv2 = 0;
+            if (enemy) cv1 = 50;
+            else cv2 = 50;
+
+            var c1 = Color.FromNonPremultiplied(_colourRand1 - _colourRand2, 0, 0, 16);
+            var c2 = Color.FromNonPremultiplied(0, 0, _colourRand1 - _colourRand2, 16);
+            var c3 = Color.FromNonPremultiplied(cv1, cv2, 0, 16);
+            var c4 = Color.FromNonPremultiplied(0, 0, 0, 255);
+
+
+            var color1 = enemy ? c1 : c2;
+            var color2 = c3;
+            Vector4 color3 = c4;
 
             for (var i = 0; i < ix.Length - 2; i += 3)
             {
@@ -151,22 +177,28 @@ namespace DefenseShields.Support
 
 
                 if (faceMaterial.HasValue)
-                    if (impactFactor > 0.0003 && impactFactor < 0.0005 && !worldImpactPosition.Equals(new Vector3D(0, 0, 0)))
+                    if (impactFactor < 0.006 && !worldImpactPosition.Equals(new Vector3D(0, 0, 0)))
                     {
-                        Log.Line($"{impactFactor} - {localImpact} - {i}");
+                        //Log.Line($"{impactFactor} - {localImpact} - {i}");
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
                             _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
-                            (v0 + v1 + v2) / 3, colour1);
+                            (v0 + v1 + v2) / 3, color2);
                     }
                     else
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
                             _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
-                            (v0 + v1 + v2) / 3, colour2);
+                            (v0 + v1 + v2) / 3, color1);
                 if (lineMaterial.HasValue && lineThickness > 0)
                 {
-                    MySimpleObjectDraw.DrawLine(v0, v1, lineMaterial, ref color, lineThickness);
-                    MySimpleObjectDraw.DrawLine(v1, v2, lineMaterial, ref color, lineThickness);
-                    MySimpleObjectDraw.DrawLine(v2, v0, lineMaterial, ref color, lineThickness);
+                    MySimpleObjectDraw.DrawLine(v0, v1, lineMaterial, ref color3, lineThickness);
+                    MySimpleObjectDraw.DrawLine(v1, v2, lineMaterial, ref color3, lineThickness);
+                    MySimpleObjectDraw.DrawLine(v2, v0, lineMaterial, ref color3, lineThickness);
+                }
+                if (lineMaterial.HasValue && impactFactor < 0.05 && !worldImpactPosition.Equals(new Vector3D(0, 0, 0)))
+                {
+                    MySimpleObjectDraw.DrawLine(v0, v1, lineMaterial, ref color3, 0.25f);
+                    MySimpleObjectDraw.DrawLine(v1, v2, lineMaterial, ref color3, 0.25f);
+                    MySimpleObjectDraw.DrawLine(v2, v0, lineMaterial, ref color3, 0.25f);
                 }
             }
         }
