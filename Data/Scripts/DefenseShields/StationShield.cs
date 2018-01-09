@@ -500,10 +500,10 @@ namespace DefenseShields.Station
                     relations == MyRelationsBetweenPlayerAndBlock.FactionShare) enemy = false;
                 else enemy = true;
                 var edgeMatrix1 = MatrixD.Rescale(_worldMatrix, new Vector3D(_width - 1f, _height - 1f, _depth - -1f));
-                var edgeMatrix2 = MatrixD.Rescale(_worldMatrix, new Vector3D(_width / 150, _height / 150, _depth / 150));
+                var edgeMatrix2 = MatrixD.Rescale(_worldMatrix, new Vector3D(_width * 0.8, _height * 0.8, _depth * 0.8));
                 DetectMatrix = edgeMatrix2;
                 _shield.SetWorldMatrix(edgeMatrix2);
-                _sphere.Draw(edgeMatrix1, 1f, 3, Count, enemy, WorldImpactPosition, DetectMatrix, _faceId, _lineId, -1);
+                _sphere.Draw(edgeMatrix1, 1f, 3, Count, enemy, WorldImpactPosition, DetectMatrix, _faceId, _lineId, 0.10f);
             }
         }
         #endregion
