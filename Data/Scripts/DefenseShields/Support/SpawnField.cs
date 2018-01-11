@@ -10,13 +10,13 @@ using VRageMath;
 
 namespace DefenseShields.Support
 {
-    class SpawnField
+    class Spawn
     {
         #region Cube+subparts Class
         public class Utils
         {
             //SPAWN METHOD
-            public static IMyEntity Spawn(string subtypeId, string name = "", bool isVisible = true, bool hasPhysics = false, bool isStatic = false, bool toSave = false, bool destructible = false, long ownerId = 0)
+            public static IMyEntity SpawnShield(string subtypeId, string name = "", bool isVisible = true, bool hasPhysics = false, bool isStatic = false, bool toSave = false, bool destructible = false, long ownerId = 0)
             {
                 try
                 {
@@ -96,23 +96,34 @@ namespace DefenseShields.Support
 
         public Icosphere(int lods)
         {
-            float X = 0.525731112119133606f;
-            float Z = 0.850650808352039932f;
+            //const float X = 0.525731112119133606f;
+            //const float Z = 0.850650808352039932f;
             Vector3[] data =
             {
-                new Vector3(-X, 0, Z), new Vector3(X, 0, Z), new Vector3(-X, 0, -Z), new Vector3(X, 0, -Z),
+                /*new Vector3(-X, 0, Z), new Vector3(X, 0, Z), new Vector3(-X, 0, -Z), new Vector3(X, 0, -Z),
                 new Vector3(0, Z, X), new Vector3(0, Z, -X), new Vector3(0, -Z, X), new Vector3(0, -Z, -X),
-                new Vector3(Z, X, 0), new Vector3(-Z, X, 0), new Vector3(Z, -X, 0), new Vector3(-Z, -X, 0)
+                new Vector3(Z, X, 0), new Vector3(-Z, X, 0), new Vector3(Z, -X, 0), new Vector3(-Z, -X, 0)*/
+                new Vector3(0.000000f, 0.000000f, -1.000000f), new Vector3(0.723600f, -0.525720f, -0.447215f),
+                new Vector3(-0.276385f, -0.850640f, -0.447215f), new Vector3(0.723600f, 0.525720f, -0.447215f),
+                new Vector3(-0.894425f, 0.000000f, -0.447215f), new Vector3(-0.276385d, 0.850640f, -0.447215f),
+                new Vector3(0.894425f, 0.000000f, 0.447215f), new Vector3(0.276385f, -0.850640f, 0.447215f),
+                new Vector3(-0.723600f, -0.525720f, 0.447215f), new Vector3(-0.723600f, 0.525720f, 0.447215f),
+                new Vector3(0.276385f, 0.850640f, 0.447215f), new Vector3(0.000000f, 0.000000f, 1.000000f)
             };
             List<Vector3> points = new List<Vector3>(12 * (1 << (lods - 1)));
             points.AddRange(data);
             int[][] index = new int[lods][];
             index[0] = new int[]
             {
+                /*
                 0, 4, 1, 0, 9, 4, 9, 5, 4, 4, 5, 8, 4, 8, 1,
                 8, 10, 1, 8, 3, 10, 5, 3, 8, 5, 2, 3, 2, 7, 3, 7, 10, 3, 7,
                 6, 10, 7, 11, 6, 11, 0, 6, 0, 1, 6, 6, 1, 10, 9, 0, 11, 9,
                 11, 2, 9, 2, 5, 7, 2, 11
+                */
+                0, 1, 2, 1, 0, 3, 0, 2, 4, 0, 4, 5, 0, 5, 3, 1, 3, 6, 2, 1, 7,
+                4, 2, 8, 5, 4, 9, 3, 5, 10, 1, 6, 7, 2, 7, 8, 4, 8, 9, 5, 9, 10,
+                3, 10, 6, 7, 6, 11, 8, 7, 11, 9, 8, 11, 10, 9, 11, 6, 10, 11
             };
             for (int i = 1; i < lods; i++)
                 index[i] = Subdivide(points, index[i - 1]);
@@ -138,20 +149,24 @@ namespace DefenseShields.Support
             {
                 _colourRand1 += Random.Next(1, 32);
                 _colourRand2 += Random.Next(1, 32);
-                if (_colourRand1 - _colourRand2 < 80) _colourRand1 = _colourRand2 + 112;
+                if (_colourRand1 - _colourRand2 < 100) _colourRand1 = _colourRand2 + 112;
                 if (_colourRand1 - _colourRand2 > 200) _colourRand1 = _colourRand2 + 168;
 
             }
 
             var cv1 = 0;
             var cv2 = 0;
+            var cv3 = 0;
+            var cv4 = 0;
             if (enemy) cv1 = 50;
             else cv2 = 50;
+            if (cv1 !=0) cv3 = cv1 + 30;
+            if (cv2 !=0) cv4 = cv2 + 30;
 
             var c1 = Color.FromNonPremultiplied(_colourRand1 - _colourRand2, 0, 0, 16);
             var c2 = Color.FromNonPremultiplied(0, 0, _colourRand1 - _colourRand2, 16);
-            var c3 = Color.FromNonPremultiplied(cv1, cv2, 0, 16);
-            var c4 = Color.FromNonPremultiplied(0, 0, 0, 255);
+            var c3 = Color.FromNonPremultiplied(cv3, 0, cv4, 16);
+            var c4 = Color.FromNonPremultiplied(cv1, 0, cv2, 16);
 
 
             var color1 = enemy ? c1 : c2;
@@ -194,11 +209,11 @@ namespace DefenseShields.Support
                     MySimpleObjectDraw.DrawLine(v1, v2, lineMaterial, ref color3, lineThickness);
                     MySimpleObjectDraw.DrawLine(v2, v0, lineMaterial, ref color3, lineThickness);
                 }
-                if (lineMaterial.HasValue && impactFactor < 0.05 && !worldImpactPosition.Equals(new Vector3D(0, 0, 0)))
+                if (lineMaterial.HasValue && impactFactor < 0.03 && !worldImpactPosition.Equals(new Vector3D(0, 0, 0)))
                 {
-                    MySimpleObjectDraw.DrawLine(v0, v1, lineMaterial, ref color3, 0.25f);
-                    MySimpleObjectDraw.DrawLine(v1, v2, lineMaterial, ref color3, 0.25f);
-                    MySimpleObjectDraw.DrawLine(v2, v0, lineMaterial, ref color3, 0.25f);
+                    MySimpleObjectDraw.DrawLine(v0, v1, lineMaterial, ref color3, 0.5f);
+                    MySimpleObjectDraw.DrawLine(v1, v2, lineMaterial, ref color3, 0.5f);
+                    MySimpleObjectDraw.DrawLine(v2, v0, lineMaterial, ref color3, 0.5f);
                 }
             }
         }

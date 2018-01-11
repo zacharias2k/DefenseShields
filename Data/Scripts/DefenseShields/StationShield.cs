@@ -37,7 +37,7 @@ namespace DefenseShields.Station
     public class DefenseShields : MyGameLogicComponent
     {
         #region Setup
-        private float _animStep;
+        protected float _animStep;
         private float _range;
         private float _width;
         private float _height;
@@ -53,12 +53,12 @@ namespace DefenseShields.Station
         public int Count = -301;
         public int Playercount = 600;
         public int Gridcount = 600;
-        private int _time;
+        protected int _time;
         private int _playertime;
         private int _impact;
 
         public bool Initialized = true;
-        private bool _animInit;
+        protected bool _animInit;
         private bool _playerwebbed;
         private bool _shotwebbed;
         private bool _shotlocked;
@@ -70,21 +70,21 @@ namespace DefenseShields.Station
         private readonly Icosphere _sphere = new Icosphere(4);
         protected Vector3D WorldImpactPosition = new Vector3D(0, 0, 0);
 
-        private MatrixD _worldMatrix;
+        protected MatrixD _worldMatrix;
         public MatrixD DetectMatrix;
         //MatrixD _detectMatrix = MatrixD.Identity;
-        private MyEntitySubpart _subpartRotor;
+        protected MyEntitySubpart _subpartRotor;
         public RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> Slider;
         public RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> Ellipsoid;
         public MyResourceSinkComponent Sink;
         public MyDefinitionId PowerDefinitionId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
-        private readonly List<MyEntitySubpart> _subpartsArms = new List<MyEntitySubpart>();
-        private readonly List<MyEntitySubpart> _subpartsReflectors = new List<MyEntitySubpart>();
-        private List<Matrix> _matrixArmsOff = new List<Matrix>();
-        private List<Matrix> _matrixArmsOn = new List<Matrix>();
-        private List<Matrix> _matrixReflectorsOff = new List<Matrix>();
-        private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
+        protected readonly List<MyEntitySubpart> _subpartsArms = new List<MyEntitySubpart>();
+        protected readonly List<MyEntitySubpart> _subpartsReflectors = new List<MyEntitySubpart>();
+        protected List<Matrix> _matrixArmsOff = new List<Matrix>();
+        protected List<Matrix> _matrixArmsOn = new List<Matrix>();
+        protected List<Matrix> _matrixReflectorsOff = new List<Matrix>();
+        protected List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
         public MyConcurrentHashSet<IMyEntity> InHash = new MyConcurrentHashSet<IMyEntity>();
         public static HashSet<IMyEntity> DestroyGridHash = new HashSet<IMyEntity>();
@@ -96,10 +96,10 @@ namespace DefenseShields.Station
 
         public static readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
 
-        private IMyOreDetector _oblock; 
-        private IMyFunctionalBlock _fblock;
+        private IMyOreDetector _oblock;
+        protected IMyFunctionalBlock _fblock;
         private IMyTerminalBlock _tblock;
-        private MyCubeBlock _cblock;
+        protected MyCubeBlock _cblock;
         private IMyEntity _shield;
         #endregion
 
@@ -140,6 +140,9 @@ namespace DefenseShields.Station
                         BlockAnimationReset();
                     }
                     BlockAnimation();
+                    //var banim = new BlockAnimation();
+                    //banim.Animate();
+                    //Log.Line($"step 1");
                 }
                 if (Playercount < 600) Playercount++;
                 if (Gridcount < 600) Gridcount++;
@@ -189,7 +192,38 @@ namespace DefenseShields.Station
                 ((IMyFunctionalBlock)_cblock).AppendingCustomInfo += AppendingCustomInfo;
                 _tblock.RefreshCustomInfo();
                 _absorb = 150f;
-                _shield = SpawnField.Utils.Spawn("LargeField", "", true, false, false, false, false, _cblock.IDModule.Owner);
+
+                /*
+                // Hollow Sphere
+                var diameter = 600;
+                double maxDiameter = 0;
+                maxDiameter = Math.Max(maxDiameter, diameter);
+
+                var position = _tblock.GetPosition();
+                var layers = new List<Voxels.Voxels.AsteroidSphereLayer>();
+
+                byte material = 1;
+                var materialName = "Stone_01";
+                var name = "test";
+                var length = (int)((maxDiameter / 2) + 4).RoundUpToCube();
+                var size = new Vector3I(length, length, length);
+                var origin = new Vector3I(size.X / 2, size.Y / 2, size.Z / 2);
+                //layers = layers.OrderByDescending(e => e.Diameter).ToList();
+                layers.Add(new Voxels.Voxels.AsteroidSphereLayer() { Diameter = diameter, Material = material, MaterialName = materialName });
+                layers.Add(new Voxels.Voxels.AsteroidSphereLayer() { Diameter = 590f, Material = 255, MaterialName = materialName });
+                Voxels.Voxels.CreateNewAsteroid(name, size, position);
+
+                Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(origin.X - 2, origin.Y - 2, origin.Z - 2), origin, layers);
+                Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(-origin.X + 2, origin.Y - 2, origin.Z - 2), origin, layers);
+                Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(origin.X - 2, -origin.Y + 2, origin.Z - 2), origin, layers);
+                Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(-origin.X + 2, -origin.Y + 2, origin.Z - 2), origin, layers);
+                Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(origin.X - 2, origin.Y - 2, -origin.Z + 2), origin, layers);
+                Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(-origin.X + 2, origin.Y - 2, -origin.Z + 2), origin, layers);
+                Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(origin.X - 2, -origin.Y + 2, -origin.Z + 2), origin, layers);
+                Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(-origin.X + 2, -origin.Y + 2, -origin.Z + 2), origin, layers);
+                //
+                */
+                _shield = Spawn.Utils.SpawnShield("LargeField", "", true, false, false, false, false, _cblock.IDModule.Owner);
                 Initialized = false;
 
             }
@@ -243,8 +277,8 @@ namespace DefenseShields.Station
                 _matrixReflectorsOff = new List<Matrix>();
                 _matrixReflectorsOn = new List<Matrix>();
 
-                _worldMatrix = Entity.WorldMatrix;
-                _worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
+                //_worldMatrix = Entity.WorldMatrix;
+                //_worldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
 
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
 
@@ -499,11 +533,11 @@ namespace DefenseShields.Station
                 if (relations == MyRelationsBetweenPlayerAndBlock.Owner || 
                     relations == MyRelationsBetweenPlayerAndBlock.FactionShare) enemy = false;
                 else enemy = true;
-                var edgeMatrix1 = MatrixD.Rescale(_worldMatrix, new Vector3D(_width - 1f, _height - 1f, _depth - -1f));
-                var edgeMatrix2 = MatrixD.Rescale(_worldMatrix, new Vector3D(_width * 0.8, _height * 0.8, _depth * 0.8));
+                var edgeMatrix1 = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
+                var edgeMatrix2 = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
                 DetectMatrix = edgeMatrix2;
                 _shield.SetWorldMatrix(edgeMatrix2);
-                _sphere.Draw(edgeMatrix1, 1f, 3, Count, enemy, WorldImpactPosition, DetectMatrix, _faceId, _lineId, 0.10f);
+                _sphere.Draw(edgeMatrix1, 1f, 3, Count, enemy, WorldImpactPosition, DetectMatrix, _faceId, _lineId, 0.25f);
             }
         }
         #endregion
@@ -734,4 +768,16 @@ namespace DefenseShields.Station
         }
         #endregion
     }
+
+    public static class Test
+    {
+        public static double RoundUpToCube(this double value)
+        {
+            int baseVal = 1;
+            while (baseVal < value)
+                baseVal = baseVal * 2;
+            return baseVal;
+        }
+    }
+
 }

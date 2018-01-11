@@ -7,6 +7,9 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 
 using DefenseShields.Support;
+using Sandbox.Game.Entities;
+using Sandbox.Game.Weapons;
+using SpaceEngineers.Game.ModAPI;
 
 namespace DefenseShields
 {
@@ -72,6 +75,43 @@ namespace DefenseShields
             if (generator.InHash.Contains(attacker)) return;
             info.Amount = 0f;
         }
+
+        //These are the subpart paths for every type of weapon.Then the last subpart has a dummy 
+        //with "muzzle_projectile", "muzzle_missile", or "barrel".  The forward direction of this 
+        //dummy is the way it shoots, the position is where it shoots from:
+        /*
+        public static DirectionBarrelComponent CreateAuto(IMyEntity ent)
+        {
+            if (ent is IMyLargeGatlingTurret)
+                return new DirectionBarrelComponent("GatlingTurretBase1", "GatlingTurretBase2", "GatlingBarrel");
+            if (ent is IMyLargeInteriorTurret)
+                return new DirectionBarrelComponent("InteriorTurretBase1", "InteriorTurretBase2");
+            if (ent is IMyLargeMissileTurret)
+                return new DirectionBarrelComponent("MissileTurretBase1", "MissileTurretBarrels");
+            if (ent is IMySmallGatlingGun)
+                return new DirectionBarrelComponent("Barrel");
+            if (ent is IMySmallMissileLauncher)
+                return new DirectionBarrelComponent();
+            return null;
+        }
+        private bool IsShooting
+        {
+            get
+            {
+                IMyUserControllableGun gun = Entity;
+                if (gun == null)
+                    return false;
+                if (gun.IsShooting)
+                    return true;
+                var gunBase = gun as IMyGunObject<MyGunBase>;
+                if (gunBase != null && gunBase.IsShooting)
+                    return true;
+                return _blockShootProperty?.GetValue(gun) ?? false;
+            }
+        }
+
+        _blockShootProperty = tBlock.GetProperty("Shoot").Cast<bool>();
+        */
     }
     #endregion
 }
