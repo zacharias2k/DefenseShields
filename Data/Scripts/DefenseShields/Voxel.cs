@@ -12,7 +12,7 @@ using VRage.Game;
 using VRage.Game.ModAPI;
 using VRageMath;
 
-namespace DefenseShields.Voxels
+namespace DefenseShields
 {
 
 

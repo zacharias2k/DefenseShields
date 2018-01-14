@@ -19,7 +19,7 @@ namespace DefenseShields
     public class DefenseShieldsBase : MySessionComponentBase
     {
         public static bool IsInit;
-        private static List<Station.DefenseShields> _bulletShields = new List<Station.DefenseShields>(); // check 
+        private static List<DefenseShields> _bulletShields = new List<DefenseShields>(); // check 
         public static bool ControlsLoaded;
 
         // Initialisation

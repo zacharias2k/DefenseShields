@@ -2,7 +2,7 @@
 using System.Text;
 using Sandbox.ModAPI;
 
-namespace DefenseShields
+namespace DefenseShields.Control
 {
     #region Controls Class
     public class RefreshCheckbox<T> : Control.Checkbox<T>
@@ -16,7 +16,7 @@ namespace DefenseShields
         public override void Setter(IMyTerminalBlock block, bool newState)
         {
             base.Setter(block, newState);
-            var shield = block.GameLogic.GetAs<Station.DefenseShields>();
+            var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
             shield.Sink.Update();
             block.RefreshCustomInfo();
@@ -54,7 +54,7 @@ namespace DefenseShields
         public void SetterOutside(IMyTerminalBlock block, float value)
         {
             base.Setter(block, value);
-            var shield = block.GameLogic.GetAs<Station.DefenseShields>();
+            var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
             shield.Sink.Update();
         }
@@ -64,7 +64,7 @@ namespace DefenseShields
             base.Setter(block, value);
             //var message = new shieldNetwork.MessageSync() { Value = value, EntityId = block.EntityId };
             //shieldNetwork.MessageUtils.SendMessageToAll(message);
-            var shield = block.GameLogic.GetAs<Station.DefenseShields>();
+            var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
             shield.Sink.Update();
         }

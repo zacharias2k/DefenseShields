@@ -5,7 +5,7 @@ using DefenseShields.Support;
 
 namespace DefenseShields
 {
-    class DestroyEntity : Station.DefenseShields
+    class DestroyEntity : DefenseShields
     {
         #region Close flagged grids
         public static void GridClose(int _gridcount)

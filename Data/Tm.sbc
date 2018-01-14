@@ -11,8 +11,8 @@
       <AlphaSaturation>1</AlphaSaturation>
       <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <Emissivity>0</Emissivity>
-      <IgnoreDepth>true</IgnoreDepth>
-      <SoftParticleDistanceScale>1000</SoftParticleDistanceScale>
+      <IgnoreDepth>false</IgnoreDepth>
+      <SoftParticleDistanceScale>1</SoftParticleDistanceScale>
       <Texture>Textures\Void.dds</Texture>
       <UseAtlas>false</UseAtlas>
 	  <NeedSort>true</NeedSort>
@@ -25,12 +25,12 @@
         <Y>1</Y>
       </UVSize>
 	  <Color>
-        <X>255</X>
-        <Y>255</Y>
-	      <Z>255</Z>
-	      <W>0.001</W>
+        <X>0</X>
+        <Y>0</Y>
+	      <Z>0</Z>
+	      <W>0</W>
       </Color>
-	  <Reflectivity>0.25</Reflectivity>
+	  <Reflectivity>0</Reflectivity>
     </TransparentMaterial>
 	<TransparentMaterial>
       <Id>
@@ -41,8 +41,8 @@
       <AlphaSaturation>1</AlphaSaturation>
       <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <Emissivity>0</Emissivity>
-      <IgnoreDepth>true</IgnoreDepth>
-      <SoftParticleDistanceScale>1000</SoftParticleDistanceScale>
+      <IgnoreDepth>false</IgnoreDepth>
+      <SoftParticleDistanceScale>1</SoftParticleDistanceScale>
       <Texture>Textures\Void.dds</Texture>
       <UseAtlas>false</UseAtlas>
 	  <NeedSort>true</NeedSort>
@@ -55,12 +55,12 @@
         <Y>1</Y>
       </UVSize>
 	    <Color>
-        <X>255</X>
-        <Y>255</Y>
-        <Z>255</Z>
-        <W>0.001</W>
+        <X>0</X>
+        <Y>0</Y>
+        <Z>0</Z>
+        <W>0</W>
       </Color>
-	  <Reflectivity>0.25</Reflectivity>
+	  <Reflectivity>0</Reflectivity>
     </TransparentMaterial>
 
     <TransparentMaterial>
@@ -69,11 +69,11 @@
         <SubtypeId>VoidCCW</SubtypeId>
       </Id>
       <AlphaMistingEnable>false</AlphaMistingEnable>
-      <AlphaSaturation>0</AlphaSaturation>
+      <AlphaSaturation>1</AlphaSaturation>
       <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <Emissivity>0</Emissivity>
-      <IgnoreDepth>true</IgnoreDepth>
-      <SoftParticleDistanceScale>1000</SoftParticleDistanceScale>
+      <IgnoreDepth>false</IgnoreDepth>
+      <SoftParticleDistanceScale>1</SoftParticleDistanceScale>
       <Texture>Textures\Void.dds</Texture>
       <UseAtlas>false</UseAtlas>
       <NeedSort>true</NeedSort>
@@ -86,12 +86,12 @@
         <Y>1</Y>
       </UVSize>
       <Color>
-        <X>255</X>
-        <Y>255</Y>
-        <Z>255</Z>
-        <W>0.000000000001</W>
+        <X>0</X>
+        <Y>0</Y>
+        <Z>0</Z>
+        <W>0</W>
       </Color>
-      <Reflectivity>0.00000000000000000000000000000000001</Reflectivity>
+      <Reflectivity>0</Reflectivity>
     </TransparentMaterial>
 
   </TransparentMaterials>
