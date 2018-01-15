@@ -127,6 +127,18 @@ Examples:
         }
         #endregion
 
+        /*
+public static class Test
+{
+    public static double RoundUpToCube(this double value)
+    {
+        int baseVal = 1;
+        while (baseVal < value)
+            baseVal = baseVal * 2;
+        return baseVal;
+    }
+}
+*/
         public static string ProcessAsteroid(string asteroidName, Vector3I size, Vector3D position, Vector3D offset, Vector3I origin, List<AsteroidSphereLayer> layers)
         {
             var storeName = CreateUniqueStorageName(asteroidName);

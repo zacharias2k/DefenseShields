@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Game;
@@ -91,35 +92,38 @@ namespace DefenseShields.Support
 
         private readonly Vector3[] _vertexBuffer;
         private static readonly Random Random = new Random();
+
         private readonly int[][] _indexBuffer;
         private readonly SortedList<double, int> _faceLocSlist = new SortedList<double, int>();
+        private readonly SortedList<double, int> _glichSlist = new SortedList<double, int>();
 
         private int _impactNew;
+        private int _glitch;
         private int _impactCharge;
-        private int _1Face;
-        private int _2Face;
-        private int _3Face;
-        private int _4Face;
-        private int _5Face;
-        private int _6Face;
-        private int _colourRand1;
-        private int _colourRand2;
-        private int _pulseColor = 80;
-        private double _firstFaceLoc;
-        private double _lastFaceLoc;
+        private int _pulseCount;
+        private int _pulse = 25;
 
-        private bool _charge = true;
+        private double _firstHitFaceLoc1x;
+        private double _lastHitFaceLoc1x;
+        private double _firstFaceLoc1x;
+        private double _lastFaceLoc1x;
+        private double _firstFaceLoc2x;
+        private double _lastFaceLoc2x;
+        private double _firstFaceLoc4x;
+        private double _lastFaceLoc4x;
+        private double _firstFaceLoc6X;
+        private double _lastFaceLoc6X;
+
         private bool _impactFinished;
+        private bool _charged = true;
+
 
         public Icosphere(int lods)
         {
-            //const float X = 0.525731112119133606f;
-            //const float Z = 0.850650808352039932f;
+            const float X = 0.525731112119133606f;
+            const float Z = 0.850650808352039932f;
             Vector3[] data =
             {
-                /*new Vector3(-X, 0, Z), new Vector3(X, 0, Z), new Vector3(-X, 0, -Z), new Vector3(X, 0, -Z),
-                new Vector3(0, Z, X), new Vector3(0, Z, -X), new Vector3(0, -Z, X), new Vector3(0, -Z, -X),
-                new Vector3(Z, X, 0), new Vector3(-Z, X, 0), new Vector3(Z, -X, 0), new Vector3(-Z, -X, 0)*/
                 new Vector3(0.000000f, 0.000000f, -1.000000f), new Vector3(0.723600f, -0.525720f, -0.447215f),
                 new Vector3(-0.276385f, -0.850640f, -0.447215f), new Vector3(0.723600f, 0.525720f, -0.447215f),
                 new Vector3(-0.894425f, 0.000000f, -0.447215f), new Vector3(-0.276385d, 0.850640f, -0.447215f),
@@ -127,17 +131,11 @@ namespace DefenseShields.Support
                 new Vector3(-0.723600f, -0.525720f, 0.447215f), new Vector3(-0.723600f, 0.525720f, 0.447215f),
                 new Vector3(0.276385f, 0.850640f, 0.447215f), new Vector3(0.000000f, 0.000000f, 1.000000f)
             };
-            List<Vector3> points = new List<Vector3>(12 * (1 << (lods)));
+            List<Vector3> points = new List<Vector3>(12 * (1 << (lods - 1)));
             points.AddRange(data);
             int[][] index = new int[lods][];
             index[0] = new int[]
             {
-                /*
-                0, 4, 1, 0, 9, 4, 9, 5, 4, 4, 5, 8, 4, 8, 1,
-                8, 10, 1, 8, 3, 10, 5, 3, 8, 5, 2, 3, 2, 7, 3, 7, 10, 3, 7,
-                6, 10, 7, 11, 6, 11, 0, 6, 0, 1, 6, 6, 1, 10, 9, 0, 11, 9,
-                11, 2, 9, 2, 5, 7, 2, 11
-                */
                 0, 1, 2, 1, 0, 3, 0, 2, 4, 0, 4, 5, 0, 5, 3, 1, 3, 6, 2, 1, 7,
                 4, 2, 8, 5, 4, 9, 3, 5, 10, 1, 6, 7, 2, 7, 8, 4, 8, 9, 5, 9, 10,
                 3, 10, 6, 7, 6, 11, 8, 7, 11, 9, 8, 11, 10, 9, 11, 6, 10, 11
@@ -149,12 +147,81 @@ namespace DefenseShields.Support
             _vertexBuffer = points.ToArray();
         }
 
-        public void Draw(MatrixD matrix, float radius, int lod, int count, bool enemy, Vector3D impactPos, MatrixD detectMatrix, IMyEntity _shield, MyStringId? faceMaterial = null, MyStringId? lineMaterial = null, float lineThickness = -1f)
+        public void Draw(MatrixD matrix, float radius, int lod, int count, bool enemy, Vector3D impactPos,
+            MatrixD detectMatrix, IMyEntity shield1, IMyEntity shield2, MyStringId? faceMaterial = null,
+            MyStringId? lineMaterial = null, float lineThickness = -1f)
         {
             var lineWidth = radius / 600;
             radius = 1f; //We set sphere radius elsewhere
+
+
+            #region Color changing code
+            //Init Colors
+            var cv1 = 0;
+            var cv2 = 0;
+            var cv3 = 0;
+            var cv4 = 0;
+            if (enemy) cv1 = 75;
+            else cv2 = 75;
+            if (cv1 != 0) cv3 = cv1;
+            if (cv2 != 0) cv4 = cv2;
+            var rndNum1 = Random.Next(15, 27);
+            var colorRnd1 = Random.Next(15, 50);
+            var colorRnd2 = Random.Next(8, 255);
+            var rndNum3 = Random.Next(55, 63);
+            var rndNum4 = Random.Next(40, 120);
+
+            //waveColor
+            var waveColor = Color.FromNonPremultiplied(cv3, 0, cv4, rndNum1 - 5);
+
+            //wavePassedColor
+            var wavePassedColor = Color.FromNonPremultiplied(0, 0, 5, colorRnd1);
+            if (count % 10 == 0)
+            {
+                wavePassedColor = Color.FromNonPremultiplied(0, 0, rndNum1, rndNum1 - 5);
+            }
+
+            //waveComingColor
+            var waveComingColor = Color.FromNonPremultiplied(cv1, 0, cv2, 16);
+
+            //hitColor
+            var hitColor = Color.FromNonPremultiplied(0, 0, colorRnd2, 16);
+
+            //lineColor
+            var lineColor = Color.FromNonPremultiplied(cv1, 0, cv2, 32);
+            Vector4 vlineColor = lineColor;
+
+            //pulseColor
+            if (_charged)
+            {
+                if (_pulseCount < 60 && _pulseCount % 4 == 0)
+                {
+                    _pulse -= 1;
+                }
+                else if (_pulseCount >= 60 && _pulseCount % 4 == 0)
+                {
+                    _pulse += 1;
+                }
+                //Log.Line($"Pulse: {_pulse} Count: {_pulseCount}");
+                if (_pulseCount != 119) _pulseCount++;
+                else _pulseCount = 0;
+
+            }
+
+            var puleColor1 = Color.FromNonPremultiplied(_pulse, 0, 0, 16);
+            var puleColor2 = Color.FromNonPremultiplied(0, 0, 0, _pulse);
+            var glitchColor = Color.FromNonPremultiplied(0, 0, rndNum4, rndNum1 - 5);
+            if (_pulseCount == 59 && _pulseCount == rndNum3)
+            {
+                puleColor2 = Color.FromNonPremultiplied(0, 0, 27, _pulse);
+                _glitch = 1;
+                Log.Line($"Random Pulse: {_pulse}");
+            }
+            var pulseColor = enemy ? puleColor1 : puleColor2;
+            #endregion
+
+            #region Draw Prep
             var impactTrue = !impactPos.Equals(_oldImpactPos);
-            //Log.Line($"{impactTrue} - {impactPos} - {_oldImpactPos}");
             if (impactTrue)
             {
                 if (_impactNew == 0) _impactFinished = true;
@@ -162,20 +229,77 @@ namespace DefenseShields.Support
                 _oldImpactPos = impactPos;
                 _impactNew = 1;
                 _impactCharge = 0;
+                _charged = false;
+                _pulseCount = 0;
+                _pulse = 25;
             }
-            if (_impactNew == 61)
+            if (_impactNew == 65)
             {
                 _impactNew = 0;
                 _impactCharge = 1;
             }
-            if (_impactCharge == 121) _impactCharge = 0;
+            if (_glitch == 9) _glitch = 0;
+            if (_impactCharge == 121)
+            {
+                _charged = true;
+                _impactCharge = 0;
+            }
+            //chargeColor
+            var rndNum2 = Random.Next(1, 9);
+            var chargeColor = Color.FromNonPremultiplied(0, 0, 0, 16 + _impactCharge / 6);
+            if (_impactCharge % rndNum2 == 0)
+            {
+                chargeColor = Color.FromNonPremultiplied(0, 0, 0, 16 + _impactCharge / 8);
+            }
+
+            if (_glitch != 0)
+            {
+                var ixImpact = _indexBuffer[lod];
+                var waveFacesPer = ixImpact.Length / 3 / 8;
+                var firstFace6X = _glitch * waveFacesPer - waveFacesPer;
+                var lastFace6X = _glitch * waveFacesPer - 1;
+                if (_glitch == 1)
+                {
+                    _glichSlist.Clear();
+                    for (var i = 0; i < ixImpact.Length - 2; i += 3)
+                    {
+                        var i0 = ixImpact[i];
+                        var i1 = ixImpact[i + 1];
+                        var i2 = ixImpact[i + 2];
+                        var glitchRndNum1 = Random.Next(0, 9999999);
+                        var glitchRndNum2 = Random.Next(0, 9999999);
+                        var glitchRndNum3 = Random.Next(0, 9999999);
+
+
+                        var fnorm = (_vertexBuffer[i0] + _vertexBuffer[i1] + _vertexBuffer[i2]);
+                        fnorm.Normalize();
+                        var zeroPos = new Vector3D(glitchRndNum1, glitchRndNum2, glitchRndNum3);
+                        var localImpact = Vector3D.Transform(zeroPos, MatrixD.Invert(detectMatrix));
+                        localImpact.Normalize();
+                        var impactFactor = 1 - (Vector3D.Dot(localImpact, fnorm) + 1) / 2;
+                        _glichSlist.Add(impactFactor, i);
+                    }
+                }
+                _firstFaceLoc6X = _glichSlist.ElementAt(firstFace6X).Key;
+                _lastFaceLoc6X = _glichSlist.ElementAt(lastFace6X).Key;
+            }
 
             if (_impactNew != 0)
             {
+                if (_impactNew == 1) shield1.Render.Visible = true;
+                else if (_impactNew == 2) shield1.Render.Visible = false;
+                else if (_impactNew == 16) shield2.Render.Visible = true;
+                else if (_impactNew == 17) shield2.Render.Visible = false;
+                if (_impactNew == 32) shield1.Render.Visible = true;
+                else if (_impactNew == 33) shield1.Render.Visible = false;
+                else if (_impactNew == 48) shield2.Render.Visible = true;
+                else if (_impactNew == 49) shield2.Render.Visible = false;
+
                 var ixImpact = _indexBuffer[lod];
-                var waveFacesPer = ixImpact.Length / 3 / 60;
-                var firstFace = _impactNew * waveFacesPer - waveFacesPer;
-                var lastFace = _impactNew * waveFacesPer;
+                var waveFacesPer = ixImpact.Length / 3 / 64;
+                var firstFace1X = _impactNew * waveFacesPer - waveFacesPer;
+                var lastFace1X = _impactNew * waveFacesPer - 1;
+
                 if (_impactNew == 1)
                 {
                     _faceLocSlist.Clear();
@@ -192,83 +316,15 @@ namespace DefenseShields.Support
                         var impactFactor = 1 - (Vector3D.Dot(localImpact, fnorm) + 1) / 2;
                         _faceLocSlist.Add(impactFactor, i);
                     }
-                    _1Face = _faceLocSlist.ElementAt(0).Value;
-                    _2Face = _faceLocSlist.ElementAt(1).Value;
-                    _3Face = _faceLocSlist.ElementAt(2).Value;
-                    _4Face = _faceLocSlist.ElementAt(3).Value;
-                    _5Face = _faceLocSlist.ElementAt(4).Value;
-                    _6Face = _faceLocSlist.ElementAt(5).Value;
+                    _firstHitFaceLoc1x = _faceLocSlist.ElementAt(firstFace1X).Key;
+                    _lastHitFaceLoc1x = _faceLocSlist.ElementAt(lastFace1X).Key;
                 }
-                _firstFaceLoc = _faceLocSlist.ElementAt(firstFace).Key;
-                _lastFaceLoc = _faceLocSlist.ElementAt(lastFace).Key;
+                _firstFaceLoc1x = _faceLocSlist.ElementAt(firstFace1X).Key;
+                _lastFaceLoc1x = _faceLocSlist.ElementAt(lastFace1X).Key;
             }
-            //if (_impactNew != 0) lod = 4;
-            #region Color changing code
-            var cv1 = 0;
-            var cv2 = 0;
-            var cv3 = 0;
-            var cv4 = 0;
-            var cv5 = 0;
-            var cv6 = 0;
-            if (_charge)
-            {
-                if (count == 59)
-                {
-                    _pulseColor = 140;
-                    _charge = false;
-                }
-                else
-                {
-                    _pulseColor += 1;
-                }
-            }
-            else
-            {
-                if (count == 59)
-                {
-                    _pulseColor = 80;
-                    _charge = true;
-                }
-                else
-                {
-                    _pulseColor -= 1;
-                }
-            }
-
-            if (count % 5 == 0) _colourRand1 = Random.Next(1, 75);
-            _colourRand2 = Random.Next(1, 200);
-
-            if (enemy) cv1 = 100;
-            else cv2 = 100;
-            if (cv1 != 0) cv3 = cv1;
-            if (cv2 != 0) cv4 = cv2;
-            if (cv1 != 0) cv5 = _impactCharge;
-            if (cv2 != 0) cv6 = _impactCharge;
-
-            var c1 = Color.FromNonPremultiplied(_pulseColor - 35, 0, 0, 16);
-            var c2 = Color.FromNonPremultiplied(0, 0, _pulseColor, 16);
-            var color1 = enemy ? c1 : c2;
-
-            var c3 = Color.FromNonPremultiplied(cv3, 0, cv4, 16);
-            var color2 = c3;
-
-            var c6 = Color.FromNonPremultiplied(_colourRand1, 0, 0, 16);
-            var c7 = Color.FromNonPremultiplied(0, 0, _colourRand1, 16);
-            var color3 = enemy ? c6 : c7;
-
-            var c8 = Color.FromNonPremultiplied(cv5, 0, cv6, 16);
-            var color4 = c8;
-
-            var c9 = Color.FromNonPremultiplied(cv1, 0, cv2, 16);
-            var color5 = c9;
-
-            var c10 = Color.FromNonPremultiplied(_colourRand2, 0, 0, 16);
-            var c11 = Color.FromNonPremultiplied(0, 0, _colourRand2, 16);
-            var color6 = enemy ? c10 : c11;
-
-            var vc4 = Color.FromNonPremultiplied(cv1, 0, cv2, 32);
-            Vector4 vColor1 = vc4;
             #endregion
+
+            #region Compute lines and colors
             var ix = _indexBuffer[lod];
             for (var i = 0; i < ix.Length - 2; i += 3)
             {
@@ -276,9 +332,9 @@ namespace DefenseShields.Support
                 var i1 = ix[i + 1];
                 var i2 = ix[i + 2];
 
-                var v0 = Vector3.Transform(radius * _vertexBuffer[i0], matrix);
-                var v1 = Vector3.Transform(radius * _vertexBuffer[i1], matrix);
-                var v2 = Vector3.Transform(radius * _vertexBuffer[i2], matrix);
+                var v0 = Vector3D.Transform(radius * _vertexBuffer[i0], matrix);
+                var v1 = Vector3D.Transform(radius * _vertexBuffer[i1], matrix);
+                var v2 = Vector3D.Transform(radius * _vertexBuffer[i2], matrix);
 
                 var fnorm = (_vertexBuffer[i0] + _vertexBuffer[i1] + _vertexBuffer[i2]);
                 fnorm.Normalize();
@@ -288,51 +344,63 @@ namespace DefenseShields.Support
                 if (faceMaterial.HasValue)
                     if (_impactNew != 0)
                     {
-                        if (_1Face == i || _2Face == i || _3Face == i || _4Face == i || _5Face == i || _6Face == i)
+                        if (impactFactor >= _firstHitFaceLoc1x && impactFactor <= _lastHitFaceLoc1x)
                         {
+                            //Log.Line($"Hit");
                             MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
                                 _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
-                                (v0 + v1 + v2) / 3, color6);
+                                (v0 + v1 + v2) / 3, hitColor);
                         }
-                        if (impactFactor >= _firstFaceLoc && impactFactor <= _lastFaceLoc)
+                        if (impactFactor >= _firstFaceLoc1x && impactFactor <= _lastFaceLoc1x)
                         {
-                            //Log.Line($"{i} - {count}");
+                            //Log.Line($"Wave");
                             MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
                                 _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
-                                (v0 + v1 + v2) / 3, color2);
+                                (v0 + v1 + v2) / 3, waveColor);
                         }
-                        if (impactFactor < _lastFaceLoc)
+                        if (impactFactor < _lastFaceLoc1x && _impactFinished)
                         {
-                            //Log.Line($"{i} - {count}");
+                            //Log.Line($"Wave passed");
                             MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
                                 _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
-                                (v0 + v1 + v2) / 3, color3);
+                                (v0 + v1 + v2) / 3, wavePassedColor);
                         }
-                        if (impactFactor > _lastFaceLoc && _impactFinished)
+                        if (impactFactor > _lastFaceLoc1x && _impactFinished)
                         {
+                            //Log.Line($"Wave coming");
                             MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
                                 _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
-                                (v0 + v1 + v2) / 3, color5);
+                                (v0 + v1 + v2) / 3, waveComingColor);
                         }
                     }
                     else if (_impactCharge != 0)
                     {
-                        //Log.Line($"{i} - {count}");
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
-                        _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
-                        (v0 + v1 + v2) / 3, color4);
+                            _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
+                            (v0 + v1 + v2) / 3, chargeColor);
+                    }
+                    else if (_glitch != 0)
+                    {
+                        //Log.Line($"Glitching");
+                        if (impactFactor >= _firstFaceLoc6X && impactFactor <= _lastFaceLoc6X)
+                        {
+                            MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
+                                _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
+                                (v0 + v1 + v2) / 3, glitchColor);
+                        }
                     }
                     else
                     {
+                        //Log.Line($"Idle");
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
                             _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
-                            (v0 + v1 + v2) / 3, color1);
+                            (v0 + v1 + v2) / 3, pulseColor);
                     }
                 if (lineMaterial.HasValue && lineThickness > 0)
                 {
-                    MySimpleObjectDraw.DrawLine(v0, v1, lineMaterial, ref vColor1, lineThickness);
-                    MySimpleObjectDraw.DrawLine(v1, v2, lineMaterial, ref vColor1, lineThickness);
-                    MySimpleObjectDraw.DrawLine(v2, v0, lineMaterial, ref vColor1, lineThickness);
+                    MySimpleObjectDraw.DrawLine(v0, v1, lineMaterial, ref vlineColor, lineThickness);
+                    MySimpleObjectDraw.DrawLine(v1, v2, lineMaterial, ref vlineColor, lineThickness);
+                    MySimpleObjectDraw.DrawLine(v2, v0, lineMaterial, ref vlineColor, lineThickness);
                 }
                 //if (_impactNew != 0)
                 //{
@@ -340,9 +408,12 @@ namespace DefenseShields.Support
                 //    MySimpleObjectDraw.DrawLine(v1, v2, lineMaterial, ref color3, lineWidth);
                 //    MySimpleObjectDraw.DrawLine(v2, v0, lineMaterial, ref color3, lineWidth);
                 //}
+            //});
+            #endregion
             }
             if (_impactNew != 0) _impactNew++;
-            if (_impactCharge != 0) _impactCharge++;
+            if (_glitch != 0) _glitch++;
+            if (_impactCharge != 0 && _impactNew == 0) _impactCharge++;
         }
 
         private static int SubdividedAddress(IList<Vector3> pts, IDictionary<string, int> assoc, int a, int b)

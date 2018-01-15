@@ -60,8 +60,8 @@ namespace DefenseShields
 
         private const ushort ModId = 50099;
 
-        private readonly Icosphere _sphere = new Icosphere(5);
-        private Vector3D _worldImpactPosition = new Vector3D(0, 0, 0);
+        private readonly Icosphere _sphere = new Icosphere(4);
+        private Vector3D _worldImpactPosition;
 
         private MatrixD _worldMatrix;
         public MatrixD DetectMatrix;
@@ -93,7 +93,8 @@ namespace DefenseShields
         private IMyFunctionalBlock _fblock;
         private IMyTerminalBlock _tblock;
         private MyCubeBlock _cblock;
-        private IMyEntity _shield;
+        private IMyEntity _shield1;
+        private IMyEntity _shield2;
         #endregion
 
         #region Init
@@ -168,7 +169,8 @@ namespace DefenseShields
                 }
                 if (!Initialized && _cblock.IsWorking)
                 {
-                    if (!MyAPIGateway.Utilities.IsDedicated) MyAPIGateway.Parallel.Do(DrawShield); //Check
+                    //if (!MyAPIGateway.Utilities.IsDedicated) MyAPIGateway.Parallel.StartBackground(() => DrawShield(_range)); //Check
+                    if (!MyAPIGateway.Utilities.IsDedicated) DrawShield(_range); //Check
                     else SendPoke(_range); //Check
                     MyAPIGateway.Parallel.StartBackground(WebEntities);
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
@@ -192,8 +194,10 @@ namespace DefenseShields
                 _tblock.RefreshCustomInfo();
                 _absorb = 150f;
 
-
-                _shield = Spawn.Utils.SpawnShield("LargeField", "", true, false, false, false, false, _cblock.IDModule.Owner);
+                _shield1 = Spawn.Utils.SpawnShield("LargeField", "", true, false, false, false, false, _cblock.IDModule.Owner);
+                _shield2 = Spawn.Utils.SpawnShield("ImpactField", "", true, false, false, false, false, _cblock.IDModule.Owner);
+                _shield1.Render.Visible = false;
+                _shield2.Render.Visible = false;
                 Initialized = false;
                 #region Voxel Code
                 /*
@@ -510,7 +514,7 @@ namespace DefenseShields
                 info = message;
                 if (info.ModId == ModId)
                 {
-                    DrawShield();
+                    DrawShield(info.Size);
                 }
             }
             catch (Exception ex)
@@ -522,7 +526,7 @@ namespace DefenseShields
         #endregion
 
         #region Draw Shield
-        public void DrawShield()
+        public void DrawShield(float size)
         {
             //var wiredraw = 1 << Math.Clamp((int) (5 * _range / Math.Sqrt(_cblock.WorldMatrix.Translation.Length(MyAPIGateway.Session.Camera.Position)), 1, 5));
             var relations = _tblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId);
@@ -533,9 +537,12 @@ namespace DefenseShields
 
             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) enemy = false;
             else enemy = true;
+            var colour = Color.FromNonPremultiplied(255, 80, 16, 72);
 
-            _shield.SetWorldMatrix(edgeMatrix2);
-            _sphere.Draw(edgeMatrix1, _range, 3, Count, enemy, _worldImpactPosition, DetectMatrix, _shield, _faceId, _lineId, -1);
+            if (!_shield1.WorldMatrix.Equals(edgeMatrix2)) _shield1.SetWorldMatrix(edgeMatrix2);
+            if (!_shield2.WorldMatrix.Equals(edgeMatrix2)) _shield2.SetWorldMatrix(edgeMatrix2);
+
+            _sphere.Draw(edgeMatrix1, _range, 3, Count, enemy, _worldImpactPosition, DetectMatrix, _shield1, _shield2, _faceId, _lineId, -1);
         }
         #endregion
 
