@@ -10,6 +10,8 @@ using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Weapons;
 using SpaceEngineers.Game.ModAPI;
+using VRage.Utils;
+using VRageMath;
 
 namespace DefenseShields
 {
@@ -21,8 +23,20 @@ namespace DefenseShields
         public static bool IsInit;
         private static List<DefenseShields> _bulletShields = new List<DefenseShields>(); // check 
         public static bool ControlsLoaded;
+        public int i = 0;
+        private readonly MyStringId _faceId = MyStringId.GetOrCompute("Build new");
+
 
         // Initialisation
+
+        public override void Draw()
+        {
+            if (i < 60)
+            {
+                i++;
+                for (var j = 0; j < 32768; j++) MyTransparentGeometry.AddTriangleBillboard(Vector3D.Zero, Vector3D.Zero, Vector3D.Zero, Vector3.Zero, Vector3.Zero, Vector3.Zero, Vector2.Zero, Vector2.Zero, Vector2.Zero, _faceId, 0, Vector3D.Zero);
+            }
+        }
 
         protected override void UnloadData()
         {

@@ -23,6 +23,7 @@ using VRage.Collections;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
+using Sandbox.Game.Gui;
 
 namespace DefenseShields
 {
@@ -60,7 +61,7 @@ namespace DefenseShields
 
         private const ushort ModId = 50099;
 
-        private readonly Icosphere _sphere = new Icosphere(4);
+        private readonly Icosphere _sphere = new Icosphere(6);
         private Vector3D _worldImpactPosition;
 
         private MatrixD _worldMatrix;
@@ -169,7 +170,7 @@ namespace DefenseShields
                 }
                 if (!Initialized && _cblock.IsWorking)
                 {
-                    //if (!MyAPIGateway.Utilities.IsDedicated) MyAPIGateway.Parallel.StartBackground(() => DrawShield(_range)); //Check
+                    //if (!MyAPIGateway.Utilities.IsDedicated) MyAPIGateway.Parallel.Do(() => DrawShield(_range)); //Check
                     if (!MyAPIGateway.Utilities.IsDedicated) DrawShield(_range); //Check
                     else SendPoke(_range); //Check
                     MyAPIGateway.Parallel.StartBackground(WebEntities);
@@ -525,9 +526,39 @@ namespace DefenseShields
         }
         #endregion
 
+        private bool Distance(int x)
+        {
+            var pPosition = MyAPIGateway.Session.Player.Character.GetPosition();
+            var cPosition = _cblock.CubeGrid.PositionComp.GetPosition();
+            var range = Vector3D.DistanceSquared(cPosition, pPosition) <= (x + _range) * (x + _range);
+            if (range)
+            {
+                return true;
+            }
+            return false;
+        }
+
         #region Draw Shield
         public void DrawShield(float size)
         {
+
+            var sp = new BoundingSphereD(_cblock.Position, _range);
+            var sphereOnCamera = MyAPIGateway.Session.Camera.IsInFrustum(ref sp);
+            int lod = 1;
+
+            if (Distance(400)) lod = 5;
+            else if (Distance(2250)) lod = 4;
+            else if (Distance(4500)) lod = 3;
+            else if (Distance(7000)) lod = 2;
+            else lod = 1;
+
+            //var sphereOnCamera = MyAPIGateway.Session.Camera.WorldToScreen(ref test).AbsMax() < 1;
+            //_toDraw.GetAllInSphere(tmpToDraw, ref sp);
+            //CenterDot = new HudAPIv2.BillBoardHUDMessage(MyAPIGateway.Session.Player, Vector2D.Zero, Color.Blue);
+            //CenterDot.Options |= HudAPIv2.Options.Shadowing | HudAPIv2.Options.Fixed;
+            //CenterDot.Scale = 0.0012d;
+            //CenterDot.Visible = false;
+
             //var wiredraw = 1 << Math.Clamp((int) (5 * _range / Math.Sqrt(_cblock.WorldMatrix.Translation.Length(MyAPIGateway.Session.Camera.Position)), 1, 5));
             var relations = _tblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId);
             bool enemy;
@@ -541,8 +572,10 @@ namespace DefenseShields
 
             if (!_shield1.WorldMatrix.Equals(edgeMatrix2)) _shield1.SetWorldMatrix(edgeMatrix2);
             if (!_shield2.WorldMatrix.Equals(edgeMatrix2)) _shield2.SetWorldMatrix(edgeMatrix2);
-
-            _sphere.Draw(edgeMatrix1, _range, 3, Count, enemy, _worldImpactPosition, DetectMatrix, _shield1, _shield2, _faceId, _lineId, -1);
+            if (sphereOnCamera)
+            {
+            _sphere.Draw(edgeMatrix1, _range, lod, Count, enemy, _worldImpactPosition, DetectMatrix, _shield1, _shield2, _faceId, _lineId, -1);
+            }
         }
         #endregion
 
@@ -564,13 +597,8 @@ namespace DefenseShields
             float detect = (x * x) / ((_width - f) * (_width - f)) + (y * y) / ((_depth - f) * (_depth - f)) + (z * z) / ((_height - f) * (_height - f));
             if (detect <= 1)
             {
-                //Log.Line($"Entity:{ent} x:{x} y:{y} z:{z} d:{detect} c:{Count}");
                 return true;
             }
-            /*if (detect <= 2.4 || detect > 10)
-            {
-                Log.Line($"Entity:{ent} x:{x} y:{y} z:{z} d:{detect} c:{Count}");
-            }*/
             return false;
         }
         #endregion
@@ -607,6 +635,11 @@ namespace DefenseShields
             MyAPIGateway.Parallel.ForEach(webList, webent =>
             {
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
+                if (webent.Physics.IsStatic)
+                {
+                    Log.Line($"webEffect static {webent}");
+                    return;
+                }
                 if (webent is IMyMeteor  || webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
                 {
                     if (_shotwebbed) return;
@@ -672,7 +705,7 @@ namespace DefenseShields
                     }
                     return;
                 }
-                Log.Line($"webEffect unmatched {webent.GetFriendlyName()} {webent.Name}");
+                Log.Line($"webEffect unmatched {webent.GetFriendlyName()} {webent.Name} {webent.DisplayName} {webent.EntityId} {webent.Parent} {webent.Components}");
             });
         }
         #endregion
@@ -772,16 +805,4 @@ namespace DefenseShields
         }
         #endregion
     }
-    /*
-    public static class Test
-    {
-        public static double RoundUpToCube(this double value)
-        {
-            int baseVal = 1;
-            while (baseVal < value)
-                baseVal = baseVal * 2;
-            return baseVal;
-        }
-    }
-    */
 }

@@ -63,7 +63,7 @@ namespace DefenseShields.Support
                 ZMirroxPlane = null,
                 PersistentFlags = MyPersistentEntityFlags2.InScene,
                 Name = "ArtificialCubeGrid",
-                DisplayName = "FieldGenerator",
+                DisplayName = "FieldEffect",
                 CreatePhysics = false,
                 DestructibleBlocks = true,
                 PositionAndOrientation = new MyPositionAndOrientation(Vector3D.Zero, Vector3D.Forward, Vector3D.Up),
@@ -75,7 +75,7 @@ namespace DefenseShields.Support
                         EntityId = 0,
                         BlockOrientation = EntityOrientation,
                         SubtypeName = "",
-                        Name = "Field",
+                        Name = "",
                         Min = Vector3I.Zero,
                         Owner = 0,
                         ShareMode = MyOwnershipShareModeEnum.None,
@@ -154,7 +154,6 @@ namespace DefenseShields.Support
             var lineWidth = radius / 600;
             radius = 1f; //We set sphere radius elsewhere
 
-
             #region Color changing code
             //Init Colors
             var cv1 = 0;
@@ -172,24 +171,28 @@ namespace DefenseShields.Support
             var rndNum4 = Random.Next(40, 120);
 
             //waveColor
-            var waveColor = Color.FromNonPremultiplied(cv3, 0, cv4, rndNum1 - 5);
+            var vwaveColor = Color.FromNonPremultiplied(cv3, 0, cv4, rndNum1 - 5);
+            Vector4 waveColor = vwaveColor;
 
             //wavePassedColor
-            var wavePassedColor = Color.FromNonPremultiplied(0, 0, 5, colorRnd1);
+            var vwavePassedColor = Color.FromNonPremultiplied(0, 0, 5, colorRnd1);
             if (count % 10 == 0)
             {
-                wavePassedColor = Color.FromNonPremultiplied(0, 0, rndNum1, rndNum1 - 5);
+                vwavePassedColor = Color.FromNonPremultiplied(0, 0, rndNum1, rndNum1 - 5);
             }
+            Vector4 wavePassedColor = vwavePassedColor;
 
             //waveComingColor
-            var waveComingColor = Color.FromNonPremultiplied(cv1, 0, cv2, 16);
+            var vwaveComingColor = Color.FromNonPremultiplied(cv1, 0, cv2, 16);
+            Vector4 waveComingColor = vwaveComingColor;
 
             //hitColor
-            var hitColor = Color.FromNonPremultiplied(0, 0, colorRnd2, 16);
+            var vhitColor = Color.FromNonPremultiplied(0, 0, colorRnd2, rndNum1);
+            Vector4 hitColor = vhitColor;
 
             //lineColor
-            var lineColor = Color.FromNonPremultiplied(cv1, 0, cv2, 32);
-            Vector4 vlineColor = lineColor;
+            var vlineColor = Color.FromNonPremultiplied(cv1, 0, cv2, 32);
+            Vector4 lineColor = vlineColor;
 
             //pulseColor
             if (_charged)
@@ -210,14 +213,16 @@ namespace DefenseShields.Support
 
             var puleColor1 = Color.FromNonPremultiplied(_pulse, 0, 0, 16);
             var puleColor2 = Color.FromNonPremultiplied(0, 0, 0, _pulse);
-            var glitchColor = Color.FromNonPremultiplied(0, 0, rndNum4, rndNum1 - 5);
+            var vglitchColor = Color.FromNonPremultiplied(0, 0, rndNum4, rndNum1 - 5);
+            Vector4 glitchColor = vglitchColor;
             if (_pulseCount == 59 && _pulseCount == rndNum3)
             {
                 puleColor2 = Color.FromNonPremultiplied(0, 0, 27, _pulse);
                 _glitch = 1;
                 Log.Line($"Random Pulse: {_pulse}");
             }
-            var pulseColor = enemy ? puleColor1 : puleColor2;
+            var vpulseColor = enemy ? puleColor1 : puleColor2;
+            Vector4 pulseColor = vpulseColor;
             #endregion
 
             #region Draw Prep
@@ -286,6 +291,7 @@ namespace DefenseShields.Support
 
             if (_impactNew != 0)
             {
+                
                 if (_impactNew == 1) shield1.Render.Visible = true;
                 else if (_impactNew == 2) shield1.Render.Visible = false;
                 else if (_impactNew == 16) shield2.Render.Visible = true;
@@ -294,6 +300,7 @@ namespace DefenseShields.Support
                 else if (_impactNew == 33) shield1.Render.Visible = false;
                 else if (_impactNew == 48) shield2.Render.Visible = true;
                 else if (_impactNew == 49) shield2.Render.Visible = false;
+                
 
                 var ixImpact = _indexBuffer[lod];
                 var waveFacesPer = ixImpact.Length / 3 / 64;
@@ -398,9 +405,9 @@ namespace DefenseShields.Support
                     }
                 if (lineMaterial.HasValue && lineThickness > 0)
                 {
-                    MySimpleObjectDraw.DrawLine(v0, v1, lineMaterial, ref vlineColor, lineThickness);
-                    MySimpleObjectDraw.DrawLine(v1, v2, lineMaterial, ref vlineColor, lineThickness);
-                    MySimpleObjectDraw.DrawLine(v2, v0, lineMaterial, ref vlineColor, lineThickness);
+                    MySimpleObjectDraw.DrawLine(v0, v1, lineMaterial, ref lineColor, lineThickness);
+                    MySimpleObjectDraw.DrawLine(v1, v2, lineMaterial, ref lineColor, lineThickness);
+                    MySimpleObjectDraw.DrawLine(v2, v0, lineMaterial, ref lineColor, lineThickness);
                 }
                 //if (_impactNew != 0)
                 //{
@@ -408,8 +415,8 @@ namespace DefenseShields.Support
                 //    MySimpleObjectDraw.DrawLine(v1, v2, lineMaterial, ref color3, lineWidth);
                 //    MySimpleObjectDraw.DrawLine(v2, v0, lineMaterial, ref color3, lineWidth);
                 //}
-            //});
-            #endregion
+                //});
+                #endregion
             }
             if (_impactNew != 0) _impactNew++;
             if (_glitch != 0) _glitch++;
