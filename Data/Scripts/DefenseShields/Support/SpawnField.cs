@@ -102,6 +102,7 @@ namespace DefenseShields.Support
         private int _impactCharge;
         private int _pulseCount;
         private int _pulse = 25;
+        private int _prevLod;
 
         private double _firstHitFaceLoc1x;
         private double _lastHitFaceLoc1x;
@@ -151,6 +152,9 @@ namespace DefenseShields.Support
             MatrixD detectMatrix, IMyEntity shield1, IMyEntity shield2, MyStringId? faceMaterial = null,
             MyStringId? lineMaterial = null, float lineThickness = -1f)
         {
+            var lodChange = (_impactNew != 0 || _glitch != 0) && lod != _prevLod;
+            if (lodChange) Log.Line($"Lod changed from {_prevLod} to {lod}");
+            _prevLod = lod;
             var lineWidth = radius / 600;
             radius = 1f; //We set sphere radius elsewhere
 
@@ -263,8 +267,9 @@ namespace DefenseShields.Support
                 var waveFacesPer = ixImpact.Length / 3 / 8;
                 var firstFace6X = _glitch * waveFacesPer - waveFacesPer;
                 var lastFace6X = _glitch * waveFacesPer - 1;
-                if (_glitch == 1)
+                if (_glitch == 1 || lodChange)
                 {
+                    Log.Line($"L {ixImpact.Length} -Tris {ixImpact.Length / 3} -Div8 {ixImpact.Length / 3 / 8} -{lodChange}");
                     _glichSlist.Clear();
                     for (var i = 0; i < ixImpact.Length - 2; i += 3)
                     {
@@ -307,8 +312,9 @@ namespace DefenseShields.Support
                 var firstFace1X = _impactNew * waveFacesPer - waveFacesPer;
                 var lastFace1X = _impactNew * waveFacesPer - 1;
 
-                if (_impactNew == 1)
+                if (_impactNew == 1 || lodChange)
                 {
+                    Log.Line($"L {ixImpact.Length} -Tris {ixImpact.Length / 3} -Div64 {ixImpact.Length / 3 / 64} -{lodChange}");
                     _faceLocSlist.Clear();
                     for (var i = 0; i < ixImpact.Length - 2; i += 3)
                     {

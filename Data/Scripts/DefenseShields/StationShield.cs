@@ -544,7 +544,7 @@ namespace DefenseShields
 
             var sp = new BoundingSphereD(_cblock.Position, _range);
             var sphereOnCamera = MyAPIGateway.Session.Camera.IsInFrustum(ref sp);
-            int lod = 1;
+           int lod = 1;
 
             if (Distance(400)) lod = 5;
             else if (Distance(2250)) lod = 4;
@@ -555,11 +555,7 @@ namespace DefenseShields
             //var sphereOnCamera = MyAPIGateway.Session.Camera.WorldToScreen(ref test).AbsMax() < 1;
             //_toDraw.GetAllInSphere(tmpToDraw, ref sp);
             //CenterDot = new HudAPIv2.BillBoardHUDMessage(MyAPIGateway.Session.Player, Vector2D.Zero, Color.Blue);
-            //CenterDot.Options |= HudAPIv2.Options.Shadowing | HudAPIv2.Options.Fixed;
-            //CenterDot.Scale = 0.0012d;
-            //CenterDot.Visible = false;
 
-            //var wiredraw = 1 << Math.Clamp((int) (5 * _range / Math.Sqrt(_cblock.WorldMatrix.Translation.Length(MyAPIGateway.Session.Camera.Position)), 1, 5));
             var relations = _tblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId);
             bool enemy;
             var edgeMatrix1 = MatrixD.Rescale(_worldMatrix, new Vector3D(_width, _height, _depth));
@@ -635,11 +631,6 @@ namespace DefenseShields
             MyAPIGateway.Parallel.ForEach(webList, webent =>
             {
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
-                if (webent.Physics.IsStatic)
-                {
-                    Log.Line($"webEffect static {webent}");
-                    return;
-                }
                 if (webent is IMyMeteor  || webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
                 {
                     if (_shotwebbed) return;
