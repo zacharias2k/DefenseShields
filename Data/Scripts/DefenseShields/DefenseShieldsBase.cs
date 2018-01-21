@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
-
 using DefenseShields.Support;
-using Sandbox.Game.Entities;
-using Sandbox.Game.Weapons;
-using SpaceEngineers.Game.ModAPI;
 using VRage.Utils;
 using VRageMath;
 
@@ -21,25 +16,39 @@ namespace DefenseShields
     public class DefenseShieldsBase : MySessionComponentBase
     {
         public static bool IsInit;
-        private static List<DefenseShields> _bulletShields = new List<DefenseShields>(); // check 
         public static bool ControlsLoaded;
-        public int i = 0;
+        public int I;
+
+        public static DefenseShieldsBase Instance { get; private set; }
+        public readonly Icosphere Sphere = new Icosphere(7);
+
+        public readonly List<DefenseShields> Components = new List<DefenseShields>();
+        public static List<DefenseShields> Shields = new List<DefenseShields>(); 
+
         private readonly MyStringId _faceId = MyStringId.GetOrCompute("Build new");
-
-
-        // Initialisation
 
         public override void Draw()
         {
-            if (i < 60)
+            if (I < 60)
             {
-                i++;
+                I++;
                 for (var j = 0; j < 32768; j++) MyTransparentGeometry.AddTriangleBillboard(Vector3D.Zero, Vector3D.Zero, Vector3D.Zero, Vector3.Zero, Vector3.Zero, Vector3.Zero, Vector2.Zero, Vector2.Zero, Vector2.Zero, _faceId, 0, Vector3D.Zero);
             }
+
+            foreach (var s in Components)
+            {
+                s.Draw();
+            }
+        }
+
+        public override void LoadData()
+        {
+            DefenseShields.Instance = this;
         }
 
         protected override void UnloadData()
         {
+            DefenseShields.Instance = null;
             Log.Line("Logging stopped.");
             Log.Close();
         }
@@ -51,7 +60,7 @@ namespace DefenseShields
             else if (MyAPIGateway.Session.Player != null) Init();
         }
 
-        public static void Init()
+        public static void Init() 
         {
             Log.Init("debugdevelop.log");
             Log.Line($" Logging Started");
@@ -59,17 +68,15 @@ namespace DefenseShields
             IsInit = true;
         }
 
-        // Prevent damage by bullets fired from outside zone.
-
         public static void CheckDamage(object block, ref MyDamageInformation info)
         {
-            if (info.Type == MyDamageType.Deformation) // move below, modify match Type to 
+            if (info.Type == MyDamageType.Deformation) // fix
             {
             }
 
-            if (_bulletShields.Count == 0 || info.Type != MyDamageType.Bullet) return;
+            if (Shields.Count == 0 || info.Type != MyDamageType.Bullet) return;
 
-            var generator = _bulletShields[0];
+            var generator = Shields[0];
             var ent = block as IMyEntity;
             var slimBlock = block as IMySlimBlock;
             if (slimBlock != null) ent = slimBlock.CubeGrid;
@@ -77,7 +84,7 @@ namespace DefenseShields
             if (dude != null) ent = dude;
             if (ent == null) return;
             var isProtected = false;
-            foreach (var shield in _bulletShields)
+            foreach (var shield in Shields)
                 if (shield.InHash.Contains(ent))
                 {
                     isProtected = true;

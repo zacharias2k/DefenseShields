@@ -23,6 +23,36 @@ namespace DefenseShields
         public string Message;
         public string AsteroidName;
 
+
+        /*
+var diameter = 600;
+double maxDiameter = 0;
+maxDiameter = Math.Max(maxDiameter, diameter);
+
+var position = _tblock.GetPosition();
+var layers = new List<Voxels.Voxels.AsteroidSphereLayer>();
+
+byte material = 1;
+var materialName = "Stone_01";
+var name = "test";
+var length = (int)((maxDiameter / 2) + 4).RoundUpToCube();
+var size = new Vector3I(length, length, length);
+var origin = new Vector3I(size.X / 2, size.Y / 2, size.Z / 2);
+//layers = layers.OrderByDescending(e => e.Diameter).ToList();
+layers.Add(new Voxels.Voxels.AsteroidSphereLayer() { Diameter = diameter, Material = material, MaterialName = materialName });
+layers.Add(new Voxels.Voxels.AsteroidSphereLayer() { Diameter = 590f, Material = 255, MaterialName = materialName });
+Voxels.Voxels.CreateNewAsteroid(name, size, position);
+
+Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(origin.X - 2, origin.Y - 2, origin.Z - 2), origin, layers);
+Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(-origin.X + 2, origin.Y - 2, origin.Z - 2), origin, layers);
+Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(origin.X - 2, -origin.Y + 2, origin.Z - 2), origin, layers);
+Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(-origin.X + 2, -origin.Y + 2, origin.Z - 2), origin, layers);
+Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(origin.X - 2, origin.Y - 2, -origin.Z + 2), origin, layers);
+Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(-origin.X + 2, origin.Y - 2, -origin.Z + 2), origin, layers);
+Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(origin.X - 2, -origin.Y + 2, -origin.Z + 2), origin, layers);
+Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(-origin.X + 2, -origin.Y + 2, -origin.Z + 2), origin, layers);
+*/
+
         /*This command is used to generate a sphere asteroid at the exact center of the specified co-ordinates, with multiple layers.
 /createroidsphere <Name> <X> <Y> <Z> <Parts> <Material1> <Diameter1> <Material2> <Diameter2> <Material3> <Diameter3> ....
   <Name> - the base name of the asteroid file. A number will be added if it already exists.
