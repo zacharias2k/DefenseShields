@@ -265,7 +265,7 @@ namespace DefenseShields.Support
 
             public void CalculateColor(MatrixD matrix, Vector3D ImpactPos)
             {
-                Log.Line($"Start CalculateColor");
+                Log.Line($"Start CalculateColor2");
                 //if (_mainLoop == 0) Log.Line($"start");
                 //var localImpact = Vector3D.Transform(_impactPos, MatrixD.Invert(matrix));
                 //localImpact.Normalize();
@@ -298,7 +298,7 @@ namespace DefenseShields.Support
 
                     _triColorBuffer[j] = Vector4.One; // your color
                 }
-                Log.Line($"End CalculateColor");
+                Log.Line($"End CalculateColor2");
             }
 
             public void Draw(MyStringId? faceMaterial = null, MyStringId? lineMaterial = null,

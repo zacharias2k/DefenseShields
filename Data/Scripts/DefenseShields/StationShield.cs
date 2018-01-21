@@ -77,11 +77,11 @@ namespace DefenseShields
         public IMyEntity Shield2;
 
         public static DefenseShieldsBase Instance { get; set; }
-        public readonly Icosphere.Instance Sphere = new Icosphere.Instance(Instance.Sphere);
-        //public Icosphere.Instance Sphere;
+        //public Icosphere.Instance Sphere = new Icosphere.Instance(Instance.Sphere);
+        public Icosphere.Instance Sphere;
 
-        //public override void OnAddedToScene() { DefenseShieldsBase.Instance.Components.Add(this); Sphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Sphere); }
-        //public override void OnRemovedFromScene() { DefenseShieldsBase.Instance.Components.Remove(this); Sphere = null; }
+        public override void OnAddedToScene() { DefenseShieldsBase.Instance.Components.Add(this); Sphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Sphere); }
+        public override void OnRemovedFromScene() { DefenseShieldsBase.Instance.Components.Remove(this); Sphere = null; }
         public override void OnAddedToContainer() { if (Entity.InScene) OnAddedToScene(); }
         public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
 

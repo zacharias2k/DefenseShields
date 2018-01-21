@@ -23,7 +23,6 @@ namespace DefenseShields
         public string Message;
         public string AsteroidName;
 
-
         /*
 var diameter = 600;
 double maxDiameter = 0;
