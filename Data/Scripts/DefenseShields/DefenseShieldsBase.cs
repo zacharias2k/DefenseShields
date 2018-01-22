@@ -20,7 +20,7 @@ namespace DefenseShields
         public int I;
 
         public static DefenseShieldsBase Instance { get; private set; }
-        public readonly Icosphere Sphere = new Icosphere(7);
+        public readonly Icosphere Icosphere = new Icosphere(8);
 
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
         public static List<DefenseShields> Shields = new List<DefenseShields>(); 
@@ -43,12 +43,12 @@ namespace DefenseShields
 
         public override void LoadData()
         {
-            DefenseShields.Instance = this;
+            Instance = this;
         }
 
         protected override void UnloadData()
         {
-            DefenseShields.Instance = null;
+            Instance = null;
             Log.Line("Logging stopped.");
             Log.Close();
         }

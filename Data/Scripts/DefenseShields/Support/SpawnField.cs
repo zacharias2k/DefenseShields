@@ -90,7 +90,6 @@ namespace DefenseShields.Support
     {
     
         public readonly Vector3[] _vertexBuffer;
-        private static readonly Random Random = new Random();
 
         public readonly int[][] _indexBuffer;
 
@@ -181,14 +180,14 @@ namespace DefenseShields.Support
         {
             private readonly Icosphere _backing;
 
+            private Vector3D[] _preCalcNormLclPos;
             private Vector3D[] _vertexBuffer;
             private Vector3D[] _normalBuffer;
             private Vector4[] _triColorBuffer;
 
-            public static Icosphere Icosphere { get; }
+            private static readonly Random Random = new Random();
 
-            //public readonly Icosphere.Instance Sphere = new Icosphere.Instance(Instance.Sphere);
-            //public Icosphere.Instance Sphere;
+            public static DefenseShieldsBase Sphere { get; }
 
             private readonly SortedList<double, int> _faceLocSlist = new SortedList<double, int>();
             private readonly SortedList<double, int> _glichSlist = new SortedList<double, int>();
@@ -219,6 +218,11 @@ namespace DefenseShields.Support
             private double _firstFaceLoc6X;
             private double _lastFaceLoc6X;
 
+            private double[] _impactLocSarray;
+            private double[] _glitchLocSarray;
+
+            private Vector3D _oldImpactPos;
+
             private Vector4 hitColor;
             private Vector4 lineColor;
             private Vector4 waveColor;
@@ -228,8 +232,6 @@ namespace DefenseShields.Support
             private Vector4 pulseColor;
             private Vector4 chargeColor;
 
-           // private Vector3D _impactPos;
-            private Vector3D _oldImpactPos;
 
 
             private readonly MyStringId _faceId = MyStringId.GetOrCompute("Build new");
@@ -248,6 +250,7 @@ namespace DefenseShields.Support
             public void CalculateTransform(MatrixD matrix, int lod)
             {
                 Log.Line($"Start CalculateTransform");
+
                 _lod = lod;
                 var count = checked((int)VertsForLod(lod));
                 Array.Resize(ref _vertexBuffer, count);
@@ -263,9 +266,32 @@ namespace DefenseShields.Support
                 Log.Line($"End CalculateTransform");
             }
 
+            public void CalculateLclPos(MatrixD matrix, Vector3D impactPos)
+            {
+                Log.Line($"Start CalculateLclPos");
+                var ib = _backing._indexBuffer[_lod];
+                _preCalcNormLclPos = new Vector3D[ib.Length / 3];
+
+                for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
+                {
+                    var i0 = ib[i];
+                    var i1 = ib[i + 1];
+                    var i2 = ib[i + 2];
+
+                    var v0 = _vertexBuffer[i0];
+                    var v1 = _vertexBuffer[i1];
+                    var v2 = _vertexBuffer[i2];
+
+                    var lclPos = (v0 + v1 + v2) / 3 - matrix.Translation;
+                    var normlclPos = Vector3D.Normalize(lclPos);
+                    _preCalcNormLclPos[j] = normlclPos;
+                }
+                Log.Line($"End CalculateLclPos");
+            }
+
             public void CalculateColor(MatrixD matrix, Vector3D ImpactPos)
             {
-                Log.Line($"Start CalculateColor2");
+                Log.Line($"Start CalculateColor1");
                 //if (_mainLoop == 0) Log.Line($"start");
                 //var localImpact = Vector3D.Transform(_impactPos, MatrixD.Invert(matrix));
                 //localImpact.Normalize();
@@ -274,12 +300,9 @@ namespace DefenseShields.Support
                 //fnorm.Normalize();
                 //var impactFactor = 1 - (Vector3D.Dot(localImpact, fnorm) + 1) / 2;
 
-                var matrixTranslation = matrix.Translation;
-                var localImpact = (ImpactPos) - matrix.Translation;
+                //var matrixTranslation = matrix.Translation;
+                var localImpact = ImpactPos - matrix.Translation;
                 localImpact.Normalize();
-
-
-                //var impactFactor = acos(dot(norm(lclPos), fnorm(localImpact)));
 
                 var ib = _backing._indexBuffer[_lod];
                 Array.Resize(ref _triColorBuffer, ib.Length / 3);
@@ -293,16 +316,18 @@ namespace DefenseShields.Support
                     var v1 = _vertexBuffer[i1];
                     var v2 = _vertexBuffer[i2];
 
-                    var lclPos = (v0 + v1 + v2) / 3 - matrixTranslation;
-                    var impactFactor = Math.Acos(Vector3D.Dot(Vector3D.Normalize(lclPos), Vector3D.Normalize(localImpact)));
+                    //var lclPos = (v0 + v1 + v2) / 3 - matrixTranslation;  //precompute later, 
+                    //var impactFactor = Math.Acos(Vector3D.Dot(Vector3D.Normalize(lclPos), localImpact));
+                    var dotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], localImpact);
+                    var impactFactor = Math.Acos(dotOfNormLclImpact);
 
                     _triColorBuffer[j] = Vector4.One; // your color
+                    if (impactFactor > 1 && v0 == v1 && v1 == v2) Log.Line($"This will never be true");
                 }
-                Log.Line($"End CalculateColor2");
+                Log.Line($"End CalculateColor1");
             }
 
-            public void Draw(MyStringId? faceMaterial = null, MyStringId? lineMaterial = null,
-                float lineThickness = -1f)
+            public void Draw(MyStringId? faceMaterial = null, MyStringId? lineMaterial = null, float lineThickness = -1f)
             {
                 Log.Line($"Start Draw");
                 var ib = _backing._indexBuffer[_lod];
@@ -323,6 +348,7 @@ namespace DefenseShields.Support
 
                     var color = _triColorBuffer[j];
 
+                    if (color == Vector4.One && n0 == n1 && n1 == n2 && v0 == v1 && v1 == v2) Log.Line($"This will never be true");
                     /*
                     if (faceMaterial.HasValue)
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, Vector2.Zero, Vector2.Zero,
@@ -343,9 +369,9 @@ namespace DefenseShields.Support
             private void LodNormalization()
             {
                 Log.Line($"Previous lod was {_prevLod} current lod is {_lod}");
-                var ixNew = Icosphere._indexBuffer[_lod];
+                var ixNew = Sphere.Icosphere._indexBuffer[_lod];
                 var ixLenNew = ixNew.Length;
-                var ixPrev = Icosphere._indexBuffer[_prevLod];
+                var ixPrev = Sphere.Icosphere._indexBuffer[_prevLod];
                 var ixLenPrev = ixPrev.Length;
                 var gDivNew = MyMaths.FaceDivder(GlitchSteps, ixLenNew / 3);
                 var iDivNew = MyMaths.FaceDivder(ImpactSteps, ixLenNew / 3);
@@ -496,7 +522,7 @@ namespace DefenseShields.Support
                 var lodChange = (_impactCount != 0 || _glitchCount != 0) && _lod != _prevLod;
                 if (lodChange) LodNormalization();
 
-                var ix = Icosphere._indexBuffer[_lod];
+                var ix = _backing._indexBuffer[_lod];
                 var ixLen = ix.Length;
                 _prevLod = _lod;
 
@@ -511,44 +537,49 @@ namespace DefenseShields.Support
                             _glichSlist.Clear();
                             var f = faceDiv / 2;
                             if (faceDiv <= 1) f = 1;
-                            for (var i = 0; i < ixLen - 2; i += 3 * f)
+
+                            var glitchRndNum1 = Random.Next(0, 9999999);
+                            var glitchRndNum2 = Random.Next(0, 9999999);
+                            var glitchRndNum3 = Random.Next(0, 9999999);
+                            var zeroPos = new Vector3D(glitchRndNum1, glitchRndNum2, glitchRndNum3);
+                            var localImpact = Vector3D.Transform(zeroPos, MatrixD.Invert(matrix));
+                            localImpact.Normalize();
+                            _glitchLocSarray = new double[ixLen / 3 / f];
+                            var j = 0;
+                            for (var i = 0; i < ixLen - 2; i += 3 * f, j++)
                             {
                                 var i0 = ix[i];
                                 var i1 = ix[i + 1];
                                 var i2 = ix[i + 2];
-                                var glitchRndNum1 = Random.Next(0, 9999999);
-                                var glitchRndNum2 = Random.Next(0, 9999999);
-                                var glitchRndNum3 = Random.Next(0, 9999999);
 
                                 //Log.Line($"{ixLen} - {ixLen / 3} - {faceDiv} - {i} - {_lod} - {_prevLod} - {firstFace6X} - {lastFace6X} - {_glitchCount}");
 
                                 var fnorm = (_vertexBuffer[i0] + _vertexBuffer[i1] + _vertexBuffer[i2]);
                                 fnorm.Normalize();
-                                var zeroPos = new Vector3D(glitchRndNum1, glitchRndNum2, glitchRndNum3);
-                                var localImpact = Vector3D.Transform(zeroPos, MatrixD.Invert(matrix));
-                                localImpact.Normalize();
+
                                 var impactFactor = 1 - (Vector3D.Dot(localImpact, fnorm) + 1) / 2;
-                                _glichSlist.Add(impactFactor, i);
-                                if (i == 0 || _glichSlist.Count == ixLen / 3 || _glichSlist.Count == ixLen / 3 * faceDiv || _glichSlist.Count == ixLen / 3 / f) Log.Line($"g:{i} - f:{f} - ixLen:{ixLen} - dbLen:{_glichSlist.Count}");
+                                _glitchLocSarray[j] = impactFactor;
+                                //_glichSlist.Add(impactFactor, i);
+                                if (i == 0 || _glitchLocSarray.Length == ixLen / 3 || _glitchLocSarray.Length == ixLen / 3 * faceDiv || _glitchLocSarray.Length == ixLen / 3 / f) Log.Line($"g:{i} - f:{f} - ixLen:{ixLen} - dbLen:{_glitchLocSarray.Length}");
                             }
                         }
                         if (faceDiv <= 1)
                         {
                             var firstFace6X = _glitchStep - 1;
                             var lastFace6X = firstFace6X;
-                            if (lodChange || _glitchStep == 1 || _glitchStep == GlitchSteps / faceDiv * -1 || _glitchStep == GlitchSteps / faceDiv) Log.Line($"g1 - s:{_glitchStep} - Div:{faceDiv} - 1:{firstFace6X} - 2:{lastFace6X} - dbLen:{_glichSlist.Count}");
+                            if (lodChange || _glitchStep == 1 || _glitchStep == GlitchSteps / faceDiv * -1 || _glitchStep == GlitchSteps / faceDiv) Log.Line($"g1 - s:{_glitchStep} - Div:{faceDiv} - 1:{firstFace6X} - 2:{lastFace6X} - dbLen:{_glitchLocSarray.Length}");
                             //Log.Line($"g1 - s:{_glitchStep} - Div:{faceDiv} - 1:{firstFace6X} - 2:{lastFace6X} - dbLen:{_glichSlist.Count}");
-                            _firstFaceLoc1x = _glichSlist.ElementAt(firstFace6X).Key;
-                            _lastFaceLoc1x = _glichSlist.ElementAt(lastFace6X).Key;
+                            _firstFaceLoc1x = _glitchLocSarray[firstFace6X];
+                            _lastFaceLoc1x = _glitchLocSarray[lastFace6X];
                         }
                         else
                         {
                             var firstFace6X = _glitchStep * 2 - 2;
                             var lastFace6X = firstFace6X + 1;
-                            if (lodChange || _glitchStep == 1 || _glitchStep == GlitchSteps) Log.Line($"g1 - s:{_glitchStep} - Div:{faceDiv} - 1:{firstFace6X} - 2:{lastFace6X} - dbLen:{_glichSlist.Count}");
+                            if (lodChange || _glitchStep == 1 || _glitchStep == GlitchSteps) Log.Line($"g1 - s:{_glitchStep} - Div:{faceDiv} - 1:{firstFace6X} - 2:{lastFace6X} - dbLen:{_glitchLocSarray.Length}");
                             //Log.Line($"g1 - s:{_glitchStep} - Div:{faceDiv} - 1:{firstFace6X} - 2:{lastFace6X} - dbLen:{_glichSlist.Count}");
-                            _firstFaceLoc1x = _glichSlist.ElementAt(firstFace6X).Key;
-                            _lastFaceLoc1x = _glichSlist.ElementAt(lastFace6X).Key;
+                            _firstFaceLoc1x = _glitchLocSarray[firstFace6X];
+                            _lastFaceLoc1x = _glitchLocSarray[lastFace6X];
                         }
                     }
                 }

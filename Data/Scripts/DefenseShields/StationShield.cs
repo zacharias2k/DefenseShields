@@ -57,7 +57,7 @@ namespace DefenseShields
         private bool _shotlocked;
         private bool _closegrids;
         private bool _playerkill;
-        private bool _entityMoved;
+        private bool _entityChanged = true;
 
         private const ushort ModId = 50099;
 
@@ -76,12 +76,10 @@ namespace DefenseShields
         public IMyEntity Shield1;
         public IMyEntity Shield2;
 
-        public static DefenseShieldsBase Instance { get; set; }
-        //public Icosphere.Instance Sphere = new Icosphere.Instance(Instance.Sphere);
         public Icosphere.Instance Sphere;
 
-        public override void OnAddedToScene() { DefenseShieldsBase.Instance.Components.Add(this); Sphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Sphere); }
-        public override void OnRemovedFromScene() { DefenseShieldsBase.Instance.Components.Remove(this); Sphere = null; }
+        public override void OnAddedToScene() { DefenseShieldsBase.Instance.Components.Add(this); Sphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Icosphere); }
+        public override void OnRemovedFromScene() { DefenseShieldsBase.Instance.Components.Remove(this); Sphere = null; } // check
         public override void OnAddedToContainer() { if (Entity.InScene) OnAddedToScene(); }
         public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
 
@@ -103,6 +101,9 @@ namespace DefenseShields
         public static HashSet<IMyEntity> DestroyPlayerHash = new HashSet<IMyEntity>();
 
         public static readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
+
+        private readonly MyStringId _faceId = MyStringId.GetOrCompute("Build new");
+        private readonly MyStringId _lineId = MyStringId.GetOrCompute("Square");
         #endregion
 
         #region Init
@@ -177,11 +178,11 @@ namespace DefenseShields
                 if (!Initialized && Oblock.IsWorking)
                 {
                     EntityPos = Entity.GetPosition();
+                    if (EntityPos != EntityPrevPos) _entityChanged = true;
+                    _entityChanged = EntityPos != EntityPrevPos;
                     EntityPrevPos = EntityPos;
-                    _entityMoved = EntityPos != EntityPrevPos;
-
-                    Draw();
-
+                    _entityChanged = true;
+                    //Draw();
                     //else SendPoke(_range); //Check
                     MyAPIGateway.Parallel.StartBackground(WebEntities);
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
@@ -520,16 +521,15 @@ namespace DefenseShields
             var range = Vector3D.DistanceSquared(cPosition, pPosition) <= (x + Range) * (x + Range);
             return range;
         }
-        
-        Task? _prepareTask = null;
+
+        private Task? _prepareTask = null;
 
         public void Draw()
         {
-
+            if (Initialized) return;
             var sp = new BoundingSphereD(Oblock.Position, Range);
             var sphereOnCamera = MyAPIGateway.Session.Camera.IsInFrustum(ref sp);
             int lod;
-
 
             if (Distance(400)) lod = 4;
             else if (Distance(2250)) lod = 4;
@@ -545,14 +545,14 @@ namespace DefenseShields
 
             var relations = Oblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId); // check was tblock
             bool enemy;
-            var edgeMatrix1 = MatrixD.Rescale(WorldMatrix, new Vector3D(Width, Height, Depth));
-            var edgeMatrix2 = MatrixD.Rescale(WorldMatrix, new Vector3D(Width - 1f, Height - 1f, Depth - 1f));
+            ShieldShapeMatrix = MatrixD.Rescale(WorldMatrix, new Vector3D(Width, Height, Depth));
+            
 
             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) enemy = false;
             else enemy = true;
 
-            if (!Shield1.WorldMatrix.Equals(edgeMatrix1)) Shield1.SetWorldMatrix(edgeMatrix1);
-            if (!Shield2.WorldMatrix.Equals(edgeMatrix1)) Shield2.SetWorldMatrix(edgeMatrix1);
+            if (!Shield1.WorldMatrix.Equals(ShieldShapeMatrix)) Shield1.SetWorldMatrix(ShieldShapeMatrix);
+            if (!Shield2.WorldMatrix.Equals(ShieldShapeMatrix)) Shield2.SetWorldMatrix(ShieldShapeMatrix);
 
             //BuildCollections(edgeMatrix1);
             // Models(shield1, shield2);
@@ -562,22 +562,17 @@ namespace DefenseShields
 
             if (sphereOnCamera)
             {
-                //MyAPIGateway.Parallel.Do(() => Draw(edgeMatrix1, _faceId, _lineId));
-                //MyAPIGateway.Parallel.Do(() => DrawBack(edgeMatrix1, lod2, _faceId, _lineId));
+                if (_prepareTask.HasValue && !_prepareTask.Value.IsComplete) _prepareTask.Value.Wait();
+                if (_prepareTask.HasValue && _prepareTask.Value.IsComplete) Sphere.Draw(_faceId, _lineId);
+                _prepareTask = MyAPIGateway.Parallel.Start(PrepareSphere);
             }
-
-
-            if (_prepareTask.HasValue && !_prepareTask.Value.IsComplete)
-                _prepareTask.Value.Wait();
-            //Sphere.Draw();
-            _prepareTask = MyAPIGateway.Parallel.Start(PrepareSphere);
         }
 
         private void PrepareSphere()
         {
-            if (_entityMoved)
-                Sphere.CalculateTransform(WorldMatrix, 6);
-            Sphere.CalculateColor(WorldMatrix, WorldImpactPosition);
+            if (_entityChanged) Sphere.CalculateTransform(ShieldShapeMatrix, 7);
+            if (_entityChanged) Sphere.CalculateLclPos(ShieldShapeMatrix, WorldImpactPosition);
+            Sphere.CalculateColor(ShieldShapeMatrix, WorldImpactPosition);
         }
         
         #region Impact
