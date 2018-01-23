@@ -201,17 +201,18 @@ namespace DefenseShields.Support
             private int _pulseCount;
             private int _pulse = 45;
             private int _prevLod;
+            private int _lod;
             //private int _lod2;
 
             private const int GlitchSteps = 320;
             private const int ImpactSteps = 80;
             private const int ImpactChargeSteps = 120;
 
-            private double _firstHitFaceLoc1x;
-            private double _lastHitFaceLoc1x;
-            private double _firstFaceLoc1x;
-            private double _lastFaceLoc1x;
-            private double _firstFaceLoc2x;
+            private double _firstHitFaceLoc1X;
+            private double _lastHitFaceLoc1X;
+            private double _firstFaceLoc1X;
+            private double _lastFaceLoc1X;
+            private double _firstFaceLoc2X;
             private double _lastFaceLoc2x;
             private double _firstFaceLoc4x;
             private double _lastFaceLoc4x;
@@ -223,15 +224,15 @@ namespace DefenseShields.Support
 
             private Vector3D _oldImpactPos;
 
-            private Vector4 hitColor;
-            private Vector4 lineColor;
-            private Vector4 waveColor;
-            private Vector4 wavePassedColor;
-            private Vector4 waveComingColor;
-            private Vector4 glitchColor;
-            private Vector4 pulseColor;
-            private Vector4 chargeColor;
-
+            private Vector4 _hitColor;
+            private Vector4 _lineColor;
+            private Vector4 _waveColor;
+            private Vector4 _wavePassedColor;
+            private Vector4 _waveComingColor;
+            private Vector4 _glitchColor;
+            private Vector4 _pulseColor;
+            private Vector4 _chargeColor;
+            private Vector4 _maxColor;
 
 
             private readonly MyStringId _faceId = MyStringId.GetOrCompute("Build new");
@@ -245,12 +246,10 @@ namespace DefenseShields.Support
                 _backing = backing;
             }
 
-            private int _lod;
 
             public void CalculateTransform(MatrixD matrix, int lod)
             {
-                Log.Line($"Start CalculateTransform");
-
+                //Log.Line($"Start CalculateTransform");
                 _lod = lod;
                 var count = checked((int)VertsForLod(lod));
                 Array.Resize(ref _vertexBuffer, count);
@@ -263,35 +262,12 @@ namespace DefenseShields.Support
 
                 for (var i = 0; i < count; i++)
                     Vector3D.TransformNormal(ref _backing._vertexBuffer[i], ref normalMatrix, out _normalBuffer[i]);
-                Log.Line($"End CalculateTransform");
+                //Log.Line($"End CalculateTransform");
             }
 
-            public void CalculateLclPos(MatrixD matrix, Vector3D impactPos)
+            public void CalculateColor(MatrixD matrix, Vector3D impactPos, bool entChanged, bool enemy, IMyEntity shield1, IMyEntity shield2)
             {
-                Log.Line($"Start CalculateLclPos");
-                var ib = _backing._indexBuffer[_lod];
-                _preCalcNormLclPos = new Vector3D[ib.Length / 3];
-
-                for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
-                {
-                    var i0 = ib[i];
-                    var i1 = ib[i + 1];
-                    var i2 = ib[i + 2];
-
-                    var v0 = _vertexBuffer[i0];
-                    var v1 = _vertexBuffer[i1];
-                    var v2 = _vertexBuffer[i2];
-
-                    var lclPos = (v0 + v1 + v2) / 3 - matrix.Translation;
-                    var normlclPos = Vector3D.Normalize(lclPos);
-                    _preCalcNormLclPos[j] = normlclPos;
-                }
-                Log.Line($"End CalculateLclPos");
-            }
-
-            public void CalculateColor(MatrixD matrix, Vector3D ImpactPos)
-            {
-                Log.Line($"Start CalculateColor1");
+                //Log.Line($"Start CalculateColor1");
                 //if (_mainLoop == 0) Log.Line($"start");
                 //var localImpact = Vector3D.Transform(_impactPos, MatrixD.Invert(matrix));
                 //localImpact.Normalize();
@@ -299,12 +275,21 @@ namespace DefenseShields.Support
                 //var fnorm = (_vertexBuffer[i0] + _vertexBuffer[i1] + _vertexBuffer[i2]);
                 //fnorm.Normalize();
                 //var impactFactor = 1 - (Vector3D.Dot(localImpact, fnorm) + 1) / 2;
-
                 //var matrixTranslation = matrix.Translation;
-                var localImpact = ImpactPos - matrix.Translation;
+
+                StepEffects(impactPos);
+                InitColors(enemy);
+                Models(shield1, shield2);
+
+                Vector4 currentColor = Color.FromNonPremultiplied(0, 0, 255, 128);
+                Vector4 vwaveColor = Color.FromNonPremultiplied(0, 0, 1, 1);
+                vwaveColor = currentColor / _impactCount / 2;
+                var localImpact = impactPos - matrix.Translation;
                 localImpact.Normalize();
 
                 var ib = _backing._indexBuffer[_lod];
+                Array.Resize(ref _preCalcNormLclPos, ib.Length / 3);
+                //Log.Line($"PreCalLeng: {_preCalcNormLclPos.Length} - Lod:{_lod}");
                 Array.Resize(ref _triColorBuffer, ib.Length / 3);
                 for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
                 {
@@ -318,18 +303,35 @@ namespace DefenseShields.Support
 
                     //var lclPos = (v0 + v1 + v2) / 3 - matrixTranslation;  //precompute later, 
                     //var impactFactor = Math.Acos(Vector3D.Dot(Vector3D.Normalize(lclPos), localImpact));
+                    if (entChanged || _prevLod != _lod)
+                    {
+                        var lclPos = (v0 + v1 + v2) / 3 - matrix.Translation;
+                        var normlclPos = Vector3D.Normalize(lclPos);
+                        _preCalcNormLclPos[j] = normlclPos;
+                    }
                     var dotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], localImpact);
                     var impactFactor = Math.Acos(dotOfNormLclImpact);
+                    //Log.Line($"{impactFactor}");
 
-                    _triColorBuffer[j] = Vector4.One; // your color
-                    if (impactFactor > 1 && v0 == v1 && v1 == v2) Log.Line($"This will never be true");
+                    const float waveMultiplier = Pi / ImpactSteps;
+                    var wavePosition = waveMultiplier * _impactCount;
+                    var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
+                    if (relativeToWavefront < Pi / 3 && _impactCount != 0) currentColor = vwaveColor;
+                    else if (impactFactor < wavePosition && relativeToWavefront > 0.1 && relativeToWavefront < 0.15 && _impactCount != 0  && _impactCountFinished)                    {
+                        currentColor = _wavePassedColor;
+                    }
+                    else currentColor = _pulseColor;
+                    //var trianglesRelativeToWavefront = (int)Math.Round(Math.Abs(impactFactor - wavePosition) / (Math.PI / (5 << _lod)));
+                    //Log.Line($"{currentColor}");
+                    _triColorBuffer[j] = currentColor;
                 }
-                Log.Line($"End CalculateColor1");
+                _prevLod = _lod;
+                //Log.Line($"End CalculateColor1");
             }
 
             public void Draw(MyStringId? faceMaterial = null, MyStringId? lineMaterial = null, float lineThickness = -1f)
             {
-                Log.Line($"Start Draw");
+                //Log.Line($"Start Draw");
                 var ib = _backing._indexBuffer[_lod];
 
                 for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
@@ -348,13 +350,14 @@ namespace DefenseShields.Support
 
                     var color = _triColorBuffer[j];
 
-                    if (color == Vector4.One && n0 == n1 && n1 == n2 && v0 == v1 && v1 == v2) Log.Line($"This will never be true");
-                    /*
+                    //if (color == Vector4.One && n0 == n1 && n1 == n2 && v0 == v1 && v1 == v2) Log.Line($"This will never be true");
+                    
                     if (faceMaterial.HasValue)
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, Vector2.Zero, Vector2.Zero,
                             Vector2.Zero, faceMaterial.Value, 0,
                             (v0 + v1 + v2) / 3, color);
                     
+                    /*
                     if (lineMaterial.HasValue && lineThickness > 0)
                     {
                         MySimpleObjectDraw.DrawLine(v0, v1, lineMaterial, ref color, lineThickness);
@@ -363,7 +366,7 @@ namespace DefenseShields.Support
                     }
                     */
                 }
-                Log.Line($"End Draw");
+                //Log.Line($"End Draw");
             }
 
             private void LodNormalization()
@@ -390,10 +393,9 @@ namespace DefenseShields.Support
                 }
             }
 
-            public void StepEffects(int lod, Vector3D ImpactPos)
+            public void StepEffects(Vector3D ImpactPos)
             {
                 _mainLoop++;
-                _lod = lod;
 
                 if (_mainLoop == 61) _mainLoop = 0;
                 if (_impactCount != 0) _impactCount++;
@@ -451,34 +453,37 @@ namespace DefenseShields.Support
                 if (cv1 != 0) cv3 = cv1;
                 if (cv2 != 0) cv4 = cv2;
                 var rndNum1 = Random.Next(15, 27);
-                var colorRnd1 = Random.Next(15, 50);
+                var colorRnd1 = Random.Next(0, 15);
                 var colorRnd2 = Random.Next(8, 255);
                 var rndNum3 = Random.Next(55, 63);
                 var rndNum4 = Random.Next(40, 120);
 
+                //maxColor
+                var vmaxColor = Color.FromNonPremultiplied(0, 0, 1, 1);
+                _maxColor = vmaxColor;
                 //waveColor
                 var vwaveColor = Color.FromNonPremultiplied(cv3, 0, cv4, rndNum1 - 5);
-                waveColor = vwaveColor;
+                _waveColor = vwaveColor;
 
                 //wavePassedColor
-                var vwavePassedColor = Color.FromNonPremultiplied(0, 0, 5, colorRnd1);
+                var vwavePassedColor = Color.FromNonPremultiplied(0, 0, 12, colorRnd1);
                 if (_impactCount % 10 == 0)
                 {
                     vwavePassedColor = Color.FromNonPremultiplied(0, 0, rndNum1, rndNum1 - 5);
                 }
-                wavePassedColor = vwavePassedColor;
+                _wavePassedColor = vwavePassedColor;
 
                 //waveComingColor
                 var vwaveComingColor = Color.FromNonPremultiplied(cv1, 0, cv2, 16);
-                waveComingColor = vwaveComingColor;
+                _waveComingColor = vwaveComingColor;
 
                 //hitColor
                 var vhitColor = Color.FromNonPremultiplied(0, 0, colorRnd2, rndNum1);
-                hitColor = vhitColor;
+                _hitColor = vhitColor;
 
                 //lineColor
                 var vlineColor = Color.FromNonPremultiplied(cv1, 0, cv2, 32);
-                lineColor = vlineColor;
+                _lineColor = vlineColor;
 
                 //pulseColor
                 if (_charged)
@@ -499,21 +504,21 @@ namespace DefenseShields.Support
                 var puleColor1 = Color.FromNonPremultiplied(_pulse, 0, 0, 16);
                 var puleColor2 = Color.FromNonPremultiplied(0, 0, 0, _pulse);
                 var vglitchColor = Color.FromNonPremultiplied(0, 0, rndNum4, rndNum1 - 5);
-                glitchColor = vglitchColor;
+                _glitchColor = vglitchColor;
                 if (_pulseCount == 59 && _pulseCount == rndNum3 && _glitchStep == 0)
                 {
                     _glitchCount = 1;
                     Log.Line($"Random Pulse: {_pulse}");
                 }
                 var vpulseColor = enemy ? puleColor1 : puleColor2;
-                pulseColor = vpulseColor;
+                _pulseColor = vpulseColor;
 
                 //chargeColor
                 var rndNum2 = Random.Next(1, 9);
-                chargeColor = Color.FromNonPremultiplied(0, 0, 0, 16 + _impactCharge / 6);
+                _chargeColor = Color.FromNonPremultiplied(0, 0, 0, 16 + _impactCharge / 6);
                 if (_impactCharge % rndNum2 == 0)
                 {
-                    chargeColor = Color.FromNonPremultiplied(0, 0, 0, 16 + _impactCharge / 8);
+                    _chargeColor = Color.FromNonPremultiplied(0, 0, 0, 16 + _impactCharge / 8);
                 }
             }
 
@@ -569,8 +574,8 @@ namespace DefenseShields.Support
                             var lastFace6X = firstFace6X;
                             if (lodChange || _glitchStep == 1 || _glitchStep == GlitchSteps / faceDiv * -1 || _glitchStep == GlitchSteps / faceDiv) Log.Line($"g1 - s:{_glitchStep} - Div:{faceDiv} - 1:{firstFace6X} - 2:{lastFace6X} - dbLen:{_glitchLocSarray.Length}");
                             //Log.Line($"g1 - s:{_glitchStep} - Div:{faceDiv} - 1:{firstFace6X} - 2:{lastFace6X} - dbLen:{_glichSlist.Count}");
-                            _firstFaceLoc1x = _glitchLocSarray[firstFace6X];
-                            _lastFaceLoc1x = _glitchLocSarray[lastFace6X];
+                            _firstFaceLoc1X = _glitchLocSarray[firstFace6X];
+                            _lastFaceLoc1X = _glitchLocSarray[lastFace6X];
                         }
                         else
                         {
@@ -578,8 +583,8 @@ namespace DefenseShields.Support
                             var lastFace6X = firstFace6X + 1;
                             if (lodChange || _glitchStep == 1 || _glitchStep == GlitchSteps) Log.Line($"g1 - s:{_glitchStep} - Div:{faceDiv} - 1:{firstFace6X} - 2:{lastFace6X} - dbLen:{_glitchLocSarray.Length}");
                             //Log.Line($"g1 - s:{_glitchStep} - Div:{faceDiv} - 1:{firstFace6X} - 2:{lastFace6X} - dbLen:{_glichSlist.Count}");
-                            _firstFaceLoc1x = _glitchLocSarray[firstFace6X];
-                            _lastFaceLoc1x = _glitchLocSarray[lastFace6X];
+                            _firstFaceLoc1X = _glitchLocSarray[firstFace6X];
+                            _lastFaceLoc1X = _glitchLocSarray[lastFace6X];
                         }
                     }
                 }
@@ -615,12 +620,12 @@ namespace DefenseShields.Support
                             var lastFace1X = firstFace1X;
                             if (lodChange || _impactDrawStep == 1 || _impactDrawStep == ImpactSteps / faceDiv * -1 || _impactDrawStep == ImpactSteps / faceDiv) Log.Line($"i1 - s:{_impactDrawStep} - Div:{faceDiv} - 1:{firstFace1X} - 2:{lastFace1X} - dbLen:{_faceLocSlist.Count}");
                             //Log.Line($"i1 - s:{_impactDrawStep} - Div:{faceDiv} - 1:{firstFace1X} - 2:{lastFace1X} - dbLen:{_faceLocSlist.Count}");
-                            _firstFaceLoc1x = _faceLocSlist.ElementAt(firstFace1X).Key;
-                            _lastFaceLoc1x = _faceLocSlist.ElementAt(lastFace1X).Key;
+                            _firstFaceLoc1X = _faceLocSlist.ElementAt(firstFace1X).Key;
+                            _lastFaceLoc1X = _faceLocSlist.ElementAt(lastFace1X).Key;
                             if (_impactDrawStep == 1)
                             {
-                                _firstHitFaceLoc1x = _faceLocSlist.ElementAt(firstFace1X).Key;
-                                _lastHitFaceLoc1x = _faceLocSlist.ElementAt(lastFace1X).Key;
+                                _firstHitFaceLoc1X = _faceLocSlist.ElementAt(firstFace1X).Key;
+                                _lastHitFaceLoc1X = _faceLocSlist.ElementAt(lastFace1X).Key;
                             }
                         }
                         else
@@ -629,12 +634,12 @@ namespace DefenseShields.Support
                             var lastFace1X = firstFace1X + 1;
                             if (lodChange || _impactDrawStep == 1 || _impactDrawStep == ImpactSteps) Log.Line($"i1 - s:{_impactDrawStep} - Div:{faceDiv} - 1:{firstFace1X} - 2:{lastFace1X} - dbLen:{_faceLocSlist.Count}");
                             //Log.Line($"i2 - s:{_impactDrawStep} - Div:{faceDiv} - 1:{firstFace1X} - 2:{lastFace1X} - dbLen:{_faceLocSlist.Count}");
-                            _firstFaceLoc1x = _faceLocSlist.ElementAt(firstFace1X).Key;
-                            _lastFaceLoc1x = _faceLocSlist.ElementAt(lastFace1X).Key;
+                            _firstFaceLoc1X = _faceLocSlist.ElementAt(firstFace1X).Key;
+                            _lastFaceLoc1X = _faceLocSlist.ElementAt(lastFace1X).Key;
                             if (_impactDrawStep == 1)
                             {
-                                _firstHitFaceLoc1x = _faceLocSlist.ElementAt(firstFace1X).Key;
-                                _lastHitFaceLoc1x = _faceLocSlist.ElementAt(lastFace1X).Key;
+                                _firstHitFaceLoc1X = _faceLocSlist.ElementAt(firstFace1X).Key;
+                                _lastHitFaceLoc1X = _faceLocSlist.ElementAt(lastFace1X).Key;
                             }
                         }
                     }

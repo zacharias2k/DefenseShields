@@ -2,6 +2,8 @@
 using Sandbox.Game;
 using VRage.Game.ModAPI;
 using DefenseShields.Support;
+using VRage.Game.Entity;
+using VRageMath;
 
 namespace DefenseShields
 {
@@ -82,6 +84,7 @@ namespace DefenseShields
                     var playerent = (IMyCharacter)ent;
                     var playerpos = playerent.GetPosition();
                     //MyVisualScriptLogicProvider.CreateExplosion(playerpos, 10, 1000);
+
                     //playerent.Kill();
                 }
                 DestroyPlayerHash.Clear();
@@ -93,5 +96,12 @@ namespace DefenseShields
             }
         }
         #endregion
+        /*MyExplosionInfo exp = new MyExplosionInfo(_damage, _damage, new BoundingSphereD(position.Translation, _range), _type, true)
+        {
+            Direction = position.Forward,
+            ExplosionFlags = _flags,
+            OwnerEntity = _ownerEntity as MyEntity,
+            VoxelExplosionCenter = position.Translation
+        };*/
     }
 }

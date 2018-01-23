@@ -49,6 +49,7 @@ namespace DefenseShields
         private int _time;
         private int _playertime;
         private int _impactCount;
+        private int _prevLod;
 
         public bool Initialized = true;
         private bool _animInit;
@@ -73,8 +74,8 @@ namespace DefenseShields
         public IMyFunctionalBlock Fblock;
         public IMyTerminalBlock Tblock;
 
-        public IMyEntity Shield1;
-        public IMyEntity Shield2;
+        //public IMyEntity Shield1;
+        //public IMyEntity Shield2;
 
         public Icosphere.Instance Sphere;
 
@@ -104,6 +105,11 @@ namespace DefenseShields
 
         private readonly MyStringId _faceId = MyStringId.GetOrCompute("Build new");
         private readonly MyStringId _lineId = MyStringId.GetOrCompute("Square");
+
+        private static readonly Random Random = new Random();
+
+        public IMyEntity Shield1;
+        public IMyEntity Shield2;
         #endregion
 
         #region Init
@@ -178,10 +184,9 @@ namespace DefenseShields
                 if (!Initialized && Oblock.IsWorking)
                 {
                     EntityPos = Entity.GetPosition();
-                    if (EntityPos != EntityPrevPos) _entityChanged = true;
                     _entityChanged = EntityPos != EntityPrevPos;
                     EntityPrevPos = EntityPos;
-                    _entityChanged = true;
+                    //_entityChanged = true;
                     //Draw();
                     //else SendPoke(_range); //Check
                     MyAPIGateway.Parallel.StartBackground(WebEntities);
@@ -527,54 +532,52 @@ namespace DefenseShields
         public void Draw()
         {
             if (Initialized) return;
+
+            ShieldShapeMatrix = MatrixD.Rescale(WorldMatrix, new Vector3D(Width, Height, Depth));
             var sp = new BoundingSphereD(Oblock.Position, Range);
             var sphereOnCamera = MyAPIGateway.Session.Camera.IsInFrustum(ref sp);
             int lod;
-
-            if (Distance(400)) lod = 4;
-            else if (Distance(2250)) lod = 4;
-            else if (Distance(4500)) lod = 3;
-            else if (Distance(7500)) lod = 2;
-            //else if (Distance(10000)) lod = 1;
-            else lod = 1;
-            //lod = Random.Next(0, 6);
-            lod = 6;
-            //int lod2;
-            //if (lod <= 1) lod2 = lod;
-            //else lod2 = 2;
-
-            var relations = Oblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId); // check was tblock
             bool enemy;
-            ShieldShapeMatrix = MatrixD.Rescale(WorldMatrix, new Vector3D(Width, Height, Depth));
-            
-
-            if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) enemy = false;
-            else enemy = true;
 
             if (!Shield1.WorldMatrix.Equals(ShieldShapeMatrix)) Shield1.SetWorldMatrix(ShieldShapeMatrix);
             if (!Shield2.WorldMatrix.Equals(ShieldShapeMatrix)) Shield2.SetWorldMatrix(ShieldShapeMatrix);
 
+            var relations = Oblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId); // check was tblock
+            if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) enemy = false;
+            else enemy = true;
+
+            if (Distance(400)) lod = 3;
+            else if (Distance(2250)) lod = 3;
+            else if (Distance(4500)) lod = 3;
+            else if (Distance(15000)) lod = 2;
+            else if (Distance(25000)) lod = 1;
+            else lod = 0;
+            int lod2;
+            if (lod <= 1) lod2 = lod;
+            else lod2 = 2;
+
+            //lod = Random.Next(0, 5);
+            //lod = 6;
+
             //BuildCollections(edgeMatrix1);
             // Models(shield1, shield2);
             //Instance _instance = new Instance(Outter);
-            //instance.CalculateColor();
-            //instance.Draw(_faceId, _lineId);
 
             if (sphereOnCamera)
             {
                 if (_prepareTask.HasValue && !_prepareTask.Value.IsComplete) _prepareTask.Value.Wait();
                 if (_prepareTask.HasValue && _prepareTask.Value.IsComplete) Sphere.Draw(_faceId, _lineId);
-                _prepareTask = MyAPIGateway.Parallel.Start(PrepareSphere);
+                _prepareTask = MyAPIGateway.Parallel.Start(() => PrepareSphere(lod, enemy));
             }
         }
 
-        private void PrepareSphere()
+        private void PrepareSphere(int lod, bool enemy)
         {
-            if (_entityChanged) Sphere.CalculateTransform(ShieldShapeMatrix, 7);
-            if (_entityChanged) Sphere.CalculateLclPos(ShieldShapeMatrix, WorldImpactPosition);
-            Sphere.CalculateColor(ShieldShapeMatrix, WorldImpactPosition);
+            if (_entityChanged || lod != _prevLod) Sphere.CalculateTransform(ShieldShapeMatrix, lod);
+            Sphere.CalculateColor(ShieldShapeMatrix, WorldImpactPosition, _entityChanged, enemy, Shield1, Shield2);
+            _prevLod = lod;
         }
-        
+
         #region Impact
         private void ImpactTimer(IMyEntity ent)
         {
