@@ -4,6 +4,7 @@ using System.Linq;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Game;
+using VRage.Game.Entity;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRage.Utils;
@@ -265,7 +266,7 @@ namespace DefenseShields.Support
                 //Log.Line($"End CalculateTransform");
             }
 
-            public void CalculateColor(MatrixD matrix, Vector3D impactPos, bool entChanged, bool enemy, IMyEntity shield1, IMyEntity shield2)
+            public void CalculateColor(MatrixD matrix, Vector3D impactPos, bool entChanged, bool enemy, IMyEntity shield1)
             {
                 //Log.Line($"Start CalculateColor1");
                 //if (_mainLoop == 0) Log.Line($"start");
@@ -279,7 +280,7 @@ namespace DefenseShields.Support
 
                 StepEffects(impactPos);
                 InitColors(enemy);
-                Models(shield1, shield2);
+                Models(shield1);
 
                 Vector4 currentColor = Color.FromNonPremultiplied(0, 0, 255, 128);
                 Vector4 vwaveColor = Color.FromNonPremultiplied(0, 0, 1, 1);
@@ -646,8 +647,9 @@ namespace DefenseShields.Support
                 }
             }
 
-            public void Models(IMyEntity shield1, IMyEntity shield2)
+            public void Models(IMyEntity shield1)
             {
+                /*
                 if (_impactCount == 1) shield1.Render.Visible = true;
                 else if (_impactCount == 2) shield1.Render.Visible = false;
                 else if (_impactCount == 16) shield2.Render.Visible = true;
@@ -660,7 +662,27 @@ namespace DefenseShields.Support
                 else if (_impactCount == 64) shield1.Render.Visible = false;
                 else if (_impactCount == 78) shield2.Render.Visible = true;
                 else if (_impactCount == 79) shield2.Render.Visible = false;
+                */
 
+                shield1.Render.RemoveRenderObjects();
+
+                if (_impactCount < 40) ((MyEntity) shield1).RefreshModels("C:\\Users\\shane\\AppData\\Roaming\\SpaceEngineers\\Mods\\DefenseShields\\Models\\LargeField.mwm", null);
+                else ((MyEntity) shield1).RefreshModels("C:\\Users\\shane\\AppData\\Roaming\\SpaceEngineers\\Mods\\DefenseShields\\Models\\LargeField15.mwm", null);
+
+                shield1.Render.AddRenderObjects();
+
+                if (_impactCount == 1) shield1.Render.Visible = true;
+                else if (_impactCount == 2) shield1.Render.Visible = false;
+                else if (_impactCount == 16) shield1.Render.Visible = true;
+                else if (_impactCount == 17) shield1.Render.Visible = false;
+                else if (_impactCount == 32) shield1.Render.Visible = true;
+                else if (_impactCount == 33) shield1.Render.Visible = false;
+                else if (_impactCount == 48) shield1.Render.Visible = true;
+                else if (_impactCount == 49) shield1.Render.Visible = false;
+                else if (_impactCount == 63) shield1.Render.Visible = true;
+                else if (_impactCount == 64) shield1.Render.Visible = false;
+                else if (_impactCount == 78) shield1.Render.Visible = true;
+                else if (_impactCount == 79) shield1.Render.Visible = false;
             }
         }
 

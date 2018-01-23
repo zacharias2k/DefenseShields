@@ -109,7 +109,7 @@ namespace DefenseShields
         private static readonly Random Random = new Random();
 
         public IMyEntity Shield1;
-        public IMyEntity Shield2;
+        //public IMyEntity Shield2;
         #endregion
 
         #region Init
@@ -211,17 +211,14 @@ namespace DefenseShields
                 Tblock.RefreshCustomInfo();
                 _absorb = 150f;
 
-                Shield1 = Spawn.Utils.SpawnShield("LargeField", "", true, false, false, false, false, Oblock.OwnerId);
-                Shield2 = Spawn.Utils.SpawnShield("ImpactField", "", true, false, false, false, false, Oblock.OwnerId);
+                Shield1 = Spawn.Utils.SpawnShield("LargeField-old", "", true, false, false, false, false, Oblock.OwnerId);
+                //Shield2 = Spawn.Utils.SpawnShield("ImpactField", "", true, false, false, false, false, Oblock.OwnerId);
                 Shield1.Render.Visible = false;
-                Shield2.Render.Visible = false;
+                //Shield2.Render.Visible = false;
 
                 DefenseShieldsBase.Shields.Add(this);
 
                 Initialized = false;
-                #region Voxel Code
-                #endregion
-
             }
         }
 
@@ -413,6 +410,7 @@ namespace DefenseShields
                 Height = Range;
                 Depth = Range;
             }
+            ShieldShapeMatrix = MatrixD.Rescale(WorldMatrix, new Vector3D(Width, Height, Depth));
         }
         #endregion
 
@@ -532,15 +530,13 @@ namespace DefenseShields
         public void Draw()
         {
             if (Initialized) return;
-
-            ShieldShapeMatrix = MatrixD.Rescale(WorldMatrix, new Vector3D(Width, Height, Depth));
             var sp = new BoundingSphereD(Oblock.Position, Range);
             var sphereOnCamera = MyAPIGateway.Session.Camera.IsInFrustum(ref sp);
             int lod;
             bool enemy;
 
             if (!Shield1.WorldMatrix.Equals(ShieldShapeMatrix)) Shield1.SetWorldMatrix(ShieldShapeMatrix);
-            if (!Shield2.WorldMatrix.Equals(ShieldShapeMatrix)) Shield2.SetWorldMatrix(ShieldShapeMatrix);
+            //if (!Shield2.WorldMatrix.Equals(ShieldShapeMatrix)) Shield2.SetWorldMatrix(ShieldShapeMatrix);
 
             var relations = Oblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId); // check was tblock
             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) enemy = false;
@@ -574,7 +570,7 @@ namespace DefenseShields
         private void PrepareSphere(int lod, bool enemy)
         {
             if (_entityChanged || lod != _prevLod) Sphere.CalculateTransform(ShieldShapeMatrix, lod);
-            Sphere.CalculateColor(ShieldShapeMatrix, WorldImpactPosition, _entityChanged, enemy, Shield1, Shield2);
+            Sphere.CalculateColor(ShieldShapeMatrix, WorldImpactPosition, _entityChanged, enemy, Shield1);
             _prevLod = lod;
         }
 
@@ -708,7 +704,7 @@ namespace DefenseShields
             var shotsphere = new BoundingSphereD(pos, Range);
             MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && ent is IMyMeteor || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo"));
 
-            MyAPIGateway.Parallel.ForEach(shotHash, shotent =>
+            foreach (var shotent in shotHash)
             {
                 if (shotent == null || !Detectedge(shotent, 0f)) return;
                 try
@@ -723,7 +719,7 @@ namespace DefenseShields
                     Log.Line($"Exception in shotEffects");
                     Log.Line($"{ex}");
                 }
-            });
+            }
             _shotwebbed = false;
             _shotlocked = false;
         }
