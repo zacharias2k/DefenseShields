@@ -73,6 +73,7 @@ namespace DefenseShields
         public MatrixD BlockWorldMatrix;
         public MatrixD ShieldShapeMatrix;
         public MatrixD OldShieldShapeMatrix;
+        public MatrixD ShieldShapeFutureMatrix;
         //MatrixD shieldShapeMatrix = MatrixD.Identity;
 
         public IMyOreDetector Oblock;
@@ -263,8 +264,8 @@ namespace DefenseShields
                 _matrixReflectorsOff = new List<Matrix>();
                 _matrixReflectorsOn = new List<Matrix>();
 
-                BlockWorldMatrix = Oblock.WorldMatrix;
-                BlockWorldMatrix.Translation += Oblock.WorldMatrix.Up * 0.35f;
+                BlockWorldMatrix = Entity.WorldMatrix;
+                BlockWorldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
 
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
 
@@ -318,8 +319,8 @@ namespace DefenseShields
 
         public void BlockAnimation()
         {
-            BlockWorldMatrix = Oblock.WorldMatrix;
-            BlockWorldMatrix.Translation += Oblock.WorldMatrix.Up * 0.35f;
+            BlockWorldMatrix = Entity.WorldMatrix;
+            BlockWorldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
             //Animations
             if (Fblock.Enabled && Fblock.IsFunctional && Oblock.IsWorking)
             {
@@ -403,6 +404,7 @@ namespace DefenseShields
                 Height = Range;
                 Depth = Range;
             }
+            ShieldShapeMatrix = MatrixD.Rescale(Entity.WorldMatrix, new Vector3D(Width, Height, Depth));
         }
         #endregion
 
@@ -524,9 +526,15 @@ namespace DefenseShields
             EntityPrevPos = EntityPos;
             OldShieldShapeMatrix = ShieldShapeMatrix;
 
-            if (!Shield.WorldMatrix.Equals(ShieldShapeMatrix) || _entityChanged)
+            var dt = 1; // Time difference
+            Log.Line($"{Shield.GetPosition()} - {Entity.Parent.Physics.LinearVelocity}");
+            var estimatedBlockPos = Shield.GetPosition() + Entity.Parent.Physics.LinearVelocity * dt;
+            //Log.Line($"current:{Entity.Parent.GetPosition()} future:{estimatedBlockPos}");
+            var futureMatrix = MatrixD.CreateWorld(estimatedBlockPos, Vector3.Forward, Vector3.Up);
+            if (_entityChanged)
             {
-                ShieldShapeMatrix = MatrixD.Rescale(Oblock.WorldMatrix, new Vector3D(Width, Height, Depth));
+                //Log.Line($"I am triggering {ShieldShapeMatrix} {ShieldShapeFutureMatrix}");
+                ShieldShapeMatrix = MatrixD.Rescale(BlockWorldMatrix, new Vector3D(Width, Height, Depth));
                 Shield.SetWorldMatrix(ShieldShapeMatrix);
             }
 
@@ -561,7 +569,7 @@ namespace DefenseShields
         public void Draw()
         {
             if (NotInitialized) return;
-            Log.Line($"ent: {this.Entity.EntityId} - changed?:{_entityChanged} - is onCam:{_sphereOnCamera}");
+            //Log.Line($"ent: {this.Entity.EntityId} - changed?:{_entityChanged} - is onCam:{_sphereOnCamera}");
 
             if (_sphereOnCamera)
             {
@@ -588,9 +596,9 @@ namespace DefenseShields
         #region Detect Intersection
         private bool Detectedge(IMyEntity ent, float f)
         {
-            float x = Vector3Extensions.Project(Oblock.WorldMatrix.Left, ent.GetPosition() - Oblock.WorldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(Oblock.WorldMatrix.Forward, ent.GetPosition() - Oblock.WorldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(Oblock.WorldMatrix.Up, ent.GetPosition() - Oblock.WorldMatrix.Translation).AbsMax();
+            float x = Vector3Extensions.Project(BlockWorldMatrix.Left, ent.GetPosition() - BlockWorldMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(BlockWorldMatrix.Forward, ent.GetPosition() - BlockWorldMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(BlockWorldMatrix.Up, ent.GetPosition() - BlockWorldMatrix.Translation).AbsMax();
             float detect = (x * x) / ((Width - f) * (Width - f)) + (y * y) / ((Depth - f) * (Depth - f)) + (z * z) / ((Height - f) * (Height - f));
             if (detect <= 1)
             {
