@@ -12,11 +12,11 @@ namespace DefenseShields
 {
     #region Session+protection Class
 
-    [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation | MyUpdateOrder.AfterSimulation)]
+    [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
     public class DefenseShieldsBase : MySessionComponentBase
     {
-        public static bool IsInit;
-        public static bool ControlsLoaded;
+        public bool IsInit;
+        public bool ControlsLoaded;
         public int I;
 
         public static DefenseShieldsBase Instance { get; private set; }
@@ -24,7 +24,7 @@ namespace DefenseShields
         public readonly Icosphere Icosphere = new Icosphere(8);
 
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
-        public static List<DefenseShields> Shields = new List<DefenseShields>(); 
+        public List<DefenseShields> Shields = new List<DefenseShields>(); 
 
         private readonly MyStringId _faceId = MyStringId.GetOrCompute("Build new");
 
@@ -44,8 +44,8 @@ namespace DefenseShields
 
         public string ModPath()
         {
-            var ModPath = ModContext.ModPath;
-            return ModPath;
+            var modPath = ModContext.ModPath;
+            return modPath;
         }
         public override void LoadData()
         {
@@ -66,7 +66,7 @@ namespace DefenseShields
             else if (MyAPIGateway.Session.Player != null) Init();
         }
 
-        public static void Init() 
+        public void Init() 
         {
             Log.Init("debugdevelop.log");
             Log.Line($" Logging Started");
@@ -74,7 +74,7 @@ namespace DefenseShields
             IsInit = true;
         }
 
-        public static void CheckDamage(object block, ref MyDamageInformation info)
+        public void CheckDamage(object block, ref MyDamageInformation info)
         {
             if (info.Type == MyDamageType.Deformation) // fix
             {

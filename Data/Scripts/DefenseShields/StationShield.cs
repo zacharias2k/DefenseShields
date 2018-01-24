@@ -50,9 +50,10 @@ namespace DefenseShields
         private int _time;
         private int _playertime;
         private int _impactCount;
+        private int _lod;
         private int _prevLod;
 
-        public bool Initialized = true;
+        public bool NotInitialized = true;
         private bool _animInit;
         private bool _playerwebbed;
         private bool _shotwebbed;
@@ -60,6 +61,8 @@ namespace DefenseShields
         private bool _closegrids;
         private bool _playerkill;
         private bool _entityChanged = true;
+        private bool _enemy;
+        private bool _sphereOnCamera;
 
         private const ushort ModId = 50099;
 
@@ -67,7 +70,7 @@ namespace DefenseShields
         public Vector3D EntityPos;
         public Vector3D EntityPrevPos;
 
-        public MatrixD WorldMatrix;
+        public MatrixD BlockWorldMatrix;
         public MatrixD ShieldShapeMatrix;
         public MatrixD OldShieldShapeMatrix;
         //MatrixD shieldShapeMatrix = MatrixD.Identity;
@@ -105,7 +108,7 @@ namespace DefenseShields
         private readonly MyStringId _faceId = MyStringId.GetOrCompute("Build new");
         private readonly MyStringId _lineId = MyStringId.GetOrCompute("Square");
 
-        private readonly Random Random = new Random();
+        private static readonly Random Random = new Random();
 
         public IMyEntity Shield;
         #endregion
@@ -142,7 +145,7 @@ namespace DefenseShields
             {
                 if (_animInit)
                 {
-                    if (_subpartRotor.Closed.Equals(true) && !Initialized && Oblock.IsWorking)
+                    if (_subpartRotor.Closed.Equals(true) && !NotInitialized && Oblock.IsWorking)
                     {
                         BlockAnimationReset();
                     }
@@ -151,7 +154,7 @@ namespace DefenseShields
                 if (Count++ == 59) Count = 0;
                 if (Count <= 0)
                 {
-                    if (Initialized)
+                    if (NotInitialized)
                     {
                         Count = -1;
                         InHashBuilder();
@@ -179,14 +182,9 @@ namespace DefenseShields
                     _closegrids = false;
                     if (DestroyGridHash.Count > 0) DestroyEntity.GridClose(Gridcount);
                 }
-                if (!Initialized && Oblock.IsWorking)
+                if (!NotInitialized && Oblock.IsWorking)
                 {
-                    EntityPos = Entity.GetPosition();
-                    _entityChanged = EntityPos != EntityPrevPos || ShieldShapeMatrix != OldShieldShapeMatrix;
-                    EntityPrevPos = EntityPos;
-                    OldShieldShapeMatrix = ShieldShapeMatrix;
-                    if (!Shield.WorldMatrix.Equals(ShieldShapeMatrix) || _entityChanged) Shield.SetWorldMatrix(ShieldShapeMatrix);
-
+                    PrepEntityState();
                     MyAPIGateway.Parallel.StartBackground(WebEntities);
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
                     if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
@@ -201,7 +199,7 @@ namespace DefenseShields
 
         public override void UpdateBeforeSimulation100()
         {
-            if (Initialized)
+            if (NotInitialized)
             {
                 Log.Line($" Create UI {Count}");
                 CreateUi();
@@ -211,9 +209,9 @@ namespace DefenseShields
                 var modPath = DefenseShieldsBase.Instance.ModPath();
                 Shield = Spawn.Utils.Sphere("Field", $"{modPath}\\Models\\LargeField0.mwm");
                 Shield.Render.Visible = false;
-                DefenseShieldsBase.Shields.Add(this);
+                DefenseShieldsBase.Instance.Shields.Add(this);
 
-                Initialized = false;
+                NotInitialized = false;
             }
         }
 
@@ -265,8 +263,8 @@ namespace DefenseShields
                 _matrixReflectorsOff = new List<Matrix>();
                 _matrixReflectorsOn = new List<Matrix>();
 
-                WorldMatrix = Entity.WorldMatrix;
-                WorldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
+                BlockWorldMatrix = Oblock.WorldMatrix;
+                BlockWorldMatrix.Translation += Oblock.WorldMatrix.Up * 0.35f;
 
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
 
@@ -320,8 +318,8 @@ namespace DefenseShields
 
         public void BlockAnimation()
         {
-            WorldMatrix = Entity.WorldMatrix;
-            WorldMatrix.Translation += Entity.WorldMatrix.Up * 0.35f;
+            BlockWorldMatrix = Oblock.WorldMatrix;
+            BlockWorldMatrix.Translation += Oblock.WorldMatrix.Up * 0.35f;
             //Animations
             if (Fblock.Enabled && Fblock.IsFunctional && Oblock.IsWorking)
             {
@@ -365,7 +363,7 @@ namespace DefenseShields
         public float CalcRequiredPower()
         {
 
-            if (!Initialized)
+            if (!NotInitialized)
             {
                 if (_absorb >= 0.1)
                 {
@@ -405,7 +403,6 @@ namespace DefenseShields
                 Height = Range;
                 Depth = Range;
             }
-            ShieldShapeMatrix = MatrixD.Rescale(WorldMatrix, new Vector3D(Width, Height, Depth));
         }
         #endregion
 
@@ -414,7 +411,7 @@ namespace DefenseShields
         {
             try
             {
-                DefenseShieldsBase.Shields.RemoveAt(DefenseShieldsBase.Shields.IndexOf(this));
+                DefenseShieldsBase.Instance.Shields.RemoveAt(DefenseShieldsBase.Instance.Shields.IndexOf(this));
                 //MyAPIGateway.Entities.RemoveEntity(Shield);
             }
             catch{}
@@ -455,7 +452,7 @@ namespace DefenseShields
 
         public void CreateUi()
         {
-            DefenseShieldsBase.ControlsLoaded = true;
+            DefenseShieldsBase.Instance.ControlsLoaded = true;
             RemoveOreUi();
 
             
@@ -515,25 +512,33 @@ namespace DefenseShields
         public bool Distance(int x)
         {
             var pPosition = MyAPIGateway.Session.Player.Character.GetPosition();
-            var cPosition = Oblock.CubeGrid.PositionComp.GetPosition();
+            var cPosition = Entity.GetPosition();
             var range = Vector3D.DistanceSquared(cPosition, pPosition) <= (x + Range) * (x + Range);
             return range;
         }
 
-        private Task? _prepareTask = null;
-
-        public void Draw()
+        private void PrepEntityState()
         {
-            if (Initialized) return;
+            EntityPos = Entity.GetPosition();
+            _entityChanged = EntityPos != EntityPrevPos || ShieldShapeMatrix != OldShieldShapeMatrix;
+            EntityPrevPos = EntityPos;
+            OldShieldShapeMatrix = ShieldShapeMatrix;
 
-            var sp = new BoundingSphereD(Oblock.Position, Range);
+            if (!Shield.WorldMatrix.Equals(ShieldShapeMatrix) || _entityChanged)
+            {
+                ShieldShapeMatrix = MatrixD.Rescale(Oblock.WorldMatrix, new Vector3D(Width, Height, Depth));
+                Shield.SetWorldMatrix(ShieldShapeMatrix);
+            }
+
+            var sp = new BoundingSphereD(Entity.GetPosition(), Range);
             var sphereOnCamera = MyAPIGateway.Session.Camera.IsInFrustum(ref sp);
-            Log.Line($"{sphereOnCamera}");
+            _sphereOnCamera = sphereOnCamera;
 
             bool enemy;
             var relations = Oblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId); // check was tblock
             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) enemy = false;
             else enemy = true;
+            _enemy = enemy;
 
             int lod;
             if (Distance(650)) lod = 4;
@@ -545,26 +550,32 @@ namespace DefenseShields
             int lod2;
             if (lod <= 1) lod2 = lod;
             else lod2 = 2;
-
+            _lod = lod;
             //lod = Random.Next(0, 5);
             //lod = 6;
 
+        }
 
-            Log.Line($"Changed?? {_entityChanged}");
+        private Task? _prepareTask = null;
 
-            if (sphereOnCamera)
+        public void Draw()
+        {
+            if (NotInitialized) return;
+            Log.Line($"ent: {this.Entity.EntityId} - changed?:{_entityChanged} - is onCam:{_sphereOnCamera}");
+
+            if (_sphereOnCamera)
             {
                 if (_prepareTask.HasValue && !_prepareTask.Value.IsComplete) _prepareTask.Value.Wait();
                 if (_prepareTask.HasValue && _prepareTask.Value.IsComplete) Sphere.Draw(_faceId, _lineId);
-                _prepareTask = MyAPIGateway.Parallel.Start(() => PrepareSphere(lod, enemy));
+                _prepareTask = MyAPIGateway.Parallel.Start(PrepareSphere);
             }
         }
 
-        private void PrepareSphere(int lod, bool enemy)
+        private void PrepareSphere()
         {
-            if (_entityChanged || lod != _prevLod) Sphere.CalculateTransform(ShieldShapeMatrix, lod);
-            Sphere.CalculateColor(ShieldShapeMatrix, WorldImpactPosition, _entityChanged, enemy, Shield);
-            _prevLod = lod;
+            if (_entityChanged || _lod != _prevLod) Sphere.CalculateTransform(ShieldShapeMatrix, _lod);
+            Sphere.CalculateColor(ShieldShapeMatrix, WorldImpactPosition, _entityChanged, _enemy, Shield);
+            _prevLod = _lod;
         }
 
         #region Impact
@@ -577,9 +588,9 @@ namespace DefenseShields
         #region Detect Intersection
         private bool Detectedge(IMyEntity ent, float f)
         {
-            float x = Vector3Extensions.Project(WorldMatrix.Left, ent.GetPosition() - WorldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(WorldMatrix.Forward, ent.GetPosition() - WorldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(WorldMatrix.Up, ent.GetPosition() - WorldMatrix.Translation).AbsMax();
+            float x = Vector3Extensions.Project(Oblock.WorldMatrix.Left, ent.GetPosition() - Oblock.WorldMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(Oblock.WorldMatrix.Forward, ent.GetPosition() - Oblock.WorldMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(Oblock.WorldMatrix.Up, ent.GetPosition() - Oblock.WorldMatrix.Translation).AbsMax();
             float detect = (x * x) / ((Width - f) * (Width - f)) + (y * y) / ((Depth - f) * (Depth - f)) + (z * z) / ((Height - f) * (Height - f));
             if (detect <= 1)
             {

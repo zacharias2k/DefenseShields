@@ -202,6 +202,7 @@ namespace DefenseShields.Support
         {
             private readonly Icosphere _backing;
 
+            private Vector3D _impactPos;
             private Vector3D[] _preCalcNormLclPos;
             private Vector3D[] _vertexBuffer;
             private Vector3D[] _normalBuffer;
@@ -258,9 +259,11 @@ namespace DefenseShields.Support
             private Vector4 _chargeColor;
             private Vector4 _maxColor;
 
-
             private bool _impactCountFinished;
             private bool _charged = true;
+            private bool _enemy;
+
+            private IMyEntity _shield;
 
             public Instance(Icosphere backing)
             {
@@ -286,13 +289,16 @@ namespace DefenseShields.Support
                 Log.Line($"End CalculateTransform");
             }
 
-            public void CalculateColor(MatrixD matrix, Vector3D impactPos, bool entChanged, bool enemy, IMyEntity sheild)
+            public void CalculateColor(MatrixD matrix, Vector3D impactPos, bool entChanged, bool enemy, IMyEntity shield)
             {
                 //Log.Line($"Start CalculateColor1");
+                _shield = shield;
+                _impactPos = impactPos;
+                _enemy = enemy;
 
-                StepEffects(impactPos, sheild);
-                InitColors(enemy);
-                if (_impactCount != 0) MyAPIGateway.Parallel.Start(() => Models(sheild));
+                StepEffects();
+                InitColors();
+                if (_impactCount != 0) MyAPIGateway.Parallel.Start(Models);
 
                 Vector4 currentColor = Color.FromNonPremultiplied(0, 0, 255, 128);
                 Vector4 vwaveColor = Color.FromNonPremultiplied(0, 0, 1, 1);
@@ -380,7 +386,7 @@ namespace DefenseShields.Support
                 //Log.Line($"End Draw");
             }
 
-            public void StepEffects(Vector3D ImpactPos, IMyEntity shield)
+            public void StepEffects()
             {
                 _mainLoop++;
 
@@ -395,12 +401,12 @@ namespace DefenseShields.Support
                     _glitchCount = 1;
                     Log.Line($"Random Pulse: {_pulse}");
                 }
-                var impactTrue = !ImpactPos.Equals(_oldImpactPos);
+                var impactTrue = !_impactPos.Equals(_oldImpactPos);
                 if (impactTrue)
                 {
                     if (_impactCount == 0) _impactCountFinished = true;
                     else _impactCountFinished = false;
-                    _oldImpactPos = ImpactPos;
+                    _oldImpactPos = _impactPos;
 
                     _impactCount = 1;
                     _glitchStep = 0;
@@ -429,7 +435,7 @@ namespace DefenseShields.Support
                 }
             }
 
-            public void Models(IMyEntity shield)
+            public void Models()
             {               
                 try
                 {
@@ -438,18 +444,18 @@ namespace DefenseShields.Support
                     var n = _modelCount;
                     if (_modelCount % 2 == 1)
                     {
-                        shield.Render.Visible = true;
-                        ((MyEntity) shield).RefreshModels($"{modPath}\\Models\\LargeField{n}.mwm", null);
-                        shield.Render.RemoveRenderObjects();
-                        shield.Render.UpdateRenderObject(true);
-                        Log.Line($"c:{_modelCount} - Asset:{shield.Model.AssetName} - Vis:{shield.Render.Visible}");
+                        _shield.Render.Visible = true;
+                        ((MyEntity)_shield).RefreshModels($"{modPath}\\Models\\LargeField{n}.mwm", null);
+                        _shield.Render.RemoveRenderObjects();
+                        _shield.Render.UpdateRenderObject(true);
+                        Log.Line($"c:{_modelCount} - Asset:{_shield.Model.AssetName} - Vis:{_shield.Render.Visible}");
                     }
-                    else shield.Render.Visible = false;
+                    else _shield.Render.Visible = false;
                     if (_impactCount % 2 == 0 && _modelCount != 23) _modelCount++;
                     else if (_modelCount == 23)
                     {
                         _modelCount = 0;
-                        shield.Render.Visible = false;
+                        _shield.Render.Visible = false;
                     }
                 }
                 catch (Exception ex)
@@ -459,13 +465,13 @@ namespace DefenseShields.Support
                 }
             }
 
-            public void InitColors(bool enemy)
+            public void InitColors()
             {
                 var cv1 = 0;
                 var cv2 = 0;
                 var cv3 = 0;
                 var cv4 = 0;
-                if (enemy) cv1 = 75;
+                if (_enemy) cv1 = 75;
                 else cv2 = 75;
                 if (cv1 != 0) cv3 = cv1;
                 if (cv2 != 0) cv4 = cv2;
@@ -527,7 +533,7 @@ namespace DefenseShields.Support
                     _glitchCount = 1;
                     Log.Line($"Random Pulse: {_pulse}");
                 }
-                var vpulseColor = enemy ? pulseColor1 : pulseColor2;
+                var vpulseColor = _enemy ? pulseColor1 : pulseColor2;
                 _pulseColor = vpulseColor;
 
                 //chargeColor
