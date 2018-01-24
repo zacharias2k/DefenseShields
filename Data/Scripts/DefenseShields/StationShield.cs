@@ -23,6 +23,7 @@ using VRage.Collections;
 using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
 using ParallelTasks;
+using Sandbox.Game.Entities;
 
 namespace DefenseShields
 {
@@ -68,14 +69,12 @@ namespace DefenseShields
 
         public MatrixD WorldMatrix;
         public MatrixD ShieldShapeMatrix;
+        public MatrixD OldShieldShapeMatrix;
         //MatrixD shieldShapeMatrix = MatrixD.Identity;
 
         public IMyOreDetector Oblock;
         public IMyFunctionalBlock Fblock;
         public IMyTerminalBlock Tblock;
-
-        //public IMyEntity Shield1;
-        //public IMyEntity Shield2;
 
         public Icosphere.Instance Sphere;
 
@@ -108,8 +107,7 @@ namespace DefenseShields
 
         private static readonly Random Random = new Random();
 
-        public IMyEntity Shield1;
-        //public IMyEntity Shield2;
+        public IMyEntity Shield;
         #endregion
 
         #region Init
@@ -184,11 +182,9 @@ namespace DefenseShields
                 if (!Initialized && Oblock.IsWorking)
                 {
                     EntityPos = Entity.GetPosition();
-                    _entityChanged = EntityPos != EntityPrevPos;
+                    _entityChanged = EntityPos != EntityPrevPos || ShieldShapeMatrix != OldShieldShapeMatrix;
                     EntityPrevPos = EntityPos;
-                    //_entityChanged = true;
-                    //Draw();
-                    //else SendPoke(_range); //Check
+                    OldShieldShapeMatrix = ShieldShapeMatrix;
                     MyAPIGateway.Parallel.StartBackground(WebEntities);
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
                     if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
@@ -210,12 +206,9 @@ namespace DefenseShields
                 Oblock.AppendingCustomInfo += AppendingCustomInfo;
                 Tblock.RefreshCustomInfo();
                 _absorb = 150f;
-
-                Shield1 = Spawn.Utils.SpawnShield("LargeField-old", "", true, false, false, false, false, Oblock.OwnerId);
-                //Shield2 = Spawn.Utils.SpawnShield("ImpactField", "", true, false, false, false, false, Oblock.OwnerId);
-                Shield1.Render.Visible = false;
-                //Shield2.Render.Visible = false;
-
+                var modPath = DefenseShieldsBase.Instance.ModPath();
+                Shield = Spawn.Utils.Sphere("Field", $"{modPath}\\Models\\LargeField0.mwm");
+                Shield.Render.Visible = false;
                 DefenseShieldsBase.Shields.Add(this);
 
                 Initialized = false;
@@ -535,15 +528,14 @@ namespace DefenseShields
             int lod;
             bool enemy;
 
-            if (!Shield1.WorldMatrix.Equals(ShieldShapeMatrix)) Shield1.SetWorldMatrix(ShieldShapeMatrix);
-            //if (!Shield2.WorldMatrix.Equals(ShieldShapeMatrix)) Shield2.SetWorldMatrix(ShieldShapeMatrix);
+            if (!Shield.WorldMatrix.Equals(ShieldShapeMatrix)) Shield.SetWorldMatrix(ShieldShapeMatrix);
 
             var relations = Oblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId); // check was tblock
             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) enemy = false;
             else enemy = true;
 
-            if (Distance(400)) lod = 3;
-            else if (Distance(2250)) lod = 3;
+            if (Distance(650)) lod = 5;
+            else if (Distance(2250)) lod = 4;
             else if (Distance(4500)) lod = 3;
             else if (Distance(15000)) lod = 2;
             else if (Distance(25000)) lod = 1;
@@ -555,9 +547,7 @@ namespace DefenseShields
             //lod = Random.Next(0, 5);
             //lod = 6;
 
-            //BuildCollections(edgeMatrix1);
-            // Models(shield1, shield2);
-            //Instance _instance = new Instance(Outter);
+
 
             if (sphereOnCamera)
             {
@@ -570,7 +560,7 @@ namespace DefenseShields
         private void PrepareSphere(int lod, bool enemy)
         {
             if (_entityChanged || lod != _prevLod) Sphere.CalculateTransform(ShieldShapeMatrix, lod);
-            Sphere.CalculateColor(ShieldShapeMatrix, WorldImpactPosition, _entityChanged, enemy, Shield1);
+            Sphere.CalculateColor(ShieldShapeMatrix, WorldImpactPosition, _entityChanged, enemy, Shield);
             _prevLod = lod;
         }
 

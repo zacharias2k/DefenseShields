@@ -20,6 +20,7 @@ namespace DefenseShields
         public int I;
 
         public static DefenseShieldsBase Instance { get; private set; }
+        public MyModContext MyModContext = new MyModContext();
         public readonly Icosphere Icosphere = new Icosphere(8);
 
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
@@ -41,6 +42,11 @@ namespace DefenseShields
             }
         }
 
+        public string ModPath()
+        {
+            var ModPath = ModContext.ModPath;
+            return ModPath;
+        }
         public override void LoadData()
         {
             Instance = this;

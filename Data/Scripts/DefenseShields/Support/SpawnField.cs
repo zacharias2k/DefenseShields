@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Game;
 using VRage.Game.Entity;
+using VRage.Game.VisualScripting;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRage.Utils;
@@ -18,6 +20,24 @@ namespace DefenseShields.Support
         #region Cube+subparts Class
         public class Utils
         {
+            //Shell Entities
+            public static IMyEntity Sphere(string displayName, string model)
+            {
+                try
+                {
+                    var ent = new MyEntity();
+                    ent.Init(new StringBuilder(displayName), model, null, null, null);
+                    MyAPIGateway.Entities.AddEntity(ent);
+                    return ent;
+                }
+                catch (Exception ex)
+                {
+                    Log.Line($"Exception in Spawn shell entities");
+                    Log.Line($"{ex}");
+                    return null;
+                }
+
+            }
             //SPAWN METHOD
             public static IMyEntity SpawnShield(string subtypeId, string name = "", bool isVisible = true, bool hasPhysics = false, bool isStatic = false, bool toSave = false, bool destructible = false, long ownerId = 0)
             {
@@ -87,6 +107,7 @@ namespace DefenseShields.Support
         }
         #endregion
     }
+
     public class Icosphere 
     {
     
@@ -196,17 +217,19 @@ namespace DefenseShields.Support
             private int _mainLoop = -500;
             private int _impactCount;
             private int _impactDrawStep;
+            private int _modelCount;
             private int _glitchCount;
             private int _glitchStep;
             private int _impactCharge;
             private int _pulseCount;
-            private int _pulse = 45;
+            private int _pulse = 40;
             private int _prevLod;
             private int _lod;
             //private int _lod2;
 
             private const int GlitchSteps = 320;
             private const int ImpactSteps = 80;
+            private const int ModelSteps = 22;
             private const int ImpactChargeSteps = 120;
 
             private double _firstHitFaceLoc1X;
@@ -236,9 +259,6 @@ namespace DefenseShields.Support
             private Vector4 _maxColor;
 
 
-            private readonly MyStringId _faceId = MyStringId.GetOrCompute("Build new");
-            private readonly MyStringId _lineId = MyStringId.GetOrCompute("Square");
-
             private bool _impactCountFinished;
             private bool _charged = true;
 
@@ -266,21 +286,13 @@ namespace DefenseShields.Support
                 //Log.Line($"End CalculateTransform");
             }
 
-            public void CalculateColor(MatrixD matrix, Vector3D impactPos, bool entChanged, bool enemy, IMyEntity shield1)
+            public void CalculateColor(MatrixD matrix, Vector3D impactPos, bool entChanged, bool enemy, IMyEntity sheild)
             {
                 //Log.Line($"Start CalculateColor1");
-                //if (_mainLoop == 0) Log.Line($"start");
-                //var localImpact = Vector3D.Transform(_impactPos, MatrixD.Invert(matrix));
-                //localImpact.Normalize();
 
-                //var fnorm = (_vertexBuffer[i0] + _vertexBuffer[i1] + _vertexBuffer[i2]);
-                //fnorm.Normalize();
-                //var impactFactor = 1 - (Vector3D.Dot(localImpact, fnorm) + 1) / 2;
-                //var matrixTranslation = matrix.Translation;
-
-                StepEffects(impactPos);
+                StepEffects(impactPos, sheild);
                 InitColors(enemy);
-                Models(shield1);
+                if (_impactCount != 0) MyAPIGateway.Parallel.Start(() => Models(sheild));
 
                 Vector4 currentColor = Color.FromNonPremultiplied(0, 0, 255, 128);
                 Vector4 vwaveColor = Color.FromNonPremultiplied(0, 0, 1, 1);
@@ -351,8 +363,6 @@ namespace DefenseShields.Support
 
                     var color = _triColorBuffer[j];
 
-                    //if (color == Vector4.One && n0 == n1 && n1 == n2 && v0 == v1 && v1 == v2) Log.Line($"This will never be true");
-                    
                     if (faceMaterial.HasValue)
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, Vector2.Zero, Vector2.Zero,
                             Vector2.Zero, faceMaterial.Value, 0,
@@ -370,31 +380,7 @@ namespace DefenseShields.Support
                 //Log.Line($"End Draw");
             }
 
-            private void LodNormalization()
-            {
-                Log.Line($"Previous lod was {_prevLod} current lod is {_lod}");
-                var ixNew = Sphere.Icosphere._indexBuffer[_lod];
-                var ixLenNew = ixNew.Length;
-                var ixPrev = Sphere.Icosphere._indexBuffer[_prevLod];
-                var ixLenPrev = ixPrev.Length;
-                var gDivNew = MyMaths.FaceDivder(GlitchSteps, ixLenNew / 3);
-                var iDivNew = MyMaths.FaceDivder(ImpactSteps, ixLenNew / 3);
-                var gDivPrev = MyMaths.FaceDivder(GlitchSteps, ixLenPrev / 3);
-                var iDivPrev = MyMaths.FaceDivder(ImpactSteps, ixLenPrev / 3);
-
-                if ((gDivNew < 1 || iDivNew < 1) && (gDivPrev >= 1 || iDivPrev >= 1) || (gDivPrev < 1 || iDivPrev < 1) && (gDivNew >= 1 || iDivNew >= 1))
-                {
-                    Log.Line($"Lod change passed threshold requires renormalization");
-                    // temp fix
-                    _glitchStep = 0;
-                    _glitchCount = 0;
-                    _impactCount = 0;
-                    _impactDrawStep = 0;
-                    //
-                }
-            }
-
-            public void StepEffects(Vector3D ImpactPos)
+            public void StepEffects(Vector3D ImpactPos, IMyEntity shield)
             {
                 _mainLoop++;
 
@@ -404,7 +390,7 @@ namespace DefenseShields.Support
                 if (_impactCharge != 0 && _impactCount == 0) _impactCharge++;
 
                 var rndNum1 = Random.Next(30, 69);
-                if (_impactCount == 0 && _glitchCount == 0 && _pulseCount == 59 && _pulseCount == rndNum1)
+                if (_impactCount == 0 && _glitchCount == 0 && _pulseCount == 239 && _pulseCount == rndNum1)
                 {
                     _glitchCount = 1;
                     Log.Line($"Random Pulse: {_pulse}");
@@ -423,7 +409,7 @@ namespace DefenseShields.Support
                     _impactDrawStep = 0;
                     _charged = false;
                     _pulseCount = 0;
-                    _pulse = 45;
+                    _pulse = 40;
                 }
                 if (_impactCount == ImpactSteps + 1)
                 {
@@ -440,6 +426,36 @@ namespace DefenseShields.Support
                 {
                     _charged = true;
                     _impactCharge = 0;
+                }
+            }
+
+            public void Models(IMyEntity shield)
+            {               
+                try
+                {
+                    var modPath = DefenseShieldsBase.Instance.ModPath();
+                    if (_impactCount == 1) _modelCount = 0;
+                    var n = _modelCount;
+                    if (_modelCount % 2 == 1)
+                    {
+                        shield.Render.Visible = true;
+                        ((MyEntity) shield).RefreshModels($"{modPath}\\Models\\LargeField{n}.mwm", null);
+                        shield.Render.RemoveRenderObjects();
+                        shield.Render.UpdateRenderObject(true);
+                        Log.Line($"c:{_modelCount} - Asset:{shield.Model.AssetName} - Vis:{shield.Render.Visible}");
+                    }
+                    else shield.Render.Visible = false;
+                    if (_impactCount % 2 == 0 && _modelCount != 23) _modelCount++;
+                    else if (_modelCount == 23)
+                    {
+                        _modelCount = 0;
+                        shield.Render.Visible = false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Line($" Exception in UpdateBeforeSimulation");
+                    Log.Line($" {ex}");
                 }
             }
 
@@ -502,16 +518,17 @@ namespace DefenseShields.Support
                     else _pulseCount = 0;
                 }
 
-                var puleColor1 = Color.FromNonPremultiplied(_pulse, 0, 0, 16);
-                var puleColor2 = Color.FromNonPremultiplied(0, 0, 0, _pulse);
+                var pulseColor1 = Color.FromNonPremultiplied(_pulse, 0, 0, 16);
+                var pulseColor2 = Color.FromNonPremultiplied(38, 38, 38, 7);
+                Log.Line($"{_pulse}");
                 var vglitchColor = Color.FromNonPremultiplied(0, 0, rndNum4, rndNum1 - 5);
                 _glitchColor = vglitchColor;
-                if (_pulseCount == 59 && _pulseCount == rndNum3 && _glitchStep == 0)
+                if (_pulseCount == 119 && _pulseCount == rndNum3 && _glitchStep == 0)
                 {
                     _glitchCount = 1;
                     Log.Line($"Random Pulse: {_pulse}");
                 }
-                var vpulseColor = enemy ? puleColor1 : puleColor2;
+                var vpulseColor = enemy ? pulseColor1 : pulseColor2;
                 _pulseColor = vpulseColor;
 
                 //chargeColor
@@ -520,6 +537,30 @@ namespace DefenseShields.Support
                 if (_impactCharge % rndNum2 == 0)
                 {
                     _chargeColor = Color.FromNonPremultiplied(0, 0, 0, 16 + _impactCharge / 8);
+                }
+            }
+
+            private void LodNormalization()
+            {
+                Log.Line($"Previous lod was {_prevLod} current lod is {_lod}");
+                var ixNew = Sphere.Icosphere._indexBuffer[_lod];
+                var ixLenNew = ixNew.Length;
+                var ixPrev = Sphere.Icosphere._indexBuffer[_prevLod];
+                var ixLenPrev = ixPrev.Length;
+                var gDivNew = MyMaths.FaceDivder(GlitchSteps, ixLenNew / 3);
+                var iDivNew = MyMaths.FaceDivder(ImpactSteps, ixLenNew / 3);
+                var gDivPrev = MyMaths.FaceDivder(GlitchSteps, ixLenPrev / 3);
+                var iDivPrev = MyMaths.FaceDivder(ImpactSteps, ixLenPrev / 3);
+
+                if ((gDivNew < 1 || iDivNew < 1) && (gDivPrev >= 1 || iDivPrev >= 1) || (gDivPrev < 1 || iDivPrev < 1) && (gDivNew >= 1 || iDivNew >= 1))
+                {
+                    Log.Line($"Lod change passed threshold requires renormalization");
+                    // temp fix
+                    _glitchStep = 0;
+                    _glitchCount = 0;
+                    _impactCount = 0;
+                    _impactDrawStep = 0;
+                    //
                 }
             }
 
@@ -646,44 +687,6 @@ namespace DefenseShields.Support
                     }
                 }
             }
-
-            public void Models(IMyEntity shield1)
-            {
-                /*
-                if (_impactCount == 1) shield1.Render.Visible = true;
-                else if (_impactCount == 2) shield1.Render.Visible = false;
-                else if (_impactCount == 16) shield2.Render.Visible = true;
-                else if (_impactCount == 17) shield2.Render.Visible = false;
-                else if (_impactCount == 32) shield1.Render.Visible = true;
-                else if (_impactCount == 33) shield1.Render.Visible = false;
-                else if (_impactCount == 48) shield2.Render.Visible = true;
-                else if (_impactCount == 49) shield2.Render.Visible = false;
-                else if (_impactCount == 63) shield1.Render.Visible = true;
-                else if (_impactCount == 64) shield1.Render.Visible = false;
-                else if (_impactCount == 78) shield2.Render.Visible = true;
-                else if (_impactCount == 79) shield2.Render.Visible = false;
-                */
-
-                shield1.Render.RemoveRenderObjects();
-
-                if (_impactCount < 40) ((MyEntity) shield1).RefreshModels("C:\\Users\\shane\\AppData\\Roaming\\SpaceEngineers\\Mods\\DefenseShields\\Models\\LargeField.mwm", null);
-                else ((MyEntity) shield1).RefreshModels("C:\\Users\\shane\\AppData\\Roaming\\SpaceEngineers\\Mods\\DefenseShields\\Models\\LargeField15.mwm", null);
-
-                shield1.Render.AddRenderObjects();
-
-                if (_impactCount == 1) shield1.Render.Visible = true;
-                else if (_impactCount == 2) shield1.Render.Visible = false;
-                else if (_impactCount == 16) shield1.Render.Visible = true;
-                else if (_impactCount == 17) shield1.Render.Visible = false;
-                else if (_impactCount == 32) shield1.Render.Visible = true;
-                else if (_impactCount == 33) shield1.Render.Visible = false;
-                else if (_impactCount == 48) shield1.Render.Visible = true;
-                else if (_impactCount == 49) shield1.Render.Visible = false;
-                else if (_impactCount == 63) shield1.Render.Visible = true;
-                else if (_impactCount == 64) shield1.Render.Visible = false;
-                else if (_impactCount == 78) shield1.Render.Visible = true;
-                else if (_impactCount == 79) shield1.Render.Visible = false;
-            }
         }
 
         //
@@ -710,86 +713,24 @@ namespace DefenseShields.Support
         // So you'd do that calculation right before AddTriangleBillboard
 
         /*
-        public void Draw(MatrixD matrix, MyStringId? faceMaterial = null, MyStringId? lineMaterial = null)
-        {
-            const float radius = 1f;
-            var ix = _indexBuffer[_lod];
-           // if (_mainLoop == 0) Log.Line($"start");
+        if (faceMaterial.HasValue && _lod > 2)
+            if (_impactCount != 0)
+                if (impactFactor <= _lastHitFaceLoc1x)
 
-            var matrixCache = matrix;
-            var localImpact = Vector3D.Transform(_impactPos, MatrixD.Invert(matrixCache)); 
-            localImpact.Normalize();
+                if (impactFactor >= _firstFaceLoc1x && impactFactor <= _lastFaceLoc1x)
 
+                if (impactFactor < _lastFaceLoc1x)
 
-            for (var i = 0; i < ix.Length - 2; i += 3)
-            {
-                var i0 = ix[i];
-                var i1 = ix[i + 1];
-                var i2 = ix[i + 2];
+                if (impactFactor > _lastFaceLoc1x)
+            else if (_impactCharge != 0)
+            else if (_glitchCount != 0)
+        */
+        //var localImpact = Vector3D.Transform(_impactPos, MatrixD.Invert(matrix));
+        //localImpact.Normalize();
 
-                var v0 = Vector3D.Transform(radius * _vertexBuffer[i0], matrixCache);
-                var v1 = Vector3D.Transform(radius * _vertexBuffer[i1], matrixCache);
-                var v2 = Vector3D.Transform(radius * _vertexBuffer[i2], matrixCache);
-
-                var fnorm = (_vertexBuffer[i0] + _vertexBuffer[i1] + _vertexBuffer[i2]);
-                fnorm.Normalize();
-                var impactFactor = 1 - (Vector3D.Dot(localImpact, fnorm) + 1) / 2;
-                
-                //if (v0 == v1 && v0 == v2) Log.Line($"This is a test");
-                /*
-                if (faceMaterial.HasValue && _lod > 2)
-                {
-
-                    if (_impactCount != 0)
-                    {
-                        if (impactFactor <= _lastHitFaceLoc1x)
-                        {
-                            //Log.Line($"Hit");
-                            MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
-                                _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
-                                (v0 + v1 + v2) / 3, hitColor);
-                        }
-                        if (impactFactor >= _firstFaceLoc1x && impactFactor <= _lastFaceLoc1x)
-                        {
-                            //Log.Line($"Wave {waveColor} {_firstFaceLoc1x} - {impactFactor >= _firstFaceLoc1x}");
-                            MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
-                                _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
-                                (v0 + v1 + v2) / 3, waveColor);
-                        }
-                        /*
-                        if (impactFactor < _lastFaceLoc1x)
-                        {
-                            //Log.Line($"Wave passed");
-                            MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
-                                _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
-                                (v0 + v1 + v2) / 3, wavePassedColor);
-                        }
-                        if (impactFactor > _lastFaceLoc1x)
-                        {
-                            //Log.Line($"Wave coming");
-                            MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
-                                _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
-                                (v0 + v1 + v2) / 3, waveComingColor);
-                        }
-                    }
-                    else if (_impactCharge != 0)
-                    {
-                        MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
-                            _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
-                            (v0 + v1 + v2) / 3, chargeColor);
-                    }
-                    else if (_glitchCount != 0)
-                    {
-                        //Log.Line($"Glitching");
-                        if (impactFactor >= _firstFaceLoc6X && impactFactor <= _lastFaceLoc6X)
-                        {
-                            MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, _vertexBuffer[i0], _vertexBuffer[i1],
-                                _vertexBuffer[i2], Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial.Value, 0,
-                                (v0 + v1 + v2) / 3, glitchColor);
-                        }
-                    }
-                }
-            }//);
-            if (_mainLoop == 0) Log.Line($"end");*/
+        //var fnorm = (_vertexBuffer[i0] + _vertexBuffer[i1] + _vertexBuffer[i2]);
+        //fnorm.Normalize();
+        //var impactFactor = 1 - (Vector3D.Dot(localImpact, fnorm) + 1) / 2;
+        //var matrixTranslation = matrix.Translation;
     }
 }
