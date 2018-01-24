@@ -100,12 +100,12 @@ namespace DefenseShields
         public static HashSet<IMyEntity> DestroyGridHash = new HashSet<IMyEntity>();
         public static HashSet<IMyEntity> DestroyPlayerHash = new HashSet<IMyEntity>();
 
-        public static readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
+        public readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
 
         private readonly MyStringId _faceId = MyStringId.GetOrCompute("Build new");
         private readonly MyStringId _lineId = MyStringId.GetOrCompute("Square");
 
-        private static readonly Random Random = new Random();
+        private readonly Random Random = new Random();
 
         public IMyEntity Shield;
         #endregion
@@ -185,6 +185,8 @@ namespace DefenseShields
                     _entityChanged = EntityPos != EntityPrevPos || ShieldShapeMatrix != OldShieldShapeMatrix;
                     EntityPrevPos = EntityPos;
                     OldShieldShapeMatrix = ShieldShapeMatrix;
+                    if (!Shield.WorldMatrix.Equals(ShieldShapeMatrix) || _entityChanged) Shield.SetWorldMatrix(ShieldShapeMatrix);
+
                     MyAPIGateway.Parallel.StartBackground(WebEntities);
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
                     if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
@@ -523,18 +525,18 @@ namespace DefenseShields
         public void Draw()
         {
             if (Initialized) return;
+
             var sp = new BoundingSphereD(Oblock.Position, Range);
             var sphereOnCamera = MyAPIGateway.Session.Camera.IsInFrustum(ref sp);
-            int lod;
+            Log.Line($"{sphereOnCamera}");
+
             bool enemy;
-
-            if (!Shield.WorldMatrix.Equals(ShieldShapeMatrix)) Shield.SetWorldMatrix(ShieldShapeMatrix);
-
             var relations = Oblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId); // check was tblock
             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) enemy = false;
             else enemy = true;
 
-            if (Distance(650)) lod = 5;
+            int lod;
+            if (Distance(650)) lod = 4;
             else if (Distance(2250)) lod = 4;
             else if (Distance(4500)) lod = 3;
             else if (Distance(15000)) lod = 2;
@@ -548,6 +550,7 @@ namespace DefenseShields
             //lod = 6;
 
 
+            Log.Line($"Changed?? {_entityChanged}");
 
             if (sphereOnCamera)
             {

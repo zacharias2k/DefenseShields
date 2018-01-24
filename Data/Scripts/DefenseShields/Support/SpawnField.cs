@@ -270,7 +270,7 @@ namespace DefenseShields.Support
 
             public void CalculateTransform(MatrixD matrix, int lod)
             {
-                //Log.Line($"Start CalculateTransform");
+                Log.Line($"Start CalculateTransform");
                 _lod = lod;
                 var count = checked((int)VertsForLod(lod));
                 Array.Resize(ref _vertexBuffer, count);
@@ -283,7 +283,7 @@ namespace DefenseShields.Support
 
                 for (var i = 0; i < count; i++)
                     Vector3D.TransformNormal(ref _backing._vertexBuffer[i], ref normalMatrix, out _normalBuffer[i]);
-                //Log.Line($"End CalculateTransform");
+                Log.Line($"End CalculateTransform");
             }
 
             public void CalculateColor(MatrixD matrix, Vector3D impactPos, bool entChanged, bool enemy, IMyEntity sheild)
@@ -520,7 +520,6 @@ namespace DefenseShields.Support
 
                 var pulseColor1 = Color.FromNonPremultiplied(_pulse, 0, 0, 16);
                 var pulseColor2 = Color.FromNonPremultiplied(38, 38, 38, 7);
-                Log.Line($"{_pulse}");
                 var vglitchColor = Color.FromNonPremultiplied(0, 0, rndNum4, rndNum1 - 5);
                 _glitchColor = vglitchColor;
                 if (_pulseCount == 119 && _pulseCount == rndNum3 && _glitchStep == 0)
