@@ -63,6 +63,7 @@ namespace DefenseShields
         private bool _entityChanged = true;
         private bool _enemy;
         private bool _sphereOnCamera;
+        private bool _matrixPredicted;
 
         private const ushort ModId = 50099;
 
@@ -73,12 +74,13 @@ namespace DefenseShields
         public MatrixD BlockWorldMatrix;
         public MatrixD ShieldShapeMatrix;
         public MatrixD OldShieldShapeMatrix;
-        public MatrixD ShieldShapeFutureMatrix;
+        public MatrixD PredictedBlockWorldMatrix;
         //MatrixD shieldShapeMatrix = MatrixD.Identity;
 
         public IMyOreDetector Oblock;
         public IMyFunctionalBlock Fblock;
         public IMyTerminalBlock Tblock;
+        public IMyCubeBlock Cblock;
 
         public Icosphere.Instance Sphere;
 
@@ -129,6 +131,7 @@ namespace DefenseShields
             Oblock = Entity as IMyOreDetector; 
             Fblock = Entity as IMyFunctionalBlock;
             Tblock = Entity as IMyTerminalBlock;
+            Cblock = Entity as IMyCubeBlock;
 
             if (!Shields.ContainsKey(Entity.EntityId)) Shields.Add(Entity.EntityId, this);
         }
@@ -404,7 +407,7 @@ namespace DefenseShields
                 Height = Range;
                 Depth = Range;
             }
-            ShieldShapeMatrix = MatrixD.Rescale(Entity.WorldMatrix, new Vector3D(Width, Height, Depth));
+            ShieldShapeMatrix = MatrixD.Rescale(BlockWorldMatrix, new Vector3D(Width, Height, Depth));
         }
         #endregion
 
@@ -521,21 +524,20 @@ namespace DefenseShields
 
         private void PrepEntityState()
         {
-            EntityPos = Entity.GetPosition();
-            _entityChanged = EntityPos != EntityPrevPos || ShieldShapeMatrix != OldShieldShapeMatrix;
-            EntityPrevPos = EntityPos;
+            EntityPos = Cblock.GetPosition();
+            _entityChanged = EntityPos != EntityPrevPos;
             OldShieldShapeMatrix = ShieldShapeMatrix;
-
-            var dt = 1; // Time difference
-            Log.Line($"{Shield.GetPosition()} - {Entity.Parent.Physics.LinearVelocity}");
-            var estimatedBlockPos = Shield.GetPosition() + Entity.Parent.Physics.LinearVelocity * dt;
-            //Log.Line($"current:{Entity.Parent.GetPosition()} future:{estimatedBlockPos}");
-            var futureMatrix = MatrixD.CreateWorld(estimatedBlockPos, Vector3.Forward, Vector3.Up);
+            EntityPrevPos = EntityPos;
             if (_entityChanged)
             {
-                //Log.Line($"I am triggering {ShieldShapeMatrix} {ShieldShapeFutureMatrix}");
-                ShieldShapeMatrix = MatrixD.Rescale(BlockWorldMatrix, new Vector3D(Width, Height, Depth));
-                Shield.SetWorldMatrix(ShieldShapeMatrix);
+                var dt = MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS;
+                var dtTwo = dt * 2;
+                var angVel = Vector3D.TransformNormal((Vector3D)Cblock.CubeGrid.Physics.AngularVelocity, Cblock.PositionComp.LocalMatrix);
+                var rate = angVel.Normalize() * dtTwo;
+                PredictedBlockWorldMatrix = MatrixD.CreateFromAxisAngle(angVel, rate) * Cblock.PositionComp.WorldMatrix;
+                //PredictedBlockWorldMatrix.Translation = Cblock.PositionComp.WorldMatrix.Translation + Cblock.CubeGrid.Physics.GetVelocityAtPoint(Cblock.PositionComp.WorldMatrix.Translation) * dtTwo;
+                PredictedBlockWorldMatrix.Translation = Cblock.PositionComp.WorldMatrix.Translation + Cblock.CubeGrid.Physics.GetVelocityAtPoint(Cblock.PositionComp.WorldMatrix.Translation) * dtTwo + Cblock.CubeGrid.Physics.LinearAcceleration * 0.5f * dtTwo * dtTwo;
+                ShieldShapeMatrix = MatrixD.Rescale(PredictedBlockWorldMatrix, new Vector3D(Width, Height, Depth));
             }
 
             var sp = new BoundingSphereD(Entity.GetPosition(), Range);
@@ -543,7 +545,7 @@ namespace DefenseShields
             _sphereOnCamera = sphereOnCamera;
 
             bool enemy;
-            var relations = Oblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId); // check was tblock
+            var relations = Oblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId); 
             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) enemy = false;
             else enemy = true;
             _enemy = enemy;
@@ -561,7 +563,6 @@ namespace DefenseShields
             _lod = lod;
             //lod = Random.Next(0, 5);
             //lod = 6;
-
         }
 
         private Task? _prepareTask = null;
@@ -569,9 +570,10 @@ namespace DefenseShields
         public void Draw()
         {
             if (NotInitialized) return;
+            
+            if (_entityChanged) ShieldShapeMatrix = MatrixD.Rescale(Oblock.WorldMatrix, new Vector3D(Width, Height, Depth));
             //Log.Line($"ent: {this.Entity.EntityId} - changed?:{_entityChanged} - is onCam:{_sphereOnCamera}");
-
-            if (_sphereOnCamera)
+            if (_sphereOnCamera && Oblock.IsWorking)
             {
                 if (_prepareTask.HasValue && !_prepareTask.Value.IsComplete) _prepareTask.Value.Wait();
                 if (_prepareTask.HasValue && _prepareTask.Value.IsComplete) Sphere.Draw(_faceId, _lineId);

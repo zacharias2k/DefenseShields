@@ -273,7 +273,7 @@ namespace DefenseShields.Support
 
             public void CalculateTransform(MatrixD matrix, int lod)
             {
-                Log.Line($"Start CalculateTransform");
+                //Log.Line($"Start CalculateTransform");
                 _lod = lod;
                 var count = checked((int)VertsForLod(lod));
                 Array.Resize(ref _vertexBuffer, count);
@@ -286,7 +286,7 @@ namespace DefenseShields.Support
 
                 for (var i = 0; i < count; i++)
                     Vector3D.TransformNormal(ref _backing._vertexBuffer[i], ref normalMatrix, out _normalBuffer[i]);
-                Log.Line($"End CalculateTransform");
+                //Log.Line($"End CalculateTransform");
             }
 
             public void CalculateColor(MatrixD matrix, Vector3D impactPos, bool entChanged, bool enemy, IMyEntity shield)
@@ -350,40 +350,48 @@ namespace DefenseShields.Support
 
             public void Draw(MyStringId? faceMaterial = null, MyStringId? lineMaterial = null, float lineThickness = -1f)
             {
-                //Log.Line($"Start Draw");
-                var ib = _backing._indexBuffer[_lod];
-
-                for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
+                try
                 {
-                    var i0 = ib[i];
-                    var i1 = ib[i + 1];
-                    var i2 = ib[i + 2];
+                    //Log.Line($"Start Draw");
+                    var ib = _backing._indexBuffer[_lod];
 
-                    var v0 = _vertexBuffer[i0];
-                    var v1 = _vertexBuffer[i1];
-                    var v2 = _vertexBuffer[i2];
-
-                    var n0 = _normalBuffer[i0];
-                    var n1 = _normalBuffer[i1];
-                    var n2 = _normalBuffer[i2];
-
-                    var color = _triColorBuffer[j];
-
-                    if (faceMaterial.HasValue)
-                        MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, Vector2.Zero, Vector2.Zero,
-                            Vector2.Zero, faceMaterial.Value, 0,
-                            (v0 + v1 + v2) / 3, color);
-                    
-                    /*
-                    if (lineMaterial.HasValue && lineThickness > 0)
+                    for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
                     {
-                        MySimpleObjectDraw.DrawLine(v0, v1, lineMaterial, ref color, lineThickness);
-                        MySimpleObjectDraw.DrawLine(v1, v2, lineMaterial, ref color, lineThickness);
-                        MySimpleObjectDraw.DrawLine(v2, v0, lineMaterial, ref color, lineThickness);
+                        var i0 = ib[i];
+                        var i1 = ib[i + 1];
+                        var i2 = ib[i + 2];
+
+                        var v0 = _vertexBuffer[i0];
+                        var v1 = _vertexBuffer[i1];
+                        var v2 = _vertexBuffer[i2];
+
+                        var n0 = _normalBuffer[i0];
+                        var n1 = _normalBuffer[i1];
+                        var n2 = _normalBuffer[i2];
+
+                        var color = _triColorBuffer[j];
+
+                        if (faceMaterial.HasValue)
+                            MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, Vector2.Zero, Vector2.Zero,
+                                Vector2.Zero, faceMaterial.Value, 0,
+                                (v0 + v1 + v2) / 3, color);
+
+                        /*
+                        if (lineMaterial.HasValue && lineThickness > 0)
+                        {
+                            MySimpleObjectDraw.DrawLine(v0, v1, lineMaterial, ref color, lineThickness);
+                            MySimpleObjectDraw.DrawLine(v1, v2, lineMaterial, ref color, lineThickness);
+                            MySimpleObjectDraw.DrawLine(v2, v0, lineMaterial, ref color, lineThickness);
+                        }
+                        */
                     }
-                    */
+                    //Log.Line($"End Draw");
                 }
-                //Log.Line($"End Draw");
+                catch (Exception ex)
+                {
+                    Log.Line($" Exception in UpdateBeforeSimulation");
+                    Log.Line($" {ex}");
+                }
             }
 
             public void StepEffects()
@@ -442,17 +450,18 @@ namespace DefenseShields.Support
                     var modPath = DefenseShieldsBase.Instance.ModPath();
                     if (_impactCount == 1) _modelCount = 0;
                     var n = _modelCount;
-                    if (_modelCount % 2 == 1)
+                    if (_impactCount % 2 == 1)
                     {
                         _shield.Render.Visible = true;
+                        Log.Line($"{n}");
                         ((MyEntity)_shield).RefreshModels($"{modPath}\\Models\\LargeField{n}.mwm", null);
                         _shield.Render.RemoveRenderObjects();
                         _shield.Render.UpdateRenderObject(true);
                         Log.Line($"c:{_modelCount} - Asset:{_shield.Model.AssetName} - Vis:{_shield.Render.Visible}");
                     }
                     else _shield.Render.Visible = false;
-                    if (_impactCount % 2 == 0 && _modelCount != 23) _modelCount++;
-                    else if (_modelCount == 23)
+                    if (_impactCount % 2 == 0 && _modelCount != 15) _modelCount++;
+                    else if (_modelCount == 15)
                     {
                         _modelCount = 0;
                         _shield.Render.Visible = false;
