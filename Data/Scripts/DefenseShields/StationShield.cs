@@ -18,6 +18,7 @@ using VRage.ModAPI;
 using VRage.Utils;
 using VRage.Game.Entity;
 using System.Linq;
+using BulletXNA.BulletCollision;
 using DefenseShields.Control;
 using VRage.Collections;
 using Sandbox.Game.Entities.Character.Components;
@@ -49,7 +50,6 @@ namespace DefenseShields
         public int Gridcount = 600;
         private int _time;
         private int _playertime;
-        private int _impactCount;
         private int _lod;
         private int _prevLod;
 
@@ -63,18 +63,15 @@ namespace DefenseShields
         private bool _entityChanged = true;
         private bool _enemy;
         private bool _sphereOnCamera;
-        private bool _matrixPredicted;
 
         private const ushort ModId = 50099;
 
         public Vector3D WorldImpactPosition;
-        public Vector3D EntityPos;
-        public Vector3D EntityPrevPos;
 
         public MatrixD BlockWorldMatrix;
         public MatrixD ShieldShapeMatrix;
-        public MatrixD OldShieldShapeMatrix;
         public MatrixD PredictedBlockWorldMatrix;
+        public MatrixD ReSized;
         //MatrixD shieldShapeMatrix = MatrixD.Identity;
 
         public IMyOreDetector Oblock;
@@ -188,7 +185,6 @@ namespace DefenseShields
                 }
                 if (!NotInitialized && Oblock.IsWorking)
                 {
-                    PrepEntityState();
                     MyAPIGateway.Parallel.StartBackground(WebEntities);
                     if (_shotwebbed && !_shotlocked) MyAPIGateway.Parallel.Do(ShotEffects);
                     if (_playerwebbed) MyAPIGateway.Parallel.Do(PlayerEffects);
@@ -393,7 +389,6 @@ namespace DefenseShields
             if (shield == null) { return; }
             stringBuilder.Clear();
             stringBuilder.Append("Required Power: " + shield.CalcRequiredPower().ToString("0.00") + "MW");
-
             Range = GetRadius();
             if (Ellipsoid.Getter(block).Equals(true))
             {
@@ -407,8 +402,7 @@ namespace DefenseShields
                 Height = Range;
                 Depth = Range;
             }
-            ShieldShapeMatrix = MatrixD.Rescale(BlockWorldMatrix, new Vector3D(Width, Height, Depth));
-        }
+    }
         #endregion
 
         #region Cleanup
@@ -524,20 +518,31 @@ namespace DefenseShields
 
         private void PrepEntityState()
         {
-            EntityPos = Cblock.GetPosition();
-            _entityChanged = EntityPos != EntityPrevPos;
-            OldShieldShapeMatrix = ShieldShapeMatrix;
-            EntityPrevPos = EntityPos;
-            if (_entityChanged)
+            var entAngularVelocity = Vector3D.IsZero(Cblock.CubeGrid.Physics.AngularVelocity);
+            var entLinVel = Vector3D.IsZero(Cblock.CubeGrid.Physics.GetVelocityAtPoint(Cblock.CubeGrid.PositionComp.WorldMatrix.Translation));
+            if (!entAngularVelocity || !entLinVel)
             {
-                var dt = MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS;
-                var dtTwo = dt * 2;
-                var angVel = Vector3D.TransformNormal((Vector3D)Cblock.CubeGrid.Physics.AngularVelocity, Cblock.PositionComp.LocalMatrix);
-                var rate = angVel.Normalize() * dtTwo;
-                PredictedBlockWorldMatrix = MatrixD.CreateFromAxisAngle(angVel, rate) * Cblock.PositionComp.WorldMatrix;
-                //PredictedBlockWorldMatrix.Translation = Cblock.PositionComp.WorldMatrix.Translation + Cblock.CubeGrid.Physics.GetVelocityAtPoint(Cblock.PositionComp.WorldMatrix.Translation) * dtTwo;
-                PredictedBlockWorldMatrix.Translation = Cblock.PositionComp.WorldMatrix.Translation + Cblock.CubeGrid.Physics.GetVelocityAtPoint(Cblock.PositionComp.WorldMatrix.Translation) * dtTwo + Cblock.CubeGrid.Physics.LinearAcceleration * 0.5f * dtTwo * dtTwo;
-                ShieldShapeMatrix = MatrixD.Rescale(PredictedBlockWorldMatrix, new Vector3D(Width, Height, Depth));
+                const float dt = MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS;
+                var rate = 0d;
+                var angVel = Vector3D.Zero;
+                if (!entAngularVelocity)
+                {
+                    angVel = Vector3D.TransformNormal((Vector3D)Cblock.CubeGrid.Physics.AngularVelocity, Cblock.CubeGrid.PositionComp.LocalMatrix);
+                    rate = angVel.Normalize() * dt;
+                }
+                PredictedBlockWorldMatrix = MatrixD.CreateFromAxisAngle(angVel, rate) * Cblock.CubeGrid.PositionComp.WorldMatrix;
+                PredictedBlockWorldMatrix.Translation = Cblock.CubeGrid.PositionComp.WorldMatrix.Translation + Cblock.CubeGrid.Physics.GetVelocityAtPoint(Cblock.CubeGrid.PositionComp.WorldMatrix.Translation) * dt;
+                //PredictedBlockWorldMatrix.Translation = Cblock.PositionComp.WorldMatrix.Translation + Cblock.CubeGrid.Physics.GetVelocityAtPoint(Cblock.PositionComp.WorldMatrix.Translation) * dtTwo + Cblock.CubeGrid.Physics.LinearAcceleration * 0.5f * dtTwo * dtTwo;
+                //ShieldShapeMatrix = MatrixD.Rescale(PredictedBlockWorldMatrix, new Vector3D(Width, Height, Depth));
+                ShieldShapeMatrix = MatrixD.CreateScale(Cblock.CubeGrid.PositionComp.LocalAABB.HalfExtents * (float)MathHelper.Sqrt2 + 5f) * MatrixD.CreateTranslation(Cblock.CubeGrid.PositionComp.LocalAABB.Center) * PredictedBlockWorldMatrix;
+                //ShieldShapeMatrix = MatrixD.CreateScale(Cblock.CubeGrid.PositionComp.LocalAABB.HalfExtents * (float)MathHelper.Sqrt3 + 8) * MatrixD.CreateTranslation(Cblock.CubeGrid.PositionComp.LocalAABB.Center) * Cblock.CubeGrid.WorldMatrix;
+                //ShieldShapeMatrix = MatrixD.Rescale(PredictedBlockWorldMatrix, new Vector3D(Width, Height, Depth));
+
+            }
+            else if (Cblock.CubeGrid.Physics.IsStatic) ShieldShapeMatrix = MatrixD.Rescale(BlockWorldMatrix, new Vector3D(Width, Height, Depth));
+            else
+            {
+                ShieldShapeMatrix = MatrixD.CreateScale(Cblock.CubeGrid.PositionComp.LocalAABB.HalfExtents * (float)MathHelper.Sqrt2 +5f) * MatrixD.CreateTranslation(Cblock.CubeGrid.PositionComp.LocalAABB.Center) * Cblock.CubeGrid.WorldMatrix;
             }
 
             var sp = new BoundingSphereD(Entity.GetPosition(), Range);
@@ -570,8 +575,14 @@ namespace DefenseShields
         public void Draw()
         {
             if (NotInitialized) return;
-            
-            if (_entityChanged) ShieldShapeMatrix = MatrixD.Rescale(Oblock.WorldMatrix, new Vector3D(Width, Height, Depth));
+            /*
+            var gridmatrix = Cblock.CubeGrid.WorldMatrix;
+            var gridaabb = (BoundingBoxD)Cblock.CubeGrid.LocalAABB;
+
+            var c = Color.Red;
+            MySimpleObjectDraw.DrawTransparentBox(ref gridmatrix, ref gridaabb, ref c, MySimpleObjectRasterizer.Wireframe, 1, 0.04f);
+            */
+            PrepEntityState();
             //Log.Line($"ent: {this.Entity.EntityId} - changed?:{_entityChanged} - is onCam:{_sphereOnCamera}");
             if (_sphereOnCamera && Oblock.IsWorking)
             {

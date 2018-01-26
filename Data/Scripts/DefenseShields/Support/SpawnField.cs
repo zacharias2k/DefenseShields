@@ -376,14 +376,14 @@ namespace DefenseShields.Support
                                 Vector2.Zero, faceMaterial.Value, 0,
                                 (v0 + v1 + v2) / 3, color);
 
-                        /*
+                        
                         if (lineMaterial.HasValue && lineThickness > 0)
                         {
                             MySimpleObjectDraw.DrawLine(v0, v1, lineMaterial, ref color, lineThickness);
                             MySimpleObjectDraw.DrawLine(v1, v2, lineMaterial, ref color, lineThickness);
                             MySimpleObjectDraw.DrawLine(v2, v0, lineMaterial, ref color, lineThickness);
                         }
-                        */
+                        
                     }
                     //Log.Line($"End Draw");
                 }
@@ -534,7 +534,7 @@ namespace DefenseShields.Support
                 }
 
                 var pulseColor1 = Color.FromNonPremultiplied(_pulse, 0, 0, 16);
-                var pulseColor2 = Color.FromNonPremultiplied(38, 38, 38, 7);
+                var pulseColor2 = Color.FromNonPremultiplied(0, 0, 100, 16);
                 var vglitchColor = Color.FromNonPremultiplied(0, 0, rndNum4, rndNum1 - 5);
                 _glitchColor = vglitchColor;
                 if (_pulseCount == 119 && _pulseCount == rndNum3 && _glitchStep == 0)
