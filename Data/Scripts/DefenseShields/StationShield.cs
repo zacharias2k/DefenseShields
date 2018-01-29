@@ -5,6 +5,7 @@ using ProtoBuf;
 using System;
 using Sandbox.ModAPI.Weapons;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.EntityComponents;
@@ -44,6 +45,7 @@ namespace DefenseShields
         private const float Bulletdmg = 0.1f;
         private const float Massdmg = 0.0025f;
         private const float InOutSpace = 15f;
+        private float _mobileEntitySize; 
 
         public int Count = -1;
         public int Playercount = 600;
@@ -61,23 +63,26 @@ namespace DefenseShields
         private bool _closegrids;
         private bool _playerkill;
         private bool _entityChanged = true;
-        private bool _enemy;
-        private bool _sphereOnCamera;
+        private bool _entityIsMobile;
+        private bool _warmUp = false;
 
         private const ushort ModId = 50099;
 
-        public Vector3D WorldImpactPosition;
+        public Vector3D WorldImpactPosition = new Vector3D(Vector3D.NegativeInfinity);
+        public Vector3D DetectionCenter;
 
+        public BoundingBox OldGridAabb;
         public MatrixD BlockWorldMatrix;
         public MatrixD ShieldShapeMatrix;
-        public MatrixD PredictedBlockWorldMatrix;
-        public MatrixD ReSized;
+        //public MatrixD PredictedGridWorldMatrix;
+        //public MatrixD ReSized;
         //MatrixD shieldShapeMatrix = MatrixD.Identity;
 
         public IMyOreDetector Oblock;
         public IMyFunctionalBlock Fblock;
         public IMyTerminalBlock Tblock;
         public IMyCubeBlock Cblock;
+        public IMyEntity Shield;
 
         public Icosphere.Instance Sphere;
 
@@ -105,13 +110,20 @@ namespace DefenseShields
 
         public readonly Dictionary<long, DefenseShields> Shields = new Dictionary<long, DefenseShields>();
 
-        private readonly MyStringId _faceId = MyStringId.GetOrCompute("Build new");
-        private readonly MyStringId _lineId = MyStringId.GetOrCompute("Square");
-
         private static readonly Random Random = new Random();
 
-        public IMyEntity Shield;
+        Stopwatch sw = new Stopwatch();
+
         #endregion
+        public void StopWatchReport()
+        {
+            long ticks = sw.ElapsedTicks;
+            double ns = 1000000000.0 * (double)ticks / Stopwatch.Frequency;
+            double ms = ns / 1000000.0;
+            double s = ms / 1000;
+
+            Log.Line($"ns:{ns} ms:{ms} s:{s}");
+        }
 
         #region Init
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
@@ -155,10 +167,20 @@ namespace DefenseShields
                 if (Count++ == 59) Count = 0;
                 if (Count <= 0)
                 {
-                    if (NotInitialized)
+                    if (_warmUp == false)
                     {
+                        var warming = true;
+                        foreach (var s in Shields)
+                        {
+                            if (s.Value.NotInitialized) 
+                            {
+                                warming = false;
+                                //Sphere.CalculateTransform(ShieldShapeMatrix, _lod);
+                            }
+                        }
                         Count = -1;
                         InHashBuilder();
+                        if (warming) _warmUp = true;
                         return;
                     }
                     MyAPIGateway.Parallel.Do(InHashBuilder);
@@ -175,13 +197,13 @@ namespace DefenseShields
                 {
                     if (_playerkill) Playercount = -1;
                     _playerkill = false;
-                    if (DestroyPlayerHash.Count > 0) DestroyEntity.PlayerKill(Playercount);
+                    //if (DestroyPlayerHash.Count > 0) DestroyEntity.PlayerKill(Playercount);
                 }
                 if (_closegrids || Gridcount == 59 || Gridcount == 179 || Gridcount == 299 || Gridcount == 419 || Gridcount == 479|| Gridcount == 599)
                 {
                     if (_closegrids) Gridcount = -1;
                     _closegrids = false;
-                    if (DestroyGridHash.Count > 0) DestroyEntity.GridClose(Gridcount);
+                    //if (DestroyGridHash.Count > 0) DestroyEntity.GridClose(Gridcount);
                 }
                 if (!NotInitialized && Oblock.IsWorking)
                 {
@@ -195,20 +217,25 @@ namespace DefenseShields
                 Log.Line($" Exception in UpdateBeforeSimulation");
                 Log.Line($" {ex}");
             }
+            //Log.Line($"{Count}");
         }
 
         public override void UpdateBeforeSimulation100()
         {
             if (NotInitialized)
             {
-                Log.Line($" Create UI {Count}");
+                if (Cblock.CubeGrid.Physics.IsStatic) _entityIsMobile = false;
+                else if (!Cblock.CubeGrid.Physics.IsStatic) _entityIsMobile = true;
+                Log.Line($"BeforeSim100 - H:{Height} W:{Width} D:{Depth} R:{Range}");
                 CreateUi();
                 Oblock.AppendingCustomInfo += AppendingCustomInfo;
                 Tblock.RefreshCustomInfo();
+                Log.Line($"");
                 _absorb = 150f;
                 var modPath = DefenseShieldsBase.Instance.ModPath();
                 Shield = Spawn.Utils.Sphere("Field", $"{modPath}\\Models\\LargeField0.mwm");
                 Shield.Render.Visible = false;
+
                 DefenseShieldsBase.Instance.Shields.Add(this);
 
                 NotInitialized = false;
@@ -219,6 +246,7 @@ namespace DefenseShields
         {
             try
             {
+                if (_entityIsMobile) UpdateDetection();
                 if (!_animInit)
                 {
                     if (Oblock.BlockDefinition.SubtypeId == "StationDefenseShield")
@@ -389,6 +417,11 @@ namespace DefenseShields
             if (shield == null) { return; }
             stringBuilder.Clear();
             stringBuilder.Append("Required Power: " + shield.CalcRequiredPower().ToString("0.00") + "MW");
+            if (_entityIsMobile)
+            {
+                UpdateDetection();
+                return;
+            }
             Range = GetRadius();
             if (Ellipsoid.Getter(block).Equals(true))
             {
@@ -402,7 +435,7 @@ namespace DefenseShields
                 Height = Range;
                 Depth = Range;
             }
-    }
+        }
         #endregion
 
         #region Cleanup
@@ -511,13 +544,54 @@ namespace DefenseShields
         public bool Distance(int x)
         {
             var pPosition = MyAPIGateway.Session.Player.Character.GetPosition();
-            var cPosition = Entity.GetPosition();
+            var cPosition = Cblock.CubeGrid.PositionComp.GetPosition();
             var range = Vector3D.DistanceSquared(cPosition, pPosition) <= (x + Range) * (x + Range);
             return range;
         }
 
-        private void PrepEntityState()
+        private Task? _prepareTask = null;
+
+        public void Draw()
         {
+            if (NotInitialized) return;
+            _entityChanged = OldGridAabb != Cblock.CubeGrid.LocalAABB;
+            OldGridAabb = Cblock.CubeGrid.LocalAABB;
+            var impactpos = WorldImpactPosition;
+            WorldImpactPosition = Vector3D.NegativeInfinity;
+            var entitychanged = _entityChanged;
+
+            var blockworldmatrix = BlockWorldMatrix;
+            var shield = Shield;
+
+            int lod;
+            int lod2;
+            bool enemy;
+
+            if (Distance(650)) lod = 3;
+            else if (Distance(2250)) lod = 2;
+            else if (Distance(4500)) lod = 1;
+            else if (Distance(15000)) lod = 1;
+            else if (Distance(25000)) lod = 1;
+            else lod = 0;
+            if (lod <= 1) lod2 = lod;
+            else lod2 = 2;
+
+            _lod = lod;
+            var prevlod = _prevLod;
+            _prevLod = lod;
+
+            /*
+            var gridmatrix = Cblock.CubeGrid.WorldMatrix;
+            var gridaabb = (BoundingBoxD)Cblock.CubeGrid.LocalAABB;
+            
+            var c = Color.Red;
+            MySimpleObjectDraw.DrawTransparentBox(ref gridmatrix, ref gridaabb, ref c, MySimpleObjectRasterizer.Wireframe, 1, 0.04f);
+            */
+
+            //_entityChanged = !ShieldShapeMatrix.EqualsFast(ref OldShieldShapeMatrix) || Cblock.CubeGrid.Min != GridMinMax[0] || Cblock.CubeGrid.Max != GridMinMax[1];
+
+
+            /*
             var entAngularVelocity = Vector3D.IsZero(Cblock.CubeGrid.Physics.AngularVelocity);
             var entLinVel = Vector3D.IsZero(Cblock.CubeGrid.Physics.GetVelocityAtPoint(Cblock.CubeGrid.PositionComp.WorldMatrix.Translation));
             if (!entAngularVelocity || !entLinVel)
@@ -530,73 +604,56 @@ namespace DefenseShields
                     angVel = Vector3D.TransformNormal((Vector3D)Cblock.CubeGrid.Physics.AngularVelocity, Cblock.CubeGrid.PositionComp.LocalMatrix);
                     rate = angVel.Normalize() * dt;
                 }
-                PredictedBlockWorldMatrix = MatrixD.CreateFromAxisAngle(angVel, rate) * Cblock.CubeGrid.PositionComp.WorldMatrix;
-                PredictedBlockWorldMatrix.Translation = Cblock.CubeGrid.PositionComp.WorldMatrix.Translation + Cblock.CubeGrid.Physics.GetVelocityAtPoint(Cblock.CubeGrid.PositionComp.WorldMatrix.Translation) * dt;
-                //PredictedBlockWorldMatrix.Translation = Cblock.PositionComp.WorldMatrix.Translation + Cblock.CubeGrid.Physics.GetVelocityAtPoint(Cblock.PositionComp.WorldMatrix.Translation) * dtTwo + Cblock.CubeGrid.Physics.LinearAcceleration * 0.5f * dtTwo * dtTwo;
-                //ShieldShapeMatrix = MatrixD.Rescale(PredictedBlockWorldMatrix, new Vector3D(Width, Height, Depth));
-                ShieldShapeMatrix = MatrixD.CreateScale(Cblock.CubeGrid.PositionComp.LocalAABB.HalfExtents * (float)MathHelper.Sqrt2 + 5f) * MatrixD.CreateTranslation(Cblock.CubeGrid.PositionComp.LocalAABB.Center) * PredictedBlockWorldMatrix;
+                //PredictedGridWorldMatrix = MatrixD.CreateFromAxisAngle(angVel, rate) * Cblock.CubeGrid.PositionComp.WorldMatrix;
+                //PredictedGridWorldMatrix.Translation = Cblock.CubeGrid.PositionComp.WorldMatrix.Translation + Cblock.CubeGrid.Physics.GetVelocityAtPoint(Cblock.CubeGrid.PositionComp.WorldMatrix.Translation) * dt;
                 //ShieldShapeMatrix = MatrixD.CreateScale(Cblock.CubeGrid.PositionComp.LocalAABB.HalfExtents * (float)MathHelper.Sqrt3 + 8) * MatrixD.CreateTranslation(Cblock.CubeGrid.PositionComp.LocalAABB.Center) * Cblock.CubeGrid.WorldMatrix;
-                //ShieldShapeMatrix = MatrixD.Rescale(PredictedBlockWorldMatrix, new Vector3D(Width, Height, Depth));
-
+                //PredictedGridWorldMatrix.Translation = Cblock.PositionComp.WorldMatrix.Translation + Cblock.CubeGrid.Physics.GetVelocityAtPoint(Cblock.PositionComp.WorldMatrix.Translation) * dtTwo + Cblock.CubeGrid.Physics.LinearAcceleration * 0.5f * dtTwo * dtTwo;
+                ShieldShapeMatrix = MatrixD.CreateScale(Cblock.CubeGrid.PositionComp.LocalAABB.HalfExtents * (float)MathHelper.Sqrt2 + 5f) * MatrixD.CreateTranslation(Cblock.CubeGrid.PositionComp.LocalAABB.Center); //* PredictedGridWorldMatrix;
             }
-            else if (Cblock.CubeGrid.Physics.IsStatic) ShieldShapeMatrix = MatrixD.Rescale(BlockWorldMatrix, new Vector3D(Width, Height, Depth));
-            else
-            {
-                ShieldShapeMatrix = MatrixD.CreateScale(Cblock.CubeGrid.PositionComp.LocalAABB.HalfExtents * (float)MathHelper.Sqrt2 +5f) * MatrixD.CreateTranslation(Cblock.CubeGrid.PositionComp.LocalAABB.Center) * Cblock.CubeGrid.WorldMatrix;
-            }
+            */
+            if (Cblock.CubeGrid.Physics.IsStatic && entitychanged) ShieldShapeMatrix = MatrixD.Rescale(blockworldmatrix, new Vector3D(Width, Height, Depth));
+            else if (entitychanged) ShieldShapeMatrix = MatrixD.CreateScale(Cblock.CubeGrid.PositionComp.LocalAABB.HalfExtents * (float)MathHelper.Sqrt2 + 5f) * MatrixD.CreateTranslation(Cblock.CubeGrid.PositionComp.LocalAABB.Center); // * Cblock.CubeGrid.WorldMatrix;
+            var shapematrix = ShieldShapeMatrix;
+            if (!Shield.WorldMatrix.Equals(shapematrix)) Shield.SetWorldMatrix(shapematrix);
 
             var sp = new BoundingSphereD(Entity.GetPosition(), Range);
             var sphereOnCamera = MyAPIGateway.Session.Camera.IsInFrustum(ref sp);
-            _sphereOnCamera = sphereOnCamera;
 
-            bool enemy;
-            var relations = Oblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId); 
+            var relations = Oblock.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId);
             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) enemy = false;
             else enemy = true;
-            _enemy = enemy;
-
-            int lod;
-            if (Distance(650)) lod = 4;
-            else if (Distance(2250)) lod = 4;
-            else if (Distance(4500)) lod = 3;
-            else if (Distance(15000)) lod = 2;
-            else if (Distance(25000)) lod = 1;
-            else lod = 0;
-            int lod2;
-            if (lod <= 1) lod2 = lod;
-            else lod2 = 2;
-            _lod = lod;
-            //lod = Random.Next(0, 5);
-            //lod = 6;
-        }
-
-        private Task? _prepareTask = null;
-
-        public void Draw()
-        {
-            if (NotInitialized) return;
-            /*
-            var gridmatrix = Cblock.CubeGrid.WorldMatrix;
-            var gridaabb = (BoundingBoxD)Cblock.CubeGrid.LocalAABB;
-
-            var c = Color.Red;
-            MySimpleObjectDraw.DrawTransparentBox(ref gridmatrix, ref gridaabb, ref c, MySimpleObjectRasterizer.Wireframe, 1, 0.04f);
-            */
-            PrepEntityState();
+            entitychanged = true;
+            uint renderId = Cblock.CubeGrid.Render.GetRenderObjectID();
+            //Log.Line($"Grid name {Cblock.CubeGrid.CustomName} - RenderID {renderId} - Ent: {Entity}");
             //Log.Line($"ent: {this.Entity.EntityId} - changed?:{_entityChanged} - is onCam:{_sphereOnCamera}");
-            if (_sphereOnCamera && Oblock.IsWorking)
+            if (sphereOnCamera && Oblock.IsWorking && renderId != 0)
             {
                 if (_prepareTask.HasValue && !_prepareTask.Value.IsComplete) _prepareTask.Value.Wait();
-                if (_prepareTask.HasValue && _prepareTask.Value.IsComplete) Sphere.Draw(_faceId, _lineId);
-                _prepareTask = MyAPIGateway.Parallel.Start(PrepareSphere);
+                if (_prepareTask.HasValue && _prepareTask.Value.IsComplete) Sphere.Draw(renderId);
+                _prepareTask = MyAPIGateway.Parallel.Start(() => PrepareSphere(entitychanged, enemy, lod, prevlod, impactpos, shapematrix, shield));
             }
         }
 
-        private void PrepareSphere()
+        private void PrepareSphere(bool entitychanged, bool enemy, int lod, int prevlod, Vector3D impactpos, MatrixD shapematrix, IMyEntity shield)
         {
-            if (_entityChanged || _lod != _prevLod) Sphere.CalculateTransform(ShieldShapeMatrix, _lod);
-            Sphere.CalculateColor(ShieldShapeMatrix, WorldImpactPosition, _entityChanged, _enemy, Shield);
-            _prevLod = _lod;
+            if (entitychanged || lod != prevlod) Sphere.CalculateTransform(shapematrix, lod);
+            Sphere.CalculateColor(shapematrix, impactpos, entitychanged, enemy, shield);
+        }
+
+        private void UpdateDetection()
+        {
+            if (_entityIsMobile)
+            {
+                DetectionCenter = Cblock.CubeGrid.PositionComp.WorldAABB.Center;
+                Range = (float) ShieldShapeMatrix.Scale.Length();
+                Width = (float)ShieldShapeMatrix.Left.Length();
+                Height = (float)ShieldShapeMatrix.Up.Length();
+                Depth = (float)ShieldShapeMatrix.Forward.Length();
+            }
+            else
+            {
+                
+            }
         }
 
         #region Impact
@@ -624,7 +681,10 @@ namespace DefenseShields
         #region Build inside HashSet
         public void InHashBuilder()
         {
-            var pos = Tblock.CubeGrid.GridIntegerToWorld(Tblock.Position);
+            //var pos = Tblock.CubeGrid.GridIntegerToWorld(Tblock.Position);
+            Vector3D pos;
+            if (_entityIsMobile) pos = Cblock.PositionComp.LocalAABB.Center;
+            else pos = Cblock.PositionComp.GetPosition();
             var insphere = new BoundingSphereD(pos, Range - InOutSpace);
             List<IMyEntity> inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
 
@@ -645,15 +705,17 @@ namespace DefenseShields
         #region Web and dispatch all intersecting entities
         public void WebEntities()
         {
-            var pos = Tblock.CubeGrid.GridIntegerToWorld(Tblock.Position);
+            //var pos = Tblock.CubeGrid.GridIntegerToWorld(Tblock.Position);
 
-            var websphere = new BoundingSphereD(pos, Range);
+            var websphere = new BoundingSphereD(DetectionCenter, Range);
+            if (Count == 0 ) Log.Line($"bounding {DetectionCenter} - r:{Range} - h:{Height} - w:{Width} - d:{Depth}");
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
             MyAPIGateway.Parallel.ForEach(webList, webent =>
             {
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
                 if (webent is IMyMeteor  || webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
                 {
+                    if (webent.ToString().Contains("Missile")) Log.Line($"shot detected {webent}");
                     if (_shotwebbed) return;
                     if (Detectedge(webent, 0f))
                     {
@@ -724,13 +786,15 @@ namespace DefenseShields
         public void ShotEffects()
         {
             _shotlocked = true;
-            var pos = Tblock.CubeGrid.GridIntegerToWorld(Tblock.Position);
+            //var pos = Tblock.CubeGrid.GridIntegerToWorld(Tblock.Position);
+
             var shotHash = new HashSet<IMyEntity>();
-            var shotsphere = new BoundingSphereD(pos, Range);
+            var shotsphere = new BoundingSphereD(DetectionCenter, Range);
             MyAPIGateway.Entities.GetEntities(shotHash, ent => shotsphere.Intersects(ent.WorldAABB) && ent is IMyMeteor || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo"));
 
             foreach (var shotent in shotHash)
             {
+                Log.Line($"shot being processed {shotent}");
                 if (shotent == null || !Detectedge(shotent, 0f)) return;
                 try
                 {

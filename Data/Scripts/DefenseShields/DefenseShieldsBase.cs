@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
@@ -27,6 +28,18 @@ namespace DefenseShields
         public List<DefenseShields> Shields = new List<DefenseShields>(); 
 
         private readonly MyStringId _faceId = MyStringId.GetOrCompute("Build new");
+
+        Stopwatch sw = new Stopwatch();
+
+        public void StopWatchReport()
+        {
+            long ticks = sw.ElapsedTicks;
+            double ns = 1000000000.0 * (double)ticks / Stopwatch.Frequency;
+            double ms = ns / 1000000.0;
+            double s = ms / 1000;
+
+            Log.Line($"ns:{ns} ms:{ms} s:{s}");
+        }
 
         public override void Draw()
         {
