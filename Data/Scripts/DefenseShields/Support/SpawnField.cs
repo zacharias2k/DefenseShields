@@ -330,7 +330,7 @@ namespace DefenseShields.Support
 
             public void CalculateColor(MatrixD matrix, Vector3D impactPos, bool entChanged, bool enemy, IMyEntity shield)
             {
-                _test1Color = Color.FromNonPremultiplied(0, 0, 0, 200);
+                _test1Color = Color.FromNonPremultiplied(0, 0, 0, 50);
                 _test2Color = Color.FromNonPremultiplied(0, 0, 0, 200);
                 //sw.Start();
                 //Log.Line($"Start CalculateColor1");
