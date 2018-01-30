@@ -70,11 +70,12 @@ namespace DefenseShields
 
         public Vector3D WorldImpactPosition = new Vector3D(Vector3D.NegativeInfinity);
         public Vector3D DetectionCenter;
+        private MatrixD _detectionMatrix;
+        private MatrixD _detectionMatrixInv;
 
         public BoundingBox OldGridAabb;
         public MatrixD BlockWorldMatrix;
         public MatrixD ShieldShapeMatrix;
-        public MatrixD DetectionMatrix;
         //public MatrixD PredictedGridWorldMatrix;
         //public MatrixD ReSized;
         //MatrixD shieldShapeMatrix = MatrixD.Identity;
@@ -116,6 +117,17 @@ namespace DefenseShields
         Stopwatch sw = new Stopwatch();
 
         #endregion
+
+        public MatrixD DetectionMatrix
+        {
+            get { return _detectionMatrix; }
+            set
+            {
+                _detectionMatrix = value;
+                _detectionMatrixInv = MatrixD.Invert(value);
+            }
+        }
+
         public void StopWatchReport()
         {
             long ticks = sw.ElapsedTicks;
@@ -613,12 +625,12 @@ namespace DefenseShields
                 Width = (float)ShieldShapeMatrix.Left.Length() * 2;
                 Depth = (float)ShieldShapeMatrix.Forward.Length() * 2;
                 Height = (float)ShieldShapeMatrix.Up.Length() * 2;
-                DetectionMatrix = Cblock.CubeGrid.WorldMatrix;
+                DetectionMatrix = ShieldShapeMatrix;
             }
             else
             {
                 DetectionCenter = Cblock.PositionComp.GetPosition();
-                DetectionMatrix = BlockWorldMatrix;
+                DetectionMatrix = ShieldShapeMatrix;
             }
         }
 
@@ -630,6 +642,17 @@ namespace DefenseShields
         #endregion
 
         #region Detect Intersection
+
+        private bool DetectCollision(IMyEntity ent)
+        {
+            var wVol = ent.PositionComp.WorldVolume;
+            var wDir = DetectionMatrix.Translation - wVol.Center;
+            var wLen = wDir.Length();
+            var wTest = wVol.Center + (wDir / wLen * Math.Min(wLen, wVol.Radius));
+            Log.Line($"ent: {ent} - Detect:{Vector3D.Transform(wTest, _detectionMatrixInv).LengthSquared() <= 1}");
+            return Vector3D.Transform(wTest, _detectionMatrixInv).LengthSquared() <= 1;
+        }
+
         private bool Detectedge(IMyEntity ent, float f)
         {
             float x = Vector3Extensions.Project(DetectionMatrix.Left, ent.GetPosition() - DetectionMatrix.Translation).AbsMax();
@@ -655,7 +678,7 @@ namespace DefenseShields
             InHash.Clear();
             MyAPIGateway.Parallel.ForEach(inList, inent =>
             {
-                if (inent is IMyCubeGrid || inent is IMyCharacter && Detectedge(inent, InOutSpace))
+                if (inent is IMyCubeGrid || inent is IMyCharacter && DetectCollision(inent))
                 {
                     lock (InHash)
                     {
@@ -680,13 +703,13 @@ namespace DefenseShields
                 {
                     if (webent.ToString().Contains("Missile")) Log.Line($"shot detected {webent}");
                     if (_shotwebbed) return;
-                    if (Detectedge(webent, 0f))
+                    if (DetectCollision(webent))
                     {
                         _shotwebbed = true;
                     }
                     return;
                 }
-                if (webent is IMyCharacter && (Count == 2 || Count == 17 || Count == 32 || Count == 47) && Detectedge(webent, 0f))
+                if (webent is IMyCharacter && (Count == 2 || Count == 17 || Count == 32 || Count == 47) && DetectCollision(webent))
                 {
                     Log.Line($"bounding {DetectionCenter} - r:{Range} - h:{Height} - w:{Width} - d:{Depth}");
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
@@ -707,7 +730,7 @@ namespace DefenseShields
                     //Log.Line(String.Format("{0} - grid: {1} tblock: {2} {3} {4} {5}", DateTime.Now.ToString("MM-dd-yy_HH-mm-ss-fff"), grid.CustomName, owners.Count, relations, relations == MyRelationsBetweenPlayerAndBlock.Owner, relations == MyRelationsBetweenPlayerAndBlock.FactionShare));
                     if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                 }
-                if (Detectedge(grid, 0f))
+                if (DetectCollision(grid))
                 {
                     ImpactTimer(grid);
                     var griddmg = grid.Physics.Mass * Massdmg;
@@ -759,7 +782,7 @@ namespace DefenseShields
             foreach (var shotent in shotHash)
             {
                 Log.Line($"shot being processed {shotent}");
-                if (shotent == null || !Detectedge(shotent, 0f)) return;
+                if (shotent == null || !DetectCollision(shotent)) return;
                 try
                 {
                     ImpactTimer(shotent);
