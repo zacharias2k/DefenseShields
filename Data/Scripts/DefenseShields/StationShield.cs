@@ -74,6 +74,7 @@ namespace DefenseShields
         public BoundingBox OldGridAabb;
         public MatrixD BlockWorldMatrix;
         public MatrixD ShieldShapeMatrix;
+        public MatrixD DetectionMatrix;
         //public MatrixD PredictedGridWorldMatrix;
         //public MatrixD ReSized;
         //MatrixD shieldShapeMatrix = MatrixD.Identity;
@@ -428,12 +429,14 @@ namespace DefenseShields
                 Width = Range * 0.5f;
                 Height = Range * 0.35f;
                 Depth = Range;
+                UpdateDetection();
             }
             else
             {
                 Width = Range;
-                Height = Range;
                 Depth = Range;
+                Height = Range;
+                UpdateDetection();
             }
         }
         #endregion
@@ -501,46 +504,7 @@ namespace DefenseShields
                 300);
         }
         #endregion
-
-        #region Server-client comms
-        [ProtoContract(UseProtoMembersOnly = true)]
-        public class Poke
-        {
-            [ProtoMember(1)] public ushort ModId;
-            [ProtoMember(2)]
-            public float Size { get; set; }
-        }
-
-        public void SendPoke(float size)
-        {
-            bool sent;
-            Poke info = new Poke();
-            info.ModId = ModId;
-            info.Size = size;
-            sent = MyAPIGateway.Multiplayer.SendMessageToOthers(ModId, MyAPIGateway.Utilities.SerializeToBinary(info), true);
-        }
-
-        public void GetPoke(byte[] data)
-        {
-            var message = MyAPIGateway.Utilities.SerializeFromBinary<Poke>(data);
-            Poke info = new Poke();
-            try
-            {
-                info = message;
-                if (info.ModId == ModId)
-                {
-                    //DrawShield(info.Size);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Line($"Exception in getPoke");
-                Log.Line($"{ex}");
-            }
-        }
-        #endregion
-
-        
+      
         public bool Distance(int x)
         {
             var pPosition = MyAPIGateway.Session.Player.Character.GetPosition();
@@ -568,7 +532,7 @@ namespace DefenseShields
             bool enemy;
 
             if (Distance(650)) lod = 3;
-            else if (Distance(2250)) lod = 2;
+            else if (Distance(2250)) lod = 3;
             else if (Distance(4500)) lod = 1;
             else if (Distance(15000)) lod = 1;
             else if (Distance(25000)) lod = 1;
@@ -644,15 +608,17 @@ namespace DefenseShields
         {
             if (_entityIsMobile)
             {
-                DetectionCenter = Cblock.CubeGrid.PositionComp.WorldAABB.Center;
-                Range = (float) ShieldShapeMatrix.Scale.Length();
-                Width = (float)ShieldShapeMatrix.Left.Length();
-                Height = (float)ShieldShapeMatrix.Up.Length();
-                Depth = (float)ShieldShapeMatrix.Forward.Length();
+                DetectionCenter = Cblock.CubeGrid.PositionComp.WorldVolume.Center;
+                Range = (float)ShieldShapeMatrix.Scale.AbsMax() * 2 + 15f;
+                Width = (float)ShieldShapeMatrix.Left.Length() * 2;
+                Depth = (float)ShieldShapeMatrix.Forward.Length() * 2;
+                Height = (float)ShieldShapeMatrix.Up.Length() * 2;
+                DetectionMatrix = Cblock.CubeGrid.WorldMatrix;
             }
             else
             {
-                
+                DetectionCenter = Cblock.PositionComp.GetPosition();
+                DetectionMatrix = BlockWorldMatrix;
             }
         }
 
@@ -666,10 +632,11 @@ namespace DefenseShields
         #region Detect Intersection
         private bool Detectedge(IMyEntity ent, float f)
         {
-            float x = Vector3Extensions.Project(BlockWorldMatrix.Left, ent.GetPosition() - BlockWorldMatrix.Translation).AbsMax();
-            float y = Vector3Extensions.Project(BlockWorldMatrix.Forward, ent.GetPosition() - BlockWorldMatrix.Translation).AbsMax();
-            float z = Vector3Extensions.Project(BlockWorldMatrix.Up, ent.GetPosition() - BlockWorldMatrix.Translation).AbsMax();
+            float x = Vector3Extensions.Project(DetectionMatrix.Left, ent.GetPosition() - DetectionMatrix.Translation).AbsMax();
+            float y = Vector3Extensions.Project(DetectionMatrix.Forward, ent.GetPosition() - DetectionMatrix.Translation).AbsMax();
+            float z = Vector3Extensions.Project(DetectionMatrix.Up, ent.GetPosition() - DetectionMatrix.Translation).AbsMax();
             float detect = (x * x) / ((Width - f) * (Width - f)) + (y * y) / ((Depth - f) * (Depth - f)) + (z * z) / ((Height - f) * (Height - f));
+            if (ent is IMyCharacter) Log.Line($"Ent: {ent.DisplayName} - EID {Entity.EntityId} - Detect: {detect}");
             if (detect <= 1)
             {
                 return true;
@@ -682,10 +649,7 @@ namespace DefenseShields
         public void InHashBuilder()
         {
             //var pos = Tblock.CubeGrid.GridIntegerToWorld(Tblock.Position);
-            Vector3D pos;
-            if (_entityIsMobile) pos = Cblock.PositionComp.LocalAABB.Center;
-            else pos = Cblock.PositionComp.GetPosition();
-            var insphere = new BoundingSphereD(pos, Range - InOutSpace);
+            var insphere = new BoundingSphereD(DetectionCenter, Range - InOutSpace);
             List<IMyEntity> inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
 
             InHash.Clear();
@@ -708,7 +672,6 @@ namespace DefenseShields
             //var pos = Tblock.CubeGrid.GridIntegerToWorld(Tblock.Position);
 
             var websphere = new BoundingSphereD(DetectionCenter, Range);
-            if (Count == 0 ) Log.Line($"bounding {DetectionCenter} - r:{Range} - h:{Height} - w:{Width} - d:{Depth}");
             List<IMyEntity> webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
             MyAPIGateway.Parallel.ForEach(webList, webent =>
             {
@@ -725,6 +688,7 @@ namespace DefenseShields
                 }
                 if (webent is IMyCharacter && (Count == 2 || Count == 17 || Count == 32 || Count == 47) && Detectedge(webent, 0f))
                 {
+                    Log.Line($"bounding {DetectionCenter} - r:{Range} - h:{Height} - w:{Width} - d:{Depth}");
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
                     var playerrelationship = Tblock.GetUserRelationToOwner(dude);
                     if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner || playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return;

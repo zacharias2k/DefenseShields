@@ -247,7 +247,7 @@ namespace DefenseShields.Support
             //private int _lod2;
 
             private const int GlitchSteps = 320;
-            private const int ImpactSteps = 40;
+            private const int ImpactSteps = 80;
             private const int ModelSteps = 22;
             private const int ImpactChargeSteps = 120;
 
@@ -275,6 +275,8 @@ namespace DefenseShields.Support
             private Vector4 _chargeColor;
             private Vector4 _maxColor;
             private Vector4 _currentColor;
+            private Vector4 _test1Color;
+            private Vector4 _test2Color;
 
             private bool _impactCountFinished = true;
             private bool _charged = true;
@@ -328,6 +330,8 @@ namespace DefenseShields.Support
 
             public void CalculateColor(MatrixD matrix, Vector3D impactPos, bool entChanged, bool enemy, IMyEntity shield)
             {
+                _test1Color = Color.FromNonPremultiplied(0, 0, 0, 200);
+                _test2Color = Color.FromNonPremultiplied(0, 0, 0, 200);
                 //sw.Start();
                 //Log.Line($"Start CalculateColor1");
                 _shield = shield;
@@ -372,13 +376,13 @@ namespace DefenseShields.Support
                         var pDotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _localImpacts[4]);
                         var primeImpactFactor = Math.Acos(pDotOfNormLclImpact);
 
-                        const float pWaveMultiplier = Pi / ImpactSteps / 4;
+                        const float pWaveMultiplier = Pi / ImpactSteps;
                         var pWavePosition = pWaveMultiplier * _impactCount[4];
                         var pRelativeToWavefront = Math.Abs(primeImpactFactor - pWavePosition);
                         //Log.Line($"primeImpactFactor: {primeImpactFactor} - Relative: {pRelativeToWavefront} - pWavePosition: {pWavePosition} - pWaveMultipler: {pWaveMultiplier} - _impactCount[4]: {_impactCount[4]}");
                         if (pWavePosition > primeImpactFactor) 
                         {
-                            _triColorBuffer[j] = _waveColor;
+                            _triColorBuffer[j] = _test2Color;
                             continue;
                         }
                         //Log.Line($" color: {_currentColor} - _impactCountFished? {_impactCountFinished}");
@@ -409,7 +413,7 @@ namespace DefenseShields.Support
                         //var trianglesRelativeToWavefront = (int)Math.Round(Math.Abs(impactFactor - wavePosition) / (Math.PI / (5 << _lod)));
                     }
                     //if (_impactCount[4] == 0 && !_charged) _triColorBuffer[j] = _waveColor;
-                    else if (_impactCount[4] == 0) _triColorBuffer[j] = _currentColor;
+                    else if (_impactCount[4] == 0) _triColorBuffer[j] = _test1Color;
                 }
                 _prevLod = _lod;
 
@@ -444,13 +448,15 @@ namespace DefenseShields.Support
                         var n1 = _normalBuffer[i1];
                         var n2 = _normalBuffer[i2];
                         var color = _triColorBuffer[j];
-                        if (color == _pulseColor) faceMaterial = _faceId1;
-                        else if (color == _currentColor) faceMaterial = _faceId1;
+                        if (color == _pulseColor) faceMaterial = _faceId2;
+                        else if (color == _currentColor) faceMaterial = _faceId2;
+                        else if (color == _test1Color) faceMaterial = _faceId1;
+                        else if (color == _test2Color) faceMaterial = _faceId2;
                         else if (color == _waveColor) faceMaterial = _faceId2;
-                        else if (color == _waveComingColor) faceMaterial = _faceId1;
-                        else if (color == _wavePassedColor) faceMaterial = _faceId1;
-                        else if (color == _chargeColor) faceMaterial = _faceId1;
-                        else faceMaterial = _faceId1;
+                        else if (color == _waveComingColor) faceMaterial = _faceId2;
+                        else if (color == _wavePassedColor) faceMaterial = _faceId2;
+                        else if (color == _chargeColor) faceMaterial = _faceId2;
+                        else faceMaterial = _faceId2;
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, Vector2.Zero, new Vector2(0.5f, 0), new Vector2(0.5f), faceMaterial, renderId, (v0 + v1 + v2) / 3, color);
                     }
                 }
