@@ -5,17 +5,9 @@ terms of the Do What The Fuck You Want To Public License, Version 2,
 as published by Sam Hocevar. See http://www.wtfpl.net/ for more details.
 */
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Runtime.Serialization;
-using System.Runtime.InteropServices;
-using System.Collections;
-
 using Sandbox.ModAPI;
-using VRage.ObjectBuilders;
 using Sandbox.ModAPI.Interfaces.Terminal;
-using VRage.ModAPI;
 
 namespace DefenseShields.Control
 {

@@ -96,7 +96,7 @@ namespace DefenseShields
             }
         }
         #endregion
-        /*MyExplosionInfo exp = new MyExplosionInfo(_damage, _damage, new BoundingSphereD(position.Translation, _range), _type, true)
+        /*MyExplosionInfo exp = new MyExplosionInfo(_damage, _damage, new BoundingIcoSphereD(position.Translation, _range), _type, true)
         {
             Direction = position.Forward,
             ExplosionFlags = _flags,

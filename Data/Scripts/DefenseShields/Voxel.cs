@@ -29,7 +29,7 @@ double maxDiameter = 0;
 maxDiameter = Math.Max(maxDiameter, diameter);
 
 var position = _tblock.GetPosition();
-var layers = new List<Voxels.Voxels.AsteroidSphereLayer>();
+var layers = new List<Voxels.Voxels.AsteroidIcoSphereLayer>();
 
 byte material = 1;
 var materialName = "Stone_01";
@@ -38,8 +38,8 @@ var length = (int)((maxDiameter / 2) + 4).RoundUpToCube();
 var size = new Vector3I(length, length, length);
 var origin = new Vector3I(size.X / 2, size.Y / 2, size.Z / 2);
 //layers = layers.OrderByDescending(e => e.Diameter).ToList();
-layers.Add(new Voxels.Voxels.AsteroidSphereLayer() { Diameter = diameter, Material = material, MaterialName = materialName });
-layers.Add(new Voxels.Voxels.AsteroidSphereLayer() { Diameter = 590f, Material = 255, MaterialName = materialName });
+layers.Add(new Voxels.Voxels.AsteroidIcoSphereLayer() { Diameter = diameter, Material = material, MaterialName = materialName });
+layers.Add(new Voxels.Voxels.AsteroidIcoSphereLayer() { Diameter = 590f, Material = 255, MaterialName = materialName });
 Voxels.Voxels.CreateNewAsteroid(name, size, position);
 
 Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(origin.X - 2, origin.Y - 2, origin.Z - 2), origin, layers);
@@ -52,11 +52,11 @@ Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(origin.X - 2, -
 Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(-origin.X + 2, -origin.Y + 2, -origin.Z + 2), origin, layers);
 */
 
-        /*This command is used to generate a sphere asteroid at the exact center of the specified co-ordinates, with multiple layers.
-/createroidsphere <Name> <X> <Y> <Z> <Parts> <Material1> <Diameter1> <Material2> <Diameter2> <Material3> <Diameter3> ....
+        /*This command is used to generate a IcoSphere asteroid at the exact center of the specified co-ordinates, with multiple layers.
+/createroidIcoSphere <Name> <X> <Y> <Z> <Parts> <Material1> <Diameter1> <Material2> <Diameter2> <Material3> <Diameter3> ....
   <Name> - the base name of the asteroid file. A number will be added if it already exists.
   <X> <Y> <Z> - the center coordinate of where to place the asteroid.
-  <Parts> - specify to break the sphere down into smaller chunks. Either 1=whole sphere, 2=hemispheres, 4 or 8 parts.
+  <Parts> - specify to break the IcoSphere down into smaller chunks. Either 1=whole IcoSphere, 2=hemiIcoSpheres, 4 or 8 parts.
   <Material> - the material of the layer. An empty layer can be specified with 'none'. The following materials are available: {0}
   <Diameter> - the diameter of the layer.
   ... - Additional material and diameters can be specified for additional layers.
@@ -64,12 +64,12 @@ Note:
 The larger the asteroid, the longer it will take to generate. More than 2000m can as much as an hour on some computers.
 The flat faces on the inside of the multi part asteroids will seem to become invisible at a distance.
 Examples:
-  /createroidsphere sphere_solid_stone 1000 1000 1000 1 Stone_01 100
-  /createroidsphere sphere_hollow_stone 2000 2000 2000 8 Stone_01 200 none 180
-  /createroidsphere sphere_3_tricky_layers 3000 3000 3000 2 Stone_01 200 none 180 Stone_01 160 none 140 Stone_01 120 none 100 
-  /createroidsphere sphere_layers 8000 8000 8000 2 Stone_01 200 Iron_01 180 Nickel_01 100 Cobalt_01 90 Magnesium_01 80 Silicon_01 70 
+  /createroidIcoSphere IcoSphere_solid_stone 1000 1000 1000 1 Stone_01 100
+  /createroidIcoSphere IcoSphere_hollow_stone 2000 2000 2000 8 Stone_01 200 none 180
+  /createroidIcoSphere IcoSphere_3_tricky_layers 3000 3000 3000 2 Stone_01 200 none 180 Stone_01 160 none 140 Stone_01 120 none 100 
+  /createroidIcoSphere IcoSphere_layers 8000 8000 8000 2 Stone_01 200 Iron_01 180 Nickel_01 100 Cobalt_01 90 Magnesium_01 80 Silicon_01 70 
 ", materialNames);
-                MyAPIGateway.Utilities.ShowMissionScreen("Create Asteroid Sphere:", null, " ", description.ToString(), null, "OK");
+                MyAPIGateway.Utilities.ShowMissionScreen("Create Asteroid IcoSphere:", null, " ", description.ToString(), null, "OK");
             }
 
 
@@ -77,15 +77,15 @@ Examples:
 
             /*
             Sample calls...
-            /createroidsphere test 200 200 200 1 Gold_01 200
+            /createroidIcoSphere test 200 200 200 1 Gold_01 200
             
-            /createroidsphere sphere_solid_xx_stone_01a 2000 2000 2000 2 Stone_01 200 none 100
-            /createroidsphere sphere_solid_xx_stone_01a 2000 2000 2000 2 Stone_01 200 Iron_01 180 Nickel_01 100 Cobalt_01 90 Magnesium_01 80 Silicon_01 70 Silver_01 60 Gold_01 50 Platinum_01 40 Uraninite_01 30
-            /createroidsphere sphere_solid_xx_stone_01a 2000 2000 2000 4 Stone_01 200 Iron_02 190 Nickel_01 145 Cobalt_01 130 Magnesium_01 115 Silicon_01 100 Silver_01 85 Gold_01 70 Platinum_01 55 Uraninite_01 40
+            /createroidIcoSphere IcoSphere_solid_xx_stone_01a 2000 2000 2000 2 Stone_01 200 none 100
+            /createroidIcoSphere IcoSphere_solid_xx_stone_01a 2000 2000 2000 2 Stone_01 200 Iron_01 180 Nickel_01 100 Cobalt_01 90 Magnesium_01 80 Silicon_01 70 Silver_01 60 Gold_01 50 Platinum_01 40 Uraninite_01 30
+            /createroidIcoSphere IcoSphere_solid_xx_stone_01a 2000 2000 2000 4 Stone_01 200 Iron_02 190 Nickel_01 145 Cobalt_01 130 Magnesium_01 115 Silicon_01 100 Silver_01 85 Gold_01 70 Platinum_01 55 Uraninite_01 40
              
             344m, 38s.
-            This call takes 58 seconds, for a 344 diameter sphere, with no freeze.
-            /createroidsphere 200 200 200 344 0 1 Nickel_01 test 
+            This call takes 58 seconds, for a 344 diameter IcoSphere, with no freeze.
+            /createroidIcoSphere 200 200 200 344 0 1 Nickel_01 test 
              
             http://steamcommunity.com/sharedfiles/filedetails/?id=399791753
              
@@ -168,7 +168,7 @@ public static class Test
     }
 }
 */
-        public static string ProcessAsteroid(string asteroidName, Vector3I size, Vector3D position, Vector3D offset, Vector3I origin, List<AsteroidSphereLayer> layers)
+        public static string ProcessAsteroid(string asteroidName, Vector3I size, Vector3D position, Vector3D offset, Vector3I origin, List<AsteroidIcoSphereLayer> layers)
         {
             var storeName = CreateUniqueStorageName(asteroidName);
             var storage = MyAPIGateway.Session.VoxelMaps.CreateStorage(size);
@@ -178,29 +178,29 @@ public static class Test
             foreach (var layer in layers)
             {
                 var radius = (float)(layer.Diameter - 2) / 2f;
-                IMyVoxelShapeSphere sphereShape = MyAPIGateway.Session.VoxelMaps.GetSphereVoxelHand();
-                sphereShape.Center = position;
-                sphereShape.Radius = radius;
+                IMyVoxelShapeIcoSphere IcoSphereShape = MyAPIGateway.Session.VoxelMaps.GetIcoSphereVoxelHand();
+                IcoSphereShape.Center = position;
+                IcoSphereShape.Radius = radius;
                 if (layer.Material == 255)
                 {
-                    MyAPIGateway.Session.VoxelMaps.CutOutShape(voxelMap, sphereShape);
+                    MyAPIGateway.Session.VoxelMaps.CutOutShape(voxelMap, IcoSphereShape);
                     isEmpty = true;
                 }
                 else if (isEmpty)
                 {
-                    MyAPIGateway.Session.VoxelMaps.FillInShape(voxelMap, sphereShape, layer.Material);
+                    MyAPIGateway.Session.VoxelMaps.FillInShape(voxelMap, IcoSphereShape, layer.Material);
                     isEmpty = false;
                 }
                 else
                 {
-                    MyAPIGateway.Session.VoxelMaps.PaintInShape(voxelMap, sphereShape, layer.Material);
+                    MyAPIGateway.Session.VoxelMaps.PaintInShape(voxelMap, IcoSphereShape, layer.Material);
                 }
             }
 
             return storeName;
         }
 
-        public class AsteroidSphereLayer
+        public class AsteroidIcoSphereLayer
         {
             public int Index { get; set; }
             public string MaterialName { get; set; }

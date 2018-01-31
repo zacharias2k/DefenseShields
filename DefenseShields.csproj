@@ -232,6 +232,7 @@
     <Compile Include="Data\Scripts\DefenseShields\DefenseShieldsBase.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DestroyEntity.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Guns.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\OldCode.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Logging.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Slider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\MyMaths.cs" />

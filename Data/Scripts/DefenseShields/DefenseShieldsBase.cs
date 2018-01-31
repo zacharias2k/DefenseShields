@@ -21,8 +21,8 @@ namespace DefenseShields
         public int I;
 
         public static DefenseShieldsBase Instance { get; private set; }
-        public MyModContext MyModContext = new MyModContext();
-        public readonly Icosphere Icosphere = new Icosphere(8);
+        public readonly MyModContext MyModContext = new MyModContext();
+        public readonly Icosphere Icosphere = new Icosphere(6);
 
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
         public List<DefenseShields> Shields = new List<DefenseShields>(); 
