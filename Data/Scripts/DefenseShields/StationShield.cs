@@ -121,13 +121,14 @@ namespace DefenseShields
         public override void OnAddedToContainer() { if (Entity.InScene) OnAddedToScene(); }
         public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
 
-        private void StopWatchReport()
+        private void StopWatchReport(string message)
         {
             long ticks = sw.ElapsedTicks;
             double ns = 1000000000.0 * (double)ticks / Stopwatch.Frequency;
             double ms = ns / 1000000.0;
             double s = ms / 1000;
-            Log.Line($"ns:{ns} ms:{ms} s:{s}");
+
+            Log.Line($"{message} - ns:{ns} ms:{ms} s:{s}");
         }
 
         #region Init
@@ -156,6 +157,7 @@ namespace DefenseShields
         {
             try
             {
+                //sw.Start();
                 if (_animInit)
                 {
                     if (_subpartRotor.Closed.Equals(true) && !NotInitialized && Block.IsWorking)
@@ -215,6 +217,9 @@ namespace DefenseShields
                 Log.Line($" {ex}");
             }
             //Log.Line($"{Count}");
+            //sw.Stop();
+            //StopWatchReport("Full loop");
+            //sw.Reset();
         }
 
         public override void UpdateBeforeSimulation100()
@@ -240,7 +245,7 @@ namespace DefenseShields
         {
             try
             {
-                if (_gridIsMobile) UpdateDetection();
+                if (_gridIsMobile && _entityChanged) UpdateDetection();
                 if (_animInit) return;
                 if (Block.BlockDefinition.SubtypeId == "StationDefenseShield")
                 {
@@ -259,6 +264,7 @@ namespace DefenseShields
                 Log.Line($"Exception in UpdateAfterSimulation");
                 Log.Line($"{ex}");
             }
+
         }
         #endregion
 
@@ -541,7 +547,7 @@ namespace DefenseShields
             var relations = Block.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId);
             if (relations == MyRelationsBetweenPlayerAndBlock.Owner || relations == MyRelationsBetweenPlayerAndBlock.FactionShare) enemy = false;
             else enemy = true;
-            entitychanged = true;
+            //entitychanged = true;
             uint renderId = Block.CubeGrid.Render.GetRenderObjectID();
             //Log.Line($"ent: {this.Entity.EntityId} - changed?:{_entityChanged} - is onCam:{_sphereOnCamera} - RenderID {renderId}");
 
@@ -574,18 +580,27 @@ namespace DefenseShields
             }
         }
 
+        private Vector3D ContactPoint(IMyEntity breaching)
+        {
+            var wVol = breaching.PositionComp.WorldVolume;
+            var wDir = DetectionMatrix.Translation - wVol.Center;
+            var wLen = wDir.Length();
+            var contactPoint = wVol.Center + (wDir / wLen * Math.Min(wLen, wVol.Radius));
+            return contactPoint;
+        }
+
         private bool DetectCollision(IMyEntity ent)
         {
             //In this code I compute a point - to - test by computing  a point on the entity's sphere (or the center of the ellipsoid if it's contained by the sphere)
             //var wTest = wVol.Center + (wDir / wLen * Math.Min(wLen, wVol.Radius));
             //So subtract from the radius of the entity(edited)
             //(It's fine if that goes negative -- if it does that will move the test point away from the ellipsoid)
-            var wVol = ent.PositionComp.WorldVolume;
-            var wDir = DetectionMatrix.Translation - wVol.Center;
-            var wLen = wDir.Length();
-            var wTest = wVol.Center + (wDir / wLen * Math.Min(wLen, wVol.Radius));
-            Log.Line($"ent: {ent} - Detect:{Vector3D.Transform(wTest, _detectionMatrixInv).LengthSquared() <= 1} - {Vector3D.Transform(wTest, _detectionMatrixInv).LengthSquared()}");
-            return Vector3D.Transform(wTest, _detectionMatrixInv).LengthSquared() <= 1;
+            //var wVol = ent.PositionComp.WorldVolume;
+            //var wDir = DetectionMatrix.Translation - wVol.Center;
+            //var wLen = wDir.Length();
+            //var wTest = wVol.Center + (wDir / wLen * Math.Min(wLen, wVol.Radius));
+            //Log.Line($"ent: {ent} - Detect:{Vector3D.Transform(wTest, _detectionMatrixInv).LengthSquared() <= 1} - {Vector3D.Transform(wTest, _detectionMatrixInv).LengthSquared()}");
+            return Vector3D.Transform(ContactPoint(ent), _detectionMatrixInv).LengthSquared() <= 1;
         }
         #endregion
 
@@ -638,31 +653,26 @@ namespace DefenseShields
 
             return powerCorrectionInJoules * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
             */
+
+            // Calculate Power
+            
             const double wattsPerNewton = (3.36e6 / 288000);
-            var omegaVector = field.Physics.AngularVelocity + field.Physics.AngularAcceleration * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
-            var distanceFromTargetCom = breaching.Physics.CenterOfMassWorld - field.Physics.CenterOfMassWorld;
-            var omegaSquared = omegaVector.LengthSquared();
             var velTarget = field.Physics.GetVelocityAtPoint(breaching.Physics.CenterOfMassWorld);
             var accelLinear = field.Physics.LinearAcceleration;
-            var accelRotational = omegaSquared * -distanceFromTargetCom;
-            var accelTarget = accelLinear + accelRotational;
-            var velTargetNext = velTarget + accelTarget * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
-            var velModifyNext = breaching.Physics.LinearVelocity;// + modify.Physics.LinearAcceleration * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
+            var velTargetNext = velTarget + accelLinear * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
+            var velModifyNext = breaching.Physics.LinearVelocity;
             var linearImpulse = breaching.Physics.Mass * (velTargetNext - velModifyNext);
             var powerCorrectionInJoules = wattsPerNewton * linearImpulse.Length();
-
-            var wVol = breaching.PositionComp.WorldVolume;
-            var wDir = DetectionMatrix.Translation - wVol.Center;
-            var wLen = wDir.Length();
-            var contactPoint = wVol.Center + (wDir / wLen * Math.Min(wLen, wVol.Radius));
+            
+            // ApplyImpulse
 
             var transformInv = MatrixD.Invert(ShieldShapeMatrix);
             var normalMat = MatrixD.Transpose(transformInv);
-            var localNormal = Vector3D.Transform(contactPoint, transformInv);
+            var localNormal = Vector3D.Transform(ContactPoint(breaching), transformInv);
             var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
 
-            breaching.Physics.ApplyImpulse(breaching.Physics.Mass * 2 * Vector3D.Dot(breaching.Physics.LinearVelocity, surfaceNormal) * surfaceNormal, contactPoint);
-
+            breaching.Physics.ApplyImpulse(breaching.Physics.Mass * 2 * Vector3D.Dot(breaching.Physics.LinearVelocity, surfaceNormal) * surfaceNormal, ContactPoint(breaching));
+            
             return powerCorrectionInJoules * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
         }
 
@@ -703,6 +713,10 @@ namespace DefenseShields
             var webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
             MyAPIGateway.Parallel.ForEach(webList, webent =>
             {
+               // sw.Start();
+                //sw.Stop();
+                //StopWatchReport("ApplyImpulse Performance");
+                //sw.Reset();
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
                 if (webent is IMyMeteor  || webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
                 {
@@ -722,8 +736,8 @@ namespace DefenseShields
                     if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner || playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                     _playerwebbed = true;
                 }
-                
-                if (webent is IMyCharacter || InHash.Contains(webent)) return;
+
+                if (webent is IMyCharacter) return; //|| InHash.Contains(webent)) return;
 
                 var grid = webent as IMyCubeGrid;
                 if (grid == Block.CubeGrid || DestroyGridHash.Contains(grid) || grid == null) return;
@@ -737,6 +751,7 @@ namespace DefenseShields
                 }
                 if (DetectCollision(grid))
                 {
+                    Log.Line($"Detect is true");
                     ImpactTimer(grid);
                     var griddmg = grid.Physics.Mass * Massdmg;
                     _absorb += griddmg;
@@ -761,7 +776,7 @@ namespace DefenseShields
                     Log.Line($"{test}");
                     return;
                 }
-                Log.Line($"webEffect unmatched {webent.GetFriendlyName()} {webent.Name} {webent.DisplayName} {webent.EntityId} {webent.Parent} {webent.Components}");
+                //Log.Line($"webEffect unmatched {webent.GetFriendlyName()} {webent.Name} {webent.DisplayName} {webent.EntityId} {webent.Parent} {webent.Components}");
             });
         }
         #endregion

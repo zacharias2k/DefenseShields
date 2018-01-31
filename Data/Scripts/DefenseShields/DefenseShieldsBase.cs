@@ -31,14 +31,14 @@ namespace DefenseShields
 
         Stopwatch sw = new Stopwatch();
 
-        public void StopWatchReport()
+        private void StopWatchReport(string message)
         {
             long ticks = sw.ElapsedTicks;
             double ns = 1000000000.0 * (double)ticks / Stopwatch.Frequency;
             double ms = ns / 1000000.0;
             double s = ms / 1000;
 
-            Log.Line($"ns:{ns} ms:{ms} s:{s}");
+            Log.Line($"{message} - ns:{ns} ms:{ms} s:{s}");
         }
 
         public override void Draw()
@@ -48,11 +48,14 @@ namespace DefenseShields
                 I++;
                 for (var j = 0; j < 32768; j++) MyTransparentGeometry.AddTriangleBillboard(Vector3D.Zero, Vector3D.Zero, Vector3D.Zero, Vector3.Zero, Vector3.Zero, Vector3.Zero, Vector2.Zero, Vector2.Zero, Vector2.Zero, _faceId, 0, Vector3D.Zero);
             }
-
+            //sw.Start();
             foreach (var s in Components)
             {
                 s.Draw();
             }
+            //sw.Stop();
+            //StopWatchReport("Draw Performance");
+            //sw.Reset();
         }
 
         public string ModPath()

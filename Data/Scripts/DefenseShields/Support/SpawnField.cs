@@ -145,8 +145,8 @@ namespace DefenseShields.Support
         {
             private readonly Icosphere _backing;
 
-            private Vector3D[] _impactPos = {Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity};
-            private Vector3D[] _localImpacts = { Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity};
+            private readonly Vector3D[] _impactPos = {Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity};
+            private readonly Vector3D[] _localImpacts = { Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity};
             private Vector3D[] _preCalcNormLclPos;
             private Vector3D[] _vertexBuffer;
             private Vector3D[] _normalBuffer;
@@ -216,8 +216,6 @@ namespace DefenseShields.Support
             private readonly MyStringId _faceId1 = MyStringId.GetOrCompute("CustomIdle");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private readonly MyStringId _faceId2 = MyStringId.GetOrCompute("SunDisk");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
 
-            private readonly MyStringId _lineId = MyStringId.GetOrCompute("Square");
-
             Stopwatch sw = new Stopwatch();
 
             private void StopWatchReport(string message)
@@ -234,7 +232,6 @@ namespace DefenseShields.Support
             {
                 _backing = backing;
             }
-
 
             public void CalculateTransform(MatrixD matrix, int lod)
             {
@@ -258,10 +255,9 @@ namespace DefenseShields.Support
 
             public void CalculateColor(MatrixD matrix, Vector3D impactPos, bool entChanged, bool enemy, IMyEntity shield)
             {
+                //Log.Line($"Start CalculateColor1");
                 _test1Color = Color.FromNonPremultiplied(0, 0, 0, 50);
                 _test2Color = Color.FromNonPremultiplied(0, 0, 0, 200);
-                //sw.Start();
-                //Log.Line($"Start CalculateColor1");
                 _shield = shield;
                 _enemy = enemy;
                 _matrix = matrix;
@@ -377,14 +373,12 @@ namespace DefenseShields.Support
 
             public void Draw(uint renderId)
             {
-                //sw.Start();
                 try
                 {
 
                     MyStringId faceMaterial;
                     //Log.Line($"Start Draw");
                     var ib = _backing._indexBuffer[_lod];
-                    //Log.Line($"after loading LOD");
                     for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
                     {
                         var i0 = ib[i];
@@ -416,11 +410,6 @@ namespace DefenseShields.Support
                     Log.Line($" Exception in IcoSphere Draw - renderID {renderId}");
                     Log.Line($" {ex}");
                 }
-                /*
-                sw.Stop();
-                StopWatchReport("Icosphere Draw");
-                sw.Reset();
-                */
             }
 
             private void ComputeImpacts()
