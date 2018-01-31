@@ -167,7 +167,7 @@ public static class Test
         return baseVal;
     }
 }
-*/
+
         public static string ProcessAsteroid(string asteroidName, Vector3I size, Vector3D position, Vector3D offset, Vector3I origin, List<AsteroidIcoSphereLayer> layers)
         {
             var storeName = CreateUniqueStorageName(asteroidName);
@@ -178,22 +178,22 @@ public static class Test
             foreach (var layer in layers)
             {
                 var radius = (float)(layer.Diameter - 2) / 2f;
-                IMyVoxelShapeIcoSphere IcoSphereShape = MyAPIGateway.Session.VoxelMaps.GetIcoSphereVoxelHand();
-                IcoSphereShape.Center = position;
-                IcoSphereShape.Radius = radius;
+                IMyVoxelShapeSphere SphereShape = MyAPIGateway.Session.VoxelMaps.GetSphereVoxelHand();
+                SphereShape.Center = position;
+                SphereShape.Radius = radius;
                 if (layer.Material == 255)
                 {
-                    MyAPIGateway.Session.VoxelMaps.CutOutShape(voxelMap, IcoSphereShape);
+                    MyAPIGateway.Session.VoxelMaps.CutOutShape(voxelMap, SphereShape);
                     isEmpty = true;
                 }
                 else if (isEmpty)
                 {
-                    MyAPIGateway.Session.VoxelMaps.FillInShape(voxelMap, IcoSphereShape, layer.Material);
+                    MyAPIGateway.Session.VoxelMaps.FillInShape(voxelMap, SphereShape, layer.Material);
                     isEmpty = false;
                 }
                 else
                 {
-                    MyAPIGateway.Session.VoxelMaps.PaintInShape(voxelMap, IcoSphereShape, layer.Material);
+                    MyAPIGateway.Session.VoxelMaps.PaintInShape(voxelMap, SphereShape, layer.Material);
                 }
             }
 
@@ -206,6 +206,6 @@ public static class Test
             public string MaterialName { get; set; }
             public byte Material { get; set; }
             public double Diameter { get; set; }
-        }
+        } */
     }
 }

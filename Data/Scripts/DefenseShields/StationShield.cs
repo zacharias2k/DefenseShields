@@ -76,9 +76,9 @@ namespace DefenseShields
         private MatrixD ShieldShapeMatrix;
 
         private IMyOreDetector Block => (IMyOreDetector)Entity;
-        private IMyEntity Shield => Spawn.EmptyEntity("Field", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\LargeField0.mwm");
+        private IMyEntity Shield;
 
-        private Spawn Spawn = new Spawn();
+        private readonly Spawn _spawn = new Spawn();
         private Icosphere.Instance Icosphere;
         private MyEntitySubpart _subpartRotor;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> Slider;
@@ -229,6 +229,7 @@ namespace DefenseShields
             Block.RefreshCustomInfo();
             _absorb = 150f;
 
+            Shield = _spawn.EmptyEntity("Field", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\LargeField0.mwm");
             Shield.Render.Visible = false;
 
             DefenseShieldsBase.Instance.Shields.Add(this);
@@ -583,10 +584,87 @@ namespace DefenseShields
             var wDir = DetectionMatrix.Translation - wVol.Center;
             var wLen = wDir.Length();
             var wTest = wVol.Center + (wDir / wLen * Math.Min(wLen, wVol.Radius));
-            Log.Line($"ent: {ent} - Detect:{Vector3D.Transform(wTest, _detectionMatrixInv).LengthSquared() <= 1}");
+            Log.Line($"ent: {ent} - Detect:{Vector3D.Transform(wTest, _detectionMatrixInv).LengthSquared() <= 1} - {Vector3D.Transform(wTest, _detectionMatrixInv).LengthSquared()}");
             return Vector3D.Transform(wTest, _detectionMatrixInv).LengthSquared() <= 1;
         }
         #endregion
+
+        private double ContainmentField(IMyEntity breaching, IMyEntity field)
+        {
+            //var direction = Vector3D.Normalize(grid.Center() - grid.Center);
+            //Vector3D velocity = grid.Physics.LinearVelocity;
+            //if (Vector3D.IsZero(velocity)) velocity += direction;
+            //
+            //Vector3D forceDir = Vector3D.Reflect(Vector3D.Normalize(velocity), direction);
+            //grid.Physics.SetSpeeds(velocity * forceDir, grid.Physics.AngularVelocity);
+            //var dist = Vector3D.Distance(grid.GetPosition(), websphere.Center);
+            //
+            //var d = grid.Physics.CenterOfMass - thingRepellingYou;
+            //var v = d * repulsionVelocity / d.Length();
+            //grid.Physics.AddForce((v - grid.Physics.LinearVelocity) * grid.Physics.Mass / MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS);
+
+            /*
+            // local velocity of dest
+            var velTarget = field.Physics.GetVelocityAtPoint(breaching.Physics.CenterOfMassWorld);
+            var distanceFromTargetCom = breaching.Physics.CenterOfMassWorld - field.Physics.CenterOfMassWorld;
+
+            var accelLinear = field.Physics.LinearAcceleration;
+            var omegaVector = field.Physics.AngularVelocity + field.Physics.AngularAcceleration * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
+            var omegaSquared = omegaVector.LengthSquared();
+            // omega^2 * r == a
+            var accelRotational = omegaSquared * -distanceFromTargetCom;
+            var accelTarget = accelLinear + accelRotational;
+
+            var velTargetNext = velTarget + accelTarget * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
+            var velModifyNext = breaching.Physics.LinearVelocity;// + modify.Physics.LinearAcceleration * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
+
+            var linearImpulse = breaching.Physics.Mass * (velTargetNext - velModifyNext);
+
+            // Angular matching.
+            // (dAA*dt + dAV) == (mAA*dt + mAV + tensorInverse*mAI)
+            var avelModifyNext = breaching.Physics.AngularVelocity + breaching.Physics.AngularAcceleration * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
+            var angularDV = omegaVector - avelModifyNext;
+            //var angularImpulse = Vector3.Zero;
+            var angularImpulse = Vector3.TransformNormal(angularDV, breaching.Physics.RigidBody.InertiaTensor); //not accessible :/
+
+            // based on the large grid, small ion thruster.
+            const double wattsPerNewton = (3.36e6 / 288000);
+            // based on the large grid gyro
+            const double wattsPerNewtonMeter = (0.00003 / 3.36e7);
+            // (W/N) * (N*s) + (W/(N*m))*(N*m*s) == W
+            var powerCorrectionInJoules = (wattsPerNewton * linearImpulse.Length()) + (wattsPerNewtonMeter * angularImpulse.Length());
+            breaching.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_IMPULSE_AND_WORLD_ANGULAR_IMPULSE, linearImpulse, breaching.Physics.CenterOfMassWorld, angularImpulse);
+            if (recoil) field.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_IMPULSE_AND_WORLD_ANGULAR_IMPULSE, -linearImpulse, field.Physics.CenterOfMassWorld, -angularImpulse);
+
+            return powerCorrectionInJoules * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
+            */
+            const double wattsPerNewton = (3.36e6 / 288000);
+            var omegaVector = field.Physics.AngularVelocity + field.Physics.AngularAcceleration * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
+            var distanceFromTargetCom = breaching.Physics.CenterOfMassWorld - field.Physics.CenterOfMassWorld;
+            var omegaSquared = omegaVector.LengthSquared();
+            var velTarget = field.Physics.GetVelocityAtPoint(breaching.Physics.CenterOfMassWorld);
+            var accelLinear = field.Physics.LinearAcceleration;
+            var accelRotational = omegaSquared * -distanceFromTargetCom;
+            var accelTarget = accelLinear + accelRotational;
+            var velTargetNext = velTarget + accelTarget * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
+            var velModifyNext = breaching.Physics.LinearVelocity;// + modify.Physics.LinearAcceleration * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
+            var linearImpulse = breaching.Physics.Mass * (velTargetNext - velModifyNext);
+            var powerCorrectionInJoules = wattsPerNewton * linearImpulse.Length();
+
+            var wVol = breaching.PositionComp.WorldVolume;
+            var wDir = DetectionMatrix.Translation - wVol.Center;
+            var wLen = wDir.Length();
+            var contactPoint = wVol.Center + (wDir / wLen * Math.Min(wLen, wVol.Radius));
+
+            var transformInv = MatrixD.Invert(ShieldShapeMatrix);
+            var normalMat = MatrixD.Transpose(transformInv);
+            var localNormal = Vector3D.Transform(contactPoint, transformInv);
+            var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
+
+            breaching.Physics.ApplyImpulse(breaching.Physics.Mass * 2 * Vector3D.Dot(breaching.Physics.LinearVelocity, surfaceNormal) * surfaceNormal, contactPoint);
+
+            return powerCorrectionInJoules * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
+        }
 
         #region Build inside HashSet
         private void InHashBuilder()
@@ -663,8 +741,9 @@ namespace DefenseShields
                     var griddmg = grid.Physics.Mass * Massdmg;
                     _absorb += griddmg;
                     Log.Line($" gridEffect: {grid} Shield Strike by a {(griddmg / Massdmg)}kilo grid, absorbing {griddmg}MW of energy in loop {Count}");
-
+                    /*
                     _closegrids = true;
+                    
                     DestroyGridHash.Add(grid);
 
                     var vel = grid.Physics.LinearVelocity;
@@ -672,23 +751,14 @@ namespace DefenseShields
                     vel.SetDim(1, (int)(vel.GetDim(1) * -8.0f));
                     vel.SetDim(2, (int)(vel.GetDim(2) * -8.0f));
                     grid.Physics.LinearVelocity = vel;
-                    /*
-                    var direction = Vector3D.Normalize(grid.Center() - grid.Center);
-                    Vector3D velocity = grid.Physics.LinearVelocity;
-                    if (Vector3D.IsZero(velocity))
-                        velocity += direction;
-                    Vector3D forceDir = Vector3D.Reflect(Vector3D.Normalize(velocity), direction);
-                    grid.Physics.SetSpeeds(velocity * forceDir, grid.Physics.AngularVelocity);
-                    var dist = Vector3D.Distance(grid.GetPosition(), websphere.Center);
 
-                    var d = grid.Physics.CenterOfMass - thingRepellingYou;
-                    var v = d * repulsionVelocity / d.Length();
-                    grid.Physics.AddForce((v - grid.Physics.LinearVelocity) * grid.Physics.Mass / MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS);
-                    */
                     var playerchar = MyAPIGateway.Players.GetPlayerControllingEntity(grid).Character;
                     if (playerchar == null) return;
                     DestroyPlayerHash.Add(playerchar);
                     _playerkill = true;
+                    */
+                    var test = ContainmentField(grid, Block.CubeGrid);
+                    Log.Line($"{test}");
                     return;
                 }
                 Log.Line($"webEffect unmatched {webent.GetFriendlyName()} {webent.Name} {webent.DisplayName} {webent.EntityId} {webent.Parent} {webent.Components}");
