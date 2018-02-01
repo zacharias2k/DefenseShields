@@ -422,7 +422,6 @@ namespace DefenseShields.Support
                     Log.Line($"Store impact position: {_impactPos[i]} in slot: {i}");
                     break;
                 }
-                //if (_impactCountFinished) localImpact = _impactPos[0] - matrix.Translation;
                 for (int i = 4; i >= 0; i--)
                 {
                     if (_impactPos[i] == Vector3D.NegativeInfinity) break;

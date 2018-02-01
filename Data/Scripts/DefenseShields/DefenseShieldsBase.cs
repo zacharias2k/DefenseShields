@@ -48,7 +48,7 @@ namespace DefenseShields
                 I++;
                 for (var j = 0; j < 32768; j++) MyTransparentGeometry.AddTriangleBillboard(Vector3D.Zero, Vector3D.Zero, Vector3D.Zero, Vector3.Zero, Vector3.Zero, Vector3.Zero, Vector2.Zero, Vector2.Zero, Vector2.Zero, _faceId, 0, Vector3D.Zero);
             }
-            //sw.Start();
+            sw.Start();
             foreach (var s in Components)
             {
                 s.Draw();
