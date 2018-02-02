@@ -1,18 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Text;
+using Sandbox.Definitions;
 using Sandbox.ModAPI;
-using VRage;
 using VRage.Game;
 using VRage.Game.Entity;
-using VRage.Game.VisualScripting;
 using VRage.ModAPI;
-using VRage.ObjectBuilders;
 using VRage.Utils;
 using VRageMath;
 using static VRageMath.MathHelper;
+using Color = VRageMath.Color;
+using Vector2 = VRageMath.Vector2;
+using Vector3 = VRageMath.Vector3;
+using Vector4 = VRageMath.Vector4;
 
 namespace DefenseShields.Support
 {
@@ -42,16 +43,16 @@ namespace DefenseShields.Support
     public class Icosphere 
     {
     
-        public readonly Vector3[] _vertexBuffer;
+        public readonly Vector3[] VertexBuffer;
 
-        public readonly int[][] _indexBuffer;
+        public readonly int[][] IndexBuffer;
 
 
         public Icosphere(int lods)
         {
-            const float X = 0.525731112119133606f;
-            const float Z = 0.850650808352039932f;
-            const float Y = 0;
+            const float x = 0.525731112119133606f;
+            const float z = 0.850650808352039932f;
+            const float y = 0;
             Vector3[] data =
             {
                 /*
@@ -62,9 +63,9 @@ namespace DefenseShields.Support
                 new Vector3(-0.723600f, -0.525720f, 0.447215f), new Vector3(-0.723600f, 0.525720f, 0.447215f),
                 new Vector3(0.276385f, 0.850640f, 0.447215f), new Vector3(0.000000f, 0.000000f, 1.000000f)
                 */
-                new Vector3(-X, Y, Z), new Vector3(X, Y, Z), new Vector3(-X, Y, -Z), new Vector3(X, Y, -Z),
-                new Vector3(Y, Z, X), new Vector3(Y, Z, -X), new Vector3(Y, -Z, X), new Vector3(Y, -Z, -X),
-                new Vector3(Z, X, Y), new Vector3(-Z, X, Y), new Vector3(Z, -X, Y), new Vector3(-Z, -X, Y)
+                new Vector3(-x, y, z), new Vector3(x, y, z), new Vector3(-x, y, -z), new Vector3(x, y, -z),
+                new Vector3(y, z, x), new Vector3(y, z, -x), new Vector3(y, -z, x), new Vector3(y, -z, -x),
+                new Vector3(z, x, y), new Vector3(-z, x, y), new Vector3(z, -x, y), new Vector3(-z, -x, y)
             };
             List<Vector3> points = new List<Vector3>(12 * (1 << (lods - 1)));
             points.AddRange(data);
@@ -84,8 +85,8 @@ namespace DefenseShields.Support
             for (var i = 1; i < lods; i++)
                 index[i] = Subdivide(points, index[i - 1]);
 
-            _indexBuffer = index;
-            _vertexBuffer = points.ToArray();
+            IndexBuffer = index;
+            VertexBuffer = points.ToArray();
         }
         private static int SubdividedAddress(IList<Vector3> pts, IDictionary<string, int> assoc, int a, int b)
         {
@@ -160,7 +161,7 @@ namespace DefenseShields.Support
             private readonly SortedList<double, int> _faceLocSlist = new SortedList<double, int>();
             private readonly SortedList<double, int> _glichSlist = new SortedList<double, int>();
 
-            private int[] _impactCount = new int[5];
+            private readonly int[] _impactCount = {0, 0, 0, 0, 0};
 
             private int _mainLoop;
             private int _impactDrawStep;
@@ -178,20 +179,6 @@ namespace DefenseShields.Support
             private const int ImpactSteps = 80;
             private const int ModelSteps = 22;
             private const int ImpactChargeSteps = 120;
-
-            private double _firstHitFaceLoc1X;
-            private double _lastHitFaceLoc1X;
-            private double _firstFaceLoc1X;
-            private double _lastFaceLoc1X;
-            private double _firstFaceLoc2X;
-            private double _lastFaceLoc2x;
-            private double _firstFaceLoc4x;
-            private double _lastFaceLoc4x;
-            private double _firstFaceLoc6X;
-            private double _lastFaceLoc6X;
-
-            private double[] _impactLocSarray;
-            private double[] _glitchLocSarray;
 
             private Vector4 _hitColor;
             private Vector4 _lineColor;
@@ -244,12 +231,12 @@ namespace DefenseShields.Support
                 var normalMatrix = MatrixD.Transpose(MatrixD.Invert(matrix.GetOrientation()));
 
                 for (var i = 0; i < count; i++)
-                    Vector3D.Transform(ref _backing._vertexBuffer[i], ref matrix, out _vertexBuffer[i]);
+                    Vector3D.Transform(ref _backing.VertexBuffer[i], ref matrix, out _vertexBuffer[i]);
 
                 for (var i = 0; i < count; i++)
-                    Vector3D.TransformNormal(ref _backing._vertexBuffer[i], ref normalMatrix, out _normalBuffer[i]);
+                    Vector3D.TransformNormal(ref _backing.VertexBuffer[i], ref normalMatrix, out _normalBuffer[i]);
 
-                var ib = _backing._indexBuffer[_lod];
+                var ib = _backing.IndexBuffer[_lod];
                 Array.Resize(ref _preCalcNormLclPos, ib.Length / 3);
             }
 
@@ -266,14 +253,11 @@ namespace DefenseShields.Support
                 else ComputeImpacts();
                 StepEffects();
                 InitColors();
-                //Log.Line($"Impact True? {_impact} - Count? {_impactCount[4]} -Finished? {_impactCountFinished} - charged? {_charged}- chargeCount {_chargeCount}");
-                //Log.Line($"impactPos {impactPos} - State {_impactPosState}");
                 if (_impactCount[4] != 0 ) MyAPIGateway.Parallel.Start(Models);
 
-                var ib = _backing._indexBuffer[_lod];
+                var ib = _backing.IndexBuffer[_lod];
                 Array.Resize(ref _triColorBuffer, ib.Length / 3);
 
-                //Log.Line($"PreCalLeng: {_preCalcNormLclPos.Length} - Lod:{_lod}");
                 if (entChanged || _prevLod != _lod)
                 {
                     Array.Resize(ref _preCalcNormLclPos, ib.Length / 3);
@@ -378,7 +362,7 @@ namespace DefenseShields.Support
 
                     MyStringId faceMaterial;
                     //Log.Line($"Start Draw");
-                    var ib = _backing._indexBuffer[_lod];
+                    var ib = _backing.IndexBuffer[_lod];
                     for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
                     {
                         var i0 = ib[i];
