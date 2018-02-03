@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
-using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Entity;
@@ -10,10 +9,6 @@ using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
 using static VRageMath.MathHelper;
-using Color = VRageMath.Color;
-using Vector2 = VRageMath.Vector2;
-using Vector3 = VRageMath.Vector3;
-using Vector4 = VRageMath.Vector4;
 
 namespace DefenseShields.Support
 {
@@ -158,9 +153,6 @@ namespace DefenseShields.Support
 
             private static readonly Random Random = new Random();
 
-            private readonly SortedList<double, int> _faceLocSlist = new SortedList<double, int>();
-            private readonly SortedList<double, int> _glichSlist = new SortedList<double, int>();
-
             private readonly int[] _impactCount = {0, 0, 0, 0, 0};
 
             private int _mainLoop;
@@ -177,11 +169,9 @@ namespace DefenseShields.Support
 
             private const int GlitchSteps = 320;
             private const int ImpactSteps = 80;
-            private const int ModelSteps = 22;
             private const int ImpactChargeSteps = 120;
 
             private Vector4 _hitColor;
-            private Vector4 _lineColor;
             private Vector4 _waveColor;
             private Vector4 _wavePassedColor;
             private Vector4 _waveComingColor;
@@ -361,7 +351,6 @@ namespace DefenseShields.Support
                 {
 
                     MyStringId faceMaterial;
-                    //Log.Line($"Start Draw");
                     var ib = _backing.IndexBuffer[_lod];
                     for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
                     {
@@ -494,7 +483,7 @@ namespace DefenseShields.Support
                         _modelCount++;
                     }
                     else _shield.Render.Visible = false;
-                    if (_modelCount == 16) 
+                    if (_impactCount[4] == 79) 
                     {
                         _modelCount = 0;
                         _shield.Render.Visible = false;
@@ -548,10 +537,6 @@ namespace DefenseShields.Support
                 //hitColor
                 var vhitColor = Color.FromNonPremultiplied(0, 0, colorRnd2, rndNum1);
                 _hitColor = vhitColor;
-
-                //lineColor
-                var vlineColor = Color.FromNonPremultiplied(cv1, 0, cv2, 32);
-                _lineColor = vlineColor;
 
                 //pulseColor
                 if (_charged)
