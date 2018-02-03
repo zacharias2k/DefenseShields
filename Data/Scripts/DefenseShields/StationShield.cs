@@ -25,7 +25,6 @@ using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
 using ParallelTasks;
 using Sandbox.Game.Entities;
-using Sandbox.Game.Gui;
 
 namespace DefenseShields
 {
@@ -196,7 +195,9 @@ namespace DefenseShields
                 }
                 if (_gridIsMobile)
                 {
-                    _entityChanged = _oldGridAabb != Block.CubeGrid.LocalAABB;
+                    var entAngularVelocity = !Vector3D.IsZero(Block.CubeGrid.Physics.AngularVelocity); //remove when impact local vec is fixed
+                    var entLinVel = !Vector3D.IsZero(Block.CubeGrid.Physics.GetVelocityAtPoint(Block.CubeGrid.PositionComp.WorldMatrix.Translation)); //remove when impact local vec is fixed
+                    _entityChanged = _oldGridAabb != Block.CubeGrid.LocalAABB || entAngularVelocity || entLinVel;
                     _oldGridAabb = Block.CubeGrid.LocalAABB;
                 }
                 if (_entityChanged) UpdateDetection();
@@ -515,7 +516,7 @@ namespace DefenseShields
             var sp = new BoundingSphereD(Entity.GetPosition(), _range);
             var sphereOnCamera = MyAPIGateway.Session.Camera.IsInFrustum(ref sp);
             if (!sphereOnCamera || !Block.IsWorking || renderId == 0) return;
-
+            renderId = 0; //remove when impact local vec is fixed
             if (_prepareTask.HasValue && !_prepareTask.Value.IsComplete) _prepareTask.Value.Wait();
             if (_prepareTask.HasValue && _prepareTask.Value.IsComplete) _icosphere.Draw(renderId);
             _prepareTask = MyAPIGateway.Parallel.Start(() => PrepareSphere(entitychanged, enemy, lod, prevlod, impactpos, shapematrix, shield));
@@ -552,11 +553,37 @@ namespace DefenseShields
 
         private MatrixD GetShieldShapeMatrix(bool entitychanged)
         {
-            if (Block.CubeGrid.Physics.IsStatic && entitychanged) _shieldShapeMatrix = MatrixD.Rescale(MatrixD.Identity, new Vector3D(_width, _height, _depth));
-            else if (entitychanged) _shieldShapeMatrix = MatrixD.CreateScale(Block.CubeGrid.PositionComp.LocalAABB.HalfExtents * (float)MathHelper.Sqrt2 + 5f) * MatrixD.CreateTranslation(Block.CubeGrid.PositionComp.LocalAABB.Center); // * Cblock.CubeGrid.WorldMatrix;
+            //if (Block.CubeGrid.Physics.IsStatic && entitychanged) _shieldShapeMatrix = MatrixD.Rescale(MatrixD.Identity, new Vector3D(_width, _height, _depth));
+            //else if (entitychanged) _shieldShapeMatrix = MatrixD.CreateScale(Block.CubeGrid.PositionComp.LocalAABB.HalfExtents * (float)MathHelper.Sqrt2 + 5f) * MatrixD.CreateTranslation(Block.CubeGrid.PositionComp.LocalAABB.Center); // * Cblock.CubeGrid.WorldMatrix;
+            //if (Block.CubeGrid.Physics.IsStatic && entitychanged) _shieldShapeMatrix = MatrixD.Rescale(Block.WorldMatrix, new Vector3D(_width, _height, _depth));
+            //else if (entitychanged) _shieldShapeMatrix = MatrixD.CreateScale(Block.CubeGrid.PositionComp.WorldAABB.HalfExtents * (float)MathHelper.Sqrt2 + 5f) * MatrixD.CreateTranslation(Block.CubeGrid.PositionComp.WorldAABB.Center); // * Cblock.CubeGrid.WorldMatrix;
+
+            // Remove when local impact vec is fixed
+            var entAngularVelocity = Vector3D.IsZero(Block.CubeGrid.Physics.AngularVelocity);
+            var entLinVel = Vector3D.IsZero(Block.CubeGrid.Physics.GetVelocityAtPoint(Block.CubeGrid.PositionComp.WorldMatrix.Translation));
+            if (!entAngularVelocity || !entLinVel)
+            {
+                const float dt = MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS;
+                var rate = 0d;
+                var angVel = Vector3D.Zero;
+                if (!entAngularVelocity)
+                {
+                    angVel = Vector3D.TransformNormal((Vector3D)Block.CubeGrid.Physics.AngularVelocity, Block.CubeGrid.PositionComp.LocalMatrix);
+                    rate = angVel.Normalize() * dt;
+                }
+                MatrixD predictedBlockWorldMatrix = MatrixD.CreateFromAxisAngle(angVel, rate) * Block.CubeGrid.PositionComp.WorldMatrix;
+                predictedBlockWorldMatrix.Translation = Block.CubeGrid.PositionComp.WorldMatrix.Translation + Block.CubeGrid.Physics.GetVelocityAtPoint(Block.CubeGrid.PositionComp.WorldMatrix.Translation) * dt;
+                _shieldShapeMatrix = MatrixD.CreateScale(Block.CubeGrid.PositionComp.LocalAABB.HalfExtents * (float)MathHelper.Sqrt2 + 5f) * MatrixD.CreateTranslation(Block.CubeGrid.PositionComp.LocalAABB.Center) * predictedBlockWorldMatrix;
+
+            }
+            else if (Block.CubeGrid.Physics.IsStatic) _shieldShapeMatrix = MatrixD.Rescale(Block.WorldMatrix, new Vector3D(_width, _height, _depth));
+            else
+            {
+                _shieldShapeMatrix = MatrixD.CreateScale(Block.CubeGrid.PositionComp.LocalAABB.HalfExtents * (float)MathHelper.Sqrt2 + 5f) * MatrixD.CreateTranslation(Block.CubeGrid.PositionComp.LocalAABB.Center) * Block.CubeGrid.WorldMatrix;
+            }
+            // Remove above here
 
             var shapematrix = _shieldShapeMatrix;
-
             if (!_shield.WorldMatrix.Equals(shapematrix)) _shield.SetWorldMatrix(shapematrix);
 
             return shapematrix;
@@ -591,14 +618,16 @@ namespace DefenseShields
             if (_gridIsMobile)
             {
                 _detectionCenter = Block.CubeGrid.PositionComp.WorldVolume.Center;
-                DetectionMatrix = _shieldShapeMatrix * Block.CubeGrid.WorldMatrix;
+                //DetectionMatrix = _shieldShapeMatrix * Block.CubeGrid.WorldMatrix;
+                DetectionMatrix = _shieldShapeMatrix;
                 _range = (float)_shieldShapeMatrix.Scale.AbsMax() + 15f;
             }
             else
             {
                 _detectionCenter = Block.PositionComp.WorldVolume.Center;
                 //DetectionMatrix = MatrixD.Rescale(Block.WorldMatrix, new Vector3D(_width, _height, _depth));
-                DetectionMatrix = _shieldShapeMatrix * Block.WorldMatrix;
+                //DetectionMatrix = _shieldShapeMatrix * Block.WorldMatrix;
+                DetectionMatrix = _shieldShapeMatrix;
                 _range = (float)_shieldShapeMatrix.Scale.AbsMax() + 15f;
             }
         }
@@ -744,12 +773,12 @@ namespace DefenseShields
                     }
                     return;
                 }
-                if (webent is IMyCharacter && (_count == 2 || _count == 17 || _count == 32 || _count == 47) && Intersect(webent, false))
+                if (webent is IMyCharacter && (_count == 2 || _count == 17 || _count == 32 || _count == 47) && Intersect(webent, true))
                 {
                     Log.Line($"player intersected");
                     var dude = MyAPIGateway.Players.GetPlayerControllingEntity(webent).IdentityId;
                     var playerrelationship = Block.GetUserRelationToOwner(dude);
-                    if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner || playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
+                    //if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner || playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return;
                     _playerwebbed = true;
                 }
 
