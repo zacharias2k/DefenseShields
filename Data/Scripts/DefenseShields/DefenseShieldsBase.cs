@@ -18,28 +18,17 @@ namespace DefenseShields
     {
         public bool IsInit;
         public bool ControlsLoaded;
-        public int I;
+        //public int I;
 
         public static DefenseShieldsBase Instance { get; private set; }
         public readonly MyModContext MyModContext = new MyModContext();
-        public readonly Icosphere Icosphere = new Icosphere(6);
+        public readonly Icosphere Icosphere = new Icosphere(4);
 
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
         public List<DefenseShields> Shields = new List<DefenseShields>(); 
 
-        private readonly MyStringId _faceId = MyStringId.GetOrCompute("Build new");
+        //private readonly MyStringId _faceId = MyStringId.GetOrCompute("Build new");
 
-        Stopwatch sw = new Stopwatch();
-
-        private void StopWatchReport(string message)
-        {
-            long ticks = sw.ElapsedTicks;
-            double ns = 1000000000.0 * (double)ticks / Stopwatch.Frequency;
-            double ms = ns / 1000000.0;
-            double s = ms / 1000;
-
-            Log.Line($"{message} - ns:{ns} ms:{ms} s:{s}");
-        }
 
         public override void Draw()
         {
@@ -50,14 +39,10 @@ namespace DefenseShields
                 for (var j = 0; j < 32768; j++) MyTransparentGeometry.AddTriangleBillboard(Vector3D.Zero, Vector3D.Zero, Vector3D.Zero, Vector3.Zero, Vector3.Zero, Vector3.Zero, Vector2.Zero, Vector2.Zero, Vector2.Zero, _faceId, 0, Vector3D.Zero);
             }
             */
-            //sw.Start();
             foreach (var s in Components)
             {
                 s.Draw();
             }
-            //sw.Stop();
-            //StopWatchReport("Draw Performance");
-            //sw.Reset();
         }
 
         public string ModPath()

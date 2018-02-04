@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Text;
 using Sandbox.ModAPI;
 using VRage.Game;
@@ -25,12 +24,7 @@ namespace DefenseShields.Support
                 MyAPIGateway.Entities.AddEntity(ent);
                 return ent;
             }
-            catch (Exception ex)
-            {
-                Log.Line($"Exception in Spawn shell entities");
-                Log.Line($"{ex}");
-                return null;
-            }
+            catch (Exception ex) { Log.Line($"Exception in EmptyEntity: {ex}"); return null; }
         }
     }
     #endregion
@@ -165,7 +159,6 @@ namespace DefenseShields.Support
             private int _pulse = 40;
             private int _prevLod;
             private int _lod;
-            //private int _lod2;
 
             private const int GlitchSteps = 320;
             private const int ImpactSteps = 80;
@@ -187,11 +180,13 @@ namespace DefenseShields.Support
             private bool _charged = true;
             private bool _enemy;
             private bool _impact;
+            private bool _effectsDone;
 
             private IMyEntity _shield;
 
             private readonly MyStringId _faceId1 = MyStringId.GetOrCompute("CustomIdle");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private readonly MyStringId _faceId2 = MyStringId.GetOrCompute("SunDisk");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
+            private readonly MyStringId _faceId0 = MyStringId.GetOrCompute("");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
 
             public Instance(Icosphere backing)
             {
@@ -220,26 +215,30 @@ namespace DefenseShields.Support
 
             public void CalculateColor(MatrixD matrix, Vector3D impactPos, bool entChanged, bool enemy, IMyEntity shield)
             {
-                //Log.Line($"Start CalculateColor1");
+                //Log.Line($"Start Full CalculateColor");
+                //DSUtils.Sw.Start();
                 _test1Color = Color.FromNonPremultiplied(0, 0, 0, 50);
                 _test2Color = Color.FromNonPremultiplied(0, 0, 0, 200);
                 _shield = shield;
                 _enemy = enemy;
                 _matrix = matrix;
                 _impactPosState = impactPos;
+
                 if (impactPos == Vector3D.NegativeInfinity) _impact = false;
                 else ComputeImpacts();
+
                 StepEffects();
                 InitColors();
+
                 if (_impactCount[4] != 0 ) MyAPIGateway.Parallel.Start(Models);
 
                 var ib = _backing.IndexBuffer[_lod];
                 Array.Resize(ref _triColorBuffer, ib.Length / 3);
-
                 if (entChanged || _prevLod != _lod)
                 {
                     Array.Resize(ref _preCalcNormLclPos, ib.Length / 3);
                 }
+
                 for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
                 {
                     var i0 = ib[i];
@@ -256,6 +255,7 @@ namespace DefenseShields.Support
                         var normlclPos = Vector3D.Normalize(lclPos);
                         _preCalcNormLclPos[j] = normlclPos;
                     }
+
                     if (_impactCount[4] != 0 || _glitchCount != 0)
                     {
                         //Log.Line($"impactCount and Glitch: {_impactCount[4]} - {_glitchCount}");
@@ -302,7 +302,6 @@ namespace DefenseShields.Support
                     else if (_impactCount[4] == 0) _triColorBuffer[j] = _test1Color;
                 }
                 _prevLod = _lod;
-
                 //
                 // Code
                 //
@@ -332,8 +331,10 @@ namespace DefenseShields.Support
                 try
                 {
                     DSUtils.Sw.Start();
-                    MyStringId faceMaterial;
+                    var faceMaterial = _faceId2;
                     var ib = _backing.IndexBuffer[_lod];
+                    var v21 = new Vector2(0.5f, 0);
+                    var v22 = new Vector2(0.5f);
                     for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
                     {
                         var i0 = ib[i];
@@ -348,28 +349,24 @@ namespace DefenseShields.Support
                         var n1 = _normalBuffer[i1];
                         var n2 = _normalBuffer[i2];
                         var color = _triColorBuffer[j];
-                        if (color == _pulseColor) faceMaterial = _faceId2;
-                        else if (color == _currentColor) faceMaterial = _faceId2;
+                        if (color == _currentColor) faceMaterial = _faceId2;
+                        else if (color == _pulseColor) faceMaterial = _faceId2;
                         else if (color == _test1Color) faceMaterial = _faceId1;
                         else if (color == _test2Color) faceMaterial = _faceId2;
                         else if (color == _waveColor) faceMaterial = _faceId2;
                         else if (color == _waveComingColor) faceMaterial = _faceId2;
                         else if (color == _wavePassedColor) faceMaterial = _faceId2;
                         else if (color == _chargeColor) faceMaterial = _faceId2;
-                        else faceMaterial = _faceId2;
-                        MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, Vector2.Zero, new Vector2(0.5f, 0), new Vector2(0.5f), faceMaterial, renderId, (v0 + v1 + v2) / 3, color);
+                        MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, Vector2.Zero, v21, v22, faceMaterial, renderId, (v0 + v1 + v2) / 3, color);
                     }
-                    DSUtils.StopWatchReport("IcoDraw", 1);
+                    DSUtils.StopWatchReport("IcoDraw", 2);
                 }
-                catch (Exception ex)
-                {
-                    Log.Line($" Exception in IcoSphere Draw - renderID {renderId}");
-                    Log.Line($" {ex}");
-                }
+                catch (Exception ex) { Log.Line($"Exception in IcoSphere Draw - renderId {renderId}: {ex}"); }
             }
 
             private void ComputeImpacts()
             {
+                Log.Line($"_impact true");
                 _impact = true;
                 for (var i = 4; i >= 0; i--)
                 {
@@ -442,6 +439,8 @@ namespace DefenseShields.Support
                     _chargeCount = 0;
                     Array.Clear(_triColorBuffer, 0, _triColorBuffer.Length);
                 }
+                if (_glitchCount == 0 && _impactCount[4] == 0 && _charged && !_impact) _effectsDone = true;
+                else _effectsDone = false;
             }
 
             private void Models()
@@ -464,19 +463,16 @@ namespace DefenseShields.Support
                         _shield.Render.UpdateRenderObject(true);
                         //Log.Line($"c:{_modelCount} - Asset:{_shield.Model.AssetName} - Vis:{_shield.Render.Visible}");
                         _modelCount++;
+                        if (_modelCount == 16) _modelCount = 0;
                     }
                     else _shield.Render.Visible = false;
-                    if (_impactCount[4] == 79) 
+                    if (_impactCount[4] == ImpactSteps) 
                     {
                         _modelCount = 0;
                         _shield.Render.Visible = false;
                     }
                 }
-                catch (Exception ex)
-                {
-                    Log.Line($" Exception in Models");
-                    Log.Line($" {ex}");
-                }
+                catch (Exception ex) { Log.Line($"Exception in Models: {ex}"); }
             }
 
             private void InitColors()
