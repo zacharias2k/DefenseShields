@@ -236,6 +236,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Support\Logging.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Slider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\MyMaths.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\MyUtils.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\SpawnField.cs" />
     <Compile Include="Data\Scripts\DefenseShields\StationShield.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Voxel.cs" />

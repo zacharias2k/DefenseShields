@@ -193,18 +193,6 @@ namespace DefenseShields.Support
             private readonly MyStringId _faceId1 = MyStringId.GetOrCompute("CustomIdle");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private readonly MyStringId _faceId2 = MyStringId.GetOrCompute("SunDisk");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
 
-            Stopwatch sw = new Stopwatch();
-
-            private void StopWatchReport(string message)
-            {
-                long ticks = sw.ElapsedTicks;
-                double ns = 1000000000.0 * (double)ticks / Stopwatch.Frequency;
-                double ms = ns / 1000000.0;
-                double s = ms / 1000;
-
-                Log.Line($"{message} - ns:{ns} ms:{ms} s:{s}");
-            }
-
             public Instance(Icosphere backing)
             {
                 _backing = backing;
@@ -315,12 +303,6 @@ namespace DefenseShields.Support
                 }
                 _prevLod = _lod;
 
-                /*
-                sw.Stop();
-                StopWatchReport("Icosphere CalcColor");
-                sw.Reset();
-                */
-
                 //
                 // Code
                 //
@@ -349,7 +331,7 @@ namespace DefenseShields.Support
             {
                 try
                 {
-
+                    DSUtils.Sw.Start();
                     MyStringId faceMaterial;
                     var ib = _backing.IndexBuffer[_lod];
                     for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
@@ -377,6 +359,7 @@ namespace DefenseShields.Support
                         else faceMaterial = _faceId2;
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, Vector2.Zero, new Vector2(0.5f, 0), new Vector2(0.5f), faceMaterial, renderId, (v0 + v1 + v2) / 3, color);
                     }
+                    DSUtils.StopWatchReport("IcoDraw", 1);
                 }
                 catch (Exception ex)
                 {
@@ -392,13 +375,13 @@ namespace DefenseShields.Support
                 {
                     if (_impactPos[i] != Vector3D.NegativeInfinity) continue;
                     _impactPos[i] = _impactPosState;
-                    Log.Line($"Store impact position: {_impactPos[i]} in slot: {i}");
+                    //Log.Line($"Store impact position: {_impactPos[i]} in slot: {i}");
                     break;
                 }
                 for (int i = 4; i >= 0; i--)
                 {
                     if (_impactPos[i] == Vector3D.NegativeInfinity) break;
-                    Log.Line($"_localImpact assign and normalize impact: {_impactPos[i]} in slot: {i}");
+                    //Log.Line($"_localImpact assign and normalize impact: {_impactPos[i]} in slot: {i}");
 
                     _localImpacts[i] = _impactPos[i] - _matrix.Translation;
                     _localImpacts[i].Normalize();
