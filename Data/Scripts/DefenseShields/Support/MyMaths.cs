@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VRageMath;
 
 namespace DefenseShields.Support
 {
@@ -25,9 +26,19 @@ namespace DefenseShields.Support
             if (_faceDiv == 0) throw new Exception("Invalid number of steps");
             return _faceDiv;
         }
-        public static int Mod(int x, int m)
+        public static float Mod(int x, int m)
         {
             return (x % m + m) % m;
+        }
+
+        public static Vector3D HighestVec(params Vector3D[] inputs)
+        {
+            return inputs.Max();
+        }
+
+        public static Vector3D LowesVect(params Vector3D[] inputs)
+        {
+            return inputs.Min();
         }
     }
 }

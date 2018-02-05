@@ -213,7 +213,7 @@ namespace DefenseShields.Support
                 Array.Resize(ref _preCalcNormLclPos, ib.Length / 3);
             }
 
-            public void CalculateColor(MatrixD matrix, Vector3D impactPos, bool entChanged, bool enemy, IMyEntity shield)
+            public void CalculateColor(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, IMyEntity shield)
             {
                 //Log.Line($"Start Full CalculateColor");
                 //DSUtils.Sw.Start();
@@ -223,7 +223,12 @@ namespace DefenseShields.Support
                 _enemy = enemy;
                 _matrix = matrix;
                 _impactPosState = impactPos;
+                if (impactSize <= 10) impactSize = (int)4;
+                else impactSize = (int)1;
+                var impactSpeed = 2;
+                if (impactSize < 4) impactSpeed = 1; 
 
+                //Log.Line($"impactSize {impactSize} - {impactSpeed}");
                 if (impactPos == Vector3D.NegativeInfinity) _impact = false;
                 else ComputeImpacts();
 
@@ -256,17 +261,17 @@ namespace DefenseShields.Support
                         _preCalcNormLclPos[j] = normlclPos;
                     }
 
-                    if (_impactCount[4] != 0 || _glitchCount != 0)
+                    if ((_impactCount[4] != 0 && _impactCount[4] < ImpactSteps / impactSpeed) || _glitchCount != 0)
                     {
                         //Log.Line($"impactCount and Glitch: {_impactCount[4]} - {_glitchCount}");
                         var pDotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _localImpacts[4]);
                         var primeImpactFactor = Math.Acos(pDotOfNormLclImpact);
 
-                        const float pWaveMultiplier = Pi / ImpactSteps;
+                        float pWaveMultiplier = Pi / ImpactSteps / impactSize;
                         var pWavePosition = pWaveMultiplier * _impactCount[4];
                         var pRelativeToWavefront = Math.Abs(primeImpactFactor - pWavePosition);
                         //Log.Line($"primeImpactFactor: {primeImpactFactor} - Relative: {pRelativeToWavefront} - pWavePosition: {pWavePosition} - pWaveMultipler: {pWaveMultiplier} - _impactCount[4]: {_impactCount[4]}");
-                        if (pWavePosition > primeImpactFactor) 
+                        if (pWavePosition > primeImpactFactor )//&& _impactCount[4] <= ImpactSteps / impactSize) 
                         {
                             _triColorBuffer[j] = _test2Color;
                             continue;
