@@ -27,7 +27,7 @@ using Sandbox.Game.Entities;
 
 namespace DefenseShields
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OreDetector), false, new string[] { "StationDefenseShield" })]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OreDetector), false, "StationDefenseShield")]
     public class DefenseShields : MyGameLogicComponent
     {
         #region Setup
@@ -72,7 +72,7 @@ namespace DefenseShields
 
         private IMyOreDetector Block => (IMyOreDetector)Entity;
         private IMyEntity _shield;
-
+        
         private readonly Spawn _spawn = new Spawn();
         private Icosphere.Instance _icosphere;
         private MyEntitySubpart _subpartRotor;
@@ -116,6 +116,185 @@ namespace DefenseShields
         public override void OnAddedToContainer() { if (Entity.InScene) OnAddedToScene(); }
         public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
         #endregion
+
+        // temp
+        private bool needsMatrixUpdate = false;
+        public ProjectorPreviewModSettings Settings = new ProjectorPreviewModSettings();
+        private byte previewCooldown = 0;
+        private bool blocksNeedRefresh = false;
+        private const byte COOLDOWN_PREVIEW = 30; // cooldown after toggling preview mode, in ticks
+        public const float MIN_SCALE = 0.1f; // Scale slider min/max
+        public const float MAX_SCALE = 10f;
+        public const float MIN_MAX_OFFSET = 10f; // Offset slider min/max
+        public const float MIN_MAX_ROTATE = 360f; // Rotate slider min/max
+        public float LargestGridLength = 2.5f;
+        public static MyModStorageComponent Storage { get; set; }
+        private HashSet<ulong> playersToReceive = null;
+        // above
+
+        // temp
+        public void UpdateSettings(ProjectorPreviewModSettings newSettings)
+        {
+            PreviewMode = newSettings.Enabled;
+            Scale = newSettings.Scale;
+            StatusMode = newSettings.Status;
+            SeeThroughMode = newSettings.SeeThrough;
+
+            for (int i = 0; i < 3; ++i)
+                SetOffset(newSettings.Offset.GetDim(i), i);
+
+            for (int i = 0; i < 3; ++i)
+                SetRotate(newSettings.RotateRad.GetDim(i), i);
+
+            for (int i = 0; i < 3; ++i)
+                SetSpin(newSettings.Spin.IsAxisSet(i), i);
+        }
+
+        public void SaveSettings()
+        {
+            if (DefenseShields.Storage == null)
+                DefenseShields.Storage = new MyModStorageComponent();
+
+            DefenseShields.Storage[DefenseShieldsBase.Instance.SETTINGS_GUID] = MyAPIGateway.Utilities.SerializeToXML(Settings);
+
+                Log.Line("SaveSettings()");
+        }
+
+        private bool LoadSettingsAndBlueprint()
+        {
+                Log.Line("LoadSettingsAndBlueprint()");
+
+            if (DefenseShields.Storage == null)
+                return false;
+
+            string rawData;
+            bool loadedSomething = false;
+
+            if (DefenseShields.Storage.TryGetValue(DefenseShieldsBase.Instance.SETTINGS_GUID, out rawData))
+            {
+                ProjectorPreviewModSettings loadedSettings = null;
+
+                try
+                {
+                    loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<ProjectorPreviewModSettings>(rawData);
+                }
+                catch (Exception e)
+                {
+                    loadedSettings = null;
+                    Log.Line($"Error loading settings!\n{e}");
+                }
+
+                if (loadedSettings != null)
+                {
+                    Settings = loadedSettings;
+                    loadedSomething = true;
+                }
+
+                    Log.Line($"  Loaded settings:\n{Settings.ToString()}");
+            }
+
+            /*if (DefenseShields.Storage.TryGetValue(DefenseShieldsBase.Instance.BLUEPRINT_GUID, out rawData))
+            {
+            }*/
+
+            return loadedSomething;
+        }
+
+        public bool PreviewMode
+        {
+            get { return Settings.Enabled; }
+            set
+            {
+                Settings.Enabled = value;
+                previewCooldown = COOLDOWN_PREVIEW;
+                RefreshControls(refeshCustomInfo: true);
+            }
+        }
+
+        public float Scale
+        {
+            get { return Settings.Scale; }
+            set
+            {
+                Settings.Scale = (float)Math.Round(MathHelper.Clamp(value, MIN_SCALE, Math.Min(LargestGridLength, MAX_SCALE)), 3);
+                needsMatrixUpdate = true;
+            }
+        }
+
+        public bool StatusMode
+        {
+            get { return Settings.Status; }
+            set
+            {
+                Settings.Status = value;
+                blocksNeedRefresh = true;
+            }
+        }
+
+        public bool SeeThroughMode
+        {
+            get { return Settings.SeeThrough; }
+            set
+            {
+                Settings.SeeThrough = value;
+                blocksNeedRefresh = true;
+            }
+        }
+
+        public void SetOffset(float value, int axis)
+        {
+            Settings.Offset.SetDim(axis, MathHelper.Clamp((float)Math.Round(value, 2), -MIN_MAX_OFFSET, MIN_MAX_OFFSET));
+            needsMatrixUpdate = true;
+        }
+
+        public Vector3 Rotate => Settings.RotateRad;
+
+        public void SetRotate(float value, int axis)
+        {
+            Settings.RotateRad.SetDim(axis, MathHelper.Clamp(value, -MIN_MAX_ROTATE, MIN_MAX_ROTATE));
+        }
+
+        public SpinFlags Spin => Settings.Spin;
+
+        public void SetSpin(bool value, int axis)
+        {
+            var flag = (SpinFlags)(1 << axis);
+
+            if (value)
+                Settings.Spin |= flag;
+            else
+                Settings.Spin &= ~flag;
+
+
+        }
+        private void RefreshControls(bool refreshRemoveButton = false, bool refeshCustomInfo = false)
+        {
+        }
+
+        public void RemoveBlueprints_Receiver(byte[] bytes, ulong sender)
+        {
+
+            //if (MyAPIGateway.Multiplayer.IsServer)
+                //DefenseShieldsBase.RelayToClients(DefenseShields.Block.CubeGrid.GetPosition(), bytes, sender);
+        }
+
+        public void PlayerReceivedBP(ulong id)
+        {
+            if (playersToReceive == null)
+            {
+                var e = "PlayerReceivedBP() :: playersToReceive == null !!!!";
+                Log.Line($"{e}, {e}");
+                return;
+            }
+        }
+
+        public void UseThisShip_Receiver(bool fix)
+        {
+                Log.Line($"UseThisShip_Receiver({fix})");
+
+            //UseThisShip_Internal(fix);
+        }
+        // end
 
         #region Init
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
@@ -457,7 +636,6 @@ namespace DefenseShields
                 var impactpos = _worldImpactPosition;
                 var impactsize = _impactSize;
                 _worldImpactPosition = Vector3D.NegativeInfinity;
-
                 SetShieldShapeMatrix();
 
                 var entitychanged = _entityChanged;

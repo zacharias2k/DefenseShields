@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.ModAPI;
+using VRage.ObjectBuilders;
 using VRage.Utils;
 using VRageMath;
 using static VRageMath.MathHelper;
@@ -364,7 +366,7 @@ namespace DefenseShields.Support
                         else if (color == _chargeColor) faceMaterial = _faceId2;
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, Vector2.Zero, v21, v22, faceMaterial, renderId, (v0 + v1 + v2) / 3, color);
                     }
-                    DSUtils.StopWatchReport("IcoDraw", 2);
+                    DSUtils.StopWatchReport("IcoDraw", 2f);
                 }
                 catch (Exception ex) { Log.Line($"Exception in IcoSphere Draw - renderId {renderId}: {ex}"); }
             }

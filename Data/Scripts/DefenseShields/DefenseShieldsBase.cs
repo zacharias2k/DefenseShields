@@ -1,12 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using DefenseShields.Support;
-using VRage.Utils;
 using VRageMath;
 
 namespace DefenseShields
@@ -19,6 +18,12 @@ namespace DefenseShields
         public bool IsInit;
         public bool ControlsLoaded;
         //public int I;
+
+        // test
+        public const ushort PACKET_ID = 62520; // network
+        public readonly Guid SETTINGS_GUID = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
+        //public readonly Guid BLUEPRINT_GUID = new Guid("E973AD49-F3F4-41B9-811B-2B114E6EE0F9");
+        //
 
         public static DefenseShieldsBase Instance { get; private set; }
         public readonly MyModContext MyModContext = new MyModContext();
@@ -74,6 +79,7 @@ namespace DefenseShields
             Log.Init("debugdevelop.log");
             Log.Line($" Logging Started");
             MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
+            MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID, PacketReceived);
             IsInit = true;
         }
 
@@ -106,42 +112,108 @@ namespace DefenseShields
             info.Amount = 0f;
         }
 
-        //These are the subpart paths for every type of weapon.Then the last subpart has a dummy 
-        //with "muzzle_projectile", "muzzle_missile", or "barrel".  The forward direction of this 
-        //dummy is the way it shoots, the position is where it shoots from:
-        /*
-        public static DirectionBarrelComponent CreateAuto(IMyEntity ent)
+        #region Network sync
+        private static void PacketReceived(byte[] bytes)
         {
-            if (ent is IMyLargeGatlingTurret)
-                return new DirectionBarrelComponent("GatlingTurretBase1", "GatlingTurretBase2", "GatlingBarrel");
-            if (ent is IMyLargeInteriorTurret)
-                return new DirectionBarrelComponent("InteriorTurretBase1", "InteriorTurretBase2");
-            if (ent is IMyLargeMissileTurret)
-                return new DirectionBarrelComponent("MissileTurretBase1", "MissileTurretBarrels");
-            if (ent is IMySmallGatlingGun)
-                return new DirectionBarrelComponent("Barrel");
-            if (ent is IMySmallMissileLauncher)
-                return new DirectionBarrelComponent();
-            return null;
-        }
-        private bool IsShooting
-        {
-            get
+            try
             {
-                IMyUserControllableGun gun = Entity;
-                if (gun == null)
-                    return false;
-                if (gun.IsShooting)
-                    return true;
-                var gunBase = gun as IMyGunObject<MyGunBase>;
-                if (gunBase != null && gunBase.IsShooting)
-                    return true;
-                return _blockShootProperty?.GetValue(gun) ?? false;
+                if (bytes.Length <= 2)
+                {
+                    Log.Line($"PacketReceived(); invalid length <= 2; length={bytes.Length}");
+                    return;
+                }
+
+                var data = MyAPIGateway.Utilities.SerializeFromBinary<PacketData>(bytes); // this will throw errors on invalid data
+
+                if (data == null)
+                {
+                    Log.Line($"PacketReceived(); no deserialized data!");
+                    return;
+                }
+
+                IMyEntity ent;
+                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed || !(ent is IMyProjector))
+                {
+                    Log.Line($"PacketReceived(); {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not projector"))}");
+                    return;
+                }
+
+                var logic = ent.GameLogic.GetAs<DefenseShields>();
+
+                if (logic == null)
+                {
+                    Log.Line($"PacketReceived(); {data.Type}; projector doesn't have the gamelogic component!");
+                    return;
+                }
+
+                switch (data.Type)
+                {
+                    case PacketType.SETTINGS:
+                        {
+                            if (data.Settings == null)
+                            {
+                                Log.Line($"PacketReceived(); {data.Type}; settings are null!");
+                                return;
+                            }
+
+                            Log.Line($"PacketReceived(); Settings; {(MyAPIGateway.Multiplayer.IsServer ? " Relaying to clients;" : "")}Valid!\n{logic.Settings}");
+
+                            logic.UpdateSettings(data.Settings);
+                            logic.SaveSettings();
+
+                            if (MyAPIGateway.Multiplayer.IsServer)
+                                RelayToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                        }
+                        break;
+                    case PacketType.REMOVE:
+                        logic.RemoveBlueprints_Receiver(bytes, data.Sender);
+                        break;
+                    case PacketType.RECEIVED_BP:
+                        logic.PlayerReceivedBP(data.Sender);
+                        break;
+                    case PacketType.USE_THIS_AS_IS:
+                        logic.UseThisShip_Receiver(false);
+                        break;
+                    case PacketType.USE_THIS_FIX:
+                        logic.UseThisShip_Receiver(true);
+                        break;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Line($"Invalid packet data!{e}");
             }
         }
 
-        _blockShootProperty = tBlock.GetProperty("Shoot").Cast<bool>();
-        */
+        public static void RelaySettingsToClients(IMyCubeBlock block, ProjectorPreviewModSettings settings)
+        {
+            Log.Line("RelaySettingsToClients(block,settings)");
+
+            var data = new PacketData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            RelayToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        public static void RelayToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        {
+            Log.Line("RelayToClients(syncPos,bytes,sender)");
+
+            var localSteamId = MyAPIGateway.Multiplayer.MyId;
+            var distSq = MyAPIGateway.Session.SessionSettings.ViewDistance;
+            distSq += 1000; // some safety padding
+            distSq *= distSq;
+
+            MyAPIGateway.Players.GetPlayers(null, (p) =>
+            {
+                var id = p.SteamUserId;
+
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
+                    MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID, bytes, p.SteamUserId);
+
+                return false; // avoid adding to the null list
+            });
+        }
+        #endregion
     }
     #endregion
 }

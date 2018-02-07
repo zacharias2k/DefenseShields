@@ -1,9 +1,12 @@
 ﻿using Sandbox.Common.ObjectBuilders.Definitions;
+using Sandbox.Definitions;
+using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Weapons;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces;
 using SpaceEngineers.Game.ModAPI;
+using VRage.Game;
 using VRage.Game.Components;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
@@ -74,7 +77,6 @@ namespace DefenseShields
         {
             var gun = (IMyGunObject<MyGunBase>)Entity;
             var shotTime = gun.GunBase.LastShootTime.Ticks;
-
             if (shotTime > _lastShotTime)
             {
                 _lastShotTime = shotTime;
