@@ -119,35 +119,22 @@ namespace DefenseShields
 
         // temp
         private bool needsMatrixUpdate = false;
-        public ProjectorPreviewModSettings Settings = new ProjectorPreviewModSettings();
-        private byte previewCooldown = 0;
+        public DefenseShieldsModSettings Settings = new DefenseShieldsModSettings();
         private bool blocksNeedRefresh = false;
-        private const byte COOLDOWN_PREVIEW = 30; // cooldown after toggling preview mode, in ticks
-        public const float MIN_SCALE = 0.1f; // Scale slider min/max
-        public const float MAX_SCALE = 10f;
-        public const float MIN_MAX_OFFSET = 10f; // Offset slider min/max
-        public const float MIN_MAX_ROTATE = 360f; // Rotate slider min/max
+        public const float MIN_SCALE = 15f; // Scale slider min/max
+        public const float MAX_SCALE = 300f;
         public float LargestGridLength = 2.5f;
         public static MyModStorageComponent Storage { get; set; }
         private HashSet<ulong> playersToReceive = null;
         // above
 
         // temp
-        public void UpdateSettings(ProjectorPreviewModSettings newSettings)
+        public void UpdateSettings(DefenseShieldsModSettings newSettings)
         {
-            PreviewMode = newSettings.Enabled;
-            Scale = newSettings.Scale;
-            StatusMode = newSettings.Status;
-            SeeThroughMode = newSettings.SeeThrough;
-
-            for (int i = 0; i < 3; ++i)
-                SetOffset(newSettings.Offset.GetDim(i), i);
-
-            for (int i = 0; i < 3; ++i)
-                SetRotate(newSettings.RotateRad.GetDim(i), i);
-
-            for (int i = 0; i < 3; ++i)
-                SetSpin(newSettings.Spin.IsAxisSet(i), i);
+            ShieldVisable = newSettings.Enabled;
+            Width = newSettings.Width;
+            Height = newSettings.Height;
+            Depth = newSettings.Depth;
         }
 
         public void SaveSettings()
@@ -160,9 +147,9 @@ namespace DefenseShields
                 Log.Line("SaveSettings()");
         }
 
-        private bool LoadSettingsAndBlueprint()
+        private bool LoadSettings()
         {
-                Log.Line("LoadSettingsAndBlueprint()");
+                Log.Line("LoadSettings");
 
             if (DefenseShields.Storage == null)
                 return false;
@@ -172,11 +159,11 @@ namespace DefenseShields
 
             if (DefenseShields.Storage.TryGetValue(DefenseShieldsBase.Instance.SETTINGS_GUID, out rawData))
             {
-                ProjectorPreviewModSettings loadedSettings = null;
+                DefenseShieldsModSettings loadedSettings = null;
 
                 try
                 {
-                    loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<ProjectorPreviewModSettings>(rawData);
+                    loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsModSettings>(rawData);
                 }
                 catch (Exception e)
                 {
@@ -193,99 +180,51 @@ namespace DefenseShields
                     Log.Line($"  Loaded settings:\n{Settings.ToString()}");
             }
 
-            /*if (DefenseShields.Storage.TryGetValue(DefenseShieldsBase.Instance.BLUEPRINT_GUID, out rawData))
-            {
-            }*/
-
             return loadedSomething;
         }
 
-        public bool PreviewMode
+        public bool ShieldVisable
         {
             get { return Settings.Enabled; }
             set
             {
                 Settings.Enabled = value;
-                previewCooldown = COOLDOWN_PREVIEW;
                 RefreshControls(refeshCustomInfo: true);
             }
         }
 
-        public float Scale
+        public float Width
         {
-            get { return Settings.Scale; }
+            get { return Settings.Width; }
             set
             {
-                Settings.Scale = (float)Math.Round(MathHelper.Clamp(value, MIN_SCALE, Math.Min(LargestGridLength, MAX_SCALE)), 3);
+                Settings.Width = (float)Math.Round(MathHelper.Clamp(value, MIN_SCALE, Math.Min(LargestGridLength, MAX_SCALE)), 3);
                 needsMatrixUpdate = true;
             }
         }
 
-        public bool StatusMode
+        public float Height
         {
-            get { return Settings.Status; }
+            get { return Settings.Height; }
             set
             {
-                Settings.Status = value;
-                blocksNeedRefresh = true;
+                Settings.Height = (float)Math.Round(MathHelper.Clamp(value, MIN_SCALE, Math.Min(LargestGridLength, MAX_SCALE)), 3);
+                needsMatrixUpdate = true;
             }
         }
 
-        public bool SeeThroughMode
+        public float Depth
         {
-            get { return Settings.SeeThrough; }
+            get { return Settings.Depth; }
             set
             {
-                Settings.SeeThrough = value;
-                blocksNeedRefresh = true;
+                Settings.Depth = (float)Math.Round(MathHelper.Clamp(value, MIN_SCALE, Math.Min(LargestGridLength, MAX_SCALE)), 3);
+                needsMatrixUpdate = true;
             }
         }
 
-        public void SetOffset(float value, int axis)
-        {
-            Settings.Offset.SetDim(axis, MathHelper.Clamp((float)Math.Round(value, 2), -MIN_MAX_OFFSET, MIN_MAX_OFFSET));
-            needsMatrixUpdate = true;
-        }
-
-        public Vector3 Rotate => Settings.RotateRad;
-
-        public void SetRotate(float value, int axis)
-        {
-            Settings.RotateRad.SetDim(axis, MathHelper.Clamp(value, -MIN_MAX_ROTATE, MIN_MAX_ROTATE));
-        }
-
-        public SpinFlags Spin => Settings.Spin;
-
-        public void SetSpin(bool value, int axis)
-        {
-            var flag = (SpinFlags)(1 << axis);
-
-            if (value)
-                Settings.Spin |= flag;
-            else
-                Settings.Spin &= ~flag;
-
-
-        }
         private void RefreshControls(bool refreshRemoveButton = false, bool refeshCustomInfo = false)
         {
-        }
-
-        public void RemoveBlueprints_Receiver(byte[] bytes, ulong sender)
-        {
-
-            //if (MyAPIGateway.Multiplayer.IsServer)
-                //DefenseShieldsBase.RelayToClients(DefenseShields.Block.CubeGrid.GetPosition(), bytes, sender);
-        }
-
-        public void PlayerReceivedBP(ulong id)
-        {
-            if (playersToReceive == null)
-            {
-                var e = "PlayerReceivedBP() :: playersToReceive == null !!!!";
-                Log.Line($"{e}, {e}");
-                return;
-            }
         }
 
         public void UseThisShip_Receiver(bool fix)
@@ -469,7 +408,6 @@ namespace DefenseShields
             {
                 var p = (float)_shieldShapeMatrix.Scale.Sum / 3 / 2;
                 radius = p * p * 4 * (float)Math.PI;
-                //Log.Line($"Dims rad:{radius} ran:{_range} c:{_count}");
                 return radius;
             }
             var r = (_width + _height + _depth) / 3 / 2;
@@ -477,7 +415,6 @@ namespace DefenseShields
             var r3 = r2 * 4;
             radius = r3 * (float)Math.PI;
 
-            //Log.Line($"Dims rad:{radius} ran:{_range} w:{_width} h:{_height} d:{_depth} c:{_count}");
             return radius;
         }
         #endregion
@@ -508,12 +445,6 @@ namespace DefenseShields
             Log.Line($"Create UI - c:{_count}");
             DefenseShieldsBase.Instance.ControlsLoaded = true;
             RemoveOreUi();
-
-
-            /*Ellipsoid = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Block,
-                "Ellipsoid",
-                "Switch to Ellipsoid",
-                false);*/
 
             _widthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Block, "WidthSlider", "Shield Size Width", 35, 300, 300);
             _heightSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Block, "HeightSlider", "Shield Size Height", 35, 300, 300);
@@ -634,6 +565,10 @@ namespace DefenseShields
                 var lod = CalculateLod();
                 var shield = _shield;
                 var impactpos = _worldImpactPosition;
+                if (impactpos != Vector3D.NegativeInfinity)
+                {
+                    //impactpos = Vector3D.Transform(impactpos, MatrixD.Invert(_shieldShapeMatrix)); //note no longer TransformNormal
+                }
                 var impactsize = _impactSize;
                 _worldImpactPosition = Vector3D.NegativeInfinity;
                 SetShieldShapeMatrix();
@@ -642,6 +577,7 @@ namespace DefenseShields
                 _oldGridAabb = Block.CubeGrid.LocalAABB;
 
                 var shapematrix = _shieldShapeMatrix;
+                var detectmatrix = DetectionMatrix;
                 var enemy = IsEnemy(null);
                 var renderId = GetRenderId();
 
@@ -651,21 +587,20 @@ namespace DefenseShields
                 renderId = 0; //remove when impact local vec is fixed
                 if (_prepareTask.HasValue && !_prepareTask.Value.IsComplete) _prepareTask.Value.Wait();
                 if (_prepareTask.HasValue && _prepareTask.Value.IsComplete && sphereOnCamera && Block.IsWorking) _icosphere.Draw(renderId);
-                if (sphereOnCamera && Block.IsWorking || entitychanged) _prepareTask = MyAPIGateway.Parallel.Start(() => PrepareSphere(entitychanged, enemy, lod, prevlod, impactpos, impactsize, shapematrix, shield));
+                if (sphereOnCamera && Block.IsWorking || entitychanged) _prepareTask = MyAPIGateway.Parallel.Start(() => PrepareSphere(entitychanged, enemy, lod, prevlod, impactpos, impactsize, shapematrix, detectmatrix, shield));
 
                 /*var gridmatrix = Cblock.CubeGrid.WorldMatrix;
                 var gridaabb = (BoundingBoxD)Cblock.CubeGrid.LocalAABB;
-
                 var c = Color.Red;
                 MySimpleObjectDraw.DrawTransparentBox(ref gridmatrix, ref gridaabb, ref c, MySimpleObjectRasterizer.Wireframe, 1, 0.04f); */
             }
             catch (Exception ex) { Log.Line($"Exception in Entity Draw: {ex}"); }
         }
 
-        private void PrepareSphere(bool entitychanged, bool enemy, int lod, int prevlod, Vector3D impactpos, float impactsize, MatrixD shapematrix, IMyEntity shield)
+        private void PrepareSphere(bool entitychanged, bool enemy, int lod, int prevlod, Vector3D impactpos, float impactsize, MatrixD shapematrix, MatrixD detectmatrix, IMyEntity shield)
         {
             if (entitychanged || lod != prevlod) _icosphere.CalculateTransform(shapematrix, lod);
-            _icosphere.CalculateColor(shapematrix, impactpos, impactsize, entitychanged, enemy, shield);
+            _icosphere.CalculateColor(shapematrix, detectmatrix, impactpos, impactsize, entitychanged, enemy, shield);
         }
         #endregion
 
@@ -695,13 +630,6 @@ namespace DefenseShields
 
         private void SetShieldShapeMatrix()
         {
-            //if (Block.CubeGrid.Physics.IsStatic && entitychanged) _shieldShapeMatrix = MatrixD.Rescale(MatrixD.Identity, new Vector3D(_width, _height, _depth));
-            //else if (entitychanged) _shieldShapeMatrix = MatrixD.CreateScale(Block.CubeGrid.PositionComp.LocalAABB.HalfExtents * (float)MathHelper.Sqrt2 + 5f) * MatrixD.CreateTranslation(Block.CubeGrid.PositionComp.LocalAABB.Center); // * Cblock.CubeGrid.WorldMatrix;
-            //if (Block.CubeGrid.Physics.IsStatic && entitychanged) _shieldShapeMatrix = MatrixD.Rescale(Block.WorldMatrix, new Vector3D(_width, _height, _depth));
-            //else if (entitychanged) _shieldShapeMatrix = MatrixD.CreateScale(Block.CubeGrid.PositionComp.WorldAABB.HalfExtents * (float)MathHelper.Sqrt2 + 5f) * MatrixD.CreateTranslation(Block.CubeGrid.PositionComp.WorldAABB.Center); // * Cblock.CubeGrid.WorldMatrix;
-
-            // Remove when local impact vec is fixed
-
             if (Block.CubeGrid.Physics.IsStatic)
             {
                 _shieldShapeMatrix = MatrixD.Rescale(Block.WorldMatrix, new Vector3D(_width, _height, _depth));
@@ -726,12 +654,14 @@ namespace DefenseShields
                 predictedGridWorldMatrix.Translation = Block.CubeGrid.PositionComp.WorldMatrix.Translation + Block.CubeGrid.Physics.GetVelocityAtPoint(Block.CubeGrid.PositionComp.WorldMatrix.Translation) * dt;
                 DetectionMatrix = localMatrix * Block.CubeGrid.WorldMatrix;
                 _shieldShapeMatrix = localMatrix * predictedGridWorldMatrix;
+                //_shieldShapeMatrix = localMatrix;
                 _shield.SetWorldMatrix(_shieldShapeMatrix);
             }
             else
             {
                 DetectionMatrix = localMatrix * Block.CubeGrid.WorldMatrix;
                 _shieldShapeMatrix = DetectionMatrix;
+                //_shieldShapeMatrix = localMatrix;
                 _shield.SetWorldMatrix(_shieldShapeMatrix);
             }
         }
@@ -804,10 +734,6 @@ namespace DefenseShields
             //var wTest = wVol.Center + (wDir / wLen * Math.Min(wLen, wVol.Radius));
             //So subtract from the radius of the entity(edited)
             //(It's fine if that goes negative -- if it does that will move the test point away from the ellipsoid)
-            //var wVol = ent.PositionComp.WorldVolume;
-            //var wDir = DetectionMatrix.Translation - wVol.Center;
-            //var wLen = wDir.Length();
-            //var wTest = wVol.Center + (wDir / wLen * Math.Min(wLen, wVol.Radius));
             var contactpoint = ContactPoint(ent);
 
             if (Vector3D.Transform(contactpoint, _detectionMatrixInv).LengthSquared() <= 1)
@@ -940,10 +866,8 @@ namespace DefenseShields
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
                 if (webent is IMyMeteor  || webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
                 {
-                    //if (_shotwebbed) return;
                     if (Intersect(webent, true))
                     {
-                        //_shotwebbed = true;
                         _absorb += Shotdmg;
                         Log.Line($"shotEffect: Shield absorbed {Shotdmg}MW of energy from {webent} in loop {_count}");
                         if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo")) MyVisualScriptLogicProvider.CreateExplosion(webent.GetPosition(), 0, 0);

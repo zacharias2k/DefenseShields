@@ -132,9 +132,9 @@ namespace DefenseShields
                 }
 
                 IMyEntity ent;
-                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed || !(ent is IMyProjector))
+                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed || !(ent is IMyOreDetector))
                 {
-                    Log.Line($"PacketReceived(); {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not projector"))}");
+                    Log.Line($"PacketReceived(); {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
                     return;
                 }
 
@@ -142,7 +142,7 @@ namespace DefenseShields
 
                 if (logic == null)
                 {
-                    Log.Line($"PacketReceived(); {data.Type}; projector doesn't have the gamelogic component!");
+                    Log.Line($"PacketReceived(); {data.Type}; shield doesn't have the gamelogic component!");
                     return;
                 }
 
@@ -164,12 +164,12 @@ namespace DefenseShields
                             if (MyAPIGateway.Multiplayer.IsServer)
                                 RelayToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                         }
-                        break;
-                    case PacketType.REMOVE:
-                        logic.RemoveBlueprints_Receiver(bytes, data.Sender);
-                        break;
-                    case PacketType.RECEIVED_BP:
-                        logic.PlayerReceivedBP(data.Sender);
+                        //break;
+                    //case PacketType.REMOVE:
+                        //logic.RemoveBlueprints_Receiver(bytes, data.Sender);
+                        //break;
+                    //case PacketType.RECEIVED_BP:
+                        //logic.PlayerReceivedBP(data.Sender);
                         break;
                     case PacketType.USE_THIS_AS_IS:
                         logic.UseThisShip_Receiver(false);
@@ -185,7 +185,7 @@ namespace DefenseShields
             }
         }
 
-        public static void RelaySettingsToClients(IMyCubeBlock block, ProjectorPreviewModSettings settings)
+        public static void RelaySettingsToClients(IMyCubeBlock block, DefenseShieldsModSettings settings)
         {
             Log.Line("RelaySettingsToClients(block,settings)");
 

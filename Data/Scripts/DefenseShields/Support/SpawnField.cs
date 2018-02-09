@@ -146,6 +146,7 @@ namespace DefenseShields.Support
 
             private Vector3D _impactPosState;
             private MatrixD _matrix;
+            private MatrixD _detetMatrix;
 
             private static readonly Random Random = new Random();
 
@@ -215,7 +216,7 @@ namespace DefenseShields.Support
                 Array.Resize(ref _preCalcNormLclPos, ib.Length / 3);
             }
 
-            public void CalculateColor(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, IMyEntity shield)
+            public void CalculateColor(MatrixD matrix, MatrixD detectmatrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, IMyEntity shield)
             {
                 //Log.Line($"Start Full CalculateColor");
                 //DSUtils.Sw.Start();
@@ -224,15 +225,17 @@ namespace DefenseShields.Support
                 _shield = shield;
                 _enemy = enemy;
                 _matrix = matrix;
+                _detetMatrix = detectmatrix;
                 _impactPosState = impactPos;
                 if (impactSize <= 10) impactSize = (int)4;
                 else impactSize = (int)1;
                 var impactSpeed = 2;
                 if (impactSize < 4) impactSpeed = 1; 
-
+                if (impactPos != Vector3.NegativeInfinity) Log.Line($"{impactPos}");
                 //Log.Line($"impactSize {impactSize} - {impactSpeed}");
                 if (impactPos == Vector3D.NegativeInfinity) _impact = false;
                 else ComputeImpacts();
+                if (impactPos != Vector3.NegativeInfinity) Log.Line($"{_localImpacts[4]}");
 
                 StepEffects();
                 InitColors();
@@ -373,7 +376,7 @@ namespace DefenseShields.Support
 
             private void ComputeImpacts()
             {
-                Log.Line($"_impact true");
+                //Log.Line($"_impact true {_impactPos[4]}");
                 _impact = true;
                 for (var i = 4; i >= 0; i--)
                 {
