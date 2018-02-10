@@ -146,7 +146,6 @@ namespace DefenseShields.Support
 
             private Vector3D _impactPosState;
             private MatrixD _matrix;
-            private MatrixD _detetMatrix;
 
             private static readonly Random Random = new Random();
 
@@ -216,7 +215,7 @@ namespace DefenseShields.Support
                 Array.Resize(ref _preCalcNormLclPos, ib.Length / 3);
             }
 
-            public void CalculateColor(MatrixD matrix, MatrixD detectmatrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, IMyEntity shield)
+            public void CalculateColor(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, IMyEntity shield)
             {
                 //Log.Line($"Start Full CalculateColor");
                 //DSUtils.Sw.Start();
@@ -225,7 +224,6 @@ namespace DefenseShields.Support
                 _shield = shield;
                 _enemy = enemy;
                 _matrix = matrix;
-                _detetMatrix = detectmatrix;
                 _impactPosState = impactPos;
                 if (impactSize <= 10) impactSize = (int)4;
                 else impactSize = (int)1;
@@ -464,13 +462,15 @@ namespace DefenseShields.Support
                     {
                         _shield.Render.Visible = true;
                         ((MyEntity)_shield).RefreshModels($"{modPath}\\Models\\LargeField{n}.mwm", null);
-                        _shield.SetEmissiveParts("CWShield", Color.GhostWhite, 1);
-                        _shield.SetEmissiveParts("CWShield.001", Color.GhostWhite, 1);
-                        _shield.SetEmissiveParts("CWShield.002", Color.GhostWhite, 1);
-                        _shield.SetEmissiveParts("CWShield.003", Color.GhostWhite, 1);
-                        _shield.SetEmissiveParts("CWShield.004", Color.GhostWhite, 1);
                         _shield.Render.RemoveRenderObjects();
                         _shield.Render.UpdateRenderObject(true);
+                        if (n < 3)_shield.SetEmissiveParts("CWShield", Color.GhostWhite, 1);
+                        if (n >= 3 && n < 6) _shield.SetEmissiveParts("CWShield.001", Color.GhostWhite, 1);
+                        if (n >= 6 && n < 9) _shield.SetEmissiveParts("CWShield.002", Color.GhostWhite, 1);
+                        if (n >= 9 && n < 12) _shield.SetEmissiveParts("CWShield.003", Color.GhostWhite, 1);
+                        if (n >= 12 && n < 15) _shield.SetEmissiveParts("CWShield.004", Color.GhostWhite, 1);
+                        if (n == 15) _shield.SetEmissiveParts("CWShield.005", Color.GhostWhite, 1);
+
                         //Log.Line($"c:{_modelCount} - Asset:{_shield.Model.AssetName} - Vis:{_shield.Render.Visible}");
                         _modelCount++;
                         if (_modelCount == 16) _modelCount = 0;

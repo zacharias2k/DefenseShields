@@ -9,6 +9,26 @@ namespace DefenseShields.Data.Scripts.DefenseShields
     class OldCode
     {
         /*
+            if (_entityChanged)
+            {
+                var entAngularVelocity = Vector3D.IsZero(Block.CubeGrid.Physics.AngularVelocity);
+                const float dt = MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS;
+                var rate = 0d;
+                var angVel = Vector3D.Zero;
+                if (!entAngularVelocity)
+                {
+                    angVel = Vector3D.TransformNormal((Vector3D) Block.CubeGrid.Physics.AngularVelocity, Block.CubeGrid.PositionComp.LocalMatrix);
+                    rate = angVel.Normalize() * dt;
+                }
+                var predictedGridWorldMatrix = MatrixD.CreateFromAxisAngle(angVel, rate) * Block.CubeGrid.PositionComp.WorldMatrix;
+                predictedGridWorldMatrix.Translation = Block.CubeGrid.PositionComp.WorldMatrix.Translation + Block.CubeGrid.Physics.GetVelocityAtPoint(Block.CubeGrid.PositionComp.WorldMatrix.Translation) * dt;
+                DetectionMatrix = localMatrix * Block.CubeGrid.WorldMatrix;
+                //_shieldShapeMatrix = localMatrix * predictedGridWorldMatrix;
+                _shieldShapeMatrix = localMatrix;
+                _shield.SetWorldMatrix(_shieldShapeMatrix);
+
+            }
+            
             //SPAWN METHOD
             public static IMyEntity SpawnShield(string subtypeId, string name = "", bool isVisible = true, bool hasPhysics = false, bool isStatic = false, bool toSave = false, bool destructible = false, long ownerId = 0)
             {
