@@ -141,6 +141,8 @@ namespace DefenseShields.Support
             private readonly Vector3D[] _localImpacts = { Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity};
             private Vector3D[] _preCalcNormLclPos;
             private Vector3D[] _vertexBuffer;
+            private Vector3D[] _physicsBuffer;
+
             private Vector3D[] _normalBuffer;
             private Vector4[] _triColorBuffer;
 
@@ -204,7 +206,6 @@ namespace DefenseShields.Support
                 Array.Resize(ref _normalBuffer, count);
 
                 var normalMatrix = MatrixD.Transpose(MatrixD.Invert(matrix.GetOrientation()));
-
                 for (var i = 0; i < count; i++)
                     Vector3D.Transform(ref _backing.VertexBuffer[i], ref matrix, out _vertexBuffer[i]);
 
@@ -213,6 +214,34 @@ namespace DefenseShields.Support
 
                 var ib = _backing.IndexBuffer[_lod];
                 Array.Resize(ref _preCalcNormLclPos, ib.Length / 3);
+            }
+
+            public Vector3D[] CalculatePhysics(MatrixD matrix, int lod)
+            {
+                //Log.Line($"Start CalculateTransform");
+                var count = checked((int)VertsForLod(lod));
+                Array.Resize(ref _physicsBuffer, count);
+
+                //var normalMatrix = MatrixD.Transpose(MatrixD.Invert(matrix.GetOrientation()));
+                for (var i = 0; i < count; i++)
+                    Vector3D.Transform(ref _backing.VertexBuffer[i], ref matrix, out _physicsBuffer[i]);
+
+                var ib = _backing.IndexBuffer[lod];
+                var vecs = new Vector3D[ib.Length];
+                for (int i = 0; i < ib.Length; i += 3)
+                {
+                    var i0 = ib[i];
+                    var i1 = ib[i + 1];
+                    var i2 = ib[i + 2];
+                    var v0 = _physicsBuffer[i0];
+                    var v1 = _physicsBuffer[i1];
+                    var v2 = _physicsBuffer[i2];
+
+                    vecs[i] = v0;
+                    vecs[i+1] = v1;
+                    vecs[i+2] = v2;
+                }
+                return vecs;
             }
 
             public void CalculateColor(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, IMyEntity shield)
@@ -338,7 +367,7 @@ namespace DefenseShields.Support
             {
                 try
                 {
-                    DSUtils.Sw.Start();
+                    //DSUtils.Sw.Start();
                     var faceMaterial = _faceId2;
                     var ib = _backing.IndexBuffer[_lod];
                     var v21 = new Vector2(0.5f, 0);
@@ -367,7 +396,7 @@ namespace DefenseShields.Support
                         else if (color == _chargeColor) faceMaterial = _faceId2;
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, Vector2.Zero, v21, v22, faceMaterial, renderId, (v0 + v1 + v2) / 3, color);
                     }
-                    DSUtils.StopWatchReport("IcoDraw", 2f);
+                    //DSUtils.StopWatchReport("IcoDraw", 2f);
                 }
                 catch (Exception ex) { Log.Line($"Exception in IcoSphere Draw - renderId {renderId}: {ex}"); }
             }

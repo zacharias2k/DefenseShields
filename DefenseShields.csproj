@@ -230,7 +230,6 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\Checkbox.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Controls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseShieldsBase.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\DestroyEntity.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Guns.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Network\SerializationClasses.cs" />
     <Compile Include="Data\Scripts\DefenseShields\OldCode.cs" />

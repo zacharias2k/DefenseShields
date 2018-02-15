@@ -36,7 +36,17 @@ namespace DefenseShields.Support
             return inputs.Max();
         }
 
-        public static Vector3D LowesVect(params Vector3D[] inputs)
+        public static Vector3D LowesVec(params Vector3D[] inputs)
+        {
+            return inputs.Min();
+        }
+
+        public static Vector3I LongestVec(params Vector3I[] inputs)
+        {
+            return inputs.Max();
+        }
+
+        public static Vector3I ShortestVec(params Vector3I[] inputs)
         {
             return inputs.Min();
         }
