@@ -101,6 +101,8 @@ namespace DefenseShields
         private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
         public MyConcurrentHashSet<IMyEntity> InHash { get; } = new MyConcurrentHashSet<IMyEntity>();
+        private MyConcurrentHashSet<IMySlimBlock> DmgBlocks { get; } = new MyConcurrentHashSet<IMySlimBlock>();
+
         private List<IMyCubeGrid> GridIsColliding = new List<IMyCubeGrid>();
 
         public static HashSet<IMyEntity> DestroyPlayerHash { get; } = new HashSet<IMyEntity>();
@@ -210,7 +212,8 @@ namespace DefenseShields
                     //if (DestroyGridHash.Count > 0) DestroyEntity.GridClose(Gridcount);
                 }
                 if (!_initialized || !Block.IsWorking) return;
-                GridKillField();
+                //GridKillField();
+                DamageGrids();
                 MyAPIGateway.Parallel.StartBackground(WebEntities);
                 if (_playerwebbed) PlayerEffects();
             }
@@ -625,77 +628,146 @@ namespace DefenseShields
             return contactPoint;
         }
 
-        private bool ContactPointObb(IMyEntity breaching)
+        private Vector3D ContactPointObb(IMyEntity breaching)
         {
             var bWorldAABB = breaching.WorldAABB;
-            var bLocalAABB = (BoundingBoxD)breaching.LocalAABB;
+            var bLocalAABB = breaching.LocalAABB;
+            var bLocalAABBs = (BoundingBoxD)breaching.LocalAABB;
+
             var bWorldMatrix = breaching.WorldMatrix;
+            var bWorldCenter = bWorldAABB.Center;
             var bOriBBoxD = new MyOrientedBoundingBoxD(bLocalAABB, breaching.WorldMatrix);
-            List<Vector3D> validVectors = new List<Vector3D>();
+            var bLength = breaching.PositionComp.LocalAABB.Size.Max() / 2 + 2;
+            List<Vector3D> rangedVectors = new List<Vector3D>();
+            List<Vector3D> boxedVectors = new List<Vector3D>();
             List<Vector3D> hitVectors = new List<Vector3D>();
 
             //var sOriBBoxD = new MyOrientedBoundingBoxD(_detectionCenter, _shieldSize, Quaternion.CreateFromRotationMatrix(_shieldGridMatrix));
             //var collision = sOriBBoxD.Intersects(ref bOriBBoxD);
-            var intersected = false;
-            bool collision = false;
+            var rangeSphere = new BoundingSphereD(bWorldCenter, bLength);
 
-            if (_count == 0) DSUtils.Sw.Start();
+            var collision = new Vector3D(Vector3D.NegativeInfinity);
+
+            //if (_count == 0) DSUtils.Sw.Start();
             for (int i = 0, j = 0; i < _collisionTris.Length; i += 3, j++)
             {
                 var v0 = _collisionTris[i];
                 var v1 = _collisionTris[i + 1];
                 var v2 = _collisionTris[i + 2];
+                var test1 = Vector3D.DistanceSquared(v0, bWorldCenter);
+                var test2 = Vector3D.DistanceSquared(v1, bWorldCenter);
+                var test3 = Vector3D.DistanceSquared(v2, bWorldCenter);
+
+
+                if (test1 < bLength * bLength && test2 < bLength * bLength && test3 < bLength * bLength)
+                {
+                    rangedVectors.Add(v0);
+                    rangedVectors.Add(v1);
+                    rangedVectors.Add(v2);
+                }
+            }
+            //if (_count == 0) DSUtils.StopWatchReport("Range Check", -1);
+
+            //if (_count == 2) DSUtils.Sw.Start();
+            for (int i = 0, j = 0; i < rangedVectors.Count; i += 3, j++)
+            {
+                var v0 = rangedVectors[i];
+                var v1 = rangedVectors[i + 1];
+                var v2 = rangedVectors[i + 2];
                 var test1 = bWorldAABB.Contains(v0);
                 var test2 = bWorldAABB.Contains(v1);
                 var test3 = bWorldAABB.Contains(v2);
 
                 if (test1 == ContainmentType.Contains && test2 == ContainmentType.Contains && test3 == ContainmentType.Contains)
                 {
-                    validVectors.Add(v0);
-                    validVectors.Add(v1);
-                    validVectors.Add(v2);
+                    boxedVectors.Add(v0);
+                    boxedVectors.Add(v1);
+                    boxedVectors.Add(v2);
                 }
             }
-            if (_count == 0) DSUtils.StopWatchReport("Point Check", -1);
+            //if (_count == 2) DSUtils.StopWatchReport("Point Check", -1);
 
-            if (_count == 0) DSUtils.Sw.Start();
-            for (int i = 0; i < validVectors.Count; i += 3)
+            //if (_count == 4) DSUtils.Sw.Start();
+            for (int i = 0; i < boxedVectors.Count; i += 3)
             {
-                var line1 = validVectors[i];
-                var line2 = validVectors[i + 1];
-                var line3 = validVectors[i + 2];
+                var line1 = boxedVectors[i];
+                var line2 = boxedVectors[i + 1];
+                var line3 = boxedVectors[i + 2];
                 var lineTest1 = new LineD(line1, line2);
                 var lineTest2 = new LineD(line2, line3);
                 var lineTest3 = new LineD(line3, line1);
-                if (bOriBBoxD.Intersects(ref lineTest1).HasValue || bOriBBoxD.Intersects(ref lineTest2).HasValue ||
-                    bOriBBoxD.Intersects(ref lineTest3).HasValue)
+                if (bOriBBoxD.Intersects(ref lineTest1).HasValue || bOriBBoxD.Intersects(ref lineTest2).HasValue || bOriBBoxD.Intersects(ref lineTest3).HasValue)
                 {
                     hitVectors.Add(line1);
                     hitVectors.Add(line2);
                     hitVectors.Add(line3);
-                };
+                }
             }
-            if (_count == 0) DSUtils.StopWatchReport("Line Check", -1);
-            if (_count == 0) Log.Line($"vecs found: {validVectors.Count}");
+            //if (_count == 4) DSUtils.StopWatchReport("Line Check", -1);
+            if (_count == 0) Log.Line($"total triangles: {_collisionTris.Length / 3} - Ranged {rangedVectors.Count / 3} - Box Check: {boxedVectors.Count / 3} - Obb Collision {hitVectors.Count / 3}");
 
-            if (_count == 0) DSUtils.Sw.Start();
+            if (_count == 6) DSUtils.Sw.Start();
             var vecArray = hitVectors.ToArray();
             var posCollectionSphere = BoundingSphereD.CreateFromPoints(vecArray);
+            if (_count == 6) DSUtils.StopWatchReport("posCollection Check", -1);
+
+            var grid = breaching as IMyCubeGrid;
+            if (grid != null)
+            {
+                try
+                {
+                    var getBlocks = grid.GetBlocksInsideSphere(ref posCollectionSphere);
+                    lock (DmgBlocks)
+                    {
+                        foreach (var block in getBlocks)
+                        {
+                            DmgBlocks.Add(block);
+                        }
+                    }
+                }
+                catch (Exception ex) { Log.Line($"Exception in getBlocks: {ex}"); }
+            }
             var posMatCenter = MatrixD.CreateTranslation(posCollectionSphere.Center);
-            var posMatScaled = MatrixD.Rescale(posMatCenter, 5f);
-            if (_count == 0) DSUtils.StopWatchReport("posCollection Check", -1);
+            var posMatScaled = MatrixD.Rescale(posMatCenter, posCollectionSphere.Radius);
             var c3 = Color.Yellow;
             var c4 = Color.Red;
             MyStringId rangeGridResourceId = MyStringId.GetOrCompute("Build new");
-            MySimpleObjectDraw.DrawTransparentSphere(ref posMatScaled, 1f, ref c3, MySimpleObjectRasterizer.Solid, 20, null, rangeGridResourceId, 0.25f, -1);
-            MySimpleObjectDraw.DrawTransparentBox(ref bWorldMatrix, ref bLocalAABB, ref c4, MySimpleObjectRasterizer.Solid, 1, 1f, null, null, true);
+            //MySimpleObjectDraw.DrawTransparentSphere(ref posMatScaled, 1f, ref c3, MySimpleObjectRasterizer.Solid, 20, null, rangeGridResourceId, 0.25f, -1);
+            var rangeSphereCenter = rangeSphere.Center;
+            var rangeSphereRadius = rangeSphere.Radius;
+            var rangeSphereMatrix = MatrixD.CreateWorld(rangeSphereCenter);
+            var rsm = MatrixD.Rescale(rangeSphereMatrix, rangeSphereRadius);
+            //MySimpleObjectDraw.DrawTransparentSphere(ref rsm, 1f, ref c4, MySimpleObjectRasterizer.Solid, 20, null, rangeGridResourceId, 0.25f, -1);
+            //MySimpleObjectDraw.DrawTransparentBox(ref bWorldMatrix, ref bLocalAABBs, ref c4, MySimpleObjectRasterizer.Solid, 1, 1f, null, null, true);
 
             var c1 = Color.Red;
             var c2 = Color.Blue;
             //DrawBox(sOriBBoxD, c1, false);
             //DrawBox(bOriBBoxD, c2, false);
+            if (hitVectors.Count > 0)
+            {
+                collision = posCollectionSphere.Center;
+                _worldImpactPosition = posCollectionSphere.Center;
+            }
             return collision;
 
+        }
+        
+        private void DamageGrids()
+        {
+            try
+            {
+                lock (DmgBlocks)
+                {
+                    foreach (var block in DmgBlocks)
+                    {
+                        //block.DoDamage(100f, MyDamageType.Fire, true, null, Block.EntityId);
+                    }
+                    DmgBlocks.Clear();
+                }
+                //if (_count == 0) Log.Line($"Block Count {DmgBlocks.Count}");
+            }
+            catch (Exception ex) { Log.Line($"Exception in DamgeGrids: {ex}"); }
         }
 
         public void DrawBox(MyOrientedBoundingBoxD obb, Color color, bool matrix)
@@ -706,31 +778,52 @@ namespace DefenseShields
             MySimpleObjectDraw.DrawTransparentBox(ref wm, ref box, ref color, MySimpleObjectRasterizer.Solid, 1, 1f, null, null, true);
         }
 
-        private bool Intersect(IMyEntity ent, bool impactcheck)
+        private bool IntersectOld(IMyEntity ent, bool impactcheck)
         {
-            if (ContactPointObb(ent) == false) return false;
             var contactpoint = ContactPoint(ent);
 
             if (Vector3D.Transform(contactpoint, _detectionMatrixInv).LengthSquared() <= 1)
             {
-                Log.Line($"GridIsColliding {GridIsColliding.Count} - check {impactcheck} - containsEnt {GridIsColliding.Contains(ent as IMyCubeGrid)}");
+                //Log.Line($"GridIsColliding {GridIsColliding.Count} - check {impactcheck} - containsEnt {GridIsColliding.Contains(ent as IMyCubeGrid)}");
                 _impactSize = ent.Physics.Mass;
                 if (impactcheck && !GridIsColliding.Contains(ent as IMyCubeGrid))
                 {
-                    Log.Line($"ContactPoint to WorldImpact: {contactpoint}");
-                    _worldImpactPosition = contactpoint;
+                    //Log.Line($"ContactPoint to WorldImpact: {contactpoint}");
+                    //_worldImpactPosition = contactpoint;
                 }
                 if (impactcheck && ent is IMyCubeGrid && !GridIsColliding.Contains(ent as IMyCubeGrid)) GridIsColliding.Add(ent as IMyCubeGrid);
-                if (impactcheck && _worldImpactPosition != Vector3D.NegativeInfinity) Log.Line($"intersect true: {ent} - ImpactSize: {_impactSize} - {Vector3D.Transform(contactpoint, _detectionMatrixInv).LengthSquared()} - _worldImpactPosition: {_worldImpactPosition}");
+                //if (impactcheck && _worldImpactPosition != Vector3D.NegativeInfinity) Log.Line($"intersect true: {ent} - ImpactSize: {_impactSize} - {Vector3D.Transform(contactpoint, _detectionMatrixInv).LengthSquared()} - _worldImpactPosition: {_worldImpactPosition}");
                 return true;
             }
             //if (impactcheck) Log.Line($"intersect false: {ent.GetFriendlyName()} - {Vector3D.Transform(contactpoint, _detectionMatrixInv).LengthSquared()}");
             if (ent is IMyCubeGrid && GridIsColliding.Contains(ent as IMyCubeGrid)) GridIsColliding.Remove(ent as IMyCubeGrid);
             return false;
         }
+
+        private Vector3D Intersect(IMyEntity ent, bool impactcheck)
+        {
+            var contactpoint = ContactPointObb(ent);
+
+            if (contactpoint != Vector3D.NegativeInfinity) 
+            {
+                //Log.Line($"GridIsColliding {GridIsColliding.Count} - check {impactcheck} - containsEnt {GridIsColliding.Contains(ent as IMyCubeGrid)}");
+                _impactSize = ent.Physics.Mass;
+                if (impactcheck && !GridIsColliding.Contains(ent as IMyCubeGrid))
+                {
+                    //Log.Line($"ContactPoint to WorldImpact: {contactpoint}");
+                    _worldImpactPosition = contactpoint;
+                }
+                if (impactcheck && ent is IMyCubeGrid && !GridIsColliding.Contains(ent as IMyCubeGrid)) GridIsColliding.Add(ent as IMyCubeGrid);
+                //if (impactcheck && _worldImpactPosition != Vector3D.NegativeInfinity) Log.Line($"intersect true: {ent} - ImpactSize: {_impactSize} - {Vector3D.Transform(contactpoint, _detectionMatrixInv).LengthSquared()} - _worldImpactPosition: {_worldImpactPosition}");
+                return contactpoint;
+            }
+            //if (impactcheck) Log.Line($"intersect false: {ent.GetFriendlyName()} - {Vector3D.Transform(contactpoint, _detectionMatrixInv).LengthSquared()}");
+            if (ent is IMyCubeGrid && GridIsColliding.Contains(ent as IMyCubeGrid)) GridIsColliding.Remove(ent as IMyCubeGrid);
+            return Vector3D.NegativeInfinity;
+        }
         #endregion
 
-        private double ContainmentField(IMyEntity breaching, IMyEntity field)
+        private double ContainmentField(IMyEntity breaching, IMyEntity field, Vector3D intersect)
         {
             //var direction = Vector3D.Normalize(grid.Center() - grid.Center);
             //Vector3D velocity = grid.Physics.LinearVelocity;
@@ -789,9 +882,11 @@ namespace DefenseShields
             var velModifyNext = breaching.Physics.LinearVelocity;
             var linearImpulse = breaching.Physics.Mass * (velTargetNext - velModifyNext);
             var powerCorrectionInJoules = wattsPerNewton * linearImpulse.Length();
-            
+
             // ApplyImpulse
-            var contactPoint = ContactPoint(breaching);
+            //var contactPoint = ContactPoint(breaching);
+            var contactPoint = intersect;
+
             var transformInv = MatrixD.Invert(DetectionMatrix);
             var normalMat = MatrixD.Transpose(transformInv);
             var localNormal = Vector3D.Transform(contactPoint, transformInv);
@@ -809,7 +904,7 @@ namespace DefenseShields
             //Block.CubeGrid.Physics.ApplyImpulse(Vector3D.Negate(worldDirection) * (expelForce / 2), contactPoint);
 
             //if (cpDist > 0.987f) breaching.Physics.ApplyImpulse((breaching.Physics.Mass / 500) * -0.055f * Vector3D.Dot(breaching.Physics.LinearVelocity, surfaceNormal) * surfaceNormal, contactPoint);
-            Log.Line($"cpDist:{cpDist} pow:{expelForce} bmass:{bmass} adjbmass{bmass / 50}");
+            //Log.Line($"cpDist:{cpDist} pow:{expelForce} bmass:{bmass} adjbmass{bmass / 50}");
 
             return powerCorrectionInJoules * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
         }
@@ -824,7 +919,7 @@ namespace DefenseShields
                 MyAPIGateway.Parallel.ForEach(killList, killent =>
                 {
                     var grid = killent as IMyCubeGrid;
-                    if (grid == null || grid == Block.CubeGrid || !IsEnemy(killent) || !Intersect(killent, false)) return;
+                    if (grid == null || grid == Block.CubeGrid || !IsEnemy(killent) || Intersect(killent, false) == Vector3D.NegativeInfinity) return;
 
                     var contactPoint = ContactPoint(killent);
                     var cpDist = Vector3D.Transform(contactPoint, _detectionMatrixInv).LengthSquared();
@@ -862,7 +957,7 @@ namespace DefenseShields
             InHash.Clear();
             MyAPIGateway.Parallel.ForEach(inList, inent =>
             {
-                if (!(inent is IMyCubeGrid) && (!(inent is IMyCharacter) || !Intersect(inent, false))) return;
+                if (!(inent is IMyCubeGrid) && (!(inent is IMyCharacter) || Intersect(inent, false) == Vector3D.NegativeInfinity)) return;
                 lock (InHash)
                 {
                     if (inent is IMyCubeGrid && IsEnemy(inent)) return;
@@ -882,7 +977,7 @@ namespace DefenseShields
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
                 if (webent is IMyMeteor  || webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
                 {
-                    if (Intersect(webent, true))
+                    if (Intersect(webent, true) != Vector3D.NegativeInfinity)
                     {
                         _absorb += Shotdmg;
                         Log.Line($"shotEffect: Shield absorbed {Shotdmg}MW of energy from {webent} in loop {_count}");
@@ -891,7 +986,7 @@ namespace DefenseShields
                     }
                     return;
                 }
-                if (webent is IMyCharacter && (_count == 2 || _count == 17 || _count == 32 || _count == 47) && IsEnemy(webent) && Intersect(webent, true))
+                if (webent is IMyCharacter && (_count == 2 || _count == 17 || _count == 32 || _count == 47) && IsEnemy(webent) && Intersect(webent, true) != Vector3D.NegativeInfinity)
                 {
                     Log.Line($"Enemy Player Intersected");
                 }
@@ -901,9 +996,10 @@ namespace DefenseShields
                 var grid = webent as IMyCubeGrid;
                 if (grid == Block.CubeGrid || grid == null || !IsEnemy(webent)) return;
 
-                if (Intersect(grid, true))
+                var intersect = Intersect(grid, true);
+                if (intersect != Vector3D.NegativeInfinity)
                 {
-                    ContainmentField(grid, Block.CubeGrid);
+                    ContainmentField(grid, Block.CubeGrid, intersect);
                 }
                 //Log.Line($"webEffect unmatched {webent.GetFriendlyName()} {webent.Name} {webent.DisplayName} {webent.EntityId} {webent.Parent} {webent.Components}");
             });

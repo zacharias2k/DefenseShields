@@ -258,11 +258,11 @@ namespace DefenseShields.Support
                 else impactSize = (int)1;
                 var impactSpeed = 2;
                 if (impactSize < 4) impactSpeed = 1; 
-                if (impactPos != Vector3.NegativeInfinity) Log.Line($"{impactPos}");
+                //if (impactPos != Vector3.NegativeInfinity) Log.Line($"{impactPos}");
                 //Log.Line($"impactSize {impactSize} - {impactSpeed}");
                 if (impactPos == Vector3D.NegativeInfinity) _impact = false;
                 else ComputeImpacts();
-                if (impactPos != Vector3.NegativeInfinity) Log.Line($"{_localImpacts[4]}");
+                //if (impactPos != Vector3.NegativeInfinity) Log.Line($"{_localImpacts[4]}");
 
                 StepEffects();
                 InitColors();
