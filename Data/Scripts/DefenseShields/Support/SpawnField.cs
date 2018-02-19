@@ -190,7 +190,9 @@ namespace DefenseShields.Support
 
             private readonly MyStringId _faceId1 = MyStringId.GetOrCompute("CustomIdle");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private readonly MyStringId _faceId2 = MyStringId.GetOrCompute("SunDisk");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
-            private readonly MyStringId _faceId0 = MyStringId.GetOrCompute("");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
+            private readonly MyStringId _faceId0 = MyStringId.GetOrCompute("Glass");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
+            private readonly MyStringId _faceId4 = MyStringId.GetOrCompute("CockpitGlassInside");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
+
 
             public Instance(Icosphere backing)
             {
@@ -218,11 +220,9 @@ namespace DefenseShields.Support
 
             public Vector3D[] CalculatePhysics(MatrixD matrix, int lod)
             {
-                //Log.Line($"Start CalculateTransform");
                 var count = checked((int)VertsForLod(lod));
                 Array.Resize(ref _physicsBuffer, count);
 
-                //var normalMatrix = MatrixD.Transpose(MatrixD.Invert(matrix.GetOrientation()));
                 for (var i = 0; i < count; i++)
                     Vector3D.Transform(ref _backing.VertexBuffer[i], ref matrix, out _physicsBuffer[i]);
 
@@ -367,6 +367,7 @@ namespace DefenseShields.Support
             {
                 try
                 {
+                    //Log.Line($"Start Draw");
                     //DSUtils.Sw.Start();
                     var faceMaterial = _faceId2;
                     var ib = _backing.IndexBuffer[_lod];
@@ -374,6 +375,7 @@ namespace DefenseShields.Support
                     var v22 = new Vector2(0.5f);
                     for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
                     {
+ 
                         var i0 = ib[i];
                         var i1 = ib[i + 1];
                         var i2 = ib[i + 2];
@@ -386,14 +388,14 @@ namespace DefenseShields.Support
                         var n1 = _normalBuffer[i1];
                         var n2 = _normalBuffer[i2];
                         var color = _triColorBuffer[j];
-                        if (color == _currentColor) faceMaterial = _faceId2;
-                        else if (color == _pulseColor) faceMaterial = _faceId2;
+                        if (color == _currentColor) faceMaterial = _faceId1;
+                        else if (color == _pulseColor) faceMaterial = _faceId1;
                         else if (color == _test1Color) faceMaterial = _faceId1;
-                        else if (color == _test2Color) faceMaterial = _faceId2;
-                        else if (color == _waveColor) faceMaterial = _faceId2;
-                        else if (color == _waveComingColor) faceMaterial = _faceId2;
-                        else if (color == _wavePassedColor) faceMaterial = _faceId2;
-                        else if (color == _chargeColor) faceMaterial = _faceId2;
+                        else if (color == _test2Color) faceMaterial = _faceId1;
+                        else if (color == _waveColor) faceMaterial = _faceId1;
+                        else if (color == _waveComingColor) faceMaterial = _faceId1;
+                        else if (color == _wavePassedColor) faceMaterial = _faceId1;
+                        else if (color == _chargeColor) faceMaterial = _faceId1;
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, Vector2.Zero, v21, v22, faceMaterial, renderId, (v0 + v1 + v2) / 3, color);
                     }
                     //DSUtils.StopWatchReport("IcoDraw", 2f);

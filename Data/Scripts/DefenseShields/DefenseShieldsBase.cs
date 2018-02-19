@@ -6,6 +6,7 @@ using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using DefenseShields.Support;
+using VRage.Game.Definitions;
 using VRageMath;
 
 namespace DefenseShields
@@ -19,7 +20,6 @@ namespace DefenseShields
         public bool ControlsLoaded;
         //public int I;
 
-        // test
         public const ushort PACKET_ID = 62520; // network
         public readonly Guid SETTINGS_GUID = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
         //public readonly Guid BLUEPRINT_GUID = new Guid("E973AD49-F3F4-41B9-811B-2B114E6EE0F9");
@@ -27,7 +27,7 @@ namespace DefenseShields
 
         public static DefenseShieldsBase Instance { get; private set; }
         public readonly MyModContext MyModContext = new MyModContext();
-        public readonly Icosphere Icosphere = new Icosphere(5);
+        public readonly Icosphere Icosphere = new Icosphere(6);
 
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
         public List<DefenseShields> Shields = new List<DefenseShields>(); 
