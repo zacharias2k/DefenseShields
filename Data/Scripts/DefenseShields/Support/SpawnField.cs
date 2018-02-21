@@ -244,7 +244,7 @@ namespace DefenseShields.Support
                 return vecs;
             }
 
-            public void CalculateColor(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, IMyEntity shield)
+            public void CalculateColor(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, bool sphereOnCamera, IMyEntity shield)
             {
                 //Log.Line($"Start Full CalculateColor");
                 //DSUtils.Sw.Start();
@@ -339,6 +339,7 @@ namespace DefenseShields.Support
                     else if (_impactCount[4] == 0) _triColorBuffer[j] = _test1Color;
                 }
                 _prevLod = _lod;
+                //DSUtils.StopWatchReport("ColorDraw", -1);
                 //
                 // Code
                 //
@@ -398,7 +399,7 @@ namespace DefenseShields.Support
                         else if (color == _chargeColor) faceMaterial = _faceId1;
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, Vector2.Zero, v21, v22, faceMaterial, renderId, (v0 + v1 + v2) / 3, color);
                     }
-                    //DSUtils.StopWatchReport("IcoDraw", 2f);
+                    //DSUtils.StopWatchReport("IcoDraw", -1);
                 }
                 catch (Exception ex) { Log.Line($"Exception in IcoSphere Draw - renderId {renderId}: {ex}"); }
             }

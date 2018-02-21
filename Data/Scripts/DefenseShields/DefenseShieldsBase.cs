@@ -37,6 +37,7 @@ namespace DefenseShields
 
         public override void Draw()
         {
+            //DSUtils.Sw.Start();
             /*
             if (I < 60)
             {
@@ -48,6 +49,7 @@ namespace DefenseShields
             {
                 s.Draw();
             }
+            //DSUtils.StopWatchReport("Session Draw", -1);
         }
 
         public string ModPath()

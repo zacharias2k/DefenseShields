@@ -24,6 +24,7 @@ using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
 using ParallelTasks;
 using Sandbox.Game.Entities;
+using VRageRender;
 
 namespace DefenseShields
 {
@@ -46,11 +47,15 @@ namespace DefenseShields
         private float _impactSize;
 
         private const int PhysicsLod = 3;
+
         private int _count = -1;
+        private int _testingCown = -200;
         private int _explodeCount;
         private int _time;
         private int _playertime;
         private int _prevLod;
+        private readonly int[] _magicNums = {0, 1, 2, 4, 7, 11, 16, 19, 25, 28, 34, 37};
+        private readonly int[] _magicNumsPhysics = {0, 48, 96, 240, 432, 672, 1008, 1200, 1584, 1776, 2160, 2352};
 
         private bool _entityChanged = true;
         private bool _gridChanged = true;
@@ -62,6 +67,7 @@ namespace DefenseShields
         private bool _playerkill;
         private bool _gridIsMobile;
         private bool _explode;
+        private bool buildOnce = false;
 
         private const ushort ModId = 50099;
 
@@ -70,6 +76,23 @@ namespace DefenseShields
         private Vector3D _shieldSize;
 
         private Vector3D[] _shieldTris;
+        private Vector3D[] _magicVecs = new Vector3D[12];
+        private Vector3D[] m0 = new Vector3D[5];
+        private Vector3D[] m1 = new Vector3D[5];
+        private Vector3D[] m2 = new Vector3D[5];
+        private Vector3D[] m3 = new Vector3D[5];
+        private Vector3D[] m4 = new Vector3D[5];
+        private Vector3D[] m5 = new Vector3D[5];
+        private Vector3D[] m6 = new Vector3D[5];
+        private Vector3D[] m7 = new Vector3D[5];
+        private Vector3D[] m8 = new Vector3D[5];
+        private Vector3D[] m9 = new Vector3D[5];
+        private Vector3D[] m10 = new Vector3D[5];
+        private Vector3D[] m11 = new Vector3D[5];
+
+
+
+        private double[] _shieldRanged;
 
         private MatrixD _shieldGridMatrix;
         private MatrixD _shieldShapeMatrix;
@@ -155,7 +178,6 @@ namespace DefenseShields
         #endregion
 
         #region Simulation
-        private Task? _preparePhysics = null;
         public override void UpdateBeforeSimulation()
         {
             //DSUtils.Sw.Start();
@@ -201,14 +223,441 @@ namespace DefenseShields
                     if (_entityChanged || _range <= 0) CreateShieldMatrices();
                 }
                 if (Block.CubeGrid.Physics.IsStatic) _entityChanged = RefreshDimensions();
+                if (_enablePhysics && _initialized && Block.IsWorking)
+                {
+                    _testingCown++;
+
+                    if (_testingCown >= 0) Testing();
+                }
                 if (!_initialized || !Block.IsWorking) return;
                 //GridKillField();
                 DamageGrids();
-                if (_enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
+                //if (_enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
+                //if (_enablePhysics) WebEntities();
+
                 if (_playerwebbed && _enablePhysics) PlayerEffects();
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
             //DSUtils.StopWatchReport("Main loop", -1);
+        }
+
+        private void Testing()
+        {
+            //if (_count == 0) DSUtils.Sw.Start();
+            _shieldTris = _icosphere.CalculatePhysics(DetectionMatrix, PhysicsLod);
+            var test = _icosphere.CalculatePhysics(DetectionMatrix, 0);
+
+            //DSUtils.Sw.Start();
+            var n = 0;
+            foreach (var num in _magicNums)
+            {
+                //Log.Line($"Number Order {num}");
+                _magicVecs[n] = test[num];
+                //Log.Line($"_magicVecsLen {_magicVecs.Length}");
+                //Log.Line($"num: {num} - {findMagic[n]} - {findMagic.Length} - {_shieldTris[num]}");
+                //if (_count == 0) Log.Line($"magic {num} - {test[num]}");
+                n++;
+            }
+
+            int c0 = 0;
+            int c1 = 0;
+            int c2 = 0;
+            int c3 = 0;
+            int c4 = 0;
+            int c5 = 0;
+            int c6 = 0;
+            int c7 = 0;
+            int c8 = 0;
+            int c9 = 0;
+            int c10 = 0;
+            int c11 = 0;
+            if (buildOnce == false)
+            {
+                for (int i = 0, j = 0; i < test.Length; i += 3, j++)
+                {
+                    if (c0 == 5) continue;
+                    if (c1 == 5) continue;
+                    if (c2 == 5) continue;
+                    if (c3 == 5) continue;
+                    if (c4 == 5) continue;
+                    if (c5 == 5) continue;
+                    if (c6 == 5) continue;
+                    if (c7 == 5) continue;
+                    if (c8 == 5) continue;
+                    if (c9 == 5) continue;
+                    if (c10 == 5) continue;
+                    if (c11 == 5) continue;
+
+                    var v0 = test[i];
+                    var v1 = test[i + 1];
+                    var v2 = test[i + 2];
+                    var mNum = -1;
+
+                    foreach (var magicVec in _magicVecs)
+                    {
+                        if (magicVec == _magicVecs[0]) mNum = 0;
+                        if (magicVec == _magicVecs[1]) mNum = 1;
+                        if (magicVec == _magicVecs[2]) mNum = 2;
+                        if (magicVec == _magicVecs[3]) mNum = 3;
+                        if (magicVec == _magicVecs[4]) mNum = 4;
+                        if (magicVec == _magicVecs[5]) mNum = 5;
+                        if (magicVec == _magicVecs[6]) mNum = 6;
+                        if (magicVec == _magicVecs[7]) mNum = 7;
+                        if (magicVec == _magicVecs[8]) mNum = 8;
+                        if (magicVec == _magicVecs[9]) mNum = 9;
+                        if (magicVec == _magicVecs[10]) mNum = 10;
+                        if (magicVec == _magicVecs[11]) mNum = 11;
+
+                        if (v0 == _magicVecs[mNum] || v1 == _magicVecs[mNum] || v2 == _magicVecs[mNum])
+                        {
+                            var e0 = false;
+                            var e1 = false;
+                            var e2 = false;
+
+                            if (mNum == 0)
+                            {
+                                foreach (var m in m0)
+                                {
+                                    if (m == v0) e0 = true;
+                                    if (m == v1) e1 = true;
+                                    if (m == v2) e2 = true;
+                                }
+                                if (e0 == false && v0 != _magicVecs[mNum]) m0[c0] = v0;
+                                if (e1 == false && v1 != _magicVecs[mNum]) m0[c0] = v1;
+                                if (e2 == false && v2 != _magicVecs[mNum]) m0[c0] = v2;
+
+                                if (e0 == false && v0 != _magicVecs[mNum]) c0++;
+                                if (e1 == false && v1 != _magicVecs[mNum]) c0++;
+                                if (e2 == false && v2 != _magicVecs[mNum]) c0++;
+                            }
+                            if (mNum == 1)
+                            {
+                                foreach (var m in m1)
+                                {
+                                    if (m == v0) e0 = true;
+                                    if (m == v1) e1 = true;
+                                    if (m == v2) e2 = true;
+                                }
+                                if (e0 == false && v0 != _magicVecs[mNum]) m1[c1] = v0;
+                                if (e1 == false && v1 != _magicVecs[mNum]) m1[c1] = v1;
+                                if (e2 == false && v2 != _magicVecs[mNum]) m1[c1] = v2;
+
+                                if (e0 == false && v0 != _magicVecs[mNum]) c1++;
+                                if (e1 == false && v1 != _magicVecs[mNum]) c1++;
+                                if (e2 == false && v2 != _magicVecs[mNum]) c1++;
+                            }
+                            if (mNum == 2)
+                            {
+                                foreach (var m in m2)
+                                {
+                                    if (m == v0) e0 = true;
+                                    if (m == v1) e1 = true;
+                                    if (m == v2) e2 = true;
+                                }
+                                if (e0 == false && v0 != _magicVecs[mNum]) m2[c2] = v0;
+                                if (e1 == false && v1 != _magicVecs[mNum]) m2[c2] = v1;
+                                if (e2 == false && v2 != _magicVecs[mNum]) m2[c2] = v2;
+
+                                if (e0 == false && v0 != _magicVecs[mNum]) c2++;
+                                if (e1 == false && v1 != _magicVecs[mNum]) c2++;
+                                if (e2 == false && v2 != _magicVecs[mNum]) c2++;
+                            }
+                            if (mNum == 3)
+                            {
+                                foreach (var m in m3)
+                                {
+                                    if (m == v0) e0 = true;
+                                    if (m == v1) e1 = true;
+                                    if (m == v2) e2 = true;
+                                }
+                                if (e0 == false && v0 != _magicVecs[mNum]) m3[c3] = v0;
+                                if (e1 == false && v1 != _magicVecs[mNum]) m3[c3] = v1;
+                                if (e2 == false && v2 != _magicVecs[mNum]) m3[c3] = v2;
+
+                                if (e0 == false && v0 != _magicVecs[mNum]) c3++;
+                                if (e1 == false && v1 != _magicVecs[mNum]) c3++;
+                                if (e2 == false && v2 != _magicVecs[mNum]) c3++;
+                            }
+                            if (mNum == 4)
+                            {
+                                foreach (var m in m4)
+                                {
+                                    if (m == v0) e0 = true;
+                                    if (m == v1) e1 = true;
+                                    if (m == v2) e2 = true;
+                                }
+                                if (e0 == false && v0 != _magicVecs[mNum]) m4[c4] = v0;
+                                if (e1 == false && v1 != _magicVecs[mNum]) m4[c4] = v1;
+                                if (e2 == false && v2 != _magicVecs[mNum]) m4[c4] = v2;
+
+                                if (e0 == false && v0 != _magicVecs[mNum]) c4++;
+                                if (e1 == false && v1 != _magicVecs[mNum]) c4++;
+                                if (e2 == false && v2 != _magicVecs[mNum]) c4++;
+                            }
+                            if (mNum == 5)
+                            {
+                                foreach (var m in m5)
+                                {
+                                    if (m == v0) e0 = true;
+                                    if (m == v1) e1 = true;
+                                    if (m == v2) e2 = true;
+                                }
+                                if (e0 == false && v0 != _magicVecs[mNum]) m5[c5] = v0;
+                                if (e1 == false && v1 != _magicVecs[mNum]) m5[c5] = v1;
+                                if (e2 == false && v2 != _magicVecs[mNum]) m5[c5] = v2;
+
+                                if (e0 == false && v0 != _magicVecs[mNum]) c5++;
+                                if (e1 == false && v1 != _magicVecs[mNum]) c5++;
+                                if (e2 == false && v2 != _magicVecs[mNum]) c5++;
+                            }
+                            if (mNum == 6)
+                            {
+                                foreach (var m in m6)
+                                {
+                                    if (m == v0) e0 = true;
+                                    if (m == v1) e1 = true;
+                                    if (m == v2) e2 = true;
+                                }
+                                if (e0 == false && v0 != _magicVecs[mNum]) m6[c6] = v0;
+                                if (e1 == false && v1 != _magicVecs[mNum]) m6[c6] = v1;
+                                if (e2 == false && v2 != _magicVecs[mNum]) m6[c6] = v2;
+
+                                if (e0 == false && v0 != _magicVecs[mNum]) c6++;
+                                if (e1 == false && v1 != _magicVecs[mNum]) c6++;
+                                if (e2 == false && v2 != _magicVecs[mNum]) c6++;
+                            }
+                            if (mNum == 7)
+                            {
+                                foreach (var m in m7)
+                                {
+                                    if (m == v0) e0 = true;
+                                    if (m == v1) e1 = true;
+                                    if (m == v2) e2 = true;
+                                }
+                                if (e0 == false && v0 != _magicVecs[mNum]) m7[c7] = v0;
+                                if (e1 == false && v1 != _magicVecs[mNum]) m7[c7] = v1;
+                                if (e2 == false && v2 != _magicVecs[mNum]) m7[c7] = v2;
+
+                                if (e0 == false && v0 != _magicVecs[mNum]) c7++;
+                                if (e1 == false && v1 != _magicVecs[mNum]) c7++;
+                                if (e2 == false && v2 != _magicVecs[mNum]) c7++;
+                            }
+                            if (mNum == 8)
+                            {
+                                foreach (var m in m8)
+                                {
+                                    if (m == v0) e0 = true;
+                                    if (m == v1) e1 = true;
+                                    if (m == v2) e2 = true;
+                                }
+                                if (e0 == false && v0 != _magicVecs[mNum]) m8[c8] = v0;
+                                if (e1 == false && v1 != _magicVecs[mNum]) m8[c8] = v1;
+                                if (e2 == false && v2 != _magicVecs[mNum]) m8[c8] = v2;
+
+                                if (e0 == false && v0 != _magicVecs[mNum]) c8++;
+                                if (e1 == false && v1 != _magicVecs[mNum]) c8++;
+                                if (e2 == false && v2 != _magicVecs[mNum]) c8++;
+                            }
+                            if (mNum == 9)
+                            {
+                                foreach (var m in m9)
+                                {
+                                    if (m == v0) e0 = true;
+                                    if (m == v1) e1 = true;
+                                    if (m == v2) e2 = true;
+                                }
+                                if (e0 == false && v0 != _magicVecs[mNum]) m9[c9] = v0;
+                                if (e1 == false && v1 != _magicVecs[mNum]) m9[c9] = v1;
+                                if (e2 == false && v2 != _magicVecs[mNum]) m9[c9] = v2;
+
+                                if (e0 == false && v0 != _magicVecs[mNum]) c9++;
+                                if (e1 == false && v1 != _magicVecs[mNum]) c9++;
+                                if (e2 == false && v2 != _magicVecs[mNum]) c9++;
+                            }
+                            if (mNum == 10)
+                            {
+                                foreach (var m in m10)
+                                {
+                                    if (m == v0) e0 = true;
+                                    if (m == v1) e1 = true;
+                                    if (m == v2) e2 = true;
+                                }
+                                if (e0 == false && v0 != _magicVecs[mNum]) m10[c10] = v0;
+                                if (e1 == false && v1 != _magicVecs[mNum]) m10[c10] = v1;
+                                if (e2 == false && v2 != _magicVecs[mNum]) m10[c10] = v2;
+
+                                if (e0 == false && v0 != _magicVecs[mNum]) c10++;
+                                if (e1 == false && v1 != _magicVecs[mNum]) c10++;
+                                if (e2 == false && v2 != _magicVecs[mNum]) c10++;
+                            }
+                            if (mNum == 11)
+                            {
+                                foreach (var m in m11)
+                                {
+                                    if (m == v0) e0 = true;
+                                    if (m == v1) e1 = true;
+                                    if (m == v2) e2 = true;
+                                }
+                                if (e0 == false && v0 != _magicVecs[mNum]) m11[c11] = v0;
+                                if (e1 == false && v1 != _magicVecs[mNum]) m11[c11] = v1;
+                                if (e2 == false && v2 != _magicVecs[mNum]) m11[c11] = v2;
+
+                                if (e0 == false && v0 != _magicVecs[mNum]) c11++;
+                                if (e1 == false && v1 != _magicVecs[mNum]) c11++;
+                                if (e2 == false && v2 != _magicVecs[mNum]) c11++;
+                            }
+
+                            //Log.Line($"Magic Compute {mNum}:{_magicNums[mNum]} - Tri {j}");
+                        }
+                    }
+                    buildOnce = false;
+                }
+            }
+            
+            foreach (var magic in _magicVecs)
+            {
+                //Log.Line($"magic: {magic}");
+                var c = Color.Red;
+                if (magic == _magicVecs[0]) c = Color.Blue;
+                DrawCollisionCenter(magic, 5, c);
+            }
+
+            var mc0 = 0;
+            foreach (var m in m0)
+            {
+                bool magic = m == _magicVecs[0];
+                if (_count == 0) Log.Line($"m0: {mc0}:{m} - magic:{magic}");
+                mc0++;
+            }
+
+            var mc1 = 0;
+            foreach (var m in m1)
+            {
+                bool magic = m == _magicVecs[1];
+                if (_count == 0) Log.Line($"m1: {mc1}:{m} - magic:{magic}");
+                mc1++;
+            }
+
+            var mc2 = 0;
+            foreach (var m in m2)
+            {
+                bool magic = m == _magicVecs[2];
+                if (_count == 0) Log.Line($"m2: {mc2}:{m} - magic:{magic}");
+                mc2++;
+            }
+
+            var mc3 = 0;
+            foreach (var m in m3)
+            {
+                bool magic = m == _magicVecs[3];
+                if (_count == 0) Log.Line($"m3: {mc3}:{m} - magic:{magic}");
+                mc3++;
+            }
+            var mc4 = 0;
+            foreach (var m in m4)
+            {
+                bool magic = m == _magicVecs[4];
+                if (_count == 0) Log.Line($"m4: {mc4}:{m} - magic:{magic}");
+                mc4++;
+            }
+            var mc5 = 0;
+            foreach (var m in m5)
+            {
+                bool magic = m == _magicVecs[5];
+                if (_count == 0) Log.Line($"m5: {mc5}:{m} - magic:{magic}");
+                mc5++;
+            }
+            var mc6 = 0;
+            foreach (var m in m6)
+            {
+                bool magic = m == _magicVecs[6];
+                if (_count == 0) Log.Line($"m6: {mc6}:{m} - magic:{magic}");
+                mc6++;
+            }
+            var mc7 = 0;
+            foreach (var m in m7)
+            {
+                bool magic = m == _magicVecs[7];
+                if (_count == 0) Log.Line($"m7: {mc7}:{m} - magic:{magic}");
+                mc7++;
+            }
+            var mc8 = 0;
+            foreach (var m in m8)
+            {
+                bool magic = m == _magicVecs[8];
+                if (_count == 0) Log.Line($"m8: {mc8}:{m} - magic:{magic}");
+                mc8++;
+            }
+            var mc9 = 0;
+            foreach (var m in m9)
+            {
+                bool magic = m == _magicVecs[9];
+                if (_count == 0) Log.Line($"m9: {mc9}:{m} - magic:{magic}");
+                mc9++;
+            }
+            var mc10 = 0;
+            foreach (var m in m10)
+            {
+                bool magic = m == _magicVecs[10];
+                if (_count == 0) Log.Line($"m10: {mc10}:{m} - magic:{magic}");
+                mc10++;
+            }
+            var mc11 = 0;
+            foreach (var m in m11)
+            {
+                bool magic = m == _magicVecs[11];
+                if (_count == 0) Log.Line($"m11: {mc11}:{m} - magic:{magic}");
+                mc11++;
+            }
+            var color = Vector4.Zero;
+            for (int i = 0; i < m0.Length; i++)
+            {
+                if (m0[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[0], m0[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
+            }
+            for (int i = 0; i < m1.Length; i++)
+            {
+                if (m1[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[1], m1[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
+            }
+            for (int i = 0; i < m2.Length; i++)
+            {
+                if (m2[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[2], m2[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
+            }
+            for (int i = 0; i < m3.Length; i++)
+            {
+                if (m3[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[3], m3[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
+            }
+            for (int i = 0; i < m4.Length; i++)
+            {
+                if (m4[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[4], m4[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
+            }
+            for (int i = 0; i < m5.Length; i++)
+            {
+                if (m5[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[5], m5[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
+            }
+            for (int i = 0; i < m6.Length; i++)
+            {
+                if (m6[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[6], m6[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
+            }
+            for (int i = 0; i < m7.Length; i++)
+            {
+                if (m7[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[7], m7[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
+            }
+            for (int i = 0; i < m8.Length; i++)
+            {
+                if (m8[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[8], m8[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
+            }
+            for (int i = 0; i < m9.Length; i++)
+            {
+                if (m9[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[9], m9[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
+            }
+            for (int i = 0; i < m10.Length; i++)
+            {
+                if (m10[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[10], m10[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
+            }
+            for (int i = 0; i < m11.Length; i++)
+            {
+                if (m11[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[11], m11[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
+            }
         }
 
         public override void UpdateBeforeSimulation100()
@@ -477,22 +926,24 @@ namespace DefenseShields
                 var shapeMatrix = _shieldShapeMatrix;
                 var enemy = IsEnemy(null);
                 var renderId = GetRenderId();
+                //var shapeMatrix = DetectionMatrix;
+                //uint renderId = 0;
 
                 var sp = new BoundingSphereD(Entity.GetPosition(), _range);
                 var sphereOnCamera = MyAPIGateway.Session.Camera.IsInFrustum(ref sp);
                 //Log.Line($"ent: {this.Entity.EntityId} - changed?:{_entityChanged} - is onCam:{sphereOnCamera} - RenderID {renderId}");
                 if (_prepareDraw.HasValue && !_prepareDraw.Value.IsComplete) _prepareDraw.Value.Wait();
                 if (_prepareDraw.HasValue && _prepareDraw.Value.IsComplete && sphereOnCamera && Block.IsWorking) _icosphere.Draw(renderId);
-                if (Block.IsWorking || drawShapeChanged) _prepareDraw = MyAPIGateway.Parallel.Start(() => PrepareSphere(drawShapeChanged, enemy, lod, prevlod, impactPos, impactSize, shapeMatrix, shield));
+                if (Block.IsWorking || drawShapeChanged) _prepareDraw = MyAPIGateway.Parallel.Start(() => PrepareSphere(drawShapeChanged, sphereOnCamera, enemy, lod, prevlod, impactPos, impactSize, shapeMatrix, shield));
 
             }
             catch (Exception ex) { Log.Line($"Exception in Entity Draw: {ex}"); }
         }
 
-        private void PrepareSphere(bool drawShapeChanged, bool enemy, int lod, int prevlod, Vector3D impactPos, float impactSize, MatrixD shapeMatrix,  IMyEntity shield)
+        private void PrepareSphere(bool drawShapeChanged, bool sphereOnCamera, bool enemy, int lod, int prevlod, Vector3D impactPos, float impactSize, MatrixD shapeMatrix,  IMyEntity shield)
         {
             if (drawShapeChanged || lod != prevlod) _icosphere.CalculateTransform(shapeMatrix, lod);
-            _icosphere.CalculateColor(shapeMatrix, impactPos, impactSize, drawShapeChanged, enemy, shield);
+            _icosphere.CalculateColor(shapeMatrix, impactPos, impactSize, drawShapeChanged, enemy, sphereOnCamera, shield);
         }
 
         public void DrawBox(MyOrientedBoundingBoxD obb, Color color, bool matrix)
@@ -517,7 +968,7 @@ namespace DefenseShields
         {
             int lod;
 
-            if (Distance(650)) lod = 3;
+            if (Distance(650)) lod = 0;
             else if (Distance(2250)) lod = 3;
             else if (Distance(4500)) lod = 2;
             else if (Distance(15000)) lod = 1;
@@ -548,12 +999,6 @@ namespace DefenseShields
                 DetectionMatrix = MatrixD.Rescale(_shieldGridMatrix, new Vector3D(_width, _height, _depth));
                 _range = (float)DetectionMatrix.Scale.AbsMax() + 15f;
                 //Log.Line($"static dims {_range} - {_width} - {_height} - {_depth}");
-            }
-            if (_enablePhysics)
-            {
-                //if (_count == 0) DSUtils.Sw.Start();
-                _shieldTris = _icosphere.CalculatePhysics(DetectionMatrix, PhysicsLod);
-                //if (_count == 0) DSUtils.StopWatchReport("get physics", -1);
             }
         }
 
@@ -637,12 +1082,15 @@ namespace DefenseShields
             var shieldTris = _shieldTris;
             var locCenterSphere = new BoundingSphereD();
 
+            var dPosition = _gridIsMobile ? Block.CubeGrid.PositionComp : Block.CubeGrid.PositionComp;
+            var dWorldAabb =  Block.CubeGrid.WorldAABB;
+
             var bLocalAabb = breaching.PositionComp.LocalAABB;
             var bWorldAabb = breaching.PositionComp.WorldAABB;
             var bWorldCenter = bWorldAabb.Center;
 
 
-            var lodScaler = Math.Pow(2, PhysicsLod);
+            var lodScaler = (int)Math.Pow(2, PhysicsLod);
             var gridScaler = (float)(((DetectionMatrix.Scale.X + DetectionMatrix.Scale.Y + DetectionMatrix.Scale.Z) / 3 / lodScaler) * 1.33) / bLocalAabb.Extents.Min();
             var bLength = bLocalAabb.Size.Max() / 2 + 2;
             var bLengthSqr = bLength * bLength;
@@ -650,11 +1098,115 @@ namespace DefenseShields
             var reSized = bLocalAabb.Extents.Min() * gridScaler;
             var reSizedSqr = reSized * reSized;
 
+            var bcorners = bWorldAabb.GetCorners();
+            if (_count == 0) DSUtils.Sw.Start();
+            double d0 = 9999999999999999999;
+            double d1 = 9999999999999999999;
+            double d2 = 9999999999999999999;
+            double d3 = 9999999999999999999;
+            Vector3D mv0 = Vector3D.Zero;
+            Vector3D mv1 = Vector3D.Zero;
+            Vector3D mv2 = Vector3D.Zero;
+            Vector3D mv3 = Vector3D.Zero;
+
+            for (int i = 0; i < _magicVecs.Length; i++)
+            {
+                var v0 = _magicVecs[i];
+                var test1 = Vector3D.DistanceSquared(v0, bWorldCenter);
+                //Log.Line($"{v0}");
+                if (test1 < d0 && test1 < d1 && test1 < d2 && test1 < d3)
+                {
+                    d0 = test1;
+                    mv0 = v0;
+                }
+                else if (test1 < d1 && test1 < d2 && test1 < d3)
+                {
+                    d1 = test1;
+                    mv1 = v0;
+
+                }
+                else if (test1 < d2 && test1 < d3)
+                {
+                    d2 = test1;
+                    mv2 = v0;
+
+                }
+                else if (test1 < d3)
+                {
+                    d3 = test1;
+                    mv3 = v0;
+                }
+            }
+            var dCenter = dPosition.WorldVolume.Center;
+            var dist1 = Vector3D.DistanceSquared(mv0, dCenter);
+            var dist2 = Vector3D.DistanceSquared(mv1, dCenter);
+            var dist3 = Vector3D.DistanceSquared(mv2, dCenter);
+            var dist4 = Vector3D.DistanceSquared(mv3, dCenter);
+            var cDist = Vector3D.DistanceSquared(bWorldCenter, dCenter);
+            var dc0 = Vector3D.DistanceSquared(bcorners[0], dCenter);
+            var dc1 = Vector3D.DistanceSquared(bcorners[1], dCenter);
+            var dc2 = Vector3D.DistanceSquared(bcorners[2], dCenter);
+            var dc3 = Vector3D.DistanceSquared(bcorners[3], dCenter);
+            var dc4 = Vector3D.DistanceSquared(bcorners[4], dCenter);
+            var dc5 = Vector3D.DistanceSquared(bcorners[5], dCenter);
+            var dc6 = Vector3D.DistanceSquared(bcorners[6], dCenter);
+            var dc7 = Vector3D.DistanceSquared(bcorners[7], dCenter);
+
+            
+            //Log.Line($"bcorners {bcorners.Length}");
+
+
+            //if (dc0 < dist1 || dc1 < dist1 || dc2 < dist1 || dc3 < dist1 || dc4 < dist1 || dc5 < dist1 || dc6 < dist1 || dc7 < dist1) Log.Line($"Interesection");
+            //if (test6 < test2 && test6 < test3 && test6 < test4 && test6 < test5) Log.Line($"Interesection");
+
+            //if (_count == 0) Log.Line($"dc vs dist: {dc0} {dc1} {dc2} {dc3} {dc4} {dc5} {dc6} {dc7} < {dist1}");
+            if (_count == 0) DSUtils.StopWatchReport($"Quick Check", -1);
+            //DrawCollisionCenter(boxItSphere.Center, boxItSphere.Radius, Color.Purple);
+            //Log.Line($"4 closest points: {d0} - {d1} - {d2} - {d3}");
+            //var v21 = new Vector2(0.5f, 0);
+            //var v22 = new Vector2(0.5f);
+            //MyTransparentGeometry.AddTriangleBillboard(mv0, mv1, mv2, Vector3D.Zero, Vector3D.Zero, Vector3D.Zero, Vector2.Zero, v21, v22, MyStringId.GetOrCompute(""), 0, (mv0 + mv1 + mv2) / 3, Color.Blue);
+
             if (gridScaler > 1)
             {
+                /*
+                var magicTri = SelectRootTriangle(shieldTris, bWorldCenter, lodScaler);
+                int v = 0;
+                int vv = 0;
+                var firstMatch = true;
+                var rootTri = -1;
+                var v0 = Vector3D.Zero;
+                var v1 = Vector3D.Zero;
+                var v2 = Vector3D.Zero;
+
+                foreach (var vec in magicTri)
+                {
+                    if (vec != Vector3D.Zero)
+                    {
+                        if (firstMatch)
+                        {
+                            firstMatch = false;
+                            rootTri = v;
+                        }
+                        if (vv == 0) v0 = vec;
+                        if (vv == 1) v1 = vec;
+                        if (vv == 2) v2 = vec;
+                        vv++;
+                    }
+                    v++;
+                }
+                if (_count == 0) Log.Line($"root: {rootTri} - vectors: {v0} {v1} {v2}");
+                */
+                foreach (var magic in _magicVecs)
+                {
+                    //Log.Line($"magic: {magic}");
+                    DrawCollisionCenter(magic, 5, Color.Red);
+                }
+
+                //var rangedVectors = IntersectRootCheck(shieldTris, bWorldCenter, reSizedSqr, lodScaler, rootTri);
+                /*
                 var rangedVectors = IntersectRangeCheck(shieldTris, bWorldCenter, reSizedSqr);
                 var boxedTriangles = IntersectTriBox(rangedVectors, bWorldAabb);
-
 
                 if (boxedTriangles.Count > 0)
                 {
@@ -666,16 +1218,24 @@ namespace DefenseShields
                     collision = Vector3D.Lerp(_gridIsMobile ? Block.PositionComp.WorldVolume.Center : Block.CubeGrid.PositionComp.WorldVolume.Center, locCenterSphere.Center, .9);
                     _worldImpactPosition = collision;
                    // DSUtils.StopWatchReport($"Small Grid Collision 3", -1);
-                    DrawCollisionCenter(collision, locCenterSphere.Radius); // testing
+                    DrawCollisionCenter(collision, locCenterSphere.Radius, Color.Blue); // testing
                 }
+                */
                 //if (rangedVectors.Count > 0) Log.Line($"total triangles: {_shieldTris.Length / 3} - Ranged {rangedVectors.Count / 3} - BoxTri Check: {boxedTriangles.Count / 3}");
             }
             else 
             {
-                var rangedVectors = IntersectRangeCheck(shieldTris, bWorldCenter, bLengthSqr);
-                var boxedVectors = IntersectVecBox(rangedVectors, bWorldAabb);
-                var obbLines = IntersectLineObb(boxedVectors, bLocalAabb, breaching.PositionComp.WorldMatrix);
 
+                foreach (var magic in _magicVecs)
+                {
+                    //Log.Line($"magic: {magic}");
+                    DrawCollisionCenter(magic, 5, Color.Red);
+                }
+
+                //var rangedVectors = IntersectRangeCheck(shieldTris, bWorldCenter, bLengthSqr);
+                //var boxedVectors = IntersectVecBox(rangedVectors, bWorldAabb);
+                //var obbLines = IntersectLineObb(boxedVectors, bLocalAabb, breaching.PositionComp.WorldMatrix);
+                /*
                 if (obbLines.Count > 0)
                 {
                     var pointCollectionScaled = new Vector3D[obbLines.Count];
@@ -685,8 +1245,9 @@ namespace DefenseShields
 
                     collision = Vector3D.Lerp(_gridIsMobile ? Block.PositionComp.WorldVolume.Center : Block.CubeGrid.PositionComp.WorldVolume.Center, locCenterSphere.Center, .9);
                     _worldImpactPosition = collision;
-                    DrawCollisionCenter(collision, locCenterSphere.Radius); // testing
+                    DrawCollisionCenter(collision, locCenterSphere.Radius, Color.Blue); // testing
                 }
+                */
                 //if (rangedVectors.Count > 0) Log.Line($"total triangles: {_shieldTris.Length / 3} - Ranged {rangedVectors.Count / 3} - Box Check: {boxedVectors.Count / 3} - Obb Collision {obbLines.Count / 3}");
             }
             var grid = breaching as IMyCubeGrid;
@@ -805,13 +1366,12 @@ namespace DefenseShields
             return obbLines;
         }
 
-        private void DrawCollisionCenter(Vector3D collision, double radius)
+        private void DrawCollisionCenter(Vector3D collision, double radius, Color color)
         {
             var posMatCenterScaled = MatrixD.CreateTranslation(collision);
             var posMatScaler = MatrixD.Rescale(posMatCenterScaled, radius);
-            var blue = Color.Blue;
             var rangeGridResourceId = MyStringId.GetOrCompute("Build new");
-            MySimpleObjectDraw.DrawTransparentSphere(ref posMatScaler, 1f, ref blue, MySimpleObjectRasterizer.Solid, 20, null, rangeGridResourceId, 0.25f, -1);
+            MySimpleObjectDraw.DrawTransparentSphere(ref posMatScaler, 1f, ref color, MySimpleObjectRasterizer.Solid, 20, null, rangeGridResourceId, 0.25f, -1);
         }
 
         private double ContainmentField(IMyEntity breaching, IMyEntity field, Vector3D intersect)
@@ -891,8 +1451,8 @@ namespace DefenseShields
             var worldPosition = breaching.WorldMatrix.Translation;
             var worldDirection = contactPoint - worldPosition;
 
-            breaching.Physics.ApplyImpulse(worldDirection * (expelForce / 2), contactPoint);
-            if (_gridIsMobile) Block.CubeGrid.Physics.ApplyImpulse(Vector3D.Negate(worldDirection) * (expelForce / 2), contactPoint);
+            //breaching.Physics.ApplyImpulse(worldDirection * (expelForce / 2), contactPoint);
+            //if (_gridIsMobile) Block.CubeGrid.Physics.ApplyImpulse(Vector3D.Negate(worldDirection) * (expelForce / 2), contactPoint);
 
             //if (cpDist > 0.987f) breaching.Physics.ApplyImpulse((breaching.Physics.Mass / 500) * -0.055f * Vector3D.Dot(breaching.Physics.LinearVelocity, surfaceNormal) * surfaceNormal, contactPoint);
             //Log.Line($"cpDist:{cpDist} pow:{expelForce} bmass:{bmass} adjbmass{bmass / 50}");
@@ -1037,7 +1597,7 @@ namespace DefenseShields
 
         private void WebEntities()
         {
-            DSUtils.Sw.Start();
+            //DSUtils.Sw.Start();
             var websphere = new BoundingSphereD(_detectionCenter, _range);
             var webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
             MyAPIGateway.Parallel.ForEach(webList, webent =>
@@ -1073,7 +1633,7 @@ namespace DefenseShields
                 }
                 //Log.Line($"webEffect unmatched {webent.GetFriendlyName()} {webent.Name} {webent.DisplayName} {webent.EntityId} {webent.Parent} {webent.Components}");
             });
-            DSUtils.StopWatchReport("Web", -1);
+            //DSUtils.StopWatchReport("Web", -1);
         }
         #endregion
 
