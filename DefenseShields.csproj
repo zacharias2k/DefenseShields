@@ -226,6 +226,7 @@
     <None Include="Models\LargeField.mwm" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Data\Scripts\DefenseShields\Class1.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\BaseControl.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Checkbox.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Controls.cs" />
