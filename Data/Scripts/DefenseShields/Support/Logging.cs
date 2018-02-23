@@ -68,21 +68,6 @@ namespace DefenseShields.Support
             }
         }
 
-        public static void Chars(string text)
-        {
-            try
-            {
-                if (GetInstance()._file != null)
-                {
-                    GetInstance()._file.Write(text);
-                    GetInstance()._file.Flush();
-                }
-            }
-            catch (Exception e)
-            {
-            }
-        }
-
         public static void Close()
         {
             try
