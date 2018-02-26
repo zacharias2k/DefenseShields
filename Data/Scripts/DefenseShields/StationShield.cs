@@ -24,8 +24,6 @@ using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
 using ParallelTasks;
 using Sandbox.Game.Entities;
-using VRage;
-using VRageRender;
 
 namespace DefenseShields
 {
@@ -33,72 +31,6 @@ namespace DefenseShields
     public class DefenseShields : MyGameLogicComponent
     {
         #region Setup
-        private readonly int[] _magicNums0 = { 0, 1, 2, 4, 7, 11, 16, 19, 25, 28, 34, 37 };
-        private readonly int[] _magicNums1 = { 0, 3, 6, 15, 27, 42, 63, 75, 99, 111, 135, 147 };
-        private readonly int[] _magicNums2 = { 0, 12, 24, 60, 108, 168, 252, 300, 396, 444, 540, 588 };
-        private readonly int[] _magicNums3 = { 0, 48, 96, 240, 432, 672, 1008, 1200, 1584, 1776, 2160, 2352 };
-
-        private readonly int[] _icoVerts0 =
-        {
-            0, 1, 2, 4, 7, 11, 16, 19, 25, 28, 34, 37
-        };
-
-        private readonly int[] _icoVerts1 =
-        {
-            0, 1, 2, 3, 4, 6, 13, 15, 16, 25, 27, 28, 38, 40, 42, 52, 61, 63, 64, 73, 75, 76, 85, 97, 99, 100, 109, 111,
-            112, 121, 133, 135, 136, 145, 147, 148, 157, 160, 172, 194, 206, 208
-        };
-
-        private readonly int[] _icoVerts2 =
-        {
-            0, 1, 2, 3, 4, 6, 12, 13, 14, 15, 16, 24, 25, 26, 28, 49, 51, 52, 60, 61, 62, 63, 64, 74, 76, 97, 99, 100,
-            108, 109, 110, 111, 112, 122, 124, 146, 148, 150, 157, 159, 160, 168, 169, 170, 172, 196, 205, 207, 208,
-            218, 220, 241, 243, 244, 252, 253, 254, 255, 256, 266, 268, 289, 291, 292, 300, 301, 302, 303, 304, 314,
-            316, 337, 339, 340, 350, 352, 364, 385, 387, 388, 396, 397, 398, 399, 400, 410, 412, 433, 435, 436, 444,
-            445, 446, 447, 448, 458, 460, 481, 483, 484, 494, 496, 508, 529, 531, 532, 540, 541, 542, 543, 544, 554,
-            556, 577, 579, 580, 588, 589, 590, 591, 592, 602, 604, 625, 627, 628, 637, 638, 639, 640, 650, 652, 676,
-            685, 687, 688, 698, 700, 724, 736, 748, 770, 772, 774, 784, 793, 796, 818, 820, 822, 829, 831, 832, 841,
-            842, 844, 868, 880, 892, 916, 928, 940
-        };
-
-        private readonly int[] _icoVerts3 =
-        {
-            0, 1, 2, 3, 4, 6, 12, 13, 14, 15, 16, 24, 25, 26, 28, 48, 49, 50, 51, 52, 54, 60, 61, 62, 63, 64, 73, 74,
-            76, 96, 97, 98, 99, 100, 102, 109, 110, 111, 112, 121, 122, 124, 148, 160, 172, 193, 195, 196, 204, 205,
-            206, 207, 208, 218, 220, 240, 241, 242, 243, 244, 246, 252, 253, 254, 255, 256, 265, 266, 268, 290, 292,
-            294, 301, 303, 304, 313, 314, 316, 340, 352, 364, 385, 387, 388, 396, 397, 398, 399, 400, 410, 412, 432,
-            433, 434, 435, 436, 438, 444, 445, 446, 447, 448, 457, 458, 460, 482, 484, 486, 493, 495, 496, 505, 506,
-            508, 532, 544, 556, 578, 580, 582, 589, 591, 592, 600, 601, 602, 604, 625, 627, 628, 636, 637, 638, 639,
-            640, 650, 652, 672, 673, 674, 675, 676, 678, 685, 686, 687, 688, 697, 698, 700, 724, 736, 748, 772, 781,
-            783, 784, 794, 796, 817, 819, 820, 828, 829, 830, 831, 832, 842, 844, 866, 868, 870, 877, 879, 880, 889,
-            890, 892, 916, 928, 940, 961, 963, 964, 972, 973, 974, 975, 976, 986, 988, 1008, 1009, 1010, 1011, 1012,
-            1014, 1020, 1021, 1022, 1023, 1024, 1033, 1034, 1036, 1058, 1060, 1062, 1069, 1071, 1072, 1081, 1082, 1084,
-            1108, 1120, 1132, 1153, 1155, 1156, 1164, 1165, 1166, 1167, 1168, 1178, 1180, 1200, 1201, 1202, 1203, 1204,
-            1206, 1212, 1213, 1214, 1215, 1216, 1225, 1226, 1228, 1250, 1252, 1254, 1261, 1263, 1264, 1273, 1274, 1276,
-            1300, 1312, 1324, 1345, 1347, 1348, 1356, 1357, 1358, 1359, 1360, 1370, 1372, 1394, 1396, 1398, 1405, 1407,
-            1408, 1417, 1418, 1420, 1444, 1453, 1455, 1456, 1466, 1468, 1492, 1504,
-            1516, 1537, 1539, 1540, 1548, 1549, 1550, 1551, 1552, 1562, 1564, 1584, 1585, 1586, 1587, 1588, 1590, 1596,
-            1597, 1598, 1599, 1600, 1609, 1610, 1612, 1634, 1636, 1638, 1645, 1647, 1648, 1657, 1658, 1660, 1684, 1696,
-            1708, 1729, 1731, 1732, 1740, 1741, 1742, 1743, 1744, 1754, 1756, 1776, 1777, 1778, 1779, 1780, 1782, 1788,
-            1789, 1790, 1791, 1792, 1801, 1802, 1804, 1826, 1828, 1830, 1837, 1839, 1840, 1849, 1850, 1852, 1876, 1888,
-            1900, 1921, 1923, 1924, 1932, 1933, 1934, 1935, 1936, 1946, 1948, 1970, 1972, 1974, 1981, 1983, 1984, 1993,
-            1994, 1996, 2020, 2029, 2031, 2032, 2042, 2044, 2068, 2080, 2092, 2113, 2115, 2116, 2124, 2125, 2126, 2127,
-            2128, 2138, 2140, 2160, 2161, 2162, 2163, 2164, 2166, 2172, 2173, 2174, 2175, 2176, 2185, 2186, 2188, 2210,
-            2212, 2214, 2221, 2223, 2224, 2233, 2234, 2236, 2260, 2272, 2284, 2305, 2307, 2308, 2316, 2317, 2318, 2319,
-            2320, 2330, 2332, 2352, 2353, 2354, 2355, 2356, 2358, 2364, 2365, 2366, 2367, 2368, 2377, 2378, 2380, 2402,
-            2404, 2406, 2413, 2415, 2416, 2425, 2426, 2428, 2452, 2464, 2476, 2497, 2499, 2500, 2508, 2509, 2510, 2511,
-            2512, 2522, 2524, 2545, 2546, 2547, 2548, 2550, 2556, 2557, 2558, 2559, 2560, 2569, 2570, 2572, 2594, 2596,
-            2598, 2605, 2607, 2608, 2617, 2618, 2620, 2644, 2656, 2668, 2692, 2701, 2703, 2704, 2714, 2716, 2737, 2739,
-            2740, 2748, 2749, 2750, 2751, 2752, 2762, 2764, 2786, 2788, 2790, 2797, 2799, 2800, 2809, 2810, 2812, 2836,
-            2848, 2860, 2884, 2893, 2895, 2896, 2906, 2908, 2932, 2941, 2943, 2944, 2954, 2956, 2980, 2989, 2991, 2992,
-            3002, 3004, 3028, 3040, 3052, 3074, 3076, 3078, 3085, 3087, 3088, 3096, 3097, 3098, 3100, 3124, 3133, 3135,
-            3136, 3146, 3148, 3169, 3171, 3172, 3181, 3182, 3183, 3184, 3194, 3196, 3220, 3232, 3244, 3266, 3268, 3270,
-            3277, 3279, 3280, 3288, 3289, 3290, 3292, 3313, 3315, 3316, 3324, 3325, 3326, 3327, 3328, 3338, 3340, 3361,
-            3362, 3363, 3364, 3366, 3373, 3374, 3375, 3376, 3385, 3386, 3388, 3412, 3424, 3436, 3460, 3469, 3471, 3472,
-            3482, 3484, 3508, 3517, 3519, 3520, 3530, 3532, 3556, 3565, 3567, 3568, 3578, 3580, 3604, 3616, 3628, 3652,
-            3661, 3663, 3664, 3674, 3676, 3700, 3709, 3711, 3712, 3722, 3724, 3748, 3757, 3759, 3760, 3770, 3772, 3796,
-            3808, 3820,
-        };
 
         private const float Shotdmg = 1f;
         private const float Bulletdmg = 0.1f;
@@ -117,7 +49,6 @@ namespace DefenseShields
         private const int PhysicsLod = 3;
 
         private int _count = -1;
-        private int _testingCown = -200;
         private int _explodeCount;
         private int _time;
         private int _playertime;
@@ -129,11 +60,13 @@ namespace DefenseShields
         private bool _initialized;
         private bool _animInit;
         private bool _playerwebbed;
-        private bool _closegrids;
-        private bool _playerkill;
         private bool _gridIsMobile;
         private bool _explode;
-        private bool buildOnce;
+        private bool _buildOnce;
+        private bool _buildByVerts = true;
+        private bool _buildVertZones = false;
+        private bool _buildLines = true;
+        private bool _buildTris = false;
 
         private const ushort ModId = 50099;
 
@@ -142,23 +75,8 @@ namespace DefenseShields
         private Vector3D _shieldSize;
 
         private Vector3D[] _shieldTris;
-        private Vector3D[] _magicVecs = new Vector3D[12];
+        private Vector3D[] _rootVecs = new Vector3D[12];
         private Vector3D[] _physicsVerts = new Vector3D[642];
-
-        private Vector3D[] m0 = new Vector3D[5];
-        private Vector3D[] m1 = new Vector3D[5];
-        private Vector3D[] m2 = new Vector3D[5];
-        private Vector3D[] m3 = new Vector3D[5];
-        private Vector3D[] m4 = new Vector3D[5];
-        private Vector3D[] m5 = new Vector3D[5];
-        private Vector3D[] m6 = new Vector3D[5];
-        private Vector3D[] m7 = new Vector3D[5];
-        private Vector3D[] m8 = new Vector3D[5];
-        private Vector3D[] m9 = new Vector3D[5];
-        private Vector3D[] m10 = new Vector3D[5];
-        private Vector3D[] m11 = new Vector3D[5];
-
-
 
         private double[] _shieldRanged;
 
@@ -175,6 +93,8 @@ namespace DefenseShields
 
         private readonly Spawn _spawn = new Spawn();
         private Icosphere.Instance _icosphere;
+        private readonly DataStructures _dataStructures = new DataStructures();
+        private readonly StructureBuilder _structureBuilder = new StructureBuilder();
 
         private MyEntitySubpart _subpartRotor;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _widthSlider;
@@ -195,9 +115,6 @@ namespace DefenseShields
         private MyConcurrentHashSet<IMySlimBlock> DmgBlocks { get; } = new MyConcurrentHashSet<IMySlimBlock>();
 
         private List<IMyCubeGrid> GridIsColliding = new List<IMyCubeGrid>();
-
-        public static HashSet<IMyEntity> DestroyPlayerHash { get; } = new HashSet<IMyEntity>();
-        public readonly HashSet<LineD> vecPrunedLinesTest = new HashSet<LineD>();
 
         private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
 
@@ -249,7 +166,6 @@ namespace DefenseShields
         #region Simulation
         public override void UpdateBeforeSimulation()
         {
-            //DSUtils.Sw.Start();
             try
             {
                 if (_count++ == 59) _count = 0;
@@ -300,631 +216,22 @@ namespace DefenseShields
                 //GridKillField();
                 DamageGrids();
                 //if (_enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
-                //if (_enablePhysics) WebEntities();
+                if (_enablePhysics) WebEntities();
 
                 if (_playerwebbed && _enablePhysics) PlayerEffects();
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
-            //DSUtils.StopWatchReport("Main loop", -1);
         }
 
         private void BuildPhysicsArrays()
         {
-            _shieldTris = _icosphere.CalculatePhysics(DetectionMatrix, PhysicsLod);
+            _physicsVerts = _icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsLod);
+            _rootVecs = _icosphere.ReturnPhysicsVerts(DetectionMatrix, 0);
 
-            //if (_count == 0) DSUtils.Sw.Start();
-            /*
-            var i = 0;
-            foreach (var vertNum in _icoVerts3)
-            {
-                var vert = _shieldTris[vertNum];
-                _physicsVerts[i] = vert;
-                i++;
-                //if (_count == 0) Log.Line($"i: {i} num: {vertNum} - vert: {vert}");
-            }
-            */
-            //if (_count == 0) Log.Line($"{_icoVerts3.Length}");
-            var test = _icosphere.CalculatePhysics(DetectionMatrix, 3);
-            /*
-
-            var n = 0;
-            foreach (var num in _magicNums1)
-            {
-                //Log.Line($"Number Order {num}");
-                _magicVecs[n] = test[num];
-                //Log.Line($"_magicVecsLen {_magicVecs.Length}");
-                //Log.Line($"num: {num} - {findMagic[n]} - {findMagic.Length} - {_shieldTris[num]}");
-                //if (_count == 0) Log.Line($"magic {num} - {test[num]}");
-                n++;
-            }
-            */
-            /*
-            for (int i = 0, j = 0; i < _shieldTris.Length; i++, j++)
-            {
-                var vec = _shieldTris[i];
-                foreach (var magic in _magicVecs)
-                {
-                    for (int num = 0; num < 12; num++)
-                    {
-                        if (_count == 0 && vec == magic && _magicVecs[num] == vec) Log.Line($"Found Magic root {num} at index: {i}");
-                    }
-
-                }
-            }
-            */
-            /*
-            var verts = new Vector3D[642];
-            var nums = new int[642];
-
-            var vc = 0;
-            var vn = 0;
-            var num = 0;
-            for (int i = 0, j = 0; i < test.Length; i++, j++)
-            {
-                var vec = test[i];
-                var e = true;
-                foreach (var v in verts)
-                {
-                    if (v == vec) e = false;
-                }
-                if (e) verts[vc] = vec;
-                if (e) vc++;
-                if (e) nums[vn] = i;
-                if (e) vn++;
-
-            }
-            foreach (var v in verts)
-            {
-               //Log.Line($"{num}:{nums[num]}:{v}");
-               //Log.Chars($"{nums[num]},");
-                num++;
-            }
-            */
-            var vecBufferNums = new HashSet<int>();
-            var vecBufferNumList = new List<int>();
-            var vecPrunedLines = new HashSet<LineD>();
-            var vecPrunedNums = new HashSet<MyTuple<int, int>>();
-            DrawLineD(vecPrunedLinesTest);
-
-            if (_count == 0 && buildOnce == false)
-            {
-                buildOnce = true;
-                foreach (var v in _icoVerts2)
-                {
-                    vecBufferNums.Clear();
-                    vecBufferNumList.Clear();
-                    vecPrunedLines.Clear();
-                    vecPrunedNums.Clear();
-
-                    var vert = test[v];
-                    for (int x = 0; x < test.Length; x += 3)
-                    {
-                        var v0 = test[x];
-                        var v1 = test[x + 1];
-                        var v2 = test[x + 2];
-                        if (v0 == vert || v1 == vert || v2 == vert)
-                        {
-                            vecBufferNums.Add(x);
-                            vecBufferNums.Add(x + 1);
-                            vecBufferNums.Add(x + 2);
-                        }
-                    }
-
-
-
-                    //Log.Line($" VECBUFFER {vecBufferNums.Count} - {v} \n");
-                    foreach (var Num in vecBufferNums)
-                    {
-                        vecBufferNumList.Add(Num);
-                    }
-                    //Log.Line($" VECBUFFERLIST {vecBufferNumList.Count} - {v}");
-
-
-
-                    for (int i = 0; i < vecBufferNumList.Count; i += 3)
-                    {
-                        var tri00 = vecBufferNumList[i];
-                        var tri01 = vecBufferNumList[i+1];
-                        var tri02 = vecBufferNumList[i+2];
-
-                        var tri0Line1 = new LineD(test[tri00], test[tri01]);
-                        var tri0Line2 = new LineD(test[tri00], test[tri02]);
-                        var tri0Line3 = new LineD(test[tri01], test[tri02]);
-
-
-                        vecPrunedLines.Add(tri0Line1);
-                        vecPrunedLines.Add(tri0Line2);
-                        vecPrunedLines.Add(tri0Line3);
-                    }
-
-                    int num = 0;
-                    foreach (var prune in vecPrunedLines)
-                    {
-                        var from = prune.From;
-                        var to = prune.To;
-                        int toNum = -1;
-                        int fromNum = -1;
-                        for (int i = 0; i < test.Length; i +=3)
-                        {
-                            var vn0 = test[i];
-                            var vn1 = test[i + 1];
-                            var vn2 = test[i + 2];
-
-                            if (from == vn0) fromNum = i;
-                            if (from == vn1) fromNum = i + 1;
-                            if (from == vn2) fromNum = i + 2;
-
-                            if (to == vn0) toNum = i;
-                            if (to == vn1) toNum = i + 1;
-                            if (to == vn2) toNum = i + 2;
-
-                            var icoVert = test[v];
-                            if ((from == vn0 || from == vn1 || from == vn2) && (to == vn0 || to == vn1 || to == vn2) &&
-                                (icoVert == vn0 || icoVert == vn1 || icoVert == vn2))
-                            {
-                                MyTuple<int, int> fromToNum = new MyTuple<int, int>(fromNum, toNum);
-                                MyTuple<int, int> toFromNum = new MyTuple<int, int>(toNum, fromNum);
-                                MyTuple<int, int> icoVertFromNum = new MyTuple<int, int>(v, fromNum);
-                                MyTuple<int, int> icoVertToNum = new MyTuple<int, int>(v, toNum);
-                                MyTuple<int, int> fromToIcoVert = new MyTuple<int, int>(fromNum, v);
-                                MyTuple<int, int> toIcoVert = new MyTuple<int, int>(toNum, v);
-
-                                if (!(vecPrunedNums.Contains(fromToNum) || vecPrunedNums.Contains(toFromNum))) vecPrunedNums.Add(fromToNum);
-                                if (!(vecPrunedNums.Contains(fromToNum) || vecPrunedNums.Contains(toFromNum))) vecPrunedNums.Add(toFromNum);
-                                if (!(vecPrunedNums.Contains(fromToNum) || vecPrunedNums.Contains(fromToIcoVert))) vecPrunedNums.Add(fromToIcoVert);
-                                if (!(vecPrunedNums.Contains(toFromNum) || vecPrunedNums.Contains(fromToIcoVert))) vecPrunedNums.Add(toIcoVert);
-
-                                //Log.Line($"from: {fromNum} - to: {toNum} - v: {v}");
-                                //Log.Chars($"{{}}");
-                                num++;
-                                //if (i == 0) Log.Chars($"arr[{num}] = new int[{vecPrunedNums.Count}] {{");
-                            }
-                        }
-
-                        //Log.Line($"{vecPrunedNums.Count}");
-                        foreach (var pNum in vecPrunedNums)
-                        {
-                            //Log.Line($"num: {v} -- {pNum.Item1} - {pNum.Item2}");
-
-                            var tri0Line1 = new LineD(test[pNum.Item1], test[pNum.Item2]);
-
-                            vecPrunedLinesTest.Add(tri0Line1);
-
-                        }
-                    }
-                    //DrawLineD(vecPrunedLines);
-
-                    //Log.Line($"pLines: {vecPrunedLines.Count} - vecBuff: {vecBufferNums.Count} - vecBuffList: {vecBufferNumList.Count} - vNum:{v}");
-                    /*
-                    foreach (var vec in vecBuffer)
-                    {
-                        Log.Chars($"{vec},");
-                    }
-                    Log.Chars($"\n");
-                    */
-                }
-                Log.Line($"{vecPrunedLinesTest.Count}");
-            }
-
-
-            /*
-                var c0 = 0;
-                var c1 = 0;
-                var c2 = 0;
-                var c3 = 0;
-                var c4 = 0;
-                var c5 = 0;
-                var c6 = 0;
-                var c7 = 0;
-                var c8 = 0;
-                var c9 = 0;
-                var c10 = 0;
-                var c11 = 0;
-                if (buildOnce == false)
-                {
-                    for (int i = 0, j = 0; i < test.Length; i += 3, j++)
-                    {
-                        if (c0 == 25) continue;
-                        if (c1 == 25) continue;
-                        if (c2 == 25) continue;
-                        if (c3 == 25) continue;
-                        if (c4 == 25) continue;
-                        if (c5 == 25) continue;
-                        if (c6 == 25) continue;
-                        if (c7 == 25) continue;
-                        if (c8 == 25) continue;
-                        if (c9 == 25) continue;
-                        if (c10 == 25) continue;
-                        if (c11 == 25) continue;
-
-                        var v0 = test[i];
-                        var v1 = test[i + 1];
-                        var v2 = test[i + 2];
-                        var mNum = -1;
-
-                        foreach (var magicVec in _magicVecs)
-                        {
-                            if (magicVec == _magicVecs[0]) mNum = 0;
-                            if (magicVec == _magicVecs[1]) mNum = 1;
-                            if (magicVec == _magicVecs[2]) mNum = 2;
-                            if (magicVec == _magicVecs[3]) mNum = 3;
-                            if (magicVec == _magicVecs[4]) mNum = 4;
-                            if (magicVec == _magicVecs[5]) mNum = 5;
-                            if (magicVec == _magicVecs[6]) mNum = 6;
-                            if (magicVec == _magicVecs[7]) mNum = 7;
-                            if (magicVec == _magicVecs[8]) mNum = 8;
-                            if (magicVec == _magicVecs[9]) mNum = 9;
-                            if (magicVec == _magicVecs[10]) mNum = 10;
-                            if (magicVec == _magicVecs[11]) mNum = 11;
-
-                            if (v0 == _magicVecs[mNum] || v1 == _magicVecs[mNum] || v2 == _magicVecs[mNum])
-                            {
-                                var e0 = true;
-                                var e1 = true;
-                                var e2 = true;
-
-                                if (mNum == 0)
-                                {
-                                    foreach (var m in m0)
-                                    {
-                                        if (m == v0 || v0 == _magicVecs[mNum]) e0 = false;
-                                        if (m == v1 || v1 == _magicVecs[mNum]) e1 = false;
-                                        if (m == v2 || v2 == _magicVecs[mNum]) e2 = false;
-                                    }
-                                    if (e0) m0[c0] = v0;
-                                    if (e0) c0++;
-                                    if (e1) m0[c0] = v1;
-                                    if (e1) c0++;
-                                    if (e2) m0[c0] = v2;
-                                    if (e2) c0++;
-
-                                    //if (_count == 0) Log.Line($"v0: {v0} v0: {e0} - l:{c0} - n:{mNum} - root:{v0 == _magicVecs[mNum]}");
-                                    //if (_count == 0) Log.Line($"v1: {v1} v1: {e1} - l:{c0} - n:{mNum} - root:{v1 == _magicVecs[mNum]}");
-                                    //if (_count == 0) Log.Line($"v2: {v2} v2: {e2} - l:{c0} - n:{mNum} - root:{v2 == _magicVecs[mNum]}");
-
-                                }
-                                if (mNum == 1)
-                                {
-                                    foreach (var m in m1)
-                                    {
-                                        if (m == v0 || v0 == _magicVecs[mNum]) e0 = false;
-                                        if (m == v1 || v1 == _magicVecs[mNum]) e1 = false;
-                                        if (m == v2 || v2 == _magicVecs[mNum]) e2 = false;
-                                    }
-                                    if (e0) m1[c1] = v0;
-                                    if (e0) c1++;
-                                    if (e1) m1[c1] = v1;
-                                    if (e1) c1++;
-                                    if (e2) m1[c1] = v2;
-                                    if (e2) c1++;
-                                }
-                                if (mNum == 2)
-                                {
-                                    foreach (var m in m2)
-                                    {
-                                        if (m == v0 || v0 == _magicVecs[mNum]) e0 = false;
-                                        if (m == v1 || v1 == _magicVecs[mNum]) e1 = false;
-                                        if (m == v2 || v2 == _magicVecs[mNum]) e2 = false;
-                                    }
-                                    if (e0) m2[c2] = v0;
-                                    if (e0) c2++;
-                                    if (e1) m2[c2] = v1;
-                                    if (e1) c2++;
-                                    if (e2) m2[c2] = v2;
-                                    if (e2) c2++;
-                                }
-                                if (mNum == 3)
-                                {
-                                    foreach (var m in m3)
-                                    {
-                                        if (m == v0 || v0 == _magicVecs[mNum]) e0 = false;
-                                        if (m == v1 || v1 == _magicVecs[mNum]) e1 = false;
-                                        if (m == v2 || v2 == _magicVecs[mNum]) e2 = false;
-                                    }
-                                    if (e0) m3[c3] = v0;
-                                    if (e0) c3++;
-                                    if (e1) m3[c3] = v1;
-                                    if (e1) c3++;
-                                    if (e2) m3[c3] = v2;
-                                    if (e2) c3++;
-                                }
-                                if (mNum == 4)
-                                {
-                                    foreach (var m in m4)
-                                    {
-                                        if (m == v0 || v0 == _magicVecs[mNum]) e0 = false;
-                                        if (m == v1 || v1 == _magicVecs[mNum]) e1 = false;
-                                        if (m == v2 || v2 == _magicVecs[mNum]) e2 = false;
-                                    }
-                                    if (e0) m4[c4] = v0;
-                                    if (e0) c4++;
-                                    if (e1) m4[c4] = v1;
-                                    if (e1) c4++;
-                                    if (e2) m4[c4] = v2;
-                                    if (e2) c4++;
-                                }
-                                if (mNum == 5)
-                                {
-                                    foreach (var m in m5)
-                                    {
-                                        if (m == v0 || v0 == _magicVecs[mNum]) e0 = false;
-                                        if (m == v1 || v1 == _magicVecs[mNum]) e1 = false;
-                                        if (m == v2 || v2 == _magicVecs[mNum]) e2 = false;
-                                    }
-                                    if (e0) m5[c5] = v0;
-                                    if (e0) c5++;
-                                    if (e1) m5[c5] = v1;
-                                    if (e1) c5++;
-                                    if (e2) m5[c5] = v2;
-                                    if (e2) c5++;
-                                }
-                                if (mNum == 6)
-                                {
-                                    foreach (var m in m6)
-                                    {
-                                        if (m == v0 || v0 == _magicVecs[mNum]) e0 = false;
-                                        if (m == v1 || v1 == _magicVecs[mNum]) e1 = false;
-                                        if (m == v2 || v2 == _magicVecs[mNum]) e2 = false;
-                                    }
-                                    if (e0) m6[c6] = v0;
-                                    if (e0) c6++;
-                                    if (e1) m6[c6] = v1;
-                                    if (e1) c6++;
-                                    if (e2) m6[c6] = v2;
-                                    if (e2) c6++;
-                                }
-                                if (mNum == 7)
-                                {
-                                    foreach (var m in m7)
-                                    {
-                                        if (m == v0 || v0 == _magicVecs[mNum]) e0 = false;
-                                        if (m == v1 || v1 == _magicVecs[mNum]) e1 = false;
-                                        if (m == v2 || v2 == _magicVecs[mNum]) e2 = false;
-                                    }
-                                    if (e0) m7[c7] = v0;
-                                    if (e0) c7++;
-                                    if (e1) m7[c7] = v1;
-                                    if (e1) c7++;
-                                    if (e2) m7[c7] = v2;
-                                    if (e2) c7++;
-                                }
-                                if (mNum == 8)
-                                {
-                                    foreach (var m in m8)
-                                    {
-                                        if (m == v0 || v0 == _magicVecs[mNum]) e0 = false;
-                                        if (m == v1 || v1 == _magicVecs[mNum]) e1 = false;
-                                        if (m == v2 || v2 == _magicVecs[mNum]) e2 = false;
-                                    }
-                                    if (e0) m8[c8] = v0;
-                                    if (e0) c8++;
-                                    if (e1) m8[c8] = v1;
-                                    if (e1) c8++;
-                                    if (e2) m8[c8] = v2;
-                                    if (e2) c8++;
-                                }
-                                if (mNum == 9)
-                                {
-                                    foreach (var m in m9)
-                                    {
-                                        if (m == v0 || v0 == _magicVecs[mNum]) e0 = false;
-                                        if (m == v1 || v1 == _magicVecs[mNum]) e1 = false;
-                                        if (m == v2 || v2 == _magicVecs[mNum]) e2 = false;
-                                    }
-                                    if (e0) m9[c9] = v0;
-                                    if (e0) c9++;
-                                    if (e1) m9[c9] = v1;
-                                    if (e1) c9++;
-                                    if (e2) m9[c9] = v2;
-                                    if (e2) c9++;
-                                }
-                                if (mNum == 10)
-                                {
-                                    foreach (var m in m10)
-                                    {
-                                        if (m == v0 || v0 == _magicVecs[mNum]) e0 = false;
-                                        if (m == v1 || v1 == _magicVecs[mNum]) e1 = false;
-                                        if (m == v2 || v2 == _magicVecs[mNum]) e2 = false;
-                                    }
-                                    if (e0) m10[c10] = v0;
-                                    if (e0) c10++;
-                                    if (e1) m10[c10] = v1;
-                                    if (e1) c10++;
-                                    if (e2) m10[c10] = v2;
-                                    if (e2) c10++;
-                                }
-                                if (mNum == 11)
-                                {
-                                    foreach (var m in m11)
-                                    {
-                                        if (m == v0 || v0 == _magicVecs[mNum]) e0 = false;
-                                        if (m == v1 || v1 == _magicVecs[mNum]) e1 = false;
-                                        if (m == v2 || v2 == _magicVecs[mNum]) e2 = false;
-                                    }
-                                    if (e0) m11[c11] = v0;
-                                    if (e0) c11++;
-                                    if (e1) m11[c11] = v1;
-                                    if (e1) c11++;
-                                    if (e2) m11[c11] = v2;
-                                    if (e2) c11++;
-                                }
-                            }
-                        }
-                        buildOnce = false;
-                    }
-                }
-
-                DrawMagicVerts();
-                ReportVertArrays();
-                DrawVertLines();
-                */
-            //if (_count == 0) DSUtils.StopWatchReport("compile verts", -1);
+            if (_buildOnce == false) _structureBuilder.BuildBase(_icosphere.CalculatePhysics(DetectionMatrix, PhysicsLod), _rootVecs, _physicsVerts, _buildLines, _buildTris, _buildVertZones, _buildByVerts);
+            _buildOnce = true;
         }
 
-        private void DrawMagicVerts()
-        {
-            foreach (var magic in _magicVecs)
-            {
-                //Log.Line($"magic: {magic}");
-                var c = Color.Red;
-                if (magic == _magicVecs[0]) c = Color.Blue;
-                DrawCollisionCenter(magic, 5, c);
-            }
-        }
-
-        private void DrawLineD(HashSet<LineD> lineD)
-        {
-            foreach (var line in lineD)
-            {
-                var from = line.From;
-                var to = line.To;
-                var color = Vector4.Zero;
-                MySimpleObjectDraw.DrawLine(from, to, MyStringId.GetOrCompute(""), ref color, 0.25f);
-            }
-        }
-        private void DrawVertLines()
-        {
-            var color = Vector4.Zero;
-            for (int i = 0; i < m0.Length; i++)
-            {
-                if (m0[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[0], m0[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
-            }
-            for (int i = 0; i < m1.Length; i++)
-            {
-                if (m1[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[1], m1[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
-            }
-            for (int i = 0; i < m2.Length; i++)
-            {
-                if (m2[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[2], m2[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
-            }
-            for (int i = 0; i < m3.Length; i++)
-            {
-                if (m3[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[3], m3[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
-            }
-            for (int i = 0; i < m4.Length; i++)
-            {
-                if (m4[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[4], m4[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
-            }
-            for (int i = 0; i < m5.Length; i++)
-            {
-                if (m5[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[5], m5[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
-            }
-            for (int i = 0; i < m6.Length; i++)
-            {
-                if (m6[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[6], m6[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
-            }
-            for (int i = 0; i < m7.Length; i++)
-            {
-                if (m7[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[7], m7[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
-            }
-            for (int i = 0; i < m8.Length; i++)
-            {
-                if (m8[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[8], m8[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
-            }
-            for (int i = 0; i < m9.Length; i++)
-            {
-                if (m9[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[9], m9[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
-            }
-            for (int i = 0; i < m10.Length; i++)
-            {
-                if (m10[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[10], m10[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
-            }
-            for (int i = 0; i < m11.Length; i++)
-            {
-                if (m11[i] != Vector3D.Zero) MySimpleObjectDraw.DrawLine(_magicVecs[11], m11[i], MyStringId.GetOrCompute(""), ref color, 0.25f);
-            }
-        }
-
-        private void ReportVertArrays()
-        {
-            var mc0 = 0;
-            foreach (var m in m0)
-            {
-                bool magic = m == _magicVecs[0];
-                if (_count == 0) Log.Line($"m0: {mc0}:{m} - magic:{magic} - {_magicVecs[0]}");
-                mc0++;
-            }
-
-            var mc1 = 0;
-            foreach (var m in m1)
-            {
-                bool magic = m == _magicVecs[1];
-                if (_count == 0) Log.Line($"m1: {mc1}:{m} - magic:{magic}");
-                mc1++;
-            }
-
-            var mc2 = 0;
-            foreach (var m in m2)
-            {
-                bool magic = m == _magicVecs[2];
-                if (_count == 0) Log.Line($"m2: {mc2}:{m} - magic:{magic}");
-                mc2++;
-            }
-
-            var mc3 = 0;
-            foreach (var m in m3)
-            {
-                bool magic = m == _magicVecs[3];
-                if (_count == 0) Log.Line($"m3: {mc3}:{m} - magic:{magic}");
-                mc3++;
-            }
-            var mc4 = 0;
-            foreach (var m in m4)
-            {
-                bool magic = m == _magicVecs[4];
-                if (_count == 0) Log.Line($"m4: {mc4}:{m} - magic:{magic}");
-                mc4++;
-            }
-            var mc5 = 0;
-            foreach (var m in m5)
-            {
-                bool magic = m == _magicVecs[5];
-                if (_count == 0) Log.Line($"m5: {mc5}:{m} - magic:{magic}");
-                mc5++;
-            }
-            var mc6 = 0;
-            foreach (var m in m6)
-            {
-                bool magic = m == _magicVecs[6];
-                if (_count == 0) Log.Line($"m6: {mc6}:{m} - magic:{magic}");
-                mc6++;
-            }
-            var mc7 = 0;
-            foreach (var m in m7)
-            {
-                bool magic = m == _magicVecs[7];
-                if (_count == 0) Log.Line($"m7: {mc7}:{m} - magic:{magic}");
-                mc7++;
-            }
-            var mc8 = 0;
-            foreach (var m in m8)
-            {
-                bool magic = m == _magicVecs[8];
-                if (_count == 0) Log.Line($"m8: {mc8}:{m} - magic:{magic}");
-                mc8++;
-            }
-            var mc9 = 0;
-            foreach (var m in m9)
-            {
-                bool magic = m == _magicVecs[9];
-                if (_count == 0) Log.Line($"m9: {mc9}:{m} - magic:{magic}");
-                mc9++;
-            }
-            var mc10 = 0;
-            foreach (var m in m10)
-            {
-                bool magic = m == _magicVecs[10];
-                if (_count == 0) Log.Line($"m10: {mc10}:{m} - magic:{magic}");
-                mc10++;
-            }
-            var mc11 = 0;
-            foreach (var m in m11)
-            {
-                bool magic = m == _magicVecs[11];
-                if (_count == 0) Log.Line($"m11: {mc11}:{m} - magic:{magic}");
-                mc11++;
-            }
-        }
         public override void UpdateBeforeSimulation100()
         {
             if (_initialized) return;
@@ -1267,7 +574,6 @@ namespace DefenseShields
             }
         }
 
-
         private void CreateMobileShape()
         {
             if (!_gridChanged) return;
@@ -1364,65 +670,57 @@ namespace DefenseShields
 
             if (gridScaler > 1)
             {
-                //var rangedVectors = IntersectRangeCheck(shieldTris, bWorldCenter, reSizedSqr);
-                var rangedVerts = VertRangeCheck(_physicsVerts, shieldTris, bWorldCenter, reSizedSqr);
-                Log.Line($"{rangedVerts.Count}");
-                var boxedTriangles = IntersectTriBox(rangedVerts, bWorldAabb);
-                var obbLines = IntersectLineObb(rangedVerts, bLocalAabb, breaching.PositionComp.WorldMatrix);
-                if (obbLines.Count > 0)
-                {
-                    var pointCollectionScaled = new Vector3D[obbLines.Count];
-                    obbLines.CopyTo(pointCollectionScaled);
-                    locCenterSphere = BoundingSphereD.CreateFromPoints(pointCollectionScaled);
-
-
-                    collision = Vector3D.Lerp(_gridIsMobile ? Block.PositionComp.WorldVolume.Center : Block.CubeGrid.PositionComp.WorldVolume.Center, locCenterSphere.Center, .9);
-                    _worldImpactPosition = collision;
-                    DrawCollisionCenter(collision, locCenterSphere.Radius, Color.Blue); // testing
-                }
+                if (_count == 0) DSUtils.Sw.Start();
+                var rangedVert = VertRangeCheckClosest(_physicsVerts, _rootVecs, _dataStructures.p3SmallZones, bWorldCenter);
+                if (_count == 0) DSUtils.StopWatchReport("vertRanged", -1);
+                var closestFace = _dataStructures.p3VertTris[rangedVert];
+                var boxedTriangles = IntersectSmallBox(closestFace, _physicsVerts, bWorldAabb);
+                DrawNums(FindClosestZone(rangedVert, 1)); // testing
+                DrawLineNums(_dataStructures.p3VertLines[rangedVert]); // testing
+                DrawTriVertList(boxedTriangles); // testing
 
                 if (boxedTriangles.Count > 0)
                 {
-                    //DSUtils.Sw.Start();
                     var pointCollectionScaled = new Vector3D[boxedTriangles.Count];
                     boxedTriangles.CopyTo(pointCollectionScaled);
                     locCenterSphere = BoundingSphereD.CreateFromPoints(pointCollectionScaled);
 
                     collision = Vector3D.Lerp(_gridIsMobile ? Block.PositionComp.WorldVolume.Center : Block.CubeGrid.PositionComp.WorldVolume.Center, locCenterSphere.Center, .9);
                     _worldImpactPosition = collision;
-                   // DSUtils.StopWatchReport($"Small Grid Collision 3", -1);
-                    DrawCollisionCenter(collision, locCenterSphere.Radius, Color.Blue); // testing
+                    DrawVertCollection(collision, locCenterSphere.Radius / 2, Color.Blue); // testing
                 }
-                if (rangedVerts.Count > 0) Log.Line($"total triangles: {_shieldTris.Length / 3} - Ranged {rangedVerts.Count / 3} - BoxTri Check: {boxedTriangles.Count / 3}");
             }
+            /*
             else 
             {
 
-                foreach (var magic in _magicVecs)
+                foreach (var magic in _rootVecs)
                 {
                     //Log.Line($"magic: {magic}");
-                    DrawCollisionCenter(magic, 5, Color.Red);
+                    DrawVertCollection(magic, 5, Color.Red);
                 }
 
-                var rangedVectors = IntersectRangeCheck(shieldTris, bWorldCenter, bLengthSqr);
-                var boxedVectors = IntersectVecBox(rangedVectors, bWorldAabb);
-                var obbLines = IntersectLineObb(boxedVectors, bLocalAabb, breaching.PositionComp.WorldMatrix);
-                if (obbLines.Count > 0)
+                //var rangedVectors = IntersectRangeCheck(shieldTris, bWorldCenter, bLengthSqr);
+                //var boxedVectors = IntersectVecBox(rangedVectors, bWorldAabb);
+                var rangedVert = VertRangeCheckClosest(_physicsVerts, bWorldCenter);
+                var closestFace = _dataStructures.p3VertTris[rangedVert];
+                IntersectSmallBox(closestFace, _physicsVerts, bWorldAabb);
+
+                /*
+                var obbLines = IntersectLineObb(rangedVerts, bLocalAabb, breaching.PositionComp.WorldMatrix);
+                if (obbLines)
                 {
-                    var pointCollectionScaled = new Vector3D[obbLines.Count];
-                    obbLines.CopyTo(pointCollectionScaled);
-                    locCenterSphere = BoundingSphereD.CreateFromPoints(pointCollectionScaled);
-
-
-                    collision = Vector3D.Lerp(_gridIsMobile ? Block.PositionComp.WorldVolume.Center : Block.CubeGrid.PositionComp.WorldVolume.Center, locCenterSphere.Center, .9);
+                    collision = Vector3D.Lerp(_gridIsMobile ? Block.PositionComp.WorldVolume.Center : Block.CubeGrid.PositionComp.WorldVolume.Center, rangedVerts[0].To, .9);
                     _worldImpactPosition = collision;
-                    DrawCollisionCenter(collision, locCenterSphere.Radius, Color.Blue); // testing
+                    DrawVertCollection(collision, locCenterSphere.Radius, Color.Blue); // testing
                 }
-                if (rangedVectors.Count > 0) Log.Line($"total triangles: {_shieldTris.Length / 3} - Ranged {rangedVectors.Count / 3} - Box Check: {boxedVectors.Count / 3} - Obb Collision {obbLines.Count / 3}");
+                if (rangedVerts.Length > 0) Log.Line($"total triangles: {_shieldTris.Length / 3} - Ranged {rangedVerts.Length / 3} - Obb Collision {obbLines}");
             }
-            var grid = breaching as IMyCubeGrid;
-            if (grid == null) return collision;
+            */
+            //var grid = breaching as IMyCubeGrid;
+            //if (grid == null) return collision;
 
+            /*
             try
             {
                 var getBlocks = grid.GetBlocksInsideSphere(ref locCenterSphere);
@@ -1435,87 +733,58 @@ namespace DefenseShields
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in getBlocks: {ex}"); }
+            */
             return collision;
         }
 
-        private static List<Vector3D> IntersectRangeCheck(Vector3D[] shieldTris, Vector3D bWorldCenter, float reSizedSqr)
+        private static int VertRangeCheckClosest(Vector3D[] physicsVerts3, Vector3D[] roots, int[][] zones, Vector3D bWorldCenter)
         {
-            //DSUtils.Sw.Start();
-            var rangedVectors = new List<Vector3D>();
+            double minValue1 = 9999999999999999999;
+            double minValue2 = 9999999999999999999;
+            var minNum1 = -1;
+            var minNum2 = -1;
 
-
-            for (int i = 0, j = 1; i < shieldTris.Length; i += 3, j++)
+            for (int r = 0; r < roots.Length; r++)
             {
-                var v0 = shieldTris[i];
-                var v1 = shieldTris[i + 1];
-                var v2 = shieldTris[i + 2];
-                var test1 = (float)Vector3D.DistanceSquared(v0, bWorldCenter);
-                var test2 = (float)Vector3D.DistanceSquared(v1, bWorldCenter);
-                var test3 = (float)Vector3D.DistanceSquared(v2, bWorldCenter);
+                var vert = roots[r];
+                var test1 = Vector3D.DistanceSquared(vert, bWorldCenter);
 
-                if (test1 < reSizedSqr && test2 < reSizedSqr && test3 < reSizedSqr)
+                if (test1 < minValue1)
                 {
-                    //Log.Line($"vec {j} success");
-                    rangedVectors.Add(v0);
-                    rangedVectors.Add(v1);
-                    rangedVectors.Add(v2);
+                    minValue1 = test1;
+                    minNum1 = r;
                 }
             }
-            //DSUtils.StopWatchReport($"Small Grid Collision 1", -1);
-            return rangedVectors;
-        }
-
-        private static List<Vector3D> VertRangeCheck(Vector3D[] physicsVerts3, Vector3D[] shieldTris, Vector3D bWorldCenter, float reSizedSqr)
-        {
-            var rangedVerts = new List<Vector3D>();
-            var vertBuffer = new List<Vector3D>();
-            for (int i = 0; i < physicsVerts3.Length; i++)
+            var zone = zones[minNum1];
+            var zoneLen = zone.Length;
+            for (int i = 0; i < zoneLen; i++)
             {
-                var vert = physicsVerts3[i];
-                var test1 = (float)Vector3D.DistanceSquared(vert, bWorldCenter);
+                var vert = physicsVerts3[zone[i]];
+                var test2 = Vector3D.DistanceSquared(vert, bWorldCenter);
 
-                if (test1 < reSizedSqr)
+                if (test2 < minValue2)
                 {
-                    vertBuffer.Add(vert);
-                    if (i < physicsVerts3.Length - 1) continue;
-                    //Log.Line($"vec {j} success");
+                    minValue2 = test2;
+                    minNum2 = zone[i];
                 }
-                if (i == physicsVerts3.Length - 1)
+                if (i == zoneLen - 1)
                 {
-                    DSUtils.Sw.Start();
-                    for (int j = 0; j < shieldTris.Length; j += 3)
-                    {
-                        var v0 = shieldTris[j];
-                        var v1 = shieldTris[j + 1];
-                        var v2 = shieldTris[j + 2];
-                        for (int v = 0; v < vertBuffer.Count; v++)
-                        {
-                            var vbuff = vertBuffer[v];
-                            if (v0 == vbuff || v1 == vbuff || v2 == vbuff)
-                            {
-                                rangedVerts.Add(v0);
-                                rangedVerts.Add(v1);
-                                rangedVerts.Add(v2);
-                            }
-                        }
-                    }
-                    DSUtils.StopWatchReport($"Small Grid Collision 1", -1);
+                    return minNum2;
                 }
             }
-            return rangedVerts;
+            return minNum2;
         }
 
-
-        private List<Vector3D> IntersectTriBox(List<Vector3D> rangedVectors, BoundingBoxD bWorldAabb)
+        private static List<Vector3D> IntersectSmallBox(int[] closestFace, Vector3D[] physicsVerts, BoundingBoxD bWorldAabb)
         {
-            //DSUtils.Sw.Start();
             var boxedTriangles = new List<Vector3D>();
 
-            for (int i = 0, j = 0; i < rangedVectors.Count; i += 3, j++)
+            for (int i = 0, j = 0; i < closestFace.Length; i += 3, j++)
             {
-                var v0 = rangedVectors[i];
-                var v1 = rangedVectors[i + 1];
-                var v2 = rangedVectors[i + 2];
+                var v0 = physicsVerts[closestFace[i]];
+                var v1 = physicsVerts[closestFace[i + 1]];
+                var v2 = physicsVerts[closestFace[i + 2]];
+
                 var test1 = bWorldAabb.IntersectsTriangle(v0, v1, v2);
 
                 if (!test1) continue;
@@ -1523,10 +792,23 @@ namespace DefenseShields
                 boxedTriangles.Add(v1);
                 boxedTriangles.Add(v2);
             }
-            //if (_count == 0) Log.Line($"gridScaler: {gridScaler} - Blength: {bLength} - bsqr {bLength * bLength} - bMin: {bLocalAABB.Extents.Min()}");
-            //if (rangedVectors.Count > 0) Log.Line($"total triangles: {_shieldTris.Length / 3} - Ranged {rangedVectors.Count / 3} - Box Check: {boxedVectors.Count / 3}");
-            //DSUtils.StopWatchReport($"Small Grid Collision 2", -1);
             return boxedTriangles;
+        }
+
+
+        private bool IntersectLineObb(LineD[] boxedVectors, BoundingBox bLocalAabb, MatrixD matrix)
+        {
+            var bOriBBoxD = new MyOrientedBoundingBoxD(bLocalAabb, matrix);
+
+            foreach (var line in boxedVectors)
+            {
+                var lineTest = line;
+                if (bOriBBoxD.Intersects(ref lineTest).HasValue)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private List<Vector3D> IntersectVecBox(List<Vector3D> rangedVectors, BoundingBoxD bWorldAabb)
@@ -1551,38 +833,12 @@ namespace DefenseShields
             }
             return boxedVectors;
         }
-
-        private List<Vector3D> IntersectLineObb(List<Vector3D> boxedVectors, BoundingBox bLocalAabb, MatrixD matrix)
-        {
-            var obbLines = new List<Vector3D>();
-            var bOriBBoxD = new MyOrientedBoundingBoxD(bLocalAabb, matrix);
-
-            for (var i = 0; i < boxedVectors.Count; i += 3)
-            {
-                var line1 = boxedVectors[i];
-                var line2 = boxedVectors[i + 1];
-                var line3 = boxedVectors[i + 2];
-                var lineTest1 = new LineD(line1, line2);
-                var lineTest2 = new LineD(line2, line3);
-                var lineTest3 = new LineD(line3, line1);
-                //if (lineTest1.Length > 19.45 || lineTest2.Length > 19.45 || lineTest3.Length > 19.45)Log.Line($"{lineTest3.Length} - {lineTest2.Length} - {lineTest1.Length}");
-                //if (lineTest1.Length > 0 || lineTest2.Length > 0 || lineTest3.Length > 0)Log.Line($"{lineTest3.Length} - {lineTest2.Length} - {lineTest1.Length}");
-                if (bOriBBoxD.Intersects(ref lineTest1).HasValue || bOriBBoxD.Intersects(ref lineTest2).HasValue || bOriBBoxD.Intersects(ref lineTest3).HasValue)
-                {
-                    obbLines.Add(line1);
-                    obbLines.Add(line2);
-                    obbLines.Add(line3);
-                }
-            }
-            return obbLines;
-        }
-
-        private void DrawCollisionCenter(Vector3D collision, double radius, Color color)
+        private void DrawVertCollection(Vector3D collision, double radius, Color color)
         {
             var posMatCenterScaled = MatrixD.CreateTranslation(collision);
             var posMatScaler = MatrixD.Rescale(posMatCenterScaled, radius);
             var rangeGridResourceId = MyStringId.GetOrCompute("Build new");
-            MySimpleObjectDraw.DrawTransparentSphere(ref posMatScaler, 1f, ref color, MySimpleObjectRasterizer.Solid, 20, null, rangeGridResourceId, 0.25f, -1);
+            MySimpleObjectDraw.DrawTransparentSphere(ref posMatScaler, 1f, ref color, MySimpleObjectRasterizer.Solid, 16, null, rangeGridResourceId, -1, -1);
         }
 
         private double ContainmentField(IMyEntity breaching, IMyEntity field, Vector3D intersect)
@@ -1656,16 +912,18 @@ namespace DefenseShields
 
             var bmass = -breaching.Physics.Mass;
             var cpDist = Vector3D.Transform(contactPoint, _detectionMatrixInv).LengthSquared();
-            var expelForce = (bmass); /// Math.Pow(cpDist, 2);
+            //var expelForce = (bmass); /// Math.Pow(cpDist, 2);
             //if (expelForce < -9999000000f || bmass >= -67f) expelForce = -9999000000f;
+            var expelForce = (bmass / 16) / (float)Math.Pow(cpDist, 2);
+
 
             var worldPosition = breaching.WorldMatrix.Translation;
             var worldDirection = contactPoint - worldPosition;
 
-            //breaching.Physics.ApplyImpulse(worldDirection * (expelForce / 2), contactPoint);
-            //if (_gridIsMobile) Block.CubeGrid.Physics.ApplyImpulse(Vector3D.Negate(worldDirection) * (expelForce / 2), contactPoint);
+            if (_gridIsMobile) Block.CubeGrid.Physics.ApplyImpulse(Vector3D.Negate(worldDirection) * (expelForce / 20), contactPoint);
+            else breaching.Physics.ApplyImpulse(worldDirection * (expelForce / 40), contactPoint);
 
-            //if (cpDist > 0.987f) breaching.Physics.ApplyImpulse((breaching.Physics.Mass / 500) * -0.055f * Vector3D.Dot(breaching.Physics.LinearVelocity, surfaceNormal) * surfaceNormal, contactPoint);
+            //breaching.Physics.ApplyImpulse(breaching.Physics.Mass * -0.050f * Vector3D.Dot(breaching.Physics.LinearVelocity, surfaceNormal) * surfaceNormal, contactPoint);
             //Log.Line($"cpDist:{cpDist} pow:{expelForce} bmass:{bmass} adjbmass{bmass / 50}");
 
             return powerCorrectionInJoules * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
@@ -1808,7 +1066,6 @@ namespace DefenseShields
 
         private void WebEntities()
         {
-            //DSUtils.Sw.Start();
             var websphere = new BoundingSphereD(_detectionCenter, _range);
             var webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
             MyAPIGateway.Parallel.ForEach(webList, webent =>
@@ -1844,7 +1101,6 @@ namespace DefenseShields
                 }
                 //Log.Line($"webEffect unmatched {webent.GetFriendlyName()} {webent.Name} {webent.DisplayName} {webent.EntityId} {webent.Parent} {webent.Components}");
             });
-            //DSUtils.StopWatchReport("Web", -1);
         }
         #endregion
 
@@ -2029,6 +1285,189 @@ namespace DefenseShields
             Log.Line($"UseThisShip_Receiver({fix})");
 
             //UseThisShip_Internal(fix);
+        }
+        private int GetVertNum(Vector3D vec)
+        {
+            var pmatch = false;
+            var pNum = -1;
+            foreach (var pvert in _physicsVerts)
+            {
+                pNum++;
+                if (vec == pvert) pmatch = true;
+                if (pmatch) return pNum;
+            }
+            return pNum;
+        }
+
+        private void FindRoots()
+        {
+            for (int i = 0, j = 0; i < _physicsVerts.Length; i++, j++)
+            {
+                var vec = _physicsVerts[i];
+                foreach (var magic in _rootVecs)
+                {
+                    for (int num = 0; num < 12; num++)
+                    {
+                        if (_count == 0 && vec == magic && _rootVecs[num] == vec) Log.Line($"Found root {num} at index: {i}");
+                    }
+
+                }
+            }
+        }
+
+        private int[] FindClosestZone(int locateVertNum, int size)
+        {
+            // 1 = p3SmallZones, 2 = p3MediumZones, 3 = p3LargeZones
+            var zone1Match = -1;
+            var zone2Match = -1;
+            var zone1 = _dataStructures.p3SmallZones;
+            var zone2 = _dataStructures.p3MediumZones;
+
+
+            if (size == 1)
+            {
+                for (int i = 0; i < zone1.Length; i++)
+                {
+                    foreach (var vertNum in zone1[i])
+                    {
+                        if (vertNum == locateVertNum) zone1Match = i;
+                    }
+                }
+
+            }
+            else if (size == 2)
+            {
+                for (int i = 0; i < zone2.Length; i++)
+                {
+                    foreach (var vertNum in zone2[i])
+                    {
+                        if (vertNum == locateVertNum) zone2Match = i;
+                    }
+                }
+            }
+            if (zone1Match != -1) return zone1[zone1Match];
+            if (zone2Match != -1) return zone2[zone2Match];
+            return null;
+        }
+
+        private void DrawTriNumArray(int[] array)
+        {
+            var lineId = MyStringId.GetOrCompute("Square");
+            var c = Color.Red.ToVector4();
+
+            for (int i = 0; i < array.Length; i += 3)
+            {
+                var vn0 = array[i];
+                var vn1 = array[i + 1];
+                var vn2 = array[i + 2];
+
+                var v0 = _physicsVerts[vn0];
+                var v1 = _physicsVerts[vn1];
+                var v2 = _physicsVerts[vn2];
+
+                MySimpleObjectDraw.DrawLine(v0, v1, lineId, ref c, 0.25f);
+                MySimpleObjectDraw.DrawLine(v0, v2, lineId, ref c, 0.25f);
+                MySimpleObjectDraw.DrawLine(v1, v2, lineId, ref c, 0.25f);
+
+            }
+        }
+
+        private void DrawTriVertList(List<Vector3D> list)
+        {
+            var lineId = MyStringId.GetOrCompute("Square");
+            var c = Color.Red.ToVector4();
+            for (int i = 0; i < list.Count; i += 3)
+            {
+                var v0 = list[i];
+                var v1 = list[i + 1];
+                var v2 = list[i + 2];
+
+                MySimpleObjectDraw.DrawLine(v0, v1, lineId, ref c, 0.25f);
+                MySimpleObjectDraw.DrawLine(v0, v2, lineId, ref c, 0.25f);
+                MySimpleObjectDraw.DrawLine(v1, v2, lineId, ref c, 0.25f);
+
+            }
+        }
+
+        private void DrawLineNums(int[] lineArray)
+        {
+            var c = Color.Blue.ToVector4();
+            var lineId = MyStringId.GetOrCompute("Square");
+
+            for (int i = 0; i < lineArray.Length; i += 2)
+            {
+                var v0 = _physicsVerts[lineArray[i]];
+                var v1 = _physicsVerts[lineArray[i + 1]]; ;
+                MySimpleObjectDraw.DrawLine(v0, v1, lineId, ref c, 0.25f);
+            }
+        }
+
+        private void DrawRootVerts()
+        {
+            foreach (var root in _rootVecs)
+            {
+                //Log.Line($"magic: {magic}");
+                var c = Color.Gold;
+                if (root == _rootVecs[0]) c = Color.Blue;
+                if (root == _rootVecs[1]) c = Color.Green;
+                if (root == _rootVecs[2]) c = Color.Red;
+                if (root == _rootVecs[3]) c = Color.Yellow;
+                if (root == _rootVecs[4]) c = Color.Orange;
+                if (root == _rootVecs[5]) c = Color.Purple;
+                if (root == _rootVecs[6]) c = Color.Black;
+                if (root == _rootVecs[7]) c = Color.White;
+                if (root == _rootVecs[8]) c = Color.Cyan;
+                if (root == _rootVecs[9]) c = Color.Gray;
+                if (root == _rootVecs[10]) c = Color.HotPink;
+                if (root == _rootVecs[11]) c = Color.DeepPink;
+
+
+                DrawVertCollection(root, 5, c);
+            }
+        }
+
+        private void DrawVerts(Vector3D[] list)
+        {
+            foreach (var vec in list)
+            {
+                //Log.Line($"magic: {magic}");
+                var c = Color.Gold;
+                if (vec == _rootVecs[0]) c = Color.Blue;
+                if (vec == _rootVecs[1]) c = Color.Green;
+                if (vec == _rootVecs[2]) c = Color.Red;
+                if (vec == _rootVecs[3]) c = Color.Yellow;
+                if (vec == _rootVecs[4]) c = Color.Orange;
+                if (vec == _rootVecs[5]) c = Color.Purple;
+                if (vec == _rootVecs[6]) c = Color.Black;
+                if (vec == _rootVecs[7]) c = Color.White;
+                if (vec == _rootVecs[8]) c = Color.Cyan;
+                if (vec == _rootVecs[9]) c = Color.Gray;
+                if (vec == _rootVecs[10]) c = Color.HotPink;
+                if (vec == _rootVecs[11]) c = Color.DeepPink;
+                DrawVertCollection(vec, 5, c);
+            }
+        }
+
+        private void DrawNums(int[] list)
+        {
+            foreach (var num in list)
+            {
+                //Log.Line($"magic: {magic}");
+                var c = Color.Gold;
+                if (_physicsVerts[num] == _rootVecs[0]) c = Color.Blue;
+                if (_physicsVerts[num] == _rootVecs[1]) c = Color.Green;
+                if (_physicsVerts[num] == _rootVecs[2]) c = Color.Red;
+                if (_physicsVerts[num] == _rootVecs[3]) c = Color.Yellow;
+                if (_physicsVerts[num] == _rootVecs[4]) c = Color.Orange;
+                if (_physicsVerts[num] == _rootVecs[5]) c = Color.Purple;
+                if (_physicsVerts[num] == _rootVecs[6]) c = Color.Black;
+                if (_physicsVerts[num] == _rootVecs[7]) c = Color.White;
+                if (_physicsVerts[num] == _rootVecs[8]) c = Color.Cyan;
+                if (_physicsVerts[num] == _rootVecs[9]) c = Color.Gray;
+                if (_physicsVerts[num] == _rootVecs[10]) c = Color.HotPink;
+                if (_physicsVerts[num] == _rootVecs[11]) c = Color.DeepPink;
+                DrawVertCollection(_physicsVerts[num], 5, c);
+            }
         }
     }
 }

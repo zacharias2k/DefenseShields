@@ -199,6 +199,32 @@ namespace DefenseShields.Support
                 _backing = backing;
             }
 
+            private int[,] ComputeVertexToTris(int lod)
+            {
+                var data = new int[_vertexBuffer.Length, 6];
+                var ib = _backing.IndexBuffer[lod];
+                for (var i = 0; i < ib.Length; i += 3)
+                {
+                    AddInlineList(data, ib[i], i);
+                    AddInlineList(data, ib[i], i);
+                    AddInlineList(data, ib[i], i);
+                }
+
+                return data;
+            }
+
+            private static void AddInlineList(int[,] list, int index, int val)
+            {
+                var capacity = list.GetLength(1);
+                var count = -list[index, capacity - 1];
+                if (count < 0)
+                    throw new Exception("Failed to add to list.  Overflow");
+                list[index, count] = val;
+                count++;
+                if (count < capacity)
+                    list[index, capacity - 1] = -count;
+            }
+
             public void CalculateTransform(MatrixD matrix, int lod)
             {
                 //Log.Line($"Start CalculateTransform");
@@ -242,6 +268,17 @@ namespace DefenseShields.Support
                     vecs[i+2] = v2;
                 }
                 return vecs;
+            }
+
+            public Vector3D[] ReturnPhysicsVerts(MatrixD matrix, int lod)
+            {
+                var count = checked((int)VertsForLod(lod));
+                Array.Resize(ref _physicsBuffer, count);
+
+                for (var i = 0; i < count; i++)
+                    Vector3D.Transform(ref _backing.VertexBuffer[i], ref matrix, out _physicsBuffer[i]);
+
+                return _physicsBuffer;
             }
 
             public void CalculateColor(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, bool sphereOnCamera, IMyEntity shield)
@@ -391,8 +428,8 @@ namespace DefenseShields.Support
                         var color = _triColorBuffer[j];
                         if (color == _currentColor) faceMaterial = _faceId1;
                         else if (color == _pulseColor) faceMaterial = _faceId1;
-                        else if (color == _test1Color) faceMaterial = _faceId1;
-                        else if (color == _test2Color) faceMaterial = _faceId1;
+                        else if (color == _test1Color) faceMaterial = _faceId2;
+                        else if (color == _test2Color) faceMaterial = _faceId4;
                         else if (color == _waveColor) faceMaterial = _faceId1;
                         else if (color == _waveComingColor) faceMaterial = _faceId1;
                         else if (color == _wavePassedColor) faceMaterial = _faceId1;

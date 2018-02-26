@@ -13,6 +13,7 @@ using VRage.ObjectBuilders;
 
 namespace DefenseShields
 {
+    /*
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_LargeTurretBaseDefinition), false, new string[] { "Guns" })]
     class Guns : MyGameLogicComponent
     {
@@ -113,4 +114,5 @@ namespace DefenseShields
             this.v3 = v3;
         }
     }
+    */
 }

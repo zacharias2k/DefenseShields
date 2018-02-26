@@ -226,7 +226,6 @@
     <None Include="Models\LargeField.mwm" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Data\Scripts\DefenseShields\Class1.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\BaseControl.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Checkbox.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Controls.cs" />
@@ -234,12 +233,14 @@
     <Compile Include="Data\Scripts\DefenseShields\Guns.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Network\SerializationClasses.cs" />
     <Compile Include="Data\Scripts\DefenseShields\OldCode.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\DataStructure.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Logging.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Slider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\MyMaths.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\DSUtils.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\SpawnField.cs" />
     <Compile Include="Data\Scripts\DefenseShields\StationShield.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\StructureBuilder.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Voxel.cs" />
   </ItemGroup>
   <ItemGroup>

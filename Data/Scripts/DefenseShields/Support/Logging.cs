@@ -83,6 +83,21 @@ namespace DefenseShields.Support
             }
         }
 
+        public static void CleanLine(string text)
+        {
+            try
+            {
+                if (GetInstance()._file != null)
+                {
+                    GetInstance()._file.WriteLine(text);
+                    GetInstance()._file.Flush();
+                }
+            }
+            catch (Exception e)
+            {
+            }
+        }
+
         public static void Close()
         {
             try

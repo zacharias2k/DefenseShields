@@ -15,15 +15,15 @@ using VRageMath;
 namespace DefenseShields
 {
 
+ /*
 
-    public class Voxels 
-    {
-        public bool DisplayMessage;
-        public DateTime StartTime;
-        public string Message;
-        public string AsteroidName;
+public class Voxels 
+{
+    public bool DisplayMessage;
+    public DateTime StartTime;
+    public string Message;
+    public string AsteroidName;
 
-        /*
 var diameter = 600;
 double maxDiameter = 0;
 maxDiameter = Math.Max(maxDiameter, diameter);
@@ -50,9 +50,8 @@ Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(origin.X - 2, o
 Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(-origin.X + 2, origin.Y - 2, -origin.Z + 2), origin, layers);
 Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(origin.X - 2, -origin.Y + 2, -origin.Z + 2), origin, layers);
 Voxels.Voxels.ProcessAsteroid(name, size, position, new Vector3D(-origin.X + 2, -origin.Y + 2, -origin.Z + 2), origin, layers);
-*/
 
-        /*This command is used to generate a IcoSphere asteroid at the exact center of the specified co-ordinates, with multiple layers.
+This command is used to generate a IcoSphere asteroid at the exact center of the specified co-ordinates, with multiple layers.
 /createroidIcoSphere <Name> <X> <Y> <Z> <Parts> <Material1> <Diameter1> <Material2> <Diameter2> <Material3> <Diameter3> ....
   <Name> - the base name of the asteroid file. A number will be added if it already exists.
   <X> <Y> <Z> - the center coordinate of where to place the asteroid.
@@ -75,7 +74,6 @@ Examples:
 
             // As Asteroid volumes are cubic octrees, they are sized in 64, 128, 256, 512, 1024, 2048
 
-            /*
             Sample calls...
             /createroidIcoSphere test 200 200 200 1 Gold_01 200
             
@@ -98,7 +96,6 @@ Examples:
             2000m, 40-50min.
             2700m, 1:36:50s.
         }
-        */
 
         #region Voxel
 
@@ -150,13 +147,11 @@ Examples:
             cache.ClearContent(0);
             // write new data back to the storage
             storage.WriteRange(cache, MyStorageDataTypeFlags.Content, Vector3I.Zero, size - 1);
-            */
 
             return MyAPIGateway.Session.VoxelMaps.CreateVoxelMap(storageName, storage, position, 0);
         }
         #endregion
 
-        /*
 public static class Test
 {
     public static double RoundUpToCube(this double value)
@@ -206,6 +201,6 @@ public static class Test
             public string MaterialName { get; set; }
             public byte Material { get; set; }
             public double Diameter { get; set; }
-        } */
-    }
+        } 
+    }*/
 }
