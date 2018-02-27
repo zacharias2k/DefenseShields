@@ -175,6 +175,7 @@ namespace DefenseShields.Support
                             }
                         }
                     }
+
                     foreach (var l in numL2VertsToRoots)
                     {
                         if (count == 0) _z0.Add(l);
@@ -294,18 +295,18 @@ namespace DefenseShields.Support
                     }
                     foreach (var l in numL6VertsToRoots)
                     {
-                        //if (count == 0) z0.Add(l);
-                        //if (count == 1) z1.Add(l);
-                        //if (count == 2) z2.Add(l);
-                        //if (count == 3) z3.Add(l);
-                        //if (count == 4) z4.Add(l);
-                        //if (count == 5) z5.Add(l);
-                        //if (count == 6) z6.Add(l);
-                        //if (count == 7) z7.Add(l);
-                        //if (count == 8) z8.Add(l);
-                        //if (count == 9) z9.Add(l);
-                        //if (count == 10) z10.Add(l);
-                        //if (count == 11) z11.Add(l);
+                        if (count == 0) _z0.Add(l);
+                        if (count == 1) _z1.Add(l);
+                        if (count == 2) _z2.Add(l);
+                        if (count == 3) _z3.Add(l);
+                        if (count == 4) _z4.Add(l);
+                        if (count == 5) _z5.Add(l);
+                        if (count == 6) _z6.Add(l);
+                        if (count == 7) _z7.Add(l);
+                        if (count == 8) _z8.Add(l);
+                        if (count == 9) _z9.Add(l);
+                        if (count == 10) _z10.Add(l);
+                        if (count == 11) _z11.Add(l);
                         for (int i = 0; i < shieldTris.Length; i += 3)
                         {
                             var v0 = shieldTris[i];
@@ -323,18 +324,18 @@ namespace DefenseShields.Support
                     }
                     foreach (var l in numL7VertsToRoots)
                     {
-                        //if (count == 0) z0.Add(l);
-                        //if (count == 1) z1.Add(l);
-                        //if (count == 2) z2.Add(l);
-                        //if (count == 3) z3.Add(l);
-                        //if (count == 4) z4.Add(l);
-                        //if (count == 5) z5.Add(l);
-                        //if (count == 6) z6.Add(l);
-                        //if (count == 7) z7.Add(l);
-                        //if (count == 8) z8.Add(l);
-                        //if (count == 9) z9.Add(l);
-                        //if (count == 10) z10.Add(l);
-                        //if (count == 11) z11.Add(l);
+                        if (count == 0) _z0.Add(l);
+                        if (count == 1) _z1.Add(l);
+                        if (count == 2) _z2.Add(l);
+                        if (count == 3) _z3.Add(l);
+                        if (count == 4) _z4.Add(l);
+                        if (count == 5) _z5.Add(l);
+                        if (count == 6) _z6.Add(l);
+                        if (count == 7) _z7.Add(l);
+                        if (count == 8) _z8.Add(l);
+                        if (count == 9) _z9.Add(l);
+                        if (count == 10) _z10.Add(l);
+                        if (count == 11) _z11.Add(l);
                         for (int i = 0; i < shieldTris.Length; i += 3)
                         {
                             var v0 = shieldTris[i];
@@ -352,18 +353,18 @@ namespace DefenseShields.Support
                     }
                     foreach (var l in numL8VertsToRoots)
                     {
-                        //if (count == 0) z0.Add(l);
-                        //if (count == 1) z1.Add(l);
-                        //if (count == 2) z2.Add(l);
-                        //if (count == 3) z3.Add(l);
-                        //if (count == 4) z4.Add(l);
-                        //if (count == 5) z5.Add(l);
-                        //if (count == 6) z6.Add(l);
-                        //if (count == 7) z7.Add(l);
-                        //if (count == 8) z8.Add(l);
-                        //if (count == 9) z9.Add(l);
-                        //if (count == 10) z10.Add(l);
-                        //if (count == 11) z11.Add(l);
+                        if (count == 0) _z0.Add(l);
+                        if (count == 1) _z1.Add(l);
+                        if (count == 2) _z2.Add(l);
+                        if (count == 3) _z3.Add(l);
+                        if (count == 4) _z4.Add(l);
+                        if (count == 5) _z5.Add(l);
+                        if (count == 6) _z6.Add(l);
+                        if (count == 7) _z7.Add(l);
+                        if (count == 8) _z8.Add(l);
+                        if (count == 9) _z9.Add(l);
+                        if (count == 10) _z10.Add(l);
+                        if (count == 11) _z11.Add(l);
                     }
                     count++;
                 }
@@ -666,13 +667,13 @@ namespace DefenseShields.Support
 
                     if (c < numFiveClosestTris.Count - 3)
                         Log.Chars($"{GetVertNum(v0, physicsVerts)}, {GetVertNum(v1, physicsVerts)}, {GetVertNum(v2, physicsVerts)}, ");
-                    if (c == numFiveClosestTris.Count / 3)
+                    if (c == numFiveClosestTris.Count - 3)
                         Log.Chars($"{GetVertNum(v0, physicsVerts)}, {GetVertNum(v1, physicsVerts)}, {GetVertNum(v2, physicsVerts)}");
                 }
                 else
                 {
                     if (c < numFiveClosestTris.Count - 3) Log.Chars($"{vn0}, {vn1}, {vn2}, ");
-                    if (c == numFiveClosestTris.Count / 3) Log.Chars($"{vn0}, {vn1}, {vn2}");
+                    if (c == numFiveClosestTris.Count - 3) Log.Chars($"{vn0}, {vn1}, {vn2}");
                 }
             }
             if (last == false) Log.Chars($" }},\n");

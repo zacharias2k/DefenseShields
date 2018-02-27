@@ -64,6 +64,10 @@
     <Reference Include="NLog">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\SpaceEngineers\Bin64\NLog.dll</HintPath>
     </Reference>
+    <Reference Include="OpenTK, Version=1.1.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\SpaceEngineers\Bin64\OpenTK.dll</HintPath>
+    </Reference>
     <Reference Include="RecastDetourWrapper">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\SpaceEngineers\Bin64\RecastDetourWrapper.dll</HintPath>
     </Reference>
@@ -234,6 +238,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Network\SerializationClasses.cs" />
     <Compile Include="Data\Scripts\DefenseShields\OldCode.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\DataStructure.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\VectorMath\DistPoint3Triangle3.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Logging.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Slider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\MyMaths.cs" />
@@ -241,6 +246,9 @@
     <Compile Include="Data\Scripts\DefenseShields\Support\SpawnField.cs" />
     <Compile Include="Data\Scripts\DefenseShields\StationShield.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\StructureBuilder.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\textapi.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\VectorMath\MathUtil.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\VectorMath\Triangle3.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Voxel.cs" />
   </ItemGroup>
   <ItemGroup>

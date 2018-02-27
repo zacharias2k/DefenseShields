@@ -51,4 +51,5 @@ namespace DefenseShields.Support
             return inputs.Min();
         }
     }
+
 }

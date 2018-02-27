@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
@@ -8,6 +9,7 @@ using VRage.ModAPI;
 using DefenseShields.Support;
 using VRage.Game.Definitions;
 using VRageMath;
+using DefenseShields.Support;
 
 namespace DefenseShields
 {
@@ -30,8 +32,15 @@ namespace DefenseShields
         public readonly Icosphere Icosphere = new Icosphere(6);
 
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
-        public List<DefenseShields> Shields = new List<DefenseShields>(); 
+        public List<DefenseShields> Shields = new List<DefenseShields>();
 
+        //textAPI
+        public HudAPIv2 TextAPI;
+        public HudAPIv2.HUDMessage msg;
+        public HudAPIv2.BillBoardHUDMessage Background;
+        public StringBuilder Display;
+        public HudAPIv2.EntityMessage EntityMessage;
+        //
         //private readonly MyStringId _faceId = MyStringId.GetOrCompute("Build new");
 
 
@@ -78,6 +87,7 @@ namespace DefenseShields
 
         public void Init() 
         {
+            TextAPI = new HudAPIv2();
             Log.Init("debugdevelop.log");
             Log.Line($" Logging Started");
             MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
