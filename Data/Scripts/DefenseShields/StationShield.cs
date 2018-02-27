@@ -741,9 +741,18 @@ namespace DefenseShields
         private static void GetTriDistance(Vector3D[] physicsVerts, int[][] p3VertTris, Vector3D bWorldCenter, int count)
         {
             if (count == 0) DSUtils.Sw.Start();
+            var close = false;
             //var point = new Vector3d(bWorldCenter.X, bWorldCenter.Y, bWorldCenter.Z);
             var point = bWorldCenter;
-
+            var tv0 = physicsVerts[0];
+            var tv1 = physicsVerts[1];
+            var tv2 = physicsVerts[2];
+            var tri = new Triangle3d(tv0, tv1, tv2);
+            var distTri = new DistPoint3Triangle3(point, tri);
+            if (distTri.Get() < 100) close = true;
+            if (count == 0) DSUtils.StopWatchReport("Tri Distance", -1);
+            if (count == 0 && close) Log.Line($"Tri Distance Check {distTri.Get()}");
+            /*
             foreach (var van in p3VertTris)
             {
                 for (int i = 0; i < van.Length; i += 3)
@@ -762,7 +771,7 @@ namespace DefenseShields
 
                 }
             }
-            if (count == 0) DSUtils.StopWatchReport("Tri Distance", -1);
+            */
         }
 
         private int VertRangeCheckClosest(Vector3D[] physicsVerts3, Vector3D[] roots, int[][] zones, Vector3D bWorldCenter)

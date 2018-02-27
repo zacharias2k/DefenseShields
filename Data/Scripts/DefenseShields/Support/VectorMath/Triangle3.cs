@@ -6,6 +6,38 @@ using VRageMath;
 
 namespace DefenseShields.Support
 {
+
+    public static class MathUtil
+    {
+
+        /// <summary>
+        /// Compute barycentric coordinates/weights of vPoint inside triangle (V0,V1,V2). 
+        /// If point is in triangle plane and inside triangle, coords will be positive and sum to 1.
+        /// ie if result is a, then vPoint = a.x*V0 + a.y*V1 + a.z*V2.
+        /// </summary>
+        public static Vector3D BarycentricCoords(ref Vector3D vPoint, ref Vector3D V0, ref Vector3D V1, ref Vector3D V2)
+        {
+            Vector3D kV02 = V0 - V2;
+            Vector3D kV12 = V1 - V2;
+            Vector3D kPV2 = vPoint - V2;
+            double fM00 = kV02.Dot(kV02);
+            double fM01 = kV02.Dot(kV12);
+            double fM11 = kV12.Dot(kV12);
+            double fR0 = kV02.Dot(kPV2);
+            double fR1 = kV12.Dot(kPV2);
+            double fDet = fM00 * fM11 - fM01 * fM01;
+            double fInvDet = 1.0 / fDet;
+            double fBary1 = (fM11 * fR0 - fM01 * fR1) * fInvDet;
+            double fBary2 = (fM00 * fR1 - fM01 * fR0) * fInvDet;
+            double fBary3 = 1.0 - fBary1 - fBary2;
+            return new Vector3D(fBary1, fBary2, fBary3);
+        }
+        public static Vector3D BarycentricCoords(Vector3D vPoint, Vector3D V0, Vector3D V1, Vector3D V2)
+        {
+            return BarycentricCoords(ref vPoint, ref V0, ref V1, ref V2);
+        }
+    }
+
     public struct Triangle3d
     {
         public Vector3D V0, V1, V2;

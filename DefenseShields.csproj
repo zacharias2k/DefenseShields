@@ -247,7 +247,6 @@
     <Compile Include="Data\Scripts\DefenseShields\StationShield.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\StructureBuilder.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\textapi.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\VectorMath\MathUtil.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\VectorMath\Triangle3.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Voxel.cs" />
   </ItemGroup>
