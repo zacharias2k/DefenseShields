@@ -78,8 +78,6 @@ namespace DefenseShields.Support
         }
     }
 
-
-
     public struct Triangle3f
     {
         public Vector3D V0;
@@ -109,7 +107,7 @@ namespace DefenseShields.Support
 
         public Vector3D BarycentricCoords(Vector3D point)
         {
-            return (Vector3D)MathUtil.BarycentricCoords(point, V0, V1, V2);
+            return MathUtil.BarycentricCoords(point, V0, V1, V2);
         }
     }
 
