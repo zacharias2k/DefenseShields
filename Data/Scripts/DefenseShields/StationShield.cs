@@ -534,10 +534,10 @@ namespace DefenseShields
         {
             var box = new BoundingBoxD(-obb.HalfExtent, obb.HalfExtent);
             var wm = MatrixD.CreateFromTransformScale(obb.Orientation, obb.Center, Vector3D.One);
-            wm = MatrixD.Rescale(_shieldShapeMatrix, 1f);
+            var test = box.Max * 1.09;
+            wm = MatrixD.Rescale(_shieldShapeMatrix, test);
             MySimpleObjectDraw.DrawTransparentBox(ref wm, ref box, ref color, MySimpleObjectRasterizer.Solid, 1);
         }
-
         #endregion
 
         #region Shield Draw Prep
@@ -684,7 +684,6 @@ namespace DefenseShields
         private bool Breached(IMyEntity ent, MyOrientedBoundingBoxD bOriBBoxD)
         {
             DSUtils.Sw.Start();
-            SetShieldShapeMatrix();
             var ejectionBox = GetWorldOBB(Block);
             DrawBox2(ejectionBox, Color.Red);
             if (ejectionBox.Contains(ref bOriBBoxD) != ContainmentType.Disjoint) return true;
