@@ -60,7 +60,7 @@ namespace DefenseShields
         private bool _buildByVerts = true;
         private bool _buildVertZones = false;
         private bool _buildLines = false;
-        private bool _buildTris = false;
+        private bool _buildTris = true;
         private bool _buildOnce;
         private bool _initialized;
         private bool _animInit;
@@ -76,14 +76,14 @@ namespace DefenseShields
 
         private Vector3D[] _rootVecs = new Vector3D[12];
         private Vector3D[] _rootTris = new Vector3D[60];
-        private Vector3D[] _physicsVerts;
-
-        private double[] _shieldRanged;
+        private Vector3D[] _physicsVerts3;
+        private Vector3D[] _physicsVerts1;
 
         private MatrixD _shieldGridMatrix;
         private MatrixD _shieldShapeMatrix;
         private MatrixD _detectionMatrix;
         private MatrixD _detectionMatrixInv;
+        private MatrixD _detectionMatrixInside;
         private MatrixD _mobileMatrix;
 
         private BoundingBox _oldGridAabb;
@@ -124,6 +124,7 @@ namespace DefenseShields
             {
                 _detectionMatrix = value;
                 _detectionMatrixInv = MatrixD.Invert(value);
+                _detectionMatrixInside = MatrixD.Rescale(_detectionMatrix, 1f + (-15f / 100f));
             }
         }
 
@@ -149,12 +150,13 @@ namespace DefenseShields
         #region Prep / Misc
         private void BuildPhysicsArrays()
         {
-            _physicsVerts = _icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsLod);
+            _physicsVerts3 = _icosphere.ReturnPhysicsVerts(DetectionMatrix, 3);
+            _physicsVerts1 = _icosphere.ReturnPhysicsVerts(_detectionMatrixInside, 1);
             _rootVecs = _icosphere.ReturnPhysicsVerts(DetectionMatrix, 0);
             //_rootTris = _icosphere.CalculatePhysics(DetectionMatrix, 0);
             //DrawNums(_dataStructures.p0RootZones[0]);
 
-            if (_buildOnce == false) _structureBuilder.BuildBase(_icosphere.CalculatePhysics(DetectionMatrix, 0), _rootVecs, _physicsVerts, _buildLines, _buildTris, _buildVertZones, _buildByVerts);
+            if (_buildOnce == false) _structureBuilder.BuildBase(_icosphere.CalculatePhysics(_detectionMatrixInside, 1), _rootVecs, _physicsVerts1, _buildLines, _buildTris, _buildVertZones, _buildByVerts);
             _buildOnce = true;
         }
         #endregion
@@ -223,9 +225,9 @@ namespace DefenseShields
                 if (_enablePhysics && _initialized && Block.IsWorking)
                 {
                     BuildPhysicsArrays();
+                    _shield.WorldMatrix = DetectionMatrix;
                 }
                 if (!_initialized || !Block.IsWorking) return;
-                //DrawRootVerts();
                 DamageGrids();
                 //if (_enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
                 if (_enablePhysics) WebEntities();
@@ -572,7 +574,6 @@ namespace DefenseShields
                 CreateMobileShape();
                 var mobileMatrix = _mobileMatrix;
                 DetectionMatrix = mobileMatrix * _shieldGridMatrix;
-                _range = (float)DetectionMatrix.Scale.AbsMax() + 15f;
                 _detectionCenter = Block.CubeGrid.PositionComp.WorldVolume.Center;
 
                 //Log.Line($"mobile dims {_range} - {_width} - {_height} - {_depth} - changed: {_entityChanged}");
@@ -580,11 +581,11 @@ namespace DefenseShields
             else
             {
                 _shieldGridMatrix = Block.WorldMatrix;
-                _detectionCenter = Block.PositionComp.WorldVolume.Center;
                 DetectionMatrix = MatrixD.Rescale(_shieldGridMatrix, new Vector3D(_width, _height, _depth));
-                _range = (float)DetectionMatrix.Scale.AbsMax() + 15f;
+                _detectionCenter = Block.PositionComp.WorldVolume.Center;
                 //Log.Line($"static dims {_range} - {_width} - {_height} - {_depth}");
             }
+            _range = (float)DetectionMatrix.Scale.AbsMax() + 15f;
         }
 
         private void CreateMobileShape()
@@ -646,7 +647,7 @@ namespace DefenseShields
 
         private uint GetRenderId()
         {
-            var renderId = _gridIsMobile ? Block.CubeGrid.Render.GetRenderObjectID() : Block.CubeGrid.Render.GetRenderObjectID();
+            var renderId = _gridIsMobile ? Block.CubeGrid.Render.GetRenderObjectID() : Block.CubeGrid.Render.GetRenderObjectID(); //Block obb is misaligned.
             return renderId;
         }
         #endregion
@@ -656,12 +657,6 @@ namespace DefenseShields
         {
             var bOriBBoxD = GetWorldOBB(ent as IMyCubeGrid);
             var contactpoint = ContactPointObb(ent, bOriBBoxD);
-
-            if (ent is IMyCubeGrid && Breached(ent, bOriBBoxD))
-            {
-                contactpoint = Vector3D.PositiveInfinity;
-                Log.Line($"ejecting");
-            }
 
             if (contactpoint != Vector3D.NegativeInfinity)
             {
@@ -679,17 +674,6 @@ namespace DefenseShields
             //if (impactcheck) Log.Line($"intersect false: {ent.GetFriendlyName()} - {Vector3D.Transform(contactpoint, _detectionMatrixInv).LengthSquared()}");
             if (ent is IMyCubeGrid && GridIsColliding.Contains(ent as IMyCubeGrid)) GridIsColliding.Remove(ent as IMyCubeGrid);
             return Vector3D.NegativeInfinity;
-        }
-
-        private bool Breached(IMyEntity ent, MyOrientedBoundingBoxD bOriBBoxD)
-        {
-            DSUtils.Sw.Start();
-            SetShieldShapeMatrix();
-            var ejectionBox = GetWorldOBB(Block);
-            DrawBox2(ejectionBox, Color.Red);
-            if (ejectionBox.Contains(ref bOriBBoxD) != ContainmentType.Disjoint) return true;
-            DSUtils.StopWatchReport("eject", -1);
-            return true;
         }
 
         public static MyOrientedBoundingBoxD GetWorldOBB(IMyEntity ent)
@@ -718,21 +702,28 @@ namespace DefenseShields
 
             var reSized = bLocalAabb.Extents.Min() * gridScaler;
             var reSizedSqr = reSized * reSized;
+            var shieldCenter = _shield.PositionComp.WorldVolume.Center;
 
             if (gridScaler > 1)
             {
                 if (_count == 0) DSUtils.Sw.Start();
-                var rangedVert = VertRangeFullCheck(_physicsVerts, bWorldCenter);
-                var closestFace = _dataStructures.p3VertTris[rangedVert];
-                var closestLineFace = _dataStructures.p3VertLines[rangedVert];
-                var boxedTriangles = IntersectSmallBox(closestFace, _physicsVerts, bWorldAabb);
-                //GetTriDistance(_rootTris, bWorldCenter, _count);
+                var rangedVert3 = VertRangeFullCheck(_physicsVerts3, bWorldCenter);
+                var closestFace = _dataStructures.p3VertTris[rangedVert3];
+                var closestLineFace = _dataStructures.p3VertLines[rangedVert3];
+                var boxedTriangles = IntersectSmallBox(closestFace, _physicsVerts3, bWorldAabb);
+                if (_count == 0) DSUtils.StopWatchReport("full check", -1);
 
-               // GetZonesContaingNum(rangedVert, 1, true);
-                DrawLineToNum(rangedVert, bWorldCenter);
-                DrawLineNums(closestLineFace);
+                var bCenterDist = Vector3D.DistanceSquared(bWorldCenter, _shield.PositionComp.WorldVolume.Center);
+                var sCenterDist = Vector3D.DistanceSquared(_physicsVerts3[rangedVert3], shieldCenter);
+                if (bCenterDist < sCenterDist) InsideShield(_physicsVerts1, _dataStructures.p1VertInsideTris, _dataStructures.p1VertInsideLines, bWorldCenter, bWorldAabb);
+
+                DrawLineToNum(_physicsVerts3, rangedVert3, bWorldCenter);
+                DrawLineNums(_physicsVerts3, closestLineFace);
                 DrawTriVertList(boxedTriangles); // testing
 
+
+                //GetTriDistance(_rootTris, bWorldCenter, _count);
+                // GetZonesContaingNum(rangedVert, 1, true);
                 //DrawLineNums(_dataStructures.p0RootZones[rangedVert]); // testing
                 //DrawNums(closestFace, Color.Black);
                 if (boxedTriangles.Count > 0)
@@ -745,7 +736,6 @@ namespace DefenseShields
                     _worldImpactPosition = collision;
                     //DrawVertCollection(collision, locCenterSphere.Radius / 2, Color.Blue); // testing
                 }
-                if (_count == 0) DSUtils.StopWatchReport("full check", -1);
             }
             /*
             else 
@@ -759,9 +749,9 @@ namespace DefenseShields
 
                 //var rangedVectors = IntersectRangeCheck(shieldTris, bWorldCenter, bLengthSqr);
                 //var boxedVectors = IntersectVecBox(rangedVectors, bWorldAabb);
-                var rangedVert = VertRangeCheckClosest(_physicsVerts, bWorldCenter);
+                var rangedVert = VertRangeCheckClosest(_physicsVerts3, bWorldCenter);
                 var closestFace = _dataStructures.p3VertTris[rangedVert];
-                IntersectSmallBox(closestFace, _physicsVerts, bWorldAabb);
+                IntersectSmallBox(closestFace, _physicsVerts3, bWorldAabb);
 
                 /*
                 var obbLines = IntersectLineObb(rangedVerts, bLocalAabb, breaching.PositionComp.WorldMatrix);
@@ -794,10 +784,35 @@ namespace DefenseShields
             return collision;
         }
 
-        private int VertRangeFullCheck(Vector3D[] physicsVerts3, Vector3D bWorldCenter)
+        private static List<Vector3D> InsideShield(Vector3D[] physicsVerts1, int[][] p1VertInsideTris, int[][] p1VertInsideLines, Vector3D bWorldCenter, BoundingBoxD bWorldAabb)
         {
             double minValue1 = 9999999999999999999;
-            var minNum1 = -1;
+            var minNum1 = -2;
+
+            for (int p = 0; p < physicsVerts1.Length; p++)
+            {
+                var vert = physicsVerts1[p];
+                var test1 = Vector3D.DistanceSquared(vert, bWorldCenter);
+
+                if (test1 < minValue1)
+                {
+                    minValue1 = test1;
+                    minNum1 = p;
+                }
+            }
+            var closestFace = p1VertInsideTris[minNum1];
+            //var closestLineFace = p1VertInsideLines[minNum1];
+            var boxedTriangles = IntersectSmallBox(closestFace, physicsVerts1, bWorldAabb);
+            //DrawLineToNum(physicsVerts1, minNum1, bWorldCenter);
+            //DrawLineNums(physicsVerts1, closestLineFace);
+            //DrawTriVertList(boxedTriangles); // testing
+            return boxedTriangles;
+        }
+
+        private static int VertRangeFullCheck(Vector3D[] physicsVerts3, Vector3D bWorldCenter)
+        {
+            double minValue1 = 9999999999999999999;
+            var minNum1 = -2;
 
             for (int p = 0; p < physicsVerts3.Length; p++)
             {
@@ -896,7 +911,7 @@ namespace DefenseShields
             if (count == 0) Log.Line($"{closestTri} - {triDist}");
         }
 
-        private int VertRangeCheckClosest(Vector3D[] physicsVerts3, Vector3D[] roots, int[][] zones, Vector3D bWorldCenter)
+        private int VertRangeCheckClosest(Vector3D[] physicsVerts, Vector3D[] roots, int[][] zones, Vector3D bWorldCenter)
         {
             double minValue1 = 9999999999999999999;
             double minValue2 = 9999999999999999999;
@@ -914,12 +929,12 @@ namespace DefenseShields
                     minNum1 = r;
                 }
             }
-            DrawLineToNum(minNum1, bWorldCenter);
+            DrawLineToNum(physicsVerts, minNum1, bWorldCenter);
             var zone = zones[minNum1];
             var zoneLen = zone.Length;
             for (int i = 0; i < zoneLen; i++)
             {
-                var vert = physicsVerts3[zone[i]];
+                var vert = physicsVerts[zone[i]];
                 var test2 = Vector3D.DistanceSquared(vert, bWorldCenter);
                 //Log.Line($"zoneLen: {zone.Length} - i: {i} - minNum1: {minNum1} - numCheck: {zone[i]} - test: {test2}");
 
@@ -1353,7 +1368,7 @@ namespace DefenseShields
         {
             var pmatch = false;
             var pNum = -1;
-            foreach (var pvert in _physicsVerts)
+            foreach (var pvert in _physicsVerts3)
             {
                 pNum++;
                 if (vec == pvert) pmatch = true;
@@ -1364,9 +1379,9 @@ namespace DefenseShields
 
         private void FindRoots()
         {
-            for (int i = 0, j = 0; i < _physicsVerts.Length; i++, j++)
+            for (int i = 0, j = 0; i < _physicsVerts3.Length; i++, j++)
             {
-                var vec = _physicsVerts[i];
+                var vec = _physicsVerts3[i];
                 foreach (var magic in _rootVecs)
                 {
                     for (int num = 0; num < 12; num++)
@@ -1379,7 +1394,7 @@ namespace DefenseShields
         }
 
 
-        private bool[] GetZonesContaingNum(int locateVertNum, int size, bool draw = false)
+        private bool[] GetZonesContaingNum(Vector3D[] physicsVerts, int locateVertNum, int size, bool draw = false)
         {
             // 1 = p3SmallZones, 2 = p3MediumZones, 3 = p3LargeZones, 4 = p3LargestZones
             var root = _dataStructures.p0RootZones;
@@ -1404,7 +1419,7 @@ namespace DefenseShields
                 {
                     if (z)
                     {
-                        DrawNums(zone[c]);
+                        DrawNums(physicsVerts, zone[c]);
                     }
                     c++;
                 }
@@ -1427,9 +1442,9 @@ namespace DefenseShields
             var tempVec = Vector3D.Zero;
             double pNumDistance = 9999999999999999999;
 
-            for (int i = 0; i < _physicsVerts.Length; i++)
+            for (int i = 0; i < _physicsVerts3.Length; i++)
             {
-                var v = _physicsVerts[i];
+                var v = _physicsVerts3[i];
                 if (v != locateVec) continue;
                 tempVec = v;
                 tempNum = i;
@@ -1458,7 +1473,7 @@ namespace DefenseShields
             MySimpleObjectDraw.DrawTransparentSphere(ref posMatScaler, 1f, ref color, MySimpleObjectRasterizer.Solid, lineWidth, null, rangeGridResourceId, -1, -1);
         }
 
-        private void DrawTriNumArray(int[] array)
+        private void DrawTriNumArray(Vector3D[] physicsVerts, int[] array)
         {
             var lineId = MyStringId.GetOrCompute("Square");
             var c = Color.Red.ToVector4();
@@ -1469,9 +1484,9 @@ namespace DefenseShields
                 var vn1 = array[i + 1];
                 var vn2 = array[i + 2];
 
-                var v0 = _physicsVerts[vn0];
-                var v1 = _physicsVerts[vn1];
-                var v2 = _physicsVerts[vn2];
+                var v0 = physicsVerts[vn0];
+                var v1 = physicsVerts[vn1];
+                var v2 = physicsVerts[vn2];
 
                 MySimpleObjectDraw.DrawLine(v0, v1, lineId, ref c, 0.25f);
                 MySimpleObjectDraw.DrawLine(v0, v2, lineId, ref c, 0.25f);
@@ -1497,25 +1512,25 @@ namespace DefenseShields
             }
         }
 
-        private void DrawLineNums(int[] lineArray)
+        private void DrawLineNums(Vector3D[] physicsVerts, int[] lineArray)
         {
             var c = Color.Blue.ToVector4();
             var lineId = MyStringId.GetOrCompute("Square");
 
             for (int i = 0; i < lineArray.Length; i += 2)
             {
-                var v0 = _physicsVerts[lineArray[i]];
-                var v1 = _physicsVerts[lineArray[i + 1]];
+                var v0 = physicsVerts[lineArray[i]];
+                var v1 = physicsVerts[lineArray[i + 1]];
                 MySimpleObjectDraw.DrawLine(v0, v1, lineId, ref c, 0.25f);
             }
         }
 
-        private void DrawLineToNum(int num, Vector3D fromVec)
+        private void DrawLineToNum(Vector3D[] physicsVerts, int num, Vector3D fromVec)
         {
             var c = Color.Red.ToVector4();
             var lineId = MyStringId.GetOrCompute("Square");
 
-            var v0 = _physicsVerts[num];
+            var v0 = physicsVerts[num];
             var v1 = fromVec;
             MySimpleObjectDraw.DrawLine(v0, v1, lineId, ref c, 0.25f);
         }
@@ -1543,7 +1558,7 @@ namespace DefenseShields
             }
         }
 
-        private void DrawNums(int[] list, Color color = default(Color))
+        private void DrawNums(Vector3D[] physicsVerts, int[] list, Color color = default(Color))
         {
             foreach (var num in list)
             {
@@ -1551,18 +1566,23 @@ namespace DefenseShields
                 foreach (var root in _rootVecs)
                 {
                     var rootColor = _dataStructures.zoneColors[i];
-                    if (_physicsVerts[num] == root) color = rootColor;
+                    if (physicsVerts[num] == root) color = rootColor;
                     i++;
                 }
-                DrawVertCollection(_physicsVerts[num], 5, color, 8);
+                DrawVertCollection(physicsVerts[num], 5, color, 8);
             }
         }
 
-        private void DrawSingleNum(int num)
+        private void DrawSingleNum(Vector3D[] physicsVerts, int num)
         {
             //Log.Line($"magic: {magic}");
             var c = Color.Black;
-            DrawVertCollection(_physicsVerts[num], 7, c, 20);
+            DrawVertCollection(physicsVerts[num], 7, c, 20);
+        }
+
+        private void DrawSingleVec(Vector3D vec, float size, Color color)
+        {
+            DrawVertCollection(vec, size, color, 20);
         }
         #endregion
     }
