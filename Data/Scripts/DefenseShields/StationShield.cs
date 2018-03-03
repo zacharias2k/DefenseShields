@@ -24,6 +24,7 @@ using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
 using ParallelTasks;
 using Sandbox.Game.Entities;
+using VRage.Game.Models;
 
 namespace DefenseShields
 {
@@ -655,7 +656,7 @@ namespace DefenseShields
         #region Detect Intersection
         private Vector3D Intersect(IMyEntity ent, bool impactcheck)
         {
-            var bOriBBoxD = GetWorldOBB(ent as IMyCubeGrid);
+            var bOriBBoxD = GetWorldOBB(ent);
             var contactpoint = ContactPointObb(ent, bOriBBoxD);
 
             if (contactpoint != Vector3D.NegativeInfinity)
@@ -676,15 +677,50 @@ namespace DefenseShields
             return Vector3D.NegativeInfinity;
         }
 
-        public static MyOrientedBoundingBoxD GetWorldOBB(IMyEntity ent)
+        private static MyOrientedBoundingBoxD GetWorldOBB(IMyEntity ent)
         {
             var localBox = (BoundingBoxD)ent.LocalAABB;
             var worldMatrix = ent.WorldMatrix;
             return new MyOrientedBoundingBoxD(localBox, worldMatrix);
         }
 
+        private Vector3D[] GetCorners(MyOrientedBoundingBoxD obb, int startIndex, int endIndex)
+        {
+            var indexSize = 8 - startIndex - (7 - endIndex);
+            var corners = new Vector3D[indexSize];
+            var matrixD = MatrixD.CreateFromQuaternion(obb.Orientation);
+            var value = matrixD.Left * obb.HalfExtent.X;
+            var value2 = matrixD.Up * obb.HalfExtent.Y;
+            var value3 = matrixD.Backward * obb.HalfExtent.Z;
+            corners[startIndex++] = obb.Center - value + value2 + value3;
+            corners[startIndex++] = obb.Center + value + value2 + value3;
+            corners[startIndex++] = obb.Center + value - value2 + value3;
+            corners[startIndex++] = obb.Center - value - value2 + value3;
+            corners[startIndex++] = obb.Center - value + value2 - value3;
+            corners[startIndex++] = obb.Center + value + value2 - value3;
+            corners[startIndex++] = obb.Center + value - value2 - value3;
+            corners[startIndex] = obb.Center - value - value2 - value3;
+            return corners;
+        }
+
         private Vector3D ContactPointObb(IMyEntity breaching, MyOrientedBoundingBoxD bOriBBoxD)
         {
+            // Well checking the measly 3 faces of the OBB against the ellipsoid is going to be the fastest.
+            // compute the 8 corners of the OBB in world space
+            // transform those corners by the inverse of the ellipsoid matrix
+            // for each face collide it with the unit sphere.
+            // Colliding a face with a sphere is:
+            // find the nearest point on the face to the sphere's center
+            // if distance is greater than radius reject
+            // Finding the nearest point on the face is:
+            // find the face normal (cross product)
+            // compose a plane with that normal and one point of the face
+            // project test point onto plane
+            // solve the equation (pt1-pt0)*s + (pt2-pt0)*t + pt0 = projected point
+            // clamp s and t to the domain 0-1
+            // closest point is (pt1-pt0)*s + (pt2-pt0)*t + pt0
+
+
             var collision = new Vector3D(Vector3D.NegativeInfinity);
             var locCenterSphere = new BoundingSphereD();
 
@@ -692,6 +728,7 @@ namespace DefenseShields
 
             var bLocalAabb = breaching.PositionComp.LocalAABB;
             var bWorldAabb = breaching.PositionComp.WorldAABB;
+            var bWorldVolume = breaching.PositionComp.WorldVolume;
             var bWorldCenter = bWorldAabb.Center;
 
 
@@ -703,15 +740,13 @@ namespace DefenseShields
             var reSized = bLocalAabb.Extents.Min() * gridScaler;
             var reSizedSqr = reSized * reSized;
             var shieldCenter = _shield.PositionComp.WorldVolume.Center;
-
+            var corners = GetCorners(bOriBBoxD, 0, 7);
             if (gridScaler > 1)
             {
-                if (_count == 0) DSUtils.Sw.Start();
                 var rangedVert3 = VertRangeFullCheck(_physicsVerts3, bWorldCenter);
                 var closestFace = _dataStructures.p3VertTris[rangedVert3];
                 var closestLineFace = _dataStructures.p3VertLines[rangedVert3];
                 var boxedTriangles = IntersectSmallBox(closestFace, _physicsVerts3, bWorldAabb);
-                if (_count == 0) DSUtils.StopWatchReport("full check", -1);
 
                 var bCenterDist = Vector3D.DistanceSquared(bWorldCenter, _shield.PositionComp.WorldVolume.Center);
                 var sCenterDist = Vector3D.DistanceSquared(_physicsVerts3[rangedVert3], shieldCenter);
@@ -721,9 +756,7 @@ namespace DefenseShields
                 DrawLineNums(_physicsVerts3, closestLineFace);
                 DrawTriVertList(boxedTriangles); // testing
 
-
                 //GetTriDistance(_rootTris, bWorldCenter, _count);
-                // GetZonesContaingNum(rangedVert, 1, true);
                 //DrawLineNums(_dataStructures.p0RootZones[rangedVert]); // testing
                 //DrawNums(closestFace, Color.Black);
                 if (boxedTriangles.Count > 0)
@@ -737,35 +770,49 @@ namespace DefenseShields
                     //DrawVertCollection(collision, locCenterSphere.Radius / 2, Color.Blue); // testing
                 }
             }
-            /*
             else 
             {
-
-                foreach (var magic in _rootVecs)
-                {
-                    //Log.Line($"magic: {magic}");
-                    DrawVertCollection(magic, 5, Color.Red);
-                }
-
-                //var rangedVectors = IntersectRangeCheck(shieldTris, bWorldCenter, bLengthSqr);
-                //var boxedVectors = IntersectVecBox(rangedVectors, bWorldAabb);
-                var rangedVert = VertRangeCheckClosest(_physicsVerts3, bWorldCenter);
-                var closestFace = _dataStructures.p3VertTris[rangedVert];
-                IntersectSmallBox(closestFace, _physicsVerts3, bWorldAabb);
+                DSUtils.Sw.Start();
+                var collection = ContainPointObb(_physicsVerts3, bOriBBoxD);
+                var collisionCenter = CreateFromPoints2(collection).Center;
+                if (collisionCenter != Vector3D.Zero) collision = collisionCenter;
+                DSUtils.StopWatchReport("simple test", -1);
+                
+               // var closestTriToCorners = RangeEachCorner(_physicsVerts3, corners, bWorldVolume);
 
                 /*
-                var obbLines = IntersectLineObb(rangedVerts, bLocalAabb, breaching.PositionComp.WorldMatrix);
-                if (obbLines)
+                var i = 0;
+                foreach (var tri in closestTriToCorners)
                 {
-                    collision = Vector3D.Lerp(_gridIsMobile ? Block.PositionComp.WorldVolume.Center : Block.CubeGrid.PositionComp.WorldVolume.Center, rangedVerts[0].To, .9);
-                    _worldImpactPosition = collision;
-                    DrawVertCollection(collision, locCenterSphere.Radius, Color.Blue); // testing
+                    var closestLineFace = _dataStructures.p3VertLines[tri];
+                    collision = IntersectLineFace(_physicsVerts3, closestLineFace, bOriBBoxD);
+                    //DrawLineToNum(_physicsVerts3, tri, corners[i]);
+                    //DrawLineNums(_physicsVerts3, closestLineFace);
+                    //DrawSingleVec(collision, 50f, Color.Gold);
+                    i++;
                 }
-                if (rangedVerts.Length > 0) Log.Line($"total triangles: {_shieldTris.Length / 3} - Ranged {rangedVerts.Length / 3} - Obb Collision {obbLines}");
+                */
+                //DSUtils.Sw.Start();
+
+                //var test = ContainPointObb(_physicsVerts3, bOriBBoxD);
+                //DSUtils.StopWatchReport("Obb test2", -1);
+                //if (_count == 0 && test) Log.Line($"test true"); 
+
+                //var shieldObb = GetWorldOBB(Block.CubeGrid);
+
+                //DrawBox(bOriBBoxD, Color.Red, false, breaching.WorldMatrix);
+                //DrawBox(shieldObb, Color.Blue, false, DetectionMatrix);
+
+                if (collision != Vector3D.NegativeInfinity)
+                {
+                    if (_count == 0) Log.Line($"Collision");
+                    collision = Vector3D.Lerp(_gridIsMobile ? Block.PositionComp.WorldVolume.Center : Block.CubeGrid.PositionComp.WorldVolume.Center, locCenterSphere.Center, .9);
+                    _worldImpactPosition = collision;
+                    DrawSingleVec(collision, 99f, Color.Gold);
+                }
             }
-            */
-            //var grid = breaching as IMyCubeGrid;
-            //if (grid == null) return collision;
+            var grid = breaching as IMyCubeGrid;
+            if (grid == null) return collision;
 
             /*
             try
@@ -784,7 +831,81 @@ namespace DefenseShields
             return collision;
         }
 
-        private static List<Vector3D> InsideShield(Vector3D[] physicsVerts1, int[][] p1VertInsideTris, int[][] p1VertInsideLines, Vector3D bWorldCenter, BoundingBoxD bWorldAabb)
+        private int[] RangeEachCorner(Vector3D[] physicsVerts3, Vector3D[] corners, BoundingSphereD bWorldVolume)
+        {
+            var closestTriNums = new int[8];
+            double minValue1 = 9999999999999999999;
+            var minNum1 = -2;
+
+            for (int i = 0; i < corners.Length; i++)
+            {
+                var corner = corners[i];
+                for (int p = 0; p < physicsVerts3.Length; p++)
+                {
+                    var vert = physicsVerts3[p];
+                    if (bWorldVolume.Contains(vert) == ContainmentType.Disjoint) continue;
+
+                    //Log.Line($"in sphere {p}");
+                    var test1 = Vector3D.DistanceSquared(vert, corner);
+
+                    if (test1 < minValue1)
+                    {
+                        minValue1 = test1;
+                        minNum1 = p;
+                    }
+                }
+                closestTriNums[i] = minNum1;
+            }
+            return closestTriNums;
+        }
+
+        private List<Vector3D> ContainPointObb(Vector3D[] physicsVerts, MyOrientedBoundingBoxD bOriBBoxD)
+        {
+            var containedPoints = new List<Vector3D>();
+
+            var tSphere = new BoundingSphereD(bOriBBoxD.Center, bOriBBoxD.HalfExtent.Max());
+            foreach (var vert in physicsVerts)
+            {
+                var vec = vert;
+                if (tSphere.Contains(vec) == ContainmentType.Disjoint) continue;
+                if (bOriBBoxD.Contains(ref vec))
+                {
+                    containedPoints.Add(vec);
+                }
+            }
+            return containedPoints;
+        }
+
+        private Vector3D IntersectLineFace(Vector3D[] physicsVerts, int[] lines, MyOrientedBoundingBoxD bOriBBoxD)
+        {
+            var l = 0;
+            var lArray = new bool[lines.Length / 2];
+
+            for (int i = 0, j = 0; i < lines.Length; i += 2, j++)
+            {
+                var line = new LineD(physicsVerts[lines[i]], physicsVerts[lines[i + 1]]);
+                var lineTest = bOriBBoxD.Intersects(ref line);
+                if (lineTest.HasValue)
+                {
+                    l = j;
+                    lArray[j] = true;
+                }
+            }
+            if (l == 0) return Vector3D.NegativeInfinity;
+            
+            var pArray = new Vector3D[l * 2];
+            for (int i = 0, j = 0; i < lArray.Length; i++, j += 2)
+            {
+                if (lArray[i])
+                {
+                    pArray[j / 2] = physicsVerts[lines[j]];
+                    pArray[j / 2 + 1] = physicsVerts[lines[j + 1]];
+                }
+            }
+            return pArray.Length == 0 ? Vector3D.NegativeInfinity : BoundingSphereD.CreateFromPoints(pArray).Center;
+        }
+
+        private List<Vector3D> InsideShield(Vector3D[] physicsVerts1, int[][] p1VertInsideTris, int[][] p1VertInsideLines, Vector3D bWorldCenter, BoundingBoxD bWorldAabb)
         {
             double minValue1 = 9999999999999999999;
             var minNum1 = -2;
@@ -801,11 +922,11 @@ namespace DefenseShields
                 }
             }
             var closestFace = p1VertInsideTris[minNum1];
-            //var closestLineFace = p1VertInsideLines[minNum1];
+            var closestLineFace = p1VertInsideLines[minNum1];
             var boxedTriangles = IntersectSmallBox(closestFace, physicsVerts1, bWorldAabb);
-            //DrawLineToNum(physicsVerts1, minNum1, bWorldCenter);
-            //DrawLineNums(physicsVerts1, closestLineFace);
-            //DrawTriVertList(boxedTriangles); // testing
+            DrawLineToNum(physicsVerts1, minNum1, bWorldCenter);
+            DrawLineNums(physicsVerts1, closestLineFace);
+            DrawTriVertList(boxedTriangles); // testing
             return boxedTriangles;
         }
 
@@ -861,28 +982,6 @@ namespace DefenseShields
                 }
             }
             return false;
-        }
-
-        private List<Vector3D> IntersectVecBox(List<Vector3D> rangedVectors, BoundingBoxD bWorldAabb)
-        {
-            var boxedVectors = new List<Vector3D>();
-            for (int i = 0, j = 0; i < rangedVectors.Count; i += 3, j++)
-            {
-                var v0 = rangedVectors[i];
-                var v1 = rangedVectors[i + 1];
-                var v2 = rangedVectors[i + 2];
-                var test1 = bWorldAabb.Contains(v0);
-                var test2 = bWorldAabb.Contains(v1);
-                var test3 = bWorldAabb.Contains(v2);
-
-                if (test1 == ContainmentType.Contains && test2 == ContainmentType.Contains && test3 == ContainmentType.Contains)
-                {
-                    boxedVectors.Add(v0);
-                    boxedVectors.Add(v1);
-                    boxedVectors.Add(v2);
-                }
-            }
-            return boxedVectors;
         }
 
         private static void GetTriDistance(Vector3D[] rootTris, Vector3D bWorldCenter, int count)
@@ -1583,6 +1682,82 @@ namespace DefenseShields
         private void DrawSingleVec(Vector3D vec, float size, Color color)
         {
             DrawVertCollection(vec, size, color, 20);
+        }
+
+        public static BoundingSphere CreateFromPoints2(List<Vector3D> points)
+        {
+            IEnumerator<Vector3D> enumerator = points.GetEnumerator();
+            enumerator.MoveNext();
+            Vector3D current;
+            Vector3D vector3_1 = current = enumerator.Current;
+            Vector3D vector3_2 = current;
+            Vector3D vector3_3 = current;
+            Vector3D vector3_4 = current;
+            Vector3D vector3_5 = current;
+            Vector3D vector3_6 = current;
+            foreach (Vector3D vector3_7 in points)
+            {
+                if ((double)vector3_7.X < (double)vector3_6.X)
+                    vector3_6 = vector3_7;
+                if ((double)vector3_7.X > (double)vector3_5.X)
+                    vector3_5 = vector3_7;
+                if ((double)vector3_7.Y < (double)vector3_4.Y)
+                    vector3_4 = vector3_7;
+                if ((double)vector3_7.Y > (double)vector3_3.Y)
+                    vector3_3 = vector3_7;
+                if ((double)vector3_7.Z < (double)vector3_2.Z)
+                    vector3_2 = vector3_7;
+                if ((double)vector3_7.Z > (double)vector3_1.Z)
+                    vector3_1 = vector3_7;
+            }
+            double result1;
+            Vector3D.Distance(ref vector3_5, ref vector3_6, out result1);
+            double result2;
+            Vector3D.Distance(ref vector3_3, ref vector3_4, out result2);
+            double result3;
+            Vector3D.Distance(ref vector3_1, ref vector3_2, out result3);
+            Vector3D result4;
+            double num1;
+            if ((double)result1 > (double)result2)
+            {
+                if ((double)result1 > (double)result3)
+                {
+                    Vector3D.Lerp(ref vector3_5, ref vector3_6, 0.5f, out result4);
+                    num1 = result1 * 0.5f;
+                }
+                else
+                {
+                    Vector3D.Lerp(ref vector3_1, ref vector3_2, 0.5f, out result4);
+                    num1 = result3 * 0.5f;
+                }
+            }
+            else if ((double)result2 > (double)result3)
+            {
+                Vector3D.Lerp(ref vector3_3, ref vector3_4, 0.5f, out result4);
+                num1 = result2 * 0.5f;
+            }
+            else
+            {
+                Vector3D.Lerp(ref vector3_1, ref vector3_2, 0.5f, out result4);
+                num1 = result3 * 0.5f;
+            }
+            foreach (Vector3D vector3_7 in points)
+            {
+                Vector3D vector3_8;
+                vector3_8.X = vector3_7.X - result4.X;
+                vector3_8.Y = vector3_7.Y - result4.Y;
+                vector3_8.Z = vector3_7.Z - result4.Z;
+                double num2 = vector3_8.Length();
+                if ((double)num2 > (double)num1)
+                {
+                    num1 = (double)(((double)num1 + (double)num2) * 0.5);
+                    result4 += (double)(1.0 - (double)num1 / (double)num2) * vector3_8;
+                }
+            }
+            BoundingSphereD boundingSphere;
+            boundingSphere.Center = result4;
+            boundingSphere.Radius = num1;
+            return boundingSphere;
         }
         #endregion
     }
