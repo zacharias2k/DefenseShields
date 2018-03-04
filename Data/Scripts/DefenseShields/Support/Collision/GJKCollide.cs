@@ -131,7 +131,6 @@ namespace DefenseShields.Support
 
             simplexSolverPool.GiveBack(simplexSolver);
             return true;
-
         }
 
 
