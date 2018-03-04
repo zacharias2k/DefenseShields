@@ -772,13 +772,17 @@ namespace DefenseShields
             }
             else 
             {
-                DSUtils.Sw.Start();
+                if (_count == 0) DSUtils.Sw.Start();
+
                 var collection = ContainPointObb(_physicsVerts3, bOriBBoxD);
-                var collisionCenter = CreateFromPoints2(collection).Center;
-                if (collisionCenter != Vector3D.Zero) collision = collisionCenter;
-                DSUtils.StopWatchReport("simple test", -1);
-                
-               // var closestTriToCorners = RangeEachCorner(_physicsVerts3, corners, bWorldVolume);
+                if (collection.Count > 0)
+                {
+                    var collisionCenter = CreateFromPoints(collection).Center;
+                    if (collisionCenter != Vector3D.Zero) collision = collisionCenter;
+                }
+                if (_count == 0) DSUtils.StopWatchReport("simple test", -1);
+
+                // var closestTriToCorners = RangeEachCorner(_physicsVerts3, corners, bWorldVolume);
 
                 /*
                 var i = 0;
@@ -1684,80 +1688,78 @@ namespace DefenseShields
             DrawVertCollection(vec, size, color, 20);
         }
 
-        public static BoundingSphere CreateFromPoints2(List<Vector3D> points)
+        public static BoundingSphereD CreateFromPoints(List<Vector3D> points)
         {
-            IEnumerator<Vector3D> enumerator = points.GetEnumerator();
-            enumerator.MoveNext();
             Vector3D current;
-            Vector3D vector3_1 = current = enumerator.Current;
-            Vector3D vector3_2 = current;
-            Vector3D vector3_3 = current;
-            Vector3D vector3_4 = current;
-            Vector3D vector3_5 = current;
-            Vector3D vector3_6 = current;
-            foreach (Vector3D vector3_7 in points)
+            Vector3D Vector3D_1 = current = points[0];
+            Vector3D Vector3D_2 = current;
+            Vector3D Vector3D_3 = current;
+            Vector3D Vector3D_4 = current;
+            Vector3D Vector3D_5 = current;
+            Vector3D Vector3D_6 = current;
+            foreach (Vector3D Vector3D_7 in points)
             {
-                if ((double)vector3_7.X < (double)vector3_6.X)
-                    vector3_6 = vector3_7;
-                if ((double)vector3_7.X > (double)vector3_5.X)
-                    vector3_5 = vector3_7;
-                if ((double)vector3_7.Y < (double)vector3_4.Y)
-                    vector3_4 = vector3_7;
-                if ((double)vector3_7.Y > (double)vector3_3.Y)
-                    vector3_3 = vector3_7;
-                if ((double)vector3_7.Z < (double)vector3_2.Z)
-                    vector3_2 = vector3_7;
-                if ((double)vector3_7.Z > (double)vector3_1.Z)
-                    vector3_1 = vector3_7;
+                if (Vector3D_7.X < Vector3D_6.X)
+                    Vector3D_6 = Vector3D_7;
+                if (Vector3D_7.X > Vector3D_5.X)
+                    Vector3D_5 = Vector3D_7;
+                if (Vector3D_7.Y < Vector3D_4.Y)
+                    Vector3D_4 = Vector3D_7;
+                if (Vector3D_7.Y > Vector3D_3.Y)
+                    Vector3D_3 = Vector3D_7;
+                if (Vector3D_7.Z < Vector3D_2.Z)
+                    Vector3D_2 = Vector3D_7;
+                if (Vector3D_7.Z > Vector3D_1.Z)
+                    Vector3D_1 = Vector3D_7;
             }
             double result1;
-            Vector3D.Distance(ref vector3_5, ref vector3_6, out result1);
+            Vector3D.Distance(ref Vector3D_5, ref Vector3D_6, out result1);
             double result2;
-            Vector3D.Distance(ref vector3_3, ref vector3_4, out result2);
+            Vector3D.Distance(ref Vector3D_3, ref Vector3D_4, out result2);
             double result3;
-            Vector3D.Distance(ref vector3_1, ref vector3_2, out result3);
+            Vector3D.Distance(ref Vector3D_1, ref Vector3D_2, out result3);
             Vector3D result4;
             double num1;
-            if ((double)result1 > (double)result2)
+            if (result1 > result2)
             {
-                if ((double)result1 > (double)result3)
+                if (result1 > result3)
                 {
-                    Vector3D.Lerp(ref vector3_5, ref vector3_6, 0.5f, out result4);
+                    Vector3D.Lerp(ref Vector3D_5, ref Vector3D_6, 0.5f, out result4);
                     num1 = result1 * 0.5f;
                 }
                 else
                 {
-                    Vector3D.Lerp(ref vector3_1, ref vector3_2, 0.5f, out result4);
+                    Vector3D.Lerp(ref Vector3D_1, ref Vector3D_2, 0.5f, out result4);
                     num1 = result3 * 0.5f;
                 }
             }
-            else if ((double)result2 > (double)result3)
+            else if (result2 > result3)
             {
-                Vector3D.Lerp(ref vector3_3, ref vector3_4, 0.5f, out result4);
+                Vector3D.Lerp(ref Vector3D_3, ref Vector3D_4, 0.5f, out result4);
                 num1 = result2 * 0.5f;
             }
             else
             {
-                Vector3D.Lerp(ref vector3_1, ref vector3_2, 0.5f, out result4);
+                Vector3D.Lerp(ref Vector3D_1, ref Vector3D_2, 0.5f, out result4);
                 num1 = result3 * 0.5f;
             }
-            foreach (Vector3D vector3_7 in points)
+            foreach (Vector3D Vector3D_7 in points)
             {
-                Vector3D vector3_8;
-                vector3_8.X = vector3_7.X - result4.X;
-                vector3_8.Y = vector3_7.Y - result4.Y;
-                vector3_8.Z = vector3_7.Z - result4.Z;
-                double num2 = vector3_8.Length();
-                if ((double)num2 > (double)num1)
+                Vector3D Vector3D_8;
+                Vector3D_8.X = Vector3D_7.X - result4.X;
+                Vector3D_8.Y = Vector3D_7.Y - result4.Y;
+                Vector3D_8.Z = Vector3D_7.Z - result4.Z;
+                double num2 = Vector3D_8.Length();
+                if (num2 > num1)
                 {
-                    num1 = (double)(((double)num1 + (double)num2) * 0.5);
-                    result4 += (double)(1.0 - (double)num1 / (double)num2) * vector3_8;
+                    num1 = ((num1 + num2) * 0.5);
+                    result4 += (1.0 - num1 / num2) * Vector3D_8;
                 }
             }
-            BoundingSphereD boundingSphere;
-            boundingSphere.Center = result4;
-            boundingSphere.Radius = num1;
-            return boundingSphere;
+            BoundingSphereD boundingSphereD;
+            boundingSphereD.Center = result4;
+            boundingSphereD.Radius = num1;
+            return boundingSphereD;
         }
         #endregion
     }

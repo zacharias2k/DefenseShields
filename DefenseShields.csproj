@@ -237,7 +237,13 @@
     <Compile Include="Data\Scripts\DefenseShields\Guns.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Network\SerializationClasses.cs" />
     <Compile Include="Data\Scripts\DefenseShields\OldCode.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\ConvexHullShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\DataStructure.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\VectorMath\MinkowskiSumShape.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\VectorMath\MultiShape.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\VectorMath\Octree.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\VectorMath\ResourcePool.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\VectorMath\Shapes.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\VectorMath\DistPoint3Triangle3.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Logging.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Slider.cs" />
@@ -247,7 +253,10 @@
     <Compile Include="Data\Scripts\DefenseShields\StationShield.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\StructureBuilder.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\textapi.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\VectorMath\GJKCollide.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\VectorMath\Triangle3.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\VectorMath\TriangleMeshShape.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\VectorMath\XenoCollide.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Voxel.cs" />
   </ItemGroup>
   <ItemGroup>
