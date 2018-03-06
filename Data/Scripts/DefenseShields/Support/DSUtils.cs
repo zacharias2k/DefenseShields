@@ -10,21 +10,21 @@ namespace DefenseShields.Support
     public class DSUtils
     {
 
-        public static Stopwatch Sw { get; } = new Stopwatch();
-        private static double _last;
-        public static void StopWatchReport(string message, float log)
+        public Stopwatch Sw { get; } = new Stopwatch();
+        public double Last;
+        public void StopWatchReport(string message, float log)
         {
             Sw.Stop();
             long ticks = Sw.ElapsedTicks;
             double ns = 1000000000.0 * ticks / Stopwatch.Frequency;
             double ms = ns / 1000000.0;
             double s = ms / 1000;
-            if (log <= -1) Log.Line($"{message} - ms:{(float)ms} last-ms:{(float)_last} s:{(int)s}");
+            if (log <= -1) Log.Line($"{message} - ms:{(float)ms} last-ms:{(float)Last} s:{(int)s}");
             else
             {
-                if (ms >= log) Log.Line($"{message} - ms:{(float)ms} last-ms:{(float)_last} s:{(int)s}");
+                if (ms >= log) Log.Line($"{message} - ms:{(float)ms} last-ms:{(float)Last} s:{(int)s}");
             }
-            _last = ms;
+            Last = ms;
             Sw.Reset();
         }
     }

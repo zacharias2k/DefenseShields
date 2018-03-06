@@ -46,6 +46,7 @@ namespace DefenseShields
         private const int PhysicsLod = 3;
 
         private int _count = -1;
+        private int _longLoop = 0;
         private int _explodeCount;
         private int _time;
         private int _playertime;
@@ -65,6 +66,7 @@ namespace DefenseShields
         private bool _playerwebbed;
         private bool _gridIsMobile;
         private bool _explode;
+        private bool _longLoop10;
 
         private const ushort ModId = 50099;
 
@@ -94,6 +96,11 @@ namespace DefenseShields
         private Icosphere.Instance _icosphere;
         private readonly DataStructures _dataStructures = new DataStructures();
         private readonly StructureBuilder _structureBuilder = new StructureBuilder();
+        private DSUtils _dsutil1 = new DSUtils();
+        private DSUtils _dsutil2 = new DSUtils();
+        private DSUtils _dsutil3 = new DSUtils();
+
+
 
         private MyEntitySubpart _subpartRotor;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _widthSlider;
@@ -172,8 +179,15 @@ namespace DefenseShields
         {
             try
             {
-                if (_count++ == 59) _count = 0;
-                //if (_count == 0) DSUtils.Sw.Start();
+                if (_count++ == 59)
+                {
+                    _count = 0;
+                    _longLoop++;
+                    if (_longLoop == 10) _longLoop = 0;
+                }
+                if (_longLoop == 0 && _count == 0) _longLoop10 = true;
+                else _longLoop10 = false;
+                if (Debug && _longLoop10) _dsutil1.Sw.Start();
                 if (_explode && _explodeCount++ == 14) _explodeCount = 0;
                 if (_explodeCount == 0 && _explode) _explode = false;
 
@@ -196,6 +210,7 @@ namespace DefenseShields
                 {
                     if (_count == 0) _enablePhysics = false;
                     if (_enablePhysics == false) QuickWebCheck();
+                    //if (Debug && _count == 0) _dsutil2.Sw.Start();
                     if (_enablePhysics) _preparePhysics = MyAPIGateway.Parallel.StartBackground(BuildPhysicsArrays);
 
                     if (_animInit)
@@ -210,12 +225,14 @@ namespace DefenseShields
                     DamageGrids();
                     if (_playerwebbed && _enablePhysics) PlayerEffects();
                     if (_preparePhysics.HasValue && !_preparePhysics.Value.IsComplete) _preparePhysics.Value.Wait();
+                    //if (Debug && _count == 0) _dsutil2.StopWatchReport("Physics Loop", -1);
                     if (_preparePhysics.HasValue && _preparePhysics.Value.IsComplete && _enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
                     //if (_enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
 
                     //if (_enablePhysics) WebEntities();
                     //if (_count == 0) DSUtils.StopWatchReport("main loop", -1);
                 }
+                if (Debug && _longLoop10) _dsutil1.StopWatchReport("Main loop", -1);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
@@ -488,11 +505,11 @@ namespace DefenseShields
                 var shield = _shield;
                 var impactPos = _worldImpactPosition;
 
-                var CubeBlockLocalMatrix = Block.CubeGrid.LocalMatrix;
-                var referenceWorldPosition = CubeBlockLocalMatrix.Translation;
+                var cubeBlockLocalMatrix = Block.CubeGrid.LocalMatrix;
+                var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
 
                 var worldDirection = impactPos - referenceWorldPosition;
-                var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(CubeBlockLocalMatrix));
+                var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(cubeBlockLocalMatrix));
                 if (impactPos != Vector3D.NegativeInfinity) impactPos = localPosition;
                 _worldImpactPosition = Vector3D.NegativeInfinity;
 
@@ -1310,7 +1327,7 @@ namespace DefenseShields
             var qWebList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref qWebsphere);
             foreach (var webent in qWebList)
             {
-                if (webent == null || webent is IMyFloatingObject || webent is IMyEngineerToolBase || webent == Block.CubeGrid || webent == _shield) continue;
+                if (webent == null || webent is IMyFloatingObject || webent is IMyEngineerToolBase || webent == Block.CubeGrid || webent == _shield || webent is IMyCharacter) continue;
                 if (Block.CubeGrid.Physics.IsStatic && webent is IMyVoxelBase) continue;
                 //Log.Line($"{webent.DisplayName}");
                 _enablePhysics = true;

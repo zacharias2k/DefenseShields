@@ -259,8 +259,6 @@ namespace DefenseShields.Support
 
             public Vector3D[] ReturnPhysicsVerts(MatrixD matrix, int lod)
             {
-                //var count = checked((int)VertsForLod(lod));
-                //Array.Resize(ref _physicsBuffer, count);
                 Vector3D[] physicsArray;
                 switch (lod)
                 {
@@ -411,15 +409,12 @@ namespace DefenseShields.Support
             {
                 try
                 {
-                    //Log.Line($"Start Draw");
-                    //DSUtils.Sw.Start();
                     var faceMaterial = _faceId2;
                     var ib = _backing.IndexBuffer[_lod];
                     var v21 = new Vector2(0.5f, 0);
                     var v22 = new Vector2(0.5f);
                     for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
                     {
- 
                         var i0 = ib[i];
                         var i1 = ib[i + 1];
                         var i2 = ib[i + 2];
