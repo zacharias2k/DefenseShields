@@ -643,30 +643,29 @@ namespace DefenseShields
             if (!(ent is IMyCubeGrid))
             {
                 var simpleContactPoint = ContactPoint(ent);
-                var simpleContactValue = Vector3D.Transform(simpleContactPoint, _detectionMatrixInv).LengthSquared();
+                var simpleContactBool = Vector3D.Transform(simpleContactPoint, _detectionMatrixInv).LengthSquared() <= 1;
+                if (simpleContactBool) return simpleContactPoint;
+                return Vector3D.NegativeInfinity;
             }
-            var bOriBBoxD = GetWorldOBB(ent);
-            var contactpoint = ContactPointObb(ent, bOriBBoxD);
+            var grid = ent as IMyCubeGrid;
+            var bOriBBoxD = GetWorldObb(grid);
+            var contactpoint = ContactPointObb(grid, bOriBBoxD);
 
             if (contactpoint != Vector3D.NegativeInfinity)
             {
-                //Log.Line($"GridIsColliding {GridIsColliding.Count} - check {impactcheck} - containsEnt {GridIsColliding.Contains(ent as IMyCubeGrid)}");
-                _impactSize = ent.Physics.Mass;
-                if (impactcheck && !GridIsColliding.Contains(ent as IMyCubeGrid))
+                _impactSize = grid.Physics.Mass;
+                if (impactcheck && !GridIsColliding.Contains(grid))
                 {
-                    //Log.Line($"ContactPoint to WorldImpact: {contactpoint}");
                     _worldImpactPosition = contactpoint;
                 }
-                if (impactcheck && ent is IMyCubeGrid && !GridIsColliding.Contains(ent as IMyCubeGrid)) GridIsColliding.Add(ent as IMyCubeGrid);
-                //if (impactcheck && _worldImpactPosition != Vector3D.NegativeInfinity) Log.Line($"intersect true: {ent} - ImpactSize: {_impactSize} - {Vector3D.Transform(contactpoint, _detectionMatrixInv).LengthSquared()} - _worldImpactPosition: {_worldImpactPosition}");
+                if (impactcheck && !GridIsColliding.Contains(grid)) GridIsColliding.Add(grid);
                 return contactpoint;
             }
-            //if (impactcheck) Log.Line($"intersect false: {ent.GetFriendlyName()} - {Vector3D.Transform(contactpoint, _detectionMatrixInv).LengthSquared()}");
-            if (ent is IMyCubeGrid && GridIsColliding.Contains(ent as IMyCubeGrid)) GridIsColliding.Remove(ent as IMyCubeGrid);
+            if (GridIsColliding.Contains(grid)) GridIsColliding.Remove(grid);
             return Vector3D.NegativeInfinity;
         }
 
-        private static MyOrientedBoundingBoxD GetWorldOBB(IMyEntity ent)
+        private static MyOrientedBoundingBoxD GetWorldObb(IMyEntity ent)
         {
             var localBox = (BoundingBoxD)ent.LocalAABB;
             var worldMatrix = ent.WorldMatrix;
