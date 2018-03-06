@@ -173,7 +173,7 @@ namespace DefenseShields
             try
             {
                 if (_count++ == 59) _count = 0;
-                if (_count == 0) DSUtils.Sw.Start();
+                //if (_count == 0) DSUtils.Sw.Start();
                 if (_explode && _explodeCount++ == 14) _explodeCount = 0;
                 if (_explodeCount == 0 && _explode) _explode = false;
 
@@ -198,8 +198,6 @@ namespace DefenseShields
                     if (_enablePhysics == false) QuickWebCheck();
                     if (_enablePhysics) _preparePhysics = MyAPIGateway.Parallel.StartBackground(BuildPhysicsArrays);
 
-                    //if (_enablePhysics) BuildPhysicsArrays();
-
                     if (_animInit)
                     {
                         if (_entityChanged) blockCam = new BoundingSphereD(Block.PositionComp.WorldVolume.Center, Block.WorldVolume.Radius);
@@ -211,13 +209,12 @@ namespace DefenseShields
                     }
                     DamageGrids();
                     if (_playerwebbed && _enablePhysics) PlayerEffects();
-                    if (_count == 0) DSUtils.StopWatchReport("main loop", -1);
                     if (_preparePhysics.HasValue && !_preparePhysics.Value.IsComplete) _preparePhysics.Value.Wait();
                     if (_preparePhysics.HasValue && _preparePhysics.Value.IsComplete && _enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
                     //if (_enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
 
                     //if (_enablePhysics) WebEntities();
-
+                    //if (_count == 0) DSUtils.StopWatchReport("main loop", -1);
                 }
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
@@ -227,7 +224,7 @@ namespace DefenseShields
         private void BuildPhysicsArrays()
         {
             _physicsOutside = _icosphere.ReturnPhysicsVerts(_detectionMatrixOutside, 3);
-            _rootVecs = _icosphere.ReturnPhysicsVerts(DetectionMatrix, 0);
+            _rootVecs = _icosphere.ReturnPhysicsVerts(_detectionMatrixOutside, 0);
             _physicsInside = _icosphere.ReturnPhysicsVerts(_detectionMatrixInside, 3);
             //if (_buildOnce == false) _structureBuilder.BuildBase(_icosphere.CalculatePhysics(_detectionMatrixOutside, 3), _rootVecs, _physicsOutside, _buildLines, _buildTris, _buildVertZones, _buildByVerts);
             //_buildOnce = true;
@@ -569,7 +566,7 @@ namespace DefenseShields
                 _detectionCenter = Block.PositionComp.WorldVolume.Center;
                 //Log.Line($"static dims {_range} - {_width} - {_height} - {_depth}");
             }
-            _range = (float)DetectionMatrix.Scale.AbsMax() + 15f;
+            _range = (float)_detectionMatrix.Scale.AbsMax() + 15f;
         }
 
         private void CreateMobileShape()
@@ -642,10 +639,11 @@ namespace DefenseShields
         {
             if (!(ent is IMyCubeGrid))
             {
-                var simpleContactPoint = ContactPoint(ent);
+                var simpleContactPoint = ContactPointOutside(ent);
                 var simpleContactBool = Vector3D.Transform(simpleContactPoint, _detectionMatrixInv).LengthSquared() <= 1;
-                if (simpleContactBool) return simpleContactPoint;
-                return Vector3D.NegativeInfinity;
+                if (!simpleContactBool) return Vector3D.NegativeInfinity;
+                _worldImpactPosition = simpleContactPoint;
+                return simpleContactPoint;
             }
             var grid = ent as IMyCubeGrid;
             var bOriBBoxD = GetWorldObb(grid);
@@ -691,6 +689,29 @@ namespace DefenseShields
             return corners;
         }
 
+        private Vector3D ContactPointOutside(IMyEntity breaching)
+        {
+            DSUtils.Sw.Start();
+            var wVol = breaching.PositionComp.WorldVolume;
+            var wDir = _detectionMatrix.Translation - wVol.Center;
+            var wLen = wDir.Length();
+            var contactPoint = wVol.Center + (wDir / wLen * Math.Min(wLen, wVol.Radius));
+            DSUtils.StopWatchReport("quick contactCheck", -1);
+            return contactPoint;
+        }
+
+        private Vector3D ContactPointInside(IMyEntity breaching)
+        {
+            DSUtils.Sw.Start();
+            var wVol = breaching.PositionComp.WorldVolume;
+            var wDir = _detectionMatrixInside.Translation - wVol.Center;
+            var wLen = wDir.Length();
+            var contactPoint = wVol.Center + (wDir / wLen * Math.Min(wLen, wVol.Radius));
+            DSUtils.StopWatchReport("quick contactCheck", -1);
+            return contactPoint;
+        }
+        #endregion
+
         private Vector3D ContactPointObb(IMyEntity breaching, MyOrientedBoundingBoxD bOriBBoxD)
         {
             // Well checking the measly 3 faces of the OBB against the ellipsoid is going to be the fastest.
@@ -717,12 +738,12 @@ namespace DefenseShields
 
 
             var lodScaler = (int)Math.Pow(2, PhysicsLod);
-            var gridScaler = (float)(((DetectionMatrix.Scale.X + DetectionMatrix.Scale.Y + DetectionMatrix.Scale.Z) / 3 / lodScaler) * 1.33) / bLocalAabb.Extents.Min();
+            var gridScaler = (float)(((_detectionMatrix.Scale.X + _detectionMatrix.Scale.Y + _detectionMatrix.Scale.Z) / 3 / lodScaler) * 1.33) / bLocalAabb.Extents.Min();
             var bLength = bLocalAabb.Size.Max() / 2 + 2;
             var bLengthSqr = bLength * bLength;
 
             var reSized = bLocalAabb.Extents.Min() * gridScaler;
-            if (_count == 0) Log.Line($"gridscaler is: {gridScaler} - Less than 1 equals large ship for shield size");
+            if (_count == 0) Log.Line($"gridscaler is: {gridScaler} <1 = large - >1 = small");
             if (gridScaler > 1)
             {
                 //if (_count == 0) DSUtils.Sw.Start();
@@ -1181,7 +1202,8 @@ namespace DefenseShields
             //var contactPoint = ContactPoint(breaching);
             var contactPoint = intersect;
 
-            var transformInv = MatrixD.Invert(DetectionMatrix);
+            //var transformInv = MatrixD.Invert(DetectionMatrix);
+            var transformInv = _detectionMatrixInv;
             var normalMat = MatrixD.Transpose(transformInv);
             var localNormal = Vector3D.Transform(contactPoint, transformInv);
             var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
@@ -1235,7 +1257,7 @@ namespace DefenseShields
                     var grid = killent as IMyCubeGrid;
                     if (grid == null || grid == Block.CubeGrid || !IsEnemy(killent) || Intersect(killent, false) == Vector3D.NegativeInfinity) return;
 
-                    var contactPoint = ContactPoint(killent);
+                    var contactPoint = ContactPointOutside(killent);
                     var cpDist = Vector3D.Transform(contactPoint, _detectionMatrixInv).LengthSquared();
                     //var worldPosition = killent.WorldVolume.Center;
                     //var worldDirection = contactPoint - worldPosition;
@@ -1262,16 +1284,6 @@ namespace DefenseShields
             }
             catch (Exception ex) { Log.Line($"Exception in GridKillField: {ex}"); }
         }
-
-        private Vector3D ContactPoint(IMyEntity breaching)
-        {
-            var wVol = breaching.PositionComp.WorldVolume;
-            var wDir = DetectionMatrix.Translation - wVol.Center;
-            var wLen = wDir.Length();
-            var contactPoint = wVol.Center + (wDir / wLen * Math.Min(wLen, wVol.Radius));
-            return contactPoint;
-        }
-        #endregion
 
         #region Build inside HashSet
         private void InHashBuilder()
