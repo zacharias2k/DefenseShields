@@ -287,8 +287,6 @@ namespace DefenseShields.Support
 
             public void CalculateColor(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, bool sphereOnCamera, IMyEntity shield)
             {
-                //Log.Line($"Start Full CalculateColor");
-                //DSUtils.Sw.Start();
                 _test1Color = Color.FromNonPremultiplied(0, 0, 0, 50);
                 _test2Color = Color.FromNonPremultiplied(0, 0, 0, 200);
                 _shield = shield;
@@ -299,11 +297,8 @@ namespace DefenseShields.Support
                 else impactSize = (int)1;
                 var impactSpeed = 2;
                 if (impactSize < 4) impactSpeed = 1; 
-                //if (impactPos != Vector3.NegativeInfinity) Log.Line($"{impactPos}");
-                //Log.Line($"impactSize {impactSize} - {impactSpeed}");
                 if (impactPos == Vector3D.NegativeInfinity) _impact = false;
                 else ComputeImpacts();
-                //if (impactPos != Vector3.NegativeInfinity) Log.Line($"{_localImpacts[4]}");
 
                 StepEffects();
                 InitColors();
@@ -336,20 +331,17 @@ namespace DefenseShields.Support
 
                     if ((_impactCount[4] != 0 && _impactCount[4] < ImpactSteps / impactSpeed) || _glitchCount != 0)
                     {
-                        //Log.Line($"impactCount and Glitch: {_impactCount[4]} - {_glitchCount}");
                         var pDotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _localImpacts[4]);
                         var primeImpactFactor = Math.Acos(pDotOfNormLclImpact);
 
                         float pWaveMultiplier = Pi / ImpactSteps / impactSize;
                         var pWavePosition = pWaveMultiplier * _impactCount[4];
                         var pRelativeToWavefront = Math.Abs(primeImpactFactor - pWavePosition);
-                        //Log.Line($"primeImpactFactor: {primeImpactFactor} - Relative: {pRelativeToWavefront} - pWavePosition: {pWavePosition} - pWaveMultipler: {pWaveMultiplier} - _impactCount[4]: {_impactCount[4]}");
                         if (pWavePosition > primeImpactFactor )//&& _impactCount[4] <= ImpactSteps / impactSize) 
                         {
                             _triColorBuffer[j] = _test2Color;
                             continue;
                         }
-                        //Log.Line($" color: {_currentColor} - _impactCountFished? {_impactCountFinished}");
                         if (!_impactCountFinished)
                         {
                             for (var s = 3; s >= 0; s--)
@@ -363,7 +355,6 @@ namespace DefenseShields.Support
                                 const float waveMultiplier = Pi / ImpactSteps;
                                 var wavePosition = waveMultiplier * _impactCount[s];
                                 var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
-                                //Log.Line($"{relativeToWavefront}");
                                 if (wavePosition > impactFactor)
                                 {
                                     _triColorBuffer[j] = _waveColor;
@@ -437,27 +428,22 @@ namespace DefenseShields.Support
                         else if (color == _chargeColor) faceMaterial = _faceId1;
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, Vector2.Zero, v21, v22, faceMaterial, renderId, (v0 + v1 + v2) / 3, color);
                     }
-
-                    //DSUtils.StopWatchReport("IcoDraw", -1);
                 }
                 catch (Exception ex) { Log.Line($"Exception in IcoSphere Draw - renderId {renderId}: {ex}"); }
             }
 
             private void ComputeImpacts()
             {
-                //Log.Line($"_impact true {_impactPos[4]}");
                 _impact = true;
                 for (var i = 4; i >= 0; i--)
                 {
                     if (_impactPos[i] != Vector3D.NegativeInfinity) continue;
                     _impactPos[i] = _impactPosState;
-                    //Log.Line($"Store impact position: {_impactPos[i]} in slot: {i}");
                     break;
                 }
                 for (int i = 4; i >= 0; i--)
                 {
                     if (_impactPos[i] == Vector3D.NegativeInfinity) break;
-                    //Log.Line($"_localImpact assign and normalize impact: {_impactPos[i]} in slot: {i}");
 
                     _localImpacts[i] = _impactPos[i] - _matrix.Translation;
                     _localImpacts[i].Normalize();
@@ -542,7 +528,6 @@ namespace DefenseShields.Support
                         if (n >= 12 && n < 15) _shield.SetEmissiveParts("CWShield.004", Color.GhostWhite, 1);
                         if (n == 15) _shield.SetEmissiveParts("CWShield.005", Color.GhostWhite, 1);
 
-                        //Log.Line($"c:{_modelCount} - Asset:{_shield.Model.AssetName} - Vis:{_shield.Render.Visible}");
                         _modelCount++;
                         if (_modelCount == 16) _modelCount = 0;
                     }
