@@ -691,23 +691,19 @@ namespace DefenseShields
 
         private Vector3D ContactPointOutside(IMyEntity breaching)
         {
-            DSUtils.Sw.Start();
             var wVol = breaching.PositionComp.WorldVolume;
             var wDir = _detectionMatrix.Translation - wVol.Center;
             var wLen = wDir.Length();
             var contactPoint = wVol.Center + (wDir / wLen * Math.Min(wLen, wVol.Radius));
-            DSUtils.StopWatchReport("quick contactCheck", -1);
             return contactPoint;
         }
 
         private Vector3D ContactPointInside(IMyEntity breaching)
         {
-            DSUtils.Sw.Start();
             var wVol = breaching.PositionComp.WorldVolume;
             var wDir = _detectionMatrixInside.Translation - wVol.Center;
             var wLen = wDir.Length();
             var contactPoint = wVol.Center + (wDir / wLen * Math.Min(wLen, wVol.Radius));
-            DSUtils.StopWatchReport("quick contactCheck", -1);
             return contactPoint;
         }
         #endregion
@@ -1332,12 +1328,11 @@ namespace DefenseShields
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
                 if (webent is IMyMeteor  || webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
                 {
-                    Log.Line($"intersect");
                     if (Intersect(webent, true) != Vector3D.NegativeInfinity)
                     {
                         _absorb += Shotdmg;
                         Log.Line($"shotEffect: Shield absorbed {Shotdmg}MW of energy from {webent} in loop {_count}");
-                        if (webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo")) MyVisualScriptLogicProvider.CreateExplosion(webent.GetPosition(), 0, 0);
+                        MyVisualScriptLogicProvider.CreateExplosion(webent.GetPosition(), 0, 0);
                         webent.Close();
                     }
                     return;
