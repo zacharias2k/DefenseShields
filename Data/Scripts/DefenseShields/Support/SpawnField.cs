@@ -46,14 +46,6 @@ namespace DefenseShields.Support
             const float y = 0;
             Vector3[] data =
             {
-                /*
-                new Vector3(0.000000f, 0.000000f, -1.000000f), new Vector3(0.723600f, -0.525720f, -0.447215f),
-                new Vector3(-0.276385f, -0.850640f, -0.447215f), new Vector3(0.723600f, 0.525720f, -0.447215f),
-                new Vector3(-0.894425f, 0.000000f, -0.447215f), new Vector3(-0.276385d, 0.850640f, -0.447215f),
-                new Vector3(0.894425f, 0.000000f, 0.447215f), new Vector3(0.276385f, -0.850640f, 0.447215f),
-                new Vector3(-0.723600f, -0.525720f, 0.447215f), new Vector3(-0.723600f, 0.525720f, 0.447215f),
-                new Vector3(0.276385f, 0.850640f, 0.447215f), new Vector3(0.000000f, 0.000000f, 1.000000f)
-                */
                 new Vector3(-x, y, z), new Vector3(x, y, z), new Vector3(-x, y, -z), new Vector3(x, y, -z),
                 new Vector3(y, z, x), new Vector3(y, z, -x), new Vector3(y, -z, x), new Vector3(y, -z, -x),
                 new Vector3(z, x, y), new Vector3(-z, x, y), new Vector3(z, -x, y), new Vector3(-z, -x, y)
@@ -63,11 +55,6 @@ namespace DefenseShields.Support
             var index = new int[lods][];
             index[0] = new int[]
             {
-                /*
-                0, 1, 2, 1, 0, 3, 0, 2, 4, 0, 4, 5, 0, 5, 3, 1, 3, 6, 2, 1, 7,
-                4, 2, 8, 5, 4, 9, 3, 5, 10, 1, 6, 7, 2, 7, 8, 4, 8, 9, 5, 9, 10,
-                3, 10, 6, 7, 6, 11, 8, 7, 11, 9, 8, 11, 10, 9, 11, 6, 10, 11
-                */
                 0, 4, 1, 0, 9, 4, 9, 5, 4, 4, 5, 8, 4, 8, 1,
                 8, 10, 1, 8, 3, 10, 5, 3, 8, 5, 2, 3, 2, 7, 3, 7, 10, 3, 7,
                 6, 10, 7, 11, 6, 11, 0, 6, 0, 1, 6, 6, 1, 10, 9, 0, 11, 9,
@@ -272,13 +259,32 @@ namespace DefenseShields.Support
 
             public Vector3D[] ReturnPhysicsVerts(MatrixD matrix, int lod)
             {
-                var count = checked((int)VertsForLod(lod));
-                Array.Resize(ref _physicsBuffer, count);
+                //var count = checked((int)VertsForLod(lod));
+                //Array.Resize(ref _physicsBuffer, count);
+                Vector3D[] physicsArray;
+                switch (lod)
+                {
+                    case 0:
+                        physicsArray = new Vector3D[12];
+                        break;
+                    case 1:
+                        physicsArray = new Vector3D[42];
+                        break;
+                    case 2:
+                        physicsArray = new Vector3D[162];
+                        break;
+                    case 3:
+                        physicsArray = new Vector3D[642];
+                        break;
+                    default:
+                        physicsArray = new Vector3D[2562];
+                        break;
+                }
 
-                for (var i = 0; i < count; i++)
-                    Vector3D.Transform(ref _backing.VertexBuffer[i], ref matrix, out _physicsBuffer[i]);
+                for (var i = 0; i < physicsArray.Length; i++)
+                    Vector3D.Transform(ref _backing.VertexBuffer[i], ref matrix, out physicsArray[i]);
 
-                return _physicsBuffer;
+                return physicsArray;
             }
 
             public void CalculateColor(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, bool sphereOnCamera, IMyEntity shield)

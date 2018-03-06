@@ -1,0 +1,1 @@
+﻿Get-Content -Path C:\Users\Shane\AppData\Roaming\SpaceEngineers\SpaceEngineers.log -Tail 100 -Wait

@@ -108,6 +108,9 @@ namespace DefenseShields.Support
             var numL6VertsToRoots = new HashSet<Vector3D>();
             var numL7VertsToRoots = new HashSet<Vector3D>();
             var numL8VertsToRoots = new HashSet<Vector3D>();
+            var numL9VertsToRoots = new HashSet<Vector3D>();
+            var numL10VertsToRoots = new HashSet<Vector3D>();
+            var numL11VertsToRoots = new HashSet<Vector3D>();
 
             var last = false;
             var c = 0;
@@ -130,6 +133,9 @@ namespace DefenseShields.Support
                     numL6VertsToRoots.Clear();
                     numL7VertsToRoots.Clear();
                     numL8VertsToRoots.Clear();
+                    numL9VertsToRoots.Clear();
+                    numL10VertsToRoots.Clear();
+                    numL11VertsToRoots.Clear();
 
                     for (int i = 0; i < shieldTris.Length; i += 3)
                     {
@@ -352,6 +358,93 @@ namespace DefenseShields.Support
                         }
                     }
                     foreach (var l in numL8VertsToRoots)
+                    {
+                        if (count == 0) _z0.Add(l);
+                        if (count == 1) _z1.Add(l);
+                        if (count == 2) _z2.Add(l);
+                        if (count == 3) _z3.Add(l);
+                        if (count == 4) _z4.Add(l);
+                        if (count == 5) _z5.Add(l);
+                        if (count == 6) _z6.Add(l);
+                        if (count == 7) _z7.Add(l);
+                        if (count == 8) _z8.Add(l);
+                        if (count == 9) _z9.Add(l);
+                        if (count == 10) _z10.Add(l);
+                        if (count == 11) _z11.Add(l);
+                        for (int i = 0; i < shieldTris.Length; i += 3)
+                        {
+                            var v0 = shieldTris[i];
+                            var v1 = shieldTris[i + 1];
+                            var v2 = shieldTris[i + 2];
+
+                            if (v0 == l || v1 == l || v2 == l)
+                            {
+                                numL9VertsToRoots.Add(l);
+                                numL9VertsToRoots.Add(v0);
+                                numL9VertsToRoots.Add(v1);
+                                numL9VertsToRoots.Add(v2);
+                            }
+                        }
+                    }
+                    foreach (var l in numL9VertsToRoots)
+                    {
+                        if (count == 0) _z0.Add(l);
+                        if (count == 1) _z1.Add(l);
+                        if (count == 2) _z2.Add(l);
+                        if (count == 3) _z3.Add(l);
+                        if (count == 4) _z4.Add(l);
+                        if (count == 5) _z5.Add(l);
+                        if (count == 6) _z6.Add(l);
+                        if (count == 7) _z7.Add(l);
+                        if (count == 8) _z8.Add(l);
+                        if (count == 9) _z9.Add(l);
+                        if (count == 10) _z10.Add(l);
+                        if (count == 11) _z11.Add(l);
+                        for (int i = 0; i < shieldTris.Length; i += 3)
+                        {
+                            var v0 = shieldTris[i];
+                            var v1 = shieldTris[i + 1];
+                            var v2 = shieldTris[i + 2];
+
+                            if (v0 == l || v1 == l || v2 == l)
+                            {
+                                numL10VertsToRoots.Add(l);
+                                numL10VertsToRoots.Add(v0);
+                                numL10VertsToRoots.Add(v1);
+                                numL10VertsToRoots.Add(v2);
+                            }
+                        }
+                    }
+                    foreach (var l in numL10VertsToRoots)
+                    {
+                        if (count == 0) _z0.Add(l);
+                        if (count == 1) _z1.Add(l);
+                        if (count == 2) _z2.Add(l);
+                        if (count == 3) _z3.Add(l);
+                        if (count == 4) _z4.Add(l);
+                        if (count == 5) _z5.Add(l);
+                        if (count == 6) _z6.Add(l);
+                        if (count == 7) _z7.Add(l);
+                        if (count == 8) _z8.Add(l);
+                        if (count == 9) _z9.Add(l);
+                        if (count == 10) _z10.Add(l);
+                        if (count == 11) _z11.Add(l);
+                        for (int i = 0; i < shieldTris.Length; i += 3)
+                        {
+                            var v0 = shieldTris[i];
+                            var v1 = shieldTris[i + 1];
+                            var v2 = shieldTris[i + 2];
+
+                            if (v0 == l || v1 == l || v2 == l)
+                            {
+                                numL11VertsToRoots.Add(l);
+                                numL11VertsToRoots.Add(v0);
+                                numL11VertsToRoots.Add(v1);
+                                numL11VertsToRoots.Add(v2);
+                            }
+                        }
+                    }
+                    foreach (var l in numL11VertsToRoots)
                     {
                         if (count == 0) _z0.Add(l);
                         if (count == 1) _z1.Add(l);

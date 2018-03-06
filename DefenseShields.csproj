@@ -228,6 +228,9 @@
     <None Include="Models\GeneratorReflector_Large.mwm" />
     <None Include="Models\GeneratorRotor_Large.mwm" />
     <None Include="Models\LargeField.mwm" />
+    <None Include="tools\Monitor DS.ps1" />
+    <None Include="tools\Monitor SE Error Log.ps1" />
+    <None Include="tools\Monitor SE Log.ps1" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\Scripts\DefenseShields\Control\BaseControl.cs" />

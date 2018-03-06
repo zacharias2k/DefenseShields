@@ -32,7 +32,6 @@ namespace DefenseShields
 
         private const float Shotdmg = 1f;
         private const float Bulletdmg = 0.1f;
-        private const float InOutSpace = 15f;
 
         private float _power = 0.0001f;
         private float _animStep;
@@ -52,14 +51,14 @@ namespace DefenseShields
         private int _playertime;
         private int _prevLod;
 
-        private bool debug = false;
+        private const bool Debug = true;
         private bool _entityChanged = true;
         private bool _gridChanged = true;
         private bool _enablePhysics = true;
         private bool _buildByVerts = true;
-        private bool _buildVertZones = false;
+        private bool _buildVertZones = true;
         private bool _buildLines = false;
-        private bool _buildTris = true;
+        private bool _buildTris = false;
         private bool _buildOnce;
         private bool _initialized;
         private bool _animInit;
@@ -74,7 +73,6 @@ namespace DefenseShields
         private Vector3D _shieldSize;
 
         private Vector3D[] _rootVecs = new Vector3D[12];
-        private Vector3D[] _rootTris = new Vector3D[60];
         private Vector3D[] _physicsOutside;
         private Vector3D[] _physicsInside;
 
@@ -119,6 +117,7 @@ namespace DefenseShields
         private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
         #endregion
 
+        #region constructors
         private MatrixD DetectionMatrix
         {
             get { return _detectionMatrix; }
@@ -130,6 +129,8 @@ namespace DefenseShields
                 _detectionMatrixInside = MatrixD.Rescale(value, 1d + (-3.0d / 100d));
             }
         }
+        #endregion
+
 
         public MyResourceSinkComponent Sink { get { return _sink; } set { _sink = value; } }
 
@@ -149,17 +150,6 @@ namespace DefenseShields
         private HashSet<ulong> playersToReceive = null;
         // 
 
-        #region Prep / Misc
-        private void BuildPhysicsArrays()
-        {
-            _physicsOutside = _icosphere.ReturnPhysicsVerts(_detectionMatrixOutside, 3);
-            _rootVecs = _icosphere.ReturnPhysicsVerts(DetectionMatrix, 0);
-            _physicsInside = _icosphere.ReturnPhysicsVerts(_detectionMatrixInside, 3);
-            //if (_buildOnce == false) _structureBuilder.BuildBase(_icosphere.CalculatePhysics(_detectionMatrixInside, 1), _rootVecs, _physicsVerts1, _buildLines, _buildTris, _buildVertZones, _buildByVerts);
-            //_buildOnce = true;
-        }
-        #endregion
-
         #region Init
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
@@ -177,6 +167,7 @@ namespace DefenseShields
         #endregion
 
         #region Simulation
+        private Task? _preparePhysics = null;
         public override void UpdateBeforeSimulation()
         {
             try
@@ -185,27 +176,7 @@ namespace DefenseShields
                 if (_count == 0) DSUtils.Sw.Start();
                 if (_explode && _explodeCount++ == 14) _explodeCount = 0;
                 if (_explodeCount == 0 && _explode) _explode = false;
-                /*
-                if (_count <= 0)
-                {
-                    if (!_initialized)
-                    {
-                        _count = -1;
-                        InHashBuilder();
-                        return;
-                    }
-                    InHashBuilder();
-                }
-                */
-                if (_animInit)
-                {
-                    if (_entityChanged) blockCam = new BoundingSphereD(Block.PositionComp.WorldVolume.Center, Block.WorldVolume.Radius);
-                    if (_subpartRotor.Closed.Equals(true) && _initialized && Block.IsWorking)
-                    {
-                        BlockAnimationReset();
-                    }
-                    if (Distance(1000) && MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam)) BlockAnimation();
-                }
+
                 if (_count == 29 && _absorb > 0)
                 {
                     CalcRequiredPower();
@@ -221,24 +192,47 @@ namespace DefenseShields
                     //if (_entityChanged || _gridChanged) Log.Line($"Entity Change Loop ec:{_entityChanged} gc:{_gridChanged} vel:{entLinVel} avel:{entAngularVelocity}");
                     if (_entityChanged || _range <= 0) CreateShieldMatrices();
                 }
-                if (_count == 0) _enablePhysics = false;
-                if (_enablePhysics == false) QuickWebCheck();
-                if (_enablePhysics && _initialized && Block.IsWorking)
-                {
-                    BuildPhysicsArrays();
-                }
                 if (_initialized || Block.IsWorking)
                 {
+                    if (_count == 0) _enablePhysics = false;
+                    if (_enablePhysics == false) QuickWebCheck();
+                    if (_enablePhysics) _preparePhysics = MyAPIGateway.Parallel.StartBackground(BuildPhysicsArrays);
+
+                    //if (_enablePhysics) BuildPhysicsArrays();
+
+                    if (_animInit)
+                    {
+                        if (_entityChanged) blockCam = new BoundingSphereD(Block.PositionComp.WorldVolume.Center, Block.WorldVolume.Radius);
+                        if (_subpartRotor.Closed.Equals(true))
+                        {
+                            BlockAnimationReset();
+                        }
+                        if (Distance(1000) && MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam)) MyAPIGateway.Parallel.StartBackground(BlockAnimation);
+                    }
                     DamageGrids();
-                    if (_enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
+                    if (_playerwebbed && _enablePhysics) PlayerEffects();
+                    if (_count == 0) DSUtils.StopWatchReport("main loop", -1);
+                    if (_preparePhysics.HasValue && !_preparePhysics.Value.IsComplete) _preparePhysics.Value.Wait();
+                    if (_preparePhysics.HasValue && _preparePhysics.Value.IsComplete && _enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
+                    //if (_enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
 
                     //if (_enablePhysics) WebEntities();
-                    if (_playerwebbed && _enablePhysics) PlayerEffects();
+
                 }
-                if (_count == 0) DSUtils.StopWatchReport("Main loop", -1);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
+
+        #region Prep / Misc
+        private void BuildPhysicsArrays()
+        {
+            _physicsOutside = _icosphere.ReturnPhysicsVerts(_detectionMatrixOutside, 3);
+            _rootVecs = _icosphere.ReturnPhysicsVerts(DetectionMatrix, 0);
+            _physicsInside = _icosphere.ReturnPhysicsVerts(_detectionMatrixInside, 3);
+            //if (_buildOnce == false) _structureBuilder.BuildBase(_icosphere.CalculatePhysics(_detectionMatrixOutside, 3), _rootVecs, _physicsOutside, _buildLines, _buildTris, _buildVertZones, _buildByVerts);
+            //_buildOnce = true;
+        }
+        #endregion
 
         public override void UpdateBeforeSimulation100()
         {
@@ -447,12 +441,13 @@ namespace DefenseShields
 
         private void BlockAnimation()
         {
+
             if (Block.Enabled && Block.IsFunctional && Block.IsWorking)
             {
+
                 //_subpartRotor.SetEmissiveParts("Emissive", Color.White, 1);
                 _time += 1;
                 var temp1 = Matrix.CreateRotationY(0.1f * _time);
-                temp1.Translation = _subpartRotor.PositionComp.LocalMatrix.Translation;
                 _subpartRotor.PositionComp.LocalMatrix = temp1;
                 if (_animStep < 1f)
                 {
@@ -472,6 +467,7 @@ namespace DefenseShields
             {
                 if (i < 4)
                 {
+
                     _subpartsReflectors[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixReflectorsOff[i], _matrixReflectorsOn[i], _animStep);
                 }
                 _subpartsArms[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixArmsOff[i], _matrixArmsOn[i], _animStep);
@@ -495,20 +491,21 @@ namespace DefenseShields
                 var shield = _shield;
                 var impactPos = _worldImpactPosition;
 
-                var referenceWorldPosition = _shieldGridMatrix.Translation; 
-                var worldDirection = impactPos - referenceWorldPosition; 
-                var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(_shieldGridMatrix));
+                var CubeBlockLocalMatrix = Block.CubeGrid.LocalMatrix;
+                var referenceWorldPosition = CubeBlockLocalMatrix.Translation;
+
+                var worldDirection = impactPos - referenceWorldPosition;
+                var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(CubeBlockLocalMatrix));
                 if (impactPos != Vector3D.NegativeInfinity) impactPos = localPosition;
-                //if (impactpos != Vector3D.NegativeInfinity) impactpos = Vector3D.Transform(impactpos, Block.CubeGrid.WorldMatrixInvScaled);
                 _worldImpactPosition = Vector3D.NegativeInfinity;
 
                 var impactSize = _impactSize;
 
-                //var shapeMatrix = _shieldShapeMatrix;
+                var shapeMatrix = _shieldShapeMatrix;
                 var enemy = IsEnemy(null);
-                //var renderId = GetRenderId();
-                var shapeMatrix = DetectionMatrix;
-                uint renderId = 0;
+                var renderId = GetRenderId();
+                //var shapeMatrix = DetectionMatrix;
+                //uint renderId = 0;
 
                 var sp = new BoundingSphereD(Entity.GetPosition(), _range);
                 var sphereOnCamera = MyAPIGateway.Session.Camera.IsInFrustum(ref sp);
@@ -525,24 +522,6 @@ namespace DefenseShields
         {
             if (drawShapeChanged || lod != prevlod) _icosphere.CalculateTransform(shapeMatrix, lod);
             _icosphere.CalculateColor(shapeMatrix, impactPos, impactSize, drawShapeChanged, enemy, sphereOnCamera, shield);
-        }
-
-        public void DrawBox(MyOrientedBoundingBoxD obb, Color color, bool shield, MatrixD matrix = default(MatrixD))
-        {
-            var box = new BoundingBoxD(-obb.HalfExtent, obb.HalfExtent);
-            var wm = MatrixD.CreateFromTransformScale(obb.Orientation, obb.Center, Vector3D.One);
-            //if (shield) wm = wm * _shieldGridMatrix;
-            //else wm = wm * matrix;
-            //wm = wm * Block.WorldMatrix;
-            MySimpleObjectDraw.DrawTransparentBox(ref wm, ref box, ref color, MySimpleObjectRasterizer.Solid, 1);
-        }
-
-        public void DrawBox2(MyOrientedBoundingBoxD obb, Color color)
-        {
-            var box = new BoundingBoxD(-obb.HalfExtent, obb.HalfExtent);
-            var wm = MatrixD.CreateFromTransformScale(obb.Orientation, obb.Center, Vector3D.One);
-            wm = MatrixD.Rescale(_shieldShapeMatrix, 1f);
-            MySimpleObjectDraw.DrawTransparentBox(ref wm, ref box, ref color, MySimpleObjectRasterizer.Solid, 1);
         }
 
         #endregion
@@ -603,8 +582,8 @@ namespace DefenseShields
             var buffer = 5f;
             var shieldSize = gridHalfExtents * ellipsoidAdjust + buffer;
             _shieldSize = shieldSize;
-            //var gridLocalCenter = Block.CubeGrid.PositionComp.LocalAABB.Center;
-            var mobileMatrix = MatrixD.CreateScale(shieldSize); //* MatrixD.CreateTranslation(gridLocalCenter);
+            var gridLocalCenter = Block.CubeGrid.PositionComp.LocalAABB.Center;
+            var mobileMatrix = MatrixD.CreateScale(shieldSize) * MatrixD.CreateTranslation(gridLocalCenter);
             mobileMatrix.Translation = Block.CubeGrid.PositionComp.LocalVolume.Center;
             _mobileMatrix = mobileMatrix;
         }
@@ -613,8 +592,8 @@ namespace DefenseShields
         {
             if (Block.CubeGrid.Physics.IsStatic)
             {
-                //_shieldShapeMatrix = MatrixD.Rescale(Block.LocalMatrix, new Vector3D(_width, _height, _depth));
-                _shieldShapeMatrix = MatrixD.Rescale(Block.WorldMatrix, new Vector3D(_width, _height, _depth));
+                _shieldShapeMatrix = MatrixD.Rescale(Block.LocalMatrix, new Vector3D(_width, _height, _depth));
+                //_shieldShapeMatrix = MatrixD.Rescale(Block.WorldMatrix, new Vector3D(_width, _height, _depth));
                 _shield.SetWorldMatrix(_shieldShapeMatrix);
             }
             if (!_entityChanged || Block.CubeGrid.Physics.IsStatic) return;
@@ -652,7 +631,8 @@ namespace DefenseShields
 
         private uint GetRenderId()
         {
-            var renderId = _gridIsMobile ? Block.CubeGrid.Render.GetRenderObjectID() : Block.CubeGrid.Render.GetRenderObjectID(); //Block obb is misaligned.
+            //var renderId = _gridIsMobile ? Block.CubeGrid.Render.GetRenderObjectID() : Block.CubeGrid.Render.GetRenderObjectID(); 
+            var renderId = Block.CubeGrid.Render.GetRenderObjectID(); 
             return renderId;
         }
         #endregion
@@ -660,6 +640,11 @@ namespace DefenseShields
         #region Detect Intersection
         private Vector3D Intersect(IMyEntity ent, bool impactcheck)
         {
+            if (!(ent is IMyCubeGrid))
+            {
+                var simpleContactPoint = ContactPoint(ent);
+                var simpleContactValue = Vector3D.Transform(simpleContactPoint, _detectionMatrixInv).LengthSquared();
+            }
             var bOriBBoxD = GetWorldOBB(ent);
             var contactpoint = ContactPointObb(ent, bOriBBoxD);
 
@@ -738,8 +723,13 @@ namespace DefenseShields
             var bLengthSqr = bLength * bLength;
 
             var reSized = bLocalAabb.Extents.Min() * gridScaler;
+            if (_count == 0) Log.Line($"gridscaler is: {gridScaler} - Less than 1 equals large ship for shield size");
             if (gridScaler > 1)
             {
+                //if (_count == 0) DSUtils.Sw.Start();
+                //var rootVerts = RootRangeClosest(_rootVecs, bWorldCenter);
+                //var zone = _dataStructures.p3ExtraLargeZones[rootVerts];
+                //var rangedVert3 = VertRangePartialCheck(_physicsOutside, zone, bWorldCenter);
                 var rangedVert3 = VertRangeFullCheck(_physicsOutside, bWorldCenter);
                 var closestFace0 = _dataStructures.p3VertTris[rangedVert3[0]];
                 var checkBackupFace1 = CheckFirstFace(closestFace0, rangedVert3[1]);
@@ -747,20 +737,17 @@ namespace DefenseShields
                 var checkBackupFace2 = CheckFirstFace(closestFace0, rangedVert3[2]);
                 var closestFace2 = _dataStructures.p3VertTris[rangedVert3[2]];
 
-                //if (_count == 0) DSUtils.Sw.Start();
                 var boxedTriangles = IntersectSmallBox(closestFace0, closestFace1, closestFace2, _physicsOutside, bWorldAabb, checkBackupFace1, checkBackupFace2);
-                //if (_count == 0) DSUtils.StopWatchReport("simple test", -1);
 
                 if (boxedTriangles.Count == 0)
                 {
                     var test = GetClosestInOutTri(_physicsOutside, _physicsInside, closestFace0, bWorldCenter);
-                    //if (_count == 0) DSUtils.StopWatchReport("TriCheck", -1);
                     if (test) return Vector3D.Zero;
                 }
-                //else if (_count == 0) DSUtils.StopWatchReport("TriCheck", -1);
-
-                if (debug)
+                //if (_count == 0) DSUtils.StopWatchReport("prune", -1);
+                if (Debug)
                 {
+                    //DrawNums(_physicsOutside,zone, Color.AntiqueWhite);
                     DrawLineToNum(_physicsOutside, rangedVert3[0], bWorldCenter, Color.Red);
                     DrawLineToNum(_physicsOutside, rangedVert3[1], bWorldCenter, Color.Green);
                     DrawLineToNum(_physicsOutside, rangedVert3[2], bWorldCenter, Color.Gold);
@@ -768,8 +755,8 @@ namespace DefenseShields
                     var closestLineFace0 = _dataStructures.p3VertLines[rangedVert3[0]];
                     var closestLineFace1 = _dataStructures.p3VertLines[rangedVert3[1]];
                     var closestLineFace2 = _dataStructures.p3VertLines[rangedVert3[2]];
-                    var c1 = Color.Gray;
-                    var c2 = Color.Gray;
+                    var c1 = Color.Black;
+                    var c2 = Color.Black;
                     if (checkBackupFace1) c1 = Color.Green;
                     if (checkBackupFace2) c2 = Color.Gold;
 
@@ -778,13 +765,15 @@ namespace DefenseShields
                     DrawLineNums(_physicsOutside, closestLineFace2, c2);
 
                     DrawTriVertList(boxedTriangles);
-                }
 
+                    //DrawLineToNum(_physicsOutside, rootVerts, bWorldCenter, Color.HotPink);
+                    //DrawLineToNum(_physicsOutside, rootVerts[1], bWorldCenter, Color.Green);
+                    //DrawLineToNum(_physicsOutside, rootVerts[2], bWorldCenter, Color.Gold);
+                }
 
                 if (boxedTriangles.Count > 0)
                 {
                     var locCenterSphere = CreateFromPointsList(boxedTriangles);
-
                     collision = Vector3D.Lerp(_gridIsMobile ? Block.PositionComp.WorldVolume.Center : Block.CubeGrid.PositionComp.WorldVolume.Center, locCenterSphere.Center, .9);
                     _worldImpactPosition = collision;
                 }
@@ -795,6 +784,8 @@ namespace DefenseShields
                 //if (_count == 0) DSUtils.Sw.Start();
 
                 var collection = ContainPointObb(_physicsOutside, bOriBBoxD, tSphere);
+                if (collection.Count == 0) return Vector3D.NegativeInfinity;
+                
                 var collisionCenter = CreateFromPointsList(collection).Center;
 
                 if (collection.Count > 0)
@@ -832,17 +823,29 @@ namespace DefenseShields
 
         private static bool CheckFirstFace(int[] firstFace, int secondVertNum)
         {
-            for (int i = 0; i < firstFace.Length - 3; i++)
+            for (int i = 0; i < firstFace.Length; i++)
             {
                 if (firstFace[i] == secondVertNum) return false;
             }
             return true;
         }
 
+        private static int[] CleanZoneNums(int[] zone1, int[] zone2, int[] zone3)
+        {
+            var temp = new HashSet<int>();
+            for (int i = 0; i < zone1.Length + zone2.Length + zone3.Length; i++)
+            {
+                temp.Add(i);
+            }
+            var cleanZoneNums = new int[temp.Count];
+            temp.CopyTo(cleanZoneNums);
+            return cleanZoneNums;
+        }
+
         private static List<Vector3D> IntersectSmallBox(int[] closestFace0, int[] closestFace1, int[] closestFace2, Vector3D[] physicsVerts, BoundingBoxD bWorldAabb, bool secondFace, bool thirdFace)
         {
             var boxedTriangles = new List<Vector3D>();
-            for (int i = 0, j = 0; i < closestFace0.Length - 3; i += 3, j++)
+            for (int i = 0, j = 0; i < closestFace0.Length; i += 3, j++)
             {
                 var v0 = physicsVerts[closestFace0[i]];
                 var v1 = physicsVerts[closestFace0[i + 1]];
@@ -856,7 +859,7 @@ namespace DefenseShields
             }
             if (boxedTriangles.Count == 0 && secondFace)
             {
-                for (int i = 0, j = 0; i < closestFace1.Length - 3; i += 3, j++)
+                for (int i = 0, j = 0; i < closestFace1.Length; i += 3, j++)
                 {
                     var v0 = physicsVerts[closestFace1[i]];
                     var v1 = physicsVerts[closestFace1[i + 1]];
@@ -872,7 +875,7 @@ namespace DefenseShields
             }
             if (boxedTriangles.Count == 0 && thirdFace)
             {
-                for (int i = 0, j = 0; i < closestFace1.Length - 3; i += 3, j++)
+                for (int i = 0, j = 0; i < closestFace1.Length; i += 3, j++)
                 {
                     var v0 = physicsVerts[closestFace2[i]];
                     var v1 = physicsVerts[closestFace2[i + 1]];
@@ -894,7 +897,7 @@ namespace DefenseShields
             var closestTri1 = -1;
             double triDist1 = 9999999999999999999;
 
-            for (int i = 0; i < closestFace.Length - 3; i += 3)
+            for (int i = 0; i < closestFace.Length; i += 3)
             {
                 var ov0 = physicsOutside[closestFace[i]];
                 var ov1 = physicsOutside[closestFace[i + 1]];
@@ -963,6 +966,49 @@ namespace DefenseShields
             return pArray.Length == 0 ? Vector3D.NegativeInfinity : BoundingSphereD.CreateFromPoints(pArray).Center;
         }
 
+        private static int[] VertRangePartialCheck(Vector3D[] physicsVerts, int[] zone, Vector3D bWorldCenter)
+        {
+            double minValue1 = 9999999999999999999;
+            double minValue2 = 9999999999999999999;
+            double minValue3 = 9999999999999999999;
+
+
+            var minNum1 = -2;
+            var minNum2 = -2;
+            var minNum3 = -2;
+
+            for (int p = 0; p < zone.Length; p++)
+            {
+                var vert = physicsVerts[zone[p]];
+                var test = Vector3D.DistanceSquared(vert, bWorldCenter);
+                if (test < minValue3)
+                {
+                    if (test < minValue1)
+                    {
+                        minValue3 = minValue2;
+                        minNum3 = minNum2;
+                        minValue2 = minValue1;
+                        minNum2 = minNum1;
+                        minValue1 = test;
+                        minNum1 = zone[p];
+                    }
+                    else if (test < minValue2)
+                    {
+                        minValue3 = minValue2;
+                        minNum3 = minNum2;
+                        minValue2 = test;
+                        minNum2 = zone[p];
+                    }
+                    else
+                    {
+                        minValue3 = test;
+                        minNum3 = zone[p];
+                    }
+                }
+            }
+            return new[] { minNum1, minNum2, minNum3 };
+        }
+
         private static int[] VertRangeFullCheck(Vector3D[] physicsVerts, Vector3D bWorldCenter)
         {
             double minValue1 = 9999999999999999999;
@@ -1007,41 +1053,69 @@ namespace DefenseShields
             return new [] { minNum1, minNum2, minNum3};
         }
 
-        private int VertRangeCheckClosest(Vector3D[] physicsVerts, Vector3D[] roots, int[][] zones, Vector3D bWorldCenter)
+        private static int RootRangeClosest(Vector3D[] roots, Vector3D bWorldCenter)
         {
             double minValue1 = 9999999999999999999;
-            double minValue2 = 9999999999999999999;
-            var minNum1 = -1;
-            var minNum2 = -1;
 
-            for (int r = 0; r < roots.Length; r++)
+            var minNum1 = -1;
+
+            for (int r = 0; r < 12; r++)
             {
                 var vert = roots[r];
                 var test1 = Vector3D.DistanceSquared(vert, bWorldCenter);
 
                 if (test1 < minValue1)
                 {
-                    minValue1 = test1;
-                    minNum1 = r;
-                }
-            }
-            DrawLineToNum(physicsVerts, minNum1, bWorldCenter, Color.Red);
-            var zone = zones[minNum1];
-            var zoneLen = zone.Length;
-            for (int i = 0; i < zoneLen; i++)
-            {
-                var vert = physicsVerts[zone[i]];
-                var test2 = Vector3D.DistanceSquared(vert, bWorldCenter);
-                //Log.Line($"zoneLen: {zone.Length} - i: {i} - minNum1: {minNum1} - numCheck: {zone[i]} - test: {test2}");
 
-                if (test2 < minValue2)
-                {
-                    minValue2 = test2;
-                    minNum2 = zone[i];
-                    //Log.Line($"minNum2 {minNum2} - value {minValue2}");
+                        minValue1 = test1;
+                        minNum1 = r;
                 }
             }
-            return minNum2;
+            return minNum1;
+        }
+
+        private static int[] RootRangeClosest3(Vector3D[] roots, Vector3D bWorldCenter)
+        {
+            double minValue1 = 9999999999999999999;
+            double minValue2 = 9999999999999999999;
+            double minValue3 = 9999999999999999999;
+
+            var minNum1 = -1;
+            var minNum2 = -1;
+            var minNum3 = -1;
+
+            for (int r = 0; r < roots.Length; r++)
+            {
+                var vert = roots[r];
+                var test1 = Vector3D.DistanceSquared(vert, bWorldCenter);
+
+                if (test1 < minValue3)
+                {
+                    if (test1 < minValue1)
+                    {
+                        minValue3 = minValue2;
+                        minNum3 = minNum2;
+                        minValue2 = minValue1;
+                        minNum2 = minNum1;
+                        minValue1 = test1;
+                        minNum1 = r;
+                    }
+                    else if (test1 < minValue2)
+                    {
+                        minValue3 = minValue2;
+                        minNum3 = minNum2;
+                        minValue2 = test1;
+                        minNum2 = r;
+                    }
+                    else
+                    {
+                        minValue3 = test1;
+                        minNum3 = r;
+                    }
+                }
+            }
+
+            return new[] { minNum1, minNum2, minNum3 };
         }
 
         private double ContainmentField(IMyEntity breaching, IMyEntity field, Vector3D intersect)
@@ -1599,7 +1673,7 @@ namespace DefenseShields
         private void DrawTriVertList(List<Vector3D> list)
         {
             var lineId = MyStringId.GetOrCompute("Square");
-            var c = Color.Red.ToVector4();
+            var c = Color.DarkViolet.ToVector4();
             for (int i = 0; i < list.Count; i += 3)
             {
                 var v0 = list[i];
@@ -1767,6 +1841,24 @@ namespace DefenseShields
             boundingSphereD.Center = result4;
             boundingSphereD.Radius = num1;
             return boundingSphereD;
+        }
+
+        public void DrawBox(MyOrientedBoundingBoxD obb, Color color, bool shield, MatrixD matrix = default(MatrixD))
+        {
+            var box = new BoundingBoxD(-obb.HalfExtent, obb.HalfExtent);
+            var wm = MatrixD.CreateFromTransformScale(obb.Orientation, obb.Center, Vector3D.One);
+            //if (shield) wm = wm * _shieldGridMatrix;
+            //else wm = wm * matrix;
+            //wm = wm * Block.WorldMatrix;
+            MySimpleObjectDraw.DrawTransparentBox(ref wm, ref box, ref color, MySimpleObjectRasterizer.Solid, 1);
+        }
+
+        public void DrawBox2(MyOrientedBoundingBoxD obb, Color color)
+        {
+            var box = new BoundingBoxD(-obb.HalfExtent, obb.HalfExtent);
+            var wm = MatrixD.CreateFromTransformScale(obb.Orientation, obb.Center, Vector3D.One);
+            wm = MatrixD.Rescale(_shieldShapeMatrix, 1f);
+            MySimpleObjectDraw.DrawTransparentBox(ref wm, ref box, ref color, MySimpleObjectRasterizer.Solid, 1);
         }
         #endregion
     }
