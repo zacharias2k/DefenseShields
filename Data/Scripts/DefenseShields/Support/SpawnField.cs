@@ -282,7 +282,7 @@ namespace DefenseShields.Support
                 return physicsArray;
             }
 
-            public void CalculateColor(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, bool sphereOnCamera, IMyEntity shield)
+            public void ComputeEffects(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, bool sphereOnCamera, IMyEntity shield)
             {
                 _shield = shield;
                 _enemy = enemy;
@@ -311,7 +311,7 @@ namespace DefenseShields.Support
                 Log.Line($"impacts: {_impactCount[4]} {_impactCount[3]} {_impactCount[2]} {_impactCount[1]} {_impactCount[0]}");
 
                 if (_impactCount[4] != 0) MyAPIGateway.Parallel.Start(Models);
-                ColorAssignments(entChanged, matrix, impactSize, impactSpeed);
+                ColorAssignments(entChanged, impactSize, impactSpeed);
                 _prevLod = _lod;
                 // vec3 localSpherePositionOfImpact;
                 //    foreach (vec3 triangleCom in triangles) {
@@ -326,7 +326,7 @@ namespace DefenseShields.Support
                 // Multiplying by the sphere radius(1 for the unit sphere in question) gives the arc length.
             }
 
-            private void ColorAssignments(bool entChanged, MatrixD matrix, float impactSize, int impactSpeed)
+            private void ColorAssignments(bool entChanged, float impactSize, int impactSpeed)
             {
                 var ib = _backing.IndexBuffer[_lod];
 
@@ -342,7 +342,7 @@ namespace DefenseShields.Support
 
                     if (entChanged || _prevLod != _lod)
                     {
-                        var lclPos = (v0 + v1 + v2) / 3 - matrix.Translation;
+                        var lclPos = (v0 + v1 + v2) / 3 - _matrix.Translation;
                         var normlclPos = Vector3D.Normalize(lclPos);
                         _preCalcNormLclPos[j] = normlclPos;
                     }
@@ -354,8 +354,7 @@ namespace DefenseShields.Support
                             var dotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _localImpacts[s]);
                             var impactFactor = Math.Acos(dotOfNormLclImpact);
 
-
-                            const float waveMultiplier = Pi / ImpactSteps;
+                            var waveMultiplier = Pi / ImpactSteps / impactSize;
                             var wavePosition = waveMultiplier * _impactCount[s];
                             var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
                             if (wavePosition > impactFactor)
@@ -364,47 +363,6 @@ namespace DefenseShields.Support
                             }
                         }
                     }
-                    /*
-                    if ((_impactCount[4] != 0 && _impactCount[4] < ImpactSteps / impactSpeed) || _glitchCount != 0)
-                    {
-                        var pDotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _localImpacts[4]);
-                        var primeImpactFactor = Math.Acos(pDotOfNormLclImpact);
-
-                        float pWaveMultiplier = Pi / ImpactSteps / impactSize;
-                        var pWavePosition = pWaveMultiplier * _impactCount[4];
-                        var pRelativeToWavefront = Math.Abs(primeImpactFactor - pWavePosition);
-                        if (pWavePosition > primeImpactFactor)//&& _impactCount[4] <= ImpactSteps / impactSize) 
-                        {
-                            _triColorBuffer[j] = _test2Color;
-                            continue;
-                        }
-                        if (!_impactsFinished)
-                        {
-                            for (int s = 3; s > -1; s--)
-                            {
-                                if (_localImpacts[s] == Vector3D.NegativeInfinity) continue;
-                                var dotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _localImpacts[s]);
-                                var impactFactor = Math.Acos(dotOfNormLclImpact);
-
-                                _impactCount[s] = _impactCount[s] + 1;
-
-                                const float waveMultiplier = Pi / ImpactSteps;
-                                var wavePosition = waveMultiplier * _impactCount[s];
-                                var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
-                                if (wavePosition > impactFactor)
-                                {
-                                    _triColorBuffer[j] = _waveColor;
-                                }
-                            }
-                        }
-
-                        //if (impactFactor < wavePosition && relativeToWavefront > 0.1 && relativeToWavefront < 0.15 && _impactCount != 0) _defaultColor = _wavePassedColor;
-                        //else if (_chargeCount != 0) _defaultColor = _chargeColor;
-                        //else _defaultColor = _pulseColor;
-                        //var trianglesRelativeToWavefront = (int)Math.Round(Math.Abs(impactFactor - wavePosition) / (Math.PI / (5 << _lod)));
-                    }
-                    */
-                    //if (_impactCount[4] == 0 && !_charged) _triColorBuffer[j] = _waveColor;
                     else if (_impactCount[4] == 0) _triColorBuffer[j] = _defaultColor;
                 }
             }
@@ -431,8 +389,8 @@ namespace DefenseShields.Support
                         var n1 = _normalBuffer[i1];
                         var n2 = _normalBuffer[i2];
                         var color = _triColorBuffer[j];
-                        if (color == _defaultColor) faceMaterial = _faceId3;
-                        else if (color == _waveColor) faceMaterial = _faceId4;
+                        if (color == _defaultColor) faceMaterial = _faceId1;
+                        else if (color == _waveColor) faceMaterial = _faceId2;
                         //else if (color == _pulseColor) faceMaterial = _faceId1;
                         //else if (color == _test1Color) faceMaterial = _faceId4;
                         //else if (color == _test2Color) faceMaterial = _faceId4;
@@ -555,12 +513,12 @@ namespace DefenseShields.Support
                         ((MyEntity)_shield).RefreshModels($"{modPath}\\Models\\LargeField{n}.mwm", null);
                         _shield.Render.RemoveRenderObjects();
                         _shield.Render.UpdateRenderObject(true);
-                        if (n < 3)_shield.SetEmissiveParts("CWShield", Color.GhostWhite, 1);
-                        if (n >= 3 && n < 6) _shield.SetEmissiveParts("CWShield.001", Color.GhostWhite, 1);
-                        if (n >= 6 && n < 9) _shield.SetEmissiveParts("CWShield.002", Color.GhostWhite, 1);
-                        if (n >= 9 && n < 12) _shield.SetEmissiveParts("CWShield.003", Color.GhostWhite, 1);
-                        if (n >= 12 && n < 15) _shield.SetEmissiveParts("CWShield.004", Color.GhostWhite, 1);
-                        if (n == 15) _shield.SetEmissiveParts("CWShield.005", Color.GhostWhite, 1);
+                        if (n < 3)_shield.SetEmissiveParts("CWShield", Color.DarkViolet, 1);
+                        if (n >= 3 && n < 6) _shield.SetEmissiveParts("CWShield.001", Color.DarkViolet, 1);
+                        if (n >= 6 && n < 9) _shield.SetEmissiveParts("CWShield.002", Color.DarkViolet, 1);
+                        if (n >= 9 && n < 12) _shield.SetEmissiveParts("CWShield.003", Color.DarkViolet, 1);
+                        if (n >= 12 && n < 15) _shield.SetEmissiveParts("CWShield.004", Color.DarkViolet, 1);
+                        if (n == 15) _shield.SetEmissiveParts("CWShield.005", Color.DarkViolet, 1);
 
                         _modelCount++;
                         if (_modelCount == 16) _modelCount = 0;
@@ -592,11 +550,11 @@ namespace DefenseShields.Support
                 var rndNum4 = Random.Next(40, 120);
 
                 //currentColor
-                _defaultColor = Color.FromNonPremultiplied(0, 0, 0, 16);
+                _defaultColor = Color.FromNonPremultiplied(0, 0, 0, 32);
 
                 //waveColor
                 //var vwaveColor = Color.FromNonPremultiplied(cv3, 0, cv4, rndNum1 - 5);
-                var vwaveColor = Color.FromNonPremultiplied(0, 0, 0, 100);
+                var vwaveColor = Color.FromNonPremultiplied(0, 0, 0, 200);
                 _waveColor = vwaveColor;
 
                 //maxColor

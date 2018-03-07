@@ -535,7 +535,7 @@ namespace DefenseShields
         private void PrepareSphere(bool drawShapeChanged, bool sphereOnCamera, bool enemy, int lod, int prevlod, Vector3D impactPos, float impactSize, MatrixD shapeMatrix,  IMyEntity shield)
         {
             if (drawShapeChanged || lod != prevlod) _icosphere.CalculateTransform(shapeMatrix, lod);
-            _icosphere.CalculateColor(shapeMatrix, impactPos, impactSize, drawShapeChanged, enemy, sphereOnCamera, shield);
+            _icosphere.ComputeEffects(shapeMatrix, impactPos, impactSize, drawShapeChanged, enemy, sphereOnCamera, shield);
         }
 
         #endregion
