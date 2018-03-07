@@ -214,7 +214,6 @@ namespace DefenseShields.Support
 
             public void CalculateTransform(MatrixD matrix, int lod)
             {
-                //Log.Line($"Start CalculateTransform");
                 _lod = lod;
                 var count = checked((int)VertsForLod(lod));
                 Array.Resize(ref _vertexBuffer, count);
@@ -312,6 +311,25 @@ namespace DefenseShields.Support
                     Array.Resize(ref _preCalcNormLclPos, ib.Length / 3);
                 }
 
+                ColorAssignments(entChanged, matrix, impactSize, impactSpeed);
+                _prevLod = _lod;
+                // vec3 localSpherePositionOfImpact;
+                //    foreach (vec3 triangleCom in triangles) {
+                //    var surfDistance = Math.acos(dot(triangleCom, localSpherePositionOfImpact));
+                // }
+                // surfDistance will be the distance, along the surface, between the impact point and the triangle
+                // Equinox - It won't distort properly for anything that isn't a sphere
+                // localSpherePositionOfImpact = a direction
+                // triangleCom is another direction
+                // Dot product is the cosine of the angle between them
+                // Acos gives you that angle in radians
+                // Multiplying by the sphere radius(1 for the unit sphere in question) gives the arc length.
+            }
+
+            private void ColorAssignments(bool entChanged, MatrixD matrix, float impactSize, int impactSpeed)
+            {
+                var ib = _backing.IndexBuffer[_lod];
+
                 for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
                 {
                     var i0 = ib[i];
@@ -337,7 +355,7 @@ namespace DefenseShields.Support
                         float pWaveMultiplier = Pi / ImpactSteps / impactSize;
                         var pWavePosition = pWaveMultiplier * _impactCount[4];
                         var pRelativeToWavefront = Math.Abs(primeImpactFactor - pWavePosition);
-                        if (pWavePosition > primeImpactFactor )//&& _impactCount[4] <= ImpactSteps / impactSize) 
+                        if (pWavePosition > primeImpactFactor)//&& _impactCount[4] <= ImpactSteps / impactSize) 
                         {
                             _triColorBuffer[j] = _test2Color;
                             continue;
@@ -370,30 +388,6 @@ namespace DefenseShields.Support
                     //if (_impactCount[4] == 0 && !_charged) _triColorBuffer[j] = _waveColor;
                     else if (_impactCount[4] == 0) _triColorBuffer[j] = _test1Color;
                 }
-                _prevLod = _lod;
-                //DSUtils.StopWatchReport("ColorDraw", -1);
-                //
-                // Code
-                //
-                // vec3 localSpherePositionOfImpact;
-                //    foreach (vec3 triangleCom in triangles) {
-                //    var surfDistance = Math.acos(dot(triangleCom, localSpherePositionOfImpact));
-                // }
-                //
-                //
-                // surfDistance will be the distance, along the surface, between the impact point and the triangle
-                // Equinox - It won't distort properly for anything that isn't a sphere
-                // localSpherePositionOfImpact = a direction
-                // triangleCom is another direction
-                // Dot product is the cosine of the angle between them
-                // Acos gives you that angle in radians
-                // Multiplying by the sphere radius(1 for the unit sphere in question) gives the arc length
-                // Compared to sorting a list containing every single triangle?
-                // Probably a factor of log(n) where n is the triangle count
-                // So maybe 10x or so
-                // Equinox in that example what is triangles?
-                // all the triangles to get rendered
-                // So you'd do that calculation right before AddTriangleBillboard
             }
 
             public void Draw(uint renderId)
