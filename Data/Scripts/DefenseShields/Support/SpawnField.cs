@@ -357,7 +357,18 @@ namespace DefenseShields.Support
                             var waveMultiplier = Pi / ImpactSteps / impactSize;
                             var wavePosition = waveMultiplier * _impactCount[s];
                             var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
+                            /*
                             if (wavePosition > impactFactor)
+                            {
+                                _triColorBuffer[j] = _waveColor;
+                            }
+                            */
+                            if (relativeToWavefront < .03)
+                            {
+                                // within 1/180th of wavefront
+                                _triColorBuffer[j] = _defaultColor;
+                            }
+                            else if (impactFactor < wavePosition && relativeToWavefront > 0.1 && relativeToWavefront < 0.15)
                             {
                                 _triColorBuffer[j] = _waveColor;
                             }

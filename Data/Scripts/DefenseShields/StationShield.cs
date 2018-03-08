@@ -226,7 +226,7 @@ namespace DefenseShields
                     if (_playerwebbed && _enablePhysics) PlayerEffects();
                     if (_preparePhysics.HasValue && !_preparePhysics.Value.IsComplete) _preparePhysics.Value.Wait();
                     //if (Debug && _count == 0) _dsutil2.StopWatchReport("Physics Loop", -1);
-                    if (_preparePhysics.HasValue && _preparePhysics.Value.IsComplete && _enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
+                    if (_preparePhysics.HasValue && _preparePhysics.Value.IsComplete && _enablePhysics) WebEntities();
                     //if (_enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
 
                     //if (_enablePhysics) WebEntities();
@@ -775,6 +775,10 @@ namespace DefenseShields
                 if (boxedTriangles.Count == 0)
                 {
                     var test = GetClosestInOutTri(_physicsOutside, _physicsInside, closestFace0, bWorldCenter);
+                    if (test)
+                    {
+                        breaching.PositionComp.(Vector3D.Lerp(breaching.GetPosition(), _physicsOutside[rangedVert3[0]], 1d));
+                    }
                     if (test) return Vector3D.Zero;
                 }
                 //if (_count == 0) DSUtils.StopWatchReport("prune", -1);
@@ -1225,14 +1229,14 @@ namespace DefenseShields
             var cpDist = Vector3D.Transform(contactPoint, _detectionMatrixInv).LengthSquared();
             //var expelForce = (bmass); /// Math.Pow(cpDist, 2);
             //if (expelForce < -9999000000f || bmass >= -67f) expelForce = -9999000000f;
-            var expelForce = (bmass / 16) / (float)Math.Pow(cpDist, 2);
+            var expelForce = (bmass) / (float)Math.Pow(cpDist, 4);
 
 
             var worldPosition = breaching.WorldMatrix.Translation;
             var worldDirection = contactPoint - worldPosition;
 
-            //if (_gridIsMobile) Block.CubeGrid.Physics.ApplyImpulse(Vector3D.Negate(worldDirection) * (expelForce / 20), contactPoint);
-            //else breaching.Physics.ApplyImpulse(worldDirection * (expelForce / 40), contactPoint);
+            if (_gridIsMobile) Block.CubeGrid.Physics.ApplyImpulse(Vector3D.Negate(worldDirection) * (expelForce / 20), contactPoint);
+            else breaching.Physics.ApplyImpulse(worldDirection * (expelForce / 1), contactPoint);
 
             //breaching.Physics.ApplyImpulse(breaching.Physics.Mass * -0.050f * Vector3D.Dot(breaching.Physics.LinearVelocity, surfaceNormal) * surfaceNormal, contactPoint);
             //Log.Line($"cpDist:{cpDist} pow:{expelForce} bmass:{bmass} adjbmass{bmass / 50}");
