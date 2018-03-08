@@ -119,9 +119,10 @@ namespace DefenseShields
 
         public MyConcurrentHashSet<IMyEntity> InHash { get; } = new MyConcurrentHashSet<IMyEntity>();
         private MyConcurrentHashSet<IMySlimBlock> DmgBlocks { get; } = new MyConcurrentHashSet<IMySlimBlock>();
-
         private List<IMyCubeGrid> GridIsColliding = new List<IMyCubeGrid>();
         private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
+        private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } =  new MyConcurrentDictionary<IMyEntity, Vector3D>();
+
         #endregion
 
         #region constructors
@@ -222,7 +223,7 @@ namespace DefenseShields
                         }
                         if (Distance(1000) && MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam)) MyAPIGateway.Parallel.StartBackground(BlockAnimation);
                     }
-                    DamageGrids();
+                    SyncThreadedEnts();
                     if (_playerwebbed && _enablePhysics) PlayerEffects();
                     if (_preparePhysics.HasValue && !_preparePhysics.Value.IsComplete) _preparePhysics.Value.Wait();
                     //if (Debug && _count == 0) _dsutil2.StopWatchReport("Physics Loop", -1);
@@ -775,9 +776,9 @@ namespace DefenseShields
                 if (boxedTriangles.Count == 0)
                 {
                     var test = GetClosestInOutTri(_physicsOutside, _physicsInside, closestFace0, bWorldCenter);
-                    if (test)
+                    lock (Eject)
                     {
-                        breaching.PositionComp.(Vector3D.Lerp(breaching.GetPosition(), _physicsOutside[rangedVert3[0]], 1d));
+                    if (test) Eject.Add(breaching, _physicsOutside[rangedVert3[0]]);
                     }
                     if (test) return Vector3D.Zero;
                 }
@@ -840,7 +841,6 @@ namespace DefenseShields
             }
             var grid = breaching as IMyCubeGrid;
             if (grid == null) return collision;
-
             /*
             try
             {
@@ -1244,17 +1244,22 @@ namespace DefenseShields
             return powerCorrectionInJoules * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
         }   
 
-        private void DamageGrids()
+        private void SyncThreadedEnts()
         {
-            if (DmgBlocks.Count == 0) return;
             try
             {
+
+                if (Eject.Count != 0)
+                    lock (Eject)
+                    {
+                        foreach (var ent in Eject) ent.Key.SetPosition(Vector3D.Lerp(ent.Key.GetPosition(), ent.Value, 1d));
+                        Eject.Clear();
+                    }
+
+                if (DmgBlocks.Count == 0 ) return;
                 lock (DmgBlocks)
                 {
-                    foreach (var block in DmgBlocks)
-                    {
-                        block.DoDamage(100f, MyDamageType.Fire, true, null, Block.EntityId);
-                    }
+                    foreach (var block in DmgBlocks) block.DoDamage(100f, MyDamageType.Fire, true, null, Block.EntityId);
                     DmgBlocks.Clear();
                 }
                 //if (_count == 0) Log.Line($"Block Count {DmgBlocks.Count}");

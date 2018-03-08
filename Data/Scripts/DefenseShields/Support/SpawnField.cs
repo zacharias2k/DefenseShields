@@ -345,6 +345,8 @@ namespace DefenseShields.Support
                         var lclPos = (v0 + v1 + v2) / 3 - _matrix.Translation;
                         var normlclPos = Vector3D.Normalize(lclPos);
                         _preCalcNormLclPos[j] = normlclPos;
+                        for (int c = 0; c < _triColorBuffer.Length; c++)
+                            _triColorBuffer[c] = _defaultColor;
                     }
                     if (!_impactsFinished || _glitchCount != 0)
                     {
@@ -357,12 +359,6 @@ namespace DefenseShields.Support
                             var waveMultiplier = Pi / ImpactSteps / impactSize;
                             var wavePosition = waveMultiplier * _impactCount[s];
                             var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
-                            /*
-                            if (wavePosition > impactFactor)
-                            {
-                                _triColorBuffer[j] = _waveColor;
-                            }
-                            */
                             if (relativeToWavefront < .03)
                             {
                                 // within 1/180th of wavefront
