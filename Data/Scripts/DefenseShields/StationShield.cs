@@ -212,8 +212,8 @@ namespace DefenseShields
                     if (_count == 0) _enablePhysics = false;
                     if (_enablePhysics == false) QuickWebCheck();
                     //if (Debug && _count == 0) _dsutil2.Sw.Start();
-                    //if (_enablePhysics) _preparePhysics = MyAPIGateway.Parallel.StartBackground(BuildPhysicsArrays);
-                    BuildPhysicsArrays();
+                    if (_enablePhysics) _preparePhysics = MyAPIGateway.Parallel.StartBackground(BuildPhysicsArrays);
+
                     if (_animInit)
                     {
                         if (_entityChanged) blockCam = new BoundingSphereD(Block.PositionComp.WorldVolume.Center, Block.WorldVolume.Radius);
@@ -221,15 +221,14 @@ namespace DefenseShields
                         {
                             BlockAnimationReset();
                         }
-                        //if (Distance(1000) && MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam)) MyAPIGateway.Parallel.StartBackground(BlockAnimation);
+                        if (Distance(1000) && MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam)) MyAPIGateway.Parallel.StartBackground(BlockAnimation);
                     }
-                    //SyncThreadedEnts();
+                    SyncThreadedEnts();
                     if (_playerwebbed && _enablePhysics) PlayerEffects();
-                    //if (_preparePhysics.HasValue && !_preparePhysics.Value.IsComplete) _preparePhysics.Value.Wait();
-                    //if (Debug && _count == 0) _dsutil2.StopWatchReport("Physics Loop", -1);
-                    //if (_preparePhysics.HasValue && _preparePhysics.Value.IsComplete && _enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
+                    if (_preparePhysics.HasValue && !_preparePhysics.Value.IsComplete) _preparePhysics.Value.Wait();
+                    if (_preparePhysics.HasValue && _preparePhysics.Value.IsComplete && _enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
 
-                    if (_enablePhysics) WebEntities();
+                    //if (_enablePhysics) WebEntities();
                     //if (_count == 0) DSUtils.StopWatchReport("main loop", -1);
                 }
                 if (Debug && _longLoop10) _dsutil1.StopWatchReport("Main loop", -1);
@@ -524,11 +523,10 @@ namespace DefenseShields
                 var sp = new BoundingSphereD(Entity.GetPosition(), _range);
                 var sphereOnCamera = MyAPIGateway.Session.Camera.IsInFrustum(ref sp);
                 //Log.Line($"ent: {this.Entity.EntityId} - changed?:{_entityChanged} - is onCam:{sphereOnCamera} - RenderID {renderId}");
-                //if (_prepareDraw.HasValue && !_prepareDraw.Value.IsComplete) _prepareDraw.Value.Wait();
-                //if (_prepareDraw.HasValue && _prepareDraw.Value.IsComplete && sphereOnCamera && Block.IsWorking) _icosphere.Draw(renderId);
-                //if (Block.IsWorking || drawShapeChanged) _prepareDraw = MyAPIGateway.Parallel.Start(() => PrepareSphere(drawShapeChanged, sphereOnCamera, enemy, lod, prevlod, impactPos, impactSize, shapeMatrix, shield));
-                PrepareSphere(drawShapeChanged, sphereOnCamera, enemy, lod, prevlod, impactPos, impactSize, shapeMatrix, shield);
-                _icosphere.Draw(renderId);
+                if (_prepareDraw.HasValue && !_prepareDraw.Value.IsComplete) _prepareDraw.Value.Wait();
+                if (_prepareDraw.HasValue && _prepareDraw.Value.IsComplete && sphereOnCamera && Block.IsWorking) _icosphere.Draw(renderId);
+                if (Block.IsWorking || drawShapeChanged) _prepareDraw = MyAPIGateway.Parallel.Start(() => PrepareSphere(drawShapeChanged, sphereOnCamera, enemy, lod, prevlod, impactPos, impactSize, shapeMatrix, shield));
+
             }
             catch (Exception ex) { Log.Line($"Exception in Entity Draw: {ex}"); }
         }
@@ -764,9 +762,7 @@ namespace DefenseShields
                 //var rootVerts = RootRangeClosest(_rootVecs, bWorldCenter);
                 //var zone = _dataStructures.p3ExtraLargeZones[rootVerts];
                 //var rangedVert3 = VertRangePartialCheck(_physicsOutside, zone, bWorldCenter);
-                if (_count == 0) _dsutil3.Sw.Start();
                 var rangedVert3 = VertRangeFullCheck(_physicsOutside, bWorldCenter);
-                if (_count == 0) _dsutil3.StopWatchReport("range check", -1 );
                 var closestFace0 = _dataStructures.p3VertTris[rangedVert3[0]];
                 var checkBackupFace1 = CheckFirstFace(closestFace0, rangedVert3[1]);
                 var closestFace1 = _dataStructures.p3VertTris[rangedVert3[1]];
@@ -778,10 +774,7 @@ namespace DefenseShields
                 if (boxedTriangles.Count == 0)
                 {
                     var test = GetClosestInOutTri(_physicsOutside, _physicsInside, closestFace0, bWorldCenter);
-                    lock (Eject)
-                    {
-                    if (test) Eject.Add(breaching, _physicsOutside[rangedVert3[0]]);
-                    }
+                    if (test) lock (Eject) Eject.Add(breaching, _physicsOutside[rangedVert3[0]]);
                     if (test) return Vector3D.Zero;
                 }
                 //if (_count == 0) DSUtils.StopWatchReport("prune", -1);
@@ -1063,10 +1056,7 @@ namespace DefenseShields
             for (int p = 0; p < physicsVerts.Length; p++)
             {
                 var vert = physicsVerts[p];
-
-                var range = vert - bWorldCenter;
-                var test =  (range.X * range.X + range.Y * range.Y + range.Z * range.Z);
-
+                var test = Vector3D.DistanceSquared(vert, bWorldCenter);
                 if (test < minValue3)
                 {
                     if (test < minValue1)
@@ -1225,23 +1215,23 @@ namespace DefenseShields
             var contactPoint = intersect;
 
             //var transformInv = MatrixD.Invert(DetectionMatrix);
-            var transformInv = _detectionMatrixInv;
-            var normalMat = MatrixD.Transpose(transformInv);
-            var localNormal = Vector3D.Transform(contactPoint, transformInv);
-            var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
+            //var transformInv = _detectionMatrixInv;
+            //var normalMat = MatrixD.Transpose(transformInv);
+            //var localNormal = Vector3D.Transform(contactPoint, transformInv);
+            //var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
 
             var bmass = -breaching.Physics.Mass;
-            var cpDist = Vector3D.Transform(contactPoint, _detectionMatrixInv).LengthSquared();
+            //var cpDist = Vector3D.Transform(contactPoint, _detectionMatrixInv).LengthSquared();
             //var expelForce = (bmass); /// Math.Pow(cpDist, 2);
             //if (expelForce < -9999000000f || bmass >= -67f) expelForce = -9999000000f;
-            var expelForce = (bmass) / (float)Math.Pow(cpDist, 4);
+            var expelForce = (bmass);// / (float)Math.Pow(cpDist, 4);
 
 
             var worldPosition = breaching.WorldMatrix.Translation;
             var worldDirection = contactPoint - worldPosition;
 
-            if (_gridIsMobile) Block.CubeGrid.Physics.ApplyImpulse(Vector3D.Negate(worldDirection) * (expelForce / 20), contactPoint);
-            else breaching.Physics.ApplyImpulse(worldDirection * (expelForce / 1), contactPoint);
+            if (_gridIsMobile) Block.CubeGrid.Physics.ApplyImpulse(Vector3D.Negate(worldDirection) * (expelForce / 10), contactPoint);
+            else breaching.Physics.ApplyImpulse(worldDirection * (expelForce / 10), contactPoint);
 
             //breaching.Physics.ApplyImpulse(breaching.Physics.Mass * -0.050f * Vector3D.Dot(breaching.Physics.LinearVelocity, surfaceNormal) * surfaceNormal, contactPoint);
             //Log.Line($"cpDist:{cpDist} pow:{expelForce} bmass:{bmass} adjbmass{bmass / 50}");
@@ -1254,20 +1244,25 @@ namespace DefenseShields
             try
             {
 
-                if (Eject.Count != 0)
+                if (Eject.Count > 0)
                     lock (Eject)
                     {
-                        //foreach (var ent in Eject) ent.Key.SetPosition(Vector3D.Lerp(ent.Key.GetPosition(), ent.Value, 2d));
+                        foreach (var e in Eject)
+                        {
+                            e.Key.SetPosition(Vector3D.Lerp(e.Key.GetPosition(), e.Value, 1.01d));
+                            e.Key.Physics.SetSpeeds(e.Key.Physics.LinearVelocity * -.1f, e.Key.Physics.AngularVelocity);
+                        }
                         Eject.Clear();
                     }
 
-                if (DmgBlocks.Count == 0 ) return;
-                lock (DmgBlocks)
+                if (DmgBlocks.Count > 0)
                 {
-                    foreach (var block in DmgBlocks) block.DoDamage(100f, MyDamageType.Fire, true, null, Block.EntityId);
-                    DmgBlocks.Clear();
+                    lock (DmgBlocks)
+                    {
+                        foreach (var block in DmgBlocks) block.DoDamage(100f, MyDamageType.Fire, true, null, Block.EntityId);
+                        DmgBlocks.Clear();
+                    }
                 }
-                //if (_count == 0) Log.Line($"Block Count {DmgBlocks.Count}");
             }
             catch (Exception ex) { Log.Line($"Exception in DamgeGrids: {ex}"); }
         }
@@ -1354,8 +1349,7 @@ namespace DefenseShields
         {
             var websphere = new BoundingSphereD(_detectionCenter, _range);
             var webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
-            //MyAPIGateway.Parallel.ForEach(webList, webent =>
-            foreach (var webent in webList)
+            MyAPIGateway.Parallel.ForEach(webList, webent =>
             {
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
                 if (webent is IMyMeteor  || webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
@@ -1387,7 +1381,7 @@ namespace DefenseShields
                     return;
                 }
                 //Log.Line($"webEffect unmatched {webent.GetFriendlyName()} {webent.Name} {webent.DisplayName} {webent.EntityId} {webent.Parent} {webent.Components}");
-            }//);
+            });
         }
         #endregion
 
