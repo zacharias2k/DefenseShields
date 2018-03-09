@@ -227,8 +227,7 @@ namespace DefenseShields
                     if (_playerwebbed && _enablePhysics) PlayerEffects();
                     if (_preparePhysics.HasValue && !_preparePhysics.Value.IsComplete) _preparePhysics.Value.Wait();
                     //if (Debug && _count == 0) _dsutil2.StopWatchReport("Physics Loop", -1);
-                    if (_preparePhysics.HasValue && _preparePhysics.Value.IsComplete && _enablePhysics) WebEntities();
-                    //if (_enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
+                    if (_preparePhysics.HasValue && _preparePhysics.Value.IsComplete && _enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
 
                     //if (_enablePhysics) WebEntities();
                     //if (_count == 0) DSUtils.StopWatchReport("main loop", -1);
