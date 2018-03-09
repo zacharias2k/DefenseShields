@@ -1252,7 +1252,7 @@ namespace DefenseShields
                 if (Eject.Count != 0)
                     lock (Eject)
                     {
-                        foreach (var ent in Eject) ent.Key.SetPosition(Vector3D.Lerp(ent.Key.GetPosition(), ent.Value, 1d));
+                        foreach (var ent in Eject) ent.Key.SetPosition(Vector3D.Lerp(ent.Key.GetPosition(), ent.Value, 2d));
                         Eject.Clear();
                     }
 
