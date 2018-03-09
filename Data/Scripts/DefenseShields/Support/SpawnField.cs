@@ -308,9 +308,9 @@ namespace DefenseShields.Support
                 InitColors();
                 if (_impactsFinished) return;
 
-                Log.Line($"impacts: {_impactCount[4]} {_impactCount[3]} {_impactCount[2]} {_impactCount[1]} {_impactCount[0]}");
+                //Log.Line($"impacts: {_impactCount[4]} {_impactCount[3]} {_impactCount[2]} {_impactCount[1]} {_impactCount[0]}");
 
-                if (_impactCount[4] != 0) MyAPIGateway.Parallel.Start(Models);
+                //if (_impactCount[4] != 0) MyAPIGateway.Parallel.Start(Models);
                 ColorAssignments(entChanged, impactSize, impactSpeed);
                 _prevLod = _lod;
                 // vec3 localSpherePositionOfImpact;
