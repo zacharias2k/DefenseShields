@@ -226,7 +226,6 @@ namespace DefenseShields
                     SyncThreadedEnts();
                     if (_playerwebbed && _enablePhysics) PlayerEffects();
                     if (_preparePhysics.HasValue && !_preparePhysics.Value.IsComplete) _preparePhysics.Value.Wait();
-                    //if (Debug && _count == 0) _dsutil2.StopWatchReport("Physics Loop", -1);
                     if (_preparePhysics.HasValue && _preparePhysics.Value.IsComplete && _enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
 
                     //if (_enablePhysics) WebEntities();
@@ -775,10 +774,7 @@ namespace DefenseShields
                 if (boxedTriangles.Count == 0)
                 {
                     var test = GetClosestInOutTri(_physicsOutside, _physicsInside, closestFace0, bWorldCenter);
-                    lock (Eject)
-                    {
-                    if (test) Eject.Add(breaching, _physicsOutside[rangedVert3[0]]);
-                    }
+                    if (test) lock (Eject) Eject.Add(breaching, _physicsOutside[rangedVert3[0]]);
                     if (test) return Vector3D.Zero;
                 }
                 //if (_count == 0) DSUtils.StopWatchReport("prune", -1);
@@ -1219,23 +1215,23 @@ namespace DefenseShields
             var contactPoint = intersect;
 
             //var transformInv = MatrixD.Invert(DetectionMatrix);
-            var transformInv = _detectionMatrixInv;
-            var normalMat = MatrixD.Transpose(transformInv);
-            var localNormal = Vector3D.Transform(contactPoint, transformInv);
-            var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
+            //var transformInv = _detectionMatrixInv;
+            //var normalMat = MatrixD.Transpose(transformInv);
+            //var localNormal = Vector3D.Transform(contactPoint, transformInv);
+            //var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
 
             var bmass = -breaching.Physics.Mass;
-            var cpDist = Vector3D.Transform(contactPoint, _detectionMatrixInv).LengthSquared();
+            //var cpDist = Vector3D.Transform(contactPoint, _detectionMatrixInv).LengthSquared();
             //var expelForce = (bmass); /// Math.Pow(cpDist, 2);
             //if (expelForce < -9999000000f || bmass >= -67f) expelForce = -9999000000f;
-            var expelForce = (bmass) / (float)Math.Pow(cpDist, 4);
+            var expelForce = (bmass);// / (float)Math.Pow(cpDist, 4);
 
 
             var worldPosition = breaching.WorldMatrix.Translation;
             var worldDirection = contactPoint - worldPosition;
 
-            if (_gridIsMobile) Block.CubeGrid.Physics.ApplyImpulse(Vector3D.Negate(worldDirection) * (expelForce / 20), contactPoint);
-            else breaching.Physics.ApplyImpulse(worldDirection * (expelForce / 1), contactPoint);
+            if (_gridIsMobile) Block.CubeGrid.Physics.ApplyImpulse(Vector3D.Negate(worldDirection) * (expelForce / 10), contactPoint);
+            else breaching.Physics.ApplyImpulse(worldDirection * (expelForce / 10), contactPoint);
 
             //breaching.Physics.ApplyImpulse(breaching.Physics.Mass * -0.050f * Vector3D.Dot(breaching.Physics.LinearVelocity, surfaceNormal) * surfaceNormal, contactPoint);
             //Log.Line($"cpDist:{cpDist} pow:{expelForce} bmass:{bmass} adjbmass{bmass / 50}");
@@ -1248,20 +1244,25 @@ namespace DefenseShields
             try
             {
 
-                if (Eject.Count != 0)
+                if (Eject.Count > 0)
                     lock (Eject)
                     {
-                        foreach (var ent in Eject) ent.Key.SetPosition(Vector3D.Lerp(ent.Key.GetPosition(), ent.Value, 2d));
+                        foreach (var e in Eject)
+                        {
+                            e.Key.SetPosition(Vector3D.Lerp(e.Key.GetPosition(), e.Value, 1.01d));
+                            e.Key.Physics.SetSpeeds(e.Key.Physics.LinearVelocity * -.1f, e.Key.Physics.AngularVelocity);
+                        }
                         Eject.Clear();
                     }
 
-                if (DmgBlocks.Count == 0 ) return;
-                lock (DmgBlocks)
+                if (DmgBlocks.Count > 0)
                 {
-                    foreach (var block in DmgBlocks) block.DoDamage(100f, MyDamageType.Fire, true, null, Block.EntityId);
-                    DmgBlocks.Clear();
+                    lock (DmgBlocks)
+                    {
+                        foreach (var block in DmgBlocks) block.DoDamage(100f, MyDamageType.Fire, true, null, Block.EntityId);
+                        DmgBlocks.Clear();
+                    }
                 }
-                //if (_count == 0) Log.Line($"Block Count {DmgBlocks.Count}");
             }
             catch (Exception ex) { Log.Line($"Exception in DamgeGrids: {ex}"); }
         }
