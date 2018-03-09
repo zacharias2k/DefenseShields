@@ -1056,7 +1056,8 @@ namespace DefenseShields
             for (int p = 0; p < physicsVerts.Length; p++)
             {
                 var vert = physicsVerts[p];
-                var test = Vector3D.DistanceSquared(vert, bWorldCenter);
+                var range = vert - bWorldCenter;
+                var test = (range.X * range.X + range.Y * range.Y + range.Z * range.Z);
                 if (test < minValue3)
                 {
                     if (test < minValue1)
