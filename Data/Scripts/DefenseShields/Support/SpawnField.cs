@@ -148,7 +148,6 @@ namespace DefenseShields.Support
             private int _chargeCount;
             private int _pulseCount;
             private int _pulse = 40;
-            private int _prevLod;
             private int _lod;
 
             private const int GlitchSteps = 320;
@@ -228,32 +227,6 @@ namespace DefenseShields.Support
                 Array.Resize(ref _preCalcNormLclPos, ib.Length / 3);
             }
 
-            public Vector3D[] CalculatePhysics(MatrixD matrix, int lod)
-            {
-                var count = checked((int)VertsForLod(lod));
-                Array.Resize(ref _physicsBuffer, count);
-
-                for (var i = 0; i < count; i++)
-                    Vector3D.Transform(ref _backing.VertexBuffer[i], ref matrix, out _physicsBuffer[i]);
-
-                var ib = _backing.IndexBuffer[lod];
-                var vecs = new Vector3D[ib.Length];
-                for (int i = 0; i < ib.Length; i += 3)
-                {
-                    var i0 = ib[i];
-                    var i1 = ib[i + 1];
-                    var i2 = ib[i + 2];
-                    var v0 = _physicsBuffer[i0];
-                    var v1 = _physicsBuffer[i1];
-                    var v2 = _physicsBuffer[i2];
-
-                    vecs[i] = v0;
-                    vecs[i+1] = v1;
-                    vecs[i+2] = v2;
-                }
-                return vecs;
-            }
-
             public Vector3D[] ReturnPhysicsVerts(MatrixD matrix, int lod)
             {
                 Vector3D[] physicsArray;
@@ -282,7 +255,7 @@ namespace DefenseShields.Support
                 return physicsArray;
             }
 
-            public void ComputeEffects(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, bool sphereOnCamera, IMyEntity shield)
+            public void ComputeEffects(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, bool sphereOnCamera, IMyEntity shield, int prevLod)
             {
                 _shield = shield;
                 _enemy = enemy;
@@ -297,22 +270,22 @@ namespace DefenseShields.Support
                 var impactSpeed = 2;
                 if (impactSize < 4) impactSpeed = 1;
 
-                if (entChanged || _prevLod != _lod)
+                if (entChanged || prevLod != _lod)
                 {
+                    Log.Line($"ComputeEffects - entChanged: {entChanged} - lod: {_lod} - prevlod: {prevLod}");
                     var ib = _backing.IndexBuffer[_lod];
-                    Array.Resize(ref _triColorBuffer, ib.Length / 3);
                     Array.Resize(ref _preCalcNormLclPos, ib.Length / 3);
+                    Array.Resize(ref _triColorBuffer, ib.Length / 3);
                 }
 
                 StepEffects();
                 InitColors();
-                if (_impactsFinished) return;
+                if (_impactsFinished && !(entChanged || prevLod != _lod)) return;
 
-                //Log.Line($"impacts: {_impactCount[4]} {_impactCount[3]} {_impactCount[2]} {_impactCount[1]} {_impactCount[0]}");
+                Log.Line($"impacts: {_impactCount[4]} {_impactCount[3]} {_impactCount[2]} {_impactCount[1]} {_impactCount[0]}");
 
-                //if (_impactCount[4] != 0) MyAPIGateway.Parallel.Start(Models);
-                ColorAssignments(entChanged, impactSize, impactSpeed);
-                _prevLod = _lod;
+                if (_impactCount[4] != 0) MyAPIGateway.Parallel.Start(Models);
+                ColorAssignments(entChanged, impactSize, impactSpeed, prevLod);
                 // vec3 localSpherePositionOfImpact;
                 //    foreach (vec3 triangleCom in triangles) {
                 //    var surfDistance = Math.acos(dot(triangleCom, localSpherePositionOfImpact));
@@ -326,7 +299,7 @@ namespace DefenseShields.Support
                 // Multiplying by the sphere radius(1 for the unit sphere in question) gives the arc length.
             }
 
-            private void ColorAssignments(bool entChanged, float impactSize, int impactSpeed)
+            private void ColorAssignments(bool entChanged, float impactSize, int impactSpeed, int prevLod)
             {
                 var ib = _backing.IndexBuffer[_lod];
 
@@ -340,8 +313,9 @@ namespace DefenseShields.Support
                     var v1 = _vertexBuffer[i1];
                     var v2 = _vertexBuffer[i2];
 
-                    if (entChanged || _prevLod != _lod)
+                    if (entChanged || prevLod != _lod)
                     {
+                        Log.Line($"colorAssignments - entChanged: {entChanged} - lod: {_lod} - prevlod: {prevLod}");
                         var lclPos = (v0 + v1 + v2) / 3 - _matrix.Translation;
                         var normlclPos = Vector3D.Normalize(lclPos);
                         _preCalcNormLclPos[j] = normlclPos;

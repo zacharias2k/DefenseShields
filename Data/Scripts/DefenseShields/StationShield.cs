@@ -90,7 +90,6 @@ namespace DefenseShields
 
         private IMyOreDetector Block => (IMyOreDetector)Entity;
         private IMyEntity _shield;
-        private BoundingSphereD blockCam;
 
         private readonly Spawn _spawn = new Spawn();
         private Icosphere.Instance _icosphere;
@@ -216,12 +215,12 @@ namespace DefenseShields
 
                     if (_animInit)
                     {
-                        if (_entityChanged) blockCam = new BoundingSphereD(Block.PositionComp.WorldVolume.Center, Block.WorldVolume.Radius);
-                        if (_subpartRotor.Closed.Equals(true))
+                        if (_subpartRotor.Closed.Equals(true)) BlockAnimationReset();
+                        if (Distance(1000))
                         {
-                            BlockAnimationReset();
+                            var blockCam = new BoundingSphereD(Block.PositionComp.WorldVolume.Center, Block.WorldVolume.Radius);
+                            if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam)) MyAPIGateway.Parallel.StartBackground(BlockAnimation);
                         }
-                        if (Distance(1000) && MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam)) MyAPIGateway.Parallel.StartBackground(BlockAnimation);
                     }
                     SyncThreadedEnts();
                     if (_playerwebbed && _enablePhysics) PlayerEffects();
@@ -269,6 +268,7 @@ namespace DefenseShields
         {
             try
             {
+                _entityChanged = false;
                 if (_animInit) return;
                 if (Block.BlockDefinition.SubtypeId == "StationDefenseShield")
                 {
@@ -454,7 +454,6 @@ namespace DefenseShields
 
         private void BlockAnimation()
         {
-
             if (Block.Enabled && Block.IsFunctional && Block.IsWorking)
             {
 
@@ -534,7 +533,7 @@ namespace DefenseShields
         private void PrepareSphere(bool drawShapeChanged, bool sphereOnCamera, bool enemy, int lod, int prevlod, Vector3D impactPos, float impactSize, MatrixD shapeMatrix,  IMyEntity shield)
         {
             if (drawShapeChanged || lod != prevlod) _icosphere.CalculateTransform(shapeMatrix, lod);
-            _icosphere.ComputeEffects(shapeMatrix, impactPos, impactSize, drawShapeChanged, enemy, sphereOnCamera, shield);
+            _icosphere.ComputeEffects(shapeMatrix, impactPos, impactSize, drawShapeChanged, enemy, sphereOnCamera, shield, prevlod);
         }
 
         #endregion
@@ -755,13 +754,13 @@ namespace DefenseShields
             var bLengthSqr = bLength * bLength;
 
             var reSized = bLocalAabb.Extents.Min() * gridScaler;
-            if (_count == 0) Log.Line($"gridscaler is: {gridScaler} <1 = large - >1 = small");
+            //if (_count == 0) Log.Line($"gridscaler is: {gridScaler} <1 = large - >1 = small");
             if (gridScaler > 1)
             {
-                //if (_count == 0) DSUtils.Sw.Start();
                 //var rootVerts = RootRangeClosest(_rootVecs, bWorldCenter);
                 //var zone = _dataStructures.p3ExtraLargeZones[rootVerts];
                 //var rangedVert3 = VertRangePartialCheck(_physicsOutside, zone, bWorldCenter);
+                _dsutil3.Sw.Start();
                 var rangedVert3 = VertRangeFullCheck(_physicsOutside, bWorldCenter);
                 var closestFace0 = _dataStructures.p3VertTris[rangedVert3[0]];
                 var checkBackupFace1 = CheckFirstFace(closestFace0, rangedVert3[1]);
@@ -775,9 +774,10 @@ namespace DefenseShields
                 {
                     var test = GetClosestInOutTri(_physicsOutside, _physicsInside, closestFace0, bWorldCenter);
                     if (test) lock (Eject) Eject.Add(breaching, _physicsOutside[rangedVert3[0]]);
+                    _dsutil3.StopWatchReport("Ranged inside", -1);
                     if (test) return Vector3D.Zero;
                 }
-                //if (_count == 0) DSUtils.StopWatchReport("prune", -1);
+                else _dsutil3.StopWatchReport("Ranged", -1);
                 if (Debug)
                 {
                     //DrawNums(_physicsOutside,zone, Color.AntiqueWhite);
@@ -1058,6 +1058,7 @@ namespace DefenseShields
                 var vert = physicsVerts[p];
                 var range = vert - bWorldCenter;
                 var test = (range.X * range.X + range.Y * range.Y + range.Z * range.Z);
+                //var test = Vector3D.DistanceSquared(vert, bWorldCenter);
                 if (test < minValue3)
                 {
                     if (test < minValue1)
