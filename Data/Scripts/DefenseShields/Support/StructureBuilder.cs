@@ -94,6 +94,72 @@ namespace DefenseShields.Support
         private readonly List<LineD> _vecPrunedLinesList = new List<LineD>();
         private readonly HashSet<LineD> _vecPrunedLinesHash = new HashSet<LineD>();
 
+        public void BuildTriNums(Vector3D[] shieldTris, Vector3D[] physicsVerts)
+        {
+            Log.CleanLine($"public int[][] p3TriNums = new int[1280][]");
+            Log.CleanLine($"{{");
+
+            var closestTrisNums = new HashSet<int>();
+            foreach (var v in physicsVerts)
+            {
+                closestTrisNums.Clear();
+                for (int x = 0, j = 0; x < shieldTris.Length; x += 3, j++)
+                {
+                    var v0 = shieldTris[x];
+                    var v1 = shieldTris[x + 1];
+                    var v2 = shieldTris[x + 2];
+                    if (v0 == v || v1 == v || v2 == v)
+                    {
+                        closestTrisNums.Add(j);
+                    }
+                }
+                var len = closestTrisNums.Count;
+                var c = 0;
+                Log.Chars($"new[] {{");
+                foreach (var tri in closestTrisNums)
+                {
+                    if (c < len -1) Log.Chars($"{tri},");
+                    if (c == len - 1) Log.Chars($"{tri}");
+                    c++;
+                }
+                Log.CleanLine($"}},");
+            }
+            Log.CleanLine($"}};");
+        }
+
+        private void PrintTrisNumPerVert(HashSet<int> ClosestTrisNums, Vector3D[] shieldTris, Vector3D[] physicsVerts, bool last)
+        {
+            var c = 0;
+
+            Log.CleanLine($"\n  new[] {{");
+            foreach (var tri in ClosestTrisNums)
+            {
+                c++;
+                Log.Chars($"{tri},");
+            }
+            Log.CleanLine($"}}\n");
+            /*
+            for (int i = 0, j = 0; i < numFiveClosestTris.Count; i++, j++)
+            {
+                c++;
+                var vn0 = numFiveClosestTris[i];
+                var vn1 = numFiveClosestTris[i + 1];
+                var vn2 = numFiveClosestTris[i + 2];
+                var v0 = shieldTris[vn0];
+                var v1 = shieldTris[vn1];
+                var v2 = shieldTris[vn2];
+
+                if (c < numFiveClosestTris.Count - 3)
+                    Log.Chars($"{GetVertNum(v0, physicsVerts)}, {GetVertNum(v1, physicsVerts)}, {GetVertNum(v2, physicsVerts)}, ");
+                if (c == numFiveClosestTris.Count - 3)
+                    Log.Chars($"{GetVertNum(v0, physicsVerts)}, {GetVertNum(v1, physicsVerts)}, {GetVertNum(v2, physicsVerts)}");
+            }
+            if (last == false) Log.Chars($" }},\n");
+            if (last) Log.Chars($" }}\n");
+            if (last) Log.CleanLine($"}};");
+            */
+        }
+
         public void BuildBase(Vector3D[] shieldTris, Vector3D[] rootVecs, Vector3D[] physicsVerts, bool buildLines, bool buildTris, bool buildVertZones, bool buildByVerts)
         {
             //_ds._buildOnce = true;

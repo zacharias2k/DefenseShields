@@ -183,32 +183,6 @@ namespace DefenseShields.Support
                 _backing = backing;
             }
 
-            private int[,] ComputeVertexToTris(int lod)
-            {
-                var data = new int[_vertexBuffer.Length, 6];
-                var ib = _backing.IndexBuffer[lod];
-                for (var i = 0; i < ib.Length; i += 3)
-                {
-                    AddInlineList(data, ib[i], i);
-                    AddInlineList(data, ib[i], i);
-                    AddInlineList(data, ib[i], i);
-                }
-
-                return data;
-            }
-
-            private static void AddInlineList(int[,] list, int index, int val)
-            {
-                var capacity = list.GetLength(1);
-                var count = -list[index, capacity - 1];
-                if (count < 0)
-                    throw new Exception("Failed to add to list.  Overflow");
-                list[index, count] = val;
-                count++;
-                if (count < capacity)
-                    list[index, capacity - 1] = -count;
-            }
-
             public void CalculateTransform(MatrixD matrix, int lod)
             {
                 _lod = lod;
@@ -225,6 +199,32 @@ namespace DefenseShields.Support
 
                 var ib = _backing.IndexBuffer[_lod];
                 Array.Resize(ref _preCalcNormLclPos, ib.Length / 3);
+            }
+
+            public Vector3D[] CalculatePhysics(MatrixD matrix, int lod)
+            {
+                var count = checked((int)VertsForLod(lod));
+                Array.Resize(ref _physicsBuffer, count);
+
+                for (var i = 0; i < count; i++)
+                    Vector3D.Transform(ref _backing.VertexBuffer[i], ref matrix, out _physicsBuffer[i]);
+
+                var ib = _backing.IndexBuffer[lod];
+                var vecs = new Vector3D[ib.Length];
+                for (int i = 0; i < ib.Length; i += 3)
+                {
+                    var i0 = ib[i];
+                    var i1 = ib[i + 1];
+                    var i2 = ib[i + 2];
+                    var v0 = _physicsBuffer[i0];
+                    var v1 = _physicsBuffer[i1];
+                    var v2 = _physicsBuffer[i2];
+
+                    vecs[i] = v0;
+                    vecs[i + 1] = v1;
+                    vecs[i + 2] = v2;
+                }
+                return vecs;
             }
 
             public Vector3D[] ReturnPhysicsVerts(MatrixD matrix, int lod)
@@ -250,8 +250,17 @@ namespace DefenseShields.Support
                 }
 
                 for (var i = 0; i < physicsArray.Length; i++)
-                    Vector3D.Transform(ref _backing.VertexBuffer[i], ref matrix, out physicsArray[i]);
-
+                {
+                    var num1 = (_backing.VertexBuffer[i].X * matrix.M11 + _backing.VertexBuffer[i].Y * matrix.M21 + _backing.VertexBuffer[i].Z * matrix.M31) + matrix.M41;
+                    var num2 = (_backing.VertexBuffer[i].X * matrix.M12 + _backing.VertexBuffer[i].Y * matrix.M22 + _backing.VertexBuffer[i].Z * matrix.M32) + matrix.M42;
+                    var num3 = (_backing.VertexBuffer[i].X * matrix.M13 + _backing.VertexBuffer[i].Y * matrix.M23 + _backing.VertexBuffer[i].Z * matrix.M33) + matrix.M43;
+                    var num4 = 1 / ((((_backing.VertexBuffer[i].X * matrix.M14) + (_backing.VertexBuffer[i].Y * matrix.M24)) + (_backing.VertexBuffer[i].Z * matrix.M34)) + matrix.M44);
+                    Vector3D vector3;
+                    vector3.X = num1 * num4;
+                    vector3.Y = num2 * num4;
+                    vector3.Z = num3 * num4;
+                    physicsArray[i] = vector3;
+                }
                 return physicsArray;
             }
 
@@ -272,7 +281,7 @@ namespace DefenseShields.Support
 
                 if (entChanged || prevLod != _lod)
                 {
-                    Log.Line($"ComputeEffects - entChanged: {entChanged} - lod: {_lod} - prevlod: {prevLod}");
+                    //Log.Line($"ComputeEffects - entChanged: {entChanged} - lod: {_lod} - prevlod: {prevLod}");
                     var ib = _backing.IndexBuffer[_lod];
                     Array.Resize(ref _preCalcNormLclPos, ib.Length / 3);
                     Array.Resize(ref _triColorBuffer, ib.Length / 3);
@@ -282,7 +291,7 @@ namespace DefenseShields.Support
                 InitColors();
                 if (_impactsFinished && !(entChanged || prevLod != _lod)) return;
 
-                Log.Line($"impacts: {_impactCount[4]} {_impactCount[3]} {_impactCount[2]} {_impactCount[1]} {_impactCount[0]}");
+                //Log.Line($"impacts: {_impactCount[4]} {_impactCount[3]} {_impactCount[2]} {_impactCount[1]} {_impactCount[0]}");
 
                 if (_impactCount[4] != 0) MyAPIGateway.Parallel.Start(Models);
                 ColorAssignments(entChanged, impactSize, impactSpeed, prevLod);
@@ -301,6 +310,8 @@ namespace DefenseShields.Support
 
             private void ColorAssignments(bool entChanged, float impactSize, int impactSpeed, int prevLod)
             {
+                //Log.Line($"colorAssignments - entChanged: {entChanged} - lod: {_lod} - prevlod: {prevLod}");
+
                 var ib = _backing.IndexBuffer[_lod];
 
                 for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
@@ -315,7 +326,6 @@ namespace DefenseShields.Support
 
                     if (entChanged || prevLod != _lod)
                     {
-                        Log.Line($"colorAssignments - entChanged: {entChanged} - lod: {_lod} - prevlod: {prevLod}");
                         var lclPos = (v0 + v1 + v2) / 3 - _matrix.Translation;
                         var normlclPos = Vector3D.Normalize(lclPos);
                         _preCalcNormLclPos[j] = normlclPos;
