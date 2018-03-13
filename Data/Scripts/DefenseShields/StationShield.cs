@@ -52,7 +52,7 @@ namespace DefenseShields
         private int _playertime;
         private int _prevLod;
 
-        private const bool Debug = true;
+        private const bool Debug = false;
         private bool _entityChanged = true;
         private bool _gridChanged = true;
         private bool _enablePhysics = true;
@@ -117,7 +117,7 @@ namespace DefenseShields
         private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
         public MyConcurrentHashSet<IMyEntity> InHash { get; } = new MyConcurrentHashSet<IMyEntity>();
-        private MyConcurrentHashSet<IMySlimBlock> DmgBlocks { get; } = new MyConcurrentHashSet<IMySlimBlock>();
+        private MyConcurrentList<IMySlimBlock> DmgBlocks { get; } = new MyConcurrentList<IMySlimBlock>();
         private List<IMyCubeGrid> GridIsColliding = new List<IMyCubeGrid>();
         private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
         private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } =  new MyConcurrentDictionary<IMyEntity, Vector3D>();
@@ -176,7 +176,6 @@ namespace DefenseShields
         #region Simulation
         public override void UpdateBeforeSimulation()
         {
-
             try
             {
                 if (_count++ == 59)
@@ -219,9 +218,9 @@ namespace DefenseShields
                             if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam)) MyAPIGateway.Parallel.StartBackground(BlockAnimation);
                         }
                     }
-                    if (_count == 0) _dsutil1.Sw.Start();
+                    _dsutil1.Sw.Start();
                     SyncThreadedEnts();
-                    if (_count == 0) _dsutil1.StopWatchReport("Main loop", -1);
+                    _dsutil1.StopWatchReport("Main loop", 1);
                     if (_playerwebbed && _enablePhysics) PlayerEffects();
                     if (_enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
                     //if (_enablePhysics) WebEntities();
@@ -637,29 +636,13 @@ namespace DefenseShields
             return relations != MyRelationsBetweenPlayerAndBlock.Owner && relations != MyRelationsBetweenPlayerAndBlock.FactionShare;
         }
 
-        private bool IsNeutral(IMyEntity neutral)
+        private static bool IsNeutral(IMyEntity neutral)
         {
-            if (neutral != null)
-            {
-                if (neutral is IMyCharacter)
-                {
-                    var dude = MyAPIGateway.Players.GetPlayerControllingEntity(neutral).IdentityId;
-                    var playerrelationship = Block.GetUserRelationToOwner(dude);
-                    return playerrelationship == MyRelationsBetweenPlayerAndBlock.Neutral || playerrelationship == MyRelationsBetweenPlayerAndBlock.NoOwnership;
-                }
-                if (neutral is IMyCubeGrid)
-                {
-                    var grid = neutral as IMyCubeGrid;
-                    var owners = grid.BigOwners;
-                    if (owners.Count > 0)
-                    {
-                        var relationship = Block.GetUserRelationToOwner(owners[0]);
-                        return relationship == MyRelationsBetweenPlayerAndBlock.Neutral || relationship == MyRelationsBetweenPlayerAndBlock.NoOwnership;
-                    }
-                }
-            }
-            var relations = Block.GetUserRelationToOwner(MyAPIGateway.Session.Player.IdentityId);
-            return relations == MyRelationsBetweenPlayerAndBlock.Neutral || relations == MyRelationsBetweenPlayerAndBlock.NoOwnership;
+            if (!(neutral is IMyCubeGrid)) return false;
+            var grid = (IMyCubeGrid) neutral;
+            var owners = grid.BigOwners;
+            if (owners.Count == 0) return true;
+            return false;
         }
 
         private uint GetRenderId()
@@ -675,14 +658,12 @@ namespace DefenseShields
         {
             if (!(ent is IMyCubeGrid))
             {
-                Log.Line($"simple {ent} - {enemy}");
                 var simpleContactPoint = ContactPointOutside(ent);
                 var simpleContactBool = Vector3D.Transform(simpleContactPoint, _detectionMatrixInv).LengthSquared() <= 1;
                 if (!simpleContactBool) return Vector3D.NegativeInfinity;
                 _worldImpactPosition = simpleContactPoint;
                 return simpleContactPoint;
             }
-            Log.Line($"complex {ent} - {enemy}");
             var grid = ent as IMyCubeGrid;
             var bOriBBoxD = GetWorldObb(grid);
             var contactpoint = ContactPointObb(grid, bOriBBoxD, enemy);
@@ -695,7 +676,7 @@ namespace DefenseShields
                     _worldImpactPosition = contactpoint;
                 }
                 if (impactcheck && !GridIsColliding.Contains(grid)) GridIsColliding.Add(grid);
-                if (contactpoint == Vector3D.PositiveInfinity) grid.Physics.SetSpeeds(Vector3D.Zero, Vector3D.Zero);
+                if (contactpoint == Vector3D.PositiveInfinity) grid.Physics.LinearVelocity = grid.Physics.LinearVelocity * -0.25f;
                 return contactpoint;
             }
             if (GridIsColliding.Contains(grid)) GridIsColliding.Remove(grid);
@@ -773,6 +754,7 @@ namespace DefenseShields
             var lodScaler = (int)Math.Pow(2, PhysicsLod);
             var gridScaler = (float)(((_detectionMatrix.Scale.X + _detectionMatrix.Scale.Y + _detectionMatrix.Scale.Z) / 3 / lodScaler) * 1.33) / bLocalAabb.Extents.Min();
             var faceAndInside = new int[5];
+            var boxedTriangles = new List<Vector3D>();
             //if (_count == 0) Log.Line($"gridscaler is: {gridScaler} <1 = large - >1 = small");
             if (gridScaler > 1)
             {
@@ -784,7 +766,6 @@ namespace DefenseShields
                 //var faceAndInside = GetAllClosestInOutTri(_physicsOutside, _physicsInside, closestFace0, closestFace1, closestFace2, bWorldCenter, triNums[rangedVert3[0]], triNums[rangedVert3[1]], triNums[rangedVert3[2]]);
                 faceAndInside = GetAllClosestInOutTri(_physicsOutside, _physicsInside, closestFace0, closestFace1, closestFace2, bWorldCenter);
                 var inside = faceAndInside[1] == 1;
-                if (_count == 0) _dsutil3.StopWatchReport("faceAndInside", -1);
                 int[] closestFace;
                 switch (faceAndInside[0])
                 {
@@ -801,7 +782,7 @@ namespace DefenseShields
                 //var checkBackupFace1 = CheckFirstFace(closestFace0, rangedVert3[1]);
                 //var checkBackupFace2 = CheckFirstFace(closestFace0, rangedVert3[2]);
                 //var boxedTriangles = IntersectSmallBoxFaces(closestFace0, closestFace1, closestFace2, _physicsOutside, bWorldAabb, checkBackupFace1, checkBackupFace2);
-                var boxedTriangles = IntersectSmallBox(closestFace, _physicsOutside, bWorldAabb);
+                boxedTriangles = IntersectSmallBox(closestFace, _physicsOutside, bWorldAabb);
 
                 if (inside)
                 {
@@ -810,7 +791,6 @@ namespace DefenseShields
                     lock (Eject) Eject.Add(breaching, cSphere.Center);
                     collision = Vector3D.PositiveInfinity;
                 }
-
                 if (Debug)
                 {
                     //DrawNums(_physicsOutside,zone, Color.AntiqueWhite);
@@ -886,19 +866,23 @@ namespace DefenseShields
             {
                 if (collision != Vector3D.NegativeInfinity && enemy)
                 {
-                    var deathPoints = new Vector3D[3] {_physicsInside[faceAndInside[2]], _physicsInside[faceAndInside[3]], _physicsInside[faceAndInside[4]] };
-                    var deathSphere = BoundingSphereD.CreateFromPoints(deathPoints);
-                    var getBlocks = grid.GetBlocksInsideSphere(ref deathSphere);
+                    var deathPointsOut = new Vector3D[3] { _physicsOutside[faceAndInside[2]], _physicsOutside[faceAndInside[3]], _physicsOutside[faceAndInside[4]]};
+                    var deathSphereOut = BoundingSphereD.CreateFromPoints(deathPointsOut);
+
+                    var getBlocks = grid.GetBlocksInsideSphere(ref deathSphereOut);
                     lock (DmgBlocks)
                     {
-                        foreach (var block in getBlocks)
+                        for (int i = 0; i < 25 && i < getBlocks.Count; i++)
                         {
+                            var block = getBlocks[i];
                             DmgBlocks.Add(block);
+                            if (i == 25) break;
                         }
                     }
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in getBlocks: {ex}"); }
+            if (_count == 0) _dsutil3.StopWatchReport("collision", -1);
             return collision;
         }
 
@@ -1371,7 +1355,7 @@ namespace DefenseShields
                     {
                         foreach (var e in Eject)
                         {
-                            e.Key.SetPosition(Vector3D.Lerp(e.Key.GetPosition(), e.Value, 0.333d));
+                            e.Key.SetPosition(Vector3D.Lerp(e.Key.GetPosition(), e.Value, 0.1d));
                         }
                         Eject.Clear();
                     }
@@ -1380,7 +1364,12 @@ namespace DefenseShields
                 {
                     lock (DmgBlocks)
                     {
-                        foreach (var block in DmgBlocks) block.DoDamage(100f, MyDamageType.Fire, true, null, Block.EntityId);
+                        for (int i = 0; i < 25 && i < DmgBlocks.Count; i++)
+                        {
+                            var block = DmgBlocks[i];
+                            block.DoDamage(5000f, MyDamageType.Fire, true, null, Block.EntityId);
+                            if (i == 25) break;
+                        }
                         DmgBlocks.Clear();
                     }
                 }
@@ -1472,11 +1461,9 @@ namespace DefenseShields
             var webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
             MyAPIGateway.Parallel.ForEach(webList, webent =>
             {
-                Log.Line($"neut? {IsNeutral(webent)}");
                 if (webent == null || webent is IMyVoxelBase || webent is IMyFloatingObject || webent is IMyEngineerToolBase) return;
                 if (webent is IMyMeteor  || webent.ToString().Contains("Missile") || webent.ToString().Contains("Torpedo"))
                 {
-                    Log.Line($"webent: {webent}");
                     if (Intersect(webent, true, true) != Vector3D.NegativeInfinity)
                     {
                         _absorb += Shotdmg;
@@ -1505,7 +1492,6 @@ namespace DefenseShields
                 }
                 if (grid != null && grid != Block.CubeGrid && IsNeutral(webent))
                 {
-                    Log.Line($"is neutral");
                     var intersect = Intersect(grid, true, false);
                     if (intersect != Vector3D.NegativeInfinity && intersect != Vector3D.PositiveInfinity)
                     {
@@ -2024,6 +2010,13 @@ namespace DefenseShields
             var wm = MatrixD.CreateFromTransformScale(obb.Orientation, obb.Center, Vector3D.One);
             wm = MatrixD.Rescale(_shieldShapeMatrix, 1f);
             MySimpleObjectDraw.DrawTransparentBox(ref wm, ref box, ref color, MySimpleObjectRasterizer.Solid, 1);
+        }
+
+        public void DrawSphere(BoundingSphereD sphere, Color color)
+        {
+            var radius = sphere.Radius;
+            var wm = MatrixD.CreateWorld(sphere.Center);
+            MySimpleObjectDraw.DrawTransparentSphere(ref wm, (float)radius, ref color, MySimpleObjectRasterizer.Solid, 1);
         }
         #endregion
     }
