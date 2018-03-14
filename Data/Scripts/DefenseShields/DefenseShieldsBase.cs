@@ -17,29 +17,19 @@ namespace DefenseShields
     {
         public bool IsInit;
         public bool ControlsLoaded;
-        //public int I;
 
         public const ushort PACKET_ID = 62520; // network
         public readonly Guid SETTINGS_GUID = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
-        //public readonly Guid BLUEPRINT_GUID = new Guid("E973AD49-F3F4-41B9-811B-2B114E6EE0F9");
-        //
 
         public static DefenseShieldsBase Instance { get; private set; }
         public readonly MyModContext MyModContext = new MyModContext();
         public readonly Icosphere Icosphere = new Icosphere(6);
 
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
-        public List<DefenseShields> Shields = new List<DefenseShields>();
+        //public List<DefenseShields> Shields = new List<DefenseShields>();
 
         public override void Draw()
         {
-            /*
-            if (I < 60)
-            {
-                I++;
-                for (var j = 0; j < 32768; j++) MyTransparentGeometry.AddTriangleBillboard(Vector3D.Zero, Vector3D.Zero, Vector3D.Zero, Vector3.Zero, Vector3.Zero, Vector3.Zero, Vector2.Zero, Vector2.Zero, Vector2.Zero, _faceId, 0, Vector3D.Zero);
-            }
-            */
             foreach (var s in Components)
             {
                 s.Draw();
@@ -81,31 +71,25 @@ namespace DefenseShields
 
         public void CheckDamage(object block, ref MyDamageInformation info)
         {
-            if (info.Type == MyDamageType.Deformation) // fix
-            {
-            }
+            if (Components.Count == 0 && (info.Type != MyDamageType.Bullet || info.Type != MyDamageType.Deformation)) return;
 
-            if (Shields.Count == 0 || info.Type != MyDamageType.Bullet) return;
-
-            var generator = Shields[0];
             var ent = block as IMyEntity;
             var slimBlock = block as IMySlimBlock;
             if (slimBlock != null) ent = slimBlock.CubeGrid;
-            var dude = block as IMyCharacter;
-            if (dude != null) ent = dude;
+            var player = block as IMyCharacter;
+            if (player != null) ent = player;
+
             if (ent == null) return;
-            var isProtected = false;
-            foreach (var shield in Shields)
-                if (shield.InHash.Contains(ent))
-                {
-                    isProtected = true;
-                    generator = shield;
-                }
-            if (!isProtected) return;
-            IMyEntity attacker;
-            if (!MyAPIGateway.Entities.TryGetEntityById(info.AttackerId, out attacker)) return;
-            if (generator.InHash.Contains(attacker)) return;
-            info.Amount = 0f;
+
+            foreach (var shield in Components)
+            {
+                if (!shield.Block.IsWorking || !shield._initialized) continue;
+                IMyEntity attacker;
+                if (!MyAPIGateway.Entities.TryGetEntityById(info.AttackerId, out attacker) && info.Type != MyDamageType.Deformation) continue;
+                var entId = MyAPIGateway.Entities.GetEntityById(info.AttackerId);
+                if (entId == shield.Entity) continue;
+                info.Amount = 0f;
+            }
         }
 
         #region Network sync

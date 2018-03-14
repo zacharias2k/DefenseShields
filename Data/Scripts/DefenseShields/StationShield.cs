@@ -61,7 +61,7 @@ namespace DefenseShields
         private bool _buildLines = false;
         private bool _buildTris = false;
         private bool _buildOnce;
-        private bool _initialized;
+        public bool _initialized; 
         private bool _animInit;
         private bool _playerwebbed;
         private bool _gridIsMobile;
@@ -88,7 +88,7 @@ namespace DefenseShields
 
         private BoundingBox _oldGridAabb;
 
-        private IMyOreDetector Block => (IMyOreDetector)Entity;
+        public IMyOreDetector Block => (IMyOreDetector)Entity;
         private IMyEntity _shield;
 
         private readonly Spawn _spawn = new Spawn();
@@ -117,6 +117,8 @@ namespace DefenseShields
         private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
         public MyConcurrentHashSet<IMyEntity> InHash { get; } = new MyConcurrentHashSet<IMyEntity>();
+        public MyConcurrentHashSet<IMyEntity> IsOutside { get; } = new MyConcurrentHashSet<IMyEntity>();
+
         private MyConcurrentList<IMySlimBlock> DmgBlocks { get; } = new MyConcurrentList<IMySlimBlock>();
         private List<IMyCubeGrid> GridIsColliding = new List<IMyCubeGrid>();
         private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
@@ -201,7 +203,6 @@ namespace DefenseShields
                     _gridChanged = _oldGridAabb != Block.CubeGrid.LocalAABB;
                     _oldGridAabb = Block.CubeGrid.LocalAABB;
                     _entityChanged = entAngularVelocity || entLinVel || _gridChanged;
-                    //if (_entityChanged || _gridChanged) Log.Line($"Entity Change Loop ec:{_entityChanged} gc:{_gridChanged} vel:{entLinVel} avel:{entAngularVelocity}");
                     if (_entityChanged || _range <= 0) CreateShieldMatrices();
                 }
                 if ((_initialized || Block.IsWorking) && _range > 0)
@@ -223,8 +224,6 @@ namespace DefenseShields
                     _dsutil1.StopWatchReport("Main loop", 1);
                     if (_playerwebbed && _enablePhysics) PlayerEffects();
                     if (_enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
-                    //if (_enablePhysics) WebEntities();
-                    //if (_count == 0) DSUtils.StopWatchReport("main loop", -1);
                 }
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
@@ -256,7 +255,7 @@ namespace DefenseShields
 
             _shield = _spawn.EmptyEntity("Field", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\LargeField0.mwm");
             _shield.Render.Visible = false;
-            DefenseShieldsBase.Instance.Shields.Add(this);
+            //DefenseShieldsBase.Instance.Components.Add(this);
             _initialized = true;
         }
 
@@ -272,10 +271,7 @@ namespace DefenseShields
                     Log.Line($" BlockAnimation {_count}");
                     _animInit = true;
                 }
-                else
-                {
-                    NeedsUpdate = MyEntityUpdateEnum.NONE;
-                }
+                else NeedsUpdate = MyEntityUpdateEnum.NONE;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateAfterSimulation: {ex}"); }
         }
@@ -452,7 +448,6 @@ namespace DefenseShields
             if (Block.Enabled && Block.IsFunctional && Block.IsWorking)
             {
 
-                //_subpartRotor.SetEmissiveParts("Emissive", Color.White, 1);
                 _time += 1;
                 var temp1 = Matrix.CreateRotationY(0.1f * _time);
                 _subpartRotor.PositionComp.LocalMatrix = temp1;
@@ -464,7 +459,6 @@ namespace DefenseShields
             else
             {
 
-                //_subpartRotor.SetEmissiveParts("Emissive", Color.Black + new Color(15, 15, 15, 5), 0);
                 if (_animStep > 0f)
                 {
                     _animStep -= 0.05f;
@@ -755,6 +749,7 @@ namespace DefenseShields
             var gridScaler = (float)(((_detectionMatrix.Scale.X + _detectionMatrix.Scale.Y + _detectionMatrix.Scale.Z) / 3 / lodScaler) * 1.33) / bLocalAabb.Extents.Min();
             var faceAndInside = new int[5];
             var boxedTriangles = new List<Vector3D>();
+            var inside = false;
             //if (_count == 0) Log.Line($"gridscaler is: {gridScaler} <1 = large - >1 = small");
             if (gridScaler > 1)
             {
@@ -765,7 +760,7 @@ namespace DefenseShields
                 var closestFace2 = _dataStructures.p3VertTris[rangedVert3[2]];
                 //var faceAndInside = GetAllClosestInOutTri(_physicsOutside, _physicsInside, closestFace0, closestFace1, closestFace2, bWorldCenter, triNums[rangedVert3[0]], triNums[rangedVert3[1]], triNums[rangedVert3[2]]);
                 faceAndInside = GetAllClosestInOutTri(_physicsOutside, _physicsInside, closestFace0, closestFace1, closestFace2, bWorldCenter);
-                var inside = faceAndInside[1] == 1;
+                inside = faceAndInside[1] == 1;
                 int[] closestFace;
                 switch (faceAndInside[0])
                 {
@@ -864,6 +859,11 @@ namespace DefenseShields
             if (grid == null) return collision;
             try
             {
+                if (!enemy && !inside && !IsOutside.Contains(breaching)) IsOutside.Add(breaching);
+                else if (IsOutside.Contains(breaching) && !inside) IsOutside.Remove(breaching);
+                Log.Line($"outside  {IsOutside.Count}");
+                if (IsOutside.Contains(breaching)) return Vector3D.NegativeInfinity;
+
                 if (collision != Vector3D.NegativeInfinity && enemy)
                 {
                     var deathPointsOut = new Vector3D[3] { _physicsOutside[faceAndInside[2]], _physicsOutside[faceAndInside[3]], _physicsOutside[faceAndInside[4]]};
@@ -1568,7 +1568,7 @@ namespace DefenseShields
         {
             try
             {
-                DefenseShieldsBase.Instance.Shields.RemoveAt(DefenseShieldsBase.Instance.Shields.IndexOf(this));
+                DefenseShieldsBase.Instance.Components.RemoveAt(DefenseShieldsBase.Instance.Components.IndexOf(this));
             }
             catch { }
             base.Close();
