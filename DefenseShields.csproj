@@ -250,6 +250,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Support\CSupport\Octree.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\CSupport\ResourcePool.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\Shapes.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\DebugDraw.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\DistPoint3Triangle3.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Explosions.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Logging.cs" />

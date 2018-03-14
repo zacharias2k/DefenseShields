@@ -135,7 +135,7 @@ namespace DefenseShields
                 _detectionMatrix = value;
                 _detectionMatrixInv = MatrixD.Invert(value);
                 _detectionMatrixOutside = value;
-                _detectionMatrixInside = MatrixD.Rescale(value, 1d + (-3.0d / 100d));
+                _detectionMatrixInside = MatrixD.Rescale(value, 1d + (-6.0d / 100d));
             }
         }
         #endregion
@@ -749,11 +749,12 @@ namespace DefenseShields
             var gridScaler = (float)(((_detectionMatrix.Scale.X + _detectionMatrix.Scale.Y + _detectionMatrix.Scale.Z) / 3 / lodScaler) * 1.33) / bLocalAabb.Extents.Min();
             var faceAndInside = new int[5];
             var boxedTriangles = new List<Vector3D>();
+            var center = new Vector3D[3];
             var inside = false;
+
             //if (_count == 0) Log.Line($"gridscaler is: {gridScaler} <1 = large - >1 = small");
             if (gridScaler > 1)
             {
-                if (_count == 0) _dsutil3.Sw.Start();
                 var rangedVert3 = VertRangeFullCheck(_physicsOutside, bWorldCenter);
                 var closestFace0 = _dataStructures.p3VertTris[rangedVert3[0]];
                 var closestFace1 = _dataStructures.p3VertTris[rangedVert3[1]];
@@ -781,17 +782,14 @@ namespace DefenseShields
 
                 if (inside)
                 {
-                    var center = new Vector3D[3] { _physicsOutside[faceAndInside[2]], _physicsOutside[faceAndInside[3]], _physicsOutside[faceAndInside[4]] };
-                    var cSphere = BoundingSphereD.CreateFromPoints(center);
-                    lock (Eject) Eject.Add(breaching, cSphere.Center);
-                    collision = Vector3D.PositiveInfinity;
+                    center = new Vector3D[3] { _physicsOutside[faceAndInside[2]], _physicsOutside[faceAndInside[3]], _physicsOutside[faceAndInside[4]] };
                 }
                 if (Debug)
                 {
                     //DrawNums(_physicsOutside,zone, Color.AntiqueWhite);
-                    DrawLineToNum(_physicsOutside, rangedVert3[0], bWorldCenter, Color.Red);
-                    DrawLineToNum(_physicsOutside, rangedVert3[1], bWorldCenter, Color.Green);
-                    DrawLineToNum(_physicsOutside, rangedVert3[2], bWorldCenter, Color.Gold);
+                    DsDebugDraw.DrawLineToNum(_physicsOutside, rangedVert3[0], bWorldCenter, Color.Red);
+                    DsDebugDraw.DrawLineToNum(_physicsOutside, rangedVert3[1], bWorldCenter, Color.Green);
+                    DsDebugDraw.DrawLineToNum(_physicsOutside, rangedVert3[2], bWorldCenter, Color.Gold);
 
                     int[] closestLineFace;
                     switch (faceAndInside[0])
@@ -814,11 +812,11 @@ namespace DefenseShields
                     c1 = Color.Green;
                     c2 = Color.Gold;
 
-                    DrawLineNums(_physicsOutside, closestLineFace, Color.Red);
+                    DsDebugDraw.DrawLineNums(_physicsOutside, closestLineFace, Color.Red);
                     //DrawLineNums(_physicsOutside, closestLineFace1, c1);
                     //DrawLineNums(_physicsOutside, closestLineFace2, c2);
 
-                    DrawTriVertList(boxedTriangles);
+                    DsDebugDraw.DrawTriVertList(boxedTriangles);
 
                     //DrawLineToNum(_physicsOutside, rootVerts, bWorldCenter, Color.HotPink);
                     //DrawLineToNum(_physicsOutside, rootVerts[1], bWorldCenter, Color.Green);
@@ -827,7 +825,7 @@ namespace DefenseShields
 
                 if (boxedTriangles.Count > 0 && !inside)
                 {
-                    var locCenterSphere = CreateFromPointsList(boxedTriangles);
+                    var locCenterSphere = DSUtils.CreateFromPointsList(boxedTriangles);
                     collision = Vector3D.Lerp(_gridIsMobile ? Block.PositionComp.WorldVolume.Center : Block.CubeGrid.PositionComp.WorldVolume.Center, locCenterSphere.Center, .9);
                     _worldImpactPosition = collision;
                 }
@@ -840,7 +838,7 @@ namespace DefenseShields
                 var collection = ContainPointObb(_physicsOutside, bOriBBoxD, tSphere);
                 if (collection.Count == 0) return Vector3D.NegativeInfinity;
                 
-                var collisionCenter = CreateFromPointsList(collection).Center;
+                var collisionCenter = DSUtils.CreateFromPointsList(collection).Center;
 
                 if (collection.Count > 0)
                 {
@@ -855,17 +853,26 @@ namespace DefenseShields
                     _worldImpactPosition = collision;
                 }
             }
+            var cSphere = BoundingSphereD.CreateFromPoints(center);
             var grid = breaching as IMyCubeGrid;
             if (grid == null) return collision;
             try
             {
-                if (!enemy && !inside && !IsOutside.Contains(breaching)) IsOutside.Add(breaching);
-                else if (IsOutside.Contains(breaching) && !inside) IsOutside.Remove(breaching);
-                Log.Line($"outside  {IsOutside.Count}");
-                if (IsOutside.Contains(breaching)) return Vector3D.NegativeInfinity;
+                if (!enemy && !inside && !IsOutside.Contains(grid))
+                {
+                    IsOutside.Add(grid);
+                    collision = Vector3D.PositiveInfinity;
+                }
+                if (!enemy && IsOutside.Contains(grid) && inside)
+                {
+                    IsOutside.Remove(grid);
+                    return Vector3D.NegativeInfinity;
+                }
+                if (_count == 0 && IsOutside.Contains(grid)) Log.Line($"outside - {grid.Name} {IsOutside.Count}");
 
                 if (collision != Vector3D.NegativeInfinity && enemy)
                 {
+                    lock (Eject) Eject.Add(grid, cSphere.Center);
                     var deathPointsOut = new Vector3D[3] { _physicsOutside[faceAndInside[2]], _physicsOutside[faceAndInside[3]], _physicsOutside[faceAndInside[4]]};
                     var deathSphereOut = BoundingSphereD.CreateFromPoints(deathPointsOut);
 
@@ -882,7 +889,6 @@ namespace DefenseShields
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in getBlocks: {ex}"); }
-            if (_count == 0) _dsutil3.StopWatchReport("collision", -1);
             return collision;
         }
 
@@ -1457,6 +1463,7 @@ namespace DefenseShields
 
         private void WebEntities()
         {
+            if (_count == 0) _dsutil3.Sw.Start();
             var websphere = new BoundingSphereD(_detectionCenter, _range);
             var webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
             MyAPIGateway.Parallel.ForEach(webList, webent =>
@@ -1501,6 +1508,7 @@ namespace DefenseShields
 
                 //Log.Line($"webEffect unmatched {webent.GetFriendlyName()} {webent.Name} {webent.DisplayName} {webent.EntityId} {webent.Parent} {webent.Components}");
             });
+            if (_count == 0) _dsutil3.StopWatchReport("collision", -1);
         }
         #endregion
 
@@ -1686,337 +1694,6 @@ namespace DefenseShields
             Log.Line($"UseThisShip_Receiver({fix})");
 
             //UseThisShip_Internal(fix);
-        }
-        #endregion
-
-        #region Debug and Utils
-        private int GetVertNum(Vector3D vec)
-        {
-            var pmatch = false;
-            var pNum = -1;
-            foreach (var pvert in _physicsOutside)
-            {
-                pNum++;
-                if (vec == pvert) pmatch = true;
-                if (pmatch) return pNum;
-            }
-            return pNum;
-        }
-
-        private void FindRoots()
-        {
-            for (int i = 0, j = 0; i < _physicsOutside.Length; i++, j++)
-            {
-                var vec = _physicsOutside[i];
-                foreach (var magic in _rootVecs)
-                {
-                    for (int num = 0; num < 12; num++)
-                    {
-                        if (_count == 0 && vec == magic && _rootVecs[num] == vec) Log.Line($"Found root {num} at index: {i}");
-                    }
-
-                }
-            }
-        }
-
-
-        private bool[] GetZonesContaingNum(Vector3D[] physicsVerts, int locateVertNum, int size, bool draw = false)
-        {
-            // 1 = p3SmallZones, 2 = p3MediumZones, 3 = p3LargeZones, 4 = p3LargestZones
-            var root = _dataStructures.p0RootZones;
-            var small = _dataStructures.p3SmallZones;
-            var medium = _dataStructures.p3MediumZones;
-            var zone = size == 1 ? small : medium;
-            if (size == 0) zone = root;
-            var zMatch = new bool[12];
-
-            for (int i = 0; i < zone.Length; i++)
-            {
-                foreach (var vertNum in zone[i])
-                {
-                    if (vertNum == locateVertNum) zMatch[i] = true;
-                }
-            }
-            if (draw)
-            {
-                var c = 0;
-                var j = 0;
-                foreach (var z in zMatch)
-                {
-                    if (z)
-                    {
-                        DrawNums(physicsVerts, zone[c]);
-                    }
-                    c++;
-                }
-            }
-
-            return zMatch;
-        }
-
-        private int[] FindClosestZoneToVec(Vector3D locateVec, int size)
-        {
-            // 1 = p3SmallZones, 2 = p3MediumZones, 3 = p3LargeZones, 4 = p3LargestZones
-            var root = _dataStructures.p0RootZones;
-            var small = _dataStructures.p3SmallZones;
-            var medium = _dataStructures.p3MediumZones;
-            var zone = size == 1 ? small : medium;
-            if (size == 0) zone = root;
-
-            var zoneNum = -1;
-            var tempNum = -1;
-            var tempVec = Vector3D.Zero;
-            double pNumDistance = 9999999999999999999;
-
-            for (int i = 0; i < _physicsOutside.Length; i++)
-            {
-                var v = _physicsOutside[i];
-                if (v != locateVec) continue;
-                tempVec = v;
-                tempNum = i;
-            }
-            var c = 0;
-            foreach (int[] numArray in zone)
-            {
-                foreach (var vertNum in numArray)
-                {
-                    if (vertNum != tempNum) continue;
-                    var distCheck = Vector3D.DistanceSquared(locateVec, tempVec);
-                    if (!(distCheck < pNumDistance)) continue;
-                    pNumDistance = distCheck;
-                    zoneNum = c;
-                }
-                c++;
-            }
-            return zone[zoneNum];
-        }
-
-        private void DrawVertCollection(Vector3D collision, double radius, Color color, int lineWidth = 1)
-        {
-            var posMatCenterScaled = MatrixD.CreateTranslation(collision);
-            var posMatScaler = MatrixD.Rescale(posMatCenterScaled, radius);
-            var rangeGridResourceId = MyStringId.GetOrCompute("Build new");
-            MySimpleObjectDraw.DrawTransparentSphere(ref posMatScaler, 1f, ref color, MySimpleObjectRasterizer.Solid, lineWidth, null, rangeGridResourceId, -1, -1);
-        }
-
-        private void DrawTriNumArray(Vector3D[] physicsVerts, int[] array)
-        {
-            var lineId = MyStringId.GetOrCompute("Square");
-            var c = Color.Red.ToVector4();
-
-            for (int i = 0; i < array.Length; i += 3)
-            {
-                var vn0 = array[i];
-                var vn1 = array[i + 1];
-                var vn2 = array[i + 2];
-
-                var v0 = physicsVerts[vn0];
-                var v1 = physicsVerts[vn1];
-                var v2 = physicsVerts[vn2];
-
-                MySimpleObjectDraw.DrawLine(v0, v1, lineId, ref c, 0.25f);
-                MySimpleObjectDraw.DrawLine(v0, v2, lineId, ref c, 0.25f);
-                MySimpleObjectDraw.DrawLine(v1, v2, lineId, ref c, 0.25f);
-
-            }
-        }
-
-        private void DrawTriVertList(List<Vector3D> list)
-        {
-            var lineId = MyStringId.GetOrCompute("Square");
-            var c = Color.DarkViolet.ToVector4();
-            for (int i = 0; i < list.Count; i += 3)
-            {
-                var v0 = list[i];
-                var v1 = list[i + 1];
-                var v2 = list[i + 2];
-
-                MySimpleObjectDraw.DrawLine(v0, v1, lineId, ref c, 0.25f);
-                MySimpleObjectDraw.DrawLine(v0, v2, lineId, ref c, 0.25f);
-                MySimpleObjectDraw.DrawLine(v1, v2, lineId, ref c, 0.25f);
-
-            }
-        }
-
-        private void DrawLineNums(Vector3D[] physicsVerts, int[] lineArray, Color color)
-        {
-            var c = color.ToVector4();
-            var lineId = MyStringId.GetOrCompute("Square");
-
-            for (int i = 0; i < lineArray.Length; i += 2)
-            {
-                var v0 = physicsVerts[lineArray[i]];
-                var v1 = physicsVerts[lineArray[i + 1]];
-                MySimpleObjectDraw.DrawLine(v0, v1, lineId, ref c, 0.25f);
-            }
-        }
-
-        private void DrawLineToNum(Vector3D[] physicsVerts, int num, Vector3D fromVec, Color color)
-        {
-            var c = color.ToVector4();
-            var lineId = MyStringId.GetOrCompute("Square");
-
-            var v0 = physicsVerts[num];
-            var v1 = fromVec;
-            MySimpleObjectDraw.DrawLine(v0, v1, lineId, ref c, 0.25f);
-        }
-
-        private void DrawLineToVec(Vector3D[] physicsVerts, Vector3D toVec, Vector3D fromVec, Color color)
-        {
-            var c = color.ToVector4();
-            var lineId = MyStringId.GetOrCompute("Square");
-
-            var v0 = toVec;
-            var v1 = fromVec;
-            MySimpleObjectDraw.DrawLine(v0, v1, lineId, ref c, 0.25f);
-        }
-        private void DrawRootVerts()
-        {
-            var i = 0;
-            foreach (var root in _rootVecs)
-            {
-                var rootColor = _dataStructures.zoneColors[i];
-                DrawVertCollection(root, 5, rootColor, 20);
-                i++;
-            }
-        }
-
-        private void DrawVerts(Vector3D[] list, Color color = default(Color))
-        {
-            var i = 0;
-            foreach (var vec in list)
-            {
-                var rootColor = _dataStructures.zoneColors[i];
-                if (vec == _rootVecs[i]) color = rootColor;
-                DrawVertCollection(vec, 5, color, 8);
-                i++;
-            }
-        }
-
-        private void DrawNums(Vector3D[] physicsVerts, int[] list, Color color = default(Color))
-        {
-            foreach (var num in list)
-            {
-                var i = 0;
-                foreach (var root in _rootVecs)
-                {
-                    var rootColor = _dataStructures.zoneColors[i];
-                    if (physicsVerts[num] == root) color = rootColor;
-                    i++;
-                }
-                DrawVertCollection(physicsVerts[num], 5, color, 8);
-            }
-        }
-
-        private void DrawSingleNum(Vector3D[] physicsVerts, int num)
-        {
-            //Log.Line($"magic: {magic}");
-            var c = Color.Black;
-            DrawVertCollection(physicsVerts[num], 7, c, 20);
-        }
-
-        private void DrawSingleVec(Vector3D vec, float size, Color color)
-        {
-            DrawVertCollection(vec, size, color, 20);
-        }
-
-        public static BoundingSphereD CreateFromPointsList(List<Vector3D> points)
-        {
-            Vector3D current;
-            Vector3D Vector3D_1 = current = points[0];
-            Vector3D Vector3D_2 = current;
-            Vector3D Vector3D_3 = current;
-            Vector3D Vector3D_4 = current;
-            Vector3D Vector3D_5 = current;
-            Vector3D Vector3D_6 = current;
-            foreach (Vector3D Vector3D_7 in points)
-            {
-                if (Vector3D_7.X < Vector3D_6.X)
-                    Vector3D_6 = Vector3D_7;
-                if (Vector3D_7.X > Vector3D_5.X)
-                    Vector3D_5 = Vector3D_7;
-                if (Vector3D_7.Y < Vector3D_4.Y)
-                    Vector3D_4 = Vector3D_7;
-                if (Vector3D_7.Y > Vector3D_3.Y)
-                    Vector3D_3 = Vector3D_7;
-                if (Vector3D_7.Z < Vector3D_2.Z)
-                    Vector3D_2 = Vector3D_7;
-                if (Vector3D_7.Z > Vector3D_1.Z)
-                    Vector3D_1 = Vector3D_7;
-            }
-            double result1;
-            Vector3D.Distance(ref Vector3D_5, ref Vector3D_6, out result1);
-            double result2;
-            Vector3D.Distance(ref Vector3D_3, ref Vector3D_4, out result2);
-            double result3;
-            Vector3D.Distance(ref Vector3D_1, ref Vector3D_2, out result3);
-            Vector3D result4;
-            double num1;
-            if (result1 > result2)
-            {
-                if (result1 > result3)
-                {
-                    Vector3D.Lerp(ref Vector3D_5, ref Vector3D_6, 0.5f, out result4);
-                    num1 = result1 * 0.5f;
-                }
-                else
-                {
-                    Vector3D.Lerp(ref Vector3D_1, ref Vector3D_2, 0.5f, out result4);
-                    num1 = result3 * 0.5f;
-                }
-            }
-            else if (result2 > result3)
-            {
-                Vector3D.Lerp(ref Vector3D_3, ref Vector3D_4, 0.5f, out result4);
-                num1 = result2 * 0.5f;
-            }
-            else
-            {
-                Vector3D.Lerp(ref Vector3D_1, ref Vector3D_2, 0.5f, out result4);
-                num1 = result3 * 0.5f;
-            }
-            foreach (Vector3D Vector3D_7 in points)
-            {
-                Vector3D Vector3D_8;
-                Vector3D_8.X = Vector3D_7.X - result4.X;
-                Vector3D_8.Y = Vector3D_7.Y - result4.Y;
-                Vector3D_8.Z = Vector3D_7.Z - result4.Z;
-                double num2 = Vector3D_8.Length();
-                if (num2 > num1)
-                {
-                    num1 = ((num1 + num2) * 0.5);
-                    result4 += (1.0 - num1 / num2) * Vector3D_8;
-                }
-            }
-            BoundingSphereD boundingSphereD;
-            boundingSphereD.Center = result4;
-            boundingSphereD.Radius = num1;
-            return boundingSphereD;
-        }
-
-        public void DrawBox(MyOrientedBoundingBoxD obb, Color color, bool shield, MatrixD matrix = default(MatrixD))
-        {
-            var box = new BoundingBoxD(-obb.HalfExtent, obb.HalfExtent);
-            var wm = MatrixD.CreateFromTransformScale(obb.Orientation, obb.Center, Vector3D.One);
-            //if (shield) wm = wm * _shieldGridMatrix;
-            //else wm = wm * matrix;
-            //wm = wm * Block.WorldMatrix;
-            MySimpleObjectDraw.DrawTransparentBox(ref wm, ref box, ref color, MySimpleObjectRasterizer.Solid, 1);
-        }
-
-        public void DrawBox2(MyOrientedBoundingBoxD obb, Color color)
-        {
-            var box = new BoundingBoxD(-obb.HalfExtent, obb.HalfExtent);
-            var wm = MatrixD.CreateFromTransformScale(obb.Orientation, obb.Center, Vector3D.One);
-            wm = MatrixD.Rescale(_shieldShapeMatrix, 1f);
-            MySimpleObjectDraw.DrawTransparentBox(ref wm, ref box, ref color, MySimpleObjectRasterizer.Solid, 1);
-        }
-
-        public void DrawSphere(BoundingSphereD sphere, Color color)
-        {
-            var radius = sphere.Radius;
-            var wm = MatrixD.CreateWorld(sphere.Center);
-            MySimpleObjectDraw.DrawTransparentSphere(ref wm, (float)radius, ref color, MySimpleObjectRasterizer.Solid, 1);
         }
         #endregion
     }
