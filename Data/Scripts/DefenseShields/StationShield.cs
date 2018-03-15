@@ -118,6 +118,8 @@ namespace DefenseShields
 
         public MyConcurrentHashSet<IMyEntity> InHash { get; } = new MyConcurrentHashSet<IMyEntity>();
 
+        private MyConcurrentHashSet<IMyCubeGrid> IsOutside = new MyConcurrentHashSet<IMyCubeGrid>();
+
         private MyConcurrentList<IMySlimBlock> DmgBlocks { get; } = new MyConcurrentList<IMySlimBlock>();
         private List<IMyCubeGrid> GridIsColliding = new List<IMyCubeGrid>();
         private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
@@ -747,7 +749,6 @@ namespace DefenseShields
             var gridScaler = (float)(((_detectionMatrix.Scale.X + _detectionMatrix.Scale.Y + _detectionMatrix.Scale.Z) / 3 / lodScaler) * 1.33) / bLocalAabb.Extents.Min();
             var faceAndInside = new int[5];
             var intersections = new List<Vector3D>();
-            var IsOutside = new MyConcurrentHashSet<IMyCubeGrid>();
             var center = new Vector3D[3];
             var inside = false;
 
@@ -788,17 +789,21 @@ namespace DefenseShields
             var grid = breaching as IMyCubeGrid;
             if (grid == null) return Vector3D.NegativeInfinity;
 
-            if (!inside) IsOutside.Add(grid);
-
-            if (inside)
+            lock (Eject)
             {
-                if (!enemy && IsOutside.Contains(grid)) return Vector3D.PositiveInfinity;
-                if (!enemy) return Vector3D.NegativeInfinity;
+                if (!inside) IsOutside.Add(grid);
 
-                var cSphere = BoundingSphereD.CreateFromPoints(center);
-                
-                lock (Eject)
+                if (inside)
                 {
+                    if (!enemy && IsOutside.Contains(grid))
+                    {
+                        IsOutside.Remove(grid);
+                        return Vector3D.PositiveInfinity;
+                    }
+                    if (!enemy) return Vector3D.NegativeInfinity;
+
+                    var cSphere = BoundingSphereD.CreateFromPoints(center);
+
                     Eject.Add(grid, cSphere.Center);
                     if (IsOutside.Contains(grid))
                     {
@@ -1433,7 +1438,13 @@ namespace DefenseShields
             var qWebList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref qWebsphere);
             foreach (var webent in qWebList)
             {
-                if (webent == null || webent is IMyFloatingObject || webent is IMyEngineerToolBase || webent == Block.CubeGrid || webent == _shield || webent is IMyCharacter) continue;
+                if (webent == null || webent is IMyFloatingObject || webent is IMyEngineerToolBase ||
+                    webent == Block.CubeGrid || webent == _shield || webent is IMyCharacter ||
+                    (Block.CubeGrid.Physics.IsStatic && webent is IMyVoxelBase))
+                {
+                    lock (IsOutside) IsOutside.Clear();
+                    continue;
+                }
                 if (Block.CubeGrid.Physics.IsStatic && webent is IMyVoxelBase) continue;
                 //Log.Line($"{webent.DisplayName}");
                 _enablePhysics = true;
