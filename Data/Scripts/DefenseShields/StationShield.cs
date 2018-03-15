@@ -52,7 +52,7 @@ namespace DefenseShields
         private int _playertime;
         private int _prevLod;
 
-        private const bool Debug = false;
+        private const bool Debug = true;
         private bool _entityChanged = true;
         private bool _gridChanged = true;
         private bool _enablePhysics = true;
@@ -117,7 +117,6 @@ namespace DefenseShields
         private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
 
         public MyConcurrentHashSet<IMyEntity> InHash { get; } = new MyConcurrentHashSet<IMyEntity>();
-        public MyConcurrentHashSet<IMyEntity> IsOutside { get; } = new MyConcurrentHashSet<IMyEntity>();
 
         private MyConcurrentList<IMySlimBlock> DmgBlocks { get; } = new MyConcurrentList<IMySlimBlock>();
         private List<IMyCubeGrid> GridIsColliding = new List<IMyCubeGrid>();
@@ -739,29 +738,30 @@ namespace DefenseShields
             // clamp s and t to the domain 0-1
             // closest point is (pt1-pt0)*s + (pt2-pt0)*t + pt0
 
-            var collision = new Vector3D(Vector3D.NegativeInfinity);
-
             var bLocalAabb = breaching.PositionComp.LocalAABB;
             var bWorldAabb = breaching.PositionComp.WorldAABB;
             var bWorldCenter = bWorldAabb.Center;
+            var tSphere = new BoundingSphereD(bWorldCenter, bWorldAabb.HalfExtents.Max());
 
             var lodScaler = (int)Math.Pow(2, PhysicsLod);
             var gridScaler = (float)(((_detectionMatrix.Scale.X + _detectionMatrix.Scale.Y + _detectionMatrix.Scale.Z) / 3 / lodScaler) * 1.33) / bLocalAabb.Extents.Min();
             var faceAndInside = new int[5];
-            var boxedTriangles = new List<Vector3D>();
+            var intersections = new List<Vector3D>();
+            var IsOutside = new MyConcurrentHashSet<IMyCubeGrid>();
             var center = new Vector3D[3];
             var inside = false;
 
-            //if (_count == 0) Log.Line($"gridscaler is: {gridScaler} <1 = large - >1 = small");
             if (gridScaler > 1)
             {
                 var rangedVert3 = VertRangeFullCheck(_physicsOutside, bWorldCenter);
                 var closestFace0 = _dataStructures.p3VertTris[rangedVert3[0]];
                 var closestFace1 = _dataStructures.p3VertTris[rangedVert3[1]];
                 var closestFace2 = _dataStructures.p3VertTris[rangedVert3[2]];
-                //var faceAndInside = GetAllClosestInOutTri(_physicsOutside, _physicsInside, closestFace0, closestFace1, closestFace2, bWorldCenter, triNums[rangedVert3[0]], triNums[rangedVert3[1]], triNums[rangedVert3[2]]);
+
                 faceAndInside = GetAllClosestInOutTri(_physicsOutside, _physicsInside, closestFace0, closestFace1, closestFace2, bWorldCenter);
                 inside = faceAndInside[1] == 1;
+                if (inside) center = new Vector3D[3] {_physicsOutside[faceAndInside[2]], _physicsOutside[faceAndInside[3]], _physicsOutside[faceAndInside[4]]};
+
                 int[] closestFace;
                 switch (faceAndInside[0])
                 {
@@ -778,118 +778,102 @@ namespace DefenseShields
                 //var checkBackupFace1 = CheckFirstFace(closestFace0, rangedVert3[1]);
                 //var checkBackupFace2 = CheckFirstFace(closestFace0, rangedVert3[2]);
                 //var boxedTriangles = IntersectSmallBoxFaces(closestFace0, closestFace1, closestFace2, _physicsOutside, bWorldAabb, checkBackupFace1, checkBackupFace2);
-                boxedTriangles = IntersectSmallBox(closestFace, _physicsOutside, bWorldAabb);
 
-                if (inside)
-                {
-                    center = new Vector3D[3] { _physicsOutside[faceAndInside[2]], _physicsOutside[faceAndInside[3]], _physicsOutside[faceAndInside[4]] };
-                }
-                if (Debug)
-                {
-                    //DrawNums(_physicsOutside,zone, Color.AntiqueWhite);
-                    DsDebugDraw.DrawLineToNum(_physicsOutside, rangedVert3[0], bWorldCenter, Color.Red);
-                    DsDebugDraw.DrawLineToNum(_physicsOutside, rangedVert3[1], bWorldCenter, Color.Green);
-                    DsDebugDraw.DrawLineToNum(_physicsOutside, rangedVert3[2], bWorldCenter, Color.Gold);
+                intersections = IntersectSmallBox(closestFace, _physicsOutside, bWorldAabb);
 
-                    int[] closestLineFace;
-                    switch (faceAndInside[0])
-                    {
-                        case 0:
-                            closestLineFace = _dataStructures.p3VertLines[rangedVert3[0]];
-                            break;
-                        case 1:
-                            closestLineFace = _dataStructures.p3VertLines[rangedVert3[1]];
-                            break;
-                        default:
-                            closestLineFace = _dataStructures.p3VertLines[rangedVert3[2]];
-                            break;
-                    }
-
-                    var c1 = Color.Black;
-                    var c2 = Color.Black;
-                    //if (checkBackupFace1) c1 = Color.Green;
-                    //if (checkBackupFace2) c2 = Color.Gold;
-                    c1 = Color.Green;
-                    c2 = Color.Gold;
-
-                    DsDebugDraw.DrawLineNums(_physicsOutside, closestLineFace, Color.Red);
-                    //DrawLineNums(_physicsOutside, closestLineFace1, c1);
-                    //DrawLineNums(_physicsOutside, closestLineFace2, c2);
-
-                    DsDebugDraw.DrawTriVertList(boxedTriangles);
-
-                    //DrawLineToNum(_physicsOutside, rootVerts, bWorldCenter, Color.HotPink);
-                    //DrawLineToNum(_physicsOutside, rootVerts[1], bWorldCenter, Color.Green);
-                    //DrawLineToNum(_physicsOutside, rootVerts[2], bWorldCenter, Color.Gold);
-                }
-
-                if (boxedTriangles.Count > 0 && !inside)
-                {
-                    var locCenterSphere = DSUtils.CreateFromPointsList(boxedTriangles);
-                    collision = Vector3D.Lerp(_gridIsMobile ? Block.PositionComp.WorldVolume.Center : Block.CubeGrid.PositionComp.WorldVolume.Center, locCenterSphere.Center, .9);
-                    _worldImpactPosition = collision;
-                }
+                if (Debug) SmallInterSectDebuDraw(_physicsOutside, faceAndInside[0], _dataStructures.p3VertLines, rangedVert3, bWorldCenter, intersections);
             }
-            else 
-            {
-                var tSphere = new BoundingSphereD(bWorldCenter, bWorldAabb.HalfExtents.Max());
-                //if (_count == 0) DSUtils.Sw.Start();
+            else intersections = ContainPointObb(_physicsOutside, bOriBBoxD, tSphere);
 
-                var collection = ContainPointObb(_physicsOutside, bOriBBoxD, tSphere);
-                if (collection.Count == 0) return Vector3D.NegativeInfinity;
-                
-                var collisionCenter = DSUtils.CreateFromPointsList(collection).Center;
-
-                if (collection.Count > 0)
-                {
-                    if (collisionCenter != Vector3D.Zero) collision = collisionCenter;
-                }
-                //if (_count == 0) DSUtils.StopWatchReport("simple test", -1);
-
-                if (collision != Vector3D.NegativeInfinity)
-                {
-                    if (_count == 0) Log.Line($"Collision");
-                    collision = Vector3D.Lerp(_gridIsMobile ? Block.PositionComp.WorldVolume.Center : Block.CubeGrid.PositionComp.WorldVolume.Center, collisionCenter, .9);
-                    _worldImpactPosition = collision;
-                }
-            }
-            var cSphere = BoundingSphereD.CreateFromPoints(center);
             var grid = breaching as IMyCubeGrid;
-            if (grid == null) return collision;
-            try
+            if (grid == null) return Vector3D.NegativeInfinity;
+
+            if (!inside) IsOutside.Add(grid);
+
+            if (inside)
             {
-                if (!enemy && !inside && !IsOutside.Contains(grid))
+                if (!enemy && IsOutside.Contains(grid)) return Vector3D.PositiveInfinity;
+                if (!enemy) return Vector3D.NegativeInfinity;
+
+                var cSphere = BoundingSphereD.CreateFromPoints(center);
+                
+                lock (Eject)
                 {
-                    IsOutside.Add(grid);
-                    collision = Vector3D.PositiveInfinity;
-                }
-                if (!enemy && IsOutside.Contains(grid) && inside)
-                {
-                    IsOutside.Remove(grid);
+                    Eject.Add(grid, cSphere.Center);
+                    if (IsOutside.Contains(grid))
+                    {
+                        IsOutside.Remove(grid);
+                        return Vector3D.PositiveInfinity;
+                    }
                     return Vector3D.NegativeInfinity;
                 }
-                if (_count == 0 && IsOutside.Contains(grid)) Log.Line($"outside - {grid.Name} {IsOutside.Count}");
+            }
 
-                if (collision != Vector3D.NegativeInfinity && enemy)
+            if (intersections.Count == 0) return Vector3D.NegativeInfinity;
+            if (!enemy) return Vector3D.NegativeInfinity;
+
+            var locCenterSphere = DSUtils.CreateFromPointsList(intersections);
+            var collision = Vector3D.Lerp(_gridIsMobile ? Block.PositionComp.WorldVolume.Center : Block.CubeGrid.PositionComp.WorldVolume.Center, locCenterSphere.Center, .9);
+            _worldImpactPosition = collision;
+
+            try
+            {
+                if (collision != Vector3D.NegativeInfinity)
                 {
-                    lock (Eject) Eject.Add(grid, cSphere.Center);
                     var deathPointsOut = new Vector3D[3] { _physicsOutside[faceAndInside[2]], _physicsOutside[faceAndInside[3]], _physicsOutside[faceAndInside[4]]};
                     var deathSphereOut = BoundingSphereD.CreateFromPoints(deathPointsOut);
-
                     var getBlocks = grid.GetBlocksInsideSphere(ref deathSphereOut);
+
                     lock (DmgBlocks)
-                    {
                         for (int i = 0; i < 25 && i < getBlocks.Count; i++)
                         {
                             var block = getBlocks[i];
                             DmgBlocks.Add(block);
                             if (i == 25) break;
                         }
-                    }
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in getBlocks: {ex}"); }
             return collision;
+        }
+
+        private static void SmallInterSectDebuDraw(Vector3D[] physicsOutside, int face, int[][] vertLines, int[] rangedVert, Vector3D bWorldCenter, List<Vector3D> intersections)
+        {
+            //DrawNums(_physicsOutside,zone, Color.AntiqueWhite);
+            DsDebugDraw.DrawLineToNum(physicsOutside, rangedVert[0], bWorldCenter, Color.Red);
+            DsDebugDraw.DrawLineToNum(physicsOutside, rangedVert[1], bWorldCenter, Color.Green);
+            DsDebugDraw.DrawLineToNum(physicsOutside, rangedVert[2], bWorldCenter, Color.Gold);
+
+            int[] closestLineFace;
+            switch (face)
+            {
+                case 0:
+                    closestLineFace = vertLines[rangedVert[0]];
+                    break;
+                case 1:
+                    closestLineFace = vertLines[rangedVert[1]];
+                    break;
+                default:
+                    closestLineFace = vertLines[rangedVert[2]];
+                    break;
+            }
+
+            var c1 = Color.Black;
+            var c2 = Color.Black;
+            //if (checkBackupFace1) c1 = Color.Green;
+            //if (checkBackupFace2) c2 = Color.Gold;
+            c1 = Color.Green;
+            c2 = Color.Gold;
+
+            DsDebugDraw.DrawLineNums(physicsOutside, closestLineFace, Color.Red);
+            //DrawLineNums(_physicsOutside, closestLineFace1, c1);
+            //DrawLineNums(_physicsOutside, closestLineFace2, c2);
+
+            DsDebugDraw.DrawTriVertList(intersections);
+
+            //DrawLineToNum(_physicsOutside, rootVerts, bWorldCenter, Color.HotPink);
+            //DrawLineToNum(_physicsOutside, rootVerts[1], bWorldCenter, Color.Green);
+            //DrawLineToNum(_physicsOutside, rootVerts[2], bWorldCenter, Color.Gold);
         }
 
         private static bool CheckFirstFace(int[] firstFace, int secondVertNum)
@@ -1359,10 +1343,7 @@ namespace DefenseShields
                 if (Eject.Count > 0)
                     lock (Eject)
                     {
-                        foreach (var e in Eject)
-                        {
-                            e.Key.SetPosition(Vector3D.Lerp(e.Key.GetPosition(), e.Value, 0.1d));
-                        }
+                        foreach (var e in Eject) e.Key.SetPosition(Vector3D.Lerp(e.Key.GetPosition(), e.Value, 0.1d));
                         Eject.Clear();
                     }
 
