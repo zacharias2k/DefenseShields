@@ -227,28 +227,8 @@ namespace DefenseShields.Support
                 return vecs;
             }
 
-            public Vector3D[] ReturnPhysicsVerts(MatrixD matrix, int lod)
+            public void ReturnPhysicsVerts(MatrixD matrix, Vector3D[] physicsArray)
             {
-                Vector3D[] physicsArray;
-                switch (lod)
-                {
-                    case 0:
-                        physicsArray = new Vector3D[12];
-                        break;
-                    case 1:
-                        physicsArray = new Vector3D[42];
-                        break;
-                    case 2:
-                        physicsArray = new Vector3D[162];
-                        break;
-                    case 3:
-                        physicsArray = new Vector3D[642];
-                        break;
-                    default:
-                        physicsArray = new Vector3D[2562];
-                        break;
-                }
-
                 for (var i = 0; i < physicsArray.Length; i++)
                 {
                     var num1 = (_backing.VertexBuffer[i].X * matrix.M11 + _backing.VertexBuffer[i].Y * matrix.M21 + _backing.VertexBuffer[i].Z * matrix.M31) + matrix.M41;
@@ -261,7 +241,6 @@ namespace DefenseShields.Support
                     vector3.Z = num3 * num4;
                     physicsArray[i] = vector3;
                 }
-                return physicsArray;
             }
 
             public void ComputeEffects(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, bool sphereOnCamera, IMyEntity shield, int prevLod)

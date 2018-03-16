@@ -29,7 +29,6 @@ namespace DefenseShields
     public class DefenseShields : MyGameLogicComponent
     {
         #region Setup
-
         private const float Shotdmg = 1f;
         private const float Bulletdmg = 0.1f;
 
@@ -53,6 +52,7 @@ namespace DefenseShields
         private int _prevLod;
 
         private const bool Debug = true;
+        private const bool DrawDebug = false;
         private bool _entityChanged = true;
         private bool _gridChanged = true;
         private bool _enablePhysics = true;
@@ -61,12 +61,13 @@ namespace DefenseShields
         private bool _buildLines = false;
         private bool _buildTris = false;
         private bool _buildOnce;
-        public bool _initialized; 
+        public bool Initialized; 
         private bool _animInit;
         private bool _playerwebbed;
         private bool _gridIsMobile;
         private bool _explode;
         private bool _longLoop10;
+        private bool _firstRun = true;
 
         private const ushort ModId = 50099;
 
@@ -74,9 +75,9 @@ namespace DefenseShields
         private Vector3D _detectionCenter;
         private Vector3D _shieldSize;
 
-        private Vector3D[] _rootVecs = new Vector3D[12];
-        private Vector3D[] _physicsOutside;
-        private Vector3D[] _physicsInside;
+        private readonly Vector3D[] _rootVecs = new Vector3D[12];
+        private readonly Vector3D[] _physicsOutside = new Vector3D[642];
+        private readonly Vector3D[] _physicsInside = new Vector3D[642];
 
         private MatrixD _shieldGridMatrix;
         private MatrixD _shieldShapeMatrix;
@@ -138,7 +139,6 @@ namespace DefenseShields
             }
         }
         #endregion
-
 
         public MyResourceSinkComponent Sink { get { return _sink; } set { _sink = value; } }
 
@@ -204,11 +204,11 @@ namespace DefenseShields
                     _entityChanged = entAngularVelocity || entLinVel || _gridChanged;
                     if (_entityChanged || _range <= 0) CreateShieldMatrices();
                 }
-                if ((_initialized || Block.IsWorking) && _range > 0)
+                if ((Initialized || Block.IsWorking) && _range > 0)
                 {
                     if (_count == 0) _enablePhysics = false;
                     if (_enablePhysics == false) QuickWebCheck();
-                    if ((_enablePhysics && _entityChanged) || _physicsOutside == null) BuildPhysicsArrays();
+                    if ((_enablePhysics && _entityChanged) || _firstRun) BuildPhysicsArrays();
                     if (_animInit)
                     {
                         if (_subpartRotor.Closed.Equals(true)) BlockAnimationReset();
@@ -231,18 +231,19 @@ namespace DefenseShields
         #region Prep / Misc
         private void BuildPhysicsArrays()
         {
-            _physicsOutside = _icosphere.ReturnPhysicsVerts(_detectionMatrixOutside, 3);
-            _rootVecs = _icosphere.ReturnPhysicsVerts(_detectionMatrixOutside, 0);
-            _physicsInside = _icosphere.ReturnPhysicsVerts(_detectionMatrixInside, 3);
+            _icosphere.ReturnPhysicsVerts(_detectionMatrixOutside, _physicsOutside);
+            _icosphere.ReturnPhysicsVerts(_detectionMatrixOutside, _rootVecs);
+            _icosphere.ReturnPhysicsVerts(_detectionMatrixInside, _physicsInside);
             //_structureBuilder.BuildTriNums(_icosphere.CalculatePhysics(_detectionMatrixOutside, 3), _physicsOutside);
             //if (_buildOnce == false) _structureBuilder.BuildBase(_icosphere.CalculatePhysics(_detectionMatrixOutside, 3), _rootVecs, _physicsOutside, _buildLines, _buildTris, _buildVertZones, _buildByVerts);
             //_buildOnce = true;
+            _firstRun = false;
         }
         #endregion
 
         public override void UpdateBeforeSimulation100()
         {
-            if (_initialized) return;
+            if (Initialized) return;
             Log.Line($"Initting entity");
             if (Block.CubeGrid.Physics.IsStatic) _gridIsMobile = false;
             else if (!Block.CubeGrid.Physics.IsStatic) _gridIsMobile = true;
@@ -255,7 +256,7 @@ namespace DefenseShields
             _shield = _spawn.EmptyEntity("Field", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\LargeField0.mwm");
             _shield.Render.Visible = false;
             //DefenseShieldsBase.Instance.Components.Add(this);
-            _initialized = true;
+            Initialized = true;
         }
 
         public override void UpdateAfterSimulation()
@@ -279,7 +280,7 @@ namespace DefenseShields
         #region Block Power and Entity Config Logic
         private float CalcRequiredPower()
         {
-            if (!_initialized || !Block.IsWorking) return _power;
+            if (!Initialized || !Block.IsWorking) return _power;
             if (_absorb >= 0.1)
             {
                 _absorb = _absorb - _recharge;
@@ -481,7 +482,7 @@ namespace DefenseShields
         {
             try
             {
-                if (!_initialized) return;
+                if (!Initialized) return;
 
                 SetShieldShapeMatrix();
                 var drawShapeChanged = _entityChanged;
@@ -753,12 +754,14 @@ namespace DefenseShields
 
             if (gridScaler > 1)
             {
-                var rangedVert3 = VertRangeFullCheck(_physicsOutside, bWorldCenter);
+                if (_count == 0 && Debug) _dsutil3.Sw.Start();
+                var rangedVert3 = CustomCollision.VertRangeFullCheck(_physicsOutside, bWorldCenter);
+
                 var closestFace0 = _dataStructures.p3VertTris[rangedVert3[0]];
                 var closestFace1 = _dataStructures.p3VertTris[rangedVert3[1]];
                 var closestFace2 = _dataStructures.p3VertTris[rangedVert3[2]];
 
-                faceAndInside = GetAllClosestInOutTri(_physicsOutside, _physicsInside, closestFace0, closestFace1, closestFace2, bWorldCenter);
+                faceAndInside = CustomCollision.GetAllClosestInOutTri(_physicsOutside, _physicsInside, closestFace0, closestFace1, closestFace2, bWorldCenter);
                 inside = faceAndInside[1] == 1;
                 if (inside) center = new Vector3D[3] {_physicsOutside[faceAndInside[2]], _physicsOutside[faceAndInside[3]], _physicsOutside[faceAndInside[4]]};
 
@@ -775,15 +778,12 @@ namespace DefenseShields
                         closestFace = closestFace2;
                         break;
                 }
-                //var checkBackupFace1 = CheckFirstFace(closestFace0, rangedVert3[1]);
-                //var checkBackupFace2 = CheckFirstFace(closestFace0, rangedVert3[2]);
-                //var boxedTriangles = IntersectSmallBoxFaces(closestFace0, closestFace1, closestFace2, _physicsOutside, bWorldAabb, checkBackupFace1, checkBackupFace2);
+                CustomCollision.IntersectSmallBox(closestFace, _physicsOutside, bWorldAabb, intersections);
+                if (DrawDebug) CustomCollision.SmallIntersectDebugDraw(_physicsOutside, faceAndInside[0], _dataStructures.p3VertLines, rangedVert3, bWorldCenter, intersections);
 
-                intersections = IntersectSmallBox(closestFace, _physicsOutside, bWorldAabb);
-
-                if (Debug) SmallInterSectDebuDraw(_physicsOutside, faceAndInside[0], _dataStructures.p3VertLines, rangedVert3, bWorldCenter, intersections);
+                if (_count == 0 && Debug) _dsutil3.StopWatchReport("test", -1);
             }
-            else intersections = ContainPointObb(_physicsOutside, bOriBBoxD, tSphere);
+            else intersections = CustomCollision.ContainPointObb(_physicsOutside, bOriBBoxD, tSphere);
 
             var grid = breaching as IMyCubeGrid;
             if (grid == null) return Vector3D.NegativeInfinity;
@@ -803,6 +803,7 @@ namespace DefenseShields
                     if (IsOutside.Contains(grid))
                     {
                         IsOutside.Remove(grid);
+                        //if Vector3.Dot(gridVel, (gridPos - targetPos)) > 0 (or < 0) don't change speed
                         return Vector3D.PositiveInfinity;
                     }
                     return Vector3D.NegativeInfinity;
@@ -835,414 +836,6 @@ namespace DefenseShields
             }
             catch (Exception ex) { Log.Line($"Exception in getBlocks: {ex}"); }
             return collision;
-        }
-
-        private static void SmallInterSectDebuDraw(Vector3D[] physicsOutside, int face, int[][] vertLines, int[] rangedVert, Vector3D bWorldCenter, List<Vector3D> intersections)
-        {
-            //DrawNums(_physicsOutside,zone, Color.AntiqueWhite);
-            DsDebugDraw.DrawLineToNum(physicsOutside, rangedVert[0], bWorldCenter, Color.Red);
-            DsDebugDraw.DrawLineToNum(physicsOutside, rangedVert[1], bWorldCenter, Color.Green);
-            DsDebugDraw.DrawLineToNum(physicsOutside, rangedVert[2], bWorldCenter, Color.Gold);
-
-            int[] closestLineFace;
-            switch (face)
-            {
-                case 0:
-                    closestLineFace = vertLines[rangedVert[0]];
-                    break;
-                case 1:
-                    closestLineFace = vertLines[rangedVert[1]];
-                    break;
-                default:
-                    closestLineFace = vertLines[rangedVert[2]];
-                    break;
-            }
-
-            var c1 = Color.Black;
-            var c2 = Color.Black;
-            //if (checkBackupFace1) c1 = Color.Green;
-            //if (checkBackupFace2) c2 = Color.Gold;
-            c1 = Color.Green;
-            c2 = Color.Gold;
-
-            DsDebugDraw.DrawLineNums(physicsOutside, closestLineFace, Color.Red);
-            //DrawLineNums(_physicsOutside, closestLineFace1, c1);
-            //DrawLineNums(_physicsOutside, closestLineFace2, c2);
-
-            DsDebugDraw.DrawTriVertList(intersections);
-
-            //DrawLineToNum(_physicsOutside, rootVerts, bWorldCenter, Color.HotPink);
-            //DrawLineToNum(_physicsOutside, rootVerts[1], bWorldCenter, Color.Green);
-            //DrawLineToNum(_physicsOutside, rootVerts[2], bWorldCenter, Color.Gold);
-        }
-
-        private static bool CheckFirstFace(int[] firstFace, int secondVertNum)
-        {
-            for (int i = 0; i < firstFace.Length; i++)
-            {
-                if (firstFace[i] == secondVertNum) return false;
-            }
-            return true;
-        }
-
-        private static List<Vector3D> IntersectSmallBox(int[] closestFace, Vector3D[] physicsVerts, BoundingBoxD bWorldAabb)
-        {
-            var boxedTriangles = new List<Vector3D>();
-            for (int i = 0, j = 0; i < closestFace.Length; i += 3, j++)
-            {
-                var v0 = physicsVerts[closestFace[i]];
-                var v1 = physicsVerts[closestFace[i + 1]];
-                var v2 = physicsVerts[closestFace[i + 2]];
-                var test1 = bWorldAabb.IntersectsTriangle(v0, v1, v2);
-
-                if (!test1) continue;
-                boxedTriangles.Add(v0);
-                boxedTriangles.Add(v1);
-                boxedTriangles.Add(v2);
-            }
-            return boxedTriangles;
-        }
-
-
-        private static List<Vector3D> IntersectSmallBoxFaces(int[] closestFace0, int[] closestFace1, int[] closestFace2, Vector3D[] physicsVerts, BoundingBoxD bWorldAabb, bool secondFace, bool thirdFace)
-        {
-            var boxedTriangles = new List<Vector3D>();
-            for (int i = 0, j = 0; i < closestFace0.Length; i += 3, j++)
-            {
-                var v0 = physicsVerts[closestFace0[i]];
-                var v1 = physicsVerts[closestFace0[i + 1]];
-                var v2 = physicsVerts[closestFace0[i + 2]];
-                var test1 = bWorldAabb.IntersectsTriangle(v0, v1, v2);
-
-                if (!test1) continue;
-                boxedTriangles.Add(v0);
-                boxedTriangles.Add(v1);
-                boxedTriangles.Add(v2);
-            }
-            if (boxedTriangles.Count == 0 && secondFace)
-            {
-                for (int i = 0, j = 0; i < closestFace1.Length; i += 3, j++)
-                {
-                    var v0 = physicsVerts[closestFace1[i]];
-                    var v1 = physicsVerts[closestFace1[i + 1]];
-                    var v2 = physicsVerts[closestFace1[i + 2]];
-
-                    var test1 = bWorldAabb.IntersectsTriangle(v0, v1, v2);
-
-                    if (!test1) continue;
-                    boxedTriangles.Add(v0);
-                    boxedTriangles.Add(v1);
-                    boxedTriangles.Add(v2);
-                }
-            }
-            if (boxedTriangles.Count == 0 && thirdFace)
-            {
-                for (int i = 0, j = 0; i < closestFace1.Length; i += 3, j++)
-                {
-                    var v0 = physicsVerts[closestFace2[i]];
-                    var v1 = physicsVerts[closestFace2[i + 1]];
-                    var v2 = physicsVerts[closestFace2[i + 2]];
-
-                    var test1 = bWorldAabb.IntersectsTriangle(v0, v1, v2);
-
-                    if (!test1) continue;
-                    boxedTriangles.Add(v0);
-                    boxedTriangles.Add(v1);
-                    boxedTriangles.Add(v2);
-                }
-            }
-            return boxedTriangles;
-        }
-
-        private static bool GetClosestInOutTri(Vector3D[] physicsOutside, Vector3D[] physicsInside, int[] closestFace, Vector3D bWorldCenter)
-        {
-            var closestTri1 = -1;
-            double triDist1 = 9999999999999999999;
-
-            for (int i = 0; i < closestFace.Length; i += 3)
-            {
-                var ov0 = physicsOutside[closestFace[i]];
-                var ov1 = physicsOutside[closestFace[i + 1]];
-                var ov2 = physicsOutside[closestFace[i + 2]];
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                }
-            }
-
-            var iv0 = physicsInside[closestFace[closestTri1]];
-            var iv1 = physicsInside[closestFace[closestTri1 + 1]];
-            var iv2 = physicsInside[closestFace[closestTri1 + 2]];
-
-            var itri = new Triangle3d(iv0, iv1, iv2);
-            var idistTri = new DistPoint3Triangle3(bWorldCenter, itri);
-            return triDist1 > idistTri.GetSquared();
-        }
-
-        private static int[] GetAllClosestInOutTriBackup(Vector3D[] physicsOutside, Vector3D[] physicsInside, int[] closestFace0, int[] closestFace1, int[] closestFace2, Vector3D bWorldCenter, int[] triNums0, int[] triNums1, int[] triNums2)
-        {
-            var closestTri1 = -1;
-            var closestFace = -1;
-            var status =  new int[2];
-            double triDist1 = 9999999999999999999;
-
-            for (int i = 0; i < closestFace0.Length; i += 3)
-            {
-                var ov0 = physicsOutside[closestFace0[i]];
-                var ov1 = physicsOutside[closestFace0[i + 1]];
-                var ov2 = physicsOutside[closestFace0[i + 2]];
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                    closestFace = 0;
-                }
-            }
-            for (int i = 0, j = 0; i < closestFace1.Length; i += 3, j++)
-            {
-                var skip = false;
-                for (int f = 0; f < triNums0.Length; f++)
-                {
-                    if (triNums0[f] != triNums1[j]) continue;
-                    skip = true;
-                    break;
-                }
-
-                if (skip) continue;
-                var ov0 = physicsOutside[closestFace1[i]];
-                var ov1 = physicsOutside[closestFace1[i + 1]];
-                var ov2 = physicsOutside[closestFace1[i + 2]];
-
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                    closestFace = 1;
-                }
-            }
-
-            for (int i = 0, j  = 0; i < closestFace2.Length; i += 3, j++)
-            {
-                var skip = false;
-                for (int f = 0; f < triNums0.Length; f++)
-                {
-                    if (triNums0[f] != triNums2[j]) continue;
-                    skip = true;
-                    break;
-                }
-                if (skip) continue;
-                for (int f = 0; f < triNums1.Length; f++)
-                {
-                    if (triNums1[f] != triNums2[j]) continue;
-                    skip = true;
-                    break;
-                }
-                if (skip) continue;
-
-                var ov0 = physicsOutside[closestFace2[i]];
-                var ov1 = physicsOutside[closestFace2[i + 1]];
-                var ov2 = physicsOutside[closestFace2[i + 2]];
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                    closestFace = 2;
-                }
-            }
-
-            int[] face;
-            switch (closestFace)
-            {
-                case 0:
-                    face = closestFace0;
-                    break;
-                case 1:
-                    face = closestFace1;
-                    break;
-                default:
-                    face = closestFace2;
-                    break;
-            }
-            
-            var iv0 = physicsInside[face[closestTri1]];
-            var iv1 = physicsInside[face[closestTri1 + 1]];
-            var iv2 = physicsInside[face[closestTri1 + 2]];
-
-            var itri = new Triangle3d(iv0, iv1, iv2);
-            var idistTri = new DistPoint3Triangle3(bWorldCenter, itri);
-
-            status[0] = closestFace;
-            if (triDist1 > idistTri.GetSquared()) status[1] = 1;
-            return status;
-        }
-
-        private static int[] GetAllClosestInOutTri(Vector3D[] physicsOutside, Vector3D[] physicsInside, int[] closestFace0, int[] closestFace1, int[] closestFace2, Vector3D bWorldCenter)
-        {
-            var closestTri1 = -1;
-            var closestFace = -1;
-            var status = new int[5];
-
-            double triDist1 = 9999999999999999999;
-
-            for (int i = 0; i < closestFace0.Length; i += 3)
-            {
-                var ov0 = physicsOutside[closestFace0[i]];
-                var ov1 = physicsOutside[closestFace0[i + 1]];
-                var ov2 = physicsOutside[closestFace0[i + 2]];
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                    closestFace = 0;
-                }
-            }
-
-            for (int i = 0; i < closestFace1.Length; i += 3)
-            {
-                var ov0 = physicsOutside[closestFace1[i]];
-                var ov1 = physicsOutside[closestFace1[i + 1]];
-                var ov2 = physicsOutside[closestFace1[i + 2]];
-
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                    closestFace = 1;
-                }
-            }
-
-            for (int i = 0; i < closestFace2.Length; i += 3)
-            {
-                var ov0 = physicsOutside[closestFace2[i]];
-                var ov1 = physicsOutside[closestFace2[i + 1]];
-                var ov2 = physicsOutside[closestFace2[i + 2]];
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                    closestFace = 2;
-                }
-            }
-
-            int[] face;
-            switch (closestFace)
-            {
-                case 0:
-                    face = closestFace0;
-                    break;
-                case 1:
-                    face = closestFace1;
-                    break;
-                default:
-                    face = closestFace2;
-                    break;
-            }
-
-            status[2] = face[closestTri1];
-            status[3] = face[closestTri1 + 1];
-            status[4] = face[closestTri1 + 2];
-
-            var iv0 = physicsInside[face[closestTri1]];
-            var iv1 = physicsInside[face[closestTri1 + 1]];
-            var iv2 = physicsInside[face[closestTri1 + 2]];
-
-            var itri = new Triangle3d(iv0, iv1, iv2);
-            var idistTri = new DistPoint3Triangle3(bWorldCenter, itri);
-
-            status[0] = closestFace;
-            if (triDist1 > idistTri.GetSquared()) status[1] = 1;
-
-            return status;
-        }
-
-        private static List<Vector3D> ContainPointObb(Vector3D[] physicsVerts, MyOrientedBoundingBoxD bOriBBoxD, BoundingSphereD tSphere)
-        {
-            var containedPoints = new List<Vector3D>();
-            foreach (var vert in physicsVerts)
-            {
-                var vec = vert;
-                if (tSphere.Contains(vec) == ContainmentType.Disjoint) continue;
-                if (bOriBBoxD.Contains(ref vec))
-                {
-                    containedPoints.Add(vec);
-                }
-            }
-            return containedPoints;
-        }
-
-        private static int[] VertRangeFullCheck(Vector3D[] physicsVerts, Vector3D bWorldCenter)
-        {
-            double minValue1 = 9999999999999999999;
-            double minValue2 = 9999999999999999999;
-            double minValue3 = 9999999999999999999;
-
-
-            var minNum1 = -2;
-            var minNum2 = -2;
-            var minNum3 = -2;
-
-
-            for (int p = 0; p < physicsVerts.Length; p++)
-            {
-                var vert = physicsVerts[p];
-                var range = vert - bWorldCenter;
-                var test = (range.X * range.X + range.Y * range.Y + range.Z * range.Z);
-                //var test = Vector3D.DistanceSquared(vert, bWorldCenter);
-                if (test < minValue3)
-                {
-                    if (test < minValue1)
-                    {
-                        minValue3 = minValue2;
-                        minNum3 = minNum2;
-                        minValue2 = minValue1;
-                        minNum2 = minNum1;
-                        minValue1 = test;
-                        minNum1 = p;
-                    }
-                    else if (test < minValue2)
-                    {
-                        minValue3 = minValue2;
-                        minNum3 = minNum2;
-                        minValue2 = test;
-                        minNum2 = p;
-                    }
-                    else
-                    {
-                        minValue3 = test;
-                        minNum3 = p;
-                    }
-                }
-            }
-            return new [] { minNum1, minNum2, minNum3};
         }
 
         private double ContainmentField(IMyEntity breaching, IMyEntity field, Vector3D intersect)
@@ -1378,21 +971,15 @@ namespace DefenseShields
 
                     var contactPoint = ContactPointOutside(killent);
                     var cpDist = Vector3D.Transform(contactPoint, _detectionMatrixInv).LengthSquared();
-                    //var worldPosition = killent.WorldVolume.Center;
-                    //var worldDirection = contactPoint - worldPosition;
-                    //var worldDirection = worldPosition - contactPoint;
-
 
                     var killSphere = new BoundingSphereD(contactPoint, 5f);
                     if (cpDist > 0.95f && _explode == false && _explodeCount == 0)
                     {
-                        //Log.Line($"EXPLOSION! - dist:{cpDist}");
                         _explode = true;
                         MyVisualScriptLogicProvider.CreateExplosion(killSphere.Center, (float)killSphere.Radius, 20000);
                     }
 
                     if (!(cpDist <= 0.99)) return;
-                    //Log.Line($"DoDamage - dist:{cpDist}");
                     var killBlocks = grid.GetBlocksInsideSphere(ref killSphere);
                     MyAPIGateway.Parallel.ForEach(killBlocks, block =>
                     {
@@ -1403,27 +990,6 @@ namespace DefenseShields
             }
             catch (Exception ex) { Log.Line($"Exception in GridKillField: {ex}"); }
         }
-
-        #region Build inside HashSet
-        private void InHashBuilder()
-        {
-            /*
-            var insphere = new BoundingSphereD(_detectionCenter, _range - InOutSpace);
-            var inList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref insphere);
-
-            InHash.Clear();
-            MyAPIGateway.Parallel.ForEach(inList, inent =>
-            {
-                if (!(inent is IMyCubeGrid) && (!(inent is IMyCharacter) || Intersect(inent, false) == Vector3D.NegativeInfinity)) return;
-                lock (InHash)
-                {
-                    if (inent is IMyCubeGrid && IsEnemy(inent)) return;
-                    InHash.Add(inent);
-                }
-            });
-            */
-        }
-        #endregion
 
         #region Web and dispatch all intersecting entities
         private void QuickWebCheck()
@@ -1444,7 +1010,6 @@ namespace DefenseShields
 
         private void WebEntities()
         {
-            if (_count == 0) _dsutil3.Sw.Start();
             var websphere = new BoundingSphereD(_detectionCenter, _range);
             var webList = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref websphere);
             MyAPIGateway.Parallel.ForEach(webList, webent =>
@@ -1489,7 +1054,6 @@ namespace DefenseShields
 
                 //Log.Line($"webEffect unmatched {webent.GetFriendlyName()} {webent.Name} {webent.DisplayName} {webent.EntityId} {webent.Parent} {webent.Components}");
             });
-            if (_count == 0) _dsutil3.StopWatchReport("collision", -1);
         }
         #endregion
 

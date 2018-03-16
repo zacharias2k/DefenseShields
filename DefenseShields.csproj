@@ -240,6 +240,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Guns.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Network\SerializationClasses.cs" />
     <Compile Include="Data\Scripts\DefenseShields\OldCode.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CustomCollision.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\BoxShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\ConvexHullShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\Ellipsoid.cs" />

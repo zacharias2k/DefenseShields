@@ -83,7 +83,7 @@ namespace DefenseShields
 
             foreach (var shield in Components)
             {
-                if (!shield.Block.IsWorking || !shield._initialized) continue;
+                if (!shield.Block.IsWorking || !shield.Initialized) continue;
                 IMyEntity attacker;
                 if (!MyAPIGateway.Entities.TryGetEntityById(info.AttackerId, out attacker) && info.Type != MyDamageType.Deformation) continue;
                 var entId = MyAPIGateway.Entities.GetEntityById(info.AttackerId);
