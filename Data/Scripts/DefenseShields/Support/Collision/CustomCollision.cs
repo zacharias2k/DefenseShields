@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRageMath;
 
 namespace DefenseShields.Support
@@ -42,6 +45,90 @@ namespace DefenseShields.Support
             //DrawLineToNum(_physicsOutside, rootVerts, bWorldCenter, Color.HotPink);
             //DrawLineToNum(_physicsOutside, rootVerts[1], bWorldCenter, Color.Green);
             //DrawLineToNum(_physicsOutside, rootVerts[2], bWorldCenter, Color.Gold);
+        }
+
+        public static Vector3D EjectDirection(IMyCubeGrid grid, Vector3D[] physicsOutside, int[][] vertTris, MyOrientedBoundingBoxD obb, MatrixD matrixInv)
+        {
+            var targetPos = ClosestPointInShield(obb, matrixInv);
+            var gridVel = grid.Physics.LinearVelocity;
+            var gridCenter = grid.PositionComp.WorldVolume.Center;
+            var approching = Vector3.Dot(gridVel, gridCenter - targetPos) < 0;
+            if (approching) grid.Physics.LinearVelocity = gridVel * -0.25f;
+            else return Vector3D.NegativeInfinity;
+            var rangedVerts = new int[3];
+
+            VertRangeFullCheck(physicsOutside, gridCenter, rangedVerts);
+
+            var closestFace0 = vertTris[rangedVerts[0]];
+            var closestFace1 = vertTris[rangedVerts[1]];
+            var closestFace2 = vertTris[rangedVerts[2]];
+
+            var center = GetClosestTriCenter(physicsOutside, closestFace0, closestFace1, closestFace2, gridCenter);
+            return center;
+        }
+
+        public static Vector3D ContactPointOutside(IMyEntity breaching, MatrixD matrix)
+        {
+            var wVol = breaching.PositionComp.WorldVolume;
+            var wDir = matrix.Translation - wVol.Center;
+            var wLen = wDir.Length();
+            var contactPoint = wVol.Center + (wDir / wLen * Math.Min(wLen, wVol.Radius));
+            return contactPoint;
+        }
+
+        public static bool PointInsideShield(Vector3D entCenter, MatrixD matrixInv)
+        {
+            return Vector3D.Transform(entCenter, matrixInv).LengthSquared() <= 1;
+        }
+
+        public static void ClosestCornerInShield(Vector3D[] gridCorners, MatrixD matrixInv, ref Vector3D cloestPoint)
+        {
+            var minValue1 = double.MaxValue;
+
+            for (int i = 0; i < 8; i++)
+            {
+                var point = gridCorners[i];
+                var pointInside = Vector3D.Transform(point, matrixInv).LengthSquared();
+                if (!(pointInside <= 1) || !(pointInside < minValue1)) continue;
+                minValue1 = pointInside;
+                cloestPoint = point;
+            }
+        }
+
+        public static Vector3D ClosestPointInShield(MyOrientedBoundingBoxD bOriBBoxD, MatrixD matrixInv)
+        {
+            var webentPoints = new Vector3D[15];
+            bOriBBoxD.GetCorners(webentPoints, 0);
+
+            webentPoints[8] = bOriBBoxD.Center;
+            webentPoints[9] = (webentPoints[0] + webentPoints[5]) / 2;
+            webentPoints[10] = (webentPoints[3] + webentPoints[7]) / 2;
+            webentPoints[11] = (webentPoints[0] + webentPoints[7]) / 2;
+            webentPoints[12] = (webentPoints[1] + webentPoints[6]) / 2;
+            webentPoints[13] = (webentPoints[4] + webentPoints[7]) / 2;
+            webentPoints[14] = (webentPoints[0] + webentPoints[2]) / 2;
+
+            var minValue1 = double.MaxValue;
+            var closestPoint = Vector3D.NegativeInfinity;
+            for (int i = 0; i < 15; i++)
+            {
+                var point = webentPoints[i];
+                var pointInside = Vector3D.Transform(point, matrixInv).LengthSquared();
+                if (!(pointInside <= 1) || !(pointInside < minValue1)) continue;
+                minValue1 = pointInside;
+                closestPoint = point;
+            }
+            return closestPoint;
+        }
+
+        public static bool AllCornersInShield(MyOrientedBoundingBoxD bOriBBoxD, MatrixD matrixInv)
+        {
+            var gridCorners = new Vector3D[8];
+            bOriBBoxD.GetCorners(gridCorners, 0);
+            var c = 0;
+            for (int i = 0; i < 8; i++)
+                if (Vector3D.Transform(gridCorners[i], matrixInv).LengthSquared() <= 1) c++;
+            return c == 8;
         }
 
         public static bool CheckFirstFace(int[] firstFace, int secondVertNum)
@@ -149,121 +236,11 @@ namespace DefenseShields.Support
             var idistTri = new DistPoint3Triangle3(bWorldCenter, itri);
             return triDist1 > idistTri.GetSquared();
         }
-
-        public static int[] GetAllClosestInOutTriBackup(Vector3D[] physicsOutside, Vector3D[] physicsInside, int[] closestFace0, int[] closestFace1, int[] closestFace2, Vector3D bWorldCenter, int[] triNums0, int[] triNums1, int[] triNums2)
+       
+        public static void GetClosestTriAndFace(Vector3D[] physicsOutside, Vector3D[] physicsInside, int[] closestFace0, int[] closestFace1, int[] closestFace2, Vector3D bWorldCenter, int[] faceTri)
         {
             var closestTri1 = -1;
             var closestFace = -1;
-            var status = new int[2];
-            var triDist1 = double.MaxValue;
-
-            for (int i = 0; i < closestFace0.Length; i += 3)
-            {
-                var ov0 = physicsOutside[closestFace0[i]];
-                var ov1 = physicsOutside[closestFace0[i + 1]];
-                var ov2 = physicsOutside[closestFace0[i + 2]];
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                    closestFace = 0;
-                }
-            }
-            for (int i = 0, j = 0; i < closestFace1.Length; i += 3, j++)
-            {
-                var skip = false;
-                for (int f = 0; f < triNums0.Length; f++)
-                {
-                    if (triNums0[f] != triNums1[j]) continue;
-                    skip = true;
-                    break;
-                }
-
-                if (skip) continue;
-                var ov0 = physicsOutside[closestFace1[i]];
-                var ov1 = physicsOutside[closestFace1[i + 1]];
-                var ov2 = physicsOutside[closestFace1[i + 2]];
-
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                    closestFace = 1;
-                }
-            }
-
-            for (int i = 0, j = 0; i < closestFace2.Length; i += 3, j++)
-            {
-                var skip = false;
-                for (int f = 0; f < triNums0.Length; f++)
-                {
-                    if (triNums0[f] != triNums2[j]) continue;
-                    skip = true;
-                    break;
-                }
-                if (skip) continue;
-                for (int f = 0; f < triNums1.Length; f++)
-                {
-                    if (triNums1[f] != triNums2[j]) continue;
-                    skip = true;
-                    break;
-                }
-                if (skip) continue;
-
-                var ov0 = physicsOutside[closestFace2[i]];
-                var ov1 = physicsOutside[closestFace2[i + 1]];
-                var ov2 = physicsOutside[closestFace2[i + 2]];
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                    closestFace = 2;
-                }
-            }
-
-            int[] face;
-            switch (closestFace)
-            {
-                case 0:
-                    face = closestFace0;
-                    break;
-                case 1:
-                    face = closestFace1;
-                    break;
-                default:
-                    face = closestFace2;
-                    break;
-            }
-
-            var iv0 = physicsInside[face[closestTri1]];
-            var iv1 = physicsInside[face[closestTri1 + 1]];
-            var iv2 = physicsInside[face[closestTri1 + 2]];
-
-            var itri = new Triangle3d(iv0, iv1, iv2);
-            var idistTri = new DistPoint3Triangle3(bWorldCenter, itri);
-
-            status[0] = closestFace;
-            if (triDist1 > idistTri.GetSquared()) status[1] = 1;
-            return status;
-        }
-
-        public static int[] GetAllClosestInOutTri(Vector3D[] physicsOutside, Vector3D[] physicsInside, int[] closestFace0, int[] closestFace1, int[] closestFace2, Vector3D bWorldCenter)
-        {
-            var closestTri1 = -1;
-            var closestFace = -1;
-            var status = new int[5];
 
             var triDist1 = double.MaxValue;
 
@@ -333,21 +310,89 @@ namespace DefenseShields.Support
                     break;
             }
 
-            status[2] = face[closestTri1];
-            status[3] = face[closestTri1 + 1];
-            status[4] = face[closestTri1 + 2];
+            faceTri[0] = closestFace;
+            faceTri[1] = face[closestTri1];
+            faceTri[2] = face[closestTri1 + 1];
+            faceTri[3] = face[closestTri1 + 2];
 
-            var iv0 = physicsInside[face[closestTri1]];
-            var iv1 = physicsInside[face[closestTri1 + 1]];
-            var iv2 = physicsInside[face[closestTri1 + 2]];
+        }
 
-            var itri = new Triangle3d(iv0, iv1, iv2);
-            var idistTri = new DistPoint3Triangle3(bWorldCenter, itri);
+        public static Vector3D GetClosestTriCenter(Vector3D[] physicsOutside, int[] closestFace0, int[] closestFace1, int[] closestFace2, Vector3D bWorldCenter)
+        {
+            var closestTri1 = -1;
+            var closestFace = -1;
 
-            status[0] = closestFace;
-            if (triDist1 > idistTri.GetSquared()) status[1] = 1;
+            var triDist1 = double.MaxValue;
 
-            return status;
+            for (int i = 0; i < closestFace0.Length; i += 3)
+            {
+                var ov0 = physicsOutside[closestFace0[i]];
+                var ov1 = physicsOutside[closestFace0[i + 1]];
+                var ov2 = physicsOutside[closestFace0[i + 2]];
+                var otri = new Triangle3d(ov0, ov1, ov2);
+                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
+
+                var test = odistTri.GetSquared();
+                if (test < triDist1)
+                {
+                    triDist1 = test;
+                    closestTri1 = i;
+                    closestFace = 0;
+                }
+            }
+
+            for (int i = 0; i < closestFace1.Length; i += 3)
+            {
+                var ov0 = physicsOutside[closestFace1[i]];
+                var ov1 = physicsOutside[closestFace1[i + 1]];
+                var ov2 = physicsOutside[closestFace1[i + 2]];
+
+                var otri = new Triangle3d(ov0, ov1, ov2);
+                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
+
+                var test = odistTri.GetSquared();
+                if (test < triDist1)
+                {
+                    triDist1 = test;
+                    closestTri1 = i;
+                    closestFace = 1;
+                }
+            }
+
+            for (int i = 0; i < closestFace2.Length; i += 3)
+            {
+                var ov0 = physicsOutside[closestFace2[i]];
+                var ov1 = physicsOutside[closestFace2[i + 1]];
+                var ov2 = physicsOutside[closestFace2[i + 2]];
+                var otri = new Triangle3d(ov0, ov1, ov2);
+                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
+
+                var test = odistTri.GetSquared();
+                if (test < triDist1)
+                {
+                    triDist1 = test;
+                    closestTri1 = i;
+                    closestFace = 2;
+                }
+            }
+
+            int[] face;
+            switch (closestFace)
+            {
+                case 0:
+                    face = closestFace0;
+                    break;
+                case 1:
+                    face = closestFace1;
+                    break;
+                default:
+                    face = closestFace2;
+                    break;
+            }
+
+            var center = (physicsOutside[face[closestTri1]] + physicsOutside[face[closestTri1 +1]] + physicsOutside[face[closestTri1 + 2]]) / 3;
+
+            return center;
         }
 
         public static List<Vector3D> ContainPointObb(Vector3D[] physicsVerts, MyOrientedBoundingBoxD bOriBBoxD, BoundingSphereD tSphere)
@@ -365,7 +410,95 @@ namespace DefenseShields.Support
             return containedPoints;
         }
 
-        public static int[] VertRangeFullCheck(Vector3D[] physicsVerts, Vector3D bWorldCenter)
+        public static void GetAllClosestInOutTri(Vector3D[] physicsOutside, Vector3D[] physicsInside, int[] closestFace0, int[] closestFace1, int[] closestFace2, Vector3D bWorldCenter, int[] faceInsideTri)
+        {
+            var closestTri1 = -1;
+            var closestFace = -1;
+
+            var triDist1 = double.MaxValue;
+
+            for (int i = 0; i < closestFace0.Length; i += 3)
+            {
+                var ov0 = physicsOutside[closestFace0[i]];
+                var ov1 = physicsOutside[closestFace0[i + 1]];
+                var ov2 = physicsOutside[closestFace0[i + 2]];
+                var otri = new Triangle3d(ov0, ov1, ov2);
+                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
+
+                var test = odistTri.GetSquared();
+                if (test < triDist1)
+                {
+                    triDist1 = test;
+                    closestTri1 = i;
+                    closestFace = 0;
+                }
+            }
+
+            for (int i = 0; i < closestFace1.Length; i += 3)
+            {
+                var ov0 = physicsOutside[closestFace1[i]];
+                var ov1 = physicsOutside[closestFace1[i + 1]];
+                var ov2 = physicsOutside[closestFace1[i + 2]];
+
+                var otri = new Triangle3d(ov0, ov1, ov2);
+                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
+
+                var test = odistTri.GetSquared();
+                if (test < triDist1)
+                {
+                    triDist1 = test;
+                    closestTri1 = i;
+                    closestFace = 1;
+                }
+            }
+
+            for (int i = 0; i < closestFace2.Length; i += 3)
+            {
+                var ov0 = physicsOutside[closestFace2[i]];
+                var ov1 = physicsOutside[closestFace2[i + 1]];
+                var ov2 = physicsOutside[closestFace2[i + 2]];
+                var otri = new Triangle3d(ov0, ov1, ov2);
+                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
+
+                var test = odistTri.GetSquared();
+                if (test < triDist1)
+                {
+                    triDist1 = test;
+                    closestTri1 = i;
+                    closestFace = 2;
+                }
+            }
+
+            int[] face;
+            switch (closestFace)
+            {
+                case 0:
+                    face = closestFace0;
+                    break;
+                case 1:
+                    face = closestFace1;
+                    break;
+                default:
+                    face = closestFace2;
+                    break;
+            }
+
+            faceInsideTri[2] = face[closestTri1];
+            faceInsideTri[3] = face[closestTri1 + 1];
+            faceInsideTri[4] = face[closestTri1 + 2];
+
+            var iv0 = physicsInside[face[closestTri1]];
+            var iv1 = physicsInside[face[closestTri1 + 1]];
+            var iv2 = physicsInside[face[closestTri1 + 2]];
+
+            var itri = new Triangle3d(iv0, iv1, iv2);
+            var idistTri = new DistPoint3Triangle3(bWorldCenter, itri);
+
+            faceInsideTri[0] = closestFace;
+            if (triDist1 > idistTri.GetSquared()) faceInsideTri[1] = 1;
+        }
+
+        public static void VertRangeFullCheck(Vector3D[] physicsVerts, Vector3D bWorldCenter, int[] rangedVerts)
         {
             var minValue1 = double.MaxValue;
             var minValue2 = double.MaxValue;
@@ -408,7 +541,9 @@ namespace DefenseShields.Support
                     }
                 }
             }
-            return new[] { minNum1, minNum2, minNum3 };
+            rangedVerts[0] = minNum1;
+            rangedVerts[1] = minNum2;
+            rangedVerts[2] = minNum3;
         }
     }
 }
