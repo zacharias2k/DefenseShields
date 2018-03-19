@@ -69,26 +69,16 @@ namespace DefenseShields
             IsInit = true;
         }
 
-        public void CheckDamage(object block, ref MyDamageInformation info)
+        public void CheckDamage(object target, ref MyDamageInformation info)
         {
-            if (Components.Count == 0 && (info.Type != MyDamageType.Bullet || info.Type != MyDamageType.Deformation)) return;
+            var block = target as IMySlimBlock;
+            if (block == null) return;
 
-            var ent = block as IMyEntity;
-            var slimBlock = block as IMySlimBlock;
-            if (slimBlock != null) ent = slimBlock.CubeGrid;
-            var player = block as IMyCharacter;
-            if (player != null) ent = player;
-
-            if (ent == null) return;
-
+            if (Components.Count == 0 || (info.Type != MyDamageType.Bullet && info.Type != MyDamageType.Deformation)) return;
             foreach (var shield in Components)
             {
                 if (!shield.Block.IsWorking || !shield.Initialized) continue;
-                IMyEntity attacker;
-                if (!MyAPIGateway.Entities.TryGetEntityById(info.AttackerId, out attacker) && info.Type != MyDamageType.Deformation) continue;
-                var entId = MyAPIGateway.Entities.GetEntityById(info.AttackerId);
-                if (entId == shield.Entity) continue;
-                info.Amount = 0f;
+                if (block.CubeGrid == shield.Block.CubeGrid) info.Amount = 0f;
             }
         }
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using VRage.Collections;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
@@ -45,6 +46,25 @@ namespace DefenseShields.Support
             //DrawLineToNum(_physicsOutside, rootVerts, bWorldCenter, Color.HotPink);
             //DrawLineToNum(_physicsOutside, rootVerts[1], bWorldCenter, Color.Green);
             //DrawLineToNum(_physicsOutside, rootVerts[2], bWorldCenter, Color.Gold);
+        }
+
+        public static Vector3D SmallIntersect(MyConcurrentList<IMySlimBlock> dmgBlocks, IMyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
+        {
+            var contactPoint = ContactPointOutside(grid, matrix);
+            if (!(Vector3D.Transform(contactPoint, matrixInv).LengthSquared() <= 1)) return Vector3D.NegativeInfinity;
+
+            var approching = Vector3.Dot(grid.Physics.LinearVelocity, grid.PositionComp.WorldVolume.Center - contactPoint) < 0;
+            if (approching) grid.Physics.LinearVelocity = grid.Physics.LinearVelocity * -0.25f;
+            var getBlocks = new List<IMySlimBlock>();
+            grid.GetBlocks(getBlocks);
+            lock (dmgBlocks)
+                for (int i = 0; i < getBlocks.Count; i++)
+                {
+                    var block = getBlocks[i];
+                    dmgBlocks.Add(block);
+                    if (dmgBlocks.Count >= 25) break;
+                }
+            return contactPoint;
         }
 
         public static Vector3D EjectDirection(IMyCubeGrid grid, Vector3D[] physicsOutside, int[][] vertTris, MyOrientedBoundingBoxD obb, MatrixD matrixInv)

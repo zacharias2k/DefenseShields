@@ -260,6 +260,11 @@ namespace DefenseShields.Support
             MySimpleObjectDraw.DrawTransparentBox(ref wm, ref box, ref color, MySimpleObjectRasterizer.Solid, 1);
         }
 
+        public static void DrawBox3(MatrixD matrix, BoundingBoxD box, Color color)
+        {
+            MySimpleObjectDraw.DrawTransparentBox(ref matrix, ref box, ref color, MySimpleObjectRasterizer.Solid, 1, 8f, MyStringId.GetOrCompute("square"));
+        }
+
         public static void DrawSphere(BoundingSphereD sphere, Color color)
         {
             var radius = sphere.Radius;
