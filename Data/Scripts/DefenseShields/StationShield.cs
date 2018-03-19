@@ -1,32 +1,30 @@
-﻿using Sandbox.Game;
-using VRage.ObjectBuilders;
-using VRageMath;
-using System;
-using Sandbox.ModAPI.Weapons;
-using System.Collections.Generic;
-using System.Text;
+﻿using DefenseShields.Control;
+using DefenseShields.Support;
+using ParallelTasks;
 using Sandbox.Common.ObjectBuilders;
+using Sandbox.Game;
+using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Character.Components;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
+using Sandbox.ModAPI.Weapons;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Sandbox.Engine.Physics;
+using VRage.Collections;
 using VRage.Game;
+using VRage.Game.Components;
+using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.Definitions;
-using VRage.Game.Components;
 using VRage.ModAPI;
+using VRage.ObjectBuilders;
 using VRage.Utils;
-using VRage.Game.Entity;
-using System.Linq;
-using DefenseShields.Control;
-using VRage.Collections;
-using Sandbox.Game.Entities.Character.Components;
-using DefenseShields.Support;
-using ParallelTasks;
-using Sandbox.Engine.Utils;
-using Sandbox.Game.Entities;
-using Sandbox.Game.GameSystems;
-using Sandbox.Game.Multiplayer;
-using VRage.Game.Models;
+using VRageMath;
+using VRageRender.Voxels;
 
 namespace DefenseShields
 {
@@ -1035,20 +1033,25 @@ namespace DefenseShields
                         case 5:
                             {
                                 var voxelMap = webent as IMyVoxelMap;
+                                var voxelBase = webent as IMyVoxelBase;
+
                                 if (Block.CubeGrid == null || voxelMap == null) return;
                                 var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shield.WorldAABB);
+                                var vOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(voxelMap.WorldAABB);
+                                var voxelSphere = voxelMap.WorldVolume;
+                                var shieldAABB = Block.CubeGrid.WorldAABB;
 
                                 var center = Block.CubeGrid.WorldVolume.Center;
                                 var obbMatrix = _shieldGridMatrix;
                                 obbMatrix.Translation = center;
 
-                                var corners = new Vector3D[8];
-                                var lines = new LineD[28];
+                                //var corners = new Vector3D[8];
+                                //var lines = new LineD[28];
                                 bOriBBoxD.Center = center;
                                 var obbSphere = new BoundingSphereD(bOriBBoxD.Center, bOriBBoxD.HalfExtent.Max());
 
+                                /*
                                 bOriBBoxD.GetCorners(corners, 0);
-                                var cellCount = 0f;
                                 var c = 0;
                                 for (int i = 0; i < corners.Length; i++)
                                 {
@@ -1064,12 +1067,25 @@ namespace DefenseShields
                                 for (int i = 0; i < lines.Length; i++)
                                 {
                                     var line = lines[i];
+                                    var test6 = voxelMap.GetIntersectionWithLineAndBoundingSphere(ref line, 5);
+                                    Log.Line($"{test6.HasValue}");
                                 }
+                                */
+                                //_dsutil1.Sw.Start();
                                 var test = voxelMap.GetIntersectionWithSphere(ref obbSphere);
-                                Log.Line($"test {test}");
-                                DsDebugDraw.DrawSingleVec(bOriBBoxD.Center, (float)bOriBBoxD.HalfExtent.Max(), Color.Blue);
-                                DsDebugDraw.DrawBox2(obbMatrix, bOriBBoxD, Color.Red);
-                                Log.Line($"Intersecting voxelmap");
+                                //var test2 = voxelMap.WorldAABB.Contains(Block.CubeGrid.WorldAABB) == ContainmentType.Intersects;
+                                var test3 = vOriBBoxD.Intersects(ref bOriBBoxD);
+                                var test4 = bOriBBoxD.Intersects(ref voxelSphere);
+                                var test2 = voxelMap.IsBoxIntersectingBoundingBoxOfThisVoxelMap(ref shieldAABB);
+                                var cellCount = 1f;
+                                var test5 = voxelMap.GetVoxelContentInBoundingBox(shieldAABB, out cellCount);
+                                var test6 = voxelMap.GetVoxelCoordinateFromMeters(bOriBBoxD.Center);
+                                //_dsutil1.StopWatchReport("voxel timing", -1);
+                                Log.Line($"test {test} - {test2} - {test3} - {test4} - {test5} - {test6.Length()}");
+                                //DsDebugDraw.DrawSingleVec(bOriBBoxD.Center, (float)bOriBBoxD.HalfExtent.Max(), Color.Blue);
+                                //DsDebugDraw.DrawBox2(obbMatrix, bOriBBoxD, Color.Red);
+                                //DsDebugDraw.DrawBox2(voxelMap.WorldMatrix, vOriBBoxD, Color.Beige);
+                                //DsDebugDraw.DrawSingleVec(voxelSphere.Center, (float)voxelSphere.Radius, Color.Black);
                                 return;
                             }
 
