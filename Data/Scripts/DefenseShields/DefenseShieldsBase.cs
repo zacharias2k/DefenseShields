@@ -24,16 +24,21 @@ namespace DefenseShields
         public static DefenseShieldsBase Instance { get; private set; }
         public readonly MyModContext MyModContext = new MyModContext();
         public readonly Icosphere Icosphere = new Icosphere(6);
+        private DSUtils _dsutil1 = new DSUtils();
+        private DSUtils _dsutil2 = new DSUtils();
+        private DSUtils _dsutil3 = new DSUtils();
 
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
         //public List<DefenseShields> Shields = new List<DefenseShields>();
 
         public override void Draw()
         {
+            _dsutil1.Sw.Start();
             foreach (var s in Components)
             {
                 s.Draw();
             }
+            _dsutil1.StopWatchReport("draw", -1);
         }
 
         public string ModPath()

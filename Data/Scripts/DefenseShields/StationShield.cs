@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Havok;
 using Sandbox.Engine.Physics;
 using VRage.Collections;
 using VRage.Game;
@@ -25,6 +26,7 @@ using VRage.ObjectBuilders;
 using VRage.Utils;
 using VRageMath;
 using VRageRender.Voxels;
+using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 namespace DefenseShields
 {
@@ -63,6 +65,7 @@ namespace DefenseShields
         private bool _buildVertZones = true;
         private bool _buildLines = false;
         private bool _buildTris = false;
+        public bool _voxelMapCollide = false;
         private bool _buildOnce;
         public bool Initialized; 
         private bool _animInit;
@@ -195,7 +198,6 @@ namespace DefenseShields
         #region Simulation
         public override void UpdateBeforeSimulation()
         {
-            //_dsutil3.Sw.Start();
             try
             {
                 if (_count++ == 59)
@@ -204,6 +206,8 @@ namespace DefenseShields
                     _longLoop++;
                     if (_longLoop == 10) _longLoop = 0;
                 }
+                if (_count == 0) _dsutil2.Sw.Start();
+
                 if (_longLoop == 0 && _count == 0) _longLoop10 = true;
                 else _longLoop10 = false;
                 if (_explode && _explodeCount++ == 14) _explodeCount = 0;
@@ -239,13 +243,17 @@ namespace DefenseShields
                     }
                     SyncThreadedEnts();
                     if (_playerwebbed && _enablePhysics) PlayerEffects();
-                    //if (_enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
-                    if (_enablePhysics) WebEntities();
+                    if (_enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
+                    if (_count == 0) _dsutil1.Sw.Start();
+                    if (_enablePhysics && _voxelMapCollide) VoxelWeb();
+                    if (_count == 0) _dsutil1.StopWatchReport("voxel loop", -1);
 
+                    //if (_enablePhysics) WebEntities();
                 }
+                if (_count == 0) _dsutil2.StopWatchReport("main loop", -1);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
-            //_dsutil3.StopWatchReport("main loop", -1);
+
         }
 
         #region Prep / Misc
@@ -527,12 +535,15 @@ namespace DefenseShields
                 var shield = _shield;
                 var impactPos = _worldImpactPosition;
 
-                var cubeBlockLocalMatrix = Block.CubeGrid.LocalMatrix;
-                var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
+                if (impactPos != Vector3D.NegativeInfinity)
+                {
+                    var cubeBlockLocalMatrix = Block.CubeGrid.LocalMatrix;
+                    var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
+                    var worldDirection = impactPos - referenceWorldPosition;
+                    var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(cubeBlockLocalMatrix));
+                    impactPos = localPosition;
+                }
 
-                var worldDirection = impactPos - referenceWorldPosition;
-                var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(cubeBlockLocalMatrix));
-                if (impactPos != Vector3D.NegativeInfinity) impactPos = localPosition;
                 _worldImpactPosition = Vector3D.NegativeInfinity;
 
                 var impactSize = _impactSize;
@@ -548,7 +559,6 @@ namespace DefenseShields
                 if (_prepareDraw.HasValue && !_prepareDraw.Value.IsComplete) _prepareDraw.Value.Wait();
                 if (_prepareDraw.HasValue && _prepareDraw.Value.IsComplete && sphereOnCamera && Block.IsWorking) _icosphere.Draw(renderId);
                 if (Block.IsWorking || drawShapeChanged) _prepareDraw = MyAPIGateway.Parallel.Start(() => PrepareSphere(drawShapeChanged, sphereOnCamera, enemy, lod, prevlod, impactPos, impactSize, shapeMatrix, shield));
-
             }
             catch (Exception ex) { Log.Line($"Exception in Entity Draw: {ex}"); }
         }
@@ -574,8 +584,8 @@ namespace DefenseShields
         {
             int lod;
 
-            if (Distance(650)) lod = 3;
-            else if (Distance(2250)) lod = 3;
+            if (Distance(650)) lod = 2;
+            else if (Distance(2250)) lod = 2;
             else if (Distance(4500)) lod = 2;
             else if (Distance(15000)) lod = 1;
             else if (Distance(25000)) lod = 1;
@@ -639,6 +649,7 @@ namespace DefenseShields
         {
             var relation = 0;
             if (ent == null) return -1;
+            if (ent is IMyVoxelMap && !_gridIsMobile) return -1;
 
             if (ent is IMyCharacter)
             {
@@ -664,7 +675,7 @@ namespace DefenseShields
                 return relation;
             }
             if (ent is IMyMeteor || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo")) relation = 4;
-            if (ent is IMyVoxelMap) relation = 5;
+            if (ent is IMyVoxelMap && _gridIsMobile) relation = 5;
             return relation;
         }
 
@@ -678,20 +689,13 @@ namespace DefenseShields
 
         #region Detect Intersection
 
-        private Vector3D GridIntersect(IMyCubeGrid grid, MyOrientedBoundingBoxD bOriBBoxD, bool impactcheck, bool enemy)
+        private Vector3D ObbIntersect(IMyCubeGrid grid, MyOrientedBoundingBoxD bOriBBoxD, bool impactcheck, bool enemy)
         {
             var contactpoint = ContactPointObb(grid, bOriBBoxD, enemy);
-
-            if (contactpoint != Vector3D.NegativeInfinity)
-            {
-                _impactSize = grid.Physics.Mass;
-                if (impactcheck)
-                {
-                    _worldImpactPosition = contactpoint;
-                }
-                return contactpoint;
-            }
-            return Vector3D.NegativeInfinity;
+            if (contactpoint == Vector3D.NegativeInfinity) return Vector3D.NegativeInfinity;
+            _impactSize = grid.Physics.Mass;
+            if (impactcheck) _worldImpactPosition = contactpoint;
+            return contactpoint;
         }
         #endregion
 
@@ -927,15 +931,37 @@ namespace DefenseShields
 
                 if ((webent is IMyCubeGrid && webent as IMyCubeGrid != Block.CubeGrid && relation != 0) || (_gridIsMobile && webent is IMyVoxelMap))
                 {
-                    Log.Line($"relation: {relation} - size: {webent.PositionComp.WorldVolume.Radius} - contained: {CustomCollision.PointInsideShield(webent.PositionComp.WorldVolume.Center, _detectionMatrixInv)} inside: {CustomCollision.PointInsideShield(webent.PositionComp.WorldVolume.Center, _detectionInsideInv)}");
                     _enablePhysics = true;
                     return;
                 }
             }
         }
 
+        private void VoxelWeb()
+        {
+            var pruneSphere = new BoundingSphereD(_detectionCenter, _range);
+            var pruneList = new List<MyEntity>();
+            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList, MyEntityQueryType.Static);
+            for (int i = 0; i < pruneList.Count; i++)
+            {
+                var webent = pruneList[i];
+
+                if (!(webent is IMyVoxelBase)) continue;
+
+                var voxelMap = webent as IMyVoxelMap;
+                if (Block.CubeGrid == null || voxelMap == null) return;
+
+                var center = Block.CubeGrid.WorldVolume.Center;
+                var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shield.WorldAABB);
+                bOriBBoxD.Center = center;
+                CustomCollision.VoxelCollisionStage2(Block.CubeGrid, _physicsOutside, voxelMap, bOriBBoxD);
+                return;
+            }
+        }
+
         private void WebEntities()
         {
+            if (_count == 0) _dsutil3.Sw.Start();
             try
             {
                 //_dsutil1.Sw.Start();
@@ -957,7 +983,7 @@ namespace DefenseShields
                 //MyAPIGateway.Parallel.ForEach(cleanHash, webent =>
                 foreach (var webent in cleanHash)
                 {
-                    Log.Line($"check1 - Name:{webent.DisplayName} - Relation:{EntRelation(webent)} - Size: {webent.PositionComp.WorldVolume.Radius}");
+                    //Log.Line($"check1 - Name:{webent.DisplayName} - Relation:{EntRelation(webent)} - Size: {webent.PositionComp.WorldVolume.Radius}");
                     switch (EntRelation(webent)) // -1=null, 0=friend, 1=enemyPlayer, 2=enemyGrid, 3=neutralGrid, 4=other, 5=VoxelMap 
                     {
                         case 1:
@@ -987,7 +1013,7 @@ namespace DefenseShields
                                     lock (Eject) Eject.Add(grid, ejectDir);
                                     return;
                                 }
-                                var intersect = GridIntersect(grid, bOriBBoxD, true, true);
+                                var intersect = ObbIntersect(grid, bOriBBoxD, true, true);
                                 if (intersect != Vector3D.NegativeInfinity)
                                     ContainmentField(grid, Block.CubeGrid, intersect);
                                 return;
@@ -1016,7 +1042,7 @@ namespace DefenseShields
                                     lock (Eject) Eject.Add(grid, ejectDir);
                                     return;
                                 }
-                                var intersect = GridIntersect(grid, bOriBBoxD, true, false);
+                                var intersect = ObbIntersect(grid, bOriBBoxD, true, false);
                                 if (intersect != Vector3D.NegativeInfinity)
                                     ContainmentField(grid, Block.CubeGrid, intersect);
                                 return;
@@ -1033,69 +1059,24 @@ namespace DefenseShields
                         case 5:
                             {
                                 var voxelMap = webent as IMyVoxelMap;
-                                var voxelBase = webent as IMyVoxelBase;
-
                                 if (Block.CubeGrid == null || voxelMap == null) return;
-                                var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shield.WorldAABB);
-                                var vOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(voxelMap.WorldAABB);
-                                var voxelSphere = voxelMap.WorldVolume;
-                                var shieldAABB = Block.CubeGrid.WorldAABB;
 
                                 var center = Block.CubeGrid.WorldVolume.Center;
-                                var obbMatrix = _shieldGridMatrix;
-                                obbMatrix.Translation = center;
-
-                                //var corners = new Vector3D[8];
-                                //var lines = new LineD[28];
+                                var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shield.WorldAABB);
                                 bOriBBoxD.Center = center;
-                                var obbSphere = new BoundingSphereD(bOriBBoxD.Center, bOriBBoxD.HalfExtent.Max());
-
-                                /*
-                                bOriBBoxD.GetCorners(corners, 0);
-                                var c = 0;
-                                for (int i = 0; i < corners.Length; i++)
-                                {
-                                    var pCorner = corners[i];
-                                    for (int k = i + 1; k < 8; k++)
-                                    {
-                                        var sCorner = corners[k];
-                                        var line = new LineD(pCorner, sCorner);
-                                        lines[c] = line;
-                                        c++;
-                                    }
-                                }
-                                for (int i = 0; i < lines.Length; i++)
-                                {
-                                    var line = lines[i];
-                                    var test6 = voxelMap.GetIntersectionWithLineAndBoundingSphere(ref line, 5);
-                                    Log.Line($"{test6.HasValue}");
-                                }
-                                */
-                                //_dsutil1.Sw.Start();
-                                var test = voxelMap.GetIntersectionWithSphere(ref obbSphere);
-                                //var test2 = voxelMap.WorldAABB.Contains(Block.CubeGrid.WorldAABB) == ContainmentType.Intersects;
-                                var test3 = vOriBBoxD.Intersects(ref bOriBBoxD);
-                                var test4 = bOriBBoxD.Intersects(ref voxelSphere);
-                                var test2 = voxelMap.IsBoxIntersectingBoundingBoxOfThisVoxelMap(ref shieldAABB);
-                                var cellCount = 1f;
-                                var test5 = voxelMap.GetVoxelContentInBoundingBox(shieldAABB, out cellCount);
-                                var test6 = voxelMap.GetVoxelCoordinateFromMeters(bOriBBoxD.Center);
-                                //_dsutil1.StopWatchReport("voxel timing", -1);
-                                Log.Line($"test {test} - {test2} - {test3} - {test4} - {test5} - {test6.Length()}");
-                                //DsDebugDraw.DrawSingleVec(bOriBBoxD.Center, (float)bOriBBoxD.HalfExtent.Max(), Color.Blue);
-                                //DsDebugDraw.DrawBox2(obbMatrix, bOriBBoxD, Color.Red);
-                                //DsDebugDraw.DrawBox2(voxelMap.WorldMatrix, vOriBBoxD, Color.Beige);
-                                //DsDebugDraw.DrawSingleVec(voxelSphere.Center, (float)voxelSphere.Radius, Color.Black);
+                                var collide = CustomCollision.VoxelCollisionStage1(Block.CubeGrid, voxelMap, bOriBBoxD);
+                                _voxelMapCollide = false;
+                                if (collide) _voxelMapCollide = true;
                                 return;
                             }
 
                         default:
                             return;
                     }
-                }//);
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in WebEntities: {ex}"); }
-            //_dsutil1.StopWatchReport("webbed", -1);
+            if (_count == 0) _dsutil3.StopWatchReport("Webbing", -1);
         }
         #endregion
 

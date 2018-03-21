@@ -177,6 +177,9 @@ namespace DefenseShields.Support
             private readonly MyStringId _faceId3 = MyStringId.GetOrCompute("Glass");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private readonly MyStringId _faceId4 = MyStringId.GetOrCompute("CockpitGlassInside");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
 
+            private DSUtils _dsutil1 = new DSUtils();
+            private DSUtils _dsutil2 = new DSUtils();
+            private DSUtils _dsutil3 = new DSUtils();
 
             public Instance(Icosphere backing)
             {
@@ -268,12 +271,13 @@ namespace DefenseShields.Support
 
                 StepEffects();
                 InitColors();
-                if (_impactsFinished && !(entChanged || prevLod != _lod)) return;
+                if (_impactsFinished && prevLod == _lod) return;
 
                 //Log.Line($"impacts: {_impactCount[4]} {_impactCount[3]} {_impactCount[2]} {_impactCount[1]} {_impactCount[0]}");
 
                 if (_impactCount[4] != 0) MyAPIGateway.Parallel.Start(Models);
-                ColorAssignments(entChanged, impactSize, impactSpeed, prevLod);
+                ColorAssignments(impactSize, impactSpeed, prevLod);
+
                 // vec3 localSpherePositionOfImpact;
                 //    foreach (vec3 triangleCom in triangles) {
                 //    var surfDistance = Math.acos(dot(triangleCom, localSpherePositionOfImpact));
@@ -287,12 +291,10 @@ namespace DefenseShields.Support
                 // Multiplying by the sphere radius(1 for the unit sphere in question) gives the arc length.
             }
 
-            private void ColorAssignments(bool entChanged, float impactSize, int impactSpeed, int prevLod)
+            private void ColorAssignments(float impactSize, int impactSpeed, int prevLod)
             {
                 //Log.Line($"colorAssignments - entChanged: {entChanged} - lod: {_lod} - prevlod: {prevLod}");
-
                 var ib = _backing.IndexBuffer[_lod];
-
                 for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
                 {
                     var i0 = ib[i];
@@ -303,7 +305,7 @@ namespace DefenseShields.Support
                     var v1 = _vertexBuffer[i1];
                     var v2 = _vertexBuffer[i2];
 
-                    if (entChanged || prevLod != _lod)
+                    if (prevLod != _lod)
                     {
                         var lclPos = (v0 + v1 + v2) / 3 - _matrix.Translation;
                         var normlclPos = Vector3D.Normalize(lclPos);
@@ -339,6 +341,7 @@ namespace DefenseShields.Support
 
             public void Draw(uint renderId)
             {
+                //_dsutil1.Sw.Start();
                 try
                 {
                     var faceMaterial = _faceId2;
@@ -371,6 +374,7 @@ namespace DefenseShields.Support
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in IcoSphere Draw - renderId {renderId}: {ex}"); }
+                //_dsutil1.StopWatchReport("Draw", -1);
             }
 
             private void ComputeImpacts()

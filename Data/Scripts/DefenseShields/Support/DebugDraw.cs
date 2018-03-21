@@ -183,7 +183,7 @@ namespace DefenseShields.Support
             MySimpleObjectDraw.DrawLine(v0, v1, lineId, ref c, 0.25f);
         }
 
-        public static void DrawLineToVec(Vector3D[] physicsVerts, Vector3D toVec, Vector3D fromVec, Color color)
+        public static void DrawLineToVec(Vector3D toVec, Vector3D fromVec, Color color)
         {
             var c = color.ToVector4();
             var lineId = MyStringId.GetOrCompute("Square");

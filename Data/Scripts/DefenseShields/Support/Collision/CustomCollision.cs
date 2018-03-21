@@ -1,51 +1,102 @@
 ﻿using System;
 using System.Collections.Generic;
+using Sandbox.Engine.Physics;
+using Sandbox.Engine.Voxels;
+using Sandbox.Game.Entities;
+using Sandbox.Game.WorldEnvironment.ObjectBuilders;
+using Sandbox.ModAPI;
+using Sandbox.ModAPI.Ingame;
 using VRage.Collections;
+using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
+using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 namespace DefenseShields.Support
 {
     internal static class CustomCollision
     {
-        public static void SmallIntersectDebugDraw(Vector3D[] physicsOutside, int face, int[][] vertLines, int[] rangedVert, Vector3D bWorldCenter, List<Vector3D> intersections)
+        public static void VoxelCollision(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, IMyVoxelMap voxelMap, MyOrientedBoundingBoxD bOriBBoxD)
         {
-            //DrawNums(_physicsOutside,zone, Color.AntiqueWhite);
-            DsDebugDraw.DrawLineToNum(physicsOutside, rangedVert[0], bWorldCenter, Color.Red);
-            DsDebugDraw.DrawLineToNum(physicsOutside, rangedVert[1], bWorldCenter, Color.Green);
-            DsDebugDraw.DrawLineToNum(physicsOutside, rangedVert[2], bWorldCenter, Color.Gold);
-
-            int[] closestLineFace;
-            switch (face)
+            var sVel = shieldGrid.Physics.LinearVelocity;
+            var sVelSqr = sVel.LengthSquared();
+            var sAvelSqr = shieldGrid.Physics.AngularVelocity.LengthSquared();
+            var voxelSphere = voxelMap.WorldVolume;
+            var obbSphere = new BoundingSphereD(bOriBBoxD.Center, bOriBBoxD.HalfExtent.Max());
+            var lerpedVerts = new Vector3D[642];
+            var shieldGridMass = shieldGrid.Physics.Mass;
+            for (int i = 0; i < 642; i++)
             {
-                case 0:
-                    closestLineFace = vertLines[rangedVert[0]];
-                    break;
-                case 1:
-                    closestLineFace = vertLines[rangedVert[1]];
-                    break;
-                default:
-                    closestLineFace = vertLines[rangedVert[2]];
-                    break;
+                var newVert = Vector3D.Lerp(physicsVerts[i], bOriBBoxD.Center, -0.1d);
+                lerpedVerts[i] = newVert;
             }
 
-            var c1 = Color.Black;
-            var c2 = Color.Black;
-            //if (checkBackupFace1) c1 = Color.Green;
-            //if (checkBackupFace2) c2 = Color.Gold;
-            c1 = Color.Green;
-            c2 = Color.Gold;
+            var voxelHitVecs = new List<Vector3D>();
+            const int filter = CollisionLayers.VoxelCollisionLayer;
+            if ((sVelSqr > 0.00001 || sAvelSqr > 0.00001) && voxelMap.GetIntersectionWithSphere(ref obbSphere))
+            {
+                //var myvoxelmap = (MyVoxelBase)voxelMap;
+                var obbSphereTest = bOriBBoxD.Intersects(ref voxelSphere);
+                if (!obbSphereTest) return;
+                for (int i = 0; i < 642; i++)
+                {
+                    IHitInfo hit = null;
+                    var from = physicsVerts[i];
+                    var to = lerpedVerts[i];
+                    var dir = to - from;
+                    if (sAvelSqr < 1e-4f && Vector3D.Dot(dir, sVel) < 0) continue;
+                    MyAPIGateway.Physics.CastRay(from, to, out hit, filter);
+                    if (hit?.HitEntity is IMyVoxelMap) voxelHitVecs.Add(hit.Position);
+                    //DsDebugDraw.DrawLineToVec(from, to, Color.Black);
+                }
+            }
+            for (int i = 0; i < voxelHitVecs.Count; i++) shieldGrid.Physics.ApplyImpulse((bOriBBoxD.Center - voxelHitVecs[i]) * shieldGridMass / 100, voxelHitVecs[i]);
+        }
 
-            DsDebugDraw.DrawLineNums(physicsOutside, closestLineFace, Color.Red);
-            //DrawLineNums(_physicsOutside, closestLineFace1, c1);
-            //DrawLineNums(_physicsOutside, closestLineFace2, c2);
+        public static bool VoxelCollisionStage1(IMyCubeGrid shieldGrid, IMyVoxelMap voxelMap, MyOrientedBoundingBoxD bOriBBoxD)
+        {
+            var sVelSqr = shieldGrid.Physics.LinearVelocity.LengthSquared();
+            var sAvelSqr = shieldGrid.Physics.AngularVelocity.LengthSquared();
+            var voxelSphere = voxelMap.WorldVolume;
+            var obbSphere = new BoundingSphereD(bOriBBoxD.Center, bOriBBoxD.HalfExtent.Max());
 
-            DsDebugDraw.DrawTriVertList(intersections);
+            if ((sVelSqr > 0.00001 || sAvelSqr > 0.00001) && voxelMap.GetIntersectionWithSphere(ref obbSphere))
+            {
+                //var myvoxelmap = (MyVoxelBase)voxelMap;
+                var obbSphereTest = bOriBBoxD.Intersects(ref voxelSphere);
+                return obbSphereTest;
+            }
+            return false;
+        }
 
-            //DrawLineToNum(_physicsOutside, rootVerts, bWorldCenter, Color.HotPink);
-            //DrawLineToNum(_physicsOutside, rootVerts[1], bWorldCenter, Color.Green);
-            //DrawLineToNum(_physicsOutside, rootVerts[2], bWorldCenter, Color.Gold);
+        public static void VoxelCollisionStage2(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, IMyVoxelMap voxelMap, MyOrientedBoundingBoxD bOriBBoxD)
+        {
+            var sVel = shieldGrid.Physics.LinearVelocity;
+            var sAvelSqr = shieldGrid.Physics.AngularVelocity.LengthSquared();
+            var lerpedVerts = new Vector3D[642];
+            var shieldGridMass = shieldGrid.Physics.Mass;
+
+            for (int i = 0; i < 642; i++)
+            {
+                var newVert = Vector3D.Lerp(physicsVerts[i], bOriBBoxD.Center, -0.1d);
+                lerpedVerts[i] = newVert;
+            }
+
+            var voxelHitVecs = new List<Vector3D>();
+            const int filter = CollisionLayers.VoxelCollisionLayer;
+            for (int i = 0; i < 642; i++)
+            {
+                IHitInfo hit = null;
+                var from = physicsVerts[i];
+                var to = lerpedVerts[i];
+                var dir = to - from;
+                if (sAvelSqr < 1e-4f && Vector3D.Dot(dir, sVel) < 0) continue;
+                MyAPIGateway.Physics.CastRay(from, to, out hit, filter);
+                if (hit?.HitEntity is IMyVoxelMap) voxelHitVecs.Add(hit.Position);
+                //DsDebugDraw.DrawLineToVec(from, to, Color.Black);
+            }
+            for (int i = 0; i < voxelHitVecs.Count; i++) shieldGrid.Physics.ApplyImpulse((bOriBBoxD.Center - voxelHitVecs[i]) * shieldGridMass / 100, voxelHitVecs[i]);
         }
 
         public static Vector3D SmallIntersect(MyConcurrentList<IMySlimBlock> dmgBlocks, IMyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
@@ -175,7 +226,6 @@ namespace DefenseShields.Support
                 intersections.Add(v2);
             }
         }
-
 
         public static List<Vector3D> IntersectSmallBoxFaces(int[] closestFace0, int[] closestFace1, int[] closestFace2, Vector3D[] physicsVerts, BoundingBoxD bWorldAabb, bool secondFace, bool thirdFace)
         {
@@ -564,6 +614,45 @@ namespace DefenseShields.Support
             rangedVerts[0] = minNum1;
             rangedVerts[1] = minNum2;
             rangedVerts[2] = minNum3;
+        }
+
+        public static void SmallIntersectDebugDraw(Vector3D[] physicsOutside, int face, int[][] vertLines, int[] rangedVert, Vector3D bWorldCenter, List<Vector3D> intersections)
+        {
+            //DrawNums(_physicsOutside,zone, Color.AntiqueWhite);
+            DsDebugDraw.DrawLineToNum(physicsOutside, rangedVert[0], bWorldCenter, Color.Red);
+            DsDebugDraw.DrawLineToNum(physicsOutside, rangedVert[1], bWorldCenter, Color.Green);
+            DsDebugDraw.DrawLineToNum(physicsOutside, rangedVert[2], bWorldCenter, Color.Gold);
+
+            int[] closestLineFace;
+            switch (face)
+            {
+                case 0:
+                    closestLineFace = vertLines[rangedVert[0]];
+                    break;
+                case 1:
+                    closestLineFace = vertLines[rangedVert[1]];
+                    break;
+                default:
+                    closestLineFace = vertLines[rangedVert[2]];
+                    break;
+            }
+
+            var c1 = Color.Black;
+            var c2 = Color.Black;
+            //if (checkBackupFace1) c1 = Color.Green;
+            //if (checkBackupFace2) c2 = Color.Gold;
+            c1 = Color.Green;
+            c2 = Color.Gold;
+
+            DsDebugDraw.DrawLineNums(physicsOutside, closestLineFace, Color.Red);
+            //DrawLineNums(_physicsOutside, closestLineFace1, c1);
+            //DrawLineNums(_physicsOutside, closestLineFace2, c2);
+
+            DsDebugDraw.DrawTriVertList(intersections);
+
+            //DrawLineToNum(_physicsOutside, rootVerts, bWorldCenter, Color.HotPink);
+            //DrawLineToNum(_physicsOutside, rootVerts[1], bWorldCenter, Color.Green);
+            //DrawLineToNum(_physicsOutside, rootVerts[2], bWorldCenter, Color.Gold);
         }
     }
 }
