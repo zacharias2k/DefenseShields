@@ -243,10 +243,10 @@ namespace DefenseShields
                     }
                     SyncThreadedEnts();
                     if (_playerwebbed && _enablePhysics) PlayerEffects();
-                    if (_enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
-                    if (_count == 0) _dsutil1.Sw.Start();
-                    if (_enablePhysics && _voxelMapCollide) VoxelWeb();
-                    if (_count == 0) _dsutil1.StopWatchReport("voxel loop", -1);
+                    if (_enablePhysics) MyAPIGateway.Parallel.Start(WebEntities);
+                    //if (_count == 0) _dsutil1.Sw.Start();
+                    //if (_enablePhysics && _voxelMapCollide) MyAPIGateway.Parallel.Start(VoxelWeb);
+                    //if (_count == 0) _dsutil1.StopWatchReport("voxel loop", -1);
 
                     //if (_enablePhysics) WebEntities();
                 }
@@ -954,7 +954,7 @@ namespace DefenseShields
                 var center = Block.CubeGrid.WorldVolume.Center;
                 var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shield.WorldAABB);
                 bOriBBoxD.Center = center;
-                CustomCollision.VoxelCollisionStage2(Block.CubeGrid, _physicsOutside, voxelMap, bOriBBoxD);
+                CustomCollision.VoxelCollisionStage2Test(Block.CubeGrid, _physicsOutside, voxelMap, bOriBBoxD);
                 return;
             }
         }
@@ -1064,9 +1064,12 @@ namespace DefenseShields
                                 var center = Block.CubeGrid.WorldVolume.Center;
                                 var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shield.WorldAABB);
                                 bOriBBoxD.Center = center;
-                                var collide = CustomCollision.VoxelCollisionStage1(Block.CubeGrid, voxelMap, bOriBBoxD);
-                                _voxelMapCollide = false;
-                                if (collide) _voxelMapCollide = true;
+                                //var collide = CustomCollision.VoxelCollisionStage1(Block.CubeGrid, voxelMap, bOriBBoxD);
+                                _dsutil1.Sw.Start();
+                                CustomCollision.VoxelCollisionSphere(Block.CubeGrid, _physicsOutside, voxelMap, bOriBBoxD);
+                                _dsutil1.StopWatchReport("voxel", -1);
+                                //_voxelMapCollide = false;
+                                //if (collide) _voxelMapCollide = true;
                                 return;
                             }
 

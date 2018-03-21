@@ -33,12 +33,12 @@ namespace DefenseShields
 
         public override void Draw()
         {
-            _dsutil1.Sw.Start();
+            //_dsutil1.Sw.Start();
             foreach (var s in Components)
             {
                 s.Draw();
             }
-            _dsutil1.StopWatchReport("draw", -1);
+            //_dsutil1.StopWatchReport("draw", -1);
         }
 
         public string ModPath()
