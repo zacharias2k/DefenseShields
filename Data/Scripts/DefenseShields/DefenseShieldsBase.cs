@@ -33,12 +33,20 @@ namespace DefenseShields
 
         public override void Draw()
         {
-            //_dsutil1.Sw.Start();
-            foreach (var s in Components)
+            var sphereOnCamera = new bool[Components.Count];
+            var onCount = 0;
+            for (int i = 0; i < Components.Count; i++)
             {
-                s.Draw();
+                var s = Components[i];
+                var sp = new BoundingSphereD(s.Entity.GetPosition(), s._range);
+                if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp)) continue;
+                sphereOnCamera[i] = true;
+                onCount++;
             }
-            //_dsutil1.StopWatchReport("draw", -1);
+            _dsutil1.Sw.Start();
+            for (int i = 0; i < Components.Count; i++) Components[i].Draw(onCount, sphereOnCamera[i]);
+            _dsutil1.StopWatchReport("draw", -1);
+
         }
 
         public string ModPath()

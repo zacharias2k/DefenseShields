@@ -246,7 +246,7 @@ namespace DefenseShields.Support
                 }
             }
 
-            public void ComputeEffects(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, bool sphereOnCamera, IMyEntity shield, int prevLod)
+            public void ComputeEffects(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, IMyEntity shield, int prevLod)
             {
                 _shield = shield;
                 _enemy = enemy;
@@ -261,9 +261,8 @@ namespace DefenseShields.Support
                 var impactSpeed = 2;
                 if (impactSize < 4) impactSpeed = 1;
 
-                if (entChanged || prevLod != _lod)
+                if (prevLod != _lod) // entChanged || Not sure if I need
                 {
-                    //Log.Line($"ComputeEffects - entChanged: {entChanged} - lod: {_lod} - prevlod: {prevLod}");
                     var ib = _backing.IndexBuffer[_lod];
                     Array.Resize(ref _preCalcNormLclPos, ib.Length / 3);
                     Array.Resize(ref _triColorBuffer, ib.Length / 3);

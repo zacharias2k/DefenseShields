@@ -39,7 +39,7 @@ namespace DefenseShields
 
         private float _power = 0.0001f;
         private float _animStep;
-        private float _range;
+        public float _range;
         private float _width;
         private float _height;
         private float _depth;
@@ -65,7 +65,6 @@ namespace DefenseShields
         private bool _buildVertZones = true;
         private bool _buildLines = false;
         private bool _buildTris = false;
-        public bool _voxelMapCollide = false;
         private bool _buildOnce;
         public bool Initialized; 
         private bool _animInit;
@@ -243,11 +242,9 @@ namespace DefenseShields
                     }
                     SyncThreadedEnts();
                     if (_playerwebbed && _enablePhysics) PlayerEffects();
-                    if (_enablePhysics) MyAPIGateway.Parallel.Start(WebEntities);
+                    if (_enablePhysics) MyAPIGateway.Parallel.StartBackground(WebEntities);
                     //if (_count == 0) _dsutil1.Sw.Start();
-                    //if (_enablePhysics && _voxelMapCollide) MyAPIGateway.Parallel.Start(VoxelWeb);
                     //if (_count == 0) _dsutil1.StopWatchReport("voxel loop", -1);
-
                     //if (_enablePhysics) WebEntities();
                 }
                 if (_count == 0) _dsutil2.StopWatchReport("main loop", -1);
@@ -521,7 +518,7 @@ namespace DefenseShields
 
         #region Shield Draw
         private Task? _prepareDraw = null;
-        public void Draw()
+        public void Draw(int onCount, bool sphereOnCamera)
         {
             try
             {
@@ -531,9 +528,13 @@ namespace DefenseShields
                 var drawShapeChanged = _entityChanged;
                 _entityChanged = false;
                 var prevlod = _prevLod;
-                var lod = CalculateLod();
                 var shield = _shield;
                 var impactPos = _worldImpactPosition;
+                var enemy = false;
+
+                var relation = MyAPIGateway.Session.Player.GetRelationTo(Block.OwnerId);
+                if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
+                var lod = CalculateLod(onCount);
 
                 if (impactPos != Vector3D.NegativeInfinity)
                 {
@@ -549,24 +550,20 @@ namespace DefenseShields
                 var impactSize = _impactSize;
 
                 var shapeMatrix = _shieldShapeMatrix;
-                var enemy = false;
-                var relation = MyAPIGateway.Session.Player.GetRelationTo(Block.OwnerId);
-                if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
+
                 var renderId = GetRenderId();
 
-                var sp = new BoundingSphereD(Entity.GetPosition(), _range);
-                var sphereOnCamera = MyAPIGateway.Session.Camera.IsInFrustum(ref sp);
                 if (_prepareDraw.HasValue && !_prepareDraw.Value.IsComplete) _prepareDraw.Value.Wait();
                 if (_prepareDraw.HasValue && _prepareDraw.Value.IsComplete && sphereOnCamera && Block.IsWorking) _icosphere.Draw(renderId);
-                if (Block.IsWorking || drawShapeChanged) _prepareDraw = MyAPIGateway.Parallel.Start(() => PrepareSphere(drawShapeChanged, sphereOnCamera, enemy, lod, prevlod, impactPos, impactSize, shapeMatrix, shield));
+                if (Block.IsWorking || drawShapeChanged) _prepareDraw = MyAPIGateway.Parallel.Start(() => PrepareSphere(drawShapeChanged, enemy, lod, prevlod, impactPos, impactSize, shapeMatrix, shield));
             }
             catch (Exception ex) { Log.Line($"Exception in Entity Draw: {ex}"); }
         }
 
-        private void PrepareSphere(bool drawShapeChanged, bool sphereOnCamera, bool enemy, int lod, int prevlod, Vector3D impactPos, float impactSize, MatrixD shapeMatrix,  IMyEntity shield)
+        private void PrepareSphere(bool drawShapeChanged, bool enemy, int lod, int prevlod, Vector3D impactPos, float impactSize, MatrixD shapeMatrix,  IMyEntity shield)
         {
             if (drawShapeChanged || lod != prevlod) _icosphere.CalculateTransform(shapeMatrix, lod);
-            _icosphere.ComputeEffects(shapeMatrix, impactPos, impactSize, drawShapeChanged, enemy, sphereOnCamera, shield, prevlod);
+            _icosphere.ComputeEffects(shapeMatrix, impactPos, impactSize, drawShapeChanged, enemy, shield, prevlod);
         }
 
         #endregion
@@ -580,15 +577,12 @@ namespace DefenseShields
             return range;
         }
 
-        private int CalculateLod()
+        private int CalculateLod(int onCount)
         {
-            int lod;
+            var lod = 2;
 
-            if (Distance(650)) lod = 2;
-            else if (Distance(2250)) lod = 2;
-            else if (Distance(4500)) lod = 2;
-            else if (Distance(15000)) lod = 1;
-            else if (Distance(25000)) lod = 1;
+            if (Distance(2500) && onCount == 1) lod = 3;
+            else if (Distance(8000) && onCount < 7) lod = 2;
             else lod = 1;
 
             _prevLod = lod;
@@ -650,10 +644,9 @@ namespace DefenseShields
             var relation = 0;
             if (ent == null) return -1;
             if (ent is IMyVoxelMap && !_gridIsMobile) return -1;
-
             if (ent is IMyCharacter)
             {
-                var dude = MyAPIGateway.Players.GetPlayerControllingEntity(ent).IdentityId;
+                var dude = (ent as IMyCharacter).EntityId;
                 var playerrelationship = Block.GetUserRelationToOwner(dude);
                 if (playerrelationship != MyRelationsBetweenPlayerAndBlock.Owner &&
                     playerrelationship != MyRelationsBetweenPlayerAndBlock.FactionShare) relation = 1;
@@ -937,34 +930,11 @@ namespace DefenseShields
             }
         }
 
-        private void VoxelWeb()
-        {
-            var pruneSphere = new BoundingSphereD(_detectionCenter, _range);
-            var pruneList = new List<MyEntity>();
-            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList, MyEntityQueryType.Static);
-            for (int i = 0; i < pruneList.Count; i++)
-            {
-                var webent = pruneList[i];
-
-                if (!(webent is IMyVoxelBase)) continue;
-
-                var voxelMap = webent as IMyVoxelMap;
-                if (Block.CubeGrid == null || voxelMap == null) return;
-
-                var center = Block.CubeGrid.WorldVolume.Center;
-                var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shield.WorldAABB);
-                bOriBBoxD.Center = center;
-                CustomCollision.VoxelCollisionStage2Test(Block.CubeGrid, _physicsOutside, voxelMap, bOriBBoxD);
-                return;
-            }
-        }
-
         private void WebEntities()
         {
             if (_count == 0) _dsutil3.Sw.Start();
             try
             {
-                //_dsutil1.Sw.Start();
                 var pruneSphere = new BoundingSphereD(_detectionCenter, _range);
                 var pruneList = new List<MyEntity>();
                 var cleanHash = new MyConcurrentHashSet<IMyEntity>();
@@ -1064,12 +1034,7 @@ namespace DefenseShields
                                 var center = Block.CubeGrid.WorldVolume.Center;
                                 var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shield.WorldAABB);
                                 bOriBBoxD.Center = center;
-                                //var collide = CustomCollision.VoxelCollisionStage1(Block.CubeGrid, voxelMap, bOriBBoxD);
-                                _dsutil1.Sw.Start();
                                 CustomCollision.VoxelCollisionSphere(Block.CubeGrid, _physicsOutside, voxelMap, bOriBBoxD);
-                                _dsutil1.StopWatchReport("voxel", -1);
-                                //_voxelMapCollide = false;
-                                //if (collide) _voxelMapCollide = true;
                                 return;
                             }
 
@@ -1092,12 +1057,11 @@ namespace DefenseShields
                 if (!(playerent is IMyCharacter)) continue;
                 try
                 {
-                    var playerid = MyAPIGateway.Players.GetPlayerControllingEntity(playerent).IdentityId;
+                    var character = playerent as IMyCharacter;
+                    var playerid = character.EntityId;
                     var relationship = Block.GetUserRelationToOwner(playerid);
                     if (relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare)
                     {
-                        var character = playerent as IMyCharacter;
-
                         var npcname = character.ToString();
                         //Log.Line($"playerEffect: Enemy {character} detected at loop {Count} - relationship: {relationship}");
                         if (npcname.Equals("Space_Wolf"))
