@@ -52,6 +52,7 @@ namespace DefenseShields.Support
             for (int i = 0; i < voxelHitVecs.Count; i++) shieldGrid.Physics.ApplyImpulse((bOriBBoxD.Center - voxelHitVecs[i]) * shieldGridMass / 250, voxelHitVecs[i]);
         }
 
+
         public static void VoxelCollision(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, IMyVoxelMap voxelMap, MyOrientedBoundingBoxD bOriBBoxD)
         {
             var sVel = shieldGrid.Physics.LinearVelocity;
