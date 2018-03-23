@@ -13,8 +13,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Havok;
-using Sandbox.Engine.Physics;
 using VRage.Collections;
 using VRage.Game;
 using VRage.Game.Components;
@@ -25,8 +23,6 @@ using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRage.Utils;
 using VRageMath;
-using VRageRender.Voxels;
-using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 namespace DefenseShields
 {
@@ -205,7 +201,7 @@ namespace DefenseShields
                     _longLoop++;
                     if (_longLoop == 10) _longLoop = 0;
                 }
-                if (_count == 0) _dsutil2.Sw.Start();
+                //if (_count == 0) _dsutil2.Sw.Start();
 
                 if (_longLoop == 0 && _count == 0) _longLoop10 = true;
                 else _longLoop10 = false;
@@ -247,7 +243,7 @@ namespace DefenseShields
                     //if (_count == 0) _dsutil1.StopWatchReport("voxel loop", -1);
                     //if (_enablePhysics) WebEntities();
                 }
-                if (_count == 0) _dsutil2.StopWatchReport("main loop", -1);
+                //if (_count == 0) _dsutil2.StopWatchReport("main loop", -1);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
 
@@ -641,7 +637,6 @@ namespace DefenseShields
 
         private int EntRelation(IMyEntity ent)
         {
-            var relation = 0;
             if (ent == null) return -1;
             if (ent is IMyVoxelMap && !_gridIsMobile) return -1;
             if (ent is IMyCharacter)
@@ -649,27 +644,29 @@ namespace DefenseShields
                 var dude = (ent as IMyCharacter).EntityId;
                 var playerrelationship = Block.GetUserRelationToOwner(dude);
                 if (playerrelationship != MyRelationsBetweenPlayerAndBlock.Owner &&
-                    playerrelationship != MyRelationsBetweenPlayerAndBlock.FactionShare) relation = 1;
-                return relation;
+                    playerrelationship != MyRelationsBetweenPlayerAndBlock.FactionShare) return 1;
+                return 0;
             }
             if (ent is IMyCubeGrid)
             {
                 var grid = ent as IMyCubeGrid;
 
                 var owners = grid.BigOwners;
-                if (owners.Count > 0)
-                {
-                    var relationship = Block.GetUserRelationToOwner(owners[0]);
-                    if (relationship != MyRelationsBetweenPlayerAndBlock.Owner &&
-                        relationship != MyRelationsBetweenPlayerAndBlock.FactionShare) relation = 2;
-                    return relation;
-                }
-                relation = 3;
-                return relation;
+                if (owners.Count <= 0) return 3;
+
+                var relationship = Block.GetUserRelationToOwner(owners[0]);
+                if (relationship != MyRelationsBetweenPlayerAndBlock.Owner &&
+                    relationship != MyRelationsBetweenPlayerAndBlock.FactionShare) return 2;
+                return 0;
             }
-            if (ent is IMyMeteor || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo")) relation = 4;
-            if (ent is IMyVoxelMap && _gridIsMobile) relation = 5;
-            return relation;
+
+            if (ent is IMyMeteor || ent.ToString().Contains("Missile") || ent.ToString().Contains("Torpedo"))
+            {
+                Log.Line($"relation meteor");
+                return 4;
+            }
+            if (ent is IMyVoxelMap && _gridIsMobile) return 5;
+            return 0;
         }
 
         private uint GetRenderId()
@@ -950,19 +947,17 @@ namespace DefenseShields
                     //Log.Line($"relation: {EntRelation(webent)} - size: {webent.PositionComp.WorldVolume.Radius} - contained: {CustomCollision.PointInsideShield(webent.PositionComp.WorldVolume.Center, _detectionMatrixInv)} inside: {CustomCollision.PointInsideShield(webent.PositionComp.WorldVolume.Center, _detectionInsideInv)}");
                     cleanHash.Add(webent);
                 }
-                //MyAPIGateway.Parallel.ForEach(cleanHash, webent =>
-                foreach (var webent in cleanHash)
+                MyAPIGateway.Parallel.ForEach(cleanHash, webent =>
+                //foreach (var webent in cleanHash)
                 {
                     //Log.Line($"check1 - Name:{webent.DisplayName} - Relation:{EntRelation(webent)} - Size: {webent.PositionComp.WorldVolume.Radius}");
                     switch (EntRelation(webent)) // -1=null, 0=friend, 1=enemyPlayer, 2=enemyGrid, 3=neutralGrid, 4=other, 5=VoxelMap 
                     {
                         case 1:
-                            if (_count == 2 || _count == 17 || _count == 32 || _count == 47)
                             {
-                                lock (InShield) InShield.Add(webent);
-                                Log.Line($"Enemy Player Intersected");
+                                if (_count == 2 || _count == 17 || _count == 32 || _count == 47) lock (InShield) InShield.Add(webent);
+                                return;
                             }
-                            return;
                         case 2:
                             {
                                 var grid = webent as IMyCubeGrid;
@@ -1019,6 +1014,10 @@ namespace DefenseShields
                             }
                         case 4:
                             {
+                                Log.Line($"meteor");
+                                var entCenter = webent.PositionComp.WorldVolume.Center;
+                                if (!CustomCollision.PointInsideShield(entCenter, _detectionMatrixInv)) return;
+
                                 _worldImpactPosition = webent.PositionComp.WorldVolume.Center;
                                 _absorb += Shotdmg;
                                 Log.Line($"shotEffect: Shield absorbed {Shotdmg}MW of energy from {webent} in loop {_count}");
@@ -1041,7 +1040,7 @@ namespace DefenseShields
                         default:
                             return;
                     }
-                }
+                });
             }
             catch (Exception ex) { Log.Line($"Exception in WebEntities: {ex}"); }
             if (_count == 0) _dsutil3.StopWatchReport("Webbing", -1);

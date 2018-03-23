@@ -43,9 +43,9 @@ namespace DefenseShields
                 sphereOnCamera[i] = true;
                 onCount++;
             }
-            _dsutil1.Sw.Start();
+            //_dsutil1.Sw.Start();
             for (int i = 0; i < Components.Count; i++) Components[i].Draw(onCount, sphereOnCamera[i]);
-            _dsutil1.StopWatchReport("draw", -1);
+            //_dsutil1.StopWatchReport("draw", -1);
 
         }
 
