@@ -138,7 +138,7 @@ namespace DefenseShields.Support
             return contactPoint;
         }
 
-        public static bool PointInsideShield(Vector3D entCenter, MatrixD matrixInv)
+        public static bool PointInShield(Vector3D entCenter, MatrixD matrixInv)
         {
             return Vector3D.Transform(entCenter, matrixInv).LengthSquared() <= 1;
         }

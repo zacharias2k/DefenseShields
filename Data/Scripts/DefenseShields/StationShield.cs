@@ -86,10 +86,10 @@ namespace DefenseShields
 
         private MatrixD _shieldGridMatrix;
         private MatrixD _shieldShapeMatrix;
-        private MatrixD _detectionMatrix;
-        private MatrixD _detectionMatrixInv;
-        private MatrixD _detectionMatrixOutside;
-        private MatrixD _detectionMatrixInside;
+        private MatrixD _detectMatrix;
+        private MatrixD _detectMatrixInv;
+        private MatrixD _detectMatrixOutside;
+        private MatrixD _detectMatrixInside;
         private MatrixD _detectionInsideInv;
         private MatrixD _mobileMatrix;
 
@@ -133,7 +133,8 @@ namespace DefenseShields
 
         public MyConcurrentHashSet<IMyEntity> InShield = new MyConcurrentHashSet<IMyEntity>();
         private MyConcurrentHashSet<IMyEntity> OutShield = new MyConcurrentHashSet<IMyEntity>();
-        private readonly MyConcurrentDictionary<IMyEntity, bool> _webEnts = new MyConcurrentDictionary<IMyEntity, bool>();
+        private readonly MyConcurrentDictionary<IMyEntity, EntIntersectInfo> _webEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();
+
 
 
         private MyConcurrentList<IMySlimBlock> DmgBlocks { get; } = new MyConcurrentList<IMySlimBlock>();
@@ -149,14 +150,14 @@ namespace DefenseShields
         #region constructors
         private MatrixD DetectionMatrix
         {
-            get { return _detectionMatrix; }
+            get { return _detectMatrix; }
             set
             {
-                _detectionMatrix = value;
-                _detectionMatrixInv = MatrixD.Invert(value);
-                _detectionMatrixOutside = value;
-                _detectionMatrixInside = MatrixD.Rescale(value, 1d + (-6.0d / 100d));
-                _detectionInsideInv = MatrixD.Invert(_detectionMatrixInside);
+                _detectMatrix = value;
+                _detectMatrixInv = MatrixD.Invert(value);
+                _detectMatrixOutside = value;
+                _detectMatrixInside = MatrixD.Rescale(value, 1d + (-6.0d / 100d));
+                _detectionInsideInv = MatrixD.Invert(_detectMatrixInside);
 
             }
         }
@@ -176,7 +177,7 @@ namespace DefenseShields
         public const float MIN_SCALE = 15f; // Scale slider min/max
         public const float MAX_SCALE = 300f;
         public float LargestGridLength = 2.5f;
-        public static MyModStorageComponent Storage { get; set; }
+        public static MyModStorageComponent Storage { get; set; } // broken, shouldn't be static.  Move to Session if possible.
         private HashSet<ulong> playersToReceive = null;
         // 
 
@@ -256,11 +257,11 @@ namespace DefenseShields
         #region Prep / Misc
         private void BuildPhysicsArrays()
         {
-            _icosphere.ReturnPhysicsVerts(_detectionMatrixOutside, _physicsOutside);
-            _icosphere.ReturnPhysicsVerts(_detectionMatrixOutside, _rootVecs);
-            _icosphere.ReturnPhysicsVerts(_detectionMatrixInside, _physicsInside);
-            //_structureBuilder.BuildTriNums(_icosphere.CalculatePhysics(_detectionMatrixOutside, 3), _physicsOutside);
-            //if (_buildOnce == false) _structureBuilder.BuildBase(_icosphere.CalculatePhysics(_detectionMatrixOutside, 3), _rootVecs, _physicsOutside, _buildLines, _buildTris, _buildVertZones, _buildByVerts);
+            _icosphere.ReturnPhysicsVerts(_detectMatrixOutside, _physicsOutside);
+            _icosphere.ReturnPhysicsVerts(_detectMatrixOutside, _rootVecs);
+            _icosphere.ReturnPhysicsVerts(_detectMatrixInside, _physicsInside);
+            //_structureBuilder.BuildTriNums(_icosphere.CalculatePhysics(_detectMatrixOutside, 3), _physicsOutside);
+            //if (_buildOnce == false) _structureBuilder.BuildBase(_icosphere.CalculatePhysics(_detectMatrixOutside, 3), _rootVecs, _physicsOutside, _buildLines, _buildTris, _buildVertZones, _buildByVerts);
             //_buildOnce = true;
             _firstRun = false;
         }
@@ -605,7 +606,7 @@ namespace DefenseShields
                 DetectionMatrix = MatrixD.Rescale(_shieldGridMatrix, new Vector3D(_width, _height, _depth));
                 _detectionCenter = Block.PositionComp.WorldVolume.Center;
             }
-            _range = (float)_detectionMatrix.Scale.AbsMax() + 15f;
+            _range = (float)_detectMatrix.Scale.AbsMax() + 15f;
         }
 
         private void CreateMobileShape()
@@ -713,7 +714,7 @@ namespace DefenseShields
             var tSphere = breaching.WorldVolume;
 
             var lodScaler = (int)Math.Pow(2, PhysicsLod);
-            var gridScaler = (float)(((_detectionMatrix.Scale.X + _detectionMatrix.Scale.Y + _detectionMatrix.Scale.Z) / 3 / lodScaler) * 1.33) / bLocalAabb.Extents.Min();
+            var gridScaler = (float)(((_detectMatrix.Scale.X + _detectMatrix.Scale.Y + _detectMatrix.Scale.Z) / 3 / lodScaler) * 1.33) / bLocalAabb.Extents.Min();
             var faceTri = new int[4];
             var rangedVerts = new int[3];
             var intersections = new List<Vector3D>();
@@ -842,13 +843,13 @@ namespace DefenseShields
             var contactPoint = intersect;
 
             //var transformInv = MatrixD.Invert(DetectionMatrix);
-            //var transformInv = _detectionMatrixInv;
+            //var transformInv = _detectMatrixInv;
             //var normalMat = MatrixD.Transpose(transformInv);
             //var localNormal = Vector3D.Transform(contactPoint, transformInv);
             //var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
 
             var bmass = -breaching.Physics.Mass;
-            //var cpDist = Vector3D.Transform(contactPoint, _detectionMatrixInv).LengthSquared();
+            //var cpDist = Vector3D.Transform(contactPoint, _detectMatrixInv).LengthSquared();
             //var expelForce = (bmass); /// Math.Pow(cpDist, 2);
             //if (expelForce < -9999000000f || bmass >= -67f) expelForce = -9999000000f;
             var expelForce = (bmass);// / (float)Math.Pow(cpDist, 4);
@@ -935,24 +936,39 @@ namespace DefenseShields
             {
                 var pruneSphere = new BoundingSphereD(_detectionCenter, _range);
                 var pruneList = new List<MyEntity>();
-                var oldEnts = new MyConcurrentDictionary<IMyEntity, bool>();
+                var tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+
+                //var oldEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();
+
                 MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
 
-                for (int i = 0; i < pruneList.Count; i++) if (_webEnts.ContainsKey(pruneList[i])) oldEnts.Add(pruneList[i], _webEnts[pruneList[i]]);
-                _webEnts.Clear();
+                //for (int i = 0; i < pruneList.Count; i++)
+                    //if (_webEnts.ContainsKey(pruneList[i])) oldEnts.Add(pruneList[i], _webEnts[pruneList[i]]);
+
+                //_webEnts.Clear();
                 for (int i = 0; i < pruneList.Count; i++)
                 {
                     var webent = pruneList[i];
-                    if (webent == null || webent.MarkedForClose || (webent is IMyVoxelBase && !_gridIsMobile) || webent is IMyFloatingObject || webent is IMyEngineerToolBase || (webent as IMyCubeGrid == Block.CubeGrid) || double.IsNaN(webent.PositionComp.WorldVolume.Center.X)) continue; 
-                    if (webent.GetType().Name == "MyDebrisBase") continue;
+                    if (webent == null) continue;
+                    var entCenter = webent.PositionComp.WorldVolume.Center;
 
-                    if (oldEnts.ContainsKey(webent)) _webEnts.Add(webent, oldEnts[webent]);
-                    else _webEnts.Add(webent, CustomCollision.PointInsideShield(webent.PositionComp.WorldVolume.Center, _detectionMatrixInv));
+                    if (webent.MarkedForClose || webent == _shield || (webent is IMyVoxelBase && !_gridIsMobile) || webent is IMyFloatingObject 
+                        || webent is IMyEngineerToolBase || (webent as IMyCubeGrid == Block.CubeGrid) || double.IsNaN(entCenter.X) 
+                        || webent.GetType().Name == "MyDebrisBase") continue;
+
+
+                    if (_webEnts.ContainsKey(webent))
+                    {
+                        _webEnts[webent].LastTick = tick;
+                    }
+                    else
+                        _webEnts.Add(webent, new EntIntersectInfo(webent, tick, tick, CustomCollision.PointInShield(entCenter, _detectMatrixInv), false));
                 }
                 foreach (var webent in _webEnts.Keys)
                 {
-                    if (oldEnts.ContainsKey(webent) && oldEnts[webent]) Log.Line($"skipping {webent.DisplayName}");
-                    if (oldEnts.ContainsKey(webent) && oldEnts[webent]) continue;
+                    //if (_webEnts[webent].Entity == webent && _webEnts[webent].SpawnedInside) Log.Line($"skipping {_webEnts[webent].FirstTick} {_webEnts[webent].LastTick}");
+                    if (_webEnts[webent].Entity == webent && _webEnts[webent].SpawnedInside) continue;
+                    ;
                     switch (EntRelation(webent)) // -1=null, 0=friend, 1=enemyPlayer, 2=enemyGrid, 3=neutralGrid, 4=other, 5=VoxelMap 
                     {
                         case 1:
@@ -965,11 +981,11 @@ namespace DefenseShields
                             {
                                 var grid = webent as IMyCubeGrid;
                                 if (grid == null) continue;
-                                var inside = CustomCollision.PointInsideShield(webent.PositionComp.WorldVolume.Center, _detectionInsideInv);
+                                var inside = CustomCollision.PointInShield(webent.PositionComp.WorldVolume.Center, _detectionInsideInv);
 
                                 if (grid.PositionComp.WorldVolume.Radius < 6.5 && !inside)
                                 {
-                                    var contactPoint = CustomCollision.SmallIntersect(DmgBlocks, grid, _detectionMatrix, _detectionMatrixInv);
+                                    var contactPoint = CustomCollision.SmallIntersect(DmgBlocks, grid, _detectMatrix, _detectMatrixInv);
                                     if (contactPoint != Vector3D.NegativeInfinity) _worldImpactPosition = contactPoint;
                                     continue;
                                 }
@@ -977,7 +993,7 @@ namespace DefenseShields
 
                                 if (inside)
                                 {
-                                    var ejectDir = CustomCollision.EjectDirection(grid, _physicsOutside, _dataStructures.p3VertTris, bOriBBoxD, _detectionMatrixInv);
+                                    var ejectDir = CustomCollision.EjectDirection(grid, _physicsOutside, _dataStructures.p3VertTris, bOriBBoxD, _detectMatrixInv);
                                     lock (Eject) Eject.Add(grid, ejectDir);
                                     continue;
                                 }
@@ -990,10 +1006,10 @@ namespace DefenseShields
                             {
                                 var grid = webent as IMyCubeGrid;
                                 if (grid == null) continue;
-                                var inside = CustomCollision.PointInsideShield(webent.PositionComp.WorldVolume.Center, _detectionInsideInv);
+                                var inside = CustomCollision.PointInShield(webent.PositionComp.WorldVolume.Center, _detectionInsideInv);
                                 if (grid.PositionComp.WorldVolume.Radius < 6.5 && !inside)
                                 {
-                                    var contactPoint = CustomCollision.SmallIntersect(DmgBlocks, grid, _detectionMatrix, _detectionMatrixInv);
+                                    var contactPoint = CustomCollision.SmallIntersect(DmgBlocks, grid, _detectMatrix, _detectMatrixInv);
                                     if (contactPoint != Vector3D.NegativeInfinity) _worldImpactPosition = contactPoint;
                                     if (contactPoint != Vector3D.NegativeInfinity) Log.Line($"check2 - Name:{webent.DisplayName} - Relation:{EntRelation(webent)} - Size: {webent.PositionComp.WorldVolume.Radius}");
 
@@ -1003,9 +1019,9 @@ namespace DefenseShields
 
                                 if (inside)
                                 {
-                                    if (CustomCollision.AllCornersInShield(bOriBBoxD, _detectionMatrixInv)) continue;
+                                    if (CustomCollision.AllCornersInShield(bOriBBoxD, _detectMatrixInv)) continue;
 
-                                    var ejectDir = CustomCollision.EjectDirection(grid, _physicsOutside, _dataStructures.p3VertTris, bOriBBoxD, _detectionMatrixInv);
+                                    var ejectDir = CustomCollision.EjectDirection(grid, _physicsOutside, _dataStructures.p3VertTris, bOriBBoxD, _detectMatrixInv);
                                     if (ejectDir == Vector3D.NegativeInfinity) continue;
                                     lock (Eject) Eject.Add(grid, ejectDir);
                                     continue;
@@ -1018,12 +1034,13 @@ namespace DefenseShields
                         case 4:
                             {
                                 var entCenter = webent.PositionComp.WorldVolume.Center;
-                                var inside = CustomCollision.PointInsideShield(entCenter, _detectionMatrixInv);
-                                if (webent.ToString().Contains("Missile")) Log.Line($"old:{oldEnts.ContainsKey(webent)} old status: {oldEnts.Remove(webent)} current status: {inside}");
+                                var inside = CustomCollision.PointInShield(entCenter, _detectMatrixInv);
+                                //if (webent.ToString().Contains("Missile")) Log.Line($"old:{oldEnts.ContainsKey(webent)} old status: {oldEnts.Remove(webent)} current status: {inside}");
+
 
                                 if (!inside) continue;
-                                if (oldEnts.ContainsKey(webent) && oldEnts[webent] == false)
-                                {
+                                if (_webEnts[webent].LastTick == tick && _webEnts[webent].SpawnedInside == false)
+                                { 
                                     _worldImpactPosition = webent.PositionComp.WorldVolume.Center;
                                     _absorb += Shotdmg;
                                     Log.Line($"shotEffect: Shield absorbed {Shotdmg}MW of energy from {webent} in loop {_count}");

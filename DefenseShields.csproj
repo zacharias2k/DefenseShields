@@ -245,6 +245,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\ConvexHullShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\Ellipsoid.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\CSupport\CollisionMath.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\CustomTypes.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\DataStructure.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\MinkowskiSumShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\MultiShape.cs" />
