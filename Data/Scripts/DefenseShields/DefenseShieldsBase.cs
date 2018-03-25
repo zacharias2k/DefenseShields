@@ -77,7 +77,7 @@ namespace DefenseShields
         {
             Log.Init("debugdevelop.log");
             Log.Line($" Logging Started");
-            //MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
+            MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
             MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID, PacketReceived);
             IsInit = true;
         }

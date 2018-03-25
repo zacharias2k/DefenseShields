@@ -139,6 +139,8 @@ namespace DefenseShields
 
         public MyConcurrentHashSet<IMyEntity> InShield = new MyConcurrentHashSet<IMyEntity>();
         public HashSet<IMyEntity> InFriendlyCache = new HashSet<IMyEntity>();
+        public HashSet<IMyEntity> _webEntCleanUp = new HashSet<IMyEntity>();
+
 
         private MyConcurrentHashSet<IMyEntity> OutShield = new MyConcurrentHashSet<IMyEntity>();
         private readonly MyConcurrentDictionary<IMyEntity, EntIntersectInfo> _webEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();
@@ -215,6 +217,7 @@ namespace DefenseShields
                     _longLoop++;
                     if (_longLoop == 10)
                     {
+                        _webEntCleanUp.IntersectWith(_webEnts.Keys);
                         lock (_webEnts)
                             foreach (var i in _webEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1).ToList())
                                 _webEnts.Remove(i.Key);
@@ -232,7 +235,10 @@ namespace DefenseShields
                 {
                     CalcRequiredPower();
                     Block.GameLogic.GetAs<DefenseShields>().Sink.Update();
+                    Block.ShowInInventory = false;
+                    Block.ShowInInventory = true;
                 }
+
                 if (_gridIsMobile)
                 {
                     var entAngularVelocity = !Vector3D.IsZero(Block.CubeGrid.Physics.AngularVelocity); 
@@ -242,6 +248,9 @@ namespace DefenseShields
                     _entityChanged = entAngularVelocity || entLinVel || _gridChanged;
                     if (_entityChanged || _range <= 0) CreateShieldMatrices();
                 }
+
+                //Block.VisibilityChanged = false;
+                //Block.ShowInToolbarConfig = true;
                 if (Initialized && Block.IsWorking && _range > 0 && Block.IsFunctional)
                 {
                     //Log.Line($"test damage: init: {Initialized} Working: {Block.IsWorking} Other: {Block.IsFunctional}");
@@ -343,7 +352,8 @@ namespace DefenseShields
             if (shield == null) { return; }
             stringBuilder.Clear();
             if (!_gridIsMobile)RefreshDimensions();
-            stringBuilder.Append("Required Power: " + shield.CalcRequiredPower().ToString("0.00") + "MW");
+            //stringBuilder.Append("Required Power: " + shield.CalcRequiredPower().ToString("0.00") + "MW");
+            stringBuilder.Append("Required Power: " + shield.CalcRequiredPower().ToString("0.00") + "MW" + _count);
         }
 
         private void RefreshDimensions()
