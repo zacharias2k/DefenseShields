@@ -6,6 +6,8 @@ using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using DefenseShields.Support;
+using Sandbox.Game.Entities;
+using VRage.Collections;
 using VRageMath;
 
 namespace DefenseShields
@@ -17,6 +19,10 @@ namespace DefenseShields
     {
         public bool IsInit;
         public bool ControlsLoaded;
+        public bool resetVoxelColliders;
+
+        public int voxelTrigger = 0;
+        public int _count;
 
         public const ushort PACKET_ID = 62520; // network
         public readonly Guid SETTINGS_GUID = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
@@ -28,6 +34,7 @@ namespace DefenseShields
         private DSUtils _dsutil2 = new DSUtils();
         private DSUtils _dsutil3 = new DSUtils();
 
+        private Dictionary<IMyEntity, int> VoxelDamageCounter = new Dictionary<IMyEntity, int>();
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
         //public List<DefenseShields> Shields = new List<DefenseShields>();
 
@@ -68,6 +75,14 @@ namespace DefenseShields
 
         public override void UpdateBeforeSimulation()
         {
+            if (_count++ == 1180)
+            {
+                _count = 0;
+                if (VoxelDamageCounter.Count != 0) VoxelDamageCounter.Clear();
+            }
+            voxelTrigger = 0;
+            resetVoxelColliders = false;
+            foreach (var voxel in VoxelDamageCounter.Values) if (voxel > 90) resetVoxelColliders = true;
             if (IsInit) return;
             if (MyAPIGateway.Multiplayer.IsServer && MyAPIGateway.Utilities.IsDedicated) Init();
             else if (MyAPIGateway.Session.Player != null) Init();
@@ -86,12 +101,33 @@ namespace DefenseShields
         {
             var block = target as IMySlimBlock;
             if (block == null) return;
-
             if (Components.Count == 0 || (info.Type != MyDamageType.Bullet && info.Type != MyDamageType.Deformation)) return;
             foreach (var shield in Components)
             {
                 if (!shield.Block.IsWorking || !shield.Initialized) continue;
-                if (block.CubeGrid == shield.Block.CubeGrid) info.Amount = 0f;
+                if (block.CubeGrid == shield.Block.CubeGrid)
+                {
+                    if (voxelTrigger == 0 && MyAPIGateway.Entities.GetEntityById(info.AttackerId) is IMyVoxelMap)
+                    {
+                        if (resetVoxelColliders)
+                        {
+                            var safeplace = MyAPIGateway.Entities.FindFreePlace(shield.Block.CubeGrid.WorldVolume.Center, (float)shield.Block.CubeGrid.WorldVolume.Radius * 5);
+                            if (safeplace != null)
+                            {
+                                shield.Block.CubeGrid.Physics.ClearSpeed();
+                                shield.Block.CubeGrid.SetPosition((Vector3D)safeplace);
+                                VoxelDamageCounter.Clear();
+                            }
+                        }
+                        var voxel = MyAPIGateway.Entities.GetEntityById(info.AttackerId) as IMyVoxelMap;
+                        info.Amount = 0f;
+                        if (voxel == null) continue;
+                        if (!VoxelDamageCounter.ContainsKey(voxel)) VoxelDamageCounter.Add(voxel, 1);
+                        else VoxelDamageCounter[voxel]++;
+                        voxelTrigger = 1;
+                    }
+                    info.Amount = 0f;
+                }
             }
         }
 

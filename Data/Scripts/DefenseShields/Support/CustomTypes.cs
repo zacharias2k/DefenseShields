@@ -10,13 +10,12 @@ namespace DefenseShields.Support
         public readonly bool SpawnedInside;
         public readonly bool Stuck;
 
-        public EntIntersectInfo(uint firstTick, uint lastTick, int relation, bool inside, bool stuck)
+        public EntIntersectInfo(uint firstTick, uint lastTick, int relation, bool inside)
         {
             FirstTick = firstTick;
             LastTick = lastTick;
             Relation = relation;
             SpawnedInside = inside;
-            Stuck = stuck;
         }
     }
 }

@@ -112,8 +112,6 @@ namespace DefenseShields
         private DSUtils _dsutil2 = new DSUtils();
         private DSUtils _dsutil3 = new DSUtils();
 
-
-
         private MyEntitySubpart _subpartRotor;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _widthSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _heightSlider;
@@ -122,14 +120,6 @@ namespace DefenseShields
         private MyResourceSinkComponent _sink;
         private readonly MyDefinitionId _powerDefinitionId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
-        /*
-        private readonly List<MyEntitySubpart> _subpartsArms = new List<MyEntitySubpart>();
-        private readonly List<MyEntitySubpart> _subpartsReflectors = new List<MyEntitySubpart>();
-        private List<Matrix> _matrixArmsOff = new List<Matrix>();
-        private List<Matrix> _matrixArmsOn = new List<Matrix>();
-        private List<Matrix> _matrixReflectorsOff = new List<Matrix>();
-        private List<Matrix> _matrixReflectorsOn = new List<Matrix>();
-        */
         private readonly  MyEntitySubpart[] _subpartsArms = new MyEntitySubpart[8];
         private readonly MyEntitySubpart[] _subpartsReflectors = new MyEntitySubpart[4];
         private Matrix[] _matrixArmsOff = new Matrix[8];
@@ -137,21 +127,15 @@ namespace DefenseShields
         private Matrix[] _matrixReflectorsOff = new Matrix[4];
         private Matrix[] _matrixReflectorsOn = new Matrix[4];
 
-        public MyConcurrentHashSet<IMyEntity> InShield = new MyConcurrentHashSet<IMyEntity>();
         public HashSet<IMyEntity> InFriendlyCache = new HashSet<IMyEntity>();
-        public HashSet<IMyEntity> _webEntCleanUp = new HashSet<IMyEntity>();
-
-
+        public MyConcurrentHashSet<IMyEntity> InShield = new MyConcurrentHashSet<IMyEntity>();
         private MyConcurrentHashSet<IMyEntity> OutShield = new MyConcurrentHashSet<IMyEntity>();
+
+        private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<IMyEntity, Vector3D>();
         private readonly MyConcurrentDictionary<IMyEntity, EntIntersectInfo> _webEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();
+        private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
 
         private MyConcurrentList<IMySlimBlock> DmgBlocks { get; } = new MyConcurrentList<IMySlimBlock>();
-        private MyConcurrentList<Vector3D> BoomLocs { get; } = new MyConcurrentList<Vector3D>();
-
-        private List<IMyCubeGrid> GridIsColliding = new List<IMyCubeGrid>();
-        private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
-        private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } =  new MyConcurrentDictionary<IMyEntity, Vector3D>();
-
         #endregion
 
         #region constructors
@@ -217,7 +201,6 @@ namespace DefenseShields
                     _longLoop++;
                     if (_longLoop == 10)
                     {
-                        _webEntCleanUp.IntersectWith(_webEnts.Keys);
                         lock (_webEnts)
                             foreach (var i in _webEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1).ToList())
                                 _webEnts.Remove(i.Key);
@@ -350,10 +333,8 @@ namespace DefenseShields
         {
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
-            stringBuilder.Clear();
             if (!_gridIsMobile)RefreshDimensions();
-            //stringBuilder.Append("Required Power: " + shield.CalcRequiredPower().ToString("0.00") + "MW");
-            stringBuilder.Append("Required Power: " + shield.CalcRequiredPower().ToString("0.00") + "MW" + _count);
+            stringBuilder.Append("Required Power: " + shield.CalcRequiredPower().ToString("0.00") + "MW\nCharge percent: ");
         }
 
         private void RefreshDimensions()
@@ -432,8 +413,6 @@ namespace DefenseShields
             _subpartRotor.Subparts.Clear();
             Array.Clear(_subpartsArms, 0, 8);
             Array.Clear(_subpartsReflectors, 0, 4);
-            //_subpartsArms.Clear();
-            //_subpartsReflectors.Clear();
             BlockAnimationInit();
         }
 
@@ -442,13 +421,6 @@ namespace DefenseShields
             try
             {
                 _animStep = 0f;
-
-                /*
-                _matrixArmsOff = new List<Matrix>();
-                _matrixArmsOn = new List<Matrix>();
-                _matrixReflectorsOff = new List<Matrix>();
-                _matrixReflectorsOn = new List<Matrix>();
-                */
                 _matrixArmsOff = new Matrix[8];
                 _matrixArmsOn = new Matrix[8];
                 _matrixReflectorsOff = new Matrix[4];
@@ -460,7 +432,6 @@ namespace DefenseShields
                 {
                     MyEntitySubpart temp1;
                     _subpartRotor.TryGetSubpart("ArmT" + i.ToString(), out temp1);
-                    //_matrixArmsOff.Add(temp1.PositionComp.LocalMatrix);
                     _matrixArmsOff[i - 1] = (temp1.PositionComp.LocalMatrix);
 
                     var temp2 = temp1.PositionComp.LocalMatrix.GetOrientation();
@@ -484,8 +455,6 @@ namespace DefenseShields
                             break;
                     }
                     temp2.Translation = temp1.PositionComp.LocalMatrix.Translation;
-                    //_matrixArmsOn.Add(temp2);
-                    //_subpartsArms.Add(temp1);
                     _matrixArmsOn[i - 1] = (temp2);
                     _subpartsArms[i - 1] = (temp1);
                 }
@@ -494,14 +463,11 @@ namespace DefenseShields
                 {
                     MyEntitySubpart temp3;
                     _subpartsArms[i].TryGetSubpart("Reflector", out temp3);
-                    //_subpartsReflectors.Add(temp3);
                     _subpartsReflectors[i] = (temp3);
-                    //_matrixReflectorsOff.Add(temp3.PositionComp.LocalMatrix);
                     _matrixReflectorsOff[i] = (temp3.PositionComp.LocalMatrix);
 
                     var temp4 = temp3.PositionComp.LocalMatrix * Matrix.CreateFromAxisAngle(temp3.PositionComp.LocalMatrix.Forward, -(float)Math.PI / 3);
                     temp4.Translation = temp3.PositionComp.LocalMatrix.Translation;
-                    //_matrixReflectorsOn.Add(temp4);
                     _matrixReflectorsOn[i] = (temp4);
                 }
             }
@@ -512,30 +478,16 @@ namespace DefenseShields
         {
             if (Block.Enabled && Block.IsFunctional && Block.IsWorking)
             {
-
                 _time += 1;
                 var temp1 = Matrix.CreateRotationY(0.1f * _time);
                 _subpartRotor.PositionComp.LocalMatrix = temp1;
-                if (_animStep < 1f)
-                {
-                    _animStep += 0.05f;
-                }
+                if (_animStep < 1f) _animStep += 0.05f;
             }
-            else
-            {
+            else  if (_animStep > 0f) _animStep -= 0.05f;
 
-                if (_animStep > 0f)
-                {
-                    _animStep -= 0.05f;
-                }
-            }
             for (var i = 0; i < 8; i++)
             {
-                if (i < 4)
-                {
-
-                    _subpartsReflectors[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixReflectorsOff[i], _matrixReflectorsOn[i], _animStep);
-                }
+                if (i < 4) _subpartsReflectors[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixReflectorsOff[i], _matrixReflectorsOn[i], _animStep);
                 _subpartsArms[i].PositionComp.LocalMatrix = Matrix.Slerp(_matrixArmsOff[i], _matrixArmsOn[i], _animStep);
             }
         }
@@ -568,7 +520,6 @@ namespace DefenseShields
 
                 //if (_prepareDraw.HasValue && !_prepareDraw.Value.IsComplete) _prepareDraw.Value.Wait();
                 //if (_prepareDraw.HasValue && _prepareDraw.Value.IsComplete && sphereOnCamera && Block.IsWorking) _icosphere.Draw(GetRenderId());
-
                 //if (Block.IsWorking || _entityChanged) _prepareDraw = MyAPIGateway.Parallel.Start(PrepareSphere);
                 if (Block.IsWorking || _entityChanged) PrepareSphere();
                 if (sphereOnCamera && Block.IsWorking) _icosphere.Draw(GetRenderId());
@@ -581,11 +532,9 @@ namespace DefenseShields
         {
             var prevlod = _prevLod;
             var lod = CalculateLod(_onCount);
-            //_dsutil1.Sw.Start();
             _icosphere.CalculateTransform(_shieldShapeMatrix, lod);
             _icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, _impactSize, _entityChanged, _enemy, _shield, prevlod);
             _entityChanged = false;
-            //_dsutil1.StopWatchReport("draw", 1);
         }
 
         #endregion
@@ -972,7 +921,7 @@ namespace DefenseShields
                     else
                     {
                         var relation = EntRelation(ent);
-                        if (relation > 0 && CustomCollision.PointInShield(entCenter, _detectionInsideInv) == false) _webEnts.Add(ent, new EntIntersectInfo(_tick, _tick, EntRelation(ent), false, false));
+                        if (relation > 0 && CustomCollision.PointInShield(entCenter, _detectionInsideInv) == false) _webEnts.Add(ent, new EntIntersectInfo(_tick, _tick, EntRelation(ent), false));
                         else if (relation == 0 || relation == 3) lock (InFriendlyCache) InFriendlyCache.Add(ent);
                         else Log.Line($"what is this {ent.DisplayName} relation: {relation}");
                     }
