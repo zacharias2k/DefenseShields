@@ -23,17 +23,19 @@ namespace DefenseShields.Support
             var sVelSqr = sVel.LengthSquared();
             var sAvelSqr = shieldGrid.Physics.AngularVelocity.LengthSquared();
             var voxelSphere = voxelMap.WorldVolume;
-            var obbSphere = new BoundingSphereD(bOriBBoxD.Center, bOriBBoxD.HalfExtent.Max());
-            var lerpedVerts = new Vector3D[642];
+            //var obbSphere = new BoundingSphereD(bOriBBoxD.Center, bOriBBoxD.HalfExtent.Max());
+            //var lerpedVerts = new Vector3D[642];
             var shieldGridMass = shieldGrid.Physics.Mass;
+            /*
             for (int i = 0; i < 642; i++)
             {
                 var newVert = Vector3D.Lerp(physicsVerts[i], bOriBBoxD.Center, -0.1d);
                 lerpedVerts[i] = newVert;
             }
+            */
 
             var voxelHitVecs = new List<Vector3D>();
-            if ((sVelSqr > 0.00001 || sAvelSqr > 0.00001) && voxelMap.GetIntersectionWithSphere(ref obbSphere))
+            if ((sVelSqr > 0.00001 || sAvelSqr > 0.00001))// && voxelMap.GetIntersectionWithSphere(ref obbSphere))
             {
                 var myvoxelmap = (MyVoxelBase)voxelMap;
                 var obbSphereTest = bOriBBoxD.Intersects(ref voxelSphere);
@@ -41,9 +43,9 @@ namespace DefenseShields.Support
                 for (int i = 0; i < 642; i++)
                 {
                     var from = physicsVerts[i];
-                    var to = lerpedVerts[i];
-                    var dir = to - from;
-                    if (sAvelSqr < 1e-4f && Vector3D.Dot(dir, sVel) < 0) continue;
+                    //var to = lerpedVerts[i];
+                    //var dir = to - from;
+                    //if (sAvelSqr < 1e-4f && Vector3D.Dot(dir, sVel) < 0) continue;
                     var hit = myvoxelmap.DoOverlapSphereTest(0.5f, from);
                     if (hit) voxelHitVecs.Add(from);
                     //DsDebugDraw.DrawSingleVec(from, 1f, Color.Red);

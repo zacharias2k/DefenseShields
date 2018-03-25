@@ -33,6 +33,7 @@ namespace DefenseShields
 
         public override void Draw()
         {
+            //_dsutil1.Sw.Start();
             var sphereOnCamera = new bool[Components.Count];
             var onCount = 0;
             for (int i = 0; i < Components.Count; i++)
@@ -43,7 +44,6 @@ namespace DefenseShields
                 sphereOnCamera[i] = true;
                 onCount++;
             }
-            //_dsutil1.Sw.Start();
             for (int i = 0; i < Components.Count; i++) Components[i].Draw(onCount, sphereOnCamera[i]);
             //_dsutil1.StopWatchReport("draw", -1);
 
@@ -77,7 +77,7 @@ namespace DefenseShields
         {
             Log.Init("debugdevelop.log");
             Log.Line($" Logging Started");
-            MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
+            //MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
             MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID, PacketReceived);
             IsInit = true;
         }

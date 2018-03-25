@@ -188,6 +188,7 @@ namespace DefenseShields.Support
 
             public void CalculateTransform(MatrixD matrix, int lod)
             {
+                //_dsutil3.Sw.Start();
                 _lod = lod;
                 var count = checked((int)VertsForLod(lod));
                 Array.Resize(ref _vertexBuffer, count);
@@ -202,6 +203,7 @@ namespace DefenseShields.Support
 
                 var ib = _backing.IndexBuffer[_lod];
                 Array.Resize(ref _preCalcNormLclPos, ib.Length / 3);
+                //_dsutil3.StopWatchReport("calcTrans", 1);
             }
 
             public Vector3D[] CalculatePhysics(MatrixD matrix, int lod)
@@ -275,8 +277,9 @@ namespace DefenseShields.Support
                 //Log.Line($"impacts: {_impactCount[4]} {_impactCount[3]} {_impactCount[2]} {_impactCount[1]} {_impactCount[0]}");
 
                 if (_impactCount[4] != 0) MyAPIGateway.Parallel.Start(Models);
+                //_dsutil2.Sw.Start();
                 ColorAssignments(impactSize, impactSpeed, prevLod);
-
+                //_dsutil2.StopWatchReport("colorcalc", 1);
                 // vec3 localSpherePositionOfImpact;
                 //    foreach (vec3 triangleCom in triangles) {
                 //    var surfDistance = Math.acos(dot(triangleCom, localSpherePositionOfImpact));
@@ -373,7 +376,7 @@ namespace DefenseShields.Support
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in IcoSphere Draw - renderId {renderId}: {ex}"); }
-                //_dsutil1.StopWatchReport("Draw", -1);
+                //_dsutil1.StopWatchReport("Draw", 1);
             }
 
             private void ComputeImpacts()

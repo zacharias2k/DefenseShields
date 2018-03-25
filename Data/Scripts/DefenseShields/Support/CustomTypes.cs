@@ -2,19 +2,19 @@
 
 namespace DefenseShields.Support
 {
-    class EntIntersectInfo
+    public class EntIntersectInfo
     {
         public uint LastTick;
         public readonly uint FirstTick;
-        public readonly IMyEntity Entity;
+        public readonly int Relation;
         public readonly bool SpawnedInside;
         public readonly bool Stuck;
 
-        public EntIntersectInfo(IMyEntity entity, uint firstTick, uint lastTick, bool inside, bool stuck)
+        public EntIntersectInfo(uint firstTick, uint lastTick, int relation, bool inside, bool stuck)
         {
-            Entity = entity;
             FirstTick = firstTick;
             LastTick = lastTick;
+            Relation = relation;
             SpawnedInside = inside;
             Stuck = stuck;
         }
