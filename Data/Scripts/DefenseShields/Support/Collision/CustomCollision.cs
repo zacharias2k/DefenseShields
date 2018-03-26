@@ -17,6 +17,33 @@ namespace DefenseShields.Support
 {
     internal static class CustomCollision
     {
+        public static double? IntersectRayEllipsoid(Vector3D rayPos, Vector3D rayDir)
+        {
+            MatrixD T = MatrixD.CreateTranslation(Vector3D.Zero);
+            MatrixD S = MatrixD.CreateScale(Vector3D.One);
+            MatrixD R = MatrixD.CreateFromQuaternion(Quaternion.Zero);
+
+            MatrixD ellipsoidMatrix = MatrixD.Multiply(MatrixD.Multiply(T, R), S);
+
+            MatrixD inverseEllipsoidMatrix = MatrixD.Invert(ellipsoidMatrix);
+
+            Vector3D krayPos = Vector3D.Transform(rayPos, inverseEllipsoidMatrix);
+            Vector3D krayDir = Vector3D.Transform(rayDir, inverseEllipsoidMatrix);
+
+
+            //MyAPIGateway.Utilities.ShowNotification("" + rayPos + " " + rayDir, 66);
+            //MyAPIGateway.Utilities.ShowNotification("" + krayPos + " " + krayDir, 66);
+            krayDir.Normalize();
+
+            BoundingSphereD sphere = new BoundingSphereD(Vector3.Zero, 1d);
+
+            RayD kRay = new RayD(krayPos, krayDir);
+
+            double? hitMult = sphere.Intersects(kRay);
+
+            return hitMult;
+        }
+
         public static void VoxelCollisionSphere(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, IMyVoxelMap voxelMap, MyOrientedBoundingBoxD bOriBBoxD)
         {
             var sVel = shieldGrid.Physics.LinearVelocity;
@@ -61,7 +88,7 @@ namespace DefenseShields.Support
             var sVelSqr = sVel.LengthSquared();
             var sAvelSqr = shieldGrid.Physics.AngularVelocity.LengthSquared();
             var voxelSphere = voxelMap.WorldVolume;
-            var obbSphere = new BoundingSphereD(bOriBBoxD.Center, bOriBBoxD.HalfExtent.Max());
+            //var obbSphere = new BoundingSphereD(bOriBBoxD.Center, bOriBBoxD.HalfExtent.Max());
             var lerpedVerts = new Vector3D[642];
             var shieldGridMass = shieldGrid.Physics.Mass;
             for (int i = 0; i < 642; i++)
@@ -72,9 +99,9 @@ namespace DefenseShields.Support
 
             var voxelHitVecs = new List<Vector3D>();
             const int filter = CollisionLayers.VoxelCollisionLayer;
-            if ((sVelSqr > 0.00001 || sAvelSqr > 0.00001) && voxelMap.GetIntersectionWithSphere(ref obbSphere))
+            if ((sVelSqr > 0.00001 || sAvelSqr > 0.00001)) //&& voxelMap.GetIntersectionWithSphere(ref obbSphere))
             {
-                var myvoxelmap = (MyVoxelBase)voxelMap;
+                //var myvoxelmap = (MyVoxelBase)voxelMap;
                 var obbSphereTest = bOriBBoxD.Intersects(ref voxelSphere);
                 if (!obbSphereTest) return;
                 for (int i = 0; i < 642; i++)
@@ -82,8 +109,8 @@ namespace DefenseShields.Support
                     IHitInfo hit = null;
                     var from = physicsVerts[i];
                     var to = lerpedVerts[i];
-                    var dir = to - from;
-                    if (sAvelSqr < 1e-4f && Vector3D.Dot(dir, sVel) < 0) continue;
+                    //var dir = to - from;
+                    //if (sAvelSqr < 1e-4f && Vector3D.Dot(dir, sVel) < 0) continue;
                     MyAPIGateway.Physics.CastRay(from, to, out hit, filter);
                     if (hit?.HitEntity is IMyVoxelMap) voxelHitVecs.Add(hit.Position);
                     //DsDebugDraw.DrawLineToVec(from, to, Color.Black);
