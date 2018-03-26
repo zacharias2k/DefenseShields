@@ -172,7 +172,9 @@ namespace DefenseShields.Support
 
             private IMyEntity _shield;
 
-            private readonly MyStringId _faceId1 = MyStringId.GetOrCompute("CustomIdle");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
+            //private readonly MyStringId _faceId1 = MyStringId.GetOrCompute("CustomIdle");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
+            private readonly MyStringId _faceId1 = MyStringId.GetOrCompute("CockpitGlassInside");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
+
             private readonly MyStringId _faceId2 = MyStringId.GetOrCompute("SunDisk");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private readonly MyStringId _faceId3 = MyStringId.GetOrCompute("Glass");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private readonly MyStringId _faceId4 = MyStringId.GetOrCompute("CockpitGlassInside");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
@@ -348,8 +350,8 @@ namespace DefenseShields.Support
                 {
                     var faceMaterial = _faceId2;
                     var ib = _backing.IndexBuffer[_lod];
-                    var v21 = new Vector2(0.5f, 0);
-                    var v22 = new Vector2(0.5f);
+                    var v21 = new Vector2(32f);
+                    var v22 = new Vector2(32f);
                     for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
                     {
                         var i0 = ib[i];
@@ -526,11 +528,11 @@ namespace DefenseShields.Support
                 var rndNum4 = Random.Next(40, 120);
 
                 //currentColor
-                _defaultColor = Color.FromNonPremultiplied(0, 0, 0, 32);
+                _defaultColor = Color.FromNonPremultiplied(15, 0, 0, 255);
 
                 //waveColor
                 //var vwaveColor = Color.FromNonPremultiplied(cv3, 0, cv4, rndNum1 - 5);
-                var vwaveColor = Color.FromNonPremultiplied(0, 0, 0, 200);
+                var vwaveColor = Color.FromNonPremultiplied(0, 0, 0, 225);
                 _waveColor = vwaveColor;
 
                 //maxColor

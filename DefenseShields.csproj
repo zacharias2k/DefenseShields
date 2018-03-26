@@ -171,6 +171,7 @@
     <Content Include="Audio\RealBlockGravityGenEnd3d.wav" />
     <Content Include="Audio\RealBlockGravityGenLoop3d.wav" />
     <Content Include="Audio\RealBlockGravityGenStart3d.wav" />
+    <Content Include="Models\CustomIdle.dds" />
     <Content Include="Textures\Arm_cm.dds" />
     <Content Include="Textures\Arm_ng.dds" />
     <Content Include="Textures\base_cm.dds" />
@@ -220,6 +221,7 @@
     <None Include=".vs\VSWorkspaceState.json" />
     <None Include="Audio\ShieldHitNormalHigh.xwm" />
     <None Include="Data\Audio.sbc" />
+    <None Include="Data\Scripts\TransparentMaterials.sbc" />
     <None Include="Data\StationShield.sbc" />
     <None Include="Models\GeneratorArm_Large.mwm" />
     <None Include="Models\GeneratorBase_Large.mwm" />
