@@ -157,7 +157,7 @@
       </Id>
       <AlphaMistingEnable>false</AlphaMistingEnable>
       <AlphaSaturation>1</AlphaSaturation>
-      <CanBeAffectedByOtherLights>true</CanBeAffectedByOtherLights>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <IgnoreDepth>false</IgnoreDepth>
       <SoftParticleDistanceScale>1</SoftParticleDistanceScale>
       <Texture>Textures\Particles\CockpitFighterGlassInside_ca.dds</Texture>

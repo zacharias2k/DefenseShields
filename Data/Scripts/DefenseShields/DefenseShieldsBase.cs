@@ -46,7 +46,7 @@ namespace DefenseShields
             for (int i = 0; i < Components.Count; i++)
             {
                 var s = Components[i];
-                var sp = new BoundingSphereD(s.Entity.GetPosition(), s._range);
+                var sp = new BoundingSphereD(s.Entity.GetPosition(), s.Range);
                 if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp)) continue;
                 sphereOnCamera[i] = true;
                 onCount++;
@@ -138,7 +138,7 @@ namespace DefenseShields
             {
                 if (bytes.Length <= 2)
                 {
-                    Log.Line($"PacketReceived(); invalid length <= 2; length={bytes.Length}");
+                    Log.Line($"PacketReceived(); invalid length <= 2; length={bytes.Length.ToString()}");
                     return;
                 }
 

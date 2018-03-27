@@ -68,7 +68,7 @@ namespace DefenseShields.Support
         }
         private static int SubdividedAddress(IList<Vector3> pts, IDictionary<string, int> assoc, int a, int b)
         {
-            string key = a < b ? (a + "_" + b) : (b + "_" + a);
+            string key = a < b ? (a.ToString() + "_" + b.ToString()) : (b.ToString() + "_" + a.ToString());
             int res;
             if (assoc.TryGetValue(key, out res))
                 return res;
@@ -143,37 +143,24 @@ namespace DefenseShields.Support
             private int _mainLoop;
             private int _impactDrawStep;
             private int _modelCount;
-            private int _glitchCount;
-            private int _glitchStep;
-            private int _chargeCount;
-            private int _pulseCount;
-            private int _pulse = 40;
             private int _lod;
 
-            private const int GlitchSteps = 320;
             private const int ImpactSteps = 80;
-            private const int ImpactChargeSteps = 120;
 
             private Vector4 _hitColor;
             private Vector4 _waveColor;
             private Vector4 _wavePassedColor;
             private Vector4 _waveComingColor;
-            private Vector4 _glitchColor;
-            private Vector4 _pulseColor;
-            private Vector4 _chargeColor;
-            private Vector4 _maxColor;
             private Vector4 _defaultColor;
 
             private bool _impactsFinished = true;
-            private bool _charged = true;
             private bool _enemy;
             private bool _impact;
-            private bool _effectsDone;
 
             private IMyEntity _shield;
 
             //private readonly MyStringId _faceId1 = MyStringId.GetOrCompute("CustomIdle");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
-            private readonly MyStringId _faceId1 = MyStringId.GetOrCompute("CockpitGlassInside");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
+            private readonly MyStringId _faceId1 = MyStringId.GetOrCompute("CockpitFighterGlassInside");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
 
             private readonly MyStringId _faceId2 = MyStringId.GetOrCompute("SunDisk");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private readonly MyStringId _faceId3 = MyStringId.GetOrCompute("Glass");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
@@ -317,7 +304,7 @@ namespace DefenseShields.Support
                         for (int c = 0; c < _triColorBuffer.Length; c++)
                             _triColorBuffer[c] = _defaultColor;
                     }
-                    if (!_impactsFinished || _glitchCount != 0)
+                    if (!_impactsFinished)
                     {
                         for (int s = 4; s > -1; s--)
                         {
@@ -350,8 +337,9 @@ namespace DefenseShields.Support
                 {
                     var faceMaterial = _faceId2;
                     var ib = _backing.IndexBuffer[_lod];
-                    var v21 = new Vector2(32f);
-                    var v22 = new Vector2(32f);
+                    var v21 = new Vector2(.5f);
+                    var v22 = new Vector2(.25f);
+                    //var v21 = new Vector2((0.25f) * (_mainLoop % 2) + 1);
                     for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
                     {
                         var i0 = ib[i];
@@ -368,16 +356,12 @@ namespace DefenseShields.Support
                         var color = _triColorBuffer[j];
                         if (color == _defaultColor) faceMaterial = _faceId1;
                         else if (color == _waveColor) faceMaterial = _faceId2;
-                        //else if (color == _pulseColor) faceMaterial = _faceId1;
-                        //else if (color == _test1Color) faceMaterial = _faceId4;
-                        //else if (color == _test2Color) faceMaterial = _faceId4;
                         //else if (color == _waveComingColor) faceMaterial = _faceId1;
                         //else if (color == _wavePassedColor) faceMaterial = _faceId1;
-                        //else if (color == _chargeColor) faceMaterial = _faceId1;
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, Vector2.Zero, v21, v22, faceMaterial, renderId, (v0 + v1 + v2) / 3, color);
                     }
                 }
-                catch (Exception ex) { Log.Line($"Exception in IcoSphere Draw - renderId {renderId}: {ex}"); }
+                catch (Exception ex) { Log.Line($"Exception in IcoSphere Draw - renderId {renderId.ToString()}: {ex}"); }
                 //_dsutil1.StopWatchReport("Draw", 1);
             }
 
@@ -402,28 +386,11 @@ namespace DefenseShields.Support
             private void StepEffects()
             {
                 _mainLoop++;
-
                 if (_mainLoop == 61) _mainLoop = 0;
-                //if (_impactCount[4] != 0) _impactCount[4] = _impactCount[4] + 1;
-                if (_glitchCount != 0) _glitchCount++;
-                if (_chargeCount != 0) _chargeCount++;
-
-                var rndNum1 = Random.Next(30, 69);
-                if (_impactCount[4] == 0 && _glitchCount == 0 && _pulseCount == 239 && _pulseCount == rndNum1)
-                {
-                    //_glitchCount = 1;
-                    //Log.Line($"Random Pulse: {_pulse}");
-                }
                 if (_impact)
                 {
                     _impactsFinished = false;
-                    _glitchStep = 0;
-                    _glitchCount = 0;
-                    _chargeCount = 0;
                     _impactDrawStep = 0;
-                    _charged = false;
-                    _pulseCount = 0;
-                    _pulse = 40;
                 }
                 if (!_impactsFinished)
                 {
@@ -459,23 +426,10 @@ namespace DefenseShields.Support
                     {
                         _impactsFinished = true;
                         _impactDrawStep = 0;
-                        _chargeCount = 1;
                         for (int i = 0; i < _triColorBuffer.Length; i++)
                             _triColorBuffer[i] = _defaultColor;
                     }
                 }
-                if (_glitchCount == GlitchSteps + 1)
-                {
-                    _glitchCount = 0;
-                    _glitchStep = 0;
-                }
-                if (_chargeCount == ImpactChargeSteps + 1)
-                {
-                    _charged = true;
-                    _chargeCount = 0;
-                }
-                if (_glitchCount == 0 && _impactCount[4] == 0 && _charged && !_impact) _effectsDone = true;
-                else _effectsDone = false;
             }
 
             private void Models()
@@ -488,7 +442,7 @@ namespace DefenseShields.Support
                     if (_impactCount[4] % 2 == 1)
                     {
                         _shield.Render.Visible = true;
-                        ((MyEntity)_shield).RefreshModels($"{modPath}\\Models\\LargeField{n}.mwm", null);
+                        ((MyEntity)_shield).RefreshModels($"{modPath}\\Models\\LargeField{n.ToString()}.mwm", null);
                         _shield.Render.RemoveRenderObjects();
                         _shield.Render.UpdateRenderObject(true);
                         if (n < 3)_shield.SetEmissiveParts("CWShield", Color.DarkViolet, 1);
@@ -528,16 +482,12 @@ namespace DefenseShields.Support
                 var rndNum4 = Random.Next(40, 120);
 
                 //currentColor
-                _defaultColor = Color.FromNonPremultiplied(15, 0, 0, 255);
+                _defaultColor = Color.FromNonPremultiplied(0, 0, 0, 64);
 
                 //waveColor
                 //var vwaveColor = Color.FromNonPremultiplied(cv3, 0, cv4, rndNum1 - 5);
                 var vwaveColor = Color.FromNonPremultiplied(0, 0, 0, 225);
                 _waveColor = vwaveColor;
-
-                //maxColor
-                var vmaxColor = Color.FromNonPremultiplied(0, 0, 1, 1);
-                _maxColor = vmaxColor;
 
                 //wavePassedColor
                 var vwavePassedColor = Color.FromNonPremultiplied(0, 0, 12, colorRnd1);
@@ -554,41 +504,6 @@ namespace DefenseShields.Support
                 //hitColor
                 var vhitColor = Color.FromNonPremultiplied(0, 0, colorRnd2, rndNum1);
                 _hitColor = vhitColor;
-
-                //pulseColor
-                if (_charged)
-                {
-                    if (_pulseCount < 60 && _pulseCount % 4 == 0)
-                    {
-                        _pulse -= 1;
-                    }
-                    else if (_pulseCount >= 60 && _pulseCount % 4 == 0)
-                    {
-                        _pulse += 1;
-                    }
-                    if (_pulseCount != 119) _pulseCount++;
-                    else _pulseCount = 0;
-                }
-
-                var pulseColor1 = Color.FromNonPremultiplied(_pulse, 0, 0, 16);
-                var pulseColor2 = Color.FromNonPremultiplied(0, 0, 100, 16);
-                var vglitchColor = Color.FromNonPremultiplied(0, 0, rndNum4, rndNum1 - 5);
-                _glitchColor = vglitchColor;
-                if (_pulseCount == 119 && _pulseCount == rndNum3 && _glitchStep == 0)
-                {
-                    //_glitchCount = 1;
-                    Log.Line($"Random Pulse: {_pulse}");
-                }
-                var vpulseColor = _enemy ? pulseColor1 : pulseColor2;
-                _pulseColor = vpulseColor;
-
-                //chargeColor
-                var rndNum2 = Random.Next(1, 9);
-                _chargeColor = Color.FromNonPremultiplied(0, 0, 0, 16 + _chargeCount / 6);
-                if (_chargeCount % rndNum2 == 0)
-                {
-                    _chargeColor = Color.FromNonPremultiplied(0, 0, 0, 16 + _chargeCount / 8);
-                }
             }
         }
     }
