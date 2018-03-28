@@ -79,7 +79,7 @@ namespace DefenseShields
         private Vector3D _worldImpactPosition = new Vector3D(Vector3D.NegativeInfinity);
         private Vector3D _localImpactPosition;
         private Vector3D _detectionCenter;
-        private Vector3D _shieldSize;
+        public Vector3D _shieldSize { get; set; }
 
         private readonly Vector3D[] _rootVecs = new Vector3D[12];
         private readonly Vector3D[] _physicsOutside = new Vector3D[642];
@@ -174,12 +174,13 @@ namespace DefenseShields
 
             Entity.Components.TryGet(out _sink);
             _sink.SetRequiredInputFuncByType(_powerDefinitionId, CalcRequiredPower);
-            Block.CubeGrid.Components.Add(new ShieldGridComponent(Block));
             NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
 
             if (!_shields.ContainsKey(Entity.EntityId)) _shields.Add(Entity.EntityId, this);
+            Block.CubeGrid.Components.Add(new ShieldGridComponent(_shields));
+
         }
         #endregion
 
@@ -569,6 +570,7 @@ namespace DefenseShields
                 _shieldGridMatrix = Block.WorldMatrix;
                 DetectionMatrix = MatrixD.Rescale(_shieldGridMatrix, new Vector3D(_width, _height, _depth));
                 _detectionCenter = Block.PositionComp.WorldVolume.Center;
+                _shieldSize = DetectionMatrix.Scale;
             }
             Range = (float)_detectMatrix.Scale.AbsMax() + 15f;
         }
@@ -1007,9 +1009,16 @@ namespace DefenseShields
                     lock (Eject) Eject.Add(grid, ejectDir);
                     return;
                 }
+
                 ShieldGridComponent shield;
+                var shieldActive = false;
                 grid.Components.TryGet(out shield);
-                if (shield != null) Log.Line($"My name: {Block.CubeGrid.DisplayName} Enemy Name: {shield.Entity.DisplayName} Active: {shield.ShieldActive()}");
+                if (shield != null) shieldActive = shield.ShieldActive(Block.CubeGrid.WorldVolume.Center, _shieldSize.Max());
+                if (shieldActive)
+                {
+                    Log.Line($"in range of another shield");
+                } 
+
                 if (grid.PositionComp.WorldVolume.Radius < 6.5)
                 {
                     var contactPoint = CustomCollision.SmallIntersect(DmgBlocks, grid, _detectMatrix, _detectMatrixInv);

@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
+using VRageMath;
 
 namespace DefenseShields.Support
 {
@@ -25,11 +27,11 @@ namespace DefenseShields.Support
     public class ShieldGridComponent : MyEntityComponentBase
     {
         private static List<ShieldGridComponent> m_shields = new List<ShieldGridComponent>();
-        private readonly IMyCubeBlock Block;
+        private readonly Dictionary<long, DefenseShields> Components;
 
-        public ShieldGridComponent(IMyCubeBlock block)
+        public ShieldGridComponent(Dictionary<long, DefenseShields> components)
         {
-            Block = block;
+            Components = components;
         }
 
         public override void OnAddedToContainer()
@@ -77,9 +79,14 @@ namespace DefenseShields.Support
             get { return "Shield"; }
         }
 
-        public bool ShieldActive()
+        public bool ShieldActive(Vector3D otherShieldCenter, double otherShieldRadius)
         {
-            return Block.IsFunctional && Block.IsWorking;
+            foreach (var component in Components.Values)
+            {
+                var dist = Vector3D.Distance(component.Block.CubeGrid.PositionComp.WorldVolume.Center, otherShieldCenter);
+                if (component.Block.IsFunctional && component.Block.IsWorking && dist < component._shieldSize.Max() + otherShieldRadius) return true;
+            }
+            return false;
         }
     }
 }
