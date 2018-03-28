@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Collections;
+using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
@@ -76,6 +77,45 @@ namespace DefenseShields.Support
             for (int i = 0; i < voxelHitVecs.Count; i++) shieldGrid.Physics.ApplyImpulse((bOriBBoxD.Center - voxelHitVecs[i]) * shieldGridMass / 250, voxelHitVecs[i]);
         }
 
+        public static void MeshCollisionStaticSphere(IMyCubeBlock block, BoundingSphereD shieldSphere, Vector3D[] physicsVerts, MatrixD matrix, MyOrientedBoundingBoxD sOriBBoxD)
+        {
+            var meshHitVecs = new List<Vector3D>();
+
+            var obbSphereTest = sOriBBoxD.Intersects(ref shieldSphere);
+            if (!obbSphereTest) return;
+            for (int i = 0; i < 642; i++)
+            {
+                var from = physicsVerts[i];
+                var hit = PointInShield(from, matrix);
+                if (hit) meshHitVecs.Add(from);
+                //if (hit) Log.Line($"we have a hit");
+                //DsDebugDraw.DrawLineToVec(from, shieldSphere.Center, Color.Black);
+            }
+        }
+
+        public static void MeshCollisionSphere(IMyCubeGrid shieldGrid, BoundingSphereD shieldSphere, Vector3D[] physicsVerts, MatrixD matrix, MyOrientedBoundingBoxD sOriBBoxD)
+        {
+            var sVel = shieldGrid.Physics.LinearVelocity;
+            var sVelSqr = sVel.LengthSquared();
+            var sAvelSqr = shieldGrid.Physics.AngularVelocity.LengthSquared();
+            var shieldGridMass = shieldGrid.Physics.Mass;
+
+            var meshHitVecs = new List<Vector3D>();
+            if ((sVelSqr > 0.00001 || sAvelSqr > 0.00001))
+            {
+                var obbSphereTest = sOriBBoxD.Intersects(ref shieldSphere);
+                if (!obbSphereTest) return;
+                for (int i = 0; i < 642; i++)
+                {
+                    var from = physicsVerts[i];
+                    var hit = PointInShield(from, matrix);
+                    if (hit) meshHitVecs.Add(from);
+                    //if (hit) Log.Line($"we have a hit");
+                    //DsDebugDraw.DrawLineToVec(from, shieldSphere.Center, Color.Black);
+                }
+            }
+            for (int i = 0; i < meshHitVecs.Count; i++) shieldGrid.Physics.ApplyImpulse((sOriBBoxD.Center - meshHitVecs[i]) * shieldGridMass / 250, meshHitVecs[i]);
+        }
 
         public static void VoxelCollision(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, IMyVoxelMap voxelMap, MyOrientedBoundingBoxD bOriBBoxD)
         {

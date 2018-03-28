@@ -83,8 +83,10 @@ namespace DefenseShields.Support
         {
             foreach (var component in Components.Values)
             {
-                var dist = Vector3D.Distance(component.Block.CubeGrid.PositionComp.WorldVolume.Center, otherShieldCenter);
-                if (component.Block.IsFunctional && component.Block.IsWorking && dist < component._shieldSize.Max() + otherShieldRadius) return true;
+                var b = component.Block;
+                var center = component.GridIsMobile ? b.CubeGrid.PositionComp.WorldVolume.Center : b.PositionComp.WorldVolume.Center;
+                var dist = Vector3D.Distance(center, otherShieldCenter);
+                if (b.IsFunctional && b.IsWorking && dist < component.ShieldSize.Max() + otherShieldRadius) return true;
             }
             return false;
         }
