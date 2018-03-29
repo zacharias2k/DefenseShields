@@ -670,44 +670,5 @@ namespace DefenseShields.Support
             rangedVerts[1] = minNum2;
             rangedVerts[2] = minNum3;
         }
-
-        public static void SmallIntersectDebugDraw(Vector3D[] physicsOutside, int face, int[][] vertLines, int[] rangedVert, Vector3D bWorldCenter, List<Vector3D> intersections)
-        {
-            //DrawNums(_physicsOutside,zone, Color.AntiqueWhite);
-            DsDebugDraw.DrawLineToNum(physicsOutside, rangedVert[0], bWorldCenter, Color.Red);
-            DsDebugDraw.DrawLineToNum(physicsOutside, rangedVert[1], bWorldCenter, Color.Green);
-            DsDebugDraw.DrawLineToNum(physicsOutside, rangedVert[2], bWorldCenter, Color.Gold);
-
-            int[] closestLineFace;
-            switch (face)
-            {
-                case 0:
-                    closestLineFace = vertLines[rangedVert[0]];
-                    break;
-                case 1:
-                    closestLineFace = vertLines[rangedVert[1]];
-                    break;
-                default:
-                    closestLineFace = vertLines[rangedVert[2]];
-                    break;
-            }
-
-            var c1 = Color.Black;
-            var c2 = Color.Black;
-            //if (checkBackupFace1) c1 = Color.Green;
-            //if (checkBackupFace2) c2 = Color.Gold;
-            c1 = Color.Green;
-            c2 = Color.Gold;
-
-            DsDebugDraw.DrawLineNums(physicsOutside, closestLineFace, Color.Red);
-            //DrawLineNums(_physicsOutside, closestLineFace1, c1);
-            //DrawLineNums(_physicsOutside, closestLineFace2, c2);
-
-            DsDebugDraw.DrawTriVertList(intersections);
-
-            //DrawLineToNum(_physicsOutside, rootVerts, bWorldCenter, Color.HotPink);
-            //DrawLineToNum(_physicsOutside, rootVerts[1], bWorldCenter, Color.Green);
-            //DrawLineToNum(_physicsOutside, rootVerts[2], bWorldCenter, Color.Gold);
-        }
     }
 }

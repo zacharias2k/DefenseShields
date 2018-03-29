@@ -10,6 +10,10 @@ namespace DefenseShields.Support
 {
     public class DSUtils
     {
+        public static float Mod(int x, int m)
+        {
+            return (x % m + m) % m;
+        }
 
         public Stopwatch Sw { get; } = new Stopwatch();
         public double Last;

@@ -222,8 +222,9 @@
     <None Include=".vs\VSWorkspaceState.json" />
     <None Include="Audio\ShieldHitNormalHigh.xwm" />
     <None Include="Data\Audio.sbc" />
-    <None Include="Data\Scripts\TransparentMaterials.sbc" />
-    <None Include="Data\StationShield.sbc" />
+    <None Include="Data\StationShield.sbc">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="Models\GeneratorArm_Large.mwm" />
     <None Include="Models\GeneratorBase_Large.mwm" />
     <None Include="Models\GeneratorBase_Large_Constr1.mwm" />
@@ -240,37 +241,34 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\Checkbox.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Controls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseShieldsBase.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Guns.cs" />
+    <Compile Include="Guns.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Network\SerializationClasses.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\OldCode.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CustomCollision.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\BoxShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\ConvexHullShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\Ellipsoid.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\CSupport\CollisionMath.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\CollisionMath.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\CustomTypes.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\DataStructure.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Structure\DataStructure.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\MinkowskiSumShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\MultiShape.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\CSupport\Octree.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\CSupport\ResourcePool.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\Octree.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\ResourcePool.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\Shapes.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\DebugDraw.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\DistPoint3Triangle3.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Distiance\DistPoint3Triangle3.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Explosions.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Logging.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Slider.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\MyMaths.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\DSUtils.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\SpawnField.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\StationShield.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\StructureBuilder.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\textapi.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseShields.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Structure\StructureBuilder.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\GJKCollide.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Triangle3.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\Triangle3.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\TriangleMeshShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\XenoCollide.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Voxel.cs" />
+    <Compile Include="Voxel.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include=".git\objects\info\" />

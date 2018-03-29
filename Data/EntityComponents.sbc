@@ -3,11 +3,10 @@
     <EntityComponent xsi:type="MyObjectBuilder_ModStorageComponentDefinition">
       <Id>
         <TypeId>ModStorageComponent</TypeId>
-        <SubtypeId>ProjectorPreview</SubtypeId>
+        <SubtypeId>DefenseShields</SubtypeId>
       </Id>
       <RegisteredStorageGuids>
-        <guid>1F2F7BAA-31BA-4E75-82C4-FA29679DE822</guid>
-        <guid>E973AD49-F3F4-41B9-811B-2B114E6EE0F9</guid>
+        <guid>85BBB4F5-4FB9-4230-BEEF-BB79C9811508</guid>
       </RegisteredStorageGuids>
     </EntityComponent>
   </EntityComponents>
