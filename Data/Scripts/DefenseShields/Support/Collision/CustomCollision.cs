@@ -117,6 +117,13 @@ namespace DefenseShields.Support
             for (int i = 0; i < meshHitVecs.Count; i++) shieldGrid.Physics.ApplyImpulse((sOriBBoxD.Center - meshHitVecs[i]) * shieldGridMass / 250, meshHitVecs[i]);
         }
 
+        public static void ShieldX2PointsInside(Vector3D[] shield1Verts, MatrixD shield1MatrixInv, Vector3D[] shield2Verts, MatrixD shield2MatrixInv, List<Vector3D> insidePoints)
+        {
+            for (int i = 0; i < 642; i++) if (Vector3D.Transform(shield1Verts[i], shield2MatrixInv).LengthSquared() <= 1) insidePoints.Add(shield1Verts[i]); 
+            for (int i = 0; i < 642; i++) if (Vector3D.Transform(shield2Verts[i], shield1MatrixInv).LengthSquared() <= 1) insidePoints.Add(shield2Verts[i]);
+            Log.Line($"{insidePoints.Count.ToString()}");
+        }
+
         public static void VoxelCollision(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, IMyVoxelMap voxelMap, MyOrientedBoundingBoxD bOriBBoxD)
         {
             var sVel = shieldGrid.Physics.LinearVelocity;

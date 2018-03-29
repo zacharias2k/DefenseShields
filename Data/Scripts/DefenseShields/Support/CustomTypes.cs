@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Net.Configuration;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
@@ -26,12 +27,12 @@ namespace DefenseShields.Support
 
     public class ShieldGridComponent : MyEntityComponentBase
     {
-        private static List<ShieldGridComponent> m_shields = new List<ShieldGridComponent>();
-        private readonly Dictionary<long, DefenseShields> Components;
+        private static List<ShieldGridComponent> gridShield = new List<ShieldGridComponent>();
+        public readonly DefenseShields DS;
 
-        public ShieldGridComponent(Dictionary<long, DefenseShields> components)
+        public ShieldGridComponent(DefenseShields ds)
         {
-            Components = components;
+            DS = ds;
         }
 
         public override void OnAddedToContainer()
@@ -40,7 +41,7 @@ namespace DefenseShields.Support
 
             if (Container.Entity.InScene)
             {
-                m_shields.Add(this);
+                gridShield.Add(this);
             }
         }
 
@@ -49,7 +50,7 @@ namespace DefenseShields.Support
 
             if (Container.Entity.InScene)
             {
-                m_shields.Remove(this);
+                gridShield.Remove(this);
             }
 
             base.OnBeforeRemovedFromContainer();
@@ -59,12 +60,12 @@ namespace DefenseShields.Support
         {
             base.OnAddedToScene();
 
-            m_shields.Add(this);
+            gridShield.Add(this);
         }
 
         public override void OnRemovedFromScene()
         {
-            m_shields.Remove(this);
+            gridShield.Remove(this);
 
             base.OnRemovedFromScene();
         }
@@ -79,16 +80,12 @@ namespace DefenseShields.Support
             get { return "Shield"; }
         }
 
-        public bool ShieldActive(Vector3D otherShieldCenter, double otherShieldRadius)
+        public void ComponentNames()
         {
-            foreach (var component in Components.Values)
+            foreach (var shield in gridShield)
             {
-                var b = component.Block;
-                var center = component.GridIsMobile ? b.CubeGrid.PositionComp.WorldVolume.Center : b.PositionComp.WorldVolume.Center;
-                var dist = Vector3D.Distance(center, otherShieldCenter);
-                if (b.IsFunctional && b.IsWorking && dist < component.ShieldSize.Max() + otherShieldRadius) return true;
+                Log.Line($"{shield.DS.Block.CubeGrid.DisplayName} {shield.DS.ShieldSize.Max()} {shield.DS.ShieldActive} {shield.DS.Block.CubeGrid.Physics.LinearVelocity}");
             }
-            return false;
         }
     }
 }
