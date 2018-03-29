@@ -1,8 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.Net.Configuration;
 using VRage.Game.Components;
-using VRage.Game.ModAPI;
-using VRage.ModAPI;
 using VRageMath;
 
 namespace DefenseShields.Support
@@ -84,7 +81,8 @@ namespace DefenseShields.Support
         {
             foreach (var shield in gridShield)
             {
-                Log.Line($"{shield.DS.Block.CubeGrid.DisplayName} {shield.DS.ShieldSize.Max()} {shield.DS.ShieldActive} {shield.DS.Block.CubeGrid.Physics.LinearVelocity}");
+                Log.Line(
+                    $"{shield.DS.Block.CubeGrid.DisplayName} {shield.DS.ShieldSize.Max()} {shield.DS.ShieldActive} {shield.DS.Block.CubeGrid.Physics.LinearVelocity}");
             }
         }
     }

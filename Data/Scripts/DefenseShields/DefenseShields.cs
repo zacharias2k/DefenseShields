@@ -22,7 +22,6 @@ using VRage.Collections;
 using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
 using ParallelTasks;
-using Sandbox.Engine.Physics;
 using Sandbox.Game.Entities;
 
 namespace DefenseShields
@@ -1020,25 +1019,40 @@ namespace DefenseShields
                 {
                     if (GridIsMobile)
                     {
-                        //Log.Line($"{shield.DS.Block.CubeGrid.Physics.LinearVelocity.Length()}");
-                        //_dsutil1.Sw.Start();
-                        var center = Block.CubeGrid.WorldVolume.Center;
-                        SetShieldShapeMatrix();
-                        var sOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shield.WorldAABB);
-                        _shield.SetPosition(center);
-                        sOriBBoxD.Center = center;
-                        CustomCollision.MeshCollisionSphere(Block.CubeGrid, _shield.WorldVolume, _physicsOutside, _detectMatrixInv, sOriBBoxD);
-                        //_dsutil1.StopWatchReport("timming", -1);
+                        _dsutil1.Sw.Start();
+                        var insidePoints = new List<Vector3D>();
+                        //var center = Block.CubeGrid.WorldVolume.Center;
+                        //SetShieldShapeMatrix();
+                        //var sOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shield.WorldAABB);
+                        //_shield.SetPosition(center);
+                        //sOriBBoxD.Center = center;
+                        CustomCollision.ShieldX2PointsInside(shield.DS._physicsOutside, shield.DS._detectMatrixInv, _physicsOutside, _detectMatrixInv, insidePoints);
+                        for (int i = 0; i < insidePoints.Count; i++)
+                        {
+                            shield.DS.Block.CubeGrid.Physics.ApplyImpulse((shield.DS.Block.CubeGrid.PositionComp.WorldVolume.Center - insidePoints[i]) * shield.DS.Block.CubeGrid.Physics.Mass / 250, insidePoints[i]);
+                            grid.Physics.ApplyImpulse((grid.PositionComp.WorldVolume.Center - insidePoints[i]) * grid.Physics.Mass / 250, insidePoints[i]);
+                        }
+                        _dsutil1.StopWatchReport("timming", -1);
+                        Log.Line($"{insidePoints.Count}");
                     }
                     else
                     {
-                        Log.Line($"{shield.DS.Block.CubeGrid.Physics.LinearVelocity.Length()}");
-                        var center = Block.WorldVolume.Center;
-                        SetShieldShapeMatrix();
-                        var sOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shield.WorldAABB);
-                        _shield.SetPosition(center);
-                        sOriBBoxD.Center = center;
-                        CustomCollision.MeshCollisionStaticSphere(Block, _shield.WorldVolume, _physicsOutside, _detectMatrixInv, sOriBBoxD);
+                        _dsutil1.Sw.Start();
+                        //var center = Block.WorldVolume.Center;
+                        //SetShieldShapeMatrix();
+                        //var sOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shield.WorldAABB);
+                        //_shield.SetPosition(center);
+                        //sOriBBoxD.Center = center;
+                        var insidePoints = new List<Vector3D>();
+                        CustomCollision.ShieldX2PointsInside(shield.DS._physicsOutside, shield.DS._detectMatrixInv, _physicsOutside, _detectMatrixInv, insidePoints);
+                        for (int i = 0; i < insidePoints.Count; i++)
+                        {
+                            shield.DS.Block.CubeGrid.Physics.ApplyImpulse((shield.DS.Block.CubeGrid.PositionComp.WorldVolume.Center - insidePoints[i]) * shield.DS.Block.CubeGrid.Physics.Mass / 250, insidePoints[i]);
+                            grid.Physics.ApplyImpulse((grid.PositionComp.WorldVolume.Center - insidePoints[i]) * grid.Physics.Mass / 250, insidePoints[i]);
+                        }
+                        _dsutil1.StopWatchReport("timming", -1);
+                        Log.Line($"{insidePoints.Count}");
+
                     }
                     return;
                 } 
