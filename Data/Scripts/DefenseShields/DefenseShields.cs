@@ -573,7 +573,6 @@ namespace DefenseShields
                 //if (Block.IsWorking || _entityChanged) _prepareDraw = MyAPIGateway.Parallel.Start(PrepareSphere);
                 if (Block.IsWorking || _entityChanged) PrepareSphere();
                 if (sphereOnCamera && Block.IsWorking) _icosphere.Draw(GetRenderId());
-                Block.CubeGrid.GetCubeBlock(Block.LocalVolume.Center)
             }
             catch (Exception ex) { Log.Line($"Exception in Entity Draw: {ex}"); }
         }
