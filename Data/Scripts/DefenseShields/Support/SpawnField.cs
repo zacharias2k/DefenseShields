@@ -202,6 +202,7 @@ namespace DefenseShields.Support
             private Vector4[] _triColorBuffer;
 
             private Vector3D _impactPosState;
+            private Vector3D _chargePoint;
             private MatrixD _matrix;
 
             private static readonly Random Random = new Random();
@@ -209,21 +210,26 @@ namespace DefenseShields.Support
             private readonly int[] _impactCount = {0, 0, 0, 0, 0};
 
             private int _mainLoop;
+            private int _longLoop;
             private int _impactDrawStep;
             private int _modelCount;
+            private int _chargeDrawStep;
             private int _lod;
 
             private const int ImpactSteps = 80;
+            private const int ChargeSteps = 30;
 
             private Vector4 _hitColor;
             private Vector4 _waveColor;
             private Vector4 _wavePassedColor;
             private Vector4 _waveComingColor;
             private Vector4 _defaultColor;
+            private Vector4 _chargeColor;
 
             private bool _impactsFinished = true;
             private bool _enemy;
             private bool _impact;
+            private bool _charge;
 
             private IMyEntity _shield;
 
@@ -231,7 +237,7 @@ namespace DefenseShields.Support
             private readonly MyStringId _faceId1 = MyStringId.GetOrCompute("CockpitFighterGlassInside");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
 
             private readonly MyStringId _faceId2 = MyStringId.GetOrCompute("SunDisk");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
-            private readonly MyStringId _faceId3 = MyStringId.GetOrCompute("Glass");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
+            private readonly MyStringId _faceId3 = MyStringId.GetOrCompute("CockpitFighterGlassInside");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private readonly MyStringId _faceId4 = MyStringId.GetOrCompute("CockpitGlassInside");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
 
             private DSUtils _dsutil1 = new DSUtils();
@@ -311,15 +317,12 @@ namespace DefenseShields.Support
                 _enemy = enemy;
                 _matrix = matrix;
                 _impactPosState = impactPos;
-
                 if (impactPos == Vector3D.NegativeInfinity) _impact = false;
                 else ComputeImpacts();
-
                 if (impactSize <= 10) impactSize = (int)4;
                 else impactSize = (int)1;
                 var impactSpeed = 2;
                 if (impactSize < 4) impactSpeed = 1;
-
                 if (prevLod != _lod) // entChanged || Not sure if I need
                 {
                     var ib = _backing.IndexBuffer[_lod];
@@ -329,13 +332,14 @@ namespace DefenseShields.Support
 
                 StepEffects();
                 InitColors();
+                if (_charge && _impactsFinished && prevLod == _lod) ChargeColorAssignments(prevLod);
                 if (_impactsFinished && prevLod == _lod) return;
 
                 //Log.Line($"impacts: {_impactCount[4]} {_impactCount[3]} {_impactCount[2]} {_impactCount[1]} {_impactCount[0]}");
 
                 if (_impactCount[4] != 0) MyAPIGateway.Parallel.Start(Models);
                 //_dsutil2.Sw.Start();
-                ColorAssignments(impactSize, impactSpeed, prevLod);
+                ImpactColorAssignments(impactSize, impactSpeed, prevLod);
                 //_dsutil2.StopWatchReport("colorcalc", 1);
                 // vec3 localSpherePositionOfImpact;
                 //    foreach (vec3 triangleCom in triangles) {
@@ -350,7 +354,7 @@ namespace DefenseShields.Support
                 // Multiplying by the sphere radius(1 for the unit sphere in question) gives the arc length.
             }
 
-            private void ColorAssignments(float impactSize, int impactSpeed, int prevLod)
+            private void ImpactColorAssignments(float impactSize, int impactSpeed, int prevLod)
             {
                 //Log.Line($"colorAssignments - entChanged: {entChanged} - lod: {_lod} - prevlod: {prevLod}");
                 var ib = _backing.IndexBuffer[_lod];
@@ -398,6 +402,38 @@ namespace DefenseShields.Support
                 }
             }
 
+            private void ChargeColorAssignments(int prevLod)
+            {
+                var ib = _backing.IndexBuffer[_lod];
+                for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
+                {
+                    var i0 = ib[i];
+                    var i1 = ib[i + 1];
+                    var i2 = ib[i + 2];
+
+                    var v0 = _vertexBuffer[i0];
+                    var v1 = _vertexBuffer[i1];
+                    var v2 = _vertexBuffer[i2];
+
+                    if (prevLod != _lod)
+                    {
+                        var lclPos = (v0 + v1 + v2) / 3 - _matrix.Translation;
+                        var normlclPos = Vector3D.Normalize(lclPos);
+                        _preCalcNormLclPos[j] = normlclPos;
+                        for (int c = 0; c < _triColorBuffer.Length; c++)
+                            _triColorBuffer[c] = _defaultColor;
+                    }
+
+                    var dotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _chargePoint);
+                    var impactFactor = Math.Acos(dotOfNormLclImpact);
+                    var waveMultiplier = Pi / ChargeSteps;
+                    var wavePosition = waveMultiplier * _chargeDrawStep;
+                    var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
+                    if (relativeToWavefront < .10) _triColorBuffer[j] = _chargeColor;
+                    else _triColorBuffer[j] = _defaultColor;
+                }
+            }
+
             public void Draw(uint renderId)
             {
                 //_dsutil1.Sw.Start();
@@ -405,8 +441,9 @@ namespace DefenseShields.Support
                 {
                     var faceMaterial = _faceId2;
                     var ib = _backing.IndexBuffer[_lod];
-                    var v21 = new Vector2(.5f);
-                    var v22 = new Vector2(.25f);
+                    var v20 = new Vector2(.5f);
+                    var v21 = new Vector2(0.25f);
+                    var v22 = new Vector2(0.25f);
                     //var v21 = new Vector2((0.25f) * (_mainLoop % 2) + 1);
                     for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
                     {
@@ -424,9 +461,10 @@ namespace DefenseShields.Support
                         var color = _triColorBuffer[j];
                         if (color == _defaultColor) faceMaterial = _faceId1;
                         else if (color == _waveColor) faceMaterial = _faceId2;
+                        else if (color == _chargeColor) faceMaterial = _faceId3;
                         //else if (color == _waveComingColor) faceMaterial = _faceId1;
                         //else if (color == _wavePassedColor) faceMaterial = _faceId1;
-                        MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, Vector2.Zero, v21, v22, faceMaterial, renderId, (v0 + v1 + v2) / 3, color);
+                        MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, v20, v21, v22, faceMaterial, renderId, (v0 + v1 + v2) / 3, color);
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in IcoSphere Draw - renderId {renderId.ToString()}: {ex}"); }
@@ -445,7 +483,6 @@ namespace DefenseShields.Support
                 for (int i = 4; i >= 0; i--)
                 {
                     if (_impactPos[i] == Vector3D.NegativeInfinity) break;
-
                     _localImpacts[i] = _impactPos[i] - _matrix.Translation;
                     _localImpacts[i].Normalize();
                 }
@@ -454,11 +491,37 @@ namespace DefenseShields.Support
             private void StepEffects()
             {
                 _mainLoop++;
-                if (_mainLoop == 61) _mainLoop = 0;
+                if (_mainLoop == 61)
+                {
+                    _mainLoop = 0;
+                    _longLoop++;
+                    if (_longLoop == 10)
+                    {
+                        var localImpacts = Vector3D.Zero - _matrix.Translation;
+                        localImpacts.Normalize();
+                        _chargePoint = localImpacts;
+                        _charge = true;
+                        _longLoop = 0;
+                    }
+                }
                 if (_impact)
                 {
                     _impactsFinished = false;
                     _impactDrawStep = 0;
+                    _charge = false;
+                    _chargeDrawStep = 0;
+                }
+
+                if (_charge)
+                {
+                    _chargeDrawStep++;
+                    if (_chargeDrawStep == ChargeSteps + 1)
+                    {
+                        _charge = false;
+                        _chargeDrawStep = 0;
+                        for (int i = 0; i < _triColorBuffer.Length; i++)
+                            _triColorBuffer[i] = _defaultColor;
+                    }
                 }
                 if (!_impactsFinished)
                 {
@@ -550,7 +613,7 @@ namespace DefenseShields.Support
                 var rndNum4 = Random.Next(40, 120);
 
                 //currentColor
-                _defaultColor = Color.FromNonPremultiplied(0, 0, 0, 64);
+                _defaultColor = Color.FromNonPremultiplied(0, 0, 0, 248);
 
                 //waveColor
                 //var vwaveColor = Color.FromNonPremultiplied(cv3, 0, cv4, rndNum1 - 5);
@@ -572,6 +635,10 @@ namespace DefenseShields.Support
                 //hitColor
                 var vhitColor = Color.FromNonPremultiplied(0, 0, colorRnd2, rndNum1);
                 _hitColor = vhitColor;
+
+                //chargeColor
+                var vchargeColor = Color.FromNonPremultiplied(255, 255, 255, 255);
+                _chargeColor = vchargeColor;
             }
         }
     }

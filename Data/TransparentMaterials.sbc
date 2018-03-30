@@ -305,5 +305,42 @@
       <ReflectionShadow>0.1</ReflectionShadow>
       <Gloss>0.4</Gloss>
     </TransparentMaterial>
+
+	<TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>FrostedGlass</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>false</IgnoreDepth>
+      <SoftParticleDistanceScale>1</SoftParticleDistanceScale>
+      <Texture>Textures\Particles\FrostedGlass.dds</Texture>
+      <UseAtlas>false</UseAtlas>
+      <NeedSort>true</NeedSort>
+      <UVOffset>
+        <X>0</X>
+        <Y>0</Y>
+      </UVOffset>
+      <UVSize>
+        <X>1</X>
+        <Y>1</Y>
+      </UVSize>
+      <Color>
+        <X>1</X>
+        <Y>1</Y>
+        <Z>1</Z>
+        <W>0.2</W>
+      </Color>
+      <ShadowMultiplier>
+        <X>0.15</X>
+        <Y>0.15</Y>
+        <Z>0.15</Z>
+        <W>4</W>
+      </ShadowMultiplier>
+      <Reflectivity>0.06</Reflectivity>
+      <Fresnel>1.2</Fresnel>
+    </TransparentMaterial>
   </TransparentMaterials>
 </Definitions>

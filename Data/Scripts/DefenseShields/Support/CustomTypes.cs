@@ -25,11 +25,11 @@ namespace DefenseShields.Support
     public class ShieldGridComponent : MyEntityComponentBase
     {
         private static List<ShieldGridComponent> gridShield = new List<ShieldGridComponent>();
-        public readonly DefenseShields DS;
+        public readonly DefenseShields DefenseShields;
 
-        public ShieldGridComponent(DefenseShields ds)
+        public ShieldGridComponent(DefenseShields defenseShields)
         {
-            DS = ds;
+            DefenseShields = defenseShields;
         }
 
         public override void OnAddedToContainer()
@@ -75,15 +75,6 @@ namespace DefenseShields.Support
         public override string ComponentTypeDebugString
         {
             get { return "Shield"; }
-        }
-
-        public void ComponentNames()
-        {
-            foreach (var shield in gridShield)
-            {
-                Log.Line(
-                    $"{shield.DS.Block.CubeGrid.DisplayName} {shield.DS.ShieldSize.Max()} {shield.DS.ShieldActive} {shield.DS.Block.CubeGrid.Physics.LinearVelocity}");
-            }
         }
     }
 }

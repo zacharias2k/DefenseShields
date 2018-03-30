@@ -23,6 +23,8 @@ using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
 using ParallelTasks;
 using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Cube;
+using Sandbox.Game.Gui;
 
 namespace DefenseShields
 {
@@ -35,7 +37,7 @@ namespace DefenseShields
 
         private float _power = 0.0001f;
         private float _animStep;
-        internal float Range { get; set; }
+        internal float Range;
         private float _width;
         private float _height;
         private float _depth;
@@ -67,12 +69,12 @@ namespace DefenseShields
         internal bool Initialized; 
         private bool _animInit;
         private bool _playerwebbed;
-        internal bool GridIsMobile { get; set; }
+        internal bool GridIsMobile;
         private bool _explode;
         private bool _longLoop10;
         private bool _firstRun = true;
         private bool _enemy;
-        public bool ShieldActive { get; set; }
+        internal bool ShieldActive;
 
         private const ushort ModId = 50099;
 
@@ -215,8 +217,12 @@ namespace DefenseShields
                 {
                     CalcRequiredPower();
                     Block.GameLogic.GetAs<DefenseShields>().Sink.Update();
-                    Block.ShowInInventory = false;
-                    Block.ShowInInventory = true;
+                    if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel) // ugly workaround for realtime terminal updates
+                    {
+                        Block.ShowInToolbarConfig = false;
+                        Block.ShowInToolbarConfig = true;
+                        Log.Line($"test");
+                    }
                 }
 
                 if (GridIsMobile)
@@ -229,8 +235,6 @@ namespace DefenseShields
                     if (_entityChanged || Range <= 0) CreateShieldMatrices();
                 }
 
-                //Block.VisibilityChanged = false;
-                //Block.ShowInToolbarConfig = true;
                 if (ShieldActive)
                 {
                     if (_count == 0) _enablePhysics = false;
@@ -569,7 +573,7 @@ namespace DefenseShields
                 //if (Block.IsWorking || _entityChanged) _prepareDraw = MyAPIGateway.Parallel.Start(PrepareSphere);
                 if (Block.IsWorking || _entityChanged) PrepareSphere();
                 if (sphereOnCamera && Block.IsWorking) _icosphere.Draw(GetRenderId());
-
+                Block.CubeGrid.GetCubeBlock(Block.LocalVolume.Center)
             }
             catch (Exception ex) { Log.Line($"Exception in Entity Draw: {ex}"); }
         }
@@ -900,7 +904,7 @@ namespace DefenseShields
 
         private void WebEntities()
         {
-            _dsutil3.Sw.Start();
+            //_dsutil3.Sw.Start();
             var pruneSphere = new BoundingSphereD(_detectionCenter, Range);
             var pruneList = new List<MyEntity>();
 
@@ -952,11 +956,6 @@ namespace DefenseShields
                             {
                                 var grid = webent as IMyCubeGrid;
                                 if (grid == null) continue;
-                                Log.Line($"test 3 {grid.DisplayName}");
-                                if (_shields.ContainsKey(grid.EntityId))
-                                {
-                                    Log.Line($"shield vs shield collision");
-                                }
                                 //MyAPIGateway.Parallel.Start(() => GridIntersect(grid));
                                 GridIntersect(grid);
                                 continue;
@@ -983,7 +982,7 @@ namespace DefenseShields
                             continue;
                     }
                 }
-                _dsutil3.StopWatchReport("Webbing", 1);
+                //_dsutil3.StopWatchReport("Webbing", -1);
             }
         }
 
@@ -1013,46 +1012,46 @@ namespace DefenseShields
                     return;
                 }
 
-                ShieldGridComponent shield;
-                grid.Components.TryGet(out shield);
-                if (shield != null)
+                ShieldGridComponent shieldComponent;
+                grid.Components.TryGet(out shieldComponent);
+                if (shieldComponent != null && Entity.EntityId > shieldComponent.DefenseShields.Entity.EntityId)
                 {
+                    //_dsutil1.Sw.Start();
+                    var dsVerts = shieldComponent.DefenseShields._physicsOutside;
+                    var dsMatrixInv = shieldComponent.DefenseShields._detectMatrixInv;
+                    var myGrid = Block.CubeGrid;
                     if (GridIsMobile)
                     {
-                        _dsutil1.Sw.Start();
                         var insidePoints = new List<Vector3D>();
-                        //var center = Block.CubeGrid.WorldVolume.Center;
-                        //SetShieldShapeMatrix();
-                        //var sOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shield.WorldAABB);
-                        //_shield.SetPosition(center);
-                        //sOriBBoxD.Center = center;
-                        CustomCollision.ShieldX2PointsInside(shield.DS._physicsOutside, shield.DS._detectMatrixInv, _physicsOutside, _detectMatrixInv, insidePoints);
+                        CustomCollision.ShieldX2PointsInside(dsVerts, dsMatrixInv, _physicsOutside, _detectMatrixInv, insidePoints);
                         for (int i = 0; i < insidePoints.Count; i++)
                         {
-                            shield.DS.Block.CubeGrid.Physics.ApplyImpulse((shield.DS.Block.CubeGrid.PositionComp.WorldVolume.Center - insidePoints[i]) * shield.DS.Block.CubeGrid.Physics.Mass / 250, insidePoints[i]);
                             grid.Physics.ApplyImpulse((grid.PositionComp.WorldVolume.Center - insidePoints[i]) * grid.Physics.Mass / 250, insidePoints[i]);
+                            myGrid.Physics.ApplyImpulse((myGrid.PositionComp.WorldVolume.Center - insidePoints[i]) * myGrid.Physics.Mass / 250, insidePoints[i]);
                         }
-                        _dsutil1.StopWatchReport("timming", -1);
-                        Log.Line($"{insidePoints.Count}");
+                        if (insidePoints.Count > 0)
+                        {
+                            var contactPoint = DSUtils.CreateFromPointsList(insidePoints).Center;
+                            _worldImpactPosition = contactPoint;
+                            shieldComponent.DefenseShields._worldImpactPosition = contactPoint;
+                        }
                     }
                     else
                     {
-                        _dsutil1.Sw.Start();
-                        //var center = Block.WorldVolume.Center;
-                        //SetShieldShapeMatrix();
-                        //var sOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shield.WorldAABB);
-                        //_shield.SetPosition(center);
-                        //sOriBBoxD.Center = center;
                         var insidePoints = new List<Vector3D>();
-                        CustomCollision.ShieldX2PointsInside(shield.DS._physicsOutside, shield.DS._detectMatrixInv, _physicsOutside, _detectMatrixInv, insidePoints);
+                        CustomCollision.ShieldX2PointsInside(dsVerts, dsMatrixInv, _physicsOutside, _detectMatrixInv, insidePoints);
                         for (int i = 0; i < insidePoints.Count; i++)
                         {
-                            shield.DS.Block.CubeGrid.Physics.ApplyImpulse((shield.DS.Block.CubeGrid.PositionComp.WorldVolume.Center - insidePoints[i]) * shield.DS.Block.CubeGrid.Physics.Mass / 250, insidePoints[i]);
                             grid.Physics.ApplyImpulse((grid.PositionComp.WorldVolume.Center - insidePoints[i]) * grid.Physics.Mass / 250, insidePoints[i]);
+                            myGrid.Physics.ApplyImpulse((myGrid.PositionComp.WorldVolume.Center - insidePoints[i]) * myGrid.Physics.Mass / 250, insidePoints[i]);
                         }
-                        _dsutil1.StopWatchReport("timming", -1);
-                        Log.Line($"{insidePoints.Count}");
 
+                        if (insidePoints.Count > 0)
+                        {
+                            var contactPoint = DSUtils.CreateFromPointsList(insidePoints).Center;
+                            _worldImpactPosition = contactPoint;
+                            shieldComponent.DefenseShields._worldImpactPosition = contactPoint;
+                        }
                     }
                     return;
                 } 
