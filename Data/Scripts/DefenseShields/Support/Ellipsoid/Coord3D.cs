@@ -3,6 +3,7 @@ using static System.Math;
 
 namespace DefenseShields.Support
 {
+    /*
     /// <summary>
     /// Cartesian coordinate system defined by origin and transformation matrix (in row format).
     /// </summary>
@@ -325,6 +326,7 @@ namespace DefenseShields.Support
         }
 
     }
+    */
 }
 
 

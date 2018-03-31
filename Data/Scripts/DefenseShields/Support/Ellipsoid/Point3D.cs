@@ -3,6 +3,7 @@ using static System.Math;
 
 namespace DefenseShields.Support
 {
+    /*
     /// <summary>
     /// Point in 3D space defined in global or local reference frame.
     /// </summary>
@@ -245,4 +246,5 @@ namespace DefenseShields.Support
             return !p1.Equals(p2);
         }
     }
+    */
 }

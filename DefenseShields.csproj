@@ -243,9 +243,6 @@
     <Compile Include="Data\Scripts\DefenseShields\DefenseShieldsBase.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\Coord3D.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\Ellipsoid.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\GeometRi3D.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\Interface.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\Segment3D.cs" />
     <Compile Include="test\Box3d.cs" />
     <Compile Include="test\Circle3D.cs" />
     <Compile Include="test\Coord3D.cs" />
@@ -253,8 +250,6 @@
     <Compile Include="test\Ellipsoid.cs" />
     <Compile Include="test\GeometRi3D.cs" />
     <Compile Include="test\Interface.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\Line3D.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\Matrix3D.cs" />
     <Compile Include="test\Line3D.cs" />
     <Compile Include="test\Matrix3D.cs" />
     <Compile Include="test\Plane3D.cs" />
@@ -297,7 +292,6 @@
     <Compile Include="test\Segment3D.cs" />
     <Compile Include="test\Sphere.cs" />
     <Compile Include="test\Triangle.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\Vector3D.cs" />
     <Compile Include="test\Vector3D.cs" />
     <Compile Include="Voxel.cs" />
   </ItemGroup>
