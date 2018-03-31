@@ -250,8 +250,8 @@ namespace DefenseShields
                         }
                     }
                     SyncThreadedEnts();
-                    //if (_enablePhysics) MyAPIGateway.Parallel.Start(WebEntities);
-                    if (_enablePhysics) WebEntities();
+                    if (_enablePhysics) MyAPIGateway.Parallel.Start(WebEntities);
+                    //if (_enablePhysics) WebEntities();
                 }
                 _dsutil2.StopWatchReport("main loop", 1);
             }
@@ -544,7 +544,7 @@ namespace DefenseShields
         #endregion
 
         #region Shield Draw
-        private Task? _prepareDraw = null;
+        //private Task? _prepareDraw = null;
         public void Draw(int onCount, bool sphereOnCamera)
         {
             try
@@ -946,8 +946,8 @@ namespace DefenseShields
                             {
                                 var grid = webent as IMyCubeGrid;
                                 if (grid == null) continue;
-                                //MyAPIGateway.Parallel.Start(() => GridIntersect(grid));
-                                GridIntersect(grid);
+                                MyAPIGateway.Parallel.Start(() => GridIntersect(grid));
+                                //GridIntersect(grid);
 
                                 continue;
                             }
@@ -955,8 +955,8 @@ namespace DefenseShields
                             {
                                 var grid = webent as IMyCubeGrid;
                                 if (grid == null) continue;
-                                //MyAPIGateway.Parallel.Start(() => GridIntersect(grid));
-                                GridIntersect(grid);
+                                MyAPIGateway.Parallel.Start(() => GridIntersect(grid));
+                                //GridIntersect(grid);
                                 continue;
                             }
                         case 4:
