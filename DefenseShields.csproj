@@ -241,6 +241,29 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\Checkbox.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Controls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseShieldsBase.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\Coord3D.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\Ellipsoid.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\GeometRi3D.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\Interface.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\Segment3D.cs" />
+    <Compile Include="test\Box3d.cs" />
+    <Compile Include="test\Circle3D.cs" />
+    <Compile Include="test\Coord3D.cs" />
+    <Compile Include="test\Ellipse.cs" />
+    <Compile Include="test\Ellipsoid.cs" />
+    <Compile Include="test\GeometRi3D.cs" />
+    <Compile Include="test\Interface.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\Line3D.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\Matrix3D.cs" />
+    <Compile Include="test\Line3D.cs" />
+    <Compile Include="test\Matrix3D.cs" />
+    <Compile Include="test\Plane3D.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\Point3D.cs" />
+    <Compile Include="test\Point3D.cs" />
+    <Compile Include="test\port\Box3Dcs.cs" />
+    <Compile Include="test\port\Coord3D.cs" />
+    <Compile Include="test\port\Ellipsoid.cs" />
+    <Compile Include="test\port\Interface.cs" />
     <Compile Include="Guns.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Network\SerializationClasses.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CustomCollision.cs" />
@@ -268,6 +291,14 @@
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\Triangle3.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\TriangleMeshShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\XenoCollide.cs" />
+    <Compile Include="test\Quaternion.cs" />
+    <Compile Include="test\Ray3D.cs" />
+    <Compile Include="test\Rotation.cs" />
+    <Compile Include="test\Segment3D.cs" />
+    <Compile Include="test\Sphere.cs" />
+    <Compile Include="test\Triangle.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\Vector3D.cs" />
+    <Compile Include="test\Vector3D.cs" />
     <Compile Include="Voxel.cs" />
   </ItemGroup>
   <ItemGroup>

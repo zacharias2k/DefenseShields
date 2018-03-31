@@ -7,7 +7,7 @@ using VRageMath;
 
 namespace DefenseShields.Support
 {
-    class Ellipsoid
+    class Ellipsoid2
     {
         public class ShapeEllipsoid : Shape
         {

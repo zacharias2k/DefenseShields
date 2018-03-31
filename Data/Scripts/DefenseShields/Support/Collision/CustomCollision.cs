@@ -263,6 +263,16 @@ namespace DefenseShields.Support
             return c == 8;
         }
 
+        public static bool AllAabbInShield(BoundingBoxD gridAabb, MatrixD matrixInv)
+        {
+            var gridCorners = new Vector3D[8];
+            gridAabb.GetCorners(gridCorners);
+            var c = 0;
+            for (int i = 0; i < 8; i++)
+                if (Vector3D.Transform(gridCorners[i], matrixInv).LengthSquared() <= 1) c++;
+            return c == 8;
+        }
+
         public static bool CheckFirstFace(int[] firstFace, int secondVertNum)
         {
             for (int i = 0; i < firstFace.Length; i++)
