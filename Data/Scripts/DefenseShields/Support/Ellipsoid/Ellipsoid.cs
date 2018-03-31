@@ -6,7 +6,7 @@ namespace DefenseShields.Support
     /// <summary>
     /// Ellipsoid object defined by center point and three mutually orthogonal vectors.
     /// </summary>
-    public class Ellipsoid //: IFiniteObject
+    public class Ellipsoid
     {
 
         private Point3d _point;
