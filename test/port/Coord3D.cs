@@ -1,17 +1,17 @@
 ﻿using System;
-using VRageMath;
 using static System.Math;
 
-namespace DefenseShields.Test
+namespace DefenseShields.Support
 {
+    /*
     /// <summary>
     /// Cartesian coordinate system defined by origin and transformation matrix (in row format).
     /// </summary>
     public class Coord3d
     {
 
-        private Point _origin;
-        private MatrixD _axes;
+        private Point3d _origin;
+        private Matrix3d _axes;
         private string _name;
         private static int count = 0;
 
@@ -24,8 +24,8 @@ namespace DefenseShields.Test
         /// <param name="name">Name of the coordinate system.</param>
         public Coord3d(string name = "")
         {
-            _origin = new Point(0, 0, 0);
-            _axes = MatrixD.Identity;
+            _origin = new Point3d(0, 0, 0);
+            _axes = Matrix3d.Identity();
             if ((!string.IsNullOrEmpty(name)))
             {
                 _name = name;
@@ -43,7 +43,7 @@ namespace DefenseShields.Test
         /// <param name="p">Origin of the coordinate system.</param>
         /// <param name="m">Transformation matrix (in row format).</param>
         /// <param name="name">Name of the coordinate system.</param>
-        public Coord3d(Point p, MatrixD m, string name = "")
+        public Coord3d(Point3d p, Matrix3d m, string name = "")
         {
             if (!m.IsOrthogonal)
             {
@@ -51,7 +51,7 @@ namespace DefenseShields.Test
             }
 
             _origin = p.ConvertToGlobal();
-            _axes = m;
+            _axes = m.Copy();
             if ((!string.IsNullOrEmpty(name)))
             {
                 _name = name;
@@ -70,7 +70,7 @@ namespace DefenseShields.Test
         /// <param name="v1">Vector oriented along the X axis.</param>
         /// <param name="v2">Vector in the XY plane.</param>
         /// <param name="name">Name of the coordinate system.</param>
-        public Coord3d(Point p, Vector3D v1, Vector3D v2, string name = "")
+        public Coord3d(Point3d p, Vector3d v1, Vector3d v2, string name = "")
         {
 
             if (v1.IsParallelTo(v2))
@@ -79,11 +79,11 @@ namespace DefenseShields.Test
             }
 
             v1 = v1.ConvertToGlobal().Normalized;
-            Vector3D v3 = v1.Cross(v2).Normalize();
-            v2 = v3.Cross(v1).Normalize();
+            Vector3d v3 = v1.Cross(v2).Normalized;
+            v2 = v3.Cross(v1).Normalized;
 
             _origin = p.ConvertToGlobal();
-            _axes = new MatrixD(v1, v2, v3);
+            _axes = new Matrix3d(v1, v2, v3);
             if ((!string.IsNullOrEmpty(name)))
             {
                 _name = name;
@@ -102,10 +102,10 @@ namespace DefenseShields.Test
         /// <param name="p2">Point on the X axis.</param>
         /// <param name="p3">Point on the XY plane.</param>
         /// <param name="name">Name of the coordinate system.</param>
-        public Coord3d(Point p1, Point p2, Point p3, string name = "")
+        public Coord3d(Point3d p1, Point3d p2, Point3d p3, string name = "")
         {
-            Vector3D v1 = new Vector3D(p1, p2);
-            Vector3D v2 = new Vector3D(p1, p3);
+            Vector3d v1 = new Vector3d(p1, p2);
+            Vector3d v2 = new Vector3d(p1, p3);
 
             if (v1.IsParallelTo(v2))
             {
@@ -113,11 +113,11 @@ namespace DefenseShields.Test
             }
 
             v1 = v1.ConvertToGlobal().Normalized;
-            Vector3D v3 = v1.Cross(v2).Normalize();
-            v2 = v3.Cross(v1).Normalize();
+            Vector3d v3 = v1.Cross(v2).Normalized;
+            v2 = v3.Cross(v1).Normalized;
 
             _origin = p1.ConvertToGlobal();
-            _axes = new MatrixD(v1, v2, v3);
+            _axes = new Matrix3d(v1, v2, v3);
             if ((!string.IsNullOrEmpty(name)))
             {
                 _name = name;
@@ -136,21 +136,21 @@ namespace DefenseShields.Test
         /// <param name="d1">Vector oriented along the X axis.</param>
         /// <param name="d2">Vector in the XY plane.</param>
         /// <param name="name">Name of the coordinate system.</param>
-        public Coord3d(Point p, double[] d1, double[] d2, string name = "")
+        public Coord3d(Point3d p, double[] d1, double[] d2, string name = "")
         {
-            Vector3D v1 = new Vector3D(d1);
-            Vector3D v2 = new Vector3D(d2);
+            Vector3d v1 = new Vector3d(d1);
+            Vector3d v2 = new Vector3d(d2);
             if (v1.IsParallelTo(v2))
             {
                 throw new Exception("Vectors are parallel");
             }
 
-            v1 = v1.Normalize();
-            Vector3D v3 = v1.Cross(v2).Normalize();
-            v2 = v3.Cross(v1).Normalize();
+            v1 = v1.Normalized;
+            Vector3d v3 = v1.Cross(v2).Normalized;
+            v2 = v3.Cross(v1).Normalized;
 
             _origin = p.ConvertToGlobal();
-            _axes = new MatrixD(v1, v2, v3);
+            _axes = new Matrix3d(v1, v2, v3);
             if ((!string.IsNullOrEmpty(name)))
             {
                 _name = name;
@@ -176,23 +176,23 @@ namespace DefenseShields.Test
         /// Get or Set the origin of the coordinate system
         /// </summary>
         /// <returns></returns>
-        public Point Origin
+        public Point3d Origin
         {
-            get { return new Point(_origin.X, _origin.Y, _origin.Z); }
+            get { return new Point3d(_origin.X, _origin.Y, _origin.Z); }
             set { _origin = value.ConvertToGlobal(); }
         }
         /// <summary>
         /// Get or Set unit vectors of the axes, stored as row-matrix(3x3)
         /// </summary>
         /// <returns></returns>
-        public MatrixD Axes
+        public Matrix3d Axes
         {
-            get { return _axes; }
+            get { return _axes.Copy(); }
             set
             {
                 if (value.IsOrthogonal)
                 {
-                    _axes = value;
+                    _axes = value.Copy();
                 }
                 else
                 {
@@ -218,65 +218,32 @@ namespace DefenseShields.Test
         /// <summary>
         /// Get X-axis
         /// </summary>
-        public Vector3D Xaxis
+        public Vector3d Xaxis
         {
             get { return _axes.Row1; }
         }
         /// <summary>
         /// Get Y-axis
         /// </summary>
-        public Vector3D Yaxis
+        public Vector3d Yaxis
         {
             get { return _axes.Row2; }
         }
         /// <summary>
         /// Get Z-axis
         /// </summary>
-        public Vector3D Zaxis
+        public Vector3d Zaxis
         {
             get { return _axes.Row3; }
         }
-
-        /// <summary>
-        /// XY plane in the current coordinate system
-        /// </summary>
-        public PlaneD XY_plane
-        {
-            get { return new PlaneD(0, 0, 1, 0, this); }
-        }
-
-        /// <summary>
-        /// XZ plane in the current coordinate system
-        /// </summary>
-        public PlaneD XZ_plane
-        {
-            get { return new PlaneD(0, 1, 0, 0, this); }
-        }
-
-        /// <summary>
-        /// YZ plane in the current coordinate system
-        /// </summary>
-        public PlaneD YZ_plane
-        {
-            get { return new PlaneD(1, 0, 0, 0, this); }
-        }
-
-        /// <summary>
-        /// Rotate coordinate system
-        /// </summary>
-        public void Rotate(Rotation r)
-        {
-            _axes = _axes * r.ConvertToGlobal().ToRotationMatrix.Transpose();
-        }
-
         /// <summary>
         /// Rotate coordinate system around rotation axis
         /// </summary>
         /// <param name="axis">Rotation axis</param>
         /// <param name="angle">Rotation angle (radians, counterclockwise)</param>
-        public void Rotate(Vector3D axis, double angle)
+        public void Rotate(Vector3d axis, double angle)
         {
-            _axes = _axes * MatrixD.RotationMatrix(axis.ConvertToGlobal(), angle).Transpose();
+            _axes = _axes * Matrix3d.RotationMatrix(axis.ConvertToGlobal(), angle).Transpose();
         }
 
         /// <summary>
@@ -284,9 +251,9 @@ namespace DefenseShields.Test
         /// </summary>
         /// <param name="axis">Rotation axis</param>
         /// <param name="angle">Rotation angle (degrees, counterclockwise)</param>
-        public void RotateDeg(Vector3D axis, double angle)
+        public void RotateDeg(Vector3d axis, double angle)
         {
-            _axes = _axes * MatrixD.RotationMatrix(axis.ConvertToGlobal(), angle * PI / 180).Transpose();
+            _axes = _axes * Matrix3d.RotationMatrix(axis.ConvertToGlobal(), angle * PI / 180).Transpose();
         }
 
         /// <summary>
@@ -309,7 +276,6 @@ namespace DefenseShields.Test
         {
             return _name.GetHashCode();
         }
-
         /// <summary>
         /// String representation of an object in global coordinate system.
         /// </summary>
@@ -360,4 +326,8 @@ namespace DefenseShields.Test
         }
 
     }
+    */
 }
+
+
+

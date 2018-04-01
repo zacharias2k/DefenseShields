@@ -241,8 +241,9 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\Checkbox.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Controls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseShieldsBase.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\Coord3D.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\Ellipsoid.cs" />
+    <Compile Include="test\port\Coord3D.cs" />
+    <Compile Include="test\port\Ellipsoid.cs" />
+    <Compile Include="test\port\GeometRi3D.cs" />
     <Compile Include="test\Box3d.cs" />
     <Compile Include="test\Circle3D.cs" />
     <Compile Include="test\Coord3D.cs" />
@@ -253,12 +254,8 @@
     <Compile Include="test\Line3D.cs" />
     <Compile Include="test\Matrix3D.cs" />
     <Compile Include="test\Plane3D.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\Point3D.cs" />
+    <Compile Include="test\port\Point3D.cs" />
     <Compile Include="test\Point3D.cs" />
-    <Compile Include="test\port\Box3Dcs.cs" />
-    <Compile Include="test\port\Coord3D.cs" />
-    <Compile Include="test\port\Ellipsoid.cs" />
-    <Compile Include="test\port\Interface.cs" />
     <Compile Include="Guns.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Network\SerializationClasses.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CustomCollision.cs" />

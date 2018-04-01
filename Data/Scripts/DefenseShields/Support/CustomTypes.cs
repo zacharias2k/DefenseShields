@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using VRage.Game.Components;
+using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace DefenseShields.Support
@@ -11,9 +12,11 @@ namespace DefenseShields.Support
         public readonly uint FirstTick;
         public readonly int Relation;
         public readonly bool SpawnedInside;
+        public List<IMySlimBlock> CacheBlockList;
 
-        public EntIntersectInfo(long entId, uint firstTick, uint lastTick, int relation, bool inside)
+        public EntIntersectInfo(long entId, uint firstTick, uint lastTick, int relation, bool inside, List<IMySlimBlock> cacheBlockList)
         {
+            CacheBlockList = cacheBlockList;
             EntId = entId;
             FirstTick = firstTick;
             LastTick = lastTick;
