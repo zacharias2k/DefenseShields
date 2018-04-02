@@ -134,6 +134,8 @@ namespace DefenseShields
         private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
 
         private MyConcurrentList<IMySlimBlock> DmgBlocks { get; } = new MyConcurrentList<IMySlimBlock>();
+        private MyConcurrentList<IMySlimBlock> FewDmgBlocks { get; } = new MyConcurrentList<IMySlimBlock>();
+
 
         public MyResourceSinkComponent Sink { get { return _sink; } set { _sink = value; } }
 
@@ -222,7 +224,6 @@ namespace DefenseShields
                     {
                         Block.ShowInToolbarConfig = false;
                         Block.ShowInToolbarConfig = true;
-                        Log.Line($"test");
                     }
                 }
 
@@ -252,7 +253,7 @@ namespace DefenseShields
                     }
                     SyncThreadedEnts();
                     if (_enablePhysics) MyAPIGateway.Parallel.Start(WebEntities);
-                    //if (_enablePhysics) WebEntities();
+                    //WebEntities();
                 }
                 _dsutil2.StopWatchReport("main loop", 1);
             }
@@ -640,10 +641,7 @@ namespace DefenseShields
                 }
                 if (grid.BigOwners.Count <= 0) return 3;
 
-                //var relationship = Block.GetUserRelationToOwner(owners[0]);
-
                 var enemy = GridEnemy(grid);
-                //var enemy = relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare;
 
                 if (enemy && grid.PositionComp.WorldVolume.Radius < 6.5)
                 {
@@ -653,6 +651,7 @@ namespace DefenseShields
 
                 ShieldGridComponent shieldComponent;
                 grid.Components.TryGet(out shieldComponent);
+                if (shieldComponent != null && !(shieldComponent.DefenseShields.ShieldActive) && enemy) return 3;
                 if (shieldComponent != null && Entity.EntityId > shieldComponent.DefenseShields.Entity.EntityId) return 6;
                 if (shieldComponent != null) return -1; //only process the higher EntityID
                 return enemy ? 5 : 0;
@@ -683,7 +682,6 @@ namespace DefenseShields
         #region Detect Intersection
         private void VoxelIntersect(IMyVoxelMap voxelMap)
         {
-            Log.Line($"Voxel Intersect");
             var center = Block.CubeGrid.WorldVolume.Center;
             var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shield.WorldAABB);
             bOriBBoxD.Center = center;
@@ -693,8 +691,7 @@ namespace DefenseShields
         private void SmallGridIntersect(IMyCubeGrid grid)
         {
             if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.WorldAABB))) return;
-            Log.Line($"small Grid Intersect");
-            var contactPoint = CustomCollision.SmallIntersect(DmgBlocks, grid, _detectMatrix, _detectMatrixInv);
+            var contactPoint = CustomCollision.SmallIntersect(FewDmgBlocks, grid, _detectMatrix, _detectMatrixInv);
             if (contactPoint != Vector3D.NegativeInfinity) _worldImpactPosition = contactPoint;
         }
 
@@ -715,7 +712,6 @@ namespace DefenseShields
         private void ShieldIntersect(IMyCubeGrid grid)
         {
             if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.WorldAABB))) return;
-            Log.Line($"Shield Intersect");
             ShieldGridComponent shieldComponent;
             grid.Components.TryGet(out shieldComponent);
 
@@ -885,15 +881,16 @@ namespace DefenseShields
                     var c = 0;
                     if (entInfo.CacheBlockList.Count != 0)
                     {
-                        lock (DmgBlocks) if (DmgBlocks.Count == 25) return Vector3D.NegativeInfinity;
+                        var sCenter = Block.CubeGrid.PositionComp.WorldVolume.Center;
+                        var gridDetectMatrix = MatrixD.CreateScale(grid.GridSize) * grid.PositionComp.WorldMatrix * _detectMatrixInv;
                         foreach (var block in entInfo.CacheBlockList)
                         {
-                            Vector3D bCenter;
-                            block.ComputeWorldCenter(out bCenter);
-                            if (CustomCollision.PointInShield(bCenter, _detectMatrixInv) && c < 25)
+                            if (Vector3.Transform(block.Position, gridDetectMatrix).LengthSquared() <= 1)
                             {
-                                grid.Physics.ApplyImpulse((grid.PositionComp.WorldVolume.Center - Block.CubeGrid.PositionComp.WorldVolume.Center) * grid.Physics.Mass / 250, Block.CubeGrid.PositionComp.WorldVolume.Center);
-                                Block.CubeGrid.Physics.ApplyImpulse((Block.CubeGrid.PositionComp.WorldVolume.Center - grid.PositionComp.WorldVolume.Center) * Block.CubeGrid.Physics.Mass / 250, grid.PositionComp.WorldVolume.Center);
+                                grid.Physics.ApplyImpulse((bWorldCenter - sCenter) * grid.Physics.Mass / 180, sCenter);
+                                Block.CubeGrid.Physics.ApplyImpulse((sCenter - bWorldCenter) * Block.CubeGrid.Physics.Mass / 180, bWorldCenter);
+
+                                if (DmgBlocks.Count == 25) continue;
 
                                 lock (DmgBlocks) DmgBlocks.Add(block);
                                 c++;
@@ -1069,29 +1066,31 @@ namespace DefenseShields
                         case 2:
                         {
                             MyAPIGateway.Parallel.Start(() => SmallGridIntersect(webent as IMyCubeGrid));
+                            //SmallGridIntersect(webent as IMyCubeGrid);
                             continue;
                         }
                         case 3:
                         {
-                            //if (_webEnts[webent].CacheBlockList.Count > 6000) Log.Line($"{_webEnts[webent].CacheBlockList.Count.ToString()}");
                             MyAPIGateway.Parallel.Start(() => GridIntersect(webent as IMyCubeGrid, _webEnts[webent]));
-                            //GridIntersect(webent as IMyCubeGrid, _webEnts[webent].CacheBlockList);
+                            //GridIntersect(webent as IMyCubeGrid, _webEnts[webent]);
                             continue;
                         }
                         case 4:
                         {
                             MyAPIGateway.Parallel.Start(() => SmallGridIntersect(webent as IMyCubeGrid));
+                            //SmallGridIntersect(webent as IMyCubeGrid);
                             continue;
                         }
                         case 5:
                         {
-                            //if (_webEnts[webent].CacheBlockList.Count > 6000) Log.Line($"{_webEnts[webent].CacheBlockList.Count.ToString()}");
+                            //Log.Line($"enemy large grid");
                             MyAPIGateway.Parallel.Start(() => GridIntersect(webent as IMyCubeGrid, _webEnts[webent]));
-                            //1GridIntersect(webent as IMyCubeGrid, _webEnts[webent].CacheBlockList);
+                            //GridIntersect(webent as IMyCubeGrid, _webEnts[webent]);
                             continue;
                         }
                         case 6:
                         {
+                            //Log.Line($"enemy shield grid");
                             MyAPIGateway.Parallel.Start(() => ShieldIntersect(webent as IMyCubeGrid));
                             continue;
                         }
@@ -1121,9 +1120,9 @@ namespace DefenseShields
 
         private bool Collect(IMySlimBlock mySlimBlock)
         {
-            if (mySlimBlock.Mass < 81) Log.Line($"{mySlimBlock.BlockDefinition.DisplayNameText} {mySlimBlock.Mass}");
+            //if (!(mySlimBlock.Mass < 80 || mySlimBlock.BlockDefinition.Id.TypeId == typeof(MyObjectBuilder_TextPanel) || mySlimBlock.BlockDefinition.Id.TypeId == typeof(MyObjectBuilder_TextPanel) || mySlimBlock.BlockDefinition.Id.TypeId == typeof(MyObjectBuilder_ButtonPanel))) Log.Line($"{mySlimBlock.BlockDefinition.DisplayNameText} {mySlimBlock.Mass} {mySlimBlock.BlockDefinition.Id}");
 
-            return mySlimBlock.Mass > 80;
+            return mySlimBlock.Mass > 80 || !(mySlimBlock.BlockDefinition.Id.TypeId == typeof(MyObjectBuilder_TextPanel)) || !(mySlimBlock.BlockDefinition.Id.TypeId == typeof(MyObjectBuilder_TextPanel)) || !(mySlimBlock.BlockDefinition.Id.TypeId == typeof(MyObjectBuilder_ButtonPanel));
         }
 
         private void SyncThreadedEnts()
@@ -1136,6 +1135,36 @@ namespace DefenseShields
                     {
                         foreach (var e in Eject) e.Key.SetPosition(Vector3D.Lerp(e.Key.GetPosition(), e.Value, 0.25d));
                         Eject.Clear();
+                    }
+                }
+                lock (FewDmgBlocks)
+                {
+                    var blockLen = FewDmgBlocks.Count;
+                    if (blockLen != 0)
+                    {
+                        var c = 0;
+                        for (int i = 0; i < blockLen; i++)
+                        {
+                            if (c == 25) break;
+                            var block = FewDmgBlocks[i];
+                            if (block == null || block.IsDestroyed) continue;
+                            lock (_webEnts) if (_webEnts.ContainsKey(block.CubeGrid)) _webEnts[block.CubeGrid].CacheBlockList.Remove(block);
+                            block.OnDestroy();
+                            block.DoDamage(500f, MyDamageType.Explosion, true, null, Block.CubeGrid.EntityId);
+                            if (i < blockLen)
+                            {
+                                var myCube = (MyCubeGrid)block.CubeGrid;
+                                if (myCube.BlocksCount == 0) block.CubeGrid.SyncObject.SendCloseRequest();
+                            }
+                            c++;
+                            if (c == 5)
+                            {
+                                Vector3D center;
+                                block.ComputeWorldCenter(out center);
+                                MyVisualScriptLogicProvider.CreateExplosion(center, 10f, 1500);
+                            }
+                        }
+                        FewDmgBlocks.Clear();
                     }
                 }
 
@@ -1163,7 +1192,7 @@ namespace DefenseShields
                             {
                                 Vector3D center;
                                 block.ComputeWorldCenter(out center);
-                                MyVisualScriptLogicProvider.CreateExplosion(center, (float)block.CubeGrid.WorldAABB.Max.Min() / 3, 10000);
+                                MyVisualScriptLogicProvider.CreateExplosion(center, (float)block.CubeGrid.WorldAABB.Max.Min() / 3, 15000);
                             }
                         }
                         DmgBlocks.Clear();

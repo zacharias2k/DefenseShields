@@ -4,6 +4,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Cube;
+using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace DefenseShields.Support

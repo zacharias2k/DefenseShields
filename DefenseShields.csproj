@@ -241,6 +241,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\Checkbox.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Controls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseShieldsBase.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\GetBlocks.cs" />
     <Compile Include="test\port\Coord3D.cs" />
     <Compile Include="test\port\Ellipsoid.cs" />
     <Compile Include="test\port\GeometRi3D.cs" />

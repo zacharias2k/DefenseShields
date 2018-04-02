@@ -160,7 +160,7 @@ namespace DefenseShields.Support
             for (int i = 0; i < voxelHitVecs.Count; i++) shieldGrid.Physics.ApplyImpulse((bOriBBoxD.Center - voxelHitVecs[i]) * shieldGridMass / 100, voxelHitVecs[i]);
         }
 
-        public static Vector3D SmallIntersect(MyConcurrentList<IMySlimBlock> dmgBlocks, IMyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
+        public static Vector3D SmallIntersect(MyConcurrentList<IMySlimBlock> fewDmgBlocks, IMyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
         {
             var contactPoint = ContactPointOutside(grid, matrix);
             if (!(Vector3D.Transform(contactPoint, matrixInv).LengthSquared() <= 1)) return Vector3D.NegativeInfinity;
@@ -169,12 +169,12 @@ namespace DefenseShields.Support
             if (approching) grid.Physics.LinearVelocity = grid.Physics.LinearVelocity * -0.25f;
             var getBlocks = new List<IMySlimBlock>();
             grid.GetBlocks(getBlocks);
-            lock (dmgBlocks)
+            lock (fewDmgBlocks)
                 for (int i = 0; i < getBlocks.Count; i++)
                 {
                     var block = getBlocks[i];
-                    dmgBlocks.Add(block);
-                    if (dmgBlocks.Count >= 25) break;
+                    fewDmgBlocks.Add(block);
+                    if (fewDmgBlocks.Count > 24) break;
                 }
             return contactPoint;
         }
