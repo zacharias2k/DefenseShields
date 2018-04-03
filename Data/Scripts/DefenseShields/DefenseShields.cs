@@ -111,9 +111,8 @@ namespace DefenseShields
         private MyResourceSinkComponent _sink;
         private readonly MyDefinitionId _powerDefinitionId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
-        public MyConcurrentHashSet<IMyEntity> InFriendlyCache = new MyConcurrentHashSet<IMyEntity>();
+        private MyConcurrentHashSet<IMyEntity> InFriendlyCache = new MyConcurrentHashSet<IMyEntity>();
         public MyConcurrentHashSet<IMyEntity> InShield = new MyConcurrentHashSet<IMyEntity>();
-
         private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<IMyEntity, Vector3D>();
         private readonly MyConcurrentDictionary<IMyEntity, EntIntersectInfo> _webEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();
         private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
