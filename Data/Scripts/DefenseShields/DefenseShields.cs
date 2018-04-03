@@ -111,15 +111,15 @@ namespace DefenseShields
         private MyResourceSinkComponent _sink;
         private readonly MyDefinitionId _powerDefinitionId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
-        private MyConcurrentHashSet<IMyEntity> InFriendlyCache = new MyConcurrentHashSet<IMyEntity>();
+        private MyConcurrentHashSet<IMyEntity> _inFriendlyCache = new MyConcurrentHashSet<IMyEntity>();
         public MyConcurrentHashSet<IMyEntity> InShield = new MyConcurrentHashSet<IMyEntity>();
         private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<IMyEntity, Vector3D>();
         private readonly MyConcurrentDictionary<IMyEntity, EntIntersectInfo> _webEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();
         private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
 
-        private MyConcurrentQueue<IMySlimBlock> DmgBlocks { get; } = new MyConcurrentQueue<IMySlimBlock>();
-        private MyConcurrentQueue<IMySlimBlock> FewDmgBlocks { get; } = new MyConcurrentQueue<IMySlimBlock>();
-        private MyConcurrentQueue<IMySlimBlock> DestroyedBlocks { get; } = new MyConcurrentQueue<IMySlimBlock>();
+        private MyConcurrentQueue<IMySlimBlock> _dmgBlocks  = new MyConcurrentQueue<IMySlimBlock>();
+        private MyConcurrentQueue<IMySlimBlock> _fewDmgBlocks = new MyConcurrentQueue<IMySlimBlock>();
+        private MyConcurrentQueue<IMySlimBlock> _destroyedBlocks = new MyConcurrentQueue<IMySlimBlock>();
 
         public MyResourceSinkComponent Sink { get { return _sink; } set { _sink = value; } }
 
@@ -201,7 +201,7 @@ namespace DefenseShields
                     {
                         foreach (var i in _webEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1).ToList())
                             _webEnts.Remove(i.Key);
-                        InFriendlyCache.Clear();
+                        _inFriendlyCache.Clear();
                         _longLoop = 0;
                     }
                 }
@@ -625,7 +625,7 @@ namespace DefenseShields
                 var entCenter = ent.PositionComp.WorldVolume.Center;
 
                 if (ent == _shield || ent as IMyCubeGrid == Block.CubeGrid || ent.Physics == null || ent.MarkedForClose || ent is IMyVoxelBase && !GridIsMobile
-                    || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || InFriendlyCache.Contains(ent)|| ent.GetType().Name == "MyDebrisBase") continue;
+                    || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || _inFriendlyCache.Contains(ent)|| ent.GetType().Name == "MyDebrisBase") continue;
 
                 if (_webEnts.ContainsKey(ent)) _webEnts[ent].LastTick = _tick;
                 else
@@ -633,7 +633,7 @@ namespace DefenseShields
                     var relation = EntType(ent);
 
                     if (relation > 0 && CustomCollision.PointInShield(entCenter, _detectionInsideInv) == false) _webEnts.Add(ent, new EntIntersectInfo(ent.EntityId, _tick, _tick, relation, false, new List<IMySlimBlock>()));
-                    else if (relation == 0 || relation == 3) InFriendlyCache.Add(ent);
+                    else if (relation == 0 || relation == 3) _inFriendlyCache.Add(ent);
                 }
             }
 
@@ -724,12 +724,12 @@ namespace DefenseShields
                     Eject.Clear();
                 }
 
-                var destroyedLen = DestroyedBlocks.Count;
+                var destroyedLen = _destroyedBlocks.Count;
                 if (destroyedLen != 0)
                 {
                     IMySlimBlock block;
                     var nullCount = 0;
-                    while (DestroyedBlocks.TryDequeue(out block))
+                    while (_destroyedBlocks.TryDequeue(out block))
                     {
                         EntIntersectInfo entInfo;
                         _webEnts.TryGetValue(block.CubeGrid, out entInfo);
@@ -748,11 +748,11 @@ namespace DefenseShields
                 }
                 //_dsutil1.Sw.Start();
                 //Log.Line($"{FewDmgBlocks.Count} {DmgBlocks.Count}");
-                if (FewDmgBlocks.Count != 0)
+                if (_fewDmgBlocks.Count != 0)
                 {
-                    var c = FewDmgBlocks.Count;
+                    var c = _fewDmgBlocks.Count;
                     IMySlimBlock block;
-                    while (FewDmgBlocks.TryDequeue(out block))
+                    while (_fewDmgBlocks.TryDequeue(out block))
                     {
                         if (block == null || block.IsDestroyed) continue;
 
@@ -775,11 +775,11 @@ namespace DefenseShields
                         c--;
                     }
                 }
-                if (DmgBlocks.Count != 0)
+                if (_dmgBlocks.Count != 0)
                 {
-                    var c = DmgBlocks.Count;
+                    var c = _dmgBlocks.Count;
                     IMySlimBlock block;
-                    while (DmgBlocks.TryDequeue(out block))
+                    while (_dmgBlocks.TryDequeue(out block))
                     {
                         if (block == null || block.IsDestroyed) continue;
 
@@ -828,7 +828,7 @@ namespace DefenseShields
         {
             _dsutil1.Sw.Start();
             if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.WorldAABB))) return;
-            var contactPoint = CustomCollision.SmallIntersect(FewDmgBlocks, grid, _detectMatrix, _detectMatrixInv);
+            var contactPoint = CustomCollision.SmallIntersect(_fewDmgBlocks, grid, _detectMatrix, _detectMatrixInv);
             _dsutil1.StopWatchReport("small grid", -1);
             if (contactPoint != Vector3D.NegativeInfinity) _worldImpactPosition = contactPoint;
         }
@@ -1004,7 +1004,7 @@ namespace DefenseShields
                             var block = cacheBlockList[i];
                             if (block.IsDestroyed)
                             {
-                                DestroyedBlocks.Enqueue(block);
+                                _destroyedBlocks.Enqueue(block);
                                 continue;
                             }
 
@@ -1013,8 +1013,8 @@ namespace DefenseShields
                                 grid.Physics.ApplyImpulse((bWorldCenter - sCenter) * grid.Physics.Mass / 200, sCenter);
                                 Block.CubeGrid.Physics.ApplyImpulse((sCenter - bWorldCenter) * Block.CubeGrid.Physics.Mass / 200, bWorldCenter);
 
-                                if (DmgBlocks.Count > 50) continue;
-                                DmgBlocks.Enqueue(block);
+                                if (_dmgBlocks.Count > 50) continue;
+                                _dmgBlocks.Enqueue(block);
                                 c++;
                             }
                         }
