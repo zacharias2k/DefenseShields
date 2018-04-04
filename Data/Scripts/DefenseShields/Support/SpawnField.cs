@@ -191,8 +191,12 @@ namespace DefenseShields.Support
         {
             private readonly Icosphere _backing;
 
-            private readonly Vector3D[] _impactPos = {Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity};
-            private readonly Vector3D[] _localImpacts = { Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity};
+            private readonly Vector3D[] _impactPos = {Vector3D.NegativeInfinity, Vector3D.NegativeInfinity,
+                Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity,
+                Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity};
+            private readonly Vector3D[] _localImpacts = {Vector3D.NegativeInfinity, Vector3D.NegativeInfinity,
+                Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity,
+                Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity};
             private Vector3D[] _preCalcNormLclPos;
             private Vector3D[] _vertexBuffer;
             private Vector3D[] _physicsBuffer;
@@ -206,7 +210,7 @@ namespace DefenseShields.Support
 
             private static readonly Random Random = new Random();
 
-            private readonly int[] _impactCount = {0, 0, 0, 0, 0};
+            private readonly int[] _impactCnt = new int[10];
 
             private int _mainLoop;
             private int _longLoop;
@@ -335,9 +339,8 @@ namespace DefenseShields.Support
                 if (_charge && _impactsFinished && prevLod == _lod) ChargeColorAssignments(prevLod);
                 if (_impactsFinished && prevLod == _lod) return;
 
-                //Log.Line($"impacts: {_impactCount[4]} {_impactCount[3]} {_impactCount[2]} {_impactCount[1]} {_impactCount[0]}");
 
-                //if (_impactCount[4] != 0) MyAPIGateway.Parallel.Start(Models);
+                //if (_impactCnt[9] != 0) MyAPIGateway.Parallel.Start(Models);
                 //_dsutil2.Sw.Start();
                 ImpactColorAssignments(impactSize, impactSpeed, prevLod);
                 //_dsutil2.StopWatchReport("colorcalc", 1);
@@ -378,14 +381,14 @@ namespace DefenseShields.Support
                     }
                     if (!_impactsFinished)
                     {
-                        for (int s = 4; s > -1; s--)
+                        for (int s = 9; s > -1; s--)
                         {
                             if (_localImpacts[s] == Vector3D.NegativeInfinity) continue;
                             var dotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _localImpacts[s]);
                             var impactFactor = Math.Acos(dotOfNormLclImpact);
 
                             var waveMultiplier = Pi / ImpactSteps / impactSize;
-                            var wavePosition = waveMultiplier * _impactCount[s];
+                            var wavePosition = waveMultiplier * _impactCnt[s];
                             var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
                             if (relativeToWavefront < .03)
                             {
@@ -398,7 +401,7 @@ namespace DefenseShields.Support
                             }
                         }
                     }
-                    else if (_impactCount[4] == 0) _triColorBuffer[j] = _defaultColor;
+                    else if (_impactCnt[9] == 0) _triColorBuffer[j] = _defaultColor;
                 }
             }
 
@@ -474,13 +477,13 @@ namespace DefenseShields.Support
             private void ComputeImpacts()
             {
                 _impact = true;
-                for (var i = 4; i >= 0; i--)
+                for (var i = 9; i >= 0; i--)
                 {
                     if (_impactPos[i] != Vector3D.NegativeInfinity) continue;
                     _impactPos[i] = _impactPosState;
                     break;
                 }
-                for (int i = 4; i >= 0; i--)
+                for (int i = 9; i >= 0; i--)
                 {
                     if (_impactPos[i] == Vector3D.NegativeInfinity) break;
                     _localImpacts[i] = _impactPos[i] - _matrix.Translation;
@@ -530,35 +533,17 @@ namespace DefenseShields.Support
                 }
                 if (!_impactsFinished)
                 {
-                    for (int i = 0; i < _impactCount.Length; i++)
-                        if (_impactPos[i] != Vector3D.NegativeInfinity) _impactCount[i] += 1;
-
-                    if (_impactCount[0] == ImpactSteps + 1)
+                    for (int i = 0; i < _impactCnt.Length; i++)
                     {
-                        _impactCount[0] = 0;
-                        _impactPos[0] = Vector3D.NegativeInfinity;
+                        if (_impactPos[i] != Vector3D.NegativeInfinity) _impactCnt[i] += 1;
+                        if (_impactCnt[i] == ImpactSteps + 1)
+                        {
+                            _impactCnt[i] = 0;
+                            _impactPos[i] = Vector3D.NegativeInfinity;
+                        }
                     }
-                    if (_impactCount[1] == ImpactSteps + 1)
-                    {
-                        _impactCount[1] = 0;
-                        _impactPos[1] = Vector3D.NegativeInfinity;
-                    }
-                    if (_impactCount[2] == ImpactSteps + 1)
-                    {
-                        _impactCount[2] = 0;
-                        _impactPos[2] = Vector3D.NegativeInfinity;
-                    }
-                    if (_impactCount[3] == ImpactSteps + 1)
-                    {
-                        _impactCount[3] = 0;
-                        _impactPos[3] = Vector3D.NegativeInfinity;
-                    }
-                    if (_impactCount[4] == ImpactSteps + 1)
-                    {
-                        _impactCount[4] = 0;
-                        _impactPos[4] = Vector3D.NegativeInfinity;
-                    }
-                    if (_impactCount[0] == 0 && _impactCount[1] == 0 && _impactCount[2] == 0 && _impactCount[3] == 0 && _impactCount[4] == 0)
+                    if (_impactCnt[0] == 0 && _impactCnt[1] == 0 && _impactCnt[2] == 0 && _impactCnt[3] == 0 && _impactCnt[4] == 0 
+                        && _impactCnt[5] == 0 && _impactCnt[6] == 0 && _impactCnt[7] == 0 && _impactCnt[8] == 0 && _impactCnt[9] == 0)
                     {
                         _impactsFinished = true;
                         _impactDrawStep = 0;
@@ -573,9 +558,9 @@ namespace DefenseShields.Support
                 try
                 {
                     var modPath = DefenseShieldsBase.Instance.ModPath();
-                    if (_impactCount[4] == 1) _modelCount = 0;
+                    if (_impactCnt[9] == 1) _modelCount = 0;
                     var n = _modelCount;
-                    if (_impactCount[4] % 2 == 1)
+                    if (_impactCnt[9] % 2 == 1)
                     {
                         _shield.Render.Visible = true;
                         ((MyEntity)_shield).RefreshModels($"{modPath}\\Models\\LargeField{n.ToString()}.mwm", null);
@@ -592,7 +577,7 @@ namespace DefenseShields.Support
                         if (_modelCount == 16) _modelCount = 0;
                     }
                     else _shield.Render.Visible = false;
-                    if (_impactCount[4] == ImpactSteps) 
+                    if (_impactCnt[9] == ImpactSteps) 
                     {
                         _modelCount = 0;
                         _shield.Render.Visible = false;
@@ -627,7 +612,7 @@ namespace DefenseShields.Support
 
                 //wavePassedColor
                 var vwavePassedColor = Color.FromNonPremultiplied(0, 0, 12, colorRnd1);
-                if (_impactCount[4] % 10 == 0)
+                if (_impactCnt[9] % 10 == 0)
                 {
                     vwavePassedColor = Color.FromNonPremultiplied(0, 0, rndNum1, rndNum1 - 5);
                 }

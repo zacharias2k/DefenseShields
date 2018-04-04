@@ -161,21 +161,27 @@ namespace DefenseShields.Support
             for (int i = 0; i < voxelHitVecs.Count; i++) shieldGrid.Physics.ApplyImpulse((bOriBBoxD.Center - voxelHitVecs[i]) * shieldGridMass / 100, voxelHitVecs[i]);
         }
 
-        public static Vector3D SmallIntersect(MyConcurrentQueue<IMySlimBlock> fewDmgBlocks, IMyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
+        public static void SmallIntersect(EntIntersectInfo entInfo, MyConcurrentQueue<IMySlimBlock> fewDmgBlocks, IMyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
         {
             var contactPoint = ContactPointOutside(grid, matrix);
-            if (!(Vector3D.Transform(contactPoint, matrixInv).LengthSquared() <= 1)) return Vector3D.NegativeInfinity;
+            if (!(Vector3D.Transform(contactPoint, matrixInv).LengthSquared() <= 1)) return;
+            entInfo.ContactPoint = contactPoint;
 
             var approching = Vector3.Dot(grid.Physics.LinearVelocity, grid.PositionComp.WorldVolume.Center - contactPoint) < 0;
             if (approching) grid.Physics.LinearVelocity = grid.Physics.LinearVelocity * -0.25f;
 
             var dmgblockCnt = fewDmgBlocks.Count;
-            if (dmgblockCnt == 25) return contactPoint;
+            if (dmgblockCnt == 25) return;
             var getBlocks = new List<IMySlimBlock>();
             grid.GetBlocks(getBlocks);
-            for (int i = 0; i < getBlocks.Count && i < 25 - dmgblockCnt; i++) fewDmgBlocks.Enqueue(getBlocks[i]);
-
-            return contactPoint;
+            var damage = 0f;
+            for (int i = 0; i < getBlocks.Count && i < 25 - dmgblockCnt; i++)
+            {
+                var block = getBlocks[i];
+                damage += block.Mass;
+                fewDmgBlocks.Enqueue(block);
+            }
+            entInfo.Damage = damage;
         }
 
         public static Vector3D EjectDirection(IMyCubeGrid grid, Vector3D[] physicsOutside, int[][] vertTris, MyOrientedBoundingBoxD obb, MatrixD matrixInv)

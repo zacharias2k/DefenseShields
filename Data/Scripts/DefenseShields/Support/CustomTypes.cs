@@ -8,16 +8,20 @@ namespace DefenseShields.Support
     public class EntIntersectInfo
     {
         public readonly long EntId;
+        public float Damage;
+        public Vector3D ContactPoint;
         public uint LastTick;
         public readonly uint FirstTick;
         public readonly DefenseShields.Ent Relation;
         public readonly bool SpawnedInside;
         public List<IMySlimBlock> CacheBlockList;
 
-        public EntIntersectInfo(long entId, uint firstTick, uint lastTick, DefenseShields.Ent relation, bool inside, List<IMySlimBlock> cacheBlockList)
+        public EntIntersectInfo(long entId, float damage, Vector3D contactPoint, uint firstTick, uint lastTick, DefenseShields.Ent relation, bool inside, List<IMySlimBlock> cacheBlockList)
         {
             CacheBlockList = cacheBlockList;
             EntId = entId;
+            Damage = damage;
+            ContactPoint = contactPoint;
             FirstTick = firstTick;
             LastTick = lastTick;
             Relation = relation;
