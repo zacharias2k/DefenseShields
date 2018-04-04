@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Game;
@@ -338,7 +337,7 @@ namespace DefenseShields.Support
 
                 //Log.Line($"impacts: {_impactCount[4]} {_impactCount[3]} {_impactCount[2]} {_impactCount[1]} {_impactCount[0]}");
 
-                if (_impactCount[4] != 0) MyAPIGateway.Parallel.Start(Models);
+                //if (_impactCount[4] != 0) MyAPIGateway.Parallel.Start(Models);
                 //_dsutil2.Sw.Start();
                 ImpactColorAssignments(impactSize, impactSpeed, prevLod);
                 //_dsutil2.StopWatchReport("colorcalc", 1);

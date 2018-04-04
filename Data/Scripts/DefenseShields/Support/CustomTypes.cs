@@ -10,11 +10,11 @@ namespace DefenseShields.Support
         public readonly long EntId;
         public uint LastTick;
         public readonly uint FirstTick;
-        public readonly int Relation;
+        public readonly DefenseShields.Ent Relation;
         public readonly bool SpawnedInside;
         public List<IMySlimBlock> CacheBlockList;
 
-        public EntIntersectInfo(long entId, uint firstTick, uint lastTick, int relation, bool inside, List<IMySlimBlock> cacheBlockList)
+        public EntIntersectInfo(long entId, uint firstTick, uint lastTick, DefenseShields.Ent relation, bool inside, List<IMySlimBlock> cacheBlockList)
         {
             CacheBlockList = cacheBlockList;
             EntId = entId;
