@@ -323,8 +323,8 @@ namespace DefenseShields.Support
                 _impactPosState = impactPos;
                 if (impactPos == Vector3D.NegativeInfinity) _impact = false;
                 else ComputeImpacts();
-                if (impactSize <= 10) impactSize = (int)4;
-                else impactSize = (int)1;
+                //if (impactSize <= 10) impactSize = (int)4;
+                impactSize = (int)1;
                 var impactSpeed = 2;
                 if (impactSize < 4) impactSpeed = 1;
                 if (prevLod != _lod) // entChanged || Not sure if I need
