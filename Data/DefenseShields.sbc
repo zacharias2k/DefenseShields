@@ -5,9 +5,9 @@
     <Definition xsi:type="MyObjectBuilder_OreDetectorDefinition">
       <Id>
         <TypeId>OreDetector</TypeId>
-        <SubtypeId>StationDefenseShield</SubtypeId>
+        <SubtypeId>DefenseShieldsLS</SubtypeId>
       </Id>
-      <DisplayName>Large Defense Shield</DisplayName>
+      <DisplayName>Large Ship Shield</DisplayName>
       <Icon>Textures\GUI\Icons\Cubes\ShipShield_Icon.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -29,7 +29,7 @@
       <BuildProgressModels>
 		<Model BuildPercentUpperBound="1.00" File="Models\Cubes\large\DefenseShieldBase_Large_Constr1.mwm" />
       </BuildProgressModels>
-      <BlockPairName>StationDefenseShield</BlockPairName>
+      <BlockPairName>DefenseShield</BlockPairName>
       <EdgeType>Light</EdgeType>
       <MirroringY>Z</MirroringY>
       <MirroringZ>Y</MirroringZ>
@@ -43,9 +43,9 @@
     <Definition xsi:type="MyObjectBuilder_OreDetectorDefinition">
       <Id>
         <TypeId>OreDetector</TypeId>
-        <SubtypeId>DefenseShieldS</SubtypeId>
+        <SubtypeId>DefenseShieldsSS</SubtypeId>
       </Id>
-      <DisplayName>Small Defense Shield</DisplayName>
+      <DisplayName>Small Ship Shield</DisplayName>
       <Icon>Textures\GUI\Icons\Cubes\ShipShield_Icon.dds</Icon>
       <CubeSize>Small</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -82,9 +82,9 @@
     <Definition xsi:type="MyObjectBuilder_OreDetectorDefinition">
       <Id>
         <TypeId>OreDetector</TypeId>
-        <SubtypeId>StationShield_Large</SubtypeId>
+        <SubtypeId>DefenseShieldsST</SubtypeId>
       </Id>
-      <DisplayName>Station Defense Shield</DisplayName>
+      <DisplayName>Station Shield</DisplayName>
       <Icon>Textures\GUI\Icons\Cubes\ShipShield_Icon.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>

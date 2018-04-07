@@ -10,9 +10,9 @@
       <Name>DefenseShields</Name>
       <IsShipCategory>true</IsShipCategory>
       <ItemIds>
-		<string>OreDetector/DefenseShieldL</string>
-		<string>OreDetector/DefenseShieldS</string>
-		<string>OreDetector/StationShield_Large</string>
+		<string>OreDetector/DefenseShieldsLS</string>
+		<string>OreDetector/DefenseShieldsSS</string>
+		<string>OreDetector/DefenseShieldsST</string>
       </ItemIds>
     </Category>
   </CategoryClasses>

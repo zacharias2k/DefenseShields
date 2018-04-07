@@ -255,7 +255,6 @@ namespace DefenseShields.Support
 
             public void CalculateTransform(MatrixD matrix, int lod)
             {
-                //_dsutil3.Sw.Start();
                 _lod = lod;
                 var count = checked((int)VertsForLod(lod));
                 Array.Resize(ref _vertexBuffer, count);
@@ -270,7 +269,6 @@ namespace DefenseShields.Support
 
                 var ib = _backing.IndexBuffer[_lod];
                 Array.Resize(ref _preCalcNormLclPos, ib.Length / 3);
-                //_dsutil3.StopWatchReport("calcTrans", 1);
             }
 
             public Vector3D[] CalculatePhysics(MatrixD matrix, int lod)
@@ -471,7 +469,7 @@ namespace DefenseShields.Support
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in IcoSphere Draw - renderId {renderId.ToString()}: {ex}"); }
-                //_dsutil1.StopWatchReport("Draw", 1);
+                //_dsutil1.StopWatchReport("Draw", -1);
             }
 
             private void ComputeImpacts()

@@ -4,6 +4,8 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.ModAPI;
 using VRage.Collections;
+using VRage.Game;
+using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
@@ -190,7 +192,7 @@ namespace DefenseShields.Support
             var gridVel = grid.Physics.LinearVelocity;
             var gridCenter = grid.PositionComp.WorldVolume.Center;
             var approching = Vector3.Dot(gridVel, gridCenter - targetPos) < 0;
-            if (approching) grid.Physics.LinearVelocity = gridVel * -0.25f;
+            if (approching) grid.Physics.LinearVelocity = gridVel * -0.1f;
             else return Vector3D.NegativeInfinity;
             var rangedVerts = new int[3];
 
@@ -202,6 +204,18 @@ namespace DefenseShields.Support
 
             var center = GetClosestTriCenter(physicsOutside, closestFace0, closestFace1, closestFace2, gridCenter);
             return center;
+        }
+
+        public static bool Intersecting(IMyCubeGrid breaching, IMyCubeGrid shield, Vector3D[] physicsVerts, Vector3D breachingPos)
+        {
+            var shieldPos = ClosestVert(physicsVerts, breachingPos);
+            var gridVel = breaching.Physics.LinearVelocity;
+            var gridCenter = breaching.PositionComp.WorldVolume.Center;
+            var shieldVel = shield.Physics.LinearVelocity;
+            var shieldCenter = shield.PositionComp.WorldVolume.Center;
+            var gApproching = Vector3.Dot(gridVel, gridCenter - shieldPos) < 0;
+            var sApproching = Vector3.Dot(shieldVel, shieldCenter - breachingPos) < 0;
+            return gApproching || sApproching;
         }
 
         public static Vector3D ContactPointOutside(IMyEntity breaching, MatrixD matrix)
@@ -690,6 +704,26 @@ namespace DefenseShields.Support
             rangedVerts[0] = minNum1;
             rangedVerts[1] = minNum2;
             rangedVerts[2] = minNum3;
+        }
+
+        public static Vector3D ClosestVert(Vector3D[] physicsVerts, Vector3D pos)
+        {
+            var minValue1 = double.MaxValue;
+            var closestVert = Vector3D.NegativeInfinity;
+
+
+            for (int p = 0; p < physicsVerts.Length; p++)
+            {
+                var vert = physicsVerts[p];
+                var range = vert - pos;
+                var test = (range.X * range.X + range.Y * range.Y + range.Z * range.Z);
+                if (test < minValue1)
+                {
+                    minValue1 = test;
+                    closestVert = vert;
+                }
+            }
+            return closestVert;
         }
     }
 }
