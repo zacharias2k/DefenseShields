@@ -114,6 +114,9 @@ namespace DefenseShields
         private MatrixD _mobileMatrix;
 
         private BoundingBox _oldGridAabb;
+        private BoundingBoxD _shieldAABB;
+
+        private BoundingSphereD _shieldSphere;
 
         public IMyOreDetector Shield => (IMyOreDetector)Entity;
         private IMyEntity _shield;
@@ -290,7 +293,7 @@ namespace DefenseShields
                     _gridChanged = _oldGridAabb != Shield.CubeGrid.LocalAABB;
                     _oldGridAabb = Shield.CubeGrid.LocalAABB;
                     _entityChanged = Shield.CubeGrid.Physics.IsMoving || _gridChanged;
-                    if (_entityChanged || Range <= 0) CreateShieldMatrices();
+                    if (_entityChanged || Range <= 0) CreateShieldShape();
                 }
 
                 EmitterActive = BlockWorking && Range > 0 && Shield.IsFunctional;
@@ -423,7 +426,7 @@ namespace DefenseShields
             var changed = (int)oWidth != (int)width || (int)oHeight != (int)height || (int)oDepth != (int)depth;
 
             if (!changed) return;
-            CreateShieldMatrices();
+            CreateShieldShape();
             _entityChanged = true;
         }
 
@@ -464,7 +467,7 @@ namespace DefenseShields
             _shieldLineOfSight = c < 610;
         }
 
-        private void CreateShieldMatrices()
+        private void CreateShieldShape()
         {
             if (GridIsMobile)
             {
@@ -472,18 +475,22 @@ namespace DefenseShields
                 if (_gridChanged) CreateMobileShape();
                 DetectionMatrix = _mobileMatrix * _shieldGridMatrix;
                 _detectionCenter = Shield.CubeGrid.PositionComp.WorldVolume.Center;
-                _shield.SetLocalMatrix(_mobileMatrix);
+                //_shield.SetLocalMatrix(_mobileMatrix);
+                _shieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.Min());
+                _shieldAABB = BoundingBox.CreateFromSphere(_shieldSphere);
             }
             else
             {
                 _shieldGridMatrix = Shield.WorldMatrix;
                 DetectionMatrix = MatrixD.Rescale(_shieldGridMatrix, new Vector3D(_width, _height, _depth));
-                _shield.SetLocalMatrix(MatrixD.Rescale(Shield.LocalMatrix, new Vector3D(_width, _height, _depth)));
+                //_shield.SetLocalMatrix(MatrixD.Rescale(Shield.LocalMatrix, new Vector3D(_width, _height, _depth)));
                 _detectionCenter = Shield.PositionComp.WorldVolume.Center;
                 ShieldSize = DetectionMatrix.Scale;
+                _shieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.Min());
+                _shieldAABB = BoundingBox.CreateFromSphere(_shieldSphere);
             }
             Range = (float)_detectMatrix.Scale.AbsMax() + 15f;
-            SetShieldShapeWorldMatrix();
+            SetShieldShape();
         }
 
         private void CreateMobileShape()
@@ -500,18 +507,17 @@ namespace DefenseShields
             _mobileMatrix = mobileMatrix;
         }
 
-        private void SetShieldShapeWorldMatrix()
+        private void SetShieldShape()
         {
             if (Shield.CubeGrid.Physics.IsStatic)
             {
                 _shieldShapeMatrix = MatrixD.Rescale(Shield.LocalMatrix, new Vector3D(_width, _height, _depth));
-                _shield.SetWorldMatrix(_shieldShapeMatrix * Shield.WorldMatrix);
                 //_shield.WorldVolume.Transform(_shieldShapeMatrix * Shield.WorldMatrix);
             }
             if (!_entityChanged || Shield.CubeGrid.Physics.IsStatic) return;
 
             _shieldShapeMatrix = _mobileMatrix;
-            _shield.SetWorldMatrix(_shieldShapeMatrix * Shield.CubeGrid.WorldMatrix);
+            //_shield.SetWorldMatrix(_shieldShapeMatrix * Shield.CubeGrid.WorldMatrix);
             //_shield.WorldVolume.Transform(_shieldShapeMatrix * Shield.WorldMatrix);
         }
         #endregion
@@ -1106,7 +1112,7 @@ namespace DefenseShields
         private void VoxelIntersect(IMyVoxelMap voxelMap)
         {
             var center = Shield.CubeGrid.WorldVolume.Center;
-            var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shield.WorldAABB);
+            var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shieldAABB);
             bOriBBoxD.Center = center;
             CustomCollision.VoxelCollisionSphere(Shield.CubeGrid, _physicsOutside, voxelMap, bOriBBoxD);
         }
@@ -1160,8 +1166,16 @@ namespace DefenseShields
             //DsDebugDraw.DrawObb(DetectionMatrix, sOriBBoxD, Color.AliceBlue);
             //var bWorldCenter = bWorldAabb.Center;
             var tSphere = breaching.WorldVolume;
-            Log.Line($"{_shield.WorldAABB.HalfExtents.Sum} {_shield.WorldVolume.Radius} {_shield.LocalVolume.Radius} {_shield.LocalAABB.HalfExtents.Sum}");
-            DsDebugDraw.DrawSphere(_shield.WorldVolume, Color.White);
+            //Log.Line($"{_shield.WorldAABB.HalfExtents.Sum} {_shield.WorldVolume.Radius} {_shield.LocalVolume.Radius} {_shield.LocalAABB.HalfExtents.Sum}");
+            //var scaleMatrix = MatrixD.Rescale(_shield.WorldMatrix, _shield.WorldMatrix.Scale.AbsMax());
+            //DsDebugDraw.DrawSingleVec(_detectionCenter, (float)scaleMatrix.Scale.AbsMax(), Color.Aqua);
+            Log.Line($"{ShieldSize.Min()} {ShieldSize.Max()} {_shieldSphere.Radius}");
+            var sOriBBoxD = MyOrientedBoundingBoxD.Create(_shieldAABB, DetectionMatrix);
+            //sOriBBoxD.Center = _detectionCenter;
+            DsDebugDraw.DrawObb(_detectMatrix, sOriBBoxD, Color.Red);
+            var sphere = _shieldSphere;
+            sphere.Center = Shield.PositionComp.WorldVolume.Center;
+            DsDebugDraw.DrawSphere(sphere, Color.Red);
             var sCenter = Shield.CubeGrid.WorldVolume.Center;
             var lodScaler = (int)Math.Pow(2, PhysicsLod);
            // var gridScaler = (float)(((_detectMatrix.Scale.X + _detectMatrix.Scale.Y + _detectMatrix.Scale.Z) / 3 / lodScaler) * 1.33) / bLocalAabb.Extents.Min();
