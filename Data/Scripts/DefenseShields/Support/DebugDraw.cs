@@ -307,9 +307,9 @@ namespace DefenseShields.Support
             var rangeGridResourceId = MyStringId.GetOrCompute("Build new");
             var radius = sphere.Radius;
             var transMatrix = MatrixD.CreateTranslation(sphere.Center);
-            var wm = MatrixD.Rescale(transMatrix, radius);
+            //var wm = MatrixD.Rescale(transMatrix, radius);
 
-            MySimpleObjectDraw.DrawTransparentSphere(ref wm, (float)radius, ref color, MySimpleObjectRasterizer.Solid, 1, null, rangeGridResourceId, -1, -1);
+            MySimpleObjectDraw.DrawTransparentSphere(ref transMatrix, (float)radius, ref color, MySimpleObjectRasterizer.Solid, 20, null, rangeGridResourceId, -1, -1);
         }
         #endregion
     }

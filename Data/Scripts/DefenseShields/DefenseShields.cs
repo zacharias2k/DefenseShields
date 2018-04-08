@@ -23,7 +23,6 @@ using VRage.Collections;
 using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
-using Sandbox.Game.Entities.Cube;
 
 namespace DefenseShields
 {
@@ -476,7 +475,7 @@ namespace DefenseShields
                 DetectionMatrix = _mobileMatrix * _shieldGridMatrix;
                 _detectionCenter = Shield.CubeGrid.PositionComp.WorldVolume.Center;
                 //_shield.SetLocalMatrix(_mobileMatrix);
-                _shieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.Min());
+                _shieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.Max());
                 _shieldAABB = BoundingBox.CreateFromSphere(_shieldSphere);
             }
             else
@@ -486,7 +485,7 @@ namespace DefenseShields
                 //_shield.SetLocalMatrix(MatrixD.Rescale(Shield.LocalMatrix, new Vector3D(_width, _height, _depth)));
                 _detectionCenter = Shield.PositionComp.WorldVolume.Center;
                 ShieldSize = DetectionMatrix.Scale;
-                _shieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.Min());
+                _shieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.Max());
                 _shieldAABB = BoundingBox.CreateFromSphere(_shieldSphere);
             }
             Range = (float)_detectMatrix.Scale.AbsMax() + 15f;
@@ -1169,13 +1168,29 @@ namespace DefenseShields
             //Log.Line($"{_shield.WorldAABB.HalfExtents.Sum} {_shield.WorldVolume.Radius} {_shield.LocalVolume.Radius} {_shield.LocalAABB.HalfExtents.Sum}");
             //var scaleMatrix = MatrixD.Rescale(_shield.WorldMatrix, _shield.WorldMatrix.Scale.AbsMax());
             //DsDebugDraw.DrawSingleVec(_detectionCenter, (float)scaleMatrix.Scale.AbsMax(), Color.Aqua);
-            Log.Line($"{ShieldSize.Min()} {ShieldSize.Max()} {_shieldSphere.Radius}");
-            var sOriBBoxD = MyOrientedBoundingBoxD.Create(_shieldAABB, DetectionMatrix);
-            //sOriBBoxD.Center = _detectionCenter;
-            DsDebugDraw.DrawObb(_detectMatrix, sOriBBoxD, Color.Red);
-            var sphere = _shieldSphere;
-            sphere.Center = Shield.PositionComp.WorldVolume.Center;
-            DsDebugDraw.DrawSphere(sphere, Color.Red);
+            var box = new BoundingBoxD(-Vector3D.One, Vector3D.One);
+            var sOriBBoxD = MyOrientedBoundingBoxD.Create(box, DetectionMatrix);
+
+            var breachingMatrix2 = Matrix.CreateScale(breaching.GridSize) * (Matrix)breaching.PositionComp.WorldMatrix * (Matrix)_detectMatrixInv;
+            var breachingMatrix1 = Matrix.CreateScale(Shield.CubeGrid.GridSize) * (Matrix)Shield.CubeGrid.PositionComp.WorldMatrix * (Matrix)breaching.WorldMatrixNormalizedInv;
+            var newPos1 = Vector3.Transform(_detectionCenter, breachingMatrix1);
+            var sphere = new BoundingSphereD(_shieldSphere.Center, _shieldSphere.Radius);
+            sphere.Center = _detectionCenter;
+            var box2 = BoundingBoxI.CreateFromSphere(sphere);
+
+            Vector3I newPos;
+            Vector3I oldPos = box2.Center;
+            Vector3I.Transform(ref oldPos, ref breachingMatrix1, out newPos); //note no longer TransformNormal
+            //box2.Translate(newPos);
+            DsDebugDraw.DrawSphere(sphere, Color.Blue);
+            //DsDebugDraw.DrawObb(_detectMatrix, sOriBBoxD, Color.Red);
+
+            Vector3D max = GridIntegerToWorld(Shield.CubeGrid.GridSize, box2.Max, Shield.CubeGrid.WorldMatrix);
+            Vector3D min = GridIntegerToWorld(Shield.CubeGrid.GridSize, box2.Min, Shield.CubeGrid.WorldMatrix);
+            max = breaching.WorldToGridInteger(min);
+            min = breaching.WorldToGridInteger(min);
+            var newBox = new BoundingBoxD(min, max);
+
             var sCenter = Shield.CubeGrid.WorldVolume.Center;
             var lodScaler = (int)Math.Pow(2, PhysicsLod);
            // var gridScaler = (float)(((_detectMatrix.Scale.X + _detectMatrix.Scale.Y + _detectMatrix.Scale.Z) / 3 / lodScaler) * 1.33) / bLocalAabb.Extents.Min();
@@ -1183,7 +1198,6 @@ namespace DefenseShields
             var rangedVerts = new int[3];
             var intersections = new List<Vector3D>();
             var dsutil = new DSUtils();
-            dsutil.Sw.Start();
             /*
             if (gridScaler > 1)
             {
@@ -1234,19 +1248,33 @@ namespace DefenseShields
                         var resultVelocity = momentum / (bPhysics.Mass + sPhysics.Mass);
                         var bBlockCenter = Vector3D.NegativeInfinity;
                         var gridInShieldWorld = MatrixD.CreateScale(breaching.GridSize) * breaching.PositionComp.WorldMatrix * _detectMatrixInv;
+                        var boxIngridWorld = MatrixD.CreateScale(Shield.CubeGrid.GridSize) * Shield.CubeGrid.PositionComp.WorldMatrix * MatrixD.Invert(breaching.WorldMatrix);
+
+                        sphere.Transform(gridInShieldWorld);
+                        box.TransformFast(boxIngridWorld);
                         var damage = 0f;
                         var c = 0;
+                        dsutil.Sw.Start();
 
+                        Vector3I gc = breaching.WorldToGridInteger(_detectionCenter);
+                        var rc = _shieldSphere.Radius + 3f / breaching.GridSize;
+                        rc *= rc;
                         for (int i = 0; i < cacheBlockList.Count; i++)
                         {
-                            var block = cacheBlockList[i];
-                            Vector3D blockPos;
-                            block.ComputeWorldCenter(out blockPos);
-                            if (_shield.WorldVolume.Contains(blockPos) == ContainmentType.Disjoint) continue;
-                            c++;
-                            if (_count == 0) Log.Line($"{c.ToString()} {block.BlockDefinition.Id}");
 
-                            if (_count == 29 && block.IsDestroyed)
+                            var block = cacheBlockList[i];
+                            var blockPos = block.Position;
+                            var num1 = gc.X - blockPos.X;
+                            var num2 = gc.Y - blockPos.Y;
+                            var num3 = gc.Z - blockPos.Z;
+                            var result = num1 * num1 + num2 * num2 + num3 * num3;
+                            if (result > rc) continue;
+                            //if (CustomCollision.DistanceSquared(gc, cacheBlockList[i].Position) < rc) Log.Line($"Match");
+
+                            //if (CustomCollision.GetIntersect(_detectionCenter, _shieldSphere.Radius, )) continue;
+                            c++;
+
+                            if (block.IsDestroyed)
                             {
                                 _destroyedBlocks.Enqueue(block);
                                 continue;
@@ -1256,7 +1284,6 @@ namespace DefenseShields
                                 block.ComputeWorldCenter(out bBlockCenter);
                                 bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bPhysics.Mass, breaching.PositionComp.WorldVolume.Center);
                                 sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sPhysics.Mass, Shield.CubeGrid.PositionComp.WorldVolume.Center);
-
 
                                 if (_dmgBlocks.Count > 50) continue;
                                 damage += block.Mass;
@@ -1272,6 +1299,13 @@ namespace DefenseShields
             }
             catch (Exception ex) { Log.Line($"Exception in getBlocks: {ex}");}
             dsutil.StopWatchReport("obb", -1);
+        }
+
+        public static Vector3D GridIntegerToWorld(float gridSize, Vector3I gridCoords, MatrixD worldMatrix)
+        {
+            Vector3D retval = (Vector3D)(Vector3)gridCoords;
+            retval *= gridSize;
+            return Vector3D.Transform(retval, worldMatrix);
         }
 
         private double PowerCalculation(IMyEntity breaching, IMyEntity field)

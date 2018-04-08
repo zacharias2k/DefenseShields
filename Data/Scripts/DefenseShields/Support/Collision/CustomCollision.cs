@@ -16,6 +16,21 @@ namespace DefenseShields.Support
 {
     internal static class CustomCollision
     {
+        public static void GetIntersect(Vector3D center, double radius, IMyCubeGrid query, List<IMySlimBlock> result)
+        {
+            Vector3I gc = query.WorldToGridInteger(center);
+            double rc = radius / query.GridSize;
+            query.GetBlocks(result, s => DistanceSquared(gc, s.Position) < rc);
+        }
+
+        public static double DistanceSquared(Vector3I value1, Vector3I value2)
+        {
+            int num1 = value1.X - value2.X;
+            int num2 = value1.Y - value2.Y;
+            int num3 = value1.Z - value2.Z;
+            return num1 * num1 + num2 * num2 + num3 * num3;
+        }
+
         public static double? IntersectRayEllipsoid(Vector3D rayPos, Vector3D rayDir)
         {
             MatrixD T = MatrixD.CreateTranslation(Vector3D.Zero);
