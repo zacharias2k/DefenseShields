@@ -151,14 +151,6 @@ namespace DefenseShields.Support
             return zone[zoneNum];
         }
 
-        public static void DrawVertCollection(Vector3D collision, double radius, Color color, int lineWidth = 1)
-        {
-            var posMatCenterScaled = MatrixD.CreateTranslation(collision);
-            var posMatScaler = MatrixD.Rescale(posMatCenterScaled, radius);
-            var rangeGridResourceId = MyStringId.GetOrCompute("Build new");
-            MySimpleObjectDraw.DrawTransparentSphere(ref posMatScaler, 1f, ref color, MySimpleObjectRasterizer.Solid, lineWidth, null, rangeGridResourceId, -1, -1);
-        }
-
         public static void DrawTriNumArray(Vector3D[] physicsVerts, int[] array)
         {
             var lineId = MyStringId.GetOrCompute("Square");
@@ -275,11 +267,6 @@ namespace DefenseShields.Support
             DrawVertCollection(physicsVerts[num], 7, c, 20);
         }
 
-        public static void DrawSingleVec(Vector3D vec, float size, Color color)
-        {
-            DrawVertCollection(vec, size, color, 20);
-        }
-
         public static void DrawBox(MyOrientedBoundingBoxD obb, Color color, bool shield, MatrixD matrix = default(MatrixD))
         {
             var box = new BoundingBoxD(-obb.HalfExtent, obb.HalfExtent);
@@ -290,12 +277,10 @@ namespace DefenseShields.Support
             MySimpleObjectDraw.DrawTransparentBox(ref wm, ref box, ref color, MySimpleObjectRasterizer.Solid, 1);
         }
 
-        public static void DrawBox2(MatrixD matrix, MyOrientedBoundingBoxD obb, Color color)
+        public static void DrawObb(MatrixD matrix, MyOrientedBoundingBoxD obb, Color color)
         {
             var box = new BoundingBoxD(-obb.HalfExtent, obb.HalfExtent);
-            var wm = MatrixD.CreateFromTransformScale(obb.Orientation, obb.Center, Vector3D.One);
-            wm = MatrixD.Rescale(matrix, 1f);
-            MySimpleObjectDraw.DrawTransparentBox(ref wm, ref box, ref color, MySimpleObjectRasterizer.Solid, 1);
+            MySimpleObjectDraw.DrawTransparentBox(ref matrix, ref box, ref color, MySimpleObjectRasterizer.Solid, 1);
         }
 
         public static void DrawBox3(MatrixD matrix, BoundingBoxD box, Color color)
@@ -303,11 +288,28 @@ namespace DefenseShields.Support
             MySimpleObjectDraw.DrawTransparentBox(ref matrix, ref box, ref color, MySimpleObjectRasterizer.Solid, 1, 8f, MyStringId.GetOrCompute("square"));
         }
 
+
+        public static void DrawSingleVec(Vector3D vec, float size, Color color)
+        {
+            DrawVertCollection(vec, size, color, 20);
+        }
+
+        public static void DrawVertCollection(Vector3D collision, double radius, Color color, int lineWidth = 1)
+        {
+            var posMatCenterScaled = MatrixD.CreateTranslation(collision);
+            var posMatScaler = MatrixD.Rescale(posMatCenterScaled, radius);
+            var rangeGridResourceId = MyStringId.GetOrCompute("Build new");
+            MySimpleObjectDraw.DrawTransparentSphere(ref posMatScaler, 1f, ref color, MySimpleObjectRasterizer.Solid, lineWidth, null, rangeGridResourceId, -1, -1);
+        }
+
         public static void DrawSphere(BoundingSphereD sphere, Color color)
         {
+            var rangeGridResourceId = MyStringId.GetOrCompute("Build new");
             var radius = sphere.Radius;
-            var wm = MatrixD.CreateWorld(sphere.Center);
-            MySimpleObjectDraw.DrawTransparentSphere(ref wm, (float)radius, ref color, MySimpleObjectRasterizer.Solid, 1);
+            var transMatrix = MatrixD.CreateTranslation(sphere.Center);
+            var wm = MatrixD.Rescale(transMatrix, radius);
+
+            MySimpleObjectDraw.DrawTransparentSphere(ref wm, (float)radius, ref color, MySimpleObjectRasterizer.Solid, 1, null, rangeGridResourceId, -1, -1);
         }
         #endregion
     }

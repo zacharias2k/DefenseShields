@@ -101,18 +101,18 @@ namespace DefenseShields
             if (Components.Count == 0 || (info.Type != MyDamageType.Bullet && info.Type != MyDamageType.Deformation)) return;
             foreach (var shield in Components)
             {
-                if (!shield.Block.IsWorking || !shield.Initialized) continue;
-                if (block.CubeGrid == shield.Block.CubeGrid)
+                if (!shield.Shield.IsWorking || !shield.Initialized) continue;
+                if (block.CubeGrid == shield.Shield.CubeGrid)
                 {
                     if (_voxelTrigger == 0 && MyAPIGateway.Entities.GetEntityById(info.AttackerId) is IMyVoxelMap)
                     {
                         if (_resetVoxelColliders)
                         {
-                            var safeplace = MyAPIGateway.Entities.FindFreePlace(shield.Block.CubeGrid.WorldVolume.Center, (float)shield.Block.CubeGrid.WorldVolume.Radius * 5);
+                            var safeplace = MyAPIGateway.Entities.FindFreePlace(shield.Shield.CubeGrid.WorldVolume.Center, (float)shield.Shield.CubeGrid.WorldVolume.Radius * 5);
                             if (safeplace != null)
                             {
-                                shield.Block.CubeGrid.Physics.ClearSpeed();
-                                shield.Block.CubeGrid.SetPosition((Vector3D)safeplace);
+                                shield.Shield.CubeGrid.Physics.ClearSpeed();
+                                shield.Shield.CubeGrid.SetPosition((Vector3D)safeplace);
                                 _voxelDamageCounter.Clear();
                             }
                         }

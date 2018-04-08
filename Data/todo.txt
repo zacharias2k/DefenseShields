@@ -15,3 +15,8 @@
 15) Limit placement of station/LargeShip on their respective grids.
 16) In game game state messages.
 17) try and find a better point to applyforce against, perhaps use distance and face check.
+
+                        var gridInShieldWorld = MatrixD.CreateScale(breaching.GridSize) * breaching.PositionComp.WorldMatrix * _detectMatrixInv;
+                        var orientation = Quaternion.CreateFromTwoVectors(Shield.CubeGrid.WorldVolume.Center, Shield.CubeGrid.PositionComp.WorldAABB.Max);
+                        Log.Line($"{ShieldSize.Max() / 2} {_shieldShapeMatrix.S }");
+                        var sOriBBoxD = new MyOrientedBoundingBoxD(Shield.CubeGrid.PositionComp.WorldVolume.Center, Vector3D.One, orientation);
