@@ -138,6 +138,7 @@ namespace DefenseShields
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _widthSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _heightSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _depthSlider;
+        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _visablilityCheckBox;
 
         private MyResourceSinkComponent _sink;
 
@@ -503,7 +504,7 @@ namespace DefenseShields
             Vector3D gridHalfExtents = Shield.CubeGrid.PositionComp.LocalAABB.HalfExtents;
 
             const double ellipsoidAdjust = MathematicalConstants.SQRT2;
-            const float buffer = 5f;
+            const double buffer = 2.5d;
             var shieldSize = gridHalfExtents * ellipsoidAdjust + buffer;
             ShieldSize = shieldSize;
             var gridLocalCenter = Shield.CubeGrid.PositionComp.LocalAABB.Center;
@@ -553,11 +554,14 @@ namespace DefenseShields
             Log.Line($"Create UI - c:{_count.ToString()}");
             DefenseShieldsBase.Instance.ControlsLoaded = true;
             RemoveOreUi();
+
+            _visablilityCheckBox = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "Visability", "Hide Shield From Allied", true);
+
             //if (Block.BlockDefinition.SubtypeId == "DefenseShieldsST")
             //{
-                _widthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "WidthSlider", "Shield Size Width", 10, 300, 100);
-                _heightSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HeightSlider", "Shield Size Height", 10, 300, 100);
-                _depthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "DepthSlider", "Shield Size Depth", 10, 300, 100);
+            _widthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "WidthSlider", "Shield Size Width", 30, 300, 100);
+            _heightSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HeightSlider", "Shield Size Height", 10, 300, 100);
+            _depthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "DepthSlider", "Shield Size Depth", 30, 300, 100);
             //}
         }
         #endregion
@@ -657,6 +661,8 @@ namespace DefenseShields
             var relation = MyAPIGateway.Session.Player.GetRelationTo(Shield.OwnerId);
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
             _enemy = enemy;
+            var visable = !_visablilityCheckBox.Getter(Shield).Equals(true) && !enemy;
+
             var impactPos = _worldImpactPosition;
             if (impactPos != Vector3D.NegativeInfinity)
             {
@@ -670,7 +676,7 @@ namespace DefenseShields
             _worldImpactPosition = Vector3D.NegativeInfinity;
 
             if (Shield.IsWorking) PrepareSphere();
-            if (sphereOnCamera && Shield.IsWorking) _icosphere.Draw(GetRenderId());
+            if (sphereOnCamera && Shield.IsWorking) _icosphere.Draw(GetRenderId(), visable);
         }
 
         private void PrepareSphere()

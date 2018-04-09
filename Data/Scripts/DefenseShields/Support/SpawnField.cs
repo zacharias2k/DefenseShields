@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
 using Sandbox.ModAPI;
 using VRage;
@@ -435,11 +436,13 @@ namespace DefenseShields.Support
                 }
             }
 
-            public void Draw(uint renderId)
+            public void Draw(uint renderId, bool visable)
             {
                 //_dsutil1.Sw.Start();
                 try
                 {
+                    Log.Line($"{!visable} {_impactsFinished} {!_charge}");
+                    if (!visable && _impactsFinished && !_charge) return;
                     var faceMaterial = _faceId2;
                     var ib = _backing.IndexBuffer[_lod];
                     var v20 = new Vector2(.5f);
