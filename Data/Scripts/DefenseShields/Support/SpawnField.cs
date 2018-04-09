@@ -441,7 +441,6 @@ namespace DefenseShields.Support
                 //_dsutil1.Sw.Start();
                 try
                 {
-                    Log.Line($"{!visable} {_impactsFinished} {!_charge}");
                     if (!visable && _impactsFinished && !_charge) return;
                     var faceMaterial = _faceId2;
                     var ib = _backing.IndexBuffer[_lod];
