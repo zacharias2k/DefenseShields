@@ -58,6 +58,9 @@
     <Reference Include="Logging">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\SpaceEngineers\Bin64\Logging.dll</HintPath>
     </Reference>
+    <Reference Include="Mathos, Version=1.0.5.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\Mathos.1.0.5.1\lib\Mathos.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\SpaceEngineers\Bin64\Newtonsoft.Json.dll</HintPath>
@@ -232,6 +235,7 @@
     <None Include="Models\GeneratorReflector_Large.mwm" />
     <None Include="Models\GeneratorRotor_Large.mwm" />
     <None Include="Models\LargeField.mwm" />
+    <None Include="packages.config" />
     <None Include="tools\Monitor DS.ps1" />
     <None Include="tools\Monitor SE Error Log.ps1" />
     <None Include="tools\Monitor SE Log.ps1" />

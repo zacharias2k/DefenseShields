@@ -460,7 +460,7 @@ namespace DefenseShields.Support
                         var n1 = _normalBuffer[i1];
                         var n2 = _normalBuffer[i2];
                         var color = _triColorBuffer[j];
-                        if (color == _defaultColor) faceMaterial = _faceId2;
+                        if (color == _defaultColor) faceMaterial = _faceId1;
                         else if (color == _waveColor) faceMaterial = _faceId2;
                         else if (color == _chargeColor) faceMaterial = _faceId3;
                         //else if (color == _waveComingColor) faceMaterial = _faceId1;

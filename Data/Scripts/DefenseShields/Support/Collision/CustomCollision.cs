@@ -324,7 +324,6 @@ namespace DefenseShields.Support
                 var v1 = physicsVerts[closestFace[i + 1]];
                 var v2 = physicsVerts[closestFace[i + 2]];
                 var test1 = bWorldAabb.IntersectsTriangle(v0, v1, v2);
-
                 if (!test1) continue;
                 intersections.Add(v0); 
                 intersections.Add(v1);
