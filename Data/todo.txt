@@ -9,14 +9,9 @@
 9) Finish and test Multiplayer
 10) Add damage shield block.
 11) Add particle effects to the actual shield verts/triangles.  Perhaps even impact animations.
-12) Add a toggle for owner to disable idle shield state visability.
+12) *DONE* Add a toggle for owner to disable idle shield state visability.
 13) ModAPI support (must get Line Ellispoid working).
 14) Confirm unloading of mod properly.
 15) Limit placement of station/LargeShip on their respective grids.
 16) In game game state messages.
 17) try and find a better point to applyforce against, perhaps use distance and face check.
-
-                        var gridInShieldWorld = MatrixD.CreateScale(breaching.GridSize) * breaching.PositionComp.WorldMatrix * _detectMatrixInv;
-                        var orientation = Quaternion.CreateFromTwoVectors(Shield.CubeGrid.WorldVolume.Center, Shield.CubeGrid.PositionComp.WorldAABB.Max);
-                        Log.Line($"{ShieldSize.Max() / 2} {_shieldShapeMatrix.S }");
-                        var sOriBBoxD = new MyOrientedBoundingBoxD(Shield.CubeGrid.PositionComp.WorldVolume.Center, Vector3D.One, orientation);
