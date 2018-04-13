@@ -213,14 +213,14 @@ namespace DefenseShields.Support
             MySimpleObjectDraw.DrawLine(v0, v1, lineId, ref c, 0.25f);
         }
 
-        public static void DrawLineToVec(Vector3D toVec, Vector3D fromVec, Color color)
+        public static void DrawLineToVec(Vector3D toVec, Vector3D fromVec, Color color, float lineWidth)
         {
             var c = color.ToVector4();
             var lineId = MyStringId.GetOrCompute("Square");
 
             var v0 = toVec;
             var v1 = fromVec;
-            MySimpleObjectDraw.DrawLine(v0, v1, lineId, ref c, 0.25f);
+            MySimpleObjectDraw.DrawLine(v0, v1, lineId, ref c, lineWidth);
         }
         public static void DrawRootVerts(Vector3D[] rootVerts, Color[] zoneColors)
         {

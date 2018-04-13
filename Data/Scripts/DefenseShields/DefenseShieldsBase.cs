@@ -15,7 +15,7 @@ namespace DefenseShields
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
     public class DefenseShieldsBase : MySessionComponentBase
     {
-        private bool _isInit;
+        internal bool SessionInit;
         public bool ControlsLoaded { get; set; }
         private bool _resetVoxelColliders;
 
@@ -38,6 +38,8 @@ namespace DefenseShields
         public override void Draw()
         {
             //_dsutil1.Sw.Start();
+            if (!SessionInit || Components.Count == 0) return;
+
             var sphereOnCamera = new bool[Components.Count];
             var onCount = 0;
             for (int i = 0; i < Components.Count; i++)
@@ -72,26 +74,29 @@ namespace DefenseShields
 
         public override void UpdateBeforeSimulation()
         {
-            if (_count++ == 1180)
-            {
-                _count = 0;
-                if (_voxelDamageCounter.Count != 0) _voxelDamageCounter.Clear();
+            if (!SessionInit) {
+                if (MyAPIGateway.Multiplayer.IsServer && MyAPIGateway.Utilities.IsDedicated) Init();
+                else if (MyAPIGateway.Session.Player != null) Init();
             }
-            _voxelTrigger = 0;
-            _resetVoxelColliders = false;
-            foreach (var voxel in _voxelDamageCounter.Values) if (voxel > 90) _resetVoxelColliders = true;
-            if (_isInit) return;
-            if (MyAPIGateway.Multiplayer.IsServer && MyAPIGateway.Utilities.IsDedicated) Init();
-            else if (MyAPIGateway.Session.Player != null) Init();
+            else {
+                if (_count++ == 1180) {
+                    _count = 0;
+                    if (_voxelDamageCounter.Count != 0) _voxelDamageCounter.Clear();
+                }
+                _voxelTrigger = 0;
+                _resetVoxelColliders = false;
+                foreach (var voxel in _voxelDamageCounter.Values)
+                    if (voxel > 40) _resetVoxelColliders = true;
+            }
         }
 
         public void Init() 
         {
             Log.Init("debugdevelop.log");
-            Log.Line($" Logging Started");
+            Log.Line($"Logging Started");
             MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
             MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID, PacketReceived);
-            _isInit = true;
+            SessionInit = true;
         }
 
         public void CheckDamage(object target, ref MyDamageInformation info)
@@ -101,7 +106,7 @@ namespace DefenseShields
             if (Components.Count == 0 || (info.Type != MyDamageType.Bullet && info.Type != MyDamageType.Deformation)) return;
             foreach (var shield in Components)
             {
-                if (!shield.Shield.IsWorking || !shield.Initialized) continue;
+                if (!shield.Shield.IsWorking || !shield.MainInit) continue;
                 if (block.CubeGrid == shield.Shield.CubeGrid)
                 {
                     if (_voxelTrigger == 0 && MyAPIGateway.Entities.GetEntityById(info.AttackerId) is IMyVoxelMap)

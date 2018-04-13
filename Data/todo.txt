@@ -1,17 +1,28 @@
-1) *DONE* allow emitters on outside of ship only
-2) complete shield damage scaling and power usage algorthim
-3) shield power effiecy by ditance from reactors or relays.
-4) control block and readouts
-5) *DONE* finish small ship and station blocks.
-6) fix auto size adjustment corner cases
-7) require emitters to be within range from other emitters to complete a combined (larger) field.
-8) support forward, back, left, right, top and bottom shields.
-9) Finish and test Multiplayer
-10) Add damage shield block.
-11) Add particle effects to the actual shield verts/triangles.  Perhaps even impact animations.
-12) *DONE* Add a toggle for owner to disable idle shield state visability.
-13) ModAPI support (must get Line Ellispoid working).
-14) Confirm unloading of mod properly.
-15) Limit placement of station/LargeShip on their respective grids.
-16) In game game state messages.
-17) try and find a better point to applyforce against, perhaps use distance and face check.
+Pre-Release:
+1) complete shield damage scaling and power usage algorthim
+2) Make sure only entiteis that spawned inside are counted as inside and respect proper damage for all inside entiteis (both shield vs non and vs)
+3) Collision optimization (voxel, shield and a bit more tuning of blocks).
+
+Release:
+1) Finish and test Multiplayer
+2) Add particle effects to the actual shield verts/triangles.  Perhaps even impact animations.
+3) ModAPI support (must get Line Ellispoid working).
+4) Confirm unloading of mod properly.
+5) require emitters to be within range from other emitters to complete a combined (larger) field.
+6) Block definition manager / type getter thing.
+
+version 2:
+1) Add damage shield block.
+2) support forward, back, left, right, top and bottom shields.
+3) fix auto size adjustment corner cases
+4) shield power effiecy by ditance from reactors or relays.
+5) control block and readouts
+
+Done:
+1) *DONE* finish small ship and station blocks.
+2) *DONE* allow emitters on outside of ship only
+3) *DONE* Add a toggle for owner to disable idle shield state visability.
+4) *DONE* Limit placement of station/LargeShip on their respective grids.
+5) *DONE* In game game state messages.
+6) *DONE* try and find a better point to applyforce against, perhaps use distance and face check.
+7) *DONE* Add voxel sight check
