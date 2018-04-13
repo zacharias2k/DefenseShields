@@ -489,9 +489,9 @@ namespace DefenseShields
 
         private void CheckShieldLineOfSight()
         {
+            Log.Line($"test");
             _shieldCheckSight = false;
 
-            var vertsBlocked = 0;
             var testDist = 0d;
             _blocksLos.Clear();
             _noBlocksLos.Clear();
@@ -511,7 +511,6 @@ namespace DefenseShields
                 if (hit.HasValue)
                 {
                     _blocksLos.Add(i);
-                    Interlocked.Increment(ref vertsBlocked);
                     return;
                 }
                 _noBlocksLos.Add(i);
@@ -521,16 +520,12 @@ namespace DefenseShields
                 const int filter = CollisionLayers.VoxelCollisionLayer;
                 IHitInfo hitInfo;
                 var hit = MyAPIGateway.Physics.CastRay(testPos, _physicsOutside[_noBlocksLos[i]], out hitInfo, filter);
-                if (hit)
-                {
-                    _blocksLos.Add(_noBlocksLos[i]);
-                    Interlocked.Increment(ref vertsBlocked);
-                }
+                if (hit) _blocksLos.Add(_noBlocksLos[i]);
             });
 
             for (int i = 0; i < _physicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
-            _shieldLineOfSight = vertsBlocked < 310;
-            Log.Line($"blocked verts {vertsBlocked.ToString()} [{_blocksLos.Count.ToString()}] - visable verts: {_vertsSighted.Count.ToString()} - LoS: {_shieldLineOfSight.ToString()}");
+            _shieldLineOfSight = _blocksLos.Count < 310;
+            Log.Line($"blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {_shieldLineOfSight.ToString()}");
         }
 
         private void DrawHelper()
@@ -572,9 +567,6 @@ namespace DefenseShields
             }
             else
             {
-                _icosphere.ReturnPhysicsVerts(_detectMatrixOutside, _physicsOutside);
-                _icosphere.ReturnPhysicsVerts(_detectMatrixInside, _physicsInside);
-                _shieldCheckSight = true;
                 _shieldGridMatrix = Shield.WorldMatrix;
                 DetectionMatrix = MatrixD.Rescale(_shieldGridMatrix, new Vector3D(_width, _height, _depth));
                 //_shield.SetLocalMatrix(MatrixD.Rescale(Shield.LocalMatrix, new Vector3D(_width, _height, _depth)));
