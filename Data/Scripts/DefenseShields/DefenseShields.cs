@@ -102,13 +102,11 @@ namespace DefenseShields
         private Vector3D _sVel;
         private Vector3D _sAvel;
         internal Vector3D ShieldSize { get; set; }
-        private Vector3D _SightPos;
+        private Vector3D _sightPos;
 
         private readonly Vector3D[] _rootVecs = new Vector3D[12];
         private readonly Vector3D[] _physicsOutside = new Vector3D[642];
         private readonly Vector3D[] _physicsInside = new Vector3D[642];
-
-        private Matrix _oldLocalMatrix;
 
         private MatrixD _shieldGridMatrix;
         private MatrixD _shieldShapeMatrix;
@@ -120,7 +118,7 @@ namespace DefenseShields
         private MatrixD _mobileMatrix;
 
         private BoundingBox _oldGridAabb;
-        private BoundingBoxD _shieldAABB;
+        private BoundingBoxD _shieldAabb;
 
         private BoundingSphereD _shieldSphere;
 
@@ -145,15 +143,16 @@ namespace DefenseShields
 
         private readonly MyDefinitionId _powerDefinitionId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
-        private readonly MyConcurrentHashSet<int> _blocksLos = new MyConcurrentHashSet<int>();
         private readonly MyConcurrentList<int> _vertsSighted = new MyConcurrentList<int>();
 
-
         private readonly MyConcurrentList<int> _noBlocksLos = new MyConcurrentList<int>();
-        private readonly MyConcurrentHashSet<IMyEntity> _friendlyCache = new MyConcurrentHashSet<IMyEntity>();
-        public MyConcurrentHashSet<IMyEntity> InShield = new MyConcurrentHashSet<IMyEntity>();
+
+        private readonly MyConcurrentHashSet<int> _blocksLos = new MyConcurrentHashSet<int>();
+        public readonly MyConcurrentHashSet<IMyEntity> FriendlyCache = new MyConcurrentHashSet<IMyEntity>();
+
         private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<IMyEntity, Vector3D>();
         private readonly MyConcurrentDictionary<IMyEntity, EntIntersectInfo> _webEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();
+
         private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
 
         private readonly MyConcurrentQueue<IMySlimBlock> _dmgBlocks  = new MyConcurrentQueue<IMySlimBlock>();
@@ -295,7 +294,7 @@ namespace DefenseShields
 
         public override void UpdateBeforeSimulation()
         {
-            //_dsutil2.Sw.Start();
+            _dsutil2.Sw.Start();
             try
             {
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
@@ -327,10 +326,10 @@ namespace DefenseShields
                     if (_longLoop == 10)
                     {
                         var cnt = _webEnts.Count;
-                        Log.Line($"webentCache Count: {_webEnts.Count.ToString()} - FriendCache Count: {_friendlyCache.Count.ToString()} - tick:{_tick.ToString()}");
+                        Log.Line($"webentCache Count: {_webEnts.Count.ToString()} - FriendCache Count: {FriendlyCache.Count.ToString()} - tick:{_tick.ToString()}");
                         foreach (var i in _webEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1).ToList())
                             _webEnts.Remove(i.Key);
-                        _friendlyCache.Clear();
+                        FriendlyCache.Clear();
                         Log.Line($"webentCache Cleaned: {(cnt - _webEnts.Count).ToString()} - tick:{_tick.ToString()}");
 
                         if (Shield.CubeGrid.Physics.IsStatic && Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS")
@@ -400,7 +399,7 @@ namespace DefenseShields
                 }
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
-            //_dsutil2.StopWatchReport("main loop", -1);
+            _dsutil2.StopWatchReport("main loop", -1);
         }
         #endregion
 
@@ -503,7 +502,7 @@ namespace DefenseShields
             var testDir = _subpartRotor.PositionComp.WorldVolume.Center - Shield.PositionComp.WorldVolume.Center;
             testDir.Normalize();
             var testPos = Shield.PositionComp.WorldVolume.Center + testDir * testDist;
-            _SightPos = testPos;
+            _sightPos = testPos;
             
             MyAPIGateway.Parallel.For(0, _physicsOutside.Length, i =>
             {
@@ -538,18 +537,18 @@ namespace DefenseShields
 
             foreach (var blocking in _blocksLos)
             {
-                var blockedDir = _physicsOutside[blocking] - _SightPos;
+                var blockedDir = _physicsOutside[blocking] - _sightPos;
                 blockedDir.Normalize();
-                var blockedPos = _SightPos + blockedDir * lineDist;
-                DsDebugDraw.DrawLineToVec(_SightPos, blockedPos, Color.Black, lineWidth);
+                var blockedPos = _sightPos + blockedDir * lineDist;
+                DsDebugDraw.DrawLineToVec(_sightPos, blockedPos, Color.Black, lineWidth);
             }
 
             foreach (var sighted in _vertsSighted)
             {
-                var sightedDir = _physicsOutside[sighted] - _SightPos;
+                var sightedDir = _physicsOutside[sighted] - _sightPos;
                 sightedDir.Normalize();
-                var sightedPos = _SightPos + sightedDir * lineDist;
-                DsDebugDraw.DrawLineToVec(_SightPos, sightedPos, Color.Blue, lineWidth);
+                var sightedPos = _sightPos + sightedDir * lineDist;
+                DsDebugDraw.DrawLineToVec(_sightPos, sightedPos, Color.Blue, lineWidth);
             }
         }
 
@@ -563,7 +562,7 @@ namespace DefenseShields
                 _detectionCenter = Shield.CubeGrid.PositionComp.WorldVolume.Center;
                 //_shield.SetLocalMatrix(_mobileMatrix);
                 _shieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
-                _shieldAABB = BoundingBoxD.CreateFromSphere(_shieldSphere);
+                _shieldAabb = BoundingBoxD.CreateFromSphere(_shieldSphere);
             }
             else
             {
@@ -573,7 +572,7 @@ namespace DefenseShields
                 _detectionCenter = Shield.PositionComp.WorldVolume.Center;
                 ShieldSize = DetectionMatrix.Scale;
                 _shieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
-                _shieldAABB = BoundingBoxD.CreateFromSphere(_shieldSphere);
+                _shieldAabb = BoundingBoxD.CreateFromSphere(_shieldSphere);
             }
             Range = ShieldSize.AbsMax() + 7.5f;
             SetShieldShape();
@@ -830,7 +829,8 @@ namespace DefenseShields
 
                 ShieldGridComponent shieldComponent;
                 grid.Components.TryGet(out shieldComponent);
-                if (shieldComponent != null && !(shieldComponent.DefenseShields.ShieldActive) && enemy) return Ent.LargeEnemyGrid;
+                if (shieldComponent != null && !enemy) return Ent.Friend;
+                if (shieldComponent != null && !shieldComponent.DefenseShields.ShieldActive) return Ent.LargeEnemyGrid;
                 if (shieldComponent != null && Entity.EntityId > shieldComponent.DefenseShields.Entity.EntityId) return Ent.Shielded;
                 if (shieldComponent != null) return Ent.Ignore; //only process the higher EntityID
                 return enemy ? Ent.LargeEnemyGrid : Ent.Friend;
@@ -880,12 +880,12 @@ namespace DefenseShields
                 var entCenter = ent.PositionComp.WorldVolume.Center;
 
                 if (ent == _shield || ent as IMyCubeGrid == Shield.CubeGrid || ent.Physics == null || ent.MarkedForClose || ent is IMyVoxelBase && !GridIsMobile
-                    || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || _friendlyCache.Contains(ent) || ent.GetType().Name == "MyDebrisBase") continue;
+                    || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || FriendlyCache.Contains(ent) || ent.GetType().Name == "MyDebrisBase") continue;
 
                 var relation = EntType(ent);
                 if (relation == Ent.Ignore || relation == Ent.Friend)
                 {
-                    _friendlyCache.Add(ent);
+                    FriendlyCache.Add(ent);
                     continue;
                 }
 
@@ -897,7 +897,7 @@ namespace DefenseShields
                     if (entInfo != null)
                     {
                         entInfo.LastTick = _tick;
-                        if (entInfo.SpawnedInside) _friendlyCache.Add(ent);
+                        if (entInfo.SpawnedInside) FriendlyCache.Add(ent);
                     }
                     else
                     {
@@ -905,7 +905,7 @@ namespace DefenseShields
                         if ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(((IMyCubeGrid) ent).WorldAABB, _detectMatrixInv))
                         {
                             inside = true;
-                            _friendlyCache.Add(ent);
+                            FriendlyCache.Add(ent);
                         }
                         _webEnts.Add(ent, new EntIntersectInfo(ent.EntityId, 0f, Vector3D.NegativeInfinity, _tick, _tick, relation, inside, new List<IMySlimBlock>()));
                     }
@@ -1216,7 +1216,7 @@ namespace DefenseShields
         private void VoxelIntersect(IMyVoxelMap voxelMap)
         {
             var center = Shield.CubeGrid.WorldVolume.Center;
-            var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shieldAABB);
+            var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(_shieldAabb);
             bOriBBoxD.Center = center;
             CustomCollision.VoxelCollisionSphere(Shield.CubeGrid, _physicsOutside, voxelMap, bOriBBoxD);
         }

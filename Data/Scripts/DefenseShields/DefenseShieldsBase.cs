@@ -6,6 +6,7 @@ using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using DefenseShields.Support;
+using Sandbox.Game.WorldEnvironment.ObjectBuilders;
 using VRageMath;
 
 namespace DefenseShields
@@ -106,9 +107,12 @@ namespace DefenseShields
             if (Components.Count == 0 || (info.Type != MyDamageType.Bullet && info.Type != MyDamageType.Deformation)) return;
             foreach (var shield in Components)
             {
-                if (!shield.Shield.IsWorking || !shield.MainInit) continue;
-                if (block.CubeGrid == shield.Shield.CubeGrid)
+                if (!shield.ShieldActive) continue;
+                if (shield.FriendlyCache.Contains(block.CubeGrid))
                 {
+                    var attackerEnt = MyAPIGateway.Entities.GetEntityById(info.AttackerId);
+                    if (attackerEnt != null) Log.Line($"grid: {block.CubeGrid.DisplayName} attacker: {attackerEnt.DisplayName}");
+                    if (shield.FriendlyCache.Contains(MyAPIGateway.Entities.GetEntityById(info.AttackerId))) continue;
                     if (_voxelTrigger == 0 && MyAPIGateway.Entities.GetEntityById(info.AttackerId) is IMyVoxelMap)
                     {
                         if (_resetVoxelColliders)
