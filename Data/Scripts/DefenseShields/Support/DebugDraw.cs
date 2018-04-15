@@ -267,13 +267,10 @@ namespace DefenseShields.Support
             DrawVertCollection(physicsVerts[num], 7, c, 20);
         }
 
-        public static void DrawBox(MyOrientedBoundingBoxD obb, Color color, bool shield, MatrixD matrix = default(MatrixD))
+        public static void DrawBox(MyOrientedBoundingBoxD obb, Color color)
         {
             var box = new BoundingBoxD(-obb.HalfExtent, obb.HalfExtent);
             var wm = MatrixD.CreateFromTransformScale(obb.Orientation, obb.Center, Vector3D.One);
-            //if (shield) wm = wm * _shieldGridMatrix;
-            //else wm = wm * matrix;
-            //wm = wm * Block.WorldMatrix;
             MySimpleObjectDraw.DrawTransparentBox(ref wm, ref box, ref color, MySimpleObjectRasterizer.Solid, 1);
         }
 

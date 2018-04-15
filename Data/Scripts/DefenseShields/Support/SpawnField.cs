@@ -340,6 +340,7 @@ namespace DefenseShields.Support
 
 
                 //if (_impactCnt[9] != 0) MyAPIGateway.Parallel.Start(Models);
+
                 //_dsutil2.Sw.Start();
                 ImpactColorAssignments(impactSize, impactSpeed, prevLod);
                 //_dsutil2.StopWatchReport("colorcalc", 1);
@@ -562,6 +563,7 @@ namespace DefenseShields.Support
                     var n = _modelCount;
                     if (_impactCnt[9] % 2 == 1)
                     {
+                        Log.Line($"Models!");
                         _shield.Render.Visible = true;
                         ((MyEntity)_shield).RefreshModels($"{modPath}\\Models\\LargeField{n.ToString()}.mwm", null);
                         _shield.Render.RemoveRenderObjects();

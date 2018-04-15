@@ -6,10 +6,13 @@ Pre-Release:
 Release:
 1) Finish and test Multiplayer
 2) Add particle effects to the actual shield verts/triangles.  Perhaps even impact animations.
-3) ModAPI support (must get Line Ellispoid working).
+3) ModAPI support (must get Line Ellispoid working) Ray + Sphere & Line + OBB.
 4) Confirm unloading of mod properly.
 5) require emitters to be within range from other emitters to complete a combined (larger) field.
 6) Block definition manager / type getter thing.
+
+Bugs:
+1) Exploit, second grid can be used to beat LOS check.  Switch blockcheck to raycast vs physicsInside.
 
 version 2:
 1) Add damage shield block.
@@ -17,6 +20,7 @@ version 2:
 3) fix auto size adjustment corner cases
 4) shield power effiecy by ditance from reactors or relays.
 5) control block and readouts
+6) Ellispoid MODAPI
 
 Done:
 1) *DONE* finish small ship and station blocks.
