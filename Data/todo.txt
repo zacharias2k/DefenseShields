@@ -1,7 +1,6 @@
 Pre-Release:
 1) complete shield damage/protection scaling
-2) Make sure only entiteis that spawned inside are counted as inside and respect proper damage for all inside entiteis (both shield vs non and vs)
-3) Collision optimization (voxel, shield and a bit more tuning of blocks).
+2) Collision optimization (voxel, shield and a bit more tuning of blocks).
 
 Release:
 1) Finish and test Multiplayer
@@ -13,6 +12,9 @@ Release:
 
 Bugs:
 1) Exploit, second grid can be used to beat LOS check.  Fix: Check all grids within range.
+2) Animation balls are lagging during velocity.
+3) Power is buggy.... look into jump drive power system.. However, it works if I check everyframe...
+4) Inside entiteis cannot cause deformation damage... perhaps its best to regen vs prevent.
 
 version 2:
 1) Add damage shield block.
@@ -31,3 +33,4 @@ Done:
 6) *DONE* try and find a better point to applyforce against, perhaps use distance and face check.
 7) *DONE* Add voxel sight check
 8) *DONE* Complete power usage algorthim.
+9) *DONE* Make sure only entiteis that spawned inside are counted as inside and respect proper damage for all inside entiteis (both shield vs non and vs)
