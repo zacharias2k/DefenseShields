@@ -59,6 +59,7 @@ namespace DefenseShields
         private float _shieldMaxChargeRate;
         private float _shieldChargeRate;
         private float _shieldEfficiency;
+        private float _shieldCurrentPower;
 
         private double _sAvelSqr;
         private double _sVelSqr;
@@ -145,6 +146,7 @@ namespace DefenseShields
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _widthSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _heightSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _depthSlider;
+        private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _chargeSlider;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _visablilityCheckBox;
 
         public MyResourceDistributorComponent SinkDistributor { get; set; }
@@ -258,7 +260,7 @@ namespace DefenseShields
                     Shield.RefreshCustomInfo();
                     MainInit = true;
                 }
-                Log.Line($"{AnimateInit} {MainInit} {Shield.IsFunctional}");
+                //Log.Line($"{AnimateInit} {MainInit} {Shield.IsFunctional}");
                 if (AnimateInit || !MainInit || !Shield.IsFunctional) return;
 
                 if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" || Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS" || Shield.BlockDefinition.SubtypeId == "DefenseShieldsST")
@@ -312,14 +314,10 @@ namespace DefenseShields
                     _longLoop++;
                     if (_longLoop == 10) _longLoop = 0;
                 }
-
                 if (_count == 29)
                 {
-                    CalcRequiredPower();
                     UpdateGridPower();
-                    CalcRequiredPower();
                     Shield.GameLogic.GetAs<DefenseShields>().Sink.Update();
-                    CalcRequiredPower();
 
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel) // ugly workaround for realtime terminal updates
                     {
@@ -356,7 +354,6 @@ namespace DefenseShields
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
 
-            ApiLineCheck();
             //DsDebugDraw.DrawSphere(_shield.LocalVolume, Color.White);
             //DsDebugDraw.DrawBox(_sOriBBoxD, Color.Black);
             //_dsutil2.StopWatchReport("main", -1);
@@ -377,7 +374,7 @@ namespace DefenseShields
 
             if ((!Shield.IsWorking || !Shield.IsFunctional) && ShieldActive)
             {
-                Log.Line($"Shield went offline - tick:{_tick.ToString()}");
+                Log.Line($"Shield went offline - Working?: {Shield.IsWorking.ToString()} - Functional?: {Shield.IsFunctional.ToString()} - Active?: {ShieldActive.ToString()} - tick:{_tick.ToString()}");
                 BlockParticleStop();
                 ShieldActive = false;
                 BlockWorking = false;
@@ -387,6 +384,7 @@ namespace DefenseShields
                 _shieldMaxChargeRate = 0;
                 _shieldEfficiency = 0;
                 _shieldMaxBuffer = 0;
+                _sink.SetRequiredInputByType(MyResourceDistributorComponent.ElectricityId, 0.01f);
                 return false;
             }
 
@@ -411,32 +409,41 @@ namespace DefenseShields
                 }
             _shieldMaxBuffer = _gridMaxPower * 30;
             _gridAvailablePower = _gridMaxPower - _gridCurrentPower;
-            //Log.Line($"buffer: {_shieldBuffer} max: {_gridMaxPower} current: {_gridCurrentPower} avail: {_gridAvailablePower} usable: {_gridMaxPower * .8f} sink: {_sink.CurrentInputByType(MyResourceDistributorComponent.ElectricityId)}");
+            _shieldCurrentPower = _sink.CurrentInputByType(MyResourceDistributorComponent.ElectricityId);
+
+
+            //Log.Line($"");
+            //Log.Line($"BUFFER:{_shieldBuffer} - SINK:{_sink.CurrentInputByType(MyResourceDistributorComponent.ElectricityId)} - CURRENT:{_gridCurrentPower} - AVAIL:{_gridAvailablePower} - USABLE:{_gridMaxPower * .8f} - MAX:{_gridMaxPower}");
 
             var powerForShield = 0f;
-            var shieldPopped = false;
-            var currentPower = _sink.CurrentInputByType(MyResourceDistributorComponent.ElectricityId);
 
-            if (currentPower + _gridAvailablePower > _gridMaxPower * .8 && _shieldBuffer < _shieldMaxBuffer)
+            var otherPower = _gridMaxPower - _gridAvailablePower - _shieldCurrentPower;
+            var cleanPower = _gridMaxPower - otherPower;
+            powerForShield = cleanPower * .8f;
+            /*
+            if (_gridAvailablePower < _gridMaxPower * .8f)
             {
-                var cleanPower = _gridMaxPower - currentPower;
-                //Log.Line($"Power Adjust: clean {cleanPower}");
-                if (cleanPower < _gridAvailablePower)
-                {
-                    //Log.Line($"Not enough power to maintain: Clean: {cleanPower} gridAvail: {_gridAvailablePower}");
-                    shieldPopped = true;
-                }
-                else
-                {
-                    powerForShield = (_gridMaxPower * .8f) - (cleanPower - _gridAvailablePower);
-                    //Log.Line($"adjusting to value - powerForShield: {powerForShield} - clean: {cleanPower}");
-                }
+                var otherPower = _gridMaxPower - _gridAvailablePower - _shieldCurrentPower;
+                var cleanPower = _gridMaxPower - otherPower;
+                powerForShield = cleanPower * .8f;
+            }
+            else powerForShield = _gridMaxPower * .8f;
+            */
+            /*
+            Log.Line($"{_shieldCurrentPower + _gridAvailablePower <= _gridMaxPower * .8} {_shieldBuffer < _shieldMaxBuffer}");
+            if (_shieldCurrentPower + _gridAvailablePower <= _gridMaxPower * .8 && _shieldBuffer < _shieldMaxBuffer)
+            {
+                var cleanPower = _shieldCurrentPower + _gridAvailablePower;
+                powerForShield = cleanPower * .8f;
+                Log.Line($"adjusting to value - powerForShield: {powerForShield} - clean: {cleanPower}");
             }
             else
             {
-                //Log.Line($"Enough power, maitain or increase - powerForShield: {powerForShield}");
+                Log.Line($"Enough power, maitain or increase - powerForShield: {powerForShield}");
                 powerForShield = _gridMaxPower * .8f;
             }
+            Log.Line($"");
+            */
 
             _shieldMaxChargeRate = powerForShield;
             _shieldEfficiency = 100;
@@ -449,14 +456,22 @@ namespace DefenseShields
 
         private float CalcRequiredPower()
         {
-            if (!ShieldActive) return _power = 0.1f;
-            Log.Line($"absorbing: {_absorb} - Buffer: {_shieldBuffer} - Efficiency: {_shieldEfficiency} EffectiveHP {_shieldBuffer * _shieldEfficiency}");
+            if (!ShieldActive) return _power = 0.01f;
+            //Log.Line($"absorbing: {_absorb} - Buffer: {_shieldBuffer} - Efficiency: {_shieldEfficiency} EffectiveHP {_shieldBuffer * _shieldEfficiency}");
             if (_absorb > 0) _shieldBuffer -= (_absorb / _shieldEfficiency);
-            if (_shieldBuffer < 0) Shield.Enabled = false;
+            if (_shieldBuffer < 0)
+            {
+                Log.Line($"buffer is neg");
+                Shield.Enabled = false;
+            }
 
             _absorb = 0f;
             _power = _shieldChargeRate + (_gridMaxPower / 100);
 
+            if (_sink.IsPowerAvailable(MyResourceDistributorComponent.ElectricityId, _power - _shieldCurrentPower)) return _power;
+            Log.Line($"sink reports insufficent power, Requested: {_power.ToString()} - Avail: {_gridAvailablePower.ToString()}");
+            Shield.Enabled = false;
+            _power = 0.01f;
             return _power;
         }
 
@@ -477,11 +492,10 @@ namespace DefenseShields
             stringBuilder.Append("[ Shield Status ] Max Mw: " + _gridMaxPower.ToString("0.00") +
                                  "\n" +
                                  "\n[Shield HP__]: " +_shieldBuffer.ToString("0.0") + " (" + shieldPercent.ToString("0") + "%)" +
-                                 "\n[Max HP____]: " + _shieldMaxBuffer.ToString("0.0") + " Mw" +
+                                 "\n[Effective HP]: " + (_shieldBuffer * _shieldEfficiency).ToString("0.0") +
                                  "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
                                  "\n[Full Charge_]: " + secToFull.ToString("0") + "s" +
                                  "\n[Efficiency__]: " + _shieldEfficiency.ToString("0.0") +
-                                 "\n[Effective HP]: " + (_shieldBuffer * _shieldEfficiency).ToString("0.0") +
                                  "\n" +
                                  "\n[Availabile]: " + _gridAvailablePower.ToString("0.0") + " Mw" +
                                  "\n[Current__]: " + _sink.CurrentInputByType(rId).ToString("0.0") +
@@ -606,8 +620,8 @@ namespace DefenseShields
             _blocksLos.Clear();
             _noBlocksLos.Clear();
             _vertsSighted.Clear();
-            if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS") testDist = 2.5d;
-            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") testDist = 1d;
+            if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS") testDist = 4.5d;
+            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") testDist = 2.5d;
             else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST") testDist = 8.0d;
 
             var testDir = _subpartRotor.PositionComp.WorldVolume.Center - Shield.PositionComp.WorldVolume.Center;
@@ -691,6 +705,7 @@ namespace DefenseShields
             DefenseShieldsBase.Instance.ControlsLoaded = true;
             RemoveOreUi();
 
+            _chargeSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ChargeRate", "Shield Charge Rate", 10, 90, 80);
             _visablilityCheckBox = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "Visability", "Hide Shield From Allied", false);
 
             if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" || Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") return;
@@ -801,7 +816,7 @@ namespace DefenseShields
             var relation = MyAPIGateway.Session.Player.GetRelationTo(Shield.OwnerId);
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
             _enemy = enemy;
-            var visable = !_visablilityCheckBox.Getter(Shield).Equals(true) && !enemy;
+            var visable = !(_visablilityCheckBox.Getter(Shield).Equals(true) && !enemy);
 
             var impactPos = _worldImpactPosition;
             if (impactPos != Vector3D.NegativeInfinity)
@@ -955,7 +970,7 @@ namespace DefenseShields
                     else
                     {
                         var inside = false;
-                        if ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(((IMyCubeGrid) ent).WorldAABB, _detectMatrixInv))
+                        if ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid || relation == Ent.Other) && CustomCollision.AllAabbInShield(((IMyEntity) ent).WorldAABB, _detectMatrixInv))
                         {
                             inside = true;
                             FriendlyCache.Add(ent);
@@ -981,6 +996,7 @@ namespace DefenseShields
                 {
                     var entCenter = webent.PositionComp.WorldVolume.Center;
                     var entInfo = _webEnts[webent];
+                    //Log.Line($"ent {webent.GetType().Name} {_webEnts[webent].Relation} {_webEnts[webent].SpawnedInside} {webent.DisplayName}");
                     if (entInfo.LastTick != _tick) continue;
                     if (entInfo.FirstTick == _tick && (_webEnts[webent].Relation == Ent.LargeNobodyGrid || _webEnts[webent].Relation == Ent.LargeEnemyGrid)) ((IMyCubeGrid)webent).GetBlocks(_webEnts[webent].CacheBlockList, Collect1);
                     switch (_webEnts[webent].Relation)
@@ -1534,29 +1550,23 @@ namespace DefenseShields
         #endregion
 
         #region DSModAPI
-        private bool ApiLineCheck()
+        private Vector3D? ApiLineCheck(LineD lineToCheck, float damageFactor)
         {
-            if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS")
-            {
-                _icosphere.ReturnPhysicsVerts(_detectMatrixOutside, _physicsOutside);
-                _icosphere.ReturnPhysicsVerts(_detectMatrixInside, _physicsInside);
-                var line = new LineD(Vector3D.One, Vector3D.One * 1000);
-                var obbCheck = _sOriBBoxD.Intersects(ref line);
-                if (obbCheck == null) return false;
+            _icosphere.ReturnPhysicsVerts(_detectMatrixOutside, _physicsOutside);
+            var obbCheck = _sOriBBoxD.Intersects(ref lineToCheck);
+            if (obbCheck == null) return null;
 
-                var testDir = line.From - line.To;
-                testDir.Normalize();
-                var ray = new RayD(Vector3D.One, -testDir);
-                var sphereCheck = _shieldSphere.Intersects(ray);
-                if (sphereCheck == null) return false;
+            var testDir = lineToCheck.From - lineToCheck.To;
+            testDir.Normalize();
+            var ray = new RayD(lineToCheck.From, -testDir);
+            var sphereCheck = _shieldSphere.Intersects(ray);
+            if (sphereCheck == null) return null;
 
-                var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
-                var testPos = Vector3D.One + testDir * -(double)furthestHit;
-                DsDebugDraw.DrawSingleVec(testPos, 1f, Color.Gold);
-                DsDebugDraw.DrawLineToVec(Vector3D.One, testPos, Color.Red, .1f);
-                return true;
-            }
-            return false;
+            var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
+            var hitPos = lineToCheck.From + testDir * -(double)furthestHit;
+            DsDebugDraw.DrawSingleVec(hitPos, 1f, Color.Gold);
+            DsDebugDraw.DrawLineToVec(lineToCheck.From, hitPos, Color.Red, .1f);
+            return hitPos;
         }
         #endregion
 

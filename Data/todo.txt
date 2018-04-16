@@ -1,26 +1,26 @@
 Pre-Release:
-1) complete shield damage scaling and power usage algorthim
+1) complete shield damage/protection scaling
 2) Make sure only entiteis that spawned inside are counted as inside and respect proper damage for all inside entiteis (both shield vs non and vs)
 3) Collision optimization (voxel, shield and a bit more tuning of blocks).
 
 Release:
 1) Finish and test Multiplayer
 2) Add particle effects to the actual shield verts/triangles.  Perhaps even impact animations.
-3) ModAPI support (must get Line Ellispoid working) Ray + Sphere & Line + OBB.
+3) Weapon ModAPI support  Ray + Sphere & Line + OBB in v1.
 4) Confirm unloading of mod properly.
 5) require emitters to be within range from other emitters to complete a combined (larger) field.
 6) Block definition manager / type getter thing.
 
 Bugs:
-1) Exploit, second grid can be used to beat LOS check.  Switch blockcheck to raycast vs physicsInside.
+1) Exploit, second grid can be used to beat LOS check.  Fix: Check all grids within range.
 
 version 2:
 1) Add damage shield block.
 2) support forward, back, left, right, top and bottom shields.
 3) fix auto size adjustment corner cases
-4) shield power effiecy by ditance from reactors or relays.
+4) shield power efficiency by distance from reactors or relays.
 5) control block and readouts
-6) Ellispoid MODAPI
+6) Ellipsoid weapon MODAPI
 
 Done:
 1) *DONE* finish small ship and station blocks.
@@ -30,3 +30,4 @@ Done:
 5) *DONE* In game game state messages.
 6) *DONE* try and find a better point to applyforce against, perhaps use distance and face check.
 7) *DONE* Add voxel sight check
+8) *DONE* Complete power usage algorthim.

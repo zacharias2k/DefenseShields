@@ -6,7 +6,10 @@ using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using DefenseShields.Support;
+using Sandbox.Game.Entities;
 using Sandbox.Game.WorldEnvironment.ObjectBuilders;
+using VRage.Game.Entity;
+using VRage.Utils;
 using VRageMath;
 
 namespace DefenseShields
@@ -102,19 +105,30 @@ namespace DefenseShields
 
         public void CheckDamage(object target, ref MyDamageInformation info)
         {
+            if (Components.Count == 0 || info.Type != MyDamageType.Bullet && info.Type != MyDamageType.Deformation) return;
+            MyEntity hostileEnt;
+            MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
+
             var block = target as IMySlimBlock;
             if (block == null) return;
-            if (Components.Count == 0 || (info.Type != MyDamageType.Bullet && info.Type != MyDamageType.Deformation)) return;
+
             foreach (var shield in Components)
             {
-                if (!shield.ShieldActive) continue;
-                if (shield.FriendlyCache.Contains(block.CubeGrid))
+                var blockGrid = (MyCubeGrid)block.CubeGrid;
+                if (shield.ShieldActive && (shield.Shield.CubeGrid == blockGrid || shield.FriendlyCache.Contains(blockGrid)))
                 {
-                    var attackerEnt = MyAPIGateway.Entities.GetEntityById(info.AttackerId);
-                    if (attackerEnt != null) Log.Line($"grid: {block.CubeGrid.DisplayName} attacker: {attackerEnt.DisplayName}");
-                    if (shield.FriendlyCache.Contains(MyAPIGateway.Entities.GetEntityById(info.AttackerId))) continue;
-                    if (_voxelTrigger == 0 && MyAPIGateway.Entities.GetEntityById(info.AttackerId) is IMyVoxelMap)
+                    //Log.Line($"{shield.FriendlyCache.Contains(hostileEnt)} {hostileEnt == shield.Shield.CubeGrid} {hostileEnt != null}");
+                    if (hostileEnt != null && (shield.FriendlyCache.Contains(hostileEnt) || hostileEnt == shield.Shield.CubeGrid))
                     {
+                        Log.Line($"testtest");
+                        Log.Line($"friendly: {(hostileEnt as MyCubeGrid).DisplayName} attacking: {blockGrid.DisplayName} bCnt: {blockGrid.BlocksCount} Contains: {shield.FriendlyCache.Contains(hostileEnt)} Shield: {hostileEnt == shield.Shield.CubeGrid} ");
+                        continue;
+                    }
+                    if (_voxelTrigger == 0 && hostileEnt is IMyVoxelMap)
+                    {
+                        var voxel = (IMyVoxelMap)hostileEnt;
+                        info.Amount = 0f;
+
                         if (_resetVoxelColliders)
                         {
                             var safeplace = MyAPIGateway.Entities.FindFreePlace(shield.Shield.CubeGrid.WorldVolume.Center, (float)shield.Shield.CubeGrid.WorldVolume.Radius * 5);
@@ -125,9 +139,6 @@ namespace DefenseShields
                                 _voxelDamageCounter.Clear();
                             }
                         }
-                        var voxel = MyAPIGateway.Entities.GetEntityById(info.AttackerId) as IMyVoxelMap;
-                        info.Amount = 0f;
-                        if (voxel == null) continue;
                         if (!_voxelDamageCounter.ContainsKey(voxel)) _voxelDamageCounter.Add(voxel, 1);
                         else _voxelDamageCounter[voxel]++;
                         _voxelTrigger = 1;
