@@ -34,3 +34,11 @@ Done:
 7) *DONE* Add voxel sight check
 8) *DONE* Complete power usage algorthim.
 9) *DONE* Make sure only entiteis that spawned inside are counted as inside and respect proper damage for all inside entiteis (both shield vs non and vs)
+
+
+Lowest priority group gets as much power is available after all higher priorities get their stuff.
+Hmm ok so if I am understanding correctly I can make my own lowest priority group?  Is there a way to see how much power that block/group actually consumed vs requested?
+ResourceDistributionGroups.sbc
+SuppliedRatioByType
+
+optimize block cache with LocalAABB of fat block (ignore all tiny blocks).

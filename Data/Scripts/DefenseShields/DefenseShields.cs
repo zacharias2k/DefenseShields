@@ -23,6 +23,10 @@ using VRage.Collections;
 using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Cube;
+using SpaceEngineers.Game.Entities.Blocks;
+using SpaceEngineers.Game.ModAPI;
+using VRage;
 using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 
@@ -119,6 +123,7 @@ namespace DefenseShields
 
         private readonly DataStructures _dataStructures = new DataStructures();
         private readonly StructureBuilder _structureBuilder = new StructureBuilder();
+        private readonly ResourceTracker _resourceTracker = new ResourceTracker(MyResourceDistributorComponent.ElectricityId);
 
         private readonly MyConcurrentList<int> _vertsSighted = new MyConcurrentList<int>();
         private readonly MyConcurrentList<int> _noBlocksLos = new MyConcurrentList<int>();
@@ -213,7 +218,9 @@ namespace DefenseShields
             base.Init(objectBuilder);
 
             Entity.Components.TryGet(out _sink);
-            _sink.SetRequiredInputFuncByType(MyResourceDistributorComponent.ElectricityId, CalcRequiredPower);
+            _sink.SetRequiredInputByType(MyResourceDistributorComponent.ElectricityId, 0.001f);
+            //_sink.SetMaxRequiredInputByType(MyResourceDistributorComponent.ElectricityId, 0.002f);
+            //_sink.SetInputFromDistributor(MyResourceDistributorComponent.ElectricityId, _power, true, true);
             NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
@@ -239,6 +246,11 @@ namespace DefenseShields
         */
 
         #region Simulation
+        public override void UpdateAfterSimulation()
+        {
+            UpdateGridPower();
+        }
+
         public override void UpdateAfterSimulation100()
         {
             try
@@ -314,10 +326,12 @@ namespace DefenseShields
                     _longLoop++;
                     if (_longLoop == 10) _longLoop = 0;
                 }
+                UpdateGridPower();
+                CalculatePowerCharge();
                 if (_count == 29)
                 {
-                    UpdateGridPower();
-                    Shield.GameLogic.GetAs<DefenseShields>().Sink.Update();
+
+                    //Shield.GameLogic.GetAs<DefenseShields>().Sink.Update();
 
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel) // ugly workaround for realtime terminal updates
                     {
@@ -325,7 +339,6 @@ namespace DefenseShields
                         Shield.ShowInToolbarConfig = true;
                     }
                 }
-
                 if (ShieldActive)
                 {
                     if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
@@ -364,7 +377,26 @@ namespace DefenseShields
 
         private void BackGroundChecks()
         {
-            Shield.CubeGrid.GetBlocks(null, CollectPowerBlocks);
+            _powerSources.Clear();
+
+            _dsutil1.Sw.Start();
+
+            foreach (var block in ((MyCubeGrid)Shield.CubeGrid).GetFatBlocks())
+            {
+                var source = block.Components.Get<MyResourceSourceComponent>();
+                if (source == null) continue;
+                foreach (var type in source.ResourceTypes)
+                {
+                    if (type != MyResourceDistributorComponent.ElectricityId) continue;
+                    lock (_powerSources) _powerSources.Add(source);
+                    break;
+                }
+            }
+
+            _dsutil1.StopWatchReport("PowerGetNew", -1);
+
+           // Shield.CubeGrid.GetBlocks(null, CollectPowerBlocks);
+            Log.Line($"powerCnt: {_powerSources.Count.ToString()}");
         }
 
         private bool BlockFunctional()
@@ -375,6 +407,11 @@ namespace DefenseShields
             if ((!Shield.IsWorking || !Shield.IsFunctional) && ShieldActive)
             {
                 Log.Line($"Shield went offline - Working?: {Shield.IsWorking.ToString()} - Functional?: {Shield.IsFunctional.ToString()} - Active?: {ShieldActive.ToString()} - tick:{_tick.ToString()}");
+                Log.Line($"1 - Power:{_power} - Rate:{_shieldChargeRate} - sCurrent:{_shieldCurrentPower} - sBuffer:{_shieldBuffer} - gAvail:{_gridAvailablePower} - gCurrent:{_gridCurrentPower}");
+                _shieldCurrentPower = _sink.CurrentInputByType(MyResourceDistributorComponent.ElectricityId);
+                UpdateGridPower();
+                Log.Line($"2 - Power:{_power} - Rate:{_shieldChargeRate} - sCurrent:{_shieldCurrentPower} - sBuffer:{_shieldBuffer} - gAvail:{_gridAvailablePower} - gCurrent:{_gridCurrentPower}");
+
                 BlockParticleStop();
                 ShieldActive = false;
                 BlockWorking = false;
@@ -384,7 +421,6 @@ namespace DefenseShields
                 _shieldMaxChargeRate = 0;
                 _shieldEfficiency = 0;
                 _shieldMaxBuffer = 0;
-                _sink.SetRequiredInputByType(MyResourceDistributorComponent.ElectricityId, 0.01f);
                 return false;
             }
 
@@ -408,71 +444,71 @@ namespace DefenseShields
                     _gridCurrentPower += _powerSources[i].CurrentOutput;
                 }
             _shieldMaxBuffer = _gridMaxPower * 30;
-            _gridAvailablePower = _gridMaxPower - _gridCurrentPower;
             _shieldCurrentPower = _sink.CurrentInputByType(MyResourceDistributorComponent.ElectricityId);
+            _gridAvailablePower = _gridMaxPower - _gridCurrentPower;
+        }
 
-
-            //Log.Line($"");
-            //Log.Line($"BUFFER:{_shieldBuffer} - SINK:{_sink.CurrentInputByType(MyResourceDistributorComponent.ElectricityId)} - CURRENT:{_gridCurrentPower} - AVAIL:{_gridAvailablePower} - USABLE:{_gridMaxPower * .8f} - MAX:{_gridMaxPower}");
-
+        private void CalculatePowerCharge()
+        {
             var powerForShield = 0f;
 
             var otherPower = _gridMaxPower - _gridAvailablePower - _shieldCurrentPower;
             var cleanPower = _gridMaxPower - otherPower;
             powerForShield = cleanPower * .8f;
-            /*
-            if (_gridAvailablePower < _gridMaxPower * .8f)
-            {
-                var otherPower = _gridMaxPower - _gridAvailablePower - _shieldCurrentPower;
-                var cleanPower = _gridMaxPower - otherPower;
-                powerForShield = cleanPower * .8f;
-            }
-            else powerForShield = _gridMaxPower * .8f;
-            */
-            /*
-            Log.Line($"{_shieldCurrentPower + _gridAvailablePower <= _gridMaxPower * .8} {_shieldBuffer < _shieldMaxBuffer}");
-            if (_shieldCurrentPower + _gridAvailablePower <= _gridMaxPower * .8 && _shieldBuffer < _shieldMaxBuffer)
-            {
-                var cleanPower = _shieldCurrentPower + _gridAvailablePower;
-                powerForShield = cleanPower * .8f;
-                Log.Line($"adjusting to value - powerForShield: {powerForShield} - clean: {cleanPower}");
-            }
-            else
-            {
-                Log.Line($"Enough power, maitain or increase - powerForShield: {powerForShield}");
-                powerForShield = _gridMaxPower * .8f;
-            }
-            Log.Line($"");
-            */
 
             _shieldMaxChargeRate = powerForShield;
             _shieldEfficiency = 100;
 
-            if (_shieldBuffer + _shieldMaxChargeRate > _shieldMaxBuffer) _shieldChargeRate = _shieldMaxBuffer - _shieldBuffer;
-            else _shieldChargeRate = _shieldMaxChargeRate;
+            if (_shieldBuffer + _shieldMaxChargeRate < _shieldMaxBuffer) _shieldChargeRate = _shieldMaxChargeRate;
+            else
+            {
+                Log.Line($"maxcharge: {_shieldMaxChargeRate.ToString()} would surpass buffer: {_shieldBuffer.ToString()} its max is: {_shieldMaxBuffer.ToString()}");
+                _shieldChargeRate = _shieldMaxBuffer - _shieldBuffer;
+            }
 
-            if (_shieldBuffer < _shieldMaxBuffer) _shieldBuffer += _shieldChargeRate;
+            if (_shieldBuffer < _shieldMaxBuffer && _count == 0) _shieldBuffer += _shieldChargeRate;
+            SetPower();
         }
 
-        private float CalcRequiredPower()
+        private void SetPower()
         {
-            if (!ShieldActive) return _power = 0.01f;
+            _power = _shieldChargeRate + (_gridMaxPower * 0.01f);
+
+            //Log.Line($"");
+            if (!ShieldActive)
+            {
+                Log.Line($"CalcRequiredPower - shield is already offline");
+                BlockFunctional();
+                return;
+            }
             //Log.Line($"absorbing: {_absorb} - Buffer: {_shieldBuffer} - Efficiency: {_shieldEfficiency} EffectiveHP {_shieldBuffer * _shieldEfficiency}");
             if (_absorb > 0) _shieldBuffer -= (_absorb / _shieldEfficiency);
             if (_shieldBuffer < 0)
             {
-                Log.Line($"buffer is neg");
-                Shield.Enabled = false;
+                Log.Line($"CalcRequiredPower - buffer is neg");
+                BlockFunctional();
             }
 
             _absorb = 0f;
-            _power = _shieldChargeRate + (_gridMaxPower / 100);
-
-            if (_sink.IsPowerAvailable(MyResourceDistributorComponent.ElectricityId, _power - _shieldCurrentPower)) return _power;
-            Log.Line($"sink reports insufficent power, Requested: {_power.ToString()} - Avail: {_gridAvailablePower.ToString()}");
-            Shield.Enabled = false;
-            _power = 0.01f;
-            return _power;
+            _shieldCurrentPower = _sink.CurrentInputByType(MyResourceDistributorComponent.ElectricityId);
+            if (_sink.IsPowerAvailable(MyResourceDistributorComponent.ElectricityId, _power - _shieldCurrentPower))
+            {
+                Log.Line($"");
+                Log.Line($"request: power: {_power.ToString()} - sCurrentis: {_shieldCurrentPower.ToString()} - charge rate: {_shieldChargeRate.ToString()} - gAvail: {_gridAvailablePower.ToString()} - gCurrent: {_gridCurrentPower}");
+                //_sink.SetInputFromDistributor(MyResourceDistributorComponent.ElectricityId, _power, true, true);
+                _sink.SetRequiredInputByType(MyResourceDistributorComponent.ElectricityId, _power);
+                //_sink.SetMaxRequiredInputByType(MyResourceDistributorComponent.ElectricityId, _power + _gridMaxPower * 0.1f);
+                _shieldCurrentPower = _sink.CurrentInputByType(MyResourceDistributorComponent.ElectricityId);
+                UpdateGridPower();
+                Log.Line($"post request status: power: {_power.ToString()} - sCurrentis: {_shieldCurrentPower.ToString()} - charge rate: {_shieldChargeRate.ToString()} - gAvail: {_gridAvailablePower.ToString()} - gCurrent: {_gridCurrentPower}");
+                Log.Line($"");
+            }
+            else
+            {
+                Log.Line($"power request rejected!!: {_power.ToString()} ({_shieldChargeRate} + {_gridMaxPower * 0.01f}) - sCurrent: {_shieldCurrentPower.ToString()} - Avail: {_gridAvailablePower.ToString()}");
+                BlockFunctional();
+            }
+            //Log.Line($"");
         }
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
@@ -593,23 +629,6 @@ namespace DefenseShields
             _entityChanged = true;
         }
 
-        private float GetRadius()
-        {
-            float radius;
-            if (GridIsMobile)
-            {
-                var p = (float)_shieldShapeMatrix.Scale.Sum / 3 / 2;
-                radius = p * p * 4 * (float)Math.PI;
-                return radius;
-            }
-            var r = (_width + _height + _depth) / 3 / 2;
-            var r2 = r * r;
-            var r3 = r2 * 4;
-            radius = r3 * (float)Math.PI;
-
-            return radius;
-        }
-
         private void CheckShieldLineOfSight()
         {
             if (GridIsMobile) MobileUpdate();
@@ -648,17 +667,17 @@ namespace DefenseShields
             });
 
             for (int i = 0; i < _physicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
-            _shieldLineOfSight = _blocksLos.Count < 310;
+            _shieldLineOfSight = _blocksLos.Count < 342;
             Log.Line($"blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {_shieldLineOfSight.ToString()}");
         }
 
         private void DrawHelper()
         {
             var lineDist = 0d;
-            const float lineWidth = 0.05f;
-            if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS") lineDist = 2.5d;
-            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") lineDist = 1d;
-            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST") lineDist = 5.0d;
+            const float lineWidth = 0.025f;
+            if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS") lineDist = 5.0d;
+            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") lineDist = 3d;
+            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST") lineDist = 7.5d;
 
             foreach (var blocking in _blocksLos)
             {
@@ -998,7 +1017,7 @@ namespace DefenseShields
                     var entInfo = _webEnts[webent];
                     //Log.Line($"ent {webent.GetType().Name} {_webEnts[webent].Relation} {_webEnts[webent].SpawnedInside} {webent.DisplayName}");
                     if (entInfo.LastTick != _tick) continue;
-                    if (entInfo.FirstTick == _tick && (_webEnts[webent].Relation == Ent.LargeNobodyGrid || _webEnts[webent].Relation == Ent.LargeEnemyGrid)) ((IMyCubeGrid)webent).GetBlocks(_webEnts[webent].CacheBlockList, Collect1);
+                    if (entInfo.FirstTick == _tick && (_webEnts[webent].Relation == Ent.LargeNobodyGrid || _webEnts[webent].Relation == Ent.LargeEnemyGrid)) ((IMyCubeGrid)webent).GetBlocks(_webEnts[webent].CacheBlockList, CollectCollidableBlocks);
                     switch (_webEnts[webent].Relation)
                     {
                         case Ent.EnemyPlayer:
@@ -1060,24 +1079,11 @@ namespace DefenseShields
             }
         }
 
-        private static bool Collect1(IMySlimBlock mySlimBlock)
+        private static bool CollectCollidableBlocks(IMySlimBlock mySlimBlock)
         {
             return mySlimBlock.BlockDefinition.Id.TypeId != typeof(MyObjectBuilder_TextPanel) 
                    && mySlimBlock.BlockDefinition.Id.TypeId != typeof(MyObjectBuilder_ButtonPanel) 
                    && mySlimBlock.BlockDefinition.Id.SubtypeId != MyStringHash.TryGet("SmallLight");
-        }
-
-        private bool CollectPowerBlocks(IMySlimBlock block)
-        {
-            var source = block.FatBlock?.Components.Get<MyResourceSourceComponent>();
-            if (source != null)
-                foreach (var type in source.ResourceTypes)
-                {
-                    if (type != MyResourceDistributorComponent.ElectricityId) continue;
-                    lock (_powerSources) _powerSources.Add(source);
-                    break;
-                }
-            return false;
         }
 
         private void CleanUp(int task)
