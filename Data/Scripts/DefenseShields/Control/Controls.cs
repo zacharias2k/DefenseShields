@@ -18,7 +18,7 @@ namespace DefenseShields.Control
             base.Setter(block, newState);
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
-            shield.Sink.Update();
+            shield._sink.Update();
             block.RefreshCustomInfo();
         }
     }
@@ -56,7 +56,7 @@ namespace DefenseShields.Control
             base.Setter(block, value);
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
-            shield.Sink.Update();
+            shield._sink.Update();
         }
 
         public override void Setter(IMyTerminalBlock block, float value)
@@ -66,7 +66,7 @@ namespace DefenseShields.Control
             //shieldNetwork.MessageUtils.SendMessageToAll(message);
             var shield = block.GameLogic.GetAs<DefenseShields>();
             if (shield == null) { return; }
-            shield.Sink.Update();
+            shield._sink.Update();
         }
     }
     #endregion  

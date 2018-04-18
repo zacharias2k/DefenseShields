@@ -156,8 +156,8 @@ namespace DefenseShields
 
         public MyResourceDistributorComponent SinkDistributor { get; set; }
 
-        private MyResourceSinkComponent _sink;
-        public MyResourceSinkComponent Sink { get { return _sink; } set { _sink = value; } }
+        public MyResourceSinkComponent _sink;
+        //public MyResourceSinkComponent Sink { get { return _sink; } set { _sink = value; } }
 
         public IMyOreDetector Shield => (IMyOreDetector)Entity;
         private IMyEntity _shield;
@@ -216,9 +216,20 @@ namespace DefenseShields
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
             base.Init(objectBuilder);
-
             Entity.Components.TryGet(out _sink);
-            _sink.SetRequiredInputByType(MyResourceDistributorComponent.ElectricityId, 0.001f);
+
+            //_sink = (MyResourceSinkComponent)Shield.ResourceSink;
+            var info = new MyResourceSinkInfo()
+            {
+                ResourceTypeId = MyResourceDistributorComponent.ElectricityId,
+                MaxRequiredInput = 5,
+                RequiredInputFunc = () => 4,
+            };
+            var rGroup = MyStringHash.GetOrCompute("Defense");
+            _sink.Init(rGroup, info);
+            //_sink.SetRequiredInputByType(MyResourceDistributorComponent.ElectricityId, 1);
+            //Sink.IsPoweredChanged += Receiver_IsPoweredChanged;
+            //_sink.SetRequiredInputByType(MyResourceDistributorComponent.ElectricityId, 0.001f);
             //_sink.SetMaxRequiredInputByType(MyResourceDistributorComponent.ElectricityId, 0.002f);
             //_sink.SetInputFromDistributor(MyResourceDistributorComponent.ElectricityId, _power, true, true);
             NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
@@ -246,11 +257,6 @@ namespace DefenseShields
         */
 
         #region Simulation
-        public override void UpdateAfterSimulation()
-        {
-            UpdateGridPower();
-        }
-
         public override void UpdateAfterSimulation100()
         {
             try
@@ -328,11 +334,9 @@ namespace DefenseShields
                 }
                 UpdateGridPower();
                 CalculatePowerCharge();
+                //Shield.GameLogic.GetAs<DefenseShields>().Sink.Update();
                 if (_count == 29)
                 {
-
-                    //Shield.GameLogic.GetAs<DefenseShields>().Sink.Update();
-
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel) // ugly workaround for realtime terminal updates
                     {
                         Shield.ShowInToolbarConfig = false;
@@ -493,15 +497,15 @@ namespace DefenseShields
             _shieldCurrentPower = _sink.CurrentInputByType(MyResourceDistributorComponent.ElectricityId);
             if (_sink.IsPowerAvailable(MyResourceDistributorComponent.ElectricityId, _power - _shieldCurrentPower))
             {
-                Log.Line($"");
-                Log.Line($"request: power: {_power.ToString()} - sCurrentis: {_shieldCurrentPower.ToString()} - charge rate: {_shieldChargeRate.ToString()} - gAvail: {_gridAvailablePower.ToString()} - gCurrent: {_gridCurrentPower}");
-                //_sink.SetInputFromDistributor(MyResourceDistributorComponent.ElectricityId, _power, true, true);
+                //Log.Line($"");
+                //Log.Line($"request: power: {_power.ToString()} - sCurrentis: {_shieldCurrentPower.ToString()} - charge rate: {_shieldChargeRate.ToString()} - gAvail: {_gridAvailablePower.ToString()} - gCurrent: {_gridCurrentPower}");
+                _sink.SetInputFromDistributor(MyResourceDistributorComponent.ElectricityId, _power, true, true);
                 _sink.SetRequiredInputByType(MyResourceDistributorComponent.ElectricityId, _power);
-                //_sink.SetMaxRequiredInputByType(MyResourceDistributorComponent.ElectricityId, _power + _gridMaxPower * 0.1f);
+                _sink.SetMaxRequiredInputByType(MyResourceDistributorComponent.ElectricityId, _power + _gridMaxPower * 0.1f);
                 _shieldCurrentPower = _sink.CurrentInputByType(MyResourceDistributorComponent.ElectricityId);
                 UpdateGridPower();
                 Log.Line($"post request status: power: {_power.ToString()} - sCurrentis: {_shieldCurrentPower.ToString()} - charge rate: {_shieldChargeRate.ToString()} - gAvail: {_gridAvailablePower.ToString()} - gCurrent: {_gridCurrentPower}");
-                Log.Line($"");
+                //Log.Line($"");
             }
             else
             {
