@@ -171,7 +171,7 @@ namespace DefenseShields
         public override void OnAddedToContainer() { if (Entity.InScene) OnAddedToScene(); }
         public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
 
-        // temp
+        // tem
         private bool needsMatrixUpdate = false;
         internal DefenseShieldsModSettings Settings = new DefenseShieldsModSettings();
         private bool blocksNeedRefresh = false;

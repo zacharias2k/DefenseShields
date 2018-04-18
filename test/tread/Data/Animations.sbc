@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Animations>
+  
+    <Animation>
+      <Id>
+        <TypeId>AnimationDefinition</TypeId>
+        <SubtypeId>Eikester_Treadmill_Anim</SubtypeId>
+      </Id>
+      <DisplayName>TreadmillAnim</DisplayName>
+      <Description>TreadmillAnim</Description>
+      <Icon>Textures\GUI\Icons\Fake.dds</Icon>
+      <AnimationModel>Models\Characters\Animations\TreadmillAnim.mwm</AnimationModel>
+      <ClipIndex>0</ClipIndex>
+      <InfluenceArea>Body</InfluenceArea>
+      <Public>true</Public>
+    </Animation>
+	
+  </Animations>
+</Definitions>
