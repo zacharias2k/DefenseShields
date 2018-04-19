@@ -13,7 +13,7 @@ Release:
 Bugs:
 1) Exploit, second grid can be used to beat LOS check.  Fix: Check all grids within range.
 2) Animation balls are lagging during velocity.
-3) Power is buggy.... look into jump drive power system.. However, it works if I check everyframe...
+3) Power maint scales in the wrong direction
 4) Inside entiteis cannot cause deformation damage... perhaps its best to regen vs prevent.
 
 version 2:

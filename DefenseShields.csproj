@@ -225,9 +225,12 @@
     <None Include=".vs\VSWorkspaceState.json" />
     <None Include="Audio\ShieldHitNormalHigh.xwm" />
     <None Include="Data\Audio.sbc" />
-    <None Include="Data\StationShield.sbc">
-      <SubType>Designer</SubType>
-    </None>
+    <None Include="Data\Scripts\Audio.sbc" />
+    <None Include="Data\Scripts\BlockCategories_DefenseShields.sbc" />
+    <None Include="Data\Scripts\DefenseShields.sbc" />
+    <None Include="Data\Scripts\EmitterEffect.sbc" />
+    <None Include="Data\Scripts\EntityComponents.sbc" />
+    <None Include="Data\Scripts\TransparentMaterials.sbc" />
     <None Include="Models\GeneratorArm_Large.mwm" />
     <None Include="Models\GeneratorBase_Large.mwm" />
     <None Include="Models\GeneratorBase_Large_Constr1.mwm" />

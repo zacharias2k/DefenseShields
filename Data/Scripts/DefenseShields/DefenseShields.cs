@@ -23,10 +23,6 @@ using VRage.Collections;
 using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
-using Sandbox.Game.Entities.Cube;
-using SpaceEngineers.Game.Entities.Blocks;
-using SpaceEngineers.Game.ModAPI;
-using VRage;
 using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 
@@ -64,6 +60,7 @@ namespace DefenseShields
         private float _shieldChargeRate;
         private float _shieldEfficiency;
         private float _shieldCurrentPower;
+        private float _shieldMaintain;
 
         private double _sAvelSqr;
         private double _sVelSqr;
@@ -120,6 +117,7 @@ namespace DefenseShields
         private MyOrientedBoundingBoxD _sOriBBoxD;
 
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
+        static MyDefinitionId gId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
         private readonly DataStructures _dataStructures = new DataStructures();
         private readonly StructureBuilder _structureBuilder = new StructureBuilder();
@@ -156,8 +154,7 @@ namespace DefenseShields
 
         public MyResourceDistributorComponent SinkDistributor { get; set; }
 
-        public MyResourceSinkComponent _sink;
-        //public MyResourceSinkComponent Sink { get { return _sink; } set { _sink = value; } }
+        internal MyResourceSinkComponent Sink;
 
         public IMyOreDetector Shield => (IMyOreDetector)Entity;
         private IMyEntity _shield;
@@ -216,22 +213,7 @@ namespace DefenseShields
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
             base.Init(objectBuilder);
-            Entity.Components.TryGet(out _sink);
 
-            //_sink = (MyResourceSinkComponent)Shield.ResourceSink;
-            var info = new MyResourceSinkInfo()
-            {
-                ResourceTypeId = MyResourceDistributorComponent.ElectricityId,
-                MaxRequiredInput = 5,
-                RequiredInputFunc = () => 4,
-            };
-            var rGroup = MyStringHash.GetOrCompute("Defense");
-            _sink.Init(rGroup, info);
-            //_sink.SetRequiredInputByType(MyResourceDistributorComponent.ElectricityId, 1);
-            //Sink.IsPoweredChanged += Receiver_IsPoweredChanged;
-            //_sink.SetRequiredInputByType(MyResourceDistributorComponent.ElectricityId, 0.001f);
-            //_sink.SetMaxRequiredInputByType(MyResourceDistributorComponent.ElectricityId, 0.002f);
-            //_sink.SetInputFromDistributor(MyResourceDistributorComponent.ElectricityId, _power, true, true);
             NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
@@ -256,6 +238,20 @@ namespace DefenseShields
         #endregion
         */
 
+        private void AddResourceSourceComponent()
+        {
+            var info = new MyResourceSinkInfo()
+            {
+                ResourceTypeId = gId,
+                MaxRequiredInput = 0f,
+                RequiredInputFunc = () => _power,
+            };
+
+            Entity.Components.TryGet(out Sink);
+            Sink.Init(MyStringHash.GetOrCompute("Defense"), info);
+            Sink.AddType(ref info);
+        }
+
         #region Simulation
         public override void UpdateAfterSimulation100()
         {
@@ -273,6 +269,11 @@ namespace DefenseShields
 
                     _shield = _spawn.EmptyEntity("Field", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\LargeField0.mwm");
                     _shield.Render.Visible = false;
+
+                    AddResourceSourceComponent();
+                    UpdateGridPower();
+                    CalculatePowerCharge();
+                    SetPower();
 
                     Shield.AppendingCustomInfo += AppendingCustomInfo;
                     Shield.RefreshCustomInfo();
@@ -332,17 +333,21 @@ namespace DefenseShields
                     _longLoop++;
                     if (_longLoop == 10) _longLoop = 0;
                 }
+
                 UpdateGridPower();
                 CalculatePowerCharge();
-                //Shield.GameLogic.GetAs<DefenseShields>().Sink.Update();
+                SetPower();
+
                 if (_count == 29)
                 {
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel) // ugly workaround for realtime terminal updates
                     {
+
                         Shield.ShowInToolbarConfig = false;
                         Shield.ShowInToolbarConfig = true;
                     }
                 }
+
                 if (ShieldActive)
                 {
                     if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
@@ -411,8 +416,7 @@ namespace DefenseShields
             if ((!Shield.IsWorking || !Shield.IsFunctional) && ShieldActive)
             {
                 Log.Line($"Shield went offline - Working?: {Shield.IsWorking.ToString()} - Functional?: {Shield.IsFunctional.ToString()} - Active?: {ShieldActive.ToString()} - tick:{_tick.ToString()}");
-                Log.Line($"1 - Power:{_power} - Rate:{_shieldChargeRate} - sCurrent:{_shieldCurrentPower} - sBuffer:{_shieldBuffer} - gAvail:{_gridAvailablePower} - gCurrent:{_gridCurrentPower}");
-                _shieldCurrentPower = _sink.CurrentInputByType(MyResourceDistributorComponent.ElectricityId);
+                _shieldCurrentPower = Sink.CurrentInputByType(gId);
                 UpdateGridPower();
                 Log.Line($"2 - Power:{_power} - Rate:{_shieldChargeRate} - sCurrent:{_shieldCurrentPower} - sBuffer:{_shieldBuffer} - gAvail:{_gridAvailablePower} - gCurrent:{_gridCurrentPower}");
 
@@ -447,8 +451,6 @@ namespace DefenseShields
                     _gridMaxPower += _powerSources[i].MaxOutput;
                     _gridCurrentPower += _powerSources[i].CurrentOutput;
                 }
-            _shieldMaxBuffer = _gridMaxPower * 30;
-            _shieldCurrentPower = _sink.CurrentInputByType(MyResourceDistributorComponent.ElectricityId);
             _gridAvailablePower = _gridMaxPower - _gridCurrentPower;
         }
 
@@ -456,63 +458,59 @@ namespace DefenseShields
         {
             var powerForShield = 0f;
 
+            const float ratio = 1.25f;
+            var rate = _chargeSlider.Getter(Shield);
+            var percent = rate * ratio;
+            _shieldMaintain = (percent / 100) / 100;
+            var fPercent = (percent / ratio) / 100;
+
+            _shieldEfficiency = 100f;
+
+            if (_shieldBuffer > 0 && _shieldCurrentPower < 0.001f)
+            {
+                if (_shieldBuffer > _gridMaxPower * _shieldMaintain) _shieldBuffer -= _gridMaxPower * _shieldMaintain;
+                else _shieldBuffer = 0f;
+            }
+
+            _shieldCurrentPower = Sink.CurrentInputByType(gId);
+
             var otherPower = _gridMaxPower - _gridAvailablePower - _shieldCurrentPower;
             var cleanPower = _gridMaxPower - otherPower;
-            powerForShield = cleanPower * .8f;
+            powerForShield = cleanPower * fPercent;
 
-            _shieldMaxChargeRate = powerForShield;
-            _shieldEfficiency = 100;
+            _shieldMaxChargeRate = powerForShield > 0 ? powerForShield : 0f;
+            _shieldMaxBuffer = _gridMaxPower * (100 / percent) * 30;
 
             if (_shieldBuffer + _shieldMaxChargeRate < _shieldMaxBuffer) _shieldChargeRate = _shieldMaxChargeRate;
             else
             {
-                Log.Line($"maxcharge: {_shieldMaxChargeRate.ToString()} would surpass buffer: {_shieldBuffer.ToString()} its max is: {_shieldMaxBuffer.ToString()}");
-                _shieldChargeRate = _shieldMaxBuffer - _shieldBuffer;
+                if (_shieldMaxBuffer - _shieldBuffer > 0) _shieldChargeRate = _shieldMaxBuffer - _shieldBuffer;
+                else _shieldMaxChargeRate = 0f;
             }
 
+            if (_shieldMaxChargeRate < 0.001f)
+            {
+                _shieldChargeRate = 0f;
+                if (_shieldBuffer > _shieldMaxBuffer)  _shieldBuffer = _shieldMaxBuffer;
+                return;
+            }
             if (_shieldBuffer < _shieldMaxBuffer && _count == 0) _shieldBuffer += _shieldChargeRate;
-            SetPower();
         }
 
         private void SetPower()
         {
-            _power = _shieldChargeRate + (_gridMaxPower * 0.01f);
+            Log.Line($"{_shieldChargeRate} - {_gridMaxPower * _shieldMaintain} - {_shieldMaintain}");
+            _power = _shieldChargeRate + _gridMaxPower * _shieldMaintain;
+            Sink.Update();
+            _shieldCurrentPower = Sink.CurrentInputByType(gId);
 
-            //Log.Line($"");
-            if (!ShieldActive)
-            {
-                Log.Line($"CalcRequiredPower - shield is already offline");
-                BlockFunctional();
-                return;
-            }
-            //Log.Line($"absorbing: {_absorb} - Buffer: {_shieldBuffer} - Efficiency: {_shieldEfficiency} EffectiveHP {_shieldBuffer * _shieldEfficiency}");
             if (_absorb > 0) _shieldBuffer -= (_absorb / _shieldEfficiency);
             if (_shieldBuffer < 0)
             {
                 Log.Line($"CalcRequiredPower - buffer is neg");
                 BlockFunctional();
             }
-
             _absorb = 0f;
-            _shieldCurrentPower = _sink.CurrentInputByType(MyResourceDistributorComponent.ElectricityId);
-            if (_sink.IsPowerAvailable(MyResourceDistributorComponent.ElectricityId, _power - _shieldCurrentPower))
-            {
-                //Log.Line($"");
-                //Log.Line($"request: power: {_power.ToString()} - sCurrentis: {_shieldCurrentPower.ToString()} - charge rate: {_shieldChargeRate.ToString()} - gAvail: {_gridAvailablePower.ToString()} - gCurrent: {_gridCurrentPower}");
-                _sink.SetInputFromDistributor(MyResourceDistributorComponent.ElectricityId, _power, true, true);
-                _sink.SetRequiredInputByType(MyResourceDistributorComponent.ElectricityId, _power);
-                _sink.SetMaxRequiredInputByType(MyResourceDistributorComponent.ElectricityId, _power + _gridMaxPower * 0.1f);
-                _shieldCurrentPower = _sink.CurrentInputByType(MyResourceDistributorComponent.ElectricityId);
-                UpdateGridPower();
-                Log.Line($"post request status: power: {_power.ToString()} - sCurrentis: {_shieldCurrentPower.ToString()} - charge rate: {_shieldChargeRate.ToString()} - gAvail: {_gridAvailablePower.ToString()} - gCurrent: {_gridCurrentPower}");
-                //Log.Line($"");
-            }
-            else
-            {
-                Log.Line($"power request rejected!!: {_power.ToString()} ({_shieldChargeRate} + {_gridMaxPower * 0.01f}) - sCurrent: {_shieldCurrentPower.ToString()} - Avail: {_gridAvailablePower.ToString()}");
-                BlockFunctional();
-            }
-            //Log.Line($"");
         }
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
@@ -531,15 +529,13 @@ namespace DefenseShields
             if (_shieldChargeRate >= 1) secToFull = (int) ((_shieldMaxBuffer - _shieldBuffer) / _shieldChargeRate);
             stringBuilder.Append("[ Shield Status ] Max Mw: " + _gridMaxPower.ToString("0.00") +
                                  "\n" +
-                                 "\n[Shield HP__]: " +_shieldBuffer.ToString("0.0") + " (" + shieldPercent.ToString("0") + "%)" +
-                                 "\n[Effective HP]: " + (_shieldBuffer * _shieldEfficiency).ToString("0.0") +
+                                 "\n[Shield HP__]: " + (_shieldBuffer * _shieldEfficiency).ToString("0.0") + " (" + shieldPercent.ToString("0") + "%)" +
                                  "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
                                  "\n[Full Charge_]: " + secToFull.ToString("0") + "s" +
                                  "\n[Efficiency__]: " + _shieldEfficiency.ToString("0.0") +
                                  "\n" +
                                  "\n[Availabile]: " + _gridAvailablePower.ToString("0.0") + " Mw" +
-                                 "\n[Current__]: " + _sink.CurrentInputByType(rId).ToString("0.0") +
-                                 "\n[Required_]: " + _sink.RequiredInputByType(rId).ToString("0.0"));
+                                 "\n[Current__]: " + Sink.CurrentInputByType(rId).ToString("0.0"));
         }
 
         private void MobileUpdate()
@@ -728,7 +724,7 @@ namespace DefenseShields
             DefenseShieldsBase.Instance.ControlsLoaded = true;
             RemoveOreUi();
 
-            _chargeSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ChargeRate", "Shield Charge Rate", 10, 90, 80);
+            _chargeSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ChargeRate", "Shield Charge Rate", 5, 95, 80);
             _visablilityCheckBox = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "Visability", "Hide Shield From Allied", false);
 
             if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" || Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") return;
