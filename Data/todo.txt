@@ -1,44 +1,38 @@
-Pre-Release:
-1) complete shield damage/protection scaling
-2) Collision optimization (voxel, shield and a bit more tuning of blocks).
+Test Release:
+1) Collision optimization (voxel, shield and a bit more tuning of block based collisions).
 
-Release:
+Release 1.0:
 1) Finish and test Multiplayer
-2) Add particle effects to the actual shield verts/triangles.  Perhaps even impact animations.
-3) Weapon ModAPI support  Ray + Sphere & Line + OBB in v1.
-4) Confirm unloading of mod properly.
-5) require emitters to be within range from other emitters to complete a combined (larger) field.
-6) Block definition manager / type getter thing.
+2) Add Weapon ModAPI support - Inital accuracy level: Ray a Sphere, further reduce to Line intersecting OBB for v1.0 release.
+3) Confirm proper unloading of mod during game reload.
+4) Require emitters to be within range of other emitters to complete a combined (larger) field.
+5) Balance shield damage/protection 
 
-Bugs:
+Known Bugs / tweaks (targeted to be fixed by v1.0 release):
 1) Exploit, second grid can be used to beat LOS check.  Fix: Check all grids within range.
-2) Animation balls are lagging during velocity.
-3) Power maint scales in the wrong direction
-4) Inside entiteis cannot cause deformation damage... perhaps its best to regen vs prevent.
+2) Animated spheres are drifting during velocity.
+3) Possible bug... confirm sOriBBoxD is correct size.
+4) Shield vs Shield and Shield vs Voxel is not yet drawing power buffer.
+5) Shield strength is over buffed for testing.
+6) Particles sometimes don't start right away and/or go away.
+7) Material costs.
+8) Cleanup large shield placement on station (doesn't work as designed, but fails to init cleanly).
+9) Still have debugging enabled, performacne might be less than optimal in some cases.  
+10) Please report any in game mod warnings that report DefenseShields as the cause.  Explain what you were doing at the time.
+11) Brief mod warning when Station Shield goes online.
+12) Check to see if shield block owner is allied with BigOwner.
 
-version 2:
+Release 2.0:
 1) Add damage shield block.
-2) support forward, back, left, right, top and bottom shields.
-3) fix auto size adjustment corner cases
-4) shield power efficiency by distance from reactors or relays.
-5) control block and readouts
-6) Ellipsoid weapon MODAPI
+2) support forward, back, left, right, top and bottom shields with their own power levels and visuals.
+3) Improve auto size adjustment corner cases
+4) Adjust shield power efficiency using distance from reactors or power relays.
+5) Add a Centeral Control Block and LCD readouts
+6) Add true Ellipsoid Weapon ModAPI support.
+7) optimize block cache with LocalAABB of fat blocks (ignore all tiny/uncollidable blocks, further optimize for huge grid collisions).
+8) Look into using SuppliedRatioByType and rex's TrackSource idea for extremely precise power tracking and perhaps a very small performance improvement.
+9) Block definition manager / type getter thingy.
+10) Add actual particle effects to shield verts/triangles.  Perhaps even use impact animations.
 
-Done:
-1) *DONE* finish small ship and station blocks.
-2) *DONE* allow emitters on outside of ship only
-3) *DONE* Add a toggle for owner to disable idle shield state visability.
-4) *DONE* Limit placement of station/LargeShip on their respective grids.
-5) *DONE* In game game state messages.
-6) *DONE* try and find a better point to applyforce against, perhaps use distance and face check.
-7) *DONE* Add voxel sight check
-8) *DONE* Complete power usage algorthim.
-9) *DONE* Make sure only entiteis that spawned inside are counted as inside and respect proper damage for all inside entiteis (both shield vs non and vs)
-
-
-Lowest priority group gets as much power is available after all higher priorities get their stuff.
-Hmm ok so if I am understanding correctly I can make my own lowest priority group?  Is there a way to see how much power that block/group actually consumed vs requested?
-ResourceDistributionGroups.sbc
-SuppliedRatioByType
-
-optimize block cache with LocalAABB of fat block (ignore all tiny blocks).
+Bugs (v2):
+1) Inside entities cannot cause deformation damage... Rewrite damage handler to regen deformation damage vs preventing it from outside hostiles.

@@ -359,82 +359,90 @@ namespace DefenseShields.Support
 
             private void ImpactColorAssignments(float impactSize, int impactSpeed, int prevLod)
             {
-                //Log.Line($"colorAssignments - entChanged: {entChanged} - lod: {_lod} - prevlod: {prevLod}");
-                var ib = _backing.IndexBuffer[_lod];
-                for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
+                try
                 {
-                    var i0 = ib[i];
-                    var i1 = ib[i + 1];
-                    var i2 = ib[i + 2];
-
-                    var v0 = _vertexBuffer[i0];
-                    var v1 = _vertexBuffer[i1];
-                    var v2 = _vertexBuffer[i2];
-
-                    if (prevLod != _lod)
+                    var ib = _backing.IndexBuffer[_lod];
+                    for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
                     {
-                        var lclPos = (v0 + v1 + v2) / 3 - _matrix.Translation;
-                        var normlclPos = Vector3D.Normalize(lclPos);
-                        _preCalcNormLclPos[j] = normlclPos;
-                        for (int c = 0; c < _triColorBuffer.Length; c++)
-                            _triColorBuffer[c] = _defaultColor;
-                    }
-                    if (!_impactsFinished)
-                    {
-                        for (int s = 9; s > -1; s--)
+                        var i0 = ib[i];
+                        var i1 = ib[i + 1];
+                        var i2 = ib[i + 2];
+
+                        var v0 = _vertexBuffer[i0];
+                        var v1 = _vertexBuffer[i1];
+                        var v2 = _vertexBuffer[i2];
+
+                        if (prevLod != _lod)
                         {
-                            if (_localImpacts[s] == Vector3D.NegativeInfinity) continue;
-                            var dotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _localImpacts[s]);
-                            var impactFactor = Math.Acos(dotOfNormLclImpact);
+                            var lclPos = (v0 + v1 + v2) / 3 - _matrix.Translation;
+                            var normlclPos = Vector3D.Normalize(lclPos);
+                            _preCalcNormLclPos[j] = normlclPos;
+                            for (int c = 0; c < _triColorBuffer.Length; c++)
+                                _triColorBuffer[c] = _defaultColor;
+                        }
+                        if (!_impactsFinished)
+                        {
+                            for (int s = 9; s > -1; s--)
+                            {
+                                if (_localImpacts[s] == Vector3D.NegativeInfinity) continue;
+                                var dotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _localImpacts[s]);
+                                var impactFactor = Math.Acos(dotOfNormLclImpact);
 
-                            var waveMultiplier = Pi / ImpactSteps / impactSize;
-                            var wavePosition = waveMultiplier * _impactCnt[s];
-                            var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
-                            if (relativeToWavefront < .03)
-                            {
-                                // within 1/180th of wavefront
-                                _triColorBuffer[j] = _defaultColor;
-                            }
-                            else if (impactFactor < wavePosition && relativeToWavefront > 0.1 && relativeToWavefront < 0.15)
-                            {
-                                _triColorBuffer[j] = _waveColor;
+                                var waveMultiplier = Pi / ImpactSteps / impactSize;
+                                var wavePosition = waveMultiplier * _impactCnt[s];
+                                var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
+                                if (relativeToWavefront < .03)
+                                {
+                                    // within 1/180th of wavefront
+                                    _triColorBuffer[j] = _defaultColor;
+                                }
+                                else if (impactFactor < wavePosition && relativeToWavefront > 0.1 && relativeToWavefront < 0.15)
+                                {
+                                    _triColorBuffer[j] = _waveColor;
+                                }
                             }
                         }
+                        else if (_impactCnt[9] == 0) _triColorBuffer[j] = _defaultColor;
                     }
-                    else if (_impactCnt[9] == 0) _triColorBuffer[j] = _defaultColor;
                 }
+                catch (Exception ex) { Log.Line($"Exception in ImpactColorAssignments {ex}"); }
+                //Log.Line($"colorAssignments - entChanged: {entChanged} - lod: {_lod} - prevlod: {prevLod}");
             }
 
             private void ChargeColorAssignments(int prevLod)
             {
-                var ib = _backing.IndexBuffer[_lod];
-                for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
+                try
                 {
-                    var i0 = ib[i];
-                    var i1 = ib[i + 1];
-                    var i2 = ib[i + 2];
-
-                    var v0 = _vertexBuffer[i0];
-                    var v1 = _vertexBuffer[i1];
-                    var v2 = _vertexBuffer[i2];
-
-                    if (prevLod != _lod)
+                    var ib = _backing.IndexBuffer[_lod];
+                    for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
                     {
-                        var lclPos = (v0 + v1 + v2) / 3 - _matrix.Translation;
-                        var normlclPos = Vector3D.Normalize(lclPos);
-                        _preCalcNormLclPos[j] = normlclPos;
-                        for (int c = 0; c < _triColorBuffer.Length; c++)
-                            _triColorBuffer[c] = _defaultColor;
-                    }
+                        var i0 = ib[i];
+                        var i1 = ib[i + 1];
+                        var i2 = ib[i + 2];
 
-                    var dotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _chargePoint);
-                    var impactFactor = Math.Acos(dotOfNormLclImpact);
-                    var waveMultiplier = Pi / ChargeSteps;
-                    var wavePosition = waveMultiplier * _chargeDrawStep;
-                    var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
-                    if (relativeToWavefront < .10) _triColorBuffer[j] = _chargeColor;
-                    else _triColorBuffer[j] = _defaultColor;
+                        var v0 = _vertexBuffer[i0];
+                        var v1 = _vertexBuffer[i1];
+                        var v2 = _vertexBuffer[i2];
+
+                        if (prevLod != _lod)
+                        {
+                            var lclPos = (v0 + v1 + v2) / 3 - _matrix.Translation;
+                            var normlclPos = Vector3D.Normalize(lclPos);
+                            _preCalcNormLclPos[j] = normlclPos;
+                            for (int c = 0; c < _triColorBuffer.Length; c++)
+                                _triColorBuffer[c] = _defaultColor;
+                        }
+
+                        var dotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _chargePoint);
+                        var impactFactor = Math.Acos(dotOfNormLclImpact);
+                        var waveMultiplier = Pi / ChargeSteps;
+                        var wavePosition = waveMultiplier * _chargeDrawStep;
+                        var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
+                        if (relativeToWavefront < .10) _triColorBuffer[j] = _chargeColor;
+                        else _triColorBuffer[j] = _defaultColor;
+                    }
                 }
+                catch (Exception ex) { Log.Line($"Exception in ChargeColorAssignments {ex}"); }
             }
 
             public void Draw(uint renderId, bool visable)

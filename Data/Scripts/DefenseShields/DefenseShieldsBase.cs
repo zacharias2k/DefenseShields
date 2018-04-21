@@ -105,23 +105,20 @@ namespace DefenseShields
 
         public void CheckDamage(object target, ref MyDamageInformation info)
         {
-            if (Components.Count == 0 || info.Type != MyDamageType.Bullet && info.Type != MyDamageType.Deformation) return;
-            MyEntity hostileEnt;
-            MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
+            if (Components.Count == 0 || info.Type == MyDamageType.Destruction || info.Type == MyDamageType.Drill || info.Type == MyDamageType.Grind) return;
 
             var block = target as IMySlimBlock;
             if (block == null) return;
+            var blockGrid = (MyCubeGrid)block.CubeGrid;
 
             foreach (var shield in Components)
             {
-                var blockGrid = (MyCubeGrid)block.CubeGrid;
                 if (shield.ShieldActive && (shield.Shield.CubeGrid == blockGrid || shield.FriendlyCache.Contains(blockGrid)))
                 {
-                    //Log.Line($"{shield.FriendlyCache.Contains(hostileEnt)} {hostileEnt == shield.Shield.CubeGrid} {hostileEnt != null}");
+                    MyEntity hostileEnt;
+                    MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
                     if (hostileEnt != null && (shield.FriendlyCache.Contains(hostileEnt) || hostileEnt == shield.Shield.CubeGrid))
                     {
-                        Log.Line($"testtest");
-                        Log.Line($"friendly: {(hostileEnt as MyCubeGrid).DisplayName} attacking: {blockGrid.DisplayName} bCnt: {blockGrid.BlocksCount} Contains: {shield.FriendlyCache.Contains(hostileEnt)} Shield: {hostileEnt == shield.Shield.CubeGrid} ");
                         continue;
                     }
                     if (_voxelTrigger == 0 && hostileEnt is IMyVoxelMap)
@@ -143,6 +140,13 @@ namespace DefenseShields
                         else _voxelDamageCounter[voxel]++;
                         _voxelTrigger = 1;
                     }
+
+                    if (info.Type == MyDamageType.Deformation)
+                    {
+                        info.Amount = 0f;
+                        continue;
+                    }
+                    shield.Absorb += info.Amount;
                     info.Amount = 0f;
                 }
             }

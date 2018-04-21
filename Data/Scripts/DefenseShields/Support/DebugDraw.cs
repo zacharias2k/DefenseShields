@@ -285,6 +285,13 @@ namespace DefenseShields.Support
             MySimpleObjectDraw.DrawTransparentBox(ref matrix, ref box, ref color, MySimpleObjectRasterizer.Solid, 1, 8f, MyStringId.GetOrCompute("square"));
         }
 
+        public static void DrawOBB(MyOrientedBoundingBoxD obb, Color color, MySimpleObjectRasterizer raster = MySimpleObjectRasterizer.Wireframe, float thickness = 0.01f)
+        {
+            var box = new BoundingBoxD(-obb.HalfExtent, obb.HalfExtent);
+            var wm = MatrixD.CreateFromQuaternion(obb.Orientation);
+            wm.Translation = obb.Center;
+            MySimpleObjectDraw.DrawTransparentBox(ref wm, ref box, ref color, raster, 1, thickness, MyStringId.GetOrCompute("Square"), MyStringId.GetOrCompute("Square"));
+        }
 
         public static void DrawSingleVec(Vector3D vec, float size, Color color)
         {
