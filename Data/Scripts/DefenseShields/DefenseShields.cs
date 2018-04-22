@@ -23,6 +23,7 @@ using VRage.Collections;
 using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Cube;
 using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 
@@ -43,20 +44,18 @@ namespace DefenseShields
 
         private uint _tick;
 
+        public float ImpactSize { get; set; } = 9f;
+        public float Absorb { get; set; }
         private float _power = 0.0001f;
         internal double Range;
         private float _width;
         private float _height;
         private float _depth;
-        private float _recharge;
-        public float Absorb { get; set; }
-        private float _impactSize;
         private float _gridMaxPower;
         private float _gridCurrentPower;
         private float _gridAvailablePower;
         private float _shieldMaxBuffer;
         private float _shieldBuffer;
-        private float _shieldOldBuffer;
         private float _shieldMaxChargeRate;
         private float _shieldChargeRate;
         private float _shieldEfficiency;
@@ -66,6 +65,8 @@ namespace DefenseShields
         private double _sAvelSqr;
         private double _sVelSqr;
 
+        public int BulletCoolDown { get; private set; }= -1;
+        public int EntityCoolDown { get; private set; } = -1;
         private int _count = -1;
         private int _shieldDownLoop = -1;
         private int _longLoop;
@@ -94,7 +95,7 @@ namespace DefenseShields
         private bool _enemy;
 
         internal Vector3D ShieldSize { get; set; }
-        private Vector3D _worldImpactPosition = new Vector3D(Vector3D.NegativeInfinity);
+        public Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         private Vector3D _localImpactPosition;
         private Vector3D _detectionCenter;
         private Vector3D _sVel;
@@ -102,7 +103,7 @@ namespace DefenseShields
         private Vector3D _sightPos;
 
         private readonly Vector3D[] _rootVecs = new Vector3D[12];
-        private readonly Vector3D[] _physicsOutside = new Vector3D[642];
+        public readonly Vector3D[] _physicsOutside = new Vector3D[642];
         private readonly Vector3D[] _physicsInside = new Vector3D[642];
 
         private MatrixD _shieldGridMatrix;
@@ -214,15 +215,19 @@ namespace DefenseShields
         #region Init
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
-            base.Init(objectBuilder);
-            Entity.Components.TryGet(out Sink);
+            try
+            {
+                base.Init(objectBuilder);
+                Entity.Components.TryGet(out Sink);
 
-            NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-            NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-            NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
+                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+                NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
 
-            if (!_shields.ContainsKey(Entity.EntityId)) _shields.Add(Entity.EntityId, this);
-            Shield.CubeGrid.Components.Add(new ShieldGridComponent(this));
+                if (!_shields.ContainsKey(Entity.EntityId)) _shields.Add(Entity.EntityId, this);
+                Shield.CubeGrid.Components.Add(new ShieldGridComponent(this));
+            }
+            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
         #endregion
 
@@ -259,12 +264,6 @@ namespace DefenseShields
         }
 
         #region Simulation
-
-        public override void UpdateAfterSimulation()
-        {
-            _shieldOldBuffer = _shieldBuffer;
-        }
-
         public override void UpdateAfterSimulation100()
         {
             try
@@ -277,6 +276,15 @@ namespace DefenseShields
                     if (Shield.CubeGrid.Physics.IsStatic) GridIsMobile = false;
                     else if (!Shield.CubeGrid.Physics.IsStatic) GridIsMobile = true;
 
+                    /*
+                    if (GridIsMobile && OtherShieldCheck())
+                    {
+                        DefenseShieldsBase.Instance.Components.Remove(this);
+                        _icosphere = null;
+                        Shield.Delete();
+                        return;
+                    }
+                    */
                     CreateUi();
 
                     _shield = _spawn.EmptyEntity("Field", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\LargeField0.mwm");
@@ -309,7 +317,7 @@ namespace DefenseShields
 
         public override void UpdateBeforeSimulation()
         {
-            //_dsutil2.Sw.Start();
+            _dsutil2.Sw.Start();
             try
             {
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
@@ -335,6 +343,10 @@ namespace DefenseShields
                 if (_longLoop == 0 && _count == 0) CleanUp(1);
                 if (_longLoop == 9 && _count == 58) CleanUp(2);
 
+                if (BulletCoolDown > -1) BulletCoolDown++;
+                if (BulletCoolDown > 19) BulletCoolDown = -1;
+                if (EntityCoolDown > -1) EntityCoolDown++;
+                if (EntityCoolDown > 7) EntityCoolDown = -1;
                 if (_count++ == 59)
                 {
                     _count = 0;
@@ -350,10 +362,10 @@ namespace DefenseShields
                 {
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel) // ugly workaround for realtime terminal updates
                     {
-
                         Shield.ShowInToolbarConfig = false;
                         Shield.ShowInToolbarConfig = true;
                     }
+                    else if (_longLoop == 5) Shield.ShowInToolbarConfig = false; Shield.ShowInToolbarConfig = true;
                 }
 
                 if (ShieldActive)
@@ -386,18 +398,16 @@ namespace DefenseShields
 
             //DsDebugDraw.DrawSphere(_shield.LocalVolume, Color.White);
             //DsDebugDraw.DrawBox(_sOriBBoxD, Color.Black);
-            //_dsutil2.StopWatchReport("main", -1);
+            _dsutil2.StopWatchReport("main", 2);
         }
         #endregion
 
         #region Block Power and Entity Config Logic
-
         private void BackGroundChecks()
         {
             _powerSources.Clear();
 
             //_dsutil1.Sw.Start();
-
             foreach (var block in ((MyCubeGrid)Shield.CubeGrid).GetFatBlocks())
             {
                 var source = block.Components.Get<MyResourceSourceComponent>();
@@ -409,11 +419,19 @@ namespace DefenseShields
                     break;
                 }
             }
-
             //_dsutil1.StopWatchReport("PowerGetNew", -1);
-
-           // Shield.CubeGrid.GetBlocks(null, CollectPowerBlocks);
             Log.Line($"powerCnt: {_powerSources.Count.ToString()}");
+        }
+
+        private bool OtherShieldCheck()
+        {
+            var c = 0;
+            foreach (var block in ((MyCubeGrid) Shield.CubeGrid).GetFatBlocks())
+            {
+                if (block.BlockDefinition.BlockPairName.Equals("DefenseShield")) c++;
+                if (c > 1) return true;
+            }
+            return false;
         }
 
         private bool BlockFunctional()
@@ -435,10 +453,10 @@ namespace DefenseShields
                 _shieldBuffer = 0;
                 _shieldChargeRate = 0;
                 _shieldMaxChargeRate = 0;
-                _shieldEfficiency = 0;
-                _shieldMaxBuffer = 0;
                 if (_shieldDownLoop > -1)
                 {
+                    _power = _gridMaxPower * _shieldMaintain;
+                    Sink.Update();
                     if (_shieldDownLoop == 0)
                     {
                         Log.Line($"Shield restart");
@@ -446,7 +464,12 @@ namespace DefenseShields
                     }
 
                     _shieldDownLoop++;
-                    if (_shieldDownLoop == 1200) _shieldDownLoop = -1;
+                    if (_shieldDownLoop == 1200)
+                    {
+                        _shieldDownLoop = -1;
+                        Log.Line($"restart with buffer at {(_shieldMaxBuffer / 50).ToString()} charged");
+                        _shieldBuffer = _shieldMaxBuffer / 25; // replace this with something that scales based on charge rate
+                    }
                 }
                 return false;
             }
@@ -525,21 +548,24 @@ namespace DefenseShields
             _power = _shieldChargeRate + _gridMaxPower * _shieldMaintain;
             Sink.Update();
             _shieldCurrentPower = Sink.CurrentInputByType(gId);
-            if (Absorb > 0) _shieldBuffer -= (Absorb / _shieldEfficiency);
+            if (Absorb > 0)
+            {
+                //Log.Line($"Absorb Damage: {(Absorb / _shieldEfficiency).ToString()}");
+                _shieldBuffer -= (Absorb / _shieldEfficiency);
+            }
             if (_shieldBuffer < 0) _shieldDownLoop = 0;
             Absorb = 0f;
         }
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
-            var rId = MyResourceDistributorComponent.ElectricityId;
-            var shield = block.GameLogic.GetAs<DefenseShields>();
-            if (shield == null)
+            //var shield = block.GameLogic.GetAs<DefenseShields>();
+            if (block.GameLogic.GetAs<DefenseShields>() == null)
             {
-                Log.Line($"Appending shield is null");
+                Log.Line($"Appending Shield is not ready or null");
                 return;
             }
-            if (!GridIsMobile)RefreshDimensions();
+            if (!GridIsMobile && ShieldActive)RefreshDimensions();
             var shieldPercent = 100f;
             var secToFull = 0;
             if (_shieldBuffer < _shieldMaxBuffer) shieldPercent = (_shieldBuffer / _shieldMaxBuffer) * 100;
@@ -554,7 +580,7 @@ namespace DefenseShields
                                  "\n" +
                                  "\n[Maintenance]: " + (_gridMaxPower * _shieldMaintain).ToString("0.0") + " Mw" +
                                  "\n[Availabile]: " + _gridAvailablePower.ToString("0.0") + " Mw" +
-                                 "\n[Current__]: " + Sink.CurrentInputByType(rId).ToString("0.0"));
+                                 "\n[Current__]: " + Sink.CurrentInputByType(gId).ToString("0.0"));
         }
 
         private void MobileUpdate()
@@ -860,9 +886,15 @@ namespace DefenseShields
             _enemy = enemy;
             var visable = !(_visablilityCheckBox.Getter(Shield).Equals(true) && !enemy);
 
-            var impactPos = _worldImpactPosition;
-            if (impactPos != Vector3D.NegativeInfinity)
+            var impactPos = WorldImpactPosition;
+            if (impactPos != Vector3D.NegativeInfinity & ((BulletCoolDown == -1 || EntityCoolDown == -1)))
             {
+                if (EntityCoolDown == -1 && ImpactSize > 5) EntityCoolDown = 0;
+                else
+                {
+                    BulletCoolDown = 0;
+                }
+
                 var cubeBlockLocalMatrix = Shield.CubeGrid.LocalMatrix;
                 var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
                 var worldDirection = impactPos - referenceWorldPosition;
@@ -870,7 +902,7 @@ namespace DefenseShields
                 impactPos = localPosition;
             }
             _localImpactPosition = impactPos;
-            _worldImpactPosition = Vector3D.NegativeInfinity;
+            WorldImpactPosition = Vector3D.NegativeInfinity;
 
             if (Shield.IsWorking) PrepareSphere();
             if (sphereOnCamera && Shield.IsWorking) _icosphere.Draw(GetRenderId(), visable);
@@ -881,7 +913,7 @@ namespace DefenseShields
             var prevlod = _prevLod;
             var lod = CalculateLod(_onCount);
             if (_gridChanged || lod != prevlod) _icosphere.CalculateTransform(_shieldShapeMatrix, lod);
-            _icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, _impactSize, _entityChanged, _enemy, _shield, prevlod);
+            _icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, ImpactSize, _entityChanged, _enemy, _shield, prevlod);
             _entityChanged = false;
         }
         #endregion
@@ -1079,10 +1111,10 @@ namespace DefenseShields
                             {
                                 if (entInfo.LastTick == _tick && CustomCollision.PointInShield(entCenter, _detectMatrixInv) && !entInfo.SpawnedInside)
                                 {
-                                    _worldImpactPosition = entCenter;
-                                    Absorb += Shotdmg;
-                                    MyVisualScriptLogicProvider.CreateExplosion(entCenter, 0, 0);
+                                    WorldImpactPosition = entCenter;
+                                    Absorb += 7800;
                                     webent.Close();
+                                    MyVisualScriptLogicProvider.CreateExplosion(entCenter, 0, 0);
                                 }
                                 continue;
                             }
@@ -1215,7 +1247,6 @@ namespace DefenseShields
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in dmgBlocks: {ex}"); }
-                _impactSize = 0;
             }
             catch (Exception ex) { Log.Line($"Exception in DamageGrids: {ex}"); }
         }
@@ -1251,10 +1282,10 @@ namespace DefenseShields
             if (contactpoint != Vector3D.NegativeInfinity)
             {
                 Absorb += entInfo.Damage;
-                _impactSize += entInfo.Damage;
+                ImpactSize += entInfo.Damage;
 
                 entInfo.Damage = 0;
-                _worldImpactPosition = contactpoint;
+                WorldImpactPosition = contactpoint;
             }
         }
 
@@ -1275,10 +1306,10 @@ namespace DefenseShields
                 entInfo.ContactPoint = Vector3D.NegativeInfinity;
                 if (contactpoint == Vector3D.NegativeInfinity) return;
 
-                _impactSize += entInfo.Damage;
+                ImpactSize += entInfo.Damage;
 
                 entInfo.Damage = 0;
-                _worldImpactPosition = contactpoint;
+                WorldImpactPosition = contactpoint;
             }
         }
 
@@ -1304,8 +1335,8 @@ namespace DefenseShields
                 if (insidePoints.Count <= 0) return;
 
                 var contactPoint = DSUtils.CreateFromPointsList(insidePoints).Center;
-                _worldImpactPosition = contactPoint;
-                shieldComponent.DefenseShields._worldImpactPosition = contactPoint;
+                WorldImpactPosition = contactPoint;
+                shieldComponent.DefenseShields.WorldImpactPosition = contactPoint;
             }
             else
             {
@@ -1320,8 +1351,8 @@ namespace DefenseShields
                 if (insidePoints.Count <= 0) return;
 
                 var contactPoint = DSUtils.CreateFromPointsList(insidePoints).Center;
-                _worldImpactPosition = contactPoint;
-                shieldComponent.DefenseShields._worldImpactPosition = contactPoint;
+                WorldImpactPosition = contactPoint;
+                shieldComponent.DefenseShields.WorldImpactPosition = contactPoint;
             }
         }
 

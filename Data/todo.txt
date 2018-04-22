@@ -21,6 +21,7 @@ Known Bugs / tweaks (targeted to be fixed by v1.0 release):
 10) Please report any in game mod warnings that report DefenseShields as the cause.  Explain what you were doing at the time.
 11) Brief mod warning when Station Shield goes online.
 12) Check to see if shield block owner is allied with BigOwner.
+13) Look into own ship missiles being blocked (small grid and perhaps large).
 
 Release 2.0:
 1) Add damage shield block.

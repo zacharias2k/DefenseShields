@@ -41,22 +41,25 @@ namespace DefenseShields
 
         public override void Draw()
         {
-            //_dsutil1.Sw.Start();
-            if (!SessionInit || Components.Count == 0) return;
-
-            var sphereOnCamera = new bool[Components.Count];
-            var onCount = 0;
-            for (int i = 0; i < Components.Count; i++)
+            try
             {
-                var s = Components[i];
-                var sp = new BoundingSphereD(s.Entity.GetPosition(), s.Range);
-                if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp)) continue;
-                sphereOnCamera[i] = true;
-                onCount++;
-            }
-            for (int i = 0; i < Components.Count; i++) if (Components[i].ShieldActive) Components[i].Draw(onCount, sphereOnCamera[i]);
-            //_dsutil1.StopWatchReport("draw", -1);
+                //_dsutil1.Sw.Start();
+                if (!SessionInit || Components.Count == 0) return;
 
+                var sphereOnCamera = new bool[Components.Count];
+                var onCount = 0;
+                for (int i = 0; i < Components.Count; i++)
+                {
+                    var s = Components[i];
+                    var sp = new BoundingSphereD(s.Entity.GetPosition(), s.Range);
+                    if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp)) continue;
+                    sphereOnCamera[i] = true;
+                    onCount++;
+                }
+                for (int i = 0; i < Components.Count; i++) if (Components[i].ShieldActive) Components[i].Draw(onCount, sphereOnCamera[i]);
+                //_dsutil1.StopWatchReport("draw", -1);
+            }
+            catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
         }
 
         public string ModPath()
@@ -78,78 +81,103 @@ namespace DefenseShields
 
         public override void UpdateBeforeSimulation()
         {
-            if (!SessionInit) {
-                if (MyAPIGateway.Multiplayer.IsServer && MyAPIGateway.Utilities.IsDedicated) Init();
-                else if (MyAPIGateway.Session.Player != null) Init();
-            }
-            else {
-                if (_count++ == 1180) {
-                    _count = 0;
-                    if (_voxelDamageCounter.Count != 0) _voxelDamageCounter.Clear();
+            try
+            {
+                if (!SessionInit)
+                {
+                    if (MyAPIGateway.Multiplayer.IsServer && MyAPIGateway.Utilities.IsDedicated) Init();
+                    else if (MyAPIGateway.Session.Player != null) Init();
                 }
-                _voxelTrigger = 0;
-                _resetVoxelColliders = false;
-                foreach (var voxel in _voxelDamageCounter.Values)
-                    if (voxel > 40) _resetVoxelColliders = true;
+                else
+                {
+                    if (_count++ == 1180)
+                    {
+                        _count = 0;
+                        if (_voxelDamageCounter.Count != 0) _voxelDamageCounter.Clear();
+                    }
+                    _voxelTrigger = 0;
+                    _resetVoxelColliders = false;
+                    foreach (var voxel in _voxelDamageCounter.Values)
+                        if (voxel > 40) _resetVoxelColliders = true;
+                }
             }
+            catch (Exception ex) { Log.Line($"Exception in SessionBeforeSim: {ex}"); }
         }
 
         public void Init() 
         {
-            Log.Init("debugdevelop.log");
-            Log.Line($"Logging Started");
-            MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
-            MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID, PacketReceived);
-            SessionInit = true;
+            try
+            {
+                Log.Init("debugdevelop.log");
+                Log.Line($"Logging Started");
+                MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID, PacketReceived);
+                SessionInit = true;
+            }
+            catch (Exception ex) { Log.Line($"Exception in SessionInit: {ex}"); }
         }
 
         public void CheckDamage(object target, ref MyDamageInformation info)
         {
-            if (Components.Count == 0 || info.Type == MyDamageType.Destruction || info.Type == MyDamageType.Drill || info.Type == MyDamageType.Grind) return;
-
-            var block = target as IMySlimBlock;
-            if (block == null) return;
-            var blockGrid = (MyCubeGrid)block.CubeGrid;
-
-            foreach (var shield in Components)
+            try
             {
-                if (shield.ShieldActive && (shield.Shield.CubeGrid == blockGrid || shield.FriendlyCache.Contains(blockGrid)))
+                if (Components.Count == 0 || info.Type == MyDamageType.Destruction || info.Type == MyDamageType.Drill || info.Type == MyDamageType.Grind || info.Type == MyDamageType.Environment) return;
+
+                var block = target as IMySlimBlock;
+                if (block == null) return;
+                var blockGrid = (MyCubeGrid)block.CubeGrid;
+
+                foreach (var shield in Components)
                 {
-                    MyEntity hostileEnt;
-                    MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
-                    if (hostileEnt != null && (shield.FriendlyCache.Contains(hostileEnt) || hostileEnt == shield.Shield.CubeGrid))
+                    if (shield.ShieldActive && (shield.Shield.CubeGrid == blockGrid || shield.FriendlyCache.Contains(blockGrid)))
                     {
-                        continue;
-                    }
-                    if (_voxelTrigger == 0 && hostileEnt is IMyVoxelMap)
-                    {
-                        var voxel = (IMyVoxelMap)hostileEnt;
-                        info.Amount = 0f;
+                        MyEntity hostileEnt;
+                        MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
 
-                        if (_resetVoxelColliders)
+                        if (hostileEnt != null && (shield.FriendlyCache.Contains(hostileEnt) || hostileEnt == shield.Shield.CubeGrid))
                         {
-                            var safeplace = MyAPIGateway.Entities.FindFreePlace(shield.Shield.CubeGrid.WorldVolume.Center, (float)shield.Shield.CubeGrid.WorldVolume.Radius * 5);
-                            if (safeplace != null)
-                            {
-                                shield.Shield.CubeGrid.Physics.ClearSpeed();
-                                shield.Shield.CubeGrid.SetPosition((Vector3D)safeplace);
-                                _voxelDamageCounter.Clear();
-                            }
+                            continue;
                         }
-                        if (!_voxelDamageCounter.ContainsKey(voxel)) _voxelDamageCounter.Add(voxel, 1);
-                        else _voxelDamageCounter[voxel]++;
-                        _voxelTrigger = 1;
-                    }
+                        if (_voxelTrigger == 0 && hostileEnt is IMyVoxelMap)
+                        {
+                            var voxel = (IMyVoxelMap)hostileEnt;
+                            info.Amount = 0f;
 
-                    if (info.Type == MyDamageType.Deformation)
-                    {
+                            if (_resetVoxelColliders)
+                            {
+                                var safeplace = MyAPIGateway.Entities.FindFreePlace(shield.Shield.CubeGrid.WorldVolume.Center, (float)shield.Shield.CubeGrid.WorldVolume.Radius * 5);
+                                if (safeplace != null)
+                                {
+                                    shield.Shield.CubeGrid.Physics.ClearSpeed();
+                                    shield.Shield.CubeGrid.SetPosition((Vector3D)safeplace);
+                                    _voxelDamageCounter.Clear();
+                                }
+                            }
+                            if (!_voxelDamageCounter.ContainsKey(voxel)) _voxelDamageCounter.Add(voxel, 1);
+                            else _voxelDamageCounter[voxel]++;
+                            _voxelTrigger = 1;
+                        }
+
+                        if (info.Type == MyDamageType.Deformation)
+                        {
+                            info.Amount = 0f;
+                            continue;
+                        }
+
+                        if (hostileEnt != null && shield.Absorb < 1 && shield.BulletCoolDown == -1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity)
+                        {
+                            Vector3D blockPos;
+                            block.ComputeWorldCenter(out blockPos);
+                            var vertPos = CustomCollision.ClosestVert(shield._physicsOutside, blockPos);
+                            shield.WorldImpactPosition = vertPos;
+                            shield.ImpactSize = 5;
+                        }
+                        shield.Absorb += info.Amount;
                         info.Amount = 0f;
-                        continue;
                     }
-                    shield.Absorb += info.Amount;
-                    info.Amount = 0f;
                 }
             }
+            catch (Exception ex) { Log.Line($"Exception in SessionDamageHandler: {ex}"); }
         }
 
         #region Network sync
