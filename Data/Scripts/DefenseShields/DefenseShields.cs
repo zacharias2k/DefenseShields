@@ -23,9 +23,6 @@ using VRage.Collections;
 using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
-using Sandbox.Game.Entities.Character;
-using Sandbox.Game.Entities.Cube;
-using SpaceEngineers.Game.ModAPI;
 using VRage.Game.ModAPI.Interfaces;
 using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
@@ -228,7 +225,7 @@ namespace DefenseShields
             LargeEnemyGrid,
             Shielded,
             Other,
-            VoxelMap
+            VoxelBase
         };
         #endregion
 
@@ -983,7 +980,7 @@ namespace DefenseShields
         private Ent EntType(IMyEntity ent)
         {
             if (ent == null) return Ent.Ignore;
-            if (ent is IMyVoxelMap && !GridIsMobile) return Ent.Ignore;
+            if (ent is MyVoxelBase && !GridIsMobile) return Ent.Ignore;
 
             if (ent is IMyCharacter)
             {
@@ -1012,7 +1009,7 @@ namespace DefenseShields
             }
 
             if (ent is IMyMeteor || ent.GetType().Name.StartsWith("MyMissile")) return Ent.Other;
-            if (ent is IMyVoxelMap && GridIsMobile) return Ent.VoxelMap;
+            if (ent is MyVoxelBase && GridIsMobile) return Ent.VoxelBase;
             return 0;
         }
 
@@ -1053,7 +1050,7 @@ namespace DefenseShields
                 if (ent == null) continue;
                 var entCenter = ent.PositionComp.WorldVolume.Center;
 
-                if (ent == _shield || ent as IMyCubeGrid == Shield.CubeGrid || ent.Physics == null || ent.MarkedForClose || ent is IMyVoxelBase && !GridIsMobile
+                if (ent == _shield || ent as IMyCubeGrid == Shield.CubeGrid || ent.Physics == null || ent.MarkedForClose || ent is MyVoxelBase && !GridIsMobile
                     || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || FriendlyCache.Contains(ent) || ent.GetType().Name == "MyDebrisBase") continue;
 
                 var relation = EntType(ent);
@@ -1154,9 +1151,9 @@ namespace DefenseShields
                                 }
                                 continue;
                             }
-                        case Ent.VoxelMap:
+                        case Ent.VoxelBase:
                             {
-                                MyAPIGateway.Parallel.Start(() => VoxelIntersect(webent as IMyVoxelMap));
+                                MyAPIGateway.Parallel.Start(() => VoxelIntersect(webent as MyVoxelBase));
                                 continue;
                             }
                         default:
@@ -1414,43 +1411,38 @@ namespace DefenseShields
             var dsVerts = shieldComponent.DefenseShields._physicsOutside;
             var dsMatrixInv = shieldComponent.DefenseShields._detectMatrixInv;
             var myGrid = Shield.CubeGrid;
-            if (GridIsMobile)
+
+            var insidePoints = new List<Vector3D>();
+            CustomCollision.ShieldX2PointsInside(dsVerts, dsMatrixInv, _physicsOutside, _detectMatrixInv, insidePoints);
+
+            var bPhysics = grid.Physics;
+            var sPhysics = myGrid.Physics;
+            var momentum = bPhysics.Mass * bPhysics.LinearVelocity + sPhysics.Mass * sPhysics.LinearVelocity;
+            var resultVelocity = momentum / (bPhysics.Mass + sPhysics.Mass);
+
+            var collisionAvg = Vector3D.Zero;
+            for (int i = 0; i < insidePoints.Count; i++)
             {
-                var insidePoints = new List<Vector3D>();
-                CustomCollision.ShieldX2PointsInside(dsVerts, dsMatrixInv, _physicsOutside, _detectMatrixInv, insidePoints);
-                for (int i = 0; i < insidePoints.Count; i++)
-                {
-                    grid.Physics.ApplyImpulse((grid.PositionComp.WorldVolume.Center - insidePoints[i]) * grid.Physics.Mass / 250, insidePoints[i]);
-                    myGrid.Physics.ApplyImpulse((myGrid.PositionComp.WorldVolume.Center - insidePoints[i]) * myGrid.Physics.Mass / 250, insidePoints[i]);
-                }
-
-                if (insidePoints.Count <= 0) return;
-
-                var contactPoint = DSUtils.CreateFromPointsList(insidePoints).Center;
-                WorldImpactPosition = contactPoint;
-                shieldComponent.DefenseShields.WorldImpactPosition = contactPoint;
+                collisionAvg += insidePoints[i];
             }
-            else
-            {
-                var insidePoints = new List<Vector3D>();
-                CustomCollision.ShieldX2PointsInside(dsVerts, dsMatrixInv, _physicsOutside, _detectMatrixInv, insidePoints);
-                for (int i = 0; i < insidePoints.Count; i++)
-                {
-                    grid.Physics.ApplyImpulse((grid.PositionComp.WorldVolume.Center - insidePoints[i]) * grid.Physics.Mass / 250, insidePoints[i]);
-                    myGrid.Physics.ApplyImpulse((myGrid.PositionComp.WorldVolume.Center - insidePoints[i]) * myGrid.Physics.Mass / 250, insidePoints[i]);
-                }
 
-                if (insidePoints.Count <= 0) return;
+            if (insidePoints.Count > 0) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bPhysics.Mass, bPhysics.CenterOfMassWorld);
+            if (insidePoints.Count > 0) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sPhysics.Mass, sPhysics.CenterOfMassWorld);
 
-                var contactPoint = DSUtils.CreateFromPointsList(insidePoints).Center;
-                WorldImpactPosition = contactPoint;
-                shieldComponent.DefenseShields.WorldImpactPosition = contactPoint;
-            }
+            collisionAvg /= insidePoints.Count;
+            if (insidePoints.Count > 0) sPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * sPhysics.Mass, null, Vector3D.Zero, MathHelper.Clamp(sPhysics.LinearVelocity.Length(), 10f, 50f));
+            if (insidePoints.Count > 0) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - bPhysics.CenterOfMassWorld) * bPhysics.Mass, null, Vector3D.Zero, MathHelper.Clamp(bPhysics.LinearVelocity.Length(), 10f, 50f));
+
+            if (insidePoints.Count <= 0) return;
+
+            var contactPoint = DSUtils.CreateFromPointsList(insidePoints).Center; // replace with average
+            WorldImpactPosition = contactPoint;
+            shieldComponent.DefenseShields.WorldImpactPosition = contactPoint;
         }
 
-        private void VoxelIntersect(IMyVoxelMap voxelMap)
+        private void VoxelIntersect(MyVoxelBase voxelBase)
         {
-            CustomCollision.VoxelCollisionSphere(Shield.CubeGrid, _physicsOutside, voxelMap, _sOriBBoxD);
+            CustomCollision.VoxelCollisionSphere(Shield.CubeGrid, _physicsOutside, voxelBase, _sOriBBoxD);
         }
 
         private void PlayerIntersect(IMyEntity ent)

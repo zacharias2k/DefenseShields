@@ -133,14 +133,13 @@ namespace DefenseShields
                     {
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
-
                         if (hostileEnt != null && (shield.FriendlyCache.Contains(hostileEnt) || hostileEnt == shield.Shield.CubeGrid))
                         {
                             continue;
                         }
-                        if (_voxelTrigger == 0 && hostileEnt is IMyVoxelMap)
+                        if (_voxelTrigger == 0 && (hostileEnt is MyVoxelBase))
                         {
-                            var voxel = (IMyVoxelMap)hostileEnt;
+                            var voxel = (MyVoxelBase)hostileEnt;
                             info.Amount = 0f;
 
                             if (_resetVoxelColliders)
