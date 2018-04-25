@@ -174,9 +174,13 @@ namespace DefenseShields
 
         public override void OnAddedToScene()
         {
-            DefenseShieldsBase.Instance.Components.Add(this);
-            _icosphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Icosphere);
-            Shield.CubeGrid.Components.Add(new ShieldGridComponent(this));
+            try
+            {
+                DefenseShieldsBase.Instance.Components.Add(this);
+                _icosphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Icosphere);
+                Shield.CubeGrid.Components.Add(new ShieldGridComponent(this));
+            }
+            catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
 
         public override void OnRemovedFromScene()
@@ -513,8 +517,9 @@ namespace DefenseShields
         {
 
             if (!MainInit || !AnimateInit || NoPower || HardDisable) return false;
-            if (!Shield.IsWorking && Sink.CurrentInputByType(gId) > 0)
+            if (!Shield.IsWorking && Shield.Enabled && Sink.CurrentInputByType(gId) > 0)
             {
+                Log.Line($"shield state toggle");
                 Shield.Enabled = false;
                 Shield.Enabled = true;
             }
@@ -535,6 +540,7 @@ namespace DefenseShields
                 if (_shieldDownLoop > -1)
                 {
                     _power = _gridMaxPower * _shieldMaintain;
+                    if (_power <= 0 || float.IsNaN(_power)) _power = 0.0001f; // temporary definitely 100% will fix this to do - Find ThE NaN!
                     Sink.Update();
                     if (_shieldDownLoop == 0)
                     {
@@ -624,6 +630,7 @@ namespace DefenseShields
         private void SetPower()
         {
             _power = _shieldChargeRate + _gridMaxPower * _shieldMaintain;
+            if (_power <= 0 || float.IsNaN(_power)) _power = 0.0001f; // temporary definitely 100% will fix this to do - Find ThE NaN!
             Sink.Update();
             _shieldCurrentPower = Sink.CurrentInputByType(gId);
             if (Absorb > 0)
@@ -769,7 +776,7 @@ namespace DefenseShields
             _noBlocksLos.Clear();
             _vertsSighted.Clear();
             if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS") testDist = 4.5d;
-            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") testDist = 2.5d;
+            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") testDist = 0.8d;
             else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST") testDist = 8.0d;
 
             var testDir = _subpartRotor.PositionComp.WorldVolume.Center - Shield.PositionComp.WorldVolume.Center;
