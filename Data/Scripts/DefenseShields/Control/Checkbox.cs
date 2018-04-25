@@ -5,6 +5,8 @@ terms of the Do What The Fuck You Want To Public License, Version 2,
 as published by Sam Hocevar. See http://www.wtfpl.net/ for more details.
 */
 
+using System;
+using DefenseShields.Support;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 
@@ -50,7 +52,11 @@ namespace DefenseShields.Control
 
         public virtual void Setter(IMyTerminalBlock block, bool newState)
         {
-            MyAPIGateway.Utilities.SetVariable<bool>(block.EntityId.ToString() + InternalName, newState);
+            try
+            {
+                MyAPIGateway.Utilities.SetVariable<bool>(block.EntityId.ToString() + InternalName, newState);
+            }
+            catch (Exception ex) { Log.Line($"Exception in Checkbox Setter: {ex}"); }
         }
 
     }

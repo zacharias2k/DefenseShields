@@ -51,12 +51,14 @@ namespace DefenseShields
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
+                    if (s.HardDisable || !(s.AnimateInit && s.MainInit)) continue;
+
                     var sp = new BoundingSphereD(s.Entity.GetPosition(), s.Range);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp)) continue;
                     sphereOnCamera[i] = true;
                     onCount++;
                 }
-                for (int i = 0; i < Components.Count; i++) if (Components[i].ShieldActive) Components[i].Draw(onCount, sphereOnCamera[i]);
+                for (int i = 0; i < Components.Count; i++) if (Components[i].ShieldActive && !Components[i].HardDisable) Components[i].Draw(onCount, sphereOnCamera[i]);
                 //_dsutil1.StopWatchReport("draw", 2);
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }

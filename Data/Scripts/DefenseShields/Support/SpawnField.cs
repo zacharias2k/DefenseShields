@@ -239,11 +239,8 @@ namespace DefenseShields.Support
             private IMyEntity _shield;
 
             //private readonly MyStringId _faceId1 = MyStringId.GetOrCompute("CustomIdle");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
-            private readonly MyStringId _faceId1 = MyStringId.GetOrCompute("CockpitFighterGlassInside");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
-
-            private readonly MyStringId _faceId2 = MyStringId.GetOrCompute("SunDisk");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
-            private readonly MyStringId _faceId3 = MyStringId.GetOrCompute("CockpitFighterGlassInside");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
-            private readonly MyStringId _faceId4 = MyStringId.GetOrCompute("CockpitGlassInside");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
+            private readonly MyStringId _faceIdle = MyStringId.GetOrCompute("CustomIdle");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
+            private readonly MyStringId _faceWave = MyStringId.GetOrCompute("SunDisk");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
 
             private DSUtils _dsutil1 = new DSUtils();
             private DSUtils _dsutil2 = new DSUtils();
@@ -451,7 +448,7 @@ namespace DefenseShields.Support
                 try
                 {
                     if (!visable && _impactsFinished && !_charge) return;
-                    var faceMaterial = _faceId2;
+                    var faceMaterial = _faceIdle;
                     var ib = _backing.IndexBuffer[_lod];
                     var v20 = new Vector2(.5f);
                     var v21 = new Vector2(0.25f);
@@ -471,9 +468,9 @@ namespace DefenseShields.Support
                         var n1 = _normalBuffer[i1];
                         var n2 = _normalBuffer[i2];
                         var color = _triColorBuffer[j];
-                        if (color == _defaultColor) faceMaterial = _faceId1;
-                        else if (color == _waveColor) faceMaterial = _faceId2;
-                        else if (color == _chargeColor) faceMaterial = _faceId3;
+                        if (color == _defaultColor) faceMaterial = _faceIdle;
+                        else if (color == _waveColor) faceMaterial = _faceWave;
+                        else if (color == _chargeColor) faceMaterial = _faceIdle;
                         //else if (color == _waveComingColor) faceMaterial = _faceId1;
                         //else if (color == _wavePassedColor) faceMaterial = _faceId1;
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, v20, v21, v22, faceMaterial, renderId, (v0 + v1 + v2) / 3, color);

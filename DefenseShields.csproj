@@ -175,6 +175,7 @@
     <Content Include="Audio\RealBlockGravityGenEnd3d.wav" />
     <Content Include="Audio\RealBlockGravityGenLoop3d.wav" />
     <Content Include="Audio\RealBlockGravityGenStart3d.wav" />
+    <Content Include="Data\todo.txt" />
     <Content Include="Models\CustomIdle.dds" />
     <Content Include="Textures\Arm_cm.dds" />
     <Content Include="Textures\Arm_ng.dds" />
@@ -225,12 +226,11 @@
     <None Include=".vs\VSWorkspaceState.json" />
     <None Include="Audio\ShieldHitNormalHigh.xwm" />
     <None Include="Data\Audio.sbc" />
-    <None Include="Data\Scripts\Audio.sbc" />
-    <None Include="Data\Scripts\BlockCategories_DefenseShields.sbc" />
-    <None Include="Data\Scripts\DefenseShields.sbc" />
-    <None Include="Data\Scripts\EmitterEffect.sbc" />
-    <None Include="Data\Scripts\EntityComponents.sbc" />
-    <None Include="Data\Scripts\TransparentMaterials.sbc" />
+    <None Include="Data\BlockCategories_DefenseShields.sbc" />
+    <None Include="Data\DefenseShields.sbc" />
+    <None Include="Data\EmitterEffect.sbc" />
+    <None Include="Data\EntityComponents.sbc" />
+    <None Include="Data\TransparentMaterials.sbc" />
     <None Include="Models\GeneratorArm_Large.mwm" />
     <None Include="Models\GeneratorBase_Large.mwm" />
     <None Include="Models\GeneratorBase_Large_Constr1.mwm" />

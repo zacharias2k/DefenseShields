@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using DefenseShields.Support;
 using Sandbox.ModAPI;
 
 namespace DefenseShields.Control
@@ -15,11 +16,15 @@ namespace DefenseShields.Control
         }
         public override void Setter(IMyTerminalBlock block, bool newState)
         {
-            base.Setter(block, newState);
-            var shield = block.GameLogic.GetAs<DefenseShields>();
-            if (shield == null) { return; }
-            shield.Sink.Update();
-            block.RefreshCustomInfo();
+            try
+            {
+                base.Setter(block, newState);
+                var shield = block.GameLogic.GetAs<DefenseShields>();
+                if (shield == null) { return; }
+                shield.Sink.Update();
+                block.RefreshCustomInfo();
+            }
+            catch (Exception ex) { Log.Line($"Exception in Controls Checkbox Setter: {ex}"); }
         }
     }
 
@@ -61,12 +66,16 @@ namespace DefenseShields.Control
 
         public override void Setter(IMyTerminalBlock block, float value)
         {
-            base.Setter(block, value);
-            //var message = new shieldNetwork.MessageSync() { Value = value, EntityId = block.EntityId };
-            //shieldNetwork.MessageUtils.SendMessageToAll(message);
-            var shield = block.GameLogic.GetAs<DefenseShields>();
-            if (shield == null) { return; }
-            shield.Sink.Update();
+            try
+            {
+                base.Setter(block, value);
+                //var message = new shieldNetwork.MessageSync() { Value = value, EntityId = block.EntityId };
+                //shieldNetwork.MessageUtils.SendMessageToAll(message);
+                var shield = block.GameLogic.GetAs<DefenseShields>();
+                if (shield == null) { return; }
+                shield.Sink.Update();
+            }
+            catch (Exception ex) { Log.Line($"Exception in Controls Setter: {ex}"); }
         }
     }
     #endregion  
