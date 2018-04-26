@@ -176,6 +176,12 @@ namespace DefenseShields
         {
             try
             {
+                if (!Entity.MarkedForClose)
+                {
+                    Log.Line($"Entity not closed in OnAddedToScene - gridSplit?.");
+                    return;
+                }
+                Log.Line($"Entity closed in OnAddedToScene.");
                 DefenseShieldsBase.Instance.Components.Add(this);
                 _icosphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Icosphere);
                 Shield.CubeGrid.Components.Add(new ShieldGridComponent(this));
@@ -185,14 +191,25 @@ namespace DefenseShields
 
         public override void OnRemovedFromScene()
         {
-            DefenseShieldsBase.Instance.Components.Remove(this);
-            _icosphere = null;
-            BlockParticleStop();
-            Shield.CubeGrid.Components.Remove(typeof(ShieldGridComponent), this);
+            try
+            {
+                if (!Entity.MarkedForClose)
+                {
+                    Log.Line($"Entity not closed in OnRemovedFromScene- gridSplit?.");
+                    return;
+                }
+                Log.Line($"Entity closed in OnRemovedFromScene.");
+                Sink.SetRequiredInputByType(gId, 0f);
+                _icosphere = null;
+                BlockParticleStop();
+                Shield.CubeGrid.Components.Remove(typeof(ShieldGridComponent), this);
+                DefenseShieldsBase.Instance.Components.Remove(this);
+            }
+            catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
 
         public override void OnAddedToContainer() { if (Entity.InScene) OnAddedToScene(); }
-        public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
+        public override void OnBeforeRemovedFromContainer() { Log.Line($"OnBeforeRemovedFromContainer"); if (Entity.InScene) OnRemovedFromScene(); }
 
         // tem
         private bool needsMatrixUpdate = false;
@@ -275,8 +292,7 @@ namespace DefenseShields
         {
             try
             {
-                if (AnimateInit && MainInit) return;
-
+                if (AnimateInit && MainInit || !Shield.IsFunctional) return;
                 HardDisable = false || Shield.EntityId != ThereCanBeOnlyOne();
 
                 NoPower = false;
@@ -345,9 +361,9 @@ namespace DefenseShields
             try
             {
                 Entity.Components.TryGet(out Sink);
-                if (!Sink.IsPowerAvailable(gId, 1f))
+                if (!Sink.IsPowerAvailable(gId, _power))
                 {
-                    Log.Line($"no power to init resourceSink");
+                    Log.Line($"no power to init resourceSink: {_power.ToString()}");
                     NoPower = true;
                     HardDisable = true;
                     return;
@@ -373,7 +389,7 @@ namespace DefenseShields
 
         public override void UpdateBeforeSimulation()
         {
-            _dsutil2.Sw.Start();
+            _dsutil2.Sw.Restart();
             try
             {
                 //if (MainInit && AnimateInit && !BlockHasPower()) return;
@@ -456,7 +472,7 @@ namespace DefenseShields
 
             //DsDebugDraw.DrawSphere(_shield.LocalVolume, Color.White);
             //DsDebugDraw.DrawBox(_sOriBBoxD, Color.Black);
-            _dsutil2.StopWatchReport("main-loop perf", 4);
+            _dsutil2.StopWatchReport("main-loop perf", 10);
         }
         #endregion
 
@@ -517,9 +533,9 @@ namespace DefenseShields
         {
 
             if (!MainInit || !AnimateInit || NoPower || HardDisable) return false;
-            if (!Shield.IsWorking && Shield.Enabled && Sink.CurrentInputByType(gId) > 0)
+            if (!Shield.IsWorking && Shield.Enabled && Shield.IsFunctional && Sink.CurrentInputByType(gId) > 0)
             {
-                Log.Line($"shield state toggle");
+                Log.Line($"shield switching from drain state to active state (power restored: {_power.ToString()})");
                 Shield.Enabled = false;
                 Shield.Enabled = true;
             }
@@ -554,7 +570,9 @@ namespace DefenseShields
                         _shieldDownLoop = -1;
                         _shieldBuffer = _shieldMaxBuffer / 25; // replace this with something that scales based on charge rate
                     }
+                    return false;
                 }
+                Sink.SetRequiredInputByType(gId, 0.0001f);
                 return false;
             }
 

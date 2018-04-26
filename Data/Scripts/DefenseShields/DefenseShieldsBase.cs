@@ -41,18 +41,17 @@ namespace DefenseShields
 
         public override void Draw()
         {
+            if (_count == 0) Log.Line($"Shields in the world: {Components.Count.ToString()}");
             try
             {
                 //_dsutil1.Sw.Start();
                 if (!SessionInit || Components.Count == 0) return;
-
                 var sphereOnCamera = new bool[Components.Count];
                 var onCount = 0;
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
                     if (s.HardDisable || !(s.AnimateInit && s.MainInit)) continue;
-
                     var sp = new BoundingSphereD(s.Entity.GetPosition(), s.Range);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp)) continue;
                     sphereOnCamera[i] = true;
