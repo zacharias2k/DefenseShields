@@ -24,6 +24,7 @@ using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage.Game.ModAPI.Interfaces;
+using VRage.Voxels;
 using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 
@@ -107,6 +108,7 @@ namespace DefenseShields
 
         private readonly Vector3D[] _rootVecs = new Vector3D[12];
         public readonly Vector3D[] _physicsOutside = new Vector3D[642];
+        public readonly Vector3D[] _physicsOutsideLow = new Vector3D[162];
         private readonly Vector3D[] _physicsInside = new Vector3D[642];
 
         private MatrixD _shieldGridMatrix;
@@ -1159,13 +1161,14 @@ namespace DefenseShields
                             inside = true;
                             FriendlyCache.Add(ent);
                         }
-                        _webEnts.Add(ent, new EntIntersectInfo(ent.EntityId, 0f, Vector3D.NegativeInfinity, _tick, _tick, relation, inside, new List<IMySlimBlock>()));
+                        _webEnts.Add(ent, new EntIntersectInfo(ent.EntityId, 0f, Vector3D.NegativeInfinity, _tick, _tick, relation, inside, new List<IMySlimBlock>(), new MyStorageData()));
                     }
                 }
             }
             if (_enablePhysics || _shieldMoving || _gridChanged)
             {
                 _icosphere.ReturnPhysicsVerts(_detectMatrixOutside, _physicsOutside);
+                _icosphere.ReturnPhysicsVerts(_detectMatrixOutside, _physicsOutsideLow);
                 _icosphere.ReturnPhysicsVerts(_detectMatrixInside, _physicsInside);
             }
             if (_enablePhysics) MyAPIGateway.Parallel.Start(WebDispatch);
@@ -1276,8 +1279,15 @@ namespace DefenseShields
 
                     break;
                 case 2:
-                    lock (_webEnts) foreach (var i in _webEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1).ToList())
+                    lock (_webEnts)
+                    {
+                        if (Debug) Log.Line($"_webEnts # {_webEnts.Count.ToString()}");
+                        foreach (var i in _webEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1).ToList())
+                        {
                             _webEnts.Remove(i.Key);
+
+                        }
+                    }
                     FriendlyCache.Clear();
                     break;
             }
@@ -1519,11 +1529,26 @@ namespace DefenseShields
             var contactPoint = DSUtils.CreateFromPointsList(insidePoints).Center; // replace with average
             WorldImpactPosition = contactPoint;
             shieldComponent.DefenseShields.WorldImpactPosition = contactPoint;
+            var damage = 1f;
+            var bDamage = (bPhysics.Mass * bPhysics.LinearVelocity).Length();
+            var sDamage = (sPhysics.Mass * sPhysics.LinearVelocity).Length();
+            damage = bDamage < sDamage ? bDamage : sDamage;
+            Absorb += damage / 1000;
         }
 
         private void VoxelIntersect(MyVoxelBase voxelBase)
         {
-            CustomCollision.VoxelCollisionSphere(Shield.CubeGrid, _physicsOutside, voxelBase, _sOriBBoxD);
+            EntIntersectInfo entInfo;
+            _webEnts.TryGetValue(voxelBase, out entInfo);
+            var collision = CustomCollision.VoxelCollisionSphere(Shield.CubeGrid, _physicsOutsideLow, voxelBase, _sOriBBoxD, entInfo.TempStorage);
+            if (collision != Vector3D.NegativeInfinity)
+            {
+                var sPhysics = Shield.CubeGrid.Physics;
+                var momentum = sPhysics.Mass * sPhysics.LinearVelocity;
+                //var resultVelocity = momentum / (sPhysics.Mass);
+                Absorb += momentum.Length() / 1000;
+                WorldImpactPosition = collision;
+            } 
         }
 
         private void PlayerIntersect(IMyEntity ent)

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
+using VRage.Voxels;
 using VRageMath;
 
 namespace DefenseShields.Support
@@ -15,8 +16,9 @@ namespace DefenseShields.Support
         public readonly DefenseShields.Ent Relation;
         public readonly bool SpawnedInside;
         public List<IMySlimBlock> CacheBlockList;
+        public readonly MyStorageData TempStorage;
 
-        public EntIntersectInfo(long entId, float damage, Vector3D contactPoint, uint firstTick, uint lastTick, DefenseShields.Ent relation, bool inside, List<IMySlimBlock> cacheBlockList)
+        public EntIntersectInfo(long entId, float damage, Vector3D contactPoint, uint firstTick, uint lastTick, DefenseShields.Ent relation, bool inside, List<IMySlimBlock> cacheBlockList, MyStorageData tempStorage)
         {
             CacheBlockList = cacheBlockList;
             EntId = entId;
@@ -26,6 +28,7 @@ namespace DefenseShields.Support
             LastTick = lastTick;
             Relation = relation;
             SpawnedInside = inside;
+            TempStorage = tempStorage;
         }
     }
 

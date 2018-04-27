@@ -248,7 +248,6 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\Checkbox.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Controls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseShieldsBase.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\GetBlocks.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Power.cs" />
     <Compile Include="test\port\Coord3D.cs" />
     <Compile Include="test\port\Ellipsoid.cs" />
@@ -281,7 +280,6 @@
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\Shapes.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\DebugDraw.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Distiance\DistPoint3Triangle3.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Explosions.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Logging.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Slider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\DSUtils.cs" />
