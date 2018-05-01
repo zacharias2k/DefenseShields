@@ -138,6 +138,7 @@ namespace DefenseShields
                         {
                             continue;
                         }
+
                         if (_voxelTrigger == 0 && (hostileEnt is MyVoxelBase))
                         {
                             var voxel = (MyVoxelBase)hostileEnt;
@@ -161,6 +162,7 @@ namespace DefenseShields
                         if (info.Type == MyDamageType.Deformation)
                         {
                             info.Amount = 0f;
+                            info.IsDeformation = false;
                             continue;
                         }
 
@@ -172,9 +174,16 @@ namespace DefenseShields
                             shield.WorldImpactPosition = vertPos;
                             shield.ImpactSize = 5;
                         }
-                        shield.Absorb += info.Amount;
+
+                        if (info.Type == MyDamageType.Explosion && hostileEnt == null)
+                        {
+                            info.Amount = 0f;
+                            continue;
+                        }
+
+                        //Log.Line($"Amount:{info.Amount.ToString()} - Type:{info.Type.ToString()} - Block:{block.BlockDefinition.GetType().Name} - Attacker:{hostileEnt?.DebugName}");
+                        shield.Absorb += info.Amount * 4;
                         info.Amount = 0f;
-                        block.FatBlock?.SetDamageEffect(false);
                     }
                 }
             }

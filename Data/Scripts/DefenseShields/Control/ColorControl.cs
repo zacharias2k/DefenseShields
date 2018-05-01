@@ -17,9 +17,8 @@ namespace DefenseShields.Control
             IMyTerminalBlock block,
             string internalName,
             string title,
-            string toolTip,
             Color defaultValue = default(Color))
-            : base(block, internalName, title, toolTip)
+            : base(block, internalName, title)
         {
             DefaultValue = defaultValue;
             Color temp;
@@ -38,7 +37,6 @@ namespace DefenseShields.Control
             button.Setter = Setter;
             button.Visible = ShowControl;
             button.Title = VRage.Utils.MyStringId.GetOrCompute(Title);
-            button.Tooltip = VRage.Utils.MyStringId.GetOrCompute(Tooltip);
             MyAPIGateway.TerminalControls.AddControl<T>(button);
         }
 

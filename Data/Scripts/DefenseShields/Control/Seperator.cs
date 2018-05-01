@@ -11,9 +11,8 @@ namespace DefenseShields.Control
     {
         public Seperator(
             IMyTerminalBlock block,
-            string internalName,
-            string toolTip)
-            : base(block, internalName, "", toolTip)
+            string internalName)
+            : base(block, internalName, "")
         {
             CreateUi();
         }

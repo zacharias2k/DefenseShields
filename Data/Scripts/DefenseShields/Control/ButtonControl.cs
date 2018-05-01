@@ -12,9 +12,8 @@ namespace DefenseShields.Control
         public ButtonControl(
             IMyTerminalBlock block,
             string internalName,
-            string title,
-            string toolTip)
-            : base(block, internalName, title, toolTip)
+            string title)
+            : base(block, internalName, title)
         {
         }
 

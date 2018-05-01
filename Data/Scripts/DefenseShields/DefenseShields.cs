@@ -97,6 +97,7 @@ namespace DefenseShields
         private bool _prevShieldActive;
         private bool _shieldStarting;
         private bool _enemy;
+        private bool _effectsCleanup;
 
         internal Vector3D ShieldSize { get; set; }
         public Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
@@ -126,6 +127,8 @@ namespace DefenseShields
         private Quaternion _sQuaternion;
 
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
+        private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
+
         static readonly MyDefinitionId gId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
         private readonly DataStructures _dataStructures = new DataStructures();
@@ -146,7 +149,7 @@ namespace DefenseShields
 
         private readonly MyConcurrentQueue<IMySlimBlock> _dmgBlocks  = new MyConcurrentQueue<IMySlimBlock>();
         private readonly MyConcurrentQueue<IMySlimBlock> _fewDmgBlocks = new MyConcurrentQueue<IMySlimBlock>();
-        private readonly MyConcurrentQueue<IMyDestroyableObject> _missileDmg = new MyConcurrentQueue<IMyDestroyableObject>();
+        private readonly MyConcurrentQueue<IMyEntity> _missileDmg = new MyConcurrentQueue<IMyEntity>();
         private readonly MyConcurrentQueue<IMyMeteor> _meteorDmg = new MyConcurrentQueue<IMyMeteor>();
         private readonly MyConcurrentQueue<IMySlimBlock> _destroyedBlocks = new MyConcurrentQueue<IMySlimBlock>();
         private readonly MyConcurrentQueue<IMyCubeGrid> _staleGrids = new MyConcurrentQueue<IMyCubeGrid>();
@@ -331,7 +334,6 @@ namespace DefenseShields
                 if (AnimateInit && MainInit || !Shield.IsFunctional) return;
                 HardDisable = false || (Shield.EntityId != ThereCanBeOnlyOne() || (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST" && !Shield.CubeGrid.Physics.IsStatic) 
                                                                                || (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" && Shield.CubeGrid.Physics.IsStatic));
-
                 NoPower = false;
                 if (!HardDisable) AddResourceSourceComponent();
 
@@ -346,7 +348,6 @@ namespace DefenseShields
                         else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" && Shield.CubeGrid.Physics.IsStatic)
                             MyVisualScriptLogicProvider.ShowNotification("Large Ship Shields only allowed on ships, not stations", 1600, "Red", id);
                         else if (NoPower) MyVisualScriptLogicProvider.ShowNotification("Insufficent power to bring Shield online", 1600, "Red", id);
-                        else MyVisualScriptLogicProvider.ShowNotification("Only one shield Emitter per grid is supported in this version", 1600, "Red", id);
                     }
                     return;
                 }
@@ -477,6 +478,7 @@ namespace DefenseShields
 
                 if (_staleGrids.Count != 0) CleanUp(0);
                 if (_longLoop == 9 && _count == 58) CleanUp(1);
+                if (_effectsCleanup && (_count == 1 || _count == 21 || _count == 41)) CleanUp(2);
 
                 if (BulletCoolDown > -1) BulletCoolDown++;
                 if (BulletCoolDown > 19) BulletCoolDown = -1;
@@ -625,10 +627,12 @@ namespace DefenseShields
 
         private void BackGroundChecks()
         {
-            _powerSources.Clear();
+            lock (_powerSources) _powerSources.Clear();
+            lock (_functionalBlocks) _functionalBlocks.Clear();
 
             foreach (var block in ((MyCubeGrid)Shield.CubeGrid).GetFatBlocks())
             {
+                lock (_functionalBlocks) if (block.IsFunctional) _functionalBlocks.Add(block);
                 var source = block.Components.Get<MyResourceSourceComponent>();
                 if (source == null) continue;
                 foreach (var type in source.ResourceTypes)
@@ -713,6 +717,7 @@ namespace DefenseShields
             if (Absorb > 0)
             {
                 //Log.Line($"Absorb Damage: {(Absorb / _shieldEfficiency).ToString()} - old: {_shieldBuffer.ToString()} - new: {(_shieldBuffer - (Absorb / _shieldEfficiency)).ToString()}");
+                _effectsCleanup = true;
                 _shieldBuffer -= (Absorb / _shieldEfficiency);
             }
             if (_shieldBuffer < 0) _shieldDownLoop = 0;
@@ -1285,10 +1290,9 @@ namespace DefenseShields
                             {
                                 if (entInfo.LastTick == _tick && CustomCollision.PointInShield(entCenter, _detectMatrixInv) && !entInfo.SpawnedInside)
                                 {
-                                    WorldImpactPosition = entCenter;
-                                    Absorb += 7800;
+                                    if (webent.MarkedForClose || webent.Closed) continue;
                                     if (webent is IMyMeteor) _meteorDmg.Enqueue(webent as IMyMeteor);
-                                    else if (webent.GetType().Name.StartsWith("MyMissile")) _missileDmg.Enqueue(webent as IMyDestroyableObject);
+                                    else if (webent.GetType().Name.StartsWith("MyMissile")) _missileDmg.Enqueue(webent);
                                 }
                                 continue;
                             }
@@ -1314,28 +1318,39 @@ namespace DefenseShields
 
         private void CleanUp(int task)
         {
-            switch (task)
+            try
             {
-                case 0:
-                    IMyCubeGrid grid;
-                    while (_staleGrids.TryDequeue(out grid)) lock (_webEnts) _webEnts.Remove(grid);
+                switch (task)
+                {
+                    case 0:
+                        IMyCubeGrid grid;
+                        while (_staleGrids.TryDequeue(out grid)) lock (_webEnts) _webEnts.Remove(grid);
 
-                    Log.Line($"Stale grid - tick:{_tick.ToString()}");
-                    break;
-                case 1:
-                    lock (_webEnts)
-                    {
-                        if (Debug) Log.Line($"_webEnts # {_webEnts.Count.ToString()}");
-                        foreach (var i in _webEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1).ToList())
+                        Log.Line($"Stale grid - tick:{_tick.ToString()}");
+                        break;
+                    case 1:
+                        lock (_webEnts)
                         {
-                            _webEnts.Remove(i.Key);
+                            if (Debug) Log.Line($"_webEnts # {_webEnts.Count.ToString()}");
+                            foreach (var i in _webEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1).ToList())
+                            {
+                                _webEnts.Remove(i.Key);
 
+                            }
                         }
-                    }
-                    Log.Line($"FriendlyCache {FriendlyCache.Count.ToString()}");
-                    FriendlyCache.Clear();
-                    break;
+                        Log.Line($"FriendlyCache {FriendlyCache.Count.ToString()}");
+                        FriendlyCache.Clear();
+                        break;
+                    case 2:
+                        lock (_functionalBlocks)
+                        {
+                            foreach (var funcBlock in _functionalBlocks) funcBlock.SetDamageEffect(false);
+                            _effectsCleanup = false;
+                        }
+                        break;
+                }
             }
+            catch (Exception ex) { Log.Line($"Exception in CleanUp: {ex}"); }
         }
 
         private void SyncThreadedEnts()
@@ -1381,9 +1396,16 @@ namespace DefenseShields
                 {
                     if (_missileDmg.Count != 0)
                     {
-                        IMyDestroyableObject destObj;
-                        while (_missileDmg.TryDequeue(out destObj))
-                            destObj?.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId); 
+                        IMyEntity ent;
+                        while (_missileDmg.TryDequeue(out ent))
+                        {
+                            if (ent == null || ent.MarkedForClose || ent.Closed) continue;
+                            var destObj = ent as IMyDestroyableObject;
+                            if (destObj == null) continue;
+                            WorldImpactPosition = ent.PositionComp.WorldVolume.Center;
+                            Absorb += 20000;
+                            destObj.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
+                        }
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in missileDmg: {ex}"); }
@@ -1394,7 +1416,12 @@ namespace DefenseShields
                     {
                         IMyMeteor meteor;
                         while (_meteorDmg.TryDequeue(out meteor))
-                            meteor?.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
+                        {
+                            if (meteor == null || meteor.MarkedForClose || meteor.Closed) continue;
+                            WorldImpactPosition = meteor.PositionComp.WorldVolume.Center;
+                            Absorb += 20000;
+                            meteor.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
+                        }
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in missileDmg: {ex}"); }
@@ -1409,7 +1436,7 @@ namespace DefenseShields
                             var npcname = character.ToString();
                             if (npcname.Equals("Space_Wolf"))
                             {
-                                character.Kill();
+                                character.Delete();
                                 continue;
                             }
                             var hId = MyCharacterOxygenComponent.HydrogenId;
