@@ -170,60 +170,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include=".gitattributes" />
-    <Content Include=".gitignore" />
     <Content Include="Audio\RealBlockGravityGenEnd3d.wav" />
     <Content Include="Audio\RealBlockGravityGenLoop3d.wav" />
     <Content Include="Audio\RealBlockGravityGenStart3d.wav" />
     <Content Include="Data\todo.txt" />
-    <Content Include="Models\CustomIdle.dds" />
-    <Content Include="Textures\Arm_cm.dds" />
-    <Content Include="Textures\Arm_ng.dds" />
-    <Content Include="Textures\base_cm.dds" />
-    <Content Include="Textures\base_ng.dds" />
-    <Content Include="Textures\Colourable_ADD.dds" />
-    <Content Include="Textures\EMISSIVE_add.dds" />
-    <Content Include="Textures\EMISSIVE_cm.dds" />
-    <Content Include="Textures\EMISSIVE_ng.dds" />
-    <Content Include="Textures\GUI\Icons\Icon.dds" />
-    <Content Include="Textures\Metal_cm.dds" />
-    <Content Include="Textures\Metal_ng.dds" />
-    <Content Include="Textures\Panel_add.dds" />
-    <Content Include="Textures\Panel_cm.dds" />
-    <Content Include="Textures\Panel_ng.dds" />
-    <Content Include="Textures\Rotor_add.dds" />
-    <Content Include="Textures\Rotor_cm.dds" />
-    <Content Include="Textures\Rotor_ng.dds" />
-    <Content Include="Textures\Void.dds" />
   </ItemGroup>
   <ItemGroup>
-    <None Include=".git\config" />
-    <None Include=".git\description" />
-    <None Include=".git\HEAD" />
-    <None Include=".git\hooks\applypatch-msg.sample" />
-    <None Include=".git\hooks\commit-msg.sample" />
-    <None Include=".git\hooks\post-update.sample" />
-    <None Include=".git\hooks\pre-applypatch.sample" />
-    <None Include=".git\hooks\pre-commit.sample" />
-    <None Include=".git\hooks\pre-push.sample" />
-    <None Include=".git\hooks\pre-rebase.sample" />
-    <None Include=".git\hooks\pre-receive.sample" />
-    <None Include=".git\hooks\prepare-commit-msg.sample" />
-    <None Include=".git\hooks\update.sample" />
-    <None Include=".git\index" />
-    <None Include=".git\info\exclude" />
-    <None Include=".git\logs\HEAD" />
-    <None Include=".git\logs\refs\heads\master" />
-    <None Include=".git\logs\refs\remotes\origin\HEAD" />
-    <None Include=".git\objects\pack\pack-97dd5c6ecf524f10168f5678ddb75d2df5c920c0.idx" />
-    <None Include=".git\objects\pack\pack-97dd5c6ecf524f10168f5678ddb75d2df5c920c0.pack" />
-    <None Include=".git\packed-refs" />
-    <None Include=".git\refs\heads\master" />
-    <None Include=".git\refs\remotes\origin\HEAD" />
-    <None Include=".vs\DefenseShields\v15\.suo" />
-    <None Include=".vs\ProjectSettings.json" />
-    <None Include=".vs\slnx.sqlite" />
-    <None Include=".vs\VSWorkspaceState.json" />
     <None Include="Audio\ShieldHitNormalHigh.xwm" />
     <None Include="Data\Audio.sbc" />
     <None Include="Data\BlockCategories_DefenseShields.sbc" />
@@ -231,14 +183,6 @@
     <None Include="Data\EmitterEffect.sbc" />
     <None Include="Data\EntityComponents.sbc" />
     <None Include="Data\TransparentMaterials.sbc" />
-    <None Include="Models\GeneratorArm_Large.mwm" />
-    <None Include="Models\GeneratorBase_Large.mwm" />
-    <None Include="Models\GeneratorBase_Large_Constr1.mwm" />
-    <None Include="Models\GeneratorBotArm_Large.mwm" />
-    <None Include="Models\GeneratorReflector_Large.mwm" />
-    <None Include="Models\GeneratorRotor_Large.mwm" />
-    <None Include="Models\LargeField.mwm" />
-    <None Include="packages.config" />
     <None Include="tools\Monitor DS.ps1" />
     <None Include="tools\Monitor SE Error Log.ps1" />
     <None Include="tools\Monitor SE Log.ps1" />
@@ -268,7 +212,6 @@
     <Compile Include="test\Plane3D.cs" />
     <Compile Include="test\port\Point3D.cs" />
     <Compile Include="test\Point3D.cs" />
-    <Compile Include="Guns.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Network\SerializationClasses.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CustomCollision.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\BoxShape.cs" />
@@ -301,12 +244,10 @@
     <Compile Include="test\Sphere.cs" />
     <Compile Include="test\Triangle.cs" />
     <Compile Include="test\Vector3D.cs" />
-    <Compile Include="Voxel.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include=".git\objects\info\" />
-    <Folder Include=".git\refs\tags\" />
-    <Folder Include="MyAPIGateway\TerminalControls\" />
+    <Folder Include="Models\" />
+    <Folder Include="Textures\GUI\Icons\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSHARP.Targets" />
   <ProjectExtensions>
