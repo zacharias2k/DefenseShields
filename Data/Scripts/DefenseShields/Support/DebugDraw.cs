@@ -280,9 +280,9 @@ namespace DefenseShields.Support
             MySimpleObjectDraw.DrawTransparentBox(ref matrix, ref box, ref color, MySimpleObjectRasterizer.Solid, 1);
         }
 
-        public static void DrawBox3(MatrixD matrix, BoundingBoxD box, Color color)
+        public static void DrawBox3(MatrixD matrix, BoundingBoxD box, Color color, MySimpleObjectRasterizer raster = MySimpleObjectRasterizer.Wireframe, float thickness = 0.01f)
         {
-            MySimpleObjectDraw.DrawTransparentBox(ref matrix, ref box, ref color, MySimpleObjectRasterizer.Solid, 1, 8f, MyStringId.GetOrCompute("square"));
+            MySimpleObjectDraw.DrawTransparentBox(ref matrix, ref box, ref color, raster, 1, thickness, MyStringId.GetOrCompute("Square"), MyStringId.GetOrCompute("Square"));
         }
 
         public static void DrawOBB(MyOrientedBoundingBoxD obb, Color color, MySimpleObjectRasterizer raster = MySimpleObjectRasterizer.Wireframe, float thickness = 0.01f)

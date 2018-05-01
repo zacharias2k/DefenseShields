@@ -51,7 +51,7 @@ namespace DefenseShields
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
-                    if (s.HardDisable || !(s.AnimateInit && s.MainInit)) continue;
+                    if (s.HardDisable || !s.ShieldActive || !(s.AnimateInit && s.MainInit)) continue;
                     var sp = new BoundingSphereD(s.Entity.GetPosition(), s.Range);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp)) continue;
                     sphereOnCamera[i] = true;
@@ -174,6 +174,7 @@ namespace DefenseShields
                         }
                         shield.Absorb += info.Amount;
                         info.Amount = 0f;
+                        block.FatBlock?.SetDamageEffect(false);
                     }
                 }
             }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Text;
 using Sandbox.ModAPI;
 using VRage;
@@ -225,11 +224,11 @@ namespace DefenseShields.Support
             private const int ChargeSteps = 30;
 
             private Vector4 _hitColor;
-            private Vector4 _waveColor;
+            private Vector4 _waveColor = Color.FromNonPremultiplied(0, 0, 0, 75);
             private Vector4 _wavePassedColor;
             private Vector4 _waveComingColor;
-            private Vector4 _defaultColor;
-            private Vector4 _chargeColor;
+            private Vector4 _defaultColor = Color.FromNonPremultiplied(0, 0, 0, 255);
+            private Vector4 _chargeColor = Color.FromNonPremultiplied(255, 255, 255, 255);
 
             private bool _impactsFinished = true;
             private bool _enemy;
@@ -238,7 +237,6 @@ namespace DefenseShields.Support
 
             private IMyEntity _shield;
 
-            //private readonly MyStringId _faceId1 = MyStringId.GetOrCompute("CustomIdle");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private readonly MyStringId _faceIdle = MyStringId.GetOrCompute("CustomIdle");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private readonly MyStringId _faceWave = MyStringId.GetOrCompute("SunDisk");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
 
@@ -323,7 +321,7 @@ namespace DefenseShields.Support
                 impactSize = (int)1;
                 var impactSpeed = 2;
                 if (impactSize < 4) impactSpeed = 1;
-                if (prevLod != _lod) // entChanged || Not sure if I need
+                if (prevLod != _lod) 
                 {
                     var ib = _backing.IndexBuffer[_lod];
                     Array.Resize(ref _preCalcNormLclPos, ib.Length / 3);
@@ -331,14 +329,11 @@ namespace DefenseShields.Support
                 }
 
                 StepEffects();
-                InitColors();
                 if (_charge && _impactsFinished && prevLod == _lod) ChargeColorAssignments(prevLod);
                 if (_impactsFinished && prevLod == _lod) return;
 
-
                 //if (_impactCnt[9] != 0) MyAPIGateway.Parallel.Start(Models);
 
-                //_dsutil2.Sw.Start();
                 ImpactColorAssignments(impactSize, impactSpeed, prevLod);
                 //_dsutil2.StopWatchReport("colorcalc", 1);
                 // vec3 localSpherePositionOfImpact;
@@ -403,7 +398,6 @@ namespace DefenseShields.Support
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in ImpactColorAssignments {ex}"); }
-                //Log.Line($"colorAssignments - entChanged: {entChanged} - lod: {_lod} - prevlod: {prevLod}");
             }
 
             private void ChargeColorAssignments(int prevLod)
@@ -453,7 +447,6 @@ namespace DefenseShields.Support
                     var v20 = new Vector2(.5f);
                     var v21 = new Vector2(0.25f);
                     var v22 = new Vector2(0.25f);
-                    //var v21 = new Vector2((0.25f) * (_mainLoop % 2) + 1);
                     for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
                     {
                         var i0 = ib[i];
@@ -591,51 +584,6 @@ namespace DefenseShields.Support
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in Models: {ex}"); }
-            }
-
-            private void InitColors()
-            {
-                var cv1 = 0;
-                var cv2 = 0;
-                var cv3 = 0;
-                var cv4 = 0;
-                if (_enemy) cv1 = 75;
-                else cv2 = 75;
-                if (cv1 != 0) cv3 = cv1;
-                if (cv2 != 0) cv4 = cv2;
-                var rndNum1 = Random.Next(15, 27);
-                var colorRnd1 = Random.Next(0, 15);
-                var colorRnd2 = Random.Next(8, 255);
-                var rndNum3 = Random.Next(55, 63);
-                var rndNum4 = Random.Next(40, 120);
-
-                //currentColor
-                _defaultColor = Color.FromNonPremultiplied(0, 0, 0, 248);
-
-                //waveColor
-                //var vwaveColor = Color.FromNonPremultiplied(cv3, 0, cv4, rndNum1 - 5);
-                var vwaveColor = Color.FromNonPremultiplied(0, 0, 0, 225);
-                _waveColor = vwaveColor;
-
-                //wavePassedColor
-                var vwavePassedColor = Color.FromNonPremultiplied(0, 0, 12, colorRnd1);
-                if (_impactCnt[9] % 10 == 0)
-                {
-                    vwavePassedColor = Color.FromNonPremultiplied(0, 0, rndNum1, rndNum1 - 5);
-                }
-                _wavePassedColor = vwavePassedColor;
-
-                //waveComingColor
-                var vwaveComingColor = Color.FromNonPremultiplied(cv1, 0, cv2, 16);
-                _waveComingColor = vwaveComingColor;
-
-                //hitColor
-                var vhitColor = Color.FromNonPremultiplied(0, 0, colorRnd2, rndNum1);
-                _hitColor = vhitColor;
-
-                //chargeColor
-                var vchargeColor = Color.FromNonPremultiplied(255, 255, 255, 255);
-                _chargeColor = vchargeColor;
             }
         }
     }

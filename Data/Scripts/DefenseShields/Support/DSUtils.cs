@@ -6,6 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Cube;
+using Sandbox.ModAPI;
+using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRageMath;
 

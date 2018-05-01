@@ -1,14 +1,9 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Sandbox.Game.Entities;
-using Sandbox.Game.Entities.Cube;
 using Sandbox.ModAPI;
-using SpaceEngineers.Game.ModAPI;
 using VRage.Collections;
-using VRage.Game;
 using VRage.Game.Components;
-using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Voxels;
@@ -19,65 +14,9 @@ namespace DefenseShields.Support
 {
     internal static class CustomCollision
     {
-        public static bool DoOverlapSphereTest(float sphereRadius, Vector3D spherePos, MyStorageData tempStorage, IMyVoxelMap myVoxelMap, IMyStorage storage, Vector3D leftBottomCorner, Vector3I storageMin)
+        public static Vector3D VoxelCollisionEllipsoid(IMyCubeGrid shieldGrid, MatrixD matrixInv, MyVoxelBase voxelBase, MyOrientedBoundingBoxD sOriBBoxD, MyStorageData tempStorage)
         {
-            Vector3D body0Pos = spherePos; 
-            BoundingSphereD newSphere;
-            newSphere.Center = body0Pos;
-            newSphere.Radius = sphereRadius;
 
-            Vector3I minCorner, maxCorner;
-            {
-                Vector3D sphereMin = newSphere.Center - newSphere.Radius - MyVoxelConstants.VOXEL_SIZE_IN_METRES;
-                Vector3D sphereMax = newSphere.Center + newSphere.Radius + MyVoxelConstants.VOXEL_SIZE_IN_METRES;
-                MyVoxelCoordSystems.WorldPositionToVoxelCoord(leftBottomCorner, ref sphereMin, out minCorner);
-                MyVoxelCoordSystems.WorldPositionToVoxelCoord(leftBottomCorner, ref sphereMax, out maxCorner);
-            }
-
-            minCorner += storageMin;
-            maxCorner += storageMin;
-
-            if (myVoxelMap != null)
-            {
-                myVoxelMap.ClampVoxelCoord(ref minCorner);
-                myVoxelMap.ClampVoxelCoord(ref maxCorner);
-            }
-
-            tempStorage.Resize(minCorner, maxCorner);
-            storage.ReadRange(tempStorage, MyStorageDataTypeFlags.Content, 0, minCorner, maxCorner);
-
-            Vector3I tempVoxelCoord, cache;
-            for (tempVoxelCoord.Z = minCorner.Z, cache.Z = 0; tempVoxelCoord.Z <= maxCorner.Z; tempVoxelCoord.Z++, cache.Z++)
-            {
-                for (tempVoxelCoord.Y = minCorner.Y, cache.Y = 0; tempVoxelCoord.Y <= maxCorner.Y; tempVoxelCoord.Y++, cache.Y++)
-                {
-                    for (tempVoxelCoord.X = minCorner.X, cache.X = 0; tempVoxelCoord.X <= maxCorner.X; tempVoxelCoord.X++, cache.X++)
-                    {
-                        byte voxelContent = tempStorage.Content(ref cache);
-
-                        if (voxelContent < MyVoxelConstants.VOXEL_ISO_LEVEL) continue;
-
-                        Vector3D voxelPosition;
-                        MyVoxelCoordSystems.VoxelCoordToWorldPosition(leftBottomCorner - storageMin * MyVoxelConstants.VOXEL_SIZE_IN_METRES, ref tempVoxelCoord, out voxelPosition);
-
-                        float voxelSize = (voxelContent / MyVoxelConstants.VOXEL_CONTENT_FULL_FLOAT) * MyVoxelConstants.VOXEL_RADIUS;
-
-                        float newDistanceToVoxel = Vector3.DistanceSquared(voxelPosition, newSphere.Center) - voxelSize;
-                        if (newDistanceToVoxel < (newSphere.Radius))
-                        {
-                            return true;
-                        }
-                    }
-                }
-            }
-            return false;
-        }
-
-        public static Vector3D VoxelCollisionSphere(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, MyVoxelBase voxelBase, MyOrientedBoundingBoxD sOriBBoxD, MyStorageData tempStorage)
-        {
-            
-            //var dsutil = new DSUtils();
-            //dsutil.Sw.Start();
             var sVel = shieldGrid.Physics.LinearVelocity;
             var sVelSqr = sVel.LengthSquared();
             var sAvelSqr = shieldGrid.Physics.AngularVelocity.LengthSquared();
@@ -91,15 +30,11 @@ namespace DefenseShields.Support
                 var storageMin = voxelBase.StorageMin;
                 var map = voxelBase as IMyVoxelMap;
                 var storage = (IMyStorage)voxelBase.Storage;
-                const float size = 0.5f;
-                for (int i = 0; i < 162; i++)
-                {
-                    var from = physicsVerts[i];
-                    var hit = DoOverlapSphereTest(size, from, tempStorage, map, storage, leftBottomCorner, storageMin);
-                    //var hit = voxelBase.RootVoxel.DoOverlapSphereTest(size, from);
-
-                    if (hit) voxelHitVecs.Add(from);
-                }
+                var shieldAabb = sOriBBoxD.GetAABB();
+                //var dsutil = new DSUtils();
+                //dsutil.Sw.Start();
+                EllipsoidTest(matrixInv, shieldAabb, tempStorage, map, storage, leftBottomCorner, storageMin, voxelHitVecs);
+                //dsutil.StopWatchReport("ellipsoid", -1);
             }
 
             if (voxelHitVecs.Count == 0) return Vector3D.NegativeInfinity;
@@ -115,8 +50,155 @@ namespace DefenseShields.Support
 
                 shieldGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(point - sPhysics.CenterOfMassWorld) * sPhysics.Mass, null, Vector3D.Zero, MathHelper.Clamp(speed, 1f, 20f));
             }
-            //dsutil.StopWatchReport("voxel", -1);
             return collisionAvg;
+        }
+
+        public static void EllipsoidTest(MatrixD matrixInv, BoundingBoxD box, MyStorageData tempStorage, IMyVoxelMap myVoxelMap, IMyStorage storage, Vector3D leftBottomCorner, Vector3I storageMin, List<Vector3D> voxelHits)
+        {
+            Vector3I minCorner, maxCorner;
+            {
+                var boxMin = box.Min - MyVoxelConstants.VOXEL_SIZE_IN_METRES;
+                var boxMax = box.Max + MyVoxelConstants.VOXEL_SIZE_IN_METRES;
+                MyVoxelCoordSystems.WorldPositionToVoxelCoord(leftBottomCorner, ref boxMin, out minCorner);
+                MyVoxelCoordSystems.WorldPositionToVoxelCoord(leftBottomCorner, ref boxMax, out maxCorner);
+            }
+
+            minCorner += storageMin;
+            maxCorner += storageMin;
+
+            if (myVoxelMap != null)
+            {
+                myVoxelMap.ClampVoxelCoord(ref minCorner);
+                myVoxelMap.ClampVoxelCoord(ref maxCorner);
+            }
+
+            var flag = MyVoxelRequestFlags.AdviseCache;
+            tempStorage.Resize(minCorner, maxCorner);
+            storage.ReadRange(tempStorage, MyStorageDataTypeFlags.Content, 0, minCorner, maxCorner, ref flag);
+
+            Vector3I tempVoxelCoord, cache;
+            for (tempVoxelCoord.Z = minCorner.Z, cache.Z = 0; tempVoxelCoord.Z <= maxCorner.Z; tempVoxelCoord.Z++, cache.Z++)
+            {
+                for (tempVoxelCoord.Y = minCorner.Y, cache.Y = 0; tempVoxelCoord.Y <= maxCorner.Y; tempVoxelCoord.Y++, cache.Y++)
+                {
+                    for (tempVoxelCoord.X = minCorner.X, cache.X = 0; tempVoxelCoord.X <= maxCorner.X; tempVoxelCoord.X++, cache.X++)
+                    {
+                        var voxelContent = tempStorage.Content(ref cache);
+
+                        if (voxelContent < MyVoxelConstants.VOXEL_ISO_LEVEL) continue;
+
+                        Vector3D voxelPosition;
+                        MyVoxelCoordSystems.VoxelCoordToWorldPosition(leftBottomCorner - storageMin * MyVoxelConstants.VOXEL_SIZE_IN_METRES, ref tempVoxelCoord, out voxelPosition);
+
+                        var newDistanceToVoxel = Vector3D.Transform(voxelPosition, matrixInv).LengthSquared() <= 1;
+
+                        if (newDistanceToVoxel) voxelHits.Add(voxelPosition);
+                    }
+                }
+            }
+        }
+
+        public static Vector3D VoxelCollisionSphere(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, MyVoxelBase voxelBase, MyOrientedBoundingBoxD sOriBBoxD, MyStorageData tempStorage)
+        {
+            
+            var sVel = shieldGrid.Physics.LinearVelocity;
+            var sVelSqr = sVel.LengthSquared();
+            var sAvelSqr = shieldGrid.Physics.AngularVelocity.LengthSquared();
+            var voxelSphere = voxelBase.RootVoxel.PositionComp.WorldVolume;
+            var voxelHitVecs = new List<Vector3D>();
+            if ((sVelSqr > 0.00001 || sAvelSqr > 0.00001))
+            {
+                var obbSphereTest = sOriBBoxD.Intersects(ref voxelSphere);
+                if (!obbSphereTest || voxelBase.Closed) return Vector3D.NegativeInfinity;
+                var leftBottomCorner = voxelBase.PositionLeftBottomCorner;
+                var storageMin = voxelBase.StorageMin;
+                var map = voxelBase as IMyVoxelMap;
+                var storage = (IMyStorage)voxelBase.Storage;
+                const float radius = 0.01f;
+                //var dsutil = new DSUtils();
+                //dsutil.Sw.Start();
+                for (int i = 0; i < 162; i++)
+                {
+                    var from = physicsVerts[i];
+                    var hit = DoOverlapSphereTest(from, radius, tempStorage, map, storage, leftBottomCorner, storageMin);
+                    //var hit = voxelBase.RootVoxel.DoOverlapSphereTest(size, from);
+
+                    if (hit) voxelHitVecs.Add(from);
+                }
+                //dsutil.StopWatchReport("sphereVoxel", -1);
+            }
+
+            if (voxelHitVecs.Count == 0) return Vector3D.NegativeInfinity;
+
+            var sPhysics = shieldGrid.Physics;
+            var lSpeed = sPhysics.LinearVelocity.Length();
+            var aSpeed = sPhysics.AngularVelocity.Length() * 20;
+            var speed = 0f;
+            speed = lSpeed > aSpeed ? lSpeed : aSpeed;
+            var collisionAvg = Vector3D.Zero;
+
+            for (int i = 0; i < voxelHitVecs.Count; i++)
+            {
+                var point = voxelHitVecs[i];
+                collisionAvg += point;
+
+                shieldGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(point - sPhysics.CenterOfMassWorld) * sPhysics.Mass, null, Vector3D.Zero, MathHelper.Clamp(speed, 1f, 20f));
+            }
+            return collisionAvg;
+        }
+
+        public static bool DoOverlapSphereTest(Vector3D center, float radius, MyStorageData tempStorage, IMyVoxelMap myVoxelMap, IMyStorage storage, Vector3D leftBottomCorner, Vector3I storageMin)
+        {
+            var body0Pos = center;
+            BoundingSphereD newSphere;
+            newSphere.Center = body0Pos;
+            newSphere.Radius = radius;
+
+            Vector3I minCorner, maxCorner;
+            {
+                var sphereMin = newSphere.Center - newSphere.Radius - MyVoxelConstants.VOXEL_SIZE_IN_METRES;
+                var sphereMax = newSphere.Center + newSphere.Radius + MyVoxelConstants.VOXEL_SIZE_IN_METRES;
+                MyVoxelCoordSystems.WorldPositionToVoxelCoord(leftBottomCorner, ref sphereMin, out minCorner);
+                MyVoxelCoordSystems.WorldPositionToVoxelCoord(leftBottomCorner, ref sphereMax, out maxCorner);
+            }
+
+            minCorner += storageMin;
+            maxCorner += storageMin;
+
+            if (myVoxelMap != null)
+            {
+                myVoxelMap.ClampVoxelCoord(ref minCorner);
+                myVoxelMap.ClampVoxelCoord(ref maxCorner);
+            }
+
+            var flag = MyVoxelRequestFlags.AdviseCache;
+
+            //tempStorage.Clear(MyStorageDataTypeEnum.Content, 0);
+            tempStorage.Resize(minCorner, maxCorner);
+            storage.ReadRange(tempStorage, MyStorageDataTypeFlags.Content, 0, minCorner, maxCorner, ref flag);
+
+            Vector3I tempVoxelCoord, cache;
+            for (tempVoxelCoord.Z = minCorner.Z, cache.Z = 0; tempVoxelCoord.Z <= maxCorner.Z; tempVoxelCoord.Z++, cache.Z++)
+            {
+                for (tempVoxelCoord.Y = minCorner.Y, cache.Y = 0; tempVoxelCoord.Y <= maxCorner.Y; tempVoxelCoord.Y++, cache.Y++)
+                {
+                    for (tempVoxelCoord.X = minCorner.X, cache.X = 0; tempVoxelCoord.X <= maxCorner.X; tempVoxelCoord.X++, cache.X++)
+                    {
+                        byte voxelContent = tempStorage.Content(ref cache);
+
+                        if (voxelContent < MyVoxelConstants.VOXEL_ISO_LEVEL) continue;
+
+                        Vector3D voxelPosition;
+                        MyVoxelCoordSystems.VoxelCoordToWorldPosition(leftBottomCorner - storageMin * MyVoxelConstants.VOXEL_SIZE_IN_METRES, ref tempVoxelCoord, out voxelPosition);
+
+                        var voxelSize = voxelContent / MyVoxelConstants.VOXEL_CONTENT_FULL_FLOAT * MyVoxelConstants.VOXEL_RADIUS;
+
+                        var newDistanceToVoxel = Vector3.DistanceSquared(voxelPosition, newSphere.Center) - voxelSize;
+                        if (newDistanceToVoxel < newSphere.Radius) return true;
+                    }
+                }
+            }
+            return false;
         }
 
         public static void GetIntersect(Vector3D center, double radius, IMyCubeGrid query, List<IMySlimBlock> result)
