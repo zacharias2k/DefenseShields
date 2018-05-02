@@ -98,7 +98,7 @@ namespace DefenseShields.Support
             }
         }
 
-        public static Vector3D VoxelCollisionSphere(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, MyVoxelBase voxelBase, MyOrientedBoundingBoxD sOriBBoxD, MyStorageData tempStorage)
+        public static Vector3D VoxelCollisionSphere(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, MyVoxelBase voxelBase, MyOrientedBoundingBoxD sOriBBoxD, MyStorageData tempStorage, MatrixD detectMatrix)
         {
             var collisionAvg = Vector3D.Zero;
 
@@ -132,7 +132,6 @@ namespace DefenseShields.Support
                 }
 
                 if (voxelHitVecs.Count == 0) return Vector3D.NegativeInfinity;
-
                 var sPhysics = shieldGrid.Physics;
                 var lSpeed = sPhysics.LinearVelocity.Length();
                 var aSpeed = sPhysics.AngularVelocity.Length() * 20;

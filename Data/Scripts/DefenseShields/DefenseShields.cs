@@ -154,6 +154,8 @@ namespace DefenseShields
         private readonly MyConcurrentQueue<IMySlimBlock> _destroyedBlocks = new MyConcurrentQueue<IMySlimBlock>();
         private readonly MyConcurrentQueue<IMyCubeGrid> _staleGrids = new MyConcurrentQueue<IMyCubeGrid>();
         private readonly MyConcurrentQueue<IMyCharacter> _characterDmg = new MyConcurrentQueue<IMyCharacter>();
+        private readonly MyConcurrentQueue<MyVoxelBase> _voxelDmg = new MyConcurrentQueue<MyVoxelBase>();
+
 
         private readonly Spawn _spawn = new Spawn();
         private Icosphere.Instance _icosphere;
@@ -368,8 +370,8 @@ namespace DefenseShields
 
                     CreateUi();
 
-                    _shield = _spawn.EmptyEntity("Field", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\LargeField0.mwm");
-                    _shield.Render.Visible = false;
+                    _shield = _spawn.EmptyEntity("Field", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\DefenseShieldAlpha.mwm");
+                    _shield.Render.Visible = true;
                     Shield.AppendingCustomInfo += AppendingCustomInfo;
                     Shield.RefreshCustomInfo();
 
@@ -1299,6 +1301,7 @@ namespace DefenseShields
                         case Ent.VoxelBase:
                             {
                                 MyAPIGateway.Parallel.Start(() => VoxelIntersect(webent as MyVoxelBase));
+                                //VoxelIntersect(webent as MyVoxelBase);
                                 continue;
                             }
                         default:
@@ -1425,6 +1428,22 @@ namespace DefenseShields
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in missileDmg: {ex}"); }
+
+                try
+                {
+                    if (_voxelDmg.Count != 0)
+                    {
+                        MyVoxelBase voxel;
+                        while (_voxelDmg.TryDequeue(out voxel))
+                        {
+                            if (voxel == null || voxel.RootVoxel.MarkedForClose || voxel.RootVoxel.Closed) continue;
+                            voxel.RootVoxel.RequestVoxelOperationElipsoid(Vector3.One * 1.0f, _detectMatrix, 0, MyVoxelBase.OperationType.Cut);
+                        }
+                    }
+                }
+                catch (Exception ex) { Log.Line($"Exception in missileDmg: {ex}"); }
+
+
 
                 try
                 {
@@ -1609,14 +1628,15 @@ namespace DefenseShields
         {
             EntIntersectInfo entInfo;
             _webEnts.TryGetValue(voxelBase, out entInfo);
-            var collision = CustomCollision.VoxelCollisionSphere(Shield.CubeGrid, _physicsOutsideLow, voxelBase, _sOriBBoxD, entInfo.TempStorage);
+            var collision = CustomCollision.VoxelCollisionSphere(Shield.CubeGrid, _physicsOutsideLow, voxelBase, _sOriBBoxD, entInfo.TempStorage, _detectMatrixOutside);
 
             if (collision != Vector3D.NegativeInfinity)
             {
                 var sPhysics = Shield.CubeGrid.Physics;
                 var momentum = sPhysics.Mass * sPhysics.LinearVelocity;
-                Absorb += momentum.Length() / 1000;
+                Absorb += momentum.Length() / 500;
                 WorldImpactPosition = collision;
+                _voxelDmg.Enqueue(voxelBase);
             } 
         }
 
