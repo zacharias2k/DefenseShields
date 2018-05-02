@@ -818,9 +818,11 @@ namespace DefenseShields
                 _shield.SetPosition(_detectionCenter);
             }
             if (!_entityChanged || Shield.CubeGrid.Physics.IsStatic) return;
-            _shield.SetWorldMatrix(Shield.CubeGrid.WorldMatrix);
-            _shield.LocalAABB = _shieldAabb;
+            _shield.SetWorldMatrix(_detectMatrix);
+            //_shield.SetLocalMatrix(DetectionMatrix);
+            //_shield.LocalAABB = _shieldAabb;
             _shield.SetPosition(_detectionCenter);
+            _shield.Render.SetParent(0, Shield.CubeGrid.Render.GetRenderObjectID());
         }
 
         private void RefreshDimensions()
@@ -978,6 +980,7 @@ namespace DefenseShields
             var temp2 = MatrixD.CreateTranslation(0, 0.002f * _time2, 0);
             _subpartRotor.PositionComp.LocalMatrix = temp1 * temp2;
             _subpartRotor.SetEmissiveParts("PlasmaEmissive", Color.Aqua, 0.1f * _emissiveIntensity);
+            //_shield.SetEmissiveParts("ShieldEmissiveAlpha", Color.Blue, 0.01f * _emissiveIntensity);
         }
 
         private void BlockParticleCreate()
