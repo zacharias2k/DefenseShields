@@ -25,6 +25,7 @@ using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage.Game.ModAPI.Interfaces;
 using VRage.Voxels;
+using VRageRender;
 using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 
@@ -370,8 +371,12 @@ namespace DefenseShields
 
                     CreateUi();
 
-                    _shield = _spawn.EmptyEntity("Field", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\DefenseShieldAlpha.mwm");
+                    _shield = _spawn.EmptyEntity("Field", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\DefenseShieldAlpha_LOD3.mwm");
                     _shield.Render.Visible = true;
+                    _shield.Render.CastShadows = false;
+                    _shield.Render.RemoveRenderObjects();
+                    _shield.Render.UpdateRenderObject(true);
+                    _shield.SetEmissiveParts("ShieldEmissiveAlpha", Color.Blue, 0.1f);
                     Shield.AppendingCustomInfo += AppendingCustomInfo;
                     Shield.RefreshCustomInfo();
 
@@ -459,6 +464,7 @@ namespace DefenseShields
             _dsutil2.Sw.Restart();
             try
             {
+
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
                 if (!BlockFunctional()) return;
 

@@ -182,30 +182,33 @@ namespace DefenseShields.Support
                 tempStorage.Clear(MyStorageDataTypeEnum.Content, 0); // did this fix index out of bounds error?
                 tempStorage.Resize(minCorner, maxCorner);
                 storage.ReadRange(tempStorage, MyStorageDataTypeFlags.Content, 0, minCorner, maxCorner, ref flag);
-
-                Vector3I tempVoxelCoord, cache;
-                for (tempVoxelCoord.Z = minCorner.Z, cache.Z = 0; tempVoxelCoord.Z <= maxCorner.Z; tempVoxelCoord.Z++, cache.Z++)
+                try
                 {
-                    for (tempVoxelCoord.Y = minCorner.Y, cache.Y = 0; tempVoxelCoord.Y <= maxCorner.Y; tempVoxelCoord.Y++, cache.Y++)
+                    Vector3I tempVoxelCoord, cache;
+                    for (tempVoxelCoord.Z = minCorner.Z, cache.Z = 0; tempVoxelCoord.Z <= maxCorner.Z; tempVoxelCoord.Z++, cache.Z++)
                     {
-                        for (tempVoxelCoord.X = minCorner.X, cache.X = 0; tempVoxelCoord.X <= maxCorner.X; tempVoxelCoord.X++, cache.X++)
+                        for (tempVoxelCoord.Y = minCorner.Y, cache.Y = 0; tempVoxelCoord.Y <= maxCorner.Y; tempVoxelCoord.Y++, cache.Y++)
                         {
-                            byte voxelContent = tempStorage.Content(ref cache);
+                            for (tempVoxelCoord.X = minCorner.X, cache.X = 0; tempVoxelCoord.X <= maxCorner.X; tempVoxelCoord.X++, cache.X++)
+                            {
+                                byte voxelContent = tempStorage.Content(ref cache);
 
-                            if (voxelContent < MyVoxelConstants.VOXEL_ISO_LEVEL) continue;
+                                if (voxelContent < MyVoxelConstants.VOXEL_ISO_LEVEL) continue;
 
-                            Vector3D voxelPosition;
-                            MyVoxelCoordSystems.VoxelCoordToWorldPosition(leftBottomCorner - storageMin * MyVoxelConstants.VOXEL_SIZE_IN_METRES, ref tempVoxelCoord, out voxelPosition);
+                                Vector3D voxelPosition;
+                                MyVoxelCoordSystems.VoxelCoordToWorldPosition(leftBottomCorner - storageMin * MyVoxelConstants.VOXEL_SIZE_IN_METRES, ref tempVoxelCoord, out voxelPosition);
 
-                            var voxelSize = voxelContent / MyVoxelConstants.VOXEL_CONTENT_FULL_FLOAT * MyVoxelConstants.VOXEL_RADIUS;
+                                var voxelSize = voxelContent / MyVoxelConstants.VOXEL_CONTENT_FULL_FLOAT * MyVoxelConstants.VOXEL_RADIUS;
 
-                            var newDistanceToVoxel = Vector3.DistanceSquared(voxelPosition, newSphere.Center) - voxelSize;
-                            if (newDistanceToVoxel < newSphere.Radius) return true;
+                                var newDistanceToVoxel = Vector3.DistanceSquared(voxelPosition, newSphere.Center) - voxelSize;
+                                if (newDistanceToVoxel < newSphere.Radius) return true;
+                            }
                         }
                     }
                 }
+                catch (Exception ex) { Log.Line($"Exception in DoOverlapSphereTest for loops: {ex}"); }
             }
-            catch (Exception ex) { Log.Line($"Exception in VoxelCollisionSphere: {ex}"); }
+            catch (Exception ex) { Log.Line($"Exception in DoOverlapSphereTest: {ex}"); }
 
             return false;
         }
