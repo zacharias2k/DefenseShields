@@ -394,7 +394,7 @@ namespace DefenseShields.Support
                                 }
                             }
                         }
-                        else if (_impactCnt[9] == 0) _triColorBuffer[j] = _defaultColor;
+                        //else if (_impactCnt[9] == 0) _triColorBuffer[j] = _defaultColor;
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in ImpactColorAssignments {ex}"); }
@@ -461,9 +461,12 @@ namespace DefenseShields.Support
                         var n1 = _normalBuffer[i1];
                         var n2 = _normalBuffer[i2];
                         var color = _triColorBuffer[j];
-                        if (color == _defaultColor) faceMaterial = _faceIdle;
-                        else if (color == _waveColor) faceMaterial = _faceWave;
+                        if (color == _waveColor) faceMaterial = _faceWave;
                         else if (color == _chargeColor) faceMaterial = _faceIdle;
+                        else continue;
+                        //if (color == _defaultColor) faceMaterial = _faceIdle;
+                        //else if (color == _waveColor) faceMaterial = _faceWave;
+                        //else if (color == _chargeColor) faceMaterial = _faceIdle;
                         //else if (color == _waveComingColor) faceMaterial = _faceId1;
                         //else if (color == _wavePassedColor) faceMaterial = _faceId1;
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, v20, v21, v22, faceMaterial, renderId, (v0 + v1 + v2) / 3, color);

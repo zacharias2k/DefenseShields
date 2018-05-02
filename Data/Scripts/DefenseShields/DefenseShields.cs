@@ -25,7 +25,6 @@ using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage.Game.ModAPI.Interfaces;
 using VRage.Voxels;
-using VRageRender;
 using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 
@@ -115,11 +114,10 @@ namespace DefenseShields
 
         private MatrixD _shieldGridMatrix;
         private MatrixD _shieldShapeMatrix;
-        private MatrixD _detectMatrix;
-        private MatrixD _detectMatrixInv;
         private MatrixD _detectMatrixOutside;
+        private MatrixD _detectMatrixOutsideInv;
         private MatrixD _detectMatrixInside;
-        private MatrixD _detectionInsideInv;
+        private MatrixD _detectInsideInv;
 
         private BoundingBox _oldGridAabb;
         private BoundingBox _shieldAabb;
@@ -138,7 +136,6 @@ namespace DefenseShields
 
         private readonly MyConcurrentList<int> _vertsSighted = new MyConcurrentList<int>();
         private readonly MyConcurrentList<int> _noBlocksLos = new MyConcurrentList<int>();
-
 
         private readonly MyConcurrentHashSet<int> _blocksLos = new MyConcurrentHashSet<int>();
         public readonly MyConcurrentHashSet<IMyEntity> FriendlyCache = new MyConcurrentHashSet<IMyEntity>();
@@ -277,14 +274,13 @@ namespace DefenseShields
         #region constructors and Enums
         private MatrixD DetectionMatrix
         {
-            get { return _detectMatrix; }
+            get { return _detectMatrixOutside; }
             set
             {
-                _detectMatrix = value;
-                _detectMatrixInv = MatrixD.Invert(value);
                 _detectMatrixOutside = value;
+                _detectMatrixOutsideInv = MatrixD.Invert(value);
                 _detectMatrixInside = MatrixD.Rescale(value, 1d + (-6.0d / 100d));
-                _detectionInsideInv = MatrixD.Invert(_detectMatrixInside);
+                _detectInsideInv = MatrixD.Invert(_detectMatrixInside);
             }
         }
 
@@ -505,7 +501,7 @@ namespace DefenseShields
 
                 if (_count == 29)
                 {
-                    if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel) // ugly workaround for realtime terminal updates
+                    if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
                     {
                         Shield.ShowInToolbarConfig = false;
                         Shield.ShowInToolbarConfig = true;
@@ -552,22 +548,6 @@ namespace DefenseShields
             if (!MainInit || !AnimateInit || NoPower || HardDisable) return false;
             var shieldPowerUsed = Sink.CurrentInputByType(gId);
 
-            /*
-            if ((_prevShieldActive || ShieldActive) && _shieldBuffer <= 0 && _shieldMaintain > shieldPowerUsed && shieldPowerUsed <= 0)
-            {
-                Log.Line($"drained w:{Shield.IsWorking.ToString()} - e:{Shield.Enabled.ToString()} - f:{Shield.IsFunctional.ToString()} b:{_shieldBuffer.ToString()} - su:{_shieldCurrentPower.ToString()} - scr:{_shieldChargeRate.ToString()} - sm:{_shieldMaintain.ToString()} - spu:{shieldPowerUsed.ToString()} - sreq:{_power.ToString()}");
-                BlockParticleStop();
-                ShieldActive = false;
-                Absorb = 0;
-                _shieldBuffer = 0;
-                //Sink.SetRequiredInputByType(gId, 0.0001f);
-                Sink.Update();
-                return false;
-            }
-            */
-            //if (_count == 0) Log.Line($"");
-            //if (_count == 0) Log.Line($"not drained w:{Shield.IsWorking.ToString()} - e:{Shield.Enabled.ToString()} - f:{Shield.IsFunctional.ToString()} b:{_shieldBuffer.ToString()} - su:{_shieldCurrentPower.ToString()} - scr:{_shieldChargeRate.ToString()} - sm:{_shieldMaintain.ToString()} - spu:{shieldPowerUsed.ToString()} - sreq:{_power.ToString()}");
-
             if (((MyCubeGrid)Shield.CubeGrid).GetFatBlocks().Count < 2 && ShieldActive)
             {
                 MyVisualScriptLogicProvider.CreateExplosion(Shield.PositionComp.WorldVolume.Center, (float)Shield.PositionComp.WorldVolume.Radius * 1.25f, 2500);
@@ -584,10 +564,8 @@ namespace DefenseShields
 
             if ((!Shield.IsWorking || !Shield.IsFunctional || _shieldDownLoop > -1))
             {
-                //Log.Line($"Shield went offline - Working?: {Shield.IsWorking.ToString()} - Functional?: {Shield.IsFunctional.ToString()} - Active?: {ShieldActive.ToString()} - tick:{_tick.ToString()}");
                 _shieldCurrentPower = Sink.CurrentInputByType(gId);
                 UpdateGridPower();
-                //Log.Line($"2 - Power:{_power} - Rate:{_shieldChargeRate} - sCurrent:{_shieldCurrentPower} - sBuffer:{_shieldBuffer} - gAvail:{_gridAvailablePower} - gCurrent:{_gridCurrentPower}");
 
                 BlockParticleStop();
                 ShieldActive = false;
@@ -734,7 +712,6 @@ namespace DefenseShields
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
-            //var shield = block.GameLogic.GetAs<DefenseShields>();
             if (block.GameLogic.GetAs<DefenseShields>() == null)
             {
                 Log.Line($"Appending Shield is not ready or null");
@@ -819,14 +796,15 @@ namespace DefenseShields
             if (Shield.CubeGrid.Physics.IsStatic)
             {
                 _shieldShapeMatrix = MatrixD.Rescale(Shield.LocalMatrix, new Vector3D(_width, _height, _depth));
-                _shield.SetWorldMatrix(Shield.WorldMatrix);
+                _shield.SetWorldMatrix(_detectMatrixOutside);
                 _shield.LocalAABB = _shieldAabb;
                 _shield.SetPosition(_detectionCenter);
+                _shield.Render.SetParent(0, Shield.Render.GetRenderObjectID());
             }
             if (!_entityChanged || Shield.CubeGrid.Physics.IsStatic) return;
-            _shield.SetWorldMatrix(_detectMatrix);
+            _shield.SetWorldMatrix(_detectMatrixOutside);
             //_shield.SetLocalMatrix(DetectionMatrix);
-            //_shield.LocalAABB = _shieldAabb;
+            _shield.LocalAABB = _shieldAabb;
             _shield.SetPosition(_detectionCenter);
             _shield.Render.SetParent(0, Shield.CubeGrid.Render.GetRenderObjectID());
         }
@@ -986,7 +964,6 @@ namespace DefenseShields
             var temp2 = MatrixD.CreateTranslation(0, 0.002f * _time2, 0);
             _subpartRotor.PositionComp.LocalMatrix = temp1 * temp2;
             _subpartRotor.SetEmissiveParts("PlasmaEmissive", Color.Aqua, 0.1f * _emissiveIntensity);
-            //_shield.SetEmissiveParts("ShieldEmissiveAlpha", Color.Blue, 0.01f * _emissiveIntensity);
         }
 
         private void BlockParticleCreate()
@@ -1066,7 +1043,6 @@ namespace DefenseShields
             var impactPos = WorldImpactPosition;
             if (impactPos != Vector3D.NegativeInfinity & ((BulletCoolDown == -1 || EntityCoolDown == -1)))
             {
-                //DsDebugDraw.DrawSingleVec(impactPos, 5f, Color.Red);
                 if (EntityCoolDown == -1 && ImpactSize > 5) EntityCoolDown = 0;
                 else
                 {
@@ -1107,13 +1083,13 @@ namespace DefenseShields
 
         private int CalculateLod(int onCount)
         {
-            var lod = 2;
+            var lod = 4;
 
-            if (Distance(2500) && onCount == 1) lod = 3;
+            //if (Distance(2500) && onCount == 1) lod = 3;
             //if (Distance(300) && onCount == 1) lod = 4;
             //else if (Distance(2500) && onCount <= 2) lod = 3;
-            else if (Distance(8000) && onCount < 7) lod = 2;
-            else lod = 1;
+            //else if (Distance(8000) && onCount < 7) lod = 2;
+            //else lod = 1;
 
             _prevLod = lod;
             return lod;
@@ -1212,7 +1188,7 @@ namespace DefenseShields
                     || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || FriendlyCache.Contains(ent) || ent.GetType().Name == "MyDebrisBase") continue;
 
                 var relation = EntType(ent);
-                if ((relation == Ent.Ignore || relation == Ent.Friend) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, _detectionInsideInv))
+                if ((relation == Ent.Ignore || relation == Ent.Friend) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, _detectInsideInv))
                 {
                     FriendlyCache.Add(ent);
                     continue;
@@ -1231,7 +1207,7 @@ namespace DefenseShields
                     else
                     {
                         var inside = false;
-                        if ((relation == Ent.Other && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixInv)) ||  ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(((IMyEntity) ent).WorldAABB, _detectMatrixInv)))
+                        if ((relation == Ent.Other && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv)) ||  ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(((IMyEntity) ent).WorldAABB, _detectMatrixOutsideInv)))
                         {
                             inside = true;
                             FriendlyCache.Add(ent);
@@ -1266,7 +1242,7 @@ namespace DefenseShields
                     {
                         case Ent.EnemyPlayer:
                             {
-                                if ((_count == 2 || _count == 17 || _count == 32 || _count == 47) && CustomCollision.PointInShield(entCenter, _detectMatrixInv))
+                                if ((_count == 2 || _count == 17 || _count == 32 || _count == 47) && CustomCollision.PointInShield(entCenter, _detectMatrixOutsideInv))
                                 {
                                     MyAPIGateway.Parallel.Start(() => PlayerIntersect(webent));
                                 }
@@ -1299,7 +1275,7 @@ namespace DefenseShields
                             }
                         case Ent.Other:
                             {
-                                if (entInfo.LastTick == _tick && CustomCollision.PointInShield(entCenter, _detectMatrixInv) && !entInfo.SpawnedInside)
+                                if (entInfo.LastTick == _tick && CustomCollision.PointInShield(entCenter, _detectMatrixOutsideInv) && !entInfo.SpawnedInside)
                                 {
                                     if (webent.MarkedForClose || webent.Closed) continue;
                                     if (webent is IMyMeteor) _meteorDmg.Enqueue(webent as IMyMeteor);
@@ -1446,7 +1422,7 @@ namespace DefenseShields
                         while (_voxelDmg.TryDequeue(out voxel))
                         {
                             if (voxel == null || voxel.RootVoxel.MarkedForClose || voxel.RootVoxel.Closed) continue;
-                            voxel.RootVoxel.RequestVoxelOperationElipsoid(Vector3.One * 1.0f, _detectMatrix, 0, MyVoxelBase.OperationType.Cut);
+                            voxel.RootVoxel.RequestVoxelOperationElipsoid(Vector3.One * 1.0f, _detectMatrixOutside, 0, MyVoxelBase.OperationType.Cut);
                         }
                     }
                 }
@@ -1533,11 +1509,11 @@ namespace DefenseShields
         #region Intersect
         private bool GridInside(IMyCubeGrid grid, MyOrientedBoundingBoxD bOriBBoxD)
         {
-            if (CustomCollision.PointInShield(grid.PositionComp.WorldVolume.Center, _detectionInsideInv))
+            if (CustomCollision.PointInShield(grid.PositionComp.WorldVolume.Center, _detectInsideInv))
             {
-                if (CustomCollision.AllCornersInShield(bOriBBoxD, _detectMatrixInv)) return true;
+                if (CustomCollision.AllCornersInShield(bOriBBoxD, _detectMatrixOutsideInv)) return true;
 
-                var ejectDir = CustomCollision.EjectDirection(grid, _physicsOutside, _dataStructures.p3VertTris, bOriBBoxD, _detectMatrixInv);
+                var ejectDir = CustomCollision.EjectDirection(grid, _physicsOutside, _dataStructures.p3VertTris, bOriBBoxD, _detectMatrixOutsideInv);
                 if (ejectDir == Vector3D.NegativeInfinity) return false;
                 Eject.Add(grid, ejectDir);
                 return true;
@@ -1554,7 +1530,7 @@ namespace DefenseShields
             _webEnts.TryGetValue(ent, out entInfo);
             if (entInfo == null) return;
 
-            CustomCollision.SmallIntersect(entInfo, _fewDmgBlocks, grid, _detectMatrix, _detectMatrixInv);
+            CustomCollision.SmallIntersect(entInfo, _fewDmgBlocks, grid, _detectMatrixOutside, _detectMatrixOutsideInv);
             var contactpoint = entInfo.ContactPoint;
             entInfo.ContactPoint = Vector3D.NegativeInfinity;
             if (contactpoint != Vector3D.NegativeInfinity)
@@ -1597,11 +1573,11 @@ namespace DefenseShields
             grid.Components.TryGet(out shieldComponent);
 
             var dsVerts = shieldComponent.DefenseShields._physicsOutside;
-            var dsMatrixInv = shieldComponent.DefenseShields._detectMatrixInv;
+            var dsMatrixInv = shieldComponent.DefenseShields._detectMatrixOutsideInv;
             var myGrid = Shield.CubeGrid;
 
             var insidePoints = new List<Vector3D>();
-            CustomCollision.ShieldX2PointsInside(dsVerts, dsMatrixInv, _physicsOutside, _detectMatrixInv, insidePoints);
+            CustomCollision.ShieldX2PointsInside(dsVerts, dsMatrixInv, _physicsOutside, _detectMatrixOutsideInv, insidePoints);
 
             var bPhysics = grid.Physics;
             var sPhysics = myGrid.Physics;
@@ -1729,7 +1705,7 @@ namespace DefenseShields
             var dsutil = new DSUtils();
 
             var collisionAvg = Vector3D.Zero;
-            var transformInv = _detectMatrixInv;
+            var transformInv = _detectMatrixOutsideInv;
             var normalMat = MatrixD.Transpose(transformInv);
             var intersection = bOriBBoxD.Intersects(ref _sOriBBoxD);
             try
@@ -1786,11 +1762,11 @@ namespace DefenseShields
 
                         blockBox.GetCorners(blockPoints);
                         blockPoints[8] = blockBox.Center;
-                        //var point2 = Vector3D.Clamp(_detectMatrixInv.Translation, blockBox.Min, blockBox.Max);
+                        //var point2 = Vector3D.Clamp(_detectMatrixOutsideInv.Translation, blockBox.Min, blockBox.Max);
                         for (int j = 8; j > -1; j--)
                         {
                             var point = blockPoints[j];
-                            if (Vector3.Transform(point, _detectMatrixInv).LengthSquared() > 1) continue;
+                            if (Vector3.Transform(point, _detectMatrixOutsideInv).LengthSquared() > 1) continue;
 
                             collisionAvg += point;
                             c3++;

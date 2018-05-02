@@ -155,6 +155,8 @@ namespace DefenseShields.Support
         {
             try
             {
+                if (storage.Closed || storage.MarkedForClose) return false;
+
                 var body0Pos = center;
                 BoundingSphereD newSphere;
                 newSphere.Center = body0Pos;
@@ -178,7 +180,6 @@ namespace DefenseShields.Support
                 }
 
                 var flag = MyVoxelRequestFlags.AdviseCache;
-
                 tempStorage.Clear(MyStorageDataTypeEnum.Content, 0); // did this fix index out of bounds error?
                 tempStorage.Resize(minCorner, maxCorner);
                 storage.ReadRange(tempStorage, MyStorageDataTypeFlags.Content, 0, minCorner, maxCorner, ref flag);
