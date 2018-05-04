@@ -22,6 +22,7 @@ using DefenseShields.Control;
 using VRage.Collections;
 using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
+using Havok;
 using Sandbox.Game.Entities;
 using VRage.Game.ModAPI.Interfaces;
 using VRage.Voxels;
@@ -48,7 +49,6 @@ namespace DefenseShields
         public float ImpactSize { get; set; } = 9f;
         public float Absorb { get; set; }
         private float _power = 0.0001f;
-        internal double Range;
         private float _width;
         private float _height;
         private float _depth;
@@ -63,8 +63,10 @@ namespace DefenseShields
         private float _shieldCurrentPower;
         private float _shieldMaintain;
 
+        internal double Range;
         private double _sAvelSqr;
         private double _sVelSqr;
+        private double _approxSurfaceArea;
 
         public int BulletCoolDown { get; private set; }= -1;
         public int EntityCoolDown { get; private set; } = -1;
@@ -373,6 +375,7 @@ namespace DefenseShields
                     _shield.Render.CastShadows = false;
                     _shield.Render.RemoveRenderObjects();
                     _shield.Render.UpdateRenderObject(true);
+                    _shield.Save = false;
                     _shield.SetEmissiveParts("ShieldEmissiveAlpha", Color.Blue, 0.1f);
                     Shield.AppendingCustomInfo += AppendingCustomInfo;
                     Shield.RefreshCustomInfo();
@@ -538,7 +541,6 @@ namespace DefenseShields
                 }
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
-
             _dsutil2.StopWatchReport("main-loop perf", 10);
         }
         #endregion
@@ -661,7 +663,8 @@ namespace DefenseShields
             var percent = rate * ratio;
             var shieldMaintainCost = 1 / percent;
             var fPercent = (percent / ratio) / 100;
-            var scaler = 30 / Shield.CubeGrid.GridSize;
+            var baseScale = 30;
+            var sizeScaler = (_approxSurfaceArea / _detectMatrixOutside.Scale.Sum) / 100;
             _shieldEfficiency = 100f;
 
             if (_shieldBuffer > 0 && _shieldCurrentPower < 0.001f)
@@ -677,7 +680,7 @@ namespace DefenseShields
             powerForShield = cleanPower * fPercent;
 
             _shieldMaxChargeRate = powerForShield > 0 ? powerForShield : 0f;
-            _shieldMaxBuffer = _gridMaxPower * (100 / percent) * scaler;
+            _shieldMaxBuffer = (_gridMaxPower * (100 / percent) * baseScale) / (float)sizeScaler;
 
             if (_shieldBuffer + _shieldMaxChargeRate < _shieldMaxBuffer) _shieldChargeRate = _shieldMaxChargeRate;
             else
@@ -764,6 +767,10 @@ namespace DefenseShields
                 _sOriBBoxD = new MyOrientedBoundingBoxD(_detectionCenter, ShieldSize, _sQuaternion);
                 _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
                 _shieldSphere = new BoundingSphereD(_detectionCenter, ShieldSize.AbsMax());
+                var sphereSurf = 4 * Math.PI * _shieldSphere.Radius * _shieldSphere.Radius;
+                var aabbSurf = _shieldAabb.SurfaceArea();
+                _approxSurfaceArea = aabbSurf < sphereSurf ? aabbSurf : sphereSurf;
+                Log.Line($"selection: {_approxSurfaceArea} - sphere:{sphereSurf} - aabb:{aabbSurf} - {_detectMatrixOutside.Scale.Sum} ");
             }
             else
             {
@@ -775,6 +782,11 @@ namespace DefenseShields
                 _sOriBBoxD = new MyOrientedBoundingBoxD(_detectionCenter, ShieldSize, _sQuaternion);
                 _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
                 _shieldSphere = new BoundingSphereD(_detectionCenter, ShieldSize.AbsMax());
+                var sphereSurf = 4 * Math.PI * _shieldSphere.Radius * _shieldSphere.Radius;
+                var aabbSurf = _shieldAabb.SurfaceArea();
+                _approxSurfaceArea = aabbSurf < sphereSurf ? aabbSurf : sphereSurf;
+                Log.Line($"selection: {_approxSurfaceArea} - sphere:{sphereSurf} - aabb:{aabbSurf} - {_detectMatrixOutside.Scale.Sum} - {_approxSurfaceArea / _detectMatrixOutside.Scale.Sum}");
+
                 /*
                 _shieldGridMatrix = Shield.WorldMatrix;
                 _shieldShapeMatrix = MatrixD.Rescale(Shield.LocalMatrix, new Vector3D(_width, _height, _depth));
@@ -807,10 +819,14 @@ namespace DefenseShields
 
         private void CreateStaticShape()
         {
-            ShieldSize = Shield.WorldMatrix.Scale;
-            Log.Line($"{_width} - {_depth} - {_height}"); // resizing is broken for some reason.
-            var mobileMatrix = MatrixD.Rescale(Shield.LocalMatrix, new Vector3D(_width, _height, _depth));
-            mobileMatrix.Translation = Shield.PositionComp.LocalVolume.Center;
+            //ShieldSize = Shield.WorldMatrix.Scale;
+            ShieldSize = Shield.PositionComp.LocalAABB.HalfExtents;
+
+            var shieldLocalCenter = Shield.PositionComp.LocalAABB.Center;
+
+            var mobileMatrix = MatrixD.CreateScale(_width, _height, _depth) * MatrixD.CreateTranslation(shieldLocalCenter);
+            //var mobileMatrix = MatrixD.Rescale(Shield.LocalMatrix, new Vector3D(_width, _height, _depth));
+            //mobileMatrix.Translation = shieldLocalCenter;
             _shieldShapeMatrix = mobileMatrix;
         }
 
@@ -819,19 +835,21 @@ namespace DefenseShields
 
             if (!GridIsMobile)
             {
-                _shield.SetWorldMatrix(_detectMatrixOutside);
+                _shield.PositionComp.SetWorldMatrix(_detectMatrixOutside);
+                //_shield.PositionComp.SetLocalMatrix(_shieldShapeMatrix);
+                //_shield.LocalVolume = _shieldSphere;
                 _shield.LocalAABB = _shieldAabb;
                 _shield.SetPosition(_detectionCenter);
-                _shield.Render.SetParent(0, Shield.Render.GetRenderObjectID());
-
+                _shield.Render.SetParent(0, Shield.Render.GetRenderObjectID(), _shieldShapeMatrix);
             }
 
             if (!_entityChanged || !GridIsMobile) return;
-
-            _shield.SetWorldMatrix(_detectMatrixOutside);
+            _shield.PositionComp.SetWorldMatrix(_detectMatrixOutside);
+            // _shield.PositionComp.SetLocalMatrix(_shieldShapeMatrix);
+            //_shield.LocalVolume = _shieldSphere;
             _shield.LocalAABB = _shieldAabb;
             _shield.SetPosition(_detectionCenter);
-            _shield.Render.SetParent(0, Shield.CubeGrid.Render.GetRenderObjectID());
+            _shield.Render.SetParent(0, Shield.CubeGrid.Render.GetRenderObjectID(), _shieldShapeMatrix);
         }
 
         private void RefreshDimensions()

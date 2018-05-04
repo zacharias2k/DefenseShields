@@ -66,8 +66,8 @@
           <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
           <IgnoreDepth>false</IgnoreDepth>
           <SoftParticleDistanceScale>1</SoftParticleDistanceScale>
-          <Texture>Textures\Particles\CockpitFighterGlassInside_ca.dds</Texture>
-          <GlossTexture>Textures\Models\Cubes\BlueFrostedMetal_cm.dds</GlossTexture>
+          <Texture>Textures\Particles\SquareWindowDirtInside_ca.dds</Texture>
+          <GlossTexture>Textures\Models\Cubes\AluminiumGlossy_ng.dds</GlossTexture>
           <UseAtlas>false</UseAtlas>
           <NeedSort>true</NeedSort>
           <UVOffset>
@@ -120,8 +120,8 @@
           <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
           <IgnoreDepth>false</IgnoreDepth>
           <SoftParticleDistanceScale>1</SoftParticleDistanceScale>
-          <Texture>Textures\Particles\CockpitFighterGlassInside_ca.dds</Texture>
-          <GlossTexture>Textures\Models\Cubes\BlueFrostedMetal_cm.dds</GlossTexture>
+          <Texture>Textures\Particles\SquareWindowDirtInside_ca.dds</Texture>
+          <GlossTexture>Textures\Models\Cubes\AluminiumGlossy_ng.dds</GlossTexture>
           <UseAtlas>false</UseAtlas>
           <NeedSort>true</NeedSort>
           <UVOffset>
