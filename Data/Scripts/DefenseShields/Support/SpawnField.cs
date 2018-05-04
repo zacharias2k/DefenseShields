@@ -383,6 +383,13 @@ namespace DefenseShields.Support
                                 var waveMultiplier = Pi / ImpactSteps / impactSize;
                                 var wavePosition = waveMultiplier * _impactCnt[s];
                                 var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
+                                if (impactFactor < wavePosition && relativeToWavefront >= 0 && relativeToWavefront < 0.2) _triColorBuffer[j] = _waveColor;
+                                if (impactFactor < wavePosition && relativeToWavefront >= 0.2 && relativeToWavefront < 0.4) _triColorBuffer[j] = _defaultColor;
+                                //if (impactFactor > wavePosition) _triColorBuffer[j] = _defaultColor;
+
+
+
+                                /*
                                 if (relativeToWavefront < .03)
                                 {
                                     // within 1/180th of wavefront
@@ -392,6 +399,7 @@ namespace DefenseShields.Support
                                 {
                                     _triColorBuffer[j] = _waveColor;
                                 }
+                                */
                             }
                         }
                         //else if (_impactCnt[9] == 0) _triColorBuffer[j] = _defaultColor;
@@ -542,6 +550,7 @@ namespace DefenseShields.Support
                         {
                             _impactCnt[i] = 0;
                             _impactPos[i] = Vector3D.NegativeInfinity;
+                            _localImpacts[i] = Vector3D.NegativeInfinity;
                         }
                     }
                     if (_impactCnt[0] == 0 && _impactCnt[1] == 0 && _impactCnt[2] == 0 && _impactCnt[3] == 0 && _impactCnt[4] == 0 

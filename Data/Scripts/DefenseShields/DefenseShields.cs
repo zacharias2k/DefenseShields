@@ -127,6 +127,7 @@ namespace DefenseShields
 
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
+        private readonly List<KeyValuePair<IMyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<IMyEntity, EntIntersectInfo>>();
 
         static readonly MyDefinitionId gId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
@@ -367,7 +368,7 @@ namespace DefenseShields
 
                     CreateUi();
 
-                    _shield = _spawn.EmptyEntity("Field", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\DefenseShieldAlpha_LOD3.mwm");
+                    _shield = _spawn.EmptyEntity("Field", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldPassive_LOD3.mwm");
                     _shield.Render.Visible = true;
                     _shield.Render.CastShadows = false;
                     _shield.Render.RemoveRenderObjects();
@@ -511,6 +512,7 @@ namespace DefenseShields
 
                 if (ShieldActive)
                 {
+                    if (_shieldStarting) _shield.Render.Visible = true;
                     if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
                     if (Distance(1000))
                     {
@@ -570,6 +572,8 @@ namespace DefenseShields
                 BlockParticleStop();
                 ShieldActive = false;
                 BlockWorking = false;
+                _prevShieldActive = false;
+                _shield.Render.Visible = false;
                 Absorb = 0;
                 _shieldBuffer = 0;
                 _shieldChargeRate = 0;
@@ -764,6 +768,16 @@ namespace DefenseShields
             else
             {
                 _shieldGridMatrix = Shield.WorldMatrix;
+                CreateStaticShape();
+                DetectionMatrix = _shieldShapeMatrix * _shieldGridMatrix;
+                _detectionCenter = Shield.PositionComp.WorldVolume.Center;
+                _sQuaternion = Quaternion.CreateFromRotationMatrix(Shield.WorldMatrix);
+                _sOriBBoxD = new MyOrientedBoundingBoxD(_detectionCenter, ShieldSize, _sQuaternion);
+                _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
+                _shieldSphere = new BoundingSphereD(_detectionCenter, ShieldSize.AbsMax());
+                /*
+                _shieldGridMatrix = Shield.WorldMatrix;
+                _shieldShapeMatrix = MatrixD.Rescale(Shield.LocalMatrix, new Vector3D(_width, _height, _depth));
                 DetectionMatrix = MatrixD.Rescale(_shieldGridMatrix, new Vector3D(_width, _height, _depth));
                 ShieldSize = DetectionMatrix.Scale;
                 _detectionCenter = Shield.PositionComp.WorldVolume.Center;
@@ -771,6 +785,7 @@ namespace DefenseShields
                 _sOriBBoxD = new MyOrientedBoundingBoxD(_detectionCenter, ShieldSize, _sQuaternion);
                 _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
                 _shieldSphere = new BoundingSphereD(_detectionCenter, ShieldSize.AbsMax());
+                */
             }
             Range = ShieldSize.AbsMax() + 7.5f;
             SetShieldShape();
@@ -790,20 +805,30 @@ namespace DefenseShields
             _shieldShapeMatrix = mobileMatrix;
         }
 
+        private void CreateStaticShape()
+        {
+            ShieldSize = Shield.WorldMatrix.Scale;
+            Log.Line($"{_width} - {_depth} - {_height}"); // resizing is broken for some reason.
+            var mobileMatrix = MatrixD.Rescale(Shield.LocalMatrix, new Vector3D(_width, _height, _depth));
+            mobileMatrix.Translation = Shield.PositionComp.LocalVolume.Center;
+            _shieldShapeMatrix = mobileMatrix;
+        }
+
         private void SetShieldShape()
         {
 
-            if (Shield.CubeGrid.Physics.IsStatic)
+            if (!GridIsMobile)
             {
-                _shieldShapeMatrix = MatrixD.Rescale(Shield.LocalMatrix, new Vector3D(_width, _height, _depth));
                 _shield.SetWorldMatrix(_detectMatrixOutside);
                 _shield.LocalAABB = _shieldAabb;
                 _shield.SetPosition(_detectionCenter);
                 _shield.Render.SetParent(0, Shield.Render.GetRenderObjectID());
+
             }
-            if (!_entityChanged || Shield.CubeGrid.Physics.IsStatic) return;
+
+            if (!_entityChanged || !GridIsMobile) return;
+
             _shield.SetWorldMatrix(_detectMatrixOutside);
-            //_shield.SetLocalMatrix(DetectionMatrix);
             _shield.LocalAABB = _shieldAabb;
             _shield.SetPosition(_detectionCenter);
             _shield.Render.SetParent(0, Shield.CubeGrid.Render.GetRenderObjectID());
@@ -1320,11 +1345,15 @@ namespace DefenseShields
                         lock (_webEnts)
                         {
                             if (Debug) Log.Line($"_webEnts # {_webEnts.Count.ToString()}");
+                            _webEntsTmp.AddRange(_webEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1));
+                            foreach (var webent in _webEntsTmp) _webEnts.Remove(webent.Key);
+                            /*
                             foreach (var i in _webEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1).ToList())
                             {
                                 _webEnts.Remove(i.Key);
 
                             }
+                            */
                         }
                         Log.Line($"FriendlyCache {FriendlyCache.Count.ToString()}");
                         FriendlyCache.Clear();
