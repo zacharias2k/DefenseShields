@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using VRage.Game;
 using VRage.Utils;
 using VRageMath;
+using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
+using VRageRender;
 
 namespace DefenseShields.Support
 {
@@ -210,12 +212,12 @@ namespace DefenseShields.Support
 
             var v0 = physicsVerts[num];
             var v1 = fromVec;
-            MySimpleObjectDraw.DrawLine(v0, v1, lineId, ref c, 0.25f);
+            MySimpleObjectDraw.DrawLine(v0, v1, lineId, ref c, 0.35f);
         }
 
-        public static void DrawLineToVec(Vector3D toVec, Vector3D fromVec, Color color, float lineWidth)
+        public static void DrawLineToVec(Vector3D toVec, Vector3D fromVec, Vector4 color, float lineWidth)
         {
-            var c = color.ToVector4();
+            var c = color;
             var lineId = MyStringId.GetOrCompute("Square");
 
             var v0 = toVec;
