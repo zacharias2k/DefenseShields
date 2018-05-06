@@ -8,6 +8,7 @@ using VRage.ModAPI;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.Game.WorldEnvironment.ObjectBuilders;
+using VRage;
 using VRage.Game.Entity;
 using VRage.Utils;
 using VRageMath;
@@ -27,6 +28,11 @@ namespace DefenseShields
         private int _count;
 
         public const ushort PACKET_ID = 62520; // network
+
+        private const long WORKSHOP_ID = 1365616918;
+        public bool enabled = true;
+        public string disabledBy = null;
+
         public readonly Guid SETTINGS_GUID = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
 
         public static DefenseShieldsBase Instance { get; private set; }
@@ -39,12 +45,49 @@ namespace DefenseShields
         private readonly Dictionary<IMyEntity, int> _voxelDamageCounter = new Dictionary<IMyEntity, int>();
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
 
+        public void Init()
+        {
+            try
+            {
+                Log.Init("debugdevelop.log");
+                Log.Line($"Logging Started");
+                MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID, PacketReceived);
+                MyAPIGateway.Utilities.RegisterMessageHandler(WORKSHOP_ID, ModMessageHandler);
+                SessionInit = true;
+            }
+            catch (Exception ex) { Log.Line($"Exception in SessionInit: {ex}"); }
+        }
+
+        private void ModMessageHandler(object obj)
+        {
+            try
+            {
+                if (obj is MyTuple<bool, string>)
+                {
+                    var data = (MyTuple<bool, string>)obj;
+                    enabled = data.Item1;
+
+                    if (enabled)
+                    {
+                        Log.Line($"Wing logic turned off by mod {data.Item2}");
+                        disabledBy = null;
+                    }
+                    else
+                    {
+                        Log.Line($"Wing logic turned off by mod {data.Item2}.");
+                        disabledBy = data.Item2;
+                    }
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in ModMessageHandler: {ex}"); }
+        }
+
         public override void Draw()
         {
             if (_count == 0) Log.Line($"Shields in the world: {Components.Count.ToString()}");
             try
             {
-                //_dsutil1.Sw.Start();
                 if (!SessionInit || Components.Count == 0) return;
                 var sphereOnCamera = new bool[Components.Count];
                 var onCount = 0;
@@ -58,7 +101,6 @@ namespace DefenseShields
                     onCount++;
                 }
                 for (int i = 0; i < Components.Count; i++) if (Components[i].ShieldActive && !Components[i].HardDisable) Components[i].Draw(onCount, sphereOnCamera[i]);
-                //_dsutil1.StopWatchReport("draw", 2);
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
         }
@@ -105,19 +147,6 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in SessionBeforeSim: {ex}"); }
         }
 
-        public void Init() 
-        {
-            try
-            {
-                Log.Init("debugdevelop.log");
-                Log.Line($"Logging Started");
-                MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
-                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID, PacketReceived);
-                SessionInit = true;
-            }
-            catch (Exception ex) { Log.Line($"Exception in SessionInit: {ex}"); }
-        }
-
         public void CheckDamage(object target, ref MyDamageInformation info)
         {
             try
@@ -134,6 +163,7 @@ namespace DefenseShields
                     {
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
+                        Log.Line($"Amount:{info.Amount.ToString()} - Type:{info.Type.ToString()} - Block:{block.BlockDefinition.GetType().Name} - Attacker:{hostileEnt?.DebugName}");
                         if (hostileEnt != null && (shield.FriendlyCache.Contains(hostileEnt) || hostileEnt == shield.Shield.CubeGrid))
                         {
                             continue;
@@ -170,7 +200,7 @@ namespace DefenseShields
                         {
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
-                            var vertPos = CustomCollision.ClosestVert(shield._physicsOutside, blockPos);
+                            var vertPos = CustomCollision.ClosestVert(shield.PhysicsOutside, blockPos);
                             shield.WorldImpactPosition = vertPos;
                             shield.ImpactSize = 5;
                         }

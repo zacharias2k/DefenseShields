@@ -17,12 +17,14 @@ namespace DefenseShields.Support
     class Spawn
     {
         //Shell Entities
-        public IMyEntity EmptyEntity(string displayName, string model)
+        public IMyEntity EmptyEntity(string displayName, string model, MyEntity parent, bool parented = false)
         {
             try
             {
+                var myParent = parented ? parent : null;
                 var ent = new MyEntity();
-                ent.Init(new StringBuilder(displayName), model, null, null, null);
+                ent.Init(new StringBuilder(displayName), model, myParent, null, null);
+                ent.Name = $"{parent.EntityId}";
                 MyAPIGateway.Entities.AddEntity(ent);
                 return ent;
             }
@@ -472,11 +474,6 @@ namespace DefenseShields.Support
                         if (color == _waveColor) faceMaterial = _faceWave;
                         else if (color == _chargeColor) faceMaterial = _faceIdle;
                         else continue;
-                        //if (color == _defaultColor) faceMaterial = _faceIdle;
-                        //else if (color == _waveColor) faceMaterial = _faceWave;
-                        //else if (color == _chargeColor) faceMaterial = _faceIdle;
-                        //else if (color == _waveComingColor) faceMaterial = _faceId1;
-                        //else if (color == _wavePassedColor) faceMaterial = _faceId1;
                         MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, v20, v21, v22, faceMaterial, renderId, (v0 + v1 + v2) / 3, color);
                     }
                 }

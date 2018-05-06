@@ -14,6 +14,28 @@ namespace DefenseShields.Support
 {
     internal static class CustomCollision
     {
+        public static bool VoxelContact(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, MyVoxelBase voxelBase, MyStorageData tempStorage, MatrixD detectMatrix)
+        {
+            try
+            {
+                if (voxelBase.Closed) return false;
+                var leftBottomCorner = voxelBase.PositionLeftBottomCorner;
+                var storageMin = voxelBase.StorageMin;
+                var map = voxelBase as IMyVoxelMap;
+                var storage = (IMyStorage)voxelBase.Storage;
+                const float radius = 0.01f;
+                for (int i = 0; i < 162; i++)
+                {
+                    var from = physicsVerts[i];
+                    var hit = DoOverlapSphereTest(from, radius, tempStorage, map, storage, leftBottomCorner, storageMin);
+                    if (hit) return true;
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in VoxelCollisionSphere: {ex}"); }
+
+            return false;
+        }
+
         public static Vector3D VoxelCollisionEllipsoid(IMyCubeGrid shieldGrid, MatrixD matrixInv, MyVoxelBase voxelBase, MyOrientedBoundingBoxD sOriBBoxD, MyStorageData tempStorage)
         {
 
@@ -124,7 +146,6 @@ namespace DefenseShields.Support
                     {
                         var from = physicsVerts[i];
                         var hit = DoOverlapSphereTest(from, radius, tempStorage, map, storage, leftBottomCorner, storageMin);
-                        //var hit = voxelBase.RootVoxel.DoOverlapSphereTest(size, from);
 
                         if (hit) voxelHitVecs.Add(from);
                     }
