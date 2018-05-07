@@ -17,7 +17,7 @@ namespace DefenseShields.Support
     class Spawn
     {
         //Shell Entities
-        public IMyEntity EmptyEntity(string displayName, string model, MyEntity parent, bool parented = false)
+        public MyEntity EmptyEntity(string displayName, string model, MyEntity parent, bool parented = false)
         {
             try
             {
@@ -237,7 +237,7 @@ namespace DefenseShields.Support
             private bool _impact;
             private bool _charge;
 
-            private IMyEntity _shield;
+            private MyEntity _shell;
 
             private readonly MyStringId _faceIdle = MyStringId.GetOrCompute("CustomIdle");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private readonly MyStringId _faceWave = MyStringId.GetOrCompute("SunDisk");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
@@ -311,9 +311,9 @@ namespace DefenseShields.Support
                 }
             }
 
-            public void ComputeEffects(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, IMyEntity shield, int prevLod)
+            public void ComputeEffects(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, MyEntity shell, int prevLod)
             {
-                _shield = shield;
+                _shell = shell;
                 _enemy = enemy;
                 _matrix = matrix;
                 _impactPosState = impactPos;
@@ -571,25 +571,25 @@ namespace DefenseShields.Support
                     if (_impactCnt[9] % 2 == 1)
                     {
                         Log.Line($"Models!");
-                        _shield.Render.Visible = true;
-                        ((MyEntity)_shield).RefreshModels($"{modPath}\\Models\\LargeField{n.ToString()}.mwm", null);
-                        _shield.Render.RemoveRenderObjects();
-                        _shield.Render.UpdateRenderObject(true);
-                        if (n < 3)_shield.SetEmissiveParts("CWShield", Color.DarkViolet, 1);
-                        if (n >= 3 && n < 6) _shield.SetEmissiveParts("CWShield.001", Color.DarkViolet, 1);
-                        if (n >= 6 && n < 9) _shield.SetEmissiveParts("CWShield.002", Color.DarkViolet, 1);
-                        if (n >= 9 && n < 12) _shield.SetEmissiveParts("CWShield.003", Color.DarkViolet, 1);
-                        if (n >= 12 && n < 15) _shield.SetEmissiveParts("CWShield.004", Color.DarkViolet, 1);
-                        if (n == 15) _shield.SetEmissiveParts("CWShield.005", Color.DarkViolet, 1);
+                        _shell.Render.Visible = true;
+                        ((MyEntity)_shell).RefreshModels($"{modPath}\\Models\\LargeField{n.ToString()}.mwm", null);
+                        _shell.Render.RemoveRenderObjects();
+                        _shell.Render.UpdateRenderObject(true);
+                        if (n < 3)_shell.SetEmissiveParts("CWShield", Color.DarkViolet, 1);
+                        if (n >= 3 && n < 6) _shell.SetEmissiveParts("CWShield.001", Color.DarkViolet, 1);
+                        if (n >= 6 && n < 9) _shell.SetEmissiveParts("CWShield.002", Color.DarkViolet, 1);
+                        if (n >= 9 && n < 12) _shell.SetEmissiveParts("CWShield.003", Color.DarkViolet, 1);
+                        if (n >= 12 && n < 15) _shell.SetEmissiveParts("CWShield.004", Color.DarkViolet, 1);
+                        if (n == 15) _shell.SetEmissiveParts("CWShield.005", Color.DarkViolet, 1);
 
                         _modelCount++;
                         if (_modelCount == 16) _modelCount = 0;
                     }
-                    else _shield.Render.Visible = false;
+                    else _shell.Render.Visible = false;
                     if (_impactCnt[9] == ImpactSteps) 
                     {
                         _modelCount = 0;
-                        _shield.Render.Visible = false;
+                        _shell.Render.Visible = false;
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in Models: {ex}"); }

@@ -163,7 +163,7 @@ namespace DefenseShields
                     {
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
-                        Log.Line($"Amount:{info.Amount.ToString()} - Type:{info.Type.ToString()} - Block:{block.BlockDefinition.GetType().Name} - Attacker:{hostileEnt?.DebugName}");
+
                         if (hostileEnt != null && (shield.FriendlyCache.Contains(hostileEnt) || hostileEnt == shield.Shield.CubeGrid))
                         {
                             continue;
@@ -193,6 +193,15 @@ namespace DefenseShields
                         {
                             info.Amount = 0f;
                             info.IsDeformation = false;
+                            continue;
+                        }
+
+                        if (info.Type == MyStringHash.GetOrCompute("DSdamage") || info.Type == MyStringHash.GetOrCompute("DSheal") || info.Type == MyStringHash.GetOrCompute("DSbypass"))
+                        {
+                            Log.Line($"Amount:{info.Amount.ToString()} - Type:{info.Type.ToString()} - Block:{block.BlockDefinition.GetType().Name} - Attacker:{hostileEnt?.DebugName}");
+                            shield.Absorb += info.Amount * 4;
+                            info.Amount = 0f;
+                            shield.WorldImpactPosition = shield._shield.Render.ColorMaskHsv;
                             continue;
                         }
 
