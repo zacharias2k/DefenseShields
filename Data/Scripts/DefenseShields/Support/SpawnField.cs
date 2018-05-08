@@ -22,7 +22,8 @@ namespace DefenseShields.Support
             try
             {
                 var myParent = parented ? parent : null;
-                var ent = new MyEntity {NeedsWorldMatrix = true};
+                var ent = new MyEntity {NeedsWorldMatrix = false};
+
                 ent.Init(new StringBuilder(displayName), model, myParent, null, null);
                 ent.Name = $"{parent.EntityId}";
                 MyAPIGateway.Entities.AddEntity(ent);
