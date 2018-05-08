@@ -55,7 +55,51 @@
       <SpecularColorFactor>3</SpecularColorFactor>
       <IsFlareOccluder>false</IsFlareOccluder>
     </TransparentMaterial>
-   
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>IdleLowFi</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>false</IgnoreDepth>
+      <SoftParticleDistanceScale>1</SoftParticleDistanceScale>
+	  <Texture>Textures\Particles\StepFadeGlass.dds</Texture>
+	  <GlossTexture>Textures\Models\Cubes\Chrome_ng.dds</GlossTexture>
+	  
+      <UseAtlas>false</UseAtlas>
+      <NeedSort>true</NeedSort>
+      <UVOffset>
+        <X>0</X>
+        <Y>0</Y>
+      </UVOffset>
+      <UVSize>
+        <X>0.25</X>
+        <Y>0.25</Y>
+      </UVSize>
+	<Color>
+		<X>.5</X> <!-- X,Y,Z: Acts sort of like Gamma for the texture; 0=dark 1=normal -->
+		<Y>.5</Y>
+		<Z>.5</Z>
+		<W>0.15</W> <!-- Use this to adjust transparency; 0=transparent 1=opaque -->
+	</Color>
+	<ColorAdd>
+		<X>0</X> <!-- X,Y,Z: Adds artificial color to texture; Suggested to leave this at 0 -->
+		<Y>0</Y>
+		<Z>0</Z>
+		<W>0.1</W> <!-- Keep this value at 0.1; Use <color><W> to fine tune transparency -->
+	</ColorAdd>
+	<ShadowMultiplier>
+		<X>1</X>  <!-- controls "emissivity", suggest 0 for windows, 1 for force fields -->
+		<Y>1</Y>
+		<Z>1</Z>
+		<W>1</W>  <!-- controls "darkening" effect of glass in shadow, 1 for no change, higher for darker tinted glass in shadow -->
+	</ShadowMultiplier>
+	<Reflectivity>0</Reflectivity> <!-- Controls reflectivity; Suggest very low numbers, for example 0.05 -->
+	<Fresnel>0.2</Fresnel> <!-- Suggest 1 to 1.5 for windows; Hard to explain, sort of like reflectivity angle; Suggest 0 for no effect on 'force fields' -->
+	<IsFlareOccluder>false</IsFlareOccluder> <!-- Hides sprite flares from stuff like the sun, lights, and thrusters; Suggest 'false' usually, use at your own discretion -->
+</TransparentMaterial>   
 <TransparentMaterial>
           <Id>
               <TypeId>TransparentMaterialDefinition</TypeId>
