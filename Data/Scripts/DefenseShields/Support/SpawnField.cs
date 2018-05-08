@@ -22,7 +22,7 @@ namespace DefenseShields.Support
             try
             {
                 var myParent = parented ? parent : null;
-                var ent = new MyEntity();
+                var ent = new MyEntity {NeedsWorldMatrix = true};
                 ent.Init(new StringBuilder(displayName), model, myParent, null, null);
                 ent.Name = $"{parent.EntityId}";
                 MyAPIGateway.Entities.AddEntity(ent);
@@ -378,6 +378,10 @@ namespace DefenseShields.Support
                         {
                             for (int s = 9; s > -1; s--)
                             {
+                                // basically the same as for a sphere: offset by radius, except the radius will depend on the axis
+                                // if you already have the mesh generated, it's easy to get the vector from point - origin
+                                // when you have the vector, save the magnitude as the length (radius at that point), then normalize the vector 
+                                // so it's length is 1, then multiply by length + wave offset you would need the original vertex points for each iteration
                                 if (_localImpacts[s] == Vector3D.NegativeInfinity) continue;
                                 var dotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _localImpacts[s]);
                                 var impactFactor = Math.Acos(dotOfNormLclImpact);

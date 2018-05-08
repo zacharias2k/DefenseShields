@@ -21,8 +21,10 @@ using DefenseShields.Control;
 using VRage.Collections;
 using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
+using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using VRage.Game.ModAPI.Interfaces;
+using VRage.Game.Models;
 using VRage.Voxels;
 using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
@@ -363,7 +365,7 @@ namespace DefenseShields
                     _shell.Save = false;
                     _shell.SetEmissiveParts("ShieldEmissiveAlpha", Color.Blue, 0.1f);
 
-                    _shield = _spawn.EmptyEntity("dShield", null, (MyEntity)Shield, false);
+                    _shield = _spawn.EmptyEntity("dShield", null, (MyEntity)Shield, true);
                     _shield.Render.CastShadows = false;
                     _shield.Render.RemoveRenderObjects();
                     _shield.Render.UpdateRenderObject(true);
@@ -592,7 +594,6 @@ namespace DefenseShields
             _dsutil2.Sw.Restart();
             try
             {
-
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
                 if (!BlockFunctional()) return;
 
@@ -633,6 +634,23 @@ namespace DefenseShields
 
                 if (_count == 29)
                 {
+                    /*
+                    var defintions = MyDefinitionManager.Static.GetAllDefinitions();
+                    foreach (var def in defintions)
+                    {
+                        if (!(def is MyAmmoMagazineDefinition)) continue;
+                        var ammoDef = def as MyAmmoMagazineDefinition;
+                        if (ammoDef.Context.IsBaseGame) continue;
+                        var ammo = MyDefinitionManager.Static.GetAmmoDefinition(ammoDef.AmmoDefinitionId);
+                        if (!(ammo is MyMissileAmmoDefinition)) continue;
+
+                        var missile = ammo as MyMissileAmmoDefinition;
+
+                        //Log.Line($"Name: {ammo.Id.SubtypeId} - Damage: {ammo.GetDamageForMechanicalObjects()} - type: {ammo.AmmoType} - speed:{ammo.DesiredSpeed} - material: {ammo.PhysicalMaterial} - Explosive: {ammo.IsExplosive} back: {ammo.BackkickForce}");
+                        //Log.Line($"{ammoDef.Model}");
+                        //Log.Line($"expoDamage: {missile.MissileExplosionDamage} - Radius: {missile.MissileExplosionRadius} - Mass: {missile.MissileMass} - {missile.DesiredSpeed} - {missile.IsExplosive} - {missile.BackkickForce} - Model: {ammoDef.Model}");
+                    }
+                    */
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
                     {
                         Shield.ShowInToolbarConfig = false;
@@ -738,7 +756,7 @@ namespace DefenseShields
             ShieldSize = shieldSize;
             var gridLocalCenter = Shield.CubeGrid.PositionComp.LocalAABB.Center;
             var mobileMatrix = MatrixD.CreateScale(shieldSize) * MatrixD.CreateTranslation(gridLocalCenter);
-            mobileMatrix.Translation = Shield.CubeGrid.PositionComp.LocalVolume.Center;
+            //mobileMatrix.Translation = Shield.CubeGrid.PositionComp.LocalVolume.Center;
             _shieldShapeMatrix = mobileMatrix;
         }
 
@@ -747,16 +765,24 @@ namespace DefenseShields
             var shieldLocalCenter = Shield.PositionComp.LocalAABB.Center;
             var mobileMatrix = MatrixD.CreateScale(_width, _height, _depth) * MatrixD.CreateTranslation(shieldLocalCenter);
             ShieldSize = mobileMatrix.Scale;
-            mobileMatrix.Translation = shieldLocalCenter;
+            //mobileMatrix.Translation = shieldLocalCenter;
             _shieldShapeMatrix = mobileMatrix;
         }
 
         private void SetShieldShape()
         {
+            _shell.PositionComp.LocalMatrix = _shieldShapeMatrix;
+            _shield.PositionComp.LocalMatrix = _shieldShapeMatrix;
+            _shield.PositionComp.LocalAABB = _shieldAabb;
+        }
+        /*
+        private void SetShieldShape()
+        {
             _shell.PositionComp.SetLocalMatrix(_shieldShapeMatrix, null, true, null);
 
-            var lMatrix = Shield.CubeGrid.LocalMatrix;
-            lMatrix.Translation = _shieldShapeMatrix.Translation;
+            //var lMatrix = Shield.CubeGrid.LocalMatrix;
+            //lMatrix.Translation = _shieldShapeMatrix.Translation;
+            var lMatrix = _shieldShapeMatrix;
             _shield.PositionComp.LocalAABB = _shieldAabb;
             _shield.PositionComp.SetPosition(_detectionCenter);
 
@@ -774,11 +800,12 @@ namespace DefenseShields
             //_shell.PositionComp.SetWorldMatrix(_detectMatrixOutside, _shield.Parent, true, true, false, false, false);
             //_shell.Render.SetParent(0, Shield.CubeGrid.Render.GetRenderObjectID(), _shieldShapeMatrix);
 
-            _shield.PositionComp.SetPosition(_detectionCenter);
+            //_shield.PositionComp.SetPosition(_detectionCenter);
             _shield.PositionComp.SetLocalMatrix(lMatrix, Shield.CubeGrid, true);
             //_shield.PositionComp.SetWorldMatrix(_detectMatrixOutside, _shield.Parent, true, true, false, false, false);
             //_shield.Render.SetParent(0, Shield.CubeGrid.Render.GetRenderObjectID(), _shieldShapeMatrix);
         }
+        */
 
         private void RefreshDimensions()
         {
@@ -1188,7 +1215,8 @@ namespace DefenseShields
                             var destObj = ent as IMyDestroyableObject;
                             if (destObj == null) continue;
                             WorldImpactPosition = ent.PositionComp.WorldVolume.Center;
-                            Absorb += 20000;
+                            var speedMulti = 200 / ent.Physics.LinearVelocity.Length();
+                            Absorb += 20000 * speedMulti;
                             destObj.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
                         }
                     }
@@ -1409,7 +1437,11 @@ namespace DefenseShields
                                 {
                                     if (webent.MarkedForClose || webent.Closed) continue;
                                     if (webent is IMyMeteor) _meteorDmg.Enqueue(webent as IMyMeteor);
-                                    else if (webent.GetType().Name.StartsWith("MyMissile")) _missileDmg.Enqueue(webent);
+                                    else if (webent.GetType().Name.StartsWith("MyMissile"))
+                                    {
+                                        Log.Line($"{webent.Model.AssetName} {webent.Model.UniqueId}");
+                                        _missileDmg.Enqueue(webent);
+                                    }
                                 }
                                 continue;
                             }
