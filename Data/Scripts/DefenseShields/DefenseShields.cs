@@ -365,7 +365,7 @@ namespace DefenseShields
                     _shell.Save = false;
                     _shell.SetEmissiveParts("ShieldEmissiveAlpha", Color.Blue, 0.1f);
 
-                    _shield = _spawn.EmptyEntity("dShield", null, (MyEntity)Shield, true);
+                    _shield = _spawn.EmptyEntity("dShield", null, (MyEntity)Shield, false);
                     _shield.Render.CastShadows = false;
                     _shield.Render.RemoveRenderObjects();
                     _shield.Render.UpdateRenderObject(true);
@@ -756,7 +756,6 @@ namespace DefenseShields
             ShieldSize = shieldSize;
             var gridLocalCenter = Shield.CubeGrid.PositionComp.LocalAABB.Center;
             var mobileMatrix = MatrixD.CreateScale(shieldSize) * MatrixD.CreateTranslation(gridLocalCenter);
-            //mobileMatrix.Translation = Shield.CubeGrid.PositionComp.LocalVolume.Center;
             _shieldShapeMatrix = mobileMatrix;
         }
 
@@ -765,7 +764,6 @@ namespace DefenseShields
             var shieldLocalCenter = Shield.PositionComp.LocalAABB.Center;
             var mobileMatrix = MatrixD.CreateScale(_width, _height, _depth) * MatrixD.CreateTranslation(shieldLocalCenter);
             ShieldSize = mobileMatrix.Scale;
-            //mobileMatrix.Translation = shieldLocalCenter;
             _shieldShapeMatrix = mobileMatrix;
         }
 
@@ -774,38 +772,12 @@ namespace DefenseShields
             _shell.PositionComp.LocalMatrix = _shieldShapeMatrix;
             _shield.PositionComp.LocalMatrix = _shieldShapeMatrix;
             _shield.PositionComp.LocalAABB = _shieldAabb;
-        }
-        /*
-        private void SetShieldShape()
-        {
-            _shell.PositionComp.SetLocalMatrix(_shieldShapeMatrix, null, true, null);
 
-            //var lMatrix = Shield.CubeGrid.LocalMatrix;
-            //lMatrix.Translation = _shieldShapeMatrix.Translation;
-            var lMatrix = _shieldShapeMatrix;
-            _shield.PositionComp.LocalAABB = _shieldAabb;
+            var matrix = _shieldShapeMatrix * Shield.WorldMatrix;
+            _shield.PositionComp.SetWorldMatrix(matrix);
             _shield.PositionComp.SetPosition(_detectionCenter);
 
-            if (!GridIsMobile)
-            {
-                _shield.PositionComp.SetLocalMatrix(lMatrix, Shield, true);
-                _shield.PositionComp.SetWorldMatrix(_detectMatrixOutside, _shield.Parent, true);
-                //_shield.SetPosition(_detectionCenter);
-                //_shield.Render.SetParent(0, Shield.CubeGrid.Render.GetRenderObjectID(), _shieldShapeMatrix);
-            }
-
-            if (!_entityChanged || !GridIsMobile) return;
-
-            //((IMyEntity)_shell).SetPosition(_detectionCenter);
-            //_shell.PositionComp.SetWorldMatrix(_detectMatrixOutside, _shield.Parent, true, true, false, false, false);
-            //_shell.Render.SetParent(0, Shield.CubeGrid.Render.GetRenderObjectID(), _shieldShapeMatrix);
-
-            //_shield.PositionComp.SetPosition(_detectionCenter);
-            _shield.PositionComp.SetLocalMatrix(lMatrix, Shield.CubeGrid, true);
-            //_shield.PositionComp.SetWorldMatrix(_detectMatrixOutside, _shield.Parent, true, true, false, false, false);
-            //_shield.Render.SetParent(0, Shield.CubeGrid.Render.GetRenderObjectID(), _shieldShapeMatrix);
         }
-        */
 
         private void RefreshDimensions()
         {
@@ -1319,7 +1291,7 @@ namespace DefenseShields
                                 ((MyCubeGrid)block.CubeGrid).EnqueueDestroyedBlock(block.Position);
                                 continue;
                             }
-                            block.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId); // set sync to true for multiplayer?
+                            block.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId); // set  to true for multiplayer?
                             if (((MyCubeGrid)block.CubeGrid).BlocksCount == 0) block.CubeGrid.SyncObject.SendCloseRequest();
                         }
                     }
