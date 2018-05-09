@@ -142,6 +142,7 @@ namespace DefenseShields
 
         private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<IMyEntity, Vector3D>();
         private readonly MyConcurrentDictionary<IMyEntity, EntIntersectInfo> _webEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();
+        private readonly MyConcurrentDictionary<string, AmmoInfo> _ammoInfo = new MyConcurrentDictionary<string, AmmoInfo>();
 
         private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
 
@@ -321,7 +322,11 @@ namespace DefenseShields
         {
             try
             {
-                if (!AmmoLoaded && _tick > 900) GetAmmoDefinitons();
+                if (!AmmoLoaded && AnimateInit && _tick > 600)
+                {
+                    AmmoLoaded = true;
+                    GetAmmoDefinitons();
+                }
                 if (AnimateInit && MainInit || !Shield.IsFunctional) return;
 
                 HardDisable = false || (Shield.EntityId != ThereCanBeOnlyOne() || (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST" && !Shield.CubeGrid.Physics.IsStatic) 
@@ -562,16 +567,12 @@ namespace DefenseShields
             {
                 if (!(def is MyAmmoMagazineDefinition)) continue;
                 var ammoDef = def as MyAmmoMagazineDefinition;
-                if (ammoDef.Context.IsBaseGame) continue;
+                //if (ammoDef.Context.IsBaseGame) continue;
                 var ammo = MyDefinitionManager.Static.GetAmmoDefinition(ammoDef.AmmoDefinitionId);
                 if (!(ammo is MyMissileAmmoDefinition)) continue;
 
-                var missile = ammo as MyMissileAmmoDefinition;
-
-                //Log.Line($"Name: {ammo.Id.SubtypeId} - Damage: {ammo.GetDamageForMechanicalObjects()} - type: {ammo.AmmoType} - speed:{ammo.DesiredSpeed} - material: {ammo.PhysicalMaterial} - Explosive: {ammo.IsExplosive} back: {ammo.BackkickForce}");
-                //Log.Line($"{ammoDef.Model}");
-                //Log.Line($"expoDamage: {missile.MissileExplosionDamage} - Radius: {missile.MissileExplosionRadius} - Mass: {missile.MissileMass} - {missile.DesiredSpeed} - {missile.IsExplosive} - {missile.BackkickForce} - Model: {ammoDef.Model}");
-                AmmoLoaded = true;
+                var shot = ammo as MyMissileAmmoDefinition;
+                _ammoInfo.Add(ammoDef.Model, new AmmoInfo(shot.IsExplosive, shot.MissileExplosionDamage, shot.MissileExplosionRadius, shot.DesiredSpeed, shot.MissileMass, shot.BackkickForce));
             }
         }
         #endregion
@@ -1194,8 +1195,8 @@ namespace DefenseShields
                             var destObj = ent as IMyDestroyableObject;
                             if (destObj == null) continue;
                             WorldImpactPosition = ent.PositionComp.WorldVolume.Center;
-                            var speedMulti = 200 / ent.Physics.LinearVelocity.Length();
-                            Absorb += 20000 * speedMulti;
+                            var damage = ComputeAmmoDamage();
+                            Absorb += damage;
                             destObj.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
                         }
                     }
@@ -1416,11 +1417,8 @@ namespace DefenseShields
                                 {
                                     if (webent.MarkedForClose || webent.Closed) continue;
                                     if (webent is IMyMeteor) _meteorDmg.Enqueue(webent as IMyMeteor);
-                                    else if (webent.GetType().Name.StartsWith("MyMissile"))
-                                    {
-                                        Log.Line($"{webent.Model.AssetName} {webent.Model.UniqueId}");
+                                    else if (_ammoInfo.ContainsKey(webent.Model.AssetName))
                                         _missileDmg.Enqueue(webent);
-                                    }
                                 }
                                 continue;
                             }
