@@ -707,8 +707,6 @@ namespace DefenseShields
             _gridChanged = _oldGridAabb != Shield.CubeGrid.LocalAABB;
             _oldGridAabb = Shield.CubeGrid.LocalAABB;
             _entityChanged = Shield.CubeGrid.Physics.IsMoving || _gridChanged || _shieldStarting;
-            _entityChanged = true;
-            _gridChanged = true;
             if (_entityChanged || Range <= 0 || _shieldStarting) CreateShieldShape();
         }
 
@@ -774,9 +772,8 @@ namespace DefenseShields
             _shield.PositionComp.LocalAABB = _shieldAabb;
 
             var matrix = _shieldShapeMatrix * Shield.WorldMatrix;
-            _shield.PositionComp.SetWorldMatrix(matrix);
+            _shield.PositionComp.SetWorldMatrix(matrix, null, true, true, true, false, true);
             _shield.PositionComp.SetPosition(_detectionCenter);
-
         }
 
         private void RefreshDimensions()
