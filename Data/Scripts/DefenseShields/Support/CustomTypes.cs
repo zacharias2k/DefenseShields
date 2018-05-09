@@ -6,6 +6,26 @@ using VRageMath;
 
 namespace DefenseShields.Support
 {
+    public struct AmmoInfo
+    {
+        public readonly bool Explosive;
+        public readonly float Damage;
+        public readonly float Radius;
+        public readonly float Speed;
+        public readonly float Mass;
+        public readonly float BackKickForce;
+
+        public AmmoInfo(bool explosive, float damage, float radius, float speed, float mass, float backKickForce)
+        {
+            Explosive = explosive;
+            Damage = damage;
+            Radius = radius;
+            Speed = speed;
+            Mass = mass;
+            BackKickForce = backKickForce;
+        }
+    }
+
     public class EntIntersectInfo
     {
         public readonly long EntId;
