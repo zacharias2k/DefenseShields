@@ -578,7 +578,6 @@ namespace DefenseShields.Support
                     if (_impactCnt[9] % 2 == 1)
                     {
                         Log.Line($"Models!");
-                        _shell.Render.Visible = true;
                         ((MyEntity)_shell).RefreshModels($"{modPath}\\Models\\LargeField{n.ToString()}.mwm", null);
                         _shell.Render.RemoveRenderObjects();
                         _shell.Render.UpdateRenderObject(true);

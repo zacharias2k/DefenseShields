@@ -83,6 +83,7 @@ namespace DefenseShields
         internal const bool Debug = true;
         internal bool MainInit;
         internal bool AnimateInit;
+        internal bool AmmoLoaded;
         internal bool GridIsMobile;
         internal bool ShieldActive;
         internal bool BlockWorking;
@@ -222,6 +223,8 @@ namespace DefenseShields
                 _power = 0f;
                 if (MainInit) Sink.Update();
                 _icosphere = null;
+                _shield.Close();
+                _shell.Close();
                 BlockParticleStop();
                 Shield.CubeGrid.Components.Remove(typeof(ShieldGridComponent), this);
                 DefenseShieldsBase.Instance.Components.Remove(this);
@@ -239,6 +242,9 @@ namespace DefenseShields
                 if (DefenseShieldsBase.Instance.Components.Contains(this)) DefenseShieldsBase.Instance.Components.Remove(this);
                 //DefenseShieldsBase.Instance.Components.RemoveAt(DefenseShieldsBase.Instance.Components.IndexOf(this));
                 _power = 0f;
+                _icosphere = null;
+                _shield.Close();
+                _shell.Close();
                 if (MainInit) Sink.Update();
                 BlockParticleStop();
             }
@@ -315,7 +321,9 @@ namespace DefenseShields
         {
             try
             {
+                if (!AmmoLoaded && _tick > 900) GetAmmoDefinitons();
                 if (AnimateInit && MainInit || !Shield.IsFunctional) return;
+
                 HardDisable = false || (Shield.EntityId != ThereCanBeOnlyOne() || (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST" && !Shield.CubeGrid.Physics.IsStatic) 
                                                                                || (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" && Shield.CubeGrid.Physics.IsStatic));
                 NoPower = false;
@@ -356,8 +364,7 @@ namespace DefenseShields
 
                     CreateUi();
 
-                    _shell = _spawn.EmptyEntity("dShell", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldPassive_LOD1.mwm", parent, true);
-                    _shell.Render.Visible = true;
+                    _shell = _spawn.EmptyEntity("dShell", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldPassive_LOD0.mwm", parent, true);
                     _shell.Render.CastShadows = false;
                     _shell.IsPreview = true;
                     _shell.Render.RemoveRenderObjects();
@@ -368,8 +375,7 @@ namespace DefenseShields
                     _shield = _spawn.EmptyEntity("dShield", null, (MyEntity)Shield, false);
                     _shield.Render.CastShadows = false;
                     _shield.Render.RemoveRenderObjects();
-                    _shield.Render.UpdateRenderObject(true);
-                    _shield.Render.Visible = false;
+                    _shield.Render.Visible = true;
                     _shield.Save = false;
 
                     Shield.AppendingCustomInfo += AppendingCustomInfo;
@@ -548,6 +554,26 @@ namespace DefenseShields
             }
             return false;
         }
+
+        private void GetAmmoDefinitons()
+        {
+            var defintions = MyDefinitionManager.Static.GetAllDefinitions();
+            foreach (var def in defintions)
+            {
+                if (!(def is MyAmmoMagazineDefinition)) continue;
+                var ammoDef = def as MyAmmoMagazineDefinition;
+                if (ammoDef.Context.IsBaseGame) continue;
+                var ammo = MyDefinitionManager.Static.GetAmmoDefinition(ammoDef.AmmoDefinitionId);
+                if (!(ammo is MyMissileAmmoDefinition)) continue;
+
+                var missile = ammo as MyMissileAmmoDefinition;
+
+                //Log.Line($"Name: {ammo.Id.SubtypeId} - Damage: {ammo.GetDamageForMechanicalObjects()} - type: {ammo.AmmoType} - speed:{ammo.DesiredSpeed} - material: {ammo.PhysicalMaterial} - Explosive: {ammo.IsExplosive} back: {ammo.BackkickForce}");
+                //Log.Line($"{ammoDef.Model}");
+                //Log.Line($"expoDamage: {missile.MissileExplosionDamage} - Radius: {missile.MissileExplosionRadius} - Mass: {missile.MissileMass} - {missile.DesiredSpeed} - {missile.IsExplosive} - {missile.BackkickForce} - Model: {ammoDef.Model}");
+                AmmoLoaded = true;
+            }
+        }
         #endregion
 
         #region Create UI
@@ -634,23 +660,6 @@ namespace DefenseShields
 
                 if (_count == 29)
                 {
-                    /*
-                    var defintions = MyDefinitionManager.Static.GetAllDefinitions();
-                    foreach (var def in defintions)
-                    {
-                        if (!(def is MyAmmoMagazineDefinition)) continue;
-                        var ammoDef = def as MyAmmoMagazineDefinition;
-                        if (ammoDef.Context.IsBaseGame) continue;
-                        var ammo = MyDefinitionManager.Static.GetAmmoDefinition(ammoDef.AmmoDefinitionId);
-                        if (!(ammo is MyMissileAmmoDefinition)) continue;
-
-                        var missile = ammo as MyMissileAmmoDefinition;
-
-                        //Log.Line($"Name: {ammo.Id.SubtypeId} - Damage: {ammo.GetDamageForMechanicalObjects()} - type: {ammo.AmmoType} - speed:{ammo.DesiredSpeed} - material: {ammo.PhysicalMaterial} - Explosive: {ammo.IsExplosive} back: {ammo.BackkickForce}");
-                        //Log.Line($"{ammoDef.Model}");
-                        //Log.Line($"expoDamage: {missile.MissileExplosionDamage} - Radius: {missile.MissileExplosionRadius} - Mass: {missile.MissileMass} - {missile.DesiredSpeed} - {missile.IsExplosive} - {missile.BackkickForce} - Model: {ammoDef.Model}");
-                    }
-                    */
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
                     {
                         Shield.ShowInToolbarConfig = false;
@@ -664,8 +673,9 @@ namespace DefenseShields
                 {
                     if (_shieldStarting)
                     {
-                        _shell.Render.Visible = true;
+                        _shell.Render.UpdateRenderObject(true);
                         _shield.Render.Visible = true;
+                        Log.Line($"starting");
                     }
                     if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
                     if (Distance(1000))
@@ -772,7 +782,7 @@ namespace DefenseShields
             _shield.PositionComp.LocalAABB = _shieldAabb;
 
             var matrix = _shieldShapeMatrix * Shield.WorldMatrix;
-            _shield.PositionComp.SetWorldMatrix(matrix, null, true, true, true, false, true);
+            _shield.PositionComp.SetWorldMatrix(matrix);
             _shield.PositionComp.SetPosition(_detectionCenter);
         }
 
@@ -826,7 +836,7 @@ namespace DefenseShields
                 ShieldActive = false;
                 BlockWorking = false;
                 _prevShieldActive = false;
-                _shell.Render.Visible = false;
+                _shell.Render.UpdateRenderObject(false);
                 _shield.Render.Visible = false;
                 Absorb = 0;
                 _shieldBuffer = 0;
