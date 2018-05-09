@@ -356,7 +356,7 @@ namespace DefenseShields
 
                     CreateUi();
 
-                    _shell = _spawn.EmptyEntity("dShell", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldPassive_LOD1.mwm", parent, true);
+                    _shell = _spawn.EmptyEntity("dShell", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldPassiveTest_LOD0.mwm", parent, true);
                     _shell.Render.Visible = true;
                     _shell.Render.CastShadows = false;
                     _shell.IsPreview = true;
