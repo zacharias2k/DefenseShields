@@ -6,7 +6,7 @@ using VRageMath;
 
 namespace DefenseShields.Support
 {
-    public struct AmmoInfo
+    public class AmmoInfo
     {
         public readonly bool Explosive;
         public readonly float Damage;

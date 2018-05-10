@@ -56,9 +56,10 @@ namespace DefenseShields
         private float _gridAvailablePower;
         private float _shieldMaxBuffer;
         private float _shieldBuffer;
-        private float _shieldMaxChargeRateffer;
+        private float _shieldMaxChargeRate;
         private float _shieldChargeRate;
-        private float _shieldEfficiencyhargeRate;
+        private float _shieldDps;
+        private float _shieldEfficiency;
         private float _shieldCurrentPower;
         private float _shieldMaintaintPower;
 
@@ -111,7 +112,7 @@ namespace DefenseShields
         public readonly Vector3D[] PhysicsOutsideLow = new Vector3D[162];
         private readonly Vector3D[] _physicsInside = new Vector3D[642];
 
-        private MatrixD _shieldGridMatrixting;
+        private MatrixD _shieldGridMatrix;
         private MatrixD _shieldShapeMatrix;
         private MatrixD _detectMatrixOutside;
         private MatrixD _detectMatrixOutsideInv;
@@ -604,7 +605,7 @@ namespace DefenseShields
             DefenseShieldsBase.Instance.ControlsLoaded = true;
             RemoveOreUi();
 
-            _chargeSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ChargeRate", "Shield Charge Rate", 5, 95, 35);
+            _chargeSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ChargeRate", "Shield Charge Rate", 20, 95, 50);
             _visablilityCheckBox = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "Visability", "Hide Shield From Allied", false);
 
             if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" || Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") return;
@@ -667,6 +668,7 @@ namespace DefenseShields
                         Shield.ShowInToolbarConfig = true;
                     }
                     else if (_longLoop == 0 || _longLoop == 5) Shield.ShowInToolbarConfig = false; Shield.ShowInToolbarConfig = true; Shield.RefreshCustomInfo();
+                    _shieldDps = 0f;
                 }
                 if (_shieldStarting && GridIsMobile && FieldShapeBlocked()) return;
 
@@ -725,9 +727,9 @@ namespace DefenseShields
         {
             if (GridIsMobile)
             {
-                _shieldGridMatrixting = Shield.CubeGrid.WorldMatrix;
+                _shieldGridMatrix = Shield.CubeGrid.WorldMatrix;
                 if (_gridChanged) CreateMobileShape();
-                DetectionMatrix = _shieldShapeMatrix * _shieldGridMatrixting;
+                DetectionMatrix = _shieldShapeMatrix * _shieldGridMatrix;
                 _detectionCenter = Shield.CubeGrid.PositionComp.WorldVolume.Center;
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(Shield.CubeGrid.WorldMatrix);
                 _sOriBBoxD = new MyOrientedBoundingBoxD(_detectionCenter, ShieldSize, _sQuaternion);
@@ -739,9 +741,9 @@ namespace DefenseShields
             }
             else
             {
-                _shieldGridMatrixting = Shield.WorldMatrix;
+                _shieldGridMatrix = Shield.WorldMatrix;
                 CreateStaticShape();
-                DetectionMatrix = _shieldShapeMatrix * _shieldGridMatrixting;
+                DetectionMatrix = _shieldShapeMatrix * _shieldGridMatrix;
                 _detectionCenter = Shield.PositionComp.WorldVolume.Center;
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(Shield.WorldMatrix);
                 _sOriBBoxD = new MyOrientedBoundingBoxD(_detectionCenter, ShieldSize, _sQuaternion);
@@ -842,7 +844,7 @@ namespace DefenseShields
                 Absorb = 0;
                 _shieldBuffer = 0;
                 _shieldChargeRate = 0;
-                _shieldMaxChargeRateffer = 0;
+                _shieldMaxChargeRate = 0;
                 if (_shieldDownLoop > -1)
                 {
                     _power = _gridMaxPower * _shieldMaintaintPower;
@@ -927,8 +929,9 @@ namespace DefenseShields
             var shieldMaintainCost = 1 / percent;
             var fPercent = (percent / ratio) / 100;
             var baseScale = 30;
-            var sizeScaler = (_approxSurfaceArea / _detectMatrixOutside.Scale.Sum) / 100;
-            _shieldEfficiencyhargeRate = 100f;
+            var sizeScaler = (_approxSurfaceArea / _detectMatrixOutside.Scale.AbsMax()) / 200;
+            //Log.Line($"{sizeScaler} - {_detectMatrixOutside.Scale.Sum} - {_detectMatrixOutside.Scale.Max()} - {_detectMatrixOutside.Scale.AbsMax()} - {_detectMatrixOutside.Scale.Length()}");
+            _shieldEfficiency = 100f;
 
             if (_shieldBuffer > 0 && _shieldCurrentPower < 0.001f)
             {
@@ -942,24 +945,24 @@ namespace DefenseShields
             var cleanPower = _gridMaxPower - otherPower;
             powerForShield = cleanPower * fPercent;
 
-            _shieldMaxChargeRateffer = powerForShield > 0 ? powerForShield : 0f;
+            _shieldMaxChargeRate = powerForShield > 0 ? powerForShield : 0f;
             _shieldMaxBuffer = (_gridMaxPower * (100 / percent) * baseScale) / (float)sizeScaler;
 
-            if (_shieldBuffer + _shieldMaxChargeRateffer < _shieldMaxBuffer) _shieldChargeRate = _shieldMaxChargeRateffer;
+            if (_shieldBuffer + _shieldMaxChargeRate < _shieldMaxBuffer) _shieldChargeRate = _shieldMaxChargeRate;
             else
             {
                 if (_shieldMaxBuffer - _shieldBuffer > 0) _shieldChargeRate = _shieldMaxBuffer - _shieldBuffer;
-                else _shieldMaxChargeRateffer = 0f;
+                else _shieldMaxChargeRate = 0f;
             }
 
-            if (_shieldMaxChargeRateffer < 0.001f)
+            if (_shieldMaxChargeRate < 0.001f)
             {
                 _shieldChargeRate = 0f;
                 _shieldMaintaintPower = shieldMaintainCost;
                 if (_shieldBuffer > _shieldMaxBuffer)  _shieldBuffer = _shieldMaxBuffer;
                 return;
             }
-            if (_shieldBuffer < _shieldMaxBuffer && _count == 0) _shieldBuffer += _shieldChargeRate;
+            if (_shieldBuffer < _shieldMaxBuffer && _count == 29) _shieldBuffer += _shieldChargeRate;
         }
 
         private double PowerCalculation(IMyEntity breaching)
@@ -988,11 +991,16 @@ namespace DefenseShields
             _shieldCurrentPower = Sink.CurrentInputByType(GId);
             if (Absorb > 0)
             {
-                //Log.Line($"Absorb Damage: {(Absorb / _shieldEfficiencyhargeRate).ToString()} - old: {_shieldBuffer.ToString()} - new: {(_shieldBuffer - (Absorb / _shieldEfficiencyhargeRate)).ToString()}");
+                _shieldDps += Absorb;
+                Log.Line($"Absorb Damage: {(Absorb).ToString()} - old: {_shieldBuffer.ToString()} - new: {(_shieldBuffer - (Absorb / _shieldEfficiency)).ToString()} - max: {_shieldMaxBuffer * _shieldEfficiency} - fracOfMax: {_shieldMaxBuffer / Absorb}");
                 _effectsCleanup = true;
-                _shieldBuffer -= (Absorb / _shieldEfficiencyhargeRate);
+                _shieldBuffer -= (Absorb / _shieldEfficiency);
             }
+            else if (Absorb < 0) _shieldBuffer += (Absorb / _shieldEfficiency);
+
             if (_shieldBuffer < 0) _shieldDownLoop = 0;
+            else if (_shieldBuffer > _shieldMaxBuffer) _shieldBuffer = _shieldMaxBuffer;
+
             Absorb = 0f;
         }
 
@@ -1007,15 +1015,15 @@ namespace DefenseShields
             var shieldPercent = 100f;
             var secToFull = 0;
             if (_shieldBuffer < _shieldMaxBuffer) shieldPercent = (_shieldBuffer / _shieldMaxBuffer) * 100;
-            if (_shieldChargeRate >= 1) secToFull = (int) ((_shieldMaxBuffer - _shieldBuffer) / _shieldChargeRate);
-            stringBuilder.Append("[Shield Status] MaxHP: " + (_shieldMaxBuffer * _shieldEfficiencyhargeRate).ToString("N0") +
+            if (_shieldChargeRate > 0) secToFull = (int) ((_shieldMaxBuffer - _shieldBuffer) / _shieldChargeRate);
+            stringBuilder.Append("[Shield Status] MaxHP: " + (_shieldMaxBuffer * _shieldEfficiency).ToString("N0") +
                                  "\n" +
-                                 "\n[Shield HP__]: " + (_shieldBuffer * _shieldEfficiencyhargeRate).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
-                                 "\n[HP Per Sec_]: " + (_shieldChargeRate * _shieldEfficiencyhargeRate).ToString("N0") +
+                                 "\n[Shield HP__]: " + (_shieldBuffer * _shieldEfficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
+                                 "\n[HP Per Sec_]: " + (_shieldChargeRate * _shieldEfficiency).ToString("N0") +
+                                 "\n[DPS_______]: " + (_shieldDps).ToString("N0") +
                                  "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
                                  "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
-                                 "\n[Efficiency__]: " + _shieldEfficiencyhargeRate.ToString("0.0") +
-                                 "\n" +
+                                 "\n[Efficiency__]: " + _shieldEfficiency.ToString("0.0") +
                                  "\n[Maintenance]: " + (_gridMaxPower * _shieldMaintaintPower).ToString("0.0") + " Mw" +
                                  "\n[Availabile]: " + _gridAvailablePower.ToString("0.0") + " Mw" +
                                  "\n[Current__]: " + Sink.CurrentInputByType(GId).ToString("0.0"));
@@ -1194,8 +1202,13 @@ namespace DefenseShields
                             if (ent == null || ent.MarkedForClose || ent.Closed) continue;
                             var destObj = ent as IMyDestroyableObject;
                             if (destObj == null) continue;
+                            var damage = ComputeAmmoDamage(ent);
+                            if (damage <= float.NegativeInfinity)
+                            {
+                                FriendlyCache.Add(ent);
+                                continue;
+                            }
                             WorldImpactPosition = ent.PositionComp.WorldVolume.Center;
-                            var damage = ComputeAmmoDamage();
                             Absorb += damage;
                             destObj.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
                         }
@@ -1212,7 +1225,7 @@ namespace DefenseShields
                         {
                             if (meteor == null || meteor.MarkedForClose || meteor.Closed) continue;
                             WorldImpactPosition = meteor.PositionComp.WorldVolume.Center;
-                            Absorb += 20000;
+                            Absorb += 5000;
                             meteor.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
                         }
                     }
@@ -1232,7 +1245,6 @@ namespace DefenseShields
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in missileDmg: {ex}"); }
-
 
                 try
                 {
@@ -1284,7 +1296,6 @@ namespace DefenseShields
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in fewBlocks: {ex}"); }
-
 
                 try
                 {
@@ -1361,6 +1372,7 @@ namespace DefenseShields
                 _icosphere.ReturnPhysicsVerts(_detectMatrixInside, _physicsInside);
             }
             if (_enablePhysics) MyAPIGateway.Parallel.Start(WebDispatch);
+            //if (_enablePhysics) WebDispatch();
 
             //_dsutil1.StopWatchReport("web", 1);
         }
@@ -1833,27 +1845,79 @@ namespace DefenseShields
         #endregion
 
         #region DSModAPI
-        private Vector3D? DsApiLineCheck(LineD lineToCheck, float damageFactor)
+        /// <summary>
+        /// RayCast against shielded targets.  If returns null proceed with normal raycast,
+        /// but do not normal cast against entities in _shielded (hashset).
+        /// </summary>
+        /// 
+        /// <param name="shield">the active shield to attack</param>
+        /// <param name="line">Ray to check for shield contact</param>
+        /// <param name="attackerId">You must pass the EntityID of the attacker</param>
+        /// <param name="damage">the amount of damage to do</param>
+        /// <param name="effect">optional effects, "DSdamage" is default, "DSheal"and "DSbypass" are possible</param>
+        private Vector3D? DsRayCast(IMyEntity shield, LineD line, long attackerId, float damage, MyStringId effect)
         {
-            _icosphere.ReturnPhysicsVerts(_detectMatrixOutside, PhysicsOutside);
-            var obbCheck = _sOriBBoxD.Intersects(ref lineToCheck);
+            var sphere = new BoundingSphereD(shield.PositionComp.WorldVolume.Center, shield.PositionComp.LocalAABB.HalfExtents.AbsMax());
+            var obb = MyOrientedBoundingBoxD.Create(shield.PositionComp.LocalAABB, shield.PositionComp.WorldMatrix.GetOrientation());
+            obb.Center = shield.PositionComp.WorldVolume.Center;
+
+            // DsDebugDraw.DrawSphere(sphere, Color.Red);
+            DsDebugDraw.DrawOBB(obb, Color.Blue, MySimpleObjectRasterizer.Wireframe, 0.1f);
+            var obbCheck = obb.Intersects(ref line);
             if (obbCheck == null) return null;
 
-            var testDir = lineToCheck.From - lineToCheck.To;
+            var testDir = line.From - line.To;
             testDir.Normalize();
-            var ray = new RayD(lineToCheck.From, -testDir);
-            var sphereCheck = _shieldSphere.Intersects(ray);
+            var ray = new RayD(line.From, -testDir);
+            var sphereCheck = sphere.Intersects(ray);
             if (sphereCheck == null) return null;
 
             var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
-            var hitPos = lineToCheck.From + testDir * -(double)furthestHit;
-            DsDebugDraw.DrawSingleVec(hitPos, 1f, Color.Gold);
-            var c = new Vector4(15, 0, 0, 10);
-            var rnd = new Random();
-            var lineWidth = 0.2f;
-            if (rnd.Next(0, 5) > 2) lineWidth = 1;
-            if (_count %2 == 0) DsDebugDraw.DrawLineToVec(lineToCheck.From, hitPos, c, lineWidth);
+            Vector3 hitPos = line.From + testDir * -(double)furthestHit;
+
+            var parent = MyAPIGateway.Entities.GetEntityById(long.Parse(shield.Name));
+            var cubeBlock = (MyCubeBlock)parent;
+            var block = (IMySlimBlock)cubeBlock.SlimBlock;
+
+            if (block == null) return null;
+           // _shielded.Add(parent);
+
+            if (Debug)
+            {
+                DsDebugDraw.DrawSingleVec(hitPos, 1f, Color.Gold);
+                var c = new Vector4(15, 0, 0, 10);
+                var rnd = new Random();
+                var lineWidth = 0.2f;
+                if (rnd.Next(0, 5) > 2) lineWidth = 1;
+                if (_count % 2 == 0) DsDebugDraw.DrawLineToVec(line.From, hitPos, c, lineWidth);
+            }
+
+            block.DoDamage(damage, MyStringHash.GetOrCompute(effect.ToString()), true, null, attackerId);
+            shield.Render.ColorMaskHsv = hitPos;
+            if (effect.ToString() == "bypass") return null;
+
             return hitPos;
+        }
+
+        private float ComputeAmmoDamage(IMyEntity ammoEnt)
+        {
+            //bypass < 0 kickback
+            //Ignores Shield entirely.
+            //
+            //healing < 0 mass ,  radius 0
+            //Heals Shield, converting weapon damage to healing value.
+            //Values as close to Zero (0) as possible, to best results, and less unintentional Results.
+            //Shield-Damage: All values such as projectile Velocity & Mass for non-explosive types and Explosive-damage when dealing with Explosive-types.
+            AmmoInfo ammoInfo;
+            _ammoInfo.TryGetValue(ammoEnt.Model.AssetName, out ammoInfo);
+            var damage = 0f;
+
+            if (ammoInfo.BackKickForce < 0) damage = float.NegativeInfinity;
+            else if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.5f)) * 7.5f;
+            else damage = ammoInfo.Mass * ammoInfo.Speed;
+
+            if (ammoInfo.Mass < 0 && ammoInfo.Radius <= 0) damage = -damage;
+            return damage;
         }
         #endregion
 
