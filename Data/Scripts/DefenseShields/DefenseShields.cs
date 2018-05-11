@@ -1425,6 +1425,15 @@ namespace DefenseShields
                                 if (entInfo.LastTick == _tick && CustomCollision.PointInShield(entCenter, _detectMatrixOutsideInv) && !entInfo.SpawnedInside)
                                 {
                                     if (webent.MarkedForClose || webent.Closed) continue;
+                                    Log.Line($"");
+                                    Log.Line($"{webent.Model.AssetName}");
+                                    Log.Line(string.Join(" ", webent.Model.AssetName.Select(x => "" + (int)x)));
+                                    foreach (var key in _ammoInfo.Keys)
+                                    {
+                                        Log.Line($"{key}");
+                                        Log.Line(string.Join(" ", key.Select(x => "" + (int) x)));
+                                    }
+                                    Log.Line($"");
                                     if (_ammoInfo.ContainsKey(webent.Model.AssetName))
                                     {
                                         Log.Line($"test");
