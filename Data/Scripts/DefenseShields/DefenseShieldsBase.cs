@@ -161,6 +161,7 @@ namespace DefenseShields
                 {
                     if (shield.ShieldActive && (shield.Shield.CubeGrid == blockGrid || shield.FriendlyCache.Contains(blockGrid)))
                     {
+
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
 
@@ -198,8 +199,8 @@ namespace DefenseShields
 
                         if (info.Type == MyStringHash.GetOrCompute("DSdamage") || info.Type == MyStringHash.GetOrCompute("DSheal") || info.Type == MyStringHash.GetOrCompute("DSbypass"))
                         {
-                            //Log.Line($"Amount:{info.Amount.ToString()} - Type:{info.Type.ToString()} - Block:{block.BlockDefinition.GetType().Name} - Attacker:{hostileEnt?.DebugName}");
-                            shield.Absorb += info.Amount * 4;
+                            Log.Line($"Amount:{info.Amount.ToString()} - Type:{info.Type.ToString()} - Block:{block.BlockDefinition.GetType().Name} - Attacker:{hostileEnt?.DebugName}");
+                            shield.Absorb += info.Amount;
                             info.Amount = 0f;
                             shield.WorldImpactPosition = shield._shield.Render.ColorMaskHsv;
                             continue;
@@ -219,9 +220,7 @@ namespace DefenseShields
                             info.Amount = 0f;
                             continue;
                         }
-
-                        //Log.Line($"Amount:{info.Amount.ToString()} - Type:{info.Type.ToString()} - Block:{block.BlockDefinition.GetType().Name} - Attacker:{hostileEnt?.DebugName}");
-                        shield.Absorb += info.Amount * 4;
+                        shield.Absorb += info.Amount;
                         info.Amount = 0f;
                     }
                 }
