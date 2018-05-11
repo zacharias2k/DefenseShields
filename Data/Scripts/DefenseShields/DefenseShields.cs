@@ -66,7 +66,7 @@ namespace DefenseShields
         internal double Range;
         private double _sAvelSqr;
         private double _sVelSqr;
-        private double _approxSurfaceArea;
+        private double _ellipsoidSurfaceArea;
 
         public int BulletCoolDown { get; private set; } = -1;
         public int EntityCoolDown { get; private set; } = -1;
@@ -143,7 +143,7 @@ namespace DefenseShields
 
         private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<IMyEntity, Vector3D>();
         private readonly MyConcurrentDictionary<IMyEntity, EntIntersectInfo> _webEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();
-        private readonly MyConcurrentDictionary<string, AmmoInfo> _ammoInfo = new MyConcurrentDictionary<string, AmmoInfo>();
+        private readonly Dictionary<string, AmmoInfo> _ammoInfo = new Dictionary<string, AmmoInfo>();
 
         private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
 
@@ -323,7 +323,7 @@ namespace DefenseShields
         {
             try
             {
-                if (!AmmoLoaded && AnimateInit && _tick > 600)
+                if (!AmmoLoaded && AnimateInit && _tick > 300)
                 {
                     AmmoLoaded = true;
                     GetAmmoDefinitons();
@@ -370,7 +370,7 @@ namespace DefenseShields
 
                     CreateUi();
 
-                    _shell = _spawn.EmptyEntity("dShell", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldPassive_LOD0.mwm", parent, true);
+                    _shell = _spawn.EmptyEntity("dShell", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldPassiveTest_LOD0.mwm", parent, true);
                     _shell.Render.CastShadows = false;
                     _shell.IsPreview = true;
                     _shell.Render.RemoveRenderObjects();
@@ -563,18 +563,23 @@ namespace DefenseShields
 
         private void GetAmmoDefinitons()
         {
-            var defintions = MyDefinitionManager.Static.GetAllDefinitions();
-            foreach (var def in defintions)
+            try
             {
-                if (!(def is MyAmmoMagazineDefinition)) continue;
-                var ammoDef = def as MyAmmoMagazineDefinition;
-                //if (ammoDef.Context.IsBaseGame) continue;
-                var ammo = MyDefinitionManager.Static.GetAmmoDefinition(ammoDef.AmmoDefinitionId);
-                if (!(ammo is MyMissileAmmoDefinition)) continue;
-
-                var shot = ammo as MyMissileAmmoDefinition;
-                _ammoInfo.Add(ammoDef.Model, new AmmoInfo(shot.IsExplosive, shot.MissileExplosionDamage, shot.MissileExplosionRadius, shot.DesiredSpeed, shot.MissileMass, shot.BackkickForce));
+                var defintions = MyDefinitionManager.Static.GetAllDefinitions();
+                Log.Line($"Getting Ammo Definitions");
+                foreach (var def in defintions)
+                {
+                    if (!(def is MyAmmoMagazineDefinition)) continue;
+                    var ammoDef = def as MyAmmoMagazineDefinition;
+                    //if (ammoDef.Context.IsBaseGame) continue;
+                    var ammo = MyDefinitionManager.Static.GetAmmoDefinition(ammoDef.AmmoDefinitionId);
+                    if (!(ammo is MyMissileAmmoDefinition)) continue;
+                    var shot = ammo as MyMissileAmmoDefinition;
+                    if (_ammoInfo.ContainsKey(ammoDef.Model)) continue;
+                    _ammoInfo.Add(ammoDef.Model, new AmmoInfo(shot.IsExplosive, shot.MissileExplosionDamage, shot.MissileExplosionRadius, shot.DesiredSpeed, shot.MissileMass, shot.BackkickForce));
+                }
             }
+            catch (Exception ex) { Log.Line($"Exception in GetAmmoDefinitions: {ex}"); }
         }
         #endregion
 
@@ -735,9 +740,7 @@ namespace DefenseShields
                 _sOriBBoxD = new MyOrientedBoundingBoxD(_detectionCenter, ShieldSize, _sQuaternion);
                 _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
                 _shieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
-                var sphereSurf = 4 * Math.PI * _shieldSphere.Radius * _shieldSphere.Radius;
-                var aabbSurf = _shieldAabb.SurfaceArea();
-                _approxSurfaceArea = aabbSurf < sphereSurf ? aabbSurf : sphereSurf;
+                _ellipsoidSurfaceArea = new EllipsoidSA(_detectMatrixOutside.Scale.X, _detectMatrixOutside.Scale.Y, _detectMatrixOutside.Scale.Z).Surface;
             }
             else
             {
@@ -749,9 +752,7 @@ namespace DefenseShields
                 _sOriBBoxD = new MyOrientedBoundingBoxD(_detectionCenter, ShieldSize, _sQuaternion);
                 _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
                 _shieldSphere = new BoundingSphereD(_detectionCenter, ShieldSize.AbsMax());
-                var sphereSurf = 4 * Math.PI * _shieldSphere.Radius * _shieldSphere.Radius;
-                var aabbSurf = _shieldAabb.SurfaceArea();
-                _approxSurfaceArea = aabbSurf < sphereSurf ? aabbSurf : sphereSurf;
+                _ellipsoidSurfaceArea = new EllipsoidSA(_detectMatrixOutside.Scale.X, _detectMatrixOutside.Scale.Y, _detectMatrixOutside.Scale.Z).Surface;
             }
             Range = ShieldSize.AbsMax() + 7.5f;
             SetShieldShape();
@@ -921,20 +922,19 @@ namespace DefenseShields
         private void CalculatePowerCharge()
         {
             var powerForShield = 0f;
-            _shieldMaintaintPower = 0f;
-
             const float ratio = 1.25f;
             var rate = _chargeSlider?.Getter(Shield) ?? 0f;
             var percent = rate * ratio;
             var shieldMaintainCost = 1 / percent;
+            _shieldMaintaintPower = shieldMaintainCost;
             var fPercent = (percent / ratio) / 100;
             var baseScale = 30;
-            var sizeScaler = (_approxSurfaceArea / _detectMatrixOutside.Scale.AbsMax()) / 200;
-            //Log.Line($"{sizeScaler} - {_detectMatrixOutside.Scale.Sum} - {_detectMatrixOutside.Scale.Max()} - {_detectMatrixOutside.Scale.AbsMax()} - {_detectMatrixOutside.Scale.Length()}");
+            var sizeScaler = (((_ellipsoidSurfaceArea / 19.1990522960099f) / _detectMatrixOutside.Scale.AbsMax()));
             _shieldEfficiency = 100f;
 
-            if (_shieldBuffer > 0 && _shieldCurrentPower < 0.001f)
+            if (_shieldBuffer > 0 && _shieldCurrentPower < 0.00000000001f) // is this even needed anymore?
             {
+                Log.Line($"if u see this it is needed");
                 if (_shieldBuffer > _gridMaxPower * shieldMaintainCost) _shieldBuffer -= _gridMaxPower * shieldMaintainCost;
                 else _shieldBuffer = 0f;
             }
@@ -958,11 +958,13 @@ namespace DefenseShields
             if (_shieldMaxChargeRate < 0.001f)
             {
                 _shieldChargeRate = 0f;
-                _shieldMaintaintPower = shieldMaintainCost;
                 if (_shieldBuffer > _shieldMaxBuffer)  _shieldBuffer = _shieldMaxBuffer;
                 return;
             }
             if (_shieldBuffer < _shieldMaxBuffer && _count == 29) _shieldBuffer += _shieldChargeRate;
+
+            //Log.Line($"{_shieldBuffer} - {_shieldChargeRate} - {_shieldMaxChargeRate} - {_shieldMaxBuffer} " +
+            //$"- {shieldMaintainCost} - {_gridMaxPower} - {powerForShield} - {_shieldCurrentPower} - {_shieldCurrentPower}");
         }
 
         private double PowerCalculation(IMyEntity breaching)
@@ -1006,11 +1008,6 @@ namespace DefenseShields
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
-            if (block.GameLogic.GetAs<DefenseShields>() == null)
-            {
-                Log.Line($"Appending Shield is not ready or null");
-                return;
-            }
             if (!GridIsMobile && ShieldActive)RefreshDimensions();
             var shieldPercent = 100f;
             var secToFull = 0;
@@ -1428,9 +1425,12 @@ namespace DefenseShields
                                 if (entInfo.LastTick == _tick && CustomCollision.PointInShield(entCenter, _detectMatrixOutsideInv) && !entInfo.SpawnedInside)
                                 {
                                     if (webent.MarkedForClose || webent.Closed) continue;
-                                    if (webent is IMyMeteor) _meteorDmg.Enqueue(webent as IMyMeteor);
-                                    else if (_ammoInfo.ContainsKey(webent.Model.AssetName))
+                                    if (_ammoInfo.ContainsKey(webent.Model.AssetName))
+                                    {
+                                        Log.Line($"test");
                                         _missileDmg.Enqueue(webent);
+                                    }
+                                    else if (webent is IMyMeteor) _meteorDmg.Enqueue(webent as IMyMeteor);
                                 }
                                 continue;
                             }
@@ -1911,6 +1911,7 @@ namespace DefenseShields
             AmmoInfo ammoInfo;
             _ammoInfo.TryGetValue(ammoEnt.Model.AssetName, out ammoInfo);
             var damage = 0f;
+            if (ammoInfo == null) return damage;
 
             if (ammoInfo.BackKickForce < 0) damage = float.NegativeInfinity;
             else if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.5f)) * 7.5f;
