@@ -225,6 +225,8 @@ namespace DefenseShields.Support
             private int _chargeDrawStep;
             private int _lod;
 
+            private float _shieldPercent;
+
             private const int ImpactSteps = 80;
             private const int ChargeSteps = 30;
 
@@ -240,7 +242,9 @@ namespace DefenseShields.Support
             private bool _impact;
             private bool _charge;
 
-            private MyEntity _shell;
+            private MyEntity _shellPassive;
+            private MyEntity _shellActive;
+
 
             private readonly MyStringId _faceIdle = MyStringId.GetOrCompute("CustomIdle");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private readonly MyStringId _faceWave = MyStringId.GetOrCompute("SunDisk");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
@@ -314,9 +318,11 @@ namespace DefenseShields.Support
                 }
             }
 
-            public void ComputeEffects(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, MyEntity shell, int prevLod)
+            public void ComputeEffects(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, MyEntity shellPassive, MyEntity shellActive, int prevLod, float shieldPercent)
             {
-                _shell = shell;
+                _shellPassive = shellPassive;
+                _shellActive = shellActive;
+                _shieldPercent = shieldPercent;
                 _enemy = enemy;
                 _matrix = matrix;
                 _impactPosState = impactPos;
@@ -337,7 +343,11 @@ namespace DefenseShields.Support
                 if (_charge && _impactsFinished && prevLod == _lod) ChargeColorAssignments(prevLod);
                 if (_impactsFinished && prevLod == _lod) return;
 
-                //if (_impactCnt[9] != 0) MyAPIGateway.Parallel.Start(Models);
+                if (_shieldPercent > 80) _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.LightBlue, 1f);
+                else if (_shieldPercent > 60) _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.DarkBlue, 1f);
+                else if (_shieldPercent > 40) _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.GreenYellow, 1f);
+                else if (_shieldPercent > 20) _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.OrangeRed, 1f);
+                else _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.DarkRed, 1f);
 
                 ImpactColorAssignments(impactSize, impactSpeed, prevLod);
                 //_dsutil2.StopWatchReport("colorcalc", 1);
@@ -528,6 +538,14 @@ namespace DefenseShields.Support
                 }
                 if (_impact)
                 {
+                    if (_impactsFinished)
+                    {
+                        _shellActive.Render.UpdateRenderObject(true);
+                        _shellPassive.Render.UpdateRenderObject(false);
+                        //_shellActive.Render.Visible = true;
+                        //_shellPassive.Render.Visible = false;
+                    }
+
                     _impactsFinished = false;
                     _impactDrawStep = 0;
                     _charge = false;
@@ -560,45 +578,16 @@ namespace DefenseShields.Support
                     if (_impactCnt[0] == 0 && _impactCnt[1] == 0 && _impactCnt[2] == 0 && _impactCnt[3] == 0 && _impactCnt[4] == 0 
                         && _impactCnt[5] == 0 && _impactCnt[6] == 0 && _impactCnt[7] == 0 && _impactCnt[8] == 0 && _impactCnt[9] == 0)
                     {
+                        _shellActive.Render.UpdateRenderObject(false);
+                        _shellPassive.Render.UpdateRenderObject(true);
+                        //_shellActive.Render.Visible = false;
+                        //_shellPassive.Render.Visible = true;
                         _impactsFinished = true;
                         _impactDrawStep = 0;
                         for (int i = 0; i < _triColorBuffer.Length; i++)
                             _triColorBuffer[i] = _defaultColor;
                     }
                 }
-            }
-
-            private void Models()
-            {               
-                try
-                {
-                    var modPath = DefenseShieldsBase.Instance.ModPath();
-                    if (_impactCnt[9] == 1) _modelCount = 0;
-                    var n = _modelCount;
-                    if (_impactCnt[9] % 2 == 1)
-                    {
-                        Log.Line($"Models!");
-                        ((MyEntity)_shell).RefreshModels($"{modPath}\\Models\\LargeField{n.ToString()}.mwm", null);
-                        _shell.Render.RemoveRenderObjects();
-                        _shell.Render.UpdateRenderObject(true);
-                        if (n < 3)_shell.SetEmissiveParts("CWShield", Color.DarkViolet, 1);
-                        if (n >= 3 && n < 6) _shell.SetEmissiveParts("CWShield.001", Color.DarkViolet, 1);
-                        if (n >= 6 && n < 9) _shell.SetEmissiveParts("CWShield.002", Color.DarkViolet, 1);
-                        if (n >= 9 && n < 12) _shell.SetEmissiveParts("CWShield.003", Color.DarkViolet, 1);
-                        if (n >= 12 && n < 15) _shell.SetEmissiveParts("CWShield.004", Color.DarkViolet, 1);
-                        if (n == 15) _shell.SetEmissiveParts("CWShield.005", Color.DarkViolet, 1);
-
-                        _modelCount++;
-                        if (_modelCount == 16) _modelCount = 0;
-                    }
-                    else _shell.Render.Visible = false;
-                    if (_impactCnt[9] == ImpactSteps) 
-                    {
-                        _modelCount = 0;
-                        _shell.Render.Visible = false;
-                    }
-                }
-                catch (Exception ex) { Log.Line($"Exception in Models: {ex}"); }
             }
         }
     }
