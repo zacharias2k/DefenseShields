@@ -182,10 +182,6 @@ namespace DefenseShields
         private MyEntity _shellPassive;
         private MyEntity _shellActive;
 
-
-        private MyTransparentMaterialDefinition _shieldPassiveGlass;
-        private MyTransparentMaterialDefinition _shieldActiveGlass;
-
         private DSUtils _dsutil1 = new DSUtils();
         private DSUtils _dsutil2 = new DSUtils();
         private DSUtils _dsutil3 = new DSUtils();
@@ -588,13 +584,6 @@ namespace DefenseShields
         {
             try
             {
-                _transMatDef = MyDefinitionManager.Static.GetTransparentMaterialDefinitions();
-                var test = MyDefinitionManagerBase.GetPostProcessor(typeof(MyTransparentMaterialDefinition));
-                foreach (var def in _transMatDef)
-                {
-                    if (def.Id.SubtypeName == "ShieldPassiveGlass") _shieldPassiveGlass = def;
-                    else if (def.Id.SubtypeName == "ShieldActiveGlass") _shieldActiveGlass = def;
-                }
                 var defintions = MyDefinitionManager.Static.GetAllDefinitions();
                 Log.Line($"Getting Definitions");
                 foreach (var def in defintions)
