@@ -170,7 +170,7 @@ namespace DefenseShields.Support
             catch (Exception ex) { Log.Line($"Exception in VoxelCollisionSphere: {ex}"); }
 
             return collisionAvg;
-        }
+        } 
 
         public static bool DoOverlapSphereTest(Vector3D center, float radius, MyStorageData tempStorage, IMyVoxelMap myVoxelMap, IMyStorage storage, Vector3D leftBottomCorner, Vector3I storageMin)
         {
