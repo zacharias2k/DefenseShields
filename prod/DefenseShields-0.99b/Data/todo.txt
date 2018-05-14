@@ -1,0 +1,39 @@
+Test Release:
+1) Collision optimization (voxel, shield and a bit more tuning of block based collisions).
+
+Release 1.0:
+1) Finish and test Multiplayer
+2) Add Weapon ModAPI support - Inital accuracy level: Ray a Sphere, further reduce to Line intersecting OBB for v1.0 release.
+3) Confirm proper unloading of mod during game reload.
+4) Require emitters to be within range of other emitters to complete a combined (larger) field.
+5) Balance shield damage/protection (surface area nornalized)
+
+Known Bugs / tweaks (targeted to be fixed by v1.0 release):
+1) Exploit, second grid can be used to beat LOS check.  Fix: Check all grids within range.
+2) Animated spheres are drifting during velocity.
+3) Possible bug... confirm sOriBBoxD is correct size.
+4) Shield vs Shield and Shield vs Voxel is not yet drawing power buffer.
+5) Shield strength is over buffed for testing.
+6) Particles sometimes don't start right away and/or go away.
+7) Material costs.
+8) Cleanup large shield placement on station (doesn't work as designed, but fails to init cleanly).
+9) Still have debugging enabled, performacne might be less than optimal in some cases.  
+10) Please report any in game mod warnings that report DefenseShields as the cause.  Explain what you were doing at the time.
+11) Brief mod warning when Station Shield goes online.
+12) Check to see if shield block owner is allied with BigOwner.
+13) Look into own ship missiles being blocked (small grid and perhaps large).
+
+Release 2.0:
+1) Add damage shield block.
+2) support forward, back, left, right, top and bottom shields with their own power levels and visuals.
+3) Improve auto size adjustment corner cases
+4) Adjust shield power efficiency using distance from reactors or power relays.
+5) Add a Centeral Control Block and LCD readouts
+6) Add true Ellipsoid Weapon ModAPI support.
+7) optimize block cache with LocalAABB of fat blocks (ignore all tiny/uncollidable blocks, further optimize for huge grid collisions).
+8) Look into using SuppliedRatioByType and rex's TrackSource idea for extremely precise power tracking and perhaps a very small performance improvement.
+9) Block definition manager / type getter thingy.
+10) Add actual particle effects to shield verts/triangles.  Perhaps even use impact animations.
+
+Bugs (v2):
+1) Inside entities cannot cause deformation damage... Rewrite damage handler to regen deformation damage vs preventing it from outside hostiles.

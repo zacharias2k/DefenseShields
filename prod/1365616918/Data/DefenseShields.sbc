@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <CubeBlocks>
+  
+    <Definition xsi:type="MyObjectBuilder_OreDetectorDefinition">
+      <Id>
+        <TypeId>OreDetector</TypeId>
+        <SubtypeId>DefenseShieldsLS</SubtypeId>
+      </Id>
+      <DisplayName>Large Ship Shield</DisplayName>
+      <Icon>Textures\GUI\Icons\Cubes\ShipShield_Icon.dds</Icon>
+      <CubeSize>Large</CubeSize>
+      <BlockTopology>TriangleMesh</BlockTopology>
+	<Size x="1" y="1" z="1" />
+      <ModelOffset x="0" y="0" z="0" />
+	<Model>Models\Cubes\large\DefenseShieldBase_Large.mwm</Model>
+      <Components>
+        <Component Subtype="SteelPlate" Count="30" />
+        <Component Subtype="SmallTube" Count="40" />
+        <Component Subtype="Computer" Count="50" />
+        <Component Subtype="RadioCommunication" Count="1" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="SteelPlate" Count="30" />
+      </Components>
+      <CriticalComponent Subtype="RadioCommunication" Index="0" />
+      <MountPoints>
+		<MountPoint Side="Bottom" StartX="0.20" StartY="0.20" EndX="0.80" EndY="0.80" />
+      </MountPoints>
+      <BuildProgressModels>
+		<Model BuildPercentUpperBound="1.00" File="Models\Cubes\large\DefenseShieldBase_Large_Constr1.mwm" />
+      </BuildProgressModels>
+      <BlockPairName>DefenseShield</BlockPairName>
+      <EdgeType>Light</EdgeType>
+      <MirroringY>Z</MirroringY>
+      <MirroringZ>Y</MirroringZ>
+      <PrimarySound>Transporter</PrimarySound>
+      <BuildTimeSeconds>45</BuildTimeSeconds>
+      <RequiredPowerInput>500</RequiredPowerInput>
+      <DamageEffectId>214</DamageEffectId>
+      <DamagedSound>ParticleElectrical</DamagedSound>
+    </Definition>
+
+    <Definition xsi:type="MyObjectBuilder_OreDetectorDefinition">
+      <Id>
+        <TypeId>OreDetector</TypeId>
+        <SubtypeId>DefenseShieldsSS</SubtypeId>
+      </Id>
+      <DisplayName>Small Ship Shield</DisplayName>
+      <Icon>Textures\GUI\Icons\Cubes\ShipShield_Icon.dds</Icon>
+      <CubeSize>Small</CubeSize>
+      <BlockTopology>TriangleMesh</BlockTopology>
+      <Public>false</Public>
+	<Size x="1" y="1" z="1" />
+      <ModelOffset x="0" y="0" z="0" />
+	<Model>Models\Cubes\small\DefenseShieldBaseS_Small.mwm</Model>
+      <Components>
+        <Component Subtype="SteelPlate" Count="30" />
+        <Component Subtype="SmallTube" Count="40" />
+        <Component Subtype="Computer" Count="50" />
+        <Component Subtype="RadioCommunication" Count="1" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="SteelPlate" Count="30" />
+      </Components>
+      <CriticalComponent Subtype="RadioCommunication" Index="0" />
+      <MountPoints>
+		<MountPoint Side="Bottom" StartX="0.25" StartY="0.25" EndX="0.75" EndY="0.75" />
+      </MountPoints>
+      <BuildProgressModels>
+		<Model BuildPercentUpperBound="1.00" File="Models\Cubes\small\DefenseShieldBaseS_Small_Constr1.mwm" />
+      </BuildProgressModels>
+      <BlockPairName>DefenseShield</BlockPairName>
+      <EdgeType>Light</EdgeType>
+      <MirroringY>Z</MirroringY>
+      <MirroringZ>Y</MirroringZ>
+      <PrimarySound>Transporter</PrimarySound>
+      <BuildTimeSeconds>45</BuildTimeSeconds>
+      <RequiredPowerInput>25</RequiredPowerInput>
+      <DamageEffectId>214</DamageEffectId>
+      <DamagedSound>ParticleElectrical</DamagedSound>
+    </Definition>
+  
+    <Definition xsi:type="MyObjectBuilder_OreDetectorDefinition">
+      <Id>
+        <TypeId>OreDetector</TypeId>
+        <SubtypeId>DefenseShieldsST</SubtypeId>
+      </Id>
+      <DisplayName>Station Shield</DisplayName>
+      <Icon>Textures\GUI\Icons\Cubes\ShipShield_Icon.dds</Icon>
+      <CubeSize>Large</CubeSize>
+      <BlockTopology>TriangleMesh</BlockTopology>
+	<Size x="3" y="3" z="3" />
+      <ModelOffset x="0" y="0" z="0" />
+	<Model>Models\Cubes\large\DefenseShieldStation_Large.mwm</Model>
+      <Components>
+        <Component Subtype="SteelPlate" Count="30" />
+        <Component Subtype="SmallTube" Count="40" />
+        <Component Subtype="Computer" Count="50" />
+        <Component Subtype="RadioCommunication" Count="1" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="SteelPlate" Count="30" />
+      </Components>
+      <CriticalComponent Subtype="RadioCommunication" Index="0" />
+      <MountPoints>
+		<MountPoint Side="Bottom" StartX="1.20" StartY="1.20" EndX="1.80" EndY="1.80" />
+      </MountPoints>
+      <BuildProgressModels>
+		<Model BuildPercentUpperBound="1.00" File="Models\Cubes\large\DefenseShieldStation_Large_Constr1.mwm" />
+      </BuildProgressModels>
+      <BlockPairName>StationShield</BlockPairName>
+      <EdgeType>Light</EdgeType>
+      <MirroringY>Z</MirroringY>
+      <MirroringZ>Y</MirroringZ>
+      <PrimarySound>Transporter</PrimarySound>
+      <BuildTimeSeconds>45</BuildTimeSeconds>
+      <RequiredPowerInput>1000</RequiredPowerInput>
+      <DamageEffectId>214</DamageEffectId>
+      <DamagedSound>ParticleElectrical</DamagedSound>
+    </Definition>
+  
+  </CubeBlocks> 
+</Definitions>

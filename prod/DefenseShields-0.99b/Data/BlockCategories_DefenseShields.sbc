@@ -1,0 +1,19 @@
+<?xml version="1.0"  encoding="utf-8"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <CategoryClasses>	
+    <Category xsi:type="MyObjectBuilder_GuiBlockCategoryDefinition">
+      <Id>
+        <TypeId>GuiBlockCategoryDefinition</TypeId>
+        <SubtypeId/>
+      </Id>
+      <DisplayName>Defense Shields</DisplayName>
+      <Name>DefenseShields</Name>
+      <IsShipCategory>true</IsShipCategory>
+      <ItemIds>
+		<string>OreDetector/DefenseShieldsLS</string>
+		<string>OreDetector/DefenseShieldsSS</string>
+		<string>OreDetector/DefenseShieldsST</string>
+      </ItemIds>
+    </Category>
+  </CategoryClasses>
+</Definitions>
