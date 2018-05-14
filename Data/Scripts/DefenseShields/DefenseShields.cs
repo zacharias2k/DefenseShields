@@ -114,7 +114,7 @@ namespace DefenseShields
 
         public readonly Vector3D[] PhysicsOutside = new Vector3D[642];
         public readonly Vector3D[] PhysicsOutsideLow = new Vector3D[162];
-        private readonly Vector3D[] _physicsInside = new Vector3D[642];
+        public readonly Vector3D[] PhysicsInside = new Vector3D[642];
 
         private MatrixD _shieldGridMatrix;
         private MatrixD _shieldShapeMatrix;
@@ -181,6 +181,7 @@ namespace DefenseShields
         public MyEntity _shield;
         private MyEntity _shellPassive;
         private MyEntity _shellActive;
+
 
         private DSUtils _dsutil1 = new DSUtils();
         private DSUtils _dsutil2 = new DSUtils();
@@ -594,8 +595,8 @@ namespace DefenseShields
                     var ammo = MyDefinitionManager.Static.GetAmmoDefinition(ammoDef.AmmoDefinitionId);
                     if (!(ammo is MyMissileAmmoDefinition)) continue;
                     var shot = ammo as MyMissileAmmoDefinition;
-                    if (_ammoInfo.ContainsKey(ammoDef.Model)) continue;
-                    _ammoInfo.Add(ammoDef.Model, new AmmoInfo(shot.IsExplosive, shot.MissileExplosionDamage, shot.MissileExplosionRadius, shot.DesiredSpeed, shot.MissileMass, shot.BackkickForce));
+                    if (_ammoInfo.ContainsKey(shot.MissileModelName)) continue;
+                    _ammoInfo.Add(shot.MissileModelName, new AmmoInfo(shot.IsExplosive, shot.MissileExplosionDamage, shot.MissileExplosionRadius, shot.DesiredSpeed, shot.MissileMass, shot.BackkickForce));
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in GetAmmoDefinitions: {ex}"); }
@@ -669,6 +670,7 @@ namespace DefenseShields
                 if (_staleGrids.Count != 0) CleanUp(0);
                 if (_longLoop == 9 && _count == 58) CleanUp(1);
                 if (_effectsCleanup && (_count == 1 || _count == 21 || _count == 41)) CleanUp(2);
+                if ((_longLoop == 8 && _count == 58) || (_longLoop == 3 && _count == 58 && FriendlyCache.Count > 50)) CleanUp(3); 
 
                 if (_count++ == 59)
                 {
@@ -795,7 +797,7 @@ namespace DefenseShields
 
         private void SetShieldShape()
         {
-            _shellPassive.PositionComp.LocalMatrix = Matrix.Zero;  // Bug - Cannot just change X Matrix Columns, so I reset first.
+            _shellPassive.PositionComp.LocalMatrix = Matrix.Zero;  // Bug - Cannot just change X coord, so I reset first.
             _shellActive.PositionComp.LocalMatrix = Matrix.Zero;
             _shield.PositionComp.LocalMatrix = Matrix.Zero;
 
@@ -950,7 +952,7 @@ namespace DefenseShields
             _shieldMaintaintPower = shieldMaintainCost;
             var fPercent = (percent / ratio) / 100;
             var baseScale = 30;
-            var sizeScaler = (((_ellipsoidSurfaceArea / 19.1990522960099f) / _detectMatrixOutside.Scale.AbsMax()));
+            var sizeScaler = (_detectMatrixOutside.Scale.Volume / _ellipsoidSurfaceArea) / 2.40063050674088;
             _shieldEfficiency = 100f;
 
             if (_shieldBuffer > 0 && _shieldCurrentPower < 0.00000000001f) // is this even needed anymore?
@@ -1163,14 +1165,18 @@ namespace DefenseShields
                             _webEntsTmp.AddRange(_webEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1));
                             foreach (var webent in _webEntsTmp) _webEnts.Remove(webent.Key);
                         }
-                        Log.Line($"FriendlyCache {FriendlyCache.Count.ToString()}");
-                        FriendlyCache.Clear();
                         break;
                     case 2:
                         lock (_functionalBlocks)
                         {
                             foreach (var funcBlock in _functionalBlocks) funcBlock.SetDamageEffect(false);
                             _effectsCleanup = false;
+                        }
+                        break;
+                    case 3:
+                        {
+                            Log.Line($"FriendlyCache {FriendlyCache.Count.ToString()}");
+                            FriendlyCache.Clear();
                         }
                         break;
                 }
@@ -1183,7 +1189,7 @@ namespace DefenseShields
             try
             {
                 if (Eject.Count == 0 && _destroyedBlocks.Count == 0 && _missileDmg.Count == 0 &&
-                    _missileDmg.Count == 0 && _characterDmg.Count == 0 && _fewDmgBlocks.Count == 0 && _dmgBlocks.Count == 0) return;
+                    _meteorDmg.Count == 0 && _characterDmg.Count == 0 && _fewDmgBlocks.Count == 0 && _dmgBlocks.Count == 0) return;
                 _dsutil1.Sw.Restart();
                 if (Eject.Count != 0)
                 {
@@ -1236,6 +1242,7 @@ namespace DefenseShields
                                 FriendlyCache.Add(ent);
                                 continue;
                             }
+                            Log.Line($"{((MyEntity)ent).DebugName} damage: {damage}");
                             WorldImpactPosition = ent.PositionComp.WorldVolume.Center;
                             Absorb += damage;
                             destObj.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
@@ -1246,7 +1253,7 @@ namespace DefenseShields
 
                 try
                 {
-                    if (_missileDmg.Count != 0)
+                    if (_meteorDmg.Count != 0)
                     {
                         IMyMeteor meteor;
                         while (_meteorDmg.TryDequeue(out meteor))
@@ -1360,10 +1367,12 @@ namespace DefenseShields
             for (int i = 0; i < pruneList.Count; i++)
             {
                 var ent = pruneList[i];
-                if (ent == null) continue;
+                if (ent == null || FriendlyCache.Contains(ent)) continue;
+
                 var entCenter = ent.PositionComp.WorldVolume.Center;
+
                 if (ent == _shield || ent as IMyCubeGrid == Shield.CubeGrid || ent.Physics == null || ent.MarkedForClose || ent is MyVoxelBase && !GridIsMobile
-                    || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || FriendlyCache.Contains(ent) || ent.GetType().Name == "MyDebrisBase") continue;
+                    || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
 
                 var relation = EntType(ent);
                 if ((relation == Ent.Ignore || relation == Ent.Friend) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, _detectInsideInv))
@@ -1385,8 +1394,14 @@ namespace DefenseShields
                     else
                     {
                         var inside = false;
-                        if ((relation == Ent.Other && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv)) || ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(((IMyEntity)ent).WorldAABB, _detectMatrixOutsideInv)))
+                        if (relation == Ent.Other && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv))
                         {
+                            FriendlyCache.Add(ent);
+                            continue;
+                        }
+                        if (relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid && CustomCollision.AllAabbInShield(((IMyEntity)ent).WorldAABB, _detectMatrixOutsideInv))
+                        {
+                            Log.Line($"inside entity {ent.DebugName} - adding friendly");
                             inside = true;
                             FriendlyCache.Add(ent);
                         }
@@ -1398,7 +1413,7 @@ namespace DefenseShields
             {
                 _icosphere.ReturnPhysicsVerts(_detectMatrixOutside, PhysicsOutside);
                 _icosphere.ReturnPhysicsVerts(_detectMatrixOutside, PhysicsOutsideLow);
-                _icosphere.ReturnPhysicsVerts(_detectMatrixInside, _physicsInside);
+                _icosphere.ReturnPhysicsVerts(_detectMatrixInside, PhysicsInside);
             }
             if (_enablePhysics) MyAPIGateway.Parallel.Start(WebDispatch);
             //if (_enablePhysics) WebDispatch();
@@ -1415,7 +1430,7 @@ namespace DefenseShields
                 {
                     var entCenter = webent.PositionComp.WorldVolume.Center;
                     var entInfo = _webEnts[webent];
-                    if (entInfo.LastTick != _tick) continue;
+                    if (entInfo.LastTick != _tick || entInfo.SpawnedInside) continue;
                     if (entInfo.FirstTick == _tick && (_webEnts[webent].Relation == Ent.LargeNobodyGrid || _webEnts[webent].Relation == Ent.LargeEnemyGrid)) ((IMyCubeGrid)webent).GetBlocks(_webEnts[webent].CacheBlockList, CollectCollidableBlocks);
                     switch (_webEnts[webent].Relation)
                     {
@@ -1457,21 +1472,8 @@ namespace DefenseShields
                                 if (entInfo.LastTick == _tick && CustomCollision.PointInShield(entCenter, _detectMatrixOutsideInv) && !entInfo.SpawnedInside)
                                 {
                                     if (webent.MarkedForClose || webent.Closed) continue;
-                                    Log.Line($"");
-                                    Log.Line($"{webent.Model.AssetName}");
-                                    Log.Line(string.Join(" ", webent.Model.AssetName.Select(x => "" + (int)x)));
-                                    foreach (var key in _ammoInfo.Keys)
-                                    {
-                                        Log.Line($"{key}");
-                                        Log.Line(string.Join(" ", key.Select(x => "" + (int) x)));
-                                    }
-                                    Log.Line($"");
-                                    if (_ammoInfo.ContainsKey(webent.Model.AssetName))
-                                    {
-                                        Log.Line($"test");
-                                        _missileDmg.Enqueue(webent);
-                                    }
-                                    else if (webent is IMyMeteor) _meteorDmg.Enqueue(webent as IMyMeteor);
+                                    if (webent is IMyMeteor) _meteorDmg.Enqueue(webent as IMyMeteor);
+                                    else _missileDmg.Enqueue(webent);
                                 }
                                 continue;
                             }
@@ -1953,8 +1955,12 @@ namespace DefenseShields
             //Shield-Damage: All values such as projectile Velocity & Mass for non-explosive types and Explosive-damage when dealing with Explosive-types.
             AmmoInfo ammoInfo;
             _ammoInfo.TryGetValue(ammoEnt.Model.AssetName, out ammoInfo);
-            var damage = 0f;
-            if (ammoInfo == null) return damage;
+            var damage = 10f;
+            if (ammoInfo == null)
+            {
+                Log.Line($"No Missile Ammo Match Found for {((MyEntity)ammoEnt).DebugName}! Let wepaon mod author know their ammo definition has improper model path");
+                return damage;
+            }
 
             if (ammoInfo.BackKickForce < 0) damage = float.NegativeInfinity;
             else if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.5f)) * 7.5f;

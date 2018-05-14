@@ -192,6 +192,16 @@ namespace DefenseShields.Support
             }
         }
 
+        public static void DrawVertArray(Vector3D[] array)
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                var c = Color.Red;
+                DrawVertCollection(array[i], 1, c, 20);
+                i++;
+            }
+        }
+
         public static void DrawLineNums(Vector3D[] physicsVerts, int[] lineArray, Color color)
         {
             var c = color.ToVector4();
