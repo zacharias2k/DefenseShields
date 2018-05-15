@@ -18,6 +18,7 @@ using VRage.Utils;
 using VRage.Game.Entity;
 using System.Linq;
 using DefenseShields.Control;
+using DefenseShields.Data.Scripts.DefenseShields.Support;
 using VRage.Collections;
 using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
@@ -182,6 +183,7 @@ namespace DefenseShields
         private MyEntity _shellPassive;
         private MyEntity _shellActive;
 
+        private EllipsoidOxygenProvider _ellipsoidOxyProvider = new EllipsoidOxygenProvider(Matrix.Zero);
 
         private DSUtils _dsutil1 = new DSUtils();
         private DSUtils _dsutil2 = new DSUtils();
@@ -198,7 +200,6 @@ namespace DefenseShields
         private HashSet<ulong> playersToReceive = null;
         // 
         #endregion
-
         #region Cleanup
         public override void OnAddedToScene()
         {
@@ -323,7 +324,8 @@ namespace DefenseShields
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
 
-                if (!(_shields).ContainsKey(Entity.EntityId)) _shields.Add(Entity.EntityId, this);
+                if (!_shields.ContainsKey(Entity.EntityId)) _shields.Add(Entity.EntityId, this);
+                MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(_ellipsoidOxyProvider);
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -809,6 +811,8 @@ namespace DefenseShields
             var matrix = _shieldShapeMatrix * Shield.WorldMatrix;
             _shield.PositionComp.SetWorldMatrix(matrix);
             _shield.PositionComp.SetPosition(_detectionCenter);
+
+            _ellipsoidOxyProvider.UpdateMatrix(_detectMatrixOutsideInv);
         }
 
         private void RefreshDimensions()
@@ -1188,9 +1192,6 @@ namespace DefenseShields
         {
             try
             {
-                if (Eject.Count == 0 && _destroyedBlocks.Count == 0 && _missileDmg.Count == 0 &&
-                    _meteorDmg.Count == 0 && _characterDmg.Count == 0 && _fewDmgBlocks.Count == 0 && _dmgBlocks.Count == 0) return;
-                _dsutil1.Sw.Restart();
                 if (Eject.Count != 0)
                 {
                     foreach (var e in Eject) e.Key.SetPosition(Vector3D.Lerp(e.Key.GetPosition(), e.Value, 0.1d));
@@ -1351,7 +1352,6 @@ namespace DefenseShields
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in dmgBlocks: {ex}"); }
-                _dsutil1.StopWatchReport("SyncEnts", -1);
             }
             catch (Exception ex) { Log.Line($"Exception in DamageGrids: {ex}"); }
         }
