@@ -227,7 +227,7 @@ namespace DefenseShields.Support
 
             private float _shieldPercent;
 
-            private const int ImpactSteps = 80;
+            private const int ImpactSteps = 60;
             private const int ChargeSteps = 30;
 
             private Vector4 _hitColor;
@@ -343,11 +343,33 @@ namespace DefenseShields.Support
                 if (_charge && _impactsFinished && prevLod == _lod) ChargeColorAssignments(prevLod);
                 if (_impactsFinished && prevLod == _lod) return;
 
-                if (_shieldPercent > 80) _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.LightBlue, 0.1f);
-                else if (_shieldPercent > 60) _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.DarkBlue, 0.1f);
-                else if (_shieldPercent > 40) _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.GreenYellow, 0.1f);
-                else if (_shieldPercent > 20) _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.OrangeRed, 0.1f);
-                else _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.DarkRed, 0.1f);
+                if (_shieldPercent > 80)
+                {
+                    _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.LightBlue, 100f);
+                    _waveColor = Color.LightBlue;
+                }
+                else if (_shieldPercent > 60)
+                {
+                    _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.DarkBlue, 100f);
+                    _waveColor = Color.DarkBlue;
+                }
+                else if (_shieldPercent > 40)
+                {
+                    _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.GreenYellow, 100f);
+                    _waveColor = Color.GreenYellow;
+                }
+                else if (_shieldPercent > 20)
+                {
+                    _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.OrangeRed, 100f);
+                    _waveColor = Color.OrangeRed;
+                }
+                else
+                {
+                    _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.DarkRed, 100f);
+                    //_waveColor = Color.DarkRed;
+                    //_waveColor = Color.FromNonPremultiplied(50, 0, 0, 75);
+                    _waveColor = new Vector4(5, 0, 0, 10);
+                }
 
                 ImpactColorAssignments(impactSize, impactSpeed, prevLod);
                 //_dsutil2.StopWatchReport("colorcalc", 1);
@@ -399,11 +421,11 @@ namespace DefenseShields.Support
                                 var dotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _localImpacts[s]);
                                 var impactFactor = Math.Acos(dotOfNormLclImpact);
 
-                                var waveMultiplier = Pi / ImpactSteps / impactSize;
+                                var waveMultiplier = Pi / ImpactSteps;
                                 var wavePosition = waveMultiplier * _impactCnt[s];
                                 var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
-                                if (impactFactor < wavePosition && relativeToWavefront >= 0 && relativeToWavefront < 0.2) _triColorBuffer[j] = _waveColor;
-                                if (impactFactor < wavePosition && relativeToWavefront >= 0.2 && relativeToWavefront < 0.4) _triColorBuffer[j] = _defaultColor;
+                                if (impactFactor < wavePosition && relativeToWavefront >= 0 && relativeToWavefront < 0.05) _triColorBuffer[j] = _waveColor;
+                                if (impactFactor < wavePosition && relativeToWavefront >= 0.05 || relativeToWavefront < 0) _triColorBuffer[j] = _defaultColor;
                                 //if (impactFactor > wavePosition) _triColorBuffer[j] = _defaultColor;
 
 
@@ -471,11 +493,18 @@ namespace DefenseShields.Support
                     if (!visable && _impactsFinished && !_charge) return;
                     var faceMaterial = _faceIdle;
                     var ib = _backing.IndexBuffer[_lod];
+                    /*
                     var v20 = new Vector2(.5f);
                     var v21 = new Vector2(0.25f);
                     var v22 = new Vector2(0.25f);
+                    */
                     for (int i = 0, j = 0; i < ib.Length; i += 3, j++)
                     {
+                        var color = _triColorBuffer[j];
+                        if (color == _waveColor) faceMaterial = _faceWave;
+                        else if (color == _chargeColor) faceMaterial = _faceIdle;
+                        else continue;
+
                         var i0 = ib[i];
                         var i1 = ib[i + 1];
                         var i2 = ib[i + 2];
@@ -487,11 +516,8 @@ namespace DefenseShields.Support
                         var n0 = _normalBuffer[i0];
                         var n1 = _normalBuffer[i1];
                         var n2 = _normalBuffer[i2];
-                        var color = _triColorBuffer[j];
-                        if (color == _waveColor) faceMaterial = _faceWave;
-                        else if (color == _chargeColor) faceMaterial = _faceIdle;
-                        else continue;
-                        MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, v20, v21, v22, faceMaterial, renderId, (v0 + v1 + v2) / 3, color);
+
+                        MyTransparentGeometry.AddTriangleBillboard(v0, v1, v2, n0, n1, n2, Vector2.Zero, Vector2.Zero, Vector2.Zero, faceMaterial, renderId, (v0 + v1 + v2) / 3, color);
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in IcoSphere Draw - renderId {renderId.ToString()}: {ex}"); }

@@ -85,6 +85,7 @@ namespace DefenseShields
 
         public override void Draw()
         {
+            _dsutil1.Sw.Start();
             if (_count == 0) Log.Line($"Shields in the world: {Components.Count.ToString()}");
             try
             {
@@ -101,6 +102,7 @@ namespace DefenseShields
                     onCount++;
                 }
                 for (int i = 0; i < Components.Count; i++) if (Components[i].ShieldActive && !Components[i].HardDisable) Components[i].Draw(onCount, sphereOnCamera[i]);
+                _dsutil1.StopWatchReport("draw", -1);
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
         }
