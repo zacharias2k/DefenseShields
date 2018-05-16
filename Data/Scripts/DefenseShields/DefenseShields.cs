@@ -1851,7 +1851,7 @@ namespace DefenseShields
             if (BulletCoolDown > 19) BulletCoolDown = -1;
             if (EntityCoolDown > -1) EntityCoolDown++;
             if (EntityCoolDown > 7) EntityCoolDown = -1;
-
+            Log.Line($"{BulletCoolDown}");
             var impactPos = WorldImpactPosition;
             if (impactPos != Vector3D.NegativeInfinity & ((BulletCoolDown == -1 || EntityCoolDown == -1)))
             {
