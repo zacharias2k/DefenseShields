@@ -197,10 +197,8 @@ namespace DefenseShields.Support
             private readonly Icosphere _backing;
 
             private readonly Vector3D[] _impactPos = {Vector3D.NegativeInfinity, Vector3D.NegativeInfinity,
-                Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity,
                 Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity};
             private readonly Vector3D[] _localImpacts = {Vector3D.NegativeInfinity, Vector3D.NegativeInfinity,
-                Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity,
                 Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity};
             private Vector3D[] _preCalcNormLclPos;
             private Vector3D[] _vertexBuffer;
@@ -215,12 +213,11 @@ namespace DefenseShields.Support
 
             private static readonly Random Random = new Random();
 
-            private readonly int[] _impactCnt = new int[10];
+            private readonly int[] _impactCnt = new int[6];
 
             private int _mainLoop;
             private int _longLoop;
             private int _longerLoop;
-            private int _impactDrawStep;
             private int _modelCount;
             private int _chargeDrawStep;
             private int _lod;
@@ -411,7 +408,7 @@ namespace DefenseShields.Support
                         }
                         if (!_impactsFinished)
                         {
-                            for (int s = 9; s > -1; s--)
+                            for (int s = 5; s > -1; s--)
                             {
                                 // basically the same as for a sphere: offset by radius, except the radius will depend on the axis
                                 // if you already have the mesh generated, it's easy to get the vector from point - origin
@@ -424,8 +421,9 @@ namespace DefenseShields.Support
                                 var waveMultiplier = Pi / ImpactSteps;
                                 var wavePosition = waveMultiplier * _impactCnt[s];
                                 var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
-                                if (impactFactor < wavePosition && relativeToWavefront >= 0 && relativeToWavefront < 0.1) _triColorBuffer[j] = _waveColor;
-                                if (impactFactor < wavePosition && relativeToWavefront >= 0.1 || relativeToWavefront < 0) _triColorBuffer[j] = _defaultColor;
+                                if (impactFactor < wavePosition && relativeToWavefront >= 0 && relativeToWavefront < 0.3) _triColorBuffer[j] = _waveColor;
+                                if (impactFactor < wavePosition && relativeToWavefront >= 0.3 || relativeToWavefront < 0) _triColorBuffer[j] = _defaultColor;
+
                                 //if (impactFactor > wavePosition) _triColorBuffer[j] = _defaultColor;
 
 
@@ -525,17 +523,21 @@ namespace DefenseShields.Support
             private void ComputeImpacts()
             {
                 _impact = true;
-                for (var i = 9; i >= 0; i--)
+                for (var i = 5; i >= 0; i--)
                 {
                     if (_impactPos[i] != Vector3D.NegativeInfinity) continue;
                     _impactPos[i] = _impactPosState;
                     break;
                 }
-                for (int i = 9; i >= 0; i--)
+                for (int i = 5; i >= 0; i--)
                 {
-                    if (_impactPos[i] == Vector3D.NegativeInfinity) break;
-                    _localImpacts[i] = _impactPos[i] - _matrix.Translation;
-                    _localImpacts[i].Normalize();
+                    if (_localImpacts[i] == Vector3D.NegativeInfinity)
+                    {
+                        if (_impactPos[i] != _impactPosState) continue; 
+                        _localImpacts[i] = _impactPos[i] - _matrix.Translation;
+                        _localImpacts[i].Normalize();
+                        break;
+                    }
                 }
             }
 
@@ -571,7 +573,6 @@ namespace DefenseShields.Support
                     }
 
                     _impactsFinished = false;
-                    _impactDrawStep = 0;
                     _charge = false;
                     _chargeDrawStep = 0;
                 }
@@ -589,25 +590,22 @@ namespace DefenseShields.Support
                 }
                 if (!_impactsFinished)
                 {
+                    Log.Line($"{_impactCnt[0]} - {_impactCnt[1]} - {_impactCnt[2]} - {_impactCnt[3]} - {_impactCnt[4]} - {_impactCnt[5]}");
                     for (int i = 0; i < _impactCnt.Length; i++)
                     {
                         if (_impactPos[i] != Vector3D.NegativeInfinity) _impactCnt[i] += 1;
-                        if (_impactCnt[i] == ImpactSteps + 1)
+                        if (_impactCnt[i] == ImpactSteps +1)
                         {
                             _impactCnt[i] = 0;
                             _impactPos[i] = Vector3D.NegativeInfinity;
                             _localImpacts[i] = Vector3D.NegativeInfinity;
                         }
                     }
-                    if (_impactCnt[0] == 0 && _impactCnt[1] == 0 && _impactCnt[2] == 0 && _impactCnt[3] == 0 && _impactCnt[4] == 0 
-                        && _impactCnt[5] == 0 && _impactCnt[6] == 0 && _impactCnt[7] == 0 && _impactCnt[8] == 0 && _impactCnt[9] == 0)
+                    if (_impactCnt[0] == 0 && _impactCnt[1] == 0 && _impactCnt[2] == 0 && _impactCnt[3] == 0 && _impactCnt[4] == 0 && _impactCnt[5] == 0)
                     {
                         _shellActive.Render.UpdateRenderObject(false);
                         _shellPassive.Render.UpdateRenderObject(true);
-                        //_shellActive.Render.Visible = false;
-                        //_shellPassive.Render.Visible = true;
                         _impactsFinished = true;
-                        _impactDrawStep = 0;
                         for (int i = 0; i < _triColorBuffer.Length; i++)
                             _triColorBuffer[i] = _defaultColor;
                     }

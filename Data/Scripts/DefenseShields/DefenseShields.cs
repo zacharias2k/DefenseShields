@@ -1848,23 +1848,23 @@ namespace DefenseShields
             var visable = !(_visablilityCheckBox.Getter(Shield).Equals(true) && !enemy);
 
             if (BulletCoolDown > -1) BulletCoolDown++;
-            if (BulletCoolDown > 19) BulletCoolDown = -1;
+            if (BulletCoolDown > 9) BulletCoolDown = -1;
             if (EntityCoolDown > -1) EntityCoolDown++;
-            if (EntityCoolDown > 7) EntityCoolDown = -1;
-            Log.Line($"{BulletCoolDown}");
+            if (EntityCoolDown > 9) EntityCoolDown = -1;
+
             var impactPos = WorldImpactPosition;
-            if (impactPos != Vector3D.NegativeInfinity & ((BulletCoolDown == -1 || EntityCoolDown == -1)))
+            _localImpactPosition = Vector3D.NegativeInfinity;
+            if (impactPos != Vector3D.NegativeInfinity & ((BulletCoolDown == -1 && EntityCoolDown == -1)))
             {
                 if (EntityCoolDown == -1 && ImpactSize > 5) EntityCoolDown = 0;
-                else BulletCoolDown = 0;
+                BulletCoolDown = 0;
 
                 var cubeBlockLocalMatrix = Shield.CubeGrid.LocalMatrix;
                 var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
                 var worldDirection = impactPos - referenceWorldPosition;
                 var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(cubeBlockLocalMatrix));
-                impactPos = localPosition;
+                _localImpactPosition = localPosition;
             }
-            _localImpactPosition = impactPos;
             WorldImpactPosition = Vector3D.NegativeInfinity;
 
             if (Shield.IsWorking) PrepareSphere();
@@ -1890,7 +1890,7 @@ namespace DefenseShields
 
         private int CalculateLod(int onCount)
         {
-            var lod = 5;
+            var lod = 4;
 
             //if (Distance(2500) && onCount == 1) lod = 3;
             //if (Distance(300) && onCount == 1) lod = 4;
