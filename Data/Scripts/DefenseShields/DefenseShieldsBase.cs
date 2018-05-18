@@ -37,7 +37,7 @@ namespace DefenseShields
 
         public static DefenseShieldsBase Instance { get; private set; }
         public readonly MyModContext MyModContext = new MyModContext();
-        public readonly Icosphere Icosphere = new Icosphere(6);
+        public readonly Icosphere Icosphere = new Icosphere(5);
         private DSUtils _dsutil1 = new DSUtils();
         private DSUtils _dsutil2 = new DSUtils();
         private DSUtils _dsutil3 = new DSUtils();
@@ -85,6 +85,7 @@ namespace DefenseShields
 
         public override void Draw()
         {
+            //_dsutil1.Sw.Start();
             if (_count == 0) Log.Line($"Shields in the world: {Components.Count.ToString()}");
             try
             {
@@ -101,6 +102,7 @@ namespace DefenseShields
                     onCount++;
                 }
                 for (int i = 0; i < Components.Count; i++) if (Components[i].ShieldActive && !Components[i].HardDisable) Components[i].Draw(onCount, sphereOnCamera[i]);
+                //_dsutil1.StopWatchReport("draw", -1);
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
         }
@@ -199,7 +201,7 @@ namespace DefenseShields
 
                         if (info.Type == MyStringHash.GetOrCompute("DSdamage") || info.Type == MyStringHash.GetOrCompute("DSheal") || info.Type == MyStringHash.GetOrCompute("DSbypass"))
                         {
-                            Log.Line($"Amount:{info.Amount.ToString()} - Type:{info.Type.ToString()} - Block:{block.BlockDefinition.GetType().Name} - Attacker:{hostileEnt?.DebugName}");
+                            //Log.Line($"Amount:{info.Amount.ToString()} - Type:{info.Type.ToString()} - Block:{block.BlockDefinition.GetType().Name} - Attacker:{hostileEnt?.DebugName}");
                             shield.Absorb += info.Amount;
                             info.Amount = 0f;
                             shield.WorldImpactPosition = shield._shield.Render.ColorMaskHsv;

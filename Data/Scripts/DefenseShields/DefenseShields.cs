@@ -106,6 +106,7 @@ namespace DefenseShields
         private bool _shieldStarting;
         private bool _enemy;
         private bool _effectsCleanup;
+        private bool _startupWarning;
 
         internal Vector3D ShieldSize { get; set; }
         public Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
@@ -135,7 +136,7 @@ namespace DefenseShields
         private readonly List<KeyValuePair<IMyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<IMyEntity, EntIntersectInfo>>();
         private ListReader<MyTransparentMaterialDefinition> _transMatDef = new List<MyTransparentMaterialDefinition>();
 
-        static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
+        private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
         private readonly DataStructures _dataStructures = new DataStructures();
         private readonly StructureBuilder _structureBuilder = new StructureBuilder();
@@ -352,11 +353,27 @@ namespace DefenseShields
                     DsUtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
                     foreach (var id in realPlayerIds)
                     {
-                        if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST" && !Shield.CubeGrid.Physics.IsStatic)
-                            MyVisualScriptLogicProvider.ShowNotification("Station shields only allowed on stations", 1600, "Red", id);
-                        else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" && Shield.CubeGrid.Physics.IsStatic)
-                            MyVisualScriptLogicProvider.ShowNotification("Large Ship Shields only allowed on ships, not stations", 1600, "Red", id);
-                        else if (NoPower) MyVisualScriptLogicProvider.ShowNotification("Insufficent power to bring Shield online", 1600, "Red", id);
+                        if (!_startupWarning && Shield.BlockDefinition.SubtypeId == "DefenseShieldsST" &&
+                            !Shield.CubeGrid.Physics.IsStatic)
+                        {
+                            MyVisualScriptLogicProvider.ShowNotification("Station shields only allowed on stations", 5000, "Red", id);
+                            _startupWarning = true;
+                        }
+                        else if (!_startupWarning && Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" && Shield.CubeGrid.Physics.IsStatic)
+                        {
+                            MyVisualScriptLogicProvider.ShowNotification("Large Ship Shields only allowed on ships, not stations", 5000, "Red", id);
+                            _startupWarning = true;
+                        }
+                        else if (!_startupWarning && NoPower)
+                        {
+                            MyVisualScriptLogicProvider.ShowNotification("Insufficent power to bring Shield online", 5000, "Red", id);
+                            _startupWarning = true;
+                        }
+                        else if (!_startupWarning)
+                        {
+                            MyVisualScriptLogicProvider.ShowNotification("Only one generator per grid in this version", 5000, "Red", id);
+                            _startupWarning = true;
+                        }
                     }
                     return;
                 }
@@ -389,7 +406,7 @@ namespace DefenseShields
                     _shellPassive.Render.UpdateRenderObject(true);
                     _shellPassive.Save = false;
 
-                    _shellActive = _spawn.EmptyEntity("dShell", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldActive_LOD3.mwm", parent, true);
+                    _shellActive = _spawn.EmptyEntity("dShell", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldActive_LOD4.mwm", parent, true);
                     _shellActive.Render.CastShadows = false;
                     _shellActive.IsPreview = true;
                     _shellActive.Render.Visible = true;
@@ -476,6 +493,9 @@ namespace DefenseShields
             var shieldId = long.MinValue;
             foreach (var shield in shieldBlocks)
             {
+                if (gridStatic && shield.BlockDefinition.BlockPairName.Equals("DefenseShield")) continue;
+                if (!gridStatic && shield.BlockDefinition.BlockPairName.Equals("StationShield")) continue;
+
                 var dist = Vector3D.DistanceSquared(shield.PositionComp.WorldVolume.Center, Shield.CubeGrid.WorldVolume.Center);
                 if (dist > shieldDistFromCenter)
                 {
@@ -1401,7 +1421,6 @@ namespace DefenseShields
                         }
                         if (relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid && CustomCollision.AllAabbInShield(((IMyEntity)ent).WorldAABB, _detectMatrixOutsideInv))
                         {
-                            Log.Line($"inside entity {ent.DebugName} - adding friendly");
                             inside = true;
                             FriendlyCache.Add(ent);
                         }
@@ -1829,23 +1848,23 @@ namespace DefenseShields
             var visable = !(_visablilityCheckBox.Getter(Shield).Equals(true) && !enemy);
 
             if (BulletCoolDown > -1) BulletCoolDown++;
-            if (BulletCoolDown > 19) BulletCoolDown = -1;
+            if (BulletCoolDown > 9) BulletCoolDown = -1;
             if (EntityCoolDown > -1) EntityCoolDown++;
-            if (EntityCoolDown > 7) EntityCoolDown = -1;
+            if (EntityCoolDown > 9) EntityCoolDown = -1;
 
             var impactPos = WorldImpactPosition;
-            if (impactPos != Vector3D.NegativeInfinity & ((BulletCoolDown == -1 || EntityCoolDown == -1)))
+            _localImpactPosition = Vector3D.NegativeInfinity;
+            if (impactPos != Vector3D.NegativeInfinity & ((BulletCoolDown == -1 && EntityCoolDown == -1)))
             {
                 if (EntityCoolDown == -1 && ImpactSize > 5) EntityCoolDown = 0;
-                else BulletCoolDown = 0;
+                BulletCoolDown = 0;
 
                 var cubeBlockLocalMatrix = Shield.CubeGrid.LocalMatrix;
                 var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
                 var worldDirection = impactPos - referenceWorldPosition;
                 var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(cubeBlockLocalMatrix));
-                impactPos = localPosition;
+                _localImpactPosition = localPosition;
             }
-            _localImpactPosition = impactPos;
             WorldImpactPosition = Vector3D.NegativeInfinity;
 
             if (Shield.IsWorking) PrepareSphere();
