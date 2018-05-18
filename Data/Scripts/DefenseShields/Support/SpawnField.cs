@@ -238,6 +238,7 @@ namespace DefenseShields.Support
             private bool _enemy;
             private bool _impact;
             private bool _charge;
+            private bool _visible;
 
             private MyEntity _shellPassive;
             private MyEntity _shellActive;
@@ -315,7 +316,7 @@ namespace DefenseShields.Support
                 }
             }
 
-            public void ComputeEffects(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, MyEntity shellPassive, MyEntity shellActive, int prevLod, float shieldPercent)
+            public void ComputeEffects(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, MyEntity shellPassive, MyEntity shellActive, int prevLod, float shieldPercent, bool visible)
             {
                 _shellPassive = shellPassive;
                 _shellActive = shellActive;
@@ -323,6 +324,7 @@ namespace DefenseShields.Support
                 _enemy = enemy;
                 _matrix = matrix;
                 _impactPosState = impactPos;
+                _visible = visible;
                 if (impactPos == Vector3D.NegativeInfinity) _impact = false;
                 else ComputeImpacts();
                 //if (impactSize <= 10) impactSize = (int)4;
@@ -476,12 +478,12 @@ namespace DefenseShields.Support
                 catch (Exception ex) { Log.Line($"Exception in ChargeColorAssignments {ex}"); }
             }
 
-            public void Draw(uint renderId, bool visable)
+            public void Draw(uint renderId)
             {
                 //_dsutil1.Sw.Start();
                 try
                 {
-                    if (!visable && _impactsFinished && !_charge) return;
+                    //if (!visable && _impactsFinished && !_charge) return;
                     var faceMaterial = _faceIdle;
                     var ib = _backing.IndexBuffer[_lod];
                     var v20 = new Vector2(.5f);
@@ -595,7 +597,7 @@ namespace DefenseShields.Support
                     if (_impactCnt[0] == 0 && _impactCnt[1] == 0 && _impactCnt[2] == 0 && _impactCnt[3] == 0 && _impactCnt[4] == 0 && _impactCnt[5] == 0)
                     {
                         _shellActive.Render.UpdateRenderObject(false);
-                        _shellPassive.Render.UpdateRenderObject(true);
+                        if (_visible) _shellPassive.Render.UpdateRenderObject(true);
                         _impactsFinished = true;
                         for (int i = 0; i < _triColorBuffer.Length; i++)
                             _triColorBuffer[i] = _defaultColor;
