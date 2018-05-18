@@ -238,6 +238,7 @@ namespace DefenseShields.Support
             private bool _enemy;
             private bool _impact;
             private bool _charge;
+            private bool _visible;
 
             private MyEntity _shellPassive;
             private MyEntity _shellActive;
@@ -315,7 +316,7 @@ namespace DefenseShields.Support
                 }
             }
 
-            public void ComputeEffects(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, MyEntity shellPassive, MyEntity shellActive, int prevLod, float shieldPercent)
+            public void ComputeEffects(MatrixD matrix, Vector3D impactPos, float impactSize, bool entChanged, bool enemy, MyEntity shellPassive, MyEntity shellActive, int prevLod, float shieldPercent, bool visible)
             {
                 _shellPassive = shellPassive;
                 _shellActive = shellActive;
@@ -323,6 +324,7 @@ namespace DefenseShields.Support
                 _enemy = enemy;
                 _matrix = matrix;
                 _impactPosState = impactPos;
+                _visible = visible;
                 if (impactPos == Vector3D.NegativeInfinity) _impact = false;
                 else ComputeImpacts();
                 //if (impactSize <= 10) impactSize = (int)4;
@@ -343,29 +345,22 @@ namespace DefenseShields.Support
                 if (_shieldPercent > 80)
                 {
                     _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.LightBlue, 100f);
-                    _waveColor = Color.LightBlue;
                 }
                 else if (_shieldPercent > 60)
                 {
                     _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.DarkBlue, 100f);
-                    _waveColor = Color.DarkBlue;
                 }
                 else if (_shieldPercent > 40)
                 {
                     _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.GreenYellow, 100f);
-                    _waveColor = Color.GreenYellow;
                 }
                 else if (_shieldPercent > 20)
                 {
                     _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.OrangeRed, 100f);
-                    _waveColor = Color.OrangeRed;
                 }
                 else
                 {
                     _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.DarkRed, 100f);
-                    //_waveColor = Color.DarkRed;
-                    //_waveColor = Color.FromNonPremultiplied(50, 0, 0, 75);
-                    //_waveColor = new Vector4(0, 0, 0, 75f);
                 }
 
                 ImpactColorAssignments(impactSize, impactSpeed, prevLod);
@@ -483,12 +478,12 @@ namespace DefenseShields.Support
                 catch (Exception ex) { Log.Line($"Exception in ChargeColorAssignments {ex}"); }
             }
 
-            public void Draw(uint renderId, bool visable)
+            public void Draw(uint renderId)
             {
                 //_dsutil1.Sw.Start();
                 try
                 {
-                    if (!visable && _impactsFinished && !_charge) return;
+                    //if (!visable && _impactsFinished && !_charge) return;
                     var faceMaterial = _faceIdle;
                     var ib = _backing.IndexBuffer[_lod];
                     var v20 = new Vector2(.5f);
@@ -568,8 +563,6 @@ namespace DefenseShields.Support
                     {
                         _shellActive.Render.UpdateRenderObject(true);
                         _shellPassive.Render.UpdateRenderObject(false);
-                        //_shellActive.Render.Visible = true;
-                        //_shellPassive.Render.Visible = false;
                     }
 
                     _impactsFinished = false;
@@ -590,7 +583,7 @@ namespace DefenseShields.Support
                 }
                 if (!_impactsFinished)
                 {
-                    Log.Line($"{_impactCnt[0]} - {_impactCnt[1]} - {_impactCnt[2]} - {_impactCnt[3]} - {_impactCnt[4]} - {_impactCnt[5]}");
+                    //Log.Line($"{_impactCnt[0]} - {_impactCnt[1]} - {_impactCnt[2]} - {_impactCnt[3]} - {_impactCnt[4]} - {_impactCnt[5]}");
                     for (int i = 0; i < _impactCnt.Length; i++)
                     {
                         if (_impactPos[i] != Vector3D.NegativeInfinity) _impactCnt[i] += 1;
@@ -604,7 +597,7 @@ namespace DefenseShields.Support
                     if (_impactCnt[0] == 0 && _impactCnt[1] == 0 && _impactCnt[2] == 0 && _impactCnt[3] == 0 && _impactCnt[4] == 0 && _impactCnt[5] == 0)
                     {
                         _shellActive.Render.UpdateRenderObject(false);
-                        _shellPassive.Render.UpdateRenderObject(true);
+                        if (_visible) _shellPassive.Render.UpdateRenderObject(true);
                         _impactsFinished = true;
                         for (int i = 0; i < _triColorBuffer.Length; i++)
                             _triColorBuffer[i] = _defaultColor;

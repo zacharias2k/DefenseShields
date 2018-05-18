@@ -129,9 +129,9 @@
         <W>0</W>
       </Color>
       <ColorAdd>
-        <X>0.00</X>
-        <Y>0.005</Y>
-        <Z>0.02</Z>
+        <X>0.0</X>
+        <Y>0.0</Y>
+        <Z>0.0</Z>
         <W>0.1</W>
       </ColorAdd>
       <ShadowMultiplier>
@@ -146,10 +146,10 @@
         <Z>0</Z>
         <W>0</W>
       </LightMultiplier>
-      <Reflectivity>0.4</Reflectivity>
+      <Reflectivity>0</Reflectivity>
       <Fresnel>15</Fresnel>
       <ReflectionShadow>1</ReflectionShadow>
-      <Gloss>0.4</Gloss>
+      <Gloss>0</Gloss>
       <GlossTextureAdd>0.8</GlossTextureAdd>
       <SpecularColorFactor>255</SpecularColorFactor>
       <IsFlareOccluder>true</IsFlareOccluder>
@@ -200,7 +200,7 @@
           <Z>0</Z>
           <W>0</W>
       </LightMultiplier>
-      <Reflectivity>0.4</Reflectivity>
+      <Reflectivity>0.6</Reflectivity>
       <Fresnel>15</Fresnel>
       <ReflectionShadow>1</ReflectionShadow>
       <Gloss>0.4</Gloss>

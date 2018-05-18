@@ -18,7 +18,6 @@ using VRage.Utils;
 using VRage.Game.Entity;
 using System.Linq;
 using DefenseShields.Control;
-using DefenseShields.Data.Scripts.DefenseShields.Support;
 using VRage.Collections;
 using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
@@ -107,6 +106,7 @@ namespace DefenseShields
         private bool _enemy;
         private bool _effectsCleanup;
         private bool _startupWarning;
+        private bool _hideShield;
 
         internal Vector3D ShieldSize { get; set; }
         public Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
@@ -398,7 +398,7 @@ namespace DefenseShields
 
                     CreateUi();
 
-                    _shellPassive = _spawn.EmptyEntity("dShell", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldPassive_LOD0.mwm", parent, true);
+                    _shellPassive = _spawn.EmptyEntity("dShellPassive", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldPassive_LOD0.mwm", parent, true);
                     _shellPassive.Render.CastShadows = false;
                     _shellPassive.IsPreview = true;
                     _shellPassive.Render.Visible = true;
@@ -406,7 +406,7 @@ namespace DefenseShields
                     _shellPassive.Render.UpdateRenderObject(true);
                     _shellPassive.Save = false;
 
-                    _shellActive = _spawn.EmptyEntity("dShell", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldActive_LOD4.mwm", parent, true);
+                    _shellActive = _spawn.EmptyEntity("dShellActive", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldActive_LOD3.mwm", parent, true);
                     _shellActive.Render.CastShadows = false;
                     _shellActive.IsPreview = true;
                     _shellActive.Render.Visible = true;
@@ -721,11 +721,12 @@ namespace DefenseShields
                 {
                     if (_shieldStarting)
                     {
-                        _shellPassive.Render.UpdateRenderObject(true);
+                        if (!(_visablilityCheckBox.Getter(Shield).Equals(true))) _shellPassive.Render.UpdateRenderObject(true);
                         _shellActive.Render.UpdateRenderObject(true);
                         _shellActive.Render.UpdateRenderObject(false);
                         _shield.Render.Visible = true;
                         _shield.Render.UpdateRenderObject(true);
+                        SyncThreadedEnts(true);
                         Log.Line($"starting");
                     }
                     if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
@@ -752,7 +753,6 @@ namespace DefenseShields
                     if (!_blockParticleStopped) BlockParticleStop();
                 }
                 _dsutil2.StopWatchReport("main-loop perf", 4);
-
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
@@ -1208,10 +1208,22 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in CleanUp: {ex}"); }
         }
 
-        private void SyncThreadedEnts()
+        private void SyncThreadedEnts(bool clear = false)
         {
             try
             {
+                if (clear)
+                {
+                    Eject.Clear();
+                    _destroyedBlocks.Clear();
+                    _missileDmg.Clear();
+                    _meteorDmg.Clear();
+                    _voxelDmg.Clear();
+                    _characterDmg.Clear();
+                    _fewDmgBlocks.Clear();
+                    _dmgBlocks.Clear();
+                    return;
+                }
                 if (Eject.Count != 0)
                 {
                     foreach (var e in Eject) e.Key.SetPosition(Vector3D.Lerp(e.Key.GetPosition(), e.Value, 0.1d));
@@ -1263,7 +1275,7 @@ namespace DefenseShields
                                 FriendlyCache.Add(ent);
                                 continue;
                             }
-                            Log.Line($"{((MyEntity)ent).DebugName} damage: {damage}");
+                            //Log.Line($"{((MyEntity)ent).DebugName} damage: {damage}");
                             WorldImpactPosition = ent.PositionComp.WorldVolume.Center;
                             Absorb += damage;
                             destObj.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
@@ -1395,7 +1407,7 @@ namespace DefenseShields
                     || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
 
                 var relation = EntType(ent);
-                if ((relation == Ent.Ignore || relation == Ent.Friend) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, _detectInsideInv))
+                if ((relation == Ent.Ignore || relation == Ent.Friend) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, _detectMatrixOutsideInv))
                 {
                     FriendlyCache.Add(ent);
                     continue;
@@ -1419,7 +1431,7 @@ namespace DefenseShields
                             FriendlyCache.Add(ent);
                             continue;
                         }
-                        if (relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid && CustomCollision.AllAabbInShield(((IMyEntity)ent).WorldAABB, _detectMatrixOutsideInv))
+                        if ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, _detectMatrixOutsideInv))
                         {
                             inside = true;
                             FriendlyCache.Add(ent);
@@ -1499,7 +1511,6 @@ namespace DefenseShields
                         case Ent.VoxelBase:
                             {
                                 MyAPIGateway.Parallel.Start(() => VoxelIntersect(webent as MyVoxelBase));
-                                //VoxelIntersect(webent as MyVoxelBase);
                                 continue;
                             }
                         default:
@@ -1671,12 +1682,12 @@ namespace DefenseShields
                 collisionAvg += insidePoints[i];
             }
 
-            if (insidePoints.Count > 0) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bPhysics.Mass, bPhysics.CenterOfMassWorld);
-            if (insidePoints.Count > 0) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sPhysics.Mass, sPhysics.CenterOfMassWorld);
+            if (insidePoints.Count > 0 && !bPhysics.IsStatic) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bPhysics.Mass, bPhysics.CenterOfMassWorld);
+            if (insidePoints.Count > 0 && !sPhysics.IsStatic) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sPhysics.Mass, sPhysics.CenterOfMassWorld);
 
             collisionAvg /= insidePoints.Count;
-            if (insidePoints.Count > 0) sPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * sPhysics.Mass, null, Vector3D.Zero, MathHelper.Clamp(sPhysics.LinearVelocity.Length(), 10f, 50f));
-            if (insidePoints.Count > 0) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - bPhysics.CenterOfMassWorld) * bPhysics.Mass, null, Vector3D.Zero, MathHelper.Clamp(bPhysics.LinearVelocity.Length(), 10f, 50f));
+            if (insidePoints.Count > 0 && !sPhysics.IsStatic) sPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * sPhysics.Mass, null, Vector3D.Zero, MathHelper.Clamp(sPhysics.LinearVelocity.Length(), 10f, 50f));
+            if (insidePoints.Count > 0 && !bPhysics.IsStatic) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - bPhysics.CenterOfMassWorld) * bPhysics.Mass, null, Vector3D.Zero, MathHelper.Clamp(bPhysics.LinearVelocity.Length(), 10f, 50f));
 
             if (insidePoints.Count <= 0) return;
 
@@ -1816,14 +1827,14 @@ namespace DefenseShields
                     if (collisionAvg != Vector3D.Zero)
                     {
                         collisionAvg /= c3;
-                        bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bPhysics.Mass, bPhysics.CenterOfMassWorld);
-                        sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sPhysics.Mass, sPhysics.CenterOfMassWorld);
+                        if (!bPhysics.IsStatic) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bPhysics.Mass, bPhysics.CenterOfMassWorld);
+                        if (!sPhysics.IsStatic) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sPhysics.Mass, sPhysics.CenterOfMassWorld);
                         var surfaceMass = (bPhysics.Mass > sPhysics.Mass) ? sPhysics.Mass : bPhysics.Mass;
                         var surfaceMulti = (c3 > 5) ? 5 : c3;
                         var localNormal = Vector3D.Transform(collisionAvg, transformInv);
                         var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
-                        bPhysics.ApplyImpulse(surfaceMulti * (surfaceMass / 5) * -Vector3D.Dot(bPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
-                        sPhysics.ApplyImpulse(surfaceMulti * (surfaceMass / 5) * -Vector3D.Dot(sPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
+                        if (!bPhysics.IsStatic) bPhysics.ApplyImpulse(surfaceMulti * (surfaceMass / 5) * -Vector3D.Dot(bPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
+                        if (!sPhysics.IsStatic) sPhysics.ApplyImpulse(surfaceMulti * (surfaceMass / 5) * -Vector3D.Dot(sPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
                         bBlockCenter = collisionAvg;
                     }
                     entInfo.Damage = damage;
@@ -1845,8 +1856,17 @@ namespace DefenseShields
             var relation = MyAPIGateway.Session.Player.GetRelationTo(Shield.OwnerId);
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
             _enemy = enemy;
-            var visable = !(_visablilityCheckBox.Getter(Shield).Equals(true) && !enemy);
-
+            var visible = !(_visablilityCheckBox.Getter(Shield).Equals(true) && !enemy);
+            if (!visible && !_hideShield)
+            {
+                _hideShield = true;
+                _shellPassive.Render.UpdateRenderObject(false);
+            }
+            else if (visible && _hideShield)
+            {
+                _hideShield = false;
+                _shellPassive.Render.UpdateRenderObject(true);
+            }
             if (BulletCoolDown > -1) BulletCoolDown++;
             if (BulletCoolDown > 9) BulletCoolDown = -1;
             if (EntityCoolDown > -1) EntityCoolDown++;
@@ -1867,17 +1887,15 @@ namespace DefenseShields
             }
             WorldImpactPosition = Vector3D.NegativeInfinity;
 
-            if (Shield.IsWorking) PrepareSphere();
-            if (sphereOnCamera && Shield.IsWorking) _icosphere.Draw(GetRenderId(), visable);
-        }
-
-        private void PrepareSphere()
-        {
-            var prevlod = _prevLod;
-            var lod = CalculateLod(_onCount);
-            if (_gridChanged || lod != prevlod) _icosphere.CalculateTransform(_shieldShapeMatrix, lod);
-            _icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, ImpactSize, _entityChanged, _enemy, _shellPassive, _shellActive, prevlod, _shieldPercent);
-            _entityChanged = false;
+            if (Shield.IsWorking)
+            {
+                var prevlod = _prevLod;
+                var lod = CalculateLod(_onCount);
+                if (_gridChanged || lod != prevlod) _icosphere.CalculateTransform(_shieldShapeMatrix, lod);
+                _icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, ImpactSize, _entityChanged, _enemy, _shellPassive, _shellActive, prevlod, _shieldPercent, visible);
+                _entityChanged = false;
+            }
+            if (sphereOnCamera && Shield.IsWorking) _icosphere.Draw(GetRenderId());
         }
 
         private bool Distance(int x)
@@ -1892,7 +1910,8 @@ namespace DefenseShields
         {
             var lod = 4;
 
-            //if (Distance(2500) && onCount == 1) lod = 3;
+            if (onCount > 20) lod = 2;
+            else if (onCount > 10) lod = 3;
             //if (Distance(300) && onCount == 1) lod = 4;
             //else if (Distance(2500) && onCount <= 2) lod = 3;
             //else if (Distance(8000) && onCount < 7) lod = 2;
