@@ -18,7 +18,6 @@ using VRage.Utils;
 using VRage.Game.Entity;
 using System.Linq;
 using DefenseShields.Control;
-using DefenseShields.Data.Scripts.DefenseShields.Support;
 using VRage.Collections;
 using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
@@ -726,6 +725,7 @@ namespace DefenseShields
                         _shellActive.Render.UpdateRenderObject(false);
                         _shield.Render.Visible = true;
                         _shield.Render.UpdateRenderObject(true);
+                        SyncThreadedEnts(true);
                         Log.Line($"starting");
                     }
                     if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
@@ -752,7 +752,6 @@ namespace DefenseShields
                     if (!_blockParticleStopped) BlockParticleStop();
                 }
                 _dsutil2.StopWatchReport("main-loop perf", 4);
-
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
@@ -1208,10 +1207,22 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in CleanUp: {ex}"); }
         }
 
-        private void SyncThreadedEnts()
+        private void SyncThreadedEnts(bool clear = false)
         {
             try
             {
+                if (clear)
+                {
+                    Eject.Clear();
+                    _destroyedBlocks.Clear();
+                    _missileDmg.Clear();
+                    _meteorDmg.Clear();
+                    _voxelDmg.Clear();
+                    _characterDmg.Clear();
+                    _fewDmgBlocks.Clear();
+                    _dmgBlocks.Clear();
+                    return;
+                }
                 if (Eject.Count != 0)
                 {
                     foreach (var e in Eject) e.Key.SetPosition(Vector3D.Lerp(e.Key.GetPosition(), e.Value, 0.1d));
@@ -1395,8 +1406,9 @@ namespace DefenseShields
                     || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
 
                 var relation = EntType(ent);
-                if ((relation == Ent.Ignore || relation == Ent.Friend) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, _detectInsideInv))
+                if ((relation == Ent.Ignore || relation == Ent.Friend) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, _detectMatrixOutsideInv))
                 {
+                    Log.Line($"adding as friend");
                     FriendlyCache.Add(ent);
                     continue;
                 }
@@ -1419,8 +1431,9 @@ namespace DefenseShields
                             FriendlyCache.Add(ent);
                             continue;
                         }
-                        if (relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid && CustomCollision.AllAabbInShield(((IMyEntity)ent).WorldAABB, _detectMatrixOutsideInv))
+                        if ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, _detectMatrixOutsideInv))
                         {
+                            Log.Line($"nobody friend spawned inside - {ent.DebugName} - {relation} - {DetectionMatrix.Scale} - {DetectionMatrix.Translation}");
                             inside = true;
                             FriendlyCache.Add(ent);
                         }
@@ -1499,7 +1512,6 @@ namespace DefenseShields
                         case Ent.VoxelBase:
                             {
                                 MyAPIGateway.Parallel.Start(() => VoxelIntersect(webent as MyVoxelBase));
-                                //VoxelIntersect(webent as MyVoxelBase);
                                 continue;
                             }
                         default:

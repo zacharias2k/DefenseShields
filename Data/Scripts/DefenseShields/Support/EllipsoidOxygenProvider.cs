@@ -2,7 +2,7 @@
 using VRage.Game.ModAPI;
 using VRageMath;
 
-namespace DefenseShields.Data.Scripts.DefenseShields.Support
+namespace DefenseShields.Support
 {
     class EllipsoidOxygenProvider : IMyOxygenProvider
     {

@@ -343,29 +343,22 @@ namespace DefenseShields.Support
                 if (_shieldPercent > 80)
                 {
                     _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.LightBlue, 100f);
-                    _waveColor = Color.LightBlue;
                 }
                 else if (_shieldPercent > 60)
                 {
                     _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.DarkBlue, 100f);
-                    _waveColor = Color.DarkBlue;
                 }
                 else if (_shieldPercent > 40)
                 {
                     _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.GreenYellow, 100f);
-                    _waveColor = Color.GreenYellow;
                 }
                 else if (_shieldPercent > 20)
                 {
                     _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.OrangeRed, 100f);
-                    _waveColor = Color.OrangeRed;
                 }
                 else
                 {
                     _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.DarkRed, 100f);
-                    //_waveColor = Color.DarkRed;
-                    //_waveColor = Color.FromNonPremultiplied(50, 0, 0, 75);
-                    //_waveColor = new Vector4(0, 0, 0, 75f);
                 }
 
                 ImpactColorAssignments(impactSize, impactSpeed, prevLod);
@@ -568,8 +561,6 @@ namespace DefenseShields.Support
                     {
                         _shellActive.Render.UpdateRenderObject(true);
                         _shellPassive.Render.UpdateRenderObject(false);
-                        //_shellActive.Render.Visible = true;
-                        //_shellPassive.Render.Visible = false;
                     }
 
                     _impactsFinished = false;
@@ -590,7 +581,7 @@ namespace DefenseShields.Support
                 }
                 if (!_impactsFinished)
                 {
-                    Log.Line($"{_impactCnt[0]} - {_impactCnt[1]} - {_impactCnt[2]} - {_impactCnt[3]} - {_impactCnt[4]} - {_impactCnt[5]}");
+                    //Log.Line($"{_impactCnt[0]} - {_impactCnt[1]} - {_impactCnt[2]} - {_impactCnt[3]} - {_impactCnt[4]} - {_impactCnt[5]}");
                     for (int i = 0; i < _impactCnt.Length; i++)
                     {
                         if (_impactPos[i] != Vector3D.NegativeInfinity) _impactCnt[i] += 1;
