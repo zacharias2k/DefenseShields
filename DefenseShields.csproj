@@ -199,7 +199,6 @@
     <Compile Include="Data\Scripts\DefenseShields\Support\EllipsoidOxygenProvider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Power.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\SurfaceArea\EllipsoidSA.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\SurfaceArea\Shape3D.cs" />
     <Compile Include="test\port\Coord3D.cs" />
     <Compile Include="test\port\Ellipsoid.cs" />
     <Compile Include="test\port\GeometRi3D.cs" />

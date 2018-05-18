@@ -184,7 +184,8 @@ namespace DefenseShields
         private MyEntity _shellPassive;
         private MyEntity _shellActive;
 
-        private EllipsoidOxygenProvider _ellipsoidOxyProvider = new EllipsoidOxygenProvider(Matrix.Zero);
+        internal readonly EllipsoidOxygenProvider EllipsoidOxyProvider = new EllipsoidOxygenProvider(Matrix.Zero);
+        internal readonly EllipsoidSA EllipsoidSa = new EllipsoidSA(double.MinValue, double.MinValue, double.MinValue);
 
         private DSUtils _dsutil1 = new DSUtils();
         private DSUtils _dsutil2 = new DSUtils();
@@ -326,7 +327,7 @@ namespace DefenseShields
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
 
                 if (!_shields.ContainsKey(Entity.EntityId)) _shields.Add(Entity.EntityId, this);
-                MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(_ellipsoidOxyProvider);
+                MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -784,7 +785,7 @@ namespace DefenseShields
                 _sOriBBoxD = new MyOrientedBoundingBoxD(_detectionCenter, ShieldSize, _sQuaternion);
                 _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
                 _shieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
-                _ellipsoidSurfaceArea = new EllipsoidSA(_detectMatrixOutside.Scale.X, _detectMatrixOutside.Scale.Y, _detectMatrixOutside.Scale.Z).Surface;
+                EllipsoidSa.Update(_detectMatrixOutside.Scale.X, _detectMatrixOutside.Scale.Y, _detectMatrixOutside.Scale.Z);
             }
             else
             {
@@ -797,10 +798,10 @@ namespace DefenseShields
                 _sOriBBoxD = new MyOrientedBoundingBoxD(_detectionCenter, ShieldSize, _sQuaternion);
                 _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
                 _shieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
-
-                _ellipsoidSurfaceArea = new EllipsoidSA(_detectMatrixOutside.Scale.X, _detectMatrixOutside.Scale.Y, _detectMatrixOutside.Scale.Z).Surface;
+                EllipsoidSa.Update(_detectMatrixOutside.Scale.X, _detectMatrixOutside.Scale.Y, _detectMatrixOutside.Scale.Z);
             }
             Range = ShieldSize.AbsMax() + 7.5f;
+            _ellipsoidSurfaceArea = EllipsoidSa.Surface;
             SetShieldShape();
         }
 
@@ -832,7 +833,7 @@ namespace DefenseShields
             _shield.PositionComp.SetWorldMatrix(matrix);
             _shield.PositionComp.SetPosition(_detectionCenter);
 
-            _ellipsoidOxyProvider.UpdateMatrix(_detectMatrixOutsideInv);
+            EllipsoidOxyProvider.UpdateMatrix(_detectMatrixOutsideInv);
         }
 
         private void RefreshDimensions()
