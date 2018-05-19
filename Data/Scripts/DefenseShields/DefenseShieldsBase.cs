@@ -86,6 +86,7 @@ namespace DefenseShields
         public override void Draw()
         {
             //_dsutil1.Sw.Start();
+            if (MyAPIGateway.Utilities.IsDedicated) return;
             if (_count == 0) Log.Line($"Shields in the world: {Components.Count.ToString()}");
             try
             {
