@@ -7,7 +7,6 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
-using Sandbox.Game.WorldEnvironment.ObjectBuilders;
 using VRage;
 using VRage.Game.Entity;
 using VRage.Utils;
@@ -33,7 +32,7 @@ namespace DefenseShields
         public bool enabled = true;
         public string disabledBy = null;
 
-        public readonly Guid SETTINGS_GUID = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
+        public readonly Guid SettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
 
         public static DefenseShieldsBase Instance { get; private set; }
         public readonly MyModContext MyModContext = new MyModContext();
@@ -275,10 +274,10 @@ namespace DefenseShields
                                 return;
                             }
 
-                            Log.Line($"PacketReceived(); Settings; {(MyAPIGateway.Multiplayer.IsServer ? " Relaying to clients;" : "")}Valid!\n{logic.Settings}");
+                            Log.Line($"PacketReceived(); Settings; {(MyAPIGateway.Multiplayer.IsServer ? " Relaying to clients;" : "")}Valid!\n{logic.Config.Settings}");
 
-                            logic.UpdateSettings(data.Settings);
-                            logic.SaveSettings();
+                            logic.Config.UpdateSettings(data.Settings);
+                            logic.Config.SaveSettings();
 
                             if (MyAPIGateway.Multiplayer.IsServer)
                                 RelayToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
@@ -291,10 +290,10 @@ namespace DefenseShields
                         //logic.PlayerReceivedBP(data.Sender);
                         break;
                     case PacketType.USE_THIS_AS_IS:
-                        logic.UseThisShip_Receiver(false);
+                        logic.Config.UseThisShip_Receiver(false);
                         break;
                     case PacketType.USE_THIS_FIX:
-                        logic.UseThisShip_Receiver(true);
+                        logic.Config.UseThisShip_Receiver(true);
                         break;
                 }
             }

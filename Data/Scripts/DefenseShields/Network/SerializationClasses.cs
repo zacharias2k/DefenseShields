@@ -19,10 +19,15 @@ namespace DefenseShields
         [ProtoMember(4)]
         public float Depth = -1;
 
+        [ProtoMember(5)]
+        public bool IdleVisible = false;
+
+        [ProtoMember(6)]
+        public bool ActiveVisible = false;
 
         public override string ToString()
         {
-            return $"Enabled = {Enabled}\nWidth = {Math.Round(Width, 4)}\nHeight = {Math.Round(Height, 4)}\nDepth = {Math.Round(Depth, 4)}";
+            return $"Enabled = {Enabled}\nIdleVisible = {IdleVisible}\nActiveVisible = {ActiveVisible}\nWidth = {Math.Round(Width, 4)}\nHeight = {Math.Round(Height, 4)}\nDepth = {Math.Round(Depth, 4)}";
         }
     }
 

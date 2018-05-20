@@ -18,6 +18,7 @@ using VRage.Utils;
 using VRage.Game.Entity;
 using System.Linq;
 using DefenseShields.Control;
+using DefenseShields.Settings;
 using VRage.Collections;
 using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
@@ -109,6 +110,8 @@ namespace DefenseShields
         private bool _effectsCleanup;
         private bool _startupWarning;
         private bool _hideShield;
+        private bool _oldHidePassive;
+        private bool _oldHideActive;
 
         internal Vector3D ShieldSize { get; set; }
         public Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
@@ -164,10 +167,6 @@ namespace DefenseShields
         private readonly MyConcurrentQueue<IMyCharacter> _characterDmg = new MyConcurrentQueue<IMyCharacter>();
         private readonly MyConcurrentQueue<MyVoxelBase> _voxelDmg = new MyConcurrentQueue<MyVoxelBase>();
 
-
-        private readonly Spawn _spawn = new Spawn();
-        private Icosphere.Instance _icosphere;
-
         private readonly MyParticleEffect[] _effects = new MyParticleEffect[1];
         private MyEntitySubpart _subpartRotor;
 
@@ -187,25 +186,18 @@ namespace DefenseShields
         private MyEntity _shellPassive;
         private MyEntity _shellActive;
 
+        internal Icosphere.Instance Icosphere;
+        internal readonly Spawn Spawn = new Spawn();
         internal readonly EllipsoidOxygenProvider EllipsoidOxyProvider = new EllipsoidOxygenProvider(Matrix.Zero);
         internal readonly EllipsoidSA EllipsoidSa = new EllipsoidSA(double.MinValue, double.MinValue, double.MinValue);
+        internal readonly Config Config = new Config();
 
-        private DSUtils _dsutil1 = new DSUtils();
-        private DSUtils _dsutil2 = new DSUtils();
-        private DSUtils _dsutil3 = new DSUtils();
-        private DSUtils _dsutil4 = new DSUtils();
-
-        // tem
-        private bool needsMatrixUpdate = false;
-        internal DefenseShieldsModSettings Settings = new DefenseShieldsModSettings();
-        private bool blocksNeedRefresh = false;
-        public const float MIN_SCALE = 15f; // Scale slider min/max
-        public const float MAX_SCALE = 300f;
-        public float LargestGridLength = 2.5f;
-        public static MyModStorageComponent Storage { get; set; } // broken, shouldn't be static.  Move to Session if possible.
-        private HashSet<ulong> playersToReceive = null;
-        // 
+        internal DSUtils Dsutil1 = new DSUtils();
+        internal DSUtils Dsutil2 = new DSUtils();
+        internal DSUtils Dsutil3 = new DSUtils();
+        internal DSUtils Dsutil4 = new DSUtils();
         #endregion
+
         #region Cleanup
         public override void OnAddedToScene()
         {
@@ -213,12 +205,12 @@ namespace DefenseShields
             {
                 if (!Entity.MarkedForClose)
                 {
-                    Log.Line("Entity not closed in OnAddedToScene - gridSplit?.");
+                    //Log.Line("Entity not closed in OnAddedToScene - gridSplit?.");
                     return;
                 }
-                Log.Line("Entity closed in OnAddedToScene.");
+                //Log.Line("Entity closed in OnAddedToScene.");
                 DefenseShieldsBase.Instance.Components.Add(this);
-                _icosphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Icosphere);
+                Icosphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Icosphere);
                 Shield.CubeGrid.Components.Add(new ShieldGridComponent(this));
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
@@ -228,16 +220,16 @@ namespace DefenseShields
         {
             try
             {
-                Log.Line("OnremoveFromScene");
+                //Log.Line("OnremoveFromScene");
                 if (!Entity.MarkedForClose)
                 {
-                    Log.Line("Entity not closed in OnRemovedFromScene- gridSplit?.");
+                    //Log.Line("Entity not closed in OnRemovedFromScene- gridSplit?.");
                     return;
                 }
-                Log.Line("Entity closed in OnRemovedFromScene.");
+                //Log.Line("Entity closed in OnRemovedFromScene.");
                 _power = 0f;
                 if (MainInit) Sink.Update();
-                _icosphere = null;
+                Icosphere = null;
                 _shield.Close();
                 _shellPassive.Close();
                 _shellActive.Close();
@@ -249,15 +241,15 @@ namespace DefenseShields
         }
 
         public override void OnAddedToContainer() { if (Entity.InScene) OnAddedToScene(); }
-        public override void OnBeforeRemovedFromContainer() { Log.Line("OnBeforeRemovedFromContainer"); if (Entity.InScene) OnRemovedFromScene(); }
+        public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
         public override void Close()
         {
             try
             {
-                Log.Line("Close");
+                //Log.Line("Close");
                 if (DefenseShieldsBase.Instance.Components.Contains(this)) DefenseShieldsBase.Instance.Components.Remove(this);
                 _power = 0f;
-                _icosphere = null;
+                Icosphere = null;
 
                 if (MainInit) Sink.Update();
                 BlockParticleStop();
@@ -379,10 +371,10 @@ namespace DefenseShields
                     return;
                 }
 
-                if (_icosphere == null) 
+                if (Icosphere == null) 
                 {
-                    Log.Line($"_icosphere Null!");
-                    _icosphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Icosphere);
+                    //Log.Line($"_icosphere Null!");
+                    Icosphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Icosphere);
                     if (!DefenseShieldsBase.Instance.Components.Contains(this)) DefenseShieldsBase.Instance.Components.Add(this);
                     if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>()) Shield.CubeGrid.Components.Add(new ShieldGridComponent(this));
                 }
@@ -399,7 +391,7 @@ namespace DefenseShields
 
                     CreateUi();
 
-                    _shellPassive = _spawn.EmptyEntity("dShellPassive", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldPassive_LOD0.mwm", parent, true);
+                    _shellPassive = Spawn.EmptyEntity("dShellPassive", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldPassive_LOD0.mwm", parent, true);
                     _shellPassive.Render.CastShadows = false;
                     _shellPassive.IsPreview = true;
                     _shellPassive.Render.Visible = true;
@@ -407,7 +399,7 @@ namespace DefenseShields
                     _shellPassive.Render.UpdateRenderObject(true);
                     _shellPassive.Save = false;
 
-                    _shellActive = _spawn.EmptyEntity("dShellActive", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldActiveH_LOD3.mwm", parent, true);
+                    _shellActive = Spawn.EmptyEntity("dShellActive", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldActiveH_LOD3.mwm", parent, true);
                     _shellActive.Render.CastShadows = false;
                     _shellActive.IsPreview = true;
                     _shellActive.Render.Visible = true;
@@ -417,7 +409,7 @@ namespace DefenseShields
                     _shellActive.Save = false;
                     _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.Black, 0.01f);
 
-                    _shield = _spawn.EmptyEntity("dShield", null, (MyEntity)Shield, false);
+                    _shield = Spawn.EmptyEntity("dShield", null, (MyEntity)Shield, false);
                     _shield.Render.CastShadows = false;
                     _shield.Render.RemoveRenderObjects();
                     _shield.Render.UpdateRenderObject(true);
@@ -442,8 +434,9 @@ namespace DefenseShields
                     if (GridIsMobile) MobileUpdate();
                     else RefreshDimensions();
 
-                    _icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
-
+                    Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
+                    var test = Config.LoadSettings();
+                    if (test) Log.Line($"Success!!");
                     AnimateInit = true;
                 }
             }
@@ -476,6 +469,8 @@ namespace DefenseShields
             var shieldBlocks = new List<MyCubeBlock>();
             foreach (var block in ((MyCubeGrid)Shield.CubeGrid).GetFatBlocks())
             {
+                if (block ==  null) continue;
+
                 if (block.BlockDefinition.BlockPairName.Equals("DefenseShield") || block.BlockDefinition.BlockPairName.Equals("StationShield"))
                 {
                     if (gridStatic && Shield.BlockDefinition.SubtypeId == "DefenseShieldsST")
@@ -494,6 +489,7 @@ namespace DefenseShields
             var shieldId = long.MinValue;
             foreach (var shield in shieldBlocks)
             {
+                if (shield == null) continue;
                 if (gridStatic && shield.BlockDefinition.BlockPairName.Equals("DefenseShield")) continue;
                 if (!gridStatic && shield.BlockDefinition.BlockPairName.Equals("StationShield")) continue;
 
@@ -512,7 +508,7 @@ namespace DefenseShields
             if (GridIsMobile)
             {
                 MobileUpdate();
-                _icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
+                Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
             }
             else RefreshDimensions();
 
@@ -590,7 +586,7 @@ namespace DefenseShields
 
             if (pruneList.Count == 0) return false;
             MobileUpdate();
-            _icosphere.ReturnPhysicsVerts(_detectMatrixOutside, PhysicsOutsideLow);
+            Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, PhysicsOutsideLow);
             foreach (var voxel in pruneList)
             {
                 if (voxel.RootVoxel == null) continue;
@@ -609,7 +605,7 @@ namespace DefenseShields
             try
             {
                 var defintions = MyDefinitionManager.Static.GetAllDefinitions();
-                Log.Line($"Getting Definitions");
+                //Log.Line($"Getting Definitions");
                 foreach (var def in defintions)
                 {
                     if (!(def is MyAmmoMagazineDefinition)) continue;
@@ -649,7 +645,7 @@ namespace DefenseShields
 
         private void CreateUi()
         {
-            Log.Line($"Create UI - Tick:{_tick.ToString()}");
+            //Log.Line($"Create UI - Tick:{_tick.ToString()}");
             DefenseShieldsBase.Instance.ControlsLoaded = true;
             RemoveOreUi();
 
@@ -670,7 +666,7 @@ namespace DefenseShields
         {
             try
             {
-                _dsutil2.Sw.Restart();
+                Dsutil2.Sw.Restart();
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
                 if (!BlockFunctional()) return;
 
@@ -713,6 +709,7 @@ namespace DefenseShields
                     {
                         Shield.ShowInToolbarConfig = false;
                         Shield.ShowInToolbarConfig = true;
+                        ConfigUpdate();
                     }
                     else if (_longLoop == 0 || _longLoop == 5) Shield.ShowInToolbarConfig = false; Shield.ShowInToolbarConfig = true; Shield.RefreshCustomInfo();
                     _shieldDps = 0f;
@@ -723,6 +720,7 @@ namespace DefenseShields
                 {
                     if (_shieldStarting)
                     {
+                        Log.Line($"starting");
                         if (!(_hidePassiveCheckBox.Getter(Shield).Equals(true))) _shellPassive.Render.UpdateRenderObject(true);
 
                         _shellActive.Render.UpdateRenderObject(true);
@@ -730,7 +728,7 @@ namespace DefenseShields
                         _shield.Render.Visible = true;
                         _shield.Render.UpdateRenderObject(true);
                         SyncThreadedEnts(true);
-                        Log.Line($"starting");
+                        if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(_detectMatrixOutsideInv);
                     }
                     if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
                     if (!MyAPIGateway.Utilities.IsDedicated && Distance(1000))
@@ -755,11 +753,31 @@ namespace DefenseShields
                     SyncThreadedEnts();
                     if (!_blockParticleStopped) BlockParticleStop();
                 }
-                _dsutil2.StopWatchReport("main-loop perf", 4);
+                Dsutil2.StopWatchReport("main-loop perf", 4);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
         #endregion
+
+        private void ConfigUpdate()
+        {
+            var changed = false;
+            var hidePassive = _hidePassiveCheckBox.Getter(Shield).Equals(true);
+            var hideActive = _hideActiveCheckBox.Getter(Shield).Equals(true);
+            if (_oldHidePassive != hidePassive || _oldHideActive != hideActive)
+            {
+                changed = true;
+                _oldHidePassive = hidePassive;
+                _oldHideActive = hideActive;
+            }
+
+            if (!changed) return;
+            Config.Shield = Shield.Enabled;
+            Config.ShieldActiveVisible = hideActive;
+            Config.ShieldIdleVisible = hidePassive;
+            Config.SaveSettings();
+            Log.Line($"{Config.Shield} - {Config.Depth} - {Config.Width} - {Config.Height} - {Config.ShieldActiveVisible} - {Config.ShieldIdleVisible}");
+        }
 
         #region Shield Shape
         private void MobileUpdate()
@@ -835,7 +853,7 @@ namespace DefenseShields
             _shield.PositionComp.SetWorldMatrix(matrix);
             _shield.PositionComp.SetPosition(_detectionCenter);
 
-            EllipsoidOxyProvider.UpdateMatrix(_detectMatrixOutsideInv);
+            if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(_detectMatrixOutsideInv);
         }
 
         private void RefreshDimensions()
@@ -851,10 +869,15 @@ namespace DefenseShields
             _depth = depth;
             var changed = (int)oWidth != (int)width || (int)oHeight != (int)height || (int)oDepth != (int)depth;
             if (!changed) return;
-            CreateShieldShape();
 
-            _icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
+            CreateShieldShape();
+            Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
             _entityChanged = true;
+            Config.Depth = depth;
+            Config.Width = width;
+            Config.Height = height;
+            Config.SaveSettings();
+            Log.Line($"{Config.Shield} - {Config.Depth} - {Config.Width} - {Config.Height} - {Config.ShieldActiveVisible} - {Config.ShieldIdleVisible}");
         }
         #endregion
 
@@ -873,7 +896,7 @@ namespace DefenseShields
 
             if (!Shield.IsWorking && Shield.Enabled && Shield.IsFunctional && shieldPowerUsed > 0)
             {
-                Log.Line($"fixing shield state power: {_power.ToString()})");
+                Log.Line($"fixing shield state power: {_power.ToString()}");
                 Shield.Enabled = false;
                 Shield.Enabled = true;
                 return true;
@@ -883,7 +906,7 @@ namespace DefenseShields
             {
                 _shieldCurrentPower = Sink.CurrentInputByType(GId);
                 UpdateGridPower();
-
+                if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(MatrixD.Zero);
                 BlockParticleStop();
                 ShieldActive = false;
                 BlockWorking = false;
@@ -1134,7 +1157,7 @@ namespace DefenseShields
             {
                 if (_effects[i] == null)
                 {
-                    Log.Line($"Particle #{i.ToString()} is null, creating - tick:{_tick.ToString()}");
+                    //Log.Line($"Particle #{i.ToString()} is null, creating - tick:{_tick.ToString()}");
                     MyParticlesManager.TryCreateParticleEffect("EmitterEffect", out _effects[i]);
                     if (_effects[i] == null) continue;
                     _effects[i].UserScale = 1f;
@@ -1144,7 +1167,7 @@ namespace DefenseShields
 
                 if (_effects[i] != null)
                 {
-                    Log.Line($"Particle #{i.ToString()} exists, updating - tick:{_tick.ToString()}");
+                    //Log.Line($"Particle #{i.ToString()} exists, updating - tick:{_tick.ToString()}");
 
                     _effects[i].WorldMatrix = _subpartRotor.WorldMatrix;
                     _effects[i].Stop();
@@ -1242,7 +1265,7 @@ namespace DefenseShields
         {
             try
             {
-                _dsutil4.Sw.Restart();
+                Dsutil4.Sw.Restart();
                 if (clear)
                 {
                     Eject.Clear();
@@ -1415,7 +1438,7 @@ namespace DefenseShields
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in dmgBlocks: {ex}"); }
-                _dsutil4.StopWatchReport("syncEnt", 3);
+                Dsutil4.StopWatchReport("syncEnt", 3);
             }
             catch (Exception ex) { Log.Line($"Exception in DamageGrids: {ex}"); }
         }
@@ -1424,7 +1447,7 @@ namespace DefenseShields
         #region Web Entities
         private void WebEntities()
         {
-            _dsutil1.Sw.Restart();
+            Dsutil1.Sw.Restart();
             var pruneSphere = new BoundingSphereD(_detectionCenter, Range);
             var pruneList = new List<MyEntity>();
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
@@ -1474,18 +1497,18 @@ namespace DefenseShields
             }
             if (_enablePhysics || _shieldMoving || _gridChanged)
             {
-                _icosphere.ReturnPhysicsVerts(_detectMatrixOutside, PhysicsOutside);
-                _icosphere.ReturnPhysicsVerts(_detectMatrixOutside, PhysicsOutsideLow);
-                _icosphere.ReturnPhysicsVerts(_detectMatrixInside, PhysicsInside);
+                Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, PhysicsOutside);
+                Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, PhysicsOutsideLow);
+                Icosphere.ReturnPhysicsVerts(_detectMatrixInside, PhysicsInside);
             }
             if (_enablePhysics) MyAPIGateway.Parallel.Start(WebDispatch);
 
-            _dsutil1.StopWatchReport("web", 3);
+            Dsutil1.StopWatchReport("web", 3);
         }
 
         private void WebDispatch()
         {
-            _dsutil3.Sw.Restart();
+            Dsutil3.Sw.Restart();
             var ep = 0;
             var ns = 0;
             var nl = 0;
@@ -1570,7 +1593,7 @@ namespace DefenseShields
 
             if (Debug && _longLoop == 5 && _count == 5)
                 lock (_webEnts) Log.Line($"friend:{FriendlyCache.Count} total:{_webEnts.Count} ep:{ep} ns:{ns} nl:{nl} es:{es} el:{el} ss:{ss} oo:{oo} vv:{vv} xx:{xx}");
-            _dsutil3.StopWatchReport("webDispatch", 3);
+            Dsutil3.StopWatchReport("webDispatch", 3);
         }
         #endregion
 
@@ -1778,7 +1801,7 @@ namespace DefenseShields
             var npcname = character.ToString();
             if (npcname.Equals("Space_Wolf"))
             {
-                Log.Line($"playerEffect: Killing {character}");
+                //Log.Line($"playerEffect: Killing {character}");
                 _characterDmg.Enqueue(character);
                 //Absorb += 500;
                 //WorldImpactPosition = ent.PositionComp.WorldVolume.Center;
@@ -1947,11 +1970,11 @@ namespace DefenseShields
             {
                 var prevlod = _prevLod;
                 var lod = CalculateLod(_onCount);
-                if (_gridChanged || lod != prevlod) _icosphere.CalculateTransform(_shieldShapeMatrix, lod);
-                _icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, _shieldPercent, passiveVisible, activeVisible);
+                if (_gridChanged || lod != prevlod) Icosphere.CalculateTransform(_shieldShapeMatrix, lod);
+                Icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, _shieldPercent, passiveVisible, activeVisible);
                 _entityChanged = false;
             }
-            if (sphereOnCamera && Shield.IsWorking) _icosphere.Draw(GetRenderId());
+            if (sphereOnCamera && Shield.IsWorking) Icosphere.Draw(GetRenderId());
         }
 
         private bool Distance(int x)
@@ -2062,113 +2085,6 @@ namespace DefenseShields
 
             if (ammoInfo.Mass < 0 && ammoInfo.Radius <= 0) damage = -damage;
             return damage;
-        }
-        #endregion
-
-        #region Settings
-        public void UpdateSettings(DefenseShieldsModSettings newSettings)
-        {
-            ShieldVisable = newSettings.Enabled;
-            Width = newSettings.Width;
-            Height = newSettings.Height;
-            Depth = newSettings.Depth;
-        }
-
-        public void SaveSettings()
-        {
-            if (DefenseShields.Storage == null)
-                DefenseShields.Storage = new MyModStorageComponent();
-
-            DefenseShields.Storage[DefenseShieldsBase.Instance.SETTINGS_GUID] = MyAPIGateway.Utilities.SerializeToXML(Settings);
-
-            Log.Line("SaveSettings()");
-        }
-
-        private bool LoadSettings()
-        {
-            Log.Line("LoadSettings");
-
-            if (DefenseShields.Storage == null)
-                return false;
-
-            string rawData;
-            bool loadedSomething = false;
-
-            if (DefenseShields.Storage.TryGetValue(DefenseShieldsBase.Instance.SETTINGS_GUID, out rawData))
-            {
-                DefenseShieldsModSettings loadedSettings = null;
-
-                try
-                {
-                    loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsModSettings>(rawData);
-                }
-                catch (Exception e)
-                {
-                    loadedSettings = null;
-                    Log.Line($"Error loading settings!\n{e}");
-                }
-
-                if (loadedSettings != null)
-                {
-                    Settings = loadedSettings;
-                    loadedSomething = true;
-                }
-
-                Log.Line($"  Loaded settings:\n{Settings.ToString()}");
-            }
-
-            return loadedSomething;
-        }
-
-        public bool ShieldVisable
-        {
-            get { return Settings.Enabled; }
-            set
-            {
-                Settings.Enabled = value;
-                RefreshControls(refeshCustomInfo: true);
-            }
-        }
-
-        public float Width
-        {
-            get { return Settings.Width; }
-            set
-            {
-                Settings.Width = (float)Math.Round(MathHelper.Clamp(value, MIN_SCALE, Math.Min(LargestGridLength, MAX_SCALE)), 3);
-                needsMatrixUpdate = true;
-            }
-        }
-
-        public float Height
-        {
-            get { return Settings.Height; }
-            set
-            {
-                Settings.Height = (float)Math.Round(MathHelper.Clamp(value, MIN_SCALE, Math.Min(LargestGridLength, MAX_SCALE)), 3);
-                needsMatrixUpdate = true;
-            }
-        }
-
-        public float Depth
-        {
-            get { return Settings.Depth; }
-            set
-            {
-                Settings.Depth = (float)Math.Round(MathHelper.Clamp(value, MIN_SCALE, Math.Min(LargestGridLength, MAX_SCALE)), 3);
-                needsMatrixUpdate = true;
-            }
-        }
-
-        private void RefreshControls(bool refreshRemoveButton = false, bool refeshCustomInfo = false)
-        {
-        }
-
-        public void UseThisShip_Receiver(bool fix)
-        {
-            Log.Line($"UseThisShip_Receiver({fix.ToString()})");
-
-            //UseThisShip_Internal(fix);
         }
         #endregion
     }

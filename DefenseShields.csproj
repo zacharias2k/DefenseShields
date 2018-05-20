@@ -195,6 +195,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\Controls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Seperator.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseShieldsBase.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Settings\Config.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\DSUtilsStatic.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\EllipsoidOxygenProvider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Power.cs" />
