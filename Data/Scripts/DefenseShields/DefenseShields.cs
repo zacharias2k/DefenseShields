@@ -112,7 +112,8 @@ namespace DefenseShields
         private bool _hideShield;
         private bool _oldHidePassive;
         private bool _oldHideActive;
-        private bool _configMatrixUpdate = false;
+        private bool _configMatrixUpdate;
+        private bool _entOutofSync;
 
         internal Vector3D ShieldSize { get; set; }
         public Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
@@ -443,7 +444,7 @@ namespace DefenseShields
                     //ConfigUpdate();
 
                     Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
-
+                    _entOutofSync = true;
                     AnimateInit = true;
                 }
             }
@@ -764,6 +765,13 @@ namespace DefenseShields
                     SyncThreadedEnts();
                     if (!_blockParticleStopped) BlockParticleStop();
                 }
+
+                if (_entOutofSync)
+                {
+                    SaveAndNetworkUpdate();
+                    _entOutofSync = false;
+                }
+
                 Dsutil2.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - main", 4);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
@@ -790,7 +798,14 @@ namespace DefenseShields
             ShieldActiveVisible = hideActive;
             ShieldIdleVisible = hidePassive;
             Rate = rate;
-            SaveSettings();
+            _entOutofSync = true;
+        }
+
+        private void SyncConfig()
+        {
+            _widthSlider.Setter(Shield, Settings.Width);
+            _heightSlider.Setter(Shield, Settings.Height);
+            _depthSlider.Setter(Shield, Settings.Depth);
         }
 
         #region Shield Shape
@@ -886,11 +901,11 @@ namespace DefenseShields
 
             CreateShieldShape();
             Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
-            _entityChanged = true;
             Depth = depth;
             Width = width;
             Height = height;
-            SaveSettings();
+            _entityChanged = true;
+            _entOutofSync = true;
         }
         #endregion
 
@@ -2110,6 +2125,7 @@ namespace DefenseShields
             Height = newSettings.Height;
             Depth = newSettings.Depth;
             Rate = newSettings.Rate;
+            SyncConfig();
         }
 
         public void SaveSettings()
@@ -2232,6 +2248,21 @@ namespace DefenseShields
             Log.Line($"ShieldId:{Shield.EntityId.ToString()} - UseThisShip_Receiver({fix.ToString()})");
 
             //UseThisShip_Internal(fix);
+        }
+
+        private void SaveAndNetworkUpdate()
+        {
+            SaveSettings();
+
+            if (MyAPIGateway.Multiplayer.IsServer)
+            {
+                DefenseShieldsBase.RelaySettingsToClients(Shield, Settings); // update clients with server's settings
+            }
+            else // client, send settings to server
+            {
+                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new PacketData(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, Settings));
+                MyAPIGateway.Multiplayer.SendMessageToServer(DefenseShieldsBase.PACKET_ID, bytes);
+            }
         }
         #endregion
     }

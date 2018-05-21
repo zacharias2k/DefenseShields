@@ -71,8 +71,6 @@ namespace DefenseShields
     public enum PacketType : byte
     {
         SETTINGS,
-        //REMOVE,
-        //RECEIVED_BP,
         USE_THIS_AS_IS,
         USE_THIS_FIX,
     }

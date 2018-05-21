@@ -274,7 +274,7 @@ namespace DefenseShields
                                 return;
                             }
 
-                            Log.Line($"PacketReceived(); Settings; {(MyAPIGateway.Multiplayer.IsServer ? " Relaying to clients;" : "")}Valid!\n{logic.Settings}");
+                            Log.Line($"PacketReceived(); Settings; {(MyAPIGateway.Multiplayer.IsServer ? " Relaying to clients;" : "")} Valid!\n{logic.Settings}");
 
                             logic.UpdateSettings(data.Settings);
                             logic.SaveSettings();
@@ -305,7 +305,7 @@ namespace DefenseShields
 
         public static void RelaySettingsToClients(IMyCubeBlock block, DefenseShieldsModSettings settings)
         {
-            Log.Line("RelaySettingsToClients(block,settings)");
+            //Log.Line("RelaySettingsToClients(block,settings)");
 
             var data = new PacketData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
@@ -314,7 +314,7 @@ namespace DefenseShields
 
         public static void RelayToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
-            Log.Line("RelayToClients(syncPos,bytes,sender)");
+            //Log.Line("RelayToClients(syncPos,bytes,sender)");
 
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
             var distSq = MyAPIGateway.Session.SessionSettings.ViewDistance;
