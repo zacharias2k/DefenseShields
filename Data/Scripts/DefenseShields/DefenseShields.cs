@@ -51,14 +51,10 @@ namespace DefenseShields
         public float ImpactSize { get; set; } = 9f;
         public float Absorb { get; set; }
         private float _power = 0.0001f;
-        private float _width;
-        private float _height;
-        private float _depth;
         private float _gridMaxPower;
         private float _gridCurrentPower;
         private float _gridAvailablePower;
         private float _shieldMaxBuffer;
-        private float _shieldBuffer;
         private float _shieldMaxChargeRate;
         private float _shieldChargeRate;
         private float _shieldDps;
@@ -68,6 +64,9 @@ namespace DefenseShields
         private float _shieldPercent;
         private float _shieldConsumptionRate;
         private float _oldRate;
+        private float _oldWidth;
+        private float _oldHeight;
+        private float _oldDepth;
 
         internal double Range;
         private double _sAvelSqr;
@@ -613,12 +612,10 @@ namespace DefenseShields
             try
             {
                 var defintions = MyDefinitionManager.Static.GetAllDefinitions();
-                //Log.Line($"Getting Definitions");
                 foreach (var def in defintions)
                 {
                     if (!(def is MyAmmoMagazineDefinition)) continue;
                     var ammoDef = def as MyAmmoMagazineDefinition;
-                    //if (ammoDef.Context.IsBaseGame) continue;
                     var ammo = MyDefinitionManager.Static.GetAmmoDefinition(ammoDef.AmmoDefinitionId);
                     if (!(ammo is MyMissileAmmoDefinition)) continue;
                     var shot = ammo as MyMissileAmmoDefinition;
@@ -725,6 +722,7 @@ namespace DefenseShields
                         Shield.ShowInToolbarConfig = true;
                         Shield.RefreshCustomInfo();
                     }
+                    SaveSettings();
                     _shieldDps = 0f;
                 }
                 if (_shieldStarting && GridIsMobile && FieldShapeBlocked()) return;
@@ -778,36 +776,6 @@ namespace DefenseShields
         }
         #endregion
 
-        private void ConfigUpdate()
-        {
-            var changed = false;
-            var hidePassive = _hidePassiveCheckBox.Getter(Shield).Equals(true);
-            var hideActive = _hideActiveCheckBox.Getter(Shield).Equals(true);
-            var rate = _chargeSlider?.Getter(Shield) ?? 20f;
-
-            if (_oldHidePassive != hidePassive || _oldHideActive != hideActive || !_oldRate.Equals(rate))
-            {
-                changed = true;
-                _oldHidePassive = hidePassive;
-                _oldHideActive = hideActive;
-                _oldRate = rate;
-            }
-
-            if (!changed) return;
-            Enabled = Shield.Enabled;
-            ShieldActiveVisible = hideActive;
-            ShieldIdleVisible = hidePassive;
-            Rate = rate;
-            _entOutofSync = true;
-        }
-
-        private void SyncConfig()
-        {
-            _widthSlider.Setter(Shield, Settings.Width);
-            _heightSlider.Setter(Shield, Settings.Height);
-            _depthSlider.Setter(Shield, Settings.Depth);
-        }
-
         #region Shield Shape
         private void MobileUpdate()
         {
@@ -839,8 +807,8 @@ namespace DefenseShields
             else
             {
                 _shieldGridMatrix = Shield.WorldMatrix;
-                DetectionMatrix = MatrixD.Rescale(_shieldGridMatrix, new Vector3D(_width, _height, _depth));
-                _shieldShapeMatrix = MatrixD.Rescale(Shield.LocalMatrix, new Vector3D(_width, _height, _depth));
+                DetectionMatrix = MatrixD.Rescale(_shieldGridMatrix, new Vector3D(Width, Height, Depth));
+                _shieldShapeMatrix = MatrixD.Rescale(Shield.LocalMatrix, new Vector3D(Width, Height, Depth));
                 ShieldSize = DetectionMatrix.Scale;
                 _detectionCenter = Shield.PositionComp.WorldVolume.Center;
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(Shield.CubeGrid.WorldMatrix);
@@ -890,20 +858,19 @@ namespace DefenseShields
             var width = _widthSlider.Getter(Shield);
             var height = _heightSlider.Getter(Shield);
             var depth = _depthSlider.Getter(Shield);
-            var oWidth = _width;
-            var oHeight = _height;
-            var oDepth = _depth;
-            _width = width;
-            _height = height;
-            _depth = depth;
-            var changed = (int)oWidth != (int)width || (int)oHeight != (int)height || (int)oDepth != (int)depth;
-            if (!changed) return;
 
+            var changed = !_oldWidth.Equals(width) || !_oldHeight.Equals(height) || !_oldDepth.Equals(depth);
+            if (!changed) return;
             CreateShieldShape();
             Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
+
             Depth = depth;
             Width = width;
             Height = height;
+            _oldWidth = width;
+            _oldHeight = height;
+            _oldDepth = depth;
+
             _entityChanged = true;
             _entOutofSync = true;
         }
@@ -944,7 +911,7 @@ namespace DefenseShields
                 _shield.Render.Visible = false;
                 _shield.Render.UpdateRenderObject(false);
                 Absorb = 0;
-                _shieldBuffer = 0;
+                ShieldBuffer = 0;
                 _shieldChargeRate = 0;
                 _shieldMaxChargeRate = 0;
                 if (_shieldDownLoop > -1)
@@ -970,7 +937,7 @@ namespace DefenseShields
                     if (_shieldDownLoop == 1200)
                     {
                         _shieldDownLoop = -1;
-                        _shieldBuffer = _shieldMaxBuffer / 25; // replace this with something that scales based on charge rate
+                        ShieldBuffer = _shieldMaxBuffer / 25; // replace this with something that scales based on charge rate
                     }
                     return false;
                 }
@@ -1036,11 +1003,11 @@ namespace DefenseShields
             _sizeScaler = (_detectMatrixOutside.Scale.Volume / _ellipsoidSurfaceArea) / 2.40063050674088;
             _shieldEfficiency = 100f;
 
-            if (_shieldBuffer > 0 && _shieldCurrentPower < 0.00000000001f) // is this even needed anymore?
+            if (ShieldBuffer > 0 && _shieldCurrentPower < 0.00000000001f) // is this even needed anymore?
             {
                 Log.Line($"ShieldId:{Shield.EntityId.ToString()} - if u see this it is needed");
-                if (_shieldBuffer > _gridMaxPower * shieldMaintainCost) _shieldBuffer -= _gridMaxPower * shieldMaintainCost;
-                else _shieldBuffer = 0f;
+                if (ShieldBuffer > _gridMaxPower * shieldMaintainCost) ShieldBuffer -= _gridMaxPower * shieldMaintainCost;
+                else ShieldBuffer = 0f;
             }
 
             _shieldCurrentPower = Sink.CurrentInputByType(GId);
@@ -1054,21 +1021,21 @@ namespace DefenseShields
 
             if (_sizeScaler < 1)
             {
-                if (_shieldBuffer + _shieldMaxChargeRate < _shieldMaxBuffer) _shieldChargeRate = _shieldMaxChargeRate;
-                else if (_shieldMaxBuffer - _shieldBuffer > 0) _shieldChargeRate = _shieldMaxBuffer - _shieldBuffer;
+                if (ShieldBuffer + _shieldMaxChargeRate < _shieldMaxBuffer) _shieldChargeRate = _shieldMaxChargeRate;
+                else if (_shieldMaxBuffer - ShieldBuffer > 0) _shieldChargeRate = _shieldMaxBuffer - ShieldBuffer;
                 else _shieldMaxChargeRate = 0f;
                 _shieldConsumptionRate = _shieldChargeRate;
             }
-            else if (_shieldBuffer + (_shieldMaxChargeRate / _sizeScaler) < _shieldMaxBuffer)
+            else if (ShieldBuffer + (_shieldMaxChargeRate / _sizeScaler) < _shieldMaxBuffer)
             {
                 _shieldChargeRate = (_shieldMaxChargeRate / (float)_sizeScaler);
                 _shieldConsumptionRate = _shieldMaxChargeRate;
             }
             else
             {
-                if (_shieldMaxBuffer - _shieldBuffer > 0)
+                if (_shieldMaxBuffer - ShieldBuffer > 0)
                 {
-                    _shieldChargeRate = _shieldMaxBuffer - _shieldBuffer;
+                    _shieldChargeRate = _shieldMaxBuffer - ShieldBuffer;
                     _shieldConsumptionRate = _shieldChargeRate;
                 }
                 else _shieldMaxChargeRate = 0f;
@@ -1078,18 +1045,18 @@ namespace DefenseShields
             {
                 _shieldChargeRate = 0f;
                 _shieldConsumptionRate = 0f;
-                if (_shieldBuffer > _shieldMaxBuffer)  _shieldBuffer = _shieldMaxBuffer;
+                if (ShieldBuffer > _shieldMaxBuffer)  ShieldBuffer = _shieldMaxBuffer;
                 return;
             }
 
-            if (_shieldBuffer < _shieldMaxBuffer && _count == 29)
+            if (ShieldBuffer < _shieldMaxBuffer && _count == 29)
             {
-                _shieldBuffer += _shieldChargeRate;
+                ShieldBuffer += _shieldChargeRate;
             }
             if (_count == 29)
             {
                 _shieldPercent = 100f;
-                if (_shieldBuffer < _shieldMaxBuffer) _shieldPercent = (_shieldBuffer / _shieldMaxBuffer) * 100;
+                if (ShieldBuffer < _shieldMaxBuffer) _shieldPercent = (ShieldBuffer / _shieldMaxBuffer) * 100;
                 else _shieldPercent = 100f;
             }
         }
@@ -1121,14 +1088,14 @@ namespace DefenseShields
             if (Absorb > 0)
             {
                 _shieldDps += Absorb;
-                //Log.Line($"Absorb Damage: {(Absorb).ToString()} - old: {_shieldBuffer.ToString()} - new: {(_shieldBuffer - (Absorb / _shieldEfficiency)).ToString()} - max: {_shieldMaxBuffer * _shieldEfficiency} - fracOfMax: {_shieldMaxBuffer / Absorb}");
+                //Log.Line($"Absorb Damage: {(Absorb).ToString()} - old: {ShieldBuffer.ToString()} - new: {(ShieldBuffer - (Absorb / _shieldEfficiency)).ToString()} - max: {_shieldMaxBuffer * _shieldEfficiency} - fracOfMax: {_shieldMaxBuffer / Absorb}");
                 _effectsCleanup = true;
-                _shieldBuffer -= (Absorb / _shieldEfficiency);
+                ShieldBuffer -= (Absorb / _shieldEfficiency);
             }
-            else if (Absorb < 0) _shieldBuffer += (Absorb / _shieldEfficiency);
+            else if (Absorb < 0) ShieldBuffer += (Absorb / _shieldEfficiency);
 
-            if (_shieldBuffer < 0) _shieldDownLoop = 0;
-            else if (_shieldBuffer > _shieldMaxBuffer) _shieldBuffer = _shieldMaxBuffer;
+            if (ShieldBuffer < 0) _shieldDownLoop = 0;
+            else if (ShieldBuffer > _shieldMaxBuffer) ShieldBuffer = _shieldMaxBuffer;
 
             Absorb = 0f;
         }
@@ -1138,11 +1105,11 @@ namespace DefenseShields
             if (!GridIsMobile && ShieldActive)RefreshDimensions();
             var shieldPercent = 100f;
             var secToFull = 0;
-            if (_shieldBuffer < _shieldMaxBuffer) shieldPercent = (_shieldBuffer / _shieldMaxBuffer) * 100;
-            if (_shieldChargeRate > 0) secToFull = (int) ((_shieldMaxBuffer - _shieldBuffer) / _shieldChargeRate);
+            if (ShieldBuffer < _shieldMaxBuffer) shieldPercent = (ShieldBuffer / _shieldMaxBuffer) * 100;
+            if (_shieldChargeRate > 0) secToFull = (int) ((_shieldMaxBuffer - ShieldBuffer) / _shieldChargeRate);
             stringBuilder.Append("[Shield Status] MaxHP: " + (_shieldMaxBuffer * _shieldEfficiency).ToString("N0") +
                                  "\n" +
-                                 "\n[Shield HP__]: " + (_shieldBuffer * _shieldEfficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
+                                 "\n[Shield HP__]: " + (ShieldBuffer * _shieldEfficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
                                  "\n[HP Per Sec_]: " + (_shieldChargeRate * _shieldEfficiency).ToString("N0") +
                                  "\n[DPS_______]: " + (_shieldDps).ToString("N0") +
                                  "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
@@ -2006,6 +1973,8 @@ namespace DefenseShields
 
         private bool Distance(int x)
         {
+            if (MyAPIGateway.Session.Player.Character == null) return false;
+
             var pPosition = MyAPIGateway.Session.Player.Character.GetPosition();
             var cPosition = Shield.CubeGrid.PositionComp.GetPosition();
             var range = Vector3D.DistanceSquared(cPosition, pPosition) <= (x + Range) * (x + Range);
@@ -2018,10 +1987,6 @@ namespace DefenseShields
 
             if (onCount > 20) lod = 2;
             else if (onCount > 10) lod = 3;
-            //if (Distance(300) && onCount == 1) lod = 4;
-            //else if (Distance(2500) && onCount <= 2) lod = 3;
-            //else if (Distance(8000) && onCount < 7) lod = 2;
-            //else lod = 1;
 
             _prevLod = lod;
             return lod;
@@ -2116,16 +2081,50 @@ namespace DefenseShields
         #endregion
 
         #region Settings
+        private void LocalUpdate()
+        {
+            var changed = false;
+            var hidePassive = _hidePassiveCheckBox.Getter(Shield).Equals(true);
+            var hideActive = _hideActiveCheckBox.Getter(Shield).Equals(true);
+            var rate = _chargeSlider?.Getter(Shield) ?? 20f;
+
+            if (_oldHidePassive != hidePassive || _oldHideActive != hideActive || !_oldRate.Equals(rate))
+            {
+                changed = true;
+                _oldHidePassive = hidePassive;
+                _oldHideActive = hideActive;
+                _oldRate = rate;
+            }
+
+            if (!changed) return;
+            Enabled = Shield.Enabled;
+            ShieldActiveVisible = hideActive;
+            ShieldIdleVisible = hidePassive;
+            Rate = rate;
+            _entOutofSync = true;
+        }
+
+        private void SyncControls()
+        {
+            _widthSlider.Setter(Shield, Settings.Width);
+            _heightSlider.Setter(Shield, Settings.Height);
+            _depthSlider.Setter(Shield, Settings.Depth);
+            _chargeSlider.Setter(Shield, Settings.Rate);
+            _hideActiveCheckBox.Setter(Shield, Settings.ActiveInvisible);
+            _hidePassiveCheckBox.Setter(Shield, Settings.IdleInvisible);
+        }
+
         public void UpdateSettings(DefenseShieldsModSettings newSettings)
         {
             Enabled = newSettings.Enabled;
-            ShieldIdleVisible = newSettings.IdleVisible;
-            ShieldActiveVisible = newSettings.ActiveVisible;
+            ShieldIdleVisible = newSettings.IdleInvisible;
+            ShieldActiveVisible = newSettings.ActiveInvisible;
             Width = newSettings.Width;
             Height = newSettings.Height;
             Depth = newSettings.Depth;
             Rate = newSettings.Rate;
-            SyncConfig();
+            //ShieldBuffer = newSettings.Buffer;
+            SyncControls();
         }
 
         public void SaveSettings()
@@ -2181,20 +2180,20 @@ namespace DefenseShields
 
         public bool ShieldIdleVisible
         {
-            get { return Settings.IdleVisible; }
+            get { return Settings.IdleInvisible; }
             set
             {
-                Settings.IdleVisible = value;
+                Settings.IdleInvisible = value;
                 RefreshControls(refeshCustomInfo: true);
             }
         }
 
         public bool ShieldActiveVisible
         {
-            get { return Settings.ActiveVisible; }
+            get { return Settings.ActiveInvisible; }
             set
             {
-                Settings.ActiveVisible = value;
+                Settings.ActiveInvisible = value;
                 RefreshControls(refeshCustomInfo: true);
             }
         }
@@ -2202,41 +2201,31 @@ namespace DefenseShields
         public float Width
         {
             get { return Settings.Width; }
-            set
-            {
-                Settings.Width = value;
-                _configMatrixUpdate = true;
-            }
+            set { Settings.Width = value; }
         }
 
         public float Height
         {
             get { return Settings.Height; }
-            set
-            {
-                Settings.Height = value;
-                _configMatrixUpdate = true;
-            }
+            set { Settings.Height = value; }
         }
 
         public float Depth
         {
             get { return Settings.Depth; }
-            set
-            {
-                Settings.Depth = value;
-                _configMatrixUpdate = true;
-            }
+            set { Settings.Depth = value; }
         }
 
         public float Rate
         {
             get { return Settings.Rate; }
-            set
-            {
-                Settings.Rate = value;
-                _configMatrixUpdate = false;
-            }
+            set { Settings.Rate = value; }
+        }
+
+        public float ShieldBuffer
+        {
+            get { return Settings.Buffer; }
+            set { Settings.Buffer = value; }
         }
 
         private void RefreshControls(bool refreshRemoveButton = false, bool refeshCustomInfo = false)

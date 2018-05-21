@@ -199,7 +199,7 @@ namespace DefenseShields
                             continue;
                         }
 
-                        if (info.Type == MyStringHash.GetOrCompute("DSdamage") || info.Type == MyStringHash.GetOrCompute("DSheal") || info.Type == MyStringHash.GetOrCompute("DSbypass"))
+                        if (info.Type.String.Equals("DSdamage") || info.Type.String.Equals("DSheal") || info.Type.String.Equals("DSbypass"))
                         {
                             //Log.Line($"Amount:{info.Amount.ToString()} - Type:{info.Type.ToString()} - Block:{block.BlockDefinition.GetType().Name} - Attacker:{hostileEnt?.DebugName}");
                             shield.Absorb += info.Amount;
@@ -274,7 +274,7 @@ namespace DefenseShields
                                 return;
                             }
 
-                            Log.Line($"PacketReceived(); Settings; {(MyAPIGateway.Multiplayer.IsServer ? " Relaying to clients;" : "")} Valid!\n{logic.Settings}");
+                            //Log.Line($"PacketReceived(); Settings; {(MyAPIGateway.Multiplayer.IsServer ? " Relaying to clients;" : "")} Valid!\n{logic.Settings}");
 
                             logic.UpdateSettings(data.Settings);
                             logic.SaveSettings();
