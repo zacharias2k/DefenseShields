@@ -67,6 +67,7 @@ namespace DefenseShields
         private float _shieldMaintaintPower;
         private float _shieldPercent;
         private float _shieldConsumptionRate;
+        private float _oldRate;
 
         internal double Range;
         private double _sAvelSqr;
@@ -111,6 +112,7 @@ namespace DefenseShields
         private bool _hideShield;
         private bool _oldHidePassive;
         private bool _oldHideActive;
+        private bool _configMatrixUpdate = false;
 
         internal Vector3D ShieldSize { get; set; }
         public Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
@@ -194,11 +196,6 @@ namespace DefenseShields
         internal DSUtils Dsutil2 = new DSUtils();
         internal DSUtils Dsutil3 = new DSUtils();
         internal DSUtils Dsutil4 = new DSUtils();
-
-        private bool needsMatrixUpdate = false;
-        public const float SliderMin = 30f;
-        public const float SliderMax = 300f;
-        public float LargestGridLength = 2.5f;
 
         public MyModStorageComponentBase Storage { get; set; }
         internal HashSet<ulong> playersToReceive = null;
@@ -308,7 +305,7 @@ namespace DefenseShields
         {
             try
             {
-                Log.Line($"Starting Init for {Entity.EntityId.ToString()}");
+                //Log.Line($"Starting Init for {Entity.EntityId.ToString()}");
                 Entity.Components.TryGet(out Sink);
                 ResourceInfo = new MyResourceSinkInfo()
                 {
@@ -388,7 +385,7 @@ namespace DefenseShields
 
                 if (!MainInit && Shield.IsFunctional)
                 {
-                    Log.Line($"Initting {Shield.BlockDefinition.SubtypeId} - tick:{_tick.ToString()}");
+                    //Log.Line($"Initting {Shield.BlockDefinition.SubtypeId} - tick:{_tick.ToString()}");
                     if (Shield.CubeGrid.Physics.IsStatic) GridIsMobile = false;
                     else if (!Shield.CubeGrid.Physics.IsStatic) GridIsMobile = true;
 
@@ -434,13 +431,11 @@ namespace DefenseShields
                 if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" || Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS" || Shield.BlockDefinition.SubtypeId == "DefenseShieldsST")
                 {
                     _blocksChanged = true;
-                    Log.Line($"{Shield.BlockDefinition.SubtypeId} is functional - tick:{_tick.ToString()}");
+                    Log.Line($"ShieldId:{Shield.EntityId.ToString()} - {Shield.BlockDefinition.SubtypeId} is functional - tick:{_tick.ToString()}");
                     Entity.TryGetSubpart("Rotor", out _subpartRotor);
 
                     Storage = Shield.Storage;
-
-                    var test = LoadSettings();
-                    if (test) Log.Line($"Success!!");
+                    LoadSettings();
 
                     if (!MyAPIGateway.Utilities.IsDedicated) BlockParticleCreate();
                     if (GridIsMobile) MobileUpdate();
@@ -461,7 +456,7 @@ namespace DefenseShields
             {
                 if (!Sink.IsPowerAvailable(GId, _power))
                 {
-                    Log.Line($"no power to init resourceSink: {_power.ToString()}");
+                    //Log.Line($"ShieldId:{Shield.EntityId.ToString()} - no power to init resourceSink: {_power.ToString()}");
                     NoPower = true;
                     HardDisable = true;
                     return;
@@ -560,7 +555,7 @@ namespace DefenseShields
 
             for (int i = 0; i < PhysicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
             _shieldLineOfSight = _blocksLos.Count < 500;
-            Log.Line($"blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {_shieldLineOfSight.ToString()}");
+            Log.Line($"ShieldId:{Shield.EntityId.ToString()} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {_shieldLineOfSight.ToString()}");
         }
 
         private void DrawHelper()
@@ -769,7 +764,7 @@ namespace DefenseShields
                     SyncThreadedEnts();
                     if (!_blockParticleStopped) BlockParticleStop();
                 }
-                Dsutil2.StopWatchReport("main-loop perf", 4);
+                Dsutil2.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - main", 4);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
@@ -780,17 +775,21 @@ namespace DefenseShields
             var changed = false;
             var hidePassive = _hidePassiveCheckBox.Getter(Shield).Equals(true);
             var hideActive = _hideActiveCheckBox.Getter(Shield).Equals(true);
-            if (_oldHidePassive != hidePassive || _oldHideActive != hideActive)
+            var rate = _chargeSlider?.Getter(Shield) ?? 20f;
+
+            if (_oldHidePassive != hidePassive || _oldHideActive != hideActive || !_oldRate.Equals(rate))
             {
                 changed = true;
                 _oldHidePassive = hidePassive;
                 _oldHideActive = hideActive;
+                _oldRate = rate;
             }
 
             if (!changed) return;
             Enabled = Shield.Enabled;
             ShieldActiveVisible = hideActive;
             ShieldIdleVisible = hidePassive;
+            Rate = rate;
             SaveSettings();
         }
 
@@ -910,7 +909,7 @@ namespace DefenseShields
 
             if (!Shield.IsWorking && Shield.Enabled && Shield.IsFunctional && shieldPowerUsed > 0)
             {
-                Log.Line($"fixing shield state power: {_power.ToString()}");
+                //Log.Line($"fixing shield state power: {_power.ToString()}");
                 Shield.Enabled = false;
                 Shield.Enabled = true;
                 return true;
@@ -941,7 +940,6 @@ namespace DefenseShields
 
                     if (_shieldDownLoop == 0)
                     {
-                        Log.Line($"Shield restart");
                         var realPlayerIds = new List<long>();
                         DsUtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
                         foreach (var id in realPlayerIds)
@@ -991,7 +989,7 @@ namespace DefenseShields
                     break;
                 }
             }
-            Log.Line($"powerCnt: {_powerSources.Count.ToString()}");
+            Log.Line($"ShieldId:{Shield.EntityId.ToString()} - powerCnt: {_powerSources.Count.ToString()}");
         }
 
         private void UpdateGridPower()
@@ -1014,7 +1012,7 @@ namespace DefenseShields
         {
             var powerForShield = 0f;
             const float ratio = 1.25f;
-            var rate = _chargeSlider?.Getter(Shield) ?? 0f;
+            var rate = _chargeSlider?.Getter(Shield) ?? 20f;
             var percent = rate * ratio;
             var shieldMaintainCost = 1 / percent;
             _shieldMaintaintPower = shieldMaintainCost;
@@ -1025,7 +1023,7 @@ namespace DefenseShields
 
             if (_shieldBuffer > 0 && _shieldCurrentPower < 0.00000000001f) // is this even needed anymore?
             {
-                Log.Line($"if u see this it is needed");
+                Log.Line($"ShieldId:{Shield.EntityId.ToString()} - if u see this it is needed");
                 if (_shieldBuffer > _gridMaxPower * shieldMaintainCost) _shieldBuffer -= _gridMaxPower * shieldMaintainCost;
                 else _shieldBuffer = 0f;
             }
@@ -1144,7 +1142,7 @@ namespace DefenseShields
         #region Block Animation
         private void BlockMoveAnimationReset()
         {
-            Log.Line($"Resetting BlockMovement - Tick:{_tick.ToString()}");
+            //Log.Line($"Resetting BlockMovement - Tick:{_tick.ToString()}");
             _subpartRotor.Subparts.Clear();
             Entity.TryGetSubpart("Rotor", out _subpartRotor);
         }
@@ -1241,12 +1239,12 @@ namespace DefenseShields
                         IMyCubeGrid grid;
                         while (_staleGrids.TryDequeue(out grid)) lock (_webEnts) _webEnts.Remove(grid);
 
-                        Log.Line($"Stale grid - tick:{_tick.ToString()}");
+                        Log.Line($"ShieldId:{Shield.EntityId.ToString()} - Stale grid - tick:{_tick.ToString()}");
                         break;
                     case 1:
                         lock (_webEnts)
                         {
-                            if (Debug) Log.Line($"_webEnts # {_webEnts.Count.ToString()}");
+                            if (Debug && _webEnts.Count > 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - _webEnts # {_webEnts.Count.ToString()}");
                             _webEntsTmp.AddRange(_webEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1));
                             foreach (var webent in _webEntsTmp) _webEnts.Remove(webent.Key);
                         }
@@ -1260,13 +1258,13 @@ namespace DefenseShields
                         break;
                     case 3:
                         {
-                            if (Debug) Log.Line($"FriendlyCache {FriendlyCache.Count.ToString()}");
+                            if (Debug && FriendlyCache.Count > 5) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - FriendlyCache {FriendlyCache.Count.ToString()}");
                             FriendlyCache.Clear();
                         }
                         break;
                     case 4:
                     {
-                        if (Debug) Log.Line($"_webEnts # {_webEnts.Count.ToString()}");
+                        if (Debug) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - _webEnts # {_webEnts.Count.ToString()}");
                         lock (_webEnts) _webEnts.Clear();
                     }
                         break;
@@ -1452,7 +1450,7 @@ namespace DefenseShields
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in dmgBlocks: {ex}"); }
-                Dsutil4.StopWatchReport("syncEnt", 3);
+                Dsutil4.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - syncEnt", 3);
             }
             catch (Exception ex) { Log.Line($"Exception in DamageGrids: {ex}"); }
         }
@@ -1517,7 +1515,7 @@ namespace DefenseShields
             }
             if (_enablePhysics) MyAPIGateway.Parallel.Start(WebDispatch);
 
-            Dsutil1.StopWatchReport("web", 3);
+            Dsutil1.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - Web", 3);
         }
 
         private void WebDispatch()
@@ -1606,8 +1604,8 @@ namespace DefenseShields
             }
 
             if (Debug && _longLoop == 5 && _count == 5)
-                lock (_webEnts) Log.Line($"friend:{FriendlyCache.Count} total:{_webEnts.Count} ep:{ep} ns:{ns} nl:{nl} es:{es} el:{el} ss:{ss} oo:{oo} vv:{vv} xx:{xx}");
-            Dsutil3.StopWatchReport("webDispatch", 3);
+                lock (_webEnts) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - friend:{FriendlyCache.Count} total:{_webEnts.Count} ep:{ep} ns:{ns} nl:{nl} es:{es} el:{el} ss:{ss} oo:{oo} vv:{vv} xx:{xx}");
+            Dsutil3.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - webDispatch", 3);
         }
         #endregion
 
@@ -1683,7 +1681,7 @@ namespace DefenseShields
         {
             return mySlimBlock.BlockDefinition.Id.TypeId != typeof(MyObjectBuilder_TextPanel)
                    && mySlimBlock.BlockDefinition.Id.TypeId != typeof(MyObjectBuilder_ButtonPanel)
-                   && mySlimBlock.BlockDefinition.Id.SubtypeId != MyStringHash.TryGet("SmallLight");
+                   && mySlimBlock.BlockDefinition.Id.SubtypeId.String.Equals("SmallLight");
         }
         #endregion
 
@@ -2089,7 +2087,7 @@ namespace DefenseShields
             var damage = 10f;
             if (ammoInfo == null)
             {
-                Log.Line($"No Missile Ammo Match Found for {((MyEntity)ammoEnt).DebugName}! Let wepaon mod author know their ammo definition has improper model path");
+                Log.Line($"ShieldId:{Shield.EntityId.ToString()} - No Missile Ammo Match Found for {((MyEntity)ammoEnt).DebugName}! Let wepaon mod author know their ammo definition has improper model path");
                 return damage;
             }
 
@@ -2102,7 +2100,7 @@ namespace DefenseShields
         }
         #endregion
 
-        #region MyRegion
+        #region Settings
         public void UpdateSettings(DefenseShieldsModSettings newSettings)
         {
             Enabled = newSettings.Enabled;
@@ -2111,13 +2109,14 @@ namespace DefenseShields
             Width = newSettings.Width;
             Height = newSettings.Height;
             Depth = newSettings.Depth;
+            Rate = newSettings.Rate;
         }
 
         public void SaveSettings()
         {
             if (Shield.Storage == null)
             {
-                Log.Line($"Storage = null");
+                Log.Line($"ShieldId:{Shield.EntityId.ToString()} - Storage = null");
                 Shield.Storage = new MyModStorageComponent();
             }
             Shield.Storage[DefenseShieldsBase.Instance.SettingsGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
@@ -2141,7 +2140,7 @@ namespace DefenseShields
                 catch (Exception e)
                 {
                     loadedSettings = null;
-                    Log.Line($"Error loading settings!\n{e}");
+                    Log.Line($"ShieldId:{Shield.EntityId.ToString()} - Error loading settings!\n{e}");
                 }
 
                 if (loadedSettings != null)
@@ -2149,7 +2148,7 @@ namespace DefenseShields
                     Settings = loadedSettings;
                     loadedSomething = true;
                 }
-                Log.Line($"Loaded settings:\n{Settings.ToString()}");
+                //Log.Line($"Loaded settings:\n{Settings.ToString()}");
             }
             return loadedSomething;
         }
@@ -2190,7 +2189,7 @@ namespace DefenseShields
             set
             {
                 Settings.Width = value;
-                needsMatrixUpdate = true;
+                _configMatrixUpdate = true;
             }
         }
 
@@ -2200,7 +2199,7 @@ namespace DefenseShields
             set
             {
                 Settings.Height = value;
-                needsMatrixUpdate = true;
+                _configMatrixUpdate = true;
             }
         }
 
@@ -2210,7 +2209,17 @@ namespace DefenseShields
             set
             {
                 Settings.Depth = value;
-                needsMatrixUpdate = true;
+                _configMatrixUpdate = true;
+            }
+        }
+
+        public float Rate
+        {
+            get { return Settings.Rate; }
+            set
+            {
+                Settings.Rate = value;
+                _configMatrixUpdate = false;
             }
         }
 
@@ -2220,7 +2229,7 @@ namespace DefenseShields
 
         public void UseThisShip_Receiver(bool fix)
         {
-            Log.Line($"UseThisShip_Receiver({fix.ToString()})");
+            Log.Line($"ShieldId:{Shield.EntityId.ToString()} - UseThisShip_Receiver({fix.ToString()})");
 
             //UseThisShip_Internal(fix);
         }

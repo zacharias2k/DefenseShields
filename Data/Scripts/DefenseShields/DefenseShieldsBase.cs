@@ -135,7 +135,7 @@ namespace DefenseShields
                 }
                 else
                 {
-                    if (_count++ == 1180)
+                    if (_count++ == 3600)
                     {
                         _count = 0;
                         if (_voxelDamageCounter.Count != 0) _voxelDamageCounter.Clear();
@@ -161,7 +161,7 @@ namespace DefenseShields
 
                 foreach (var shield in Components)
                 {
-                    if (shield.ShieldActive && (shield.Shield.CubeGrid == blockGrid || shield.FriendlyCache.Contains(blockGrid)))
+                    if (shield.ShieldActive && (shield.Shield.CubeGrid == blockGrid || shield.FriendlyCache.Contains(blockGrid) || shield.FriendlyCache.Contains(target as IMyCharacter)))
                     {
 
                         MyEntity hostileEnt;
@@ -250,7 +250,7 @@ namespace DefenseShields
                 }
 
                 IMyEntity ent;
-                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed || !(ent is IMyOreDetector))
+                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
                 {
                     Log.Line($"PacketReceived(); {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
                     return;
