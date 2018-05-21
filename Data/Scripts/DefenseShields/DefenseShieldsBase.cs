@@ -274,10 +274,10 @@ namespace DefenseShields
                                 return;
                             }
 
-                            Log.Line($"PacketReceived(); Settings; {(MyAPIGateway.Multiplayer.IsServer ? " Relaying to clients;" : "")}Valid!\n{logic.Config.Settings}");
+                            Log.Line($"PacketReceived(); Settings; {(MyAPIGateway.Multiplayer.IsServer ? " Relaying to clients;" : "")}Valid!\n{logic.Settings}");
 
-                            logic.Config.UpdateSettings(data.Settings);
-                            logic.Config.SaveSettings();
+                            logic.UpdateSettings(data.Settings);
+                            logic.SaveSettings();
 
                             if (MyAPIGateway.Multiplayer.IsServer)
                                 RelayToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
@@ -290,10 +290,10 @@ namespace DefenseShields
                         //logic.PlayerReceivedBP(data.Sender);
                         break;
                     case PacketType.USE_THIS_AS_IS:
-                        logic.Config.UseThisShip_Receiver(false);
+                        logic.UseThisShip_Receiver(false);
                         break;
                     case PacketType.USE_THIS_FIX:
-                        logic.Config.UseThisShip_Receiver(true);
+                        logic.UseThisShip_Receiver(true);
                         break;
                 }
             }

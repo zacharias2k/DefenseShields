@@ -18,7 +18,6 @@ using VRage.Utils;
 using VRage.Game.Entity;
 using System.Linq;
 using DefenseShields.Control;
-using DefenseShields.Settings;
 using VRage.Collections;
 using Sandbox.Game.Entities.Character.Components;
 using DefenseShields.Support;
@@ -190,12 +189,20 @@ namespace DefenseShields
         internal readonly Spawn Spawn = new Spawn();
         internal readonly EllipsoidOxygenProvider EllipsoidOxyProvider = new EllipsoidOxygenProvider(Matrix.Zero);
         internal readonly EllipsoidSA EllipsoidSa = new EllipsoidSA(double.MinValue, double.MinValue, double.MinValue);
-        internal readonly Config Config = new Config();
 
         internal DSUtils Dsutil1 = new DSUtils();
         internal DSUtils Dsutil2 = new DSUtils();
         internal DSUtils Dsutil3 = new DSUtils();
         internal DSUtils Dsutil4 = new DSUtils();
+
+        private bool needsMatrixUpdate = false;
+        public const float SliderMin = 30f;
+        public const float SliderMax = 300f;
+        public float LargestGridLength = 2.5f;
+
+        public MyModStorageComponentBase Storage { get; set; }
+        internal HashSet<ulong> playersToReceive = null;
+        internal DefenseShieldsModSettings Settings = new DefenseShieldsModSettings();
         #endregion
 
         #region Cleanup
@@ -430,13 +437,18 @@ namespace DefenseShields
                     Log.Line($"{Shield.BlockDefinition.SubtypeId} is functional - tick:{_tick.ToString()}");
                     Entity.TryGetSubpart("Rotor", out _subpartRotor);
 
+                    Storage = Shield.Storage;
+
+                    var test = LoadSettings();
+                    if (test) Log.Line($"Success!!");
+
                     if (!MyAPIGateway.Utilities.IsDedicated) BlockParticleCreate();
                     if (GridIsMobile) MobileUpdate();
                     else RefreshDimensions();
+                    //ConfigUpdate();
 
                     Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
-                    var test = Config.LoadSettings();
-                    if (test) Log.Line($"Success!!");
+
                     AnimateInit = true;
                 }
             }
@@ -711,7 +723,12 @@ namespace DefenseShields
                         Shield.ShowInToolbarConfig = true;
                         ConfigUpdate();
                     }
-                    else if (_longLoop == 0 || _longLoop == 5) Shield.ShowInToolbarConfig = false; Shield.ShowInToolbarConfig = true; Shield.RefreshCustomInfo();
+                    else if (_longLoop == 0 || _longLoop == 5)
+                    {
+                        Shield.ShowInToolbarConfig = false;
+                        Shield.ShowInToolbarConfig = true;
+                        Shield.RefreshCustomInfo();
+                    }
                     _shieldDps = 0f;
                 }
                 if (_shieldStarting && GridIsMobile && FieldShapeBlocked()) return;
@@ -720,7 +737,6 @@ namespace DefenseShields
                 {
                     if (_shieldStarting)
                     {
-                        Log.Line($"starting");
                         if (!(_hidePassiveCheckBox.Getter(Shield).Equals(true))) _shellPassive.Render.UpdateRenderObject(true);
 
                         _shellActive.Render.UpdateRenderObject(true);
@@ -772,11 +788,10 @@ namespace DefenseShields
             }
 
             if (!changed) return;
-            Config.Shield = Shield.Enabled;
-            Config.ShieldActiveVisible = hideActive;
-            Config.ShieldIdleVisible = hidePassive;
-            Config.SaveSettings();
-            Log.Line($"{Config.Shield} - {Config.Depth} - {Config.Width} - {Config.Height} - {Config.ShieldActiveVisible} - {Config.ShieldIdleVisible}");
+            Enabled = Shield.Enabled;
+            ShieldActiveVisible = hideActive;
+            ShieldIdleVisible = hidePassive;
+            SaveSettings();
         }
 
         #region Shield Shape
@@ -873,11 +888,10 @@ namespace DefenseShields
             CreateShieldShape();
             Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
             _entityChanged = true;
-            Config.Depth = depth;
-            Config.Width = width;
-            Config.Height = height;
-            Config.SaveSettings();
-            Log.Line($"{Config.Shield} - {Config.Depth} - {Config.Width} - {Config.Height} - {Config.ShieldActiveVisible} - {Config.ShieldIdleVisible}");
+            Depth = depth;
+            Width = width;
+            Height = height;
+            SaveSettings();
         }
         #endregion
 
@@ -2085,6 +2099,130 @@ namespace DefenseShields
 
             if (ammoInfo.Mass < 0 && ammoInfo.Radius <= 0) damage = -damage;
             return damage;
+        }
+        #endregion
+
+        #region MyRegion
+        public void UpdateSettings(DefenseShieldsModSettings newSettings)
+        {
+            Enabled = newSettings.Enabled;
+            ShieldIdleVisible = newSettings.IdleVisible;
+            ShieldActiveVisible = newSettings.ActiveVisible;
+            Width = newSettings.Width;
+            Height = newSettings.Height;
+            Depth = newSettings.Depth;
+        }
+
+        public void SaveSettings()
+        {
+            if (Shield.Storage == null)
+            {
+                Log.Line($"Storage = null");
+                Shield.Storage = new MyModStorageComponent();
+            }
+            Shield.Storage[DefenseShieldsBase.Instance.SettingsGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
+        }
+
+        public bool LoadSettings()
+        {
+            if (Shield.Storage == null) return false;
+
+            string rawData;
+            bool loadedSomething = false;
+
+            if (Shield.Storage.TryGetValue(DefenseShieldsBase.Instance.SettingsGuid, out rawData))
+            {
+                DefenseShieldsModSettings loadedSettings = null;
+
+                try
+                {
+                    loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsModSettings>(rawData);
+                }
+                catch (Exception e)
+                {
+                    loadedSettings = null;
+                    Log.Line($"Error loading settings!\n{e}");
+                }
+
+                if (loadedSettings != null)
+                {
+                    Settings = loadedSettings;
+                    loadedSomething = true;
+                }
+                Log.Line($"Loaded settings:\n{Settings.ToString()}");
+            }
+            return loadedSomething;
+        }
+
+        public bool Enabled
+        {
+            get { return Settings.Enabled; }
+            set
+            {
+                Settings.Enabled = value;
+                RefreshControls(refeshCustomInfo: true);
+            }
+        }
+
+        public bool ShieldIdleVisible
+        {
+            get { return Settings.IdleVisible; }
+            set
+            {
+                Settings.IdleVisible = value;
+                RefreshControls(refeshCustomInfo: true);
+            }
+        }
+
+        public bool ShieldActiveVisible
+        {
+            get { return Settings.ActiveVisible; }
+            set
+            {
+                Settings.ActiveVisible = value;
+                RefreshControls(refeshCustomInfo: true);
+            }
+        }
+
+        public float Width
+        {
+            get { return Settings.Width; }
+            set
+            {
+                Settings.Width = value;
+                needsMatrixUpdate = true;
+            }
+        }
+
+        public float Height
+        {
+            get { return Settings.Height; }
+            set
+            {
+                Settings.Height = value;
+                needsMatrixUpdate = true;
+            }
+        }
+
+        public float Depth
+        {
+            get { return Settings.Depth; }
+            set
+            {
+                Settings.Depth = value;
+                needsMatrixUpdate = true;
+            }
+        }
+
+        private void RefreshControls(bool refreshRemoveButton = false, bool refeshCustomInfo = false)
+        {
+        }
+
+        public void UseThisShip_Receiver(bool fix)
+        {
+            Log.Line($"UseThisShip_Receiver({fix.ToString()})");
+
+            //UseThisShip_Internal(fix);
         }
         #endregion
     }
