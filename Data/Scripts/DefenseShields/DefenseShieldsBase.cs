@@ -155,13 +155,22 @@ namespace DefenseShields
             {
                 if (Components.Count == 0 || info.Type == MyDamageType.Destruction || info.Type == MyDamageType.Drill || info.Type == MyDamageType.Grind || info.Type == MyDamageType.Environment) return;
 
+                var player = target as IMyCharacter;
+                if (player != null)
+                {
+                    foreach (var shield in Components)
+                    {
+                        //if (shield.ShieldActive && shield.FriendlyCache.Contains(player))
+                    }
+                    return;
+                }
                 var block = target as IMySlimBlock;
                 if (block == null) return;
                 var blockGrid = (MyCubeGrid)block.CubeGrid;
 
                 foreach (var shield in Components)
                 {
-                    if (shield.ShieldActive && (shield.Shield.CubeGrid == blockGrid || shield.FriendlyCache.Contains(blockGrid) || shield.FriendlyCache.Contains(target as IMyCharacter)))
+                    if (shield.ShieldActive && (shield.Shield.CubeGrid == blockGrid || shield.FriendlyCache.Contains(blockGrid)))
                     {
 
                         MyEntity hostileEnt;
@@ -282,18 +291,6 @@ namespace DefenseShields
                             if (MyAPIGateway.Multiplayer.IsServer)
                                 RelayToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                         }
-                        //break;
-                    //case PacketType.REMOVE:
-                        //logic.RemoveBlueprints_Receiver(bytes, data.Sender);
-                        //break;
-                    //case PacketType.RECEIVED_BP:
-                        //logic.PlayerReceivedBP(data.Sender);
-                        break;
-                    case PacketType.USE_THIS_AS_IS:
-                        logic.UseThisShip_Receiver(false);
-                        break;
-                    case PacketType.USE_THIS_FIX:
-                        logic.UseThisShip_Receiver(true);
                         break;
                 }
             }

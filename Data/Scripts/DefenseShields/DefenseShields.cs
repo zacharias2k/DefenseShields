@@ -77,6 +77,7 @@ namespace DefenseShields
         public int BulletCoolDown { get; private set; } = -1;
         public int EntityCoolDown { get; private set; } = -1;
         private int _count = -1;
+        private int _syncCoolDown = -1;
         private int _shieldDownLoop = -1;
         private int _longLoop;
         private int _animationLoop;
@@ -703,6 +704,7 @@ namespace DefenseShields
                     _longLoop++;
                     if (_longLoop == 10) _longLoop = 0;
                 }
+                if (_syncCoolDown > -1 && _syncCoolDown++ == 3) _syncCoolDown = -1;
 
                 UpdateGridPower();
                 CalculatePowerCharge();
@@ -714,12 +716,12 @@ namespace DefenseShields
                     {
                         Shield.ShowInToolbarConfig = false;
                         Shield.ShowInToolbarConfig = true;
-                        ConfigUpdate();
+                        LocalUpdate();
                     }
                     else if (_longLoop == 0 || _longLoop == 5)
                     {
-                        Shield.ShowInToolbarConfig = false;
-                        Shield.ShowInToolbarConfig = true;
+                        //Shield.ShowInToolbarConfig = false;
+                        //Shield.ShowInToolbarConfig = true;
                         Shield.RefreshCustomInfo();
                     }
                     SaveSettings();
@@ -764,10 +766,11 @@ namespace DefenseShields
                     if (!_blockParticleStopped) BlockParticleStop();
                 }
 
-                if (_entOutofSync)
+                if (_entOutofSync && _syncCoolDown == -1)
                 {
                     SaveAndNetworkUpdate();
                     _entOutofSync = false;
+                    _syncCoolDown = 0;
                 }
 
                 Dsutil2.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - main", 4);
@@ -2106,6 +2109,8 @@ namespace DefenseShields
 
         private void SyncControls()
         {
+
+            //Log.Line($"syncing controls for shield {Shield.EntityId}");
             _widthSlider.Setter(Shield, Settings.Width);
             _heightSlider.Setter(Shield, Settings.Height);
             _depthSlider.Setter(Shield, Settings.Depth);
@@ -2124,7 +2129,6 @@ namespace DefenseShields
             Depth = newSettings.Depth;
             Rate = newSettings.Rate;
             //ShieldBuffer = newSettings.Buffer;
-            SyncControls();
         }
 
         public void SaveSettings()
@@ -2174,7 +2178,7 @@ namespace DefenseShields
             set
             {
                 Settings.Enabled = value;
-                RefreshControls(refeshCustomInfo: true);
+                RefreshControls(false);
             }
         }
 
@@ -2184,7 +2188,7 @@ namespace DefenseShields
             set
             {
                 Settings.IdleInvisible = value;
-                RefreshControls(refeshCustomInfo: true);
+                RefreshControls(false);
             }
         }
 
@@ -2194,7 +2198,7 @@ namespace DefenseShields
             set
             {
                 Settings.ActiveInvisible = value;
-                RefreshControls(refeshCustomInfo: true);
+                RefreshControls(false);
             }
         }
 
@@ -2228,15 +2232,12 @@ namespace DefenseShields
             set { Settings.Buffer = value; }
         }
 
-        private void RefreshControls(bool refreshRemoveButton = false, bool refeshCustomInfo = false)
+        private void RefreshControls(bool refeshCustomInfo)
         {
-        }
-
-        public void UseThisShip_Receiver(bool fix)
-        {
-            Log.Line($"ShieldId:{Shield.EntityId.ToString()} - UseThisShip_Receiver({fix.ToString()})");
-
-            //UseThisShip_Internal(fix);
+            SyncControls();
+            Shield.ShowInToolbarConfig = false;
+            Shield.ShowInToolbarConfig = true;
+            if (refeshCustomInfo) Shield.RefreshCustomInfo();
         }
 
         private void SaveAndNetworkUpdate()
@@ -2245,10 +2246,12 @@ namespace DefenseShields
 
             if (MyAPIGateway.Multiplayer.IsServer)
             {
+                //Log.Line($"server sent network update for shield {Shield.EntityId}");
                 DefenseShieldsBase.RelaySettingsToClients(Shield, Settings); // update clients with server's settings
             }
             else // client, send settings to server
             {
+                //Log.Line($"client sent network update {Shield.EntityId}");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new PacketData(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, Settings));
                 MyAPIGateway.Multiplayer.SendMessageToServer(DefenseShieldsBase.PACKET_ID, bytes);
             }
