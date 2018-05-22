@@ -97,6 +97,8 @@ namespace DefenseShields
         internal bool BlockWorking;
         internal bool HardDisable { get; private set; }
         internal bool NoPower;
+        public bool ServerUpdate;
+        private bool _clientUpdate;
         private bool _entityChanged = true;
         private bool _gridChanged = true;
         private bool _enablePhysics = true;
@@ -110,10 +112,7 @@ namespace DefenseShields
         private bool _effectsCleanup;
         private bool _startupWarning;
         private bool _hideShield;
-        private bool _oldHidePassive;
-        private bool _oldHideActive;
-        private bool _configMatrixUpdate;
-        private bool _entOutofSync;
+        private bool _updateDimensions;
 
         internal Vector3D ShieldSize { get; set; }
         public Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
@@ -435,16 +434,19 @@ namespace DefenseShields
                     Log.Line($"ShieldId:{Shield.EntityId.ToString()} - {Shield.BlockDefinition.SubtypeId} is functional - tick:{_tick.ToString()}");
                     Entity.TryGetSubpart("Rotor", out _subpartRotor);
 
+                    _clientUpdate = true;
+                    //ServerUpdate = true;
+                    _updateDimensions = true;
+
                     Storage = Shield.Storage;
                     LoadSettings();
 
                     if (!MyAPIGateway.Utilities.IsDedicated) BlockParticleCreate();
                     if (GridIsMobile) MobileUpdate();
                     else RefreshDimensions();
-                    //ConfigUpdate();
 
                     Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
-                    _entOutofSync = true;
+
                     AnimateInit = true;
                 }
             }
@@ -672,12 +674,29 @@ namespace DefenseShields
         {
             try
             {
-                Dsutil2.Sw.Restart();
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+                if (_tick % 3600 == 0) Log.Line($"-=[ DS is alive ]=-");
+                Dsutil2.Sw.Restart();
                 if (!BlockFunctional()) return;
 
-                if (GridIsMobile) MobileUpdate();
+                if (ServerUpdate) SyncControlsServer();
+                _clientUpdate = SyncControlsClient();
 
+                if (_clientUpdate)
+                {
+                    //Log.Line($"Clinet Update");
+                    if (!GridIsMobile) _updateDimensions = true;
+
+                    if (_clientUpdate)
+                    {
+                        NetworkUpdate();
+                        _clientUpdate = false;
+                    }
+                    SaveSettings();
+                }
+
+                if (GridIsMobile) MobileUpdate();
+                if (_updateDimensions) RefreshDimensions();
 
                 if (_longLoop == 0 && _blocksChanged)
                 {
@@ -704,7 +723,6 @@ namespace DefenseShields
                     _longLoop++;
                     if (_longLoop == 10) _longLoop = 0;
                 }
-                if (_syncCoolDown > -1 && _syncCoolDown++ == 3) _syncCoolDown = -1;
 
                 UpdateGridPower();
                 CalculatePowerCharge();
@@ -716,7 +734,6 @@ namespace DefenseShields
                     {
                         Shield.ShowInToolbarConfig = false;
                         Shield.ShowInToolbarConfig = true;
-                        LocalUpdate();
                     }
                     else if (_longLoop == 0 || _longLoop == 5)
                     {
@@ -724,7 +741,6 @@ namespace DefenseShields
                         //Shield.ShowInToolbarConfig = true;
                         Shield.RefreshCustomInfo();
                     }
-                    SaveSettings();
                     _shieldDps = 0f;
                 }
                 if (_shieldStarting && GridIsMobile && FieldShapeBlocked()) return;
@@ -743,7 +759,7 @@ namespace DefenseShields
                         if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(_detectMatrixOutsideInv);
                     }
                     if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
-                    if (!MyAPIGateway.Utilities.IsDedicated && Distance(1000))
+                    if ((!MyAPIGateway.Utilities.IsDedicated || !MyAPIGateway.Multiplayer.IsServer) && Distance(1000))
                     {
                         if (_shieldMoving || _shieldStarting) BlockParticleUpdate();
                         var blockCam = Shield.PositionComp.WorldVolume;
@@ -765,14 +781,6 @@ namespace DefenseShields
                     SyncThreadedEnts();
                     if (!_blockParticleStopped) BlockParticleStop();
                 }
-
-                if (_entOutofSync && _syncCoolDown == -1)
-                {
-                    SaveAndNetworkUpdate();
-                    _entOutofSync = false;
-                    _syncCoolDown = 0;
-                }
-
                 Dsutil2.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - main", 4);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
@@ -858,24 +866,12 @@ namespace DefenseShields
 
         private void RefreshDimensions()
         {
-            var width = _widthSlider.Getter(Shield);
-            var height = _heightSlider.Getter(Shield);
-            var depth = _depthSlider.Getter(Shield);
 
-            var changed = !_oldWidth.Equals(width) || !_oldHeight.Equals(height) || !_oldDepth.Equals(depth);
-            if (!changed) return;
+            if (!_updateDimensions) return;
+            _updateDimensions = false;
             CreateShieldShape();
             Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
-
-            Depth = depth;
-            Width = width;
-            Height = height;
-            _oldWidth = width;
-            _oldHeight = height;
-            _oldDepth = depth;
-
             _entityChanged = true;
-            _entOutofSync = true;
         }
         #endregion
 
@@ -1105,7 +1101,7 @@ namespace DefenseShields
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
-            if (!GridIsMobile && ShieldActive)RefreshDimensions();
+            //if (!GridIsMobile && ShieldActive)RefreshDimensions();
             var shieldPercent = 100f;
             var secToFull = 0;
             if (ShieldBuffer < _shieldMaxBuffer) shieldPercent = (ShieldBuffer / _shieldMaxBuffer) * 100;
@@ -1382,7 +1378,7 @@ namespace DefenseShields
                             var playerGasLevel = character.GetSuitGasFillLevel(hId);
                             character.Components.Get<MyCharacterOxygenComponent>().UpdateStoredGasLevel(ref hId, (playerGasLevel * -0.0001f) + .002f);
                             MyVisualScriptLogicProvider.CreateExplosion(character.GetPosition(), 0, 0);
-                            character.DoDamage(50f, MyDamageType.Fire, true);
+                            character.DoDamage(50f, MyDamageType.Fire, true, null, Shield.CubeGrid.EntityId);
                             var vel = character.Physics.LinearVelocity;
                             if (vel == new Vector3D(0, 0, 0)) vel = MyUtils.GetRandomVector3Normalized();
                             var speedDir = Vector3D.Normalize(vel);
@@ -1394,6 +1390,26 @@ namespace DefenseShields
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in missileDmg: {ex}"); }
+
+                try
+                {
+                    if (_dmgBlocks.Count != 0)
+                    {
+                        IMySlimBlock block;
+                        while (_dmgBlocks.TryDequeue(out block))
+                        {
+                            if (block == null) continue;
+                            if (block.IsDestroyed)
+                            {
+                                ((MyCubeGrid)block.CubeGrid).EnqueueDestroyedBlock(block.Position);
+                                continue;
+                            }
+                            block.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId); // set  to true for multiplayer?
+                            if (((MyCubeGrid)block.CubeGrid).BlocksCount == 0) block.CubeGrid.SyncObject.SendCloseRequest();
+                        }
+                    }
+                }
+                catch (Exception ex) { Log.Line($"Exception in dmgBlocks: {ex}"); }
 
                 try
                 {
@@ -1415,26 +1431,6 @@ namespace DefenseShields
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in fewBlocks: {ex}"); }
-
-                try
-                {
-                    if (_dmgBlocks.Count != 0)
-                    {
-                        IMySlimBlock block;
-                        while (_dmgBlocks.TryDequeue(out block))
-                        {
-                            if (block == null) continue;
-                            if (block.IsDestroyed)
-                            {
-                                ((MyCubeGrid)block.CubeGrid).EnqueueDestroyedBlock(block.Position);
-                                continue;
-                            }
-                            block.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId); // set  to true for multiplayer?
-                            if (((MyCubeGrid)block.CubeGrid).BlocksCount == 0) block.CubeGrid.SyncObject.SendCloseRequest();
-                        }
-                    }
-                }
-                catch (Exception ex) { Log.Line($"Exception in dmgBlocks: {ex}"); }
                 Dsutil4.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - syncEnt", 3);
             }
             catch (Exception ex) { Log.Line($"Exception in DamageGrids: {ex}"); }
@@ -1450,6 +1446,7 @@ namespace DefenseShields
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
             for (int i = 0; i < pruneList.Count; i++)
             {
+
                 var ent = pruneList[i];
                 if (ent == null || FriendlyCache.Contains(ent)) continue;
 
@@ -1461,6 +1458,7 @@ namespace DefenseShields
                 var relation = EntType(ent);
                 if (relation == Ent.Ignore || relation == Ent.Friend)
                 {
+                    if (relation == Ent.Friend && !CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv)) continue;
                     FriendlyCache.Add(ent);
                     continue;
                 }
@@ -1666,7 +1664,7 @@ namespace DefenseShields
         {
             return mySlimBlock.BlockDefinition.Id.TypeId != typeof(MyObjectBuilder_TextPanel)
                    && mySlimBlock.BlockDefinition.Id.TypeId != typeof(MyObjectBuilder_ButtonPanel)
-                   && mySlimBlock.BlockDefinition.Id.SubtypeId.String.Equals("SmallLight");
+                   && mySlimBlock.BlockDefinition.Id.SubtypeId != MyStringHash.TryGet("SmallLight");
         }
         #endregion
 
@@ -1679,7 +1677,8 @@ namespace DefenseShields
 
                 var ejectDir = CustomCollision.EjectDirection(grid, PhysicsOutside, _dataStructures.p3VertTris, bOriBBoxD, _detectMatrixOutsideInv);
                 if (ejectDir == Vector3D.NegativeInfinity) return false;
-                Eject.Add(grid, ejectDir);
+                Eject.TryAdd(grid, ejectDir);
+
                 return true;
             }
             return false;
@@ -1722,7 +1721,6 @@ namespace DefenseShields
                 var contactpoint = entInfo.ContactPoint;
                 entInfo.ContactPoint = Vector3D.NegativeInfinity;
                 if (contactpoint == Vector3D.NegativeInfinity) return;
-
                 ImpactSize += entInfo.Damage;
 
                 entInfo.Damage = 0;
@@ -2084,43 +2082,69 @@ namespace DefenseShields
         #endregion
 
         #region Settings
-        private void LocalUpdate()
+        private void SyncControlsServer()
         {
-            var changed = false;
-            var hidePassive = _hidePassiveCheckBox.Getter(Shield).Equals(true);
-            var hideActive = _hideActiveCheckBox.Getter(Shield).Equals(true);
-            var rate = _chargeSlider?.Getter(Shield) ?? 20f;
-
-            if (_oldHidePassive != hidePassive || _oldHideActive != hideActive || !_oldRate.Equals(rate))
+            if (_widthSlider != null && !_widthSlider.Getter(Shield).Equals(Settings.Width))
             {
-                changed = true;
-                _oldHidePassive = hidePassive;
-                _oldHideActive = hideActive;
-                _oldRate = rate;
+                _widthSlider.Setter(Shield, Settings.Width);
             }
 
-            if (!changed) return;
-            Enabled = Shield.Enabled;
-            ShieldActiveVisible = hideActive;
-            ShieldIdleVisible = hidePassive;
-            Rate = rate;
-            _entOutofSync = true;
+            if (_heightSlider != null && !_heightSlider.Getter(Shield).Equals(Settings.Height))
+            {
+                _heightSlider.Setter(Shield, Settings.Height);
+            }
+
+            if (_depthSlider != null && !_depthSlider.Getter(Shield).Equals(Settings.Depth))
+            {
+                _depthSlider.Setter(Shield, Settings.Depth);
+            }
+
+            if (_chargeSlider != null && !_chargeSlider.Getter(Shield).Equals(Settings.Rate))
+            {
+                _chargeSlider.Setter(Shield, Settings.Rate);
+            }
+
+            if (_hideActiveCheckBox != null && !_hideActiveCheckBox.Getter(Shield).Equals(Settings.ActiveInvisible))
+            {
+                _hideActiveCheckBox.Setter(Shield, Settings.ActiveInvisible);
+            }
+
+            if (_hidePassiveCheckBox != null && !_hidePassiveCheckBox.Getter(Shield).Equals(Settings.IdleInvisible))
+            {
+                _hidePassiveCheckBox.Setter(Shield, Settings.IdleInvisible);
+            }
+            //Log.Line($"Synced Server Controls");
+            ServerUpdate = false;
+            _updateDimensions = true;
+            SaveSettings();
         }
 
-        private void SyncControls()
+        private bool SyncControlsClient()
         {
-
-            //Log.Line($"syncing controls for shield {Shield.EntityId}");
-            _widthSlider.Setter(Shield, Settings.Width);
-            _heightSlider.Setter(Shield, Settings.Height);
-            _depthSlider.Setter(Shield, Settings.Depth);
-            _chargeSlider.Setter(Shield, Settings.Rate);
-            _hideActiveCheckBox.Setter(Shield, Settings.ActiveInvisible);
-            _hidePassiveCheckBox.Setter(Shield, Settings.IdleInvisible);
+            var needsSync = false;
+            if (!_widthSlider.Getter(Shield).Equals(Width)
+                                   || !_heightSlider.Getter(Shield).Equals(Height)
+                                   || !_depthSlider.Getter(Shield).Equals(Depth)
+                                   || !_chargeSlider.Getter(Shield).Equals(Rate)
+                                   || !_hideActiveCheckBox.Getter(Shield).Equals(ShieldActiveVisible)
+                                   || !_hidePassiveCheckBox.Getter(Shield).Equals(ShieldIdleVisible))
+            {
+                needsSync = true;
+                Width = _widthSlider.Getter(Shield);
+                Height = _heightSlider.Getter(Shield);
+                Depth = _depthSlider.Getter(Shield);
+                Rate = _chargeSlider.Getter(Shield);
+                ShieldActiveVisible = _hideActiveCheckBox.Getter(Shield);
+                ShieldIdleVisible = _hidePassiveCheckBox.Getter(Shield);
+                //Log.Line($"needs server updatem for: {Shield.EntityId}");
+            }
+            _clientUpdate = false;
+            return needsSync;
         }
 
         public void UpdateSettings(DefenseShieldsModSettings newSettings)
         {
+            //Log.Line($"update settings {Shield.EntityId}");
             Enabled = newSettings.Enabled;
             ShieldIdleVisible = newSettings.IdleInvisible;
             ShieldActiveVisible = newSettings.ActiveInvisible;
@@ -2128,11 +2152,11 @@ namespace DefenseShields
             Height = newSettings.Height;
             Depth = newSettings.Depth;
             Rate = newSettings.Rate;
-            //ShieldBuffer = newSettings.Buffer;
         }
 
         public void SaveSettings()
         {
+            //Log.Line($"SaveSettings {Shield.EntityId}");
             if (Shield.Storage == null)
             {
                 Log.Line($"ShieldId:{Shield.EntityId.ToString()} - Storage = null");
@@ -2143,6 +2167,7 @@ namespace DefenseShields
 
         public bool LoadSettings()
         {
+            //Log.Line($"Loadsettings {Shield.EntityId}");
             if (Shield.Storage == null) return false;
 
             string rawData;
@@ -2175,31 +2200,19 @@ namespace DefenseShields
         public bool Enabled
         {
             get { return Settings.Enabled; }
-            set
-            {
-                Settings.Enabled = value;
-                RefreshControls(false);
-            }
+            set { Settings.Enabled = value; }
         }
 
         public bool ShieldIdleVisible
         {
             get { return Settings.IdleInvisible; }
-            set
-            {
-                Settings.IdleInvisible = value;
-                RefreshControls(false);
-            }
+            set { Settings.IdleInvisible = value; }
         }
 
         public bool ShieldActiveVisible
         {
             get { return Settings.ActiveInvisible; }
-            set
-            {
-                Settings.ActiveInvisible = value;
-                RefreshControls(false);
-            }
+            set { Settings.ActiveInvisible = value; }
         }
 
         public float Width
@@ -2232,17 +2245,8 @@ namespace DefenseShields
             set { Settings.Buffer = value; }
         }
 
-        private void RefreshControls(bool refeshCustomInfo)
+        private void NetworkUpdate()
         {
-            SyncControls();
-            Shield.ShowInToolbarConfig = false;
-            Shield.ShowInToolbarConfig = true;
-            if (refeshCustomInfo) Shield.RefreshCustomInfo();
-        }
-
-        private void SaveAndNetworkUpdate()
-        {
-            SaveSettings();
 
             if (MyAPIGateway.Multiplayer.IsServer)
             {

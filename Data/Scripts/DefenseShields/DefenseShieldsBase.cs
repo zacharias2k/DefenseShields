@@ -43,6 +43,8 @@ namespace DefenseShields
 
         private readonly Dictionary<IMyEntity, int> _voxelDamageCounter = new Dictionary<IMyEntity, int>();
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
+        public readonly List<IMyPlayer> Players = new List<IMyPlayer>();
+
 
         public void Init()
         {
@@ -160,7 +162,12 @@ namespace DefenseShields
                 {
                     foreach (var shield in Components)
                     {
-                        //if (shield.ShieldActive && shield.FriendlyCache.Contains(player))
+                        MyEntity hostileEnt;
+                        MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
+
+                        if (shield.ShieldActive 
+                            && shield.FriendlyCache.Contains(player) 
+                            && (hostileEnt == null  || !shield.FriendlyCache.Contains(hostileEnt))) info.Amount = 0f;
                     }
                     return;
                 }
@@ -181,7 +188,7 @@ namespace DefenseShields
                             continue;
                         }
 
-                        if (_voxelTrigger == 0 && (hostileEnt is MyVoxelBase))
+                        if ((!MyAPIGateway.Multiplayer.IsServer || !MyAPIGateway.Utilities.IsDedicated) && _voxelTrigger == 0 && (hostileEnt is MyVoxelBase))
                         {
                             var voxel = (MyVoxelBase)hostileEnt;
                             info.Amount = 0f;
@@ -287,6 +294,7 @@ namespace DefenseShields
 
                             logic.UpdateSettings(data.Settings);
                             logic.SaveSettings();
+                            logic.ServerUpdate = true;
 
                             if (MyAPIGateway.Multiplayer.IsServer)
                                 RelayToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
@@ -302,7 +310,7 @@ namespace DefenseShields
 
         public static void RelaySettingsToClients(IMyCubeBlock block, DefenseShieldsModSettings settings)
         {
-            //Log.Line("RelaySettingsToClients(block,settings)");
+            //Log.Line("RelaySettingsToClients");
 
             var data = new PacketData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
@@ -311,22 +319,25 @@ namespace DefenseShields
 
         public static void RelayToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
-            //Log.Line("RelayToClients(syncPos,bytes,sender)");
+            //Log.Line("RelayToClients");
 
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
-            var distSq = MyAPIGateway.Session.SessionSettings.ViewDistance;
-            distSq += 1000; // some safety padding
+            var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
+            distSq += 1000; // some safety padding, avoid desync
             distSq *= distSq;
 
-            MyAPIGateway.Players.GetPlayers(null, (p) =>
+            var players = Instance.Players;
+            players.Clear();
+            MyAPIGateway.Players.GetPlayers(players);
+
+            foreach (var p in players)
             {
                 var id = p.SteamUserId;
 
                 if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
                     MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID, bytes, p.SteamUserId);
-
-                return false; // avoid adding to the null list
-            });
+            }
+            players.Clear();
         }
         #endregion
     }
