@@ -201,7 +201,7 @@
     <Compile Include="Data\Scripts\DefenseShields\dsComponent-Intersect.cs" />
     <Compile Include="Data\Scripts\DefenseShields\dsComponent-Settings.cs" />
     <Compile Include="Data\Scripts\DefenseShields\dsComponent-Setup.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\dsComponent-Startup.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\dsComponent-Init.cs" />
     <Compile Include="Data\Scripts\DefenseShields\dsComponent-SyncEnts.cs" />
     <Compile Include="Data\Scripts\DefenseShields\dsSession.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\DSUtilsStatic.cs" />

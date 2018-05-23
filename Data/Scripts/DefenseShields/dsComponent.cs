@@ -13,6 +13,9 @@ using VRage.ModAPI;
 using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
+using VRage.Voxels;
+using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
+
 
 namespace DefenseShields
 {
@@ -126,6 +129,105 @@ namespace DefenseShields
                 Dsutil2.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - main", 4);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
+        }
+        #endregion
+
+        #region Field Check
+        private void CheckShieldLineOfSight()
+        {
+            if (GridIsMobile)
+            {
+                MobileUpdate();
+                Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
+            }
+            else RefreshDimensions();
+
+            var testDist = 0d;
+            _blocksLos.Clear();
+            _noBlocksLos.Clear();
+            _vertsSighted.Clear();
+            if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS") testDist = 4.5d;
+            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") testDist = 0.8d;
+            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST") testDist = 8.0d;
+
+            var testDir = _subpartRotor.PositionComp.WorldVolume.Center - Shield.PositionComp.WorldVolume.Center;
+            testDir.Normalize();
+            var testPos = Shield.PositionComp.WorldVolume.Center + testDir * testDist;
+            _sightPos = testPos;
+
+            MyAPIGateway.Parallel.For(0, PhysicsOutside.Length, i =>
+            {
+                var hit = Shield.CubeGrid.RayCastBlocks(testPos, PhysicsOutside[i]);
+                if (hit.HasValue)
+                {
+                    _blocksLos.Add(i);
+                    return;
+                }
+                _noBlocksLos.Add(i);
+            });
+            if (GridIsMobile)
+            {
+                MyAPIGateway.Parallel.For(0, _noBlocksLos.Count, i =>
+                {
+                    const int filter = CollisionLayers.VoxelCollisionLayer;
+                    IHitInfo hitInfo;
+                    var hit = MyAPIGateway.Physics.CastRay(testPos, PhysicsOutside[_noBlocksLos[i]], out hitInfo, filter);
+                    if (hit) _blocksLos.Add(_noBlocksLos[i]);
+                });
+            }
+
+            for (int i = 0; i < PhysicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
+            _shieldLineOfSight = _blocksLos.Count < 500;
+            Log.Line($"ShieldId:{Shield.EntityId.ToString()} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {_shieldLineOfSight.ToString()}");
+        }
+
+        private void DrawHelper()
+        {
+            var lineDist = 0d;
+            const float lineWidth = 0.025f;
+            if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS") lineDist = 5.0d;
+            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") lineDist = 3d;
+            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST") lineDist = 7.5d;
+
+            foreach (var blocking in _blocksLos)
+            {
+                var blockedDir = PhysicsOutside[blocking] - _sightPos;
+                blockedDir.Normalize();
+                var blockedPos = _sightPos + blockedDir * lineDist;
+                DsDebugDraw.DrawLineToVec(_sightPos, blockedPos, Color.Black, lineWidth);
+            }
+
+            foreach (var sighted in _vertsSighted)
+            {
+                var sightedDir = PhysicsOutside[sighted] - _sightPos;
+                sightedDir.Normalize();
+                var sightedPos = _sightPos + sightedDir * lineDist;
+                DsDebugDraw.DrawLineToVec(_sightPos, sightedPos, Color.Blue, lineWidth);
+            }
+            if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("The shield emitter DOES NOT have a CLEAR ENOUGH LINE OF SIGHT to the shield, SHUTTING DOWN.", 960, "Red", Shield.OwnerId);
+            if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("Blue means clear line of sight, black means blocked......................................................................", 960, "Red", Shield.OwnerId);
+        }
+
+        private bool FieldShapeBlocked()
+        {
+            var pruneSphere = new BoundingSphereD(_detectionCenter, Range);
+            var pruneList = new List<MyVoxelBase>();
+            MyGamePruningStructure.GetAllVoxelMapsInSphere(ref pruneSphere, pruneList);
+
+            if (pruneList.Count == 0) return false;
+            MobileUpdate();
+            Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, PhysicsOutsideLow);
+            foreach (var voxel in pruneList)
+            {
+                if (voxel.RootVoxel == null) continue;
+
+                if (!CustomCollision.VoxelContact(Shield.CubeGrid, PhysicsOutsideLow, voxel, new MyStorageData(), _detectMatrixOutside)) continue;
+
+                Shield.Enabled = false;
+                MyVisualScriptLogicProvider.ShowNotification("The shield's field cannot form when in contact with a solid body", 6720, "Blue", Shield.OwnerId);
+                return true;
+            }
+            return false;
         }
         #endregion
 
