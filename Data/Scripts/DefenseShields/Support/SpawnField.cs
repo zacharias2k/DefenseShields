@@ -35,7 +35,7 @@ namespace DefenseShields.Support
         }
 
         //Spawn Block
-        public static IMyEntity SpawnBlock(string subtypeId, string name = "", bool isVisible = true, bool hasPhysics = false, bool isStatic = false, bool toSave = false, bool destructible = false, long ownerId = 0)
+        public MyEntity SpawnBlock(string subtypeId, string name, bool isVisible = true, bool hasPhysics = false, bool isStatic = false, bool toSave = false, bool destructible = false, long ownerId = 0)
         {
             try
             {
@@ -44,10 +44,10 @@ namespace DefenseShields.Support
                 CubeGridBuilder.CreatePhysics = hasPhysics;
                 CubeGridBuilder.IsStatic = isStatic;
                 CubeGridBuilder.DestructibleBlocks = destructible;
-                var ent = MyAPIGateway.Entities.CreateFromObjectBuilder(CubeGridBuilder);
+                MyEntity ent = (MyEntity) MyAPIGateway.Entities.CreateFromObjectBuilder(CubeGridBuilder);
 
                 ent.Flags &= ~EntityFlags.Save;
-                ent.Visible = isVisible;
+                ent.Render.Visible = isVisible;
                 MyAPIGateway.Entities.AddEntity(ent, true);
 
                 return ent;
@@ -63,7 +63,7 @@ namespace DefenseShields.Support
         private static readonly SerializableBlockOrientation EntityOrientation = new SerializableBlockOrientation(Base6Directions.Direction.Forward, Base6Directions.Direction.Up);
 
         //OBJECTBUILDERS
-        private static readonly MyObjectBuilder_CubeGrid CubeGridBuilder = new MyObjectBuilder_CubeGrid()
+        private readonly MyObjectBuilder_CubeGrid CubeGridBuilder = new MyObjectBuilder_CubeGrid()
         {
 
             EntityId = 0,
@@ -80,7 +80,7 @@ namespace DefenseShields.Support
             ZMirroxPlane = null,
             PersistentFlags = MyPersistentEntityFlags2.InScene,
             Name = "ArtificialCubeGrid",
-            DisplayName = "FieldEffect",
+            DisplayName = "dShield",
             CreatePhysics = false,
             DestructibleBlocks = true,
             PositionAndOrientation = new MyPositionAndOrientation(Vector3D.Zero, Vector3D.Forward, Vector3D.Up),
@@ -91,9 +91,9 @@ namespace DefenseShields.Support
                     {
                         EntityId = 0,
                         BlockOrientation = EntityOrientation,
-                        SubtypeName = "",
+                        SubtypeName = "LargeDecoy",
                         Name = "",
-                        Min = Vector3I.Zero,
+                        Min = Vector3I.One,
                         Owner = 0,
                         ShareMode = MyOwnershipShareModeEnum.None,
                         DeformationRatio = 0,

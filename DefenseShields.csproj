@@ -179,7 +179,9 @@
     <None Include="Audio\ShieldHitNormalHigh.xwm" />
     <None Include="Data\Audio.sbc" />
     <None Include="Data\BlockCategories_DefenseShields.sbc" />
-    <None Include="Data\DefenseShields.sbc" />
+    <None Include="Data\DefenseShields.sbc">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="Data\EmitterEffect.sbc" />
     <None Include="Data\EntityComponents.sbc" />
     <None Include="Data\TransparentMaterials.sbc" />
@@ -188,13 +190,20 @@
     <None Include="tools\Monitor SE Log.ps1" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Data\Scripts\DefenseShields\API\dsApi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\BaseControl.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\ButtonControl.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Checkbox.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\ColorControl.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Controls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Seperator.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\DefenseShieldsBase.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\dsComponent-Entweb.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\dsComponent-Intersect.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\dsComponent-Settings.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\dsComponent-Setup.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\dsComponent-Startup.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\dsComponent-SyncEnts.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\dsSession.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\DSUtilsStatic.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\EllipsoidOxygenProvider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Power.cs" />
@@ -233,7 +242,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\Slider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\DSUtils.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\SpawnField.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\DefenseShields.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\dsComponent.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Structure\StructureBuilder.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\GJKCollide.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\Triangle3.cs" />
@@ -248,8 +257,6 @@
     <Compile Include="test\Vector3D.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Data\Scripts\DefenseShields\API\" />
-    <Folder Include="Data\Scripts\DefenseShields\Settings\" />
     <Folder Include="Models\" />
     <Folder Include="prod\" />
     <Folder Include="Textures\GUI\Icons\" />

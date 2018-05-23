@@ -15,7 +15,6 @@ using VRageMath;
 namespace DefenseShields
 {
     #region Session+protection Class
-
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
     public class DefenseShieldsBase : MySessionComponentBase
     {
@@ -171,6 +170,7 @@ namespace DefenseShields
                     }
                     return;
                 }
+
                 var block = target as IMySlimBlock;
                 if (block == null) return;
                 var blockGrid = (MyCubeGrid)block.CubeGrid;
@@ -183,12 +183,12 @@ namespace DefenseShields
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
 
-                        if (hostileEnt != null && (shield.FriendlyCache.Contains(hostileEnt) || hostileEnt == shield.Shield.CubeGrid))
+                        if (hostileEnt != null && (hostileEnt == shield.Shield.CubeGrid) || shield.FriendlyCache.Contains(hostileEnt))
                         {
                             continue;
                         }
 
-                        if ((!MyAPIGateway.Multiplayer.IsServer || !MyAPIGateway.Utilities.IsDedicated) && _voxelTrigger == 0 && (hostileEnt is MyVoxelBase))
+                        if ((hostileEnt is MyVoxelBase) && _voxelTrigger == 0 && (!MyAPIGateway.Multiplayer.IsServer || !MyAPIGateway.Utilities.IsDedicated))
                         {
                             var voxel = (MyVoxelBase)hostileEnt;
                             info.Amount = 0f;
@@ -215,6 +215,12 @@ namespace DefenseShields
                             continue;
                         }
 
+                        if (hostileEnt == null && info.Type == MyDamageType.Explosion)
+                        {
+                            info.Amount = 0f;
+                            continue;
+                        }
+
                         if (info.Type.String.Equals("DSdamage") || info.Type.String.Equals("DSheal") || info.Type.String.Equals("DSbypass"))
                         {
                             //Log.Line($"Amount:{info.Amount.ToString()} - Type:{info.Type.ToString()} - Block:{block.BlockDefinition.GetType().Name} - Attacker:{hostileEnt?.DebugName}");
@@ -233,11 +239,6 @@ namespace DefenseShields
                             shield.ImpactSize = 5;
                         }
 
-                        if (info.Type == MyDamageType.Explosion && hostileEnt == null)
-                        {
-                            info.Amount = 0f;
-                            continue;
-                        }
                         shield.Absorb += info.Amount;
                         info.Amount = 0f;
                     }
