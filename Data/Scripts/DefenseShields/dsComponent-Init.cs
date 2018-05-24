@@ -159,8 +159,8 @@ namespace DefenseShields
                     Storage = Shield.Storage;
                     LoadSettings();
 
-                    if (ServerEnforcedValues.Nerf >= 0) ShieldNerf = ServerEnforcedValues.Nerf;
-                    if (ServerEnforcedValues.BaseScaler >= 1) ShieldBaseScaler = ServerEnforcedValues.BaseScaler;
+                    if (DefenseShieldsBase.Nerf >= 0) ShieldNerf = DefenseShieldsBase.Nerf;
+                    if (DefenseShieldsBase.BaseScaler >= 1) ShieldBaseScaler = DefenseShieldsBase.BaseScaler;
                     if (ShieldNerf < 0 || ShieldBaseScaler < 1) EnforcementRequest();
 
                     if (!MyAPIGateway.Utilities.IsDedicated) BlockParticleCreate();

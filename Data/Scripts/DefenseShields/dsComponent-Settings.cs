@@ -225,8 +225,6 @@ namespace DefenseShields
             {
                 Log.Line($"This is the server (Dedicated: {MyAPIGateway.Utilities.IsDedicated}) bypassing enforcement request");
                 _firstRun = false;
-                ShieldBaseScaler = ServerEnforcedValues.BaseScaler;
-                ShieldNerf = ServerEnforcedValues.Nerf;
             }
             else if (_firstRun)
             {
