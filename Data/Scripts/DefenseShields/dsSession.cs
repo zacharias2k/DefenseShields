@@ -9,7 +9,6 @@ using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage;
 using VRage.Game.Entity;
-using VRage.Utils;
 using VRageMath;
 
 namespace DefenseShields
@@ -21,17 +20,20 @@ namespace DefenseShields
         internal bool SessionInit;
         public bool ControlsLoaded { get; set; }
         private bool _resetVoxelColliders;
+        public bool Enabled = true;
 
         private int _voxelTrigger;
         private int _count;
 
-        public const ushort PACKET_ID = 62520; // network
+        public const ushort PACKET_ID_SETTINGS = 62520; // network
+        public const ushort PACKET_ID_ENFORCE = 62521; // network
 
         private const long WORKSHOP_ID = 1365616918;
-        public bool enabled = true;
         public string disabledBy = null;
 
         public readonly Guid SettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
+        public readonly Guid EnforceGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811509");
+
 
         public static DefenseShieldsBase Instance { get; private set; }
         public readonly MyModContext MyModContext = new MyModContext();
@@ -52,8 +54,53 @@ namespace DefenseShields
                 Log.Init("debugdevelop.log");
                 Log.Line($"Logging Started");
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
-                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID, PacketReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_SETTINGS, PacketSettingsReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_ENFORCE, PacketNerfReceived);
                 MyAPIGateway.Utilities.RegisterMessageHandler(WORKSHOP_ID, ModMessageHandler);
+                var nerfExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShieldsNerf.cfg");
+                var baseScaleExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShieldsBaseScale.cfg");
+
+                if (MyAPIGateway.Utilities.IsDedicated || MyAPIGateway.Multiplayer.IsServer)
+                {
+                    if (nerfExists)
+                    {
+                        var getNerf = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShieldsNerf.cfg");
+                        float nerf;
+                        float.TryParse(getNerf.ReadToEnd(), out nerf);
+                        DefenseShields.ServerEnforcedValues.Nerf = nerf;
+                        Log.Line($"writting nerf to Values: {nerf} - {DefenseShields.ServerEnforcedValues.Nerf}");
+                    }
+                    else
+                    {
+                        var noNerf = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShieldsNerf.cfg");
+                        noNerf.Write("00.0000");
+                        noNerf.Close();
+                        var getNerf = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShieldsNerf.cfg");
+                        float nerf;
+                        float.TryParse(getNerf.ReadToEnd(), out nerf);
+                        DefenseShields.ServerEnforcedValues.Nerf = nerf;
+                        Log.Line($"writting nerf to Values: {nerf} - {DefenseShields.ServerEnforcedValues.Nerf}");
+
+                    }
+
+                    if (baseScaleExists)
+                    {
+                        var getBaseScaler = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShieldsBaseScale.cfg");
+                        int basescale;
+                        int.TryParse(getBaseScaler.ReadToEnd(), out basescale);
+                        DefenseShields.ServerEnforcedValues.BaseScaler = basescale;
+                    }
+                    else
+                    {
+                        var noBaseScaler = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShieldsBaseScale.cfg");
+                        noBaseScaler.Write("30");
+                        noBaseScaler.Close();
+                        var getBaseScaler = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShieldsBaseScale.cfg");
+                        int basescale;
+                        int.TryParse(getBaseScaler.ReadToEnd(), out basescale);
+                        DefenseShields.ServerEnforcedValues.BaseScaler = basescale;
+                    }
+                }
                 SessionInit = true;
             }
             catch (Exception ex) { Log.Line($"Exception in SessionInit: {ex}"); }
@@ -66,9 +113,9 @@ namespace DefenseShields
                 if (obj is MyTuple<bool, string>)
                 {
                     var data = (MyTuple<bool, string>)obj;
-                    enabled = data.Item1;
+                    Enabled = data.Item1;
 
-                    if (enabled)
+                    if (Enabled)
                     {
                         Log.Line($"Wing logic turned off by mod {data.Item2}");
                         disabledBy = null;
@@ -188,7 +235,7 @@ namespace DefenseShields
                             continue;
                         }
 
-                        if ((hostileEnt is MyVoxelBase) && _voxelTrigger == 0 && (!MyAPIGateway.Multiplayer.IsServer || !MyAPIGateway.Utilities.IsDedicated))
+                        if ((hostileEnt is MyVoxelBase) && _voxelTrigger == 0 && (!MyAPIGateway.Utilities.IsDedicated))
                         {
                             var voxel = (MyVoxelBase)hostileEnt;
                             info.Amount = 0f;
@@ -248,7 +295,7 @@ namespace DefenseShields
         }
 
         #region Network sync
-        private static void PacketReceived(byte[] bytes)
+        private static void PacketSettingsReceived(byte[] bytes)
         {
             try
             {
@@ -293,6 +340,8 @@ namespace DefenseShields
 
                             //Log.Line($"PacketReceived(); Settings; {(MyAPIGateway.Multiplayer.IsServer ? " Relaying to clients;" : "")} Valid!\n{logic.Settings}");
 
+                            //if (MyAPIGateway.Utilities.IsDedicated) data.Settings.Nerf = ForceServerNerf;
+                            Log.Line($"Packet received: {MyAPIGateway.Multiplayer.IsServer} - data:{data.Settings.Nerf} - {data.Settings.BaseScaler}");
                             logic.UpdateSettings(data.Settings);
                             logic.SaveSettings();
                             logic.ServerUpdate = true;
@@ -307,6 +356,80 @@ namespace DefenseShields
             {
                 Log.Line($"Invalid packet data!{e}");
             }
+        }
+
+        private static void PacketNerfReceived(byte[] bytes)
+        {
+            try
+            {
+                if (bytes.Length <= 2)
+                {
+                    Log.Line($"PacketReceived(); invalid length <= 2; length={bytes.Length.ToString()}");
+                    return;
+                }
+
+                var data = MyAPIGateway.Utilities.SerializeFromBinary<EnforceData>(bytes); // this will throw errors on invalid data
+
+                if (data == null)
+                {
+                    Log.Line($"PacketReceived(); no deserialized data!");
+                    return;
+                }
+
+                IMyEntity ent;
+                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
+                {
+                    Log.Line($"PacketReceived(); {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    return;
+                }
+
+                var logic = ent.GameLogic.GetAs<DefenseShields>();
+
+                if (logic == null)
+                {
+                    Log.Line($"PacketReceived(); {data.Type}; shield doesn't have the gamelogic component!");
+                    return;
+                }
+
+                switch (data.Type)
+                {
+                    case PacketType.ENFORCE:
+                        {
+                            if (data.Enforce == null)
+                            {
+                                Log.Line($"PacketReceived(); {data.Type}; Enforce is null!");
+                                return;
+                            }
+
+                            Log.Line($"PacketReceived(); Enforce - Server: {MyAPIGateway.Multiplayer.IsServer} Valid packet!\n{DefenseShields.ServerEnforcedValues}");
+                            if (!(MyAPIGateway.Utilities.IsDedicated))
+                            {
+                                Log.Line($"Client updating and saving enforcement");
+                                logic.UpdateEnforcement(data.Enforce);
+                                logic.SaveEnforcement();
+                                logic.EnforceUpdate = true;
+                            }
+
+                            if (MyAPIGateway.Utilities.IsDedicated)
+                            {
+                                RelayEnforcementToClients(logic.Shield);
+                            }
+                        }
+                        break;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Line($"Invalid packet data!{e}");
+            }
+        }
+
+        public static void RelayEnforcementToClients(IMyCubeBlock block)
+        {
+            Log.Line($"RelayEnforcementToClients - Nerf:{DefenseShields.ServerEnforcedValues.Nerf} - Base:{DefenseShields.ServerEnforcedValues.BaseScaler}");
+            var data = new EnforceData(MyAPIGateway.Multiplayer.MyId, block.EntityId, DefenseShields.ServerEnforcedValues);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            ForceClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
         }
 
         public static void RelaySettingsToClients(IMyCubeBlock block, DefenseShieldsModSettings settings)
@@ -336,7 +459,29 @@ namespace DefenseShields
                 var id = p.SteamUserId;
 
                 if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
-                    MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID, bytes, p.SteamUserId);
+                    MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_SETTINGS, bytes, p.SteamUserId);
+            }
+            players.Clear();
+        }
+
+        public static void ForceClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        {
+            Log.Line("Forcing clients");
+            var localSteamId = MyAPIGateway.Multiplayer.MyId;
+            var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
+            distSq += 1000; 
+            distSq *= distSq;
+
+            var players = Instance.Players;
+            players.Clear();
+            MyAPIGateway.Players.GetPlayers(players);
+
+            foreach (var p in players)
+            {
+                var id = p.SteamUserId;
+
+                if (id != localSteamId && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
+                    MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_ENFORCE, bytes, p.SteamUserId);
             }
             players.Clear();
         }

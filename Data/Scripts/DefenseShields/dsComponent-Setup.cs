@@ -57,6 +57,8 @@ namespace DefenseShields
         private int _onCount;
         private int _oldBlockCount;
 
+        public bool ServerUpdate;
+        public bool EnforceUpdate;
         internal const bool Debug = true;
         internal bool MainInit;
         internal bool AnimateInit;
@@ -66,7 +68,6 @@ namespace DefenseShields
         internal bool BlockWorking;
         internal bool HardDisable { get; private set; }
         internal bool NoPower;
-        public bool ServerUpdate;
         private bool _entityChanged = true;
         private bool _gridChanged = true;
         private bool _enablePhysics = true;
@@ -81,6 +82,7 @@ namespace DefenseShields
         private bool _startupWarning;
         private bool _hideShield;
         private bool _updateDimensions;
+        private bool _firstRun = true;
 
         internal Vector3D ShieldSize { get; set; }
         public Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
@@ -168,6 +170,8 @@ namespace DefenseShields
         public MyModStorageComponentBase Storage { get; set; }
         internal HashSet<ulong> playersToReceive = null;
         internal DefenseShieldsModSettings Settings = new DefenseShieldsModSettings();
+        public static DefenseShieldsEnforcement ServerEnforcedValues = new DefenseShieldsEnforcement();
+
         #endregion
 
         #region constructors and Enums

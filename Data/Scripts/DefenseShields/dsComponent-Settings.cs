@@ -2,6 +2,7 @@
 using DefenseShields.Support;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
+using VRage.Game;
 
 namespace DefenseShields
 {
@@ -39,6 +40,7 @@ namespace DefenseShields
             {
                 _hidePassiveCheckBox.Setter(Shield, Settings.IdleInvisible);
             }
+
             //Log.Line($"Synced Server Controls");
             ServerUpdate = false;
             _updateDimensions = true;
@@ -93,6 +95,7 @@ namespace DefenseShields
         public void UpdateSettings(DefenseShieldsModSettings newSettings)
         {
             //Log.Line($"update settings {Shield.EntityId}");
+            Log.Line($"Updating Settings- current: {ShieldNerf} - {ShieldBaseScaler} - {Settings.Nerf} - {Settings.BaseScaler} - {ServerEnforcedValues.Nerf} - {ServerEnforcedValues.BaseScaler}");
             Enabled = newSettings.Enabled;
             ShieldIdleVisible = newSettings.IdleInvisible;
             ShieldActiveVisible = newSettings.ActiveInvisible;
@@ -100,6 +103,20 @@ namespace DefenseShields
             Height = newSettings.Height;
             Depth = newSettings.Depth;
             Rate = newSettings.Rate;
+            ShieldBaseScaler = newSettings.BaseScaler;
+            ShieldNerf = newSettings.Nerf;
+            Log.Line($"Updating Settings- after: {ShieldNerf} - {ShieldBaseScaler} - {Settings.Nerf} - {Settings.BaseScaler} - {ServerEnforcedValues.Nerf} - {ServerEnforcedValues.BaseScaler}");
+
+        }
+
+        public void UpdateEnforcement(DefenseShieldsEnforcement newEnforce)
+        {
+            Log.Line($"updating enforcement - CurrentNerf:{ServerEnforcedValues.Nerf} - newNerf: {newEnforce.Nerf} - CurrentBase:{ServerEnforcedValues.BaseScaler} - newBase: {newEnforce.BaseScaler} - {Shield.EntityId}");
+            ServerEnforcedValues.Nerf = newEnforce.Nerf;
+            ShieldNerf = ServerEnforcedValues.Nerf;
+
+            ServerEnforcedValues.BaseScaler = newEnforce.BaseScaler;
+            ShieldBaseScaler = ServerEnforcedValues.BaseScaler;
         }
 
         public void SaveSettings()
@@ -111,6 +128,17 @@ namespace DefenseShields
                 Shield.Storage = new MyModStorageComponent();
             }
             Shield.Storage[DefenseShieldsBase.Instance.SettingsGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
+        }
+
+        public void SaveEnforcement()
+        {
+            Log.Line($"Saving enforcement {Shield.EntityId} ");
+            if (Shield.Storage == null)
+            {
+                Log.Line($"ShieldId:{Shield.EntityId.ToString()} - Storage = null");
+                Shield.Storage = new MyModStorageComponent();
+            }
+            Shield.Storage[DefenseShieldsBase.Instance.EnforceGuid] = MyAPIGateway.Utilities.SerializeToXML(ServerEnforcedValues);
         }
 
         public bool LoadSettings()
@@ -193,6 +221,38 @@ namespace DefenseShields
             set { Settings.Buffer = value; }
         }
 
+        public float ShieldNerf
+        {
+            get { return ServerEnforcedValues.Nerf; }
+            set { ServerEnforcedValues.Nerf = value; }
+        }
+
+        public float ShieldBaseScaler
+        {
+            get { return ServerEnforcedValues.BaseScaler; }
+            set { ServerEnforcedValues.BaseScaler = value; }
+        }
+
+        private void EnforcementRequest()
+        {
+            if (_firstRun && (MyAPIGateway.Utilities.IsDedicated || MyAPIGateway.Multiplayer.IsServer))
+            {
+                Log.Line($"This is the server (Dedicated: {MyAPIGateway.Utilities.IsDedicated}) bypassing enforcement request");
+                _firstRun = false;
+                ShieldBaseScaler = ServerEnforcedValues.BaseScaler;
+                ShieldNerf = ServerEnforcedValues.Nerf;
+                Settings.Nerf = ShieldNerf;
+                Settings.BaseScaler = ShieldBaseScaler;
+            }
+            else if (_firstRun)
+            {
+                Log.Line($"Client requesting enforcement - current: {ShieldNerf} - {ShieldBaseScaler} - {Settings.Nerf} - {Settings.BaseScaler} - {ServerEnforcedValues.Nerf} - {ServerEnforcedValues.BaseScaler}");
+                _firstRun = false;
+                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new EnforceData(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, ServerEnforcedValues));
+                MyAPIGateway.Multiplayer.SendMessageToServer(DefenseShieldsBase.PACKET_ID_ENFORCE, bytes);
+            }
+        }
+
         private void NetworkUpdate()
         {
 
@@ -205,7 +265,7 @@ namespace DefenseShields
             {
                 //Log.Line($"client sent network update {Shield.EntityId}");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new PacketData(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, Settings));
-                MyAPIGateway.Multiplayer.SendMessageToServer(DefenseShieldsBase.PACKET_ID, bytes);
+                MyAPIGateway.Multiplayer.SendMessageToServer(DefenseShieldsBase.PACKET_ID_SETTINGS, bytes);
             }
         }
         #endregion

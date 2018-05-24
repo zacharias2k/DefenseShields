@@ -35,6 +35,7 @@ namespace DefenseShields
             {
                 Dsutil2.Sw.Restart();
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+                if (_tick % 600 == 0) Log.Line($"Nerfer: {ShieldNerf} - BaseScaler: {ShieldBaseScaler}");
                 if (!BlockFunctional()) return;
 
                 if (ServerUpdate) SyncControlsServer();
@@ -104,7 +105,7 @@ namespace DefenseShields
                         if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(_detectMatrixOutsideInv);
                     }
                     if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
-                    if ((!MyAPIGateway.Utilities.IsDedicated || !MyAPIGateway.Multiplayer.IsServer) && Distance(1000))
+                    if ((!MyAPIGateway.Utilities.IsDedicated) && Distance(1000))
                     {
                         if (_shieldMoving || _shieldStarting) BlockParticleUpdate();
                         var blockCam = Shield.PositionComp.WorldVolume;
@@ -322,8 +323,7 @@ namespace DefenseShields
         #region Block Power Logic
         private bool BlockFunctional()
         {
-
-            if (!MainInit || !AnimateInit || NoPower || HardDisable) return false;
+            if (!MainInit || !AnimateInit || NoPower || HardDisable || ShieldBaseScaler < 1 || ShieldNerf  < 0) return false;
             var shieldPowerUsed = Sink.CurrentInputByType(GId);
 
             if (((MyCubeGrid)Shield.CubeGrid).GetFatBlocks().Count < 2 && ShieldActive)
@@ -435,6 +435,10 @@ namespace DefenseShields
 
         private void CalculatePowerCharge()
         {
+            var nerf = ShieldNerf > 0 && ShieldNerf < 1;
+            var nerfer = nerf ? ShieldNerf : 1f;
+
+            var shieldVol = _detectMatrixOutside.Scale.Volume;
             var powerForShield = 0f;
             const float ratio = 1.25f;
             var rate = _chargeSlider?.Getter(Shield) ?? 20f;
@@ -442,8 +446,7 @@ namespace DefenseShields
             var shieldMaintainCost = 1 / percent;
             _shieldMaintaintPower = shieldMaintainCost;
             var fPercent = (percent / ratio) / 100;
-            var baseScale = 30;
-            _sizeScaler = (_detectMatrixOutside.Scale.Volume / _ellipsoidSurfaceArea) / 2.40063050674088;
+            _sizeScaler = (shieldVol / _ellipsoidSurfaceArea) / 2.40063050674088;
             _shieldEfficiency = 100f;
 
             if (ShieldBuffer > 0 && _shieldCurrentPower < 0.00000000001f) // is this even needed anymore?
@@ -460,7 +463,7 @@ namespace DefenseShields
             powerForShield = (cleanPower * fPercent);
 
             _shieldMaxChargeRate = powerForShield > 0 ? powerForShield : 0f;
-            _shieldMaxBuffer = (_gridMaxPower * (100 / percent) * baseScale) / (float)_sizeScaler;
+            _shieldMaxBuffer = ((_gridMaxPower * (100 / percent) * ShieldBaseScaler) / (float)_sizeScaler) * nerfer;
 
             if (_sizeScaler < 1)
             {
@@ -471,7 +474,7 @@ namespace DefenseShields
             }
             else if (ShieldBuffer + (_shieldMaxChargeRate / _sizeScaler) < _shieldMaxBuffer)
             {
-                _shieldChargeRate = (_shieldMaxChargeRate / (float)_sizeScaler);
+                _shieldChargeRate = (_shieldMaxChargeRate / (float)_sizeScaler) * nerfer;
                 _shieldConsumptionRate = _shieldMaxChargeRate;
             }
             else
