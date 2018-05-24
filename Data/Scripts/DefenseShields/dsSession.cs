@@ -17,6 +17,9 @@ namespace DefenseShields
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
     public class DefenseShieldsBase : MySessionComponentBase
     {
+        public static float Nerf;
+        public static int BaseScaler;
+
         internal bool SessionInit;
         public bool ControlsLoaded { get; set; }
         private bool _resetVoxelColliders;
@@ -32,8 +35,6 @@ namespace DefenseShields
         public string disabledBy = null;
 
         public readonly Guid SettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
-        public readonly Guid EnforceGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811509");
-
 
         public static DefenseShieldsBase Instance { get; private set; }
         public readonly MyModContext MyModContext = new MyModContext();
@@ -68,6 +69,7 @@ namespace DefenseShields
                         float nerf;
                         float.TryParse(getNerf.ReadToEnd(), out nerf);
                         DefenseShields.ServerEnforcedValues.Nerf = nerf;
+                        Nerf = nerf;
                         Log.Line($"writting nerf to Values: {nerf} - {DefenseShields.ServerEnforcedValues.Nerf}");
                     }
                     else
@@ -79,6 +81,7 @@ namespace DefenseShields
                         float nerf;
                         float.TryParse(getNerf.ReadToEnd(), out nerf);
                         DefenseShields.ServerEnforcedValues.Nerf = nerf;
+                        Nerf = nerf;
                         Log.Line($"writting nerf to Values: {nerf} - {DefenseShields.ServerEnforcedValues.Nerf}");
 
                     }
@@ -86,9 +89,10 @@ namespace DefenseShields
                     if (baseScaleExists)
                     {
                         var getBaseScaler = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShieldsBaseScale.cfg");
-                        int basescale;
-                        int.TryParse(getBaseScaler.ReadToEnd(), out basescale);
-                        DefenseShields.ServerEnforcedValues.BaseScaler = basescale;
+                        int baseScale;
+                        int.TryParse(getBaseScaler.ReadToEnd(), out baseScale);
+                        DefenseShields.ServerEnforcedValues.BaseScaler = baseScale;
+                        BaseScaler = baseScale;
                     }
                     else
                     {
@@ -96,9 +100,10 @@ namespace DefenseShields
                         noBaseScaler.Write("30");
                         noBaseScaler.Close();
                         var getBaseScaler = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShieldsBaseScale.cfg");
-                        int basescale;
-                        int.TryParse(getBaseScaler.ReadToEnd(), out basescale);
-                        DefenseShields.ServerEnforcedValues.BaseScaler = basescale;
+                        int baseScale;
+                        int.TryParse(getBaseScaler.ReadToEnd(), out baseScale);
+                        DefenseShields.ServerEnforcedValues.BaseScaler = baseScale;
+                        BaseScaler = baseScale;
                     }
                 }
                 SessionInit = true;
@@ -406,7 +411,7 @@ namespace DefenseShields
                             {
                                 Log.Line($"Client updating and saving enforcement");
                                 logic.UpdateEnforcement(data.Enforce);
-                                logic.SaveEnforcement();
+                                logic.SaveSettings();
                                 logic.EnforceUpdate = true;
                             }
 

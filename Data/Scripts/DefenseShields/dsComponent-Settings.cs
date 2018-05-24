@@ -112,11 +112,8 @@ namespace DefenseShields
         public void UpdateEnforcement(DefenseShieldsEnforcement newEnforce)
         {
             Log.Line($"updating enforcement - CurrentNerf:{ServerEnforcedValues.Nerf} - newNerf: {newEnforce.Nerf} - CurrentBase:{ServerEnforcedValues.BaseScaler} - newBase: {newEnforce.BaseScaler} - {Shield.EntityId}");
-            ServerEnforcedValues.Nerf = newEnforce.Nerf;
-            ShieldNerf = ServerEnforcedValues.Nerf;
-
-            ServerEnforcedValues.BaseScaler = newEnforce.BaseScaler;
-            ShieldBaseScaler = ServerEnforcedValues.BaseScaler;
+            ShieldNerf = newEnforce.Nerf;
+            ShieldBaseScaler = newEnforce.BaseScaler;
         }
 
         public void SaveSettings()
@@ -128,17 +125,6 @@ namespace DefenseShields
                 Shield.Storage = new MyModStorageComponent();
             }
             Shield.Storage[DefenseShieldsBase.Instance.SettingsGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
-        }
-
-        public void SaveEnforcement()
-        {
-            Log.Line($"Saving enforcement {Shield.EntityId} ");
-            if (Shield.Storage == null)
-            {
-                Log.Line($"ShieldId:{Shield.EntityId.ToString()} - Storage = null");
-                Shield.Storage = new MyModStorageComponent();
-            }
-            Shield.Storage[DefenseShieldsBase.Instance.EnforceGuid] = MyAPIGateway.Utilities.SerializeToXML(ServerEnforcedValues);
         }
 
         public bool LoadSettings()
@@ -223,14 +209,14 @@ namespace DefenseShields
 
         public float ShieldNerf
         {
-            get { return ServerEnforcedValues.Nerf; }
-            set { ServerEnforcedValues.Nerf = value; }
+            get { return Settings.Nerf; }
+            set { Settings.Nerf = value; }
         }
 
         public float ShieldBaseScaler
         {
-            get { return ServerEnforcedValues.BaseScaler; }
-            set { ServerEnforcedValues.BaseScaler = value; }
+            get { return Settings.BaseScaler; }
+            set { Settings.BaseScaler = value; }
         }
 
         private void EnforcementRequest()
@@ -241,8 +227,6 @@ namespace DefenseShields
                 _firstRun = false;
                 ShieldBaseScaler = ServerEnforcedValues.BaseScaler;
                 ShieldNerf = ServerEnforcedValues.Nerf;
-                Settings.Nerf = ShieldNerf;
-                Settings.BaseScaler = ShieldBaseScaler;
             }
             else if (_firstRun)
             {
