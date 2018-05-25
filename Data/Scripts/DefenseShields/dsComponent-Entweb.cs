@@ -35,9 +35,9 @@ namespace DefenseShields
                     || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
 
                 var relation = EntType(ent);
-                if (relation == global::DefenseShields.DefenseShields.Ent.Ignore || relation == global::DefenseShields.DefenseShields.Ent.Friend)
+                if (relation == Ent.Ignore || relation == Ent.Friend)
                 {
-                    if (relation == global::DefenseShields.DefenseShields.Ent.Friend && !CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv)) continue;
+                    if (relation == Ent.Friend && !CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv)) continue;
                     FriendlyCache.Add(ent);
                     continue;
                 }
@@ -55,12 +55,12 @@ namespace DefenseShields
                     else
                     {
                         var inside = false;
-                        if (relation == global::DefenseShields.DefenseShields.Ent.Other && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv))
+                        if (relation == Ent.Other && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv))
                         {
                             FriendlyCache.Add(ent);
                             continue;
                         }
-                        if ((relation == global::DefenseShields.DefenseShields.Ent.LargeNobodyGrid || relation == global::DefenseShields.DefenseShields.Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, _detectMatrixOutsideInv))
+                        if ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, _detectMatrixOutsideInv))
                         {
                             inside = true;
                             FriendlyCache.Add(ent);
@@ -99,10 +99,11 @@ namespace DefenseShields
                     var entCenter = webent.PositionComp.WorldVolume.Center;
                     var entInfo = _webEnts[webent];
                     if (entInfo.LastTick != _tick || entInfo.SpawnedInside) continue;
-                    if (entInfo.FirstTick == _tick && (_webEnts[webent].Relation == global::DefenseShields.DefenseShields.Ent.LargeNobodyGrid || _webEnts[webent].Relation == global::DefenseShields.DefenseShields.Ent.LargeEnemyGrid)) ((IMyCubeGrid)webent).GetBlocks(_webEnts[webent].CacheBlockList, CollectCollidableBlocks);
+                    if (entInfo.FirstTick == _tick && (_webEnts[webent].Relation == Ent.LargeNobodyGrid || _webEnts[webent].Relation == Ent.LargeEnemyGrid))
+                        ((IMyCubeGrid)webent).GetBlocks(_webEnts[webent].CacheBlockList, CollectCollidableBlocks);
                     switch (_webEnts[webent].Relation)
                     {
-                        case global::DefenseShields.DefenseShields.Ent.EnemyPlayer:
+                        case Ent.EnemyPlayer:
                             {
                                 ep++;
                                 if ((_count == 2 || _count == 17 || _count == 32 || _count == 47) && CustomCollision.PointInShield(entCenter, _detectMatrixOutsideInv))
@@ -111,37 +112,37 @@ namespace DefenseShields
                                 }
                                 continue;
                             }
-                        case global::DefenseShields.DefenseShields.Ent.SmallNobodyGrid:
+                        case Ent.SmallNobodyGrid:
                             {
                                 ns++;
                                 MyAPIGateway.Parallel.Start(() => SmallGridIntersect(webent));
                                 continue;
                             }
-                        case global::DefenseShields.DefenseShields.Ent.LargeNobodyGrid:
+                        case Ent.LargeNobodyGrid:
                             {
                                 nl++;
                                 MyAPIGateway.Parallel.Start(() => GridIntersect(webent));
                                 continue;
                             }
-                        case global::DefenseShields.DefenseShields.Ent.SmallEnemyGrid:
+                        case Ent.SmallEnemyGrid:
                             {
                                 es++;
                                 MyAPIGateway.Parallel.Start(() => SmallGridIntersect(webent));
                                 continue;
                             }
-                        case global::DefenseShields.DefenseShields.Ent.LargeEnemyGrid:
+                        case Ent.LargeEnemyGrid:
                             {
                                 el++;
                                 MyAPIGateway.Parallel.Start(() => GridIntersect(webent));
                                 continue;
                             }
-                        case global::DefenseShields.DefenseShields.Ent.Shielded:
+                        case Ent.Shielded:
                             {
                                 ss++;
                                 MyAPIGateway.Parallel.Start(() => ShieldIntersect(webent as IMyCubeGrid));
                                 continue;
                             }
-                        case global::DefenseShields.DefenseShields.Ent.Other:
+                        case Ent.Other:
                             {
                                 oo++;
                                 if (CustomCollision.PointInShield(entCenter, _detectMatrixOutsideInv))
@@ -152,7 +153,7 @@ namespace DefenseShields
                                 }
                                 continue;
                             }
-                        case global::DefenseShields.DefenseShields.Ent.VoxelBase:
+                        case Ent.VoxelBase:
                             {
                                 vv++;
                                 MyAPIGateway.Parallel.Start(() => VoxelIntersect(webent as MyVoxelBase));
@@ -172,39 +173,39 @@ namespace DefenseShields
         #endregion
 
         #region Gather Entity Information
-        private global::DefenseShields.DefenseShields.Ent EntType(IMyEntity ent)
+        private Ent EntType(IMyEntity ent)
         {
-            if (ent == null) return global::DefenseShields.DefenseShields.Ent.Ignore;
-            if (ent is MyVoxelBase && !GridIsMobile) return global::DefenseShields.DefenseShields.Ent.Ignore;
+            if (ent == null) return Ent.Ignore;
+            if (ent is MyVoxelBase && !GridIsMobile) return Ent.Ignore;
 
             if (ent is IMyCharacter)
             {
                 var dude = MyAPIGateway.Players.GetPlayerControllingEntity(ent)?.IdentityId;
-                if (dude == null) return global::DefenseShields.DefenseShields.Ent.Ignore;
+                if (dude == null) return Ent.Ignore;
                 var playerrelationship = Shield.GetUserRelationToOwner((long)dude);
-                if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner || playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return global::DefenseShields.DefenseShields.Ent.Friend;
-                return (ent as IMyCharacter).IsDead ? global::DefenseShields.DefenseShields.Ent.Ignore : global::DefenseShields.DefenseShields.Ent.EnemyPlayer;
+                if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner || playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return Ent.Friend;
+                return (ent as IMyCharacter).IsDead ? Ent.Ignore : Ent.EnemyPlayer;
             }
             if (ent is IMyCubeGrid)
             {
                 var grid = ent as IMyCubeGrid;
-                if (((MyCubeGrid)grid).BlocksCount < 3 && grid.BigOwners.Count == 0) return global::DefenseShields.DefenseShields.Ent.SmallNobodyGrid;
-                if (grid.BigOwners.Count <= 0) return global::DefenseShields.DefenseShields.Ent.LargeNobodyGrid;
+                if (((MyCubeGrid)grid).BlocksCount < 3 && grid.BigOwners.Count == 0) return Ent.SmallNobodyGrid;
+                if (grid.BigOwners.Count <= 0) return Ent.LargeNobodyGrid;
 
                 var enemy = GridEnemy(grid);
-                if (enemy && ((MyCubeGrid)grid).BlocksCount < 3) return global::DefenseShields.DefenseShields.Ent.SmallEnemyGrid;
+                if (enemy && ((MyCubeGrid)grid).BlocksCount < 3) return Ent.SmallEnemyGrid;
 
                 ShieldGridComponent shieldComponent;
                 grid.Components.TryGet(out shieldComponent);
-                if (shieldComponent != null && !enemy) return global::DefenseShields.DefenseShields.Ent.Friend;
-                if (shieldComponent != null && !shieldComponent.DefenseShields.ShieldActive) return global::DefenseShields.DefenseShields.Ent.LargeEnemyGrid;
-                if (shieldComponent != null && Entity.EntityId > shieldComponent.DefenseShields.Entity.EntityId) return global::DefenseShields.DefenseShields.Ent.Shielded;
-                if (shieldComponent != null) return global::DefenseShields.DefenseShields.Ent.Ignore; //only process the higher EntityID
-                return enemy ? global::DefenseShields.DefenseShields.Ent.LargeEnemyGrid : global::DefenseShields.DefenseShields.Ent.Friend;
+                if (shieldComponent != null && !enemy) return Ent.Friend;
+                if (shieldComponent != null && !shieldComponent.DefenseShields.ShieldActive) return Ent.LargeEnemyGrid;
+                if (shieldComponent != null && Entity.EntityId > shieldComponent.DefenseShields.Entity.EntityId) return Ent.Shielded;
+                if (shieldComponent != null) return Ent.Ignore; //only process the higher EntityID
+                return enemy ? Ent.LargeEnemyGrid : Ent.Friend;
             }
 
-            if (ent is IMyMeteor || ent.GetType().Name.StartsWith("MyMissile")) return global::DefenseShields.DefenseShields.Ent.Other;
-            if (ent is MyVoxelBase && GridIsMobile) return global::DefenseShields.DefenseShields.Ent.VoxelBase;
+            if (ent is IMyMeteor || ent.GetType().Name.StartsWith("MyMissile")) return Ent.Other;
+            if (ent is MyVoxelBase && GridIsMobile) return Ent.VoxelBase;
             return 0;
         }
 

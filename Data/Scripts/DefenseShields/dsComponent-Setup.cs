@@ -32,7 +32,6 @@ namespace DefenseShields
         private float _shieldMaxChargeRate;
         private float _shieldChargeRate;
         private float _shieldDps;
-        private float _shieldEfficiency;
         private float _shieldCurrentPower;
         private float _shieldMaintaintPower;
         private float _shieldPercent;

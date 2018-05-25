@@ -17,8 +17,9 @@ namespace DefenseShields
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
     public class DefenseShieldsBase : MySessionComponentBase
     {
-        public static float Nerf;
-        public static int BaseScaler;
+        public static float Nerf = -1f;
+        public static float Efficiency = -1f;
+        public static int BaseScaler = -1;
 
         internal bool SessionInit;
         public bool ControlsLoaded { get; set; }
@@ -56,10 +57,12 @@ namespace DefenseShields
                 Log.Line($"Logging Started");
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_SETTINGS, PacketSettingsReceived);
-                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_ENFORCE, PacketNerfReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_ENFORCE, PacketEnforcementReceived);
                 MyAPIGateway.Utilities.RegisterMessageHandler(WORKSHOP_ID, ModMessageHandler);
                 var nerfExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShieldsNerf.cfg");
                 var baseScaleExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShieldsBaseScale.cfg");
+                var efficiencyExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShieldsEfficiency.cfg");
+
 
                 if (MyAPIGateway.Utilities.IsDedicated || MyAPIGateway.Multiplayer.IsServer)
                 {
@@ -70,7 +73,6 @@ namespace DefenseShields
                         float.TryParse(getNerf.ReadToEnd(), out nerf);
                         DefenseShields.ServerEnforcedValues.Nerf = nerf;
                         Nerf = nerf;
-                        Log.Line($"writting nerf to Values: {nerf} - {DefenseShields.ServerEnforcedValues.Nerf}");
                     }
                     else
                     {
@@ -82,8 +84,6 @@ namespace DefenseShields
                         float.TryParse(getNerf.ReadToEnd(), out nerf);
                         DefenseShields.ServerEnforcedValues.Nerf = nerf;
                         Nerf = nerf;
-                        Log.Line($"writting nerf to Values: {nerf} - {DefenseShields.ServerEnforcedValues.Nerf}");
-
                     }
 
                     if (baseScaleExists)
@@ -104,6 +104,26 @@ namespace DefenseShields
                         int.TryParse(getBaseScaler.ReadToEnd(), out baseScale);
                         DefenseShields.ServerEnforcedValues.BaseScaler = baseScale;
                         BaseScaler = baseScale;
+                    }
+
+                    if (efficiencyExists)
+                    {
+                        var getEfficiency = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShieldsEfficiency.cfg");
+                        float efficiency;
+                        float.TryParse(getEfficiency.ReadToEnd(), out efficiency);
+                        DefenseShields.ServerEnforcedValues.Efficiency = efficiency;
+                        Efficiency = efficiency;
+                    }
+                    else
+                    {
+                        var noEfficiency = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShieldsEfficiency.cfg");
+                        noEfficiency.Write("100");
+                        noEfficiency.Close();
+                        var getEfficiency = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShieldsEfficiency.cfg");
+                        float efficiency;
+                        float.TryParse(getEfficiency.ReadToEnd(), out efficiency);
+                        DefenseShields.ServerEnforcedValues.Efficiency = efficiency;
+                        Efficiency = efficiency;
                     }
                 }
                 SessionInit = true;
@@ -343,10 +363,8 @@ namespace DefenseShields
                                 return;
                             }
 
-                            //Log.Line($"PacketReceived(); Settings; {(MyAPIGateway.Multiplayer.IsServer ? " Relaying to clients;" : "")} Valid!\n{logic.Settings}");
-
-                            //if (MyAPIGateway.Utilities.IsDedicated) data.Settings.Nerf = ForceServerNerf;
-                            Log.Line($"Packet received: {MyAPIGateway.Multiplayer.IsServer} - data:{data.Settings.Nerf} - {data.Settings.BaseScaler}");
+                            //Log.Line($"Packet received: {MyAPIGateway.Multiplayer.IsServer} - data:{data.Settings.Nerf} - {data.Settings.BaseScaler}");
+                            data.Settings.Buffer = logic.ShieldBuffer;
                             logic.UpdateSettings(data.Settings);
                             logic.SaveSettings();
                             logic.ServerUpdate = true;
@@ -357,13 +375,11 @@ namespace DefenseShields
                         break;
                 }
             }
-            catch (Exception e)
-            {
-                Log.Line($"Invalid packet data!{e}");
-            }
+            catch (Exception ex) { Log.Line($"Exception in PacketSettingsReceived: {ex}"); }
+
         }
 
-        private static void PacketNerfReceived(byte[] bytes)
+        private static void PacketEnforcementReceived(byte[] bytes)
         {
             try
             {
@@ -406,10 +422,9 @@ namespace DefenseShields
                                 return;
                             }
 
-                            Log.Line($"PacketReceived(); Enforce - Server: {MyAPIGateway.Multiplayer.IsServer} Valid packet!\n{DefenseShields.ServerEnforcedValues}");
+                            //Log.Line($"PacketReceived(); Enforce - Server: {MyAPIGateway.Multiplayer.IsServer} Valid packet!\n{DefenseShields.ServerEnforcedValues} - {data.Enforce.Nerf} - {data.Enforce.BaseScaler}");
                             if (!(MyAPIGateway.Utilities.IsDedicated))
                             {
-                                Log.Line($"Client updating and saving enforcement");
                                 logic.UpdateEnforcement(data.Enforce);
                                 logic.SaveSettings();
                                 logic.EnforceUpdate = true;
@@ -423,24 +438,20 @@ namespace DefenseShields
                         break;
                 }
             }
-            catch (Exception e)
-            {
-                Log.Line($"Invalid packet data!{e}");
-            }
+            catch (Exception ex) { Log.Line($"Exception in PacketEnforcementReceived: {ex}"); }
         }
 
         public static void RelayEnforcementToClients(IMyCubeBlock block)
         {
-            Log.Line($"RelayEnforcementToClients - Nerf:{DefenseShields.ServerEnforcedValues.Nerf} - Base:{DefenseShields.ServerEnforcedValues.BaseScaler}");
             var data = new EnforceData(MyAPIGateway.Multiplayer.MyId, block.EntityId, DefenseShields.ServerEnforcedValues);
+
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
             ForceClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+            //Log.Line($"RelayEnforcementToClients - Nerf:{data.Enforce.Nerf} - Base:{data.Enforce.BaseScaler} - all {data.Enforce}");
         }
 
         public static void RelaySettingsToClients(IMyCubeBlock block, DefenseShieldsModSettings settings)
         {
-            //Log.Line("RelaySettingsToClients");
-
             var data = new PacketData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
             RelayToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
@@ -448,8 +459,6 @@ namespace DefenseShields
 
         public static void RelayToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
-            //Log.Line("RelayToClients");
-
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
             var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
             distSq += 1000; // some safety padding, avoid desync
@@ -471,7 +480,6 @@ namespace DefenseShields
 
         public static void ForceClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
-            Log.Line("Forcing clients");
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
             var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
             distSq += 1000; 
@@ -485,7 +493,7 @@ namespace DefenseShields
             {
                 var id = p.SteamUserId;
 
-                if (id != localSteamId && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
+                if (id != localSteamId && (Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq) || id == sender)
                     MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_ENFORCE, bytes, p.SteamUserId);
             }
             players.Clear();

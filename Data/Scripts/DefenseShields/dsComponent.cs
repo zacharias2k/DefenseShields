@@ -35,7 +35,6 @@ namespace DefenseShields
             {
                 Dsutil2.Sw.Restart();
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-                if (_tick % 600 == 0) Log.Line($"Nerfer: {ShieldNerf} - BaseScaler: {ShieldBaseScaler}");
                 if (!BlockFunctional()) return;
 
                 if (ServerUpdate) SyncControlsServer();
@@ -76,6 +75,7 @@ namespace DefenseShields
 
                 if (_count == 29)
                 {
+                    SaveSettings();
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
                     {
                         Shield.ShowInToolbarConfig = false;
@@ -323,7 +323,7 @@ namespace DefenseShields
         #region Block Power Logic
         private bool BlockFunctional()
         {
-            if (!MainInit || !AnimateInit || NoPower || HardDisable || ShieldBaseScaler < 1 || ShieldNerf  < 0) return false;
+            if (!MainInit || !AnimateInit || NoPower || HardDisable || ShieldBaseScaler < 1 || ShieldNerf  < 0 || ShieldEfficiency < 0) return false;
             var shieldPowerUsed = Sink.CurrentInputByType(GId);
 
             if (((MyCubeGrid)Shield.CubeGrid).GetFatBlocks().Count < 2 && ShieldActive)
@@ -380,7 +380,9 @@ namespace DefenseShields
                     if (_shieldDownLoop == 1200)
                     {
                         _shieldDownLoop = -1;
-                        ShieldBuffer = _shieldMaxBuffer / 25; // replace this with something that scales based on charge rate
+                        var nerf = ShieldNerf > 0 && ShieldNerf < 1;
+                        var nerfer = nerf ? ShieldNerf : 1f;
+                        ShieldBuffer = (_shieldMaxBuffer / 25) * nerfer; // replace this with something that scales based on charge rate
                     }
                     return false;
                 }
@@ -437,7 +439,6 @@ namespace DefenseShields
         {
             var nerf = ShieldNerf > 0 && ShieldNerf < 1;
             var nerfer = nerf ? ShieldNerf : 1f;
-
             var shieldVol = _detectMatrixOutside.Scale.Volume;
             var powerForShield = 0f;
             const float ratio = 1.25f;
@@ -447,7 +448,6 @@ namespace DefenseShields
             _shieldMaintaintPower = shieldMaintainCost;
             var fPercent = (percent / ratio) / 100;
             _sizeScaler = (shieldVol / _ellipsoidSurfaceArea) / 2.40063050674088;
-            _shieldEfficiency = 100f;
 
             if (ShieldBuffer > 0 && _shieldCurrentPower < 0.00000000001f) // is this even needed anymore?
             {
@@ -467,14 +467,14 @@ namespace DefenseShields
 
             if (_sizeScaler < 1)
             {
-                if (ShieldBuffer + _shieldMaxChargeRate < _shieldMaxBuffer) _shieldChargeRate = _shieldMaxChargeRate;
+                if (ShieldBuffer + (_shieldMaxChargeRate * nerfer) < _shieldMaxBuffer) _shieldChargeRate = (_shieldMaxChargeRate * nerfer);
                 else if (_shieldMaxBuffer - ShieldBuffer > 0) _shieldChargeRate = _shieldMaxBuffer - ShieldBuffer;
                 else _shieldMaxChargeRate = 0f;
                 _shieldConsumptionRate = _shieldChargeRate;
             }
-            else if (ShieldBuffer + (_shieldMaxChargeRate / _sizeScaler) < _shieldMaxBuffer)
+            else if (ShieldBuffer + (_shieldMaxChargeRate / (_sizeScaler / nerfer)) < _shieldMaxBuffer)
             {
-                _shieldChargeRate = (_shieldMaxChargeRate / (float)_sizeScaler) * nerfer;
+                _shieldChargeRate = _shieldMaxChargeRate / ((float)_sizeScaler / nerfer);
                 _shieldConsumptionRate = _shieldMaxChargeRate;
             }
             else
@@ -534,11 +534,11 @@ namespace DefenseShields
             if (Absorb > 0)
             {
                 _shieldDps += Absorb;
-                //Log.Line($"Absorb Damage: {(Absorb).ToString()} - old: {ShieldBuffer.ToString()} - new: {(ShieldBuffer - (Absorb / _shieldEfficiency)).ToString()} - max: {_shieldMaxBuffer * _shieldEfficiency} - fracOfMax: {_shieldMaxBuffer / Absorb}");
+                //Log.Line($"Absorb Damage: {(Absorb).ToString()} - old: {ShieldBuffer.ToString()} - new: {(ShieldBuffer - (Absorb / ShieldEfficiency)).ToString()} - max: {_shieldMaxBuffer * ShieldEfficiency} - fracOfMax: {_shieldMaxBuffer / Absorb}");
                 _effectsCleanup = true;
-                ShieldBuffer -= (Absorb / _shieldEfficiency);
+                ShieldBuffer -= (Absorb / ShieldEfficiency);
             }
-            else if (Absorb < 0) ShieldBuffer += (Absorb / _shieldEfficiency);
+            else if (Absorb < 0) ShieldBuffer += (Absorb / ShieldEfficiency);
 
             if (ShieldBuffer < 0) _shieldDownLoop = 0;
             else if (ShieldBuffer > _shieldMaxBuffer) ShieldBuffer = _shieldMaxBuffer;
@@ -553,14 +553,14 @@ namespace DefenseShields
             var secToFull = 0;
             if (ShieldBuffer < _shieldMaxBuffer) shieldPercent = (ShieldBuffer / _shieldMaxBuffer) * 100;
             if (_shieldChargeRate > 0) secToFull = (int) ((_shieldMaxBuffer - ShieldBuffer) / _shieldChargeRate);
-            stringBuilder.Append("[Shield Status] MaxHP: " + (_shieldMaxBuffer * _shieldEfficiency).ToString("N0") +
+            stringBuilder.Append("[Shield Status] MaxHP: " + (_shieldMaxBuffer * ShieldEfficiency).ToString("N0") +
                                  "\n" +
-                                 "\n[Shield HP__]: " + (ShieldBuffer * _shieldEfficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
-                                 "\n[HP Per Sec_]: " + (_shieldChargeRate * _shieldEfficiency).ToString("N0") +
+                                 "\n[Shield HP__]: " + (ShieldBuffer * ShieldEfficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
+                                 "\n[HP Per Sec_]: " + (_shieldChargeRate * ShieldEfficiency).ToString("N0") +
                                  "\n[DPS_______]: " + (_shieldDps).ToString("N0") +
                                  "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
                                  "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
-                                 "\n[Efficiency__]: " + _shieldEfficiency.ToString("0.0") +
+                                 "\n[Efficiency__]: " + ShieldEfficiency.ToString("0.0") +
                                  "\n[Maintenance]: " + (_gridMaxPower * _shieldMaintaintPower).ToString("0.0") + " Mw" +
                                  "\n[Availabile]: " + _gridAvailablePower.ToString("0.0") + " Mw" +
                                  "\n[Current__]: " + Sink.CurrentInputByType(GId).ToString("0.0"));

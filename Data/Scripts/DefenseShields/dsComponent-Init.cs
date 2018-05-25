@@ -159,9 +159,7 @@ namespace DefenseShields
                     Storage = Shield.Storage;
                     LoadSettings();
 
-                    if (DefenseShieldsBase.Nerf >= 0) ShieldNerf = DefenseShieldsBase.Nerf;
-                    if (DefenseShieldsBase.BaseScaler >= 1) ShieldBaseScaler = DefenseShieldsBase.BaseScaler;
-                    if (ShieldNerf < 0 || ShieldBaseScaler < 1) EnforcementRequest();
+                    EnforcementInit();
 
                     if (!MyAPIGateway.Utilities.IsDedicated) BlockParticleCreate();
                     if (GridIsMobile) MobileUpdate();
@@ -173,6 +171,25 @@ namespace DefenseShields
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateAfterSimulation100: {ex}"); }
+        }
+
+        private void EnforcementInit()
+        {
+            if (DefenseShieldsBase.Nerf >= 0) {ShieldNerf = DefenseShieldsBase.Nerf;}
+            if (DefenseShieldsBase.BaseScaler >= 1) ShieldBaseScaler = DefenseShieldsBase.BaseScaler;
+            if (DefenseShieldsBase.Efficiency >= 1) ShieldEfficiency = DefenseShieldsBase.Efficiency;
+
+            if (DefenseShieldsBase.BaseScaler == -1 && Settings.BaseScaler != -1)
+            {
+                DefenseShieldsBase.BaseScaler = Settings.BaseScaler;
+                ServerEnforcedValues.BaseScaler = Settings.BaseScaler;
+                DefenseShieldsBase.Nerf = Settings.Nerf;
+                ServerEnforcedValues.Nerf = Settings.Nerf;
+                DefenseShieldsBase.Efficiency = Settings.Efficiency;
+                ServerEnforcedValues.Efficiency = Settings.Efficiency;
+            }
+
+            if (DefenseShieldsBase.Nerf < 0 || DefenseShieldsBase.BaseScaler < 1 || DefenseShieldsBase.Efficiency < 0) EnforcementRequest();
         }
 
         private void AddResourceSourceComponent()

@@ -2,7 +2,6 @@
 using DefenseShields.Support;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
-using VRage.Game;
 
 namespace DefenseShields
 {
@@ -95,7 +94,6 @@ namespace DefenseShields
         public void UpdateSettings(DefenseShieldsModSettings newSettings)
         {
             //Log.Line($"update settings {Shield.EntityId}");
-            Log.Line($"Updating Settings- current: {ShieldNerf} - {ShieldBaseScaler} - {Settings.Nerf} - {Settings.BaseScaler} - {ServerEnforcedValues.Nerf} - {ServerEnforcedValues.BaseScaler}");
             Enabled = newSettings.Enabled;
             ShieldIdleVisible = newSettings.IdleInvisible;
             ShieldActiveVisible = newSettings.ActiveInvisible;
@@ -103,22 +101,30 @@ namespace DefenseShields
             Height = newSettings.Height;
             Depth = newSettings.Depth;
             Rate = newSettings.Rate;
+            ShieldBuffer = newSettings.Buffer;
+
             ShieldBaseScaler = newSettings.BaseScaler;
             ShieldNerf = newSettings.Nerf;
-            Log.Line($"Updating Settings- after: {ShieldNerf} - {ShieldBaseScaler} - {Settings.Nerf} - {Settings.BaseScaler} - {ServerEnforcedValues.Nerf} - {ServerEnforcedValues.BaseScaler}");
-
+            ShieldEfficiency = newSettings.Efficiency;
         }
 
         public void UpdateEnforcement(DefenseShieldsEnforcement newEnforce)
         {
-            Log.Line($"updating enforcement - CurrentNerf:{ServerEnforcedValues.Nerf} - newNerf: {newEnforce.Nerf} - CurrentBase:{ServerEnforcedValues.BaseScaler} - newBase: {newEnforce.BaseScaler} - {Shield.EntityId}");
             ShieldNerf = newEnforce.Nerf;
             ShieldBaseScaler = newEnforce.BaseScaler;
+            ShieldEfficiency = newEnforce.Efficiency;
+
+            DefenseShieldsBase.Nerf = newEnforce.Nerf;
+            DefenseShieldsBase.BaseScaler = newEnforce.BaseScaler;
+            DefenseShieldsBase.Efficiency = newEnforce.Efficiency;
+
+            ServerEnforcedValues.Nerf = newEnforce.Nerf;
+            ServerEnforcedValues.BaseScaler = newEnforce.BaseScaler;
+            ServerEnforcedValues.Efficiency = newEnforce.Efficiency;
         }
 
         public void SaveSettings()
         {
-            //Log.Line($"SaveSettings {Shield.EntityId}");
             if (Shield.Storage == null)
             {
                 Log.Line($"ShieldId:{Shield.EntityId.ToString()} - Storage = null");
@@ -129,7 +135,6 @@ namespace DefenseShields
 
         public bool LoadSettings()
         {
-            //Log.Line($"Loadsettings {Shield.EntityId}");
             if (Shield.Storage == null) return false;
 
             string rawData;
@@ -213,7 +218,13 @@ namespace DefenseShields
             set { Settings.Nerf = value; }
         }
 
-        public float ShieldBaseScaler
+        public float ShieldEfficiency
+        {
+            get { return Settings.Efficiency; }
+            set { Settings.Efficiency = value; }
+        }
+
+        public int ShieldBaseScaler
         {
             get { return Settings.BaseScaler; }
             set { Settings.BaseScaler = value; }
