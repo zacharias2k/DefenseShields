@@ -206,8 +206,10 @@ namespace DefenseShields
                 HardDisable = false;
                 NoPower = false;
                 UpdateGridPower();
-                CalculatePowerCharge();
-                SetPower();
+                _power = 0.0001f;
+                Sink.Update();
+                //CalculatePowerCharge();
+                //SetPower();
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }

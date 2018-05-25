@@ -75,7 +75,9 @@ namespace DefenseShields
 
                 if (_count == 29)
                 {
+                    Dsutil5.Sw.Restart();
                     SaveSettings();
+                    Dsutil5.StopWatchReport("save", -1);
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
                     {
                         Shield.ShowInToolbarConfig = false;
@@ -323,7 +325,7 @@ namespace DefenseShields
         #region Block Power Logic
         private bool BlockFunctional()
         {
-            if (!MainInit || !AnimateInit || NoPower || HardDisable || ShieldBaseScaler < 1 || ShieldNerf  < 0 || ShieldEfficiency < 0) return false;
+            if (!MainInit || !AnimateInit || NoPower || HardDisable || ShieldBaseScaler.Equals(-1) || ShieldNerf.Equals(-1f) || ShieldEfficiency.Equals(-1f) || ShieldBuffer.Equals(-1f)) return false;
             var shieldPowerUsed = Sink.CurrentInputByType(GId);
 
             if (((MyCubeGrid)Shield.CubeGrid).GetFatBlocks().Count < 2 && ShieldActive)
