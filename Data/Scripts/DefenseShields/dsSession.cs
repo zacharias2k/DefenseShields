@@ -17,10 +17,11 @@ namespace DefenseShields
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
     public class DefenseShieldsBase : MySessionComponentBase
     {
+        /*
         public static float Nerf = -1f;
         public static float Efficiency = -1f;
         public static int BaseScaler = -1;
-
+        */
         internal bool SessionInit;
         public bool ControlsLoaded { get; set; }
         private bool _resetVoxelColliders;
@@ -72,7 +73,7 @@ namespace DefenseShields
                         float nerf;
                         float.TryParse(getNerf.ReadToEnd(), out nerf);
                         DefenseShields.ServerEnforcedValues.Nerf = nerf;
-                        Nerf = nerf;
+                        //Nerf = nerf;
                     }
                     else
                     {
@@ -83,7 +84,7 @@ namespace DefenseShields
                         float nerf;
                         float.TryParse(getNerf.ReadToEnd(), out nerf);
                         DefenseShields.ServerEnforcedValues.Nerf = nerf;
-                        Nerf = nerf;
+                        //Nerf = nerf;
                     }
 
                     if (baseScaleExists)
@@ -92,7 +93,7 @@ namespace DefenseShields
                         int baseScale;
                         int.TryParse(getBaseScaler.ReadToEnd(), out baseScale);
                         DefenseShields.ServerEnforcedValues.BaseScaler = baseScale;
-                        BaseScaler = baseScale;
+                        //BaseScaler = baseScale;
                     }
                     else
                     {
@@ -103,7 +104,7 @@ namespace DefenseShields
                         int baseScale;
                         int.TryParse(getBaseScaler.ReadToEnd(), out baseScale);
                         DefenseShields.ServerEnforcedValues.BaseScaler = baseScale;
-                        BaseScaler = baseScale;
+                        //BaseScaler = baseScale;
                     }
 
                     if (efficiencyExists)
@@ -112,7 +113,7 @@ namespace DefenseShields
                         float efficiency;
                         float.TryParse(getEfficiency.ReadToEnd(), out efficiency);
                         DefenseShields.ServerEnforcedValues.Efficiency = efficiency;
-                        Efficiency = efficiency;
+                        //Efficiency = efficiency;
                     }
                     else
                     {
@@ -123,7 +124,7 @@ namespace DefenseShields
                         float efficiency;
                         float.TryParse(getEfficiency.ReadToEnd(), out efficiency);
                         DefenseShields.ServerEnforcedValues.Efficiency = efficiency;
-                        Efficiency = efficiency;
+                        //Efficiency = efficiency;
                     }
                 }
                 SessionInit = true;

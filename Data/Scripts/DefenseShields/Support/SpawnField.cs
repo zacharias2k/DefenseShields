@@ -451,7 +451,7 @@ namespace DefenseShields.Support
                 //_dsutil1.Sw.Start();
                 try
                 {
-                    //if (!visable && _impactsFinished && !_charge) return;
+                    if (_impactsFinished && !_charge) return;
                     var faceMaterial = _faceIdle;
                     var ib = _backing.IndexBuffer[_lod];
                     var v20 = new Vector2(.5f);

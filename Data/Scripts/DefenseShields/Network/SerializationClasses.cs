@@ -30,7 +30,7 @@ namespace DefenseShields
         public float Rate = -1f;
 
         [ProtoMember(8), DefaultValue(-1)]
-        public float Buffer = -1f;
+        public float Buffer = 0f;
 
         [ProtoMember(9), DefaultValue(-1)]
         public float Nerf = -1f;

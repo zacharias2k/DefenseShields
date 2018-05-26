@@ -27,7 +27,7 @@ namespace DefenseShields
             {
 
                 var ent = pruneList[i];
-                if (ent == null || FriendlyCache.Contains(ent)) continue;
+                if (ent == null || FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent)) continue;
 
                 var entCenter = ent.PositionComp.WorldVolume.Center;
 
@@ -37,8 +37,12 @@ namespace DefenseShields
                 var relation = EntType(ent);
                 if (relation == Ent.Ignore || relation == Ent.Friend)
                 {
-                    if (relation == Ent.Friend && !CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv)) continue;
-                    FriendlyCache.Add(ent);
+                    if (relation == Ent.Friend && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv))
+                    {
+                        FriendlyCache.Add(ent);
+                        continue;
+                    }
+                    IgnoreCache.Add(ent);
                     continue;
                 }
 
@@ -50,20 +54,22 @@ namespace DefenseShields
                     if (entInfo != null)
                     {
                         entInfo.LastTick = _tick;
-                        if (entInfo.SpawnedInside) FriendlyCache.Add(ent);
+                        //if (entInfo.SpawnedInside) IgnoreCache.Add(ent);
                     }
                     else
                     {
                         var inside = false;
                         if (relation == Ent.Other && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv))
                         {
-                            FriendlyCache.Add(ent);
+                            IgnoreCache.Add(ent);
                             continue;
                         }
                         if ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, _detectMatrixOutsideInv))
                         {
                             inside = true;
                             FriendlyCache.Add(ent);
+                            _webEnts.Remove(ent);
+                            continue;
                         }
                         _webEnts.Add(ent, new EntIntersectInfo(ent.EntityId, 0f, Vector3D.NegativeInfinity, _tick, _tick, relation, inside, new List<IMySlimBlock>(), new MyStorageData()));
                     }
@@ -167,7 +173,7 @@ namespace DefenseShields
             }
 
             if (Debug && _longLoop == 5 && _count == 5)
-                lock (_webEnts) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - friend:{FriendlyCache.Count} total:{_webEnts.Count} ep:{ep} ns:{ns} nl:{nl} es:{es} el:{el} ss:{ss} oo:{oo} vv:{vv} xx:{xx}");
+                lock (_webEnts) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - friend:{FriendlyCache.Count} - ignore:{IgnoreCache.Count} - total:{_webEnts.Count} ep:{ep} ns:{ns} nl:{nl} es:{es} el:{el} ss:{ss} oo:{oo} vv:{vv} xx:{xx}");
             Dsutil3.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - webDispatch", 3);
         }
         #endregion

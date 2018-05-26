@@ -43,6 +43,9 @@ namespace DefenseShields
 
                 if (!_shields.ContainsKey(Entity.EntityId)) _shields.Add(Entity.EntityId, this);
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
+                DefenseShieldsBase.Instance.Components.Add(this);
+                Shield.CubeGrid.Components.Add(new ShieldGridComponent(this));
+                StorageSetup();
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -56,146 +59,159 @@ namespace DefenseShields
                     DefinitionsLoaded = true;
                     GetDefinitons();
                 }
-                if (AnimateInit && MainInit || !Shield.IsFunctional) return;
 
-                HardDisable = false || (Shield.EntityId != ThereCanBeOnlyOne() || (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST" && !Shield.CubeGrid.Physics.IsStatic)
-                                                                               || (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" && Shield.CubeGrid.Physics.IsStatic));
-                NoPower = false;
-                if (!HardDisable) AddResourceSourceComponent();
+                if (AnimateInit && MainInit || ServerEnforcedValues.Nerf.Equals(-1f) || ServerEnforcedValues.Efficiency.Equals(-1f)  
+                    || ServerEnforcedValues.BaseScaler.Equals(-1) || !Shield.IsFunctional || !HealthAndPowerCheck()) return;
 
-                if (HardDisable)
-                {
-                    var realPlayerIds = new List<long>();
-                    DsUtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
-                    foreach (var id in realPlayerIds)
-                    {
-                        if (!_startupWarning && Shield.BlockDefinition.SubtypeId == "DefenseShieldsST" &&
-                            !Shield.CubeGrid.Physics.IsStatic)
-                        {
-                            MyVisualScriptLogicProvider.ShowNotification("Station shields only allowed on stations", 5000, "Red", id);
-                            _startupWarning = true;
-                        }
-                        else if (!_startupWarning && Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" && Shield.CubeGrid.Physics.IsStatic)
-                        {
-                            MyVisualScriptLogicProvider.ShowNotification("Large Ship Shields only allowed on ships, not stations", 5000, "Red", id);
-                            _startupWarning = true;
-                        }
-                        else if (!_startupWarning && NoPower)
-                        {
-                            MyVisualScriptLogicProvider.ShowNotification("Insufficent power to bring Shield online", 5000, "Red", id);
-                            _startupWarning = true;
-                        }
-                        else if (!_startupWarning)
-                        {
-                            MyVisualScriptLogicProvider.ShowNotification("Only one generator per grid in this version", 5000, "Red", id);
-                            _startupWarning = true;
-                        }
-                    }
-                    return;
-                }
-
-                if (Icosphere == null)
-                {
-                    //Log.Line($"_icosphere Null!");
-                    Icosphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Icosphere);
-                    if (!DefenseShieldsBase.Instance.Components.Contains(this)) DefenseShieldsBase.Instance.Components.Add(this);
-                    if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>()) Shield.CubeGrid.Components.Add(new ShieldGridComponent(this));
-                }
+                if (Icosphere == null) Icosphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Icosphere);
 
                 if (!MainInit && Shield.IsFunctional)
                 {
-                    //Log.Line($"Initting {Shield.BlockDefinition.SubtypeId} - tick:{_tick.ToString()}");
                     if (Shield.CubeGrid.Physics.IsStatic) GridIsMobile = false;
                     else if (!Shield.CubeGrid.Physics.IsStatic) GridIsMobile = true;
 
-                    MyEntity parent;
-                    if (GridIsMobile) parent = (MyEntity)Shield.CubeGrid;
-                    else parent = (MyEntity)Shield.CubeGrid;
-
                     CreateUi();
+                    //SyncControlsClient();
 
-                    _shellPassive = Spawn.EmptyEntity("dShellPassive", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldPassive_LOD0.mwm", parent, true);
-                    _shellPassive.Render.CastShadows = false;
-                    _shellPassive.IsPreview = true;
-                    _shellPassive.Render.Visible = true;
-                    _shellPassive.Render.RemoveRenderObjects();
-                    _shellPassive.Render.UpdateRenderObject(true);
-                    _shellPassive.Save = false;
-
-                    _shellActive = Spawn.EmptyEntity("dShellActive", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldActiveH_LOD3.mwm", parent, true);
-                    _shellActive.Render.CastShadows = false;
-                    _shellActive.IsPreview = true;
-                    _shellActive.Render.Visible = true;
-                    _shellActive.Render.RemoveRenderObjects();
-                    _shellActive.Render.UpdateRenderObject(true);
-                    _shellActive.Render.UpdateRenderObject(false);
-                    _shellActive.Save = false;
-                    _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.Black, 0.01f);
-
-                    _shield = Spawn.EmptyEntity("dShield", null, (MyEntity)Shield, false);
-                    //_shield = Spawn.SpawnBlock("dShield", $"{Shield.EntityId}", true, false, false, false, true, Shield.OwnerId);
-                    _shield.Render.CastShadows = false;
-                    _shield.Render.RemoveRenderObjects();
-                    _shield.Render.UpdateRenderObject(true);
-                    _shield.Render.Visible = true;
-                    _shield.Save = false;
-
-                    Shield.AppendingCustomInfo += AppendingCustomInfo;
-                    Shield.RefreshCustomInfo();
+                    //_oldBlockCount = ((MyCubeGrid)Shield.CubeGrid).BlocksCount;
+                    //BackGroundChecks();
+                    //UpdateGridPower();
 
                     MainInit = true;
+                    return;
+                }
+
+                if (!PhysicsInit)
+                {
+                    PhysicsInit = true;
+
+                    SpawnEntities();
+
+                    return;
                 }
 
                 if (AnimateInit || !MainInit || !Shield.IsFunctional) return;
 
                 if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" || Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS" || Shield.BlockDefinition.SubtypeId == "DefenseShieldsST")
                 {
-                    _blocksChanged = true;
+                    //_blocksChanged = true;
                     Log.Line($"ShieldId:{Shield.EntityId.ToString()} - {Shield.BlockDefinition.SubtypeId} is functional - tick:{_tick.ToString()}");
                     Entity.TryGetSubpart("Rotor", out _subpartRotor);
 
-                    ServerUpdate = true;
-                    _updateDimensions = true;
-                    Storage = Shield.Storage;
-                    LoadSettings();
-
-                    EnforcementInit();
-
                     if (!MyAPIGateway.Utilities.IsDedicated) BlockParticleCreate();
-                    if (GridIsMobile) MobileUpdate();
-                    else RefreshDimensions();
-
-                    Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
 
                     AnimateInit = true;
+                    Log.Line($"enforcement values: {ServerEnforcedValues.BaseScaler} - {ServerEnforcedValues.Efficiency} - {ServerEnforcedValues.Nerf}");
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateAfterSimulation100: {ex}"); }
         }
 
-        private void EnforcementInit()
+        private bool HealthAndPowerCheck()
         {
-            if (DefenseShieldsBase.Nerf >= 0) {ShieldNerf = DefenseShieldsBase.Nerf;}
-            if (DefenseShieldsBase.BaseScaler >= 1) ShieldBaseScaler = DefenseShieldsBase.BaseScaler;
-            if (DefenseShieldsBase.Efficiency >= 1) ShieldEfficiency = DefenseShieldsBase.Efficiency;
+            if (SinkInit) return true;
 
-            if (DefenseShieldsBase.BaseScaler == -1 && Settings.BaseScaler != -1)
+            HardDisable = false || Shield.EntityId != ThereCanBeOnlyOne() || Shield.BlockDefinition.SubtypeId == "DefenseShieldsST" &&
+                !Shield.CubeGrid.Physics.IsStatic || Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" && Shield.CubeGrid.Physics.IsStatic;
+
+            NoPower = false;
+            if (!HardDisable && !SinkInit) PowerInitCheck();
+
+            if (!HardDisable || SinkInit) return true;
+
+            var realPlayerIds = new List<long>();
+            DsUtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
+            foreach (var id in realPlayerIds)
             {
-                DefenseShieldsBase.BaseScaler = Settings.BaseScaler;
+                if (!_startupWarning && Shield.BlockDefinition.SubtypeId == "DefenseShieldsST" && !Shield.CubeGrid.Physics.IsStatic)
+                {
+                    MyVisualScriptLogicProvider.ShowNotification("Station shields only allowed on stations", 5000, "Red", id);
+                    _startupWarning = true;
+                }
+                else if (!_startupWarning && Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" && Shield.CubeGrid.Physics.IsStatic)
+                {
+                    MyVisualScriptLogicProvider.ShowNotification("Large Ship Shields only allowed on ships, not stations", 5000, "Red", id);
+                    _startupWarning = true;
+                }
+                else if (!_startupWarning && NoPower)
+                {
+                    MyVisualScriptLogicProvider.ShowNotification("Insufficent power to bring Shield online", 5000, "Red", id);
+                    _startupWarning = true;
+                }
+                else if (!_startupWarning)
+                {
+                    MyVisualScriptLogicProvider.ShowNotification("Only one generator per grid in this version", 5000, "Red", id);
+                    _startupWarning = true;
+                }
+            }
+            return false;
+        }
+
+        private void SpawnEntities()
+        {
+            //Log.Line($"Initting {Shield.BlockDefinition.SubtypeId} - tick:{_tick.ToString()}");
+
+            MyEntity parent;
+            if (GridIsMobile) parent = (MyEntity)Shield.CubeGrid;
+            else parent = (MyEntity)Shield.CubeGrid;
+
+            _shellPassive = Spawn.EmptyEntity("dShellPassive", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldPassive_LOD0.mwm", parent, true);
+            _shellPassive.Render.CastShadows = false;
+            _shellPassive.IsPreview = true;
+            _shellPassive.Render.Visible = true;
+            _shellPassive.Render.RemoveRenderObjects();
+            _shellPassive.Render.UpdateRenderObject(true);
+            _shellPassive.Render.UpdateRenderObject(false);
+            _shellPassive.Save = false;
+
+            _shellActive = Spawn.EmptyEntity("dShellActive", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldActiveH_LOD3.mwm", parent, true);
+            _shellActive.Render.CastShadows = false;
+            _shellActive.IsPreview = true;
+            _shellActive.Render.Visible = true;
+            _shellActive.Render.RemoveRenderObjects();
+            _shellActive.Render.UpdateRenderObject(true);
+            _shellActive.Render.UpdateRenderObject(false);
+            _shellActive.Save = false;
+            _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.Black, 0.01f);
+
+            _shield = Spawn.EmptyEntity("dShield", null, (MyEntity)Shield, false);
+            //_shield = Spawn.SpawnBlock("dShield", $"{Shield.EntityId}", true, false, false, false, true, Shield.OwnerId);
+            _shield.Render.CastShadows = false;
+            _shield.Render.RemoveRenderObjects();
+            _shield.Render.UpdateRenderObject(true);
+            _shield.Render.Visible = true;
+            _shield.Save = false;
+
+            Shield.AppendingCustomInfo += AppendingCustomInfo;
+            Shield.RefreshCustomInfo();
+        }
+
+        private void StorageSetup()
+        {
+            //ServerUpdate = true;
+            //_updateDimensions = true;
+            Storage = Shield.Storage;
+            LoadSettings();
+
+            if (ServerEnforcedValues.Nerf >= 0) { ShieldNerf = ServerEnforcedValues.Nerf; }
+            if (ServerEnforcedValues.BaseScaler >= 1) ShieldBaseScaler = ServerEnforcedValues.BaseScaler;
+            if (ServerEnforcedValues.Efficiency >= 1) ShieldEfficiency = ServerEnforcedValues.Efficiency;
+
+            if (ServerEnforcedValues.BaseScaler == -1 && Settings.BaseScaler != -1)
+            {
                 ServerEnforcedValues.BaseScaler = Settings.BaseScaler;
-                DefenseShieldsBase.Nerf = Settings.Nerf;
                 ServerEnforcedValues.Nerf = Settings.Nerf;
-                DefenseShieldsBase.Efficiency = Settings.Efficiency;
                 ServerEnforcedValues.Efficiency = Settings.Efficiency;
             }
 
-            if (DefenseShieldsBase.Nerf < 0 || DefenseShieldsBase.BaseScaler < 1 || DefenseShieldsBase.Efficiency < 0) EnforcementRequest();
+            if (ServerEnforcedValues.Nerf < 0 || ServerEnforcedValues.BaseScaler < 1 || ServerEnforcedValues.Efficiency < 0) EnforcementRequest();
         }
 
-        private void AddResourceSourceComponent()
+        private void PowerInitCheck()
         {
             try
             {
+                if (SinkInit) return;
                 if (!Sink.IsPowerAvailable(GId, _power))
                 {
                     //Log.Line($"ShieldId:{Shield.EntityId.ToString()} - no power to init resourceSink: {_power.ToString()}");
@@ -203,13 +219,12 @@ namespace DefenseShields
                     HardDisable = true;
                     return;
                 }
+                SinkInit = true;
                 HardDisable = false;
                 NoPower = false;
-                UpdateGridPower();
-                _power = 0.0001f;
+                _power = 0.0000000001f;
+                _shieldCurrentPower = _power;
                 Sink.Update();
-                //CalculatePowerCharge();
-                //SetPower();
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }

@@ -61,6 +61,9 @@ namespace DefenseShields
         internal const bool Debug = true;
         internal bool MainInit;
         internal bool AnimateInit;
+        internal bool StorageInit;
+        internal bool PhysicsInit;
+        internal bool SinkInit;
         internal bool DefinitionsLoaded;
         internal bool GridIsMobile;
         internal bool ShieldActive;
@@ -71,7 +74,7 @@ namespace DefenseShields
         private bool _gridChanged = true;
         private bool _enablePhysics = true;
         private bool _shieldMoving = true;
-        private bool _blocksChanged = true;
+        private bool _blocksChanged = false;
         private bool _blockParticleStopped;
         private bool _shieldLineOfSight;
         private bool _prevShieldActive;
@@ -120,7 +123,9 @@ namespace DefenseShields
         private readonly MyConcurrentList<int> _noBlocksLos = new MyConcurrentList<int>();
 
         private readonly MyConcurrentHashSet<int> _blocksLos = new MyConcurrentHashSet<int>();
-        public readonly MyConcurrentHashSet<IMyEntity> FriendlyCache = new MyConcurrentHashSet<IMyEntity>();
+        public readonly HashSet<IMyEntity> FriendlyCache = new HashSet<IMyEntity>();
+        public readonly HashSet<IMyEntity> IgnoreCache = new HashSet<IMyEntity>();
+
 
         private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<IMyEntity, Vector3D>();
         private readonly MyConcurrentDictionary<IMyEntity, EntIntersectInfo> _webEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();

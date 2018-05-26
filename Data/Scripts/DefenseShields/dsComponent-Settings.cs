@@ -114,9 +114,9 @@ namespace DefenseShields
             ShieldBaseScaler = newEnforce.BaseScaler;
             ShieldEfficiency = newEnforce.Efficiency;
 
-            DefenseShieldsBase.Nerf = newEnforce.Nerf;
-            DefenseShieldsBase.BaseScaler = newEnforce.BaseScaler;
-            DefenseShieldsBase.Efficiency = newEnforce.Efficiency;
+            //DefenseShieldsBase.Nerf = newEnforce.Nerf;
+            //DefenseShieldsBase.BaseScaler = newEnforce.BaseScaler;
+            //DefenseShieldsBase.Efficiency = newEnforce.Efficiency;
 
             ServerEnforcedValues.Nerf = newEnforce.Nerf;
             ServerEnforcedValues.BaseScaler = newEnforce.BaseScaler;
@@ -232,15 +232,13 @@ namespace DefenseShields
 
         private void EnforcementRequest()
         {
-            if (_firstRun && (MyAPIGateway.Utilities.IsDedicated || MyAPIGateway.Multiplayer.IsServer))
+            if ((MyAPIGateway.Utilities.IsDedicated || MyAPIGateway.Multiplayer.IsServer))
             {
                 Log.Line($"This is the server (Dedicated: {MyAPIGateway.Utilities.IsDedicated}) bypassing enforcement request");
-                _firstRun = false;
             }
-            else if (_firstRun)
+            else 
             {
                 Log.Line($"Client requesting enforcement - current: {ShieldNerf} - {ShieldBaseScaler} - {Settings.Nerf} - {Settings.BaseScaler} - {ServerEnforcedValues.Nerf} - {ServerEnforcedValues.BaseScaler}");
-                _firstRun = false;
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new EnforceData(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, ServerEnforcedValues));
                 MyAPIGateway.Multiplayer.SendMessageToServer(DefenseShieldsBase.PACKET_ID_ENFORCE, bytes);
             }

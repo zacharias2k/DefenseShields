@@ -45,9 +45,9 @@ namespace DefenseShields
 
                 if (_longLoop == 0 && _blocksChanged)
                 {
+                    _blocksChanged = false;
                     MyAPIGateway.Parallel.StartBackground(BackGroundChecks);
                     CheckShieldLineOfSight();
-                    _blocksChanged = false;
                 }
 
                 if (_shieldLineOfSight == false && !MyAPIGateway.Utilities.IsDedicated) DrawHelper();
@@ -60,7 +60,9 @@ namespace DefenseShields
                 if (_staleGrids.Count != 0) CleanUp(0);
                 if (_longLoop == 9 && _count == 58) CleanUp(1);
                 if (_effectsCleanup && (_count == 1 || _count == 21 || _count == 41)) CleanUp(2);
-                if ((_longLoop == 8 && _count == 58) || (_longLoop == 3 && _count == 58 && FriendlyCache.Count > 50)) CleanUp(3); 
+                if (_longLoop % 2 == 0 && _count == 5) CleanUp(3);
+                if (_longLoop % 2 == 0 && _count == 35) CleanUp(4);
+                if (_longLoop == 7 && _count == 30 && MyAPIGateway.Utilities.IsDedicated) SaveSettings();
 
                 if (_count++ == 59)
                 {
@@ -69,15 +71,19 @@ namespace DefenseShields
                     if (_longLoop == 10) _longLoop = 0;
                 }
 
+
                 UpdateGridPower();
                 CalculatePowerCharge();
                 SetPower();
 
+                if (_firstRun)
+                {
+                    _firstRun = false;
+                    return;
+                }
+
                 if (_count == 29)
                 {
-                    Dsutil5.Sw.Restart();
-                    SaveSettings();
-                    Dsutil5.StopWatchReport("save", -1);
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
                     {
                         Shield.ShowInToolbarConfig = false;
@@ -325,8 +331,24 @@ namespace DefenseShields
         #region Block Power Logic
         private bool BlockFunctional()
         {
-            if (!MainInit || !AnimateInit || NoPower || HardDisable || ShieldBaseScaler.Equals(-1) || ShieldNerf.Equals(-1f) || ShieldEfficiency.Equals(-1f) || ShieldBuffer.Equals(-1f)) return false;
+            if (!MainInit || !AnimateInit || NoPower || HardDisable) return false;
             var shieldPowerUsed = Sink.CurrentInputByType(GId);
+
+            if (Range.Equals(0))
+            {
+                Log.Line($"startup");
+                _updateDimensions = true;
+                if (GridIsMobile) MobileUpdate();
+                else RefreshDimensions();
+
+                Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
+                BackGroundChecks();
+                UpdateGridPower();
+                _gridChanged = false;
+                _entityChanged = false;
+                _blocksChanged = false;
+                return false;
+            }
 
             if (((MyCubeGrid)Shield.CubeGrid).GetFatBlocks().Count < 2 && ShieldActive)
             {
@@ -374,6 +396,8 @@ namespace DefenseShields
                             MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 19200, "Red", id);
                         }
 
+                        CleanUp(0);
+                        CleanUp(1);
                         CleanUp(3);
                         CleanUp(4);
                     }
@@ -529,7 +553,6 @@ namespace DefenseShields
         {
             _power = _shieldConsumptionRate + _gridMaxPower * _shieldMaintaintPower;
             if (_power <= 0 || float.IsNaN(_power)) _power = 0.0001f; // temporary definitely 100% will fix this to do - Find ThE NaN!
-
             Sink.Update();
 
             _shieldCurrentPower = Sink.CurrentInputByType(GId);
@@ -542,7 +565,11 @@ namespace DefenseShields
             }
             else if (Absorb < 0) ShieldBuffer += (Absorb / ShieldEfficiency);
 
-            if (ShieldBuffer < 0) _shieldDownLoop = 0;
+            if (ShieldBuffer < 0)
+            {
+                Log.Line($"{ShieldBuffer}");
+                _shieldDownLoop = 0;
+            }
             else if (ShieldBuffer > _shieldMaxBuffer) ShieldBuffer = _shieldMaxBuffer;
 
             Absorb = 0f;
@@ -755,7 +782,10 @@ namespace DefenseShields
                     case 1:
                         lock (_webEnts)
                         {
-                            if (Debug && _webEnts.Count > 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - _webEnts # {_webEnts.Count.ToString()}");
+                            if (Debug && _webEnts.Count > 1)
+                            {
+                                Log.Line($"ShieldId:{Shield.EntityId.ToString()} - _webEnts # {_webEnts.Count.ToString()}");
+                            }
                             _webEntsTmp.AddRange(_webEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1));
                             foreach (var webent in _webEntsTmp) _webEnts.Remove(webent.Key);
                         }
@@ -769,14 +799,20 @@ namespace DefenseShields
                         break;
                     case 3:
                         {
-                            if (Debug && FriendlyCache.Count > 5) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - FriendlyCache {FriendlyCache.Count.ToString()}");
+                            if (Debug && FriendlyCache.Count > 15 && _longLoop == 0)
+                            {
+                                Log.Line($"ShieldId:{Shield.EntityId.ToString()} - FriendlyCache {FriendlyCache.Count.ToString()}");
+                            }
                             FriendlyCache.Clear();
                         }
                         break;
                     case 4:
                         {
-                            if (Debug) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - _webEnts # {_webEnts.Count.ToString()}");
-                            lock (_webEnts) _webEnts.Clear();
+                        if (Debug && IgnoreCache.Count > 5)
+                            {
+                                Log.Line($"ShieldId:{Shield.EntityId.ToString()} - FriendlyCache {IgnoreCache.Count.ToString()}");
+                            }
+                            IgnoreCache.Clear();
                         }
                         break;
                 }
@@ -788,15 +824,17 @@ namespace DefenseShields
         {
             try
             {
+                /*
                 if (!Entity.MarkedForClose)
                 {
                     //Log.Line("Entity not closed in OnAddedToScene - gridSplit?.");
                     return;
                 }
+                */
                 //Log.Line("Entity closed in OnAddedToScene.");
-                DefenseShieldsBase.Instance.Components.Add(this);
-                Icosphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Icosphere);
-                Shield.CubeGrid.Components.Add(new ShieldGridComponent(this));
+                //DefenseShieldsBase.Instance.Components.Add(this);
+                //Icosphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Icosphere);
+                //Shield.CubeGrid.Components.Add(new ShieldGridComponent(this));
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
