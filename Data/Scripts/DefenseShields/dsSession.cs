@@ -17,11 +17,6 @@ namespace DefenseShields
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
     public class DefenseShieldsBase : MySessionComponentBase
     {
-        /*
-        public static float Nerf = -1f;
-        public static float Efficiency = -1f;
-        public static int BaseScaler = -1;
-        */
         internal bool SessionInit;
         public bool ControlsLoaded { get; set; }
         private bool _resetVoxelColliders;
@@ -55,76 +50,27 @@ namespace DefenseShields
             try
             {
                 Log.Init("debugdevelop.log");
-                Log.Line($"Logging Started");
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_SETTINGS, PacketSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_ENFORCE, PacketEnforcementReceived);
                 MyAPIGateway.Utilities.RegisterMessageHandler(WORKSHOP_ID, ModMessageHandler);
-                var nerfExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShieldsNerf.cfg");
-                var baseScaleExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShieldsBaseScale.cfg");
-                var efficiencyExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShieldsEfficiency.cfg");
-
 
                 if (MyAPIGateway.Utilities.IsDedicated || MyAPIGateway.Multiplayer.IsServer)
                 {
-                    if (nerfExists)
+                    var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg");
+                    if (!dsCfgExists)
                     {
-                        var getNerf = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShieldsNerf.cfg");
-                        float nerf;
-                        float.TryParse(getNerf.ReadToEnd(), out nerf);
-                        DefenseShields.ServerEnforcedValues.Nerf = nerf;
-                        //Nerf = nerf;
+                        var cfg = MyAPIGateway.Utilities.WriteBinaryFileInGlobalStorage("DefenseShields.cfg");
+                        var data = MyAPIGateway.Utilities.SerializeToXML(DefenseShields.ServerEnforcedValues);
+                        cfg.Write(data);
+                        cfg.Flush();
                     }
                     else
                     {
-                        var noNerf = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShieldsNerf.cfg");
-                        noNerf.Write("00.0000");
-                        noNerf.Close();
-                        var getNerf = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShieldsNerf.cfg");
-                        float nerf;
-                        float.TryParse(getNerf.ReadToEnd(), out nerf);
-                        DefenseShields.ServerEnforcedValues.Nerf = nerf;
-                        //Nerf = nerf;
-                    }
-
-                    if (baseScaleExists)
-                    {
-                        var getBaseScaler = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShieldsBaseScale.cfg");
-                        int baseScale;
-                        int.TryParse(getBaseScaler.ReadToEnd(), out baseScale);
-                        DefenseShields.ServerEnforcedValues.BaseScaler = baseScale;
-                        //BaseScaler = baseScale;
-                    }
-                    else
-                    {
-                        var noBaseScaler = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShieldsBaseScale.cfg");
-                        noBaseScaler.Write("30");
-                        noBaseScaler.Close();
-                        var getBaseScaler = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShieldsBaseScale.cfg");
-                        int baseScale;
-                        int.TryParse(getBaseScaler.ReadToEnd(), out baseScale);
-                        DefenseShields.ServerEnforcedValues.BaseScaler = baseScale;
-                        //BaseScaler = baseScale;
-                    }
-
-                    if (efficiencyExists)
-                    {
-                        var getEfficiency = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShieldsEfficiency.cfg");
-                        float efficiency;
-                        float.TryParse(getEfficiency.ReadToEnd(), out efficiency);
-                        DefenseShields.ServerEnforcedValues.Efficiency = efficiency;
-                        //Efficiency = efficiency;
-                    }
-                    else
-                    {
-                        var noEfficiency = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShieldsEfficiency.cfg");
-                        noEfficiency.Write("100");
-                        noEfficiency.Close();
-                        var getEfficiency = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShieldsEfficiency.cfg");
-                        float efficiency;
-                        float.TryParse(getEfficiency.ReadToEnd(), out efficiency);
-                        DefenseShields.ServerEnforcedValues.Efficiency = efficiency;
-                        //Efficiency = efficiency;
+                        var cfg = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShields.cfg");
+                        var data = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsEnforcement>(cfg.ReadToEnd().Substring(2));
+                        DefenseShields.ServerEnforcedValues = data;
+                        Log.Line($"{DefenseShields.ServerEnforcedValues.Nerf} - {DefenseShields.ServerEnforcedValues.BaseScaler} - {DefenseShields.ServerEnforcedValues.Efficiency}");
                     }
                 }
                 SessionInit = true;
@@ -143,12 +89,10 @@ namespace DefenseShields
 
                     if (Enabled)
                     {
-                        Log.Line($"Wing logic turned off by mod {data.Item2}");
                         disabledBy = null;
                     }
                     else
                     {
-                        Log.Line($"Wing logic turned off by mod {data.Item2}.");
                         disabledBy = data.Item2;
                     }
                 }
@@ -158,7 +102,6 @@ namespace DefenseShields
 
         public override void Draw()
         {
-            //_dsutil1.Sw.Start();
             if (MyAPIGateway.Utilities.IsDedicated) return;
             if (_count == 0) Log.Line($"Shields in the world: {Components.Count.ToString()}");
             try
@@ -176,7 +119,6 @@ namespace DefenseShields
                     onCount++;
                 }
                 for (int i = 0; i < Components.Count; i++) if (Components[i].ShieldActive && !Components[i].HardDisable) Components[i].Draw(onCount, sphereOnCamera[i]);
-                //_dsutil1.StopWatchReport("draw", -1);
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
         }
