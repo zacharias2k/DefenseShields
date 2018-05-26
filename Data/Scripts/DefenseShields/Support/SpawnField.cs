@@ -448,7 +448,7 @@ namespace DefenseShields.Support
 
             public void Draw(uint renderId)
             {
-                //_dsutil1.Sw.Start();
+                ///_dsutil1.Sw.Start();
                 try
                 {
                     if (_impactsFinished && !_charge) return;
