@@ -831,11 +831,11 @@ namespace DefenseShields
                 _power = 0f;
                 if (MainInit) Sink.Update();
                 Icosphere = null;
-                _shield.Close();
-                _shellPassive.Close();
-                _shellActive.Close();
+                _shield?.Close();
+                _shellPassive?.Close();
+                _shellActive?.Close();
                 BlockParticleStop();
-                Shield.CubeGrid.Components.Remove(typeof(ShieldGridComponent), this);
+                Shield?.CubeGrid.Components.Remove(typeof(ShieldGridComponent), this);
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
                 DefenseShieldsBase.Instance.Components.Remove(this);
             }

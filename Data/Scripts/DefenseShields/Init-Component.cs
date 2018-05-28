@@ -52,12 +52,12 @@ namespace DefenseShields
         {
             try
             {
-                if (!DefinitionsLoaded && AnimateInit && _tick > 300)
+                if (!DefinitionsLoaded && MainInit && _tick > 200)
                 {
                     DefinitionsLoaded = true;
                     GetDefinitons();
                 }
-                if (AnimateInit && MainInit || !Shield.IsFunctional || !HealthAndPowerCheck()) return;
+                if (AnimateInit && MainInit || !Shield.IsFunctional) return;
 
                 if (Icosphere == null) Icosphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Icosphere);
 
@@ -86,6 +86,8 @@ namespace DefenseShields
                 }
 
                 if (ServerEnforcedValues.Nerf.Equals(-1f)) return;
+
+                if (!HealthAndPowerCheck()) return;
 
                 if (!PhysicsInit)
                 {

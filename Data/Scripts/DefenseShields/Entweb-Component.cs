@@ -28,7 +28,6 @@ namespace DefenseShields
             {
 
                 var ent = pruneList[i];
-                if (_count == 0) Log.Line($"{ent.DebugName} - {ent.Physics == null} - {ent.Render.IsVisible()} - {ent.GetType() == typeof(MyEntity)} - {ent.DisplayName.Equals("dShield")}");
                 if (ent == null || FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent)) continue;
 
                 var entCenter = ent.PositionComp.WorldVolume.Center;
@@ -181,6 +180,21 @@ namespace DefenseShields
         #endregion
 
         #region Gather Entity Information
+        public enum Ent
+        {
+            Ignore,
+            Friend,
+            EnemyPlayer,
+            SmallNobodyGrid,
+            LargeNobodyGrid,
+            SmallEnemyGrid,
+            LargeEnemyGrid,
+            Shielded,
+            Other,
+            VoxelBase,
+            Weapon
+        };
+
         private Ent EntType(IMyEntity ent)
         {
             if (ent == null) return Ent.Ignore;

@@ -173,7 +173,6 @@
     <Content Include="Audio\RealBlockGravityGenEnd3d.wav" />
     <Content Include="Audio\RealBlockGravityGenLoop3d.wav" />
     <Content Include="Audio\RealBlockGravityGenStart3d.wav" />
-    <Content Include="Data\todo.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Audio\ShieldHitNormalHigh.xwm" />

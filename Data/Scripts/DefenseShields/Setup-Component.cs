@@ -117,8 +117,7 @@ namespace DefenseShields
         private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
         private readonly DataStructures _dataStructures = new DataStructures();
-        private readonly StructureBuilder _structureBuilder = new StructureBuilder();
-        private readonly ResourceTracker _resourceTracker = new ResourceTracker(MyResourceDistributorComponent.ElectricityId);
+        //private readonly StructureBuilder _structureBuilder = new StructureBuilder();
 
         private readonly MyConcurrentList<int> _vertsSighted = new MyConcurrentList<int>();
         private readonly MyConcurrentList<int> _noBlocksLos = new MyConcurrentList<int>();
@@ -191,21 +190,6 @@ namespace DefenseShields
                 _detectInsideInv = MatrixD.Invert(_detectMatrixInside);
             }
         }
-
-        public enum Ent
-        {
-            Ignore,
-            Friend,
-            EnemyPlayer,
-            SmallNobodyGrid,
-            LargeNobodyGrid,
-            SmallEnemyGrid,
-            LargeEnemyGrid,
-            Shielded,
-            Other,
-            VoxelBase,
-            Weapon
-        };
         #endregion
     }
 }
