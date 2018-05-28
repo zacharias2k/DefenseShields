@@ -20,7 +20,7 @@ namespace DefenseShields
         #region Web Entities
         private void WebEntities()
         {
-            Dsutil1.Sw.Restart();
+            if (Debug == 1) Dsutil2.Sw.Restart();
             var pruneSphere = new BoundingSphereD(_detectionCenter, Range);
             var pruneList = new List<MyEntity>();
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
@@ -28,6 +28,7 @@ namespace DefenseShields
             {
 
                 var ent = pruneList[i];
+                if (_count == 0) Log.Line($"{ent.DebugName} - {ent.Physics == null} - {ent.Render.IsVisible()} - {ent.GetType() == typeof(MyEntity)} - {ent.DisplayName.Equals("dShield")}");
                 if (ent == null || FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent)) continue;
 
                 var entCenter = ent.PositionComp.WorldVolume.Center;
@@ -84,12 +85,12 @@ namespace DefenseShields
             }
             if (_enablePhysics) MyAPIGateway.Parallel.Start(WebDispatch);
 
-            Dsutil1.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - Web", 3);
+            if (Debug == 1) Dsutil2.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - Web", 3);
         }
 
         private void WebDispatch()
         {
-            Dsutil3.Sw.Restart();
+            if (Debug == 1) Dsutil3.Sw.Restart();
             var ep = 0;
             var ns = 0;
             var nl = 0;
@@ -173,9 +174,9 @@ namespace DefenseShields
                 }
             }
 
-            if (Debug && _longLoop == 5 && _count == 5)
+            if (Debug == 1 && _longLoop == 5 && _count == 5)
                 lock (_webEnts) if (_webEnts.Count > 7 || FriendlyCache.Count > 15 || IgnoreCache.Count > 15) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - friend:{FriendlyCache.Count} - ignore:{IgnoreCache.Count} - total:{_webEnts.Count} ep:{ep} ns:{ns} nl:{nl} es:{es} el:{el} ss:{ss} oo:{oo} vv:{vv} xx:{xx}");
-            Dsutil3.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - webDispatch", 3);
+            if (Debug == 1) Dsutil3.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - webDispatch", 3);
         }
         #endregion
 

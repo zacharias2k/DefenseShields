@@ -60,7 +60,6 @@ namespace DefenseShields
         public bool ServerUpdate;
         public bool EnforceUpdate;
         public bool DeformEnabled;
-        internal const bool Debug = true;
         internal bool MainInit;
         internal bool AnimateInit;
         internal bool StorageInit;
@@ -172,8 +171,6 @@ namespace DefenseShields
         internal DSUtils Dsutil2 = new DSUtils();
         internal DSUtils Dsutil3 = new DSUtils();
         internal DSUtils Dsutil4 = new DSUtils();
-        internal DSUtils Dsutil5 = new DSUtils();
-        internal DSUtils Dsutil6 = new DSUtils();
 
         public MyModStorageComponentBase Storage { get; set; }
         internal HashSet<ulong> playersToReceive = null;

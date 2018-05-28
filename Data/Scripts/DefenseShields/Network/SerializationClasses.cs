@@ -57,6 +57,9 @@ namespace DefenseShields
         [ProtoMember(16), DefaultValue(-1)]
         public int DisableGridDamageSupport = -1;
 
+        [ProtoMember(17), DefaultValue(-1)]
+        public int Debug = -1;
+
         public override string ToString()
         {
             return $"Enabled = {Enabled}\nIdleVisible = {IdleInvisible}\nActiveVisible = {ActiveInvisible}\nWidth = {Math.Round(Width, 4)}\nHeight = {Math.Round(Height, 4)}\nDepth = {Math.Round(Depth, 4)}\nRate = {Math.Round(Rate, 4)}\nNerf = {Math.Round(Nerf, 4)}\nBaseScaler = {BaseScaler}\nEfficiency = {Math.Round(Efficiency, 4)}";
@@ -89,6 +92,9 @@ namespace DefenseShields
 
         [ProtoMember(8), DefaultValue(-1)]
         public int DisableGridDamageSupport = -1;
+
+        [ProtoMember(9), DefaultValue(-1)]
+        public int Debug = -1;
 
         public override string ToString()
         {

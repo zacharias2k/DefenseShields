@@ -34,6 +34,7 @@ namespace DefenseShields.Support
             catch (Exception ex) { Log.Line($"Exception in EmptyEntity: {ex}"); return null; }
         }
 
+        /*
         //Spawn Block
         public MyEntity SpawnBlock(string subtypeId, string name, bool isVisible = true, bool hasPhysics = false, bool isStatic = false, bool toSave = false, bool destructible = false, long ownerId = 0)
         {
@@ -100,6 +101,7 @@ namespace DefenseShields.Support
                     }
                 }
         };
+    */
     }
     #endregion
 
@@ -248,8 +250,6 @@ namespace DefenseShields.Support
             private readonly MyStringId _faceWave = MyStringId.GetOrCompute("SunDisk");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
 
             private DSUtils _dsutil1 = new DSUtils();
-            private DSUtils _dsutil2 = new DSUtils();
-            private DSUtils _dsutil3 = new DSUtils();
 
             public Instance(Icosphere backing)
             {

@@ -162,8 +162,6 @@ namespace DefenseShields
 
         private void BlockIntersect(IMyCubeGrid breaching, MyOrientedBoundingBoxD bOriBBoxD, EntIntersectInfo entInfo)
         {
-            var dsutil = new DSUtils();
-
             var collisionAvg = Vector3D.Zero;
             var transformInv = _detectMatrixOutsideInv;
             var normalMat = MatrixD.Transpose(transformInv);
@@ -255,7 +253,6 @@ namespace DefenseShields
                     Absorb += damage;
                     if (bBlockCenter != Vector3D.NegativeInfinity) entInfo.ContactPoint = bBlockCenter;
                     //if (_count == 58) Log.Line($"[status] obb: true - blocks:{cacheBlockList.Count.ToString()} - sphered:{c1.ToString()} [{c5.ToString()}] - IsDestroyed:{c6.ToString()} not:[{c2.ToString()}] - bCenter Inside Ellipsoid:{c3.ToString()} - Damaged:{c4.ToString()}");
-                    //if (_count == 0) dsutil.StopWatchReport("[perform]", -1);
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in BlockIntersect: {ex}"); }

@@ -160,6 +160,8 @@
       <EmissiveColorPreset>Default</EmissiveColorPreset>
     </Definition>
 	<!-- End Shield Modulator -->
+    
+    <!--
     <Definition>
       <Id>
         <TypeId>CubeBlock</TypeId>
@@ -188,5 +190,6 @@
       <EdgeType>Light</EdgeType>
       <BuildTimeSeconds>10</BuildTimeSeconds>
     </Definition>
+    -->
   </CubeBlocks> 
 </Definitions>

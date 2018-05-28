@@ -116,6 +116,7 @@ namespace DefenseShields
                 SmallShipRatio = newSettings.SmallShipRatio;
                 VoxelSupport = newSettings.DisableVoxelSupport;
                 GridDamageSupport = newSettings.DisableGridDamageSupport;
+                Debug = newSettings.Debug;
             }
         }
 
@@ -129,6 +130,7 @@ namespace DefenseShields
             SmallShipRatio = newEnforce.SmallShipRatio;
             VoxelSupport = newEnforce.DisableVoxelSupport;
             GridDamageSupport = newEnforce.DisableGridDamageSupport;
+            Debug = newEnforce.Debug;
 
             ServerEnforcedValues.Nerf = newEnforce.Nerf;
             ServerEnforcedValues.BaseScaler = newEnforce.BaseScaler;
@@ -138,6 +140,7 @@ namespace DefenseShields
             ServerEnforcedValues.SmallShipRatio = newEnforce.SmallShipRatio;
             ServerEnforcedValues.DisableVoxelSupport = newEnforce.DisableVoxelSupport;
             ServerEnforcedValues.DisableGridDamageSupport = newEnforce.DisableGridDamageSupport;
+            ServerEnforcedValues.Debug = newEnforce.Debug;
         }
 
         public void SaveSettings()
@@ -275,6 +278,12 @@ namespace DefenseShields
         {
             get { return Settings.DisableGridDamageSupport; }
             set { Settings.DisableGridDamageSupport = value; }
+        }
+
+        public int Debug
+        {
+            get { return Settings.Debug; }
+            set { Settings.Debug = value; }
         }
 
         private void EnforcementRequest()

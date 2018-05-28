@@ -220,6 +220,9 @@ namespace DefenseShields
             if (ServerEnforcedValues.DisableVoxelSupport > 0) VoxelSupport = ServerEnforcedValues.DisableVoxelSupport;
             if (ServerEnforcedValues.DisableGridDamageSupport > 0) GridDamageSupport = ServerEnforcedValues.DisableGridDamageSupport;
 
+            if (ServerEnforcedValues.Debug > 0) Debug = ServerEnforcedValues.Debug;
+
+
             if (ServerEnforcedValues.BaseScaler.Equals(-1) && !Settings.BaseScaler.Equals(-1))
             {
                 ServerEnforcedValues.BaseScaler = Settings.BaseScaler;
@@ -232,6 +235,8 @@ namespace DefenseShields
 
                 ServerEnforcedValues.DisableVoxelSupport = Settings.DisableVoxelSupport;
                 ServerEnforcedValues.DisableGridDamageSupport = Settings.DisableGridDamageSupport;
+
+                ServerEnforcedValues.Debug = Settings.Debug;
             }
 
             if (ServerEnforcedValues.BaseScaler < 1) EnforcementRequest();
@@ -246,6 +251,11 @@ namespace DefenseShields
             StationRatio = ServerEnforcedValues.StationRatio;
             LargeShipRatio = ServerEnforcedValues.LargeShipRatio;
             SmallShipRatio = ServerEnforcedValues.SmallShipRatio;
+
+            VoxelSupport = ServerEnforcedValues.DisableVoxelSupport;
+            GridDamageSupport = ServerEnforcedValues.DisableGridDamageSupport;
+
+            Debug = ServerEnforcedValues.Debug;
         }
 
         private void PowerInitCheck()
