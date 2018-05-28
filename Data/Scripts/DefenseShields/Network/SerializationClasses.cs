@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.ComponentModel;
 using ProtoBuf;
 
@@ -41,6 +42,21 @@ namespace DefenseShields
         [ProtoMember(11), DefaultValue(-1)]
         public float Efficiency = -1;
 
+        [ProtoMember(12), DefaultValue(-1)]
+        public int StationRatio = -1;
+
+        [ProtoMember(13), DefaultValue(-1)]
+        public int LargeShipRatio = -1;
+
+        [ProtoMember(14), DefaultValue(-1)]
+        public int SmallShipRatio = -1;
+
+        [ProtoMember(15), DefaultValue(-1)]
+        public int DisableVoxelSupport = -1;
+
+        [ProtoMember(16), DefaultValue(-1)]
+        public int DisableGridDamageSupport = -1;
+
         public override string ToString()
         {
             return $"Enabled = {Enabled}\nIdleVisible = {IdleInvisible}\nActiveVisible = {ActiveInvisible}\nWidth = {Math.Round(Width, 4)}\nHeight = {Math.Round(Height, 4)}\nDepth = {Math.Round(Depth, 4)}\nRate = {Math.Round(Rate, 4)}\nNerf = {Math.Round(Nerf, 4)}\nBaseScaler = {BaseScaler}\nEfficiency = {Math.Round(Efficiency, 4)}";
@@ -59,10 +75,26 @@ namespace DefenseShields
         [ProtoMember(3), DefaultValue(-1)]
         public float Efficiency = -1f;
 
+        [ProtoMember(4), DefaultValue(-1)]
+        public int StationRatio = -1;
+
+        [ProtoMember(5), DefaultValue(-1)]
+        public int LargeShipRatio = -1;
+
+        [ProtoMember(6), DefaultValue(-1)]
+        public int SmallShipRatio = -1;
+
+        [ProtoMember(7), DefaultValue(-1)]
+        public int DisableVoxelSupport = -1;
+
+        [ProtoMember(8), DefaultValue(-1)]
+        public int DisableGridDamageSupport = -1;
+
         public override string ToString()
         {
             return $"Nerf = {Math.Round(Nerf, 4)}\nBaseScaler = {BaseScaler}\nEfficiency = {Math.Round(Efficiency, 4)}";
         }
+
     }
 
     [ProtoContract]

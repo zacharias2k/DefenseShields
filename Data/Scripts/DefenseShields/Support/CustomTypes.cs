@@ -1,6 +1,10 @@
 ﻿using System.Collections.Generic;
+using VRage;
+using VRage.Game;
 using VRage.Game.Components;
+using VRage.Game.Entity;
 using VRage.Game.ModAPI;
+using VRage.Utils;
 using VRage.Voxels;
 using VRageMath;
 
@@ -23,6 +27,39 @@ namespace DefenseShields.Support
             Speed = speed;
             Mass = mass;
             BackKickForce = backKickForce;
+        }
+    }
+
+    public class BlockDamageInfo
+    {
+        public MyEntity Entity;
+        public Vector3I Vector;
+        public bool NormalDamage;
+        public bool Deformation;
+        public int Count;
+        public BlockDamageInfo(MyEntity entity, Vector3I vector, bool normalDamage, bool deformation, int count)
+        {
+            Entity = entity;
+            NormalDamage = normalDamage;
+            Deformation = deformation;
+            Vector = vector;
+            Count = count;
+        }
+    }
+
+    public struct ShieldHit
+    {
+        public readonly IMySlimBlock Block;
+        public readonly float Amount;
+        public readonly MyEntity Attacker;
+        public readonly MyStringHash Type;
+
+        public ShieldHit(IMySlimBlock block, float amount, MyEntity attacker, MyStringHash type)
+        {
+            Block = block;
+            Amount = amount;
+            Attacker = attacker;
+            Type = type;
         }
     }
 

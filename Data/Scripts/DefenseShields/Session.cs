@@ -9,6 +9,7 @@ using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage;
 using VRage.Game.Entity;
+using VRage.Utils;
 using VRageMath;
 
 namespace DefenseShields
@@ -19,12 +20,10 @@ namespace DefenseShields
     {
         internal bool SessionInit;
         public bool ControlsLoaded { get; set; }
-        private bool _resetVoxelColliders;
         public bool Enabled = true;
 
-        private int _voxelTrigger;
-        private int _count;
-
+        private int _count = -1;
+        private int _longLoop;
         public const ushort PACKET_ID_SETTINGS = 62520; // network
         public const ushort PACKET_ID_ENFORCE = 62521; // network
 
@@ -44,12 +43,12 @@ namespace DefenseShields
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
         public readonly List<IMyPlayer> Players = new List<IMyPlayer>();
 
-
         public void Init()
         {
             try
             {
                 Log.Init("debugdevelop.log");
+                Log.Line($"Logging Started");
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_SETTINGS, PacketSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_ENFORCE, PacketEnforcementReceived);
@@ -57,25 +56,78 @@ namespace DefenseShields
 
                 if (MyAPIGateway.Utilities.IsDedicated || MyAPIGateway.Multiplayer.IsServer)
                 {
-                    var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg");
-                    if (!dsCfgExists)
-                    {
-                        var cfg = MyAPIGateway.Utilities.WriteBinaryFileInGlobalStorage("DefenseShields.cfg");
-                        var data = MyAPIGateway.Utilities.SerializeToXML(DefenseShields.ServerEnforcedValues);
-                        cfg.Write(data);
-                        cfg.Flush();
-                    }
-                    else
-                    {
-                        var cfg = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShields.cfg");
-                        var data = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsEnforcement>(cfg.ReadToEnd().Substring(2));
-                        DefenseShields.ServerEnforcedValues = data;
-                        Log.Line($"{DefenseShields.ServerEnforcedValues.Nerf} - {DefenseShields.ServerEnforcedValues.BaseScaler} - {DefenseShields.ServerEnforcedValues.Efficiency}");
-                    }
+                    PrepConfigFile();
+                    ReadConfigFile();
                 }
                 SessionInit = true;
             }
             catch (Exception ex) { Log.Line($"Exception in SessionInit: {ex}"); }
+        }
+
+        private static void PrepConfigFile()
+        {
+            var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg");
+            if (dsCfgExists)
+            {
+                var unPackCfg = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShields.cfg");
+                var unPackedData = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsEnforcement>(unPackCfg.ReadToEnd());
+                if (!unPackedData.DisableVoxelSupport.Equals(-1)) return;
+
+                DefenseShields.ServerEnforcedValues.BaseScaler = 30;
+                DefenseShields.ServerEnforcedValues.Nerf = 0f;
+                DefenseShields.ServerEnforcedValues.Efficiency = 100f;
+                DefenseShields.ServerEnforcedValues.StationRatio = 2;
+                DefenseShields.ServerEnforcedValues.LargeShipRatio = 5;
+                DefenseShields.ServerEnforcedValues.SmallShipRatio = 1;
+                DefenseShields.ServerEnforcedValues.DisableVoxelSupport = 0;
+                DefenseShields.ServerEnforcedValues.DisableGridDamageSupport = 0;
+
+                Log.Line($"invalid config file regenerating, [DisableVoxelSupport] value was: {unPackedData.DisableVoxelSupport}");
+                if (!unPackedData.BaseScaler.Equals(-1)) DefenseShields.ServerEnforcedValues.BaseScaler = unPackedData.BaseScaler;
+                if (!unPackedData.Nerf.Equals(-1f)) DefenseShields.ServerEnforcedValues.Nerf = unPackedData.Nerf;
+                if (!unPackedData.Efficiency.Equals(-1f)) DefenseShields.ServerEnforcedValues.Efficiency = unPackedData.Efficiency;
+                if (!unPackedData.StationRatio.Equals(-1)) DefenseShields.ServerEnforcedValues.StationRatio = unPackedData.StationRatio;
+                if (!unPackedData.LargeShipRatio.Equals(-1)) DefenseShields.ServerEnforcedValues.LargeShipRatio = unPackedData.LargeShipRatio;
+                if (!unPackedData.SmallShipRatio.Equals(-1)) DefenseShields.ServerEnforcedValues.SmallShipRatio = unPackedData.SmallShipRatio;
+                if (!unPackedData.DisableVoxelSupport.Equals(-1)) DefenseShields.ServerEnforcedValues.DisableVoxelSupport = unPackedData.DisableVoxelSupport;
+                if (!unPackedData.DisableGridDamageSupport.Equals(-1)) DefenseShields.ServerEnforcedValues.DisableGridDamageSupport = unPackedData.DisableGridDamageSupport;
+                unPackedData = null;
+                unPackCfg.Close();
+                unPackCfg.Dispose();
+                MyAPIGateway.Utilities.DeleteFileInGlobalStorage("DefenseShields.cfg");
+                var newCfg = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShields.cfg");
+                var newData = MyAPIGateway.Utilities.SerializeToXML(DefenseShields.ServerEnforcedValues);
+                newCfg.Write(newData);
+                newCfg.Flush();
+                newCfg.Close();
+            }
+            else
+            {
+                DefenseShields.ServerEnforcedValues.BaseScaler = 30;
+                DefenseShields.ServerEnforcedValues.Nerf = 0f;
+                DefenseShields.ServerEnforcedValues.Efficiency = 100f;
+                DefenseShields.ServerEnforcedValues.StationRatio = 2;
+                DefenseShields.ServerEnforcedValues.LargeShipRatio = 5;
+                DefenseShields.ServerEnforcedValues.SmallShipRatio = 1;
+                DefenseShields.ServerEnforcedValues.DisableVoxelSupport = 0;
+                DefenseShields.ServerEnforcedValues.DisableGridDamageSupport = 0;
+
+                var cfg = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShields.cfg");
+                var data = MyAPIGateway.Utilities.SerializeToXML(DefenseShields.ServerEnforcedValues);
+                cfg.Write(data);
+                cfg.Flush();
+                cfg.Close();
+            }
+        }
+
+        private static void ReadConfigFile()
+        {
+            var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg");
+            if (!dsCfgExists) return;
+
+            var cfg = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShields.cfg");
+            var data = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsEnforcement>(cfg.ReadToEnd());
+            DefenseShields.ServerEnforcedValues = data;
         }
 
         private void ModMessageHandler(object obj)
@@ -144,22 +196,19 @@ namespace DefenseShields
         {
             try
             {
+                for (int i = 0; i < Components.Count; i++) Components[i].DeformEnabled = false;
+
+                if (_count++ == 59)
+                {
+                    _count = 0;
+                    _longLoop++;
+                    if (_longLoop == 10) _longLoop = 0;
+                }
+
                 if (!SessionInit)
                 {
                     if (MyAPIGateway.Multiplayer.IsServer && MyAPIGateway.Utilities.IsDedicated) Init();
                     else if (MyAPIGateway.Session.Player != null) Init();
-                }
-                else
-                {
-                    if (_count++ == 3600)
-                    {
-                        _count = 0;
-                        if (_voxelDamageCounter.Count != 0) _voxelDamageCounter.Clear();
-                    }
-                    _voxelTrigger = 0;
-                    _resetVoxelColliders = false;
-                    foreach (var voxel in _voxelDamageCounter.Values)
-                        if (voxel > 40) _resetVoxelColliders = true;
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in SessionBeforeSim: {ex}"); }
@@ -194,56 +243,23 @@ namespace DefenseShields
                 {
                     if (shield.ShieldActive && (shield.Shield.CubeGrid == blockGrid || shield.FriendlyCache.Contains(blockGrid)))
                     {
-
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
-
-                        if (hostileEnt != null && (hostileEnt == shield.Shield.CubeGrid) || shield.FriendlyCache.Contains(hostileEnt))
+                        if (shield.FriendlyCache.Contains(hostileEnt) || hostileEnt == shield.Shield.CubeGrid)
                         {
+                            shield.DeformEnabled = true;
                             continue;
                         }
 
-                        if ((hostileEnt is MyVoxelBase) && _voxelTrigger == 0 && (!MyAPIGateway.Utilities.IsDedicated))
+                        if (hostileEnt != null && block.FatBlock == shield.Shield && (info.Type.String.Equals("DSdamage") || info.Type.String.Equals("DSheal") || info.Type.String.Equals("DSbypass")))
                         {
-                            var voxel = (MyVoxelBase)hostileEnt;
-                            info.Amount = 0f;
-
-                            if (_resetVoxelColliders)
-                            {
-                                var safeplace = MyAPIGateway.Entities.FindFreePlace(shield.Shield.CubeGrid.WorldVolume.Center, (float)shield.Shield.CubeGrid.WorldVolume.Radius * 5);
-                                if (safeplace != null)
-                                {
-                                    shield.Shield.CubeGrid.Physics.ClearSpeed();
-                                    shield.Shield.CubeGrid.SetPosition((Vector3D)safeplace);
-                                    _voxelDamageCounter.Clear();
-                                }
-                            }
-                            if (!_voxelDamageCounter.ContainsKey(voxel)) _voxelDamageCounter.Add(voxel, 1);
-                            else _voxelDamageCounter[voxel]++;
-                            _voxelTrigger = 1;
-                        }
-
-                        if (info.Type == MyDamageType.Deformation)
-                        {
-                            info.Amount = 0f;
-                            info.IsDeformation = false;
-                            continue;
-                        }
-
-                        if (hostileEnt == null && info.Type == MyDamageType.Explosion)
-                        {
-                            info.Amount = 0f;
-                            continue;
-                        }
-
-                        if (info.Type.String.Equals("DSdamage") || info.Type.String.Equals("DSheal") || info.Type.String.Equals("DSbypass"))
-                        {
-                            //Log.Line($"Amount:{info.Amount.ToString()} - Type:{info.Type.ToString()} - Block:{block.BlockDefinition.GetType().Name} - Attacker:{hostileEnt?.DebugName}");
                             shield.Absorb += info.Amount;
                             info.Amount = 0f;
                             shield.WorldImpactPosition = shield._shield.Render.ColorMaskHsv;
                             continue;
                         }
+
+                        if (shield.DeformEnabled) continue;
 
                         if (hostileEnt != null && shield.Absorb < 1 && shield.BulletCoolDown == -1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity)
                         {

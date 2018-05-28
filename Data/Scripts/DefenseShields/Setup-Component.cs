@@ -55,9 +55,11 @@ namespace DefenseShields
         private int _prevLod;
         private int _onCount;
         private int _oldBlockCount;
+        private int _shieldRatio;
 
         public bool ServerUpdate;
         public bool EnforceUpdate;
+        public bool DeformEnabled;
         internal const bool Debug = true;
         internal bool MainInit;
         internal bool AnimateInit;
@@ -84,7 +86,7 @@ namespace DefenseShields
         private bool _startupWarning;
         private bool _hideShield;
         private bool _updateDimensions;
-        private bool _firstRun = true;
+        private bool _warmUp = true;
 
         internal Vector3D ShieldSize { get; set; }
         public Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
@@ -171,6 +173,7 @@ namespace DefenseShields
         internal DSUtils Dsutil3 = new DSUtils();
         internal DSUtils Dsutil4 = new DSUtils();
         internal DSUtils Dsutil5 = new DSUtils();
+        internal DSUtils Dsutil6 = new DSUtils();
 
         public MyModStorageComponentBase Storage { get; set; }
         internal HashSet<ulong> playersToReceive = null;
@@ -203,7 +206,8 @@ namespace DefenseShields
             LargeEnemyGrid,
             Shielded,
             Other,
-            VoxelBase
+            VoxelBase,
+            Weapon
         };
         #endregion
     }

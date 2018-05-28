@@ -10,6 +10,10 @@ namespace DefenseShields
         #region Settings
         private void SyncControlsServer()
         {
+            if (Shield != null && !Shield.Enabled.Equals(Settings.Enabled))
+            {
+                Enabled = Settings.Enabled;
+            }
             if (_widthSlider != null && !_widthSlider.Getter(Shield).Equals(Settings.Width))
             {
                 _widthSlider.Setter(Shield, Settings.Width);
@@ -40,7 +44,6 @@ namespace DefenseShields
                 _hidePassiveCheckBox.Setter(Shield, Settings.IdleInvisible);
             }
 
-            //Log.Line($"Synced Server Controls");
             ServerUpdate = false;
             _updateDimensions = true;
             SaveSettings();
@@ -51,7 +54,8 @@ namespace DefenseShields
             var needsSync = false;
             if (!GridIsMobile)
             {
-                if (!_widthSlider.Getter(Shield).Equals(Width)
+                if (!Enabled.Equals(Enabled) ||
+                    !_widthSlider.Getter(Shield).Equals(Width)
                     || !_heightSlider.Getter(Shield).Equals(Height)
                     || !_depthSlider.Getter(Shield).Equals(Depth)
                     || !_chargeSlider.Getter(Shield).Equals(Rate)
@@ -59,41 +63,40 @@ namespace DefenseShields
                     || !_hidePassiveCheckBox.Getter(Shield).Equals(ShieldIdleVisible))
                 {
                     needsSync = true;
+                    Enabled = Settings.Enabled;
                     Width = _widthSlider.Getter(Shield);
                     Height = _heightSlider.Getter(Shield);
                     Depth = _depthSlider.Getter(Shield);
                     Rate = _chargeSlider.Getter(Shield);
                     ShieldActiveVisible = _hideActiveCheckBox.Getter(Shield);
                     ShieldIdleVisible = _hidePassiveCheckBox.Getter(Shield);
-                    //Log.Line($"needs server updatem for: {Shield.EntityId}");
                 }
             }
             else
             {
-                if (!_chargeSlider.Getter(Shield).Equals(Rate)
+                if (!Enabled.Equals(Enabled) ||
+                    !_chargeSlider.Getter(Shield).Equals(Rate)
                     || !_hideActiveCheckBox.Getter(Shield).Equals(ShieldActiveVisible)
                     || !_hidePassiveCheckBox.Getter(Shield).Equals(ShieldIdleVisible))
                 {
                     needsSync = true;
+                    Enabled = Settings.Enabled;
                     Rate = _chargeSlider.Getter(Shield);
                     ShieldActiveVisible = _hideActiveCheckBox.Getter(Shield);
                     ShieldIdleVisible = _hidePassiveCheckBox.Getter(Shield);
-                    //Log.Line($"needs server updatem for: {Shield.EntityId}");
                 }
             }
 
             if (needsSync)
             {
-                //Log.Line($"Clinet Update");
                 if (!GridIsMobile) _updateDimensions = true;
                 NetworkUpdate();
                 SaveSettings();
             }
         }
 
-        public void UpdateSettings(DefenseShieldsModSettings newSettings)
+        public void UpdateSettings(DefenseShieldsModSettings newSettings, bool localOnly = true)
         {
-            //Log.Line($"update settings {Shield.EntityId}");
             Enabled = newSettings.Enabled;
             ShieldIdleVisible = newSettings.IdleInvisible;
             ShieldActiveVisible = newSettings.ActiveInvisible;
@@ -103,9 +106,17 @@ namespace DefenseShields
             Rate = newSettings.Rate;
             ShieldBuffer = newSettings.Buffer;
 
-            ShieldBaseScaler = newSettings.BaseScaler;
-            ShieldNerf = newSettings.Nerf;
-            ShieldEfficiency = newSettings.Efficiency;
+            if (localOnly)
+            {
+                ShieldBaseScaler = newSettings.BaseScaler;
+                ShieldNerf = newSettings.Nerf;
+                ShieldEfficiency = newSettings.Efficiency;
+                StationRatio = newSettings.StationRatio;
+                LargeShipRatio = newSettings.LargeShipRatio;
+                SmallShipRatio = newSettings.SmallShipRatio;
+                VoxelSupport = newSettings.DisableVoxelSupport;
+                GridDamageSupport = newSettings.DisableGridDamageSupport;
+            }
         }
 
         public void UpdateEnforcement(DefenseShieldsEnforcement newEnforce)
@@ -113,14 +124,20 @@ namespace DefenseShields
             ShieldNerf = newEnforce.Nerf;
             ShieldBaseScaler = newEnforce.BaseScaler;
             ShieldEfficiency = newEnforce.Efficiency;
-
-            //DefenseShieldsBase.Nerf = newEnforce.Nerf;
-            //DefenseShieldsBase.BaseScaler = newEnforce.BaseScaler;
-            //DefenseShieldsBase.Efficiency = newEnforce.Efficiency;
+            StationRatio = newEnforce.StationRatio;
+            LargeShipRatio = newEnforce.LargeShipRatio;
+            SmallShipRatio = newEnforce.SmallShipRatio;
+            VoxelSupport = newEnforce.DisableVoxelSupport;
+            GridDamageSupport = newEnforce.DisableGridDamageSupport;
 
             ServerEnforcedValues.Nerf = newEnforce.Nerf;
             ServerEnforcedValues.BaseScaler = newEnforce.BaseScaler;
             ServerEnforcedValues.Efficiency = newEnforce.Efficiency;
+            ServerEnforcedValues.StationRatio = newEnforce.StationRatio;
+            ServerEnforcedValues.LargeShipRatio = newEnforce.LargeShipRatio;
+            ServerEnforcedValues.SmallShipRatio = newEnforce.SmallShipRatio;
+            ServerEnforcedValues.DisableVoxelSupport = newEnforce.DisableVoxelSupport;
+            ServerEnforcedValues.DisableGridDamageSupport = newEnforce.DisableGridDamageSupport;
         }
 
         public void SaveSettings()
@@ -230,15 +247,45 @@ namespace DefenseShields
             set { Settings.BaseScaler = value; }
         }
 
+        public int StationRatio
+        {
+            get { return Settings.StationRatio; }
+            set { Settings.StationRatio = value; }
+        }
+
+        public int LargeShipRatio
+        {
+            get { return Settings.LargeShipRatio; }
+            set { Settings.LargeShipRatio = value; }
+        }
+
+        public int SmallShipRatio
+        {
+            get { return Settings.SmallShipRatio; }
+            set { Settings.SmallShipRatio = value; }
+        }
+
+        public int VoxelSupport
+        {
+            get { return Settings.DisableVoxelSupport; }
+            set { Settings.DisableVoxelSupport = value; }
+        }
+
+        public int GridDamageSupport
+        {
+            get { return Settings.DisableGridDamageSupport; }
+            set { Settings.DisableGridDamageSupport = value; }
+        }
+
         private void EnforcementRequest()
         {
             if ((MyAPIGateway.Utilities.IsDedicated || MyAPIGateway.Multiplayer.IsServer))
             {
-                Log.Line($"This is the server (Dedicated: {MyAPIGateway.Utilities.IsDedicated}) bypassing enforcement request");
+                //Log.Line($"This is the server (Dedicated: {MyAPIGateway.Utilities.IsDedicated}) bypassing enforcement request");
             }
             else 
             {
-                Log.Line($"Client requesting enforcement - current: {ShieldNerf} - {ShieldBaseScaler} - {Settings.Nerf} - {Settings.BaseScaler} - {ServerEnforcedValues.Nerf} - {ServerEnforcedValues.BaseScaler}");
+                //Log.Line($"Client requesting enforcement - current: {ShieldNerf} - {ShieldBaseScaler} - {Settings.Nerf} - {Settings.BaseScaler} - {ServerEnforcedValues.Nerf} - {ServerEnforcedValues.BaseScaler}");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new EnforceData(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, ServerEnforcedValues));
                 MyAPIGateway.Multiplayer.SendMessageToServer(DefenseShieldsBase.PACKET_ID_ENFORCE, bytes);
             }

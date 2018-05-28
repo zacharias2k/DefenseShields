@@ -2,6 +2,7 @@
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
+using Sandbox.Game.Weapons;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Weapons;
 using VRage.Game;
@@ -30,14 +31,13 @@ namespace DefenseShields
                 if (ent == null || FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent)) continue;
 
                 var entCenter = ent.PositionComp.WorldVolume.Center;
-
-                if (ent == _shield || ent as IMyCubeGrid == Shield.CubeGrid || ent.Physics == null || ent.MarkedForClose || ent is MyVoxelBase && !GridIsMobile
+                if (ent == _shield || ent as IMyCubeGrid == Shield.CubeGrid || (ent.Physics == null && !(ent is IMyAutomaticRifleGun)) || ent.MarkedForClose || ent is MyVoxelBase && !GridIsMobile
                     || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
 
                 var relation = EntType(ent);
-                if (relation == Ent.Ignore || relation == Ent.Friend)
+                if (relation == Ent.Ignore || relation == Ent.Friend || relation == Ent.Weapon)
                 {
-                    if (relation == Ent.Friend && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv))
+                    if ((relation == Ent.Friend || relation == Ent.Weapon) && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv))
                     {
                         FriendlyCache.Add(ent);
                         continue;
@@ -77,6 +77,7 @@ namespace DefenseShields
             }
             if (_enablePhysics || _shieldMoving || _gridChanged)
             {
+
                 Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, PhysicsOutside);
                 Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, PhysicsOutsideLow);
                 Icosphere.ReturnPhysicsVerts(_detectMatrixInside, PhysicsInside);
@@ -173,7 +174,7 @@ namespace DefenseShields
             }
 
             if (Debug && _longLoop == 5 && _count == 5)
-                lock (_webEnts) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - friend:{FriendlyCache.Count} - ignore:{IgnoreCache.Count} - total:{_webEnts.Count} ep:{ep} ns:{ns} nl:{nl} es:{es} el:{el} ss:{ss} oo:{oo} vv:{vv} xx:{xx}");
+                lock (_webEnts) if (_webEnts.Count > 7 || FriendlyCache.Count > 15 || IgnoreCache.Count > 15) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - friend:{FriendlyCache.Count} - ignore:{IgnoreCache.Count} - total:{_webEnts.Count} ep:{ep} ns:{ns} nl:{nl} es:{es} el:{el} ss:{ss} oo:{oo} vv:{vv} xx:{xx}");
             Dsutil3.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - webDispatch", 3);
         }
         #endregion
@@ -182,7 +183,8 @@ namespace DefenseShields
         private Ent EntType(IMyEntity ent)
         {
             if (ent == null) return Ent.Ignore;
-            if (ent is MyVoxelBase && !GridIsMobile) return Ent.Ignore;
+            if (ent is MyVoxelBase && (ServerEnforcedValues.DisableVoxelSupport == 1 || !GridIsMobile)) return Ent.Ignore;
+            if (ent is IMyAutomaticRifleGun) return Ent.Weapon;
 
             if (ent is IMyCharacter)
             {

@@ -24,7 +24,6 @@ namespace DefenseShields
         {
             try
             {
-                //Log.Line($"Starting Init for {Entity.EntityId.ToString()}");
                 Entity.Components.TryGet(out Sink);
                 ResourceInfo = new MyResourceSinkInfo()
                 {
@@ -45,7 +44,6 @@ namespace DefenseShields
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
                 DefenseShieldsBase.Instance.Components.Add(this);
                 Shield.CubeGrid.Components.Add(new ShieldGridComponent(this));
-                StorageSetup();
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -59,49 +57,65 @@ namespace DefenseShields
                     DefinitionsLoaded = true;
                     GetDefinitons();
                 }
-
-                if (AnimateInit && MainInit || ServerEnforcedValues.Nerf.Equals(-1f) || ServerEnforcedValues.Efficiency.Equals(-1f)  
-                    || ServerEnforcedValues.BaseScaler.Equals(-1) || !Shield.IsFunctional || !HealthAndPowerCheck()) return;
+                if (AnimateInit && MainInit || !Shield.IsFunctional || !HealthAndPowerCheck()) return;
 
                 if (Icosphere == null) Icosphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Icosphere);
 
                 if (!MainInit && Shield.IsFunctional)
                 {
+
+                    StorageSetup();
+
+                    var enableState = Shield.Enabled;
+                    if (enableState)
+                    {
+                        Shield.Enabled = false;
+                        Shield.Enabled = true;
+                    }
+
+                    if (MyAPIGateway.Utilities.IsDedicated || MyAPIGateway.Multiplayer.IsServer) ServerEnforcementSetup();
+                    else ClientEnforcementRequest();
+
                     if (Shield.CubeGrid.Physics.IsStatic) GridIsMobile = false;
                     else if (!Shield.CubeGrid.Physics.IsStatic) GridIsMobile = true;
 
                     CreateUi();
-                    //SyncControlsClient();
-
-                    //_oldBlockCount = ((MyCubeGrid)Shield.CubeGrid).BlocksCount;
-                    //BackGroundChecks();
-                    //UpdateGridPower();
 
                     MainInit = true;
                     return;
                 }
 
+                if (ServerEnforcedValues.Nerf.Equals(-1f)) return;
+
                 if (!PhysicsInit)
                 {
-                    PhysicsInit = true;
-
                     SpawnEntities();
 
-                    return;
+                    switch (Shield.BlockDefinition.SubtypeId)
+                    {
+                        case "DefenseShieldsST":
+                            _shieldRatio = ServerEnforcedValues.StationRatio;
+                            break;
+                        case "DefenseShieldsLS":
+                            _shieldRatio = ServerEnforcedValues.LargeShipRatio;
+                            break;
+                        case "DefenseShieldsSS":
+                            _shieldRatio = ServerEnforcedValues.SmallShipRatio;
+                            break;
+                    }
+
+                    PhysicsInit = true;
                 }
 
                 if (AnimateInit || !MainInit || !Shield.IsFunctional) return;
 
                 if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" || Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS" || Shield.BlockDefinition.SubtypeId == "DefenseShieldsST")
                 {
-                    //_blocksChanged = true;
                     Log.Line($"ShieldId:{Shield.EntityId.ToString()} - {Shield.BlockDefinition.SubtypeId} is functional - tick:{_tick.ToString()}");
                     Entity.TryGetSubpart("Rotor", out _subpartRotor);
 
                     if (!MyAPIGateway.Utilities.IsDedicated) BlockParticleCreate();
-
                     AnimateInit = true;
-                    Log.Line($"enforcement values: {ServerEnforcedValues.BaseScaler} - {ServerEnforcedValues.Efficiency} - {ServerEnforcedValues.Nerf}");
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateAfterSimulation100: {ex}"); }
@@ -188,23 +202,50 @@ namespace DefenseShields
 
         private void StorageSetup()
         {
-            //ServerUpdate = true;
-            //_updateDimensions = true;
             Storage = Shield.Storage;
             LoadSettings();
+            UpdateSettings(Settings, false);
+        }
 
-            if (ServerEnforcedValues.Nerf >= 0) { ShieldNerf = ServerEnforcedValues.Nerf; }
+        private void ClientEnforcementRequest()
+        {
+            if (ServerEnforcedValues.Nerf >= 0) ShieldNerf = ServerEnforcedValues.Nerf; 
             if (ServerEnforcedValues.BaseScaler >= 1) ShieldBaseScaler = ServerEnforcedValues.BaseScaler;
             if (ServerEnforcedValues.Efficiency >= 1) ShieldEfficiency = ServerEnforcedValues.Efficiency;
 
-            if (ServerEnforcedValues.BaseScaler == -1 && Settings.BaseScaler != -1)
+            if (ServerEnforcedValues.StationRatio > 0) StationRatio = ServerEnforcedValues.StationRatio; 
+            if (ServerEnforcedValues.LargeShipRatio > 0) LargeShipRatio = ServerEnforcedValues.LargeShipRatio;
+            if (ServerEnforcedValues.SmallShipRatio > 0) SmallShipRatio = ServerEnforcedValues.SmallShipRatio;
+
+            if (ServerEnforcedValues.DisableVoxelSupport > 0) VoxelSupport = ServerEnforcedValues.DisableVoxelSupport;
+            if (ServerEnforcedValues.DisableGridDamageSupport > 0) GridDamageSupport = ServerEnforcedValues.DisableGridDamageSupport;
+
+            if (ServerEnforcedValues.BaseScaler.Equals(-1) && !Settings.BaseScaler.Equals(-1))
             {
                 ServerEnforcedValues.BaseScaler = Settings.BaseScaler;
                 ServerEnforcedValues.Nerf = Settings.Nerf;
                 ServerEnforcedValues.Efficiency = Settings.Efficiency;
+
+                ServerEnforcedValues.StationRatio = Settings.StationRatio;
+                ServerEnforcedValues.LargeShipRatio = Settings.LargeShipRatio;
+                ServerEnforcedValues.SmallShipRatio = Settings.SmallShipRatio;
+
+                ServerEnforcedValues.DisableVoxelSupport = Settings.DisableVoxelSupport;
+                ServerEnforcedValues.DisableGridDamageSupport = Settings.DisableGridDamageSupport;
             }
 
-            if (ServerEnforcedValues.Nerf < 0 || ServerEnforcedValues.BaseScaler < 1 || ServerEnforcedValues.Efficiency < 0) EnforcementRequest();
+            if (ServerEnforcedValues.BaseScaler < 1) EnforcementRequest();
+        }
+
+        private void ServerEnforcementSetup()
+        {
+            ShieldNerf = ServerEnforcedValues.Nerf; 
+            ShieldBaseScaler = ServerEnforcedValues.BaseScaler;
+            ShieldEfficiency = ServerEnforcedValues.Efficiency;
+
+            StationRatio = ServerEnforcedValues.StationRatio;
+            LargeShipRatio = ServerEnforcedValues.LargeShipRatio;
+            SmallShipRatio = ServerEnforcedValues.SmallShipRatio;
         }
 
         private void PowerInitCheck()
@@ -214,7 +255,6 @@ namespace DefenseShields
                 if (SinkInit) return;
                 if (!Sink.IsPowerAvailable(GId, _power))
                 {
-                    //Log.Line($"ShieldId:{Shield.EntityId.ToString()} - no power to init resourceSink: {_power.ToString()}");
                     NoPower = true;
                     HardDisable = true;
                     return;
@@ -312,7 +352,6 @@ namespace DefenseShields
 
         private void CreateUi()
         {
-            //Log.Line($"Create UI - Tick:{_tick.ToString()}");
             DefenseShieldsBase.Instance.ControlsLoaded = true;
             RemoveOreUi();
 
