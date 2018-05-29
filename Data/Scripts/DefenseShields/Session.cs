@@ -29,6 +29,7 @@ namespace DefenseShields
         public const ushort PACKET_ID_ENFORCE = 62521; // network
         private const long WORKSHOP_ID = 1365616918;
         public readonly Guid SettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
+        public readonly Guid ModulatorGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811509");
 
         public string disabledBy = null;
 
@@ -39,6 +40,8 @@ namespace DefenseShields
 
         private readonly Dictionary<IMyEntity, int> _voxelDamageCounter = new Dictionary<IMyEntity, int>();
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
+        public readonly List<Modulators> Modulators = new List<Modulators>();
+
         public readonly List<IMyPlayer> Players = new List<IMyPlayer>();
 
         public void Init()

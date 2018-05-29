@@ -104,6 +104,24 @@ namespace DefenseShields
     }
 
     [ProtoContract]
+    public class ModulatorSettings
+    {
+        [ProtoMember(1)]
+        public bool Enabled = false;
+
+        [ProtoMember(2)]
+        public bool IdleInvisible = false;
+
+        [ProtoMember(3)]
+        public bool ActiveInvisible = false;
+
+        public override string ToString()
+        {
+            return $"Enabled";
+        }
+    }
+
+    [ProtoContract]
     public class PacketData
     {
         [ProtoMember(1)]
