@@ -49,7 +49,7 @@ namespace DefenseShields
                     MyAPIGateway.Parallel.StartBackground(BackGroundChecks);
                     CheckShieldLineOfSight();
                 }
-                if (_shieldLineOfSight == false && !MyAPIGateway.Utilities.IsDedicated) DrawHelper();
+                if (_shieldLineOfSight == false && !Session.DedicatedServer) DrawHelper();
 
                 ShieldActive = BlockWorking && _shieldLineOfSight;
                 if (_prevShieldActive == false && BlockWorking) _shieldStarting = true;
@@ -68,7 +68,7 @@ namespace DefenseShields
                 if (_effectsCleanup && (_count == 1 || _count == 21 || _count == 41)) CleanUp(2);
                 if (_longLoop % 2 == 0 && _count == 5) CleanUp(3);
                 if (_longLoop == 6 && _count == 35) CleanUp(4);
-                if (_longLoop == 7 && _count == 30 && MyAPIGateway.Utilities.IsDedicated) SaveSettings();
+                if (_longLoop == 7 && _count == 30 && (Session.DedicatedServer || Session.IsServer)) SaveSettings();
 
                 UpdateGridPower();
                 CalculatePowerCharge();
@@ -83,8 +83,6 @@ namespace DefenseShields
                     }
                     else if (_longLoop == 0 || _longLoop == 5)
                     {
-                        //Shield.ShowInToolbarConfig = false;
-                        //Shield.ShowInToolbarConfig = true;
                         Shield.RefreshCustomInfo();
                     }
                     _shieldDps = 0f;
@@ -105,11 +103,12 @@ namespace DefenseShields
                         if (_warmUp) //smooth out init latency.
                         {
                             _warmUp = false;
+                            if (Debug == 1) Log.Line($"Warmup complete");
                             return;
                         }
                     }
                     if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
-                    if ((!MyAPIGateway.Utilities.IsDedicated) && Distance(1000))
+                    if ((!Session.DedicatedServer) && Distance(1000))
                     {
                         if (_shieldMoving || _shieldStarting) BlockParticleUpdate();
                         var blockCam = Shield.PositionComp.WorldVolume;
@@ -183,7 +182,7 @@ namespace DefenseShields
 
             for (int i = 0; i < PhysicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
             _shieldLineOfSight = _blocksLos.Count < 500;
-            Log.Line($"ShieldId:{Shield.EntityId.ToString()} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {_shieldLineOfSight.ToString()}");
+            if (Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {_shieldLineOfSight.ToString()}");
         }
 
         private void DrawHelper()
@@ -341,15 +340,16 @@ namespace DefenseShields
             }
             var shieldPowerUsed = Sink.CurrentInputByType(GId);
 
-            if (((MyCubeGrid)Shield.CubeGrid).GetFatBlocks().Count < 2 && ShieldActive)
+            if (((MyCubeGrid)Shield.CubeGrid).GetFatBlocks().Count < 2 && ShieldActive && !Session.MpActive)
             {
+                if (Debug == 1) Log.Line($"Shield going critical");
                 MyVisualScriptLogicProvider.CreateExplosion(Shield.PositionComp.WorldVolume.Center, (float)Shield.PositionComp.WorldVolume.Radius * 1.25f, 2500);
                 return false;
             }
 
             if (!Shield.IsWorking && Shield.Enabled && Shield.IsFunctional && shieldPowerUsed > 0)
             {
-                Log.Line($"fixing shield state power: {_power.ToString()}");
+                if (Debug == 1) Log.Line($"fixing shield state power: {_power.ToString()}");
                 Shield.Enabled = false;
                 Shield.Enabled = true;
                 return true;
@@ -433,7 +433,7 @@ namespace DefenseShields
                     break;
                 }
             }
-            Log.Line($"ShieldId:{Shield.EntityId.ToString()} - powerCnt: {_powerSources.Count.ToString()}");
+            if (Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - powerCnt: {_powerSources.Count.ToString()}");
         }
 
         private void UpdateGridPower()
@@ -569,7 +569,6 @@ namespace DefenseShields
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
-            //if (!GridIsMobile && ShieldActive)RefreshDimensions();
             var shieldPercent = 100f;
             var secToFull = 0;
             if (ShieldBuffer < _shieldMaxBuffer) shieldPercent = (ShieldBuffer / _shieldMaxBuffer) * 100;
@@ -591,7 +590,7 @@ namespace DefenseShields
         #region Block Animation
         private void BlockMoveAnimationReset()
         {
-            //Log.Line($"Resetting BlockMovement - Tick:{_tick.ToString()}");
+            if (Debug == 1) Log.Line($"Resetting BlockMovement - Tick:{_tick.ToString()}");
             _subpartRotor.Subparts.Clear();
             Entity.TryGetSubpart("Rotor", out _subpartRotor);
         }
@@ -618,7 +617,7 @@ namespace DefenseShields
             {
                 if (_effects[i] == null)
                 {
-                    //Log.Line($"Particle #{i.ToString()} is null, creating - tick:{_tick.ToString()}");
+                    if (Debug == 1) Log.Line($"Particle #{i.ToString()} is null, creating - tick:{_tick.ToString()}");
                     MyParticlesManager.TryCreateParticleEffect("EmitterEffect", out _effects[i]);
                     if (_effects[i] == null) continue;
                     _effects[i].UserScale = 1f;
@@ -628,8 +627,6 @@ namespace DefenseShields
 
                 if (_effects[i] != null)
                 {
-                    //Log.Line($"Particle #{i.ToString()} exists, updating - tick:{_tick.ToString()}");
-
                     _effects[i].WorldMatrix = _subpartRotor.WorldMatrix;
                     _effects[i].Stop();
                     _blockParticleStopped = true;
@@ -810,8 +807,8 @@ namespace DefenseShields
                 }
                 */
                 //Log.Line("Entity closed in OnAddedToScene.");
-                //DefenseShieldsBase.Instance.Components.Add(this);
-                //Icosphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Icosphere);
+                //Session.Instance.Components.Add(this);
+                //Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
                 //Shield.CubeGrid.Components.Add(new ShieldGridComponent(this));
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
@@ -837,7 +834,7 @@ namespace DefenseShields
                 BlockParticleStop();
                 Shield?.CubeGrid.Components.Remove(typeof(ShieldGridComponent), this);
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
-                DefenseShieldsBase.Instance.Components.Remove(this);
+                Session.Instance.Components.Remove(this);
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
@@ -849,7 +846,7 @@ namespace DefenseShields
             try
             {
                 //Log.Line("Close");
-                if (DefenseShieldsBase.Instance.Components.Contains(this)) DefenseShieldsBase.Instance.Components.Remove(this);
+                if (Session.Instance.Components.Contains(this)) Session.Instance.Components.Remove(this);
                 _power = 0f;
                 Icosphere = null;
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);

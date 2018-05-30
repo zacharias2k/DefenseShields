@@ -11,6 +11,7 @@ using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRage.ModAPI;
+using VRage.Utils;
 using VRageMath;
 
 namespace DefenseShields
@@ -173,8 +174,11 @@ namespace DefenseShields
         public MyModStorageComponentBase Storage { get; set; }
         internal HashSet<ulong> playersToReceive = null;
         internal DefenseShieldsModSettings Settings = new DefenseShieldsModSettings();
-        public static DefenseShieldsEnforcement ServerEnforcedValues = new DefenseShieldsEnforcement();
 
+        internal MyStringId CustomDataTooltip = MyStringId.GetOrCompute("Shows and Editor for custom data to be used by scripts and mods");
+        internal MyStringId CustomData = MyStringId.GetOrCompute("CustomData");
+        internal MyStringId Password = MyStringId.GetOrCompute("Password");
+        internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Set the shield modulation password");
         #endregion
 
         #region constructors and Enums

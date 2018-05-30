@@ -93,6 +93,7 @@ namespace DefenseShields.Support
     {
         private static List<ShieldGridComponent> gridShield = new List<ShieldGridComponent>();
         public readonly DefenseShields DefenseShields;
+        public string Password;
 
         public ShieldGridComponent(DefenseShields defenseShields)
         {
@@ -139,6 +140,12 @@ namespace DefenseShields.Support
             return true;
         }
 
+        public string ModulationPassword
+        {
+            get { return Password; }
+            set { Password = value; }
+        }
+
         public override string ComponentTypeDebugString
         {
             get { return "Shield"; }
@@ -149,6 +156,7 @@ namespace DefenseShields.Support
     {
         private static List<ModulatorGridComponent> gridModulator = new List<ModulatorGridComponent>();
         public readonly Modulators Modulators;
+        public string Password;
 
         public ModulatorGridComponent(Modulators modulators)
         {
@@ -193,6 +201,12 @@ namespace DefenseShields.Support
         public override bool IsSerialized()
         {
             return true;
+        }
+
+        public string ModulationPassword
+        {
+            get { return Password; }
+            set { Password = value; }
         }
 
         public override string ComponentTypeDebugString

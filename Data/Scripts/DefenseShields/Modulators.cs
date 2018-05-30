@@ -4,8 +4,8 @@ using System.Linq;
 using DefenseShields.Control;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
-using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
+using Sandbox.Game.Localization;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Game;
@@ -13,44 +13,54 @@ using VRage.Game.Components;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
+using VRage.Utils;
 
 namespace DefenseShields
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OreDetector), false, "LargeShieldModulator")]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "LargeShieldModulator")]
     public class Modulators : MyGameLogicComponent
     {
         private float _power = 0.05f;
         internal bool MainInit;
+        internal bool CustomDataReset = true;
+        internal MyStringId Password = MyStringId.GetOrCompute("Password");
+        internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Set the shield modulation password");
+
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;
         public MyModStorageComponentBase Storage { get; set; }
 
         internal ModulatorSettings Settings = new ModulatorSettings();
+        internal ModulatorGridComponent MGridComponent;
 
         private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
         private readonly Dictionary<long, Modulators> _modulators = new Dictionary<long, Modulators>();
 
-        public IMyOreDetector Modulator => (IMyOreDetector)Entity;
+        private IMyUpgradeModule Modulator => (IMyUpgradeModule)Entity;
 
-        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _modulateVoxels;
-        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _modulateGrids;
+        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule> _modulateVoxels;
+        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule> _modulateGrids;
+
+        public Modulators()
+        {
+            MGridComponent = new ModulatorGridComponent(this);
+        }
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
             try
             {
                 Entity.Components.TryGet(out Sink);
-
                 base.Init(objectBuilder);
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
-
+                Modulator.OnClose += OnClose;
+                Modulator.CubeGrid.Components.Add(MGridComponent);
+                Session.Instance.Modulators.Add(this);
                 if (!_modulators.ContainsKey(Entity.EntityId)) _modulators.Add(Entity.EntityId, this);
-                DefenseShieldsBase.Instance.Modulators.Add(this);
-                Modulator.CubeGrid.Components.Add(new ModulatorGridComponent(this));
-                Modulator.BroadcastUsingAntennas = false;
-                StorageSetup();
                 CreateUi();
+                StorageSetup();
+                MyAPIGateway.TerminalControls.CustomControlGetter += CustomDataToPassword;
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -66,39 +76,60 @@ namespace DefenseShields
         {
             if (!MainInit)
             {
+                MGridComponent.ModulationPassword = Modulator.CustomData;
                 MainInit = true;
             }
-            Log.Line($"{Modulator.IsWorking} - {Modulator.BroadcastUsingAntennas}");
+
+            if (Modulator.CustomData != MGridComponent.ModulationPassword)
+            {
+                MGridComponent.ModulationPassword = Modulator.CustomData;
+                SaveSettings();
+            }
         }
 
         #region Create UI
-        private bool ShowControlOreDetectorControls(IMyTerminalBlock block)
-        {
-            return block.BlockDefinition.SubtypeName.Contains("OreDetector");
-        }
-
-        private void RemoveOreUi()
-        {
-            var actions = new List<IMyTerminalAction>();
-            MyAPIGateway.TerminalControls.GetActions<Sandbox.ModAPI.Ingame.IMyOreDetector>(out actions);
-            var actionAntenna = actions.First((x) => x.Id.ToString() == "BroadcastUsingAntennas");
-            actionAntenna.Enabled = ShowControlOreDetectorControls;
-
-            var controls = new List<IMyTerminalControl>();
-            MyAPIGateway.TerminalControls.GetControls<Sandbox.ModAPI.Ingame.IMyOreDetector>(out controls);
-            var antennaControl = controls.First((x) => x.Id.ToString() == "BroadcastUsingAntennas");
-            antennaControl.Visible = ShowControlOreDetectorControls;
-            var radiusControl = controls.First((x) => x.Id.ToString() == "Range");
-            radiusControl.Visible = ShowControlOreDetectorControls;
-        }
-
         private void CreateUi()
         {
-            DefenseShieldsBase.Instance.ControlsLoaded = true;
-            RemoveOreUi();
+            Session.Instance.ControlsLoaded = true;
+            _modulateVoxels = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Modulator, "AllowVoxels", "Voxels may pass", true);
+            _modulateGrids = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Modulator, "AllowGrids", "Grids may pass", false);
+        }
 
-            _modulateVoxels = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Modulator, "AllowVoxels", "Voxels may pass", true);
-            _modulateGrids = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Modulator, "AllowGrids", "Grids may pass", false);
+        private void CustomDataToPassword(IMyTerminalBlock block, List<IMyTerminalControl> myTerminalControls)
+        {
+            try
+            {
+                if (block.BlockDefinition.SubtypeId == "LargeShieldModulator" || block.BlockDefinition.SubtypeId == "DefenseShieldsST" 
+                    || block.BlockDefinition.SubtypeId == "DefenseShieldsSS" || block.BlockDefinition.SubtypeId == "DefenseShieldsLS")
+                    SetCustomDataToPassword(myTerminalControls);
+                else if (!CustomDataReset) ResetCustomData(myTerminalControls);
+            }
+            catch (Exception ex) { Log.Line($"Exception in CustomDataToPassword: {ex}"); }
+        }
+
+        private void SetCustomDataToPassword(IEnumerable<IMyTerminalControl> controls)
+        {
+            var customData = controls.First((x) => x.Id.ToString() == "CustomData");
+            ((IMyTerminalControlTitleTooltip) customData).Title = Password;
+            ((IMyTerminalControlTitleTooltip) customData).Tooltip = PasswordTooltip;
+            customData.RedrawControl();
+            CustomDataReset = false;
+        }
+
+        private void ResetCustomData(IEnumerable<IMyTerminalControl> controls)
+        {
+            var customData = controls.First((x) => x.Id.ToString() == "CustomData");
+            ((IMyTerminalControlTitleTooltip)customData).Title = MySpaceTexts.Terminal_CustomData;
+            ((IMyTerminalControlTitleTooltip) customData).Tooltip = MySpaceTexts.Terminal_CustomDataTooltip;
+            customData.RedrawControl();
+            CustomDataReset = true;
+        }
+
+        private void OnClose(IMyEntity obj)
+        {
+            if (Modulator.CubeGrid.Components.Contains(typeof(ModulatorGridComponent))) Modulator.CubeGrid.Components.Add(MGridComponent);
+            if (_modulators.ContainsKey(Entity.EntityId)) _modulators.Remove(Entity.EntityId);
+            if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
         }
         #endregion
 
@@ -134,7 +165,7 @@ namespace DefenseShields
                 Log.Line($"ShieldId:{Modulator.EntityId.ToString()} - Storage = null");
                 Modulator.Storage = new MyModStorageComponent();
             }
-            Modulator.Storage[DefenseShieldsBase.Instance.ModulatorGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
+            Modulator.Storage[Session.Instance.ModulatorGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
         }
 
         public bool LoadSettings()
@@ -144,7 +175,7 @@ namespace DefenseShields
             string rawData;
             bool loadedSomething = false;
 
-            if (Modulator.Storage.TryGetValue(DefenseShieldsBase.Instance.ModulatorGuid, out rawData))
+            if (Modulator.Storage.TryGetValue(Session.Instance.ModulatorGuid, out rawData))
             {
                 ModulatorSettings loadedSettings = null;
 
