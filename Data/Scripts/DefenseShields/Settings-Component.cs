@@ -47,6 +47,7 @@ namespace DefenseShields
             ServerUpdate = false;
             _updateDimensions = true;
             SaveSettings();
+            if (Debug == 1) Log.Line($"SyncControlsServer");
         }
 
         private void SyncControlsClient()
@@ -92,6 +93,7 @@ namespace DefenseShields
                 if (!GridIsMobile) _updateDimensions = true;
                 NetworkUpdate();
                 SaveSettings();
+                if (Debug == 1) Log.Line($"Needed sync");
             }
         }
 
@@ -105,7 +107,7 @@ namespace DefenseShields
             Depth = newSettings.Depth;
             Rate = newSettings.Rate;
             ShieldBuffer = newSettings.Buffer;
-
+            if (Session.ServerEnforcedValues.Debug == 1) Log.Line($"Updated settings");
             if (localOnly)
             {
                 ShieldBaseScaler = newSettings.BaseScaler;
@@ -117,6 +119,7 @@ namespace DefenseShields
                 VoxelSupport = newSettings.DisableVoxelSupport;
                 GridDamageSupport = newSettings.DisableGridDamageSupport;
                 Debug = newSettings.Debug;
+                if (Session.ServerEnforcedValues.Debug == 1) Log.Line($"Updated settings (local only)");
             }
         }
 
@@ -132,15 +135,16 @@ namespace DefenseShields
             GridDamageSupport = newEnforce.DisableGridDamageSupport;
             Debug = newEnforce.Debug;
 
-            ServerEnforcedValues.Nerf = newEnforce.Nerf;
-            ServerEnforcedValues.BaseScaler = newEnforce.BaseScaler;
-            ServerEnforcedValues.Efficiency = newEnforce.Efficiency;
-            ServerEnforcedValues.StationRatio = newEnforce.StationRatio;
-            ServerEnforcedValues.LargeShipRatio = newEnforce.LargeShipRatio;
-            ServerEnforcedValues.SmallShipRatio = newEnforce.SmallShipRatio;
-            ServerEnforcedValues.DisableVoxelSupport = newEnforce.DisableVoxelSupport;
-            ServerEnforcedValues.DisableGridDamageSupport = newEnforce.DisableGridDamageSupport;
-            ServerEnforcedValues.Debug = newEnforce.Debug;
+            Session.ServerEnforcedValues.Nerf = newEnforce.Nerf;
+            Session.ServerEnforcedValues.BaseScaler = newEnforce.BaseScaler;
+            Session.ServerEnforcedValues.Efficiency = newEnforce.Efficiency;
+            Session.ServerEnforcedValues.StationRatio = newEnforce.StationRatio;
+            Session.ServerEnforcedValues.LargeShipRatio = newEnforce.LargeShipRatio;
+            Session.ServerEnforcedValues.SmallShipRatio = newEnforce.SmallShipRatio;
+            Session.ServerEnforcedValues.DisableVoxelSupport = newEnforce.DisableVoxelSupport;
+            Session.ServerEnforcedValues.DisableGridDamageSupport = newEnforce.DisableGridDamageSupport;
+            Session.ServerEnforcedValues.Debug = newEnforce.Debug;
+            if (Debug == 1) Log.Line($"Updated Enforcements");
         }
 
         public void SaveSettings()
@@ -150,7 +154,8 @@ namespace DefenseShields
                 Log.Line($"ShieldId:{Shield.EntityId.ToString()} - Storage = null");
                 Shield.Storage = new MyModStorageComponent();
             }
-            Shield.Storage[DefenseShieldsBase.Instance.SettingsGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
+            Shield.Storage[Session.Instance.SettingsGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
+            if (Debug == 1) Log.Line($"Saved Settings");
         }
 
         public bool LoadSettings()
@@ -160,7 +165,7 @@ namespace DefenseShields
             string rawData;
             bool loadedSomething = false;
 
-            if (Shield.Storage.TryGetValue(DefenseShieldsBase.Instance.SettingsGuid, out rawData))
+            if (Shield.Storage.TryGetValue(Session.Instance.SettingsGuid, out rawData))
             {
                 DefenseShieldsModSettings loadedSettings = null;
 
@@ -179,7 +184,7 @@ namespace DefenseShields
                     Settings = loadedSettings;
                     loadedSomething = true;
                 }
-                //Log.Line($"Loaded settings:\n{Settings.ToString()}");
+                if (Settings.Debug == 1) Log.Line($"Loaded settings:\n{Settings.ToString()}");
             }
             return loadedSomething;
         }
@@ -288,31 +293,31 @@ namespace DefenseShields
 
         private void EnforcementRequest()
         {
-            if ((MyAPIGateway.Utilities.IsDedicated || MyAPIGateway.Multiplayer.IsServer))
+            if (Session.DedicatedServer || Session.IsServer)
             {
-                //Log.Line($"This is the server (Dedicated: {MyAPIGateway.Utilities.IsDedicated}) bypassing enforcement request");
+                Log.Line($"I am the host, no one has power over me: {Session.ServerEnforcedValues}");
             }
             else 
             {
-                //Log.Line($"Client requesting enforcement - current: {ShieldNerf} - {ShieldBaseScaler} - {Settings.Nerf} - {Settings.BaseScaler} - {ServerEnforcedValues.Nerf} - {ServerEnforcedValues.BaseScaler}");
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new EnforceData(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, ServerEnforcedValues));
-                MyAPIGateway.Multiplayer.SendMessageToServer(DefenseShieldsBase.PACKET_ID_ENFORCE, bytes);
+                Log.Line($"Client requesting enforcement - current: {Session.ServerEnforcedValues}");
+                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new EnforceData(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, Session.ServerEnforcedValues));
+                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PACKET_ID_ENFORCE, bytes);
             }
         }
 
         private void NetworkUpdate()
         {
 
-            if (MyAPIGateway.Multiplayer.IsServer)
+            if (Session.IsServer)
             {
-                //Log.Line($"server sent network update for shield {Shield.EntityId}");
-                DefenseShieldsBase.RelaySettingsToClients(Shield, Settings); // update clients with server's settings
+                if (Debug == 1) Log.Line($"server relaying network settings update for shield {Shield.EntityId}");
+                Session.RelaySettingsToClients(Shield, Settings); // update clients with server's settings
             }
             else // client, send settings to server
             {
-                //Log.Line($"client sent network update {Shield.EntityId}");
+                if (Debug == 1) Log.Line($"client sent network settings update for shield {Shield.EntityId}");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new PacketData(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, Settings));
-                MyAPIGateway.Multiplayer.SendMessageToServer(DefenseShieldsBase.PACKET_ID_SETTINGS, bytes);
+                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PACKET_ID_SETTINGS, bytes);
             }
         }
         #endregion

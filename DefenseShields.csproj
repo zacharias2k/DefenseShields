@@ -198,6 +198,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\Seperator.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Entweb-Component.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Intersect-Component.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Modulators.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Settings-Component.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Setup-Component.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Init-Component.cs" />

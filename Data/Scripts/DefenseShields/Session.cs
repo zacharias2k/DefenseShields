@@ -15,11 +15,15 @@ namespace DefenseShields
 {
     #region Session+protection Class
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
-    public class DefenseShieldsBase : MySessionComponentBase
+    public class Session : MySessionComponentBase
     {
         internal bool SessionInit;
         public bool ControlsLoaded { get; set; }
         public bool Enabled = true;
+
+        public static readonly bool MpActive = MyAPIGateway.Multiplayer.MultiplayerActive;
+        public static readonly bool IsServer = MyAPIGateway.Multiplayer.IsServer;
+        public static readonly bool DedicatedServer = MyAPIGateway.Utilities.IsDedicated;
 
         private int _count = -1;
         private int _longLoop;
@@ -29,17 +33,23 @@ namespace DefenseShields
         public const ushort PACKET_ID_ENFORCE = 62521; // network
         private const long WORKSHOP_ID = 1365616918;
         public readonly Guid SettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
+        public readonly Guid ModulatorGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811509");
 
         public string disabledBy = null;
 
-        public static DefenseShieldsBase Instance { get; private set; }
+        public static Session Instance { get; private set; }
         public readonly MyModContext MyModContext = new MyModContext();
         public readonly Icosphere Icosphere = new Icosphere(5);
         private DSUtils _dsutil1 = new DSUtils();
 
         private readonly Dictionary<IMyEntity, int> _voxelDamageCounter = new Dictionary<IMyEntity, int>();
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
+        public readonly List<Modulators> Modulators = new List<Modulators>();
+
         public readonly List<IMyPlayer> Players = new List<IMyPlayer>();
+
+        public static DefenseShieldsEnforcement ServerEnforcedValues = new DefenseShieldsEnforcement();
+
 
         public void Init()
         {
@@ -52,8 +62,9 @@ namespace DefenseShields
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_ENFORCE, PacketEnforcementReceived);
                 MyAPIGateway.Utilities.RegisterMessageHandler(WORKSHOP_ID, ModMessageHandler);
 
-                if (MyAPIGateway.Utilities.IsDedicated || MyAPIGateway.Multiplayer.IsServer)
+                if (DedicatedServer || IsServer)
                 {
+                    Log.Line($"This is a server, loading config");
                     DsUtilsStatic.PrepConfigFile();
                     DsUtilsStatic.ReadConfigFile();
                 }
@@ -64,8 +75,8 @@ namespace DefenseShields
 
         public override void Draw()
         {
-            if (MyAPIGateway.Utilities.IsDedicated) return;
-            if (_extendedLoop == 0 & _longLoop == 0 && _count == 0) Log.Line($"Shields in the world: {Components.Count.ToString()}");
+            if (DedicatedServer) return;
+            if (ServerEnforcedValues.Debug == 1 && _extendedLoop == 0 & _longLoop == 0 && _count == 0) Log.Line($"Shields in the world: {Components.Count.ToString()}");
             try
             {
                 if (!SessionInit || Components.Count == 0) return;
@@ -105,7 +116,7 @@ namespace DefenseShields
 
                 if (!SessionInit)
                 {
-                    if (MyAPIGateway.Multiplayer.IsServer && MyAPIGateway.Utilities.IsDedicated) Init();
+                    if (IsServer && DedicatedServer) Init();
                     else if (MyAPIGateway.Session.Player != null) Init();
                 }
             }
@@ -226,7 +237,7 @@ namespace DefenseShields
                             logic.SaveSettings();
                             logic.ServerUpdate = true;
 
-                            if (MyAPIGateway.Multiplayer.IsServer)
+                            if (IsServer)
                                 RelayToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                         }
                         break;
@@ -280,14 +291,14 @@ namespace DefenseShields
                             }
 
                             //Log.Line($"PacketReceived(); Enforce - Server: {MyAPIGateway.Multiplayer.IsServer} Valid packet!\n{DefenseShields.ServerEnforcedValues} - {data.Enforce.Nerf} - {data.Enforce.BaseScaler}");
-                            if (!(MyAPIGateway.Utilities.IsDedicated))
+                            if (!(DedicatedServer || IsServer))
                             {
                                 logic.UpdateEnforcement(data.Enforce);
                                 logic.SaveSettings();
                                 logic.EnforceUpdate = true;
                             }
 
-                            if (MyAPIGateway.Utilities.IsDedicated)
+                            if (DedicatedServer || IsServer)
                             {
                                 RelayEnforcementToClients(logic.Shield);
                             }
@@ -300,7 +311,7 @@ namespace DefenseShields
 
         public static void RelayEnforcementToClients(IMyCubeBlock block)
         {
-            var data = new EnforceData(MyAPIGateway.Multiplayer.MyId, block.EntityId, DefenseShields.ServerEnforcedValues);
+            var data = new EnforceData(MyAPIGateway.Multiplayer.MyId, block.EntityId, ServerEnforcedValues);
 
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
             ForceClients(block.CubeGrid.GetPosition(), bytes, data.Sender);

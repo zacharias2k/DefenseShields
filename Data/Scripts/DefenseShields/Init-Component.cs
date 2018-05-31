@@ -42,8 +42,9 @@ namespace DefenseShields
 
                 if (!_shields.ContainsKey(Entity.EntityId)) _shields.Add(Entity.EntityId, this);
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
-                DefenseShieldsBase.Instance.Components.Add(this);
+                Session.Instance.Components.Add(this);
                 Shield.CubeGrid.Components.Add(new ShieldGridComponent(this));
+                if (Debug == 1) Log.Line($"pre-Init complete");
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -56,10 +57,11 @@ namespace DefenseShields
                 {
                     DefinitionsLoaded = true;
                     GetDefinitons();
+                    if (Debug == 1) Log.Line($"Get Definitions");
                 }
                 if (AnimateInit && MainInit || !Shield.IsFunctional) return;
 
-                if (Icosphere == null) Icosphere = new Icosphere.Instance(DefenseShieldsBase.Instance.Icosphere);
+                if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
 
                 if (!MainInit && Shield.IsFunctional)
                 {
@@ -67,13 +69,14 @@ namespace DefenseShields
                     StorageSetup();
 
                     var enableState = Shield.Enabled;
+
                     if (enableState)
                     {
                         Shield.Enabled = false;
                         Shield.Enabled = true;
                     }
 
-                    if (MyAPIGateway.Utilities.IsDedicated || MyAPIGateway.Multiplayer.IsServer) ServerEnforcementSetup();
+                    if (Session.IsServer) ServerEnforcementSetup();
                     else ClientEnforcementRequest();
 
                     if (Shield.CubeGrid.Physics.IsStatic) GridIsMobile = false;
@@ -81,11 +84,13 @@ namespace DefenseShields
 
                     CreateUi();
 
+                    if (Debug == 1) Log.Line($"MainInit complete");
+
                     MainInit = true;
                     return;
                 }
 
-                if (ServerEnforcedValues.Nerf.Equals(-1f)) return;
+                if (Session.ServerEnforcedValues.Nerf.Equals(-1f)) return;
 
                 if (!HealthAndPowerCheck()) return;
 
@@ -96,15 +101,17 @@ namespace DefenseShields
                     switch (Shield.BlockDefinition.SubtypeId)
                     {
                         case "DefenseShieldsST":
-                            _shieldRatio = ServerEnforcedValues.StationRatio;
+                            _shieldRatio = Session.ServerEnforcedValues.StationRatio;
                             break;
                         case "DefenseShieldsLS":
-                            _shieldRatio = ServerEnforcedValues.LargeShipRatio;
+                            _shieldRatio = Session.ServerEnforcedValues.LargeShipRatio;
                             break;
                         case "DefenseShieldsSS":
-                            _shieldRatio = ServerEnforcedValues.SmallShipRatio;
+                            _shieldRatio = Session.ServerEnforcedValues.SmallShipRatio;
                             break;
                     }
+
+                    if (Debug == 1) Log.Line($"PhysicsInit complete");
 
                     PhysicsInit = true;
                 }
@@ -113,10 +120,13 @@ namespace DefenseShields
 
                 if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" || Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS" || Shield.BlockDefinition.SubtypeId == "DefenseShieldsST")
                 {
-                    Log.Line($"ShieldId:{Shield.EntityId.ToString()} - {Shield.BlockDefinition.SubtypeId} is functional - tick:{_tick.ToString()}");
+                    if (Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - {Shield.BlockDefinition.SubtypeId} is functional - tick:{_tick.ToString()}");
                     Entity.TryGetSubpart("Rotor", out _subpartRotor);
 
-                    if (!MyAPIGateway.Utilities.IsDedicated) BlockParticleCreate();
+                    if (!Session.DedicatedServer) BlockParticleCreate();
+
+                    if (Debug == 1) Log.Line($"AnimateInit complete");
+
                     AnimateInit = true;
                 }
             }
@@ -134,6 +144,7 @@ namespace DefenseShields
             if (!HardDisable && !SinkInit) PowerInitCheck();
 
             if (!HardDisable || SinkInit) return true;
+            if (Debug == 1) Log.Line($"HardDisable is triggered - Power: {NoPower} - {SinkInit} - {Shield.BlockDefinition.SubtypeId}");
 
             var realPlayerIds = new List<long>();
             DsUtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
@@ -171,7 +182,7 @@ namespace DefenseShields
             if (GridIsMobile) parent = (MyEntity)Shield.CubeGrid;
             else parent = (MyEntity)Shield.CubeGrid;
 
-            _shellPassive = Spawn.EmptyEntity("dShellPassive", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldPassive_LOD0.mwm", parent, true);
+            _shellPassive = Spawn.EmptyEntity("dShellPassive", $"{Session.Instance.ModPath()}\\Models\\Cubes\\ShieldPassive_LOD0.mwm", parent, true);
             _shellPassive.Render.CastShadows = false;
             _shellPassive.IsPreview = true;
             _shellPassive.Render.Visible = true;
@@ -180,7 +191,7 @@ namespace DefenseShields
             _shellPassive.Render.UpdateRenderObject(false);
             _shellPassive.Save = false;
 
-            _shellActive = Spawn.EmptyEntity("dShellActive", $"{DefenseShieldsBase.Instance.ModPath()}\\Models\\Cubes\\ShieldActiveH_LOD3.mwm", parent, true);
+            _shellActive = Spawn.EmptyEntity("dShellActive", $"{Session.Instance.ModPath()}\\Models\\Cubes\\ShieldActiveH_LOD3.mwm", parent, true);
             _shellActive.Render.CastShadows = false;
             _shellActive.IsPreview = true;
             _shellActive.Render.Visible = true;
@@ -200,6 +211,8 @@ namespace DefenseShields
 
             Shield.AppendingCustomInfo += AppendingCustomInfo;
             Shield.RefreshCustomInfo();
+
+            if (Debug == 1) Log.Line($"SpawnEntities complete");
         }
 
         private void StorageSetup()
@@ -207,57 +220,61 @@ namespace DefenseShields
             Storage = Shield.Storage;
             LoadSettings();
             UpdateSettings(Settings, false);
+            if (Debug == 1) Log.Line($"StorageSetup complete");
         }
 
         private void ClientEnforcementRequest()
         {
-            if (ServerEnforcedValues.Nerf >= 0) ShieldNerf = ServerEnforcedValues.Nerf; 
-            if (ServerEnforcedValues.BaseScaler >= 1) ShieldBaseScaler = ServerEnforcedValues.BaseScaler;
-            if (ServerEnforcedValues.Efficiency >= 1) ShieldEfficiency = ServerEnforcedValues.Efficiency;
+            if (Session.ServerEnforcedValues.Nerf >= 0) ShieldNerf = Session.ServerEnforcedValues.Nerf; 
+            if (Session.ServerEnforcedValues.BaseScaler >= 1) ShieldBaseScaler = Session.ServerEnforcedValues.BaseScaler;
+            if (Session.ServerEnforcedValues.Efficiency >= 1) ShieldEfficiency = Session.ServerEnforcedValues.Efficiency;
 
-            if (ServerEnforcedValues.StationRatio > 0) StationRatio = ServerEnforcedValues.StationRatio; 
-            if (ServerEnforcedValues.LargeShipRatio > 0) LargeShipRatio = ServerEnforcedValues.LargeShipRatio;
-            if (ServerEnforcedValues.SmallShipRatio > 0) SmallShipRatio = ServerEnforcedValues.SmallShipRatio;
+            if (Session.ServerEnforcedValues.StationRatio > 0) StationRatio = Session.ServerEnforcedValues.StationRatio; 
+            if (Session.ServerEnforcedValues.LargeShipRatio > 0) LargeShipRatio = Session.ServerEnforcedValues.LargeShipRatio;
+            if (Session.ServerEnforcedValues.SmallShipRatio > 0) SmallShipRatio = Session.ServerEnforcedValues.SmallShipRatio;
 
-            if (ServerEnforcedValues.DisableVoxelSupport > 0) VoxelSupport = ServerEnforcedValues.DisableVoxelSupport;
-            if (ServerEnforcedValues.DisableGridDamageSupport > 0) GridDamageSupport = ServerEnforcedValues.DisableGridDamageSupport;
+            if (Session.ServerEnforcedValues.DisableVoxelSupport > 0) VoxelSupport = Session.ServerEnforcedValues.DisableVoxelSupport;
+            if (Session.ServerEnforcedValues.DisableGridDamageSupport > 0) GridDamageSupport = Session.ServerEnforcedValues.DisableGridDamageSupport;
 
-            if (ServerEnforcedValues.Debug > 0) Debug = ServerEnforcedValues.Debug;
+            if (Session.ServerEnforcedValues.Debug > 0) Debug = Session.ServerEnforcedValues.Debug;
 
 
-            if (ServerEnforcedValues.BaseScaler.Equals(-1) && !Settings.BaseScaler.Equals(-1))
+            if (Session.ServerEnforcedValues.BaseScaler.Equals(-1) && !Settings.BaseScaler.Equals(-1))
             {
-                ServerEnforcedValues.BaseScaler = Settings.BaseScaler;
-                ServerEnforcedValues.Nerf = Settings.Nerf;
-                ServerEnforcedValues.Efficiency = Settings.Efficiency;
+                Session.ServerEnforcedValues.BaseScaler = Settings.BaseScaler;
+                Session.ServerEnforcedValues.Nerf = Settings.Nerf;
+                Session.ServerEnforcedValues.Efficiency = Settings.Efficiency;
 
-                ServerEnforcedValues.StationRatio = Settings.StationRatio;
-                ServerEnforcedValues.LargeShipRatio = Settings.LargeShipRatio;
-                ServerEnforcedValues.SmallShipRatio = Settings.SmallShipRatio;
+                Session.ServerEnforcedValues.StationRatio = Settings.StationRatio;
+                Session.ServerEnforcedValues.LargeShipRatio = Settings.LargeShipRatio;
+                Session.ServerEnforcedValues.SmallShipRatio = Settings.SmallShipRatio;
 
-                ServerEnforcedValues.DisableVoxelSupport = Settings.DisableVoxelSupport;
-                ServerEnforcedValues.DisableGridDamageSupport = Settings.DisableGridDamageSupport;
+                Session.ServerEnforcedValues.DisableVoxelSupport = Settings.DisableVoxelSupport;
+                Session.ServerEnforcedValues.DisableGridDamageSupport = Settings.DisableGridDamageSupport;
 
-                ServerEnforcedValues.Debug = Settings.Debug;
+                Session.ServerEnforcedValues.Debug = Settings.Debug;
+                if (Debug == 1) Log.Line($"Local enforcements found, bypassing request");
             }
 
-            if (ServerEnforcedValues.BaseScaler < 1) EnforcementRequest();
+            if (Session.ServerEnforcedValues.BaseScaler < 1) EnforcementRequest();
+            if (Debug == 1) Log.Line($"ClientEnforcementRequest Check finished - Enforcement Request?: {Session.ServerEnforcedValues.BaseScaler < 1}");
         }
 
         private void ServerEnforcementSetup()
         {
-            ShieldNerf = ServerEnforcedValues.Nerf; 
-            ShieldBaseScaler = ServerEnforcedValues.BaseScaler;
-            ShieldEfficiency = ServerEnforcedValues.Efficiency;
+            ShieldNerf = Session.ServerEnforcedValues.Nerf; 
+            ShieldBaseScaler = Session.ServerEnforcedValues.BaseScaler;
+            ShieldEfficiency = Session.ServerEnforcedValues.Efficiency;
 
-            StationRatio = ServerEnforcedValues.StationRatio;
-            LargeShipRatio = ServerEnforcedValues.LargeShipRatio;
-            SmallShipRatio = ServerEnforcedValues.SmallShipRatio;
+            StationRatio = Session.ServerEnforcedValues.StationRatio;
+            LargeShipRatio = Session.ServerEnforcedValues.LargeShipRatio;
+            SmallShipRatio = Session.ServerEnforcedValues.SmallShipRatio;
 
-            VoxelSupport = ServerEnforcedValues.DisableVoxelSupport;
-            GridDamageSupport = ServerEnforcedValues.DisableGridDamageSupport;
+            VoxelSupport = Session.ServerEnforcedValues.DisableVoxelSupport;
+            GridDamageSupport = Session.ServerEnforcedValues.DisableGridDamageSupport;
 
-            Debug = ServerEnforcedValues.Debug;
+            Debug = Session.ServerEnforcedValues.Debug;
+            if (Debug == 1) Log.Line($"ServerEnforcementSetup - nerf: {ShieldNerf} - base: {ShieldBaseScaler} - Eff: {ShieldEfficiency} - ST:{StationRatio} - LS:{LargeShipRatio} - SS:{SmallShipRatio} - Voxel:{VoxelSupport} - Grid:{GridDamageSupport}\n{Session.ServerEnforcedValues}");
         }
 
         private void PowerInitCheck()
@@ -267,6 +284,7 @@ namespace DefenseShields
                 if (SinkInit) return;
                 if (!Sink.IsPowerAvailable(GId, _power))
                 {
+                    if (Debug == 1) Log.Line($"HardDisable");
                     NoPower = true;
                     HardDisable = true;
                     return;
@@ -277,12 +295,14 @@ namespace DefenseShields
                 _power = 0.0000000001f;
                 _shieldCurrentPower = _power;
                 Sink.Update();
+                if (Debug == 1) Log.Line($"PowerInit complete");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }
 
         private long ThereCanBeOnlyOne()
         {
+            if (Debug == 1) Log.Line($"ThereCanBeOnlyOne start");
             var gridStatic = Shield.CubeGrid.Physics.IsStatic;
             var shieldBlocks = new List<MyCubeBlock>();
             foreach (var block in ((MyCubeGrid)Shield.CubeGrid).GetFatBlocks())
@@ -318,6 +338,7 @@ namespace DefenseShields
                     shieldId = shield.EntityId;
                 }
             }
+            if (Debug == 1) Log.Line($"ThereCanBeOnlyOne complete, found shield: {shieldId}");
             return shieldId;
         }
 
@@ -364,7 +385,7 @@ namespace DefenseShields
 
         private void CreateUi()
         {
-            DefenseShieldsBase.Instance.ControlsLoaded = true;
+            Session.Instance.ControlsLoaded = true;
             RemoveOreUi();
 
             _chargeSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ChargeRate", "Shield Charge Rate", 20, 95, 50);
@@ -376,6 +397,7 @@ namespace DefenseShields
             _widthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "WidthSlider", "Shield Size Width", 30, 300, 100);
             _heightSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HeightSlider", "Shield Size Height", 30, 300, 100);
             _depthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "DepthSlider", "Shield Size Depth", 30, 300, 100);
+            if (Debug == 1) Log.Line($"CreateUI Complete");
         }
         #endregion
     }

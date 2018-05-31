@@ -118,9 +118,9 @@
     </Definition>
   <!-- Shield Modulator -->
   
-      <Definition xsi:type="MyObjectBuilder_SpaceBallDefinition">
+      <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
-        <TypeId>SpaceBall</TypeId>
+        <TypeId>UpgradeModule</TypeId>
         <SubtypeId>LargeShieldModulator</SubtypeId>
       </Id>
       <DisplayName>Shield Modulator</DisplayName>

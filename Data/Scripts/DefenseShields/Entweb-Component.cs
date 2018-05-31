@@ -35,13 +35,14 @@ namespace DefenseShields
                     || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
 
                 var relation = EntType(ent);
-                if (relation == Ent.Ignore || relation == Ent.Friend || relation == Ent.Weapon)
+                if (relation == Ent.Ignore || relation == Ent.Friend || relation == Ent.Weapon || relation == Ent.Authenticated)
                 {
-                    if ((relation == Ent.Friend || relation == Ent.Weapon) && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv))
+                    if ((relation == Ent.Friend || relation == Ent.Weapon || relation == Ent.Authenticated) && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv))
                     {
                         FriendlyCache.Add(ent);
                         continue;
                     }
+                    if (relation == Ent.Authenticated) continue;
                     IgnoreCache.Add(ent);
                     continue;
                 }
@@ -192,13 +193,14 @@ namespace DefenseShields
             Shielded,
             Other,
             VoxelBase,
-            Weapon
+            Weapon,
+            Authenticated
         };
 
         private Ent EntType(IMyEntity ent)
         {
             if (ent == null) return Ent.Ignore;
-            if (ent is MyVoxelBase && (ServerEnforcedValues.DisableVoxelSupport == 1 || !GridIsMobile)) return Ent.Ignore;
+            if (ent is MyVoxelBase && (Session.ServerEnforcedValues.DisableVoxelSupport == 1 || !GridIsMobile)) return Ent.Ignore;
             if (ent is IMyAutomaticRifleGun) return Ent.Weapon;
 
             if (ent is IMyCharacter)
@@ -212,6 +214,20 @@ namespace DefenseShields
             if (ent is IMyCubeGrid)
             {
                 var grid = ent as IMyCubeGrid;
+
+                if (grid.Components.Contains(typeof(ModulatorGridComponent)))
+                {
+                    ModulatorGridComponent modComp;
+                    grid.Components.TryGet(out modComp);
+
+                    if (modComp.ModulationPassword.Equals(Shield.CustomData))
+                    {
+                        //Log.Line($"Modulator password [{modComp.ModulationPassword}] matches");
+                        return Ent.Authenticated;
+                    }
+                    //Log.Line($"Modulator password [{modComp.ModulationPassword}] does not match!");
+                }
+
                 if (((MyCubeGrid)grid).BlocksCount < 3 && grid.BigOwners.Count == 0) return Ent.SmallNobodyGrid;
                 if (grid.BigOwners.Count <= 0) return Ent.LargeNobodyGrid;
 

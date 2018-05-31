@@ -93,6 +93,7 @@ namespace DefenseShields.Support
     {
         private static List<ShieldGridComponent> gridShield = new List<ShieldGridComponent>();
         public readonly DefenseShields DefenseShields;
+        public string Password;
 
         public ShieldGridComponent(DefenseShields defenseShields)
         {
@@ -137,6 +138,75 @@ namespace DefenseShields.Support
         public override bool IsSerialized()
         {
             return true;
+        }
+
+        public string ModulationPassword
+        {
+            get { return Password; }
+            set { Password = value; }
+        }
+
+        public override string ComponentTypeDebugString
+        {
+            get { return "Shield"; }
+        }
+    }
+
+    public class ModulatorGridComponent : MyEntityComponentBase
+    {
+        private static List<ModulatorGridComponent> gridModulator = new List<ModulatorGridComponent>();
+        public readonly Modulators Modulators;
+        public string Password;
+
+        public ModulatorGridComponent(Modulators modulators)
+        {
+            Modulators = modulators;
+        }
+
+        public override void OnAddedToContainer()
+        {
+            base.OnAddedToContainer();
+
+            if (Container.Entity.InScene)
+            {
+                gridModulator.Add(this);
+            }
+        }
+
+        public override void OnBeforeRemovedFromContainer()
+        {
+
+            if (Container.Entity.InScene)
+            {
+                gridModulator.Remove(this);
+            }
+
+            base.OnBeforeRemovedFromContainer();
+        }
+
+        public override void OnAddedToScene()
+        {
+            base.OnAddedToScene();
+
+            gridModulator.Add(this);
+        }
+
+        public override void OnRemovedFromScene()
+        {
+            gridModulator.Remove(this);
+
+            base.OnRemovedFromScene();
+        }
+
+        public override bool IsSerialized()
+        {
+            return true;
+        }
+
+        public string ModulationPassword
+        {
+            get { return Password; }
+            set { Password = value; }
         }
 
         public override string ComponentTypeDebugString
