@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
@@ -7,8 +8,11 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
+using Sandbox.Game.Localization;
+using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage;
 using VRage.Game.Entity;
+using VRage.Utils;
 using VRageMath;
 
 namespace DefenseShields
@@ -20,6 +24,9 @@ namespace DefenseShields
         internal bool SessionInit;
         public bool ControlsLoaded { get; set; }
         public bool Enabled = true;
+        internal bool CustomDataReset = true;
+        internal MyStringId Password = MyStringId.GetOrCompute("Password");
+        internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Set the shield modulation password");
 
         public static readonly bool MpActive = MyAPIGateway.Multiplayer.MultiplayerActive;
         public static readonly bool IsServer = MyAPIGateway.Multiplayer.IsServer;
@@ -31,6 +38,7 @@ namespace DefenseShields
 
         public const ushort PACKET_ID_SETTINGS = 62520; // network
         public const ushort PACKET_ID_ENFORCE = 62521; // network
+        public const ushort PACKET_ID_MODULATOR = 62522; // network
         private const long WORKSHOP_ID = 1365616918;
         public readonly Guid SettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
         public readonly Guid ModulatorGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811509");
@@ -48,7 +56,7 @@ namespace DefenseShields
 
         public readonly List<IMyPlayer> Players = new List<IMyPlayer>();
 
-        public static DefenseShieldsEnforcement ServerEnforcedValues = new DefenseShieldsEnforcement();
+        public static DefenseShieldsEnforcement Enforced = new DefenseShieldsEnforcement();
 
 
         public void Init()
@@ -60,7 +68,9 @@ namespace DefenseShields
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_SETTINGS, PacketSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_ENFORCE, PacketEnforcementReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_MODULATOR, ModulatorSettingsReceived);
                 MyAPIGateway.Utilities.RegisterMessageHandler(WORKSHOP_ID, ModMessageHandler);
+                MyAPIGateway.TerminalControls.CustomControlGetter += CustomDataToPassword;
 
                 if (DedicatedServer || IsServer)
                 {
@@ -76,7 +86,7 @@ namespace DefenseShields
         public override void Draw()
         {
             if (DedicatedServer) return;
-            if (ServerEnforcedValues.Debug == 1 && _extendedLoop == 0 & _longLoop == 0 && _count == 0) Log.Line($"Shields in the world: {Components.Count.ToString()}");
+            if (Enforced.Debug == 1 && _extendedLoop == 0 & _longLoop == 0 && _count == 0) Log.Line($"Shields in the world: {Components.Count.ToString()}");
             try
             {
                 if (!SessionInit || Components.Count == 0) return;
@@ -231,20 +241,19 @@ namespace DefenseShields
                                 return;
                             }
 
-                            //Log.Line($"Packet received: {MyAPIGateway.Multiplayer.IsServer} - data:{data.Settings.Nerf} - {data.Settings.BaseScaler}");
+                            if (Enforced.Debug == 1) Log.Line($"Packet Settings Packet received:- data:\n{data.Settings}");
                             data.Settings.Buffer = logic.ShieldBuffer;
                             logic.UpdateSettings(data.Settings);
                             logic.SaveSettings();
                             logic.ServerUpdate = true;
 
                             if (IsServer)
-                                RelayToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                                ShieldSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                         }
                         break;
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in PacketSettingsReceived: {ex}"); }
-
         }
 
         private static void PacketEnforcementReceived(byte[] bytes)
@@ -290,7 +299,7 @@ namespace DefenseShields
                                 return;
                             }
 
-                            //Log.Line($"PacketReceived(); Enforce - Server: {MyAPIGateway.Multiplayer.IsServer} Valid packet!\n{DefenseShields.ServerEnforcedValues} - {data.Enforce.Nerf} - {data.Enforce.BaseScaler}");
+                            if (Enforced.Debug == 1) Log.Line($"PacketReceived(); Enforce - Server:\n{data.Enforce}");
                             if (!(DedicatedServer || IsServer))
                             {
                                 logic.UpdateEnforcement(data.Enforce);
@@ -300,7 +309,7 @@ namespace DefenseShields
 
                             if (DedicatedServer || IsServer)
                             {
-                                RelayEnforcementToClients(logic.Shield);
+                                PacketizeEnforcements(logic.Shield);
                             }
                         }
                         break;
@@ -309,23 +318,85 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in PacketEnforcementReceived: {ex}"); }
         }
 
-        public static void RelayEnforcementToClients(IMyCubeBlock block)
+        private static void ModulatorSettingsReceived(byte[] bytes)
         {
-            var data = new EnforceData(MyAPIGateway.Multiplayer.MyId, block.EntityId, ServerEnforcedValues);
+            try
+            {
+                if (bytes.Length <= 2)
+                {
+                    Log.Line($"PacketReceived(); invalid length <= 2; length={bytes.Length.ToString()}");
+                    return;
+                }
 
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            ForceClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
-            //Log.Line($"RelayEnforcementToClients - Nerf:{data.Enforce.Nerf} - Base:{data.Enforce.BaseScaler} - all {data.Enforce}");
+                var data = MyAPIGateway.Utilities.SerializeFromBinary<ModulatorData>(bytes); // this will throw errors on invalid data
+
+                if (data == null)
+                {
+                    Log.Line($"PacketReceived(); no deserialized data!");
+                    return;
+                }
+
+                IMyEntity ent;
+                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
+                {
+                    Log.Line($"PacketReceived(); {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    return;
+                }
+
+                var logic = ent.GameLogic.GetAs<Modulators>();
+
+                if (logic == null)
+                {
+                    Log.Line($"PacketReceived(); {data.Type}; shield doesn't have the gamelogic component!");
+                    return;
+                }
+
+                switch (data.Type)
+                {
+                    case PacketType.MODULATOR:
+                        {
+                            if (data.Settings == null)
+                            {
+                                Log.Line($"PacketReceived(); {data.Type}; settings are null!");
+                                return;
+                            }
+
+                            if (Enforced.Debug == 1) Log.Line($"Packet received:\n{data.Settings}");
+                            logic.UpdateSettings(data.Settings);
+                            logic.SaveSettings();
+                            logic.ServerUpdate = true;
+
+                            if (IsServer)
+                                ModulatorSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in ModulatorSettingsReceived: {ex}"); }
         }
 
-        public static void RelaySettingsToClients(IMyCubeBlock block, DefenseShieldsModSettings settings)
+        public static void PacketizeEnforcements(IMyCubeBlock block)
+        {
+            var data = new EnforceData(MyAPIGateway.Multiplayer.MyId, block.EntityId, Enforced);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            ClientEnforcement(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        public static void PacketizeModulatorSettings(IMyCubeBlock block, ModulatorSettings settings)
+        {
+            var data = new ModulatorData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            ModulatorSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        public static void PacketizeShieldSettings(IMyCubeBlock block, DefenseShieldsModSettings settings)
         {
             var data = new PacketData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            RelayToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+            ShieldSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
         }
 
-        public static void RelayToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        public static void ShieldSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
             var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
@@ -346,7 +417,7 @@ namespace DefenseShields
             players.Clear();
         }
 
-        public static void ForceClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        public static void ClientEnforcement(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
             var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
@@ -363,6 +434,27 @@ namespace DefenseShields
 
                 if (id != localSteamId && (Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq) || id == sender)
                     MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_ENFORCE, bytes, p.SteamUserId);
+            }
+            players.Clear();
+        }
+
+        public static void ModulatorSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        {
+            var localSteamId = MyAPIGateway.Multiplayer.MyId;
+            var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
+            distSq += 1000; // some safety padding, avoid desync
+            distSq *= distSq;
+
+            var players = Instance.Players;
+            players.Clear();
+            MyAPIGateway.Players.GetPlayers(players);
+
+            foreach (var p in players)
+            {
+                var id = p.SteamUserId;
+
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
+                    MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_MODULATOR, bytes, p.SteamUserId);
             }
             players.Clear();
         }
@@ -394,6 +486,37 @@ namespace DefenseShields
         {
             var modPath = ModContext.ModPath;
             return modPath;
+        }
+
+        private void CustomDataToPassword(IMyTerminalBlock block, List<IMyTerminalControl> myTerminalControls)
+        {
+            try
+            {
+                if (block.BlockDefinition.SubtypeId == "LargeShieldModulator"  || block.BlockDefinition.SubtypeId == "SmallShieldModulator" 
+                    || block.BlockDefinition.SubtypeId == "DefenseShieldsST" || block.BlockDefinition.SubtypeId == "DefenseShieldsSS" 
+                    || block.BlockDefinition.SubtypeId == "DefenseShieldsLS")
+                    SetCustomDataToPassword(myTerminalControls);
+                else if (!CustomDataReset) ResetCustomData(myTerminalControls);
+            }
+            catch (Exception ex) { Log.Line($"Exception in CustomDataToPassword: {ex}"); }
+        }
+
+        private void SetCustomDataToPassword(IEnumerable<IMyTerminalControl> controls)
+        {
+            var customData = controls.First((x) => x.Id.ToString() == "CustomData");
+            ((IMyTerminalControlTitleTooltip)customData).Title = Password;
+            ((IMyTerminalControlTitleTooltip)customData).Tooltip = PasswordTooltip;
+            customData.RedrawControl();
+            CustomDataReset = false;
+        }
+
+        private void ResetCustomData(IEnumerable<IMyTerminalControl> controls)
+        {
+            var customData = controls.First((x) => x.Id.ToString() == "CustomData");
+            ((IMyTerminalControlTitleTooltip)customData).Title = MySpaceTexts.Terminal_CustomData;
+            ((IMyTerminalControlTitleTooltip)customData).Tooltip = MySpaceTexts.Terminal_CustomDataTooltip;
+            customData.RedrawControl();
+            CustomDataReset = true;
         }
 
         public override void LoadData()

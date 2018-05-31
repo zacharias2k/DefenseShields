@@ -33,7 +33,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Debug == 1) Dsutil1.Sw.Restart();
+                if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
                 if (!BlockFunctional()) return;
 
@@ -67,8 +67,8 @@ namespace DefenseShields
                 if (_longLoop == 9 && _count == 58) CleanUp(1);
                 if (_effectsCleanup && (_count == 1 || _count == 21 || _count == 41)) CleanUp(2);
                 if (_longLoop % 2 == 0 && _count == 5) CleanUp(3);
-                if (_longLoop == 6 && _count == 35) CleanUp(4);
-                if (_longLoop == 7 && _count == 30 && (Session.DedicatedServer || Session.IsServer)) SaveSettings();
+                if (_longLoop == 5 && _count == 10) CleanUp(4);
+                if (_longLoop == 6 && _count == 15 && (Session.DedicatedServer || Session.IsServer)) SaveSettings();
 
                 UpdateGridPower();
                 CalculatePowerCharge();
@@ -90,6 +90,11 @@ namespace DefenseShields
                 if (_shieldStarting && GridIsMobile && FieldShapeBlocked()) return;
                 if (ShieldActive)
                 {
+                    if (_longLoop % 2 != 0 && _count == 20)
+                    {
+                        GetModulationInfo();
+                        if (_reModulationLoop > -1) return;
+                    }
                     if (_shieldStarting)
                     {
                         if (!(_hidePassiveCheckBox.Getter(Shield).Equals(true))) _shellPassive.Render.UpdateRenderObject(true);
@@ -103,7 +108,7 @@ namespace DefenseShields
                         if (_warmUp) //smooth out init latency.
                         {
                             _warmUp = false;
-                            if (Debug == 1) Log.Line($"Warmup complete");
+                            if (Session.Enforced.Debug == 1) Log.Line($"Warmup complete");
                             return;
                         }
                     }
@@ -130,7 +135,7 @@ namespace DefenseShields
                     SyncThreadedEnts();
                     if (!_blockParticleStopped) BlockParticleStop();
                 }
-                if (Debug == 1) Dsutil1.StopWatchReport($"MainLoop: ShieldId:{Shield.EntityId.ToString()} - Active: {ShieldActive} - Tick: {_tick} loop: {_longLoop}-{_count}", 4);
+                if (Session.Enforced.Debug == 1) Dsutil1.StopWatchReport($"MainLoop: ShieldId:{Shield.EntityId.ToString()} - Active: {ShieldActive} - Tick: {_tick} loop: {_longLoop}-{_count}", 4);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
@@ -182,7 +187,7 @@ namespace DefenseShields
 
             for (int i = 0; i < PhysicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
             _shieldLineOfSight = _blocksLos.Count < 500;
-            if (Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {_shieldLineOfSight.ToString()}");
+            if (Session.Enforced.Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {_shieldLineOfSight.ToString()}");
         }
 
         private void DrawHelper()
@@ -342,20 +347,20 @@ namespace DefenseShields
 
             if (((MyCubeGrid)Shield.CubeGrid).GetFatBlocks().Count < 2 && ShieldActive && !Session.MpActive)
             {
-                if (Debug == 1) Log.Line($"Shield going critical");
+                if (Session.Enforced.Debug == 1) Log.Line($"Shield going critical");
                 MyVisualScriptLogicProvider.CreateExplosion(Shield.PositionComp.WorldVolume.Center, (float)Shield.PositionComp.WorldVolume.Radius * 1.25f, 2500);
                 return false;
             }
 
             if (!Shield.IsWorking && Shield.Enabled && Shield.IsFunctional && shieldPowerUsed > 0)
             {
-                if (Debug == 1) Log.Line($"fixing shield state power: {_power.ToString()}");
+                if (Session.Enforced.Debug == 1) Log.Line($"fixing shield state power: {_power.ToString()}");
                 Shield.Enabled = false;
                 Shield.Enabled = true;
                 return true;
             }
 
-            if ((!Shield.IsWorking || !Shield.IsFunctional || _shieldDownLoop > -1))
+            if ((!Shield.IsWorking || !Shield.IsFunctional || _shieldDownLoop > -1) || _reModulationLoop > -1)
             {
                 _shieldCurrentPower = Sink.CurrentInputByType(GId);
                 UpdateGridPower();
@@ -372,25 +377,37 @@ namespace DefenseShields
                 ShieldBuffer = 0;
                 _shieldChargeRate = 0;
                 _shieldMaxChargeRate = 0;
-                if (_shieldDownLoop > -1)
+                if (_shieldDownLoop > -1 || _reModulationLoop > -1)
                 {
                     _power = _gridMaxPower * _shieldMaintaintPower;
                     if (_power < 0 || float.IsNaN(_power)) _power = 0.0001f; // temporary definitely 100% will fix this to do - Find ThE NaN!
                     Sink.Update();
 
-                    if (_shieldDownLoop == 0)
+                    if (_shieldDownLoop == 0 || _reModulationLoop == 0)
                     {
                         var realPlayerIds = new List<long>();
                         DsUtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
                         foreach (var id in realPlayerIds)
                         {
-                            MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 19200, "Red", id);
+                            if (_shieldDownLoop == 0) MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 19200, "Red", id);
+                            if (_reModulationLoop == 0) MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield remodulating, restarting in 5 seconds.", 4800, "White", id);
                         }
 
                         CleanUp(0);
                         CleanUp(1);
                         CleanUp(3);
                         CleanUp(4);
+                    }
+
+                    if (_reModulationLoop > -1)
+                    {
+                        _reModulationLoop++;
+                        if (_reModulationLoop == 300)
+                        {
+                            _reModulationLoop = -1;
+                            return false;
+                        }
+                        return false;
                     }
 
                     _shieldDownLoop++;
@@ -433,7 +450,7 @@ namespace DefenseShields
                     break;
                 }
             }
-            if (Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - powerCnt: {_powerSources.Count.ToString()}");
+            if (Session.Enforced.Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - powerCnt: {_powerSources.Count.ToString()}");
         }
 
         private void UpdateGridPower()
@@ -590,7 +607,7 @@ namespace DefenseShields
         #region Block Animation
         private void BlockMoveAnimationReset()
         {
-            if (Debug == 1) Log.Line($"Resetting BlockMovement - Tick:{_tick.ToString()}");
+            if (Session.Enforced.Debug == 1) Log.Line($"Resetting BlockMovement - Tick:{_tick.ToString()}");
             _subpartRotor.Subparts.Clear();
             Entity.TryGetSubpart("Rotor", out _subpartRotor);
         }
@@ -617,7 +634,7 @@ namespace DefenseShields
             {
                 if (_effects[i] == null)
                 {
-                    if (Debug == 1) Log.Line($"Particle #{i.ToString()} is null, creating - tick:{_tick.ToString()}");
+                    if (Session.Enforced.Debug == 1) Log.Line($"Particle #{i.ToString()} is null, creating - tick:{_tick.ToString()}");
                     MyParticlesManager.TryCreateParticleEffect("EmitterEffect", out _effects[i]);
                     if (_effects[i] == null) continue;
                     _effects[i].UserScale = 1f;
@@ -794,6 +811,29 @@ namespace DefenseShields
             }
             catch (Exception ex) { Log.Line($"Exception in CleanUp: {ex}"); }
         }
+
+        #region Shield Support Blocks
+        private void GetModulationInfo()
+        {
+
+            ModulatorGridComponent modComp;
+            Shield.CubeGrid.Components.TryGet(out modComp);
+            if (modComp != null)
+            {
+                var reModulate = ModulateVoxels != modComp.ModulateVoxels || ModulateGrids != modComp.ModulateGrids;
+                if (reModulate) _reModulationLoop = 0;
+
+                ModulateVoxels = modComp.ModulateVoxels;
+                ModulateGrids = modComp.ModulateGrids;
+            }
+            else
+            {
+                ModulateVoxels = false;
+                ModulateGrids = false;
+            }
+        }
+        #endregion
+
 
         public override void OnAddedToScene()
         {

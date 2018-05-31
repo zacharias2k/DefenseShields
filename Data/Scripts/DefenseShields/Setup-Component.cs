@@ -48,6 +48,7 @@ namespace DefenseShields
         public int EntityCoolDown { get; private set; } = -1;
         private int _count = -1;
         private int _shieldDownLoop = -1;
+        private int _reModulationLoop = -1;
         private int _longLoop;
         private int _animationLoop;
         private int _time;
@@ -170,6 +171,7 @@ namespace DefenseShields
         internal DSUtils Dsutil2 = new DSUtils();
         internal DSUtils Dsutil3 = new DSUtils();
         internal DSUtils Dsutil4 = new DSUtils();
+        internal DSUtils Dsutil5 = new DSUtils();
 
         public MyModStorageComponentBase Storage { get; set; }
         internal HashSet<ulong> playersToReceive = null;

@@ -48,64 +48,65 @@ namespace DefenseShields.Support
                 var unPackCfg = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShields.cfg");
                 var unPackedData = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsEnforcement>(unPackCfg.ReadToEnd());
 
-                if (Session.ServerEnforcedValues.Debug == 1)
-                    Log.Line($"unPackedData is: {unPackedData}\nServerEnforcedValues are: {Session.ServerEnforcedValues}");
+                if (Session.Enforced.Debug == 1)
+                    Log.Line($"unPackedData is: {unPackedData}\nServEnforced are: {Session.Enforced}");
 
                 if (!unPackedData.Debug.Equals(-1)) return;
 
-                Session.ServerEnforcedValues.BaseScaler = 30;
-                Session.ServerEnforcedValues.Nerf = 0f;
-                Session.ServerEnforcedValues.Efficiency = 100f;
-                Session.ServerEnforcedValues.StationRatio = 2;
-                Session.ServerEnforcedValues.LargeShipRatio = 5;
-                Session.ServerEnforcedValues.SmallShipRatio = 1;
-                Session.ServerEnforcedValues.DisableVoxelSupport = 0;
-                Session.ServerEnforcedValues.DisableGridDamageSupport = 0;
-                Session.ServerEnforcedValues.Debug = 1;
+                Session.Enforced.BaseScaler = 30;
+                Session.Enforced.Nerf = 0f;
+                Session.Enforced.Efficiency = 100f;
+                Session.Enforced.StationRatio = 2;
+                Session.Enforced.LargeShipRatio = 3;
+                Session.Enforced.SmallShipRatio = 1;
+                Session.Enforced.DisableVoxelSupport = 0;
+                Session.Enforced.DisableGridDamageSupport = 0;
+                Session.Enforced.Debug = 0;
 
                 Log.Line($"invalid config file regenerating, [Debug] value was: {unPackedData.Debug}");
-                if (!unPackedData.BaseScaler.Equals(-1)) Session.ServerEnforcedValues.BaseScaler = unPackedData.BaseScaler;
-                if (!unPackedData.Nerf.Equals(-1f)) Session.ServerEnforcedValues.Nerf = unPackedData.Nerf;
-                if (!unPackedData.Efficiency.Equals(-1f)) Session.ServerEnforcedValues.Efficiency = unPackedData.Efficiency;
-                if (!unPackedData.StationRatio.Equals(-1)) Session.ServerEnforcedValues.StationRatio = unPackedData.StationRatio;
-                if (!unPackedData.LargeShipRatio.Equals(-1)) Session.ServerEnforcedValues.LargeShipRatio = unPackedData.LargeShipRatio;
-                if (!unPackedData.SmallShipRatio.Equals(-1)) Session.ServerEnforcedValues.SmallShipRatio = unPackedData.SmallShipRatio;
-                if (!unPackedData.DisableVoxelSupport.Equals(-1)) Session.ServerEnforcedValues.DisableVoxelSupport = unPackedData.DisableVoxelSupport;
-                if (!unPackedData.DisableGridDamageSupport.Equals(-1)) Session.ServerEnforcedValues.DisableGridDamageSupport = unPackedData.DisableGridDamageSupport;
-                if (!unPackedData.Debug.Equals(-1)) Session.ServerEnforcedValues.Debug = unPackedData.Debug;
+                if (!unPackedData.BaseScaler.Equals(-1)) Session.Enforced.BaseScaler = unPackedData.BaseScaler;
+                if (!unPackedData.Nerf.Equals(-1f)) Session.Enforced.Nerf = unPackedData.Nerf;
+                if (!unPackedData.Efficiency.Equals(-1f)) Session.Enforced.Efficiency = unPackedData.Efficiency;
+                if (!unPackedData.StationRatio.Equals(-1)) Session.Enforced.StationRatio = unPackedData.StationRatio;
+                if (!unPackedData.LargeShipRatio.Equals(-1)) Session.Enforced.LargeShipRatio = unPackedData.LargeShipRatio;
+                if (!unPackedData.LargeShipRatio.Equals(5)) Session.Enforced.LargeShipRatio = 3; // temporary remove.
+                if (!unPackedData.SmallShipRatio.Equals(-1)) Session.Enforced.SmallShipRatio = unPackedData.SmallShipRatio;
+                if (!unPackedData.DisableVoxelSupport.Equals(-1)) Session.Enforced.DisableVoxelSupport = unPackedData.DisableVoxelSupport;
+                if (!unPackedData.DisableGridDamageSupport.Equals(-1)) Session.Enforced.DisableGridDamageSupport = unPackedData.DisableGridDamageSupport;
+                if (!unPackedData.Debug.Equals(-1)) Session.Enforced.Debug = unPackedData.Debug;
 
                 unPackedData = null;
                 unPackCfg.Close();
                 unPackCfg.Dispose();
                 MyAPIGateway.Utilities.DeleteFileInGlobalStorage("DefenseShields.cfg");
                 var newCfg = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShields.cfg");
-                var newData = MyAPIGateway.Utilities.SerializeToXML(Session.ServerEnforcedValues);
+                var newData = MyAPIGateway.Utilities.SerializeToXML(Session.Enforced);
                 newCfg.Write(newData);
                 newCfg.Flush();
                 newCfg.Close();
 
-                if (Session.ServerEnforcedValues.Debug == 1)
+                if (Session.Enforced.Debug == 1)
                     Log.Line($"wrote modified config file - file exists: {MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg")}");
             }
             else
             {
-                Session.ServerEnforcedValues.BaseScaler = 30;
-                Session.ServerEnforcedValues.Nerf = 0f;
-                Session.ServerEnforcedValues.Efficiency = 100f;
-                Session.ServerEnforcedValues.StationRatio = 2;
-                Session.ServerEnforcedValues.LargeShipRatio = 5;
-                Session.ServerEnforcedValues.SmallShipRatio = 1;
-                Session.ServerEnforcedValues.DisableVoxelSupport = 0;
-                Session.ServerEnforcedValues.DisableGridDamageSupport = 0;
-                Session.ServerEnforcedValues.Debug = 1;
+                Session.Enforced.BaseScaler = 30;
+                Session.Enforced.Nerf = 0f;
+                Session.Enforced.Efficiency = 100f;
+                Session.Enforced.StationRatio = 2;
+                Session.Enforced.LargeShipRatio = 3;
+                Session.Enforced.SmallShipRatio = 1;
+                Session.Enforced.DisableVoxelSupport = 0;
+                Session.Enforced.DisableGridDamageSupport = 0;
+                Session.Enforced.Debug = 0;
 
                 var cfg = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShields.cfg");
-                var data = MyAPIGateway.Utilities.SerializeToXML(Session.ServerEnforcedValues);
+                var data = MyAPIGateway.Utilities.SerializeToXML(Session.Enforced);
                 cfg.Write(data);
                 cfg.Flush();
                 cfg.Close();
 
-                if (Session.ServerEnforcedValues.Debug == 1)
+                if (Session.Enforced.Debug == 1)
                     Log.Line($"wrote new config file - file exists: {MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg")}");
             }
         }
@@ -114,15 +115,15 @@ namespace DefenseShields.Support
         {
             var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg");
 
-            if (Session.ServerEnforcedValues.Debug == 1) Log.Line($"Reading config, file exists? {dsCfgExists}");
+            if (Session.Enforced.Debug == 1) Log.Line($"Reading config, file exists? {dsCfgExists}");
 
             if (!dsCfgExists) return;
 
             var cfg = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShields.cfg");
             var data = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsEnforcement>(cfg.ReadToEnd());
-            Session.ServerEnforcedValues = data;
+            Session.Enforced = data;
 
-            if (Session.ServerEnforcedValues.Debug == 1) Log.Line($"Writing settings to mod:\n{data}");
+            if (Session.Enforced.Debug == 1) Log.Line($"Writing settings to mod:\n{data}");
         }
     }
 }

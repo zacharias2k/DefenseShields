@@ -1,30 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using DefenseShields.Control;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.EntityComponents;
-using Sandbox.Game.Localization;
 using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
-using VRage.Utils;
 
 namespace DefenseShields
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "LargeShieldModulator")]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "LargeShieldModulator", "SmallShieldModulator")]
     public class Modulators : MyGameLogicComponent
     {
+        private uint _tick;
+        private int _count = -1;
+        private int _longLoop;
+
         private float _power = 0.05f;
         internal bool MainInit;
-        internal bool CustomDataReset = true;
-        internal MyStringId Password = MyStringId.GetOrCompute("Password");
-        internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Set the shield modulation password");
+        public bool ServerUpdate;
 
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;
@@ -54,13 +52,11 @@ namespace DefenseShields
                 Entity.Components.TryGet(out Sink);
                 base.Init(objectBuilder);
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
-                Modulator.OnClose += OnClose;
                 Modulator.CubeGrid.Components.Add(MGridComponent);
                 Session.Instance.Modulators.Add(this);
                 if (!_modulators.ContainsKey(Entity.EntityId)) _modulators.Add(Entity.EntityId, this);
                 CreateUi();
                 StorageSetup();
-                MyAPIGateway.TerminalControls.CustomControlGetter += CustomDataToPassword;
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -74,16 +70,22 @@ namespace DefenseShields
 
         public override void UpdateBeforeSimulation100()
         {
-            if (!MainInit)
+            _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+            if (_count++ == 59)
             {
-                MGridComponent.ModulationPassword = Modulator.CustomData;
-                MainInit = true;
+                _count = 0;
+                _longLoop++;
+                if (_longLoop == 10) _longLoop = 0;
             }
+
+            if (ServerUpdate) SyncControlsServer();
+            SyncControlsClient();
 
             if (Modulator.CustomData != MGridComponent.ModulationPassword)
             {
                 MGridComponent.ModulationPassword = Modulator.CustomData;
                 SaveSettings();
+                if (Session.Enforced.Debug == 1) Log.Line($"Updating modulator password");
             }
         }
 
@@ -95,74 +97,79 @@ namespace DefenseShields
             _modulateGrids = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Modulator, "AllowGrids", "Grids may pass", false);
         }
 
-        private void CustomDataToPassword(IMyTerminalBlock block, List<IMyTerminalControl> myTerminalControls)
+        public override void OnRemovedFromScene()
         {
             try
             {
-                if (block.BlockDefinition.SubtypeId == "LargeShieldModulator" || block.BlockDefinition.SubtypeId == "DefenseShieldsST" 
-                    || block.BlockDefinition.SubtypeId == "DefenseShieldsSS" || block.BlockDefinition.SubtypeId == "DefenseShieldsLS")
-                    SetCustomDataToPassword(myTerminalControls);
-                else if (!CustomDataReset) ResetCustomData(myTerminalControls);
+                //Log.Line("OnremoveFromScene");
+                if (!Entity.MarkedForClose)
+                {
+                    //Log.Line("Entity not closed in OnRemovedFromScene- gridSplit?.");
+                    return;
+                }
+                Modulator?.CubeGrid.Components.Remove(typeof(ModulatorGridComponent), this);
+                Session.Instance.Modulators.Remove(this);
             }
-            catch (Exception ex) { Log.Line($"Exception in CustomDataToPassword: {ex}"); }
+            catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
 
-        private void SetCustomDataToPassword(IEnumerable<IMyTerminalControl> controls)
+        public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
+        public override void Close()
         {
-            var customData = controls.First((x) => x.Id.ToString() == "CustomData");
-            ((IMyTerminalControlTitleTooltip) customData).Title = Password;
-            ((IMyTerminalControlTitleTooltip) customData).Tooltip = PasswordTooltip;
-            customData.RedrawControl();
-            CustomDataReset = false;
+            try
+            {
+                if (_modulators.ContainsKey(Entity.EntityId)) _modulators.Remove(Entity.EntityId);
+                if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
+            }
+            catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
+            base.Close();
         }
 
-        private void ResetCustomData(IEnumerable<IMyTerminalControl> controls)
+        public override void MarkForClose()
         {
-            var customData = controls.First((x) => x.Id.ToString() == "CustomData");
-            ((IMyTerminalControlTitleTooltip)customData).Title = MySpaceTexts.Terminal_CustomData;
-            ((IMyTerminalControlTitleTooltip) customData).Tooltip = MySpaceTexts.Terminal_CustomDataTooltip;
-            customData.RedrawControl();
-            CustomDataReset = true;
-        }
-
-        private void OnClose(IMyEntity obj)
-        {
-            if (Modulator.CubeGrid.Components.Contains(typeof(ModulatorGridComponent))) Modulator.CubeGrid.Components.Add(MGridComponent);
-            if (_modulators.ContainsKey(Entity.EntityId)) _modulators.Remove(Entity.EntityId);
-            if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
+            try
+            {
+            }
+            catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
+            base.MarkForClose();
         }
         #endregion
 
+        #region Settings
         public bool Enabled
         {
             get { return Settings.Enabled; }
             set { Settings.Enabled = value; }
         }
 
-        public bool ShieldIdleVisible
+        public bool ModulateVoxels
         {
-            get { return Settings.IdleInvisible; }
-            set { Settings.IdleInvisible = value; }
+            get { return Settings.ModulateVoxels; }
+            set { Settings.ModulateVoxels = value; }
         }
 
-        public bool ShieldActiveVisible
+        public bool ModulateGrids
         {
-            get { return Settings.ActiveInvisible; }
-            set { Settings.ActiveInvisible = value; }
+            get { return Settings.ModulateGrids; }
+            set { Settings.ModulateGrids = value; }
         }
 
         public void UpdateSettings(ModulatorSettings newSettings, bool localOnly = true)
         {
             Enabled = newSettings.Enabled;
-            ShieldIdleVisible = newSettings.IdleInvisible;
-            ShieldActiveVisible = newSettings.ActiveInvisible;
+            MGridComponent.Enabled = newSettings.Enabled;
+            ModulateVoxels = newSettings.ModulateVoxels;
+            MGridComponent.Voxels = newSettings.ModulateVoxels;
+            ModulateGrids = newSettings.ModulateGrids;
+            MGridComponent.Grids = newSettings.ModulateGrids;
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings for modulator");
         }
 
         public void SaveSettings()
         {
             if (Modulator.Storage == null)
             {
-                Log.Line($"ShieldId:{Modulator.EntityId.ToString()} - Storage = null");
+                Log.Line($"ModulatorId:{Modulator.EntityId.ToString()} - Storage = null");
                 Modulator.Storage = new MyModStorageComponent();
             }
             Modulator.Storage[Session.Instance.ModulatorGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
@@ -186,7 +193,7 @@ namespace DefenseShields
                 catch (Exception e)
                 {
                     loadedSettings = null;
-                    Log.Line($"ShieldId:{Modulator.EntityId.ToString()} - Error loading settings!\n{e}");
+                    Log.Line($"ModulatorId:{Modulator.EntityId.ToString()} - Error loading settings!\n{e}");
                 }
 
                 if (loadedSettings != null)
@@ -194,11 +201,77 @@ namespace DefenseShields
                     Settings = loadedSettings;
                     loadedSomething = true;
                 }
-                //Log.Line($"Loaded settings:\n{Settings.ToString()}");
             }
             return loadedSomething;
         }
 
+        private void SyncControlsServer()
+        {
+            if (Modulator != null && !Modulator.Enabled.Equals(Settings.Enabled))
+            {
+                Enabled = Settings.Enabled;
+                MGridComponent.Enabled = Settings.Enabled;
+            }
+
+            if (_modulateVoxels != null && !_modulateVoxels.Getter(Modulator).Equals(Settings.ModulateVoxels))
+            {
+                _modulateVoxels.Setter(Modulator, Settings.ModulateVoxels);
+                MGridComponent.Voxels = Settings.ModulateVoxels;
+            }
+
+            if (_modulateGrids != null && !_modulateGrids.Getter(Modulator).Equals(Settings.ModulateGrids))
+            {
+                _modulateGrids.Setter(Modulator, Settings.ModulateGrids);
+                MGridComponent.Grids = Settings.ModulateGrids;
+            }
+
+            ServerUpdate = false;
+            SaveSettings();
+            if (Session.Enforced.Debug == 1) Log.Line($"SyncControlsServer (modulator)");
+        }
+
+        private void SyncControlsClient()
+        {
+            var needsSync = false;
+            if (!Enabled.Equals(Enabled) 
+                || !_modulateVoxels.Getter(Modulator).Equals(ModulateVoxels)
+                || !_modulateGrids.Getter(Modulator).Equals(ModulateGrids))
+            {
+                needsSync = true;
+                Enabled = Settings.Enabled;
+                MGridComponent.Enabled = Settings.Enabled;
+                ModulateVoxels = _modulateVoxels.Getter(Modulator);
+                MGridComponent.Voxels = _modulateVoxels.Getter(Modulator);
+                ModulateGrids = _modulateGrids.Getter(Modulator);
+                MGridComponent.Grids = _modulateGrids.Getter(Modulator);
+            }
+
+            if (needsSync)
+            {
+                NetworkUpdate();
+                SaveSettings();
+                if (Session.Enforced.Debug == 1) Log.Line($"Needed sync for modulator");
+            }
+        }
+        #endregion
+
+        #region Network
+        private void NetworkUpdate()
+        {
+
+            if (Session.IsServer)
+            {
+                if (Session.Enforced.Debug == 1) Log.Line($"server relaying network settings update for modulator {Modulator.EntityId}");
+                Session.PacketizeModulatorSettings(Modulator, Settings); // update clients with server's settings
+            }
+            else // client, send settings to server
+            {
+                if (Session.Enforced.Debug == 1) Log.Line($"client sent network settings update for modulator {Modulator.EntityId}");
+                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new ModulatorData(MyAPIGateway.Multiplayer.MyId, Modulator.EntityId, Settings));
+                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PACKET_ID_MODULATOR, bytes);
+            }
+        }
+        #endregion
         public override void OnAddedToContainer() { if (Entity.InScene) OnAddedToScene(); }
     }
 }

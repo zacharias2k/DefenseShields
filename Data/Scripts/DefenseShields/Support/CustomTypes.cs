@@ -157,6 +157,10 @@ namespace DefenseShields.Support
         private static List<ModulatorGridComponent> gridModulator = new List<ModulatorGridComponent>();
         public readonly Modulators Modulators;
         public string Password;
+        public bool Enabled;
+        public bool Voxels;
+        public bool Grids;
+
 
         public ModulatorGridComponent(Modulators modulators)
         {
@@ -209,6 +213,23 @@ namespace DefenseShields.Support
             set { Password = value; }
         }
 
+        public bool ModulationEnabled
+        {
+            get { return Enabled; }
+            set { Enabled = value; }
+        }
+
+        public bool ModulateVoxels
+        {
+            get { return Voxels; }
+            set { Voxels = value; }
+        }
+
+        public bool ModulateGrids
+        {
+            get { return Grids; }
+            set { Grids = value; }
+        }
         public override string ComponentTypeDebugString
         {
             get { return "Shield"; }

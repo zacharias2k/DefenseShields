@@ -159,9 +159,10 @@
       <PhysicalMaterial>Metal</PhysicalMaterial>
       <EmissiveColorPreset>Default</EmissiveColorPreset>
     </Definition>
-    <Definition xsi:type="MyObjectBuilder_OxygenFarmDefinition">
+
+    <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
-        <TypeId>OxygenFarm</TypeId>
+        <TypeId>UpgradeModule</TypeId>
         <SubtypeId>SmallShieldModulator</SubtypeId>
       </Id>
       <DisplayName>Shield Modulator</DisplayName>

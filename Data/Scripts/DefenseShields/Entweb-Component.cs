@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
@@ -20,7 +21,7 @@ namespace DefenseShields
         #region Web Entities
         private void WebEntities()
         {
-            if (Debug == 1) Dsutil2.Sw.Restart();
+            if (Session.Enforced.Debug == 1) Dsutil2.Sw.Restart();
             var pruneSphere = new BoundingSphereD(_detectionCenter, Range);
             var pruneList = new List<MyEntity>();
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
@@ -85,12 +86,12 @@ namespace DefenseShields
             }
             if (_enablePhysics) MyAPIGateway.Parallel.Start(WebDispatch);
 
-            if (Debug == 1) Dsutil2.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - Web", 3);
+            if (Session.Enforced.Debug == 1) Dsutil2.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - Web", 3);
         }
 
         private void WebDispatch()
         {
-            if (Debug == 1) Dsutil3.Sw.Restart();
+            if (Session.Enforced.Debug == 1) Dsutil3.Sw.Restart();
             var ep = 0;
             var ns = 0;
             var nl = 0;
@@ -174,9 +175,9 @@ namespace DefenseShields
                 }
             }
 
-            if (Debug == 1 && _longLoop == 5 && _count == 5)
+            if (Session.Enforced.Debug == 1 && _longLoop == 5 && _count == 5)
                 lock (_webEnts) if (_webEnts.Count > 7 || FriendlyCache.Count > 15 || IgnoreCache.Count > 15) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - friend:{FriendlyCache.Count} - ignore:{IgnoreCache.Count} - total:{_webEnts.Count} ep:{ep} ns:{ns} nl:{nl} es:{es} el:{el} ss:{ss} oo:{oo} vv:{vv} xx:{xx}");
-            if (Debug == 1) Dsutil3.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - webDispatch", 3);
+            if (Session.Enforced.Debug == 1) Dsutil3.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - webDispatch", 3);
         }
         #endregion
 
@@ -200,7 +201,7 @@ namespace DefenseShields
         private Ent EntType(IMyEntity ent)
         {
             if (ent == null) return Ent.Ignore;
-            if (ent is MyVoxelBase && (Session.ServerEnforcedValues.DisableVoxelSupport == 1 || !GridIsMobile)) return Ent.Ignore;
+            if (ent is MyVoxelBase && (Session.Enforced.DisableVoxelSupport == 1 || ModulateVoxels || !GridIsMobile)) return Ent.Ignore;
             if (ent is IMyAutomaticRifleGun) return Ent.Weapon;
 
             if (ent is IMyCharacter)
@@ -213,13 +214,13 @@ namespace DefenseShields
             }
             if (ent is IMyCubeGrid)
             {
+                if (ModulateGrids) return Ent.Ignore;
+
                 var grid = ent as IMyCubeGrid;
-
-                if (grid.Components.Contains(typeof(ModulatorGridComponent)))
+                ModulatorGridComponent modComp;
+                grid.Components.TryGet(out modComp);
+                if (modComp != null)
                 {
-                    ModulatorGridComponent modComp;
-                    grid.Components.TryGet(out modComp);
-
                     if (modComp.ModulationPassword.Equals(Shield.CustomData))
                     {
                         //Log.Line($"Modulator password [{modComp.ModulationPassword}] matches");

@@ -47,7 +47,7 @@ namespace DefenseShields
             ServerUpdate = false;
             _updateDimensions = true;
             SaveSettings();
-            if (Debug == 1) Log.Line($"SyncControlsServer");
+            if (Session.Enforced.Debug == 1) Log.Line($"SyncControlsServer");
         }
 
         private void SyncControlsClient()
@@ -93,7 +93,7 @@ namespace DefenseShields
                 if (!GridIsMobile) _updateDimensions = true;
                 NetworkUpdate();
                 SaveSettings();
-                if (Debug == 1) Log.Line($"Needed sync");
+                if (Session.Enforced.Debug == 1) Log.Line($"Needed sync");
             }
         }
 
@@ -107,7 +107,10 @@ namespace DefenseShields
             Depth = newSettings.Depth;
             Rate = newSettings.Rate;
             ShieldBuffer = newSettings.Buffer;
-            if (Session.ServerEnforcedValues.Debug == 1) Log.Line($"Updated settings");
+            ModulateVoxels = newSettings.ModulateVoxels;
+            ModulateGrids = newSettings.ModulateGrids;
+
+            if (newSettings.Debug == 1) Log.Line($"Updated settings:\n{newSettings}");
             if (localOnly)
             {
                 ShieldBaseScaler = newSettings.BaseScaler;
@@ -119,7 +122,7 @@ namespace DefenseShields
                 VoxelSupport = newSettings.DisableVoxelSupport;
                 GridDamageSupport = newSettings.DisableGridDamageSupport;
                 Debug = newSettings.Debug;
-                if (Session.ServerEnforcedValues.Debug == 1) Log.Line($"Updated settings (local only)");
+                if (newSettings.Debug == 1) Log.Line($"Updated settings (local only)");
             }
         }
 
@@ -135,16 +138,16 @@ namespace DefenseShields
             GridDamageSupport = newEnforce.DisableGridDamageSupport;
             Debug = newEnforce.Debug;
 
-            Session.ServerEnforcedValues.Nerf = newEnforce.Nerf;
-            Session.ServerEnforcedValues.BaseScaler = newEnforce.BaseScaler;
-            Session.ServerEnforcedValues.Efficiency = newEnforce.Efficiency;
-            Session.ServerEnforcedValues.StationRatio = newEnforce.StationRatio;
-            Session.ServerEnforcedValues.LargeShipRatio = newEnforce.LargeShipRatio;
-            Session.ServerEnforcedValues.SmallShipRatio = newEnforce.SmallShipRatio;
-            Session.ServerEnforcedValues.DisableVoxelSupport = newEnforce.DisableVoxelSupport;
-            Session.ServerEnforcedValues.DisableGridDamageSupport = newEnforce.DisableGridDamageSupport;
-            Session.ServerEnforcedValues.Debug = newEnforce.Debug;
-            if (Debug == 1) Log.Line($"Updated Enforcements");
+            Session.Enforced.Nerf = newEnforce.Nerf;
+            Session.Enforced.BaseScaler = newEnforce.BaseScaler;
+            Session.Enforced.Efficiency = newEnforce.Efficiency;
+            Session.Enforced.StationRatio = newEnforce.StationRatio;
+            Session.Enforced.LargeShipRatio = newEnforce.LargeShipRatio;
+            Session.Enforced.SmallShipRatio = newEnforce.SmallShipRatio;
+            Session.Enforced.DisableVoxelSupport = newEnforce.DisableVoxelSupport;
+            Session.Enforced.DisableGridDamageSupport = newEnforce.DisableGridDamageSupport;
+            Session.Enforced.Debug = newEnforce.Debug;
+            if (Session.Enforced.Debug == 1) Log.Line($"Updated Enforcements:\n{Session.Enforced}");
         }
 
         public void SaveSettings()
@@ -237,6 +240,18 @@ namespace DefenseShields
             set { Settings.Buffer = value; }
         }
 
+        public bool ModulateVoxels
+        {
+            get { return Settings.ModulateVoxels; }
+            set { Settings.ModulateVoxels = value; }
+        }
+
+        public bool ModulateGrids
+        {
+            get { return Settings.ModulateGrids; }
+            set { Settings.ModulateGrids = value; }
+        }
+
         public float ShieldNerf
         {
             get { return Settings.Nerf; }
@@ -295,12 +310,12 @@ namespace DefenseShields
         {
             if (Session.DedicatedServer || Session.IsServer)
             {
-                Log.Line($"I am the host, no one has power over me: {Session.ServerEnforcedValues}");
+                Log.Line($"I am the host, no one has power over me: {Session.Enforced}");
             }
             else 
             {
-                Log.Line($"Client requesting enforcement - current: {Session.ServerEnforcedValues}");
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new EnforceData(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, Session.ServerEnforcedValues));
+                Log.Line($"Client requesting enforcement - current: {Session.Enforced}");
+                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new EnforceData(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, Session.Enforced));
                 MyAPIGateway.Multiplayer.SendMessageToServer(Session.PACKET_ID_ENFORCE, bytes);
             }
         }
@@ -310,8 +325,8 @@ namespace DefenseShields
 
             if (Session.IsServer)
             {
-                if (Debug == 1) Log.Line($"server relaying network settings update for shield {Shield.EntityId}");
-                Session.RelaySettingsToClients(Shield, Settings); // update clients with server's settings
+                if (Session.Enforced.Debug == 1) Log.Line($"server relaying network settings update for shield {Shield.EntityId}");
+                Session.PacketizeShieldSettings(Shield, Settings); // update clients with server's settings
             }
             else // client, send settings to server
             {

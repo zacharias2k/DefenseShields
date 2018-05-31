@@ -60,13 +60,19 @@ namespace DefenseShields
         [ProtoMember(17), DefaultValue(-1)]
         public int Debug = -1;
 
+        [ProtoMember(18)]
+        public bool ModulateVoxels = false;
+
+        [ProtoMember(19)]
+        public bool ModulateGrids = false;
+
         public override string ToString()
         {
             return $"Enabled = {Enabled}\nIdleVisible = {IdleInvisible}\nActiveVisible = {ActiveInvisible}\nWidth = {Math.Round(Width, 4)}" +
                    $"\nHeight = {Math.Round(Height, 4)}\nDepth = {Math.Round(Depth, 4)}\nRate = {Math.Round(Rate, 4)}\nNerf = {Math.Round(Nerf, 4)}" +
                    $"\nBaseScaler = {BaseScaler}\nEfficiency = {Math.Round(Efficiency, 4)}\nStationRatio = {StationRatio}\nLargeShipRatio = {LargeShipRatio}" +
                    $"\nSmallShipRatio = {SmallShipRatio}\nDisableVoxelSupport = {DisableVoxelSupport}\nDisableGridDamageSupport = {DisableGridDamageSupport}" +
-                   $"\nDebug = {Debug}";
+                   $"\nDebug = {Debug}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}";
         }
     }
 
@@ -116,14 +122,14 @@ namespace DefenseShields
         public bool Enabled = false;
 
         [ProtoMember(2)]
-        public bool IdleInvisible = false;
+        public bool ModulateVoxels = false;
 
         [ProtoMember(3)]
-        public bool ActiveInvisible = false;
+        public bool ModulateGrids = false;
 
         public override string ToString()
         {
-            return $"Enabled";
+            return $"Enabled = {Enabled}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}";
         }
     }
 
@@ -194,9 +200,44 @@ namespace DefenseShields
             Enforce = null;
         }
     }
+
+    [ProtoContract]
+    public class ModulatorData
+    {
+        [ProtoMember(1)]
+        public PacketType Type = PacketType.MODULATOR;
+
+        [ProtoMember(2)]
+        public long EntityId = 0;
+
+        [ProtoMember(3)]
+        public ulong Sender = 0;
+
+        [ProtoMember(4)]
+        public ModulatorSettings Settings = null;
+
+        public ModulatorData() { } // empty ctor is required for deserialization
+
+        public ModulatorData(ulong sender, long entityId, ModulatorSettings settings)
+        {
+            Type = PacketType.MODULATOR;
+            Sender = sender;
+            EntityId = entityId;
+            Settings = settings;
+        }
+
+        public ModulatorData(ulong sender, long entityId, PacketType action)
+        {
+            Type = action;
+            Sender = sender;
+            EntityId = entityId;
+            Settings = null;
+        }
+    }
     public enum PacketType : byte
     {
         SETTINGS,
         ENFORCE,
+        MODULATOR,
     }
 }
