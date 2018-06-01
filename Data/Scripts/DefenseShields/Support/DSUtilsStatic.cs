@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.Entity;
@@ -38,6 +39,37 @@ namespace DefenseShields.Support
                 if (player == null) continue;
                 if (realPlayersIdentities.Contains(player.Identity)) realPlayers.Add(player.IdentityId);
             }
+        }
+
+        public static double CreateShieldFit(IMyCubeBlock shield)
+        {
+            var BlockPoints = new Vector3D[8];
+            var blocks = new List<IMySlimBlock>();
+            shield.CubeGrid.GetBlocks(blocks, null);
+
+            for (int i = 1; i <= 10; i++)
+            {
+                var ellipsoidAdjust = MathHelper.Lerp(Math.Sqrt(2), Math.Sqrt(3), i * 0.1);
+                Vector3D gridHalfExtents = shield.CubeGrid.PositionComp.LocalAABB.HalfExtents;
+
+                var shieldSize = gridHalfExtents * ellipsoidAdjust;
+                var mobileMatrix = MatrixD.CreateScale(shieldSize);
+                mobileMatrix.Translation = shield.CubeGrid.PositionComp.LocalVolume.Center;
+                var matrixInv = MatrixD.Invert(mobileMatrix * shield.CubeGrid.WorldMatrix);
+
+                var c = 0;
+                foreach (var block in blocks)
+                {
+                    BoundingBoxD blockBox;
+                    block.GetWorldBoundingBox(out blockBox);
+
+                    blockBox.GetCorners(BlockPoints);
+
+                    foreach (var point in BlockPoints) if (!CustomCollision.PointInShield(point, matrixInv)) c++;
+                }
+                if (c == 0) return MathHelper.Lerp(Math.Sqrt(2), Math.Sqrt(3), i + 1 * 0.1); ;
+            }
+            return Math.Sqrt(3);
         }
 
         public static void PrepConfigFile()

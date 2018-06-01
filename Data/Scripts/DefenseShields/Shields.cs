@@ -90,6 +90,9 @@ namespace DefenseShields
                 if (_shieldStarting && GridIsMobile && FieldShapeBlocked()) return;
                 if (ShieldActive)
                 {
+                    Dsutil5.Sw.Restart();
+                    var fit = DsUtilsStatic.CreateShieldFit(Shield); // test
+                    Dsutil5.StopWatchReport("test", -1);
                     if (_longLoop % 2 != 0 && _count == 20)
                     {
                         GetModulationInfo();
