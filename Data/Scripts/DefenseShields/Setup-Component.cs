@@ -98,6 +98,7 @@ namespace DefenseShields
         public readonly Vector3D[] PhysicsOutside = new Vector3D[642];
         public readonly Vector3D[] PhysicsOutsideLow = new Vector3D[162];
         public readonly Vector3D[] PhysicsInside = new Vector3D[642];
+        public readonly Vector3D[] BlockPoints = new Vector3D[8];
 
         private MatrixD _shieldGridMatrix;
         private MatrixD _shieldShapeMatrix;

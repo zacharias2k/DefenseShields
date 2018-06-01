@@ -202,6 +202,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Settings-Component.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Setup-Component.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Init-Component.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Spawn.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SyncEnts-Component.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\DSUtilsStatic.cs" />
@@ -240,8 +241,8 @@
     <Compile Include="Data\Scripts\DefenseShields\Support\Logging.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Slider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\DSUtils.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\SpawnField.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Component.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Render.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Shields.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Structure\StructureBuilder.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\GJKCollide.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\Triangle3.cs" />

@@ -26,7 +26,6 @@ namespace DefenseShields.Data.Scripts.DefenseShields.API
             var sphere = new BoundingSphereD(shield.PositionComp.WorldVolume.Center, shield.PositionComp.LocalAABB.HalfExtents.AbsMax());
             var obb = MyOrientedBoundingBoxD.Create(shield.PositionComp.LocalAABB, shield.PositionComp.WorldMatrix.GetOrientation());
             obb.Center = shield.PositionComp.WorldVolume.Center;
-
             // DsDebugDraw.DrawSphere(sphere, Color.Red);
             DsDebugDraw.DrawOBB(obb, Color.Blue, MySimpleObjectRasterizer.Wireframe, 0.1f);
             var obbCheck = obb.Intersects(ref line);

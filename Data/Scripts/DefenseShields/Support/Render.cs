@@ -13,105 +13,10 @@ using static VRageMath.MathHelper;
 
 namespace DefenseShields.Support
 {
-    #region Spawn
-    class Spawn
-    {
-        //Shell Entities
-        public MyEntity EmptyEntity(string displayName, string model, MyEntity parent, bool parented = false)
-        {
-            try
-            {
-                var myParent = parented ? parent : null;
-                var ent = new MyEntity {NeedsWorldMatrix = true};
-
-                ent.Init(new StringBuilder(displayName), model, myParent, null, null);
-                //ent.Init(new StringBuilder(displayName), model, null, null, null);
-                //parent.Hierarchy.AddChild(ent, insertIntoSceneIfNeeded: true, preserveWorldPos: false);
-                ent.Name = $"{parent.EntityId}";
-                MyAPIGateway.Entities.AddEntity(ent);
-                return ent;
-            }
-            catch (Exception ex) { Log.Line($"Exception in EmptyEntity: {ex}"); return null; }
-        }
-
-        /*
-        //Spawn Block
-        public MyEntity SpawnBlock(string subtypeId, string name, bool isVisible = true, bool hasPhysics = false, bool isStatic = false, bool toSave = false, bool destructible = false, long ownerId = 0)
-        {
-            try
-            {
-                CubeGridBuilder.Name = name;
-                CubeGridBuilder.CubeBlocks[0].SubtypeName = subtypeId;
-                CubeGridBuilder.CreatePhysics = hasPhysics;
-                CubeGridBuilder.IsStatic = isStatic;
-                CubeGridBuilder.DestructibleBlocks = destructible;
-                MyEntity ent = (MyEntity) MyAPIGateway.Entities.CreateFromObjectBuilder(CubeGridBuilder);
-
-                ent.Flags &= ~EntityFlags.Save;
-                ent.Render.Visible = isVisible;
-                MyAPIGateway.Entities.AddEntity(ent, true);
-
-                return ent;
-            }
-            catch (Exception ex)
-            {
-                Log.Line($"Exception in Spawn");
-                Log.Line($"{ex}");
-                return null;
-            }
-        }
-
-        private static readonly SerializableBlockOrientation EntityOrientation = new SerializableBlockOrientation(Base6Directions.Direction.Forward, Base6Directions.Direction.Up);
-
-        //OBJECTBUILDERS
-        private readonly MyObjectBuilder_CubeGrid CubeGridBuilder = new MyObjectBuilder_CubeGrid()
-        {
-
-            EntityId = 0,
-            GridSizeEnum = MyCubeSize.Large,
-            IsStatic = true,
-            Skeleton = new List<BoneInfo>(),
-            LinearVelocity = Vector3.Zero,
-            AngularVelocity = Vector3.Zero,
-            ConveyorLines = new List<MyObjectBuilder_ConveyorLine>(),
-            BlockGroups = new List<MyObjectBuilder_BlockGroup>(),
-            Handbrake = false,
-            XMirroxPlane = null,
-            YMirroxPlane = null,
-            ZMirroxPlane = null,
-            PersistentFlags = MyPersistentEntityFlags2.InScene,
-            Name = "ArtificialCubeGrid",
-            DisplayName = "dShield",
-            CreatePhysics = false,
-            DestructibleBlocks = true,
-            PositionAndOrientation = new MyPositionAndOrientation(Vector3D.Zero, Vector3D.Forward, Vector3D.Up),
-
-            CubeBlocks = new List<MyObjectBuilder_CubeBlock>()
-                {
-                    new MyObjectBuilder_CubeBlock()
-                    {
-                        EntityId = 0,
-                        BlockOrientation = EntityOrientation,
-                        SubtypeName = "LargeDecoy",
-                        Name = "",
-                        Min = Vector3I.One,
-                        Owner = 0,
-                        ShareMode = MyOwnershipShareModeEnum.None,
-                        DeformationRatio = 0,
-                    }
-                }
-        };
-    */
-    }
-    #endregion
-
     public class Icosphere 
-    {
-    
+    {   
         public readonly Vector3[] VertexBuffer;
-
         public readonly int[][] IndexBuffer;
-
 
         public Icosphere(int lods)
         {

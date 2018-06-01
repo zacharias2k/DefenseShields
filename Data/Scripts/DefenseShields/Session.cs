@@ -70,7 +70,7 @@ namespace DefenseShields
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_ENFORCE, PacketEnforcementReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_MODULATOR, ModulatorSettingsReceived);
                 MyAPIGateway.Utilities.RegisterMessageHandler(WORKSHOP_ID, ModMessageHandler);
-                MyAPIGateway.TerminalControls.CustomControlGetter += CustomDataToPassword;
+                if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter += CustomDataToPassword;
 
                 if (DedicatedServer || IsServer)
                 {
@@ -164,7 +164,7 @@ namespace DefenseShields
                     {
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
-                        if (shield.FriendlyCache.Contains(hostileEnt) || hostileEnt == shield.Shield.CubeGrid)
+                        if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt) || hostileEnt == shield.Shield.CubeGrid)
                         {
                             shield.DeformEnabled = true;
                             continue;
