@@ -717,7 +717,6 @@ namespace DefenseShields.Support
             new[] {159, 641, 628, 161, 635, 641, 628, 641, 635, 161, 641, 640, 159, 639, 641, 640, 641, 639}
         };
 
-        public HashSet<int[]> test = new HashSet<int[]>();
         public int[][] p3TriNums = new int[642][]
         {
             new[] {0, 64, 848, 896, 1040},

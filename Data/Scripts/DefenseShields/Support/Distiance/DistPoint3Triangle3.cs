@@ -36,6 +36,11 @@ namespace DefenseShields.Support
             point = PointIn; triangle = TriangleIn;
         }
 
+        public void Update(Vector3D PointIn, Triangle3d TriangleIn)
+        {
+            point = PointIn; triangle = TriangleIn;
+        }
+
         public DistPoint3Triangle3 Compute()
         {
             GetSquared();

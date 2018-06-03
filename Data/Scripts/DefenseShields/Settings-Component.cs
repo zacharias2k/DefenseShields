@@ -34,6 +34,11 @@ namespace DefenseShields
                 _chargeSlider.Setter(Shield, Settings.Rate);
             }
 
+            if (_shieldFit != null && !_shieldFit.Getter(Shield).Equals(Settings.ShieldFit))
+            {
+                _shieldFit.Setter(Shield, Settings.ShieldFit);
+            }
+
             if (_hideActiveCheckBox != null && !_hideActiveCheckBox.Getter(Shield).Equals(Settings.ActiveInvisible))
             {
                 _hideActiveCheckBox.Setter(Shield, Settings.ActiveInvisible);
@@ -78,11 +83,15 @@ namespace DefenseShields
                 if (!Enabled.Equals(Enabled) ||
                     !_chargeSlider.Getter(Shield).Equals(Rate)
                     || !_hideActiveCheckBox.Getter(Shield).Equals(ShieldActiveVisible)
-                    || !_hidePassiveCheckBox.Getter(Shield).Equals(ShieldIdleVisible))
+                    || !_hidePassiveCheckBox.Getter(Shield).Equals(ShieldIdleVisible)
+                    || !_chargeSlider.Getter(Shield).Equals(Rate)
+                    || !_shieldFit.Getter(Shield).Equals(ShieldFit))
                 {
                     needsSync = true;
                     Enabled = Settings.Enabled;
                     Rate = _chargeSlider.Getter(Shield);
+                    ShieldFit = _shieldFit.Getter(Shield);
+                    _fitChanged = true;
                     ShieldActiveVisible = _hideActiveCheckBox.Getter(Shield);
                     ShieldIdleVisible = _hidePassiveCheckBox.Getter(Shield);
                 }
@@ -106,38 +115,16 @@ namespace DefenseShields
             Height = newSettings.Height;
             Depth = newSettings.Depth;
             Rate = newSettings.Rate;
+            ShieldFit = newSettings.ShieldFit;
             ShieldBuffer = newSettings.Buffer;
             ModulateVoxels = newSettings.ModulateVoxels;
             ModulateGrids = newSettings.ModulateGrids;
 
-            if (newSettings.Debug == 1) Log.Line($"Updated settings:\n{newSettings}");
-            if (localOnly)
-            {
-                ShieldBaseScaler = newSettings.BaseScaler;
-                ShieldNerf = newSettings.Nerf;
-                ShieldEfficiency = newSettings.Efficiency;
-                StationRatio = newSettings.StationRatio;
-                LargeShipRatio = newSettings.LargeShipRatio;
-                SmallShipRatio = newSettings.SmallShipRatio;
-                VoxelSupport = newSettings.DisableVoxelSupport;
-                GridDamageSupport = newSettings.DisableGridDamageSupport;
-                Debug = newSettings.Debug;
-                if (newSettings.Debug == 1) Log.Line($"Updated settings (local only)");
-            }
+            if (Session.Enforced.Debug == 1) Log.Line($"Updated settings:\n{newSettings}");
         }
 
         public void UpdateEnforcement(DefenseShieldsEnforcement newEnforce)
         {
-            ShieldNerf = newEnforce.Nerf;
-            ShieldBaseScaler = newEnforce.BaseScaler;
-            ShieldEfficiency = newEnforce.Efficiency;
-            StationRatio = newEnforce.StationRatio;
-            LargeShipRatio = newEnforce.LargeShipRatio;
-            SmallShipRatio = newEnforce.SmallShipRatio;
-            VoxelSupport = newEnforce.DisableVoxelSupport;
-            GridDamageSupport = newEnforce.DisableGridDamageSupport;
-            Debug = newEnforce.Debug;
-
             Session.Enforced.Nerf = newEnforce.Nerf;
             Session.Enforced.BaseScaler = newEnforce.BaseScaler;
             Session.Enforced.Efficiency = newEnforce.Efficiency;
@@ -147,6 +134,9 @@ namespace DefenseShields
             Session.Enforced.DisableVoxelSupport = newEnforce.DisableVoxelSupport;
             Session.Enforced.DisableGridDamageSupport = newEnforce.DisableGridDamageSupport;
             Session.Enforced.Debug = newEnforce.Debug;
+            Session.Enforced.AltRecharge = newEnforce.AltRecharge;
+            Session.Enforced.Version = newEnforce.Version;
+
             if (Session.Enforced.Debug == 1) Log.Line($"Updated Enforcements:\n{Session.Enforced}");
         }
 
@@ -158,7 +148,6 @@ namespace DefenseShields
                 Shield.Storage = new MyModStorageComponent();
             }
             Shield.Storage[Session.Instance.SettingsGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
-            if (Debug == 1) Log.Line($"Saved Settings");
         }
 
         public bool LoadSettings()
@@ -187,7 +176,7 @@ namespace DefenseShields
                     Settings = loadedSettings;
                     loadedSomething = true;
                 }
-                if (Settings.Debug == 1) Log.Line($"Loaded settings:\n{Settings.ToString()}");
+                if (Session.Enforced.Debug == 1) Log.Line($"Loaded settings:\n{Settings.ToString()}");
             }
             return loadedSomething;
         }
@@ -234,6 +223,12 @@ namespace DefenseShields
             set { Settings.Rate = value; }
         }
 
+        public bool ShieldFit
+        {
+            get { return Settings.ShieldFit; }
+            set { Settings.ShieldFit = value; }
+        }
+
         public float ShieldBuffer
         {
             get { return Settings.Buffer; }
@@ -252,69 +247,15 @@ namespace DefenseShields
             set { Settings.ModulateGrids = value; }
         }
 
-        public float ShieldNerf
-        {
-            get { return Settings.Nerf; }
-            set { Settings.Nerf = value; }
-        }
-
-        public float ShieldEfficiency
-        {
-            get { return Settings.Efficiency; }
-            set { Settings.Efficiency = value; }
-        }
-
-        public int ShieldBaseScaler
-        {
-            get { return Settings.BaseScaler; }
-            set { Settings.BaseScaler = value; }
-        }
-
-        public int StationRatio
-        {
-            get { return Settings.StationRatio; }
-            set { Settings.StationRatio = value; }
-        }
-
-        public int LargeShipRatio
-        {
-            get { return Settings.LargeShipRatio; }
-            set { Settings.LargeShipRatio = value; }
-        }
-
-        public int SmallShipRatio
-        {
-            get { return Settings.SmallShipRatio; }
-            set { Settings.SmallShipRatio = value; }
-        }
-
-        public int VoxelSupport
-        {
-            get { return Settings.DisableVoxelSupport; }
-            set { Settings.DisableVoxelSupport = value; }
-        }
-
-        public int GridDamageSupport
-        {
-            get { return Settings.DisableGridDamageSupport; }
-            set { Settings.DisableGridDamageSupport = value; }
-        }
-
-        public int Debug
-        {
-            get { return Settings.Debug; }
-            set { Settings.Debug = value; }
-        }
-
         private void EnforcementRequest()
         {
-            if (Session.DedicatedServer || Session.IsServer)
+            if (Session.IsServer)
             {
-                Log.Line($"I am the host, no one has power over me: {Session.Enforced}");
+                Log.Line($"I am the host, no one has power over me:\n{Session.Enforced}");
             }
             else 
             {
-                Log.Line($"Client requesting enforcement - current: {Session.Enforced}");
+                Log.Line($"Client [{MyAPIGateway.Multiplayer.MyId}] requesting enforcement - current:\n{Session.Enforced}");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new EnforceData(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, Session.Enforced));
                 MyAPIGateway.Multiplayer.SendMessageToServer(Session.PACKET_ID_ENFORCE, bytes);
             }
@@ -330,7 +271,7 @@ namespace DefenseShields
             }
             else // client, send settings to server
             {
-                if (Debug == 1) Log.Line($"client sent network settings update for shield {Shield.EntityId}");
+                if (Session.Enforced.Debug == 1) Log.Line($"client sent network settings update for shield {Shield.EntityId}");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new PacketData(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, Settings));
                 MyAPIGateway.Multiplayer.SendMessageToServer(Session.PACKET_ID_SETTINGS, bytes);
             }

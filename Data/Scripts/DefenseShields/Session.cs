@@ -21,9 +21,13 @@ namespace DefenseShields
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
     public class Session : MySessionComponentBase
     {
+        private uint _tick;
+
         internal bool SessionInit;
+        internal bool DefinitionsLoaded;
         public bool ControlsLoaded { get; set; }
         public bool Enabled = true;
+        public static bool EnforceInit;
         internal bool CustomDataReset = true;
         internal MyStringId Password = MyStringId.GetOrCompute("Password");
         internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Set the shield modulation password");
@@ -50,6 +54,7 @@ namespace DefenseShields
         public readonly Icosphere Icosphere = new Icosphere(5);
         private DSUtils _dsutil1 = new DSUtils();
 
+        public static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         private readonly Dictionary<IMyEntity, int> _voxelDamageCounter = new Dictionary<IMyEntity, int>();
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
         public readonly List<Modulators> Modulators = new List<Modulators>();
@@ -110,6 +115,8 @@ namespace DefenseShields
         {
             try
             {
+                _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+
                 for (int i = 0; i < Components.Count; i++) Components[i].DeformEnabled = false;
 
                 if (_count++ == 59)
@@ -126,8 +133,14 @@ namespace DefenseShields
 
                 if (!SessionInit)
                 {
-                    if (IsServer && DedicatedServer) Init();
-                    else if (MyAPIGateway.Session.Player != null) Init();
+                    if (DedicatedServer) Init();
+                    else if (MyAPIGateway.Session != null) Init();
+                }
+
+                if (!DefinitionsLoaded && SessionInit && _tick > 200)
+                {
+                    DefinitionsLoaded = true;
+                    DsUtilsStatic.GetDefinitons();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in SessionBeforeSim: {ex}"); }
@@ -260,6 +273,7 @@ namespace DefenseShields
         {
             try
             {
+                if (!IsServer) Log.Line($"client received enforcement");
                 if (bytes.Length <= 2)
                 {
                     Log.Line($"PacketReceived(); invalid length <= 2; length={bytes.Length.ToString()}");
@@ -300,17 +314,15 @@ namespace DefenseShields
                             }
 
                             if (Enforced.Debug == 1) Log.Line($"PacketReceived(); Enforce - Server:\n{data.Enforce}");
-                            if (!(DedicatedServer || IsServer))
+                            if (!IsServer)
                             {
                                 logic.UpdateEnforcement(data.Enforce);
                                 logic.SaveSettings();
-                                logic.EnforceUpdate = true;
+                                EnforceInit = true;
+                                Log.Line($"client accepted enforcement");
+                                if (Enforced.Debug == 1) Log.Line($"Client EnforceInit Complete with enforcements:\n{data.Enforce}");
                             }
-
-                            if (DedicatedServer || IsServer)
-                            {
-                                PacketizeEnforcements(logic.Shield);
-                            }
+                            else PacketizeEnforcements(logic.Shield);
                         }
                         break;
                 }
@@ -379,7 +391,9 @@ namespace DefenseShields
         {
             var data = new EnforceData(MyAPIGateway.Multiplayer.MyId, block.EntityId, Enforced);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            ClientEnforcement(block.CubeGrid.GetPosition(), bytes, data.Sender);
+            //ClientEnforcement(block.CubeGrid.GetPosition(), bytes, data.Sender);
+            //MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_ENFORCE, bytes, data.Sender);
+            Log.Line($"{data.Sender} - myId {MyAPIGateway.Multiplayer.MyId} - version: {data.Enforce.Version}");
         }
 
         public static void PacketizeModulatorSettings(IMyCubeBlock block, ModulatorSettings settings)
@@ -417,6 +431,7 @@ namespace DefenseShields
             players.Clear();
         }
 
+        /*
         public static void ClientEnforcement(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
@@ -437,6 +452,7 @@ namespace DefenseShields
             }
             players.Clear();
         }
+        */
 
         public static void ModulatorSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {

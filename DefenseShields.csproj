@@ -244,10 +244,8 @@
     <Compile Include="Data\Scripts\DefenseShields\Support\Render.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Shields.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Structure\StructureBuilder.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Collision\GJKCollide.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\Triangle3.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\TriangleMeshShape.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Collision\XenoCollide.cs" />
     <Compile Include="test\Quaternion.cs" />
     <Compile Include="test\Ray3D.cs" />
     <Compile Include="test\Rotation.cs" />
