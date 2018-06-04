@@ -347,6 +347,8 @@ namespace DefenseShields
         {
             if (!MainInit || !AnimateInit || !Session.EnforceInit || NoPower || HardDisable) return false;
 
+            if (_longLoop == 0 && _count == 0 && Shield.Enabled && ConnectCheck()) return false;
+
             if (Range.Equals(0)) // populate matrices and prep for smooth init.
             {
                 _updateDimensions = true;

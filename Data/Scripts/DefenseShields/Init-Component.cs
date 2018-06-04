@@ -8,8 +8,10 @@ using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
+using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
+using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRage.Utils;
@@ -40,6 +42,7 @@ namespace DefenseShields
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
 
+                Shield.CubeGrid.OnIsStaticChanged += CheckStatic;
                 if (!_shields.ContainsKey(Entity.EntityId)) _shields.Add(Entity.EntityId, this);
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
                 Session.Instance.Components.Add(this);
@@ -62,7 +65,7 @@ namespace DefenseShields
                     return;
                 }
 
-                if (AnimateInit && MainInit || !Shield.IsFunctional) return;
+                if (AnimateInit && MainInit || !Shield.IsFunctional || ConnectCheck()) return;
 
                 if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
 
@@ -133,19 +136,49 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in UpdateAfterSimulation100: {ex}"); }
         }
 
-        private bool HealthAndPowerCheck()
+        private void CheckStatic(IMyCubeGrid myCubeGrid, bool b)
         {
-            if (SinkInit) return true;
+            CheckShieldType();
+        }
 
-            HardDisable = false || Shield.EntityId != ThereCanBeOnlyOne() || Shield.BlockDefinition.SubtypeId == "DefenseShieldsST" &&
-                !Shield.CubeGrid.Physics.IsStatic || Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" && Shield.CubeGrid.Physics.IsStatic;
+        private bool ConnectCheck()
+        {
+            if (!Shield.Enabled) return true;
 
-            NoPower = false;
-            if (!HardDisable && !SinkInit) PowerInitCheck();
+            var connList = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Physical);
+            if (connList.Count <= 1) return false;
+            var subId = Shield.BlockDefinition.SubtypeId;
+            var myGrid = Shield.CubeGrid;
+            var myGridIsSub = false;
 
-            if (!HardDisable || SinkInit) return true;
-            if (Session.Enforced.Debug == 1) Log.Line($"HardDisable is triggered - Power: {NoPower} - {SinkInit} - {Shield.BlockDefinition.SubtypeId}");
+            if (subId == "DefenseShieldsSS")
+            {
+                if (connList.Count > 1) myGridIsSub = true;
+            }
+            else if (subId == "DefenseShieldsLS")
+            {
+                foreach (var grid in connList)
+                {
+                    if (grid != myGrid && grid.GridSizeEnum == MyCubeSize.Large) myGridIsSub = true;
+                }
+            }
 
+            if (myGridIsSub)
+            {
+                var realPlayerIds = new List<long>();
+                DsUtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
+                foreach (var id in realPlayerIds)
+                {
+                    MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- connected to parent grid, powering shield down.", 4800, "White", id);
+                }
+
+                Shield.Enabled = false;
+            }
+            return myGridIsSub;
+        }
+
+        private void CheckShieldType(bool takeAction = false)
+        {
             var realPlayerIds = new List<long>();
             DsUtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
             foreach (var id in realPlayerIds)
@@ -160,10 +193,17 @@ namespace DefenseShields
                     MyVisualScriptLogicProvider.ShowNotification("Large Ship Shields only allowed on ships, not stations", 5000, "Red", id);
                     _startupWarning = true;
                 }
-                else if (!_startupWarning && NoPower)
+                else if (!_startupWarning && NoPower || takeAction)
                 {
-                    MyVisualScriptLogicProvider.ShowNotification("Insufficent power to bring Shield online", 5000, "Red", id);
-                    _startupWarning = true;
+                    if (takeAction)
+                    {
+                        if (!Sink.IsPowerAvailable(GId, _power)) _startupWarning = true;
+                    }
+                    else
+                    {
+                        MyVisualScriptLogicProvider.ShowNotification("Insufficent power to bring Shield online", 5000, "Red", id);
+                        _startupWarning = true;
+                    }
                 }
                 else if (!_startupWarning)
                 {
@@ -171,6 +211,29 @@ namespace DefenseShields
                     _startupWarning = true;
                 }
             }
+
+            if (takeAction && _startupWarning)
+            {
+                _startupWarning = false;
+                Shield.Enabled = false;
+            }
+        }
+
+        private bool HealthAndPowerCheck()
+        {
+            if (SinkInit) return true;
+
+            HardDisable = false || Shield.EntityId != ThereCanBeOnlyOne() || Shield.BlockDefinition.SubtypeId == "DefenseShieldsST" &&
+                !Shield.CubeGrid.Physics.IsStatic || Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" && Shield.CubeGrid.Physics.IsStatic;
+
+            NoPower = false;
+            if (!HardDisable && !SinkInit) PowerInitCheck();
+
+            if (!HardDisable || SinkInit) return true;
+            if (Session.Enforced.Debug == 1) Log.Line($"HardDisable is triggered - Power: {NoPower} - {SinkInit} - {Shield.BlockDefinition.SubtypeId}");
+
+            CheckShieldType();
+
             return false;
         }
 
