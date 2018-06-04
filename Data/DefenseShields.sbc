@@ -184,9 +184,7 @@
       </Components>
       <CriticalComponent Subtype="Computer" Index="0" />
       <BuildProgressModels>
-        <Model BuildPercentUpperBound="0.33" File="Models\Cubes\ShieldModulatorLarge_Constr1.mwm" />
-        <Model BuildPercentUpperBound="0.66" File="Models\Cubes\ShieldModulatorLarge_Constr2.mwm" />
-        <Model BuildPercentUpperBound="1.00" File="Models\Cubes\ShieldModulatorLarge_Constr3.mwm" />
+        <Model BuildPercentUpperBound="0.50" File="Models\Cubes\SmallModulator_Constr1.mwm" />
       </BuildProgressModels>
       <BlockPairName>ShieldModulator</BlockPairName>
       <EdgeType>Light</EdgeType>
