@@ -86,11 +86,14 @@ namespace DefenseShields
         [ProtoMember(11), DefaultValue(-1)]
         public int Version = -1;
 
+        [ProtoMember(12)]
+        public ulong SenderId = 0;
+
         public override string ToString()
         {
             return $"Nerf = {Math.Round(Nerf, 4)}\nBaseScaler = {BaseScaler}\nEfficiency = {Math.Round(Efficiency, 4)}\nStationRatio = {StationRatio}\nLargeShipRatio = {LargeShipRatio}" +
                    $"\nSmallShipRatio = {SmallShipRatio}\nDisableVoxelSupport = {DisableVoxelSupport}\nDisableGridDamageSupport = {DisableGridDamageSupport}" +
-                   $"\nDebug = {Debug}\nAltRecharge = {AltRecharge}\nVersion = {Version}";
+                   $"\nDebug = {Debug}\nAltRecharge = {AltRecharge}\nVersion = {Version}\nSenderId = {SenderId}";
         }
 
     }

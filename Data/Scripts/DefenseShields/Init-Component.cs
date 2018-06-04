@@ -44,6 +44,7 @@ namespace DefenseShields
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
                 Session.Instance.Components.Add(this);
                 Shield.CubeGrid.Components.Add(new ShieldGridComponent(this));
+                StorageSetup();
                 if (Session.Enforced.Debug == 1) Log.Line($"pre-Init complete");
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
@@ -58,6 +59,7 @@ namespace DefenseShields
                     _enforceTick = _tick;
                     if (Session.IsServer) ServerEnforcementSetup();
                     else ClientEnforcementRequest();
+                    return;
                 }
 
                 if (AnimateInit && MainInit || !Shield.IsFunctional) return;
@@ -66,9 +68,6 @@ namespace DefenseShields
 
                 if (!MainInit && Shield.IsFunctional)
                 {
-
-                    StorageSetup();
-
                     var enableState = Shield.Enabled;
 
                     if (enableState)
@@ -220,7 +219,7 @@ namespace DefenseShields
         {
             Storage = Shield.Storage;
             LoadSettings();
-            UpdateSettings(Settings, false);
+            UpdateSettings(Settings);
             if (Session.Enforced.Debug == 1) Log.Line($"StorageSetup complete");
         }
 

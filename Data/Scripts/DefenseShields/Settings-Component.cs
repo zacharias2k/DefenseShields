@@ -106,7 +106,7 @@ namespace DefenseShields
             }
         }
 
-        public void UpdateSettings(DefenseShieldsModSettings newSettings, bool localOnly = true)
+        public void UpdateSettings(DefenseShieldsModSettings newSettings)
         {
             Enabled = newSettings.Enabled;
             ShieldIdleVisible = newSettings.IdleInvisible;
@@ -136,6 +136,7 @@ namespace DefenseShields
             Session.Enforced.Debug = newEnforce.Debug;
             Session.Enforced.AltRecharge = newEnforce.AltRecharge;
             Session.Enforced.Version = newEnforce.Version;
+            Session.Enforced.SenderId = newEnforce.SenderId;
 
             if (Session.Enforced.Debug == 1) Log.Line($"Updated Enforcements:\n{Session.Enforced}");
         }
@@ -256,6 +257,7 @@ namespace DefenseShields
             else 
             {
                 Log.Line($"Client [{MyAPIGateway.Multiplayer.MyId}] requesting enforcement - current:\n{Session.Enforced}");
+                Session.Enforced.SenderId = MyAPIGateway.Multiplayer.MyId;
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new EnforceData(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, Session.Enforced));
                 MyAPIGateway.Multiplayer.SendMessageToServer(Session.PACKET_ID_ENFORCE, bytes);
             }

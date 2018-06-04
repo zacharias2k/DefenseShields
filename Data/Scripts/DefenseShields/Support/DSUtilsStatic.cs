@@ -104,17 +104,17 @@ namespace DefenseShields.Support
 
         public static void PrepConfigFile()
         {
-            var baseScaler = 30;
-            var nerf = 0f;
-            var efficiency = 100f;
-            var stationRatio = 2;
-            var largeShipRate = 3;
-            var smallShipRatio = 1;
-            var disableVoxel = 0;
-            var disableGridDmg = 0;
-            var debug = 0;
-            var altRecharge = false;
-            var version = 56;
+            const int baseScaler = 30;
+            const float nerf = 0f;
+            const float efficiency = 100f;
+            const int stationRatio = 2;
+            const int largeShipRate = 3;
+            const int smallShipRatio = 1;
+            const int disableVoxel = 0;
+            const int disableGridDmg = 0;
+            const int debug = 0;
+            const bool altRecharge = false;
+            const int version = 56;
 
             var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg");
             if (dsCfgExists)
@@ -135,7 +135,7 @@ namespace DefenseShields.Support
                 Session.Enforced.DisableVoxelSupport = !unPackedData.DisableVoxelSupport.Equals(-1) ? unPackedData.DisableVoxelSupport : disableVoxel;
                 Session.Enforced.DisableGridDamageSupport = !unPackedData.DisableGridDamageSupport.Equals(-1) ? unPackedData.DisableGridDamageSupport : disableGridDmg;
                 Session.Enforced.Debug = !unPackedData.Debug.Equals(-1) ? unPackedData.Debug : debug;
-                Session.Enforced.AltRecharge = unPackedData.AltRecharge ? unPackedData.AltRecharge : altRecharge;
+                Session.Enforced.AltRecharge = unPackedData.AltRecharge;
                 Session.Enforced.Version = !unPackedData.Version.Equals(-1) ? unPackedData.Version : version;
 
                 unPackedData = null;

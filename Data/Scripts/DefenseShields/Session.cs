@@ -255,7 +255,6 @@ namespace DefenseShields
                             }
 
                             if (Enforced.Debug == 1) Log.Line($"Packet Settings Packet received:- data:\n{data.Settings}");
-                            data.Settings.Buffer = logic.ShieldBuffer;
                             logic.UpdateSettings(data.Settings);
                             logic.SaveSettings();
                             logic.ServerUpdate = true;
@@ -322,7 +321,7 @@ namespace DefenseShields
                                 Log.Line($"client accepted enforcement");
                                 if (Enforced.Debug == 1) Log.Line($"Client EnforceInit Complete with enforcements:\n{data.Enforce}");
                             }
-                            else PacketizeEnforcements(logic.Shield);
+                            else PacketizeEnforcements(logic.Shield, data.Enforce.SenderId);
                         }
                         break;
                 }
@@ -387,13 +386,12 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in ModulatorSettingsReceived: {ex}"); }
         }
 
-        public static void PacketizeEnforcements(IMyCubeBlock block)
+        public static void PacketizeEnforcements(IMyCubeBlock block, ulong senderId)
         {
             var data = new EnforceData(MyAPIGateway.Multiplayer.MyId, block.EntityId, Enforced);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
             //ClientEnforcement(block.CubeGrid.GetPosition(), bytes, data.Sender);
-            //MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_ENFORCE, bytes, data.Sender);
-            Log.Line($"{data.Sender} - myId {MyAPIGateway.Multiplayer.MyId} - version: {data.Enforce.Version}");
+            MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_ENFORCE, bytes, senderId);
         }
 
         public static void PacketizeModulatorSettings(IMyCubeBlock block, ModulatorSettings settings)
@@ -430,29 +428,6 @@ namespace DefenseShields
             }
             players.Clear();
         }
-
-        /*
-        public static void ClientEnforcement(Vector3D syncPosition, byte[] bytes, ulong sender)
-        {
-            var localSteamId = MyAPIGateway.Multiplayer.MyId;
-            var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
-            distSq += 1000; 
-            distSq *= distSq;
-
-            var players = Instance.Players;
-            players.Clear();
-            MyAPIGateway.Players.GetPlayers(players);
-
-            foreach (var p in players)
-            {
-                var id = p.SteamUserId;
-
-                if (id != localSteamId && (Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq) || id == sender)
-                    MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_ENFORCE, bytes, p.SteamUserId);
-            }
-            players.Clear();
-        }
-        */
 
         public static void ModulatorSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {

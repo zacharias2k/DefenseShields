@@ -345,7 +345,7 @@ namespace DefenseShields
         #region Block Power Logic
         private bool BlockFunctional()
         {
-            if (!MainInit || !AnimateInit || NoPower || HardDisable) return false;
+            if (!MainInit || !AnimateInit || !Session.EnforceInit || NoPower || HardDisable) return false;
 
             if (Range.Equals(0)) // populate matrices and prep for smooth init.
             {
@@ -359,11 +359,14 @@ namespace DefenseShields
                 if (!_blocksChanged) _blocksChanged = blockCnt != _oldBlockCount;
                 _oldBlockCount = blockCnt;
 
-                //BackGroundChecks();
-                //CheckShieldLineOfSight();
-                //UpdateGridPower();
+                BackGroundChecks();
+                CheckShieldLineOfSight();
+                UpdateGridPower();
 
                 BlockWorking = MainInit && AnimateInit && Shield.IsWorking && Shield.IsFunctional;
+                if (Session.Enforced.Debug == 1) Log.Line($"range warmup enforced:\n{Session.Enforced}");
+                if (Session.Enforced.Debug == 1) Log.Line($"range warmup buffer:{ShieldBuffer} - BlockWorking:{BlockWorking} - LoS:{_shieldLineOfSight}");
+
                 return BlockWorking;
             }
 
@@ -498,7 +501,6 @@ namespace DefenseShields
             var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
             var rawNerf = nerf ? Session.Enforced.Nerf : 1f;
             var nerfer = rawNerf / _shieldRatio;
-
             var shieldVol = _detectMatrixOutside.Scale.Volume;
             var powerForShield = 0f;
             const float ratio = 1.25f;
@@ -524,7 +526,6 @@ namespace DefenseShields
 
             _shieldMaxChargeRate = powerForShield > 0 ? powerForShield : 0f;
             _shieldMaxBuffer = ((_gridMaxPower * (100 / percent) * Session.Enforced.BaseScaler) / (float)_sizeScaler) * nerfer;
-
             if (_sizeScaler < 1)
             {
                 if (ShieldBuffer + (_shieldMaxChargeRate * nerfer) < _shieldMaxBuffer) _shieldChargeRate = (_shieldMaxChargeRate * nerfer);
