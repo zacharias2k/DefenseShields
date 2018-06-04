@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using DefenseShields.Control;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
@@ -19,9 +20,8 @@ namespace DefenseShields
     public partial class DefenseShields 
     {
         #region Setup
-        private const ulong ModId = 41000;
-
         private uint _tick;
+        private uint _enforceTick;
 
         public float ImpactSize { get; set; } = 9f;
         public float Absorb { get; set; }
@@ -39,6 +39,8 @@ namespace DefenseShields
         private float _shieldConsumptionRate;
 
         internal double Range;
+        private double _ellipsoidAdjust = Math.Sqrt(2);
+        private double _oldEllipsoidAdjust;
         private double _sAvelSqr;
         private double _sVelSqr;
         private double _ellipsoidSurfaceArea;
@@ -60,34 +62,36 @@ namespace DefenseShields
         private int _shieldRatio;
 
         public bool ServerUpdate;
-        public bool EnforceUpdate;
         public bool DeformEnabled;
         internal bool MainInit;
         internal bool AnimateInit;
         internal bool StorageInit;
         internal bool PhysicsInit;
         internal bool SinkInit;
-        internal bool DefinitionsLoaded;
         internal bool GridIsMobile;
         internal bool ShieldActive;
         internal bool BlockWorking;
         internal bool HardDisable { get; private set; }
         internal bool NoPower;
-        private bool _entityChanged = true;
-        private bool _gridChanged = true;
-        private bool _enablePhysics = true;
-        private bool _shieldMoving = true;
-        private bool _blocksChanged = false;
+        private bool _enemy;
+        private bool _blocksChanged;
         private bool _blockParticleStopped;
         private bool _shieldLineOfSight;
         private bool _prevShieldActive;
-        private bool _shieldStarting;
-        private bool _enemy;
+        private bool _shieldStarting = true;
         private bool _effectsCleanup;
         private bool _startupWarning;
         private bool _hideShield;
         private bool _updateDimensions;
+        private bool _shapeAdjusted;
+        private bool _entityChanged = true;
+        private bool _gridChanged = true;
+        private bool _enablePhysics = true;
+        private bool _shieldMoving = true;
         private bool _warmUp = true;
+        private bool _createMobileShape = true;
+        private bool _shapeLoaded = true;
+        private bool _fitChanged = false;
 
         internal Vector3D ShieldSize { get; set; }
         public Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
@@ -131,7 +135,6 @@ namespace DefenseShields
 
         private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<IMyEntity, Vector3D>();
         private readonly MyConcurrentDictionary<IMyEntity, EntIntersectInfo> _webEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();
-        private readonly Dictionary<string, AmmoInfo> _ammoInfo = new Dictionary<string, AmmoInfo>();
 
         private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
 
@@ -151,6 +154,7 @@ namespace DefenseShields
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _heightSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _depthSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _chargeSlider;
+        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _shieldFit;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _hidePassiveCheckBox;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _hideActiveCheckBox;
 

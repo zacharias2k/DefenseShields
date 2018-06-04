@@ -219,7 +219,7 @@ namespace DefenseShields
                 var grid = ent as IMyCubeGrid;
                 ModulatorGridComponent modComp;
                 grid.Components.TryGet(out modComp);
-                if (modComp != null)
+                if (modComp?.ModulationPassword != null)
                 {
                     if (modComp.ModulationPassword.Equals(Shield.CustomData))
                     {
@@ -277,7 +277,7 @@ namespace DefenseShields
             //Values as close to Zero (0) as possible, to best results, and less unintentional Results.
             //Shield-Damage: All values such as projectile Velocity & Mass for non-explosive types and Explosive-damage when dealing with Explosive-types.
             AmmoInfo ammoInfo;
-            _ammoInfo.TryGetValue(ammoEnt.Model.AssetName, out ammoInfo);
+            Session.AmmoCollection.TryGetValue(ammoEnt.Model.AssetName, out ammoInfo);
             var damage = 10f;
             if (ammoInfo == null)
             {

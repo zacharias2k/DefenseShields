@@ -44,6 +44,7 @@ namespace DefenseShields
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
                 Session.Instance.Components.Add(this);
                 Shield.CubeGrid.Components.Add(new ShieldGridComponent(this));
+                StorageSetup();
                 if (Session.Enforced.Debug == 1) Log.Line($"pre-Init complete");
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
@@ -53,21 +54,20 @@ namespace DefenseShields
         {
             try
             {
-                if (!DefinitionsLoaded && MainInit && _tick > 200)
+                if (!Session.EnforceInit && (_enforceTick == 0 || _tick - _enforceTick > 60))
                 {
-                    DefinitionsLoaded = true;
-                    GetDefinitons();
-                    if (Session.Enforced.Debug == 1) Log.Line($"Get Definitions");
+                    _enforceTick = _tick;
+                    if (Session.IsServer) ServerEnforcementSetup();
+                    else ClientEnforcementRequest();
+                    return;
                 }
+
                 if (AnimateInit && MainInit || !Shield.IsFunctional) return;
 
                 if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
 
                 if (!MainInit && Shield.IsFunctional)
                 {
-
-                    StorageSetup();
-
                     var enableState = Shield.Enabled;
 
                     if (enableState)
@@ -76,10 +76,12 @@ namespace DefenseShields
                         Shield.Enabled = true;
                     }
 
-                    if (Session.IsServer) ServerEnforcementSetup();
-                    else ClientEnforcementRequest();
-
-                    if (Shield.CubeGrid.Physics.IsStatic) GridIsMobile = false;
+                    if (Shield.CubeGrid.Physics.IsStatic)
+                    {
+                        GridIsMobile = false;
+                        _createMobileShape = false;
+                        _shapeLoaded = false;
+                    }
                     else if (!Shield.CubeGrid.Physics.IsStatic) GridIsMobile = true;
 
                     CreateUi();
@@ -87,10 +89,8 @@ namespace DefenseShields
                     if (Session.Enforced.Debug == 1) Log.Line($"MainInit complete");
 
                     MainInit = true;
-                    return;
+                    //return;
                 }
-
-                if (Session.Enforced.Nerf.Equals(-1f)) return;
 
                 if (!HealthAndPowerCheck()) return;
 
@@ -219,63 +219,29 @@ namespace DefenseShields
         {
             Storage = Shield.Storage;
             LoadSettings();
-            UpdateSettings(Settings, false);
+            UpdateSettings(Settings);
             if (Session.Enforced.Debug == 1) Log.Line($"StorageSetup complete");
         }
 
         private void ClientEnforcementRequest()
         {
-            if (Session.Enforced.Nerf >= 0) ShieldNerf = Session.Enforced.Nerf; 
-            if (Session.Enforced.BaseScaler >= 1) ShieldBaseScaler = Session.Enforced.BaseScaler;
-            if (Session.Enforced.Efficiency >= 1) ShieldEfficiency = Session.Enforced.Efficiency;
-
-            if (Session.Enforced.StationRatio > 0) StationRatio = Session.Enforced.StationRatio; 
-            if (Session.Enforced.LargeShipRatio > 0) LargeShipRatio = Session.Enforced.LargeShipRatio;
-            if (Session.Enforced.SmallShipRatio > 0) SmallShipRatio = Session.Enforced.SmallShipRatio;
-
-            if (Session.Enforced.DisableVoxelSupport > 0) VoxelSupport = Session.Enforced.DisableVoxelSupport;
-            if (Session.Enforced.DisableGridDamageSupport > 0) GridDamageSupport = Session.Enforced.DisableGridDamageSupport;
-
-            if (Session.Enforced.Debug > 0) Debug = Session.Enforced.Debug;
-
-
-            if (Session.Enforced.BaseScaler.Equals(-1) && !Settings.BaseScaler.Equals(-1))
+            if (Session.Enforced.Version > 0)
             {
-                Session.Enforced.BaseScaler = Settings.BaseScaler;
-                Session.Enforced.Nerf = Settings.Nerf;
-                Session.Enforced.Efficiency = Settings.Efficiency;
-
-                Session.Enforced.StationRatio = Settings.StationRatio;
-                Session.Enforced.LargeShipRatio = Settings.LargeShipRatio;
-                Session.Enforced.SmallShipRatio = Settings.SmallShipRatio;
-
-                Session.Enforced.DisableVoxelSupport = Settings.DisableVoxelSupport;
-                Session.Enforced.DisableGridDamageSupport = Settings.DisableGridDamageSupport;
-
-                Session.Enforced.Debug = Settings.Debug;
-                if (Session.Enforced.Debug == 1) Log.Line($"Local enforcements found, bypassing request");
+                if (Session.Enforced.Debug == 1) Log.Line($"Local enforcements found, bypassing request - IsServer? {Session.IsServer}");
             }
-
-            if (Session.Enforced.BaseScaler < 1) EnforcementRequest();
-            if (Session.Enforced.Debug == 1) Log.Line($"ClientEnforcementRequest Check finished - Enforcement Request?: {Session.Enforced.BaseScaler < 1}");
+            else 
+            {
+                if (Session.Enforced.Debug == 1) Log.Line($"ClientEnforcementRequest Check finished - Enforcement Request?: {Session.Enforced.Version <= 0}");
+                EnforcementRequest();
+            }
         }
 
-        private void ServerEnforcementSetup()
+        private static void ServerEnforcementSetup()
         {
-            ShieldNerf = Session.Enforced.Nerf; 
-            ShieldBaseScaler = Session.Enforced.BaseScaler;
-            ShieldEfficiency = Session.Enforced.Efficiency;
+            if (Session.Enforced.Version > 0) Session.EnforceInit = true;
+            else Log.Line($"Server has failed to set its own enforcements!! Report this as a bug");
 
-            StationRatio = Session.Enforced.StationRatio;
-            LargeShipRatio = Session.Enforced.LargeShipRatio;
-            SmallShipRatio = Session.Enforced.SmallShipRatio;
-
-            VoxelSupport = Session.Enforced.DisableVoxelSupport;
-            GridDamageSupport = Session.Enforced.DisableGridDamageSupport;
-
-            Debug = Session.Enforced.Debug;
-
-            if (Session.Enforced.Debug == 1) Log.Line($"ServerEnforcementSetup - nerf: {ShieldNerf} - base: {ShieldBaseScaler} - Eff: {ShieldEfficiency} - ST:{StationRatio} - LS:{LargeShipRatio} - SS:{SmallShipRatio} - Voxel:{VoxelSupport} - Grid:{GridDamageSupport}\n{Session.Enforced}");
+            if (Session.Enforced.Debug == 1) Log.Line($"ServerEnforcementSetup\n{Session.Enforced}");
         }
 
         private void PowerInitCheck()
@@ -342,25 +308,6 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 1) Log.Line($"ThereCanBeOnlyOne complete, found shield: {shieldId}");
             return shieldId;
         }
-
-        private void GetDefinitons()
-        {
-            try
-            {
-                var defintions = MyDefinitionManager.Static.GetAllDefinitions();
-                foreach (var def in defintions)
-                {
-                    if (!(def is MyAmmoMagazineDefinition)) continue;
-                    var ammoDef = def as MyAmmoMagazineDefinition;
-                    var ammo = MyDefinitionManager.Static.GetAmmoDefinition(ammoDef.AmmoDefinitionId);
-                    if (!(ammo is MyMissileAmmoDefinition)) continue;
-                    var shot = ammo as MyMissileAmmoDefinition;
-                    if (_ammoInfo.ContainsKey(shot.MissileModelName)) continue;
-                    _ammoInfo.Add(shot.MissileModelName, new AmmoInfo(shot.IsExplosive, shot.MissileExplosionDamage, shot.MissileExplosionRadius, shot.DesiredSpeed, shot.MissileMass, shot.BackkickForce));
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in GetAmmoDefinitions: {ex}"); }
-        }
         #endregion
 
         #region Create UI
@@ -390,6 +337,7 @@ namespace DefenseShields
             RemoveOreUi();
 
             _chargeSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ChargeRate", "Shield Charge Rate", 20, 95, 50);
+            _shieldFit = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ShieldFit", "Extend Shield", false);
             _hidePassiveCheckBox = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HidePassive", "Hide idle shield state", false);
             _hideActiveCheckBox = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HideActive", "Hide active shield state", false);
 

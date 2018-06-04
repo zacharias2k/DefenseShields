@@ -33,46 +33,20 @@ namespace DefenseShields
         [ProtoMember(8), DefaultValue(-1)]
         public float Buffer = 0f;
 
-        [ProtoMember(9), DefaultValue(-1)]
-        public float Nerf = -1f;
-
-        [ProtoMember(10), DefaultValue(-1)]
-        public int BaseScaler = -1;
-
-        [ProtoMember(11), DefaultValue(-1)]
-        public float Efficiency = -1;
-
-        [ProtoMember(12), DefaultValue(-1)]
-        public int StationRatio = -1;
-
-        [ProtoMember(13), DefaultValue(-1)]
-        public int LargeShipRatio = -1;
-
-        [ProtoMember(14), DefaultValue(-1)]
-        public int SmallShipRatio = -1;
-
-        [ProtoMember(15), DefaultValue(-1)]
-        public int DisableVoxelSupport = -1;
-
-        [ProtoMember(16), DefaultValue(-1)]
-        public int DisableGridDamageSupport = -1;
-
-        [ProtoMember(17), DefaultValue(-1)]
-        public int Debug = -1;
-
-        [ProtoMember(18)]
+        [ProtoMember(9)]
         public bool ModulateVoxels = false;
 
-        [ProtoMember(19)]
+        [ProtoMember(10)]
         public bool ModulateGrids = false;
+
+        [ProtoMember(11)]
+        public bool ShieldFit = false;
 
         public override string ToString()
         {
             return $"Enabled = {Enabled}\nIdleVisible = {IdleInvisible}\nActiveVisible = {ActiveInvisible}\nWidth = {Math.Round(Width, 4)}" +
-                   $"\nHeight = {Math.Round(Height, 4)}\nDepth = {Math.Round(Depth, 4)}\nRate = {Math.Round(Rate, 4)}\nNerf = {Math.Round(Nerf, 4)}" +
-                   $"\nBaseScaler = {BaseScaler}\nEfficiency = {Math.Round(Efficiency, 4)}\nStationRatio = {StationRatio}\nLargeShipRatio = {LargeShipRatio}" +
-                   $"\nSmallShipRatio = {SmallShipRatio}\nDisableVoxelSupport = {DisableVoxelSupport}\nDisableGridDamageSupport = {DisableGridDamageSupport}" +
-                   $"\nDebug = {Debug}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}";
+                   $"\nHeight = {Math.Round(Height, 4)}\nDepth = {Math.Round(Depth, 4)}\nRate = {Math.Round(Rate, 4)}" +
+                   $"\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nShieldFit = {ShieldFit}";
         }
     }
 
@@ -106,11 +80,20 @@ namespace DefenseShields
         [ProtoMember(9), DefaultValue(-1)]
         public int Debug = -1;
 
+        [ProtoMember(10)]
+        public bool AltRecharge = false;
+
+        [ProtoMember(11), DefaultValue(-1)]
+        public int Version = -1;
+
+        [ProtoMember(12)]
+        public ulong SenderId = 0;
+
         public override string ToString()
         {
             return $"Nerf = {Math.Round(Nerf, 4)}\nBaseScaler = {BaseScaler}\nEfficiency = {Math.Round(Efficiency, 4)}\nStationRatio = {StationRatio}\nLargeShipRatio = {LargeShipRatio}" +
                    $"\nSmallShipRatio = {SmallShipRatio}\nDisableVoxelSupport = {DisableVoxelSupport}\nDisableGridDamageSupport = {DisableGridDamageSupport}" +
-                   $"\nDebug = {Debug}";
+                   $"\nDebug = {Debug}\nAltRecharge = {AltRecharge}\nVersion = {Version}\nSenderId = {SenderId}";
         }
 
     }
