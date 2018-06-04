@@ -93,7 +93,6 @@ namespace DefenseShields
                     }
                     _shieldDps = 0f;
                 }
-                if (_shieldStarting && GridIsMobile && FieldShapeBlocked()) return;
                 if (ShieldActive)
                 {
                     if (_longLoop % 2 != 0 && _count == 20)
@@ -103,6 +102,7 @@ namespace DefenseShields
                     }
                     if (_shieldStarting)
                     {
+                        if (_shieldStarting && GridIsMobile && FieldShapeBlocked()) return;
                         if (!(_hidePassiveCheckBox.Getter(Shield).Equals(true))) _shellPassive.Render.UpdateRenderObject(true);
 
                         _shellActive.Render.UpdateRenderObject(true);
@@ -225,6 +225,8 @@ namespace DefenseShields
 
         private bool FieldShapeBlocked()
         {
+            if (ModulateVoxels) return false;
+
             var pruneSphere = new BoundingSphereD(_detectionCenter, Range);
             var pruneList = new List<MyVoxelBase>();
             MyGamePruningStructure.GetAllVoxelMapsInSphere(ref pruneSphere, pruneList);
@@ -364,6 +366,7 @@ namespace DefenseShields
                 BackGroundChecks();
                 CheckShieldLineOfSight();
                 UpdateGridPower();
+                GetModulationInfo();
 
                 BlockWorking = MainInit && AnimateInit && Shield.IsWorking && Shield.IsFunctional;
                 if (Session.Enforced.Debug == 1) Log.Line($"range warmup enforced:\n{Session.Enforced}");

@@ -153,13 +153,22 @@ namespace DefenseShields
 
             if (subId == "DefenseShieldsSS")
             {
-                if (connList.Count > 1) myGridIsSub = true;
+                foreach (var grid in connList)
+                {
+                    if (grid != myGrid && grid.GridSizeEnum == MyCubeSize.Large)
+                    {
+                        if (myGrid.PositionComp.WorldAABB.Volume < grid.PositionComp.WorldAABB.Volume) myGridIsSub = true;
+                    }
+                }
             }
             else if (subId == "DefenseShieldsLS")
             {
                 foreach (var grid in connList)
                 {
-                    if (grid != myGrid && grid.GridSizeEnum == MyCubeSize.Large) myGridIsSub = true;
+                    if (grid != myGrid && grid.GridSizeEnum == MyCubeSize.Large)
+                    {
+                        if (myGrid.PositionComp.WorldAABB.Volume < grid.PositionComp.WorldAABB.Volume) myGridIsSub = true;
+                    }
                 }
             }
 
@@ -406,9 +415,9 @@ namespace DefenseShields
 
             if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" || Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") return;
 
-            _widthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "WidthSlider", "Shield Size Width", 30, 300, 100);
-            _heightSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HeightSlider", "Shield Size Height", 30, 300, 100);
-            _depthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "DepthSlider", "Shield Size Depth", 30, 300, 100);
+            _widthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "WidthSlider", "Shield Size Width", 30, 600, 100);
+            _heightSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HeightSlider", "Shield Size Height", 30, 600, 100);
+            _depthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "DepthSlider", "Shield Size Depth", 30, 600, 100);
             if (Session.Enforced.Debug == 1) Log.Line($"CreateUI Complete");
         }
         #endregion
