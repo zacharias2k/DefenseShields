@@ -62,17 +62,42 @@ namespace DefenseShields.Support
             catch (Exception ex) { Log.Line($"Exception in GetAmmoDefinitions: {ex}"); }
         }
 
-        public static double CreateShieldFit(IMyCubeBlock shield, bool buffer)
+        public static Vector3D CreateHalfExtents(IMyCubeBlock shield)
+        {
+            var shieldGrid = shield.CubeGrid;
+            var subGrids = MyAPIGateway.GridGroups.GetGroup(shieldGrid, GridLinkTypeEnum.Logical);
+            var myAabb = shieldGrid.PositionComp.LocalAABB;
+            var expandedAabb = myAabb;
+            foreach (var grid in subGrids)
+            {
+                if (grid != shieldGrid)
+                {
+                    var shieldMatrix = shieldGrid.WorldMatrixNormalizedInv;
+                    var gQuaternion = Quaternion.CreateFromRotationMatrix(grid.WorldMatrix);
+                    var gOriBBoxD = new MyOrientedBoundingBoxD(grid.PositionComp.WorldAABB.Center, grid.PositionComp.LocalAABB.HalfExtents, gQuaternion);
+                    gOriBBoxD.Transform(shieldMatrix);
+                    expandedAabb.Include((BoundingBox)gOriBBoxD.GetAABB());
+                }
+            }
+            return expandedAabb.HalfExtents;
+        }
+
+        public static double CreateExtendFit(IMyCubeBlock shield, Vector3D gridHalfExtents, bool buffer)
         {
             var blockPoints = new Vector3D[8];
             var blocks = new List<IMySlimBlock>();
-            shield.CubeGrid.GetBlocks(blocks, null);
 
+            var subGrids = MyAPIGateway.GridGroups.GetGroup(shield.CubeGrid, GridLinkTypeEnum.Logical);
+            foreach (var grid in subGrids) grid.GetBlocks(blocks);
+
+            var sqrt2 = Math.Sqrt(2);
+            var sqrt3 = Math.Sqrt(3);
+            const double percent = 0.1;
             var last = 0;
+            var repeat = 0;
             for (int i = 0; i <= 10; i++)
             {
-                var ellipsoidAdjust = MathHelper.Lerp(Math.Sqrt(2), Math.Sqrt(3), i * 0.1);
-                Vector3D gridHalfExtents = shield.CubeGrid.PositionComp.LocalAABB.HalfExtents;
+                var ellipsoidAdjust = MathHelper.Lerp(sqrt2, sqrt3, i * percent);
 
                 var shieldSize = gridHalfExtents * ellipsoidAdjust;
                 var mobileMatrix = MatrixD.CreateScale(shieldSize);
@@ -89,17 +114,31 @@ namespace DefenseShields.Support
 
                     foreach (var point in blockPoints) if (!CustomCollision.PointInShield(point, matrixInv)) c++;
                 }
-                //Log.Line($"step:{i} - matched:{c} - computed:{ellipsoidAdjust} - sqrt2:{Math.Sqrt(2)} - sqrt3:{Math.Sqrt(3)} - {shield.CubeGrid.DisplayName}");
 
-                if (c == 0 || last == c && !buffer)
+                if (c == last) repeat++;
+                else repeat = 0;
+
+                if (c == 0 || buffer)
                 {
                     var extra = 0;
                     if (buffer) extra = 10 - i;
-                    return MathHelper.Lerp(Math.Sqrt(2), Math.Sqrt(3), (i + extra) * 0.1);
+                    return MathHelper.Lerp(sqrt2, sqrt3, (i + extra) * percent);
                 }
                 last = c;
+                if (i == 10 && repeat > 2) return MathHelper.Lerp(sqrt2, sqrt3, ((10 - repeat) + 1) * percent);
             }
-            return Math.Sqrt(3);
+            return sqrt3;
+        }
+
+        public static int BlockCount(IMyCubeBlock shield)
+        {
+            var subGrids = MyAPIGateway.GridGroups.GetGroup(shield.CubeGrid, GridLinkTypeEnum.Logical);
+            var blockCnt = 0;
+            foreach (var grid in subGrids)
+            {
+                blockCnt += ((MyCubeGrid) grid).BlocksCount;
+            }
+            return blockCnt;
         }
 
         public static void PrepConfigFile()

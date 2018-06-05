@@ -40,13 +40,19 @@ namespace DefenseShields
         public bool ModulateGrids = false;
 
         [ProtoMember(11)]
-        public bool ShieldFit = false;
+        public bool ExtendFit = false;
+
+        [ProtoMember(12)]
+        public bool SphereFit = false;
+
+        [ProtoMember(13)]
+        public bool FortifyShield = false;
 
         public override string ToString()
         {
             return $"Enabled = {Enabled}\nIdleVisible = {IdleInvisible}\nActiveVisible = {ActiveInvisible}\nWidth = {Math.Round(Width, 4)}" +
                    $"\nHeight = {Math.Round(Height, 4)}\nDepth = {Math.Round(Depth, 4)}\nRate = {Math.Round(Rate, 4)}" +
-                   $"\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nShieldFit = {ShieldFit}";
+                   $"\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nExtendFit = {ExtendFit}\nSphereFit = {SphereFit}\nFortifyShield = {FortifyShield}";
         }
     }
 

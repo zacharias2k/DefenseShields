@@ -45,7 +45,6 @@ namespace DefenseShields
                     {
                         if (_shapeAdjusted) _shapeLoaded = true;
                         else if (_shapeLoaded) MyAPIGateway.Parallel.StartBackground(GetShapeAdjust);
-                        //else if (_shapeLoaded) GetShapeAdjust();
                     }
 
                     if (_blocksChanged)
@@ -72,7 +71,7 @@ namespace DefenseShields
                 if (_staleGrids.Count != 0) CleanUp(0);
                 if (_longLoop == 9 && _count == 58) CleanUp(1);
                 if (_effectsCleanup && (_count == 1 || _count == 21 || _count == 41)) CleanUp(2);
-                if (_longLoop % 2 == 0 && _count == 5) CleanUp(3);
+                if (_longLoop % 2 == 0 && _count == 5) CleanUp(3);            
                 if (_longLoop == 5 && _count == 10) CleanUp(4);
                 if (_longLoop == 6 && _count == 15 && (Session.DedicatedServer || Session.IsServer)) SaveSettings();
 
@@ -111,9 +110,9 @@ namespace DefenseShields
                         _shield.Render.UpdateRenderObject(true);
                         SyncThreadedEnts(true);
                         if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(_detectMatrixOutsideInv);
-                        if (_warmUp) 
+                        if (!_warmedUp) 
                         {
-                            _warmUp = false;
+                            _warmedUp = true;
                             if (Session.Enforced.Debug == 1) Log.Line($"Warmup complete");
                             return;
                         }
@@ -249,9 +248,8 @@ namespace DefenseShields
 
         private void GetShapeAdjust()
         {
-            Dsutil5.Sw.Restart();
-            _ellipsoidAdjust = DsUtilsStatic.CreateShieldFit(Shield, ShieldFit);
-            Dsutil5.StopWatchReport("getfit", -1);
+            _gridHalfExtents = DsUtilsStatic.CreateHalfExtents(Shield);
+            _ellipsoidAdjust = DsUtilsStatic.CreateExtendFit(Shield, _gridHalfExtents, ExtendFit);
         }
         #endregion
 
@@ -263,7 +261,8 @@ namespace DefenseShields
             if (_sVelSqr > 0.00001 || _sAvelSqr > 0.00001 || _shieldStarting) _shieldMoving = true;
             else _shieldMoving = false;
 
-            _shapeAdjusted = !_ellipsoidAdjust.Equals(_oldEllipsoidAdjust);
+            _shapeAdjusted = !_ellipsoidAdjust.Equals(_oldEllipsoidAdjust) || !_gridHalfExtents.Equals(_oldGridHalfExtents);
+            _oldGridHalfExtents = _gridHalfExtents;
             _oldEllipsoidAdjust = _ellipsoidAdjust;
             _gridChanged = _oldGridAabb != Shield.CubeGrid.LocalAABB;
             _oldGridAabb = Shield.CubeGrid.LocalAABB;
@@ -306,9 +305,8 @@ namespace DefenseShields
 
         private void CreateMobileShape()
         {
-            Vector3D gridHalfExtents = Shield.CubeGrid.PositionComp.LocalAABB.HalfExtents;
 
-            var shieldSize = gridHalfExtents * _ellipsoidAdjust;
+            var shieldSize = _gridHalfExtents * _ellipsoidAdjust;
             ShieldSize = shieldSize;
             var mobileMatrix = MatrixD.CreateScale(shieldSize);
             mobileMatrix.Translation = Shield.CubeGrid.PositionComp.LocalVolume.Center;
@@ -347,9 +345,7 @@ namespace DefenseShields
         #region Block Power Logic
         private bool BlockFunctional()
         {
-            if (!MainInit || !AnimateInit || !Session.EnforceInit || NoPower || HardDisable) return false;
-
-            if (_longLoop == 0 && _count == 0 && Shield.Enabled && ConnectCheck()) return false;
+            if (!AllInited) return false;
 
             if (Range.Equals(0)) // populate matrices and prep for smooth init.
             {
@@ -359,14 +355,17 @@ namespace DefenseShields
                 Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
                 SyncControlsClient();
 
-                var blockCnt = ((MyCubeGrid)Shield.CubeGrid).BlocksCount;
+                //var blockCnt = ((MyCubeGrid)Shield.CubeGrid).BlocksCount;
+                _subGrids = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Logical);
+                var blockCnt = BlockCount();
                 if (!_blocksChanged) _blocksChanged = blockCnt != _oldBlockCount;
                 _oldBlockCount = blockCnt;
 
                 BackGroundChecks();
-                CheckShieldLineOfSight();
                 UpdateGridPower();
+                GetShapeAdjust();
                 GetModulationInfo();
+                CheckShieldLineOfSight();
 
                 BlockWorking = MainInit && AnimateInit && Shield.IsWorking && Shield.IsFunctional;
                 if (Session.Enforced.Debug == 1) Log.Line($"range warmup enforced:\n{Session.Enforced}");
@@ -374,6 +373,8 @@ namespace DefenseShields
 
                 return BlockWorking;
             }
+
+            if (_longLoop == 4 && _count == 4 && Shield.Enabled && ConnectCheck()) return false;
 
             var shieldPowerUsed = Sink.CurrentInputByType(GId);
 
@@ -457,12 +458,23 @@ namespace DefenseShields
                 return false;
             }
 
-            var blockCount = ((MyCubeGrid)Shield.CubeGrid).BlocksCount;
+            if (_longLoop == 4 && _count == 4) _subGrids = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Logical);
+            var blockCount = BlockCount();
             if (!_blocksChanged) _blocksChanged = blockCount != _oldBlockCount;
             _oldBlockCount = blockCount;
 
             BlockWorking = MainInit && AnimateInit && Shield.IsWorking && Shield.IsFunctional;
             return BlockWorking;
+        }
+
+        public int BlockCount()
+        {
+            var blockCnt = 0;
+            for (int i = 0; i < _subGrids.Count; i++)
+            {
+                blockCnt += ((MyCubeGrid)_subGrids[i]).BlocksCount;
+            }
+            return blockCnt;
         }
 
         private void BackGroundChecks()

@@ -34,9 +34,19 @@ namespace DefenseShields
                 _chargeSlider.Setter(Shield, Settings.Rate);
             }
 
-            if (_shieldFit != null && !_shieldFit.Getter(Shield).Equals(Settings.ShieldFit))
+            if (_extendFit != null && !_extendFit.Getter(Shield).Equals(Settings.ExtendFit))
             {
-                _shieldFit.Setter(Shield, Settings.ShieldFit);
+                _extendFit.Setter(Shield, Settings.ExtendFit);
+            }
+
+            if (_sphereFit != null && !_sphereFit.Getter(Shield).Equals(Settings.SphereFit))
+            {
+                _sphereFit.Setter(Shield, Settings.SphereFit);
+            }
+
+            if (_fortifyShield != null && !_fortifyShield.Getter(Shield).Equals(Settings.FortifyShield))
+            {
+                _fortifyShield.Setter(Shield, Settings.FortifyShield);
             }
 
             if (_hideActiveCheckBox != null && !_hideActiveCheckBox.Getter(Shield).Equals(Settings.ActiveInvisible))
@@ -80,20 +90,29 @@ namespace DefenseShields
             }
             else
             {
-                if (!Enabled.Equals(Enabled) ||
-                    !_chargeSlider.Getter(Shield).Equals(Rate)
+                if (!Enabled.Equals(Enabled) 
+                    || !_chargeSlider.Getter(Shield).Equals(Rate)
                     || !_hideActiveCheckBox.Getter(Shield).Equals(ShieldActiveVisible)
                     || !_hidePassiveCheckBox.Getter(Shield).Equals(ShieldIdleVisible)
-                    || !_chargeSlider.Getter(Shield).Equals(Rate)
-                    || !_shieldFit.Getter(Shield).Equals(ShieldFit))
+                    || !_chargeSlider.Getter(Shield).Equals(Rate))
                 {
                     needsSync = true;
                     Enabled = Settings.Enabled;
                     Rate = _chargeSlider.Getter(Shield);
-                    ShieldFit = _shieldFit.Getter(Shield);
-                    _fitChanged = true;
+
                     ShieldActiveVisible = _hideActiveCheckBox.Getter(Shield);
                     ShieldIdleVisible = _hidePassiveCheckBox.Getter(Shield);
+                }
+
+                if (!_extendFit.Getter(Shield).Equals(ExtendFit)
+                    || !_sphereFit.Getter(Shield).Equals(SphereFit)
+                    || !_fortifyShield.Getter(Shield).Equals(FortifyShield))
+                {
+                    needsSync = true;
+                    ExtendFit = _extendFit.Getter(Shield);
+                    SphereFit = _sphereFit.Getter(Shield);
+                    FortifyShield = _fortifyShield.Getter(Shield);
+                    _fitChanged = true;
                 }
             }
 
@@ -115,7 +134,9 @@ namespace DefenseShields
             Height = newSettings.Height;
             Depth = newSettings.Depth;
             Rate = newSettings.Rate;
-            ShieldFit = newSettings.ShieldFit;
+            ExtendFit = newSettings.ExtendFit;
+            SphereFit = newSettings.SphereFit;
+            FortifyShield = newSettings.FortifyShield;
             ShieldBuffer = newSettings.Buffer;
             ModulateVoxels = newSettings.ModulateVoxels;
             ModulateGrids = newSettings.ModulateGrids;
@@ -224,12 +245,23 @@ namespace DefenseShields
             set { Settings.Rate = value; }
         }
 
-        public bool ShieldFit
+        public bool ExtendFit
         {
-            get { return Settings.ShieldFit; }
-            set { Settings.ShieldFit = value; }
+            get { return Settings.ExtendFit; }
+            set { Settings.ExtendFit = value; }
         }
 
+        public bool SphereFit
+        {
+            get { return Settings.SphereFit; }
+            set { Settings.SphereFit = value; }
+        }
+
+        public bool FortifyShield
+        {
+            get { return Settings.FortifyShield; }
+            set { Settings.FortifyShield = value; }
+        }
         public float ShieldBuffer
         {
             get { return Settings.Buffer; }
