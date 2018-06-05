@@ -8,8 +8,10 @@ using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
+using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
+using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRage.Utils;
@@ -40,6 +42,7 @@ namespace DefenseShields
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
 
+                //Shield.CubeGrid.OnIsStaticChanged += CheckStatic;
                 if (!_shields.ContainsKey(Entity.EntityId)) _shields.Add(Entity.EntityId, this);
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
                 Session.Instance.Components.Add(this);
@@ -62,7 +65,7 @@ namespace DefenseShields
                     return;
                 }
 
-                if (AnimateInit && MainInit || !Shield.IsFunctional) return;
+                if (AnimateInit && MainInit || !Shield.IsFunctional || ConnectCheck()) return;
 
                 if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
 
@@ -129,8 +132,102 @@ namespace DefenseShields
 
                     AnimateInit = true;
                 }
+
+                AllInited = true;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateAfterSimulation100: {ex}"); }
+        }
+
+        private void CheckStatic(IMyCubeGrid myCubeGrid, bool b)
+        {
+            CheckShieldType();
+        }
+
+        private bool ConnectCheck()
+        {
+            if (!Shield.Enabled) return true;
+
+            var connList = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Physical);
+            if (connList.Count <= 1) return false;
+            var subId = Shield.BlockDefinition.SubtypeId;
+            var myGrid = Shield.CubeGrid;
+            var myGridIsSub = false;
+
+            if (subId == "DefenseShieldsSS")
+            {
+                foreach (var grid in connList)
+                {
+                    if (grid != myGrid && grid.GridSizeEnum == MyCubeSize.Large)
+                    {
+                        if (myGrid.PositionComp.WorldAABB.Volume < grid.PositionComp.WorldAABB.Volume) myGridIsSub = true;
+                    }
+                }
+            }
+            else if (subId == "DefenseShieldsLS")
+            {
+                foreach (var grid in connList)
+                {
+                    if (grid != myGrid && grid.GridSizeEnum == MyCubeSize.Large)
+                    {
+                        if (myGrid.PositionComp.WorldAABB.Volume < grid.PositionComp.WorldAABB.Volume) myGridIsSub = true;
+                    }
+                }
+            }
+
+            if (myGridIsSub)
+            {
+                var realPlayerIds = new List<long>();
+                DsUtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
+                foreach (var id in realPlayerIds)
+                {
+                    MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- connected to parent grid, powering shield down.", 4800, "White", id);
+                }
+
+                Shield.Enabled = false;
+            }
+            return myGridIsSub;
+        }
+
+        private void CheckShieldType(bool takeAction = false)
+        {
+            var realPlayerIds = new List<long>();
+            DsUtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
+            foreach (var id in realPlayerIds)
+            {
+                if (!_startupWarning && Shield.BlockDefinition.SubtypeId == "DefenseShieldsST" && !Shield.CubeGrid.Physics.IsStatic)
+                {
+                    MyVisualScriptLogicProvider.ShowNotification("Station shields only allowed on stations", 5000, "Red", id);
+                    _startupWarning = true;
+                }
+                else if (!_startupWarning && Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" && Shield.CubeGrid.Physics.IsStatic)
+                {
+                    MyVisualScriptLogicProvider.ShowNotification("Large Ship Shields only allowed on ships, not stations", 5000, "Red", id);
+                    _startupWarning = true;
+                }
+                else if (!_startupWarning && NoPower || takeAction)
+                {
+                    if (takeAction)
+                    {
+                        if (!Sink.IsPowerAvailable(GId, _power)) _startupWarning = true;
+                    }
+                    else
+                    {
+                        MyVisualScriptLogicProvider.ShowNotification("Insufficent power to bring Shield online", 5000, "Red", id);
+                        _startupWarning = true;
+                    }
+                }
+                else if (!_startupWarning)
+                {
+                    MyVisualScriptLogicProvider.ShowNotification("Only one generator per grid in this version", 5000, "Red", id);
+                    _startupWarning = true;
+                }
+            }
+
+            if (takeAction && _startupWarning)
+            {
+                _startupWarning = false;
+                Shield.Enabled = false;
+            }
         }
 
         private bool HealthAndPowerCheck()
@@ -146,31 +243,8 @@ namespace DefenseShields
             if (!HardDisable || SinkInit) return true;
             if (Session.Enforced.Debug == 1) Log.Line($"HardDisable is triggered - Power: {NoPower} - {SinkInit} - {Shield.BlockDefinition.SubtypeId}");
 
-            var realPlayerIds = new List<long>();
-            DsUtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
-            foreach (var id in realPlayerIds)
-            {
-                if (!_startupWarning && Shield.BlockDefinition.SubtypeId == "DefenseShieldsST" && !Shield.CubeGrid.Physics.IsStatic)
-                {
-                    MyVisualScriptLogicProvider.ShowNotification("Station shields only allowed on stations", 5000, "Red", id);
-                    _startupWarning = true;
-                }
-                else if (!_startupWarning && Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" && Shield.CubeGrid.Physics.IsStatic)
-                {
-                    MyVisualScriptLogicProvider.ShowNotification("Large Ship Shields only allowed on ships, not stations", 5000, "Red", id);
-                    _startupWarning = true;
-                }
-                else if (!_startupWarning && NoPower)
-                {
-                    MyVisualScriptLogicProvider.ShowNotification("Insufficent power to bring Shield online", 5000, "Red", id);
-                    _startupWarning = true;
-                }
-                else if (!_startupWarning)
-                {
-                    MyVisualScriptLogicProvider.ShowNotification("Only one generator per grid in this version", 5000, "Red", id);
-                    _startupWarning = true;
-                }
-            }
+            CheckShieldType();
+
             return false;
         }
 
@@ -337,15 +411,17 @@ namespace DefenseShields
             RemoveOreUi();
 
             _chargeSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ChargeRate", "Shield Charge Rate", 20, 95, 50);
-            _shieldFit = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ShieldFit", "Extend Shield", false);
+            _extendFit = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ExtendFit", "Extend Shield", false);
+            _sphereFit = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "SphereFit", "Sphere Fit", false);
+            _fortifyShield = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ShieldFortify", "Fortify Shield", false);
             _hidePassiveCheckBox = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HidePassive", "Hide idle shield state", false);
             _hideActiveCheckBox = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HideActive", "Hide active shield state", false);
 
             if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" || Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") return;
 
-            _widthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "WidthSlider", "Shield Size Width", 30, 300, 100);
-            _heightSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HeightSlider", "Shield Size Height", 30, 300, 100);
-            _depthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "DepthSlider", "Shield Size Depth", 30, 300, 100);
+            _widthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "WidthSlider", "Shield Size Width", 30, 600, 100);
+            _heightSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HeightSlider", "Shield Size Height", 30, 600, 100);
+            _depthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "DepthSlider", "Shield Size Depth", 30, 600, 100);
             if (Session.Enforced.Debug == 1) Log.Line($"CreateUI Complete");
         }
         #endregion

@@ -68,6 +68,7 @@ namespace DefenseShields
         internal bool StorageInit;
         internal bool PhysicsInit;
         internal bool SinkInit;
+        internal bool AllInited;
         internal bool GridIsMobile;
         internal bool ShieldActive;
         internal bool BlockWorking;
@@ -84,11 +85,11 @@ namespace DefenseShields
         private bool _hideShield;
         private bool _updateDimensions;
         private bool _shapeAdjusted;
+        private bool _warmedUp;
         private bool _entityChanged = true;
         private bool _gridChanged = true;
         private bool _enablePhysics = true;
         private bool _shieldMoving = true;
-        private bool _warmUp = true;
         private bool _createMobileShape = true;
         private bool _shapeLoaded = true;
         private bool _fitChanged = false;
@@ -98,6 +99,8 @@ namespace DefenseShields
         private Vector3D _localImpactPosition;
         private Vector3D _detectionCenter;
         private Vector3D _sightPos;
+        private Vector3D _gridHalfExtents;
+        private Vector3D _oldGridHalfExtents;
 
         public readonly Vector3D[] PhysicsOutside = new Vector3D[642];
         public readonly Vector3D[] PhysicsOutsideLow = new Vector3D[162];
@@ -116,6 +119,7 @@ namespace DefenseShields
         private MyOrientedBoundingBoxD _sOriBBoxD;
         private Quaternion _sQuaternion;
 
+        private List<IMyCubeGrid> _subGrids = new List<IMyCubeGrid>();
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
         private readonly List<KeyValuePair<IMyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<IMyEntity, EntIntersectInfo>>();
@@ -154,7 +158,9 @@ namespace DefenseShields
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _heightSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _depthSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _chargeSlider;
-        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _shieldFit;
+        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _extendFit;
+        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _sphereFit;
+        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _fortifyShield;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _hidePassiveCheckBox;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _hideActiveCheckBox;
 

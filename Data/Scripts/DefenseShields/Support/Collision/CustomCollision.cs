@@ -428,7 +428,7 @@ namespace DefenseShields.Support
             return Vector3D.Transform(entCenter, matrixInv).LengthSquared() <= 1;
         }
 
-        public static bool ShieldFitPoints(Vector3D entCenter, MatrixD matrixInv)
+        public static bool ExtendFitPoints(Vector3D entCenter, MatrixD matrixInv)
         {
             return Vector3D.Transform(entCenter, matrixInv).LengthSquared() <= 0.90;
         }
