@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
-using Sandbox.Game.Weapons;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Weapons;
 using VRage.Game;
@@ -77,7 +75,7 @@ namespace DefenseShields
                     }
                 }
             }
-            if (_enablePhysics || _shieldMoving || _gridChanged)
+            if (_enablePhysics || _shieldMoving || _createMobileShape)
             {
 
                 Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, PhysicsOutside);

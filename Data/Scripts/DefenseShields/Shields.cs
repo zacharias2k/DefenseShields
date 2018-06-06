@@ -11,6 +11,7 @@ using VRage.Game.ModAPI;
 using VRage.Game.Components;
 using VRage.ModAPI;
 using System.Linq;
+using System.Threading;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage.Voxels;
@@ -43,6 +44,7 @@ namespace DefenseShields
 
                     if (GridIsMobile)
                     {
+                        CreateHalfExtents();
                         if (_shapeAdjusted) _shapeLoaded = true;
                         else if (_shapeLoaded) MyAPIGateway.Parallel.StartBackground(GetShapeAdjust);
                     }
@@ -143,6 +145,205 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 1) Dsutil1.StopWatchReport($"MainLoop: ShieldId:{Shield.EntityId.ToString()} - Active: {ShieldActive} - Tick: {_tick} loop: {_longLoop}-{_count}", 4);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
+        }
+
+        public void CreateHalfExtents()
+        {
+            var myAabb = Shield.CubeGrid.PositionComp.LocalAABB;
+            var shieldGrid = Shield.CubeGrid;
+            var expandedAabb = myAabb;
+            foreach (var grid in _subGrids)
+            {
+                if (grid != shieldGrid)
+                {
+                    var shieldMatrix = shieldGrid.WorldMatrixNormalizedInv;
+                    var gQuaternion = Quaternion.CreateFromRotationMatrix(grid.WorldMatrix);
+                    var gOriBBoxD = new MyOrientedBoundingBox(grid.PositionComp.WorldAABB.Center, grid.PositionComp.LocalAABB.HalfExtents, gQuaternion);
+                    gOriBBoxD.Transform(shieldMatrix);
+                    expandedAabb.Include(gOriBBoxD.GetAABB());
+                }
+            }
+            _expandedAabb = expandedAabb;
+            _shieldFudge = 0f;
+            if (SphereFit || FortifyShield)
+            {
+                var extend = ExtendFit ? 2 : 1;
+                var fortify = FortifyShield ? 3 : 1;
+
+                var size = expandedAabb.HalfExtents.Max() * fortify;
+                _gridHalfExtents = new Vector3D(size, size, size);
+                _shieldFudge = (shieldGrid.GridSize * 4 * extend);
+            }
+            else _gridHalfExtents = expandedAabb.HalfExtents;
+        }
+
+        private void GetShapeAdjust()
+        {
+            if (SphereFit || FortifyShield) _ellipsoidAdjust = 1f;
+            else if (!ExtendFit) _ellipsoidAdjust = DsUtilsStatic.CreateNormalFit(Shield, _gridHalfExtents);
+            else _ellipsoidAdjust = DsUtilsStatic.CreateExtendedFit(Shield, _gridHalfExtents);
+        }
+
+        public int BlockCount()
+        {
+            var blockCnt = 0;
+            for (int i = 0; i < _subGrids.Count; i++)
+            {
+                blockCnt += ((MyCubeGrid)_subGrids[i]).BlocksCount;
+            }
+            return blockCnt;
+        }
+
+        private void BackGroundChecks()
+        {
+            lock (_powerSources) _powerSources.Clear();
+            lock (_functionalBlocks) _functionalBlocks.Clear();
+
+            foreach (var block in ((MyCubeGrid)Shield.CubeGrid).GetFatBlocks())
+            {
+                lock (_functionalBlocks) if (block.IsFunctional) _functionalBlocks.Add(block);
+                var source = block.Components.Get<MyResourceSourceComponent>();
+                if (source == null) continue;
+                foreach (var type in source.ResourceTypes)
+                {
+                    if (type != MyResourceDistributorComponent.ElectricityId) continue;
+                    lock (_powerSources) _powerSources.Add(source);
+                    break;
+                }
+            }
+            if (Session.Enforced.Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - powerCnt: {_powerSources.Count.ToString()}");
+        }
+
+        private bool BlockFunctional()
+        {
+            if (!AllInited) return false;
+
+            if (Range.Equals(0)) // populate matrices and prep for smooth init.
+            {
+                _subGrids = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Logical);
+                var blockCnt = BlockCount();
+                if (!_blocksChanged) _blocksChanged = blockCnt != _oldBlockCount;
+                _oldBlockCount = blockCnt;
+
+                if (GridIsMobile)
+                {
+                    CreateHalfExtents();
+                    GetShapeAdjust();
+                    MobileUpdate();
+                }
+                else
+                {
+                    _updateDimensions = true;
+                    RefreshDimensions();
+                }
+
+                Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
+                SyncControlsClient();
+
+                BackGroundChecks();
+                UpdateGridPower();
+                GetModulationInfo();
+                CheckShieldLineOfSight();
+                _shapeAdjusted = false;
+                _blocksChanged = false;
+                BlockWorking = MainInit && AnimateInit && Shield.IsWorking && Shield.IsFunctional;
+                if (Session.Enforced.Debug == 1) Log.Line($"range warmup enforced:\n{Session.Enforced}");
+                if (Session.Enforced.Debug == 1) Log.Line($"range warmup buffer:{ShieldBuffer} - BlockWorking:{BlockWorking} - LoS:{_shieldLineOfSight}");
+
+                return BlockWorking;
+            }
+
+            if (_longLoop == 4 && _count == 4 && Shield.Enabled && ConnectCheck()) return false;
+
+            var shieldPowerUsed = Sink.CurrentInputByType(GId);
+
+            if (((MyCubeGrid)Shield.CubeGrid).GetFatBlocks().Count < 2 && ShieldActive && !Session.MpActive)
+            {
+                if (Session.Enforced.Debug == 1) Log.Line($"Shield going critical");
+                MyVisualScriptLogicProvider.CreateExplosion(Shield.PositionComp.WorldVolume.Center, (float)Shield.PositionComp.WorldVolume.Radius * 1.25f, 2500);
+                return false;
+            }
+
+            if (!Shield.IsWorking && Shield.Enabled && Shield.IsFunctional && shieldPowerUsed > 0)
+            {
+                if (Session.Enforced.Debug == 1) Log.Line($"fixing shield state power: {_power.ToString()}");
+                Shield.Enabled = false;
+                Shield.Enabled = true;
+                return true;
+            }
+
+            if ((!Shield.IsWorking || !Shield.IsFunctional || _shieldDownLoop > -1) || _reModulationLoop > -1)
+            {
+                _shieldCurrentPower = Sink.CurrentInputByType(GId);
+                UpdateGridPower();
+                if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(MatrixD.Zero);
+                BlockParticleStop();
+                ShieldActive = false;
+                BlockWorking = false;
+                _prevShieldActive = false;
+                _shellPassive.Render.UpdateRenderObject(false);
+                _shellActive.Render.UpdateRenderObject(false);
+                _shield.Render.Visible = false;
+                _shield.Render.UpdateRenderObject(false);
+                Absorb = 0;
+                ShieldBuffer = 0;
+                _shieldChargeRate = 0;
+                _shieldMaxChargeRate = 0;
+                if (_shieldDownLoop > -1 || _reModulationLoop > -1)
+                {
+                    _power = _gridMaxPower * _shieldMaintaintPower;
+                    if (_power < 0 || float.IsNaN(_power)) _power = 0.0001f; // temporary definitely 100% will fix this to do - Find ThE NaN!
+                    Sink.Update();
+
+                    if (_shieldDownLoop == 0 || _reModulationLoop == 0)
+                    {
+                        var realPlayerIds = new List<long>();
+                        DsUtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
+                        foreach (var id in realPlayerIds)
+                        {
+                            if (_shieldDownLoop == 0) MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 19200, "Red", id);
+                            if (_reModulationLoop == 0) MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield remodulating, restarting in 5 seconds.", 4800, "White", id);
+                        }
+
+                        CleanUp(0);
+                        CleanUp(1);
+                        CleanUp(3);
+                        CleanUp(4);
+                    }
+
+                    if (_reModulationLoop > -1)
+                    {
+                        _reModulationLoop++;
+                        if (_reModulationLoop == 300)
+                        {
+                            _reModulationLoop = -1;
+                            return false;
+                        }
+                        return false;
+                    }
+
+                    _shieldDownLoop++;
+                    if (_shieldDownLoop == 1200)
+                    {
+                        _shieldDownLoop = -1;
+                        var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
+                        var nerfer = nerf ? Session.Enforced.Nerf : 1f;
+                        ShieldBuffer = (_shieldMaxBuffer / 25) * nerfer; // replace this with something that scales based on charge rate
+                    }
+                    return false;
+                }
+                _power = 0.0001f;
+                Sink.Update();
+                return false;
+            }
+
+            if (_longLoop == 4 && _count == 4) _subGrids = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Logical);
+            var blockCount = BlockCount();
+            if (!_blocksChanged) _blocksChanged = blockCount != _oldBlockCount;
+            _oldBlockCount = blockCount;
+
+            BlockWorking = MainInit && AnimateInit && Shield.IsWorking && Shield.IsFunctional;
+            return BlockWorking;
         }
         #endregion
 
@@ -245,12 +446,6 @@ namespace DefenseShields
             }
             return false;
         }
-
-        private void GetShapeAdjust()
-        {
-            _gridHalfExtents = DsUtilsStatic.CreateHalfExtents(Shield);
-            _ellipsoidAdjust = DsUtilsStatic.CreateExtendFit(Shield, _gridHalfExtents, ExtendFit);
-        }
         #endregion
 
         #region Shield Shape
@@ -306,7 +501,7 @@ namespace DefenseShields
         private void CreateMobileShape()
         {
 
-            var shieldSize = _gridHalfExtents * _ellipsoidAdjust;
+            var shieldSize = _gridHalfExtents * _ellipsoidAdjust + _shieldFudge;
             ShieldSize = shieldSize;
             var mobileMatrix = MatrixD.CreateScale(shieldSize);
             mobileMatrix.Translation = Shield.CubeGrid.PositionComp.LocalVolume.Center;
@@ -343,160 +538,6 @@ namespace DefenseShields
         #endregion
 
         #region Block Power Logic
-        private bool BlockFunctional()
-        {
-            if (!AllInited) return false;
-
-            if (Range.Equals(0)) // populate matrices and prep for smooth init.
-            {
-                _updateDimensions = true;
-                if (GridIsMobile) MobileUpdate();
-                else RefreshDimensions();
-                Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
-                SyncControlsClient();
-
-                //var blockCnt = ((MyCubeGrid)Shield.CubeGrid).BlocksCount;
-                _subGrids = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Logical);
-                var blockCnt = BlockCount();
-                if (!_blocksChanged) _blocksChanged = blockCnt != _oldBlockCount;
-                _oldBlockCount = blockCnt;
-
-                BackGroundChecks();
-                UpdateGridPower();
-                GetShapeAdjust();
-                GetModulationInfo();
-                CheckShieldLineOfSight();
-
-                BlockWorking = MainInit && AnimateInit && Shield.IsWorking && Shield.IsFunctional;
-                if (Session.Enforced.Debug == 1) Log.Line($"range warmup enforced:\n{Session.Enforced}");
-                if (Session.Enforced.Debug == 1) Log.Line($"range warmup buffer:{ShieldBuffer} - BlockWorking:{BlockWorking} - LoS:{_shieldLineOfSight}");
-
-                return BlockWorking;
-            }
-
-            if (_longLoop == 4 && _count == 4 && Shield.Enabled && ConnectCheck()) return false;
-
-            var shieldPowerUsed = Sink.CurrentInputByType(GId);
-
-            if (((MyCubeGrid)Shield.CubeGrid).GetFatBlocks().Count < 2 && ShieldActive && !Session.MpActive)
-            {
-                if (Session.Enforced.Debug == 1) Log.Line($"Shield going critical");
-                MyVisualScriptLogicProvider.CreateExplosion(Shield.PositionComp.WorldVolume.Center, (float)Shield.PositionComp.WorldVolume.Radius * 1.25f, 2500);
-                return false;
-            }
-
-            if (!Shield.IsWorking && Shield.Enabled && Shield.IsFunctional && shieldPowerUsed > 0)
-            {
-                if (Session.Enforced.Debug == 1) Log.Line($"fixing shield state power: {_power.ToString()}");
-                Shield.Enabled = false;
-                Shield.Enabled = true;
-                return true;
-            }
-
-            if ((!Shield.IsWorking || !Shield.IsFunctional || _shieldDownLoop > -1) || _reModulationLoop > -1)
-            {
-                _shieldCurrentPower = Sink.CurrentInputByType(GId);
-                UpdateGridPower();
-                if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(MatrixD.Zero);
-                BlockParticleStop();
-                ShieldActive = false;
-                BlockWorking = false;
-                _prevShieldActive = false;
-                _shellPassive.Render.UpdateRenderObject(false);
-                _shellActive.Render.UpdateRenderObject(false);
-                _shield.Render.Visible = false;
-                _shield.Render.UpdateRenderObject(false);
-                Absorb = 0;
-                ShieldBuffer = 0;
-                _shieldChargeRate = 0;
-                _shieldMaxChargeRate = 0;
-                if (_shieldDownLoop > -1 || _reModulationLoop > -1)
-                {
-                    _power = _gridMaxPower * _shieldMaintaintPower;
-                    if (_power < 0 || float.IsNaN(_power)) _power = 0.0001f; // temporary definitely 100% will fix this to do - Find ThE NaN!
-                    Sink.Update();
-
-                    if (_shieldDownLoop == 0 || _reModulationLoop == 0)
-                    {
-                        var realPlayerIds = new List<long>();
-                        DsUtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
-                        foreach (var id in realPlayerIds)
-                        {
-                            if (_shieldDownLoop == 0) MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 19200, "Red", id);
-                            if (_reModulationLoop == 0) MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield remodulating, restarting in 5 seconds.", 4800, "White", id);
-                        }
-
-                        CleanUp(0);
-                        CleanUp(1);
-                        CleanUp(3);
-                        CleanUp(4);
-                    }
-
-                    if (_reModulationLoop > -1)
-                    {
-                        _reModulationLoop++;
-                        if (_reModulationLoop == 300)
-                        {
-                            _reModulationLoop = -1;
-                            return false;
-                        }
-                        return false;
-                    }
-
-                    _shieldDownLoop++;
-                    if (_shieldDownLoop == 1200)
-                    {
-                        _shieldDownLoop = -1;
-                        var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
-                        var nerfer = nerf ? Session.Enforced.Nerf : 1f;
-                        ShieldBuffer = (_shieldMaxBuffer / 25) * nerfer; // replace this with something that scales based on charge rate
-                    }
-                    return false;
-                }
-                _power = 0.0001f;
-                Sink.Update();
-                return false;
-            }
-
-            if (_longLoop == 4 && _count == 4) _subGrids = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Logical);
-            var blockCount = BlockCount();
-            if (!_blocksChanged) _blocksChanged = blockCount != _oldBlockCount;
-            _oldBlockCount = blockCount;
-
-            BlockWorking = MainInit && AnimateInit && Shield.IsWorking && Shield.IsFunctional;
-            return BlockWorking;
-        }
-
-        public int BlockCount()
-        {
-            var blockCnt = 0;
-            for (int i = 0; i < _subGrids.Count; i++)
-            {
-                blockCnt += ((MyCubeGrid)_subGrids[i]).BlocksCount;
-            }
-            return blockCnt;
-        }
-
-        private void BackGroundChecks()
-        {
-            lock (_powerSources) _powerSources.Clear();
-            lock (_functionalBlocks) _functionalBlocks.Clear();
-
-            foreach (var block in ((MyCubeGrid)Shield.CubeGrid).GetFatBlocks())
-            {
-                lock (_functionalBlocks) if (block.IsFunctional) _functionalBlocks.Add(block);
-                var source = block.Components.Get<MyResourceSourceComponent>();
-                if (source == null) continue;
-                foreach (var type in source.ResourceTypes)
-                {
-                    if (type != MyResourceDistributorComponent.ElectricityId) continue;
-                    lock (_powerSources) _powerSources.Add(source);
-                    break;
-                }
-            }
-            if (Session.Enforced.Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - powerCnt: {_powerSources.Count.ToString()}");
-        }
-
         private void UpdateGridPower()
         {
             _gridMaxPower = 0;
@@ -655,6 +696,10 @@ namespace DefenseShields
 
         private void BlockMoveAnimation()
         {
+            const float ssTranslation = 0.00032f;
+            const float lsTranslation = 0.0018f;
+            const float stTranslation = 0.005f;
+
             _time -= 1;
             if (_animationLoop == 0) _time2 = 0;
             if (_animationLoop < 299) _time2 += 1;
@@ -664,13 +709,23 @@ namespace DefenseShields
             else _emissiveIntensity -= 1;
                 
             var temp1 = MatrixD.CreateRotationY(0.05f * _time);
-            var temp2 = MatrixD.CreateTranslation(0, 0.002f * _time2, 0);
+
+            MatrixD temp2;
+            if (GridIsMobile && Shield.CubeGrid.GridSizeEnum == MyCubeSize.Large) temp2 = MatrixD.CreateTranslation(0, lsTranslation * _time2, 0);
+            else if (GridIsMobile) temp2 = MatrixD.CreateTranslation(0, ssTranslation * _time2, 0);
+            else temp2 = MatrixD.CreateTranslation(0, stTranslation * _time2, 0);
+
             _subpartRotor.PositionComp.LocalMatrix = temp1 * temp2;
             _subpartRotor.SetEmissiveParts("PlasmaEmissive", Color.Aqua, 0.1f * _emissiveIntensity);
         }
 
         private void BlockParticleCreate()
         {
+            var scale = 0f;
+            if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS") scale = 10f;
+            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") scale = 2.5f;
+            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST") scale = 20f;
+
             for (int i = 0; i < _effects.Length; i++)
             {
                 if (_effects[i] == null)
@@ -679,7 +734,7 @@ namespace DefenseShields
                     MyParticlesManager.TryCreateParticleEffect("EmitterEffect", out _effects[i]);
                     if (_effects[i] == null) continue;
                     _effects[i].UserScale = 1f;
-                    _effects[i].UserRadiusMultiplier = 10f;
+                    _effects[i].UserRadiusMultiplier = scale;
                     _effects[i].UserEmitterScale = 1f;
                 }
 
@@ -694,8 +749,18 @@ namespace DefenseShields
 
         private void BlockParticleUpdate()
         {
+            var testDist = 0d;
+            if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS") testDist = 1.5d;
+            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") testDist = 1.25d;
+            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST") testDist = 3.5d;
+
+            var spawnDir = _subpartRotor.PositionComp.WorldVolume.Center - Shield.PositionComp.WorldVolume.Center;
+            spawnDir.Normalize();
+            var spawnPos = Shield.PositionComp.WorldVolume.Center + spawnDir * testDist;
+
             var predictedMatrix = Shield.PositionComp.WorldMatrix;
-            if (_sVelSqr > 4000) predictedMatrix.Translation = Shield.PositionComp.WorldMatrix.Translation + Shield.CubeGrid.Physics.GetVelocityAtPoint(Shield.PositionComp.WorldMatrix.Translation) * MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS;
+            predictedMatrix.Translation = spawnPos;
+            if (_sVelSqr > 4000) predictedMatrix.Translation = spawnPos + Shield.CubeGrid.Physics.GetVelocityAtPoint(Shield.PositionComp.WorldMatrix.Translation) * MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS;
             for (int i = 0; i < _effects.Length; i++)
                 if (_effects[i] != null)
                 {
@@ -719,13 +784,18 @@ namespace DefenseShields
 
         private void BlockParticleStart()
         {
+            var scale = 0f;
+            if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS") scale = 10f;
+            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") scale = 2.5f;
+            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST") scale = 20f;
+
             for (int i = 0; i < _effects.Length; i++)
             {
                 if (!_effects[i].IsStopped) continue;
 
                 MyParticlesManager.TryCreateParticleEffect("EmitterEffect", out _effects[i]);
                 _effects[i].UserScale = 1f;
-                _effects[i].UserRadiusMultiplier = 10f;
+                _effects[i].UserRadiusMultiplier = scale;
                 _effects[i].UserEmitterScale = 1f;
                 BlockParticleUpdate();
             }
