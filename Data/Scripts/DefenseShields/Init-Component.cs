@@ -65,7 +65,7 @@ namespace DefenseShields
                     return;
                 }
 
-                if (AnimateInit && MainInit || !Shield.IsFunctional || ConnectCheck()) return;
+                if (AllInited || !Shield.IsFunctional || ConnectCheck()) return;
 
                 if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
 
@@ -92,7 +92,6 @@ namespace DefenseShields
                     if (Session.Enforced.Debug == 1) Log.Line($"MainInit complete");
 
                     MainInit = true;
-                    //return;
                 }
 
                 if (!HealthAndPowerCheck()) return;
@@ -147,15 +146,17 @@ namespace DefenseShields
         {
             if (!Shield.Enabled) return true;
 
-            var connList = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Physical);
-            if (connList.Count <= 1) return false;
             var subId = Shield.BlockDefinition.SubtypeId;
             var myGrid = Shield.CubeGrid;
             var myGridIsSub = false;
 
+            _subGrids = MyAPIGateway.GridGroups.GetGroup(myGrid, GridLinkTypeEnum.Logical);
+            if (_subGrids.Count <= 1) return false;
+            CreateHalfExtents();
+
             if (subId == "DefenseShieldsSS")
             {
-                foreach (var grid in connList)
+                foreach (var grid in _subGrids)
                 {
                     if (grid != myGrid && grid.GridSizeEnum == MyCubeSize.Large)
                     {
@@ -165,7 +166,7 @@ namespace DefenseShields
             }
             else if (subId == "DefenseShieldsLS")
             {
-                foreach (var grid in connList)
+                foreach (var grid in _subGrids)
                 {
                     if (grid != myGrid && grid.GridSizeEnum == MyCubeSize.Large)
                     {
@@ -173,16 +174,15 @@ namespace DefenseShields
                     }
                 }
             }
-
+            if (subId != "DefenseShieldsST" && _expandedAabb.Volume() > myGrid.PositionComp.LocalAABB.Volume() * 3) myGridIsSub = true;
             if (myGridIsSub)
             {
                 var realPlayerIds = new List<long>();
                 DsUtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
                 foreach (var id in realPlayerIds)
                 {
-                    MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- connected to parent grid, powering shield down.", 4800, "White", id);
+                    MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- primary grid is connected to much larger body, powering shield down.", 4800, "White", id);
                 }
-
                 Shield.Enabled = false;
             }
             return myGridIsSub;
@@ -409,19 +409,23 @@ namespace DefenseShields
         {
             Session.Instance.ControlsLoaded = true;
             RemoveOreUi();
-
             _chargeSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ChargeRate", "Shield Charge Rate", 20, 95, 50);
-            _extendFit = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ExtendFit", "Extend Shield", false);
-            _sphereFit = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "SphereFit", "Sphere Fit", false);
-            _fortifyShield = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ShieldFortify", "Fortify Shield", false);
+
+            if (Shield.BlockDefinition.SubtypeId != "DefenseShieldsST")
+            {
+                _extendFit = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ExtendFit", "Extend Shield", false);
+                _sphereFit = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "SphereFit", "Sphere Fit", false);
+                _fortifyShield = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ShieldFortify", "Fortify Shield", false);
+            }
+            else
+            {
+                _widthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "WidthSlider", "Shield Size Width", 30, 600, 100);
+                _heightSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HeightSlider", "Shield Size Height", 30, 600, 100);
+                _depthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "DepthSlider", "Shield Size Depth", 30, 600, 100);
+            }
+
             _hidePassiveCheckBox = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HidePassive", "Hide idle shield state", false);
             _hideActiveCheckBox = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HideActive", "Hide active shield state", false);
-
-            if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" || Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") return;
-
-            _widthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "WidthSlider", "Shield Size Width", 30, 600, 100);
-            _heightSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HeightSlider", "Shield Size Height", 30, 600, 100);
-            _depthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "DepthSlider", "Shield Size Depth", 30, 600, 100);
             if (Session.Enforced.Debug == 1) Log.Line($"CreateUI Complete");
         }
         #endregion

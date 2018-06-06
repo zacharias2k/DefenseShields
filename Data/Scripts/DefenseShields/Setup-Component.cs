@@ -37,6 +37,7 @@ namespace DefenseShields
         private float _shieldMaintaintPower;
         private float _shieldPercent;
         private float _shieldConsumptionRate;
+        private float _shieldFudge;
 
         internal double Range;
         private double _ellipsoidAdjust = Math.Sqrt(2);
@@ -115,6 +116,7 @@ namespace DefenseShields
 
         private BoundingBox _oldGridAabb;
         private BoundingBox _shieldAabb;
+        private BoundingBox _expandedAabb;
         private BoundingSphereD _shieldSphere;
         private MyOrientedBoundingBoxD _sOriBBoxD;
         private Quaternion _sQuaternion;
