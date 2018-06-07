@@ -205,7 +205,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Support\Spawn.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SyncEnts-Component.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\DSUtilsStatic.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\StaticUtils.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\EllipsoidOxygenProvider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\SurfaceArea\EllipsoidSA.cs" />
     <Compile Include="test\port\Coord3D.cs" />
@@ -240,7 +240,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Support\Distiance\DistPoint3Triangle3.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Logging.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Slider.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\DSUtils.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Utils.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Render.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Shields.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Structure\StructureBuilder.cs" />

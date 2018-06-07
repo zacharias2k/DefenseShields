@@ -75,9 +75,8 @@ namespace DefenseShields
                     }
                 }
             }
-            if (_enablePhysics || _shieldMoving || _createMobileShape)
+            if (_enablePhysics || _shieldMoving || _shapeAdjusted)
             {
-
                 Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, PhysicsOutside);
                 Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, PhysicsOutsideLow);
                 Icosphere.ReturnPhysicsVerts(_detectMatrixInside, PhysicsInside);

@@ -74,7 +74,6 @@ namespace DefenseShields
         internal bool ShieldActive;
         internal bool BlockWorking;
         internal bool HardDisable { get; private set; }
-        internal bool NoPower;
         private bool _enemy;
         private bool _blocksChanged;
         private bool _blockParticleStopped;
@@ -88,10 +87,8 @@ namespace DefenseShields
         private bool _shapeAdjusted;
         private bool _warmedUp;
         private bool _entityChanged = true;
-        private bool _gridChanged = true;
         private bool _enablePhysics = true;
         private bool _shieldMoving = true;
-        private bool _createMobileShape = true;
         private bool _shapeLoaded = true;
         private bool _fitChanged = false;
 
@@ -113,8 +110,8 @@ namespace DefenseShields
         private MatrixD _detectMatrixOutsideInv;
         private MatrixD _detectMatrixInside;
         private MatrixD _detectInsideInv;
+        private MatrixD _expandedMatrix;
 
-        private BoundingBox _oldGridAabb;
         private BoundingBox _shieldAabb;
         private BoundingBox _expandedAabb;
         private BoundingSphereD _shieldSphere;

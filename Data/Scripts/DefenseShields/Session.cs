@@ -80,8 +80,8 @@ namespace DefenseShields
                 if (DedicatedServer || IsServer)
                 {
                     Log.Line($"This is a server, loading config");
-                    DsUtilsStatic.PrepConfigFile();
-                    DsUtilsStatic.ReadConfigFile();
+                    UtilsStatic.PrepConfigFile();
+                    UtilsStatic.ReadConfigFile();
                 }
                 SessionInit = true;
             }
@@ -140,7 +140,7 @@ namespace DefenseShields
                 if (!DefinitionsLoaded && SessionInit && _tick > 200)
                 {
                     DefinitionsLoaded = true;
-                    DsUtilsStatic.GetDefinitons();
+                    UtilsStatic.GetDefinitons();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in SessionBeforeSim: {ex}"); }

@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Sandbox.Definitions;
+using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
+using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace DefenseShields.Support
 {
-    internal static class DsUtilsStatic
+    internal static class UtilsStatic
     {
         public static void GetRealPlayers(Vector3D center, float radius, List<long> realPlayers)
         {
@@ -40,6 +43,112 @@ namespace DefenseShields.Support
                 if (player == null) continue;
                 if (realPlayersIdentities.Contains(player.Identity)) realPlayers.Add(player.IdentityId);
             }
+        }
+
+        public static long ThereCanBeOnlyOne(IMyCubeBlock shield)
+        {
+            if (Session.Enforced.Debug == 1) Log.Line($"ThereCanBeOnlyOne start");
+            var gridStatic = shield.CubeGrid.Physics.IsStatic;
+            var shieldBlocks = new List<MyCubeBlock>();
+            foreach (var block in ((MyCubeGrid)shield.CubeGrid).GetFatBlocks())
+            {
+                if (block == null) continue;
+
+                if (block.BlockDefinition.BlockPairName.Equals("DefenseShield") || block.BlockDefinition.BlockPairName.Equals("StationShield"))
+                {
+                    if (gridStatic && shield.BlockDefinition.SubtypeId == "DefenseShieldsST")
+                    {
+                        if (block.IsWorking) return block.EntityId;
+                        shieldBlocks.Add(block);
+                    }
+                    else if (!gridStatic && (shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" || shield.BlockDefinition.SubtypeId == "DefenseShieldsSS"))
+                    {
+                        if (block.IsWorking) return block.EntityId;
+                        shieldBlocks.Add(block);
+                    }
+                }
+            }
+            var shieldDistFromCenter = double.MinValue;
+            var shieldId = long.MinValue;
+            foreach (var s in shieldBlocks)
+            {
+                if (s == null) continue;
+                if (gridStatic && s.BlockDefinition.BlockPairName.Equals("DefenseShield")) continue;
+                if (!gridStatic && s.BlockDefinition.BlockPairName.Equals("StationShield")) continue;
+
+                var dist = Vector3D.DistanceSquared(s.PositionComp.WorldVolume.Center, shield.CubeGrid.WorldVolume.Center);
+                if (dist > shieldDistFromCenter)
+                {
+                    shieldDistFromCenter = dist;
+                    shieldId = s.EntityId;
+                }
+            }
+            if (Session.Enforced.Debug == 1) Log.Line($"ThereCanBeOnlyOne complete, found shield: {shieldId}");
+            return shieldId;
+        }
+
+        public static bool CheckShieldType(IMyFunctionalBlock shield, bool warning, bool takeAction = false)
+        {
+            var realPlayerIds = new List<long>();
+            UtilsStatic.GetRealPlayers(shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
+            foreach (var id in realPlayerIds)
+            {
+                if (!warning && shield.BlockDefinition.SubtypeId == "DefenseShieldsST" && !shield.CubeGrid.Physics.IsStatic)
+                {
+                    MyVisualScriptLogicProvider.ShowNotification("Station shields only allowed on stations", 5000, "Red", id);
+                    warning = true;
+                }
+                else if (!warning && shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" && shield.CubeGrid.Physics.IsStatic)
+                {
+                    MyVisualScriptLogicProvider.ShowNotification("Large Ship Shields only allowed on ships, not stations", 5000, "Red", id);
+                    warning = true;
+                }
+                else if (!warning && takeAction)
+                {
+                }
+                else if (!warning)
+                {
+                    MyVisualScriptLogicProvider.ShowNotification("Only one generator per grid in this version", 5000, "Red", id);
+                    warning = true;
+                }
+            }
+
+            if (takeAction && warning)
+            {
+                warning = false;
+                shield.Enabled = false;
+            }
+            return warning;
+        }
+
+        public static bool Distance(IMyCubeBlock shield, int x, double range)
+        {
+            if (MyAPIGateway.Session.Player.Character == null) return false;
+
+            var pPosition = MyAPIGateway.Session.Player.Character.GetPosition();
+            var cPosition = shield.CubeGrid.PositionComp.GetPosition();
+            var dist = Vector3D.DistanceSquared(cPosition, pPosition) <= (x + range) * (x + range);
+            return dist;
+        }
+
+        private static bool ShowControlOreDetectorControls(IMyTerminalBlock block)
+        {
+            return block.BlockDefinition.SubtypeName.Contains("OreDetector");
+        }
+
+        public static void RemoveOreUi()
+        {
+            var actions = new List<IMyTerminalAction>();
+            MyAPIGateway.TerminalControls.GetActions<Sandbox.ModAPI.Ingame.IMyOreDetector>(out actions);
+            var actionAntenna = actions.First((x) => x.Id.ToString() == "BroadcastUsingAntennas");
+            actionAntenna.Enabled = ShowControlOreDetectorControls;
+
+            var controls = new List<IMyTerminalControl>();
+            MyAPIGateway.TerminalControls.GetControls<Sandbox.ModAPI.Ingame.IMyOreDetector>(out controls);
+            var antennaControl = controls.First((x) => x.Id.ToString() == "BroadcastUsingAntennas");
+            antennaControl.Visible = ShowControlOreDetectorControls;
+            var radiusControl = controls.First((x) => x.Id.ToString() == "Range");
+            radiusControl.Visible = ShowControlOreDetectorControls;
         }
 
         public static void GetDefinitons()
@@ -163,8 +272,7 @@ namespace DefenseShields.Support
                 blockCnt += ((MyCubeGrid) grid).BlocksCount;
             }
             return blockCnt;
-        }
-
+        }	
         public static void PrepConfigFile()
         {
             const int baseScaler = 30;

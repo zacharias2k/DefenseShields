@@ -12,10 +12,10 @@ using VRageMath;
 namespace DefenseShields.Support
 {
     #region Spawn
-    class Spawn
+    internal class Spawn
     {
         //Shell Entities
-        public MyEntity EmptyEntity(string displayName, string model, MyEntity parent, bool parented = false)
+        public static MyEntity EmptyEntity(string displayName, string model, MyEntity parent, bool parented = false)
         {
             try
             {

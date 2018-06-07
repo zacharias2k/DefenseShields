@@ -11,7 +11,6 @@ using VRage.Game.ModAPI;
 using VRage.Game.Components;
 using VRage.ModAPI;
 using System.Linq;
-using System.Threading;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage.Voxels;
@@ -120,7 +119,7 @@ namespace DefenseShields
                         }
                     }
                     if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
-                    if ((!Session.DedicatedServer) && Distance(1000))
+                    if ((!Session.DedicatedServer) && UtilsStatic.Distance(Shield, 1000, Range))
                     {
                         if (_shieldMoving || _shieldStarting) BlockParticleUpdate();
                         var blockCam = Shield.PositionComp.WorldVolume;
@@ -163,6 +162,7 @@ namespace DefenseShields
                     expandedAabb.Include(gOriBBoxD.GetAABB());
                 }
             }
+
             _expandedAabb = expandedAabb;
             _shieldFudge = 0f;
             if (SphereFit || FortifyShield)
@@ -180,8 +180,8 @@ namespace DefenseShields
         private void GetShapeAdjust()
         {
             if (SphereFit || FortifyShield) _ellipsoidAdjust = 1f;
-            else if (!ExtendFit) _ellipsoidAdjust = DsUtilsStatic.CreateNormalFit(Shield, _gridHalfExtents);
-            else _ellipsoidAdjust = DsUtilsStatic.CreateExtendedFit(Shield, _gridHalfExtents);
+            else if (!ExtendFit) _ellipsoidAdjust = UtilsStatic.CreateNormalFit(Shield, _gridHalfExtents);
+            else _ellipsoidAdjust = UtilsStatic.CreateExtendedFit(Shield, _gridHalfExtents);
         }
 
         public int BlockCount()
@@ -212,6 +212,52 @@ namespace DefenseShields
                 }
             }
             if (Session.Enforced.Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - powerCnt: {_powerSources.Count.ToString()}");
+        }
+
+        private bool ConnectCheck()
+        {
+            if (!Shield.Enabled) return true;
+
+            var subId = Shield.BlockDefinition.SubtypeId;
+            var myGrid = Shield.CubeGrid;
+            var myGridIsSub = false;
+
+            _subGrids = MyAPIGateway.GridGroups.GetGroup(myGrid, GridLinkTypeEnum.Logical);
+            if (_subGrids.Count <= 1) return false;
+            CreateHalfExtents();
+
+            if (subId == "DefenseShieldsSS")
+            {
+                foreach (var grid in _subGrids)
+                {
+                    if (grid != myGrid && grid.GridSizeEnum == MyCubeSize.Large)
+                    {
+                        if (myGrid.PositionComp.WorldAABB.Volume < grid.PositionComp.WorldAABB.Volume) myGridIsSub = true;
+                    }
+                }
+            }
+            else if (subId == "DefenseShieldsLS")
+            {
+                foreach (var grid in _subGrids)
+                {
+                    if (grid != myGrid && grid.GridSizeEnum == MyCubeSize.Large)
+                    {
+                        if (myGrid.PositionComp.WorldAABB.Volume < grid.PositionComp.WorldAABB.Volume) myGridIsSub = true;
+                    }
+                }
+            }
+            //if (subId != "DefenseShieldsST" && _expandedAabb.Volume() > myGrid.PositionComp.LocalAABB.Volume() * 3) myGridIsSub = true;
+            if (myGridIsSub)
+            {
+                var realPlayerIds = new List<long>();
+                UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
+                foreach (var id in realPlayerIds)
+                {
+                    MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- primary grid is connected to much larger body, powering shield down.", 4800, "White", id);
+                }
+                Shield.Enabled = false;
+            }
+            return myGridIsSub;
         }
 
         private bool BlockFunctional()
@@ -298,7 +344,7 @@ namespace DefenseShields
                     if (_shieldDownLoop == 0 || _reModulationLoop == 0)
                     {
                         var realPlayerIds = new List<long>();
-                        DsUtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
+                        UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
                         foreach (var id in realPlayerIds)
                         {
                             if (_shieldDownLoop == 0) MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 19200, "Red", id);
@@ -459,10 +505,7 @@ namespace DefenseShields
             _shapeAdjusted = !_ellipsoidAdjust.Equals(_oldEllipsoidAdjust) || !_gridHalfExtents.Equals(_oldGridHalfExtents);
             _oldGridHalfExtents = _gridHalfExtents;
             _oldEllipsoidAdjust = _ellipsoidAdjust;
-            _gridChanged = _oldGridAabb != Shield.CubeGrid.LocalAABB;
-            _oldGridAabb = Shield.CubeGrid.LocalAABB;
-            _createMobileShape = _gridChanged || _shapeAdjusted;
-            _entityChanged = Shield.CubeGrid.Physics.IsMoving || _createMobileShape || _shieldStarting;
+            _entityChanged = Shield.CubeGrid.Physics.IsMoving || _shieldStarting;
             if (_entityChanged || Range <= 0 || _shieldStarting) CreateShieldShape();
         }
 
@@ -471,11 +514,19 @@ namespace DefenseShields
             if (GridIsMobile)
             {
                 _shieldGridMatrix = Shield.CubeGrid.WorldMatrix;
-                if (_createMobileShape) CreateMobileShape();
+                if (_shapeAdjusted) CreateMobileShape();
+                //DsDebugDraw.DrawSingleVec(_detectionCenter, 10f, Color.Blue);
+
+                //_detectionCenter = Vector3D.Transform(_expandedAabb.Center, Shield.CubeGrid.PositionComp.WorldMatrix);
+                //var newDir = Vector3D.TransformNormal(_expandedAabb.HalfExtents, Shield.CubeGrid.PositionComp.WorldMatrix);
+                //_expandedMatrix = MatrixD.CreateFromTransformScale(_sQuaternion, _detectionCenter, newDir);
+                //DetectionMatrix = _shieldShapeMatrix * _expandedMatrix;
                 DetectionMatrix = _shieldShapeMatrix * _shieldGridMatrix;
                 _detectionCenter = Shield.CubeGrid.PositionComp.WorldVolume.Center;
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(Shield.CubeGrid.WorldMatrix);
                 _sOriBBoxD = new MyOrientedBoundingBoxD(_detectionCenter, ShieldSize, _sQuaternion);
+                //_sOriBBoxD = new MyOrientedBoundingBoxD(_detectionCenter, _expandedAabb.HalfExtents, _sQuaternion);
+
                 _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
                 _shieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
                 EllipsoidSa.Update(_detectMatrixOutside.Scale.X, _detectMatrixOutside.Scale.Y, _detectMatrixOutside.Scale.Z);
@@ -505,6 +556,7 @@ namespace DefenseShields
             ShieldSize = shieldSize;
             var mobileMatrix = MatrixD.CreateScale(shieldSize);
             mobileMatrix.Translation = Shield.CubeGrid.PositionComp.LocalVolume.Center;
+            //mobileMatrix.Translation = _expandedAabb.Center;
             _shieldShapeMatrix = mobileMatrix;
         }
 
@@ -552,6 +604,7 @@ namespace DefenseShields
                     _gridCurrentPower += source.CurrentOutput;
                 }
             _gridAvailablePower = _gridMaxPower - _gridCurrentPower;
+            if (_gridCurrentPower <= 0) Shield.Enabled = false;
         }
 
         private void CalculatePowerCharge()
@@ -849,21 +902,11 @@ namespace DefenseShields
             {
                 var prevlod = _prevLod;
                 var lod = CalculateLod(_onCount);
-                if (_gridChanged || lod != prevlod) Icosphere.CalculateTransform(_shieldShapeMatrix, lod);
+                if (_shapeAdjusted || lod != prevlod) Icosphere.CalculateTransform(_shieldShapeMatrix, lod);
                 Icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, _shieldPercent, passiveVisible, activeVisible);
                 _entityChanged = false;
             }
             if (sphereOnCamera && Shield.IsWorking) Icosphere.Draw(GetRenderId());
-        }
-
-        private bool Distance(int x)
-        {
-            if (MyAPIGateway.Session.Player.Character == null) return false;
-
-            var pPosition = MyAPIGateway.Session.Player.Character.GetPosition();
-            var cPosition = Shield.CubeGrid.PositionComp.GetPosition();
-            var range = Vector3D.DistanceSquared(cPosition, pPosition) <= (x + Range) * (x + Range);
-            return range;
         }
 
         private int CalculateLod(int onCount)
@@ -950,15 +993,6 @@ namespace DefenseShields
         {
             try
             {
-                /*
-                if (!Entity.MarkedForClose)
-                {
-                    return;
-                }
-                */
-                //Session.Instance.Components.Add(this);
-                //Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
-                //Shield.CubeGrid.Components.Add(new ShieldGridComponent(this));
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
