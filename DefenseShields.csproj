@@ -199,18 +199,22 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\Scripts\DefenseShields\API\dsApi.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Config\Enforcements.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\BaseControl.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\ButtonControl.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Checkbox.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\ColorControl.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Controls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Seperator.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Config\UpdateDsSettings.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Entweb-Component.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Intersect-Component.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Modulators.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Settings-Component.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Setup-Component.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Control\SetDsControls.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Config\Shield-Settings.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Fields-Component.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Init-Component.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\DefinitionManager.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Spawn.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SyncEnts-Component.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session.cs" />
@@ -232,7 +236,7 @@
     <Compile Include="test\Plane3D.cs" />
     <Compile Include="test\port\Point3D.cs" />
     <Compile Include="test\Point3D.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Network\SerializationClasses.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Config\SerializationClasses.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CustomCollision.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\BoxShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\ConvexHullShape.cs" />

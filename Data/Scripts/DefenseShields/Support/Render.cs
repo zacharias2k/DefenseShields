@@ -123,7 +123,7 @@ namespace DefenseShields.Support
             private readonly int[] _impactCnt = new int[6];
 
             private int _mainLoop;
-            private int _longLoop;
+            private int _lCount;
             private int _longerLoop;
             private int _modelCount;
             private int _chargeDrawStep;
@@ -415,10 +415,10 @@ namespace DefenseShields.Support
                 if (_mainLoop == 61)
                 {
                     _mainLoop = 0;
-                    _longLoop++;
-                    if (_longLoop == 10)
+                    _lCount++;
+                    if (_lCount == 10)
                     {
-                        _longLoop = 0;
+                        _lCount = 0;
                         if (_longerLoop == 0 && Random.Next(0, 2) == 1 || _longerLoop == 3)
                         {
                             _charge = true;

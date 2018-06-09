@@ -37,7 +37,7 @@ namespace DefenseShields
         public static readonly bool DedicatedServer = MyAPIGateway.Utilities.IsDedicated;
 
         private int _count = -1;
-        private int _longLoop;
+        private int _lCount;
         private int _extendedLoop;
 
         public const ushort PACKET_ID_SETTINGS = 62520; // network
@@ -57,6 +57,8 @@ namespace DefenseShields
         public static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         private readonly Dictionary<IMyEntity, int> _voxelDamageCounter = new Dictionary<IMyEntity, int>();
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
+        public bool[] SphereOnCamera = new bool[0];
+
         public readonly List<Modulators> Modulators = new List<Modulators>();
 
         public readonly List<IMyPlayer> Players = new List<IMyPlayer>();
@@ -91,22 +93,25 @@ namespace DefenseShields
         public override void Draw()
         {
             if (DedicatedServer) return;
-            if (Enforced.Debug == 1 && _extendedLoop == 0 & _longLoop == 0 && _count == 0) Log.Line($"Shields in the world: {Components.Count.ToString()}");
+            if (Enforced.Debug == 1 && _extendedLoop == 0 & _lCount == 0 && _count == 0) Log.Line($"Shields in the world: {Components.Count.ToString()}");
             try
             {
                 if (!SessionInit || Components.Count == 0) return;
-                var sphereOnCamera = new bool[Components.Count];
                 var onCount = 0;
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
-                    if (s.HardDisable || !s.ShieldActive || !(s.AnimateInit && s.MainInit)) continue;
+                    if (!s.ShieldActive || !s.AllInited) continue;
                     var sp = new BoundingSphereD(s.Entity.GetPosition(), s.Range);
-                    if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp)) continue;
-                    sphereOnCamera[i] = true;
+                    if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
+                    {
+                        SphereOnCamera[i] = false;
+                        continue;
+                    }
+                    SphereOnCamera[i] = true;
                     onCount++;
                 }
-                for (int i = 0; i < Components.Count; i++) if (Components[i].ShieldActive && !Components[i].HardDisable) Components[i].Draw(onCount, sphereOnCamera[i]);
+                for (int i = 0; i < Components.Count; i++) if (Components[i].ShieldActive && Components[i].AllInited && SphereOnCamera[i]) Components[i].Draw(onCount, SphereOnCamera[i]);
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
         }
@@ -118,14 +123,14 @@ namespace DefenseShields
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
 
                 for (int i = 0; i < Components.Count; i++) Components[i].DeformEnabled = false;
-
+                if (SphereOnCamera.Length != Components.Count) Array.Resize(ref SphereOnCamera, Components.Count);
                 if (_count++ == 59)
                 {
                     _count = 0;
-                    _longLoop++;
-                    if (_longLoop == 10)
+                    _lCount++;
+                    if (_lCount == 10)
                     {
-                        _longLoop = 0;
+                        _lCount = 0;
                         _extendedLoop++;
                         if (_extendedLoop == 10) _extendedLoop = 0;
                     }
@@ -256,7 +261,7 @@ namespace DefenseShields
 
                             if (Enforced.Debug == 1) Log.Line($"Packet Settings Packet received:- data:\n{data.Settings}");
                             logic.UpdateSettings(data.Settings);
-                            logic.SaveSettings();
+                            logic.DsSet.SaveSettings();
                             logic.ServerUpdate = true;
 
                             if (IsServer)
@@ -315,8 +320,8 @@ namespace DefenseShields
                             if (Enforced.Debug == 1) Log.Line($"PacketReceived(); Enforce - Server:\n{data.Enforce}");
                             if (!IsServer)
                             {
-                                logic.UpdateEnforcement(data.Enforce);
-                                logic.SaveSettings();
+                                Enforcements.UpdateEnforcement(data.Enforce);
+                                logic.DsSet.SaveSettings();
                                 EnforceInit = true;
                                 Log.Line($"client accepted enforcement");
                                 if (Enforced.Debug == 1) Log.Line($"Client EnforceInit Complete with enforcements:\n{data.Enforce}");

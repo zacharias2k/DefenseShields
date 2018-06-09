@@ -92,7 +92,9 @@ namespace DefenseShields.Support
     public class ShieldGridComponent : MyEntityComponentBase
     {
         private static List<ShieldGridComponent> gridShield = new List<ShieldGridComponent>();
+        public HashSet<IMyCubeGrid> SubGrids = new HashSet<IMyCubeGrid>();
         public readonly DefenseShields DefenseShields;
+
         public string Password;
 
         public ShieldGridComponent(DefenseShields defenseShields)
@@ -140,6 +142,12 @@ namespace DefenseShields.Support
             return true;
         }
 
+        public HashSet<IMyCubeGrid> GetSubGrids
+        {
+            get { return SubGrids; }
+            set { SubGrids = value; }
+        }
+
         public string ModulationPassword
         {
             get { return Password; }
@@ -155,6 +163,7 @@ namespace DefenseShields.Support
     public class ModulatorGridComponent : MyEntityComponentBase
     {
         private static List<ModulatorGridComponent> gridModulator = new List<ModulatorGridComponent>();
+        public HashSet<IMyCubeGrid> SubGrids = new HashSet<IMyCubeGrid>();
         public readonly Modulators Modulators;
         public string Password;
         public bool Enabled;
@@ -207,6 +216,12 @@ namespace DefenseShields.Support
             return true;
         }
 
+        public HashSet<IMyCubeGrid> GetSubGrids
+        {
+            get { return SubGrids; }
+            set { SubGrids = value; }
+        }
+
         public string ModulationPassword
         {
             get { return Password; }
@@ -230,6 +245,7 @@ namespace DefenseShields.Support
             get { return Grids; }
             set { Grids = value; }
         }
+
         public override string ComponentTypeDebugString
         {
             get { return "Shield"; }

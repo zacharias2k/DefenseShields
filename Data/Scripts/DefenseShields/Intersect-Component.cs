@@ -60,7 +60,7 @@ namespace DefenseShields
                 if (entInfo == null) return;
 
                 var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.WorldAABB);
-                if (entInfo.Relation != global::DefenseShields.DefenseShields.Ent.LargeEnemyGrid && GridInside(grid, bOriBBoxD)) return;
+                if (entInfo.Relation != Ent.LargeEnemyGrid && GridInside(grid, bOriBBoxD)) return;
                 BlockIntersect(grid, bOriBBoxD, entInfo);
                 var contactpoint = entInfo.ContactPoint;
                 entInfo.ContactPoint = Vector3D.NegativeInfinity;
@@ -134,24 +134,19 @@ namespace DefenseShields
         private void PlayerIntersect(IMyEntity ent)
         {
             var playerInfo = _webEnts[ent];
-            var rnd = new Random();
             var character = ent as IMyCharacter;
             if (character == null) return;
             var npcname = character.ToString();
             if (npcname.Equals("Space_Wolf"))
             {
-                //Log.Line($"playerEffect: Killing {character}");
                 _characterDmg.Enqueue(character);
-                //Absorb += 500;
-                //WorldImpactPosition = ent.PositionComp.WorldVolume.Center;
                 return;
             }
             if (character.EnabledDamping) character.SwitchDamping();
             if (!character.EnabledThrusts) return;
 
             var insideTime = (int)playerInfo.LastTick - (int)playerInfo.FirstTick;
-            var explodeRollChance = rnd.Next(0 - insideTime, insideTime);
-            if (explodeRollChance <= 666) return;
+            if (insideTime < 3000) return;
             _webEnts.Remove(ent);
 
             var hydrogenId = MyCharacterOxygenComponent.HydrogenId;

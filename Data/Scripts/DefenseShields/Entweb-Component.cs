@@ -30,20 +30,24 @@ namespace DefenseShields
                 if (ent == null || FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent)) continue;
 
                 var entCenter = ent.PositionComp.WorldVolume.Center;
-                if (ent == _shield || ent as IMyCubeGrid == Shield.CubeGrid || (ent.Physics == null && !(ent is IMyAutomaticRifleGun)) || ent.MarkedForClose || ent is MyVoxelBase && !GridIsMobile
+                if (ent.Physics == null && !(ent is IMyAutomaticRifleGun) || ent.MarkedForClose || ent is MyVoxelBase && !GridIsMobile
                     || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
 
                 var relation = EntType(ent);
-                if (relation == Ent.Ignore || relation == Ent.Friend || relation == Ent.Weapon || relation == Ent.Authenticated)
+                switch (relation)
                 {
-                    if ((relation == Ent.Friend || relation == Ent.Weapon || relation == Ent.Authenticated) && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv))
-                    {
-                        FriendlyCache.Add(ent);
+                    case Ent.Authenticated:
                         continue;
-                    }
-                    if (relation == Ent.Authenticated) continue;
-                    IgnoreCache.Add(ent);
-                    continue;
+                    case Ent.Ignore:
+                    case Ent.Friend:
+                    case Ent.Weapon:
+                        if ((relation == Ent.Friend || relation == Ent.Weapon) && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv))
+                        {
+                            FriendlyCache.Add(ent);
+                            continue;
+                        }
+                        IgnoreCache.Add(ent);
+                        continue;
                 }
 
                 _enablePhysics = true;
@@ -54,7 +58,6 @@ namespace DefenseShields
                     if (entInfo != null)
                     {
                         entInfo.LastTick = _tick;
-                        //if (entInfo.SpawnedInside) IgnoreCache.Add(ent);
                     }
                     else
                     {
@@ -114,6 +117,7 @@ namespace DefenseShields
                                 ep++;
                                 if ((_count == 2 || _count == 17 || _count == 32 || _count == 47) && CustomCollision.PointInShield(entCenter, _detectMatrixOutsideInv))
                                 {
+                                    if (Session.Enforced.Debug == 1) Log.Line($"Ent: EnemyPlayer {((MyEntity)webent).DebugName}");
                                     MyAPIGateway.Parallel.Start(() => PlayerIntersect(webent));
                                 }
                                 continue;
@@ -121,36 +125,42 @@ namespace DefenseShields
                         case Ent.SmallNobodyGrid:
                             {
                                 ns++;
+                                if (Session.Enforced.Debug == 1) Log.Line($"Ent: SmallNobodyGrid {((MyEntity)webent).DebugName}");
                                 MyAPIGateway.Parallel.Start(() => SmallGridIntersect(webent));
                                 continue;
                             }
                         case Ent.LargeNobodyGrid:
                             {
                                 nl++;
+                                if (Session.Enforced.Debug == 1) Log.Line($"Ent: LargeNobodyGrid {((MyEntity)webent).DebugName}");
                                 MyAPIGateway.Parallel.Start(() => GridIntersect(webent));
                                 continue;
                             }
                         case Ent.SmallEnemyGrid:
                             {
                                 es++;
+                                if (Session.Enforced.Debug == 1) Log.Line($"Ent: SmallEnemyGrid {((MyEntity)webent).DebugName}");
                                 MyAPIGateway.Parallel.Start(() => SmallGridIntersect(webent));
                                 continue;
                             }
                         case Ent.LargeEnemyGrid:
                             {
                                 el++;
+                                if (Session.Enforced.Debug == 1) Log.Line($"Ent: LargeEnemyGrid {((MyEntity)webent).DebugName}");
                                 MyAPIGateway.Parallel.Start(() => GridIntersect(webent));
                                 continue;
                             }
                         case Ent.Shielded:
                             {
                                 ss++;
+                                if (Session.Enforced.Debug == 1) Log.Line($"Ent: Shielded {((MyEntity)webent).DebugName}");
                                 MyAPIGateway.Parallel.Start(() => ShieldIntersect(webent as IMyCubeGrid));
                                 continue;
                             }
                         case Ent.Other:
                             {
                                 oo++;
+                                if (Session.Enforced.Debug == 1) Log.Line($"Ent: Other {((MyEntity)webent).DebugName}");
                                 if (CustomCollision.PointInShield(entCenter, _detectMatrixOutsideInv))
                                 {
                                     if (webent.MarkedForClose || webent.Closed) continue;
@@ -162,17 +172,19 @@ namespace DefenseShields
                         case Ent.VoxelBase:
                             {
                                 vv++;
+                                if (Session.Enforced.Debug == 1) Log.Line($"Ent: VoxelBase {((MyEntity)webent).DebugName}");
                                 MyAPIGateway.Parallel.Start(() => VoxelIntersect(webent as MyVoxelBase));
                                 continue;
                             }
                         default:
+                            if (Session.Enforced.Debug == 1) Log.Line($"Ent: default {((MyEntity)webent).DebugName}");
                             xx++;
                             continue;
                     }
                 }
             }
 
-            if (Session.Enforced.Debug == 1 && _longLoop == 5 && _count == 5)
+            if (Session.Enforced.Debug == 1 && _lCount == 5 && _count == 5)
                 lock (_webEnts) if (_webEnts.Count > 7 || FriendlyCache.Count > 15 || IgnoreCache.Count > 15) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - friend:{FriendlyCache.Count} - ignore:{IgnoreCache.Count} - total:{_webEnts.Count} ep:{ep} ns:{ns} nl:{nl} es:{es} el:{el} ss:{ss} oo:{oo} vv:{vv} xx:{xx}");
             if (Session.Enforced.Debug == 1) Dsutil3.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - webDispatch", 3);
         }
@@ -220,10 +232,9 @@ namespace DefenseShields
                 {
                     if (modComp.ModulationPassword.Equals(Shield.CustomData))
                     {
-                        //Log.Line($"Modulator password [{modComp.ModulationPassword}] matches");
+                        foreach (var subGrid in modComp.SubGrids) FriendlyCache.Add(subGrid);
                         return Ent.Authenticated;
                     }
-                    //Log.Line($"Modulator password [{modComp.ModulationPassword}] does not match!");
                 }
 
                 if (((MyCubeGrid)grid).BlocksCount < 3 && grid.BigOwners.Count == 0) return Ent.SmallNobodyGrid;

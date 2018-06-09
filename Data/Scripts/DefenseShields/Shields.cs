@@ -13,9 +13,10 @@ using VRage.ModAPI;
 using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
+using VRage.Utils;
 using VRage.Voxels;
 using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
-
+using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
 namespace DefenseShields
 {
@@ -36,7 +37,7 @@ namespace DefenseShields
 
                 if (GridIsMobile) MobileUpdate();
                 if (_updateDimensions) RefreshDimensions();
-                if (_fitChanged || (_longLoop == 0 && _count == 0 && _blocksChanged))
+                if (_fitChanged || (_lCount == 0 && _count == 0 && _blocksChanged))
                 {
                     _oldEllipsoidAdjust = _ellipsoidAdjust;
                     _fitChanged = false;
@@ -65,16 +66,20 @@ namespace DefenseShields
                 if (_count++ == 59)
                 {
                     _count = 0;
-                    _longLoop++;
-                    if (_longLoop == 10) _longLoop = 0;
+                    _lCount++;
+                    if (_lCount == 10) _lCount = 0;
                 }
 
                 if (_staleGrids.Count != 0) CleanUp(0);
-                if (_longLoop == 9 && _count == 58) CleanUp(1);
+                if (_lCount == 9 && _count == 58) CleanUp(1);
                 if (_effectsCleanup && (_count == 1 || _count == 21 || _count == 41)) CleanUp(2);
-                if (_longLoop % 2 == 0 && _count == 5) CleanUp(3);            
-                if (_longLoop == 5 && _count == 10) CleanUp(4);
-                if (_longLoop == 6 && _count == 15 && (Session.DedicatedServer || Session.IsServer)) SaveSettings();
+                if (_lCount == 6 && _count == 15 && (Session.DedicatedServer || Session.IsServer)) DsSet.SaveSettings();
+                if ((_lCount * 60 + _count + 1) % 100 == 0) _hierarchyUpdated = false;
+                if ((_lCount * 60 + _count + 1) % 150 == 0)
+                {
+                    CleanUp(3);
+                    CleanUp(4);
+                }
 
                 UpdateGridPower();
                 CalculatePowerCharge();
@@ -87,7 +92,7 @@ namespace DefenseShields
                         Shield.ShowInToolbarConfig = false;
                         Shield.ShowInToolbarConfig = true;
                     }
-                    else if (_longLoop == 0 || _longLoop == 5)
+                    else if (_lCount == 0 || _lCount == 5)
                     {
                         Shield.RefreshCustomInfo();
                     }
@@ -95,7 +100,7 @@ namespace DefenseShields
                 }
                 if (ShieldActive)
                 {
-                    if (_longLoop % 2 != 0 && _count == 20)
+                    if (_lCount % 2 != 0 && _count == 20)
                     {
                         GetModulationInfo();
                         if (_reModulationLoop > -1) return;
@@ -119,7 +124,7 @@ namespace DefenseShields
                         }
                     }
                     if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
-                    if ((!Session.DedicatedServer) && UtilsStatic.Distance(Shield, 1000, Range))
+                    if ((!Session.DedicatedServer) && UtilsStatic.ShieldDistanceCheck(Shield, 1000, Range))
                     {
                         if (_shieldMoving || _shieldStarting) BlockParticleUpdate();
                         var blockCam = Shield.PositionComp.WorldVolume;
@@ -141,7 +146,8 @@ namespace DefenseShields
                     SyncThreadedEnts();
                     if (!_blockParticleStopped) BlockParticleStop();
                 }
-                if (Session.Enforced.Debug == 1) Dsutil1.StopWatchReport($"MainLoop: ShieldId:{Shield.EntityId.ToString()} - Active: {ShieldActive} - Tick: {_tick} loop: {_longLoop}-{_count}", 4);
+
+                if (Session.Enforced.Debug == 1) Dsutil1.StopWatchReport($"MainLoop: ShieldId:{Shield.EntityId.ToString()} - Active: {ShieldActive} - Tick: {_tick} loop: {_lCount}-{_count}", 1);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
@@ -218,15 +224,13 @@ namespace DefenseShields
         {
             if (!Shield.Enabled) return true;
 
-            var subId = Shield.BlockDefinition.SubtypeId;
             var myGrid = Shield.CubeGrid;
             var myGridIsSub = false;
 
-            _subGrids = MyAPIGateway.GridGroups.GetGroup(myGrid, GridLinkTypeEnum.Logical);
             if (_subGrids.Count <= 1) return false;
             CreateHalfExtents();
 
-            if (subId == "DefenseShieldsSS")
+            if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS")
             {
                 foreach (var grid in _subGrids)
                 {
@@ -236,7 +240,7 @@ namespace DefenseShields
                     }
                 }
             }
-            else if (subId == "DefenseShieldsLS")
+            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS")
             {
                 foreach (var grid in _subGrids)
                 {
@@ -266,7 +270,7 @@ namespace DefenseShields
 
             if (Range.Equals(0)) // populate matrices and prep for smooth init.
             {
-                _subGrids = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Logical);
+                foreach (var subgrid in SGridComponent.GetSubGrids) _subGrids.Add(subgrid);
                 var blockCnt = BlockCount();
                 if (!_blocksChanged) _blocksChanged = blockCnt != _oldBlockCount;
                 _oldBlockCount = blockCnt;
@@ -292,14 +296,14 @@ namespace DefenseShields
                 CheckShieldLineOfSight();
                 _shapeAdjusted = false;
                 _blocksChanged = false;
-                BlockWorking = MainInit && AnimateInit && Shield.IsWorking && Shield.IsFunctional;
+                BlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
                 if (Session.Enforced.Debug == 1) Log.Line($"range warmup enforced:\n{Session.Enforced}");
                 if (Session.Enforced.Debug == 1) Log.Line($"range warmup buffer:{ShieldBuffer} - BlockWorking:{BlockWorking} - LoS:{_shieldLineOfSight}");
 
                 return BlockWorking;
             }
 
-            if (_longLoop == 4 && _count == 4 && Shield.Enabled && ConnectCheck()) return false;
+            if (_lCount == 4 && _count == 4 && Shield.Enabled && ConnectCheck()) return false;
 
             var shieldPowerUsed = Sink.CurrentInputByType(GId);
 
@@ -383,12 +387,17 @@ namespace DefenseShields
                 return false;
             }
 
-            if (_longLoop == 4 && _count == 4) _subGrids = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Logical);
+            if (_lCount == 4 && _count == 4)
+            {
+                _subGrids.Clear();
+                foreach (var subgrid in SGridComponent.GetSubGrids) _subGrids.Add(subgrid);
+            }
+
             var blockCount = BlockCount();
             if (!_blocksChanged) _blocksChanged = blockCount != _oldBlockCount;
             _oldBlockCount = blockCount;
 
-            BlockWorking = MainInit && AnimateInit && Shield.IsWorking && Shield.IsFunctional;
+            BlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
             return BlockWorking;
         }
         #endregion
@@ -403,13 +412,10 @@ namespace DefenseShields
             }
             else RefreshDimensions();
 
-            var testDist = 0d;
             _blocksLos.Clear();
             _noBlocksLos.Clear();
             _vertsSighted.Clear();
-            if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS") testDist = 4.5d;
-            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") testDist = 0.8d;
-            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST") testDist = 8.0d;
+            var testDist = Definition.FieldDist;
 
             var testDir = _subpartRotor.PositionComp.WorldVolume.Center - Shield.PositionComp.WorldVolume.Center;
             testDir.Normalize();
@@ -444,11 +450,8 @@ namespace DefenseShields
 
         private void DrawHelper()
         {
-            var lineDist = 0d;
             const float lineWidth = 0.025f;
-            if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS") lineDist = 5.0d;
-            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") lineDist = 3d;
-            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST") lineDist = 7.5d;
+            var lineDist = Definition.HelperDist;
 
             foreach (var blocking in _blocksLos)
             {
@@ -774,10 +777,7 @@ namespace DefenseShields
 
         private void BlockParticleCreate()
         {
-            var scale = 0f;
-            if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS") scale = 10f;
-            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") scale = 2.5f;
-            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST") scale = 20f;
+            var scale = Definition.ParticleScale;
 
             for (int i = 0; i < _effects.Length; i++)
             {
@@ -802,10 +802,8 @@ namespace DefenseShields
 
         private void BlockParticleUpdate()
         {
-            var testDist = 0d;
-            if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS") testDist = 1.5d;
-            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") testDist = 1.25d;
-            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST") testDist = 3.5d;
+
+            var testDist = Definition.ParticleDist;
 
             var spawnDir = _subpartRotor.PositionComp.WorldVolume.Center - Shield.PositionComp.WorldVolume.Center;
             spawnDir.Normalize();
@@ -837,10 +835,7 @@ namespace DefenseShields
 
         private void BlockParticleStart()
         {
-            var scale = 0f;
-            if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS") scale = 10f;
-            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS") scale = 2.5f;
-            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsST") scale = 20f;
+            var scale = Definition.ParticleScale;
 
             for (int i = 0; i < _effects.Length; i++)
             {
@@ -854,8 +849,43 @@ namespace DefenseShields
             }
         }
         #endregion
-      
+
         #region Shield Draw
+        private void UpdateCameraViewProjInvMatrix()
+        {
+            var cam = MyAPIGateway.Session.Camera;
+            var aspectRatio = MyAPIGateway.Session.Camera.ViewportSize.X / MyAPIGateway.Session.Camera.ViewportSize.Y;
+            var projectionMatrix = MatrixD.CreatePerspectiveFieldOfView(cam.FovWithZoom, aspectRatio, Math.Min(4f, cam.NearPlaneDistance), cam.FarPlaneDistance);
+            _viewProjInv = MatrixD.Invert(cam.ViewMatrix * projectionMatrix);
+        }
+
+        private Vector3D HudToWorld(Vector2 hud)
+        {
+            var vec4 = new Vector4D(hud.X, hud.Y, 0d, 1d);
+            Vector4D.Transform(ref vec4, ref _viewProjInv, out vec4);
+            return new Vector3D((vec4.X / vec4.W), (vec4.Y / vec4.W), (vec4.Z / vec4.W));
+        }
+
+        private void UpdateIcon()
+        {
+            UpdateCameraViewProjInvMatrix();
+            var hudPos = HudToWorld(new Vector2((float)_shieldIconPos.X, (float)_shieldIconPos.Y));
+            var material = MyStringId.GetOrCompute("DS_Control");
+            var cameraPos = MyAPIGateway.Session.Camera.WorldMatrix.Translation;
+            var dirA = hudPos - cameraPos;
+            dirA.Normalize();
+            const float scale = 6.5f;
+            const float dis = 50f;
+            var drawAt = cameraPos + dirA * dis;
+            Color color;
+            if (_shieldPercent > 80) color = Color.White;
+            else if (_shieldPercent > 60) color = Color.Blue;
+            else if (_shieldPercent > 40) color = Color.Yellow;
+            else if (_shieldPercent > 20) color = Color.Orange;
+            else color = Color.DarkRed;
+            MyTransparentGeometry.AddBillboardOriented(material, color, drawAt, MyAPIGateway.Session.Camera.WorldMatrix.Left, MyAPIGateway.Session.Camera.WorldMatrix.Up, scale, BlendTypeEnum.SDR);
+        }
+
         public void Draw(int onCount, bool sphereOnCamera)
         {
             _onCount = onCount;
@@ -863,6 +893,11 @@ namespace DefenseShields
             var relation = MyAPIGateway.Session.Player.GetRelationTo(Shield.OwnerId);
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
             _enemy = enemy;
+
+            if (!enemy && !MyAPIGateway.Session.Config.MinimalHud && FriendlyCache.Contains(MyAPIGateway.Session.Player.Character))
+            {
+                UpdateIcon();
+            }
 
             var passiveVisible = !(_hidePassiveCheckBox.Getter(Shield).Equals(true) && !enemy);
             var activeVisible = !(_hideActiveCheckBox.Getter(Shield).Equals(true) && !enemy);
@@ -954,6 +989,9 @@ namespace DefenseShields
                     case 3:
                         {
                             FriendlyCache.Clear();
+                            FriendlyCache.IntersectWith(SGridComponent.GetSubGrids);
+                            FriendlyCache.Add(Shield.CubeGrid);
+                            FriendlyCache.Add(_shield);
                         }
                         break;
                     case 4:
@@ -1006,7 +1044,7 @@ namespace DefenseShields
                     return;
                 }
                 _power = 0f;
-                if (MainInit) Sink.Update();
+                if (AllInited) Sink.Update();
                 Icosphere = null;
                 _shield?.Close();
                 _shellPassive?.Close();
@@ -1029,7 +1067,7 @@ namespace DefenseShields
                 _power = 0f;
                 Icosphere = null;
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
-                if (MainInit) Sink.Update();
+                if (AllInited) Sink.Update();
                 BlockParticleStop();
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }

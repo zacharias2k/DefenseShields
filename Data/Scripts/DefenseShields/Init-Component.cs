@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using DefenseShields.Control;
 using DefenseShields.Support;
+using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.Components;
 using VRage.Game.Entity;
@@ -36,14 +38,32 @@ namespace DefenseShields
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
 
                 //Shield.CubeGrid.OnIsStaticChanged += CheckStatic;
+                ((MyCubeGrid) Shield.CubeGrid).OnHierarchyUpdated += UpdateSubGrids;
                 if (!_shields.ContainsKey(Entity.EntityId)) _shields.Add(Entity.EntityId, this);
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
                 Session.Instance.Components.Add(this);
-                Shield.CubeGrid.Components.Add(new ShieldGridComponent(this));
+                Shield.CubeGrid.Components.Add(SGridComponent);
                 StorageSetup();
                 if (Session.Enforced.Debug == 1) Log.Line($"pre-Init complete");
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
+        }
+
+        public DefenseShields()
+        {
+            SGridComponent = new ShieldGridComponent(this);
+            /*
+            {
+                SubGrids = new HashSet<IMyCubeGrid>()
+            };
+            */
+        }
+
+        private void UpdateSubGrids(MyCubeGrid myCubeGrid)
+        {
+            if (_hierarchyUpdated || !AllInited) return;
+            _hierarchyUpdated = true;
+            SGridComponent.SubGrids.IntersectWith(MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Logical));
         }
 
         public override void UpdateAfterSimulation100()
@@ -64,6 +84,10 @@ namespace DefenseShields
 
                 if (!MainInit && Shield.IsFunctional)
                 {
+                    Definition = DefinitionManager.Get(Shield.BlockDefinition.SubtypeId);
+
+                    FriendlyCache.IntersectWith(SGridComponent.GetSubGrids);
+
                     var enableState = Shield.Enabled;
 
                     if (enableState)
@@ -94,7 +118,7 @@ namespace DefenseShields
                 {
                     SpawnEntities();
 
-                    switch (Shield.BlockDefinition.SubtypeId)
+                    switch (Definition.Name)
                     {
                         case "DefenseShieldsST":
                             _shieldRatio = Session.Enforced.StationRatio;
@@ -112,34 +136,24 @@ namespace DefenseShields
                     PhysicsInit = true;
                 }
 
-                if (AnimateInit || !MainInit || !Shield.IsFunctional) return;
+                if (AllInited || !PhysicsInit || !MainInit || !Shield.IsFunctional) return;
 
-                if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" || Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS" || Shield.BlockDefinition.SubtypeId == "DefenseShieldsST")
-                {
-                    if (Session.Enforced.Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - {Shield.BlockDefinition.SubtypeId} is functional - tick:{_tick.ToString()}");
-                    Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                if (Session.Enforced.Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - {Shield.BlockDefinition.SubtypeId} is functional - tick:{_tick.ToString()}");
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
 
-                    if (!Session.DedicatedServer) BlockParticleCreate();
+                if (!Session.DedicatedServer) BlockParticleCreate();
 
-                    if (Session.Enforced.Debug == 1) Log.Line($"AnimateInit complete");
-
-                    AnimateInit = true;
-                }
+                if (Session.Enforced.Debug == 1) Log.Line($"AnimateInit complete");
 
                 AllInited = true;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateAfterSimulation100: {ex}"); }
         }
 
-        private void CheckStatic(IMyCubeGrid myCubeGrid, bool b)
-        {
-            _startupWarning = UtilsStatic.CheckShieldType(Shield, _startupWarning);
-        }
-
         private bool HealthCheck()
         {
-            HardDisable = false || Shield.EntityId != UtilsStatic.ThereCanBeOnlyOne(Shield) || Shield.BlockDefinition.SubtypeId == "DefenseShieldsST" &&
-                !Shield.CubeGrid.Physics.IsStatic || Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" && Shield.CubeGrid.Physics.IsStatic;
+            HardDisable = false || Shield.EntityId != UtilsStatic.ThereCanBeOnlyOne(Shield) || Definition.Name == "DefenseShieldsST" &&
+                !Shield.CubeGrid.Physics.IsStatic || Definition.Name == "DefenseShieldsLS" && Shield.CubeGrid.Physics.IsStatic;
 
             if (!HardDisable) return true;
             if (Session.Enforced.Debug == 1) Log.Line($"HardDisable is triggered - {Shield.BlockDefinition.SubtypeId}");
@@ -151,8 +165,6 @@ namespace DefenseShields
 
         private void SpawnEntities()
         {
-            //Log.Line($"Initting {Shield.BlockDefinition.SubtypeId} - tick:{_tick.ToString()}");
-
             MyEntity parent;
             if (GridIsMobile) parent = (MyEntity)Shield.CubeGrid;
             else parent = (MyEntity)Shield.CubeGrid;
@@ -183,18 +195,15 @@ namespace DefenseShields
             _shield.Render.UpdateRenderObject(true);
             _shield.Render.Visible = true;
             _shield.Save = false;
-
-            Shield.AppendingCustomInfo += AppendingCustomInfo;
-            Shield.RefreshCustomInfo();
-
             if (Session.Enforced.Debug == 1) Log.Line($"SpawnEntities complete");
         }
 
         private void StorageSetup()
         {
             Storage = Shield.Storage;
-            LoadSettings();
-            UpdateSettings(Settings);
+            DsSet = new DefenseShieldsSettings(Shield);
+            DsSet.LoadSettings();
+            UpdateSettings(DsSet.Settings);
             if (Session.Enforced.Debug == 1) Log.Line($"StorageSetup complete");
         }
 
@@ -207,7 +216,7 @@ namespace DefenseShields
             else 
             {
                 if (Session.Enforced.Debug == 1) Log.Line($"ClientEnforcementRequest Check finished - Enforcement Request?: {Session.Enforced.Version <= 0}");
-                EnforcementRequest();
+                Enforcements.EnforcementRequest(Shield.EntityId);
             }
         }
 
@@ -223,13 +232,13 @@ namespace DefenseShields
         {
             try
             {
-                if (SinkInit) return;
-
-                SinkInit = true;
                 HardDisable = false;
                 _power = 0.0000000001f;
                 _shieldCurrentPower = _power;
                 Sink.Update();
+
+                Shield.AppendingCustomInfo += AppendingCustomInfo;
+                Shield.RefreshCustomInfo();
                 if (Session.Enforced.Debug == 1) Log.Line($"PowerInit complete");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
@@ -243,7 +252,7 @@ namespace DefenseShields
             UtilsStatic.RemoveOreUi();
             _chargeSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ChargeRate", "Shield Charge Rate", 20, 95, 50);
 
-            if (Shield.BlockDefinition.SubtypeId != "DefenseShieldsST")
+            if (Definition.Name != "DefenseShieldsST")
             {
                 _extendFit = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ExtendFit", "Extend Shield", false);
                 _sphereFit = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "SphereFit", "Sphere Fit", false);

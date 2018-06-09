@@ -121,7 +121,7 @@ namespace DefenseShields.Support
             return warning;
         }
 
-        public static bool Distance(IMyCubeBlock shield, int x, double range)
+        public static bool ShieldDistanceCheck(IMyCubeBlock shield, int x, double range)
         {
             if (MyAPIGateway.Session.Player.Character == null) return false;
 
@@ -278,14 +278,14 @@ namespace DefenseShields.Support
             const int baseScaler = 30;
             const float nerf = 0f;
             const float efficiency = 100f;
-            const int stationRatio = 2;
-            const int largeShipRate = 3;
+            const int stationRatio = 1;
+            const int largeShipRate = 2;
             const int smallShipRatio = 1;
             const int disableVoxel = 0;
             const int disableGridDmg = 0;
             const int debug = 0;
             const bool altRecharge = false;
-            const int version = 56;
+            const int version = 57;
 
             var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg");
             if (dsCfgExists)

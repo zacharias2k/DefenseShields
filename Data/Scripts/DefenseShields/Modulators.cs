@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using DefenseShields.Control;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
+using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
+using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
@@ -16,29 +18,25 @@ namespace DefenseShields
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "LargeShieldModulator", "SmallShieldModulator")]
     public class Modulators : MyGameLogicComponent
     {
+
+        public bool ServerUpdate;
+        private bool _hierarchyUpdated = false;
+
         private uint _tick;
         private int _count = -1;
-        private int _longLoop;
-
-        private float _power = 0.05f;
-        internal bool MainInit;
-        public bool ServerUpdate;
-
-        internal MyResourceSinkInfo ResourceInfo;
-        internal MyResourceSinkComponent Sink;
-        public MyModStorageComponentBase Storage { get; set; }
-
-        internal ModulatorSettings Settings = new ModulatorSettings();
-        internal ModulatorGridComponent MGridComponent;
-
-        private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
+        private int _lCount;
 
         private readonly Dictionary<long, Modulators> _modulators = new Dictionary<long, Modulators>();
 
-        private IMyUpgradeModule Modulator => (IMyUpgradeModule)Entity;
+        public MyModStorageComponentBase Storage { get; set; }
+        internal ModulatorSettings Settings = new ModulatorSettings();
+        internal ModulatorGridComponent MGridComponent;
 
+        private IMyUpgradeModule Modulator => (IMyUpgradeModule)Entity;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule> _modulateVoxels;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule> _modulateGrids;
+
+        internal DSUtils Dsutil1 = new DSUtils();
 
         public Modulators()
         {
@@ -49,14 +47,16 @@ namespace DefenseShields
         {
             try
             {
-                Entity.Components.TryGet(out Sink);
                 base.Init(objectBuilder);
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
+                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+
                 Modulator.CubeGrid.Components.Add(MGridComponent);
                 Session.Instance.Modulators.Add(this);
                 if (!_modulators.ContainsKey(Entity.EntityId)) _modulators.Add(Entity.EntityId, this);
                 CreateUi();
                 StorageSetup();
+                ((MyCubeGrid) Modulator.CubeGrid).OnHierarchyUpdated += UpdateSubGrid;
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -68,15 +68,22 @@ namespace DefenseShields
             UpdateSettings(Settings, false);
         }
 
-        public override void UpdateBeforeSimulation100()
+        public override void UpdateBeforeSimulation()
         {
-            _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
             if (_count++ == 59)
             {
                 _count = 0;
-                _longLoop++;
-                if (_longLoop == 10) _longLoop = 0;
+                _lCount++;
+                if (_lCount == 10) _lCount = 0;
             }
+
+            if ((_lCount * 60 + _count + 1) % 100 == 0) _hierarchyUpdated = false;
+        }
+
+        public override void UpdateBeforeSimulation100()
+        {
+            _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+
 
             if (ServerUpdate) SyncControlsServer();
             SyncControlsClient();
@@ -89,49 +96,19 @@ namespace DefenseShields
             }
         }
 
+        private void UpdateSubGrid(IMyEntity myEntity)
+        {
+            if (_hierarchyUpdated) return;
+            _hierarchyUpdated = true;
+            MGridComponent.SubGrids.IntersectWith(MyAPIGateway.GridGroups.GetGroup(Modulator.CubeGrid, GridLinkTypeEnum.Logical));
+        }
+
         #region Create UI
         private void CreateUi()
         {
             Session.Instance.ControlsLoaded = true;
             _modulateVoxels = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Modulator, "AllowVoxels", "Voxels may pass", true);
             _modulateGrids = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Modulator, "AllowGrids", "Grids may pass", false);
-        }
-
-        public override void OnRemovedFromScene()
-        {
-            try
-            {
-                //Log.Line("OnremoveFromScene");
-                if (!Entity.MarkedForClose)
-                {
-                    //Log.Line("Entity not closed in OnRemovedFromScene- gridSplit?.");
-                    return;
-                }
-                Modulator?.CubeGrid.Components.Remove(typeof(ModulatorGridComponent), this);
-                Session.Instance.Modulators.Remove(this);
-            }
-            catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
-        }
-
-        public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
-        public override void Close()
-        {
-            try
-            {
-                if (_modulators.ContainsKey(Entity.EntityId)) _modulators.Remove(Entity.EntityId);
-                if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
-            }
-            catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
-            base.Close();
-        }
-
-        public override void MarkForClose()
-        {
-            try
-            {
-            }
-            catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
-            base.MarkForClose();
         }
         #endregion
 
@@ -272,6 +249,40 @@ namespace DefenseShields
             }
         }
         #endregion
+        public override void OnRemovedFromScene()
+        {
+            try
+            {
+                if (!Entity.MarkedForClose)
+                {
+                    return;
+                }
+                Modulator?.CubeGrid.Components.Remove(typeof(ModulatorGridComponent), this);
+                Session.Instance.Modulators.Remove(this);
+            }
+            catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
+        }
+
+        public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
+        public override void Close()
+        {
+            try
+            {
+                if (_modulators.ContainsKey(Entity.EntityId)) _modulators.Remove(Entity.EntityId);
+                if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
+            }
+            catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
+            base.Close();
+        }
+
+        public override void MarkForClose()
+        {
+            try
+            {
+            }
+            catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
+            base.MarkForClose();
+        }
         public override void OnAddedToContainer() { if (Entity.InScene) OnAddedToScene(); }
     }
 }
