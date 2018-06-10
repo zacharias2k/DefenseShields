@@ -1,9 +1,8 @@
 ﻿using System.Collections.Generic;
-using VRage;
-using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRage.Utils;
 using VRage.Voxels;
 using VRageMath;
@@ -86,6 +85,98 @@ namespace DefenseShields.Support
             Relation = relation;
             SpawnedInside = inside;
             TempStorage = tempStorage;
+        }
+    }
+
+    public class ControllerGridComponent : MyEntityComponentBase
+    {
+        private static List<ControllerGridComponent> gridShield = new List<ControllerGridComponent>();
+        public HashSet<IMyCubeGrid> SubGrids = new HashSet<IMyCubeGrid>();
+        public readonly Controllers Controllers;
+
+        public string Password;
+        public bool Enabled;
+        public bool Voxels;
+        public bool Grids;
+
+        public ControllerGridComponent(Controllers controllers)
+        {
+            Controllers = controllers;
+        }
+
+        public override void OnAddedToContainer()
+        {
+            base.OnAddedToContainer();
+
+            if (Container.Entity.InScene)
+            {
+                gridShield.Add(this);
+            }
+        }
+
+        public override void OnBeforeRemovedFromContainer()
+        {
+
+            if (Container.Entity.InScene)
+            {
+                gridShield.Remove(this);
+            }
+
+            base.OnBeforeRemovedFromContainer();
+        }
+
+        public override void OnAddedToScene()
+        {
+            base.OnAddedToScene();
+
+            gridShield.Add(this);
+        }
+
+        public override void OnRemovedFromScene()
+        {
+            gridShield.Remove(this);
+
+            base.OnRemovedFromScene();
+        }
+
+        public override bool IsSerialized()
+        {
+            return true;
+        }
+
+        public HashSet<IMyCubeGrid> GetSubGrids
+        {
+            get { return SubGrids; }
+            set { SubGrids = value; }
+        }
+
+        public string ModulationPassword
+        {
+            get { return Password; }
+            set { Password = value; }
+        }
+
+        public bool ModulationEnabled
+        {
+            get { return Enabled; }
+            set { Enabled = value; }
+        }
+
+        public bool ModulateVoxels
+        {
+            get { return Voxels; }
+            set { Voxels = value; }
+        }
+
+        public bool ModulateGrids
+        {
+            get { return Grids; }
+            set { Grids = value; }
+        }
+
+        public override string ComponentTypeDebugString
+        {
+            get { return "Shield"; }
         }
     }
 

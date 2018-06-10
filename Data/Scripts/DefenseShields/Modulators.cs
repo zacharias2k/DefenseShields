@@ -9,7 +9,6 @@ using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
-using VRage.Game.ObjectBuilders.Definitions;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 
@@ -20,7 +19,8 @@ namespace DefenseShields
     {
 
         public bool ServerUpdate;
-        private bool _hierarchyUpdated = false;
+        private bool _hierarchyChanged;
+        private bool _hierarchyDelayed;
 
         private uint _tick;
         private int _count = -1;
@@ -49,14 +49,13 @@ namespace DefenseShields
             {
                 base.Init(objectBuilder);
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
 
                 Modulator.CubeGrid.Components.Add(MGridComponent);
                 Session.Instance.Modulators.Add(this);
                 if (!_modulators.ContainsKey(Entity.EntityId)) _modulators.Add(Entity.EntityId, this);
                 CreateUi();
                 StorageSetup();
-                ((MyCubeGrid) Modulator.CubeGrid).OnHierarchyUpdated += UpdateSubGrid;
+                ((MyCubeGrid) Modulator.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -68,22 +67,30 @@ namespace DefenseShields
             UpdateSettings(Settings, false);
         }
 
-        public override void UpdateBeforeSimulation()
+        private void HierarchyChanged(IMyCubeGrid myCubeGrid)
         {
-            if (_count++ == 59)
+            if (_hierarchyChanged)
             {
-                _count = 0;
-                _lCount++;
-                if (_lCount == 10) _lCount = 0;
+                _hierarchyDelayed = true;
+                return;
             }
-
-            if ((_lCount * 60 + _count + 1) % 100 == 0) _hierarchyUpdated = false;
+            _hierarchyChanged = true;
+            var gotGroups = MyAPIGateway.GridGroups.GetGroup(Modulator.CubeGrid, GridLinkTypeEnum.Logical);
+            MGridComponent.GetSubGrids.Clear();
+            for (int i = 0; i < gotGroups.Count; i++) MGridComponent.GetSubGrids.Add(gotGroups[i]);
         }
 
         public override void UpdateBeforeSimulation100()
         {
             _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
 
+            _hierarchyChanged = false;
+
+            if (_hierarchyDelayed)
+            {
+                _hierarchyDelayed = false;
+                HierarchyChanged(Modulator.CubeGrid);
+            }
 
             if (ServerUpdate) SyncControlsServer();
             SyncControlsClient();
@@ -94,13 +101,6 @@ namespace DefenseShields
                 SaveSettings();
                 if (Session.Enforced.Debug == 1) Log.Line($"Updating modulator password");
             }
-        }
-
-        private void UpdateSubGrid(IMyEntity myEntity)
-        {
-            if (_hierarchyUpdated) return;
-            _hierarchyUpdated = true;
-            MGridComponent.SubGrids.IntersectWith(MyAPIGateway.GridGroups.GetGroup(Modulator.CubeGrid, GridLinkTypeEnum.Logical));
         }
 
         #region Create UI

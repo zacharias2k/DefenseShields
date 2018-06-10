@@ -70,6 +70,7 @@ namespace DefenseShields
         internal bool GridIsMobile;
         internal bool ShieldActive;
         internal bool BlockWorking;
+        internal bool CheckGridRegister;
         internal bool HardDisable { get; private set; }
         private bool _enemy;
         private bool _hierarchyUpdated;
@@ -84,13 +85,15 @@ namespace DefenseShields
         private bool _shapeAdjusted;
         private bool _warmedUp;
         private bool _fitChanged;
+        private bool _hierarchyChanged;
+        private bool _hierarchyDelayed;
         private bool _shieldStarting = true;
         private bool _entityChanged = true;
         private bool _enablePhysics = true;
         private bool _shieldMoving = true;
         private bool _shapeLoaded = true;
 
-        private Vector2D _shieldIconPos = new Vector2D(0.54, -0.62);
+        private Vector2D _shieldIconPos = new Vector2D(0.975, -0.835);
 
         internal Vector3D ShieldSize { get; set; }
         public Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
@@ -119,7 +122,6 @@ namespace DefenseShields
         private MyOrientedBoundingBoxD _sOriBBoxD;
         private Quaternion _sQuaternion;
 
-        private List<IMyCubeGrid> _subGrids = new List<IMyCubeGrid>();
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
         private readonly List<KeyValuePair<IMyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<IMyEntity, EntIntersectInfo>>();
@@ -135,7 +137,6 @@ namespace DefenseShields
         private readonly MyConcurrentHashSet<int> _blocksLos = new MyConcurrentHashSet<int>();
         public readonly HashSet<IMyEntity> FriendlyCache = new HashSet<IMyEntity>();
         public readonly HashSet<IMyEntity> IgnoreCache = new HashSet<IMyEntity>();
-
 
         private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<IMyEntity, Vector3D>();
         private readonly MyConcurrentDictionary<IMyEntity, EntIntersectInfo> _webEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();

@@ -38,12 +38,12 @@ namespace DefenseShields
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
 
                 //Shield.CubeGrid.OnIsStaticChanged += CheckStatic;
-                ((MyCubeGrid) Shield.CubeGrid).OnHierarchyUpdated += UpdateSubGrids;
                 if (!_shields.ContainsKey(Entity.EntityId)) _shields.Add(Entity.EntityId, this);
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
                 Session.Instance.Components.Add(this);
                 Shield.CubeGrid.Components.Add(SGridComponent);
                 StorageSetup();
+                ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
                 if (Session.Enforced.Debug == 1) Log.Line($"pre-Init complete");
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
@@ -52,18 +52,19 @@ namespace DefenseShields
         public DefenseShields()
         {
             SGridComponent = new ShieldGridComponent(this);
-            /*
-            {
-                SubGrids = new HashSet<IMyCubeGrid>()
-            };
-            */
         }
 
-        private void UpdateSubGrids(MyCubeGrid myCubeGrid)
+        private void HierarchyChanged(IMyCubeGrid myCubeGrid)
         {
-            if (_hierarchyUpdated || !AllInited) return;
-            _hierarchyUpdated = true;
-            SGridComponent.SubGrids.IntersectWith(MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Logical));
+            if (_hierarchyChanged)
+            {
+                _hierarchyDelayed = true;
+                return;
+            }
+            _hierarchyChanged = true;
+            var gotGroups = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Logical);
+            SGridComponent.GetSubGrids.Clear();
+            for (int i = 0; i < gotGroups.Count; i++) SGridComponent.GetSubGrids.Add(gotGroups[i]);
         }
 
         public override void UpdateAfterSimulation100()
@@ -78,15 +79,13 @@ namespace DefenseShields
                     return;
                 }
 
-                if (AllInited || !Shield.IsFunctional || ConnectCheck()) return;
+                if (AllInited || !Shield.IsFunctional || ConnectCheck(true)) return;
 
                 if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
 
                 if (!MainInit && Shield.IsFunctional)
                 {
                     Definition = DefinitionManager.Get(Shield.BlockDefinition.SubtypeId);
-
-                    FriendlyCache.IntersectWith(SGridComponent.GetSubGrids);
 
                     var enableState = Shield.Enabled;
 
@@ -117,6 +116,7 @@ namespace DefenseShields
                 if (!PhysicsInit)
                 {
                     SpawnEntities();
+                    CleanUp(3);
 
                     switch (Definition.Name)
                     {

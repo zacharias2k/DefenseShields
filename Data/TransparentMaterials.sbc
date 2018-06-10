@@ -212,49 +212,56 @@
     <TransparentMaterial>
       <Id>
         <TypeId>TransparentMaterialDefinition</TypeId>
-        <SubtypeId>Crosshair_Center</SubtypeId>
+        <SubtypeId>DS_HUD</SubtypeId>
       </Id>
       <AlphaMistingEnable>false</AlphaMistingEnable>
-      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
-      <Emissivity>0</Emissivity>
       <AlphaSaturation>1</AlphaSaturation>
-      <Reflection>false</Reflection>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <IgnoreDepth>false</IgnoreDepth>
-      <SoftParticleDistanceScale>2000</SoftParticleDistanceScale>
-      <Texture>Textures\crosshair_center.dds</Texture>
+      <SoftParticleDistanceScale>1</SoftParticleDistanceScale>
+      <Texture>Textures\sfc1.dds</Texture>
+      <!--<GlossTexture>Textures\Models\Cubes\AluminiumGlossy_ng.dds</GlossTexture> -->
       <UseAtlas>false</UseAtlas>
+      <NeedSort>true</NeedSort>
       <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
+        <X>1</X>
+        <Y>1</Y>
       </UVOffset>
       <UVSize>
         <X>1</X>
         <Y>1</Y>
       </UVSize>
-    </TransparentMaterial>
-
-    <TransparentMaterial>
-      <Id>
-        <TypeId>TransparentMaterialDefinition</TypeId>
-        <SubtypeId>DS_Control</SubtypeId>
-      </Id>
-      <AlphaMistingEnable>false</AlphaMistingEnable>
-      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
-      <Emissivity>0</Emissivity>
-      <AlphaSaturation>1</AlphaSaturation>
-      <Reflection>false</Reflection>
-      <IgnoreDepth>false</IgnoreDepth>
-      <SoftParticleDistanceScale>2000</SoftParticleDistanceScale>
-      <Texture>Textures\DS_Control.dds</Texture>
-      <UseAtlas>false</UseAtlas>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
+      <Color>
         <X>1</X>
         <Y>1</Y>
-      </UVSize>
+        <Z>1</Z>
+        <W>25</W>
+      </Color>
+      <ColorAdd>
+        <X>0</X>
+        <Y>0</Y>
+        <Z>0</Z>
+        <W>0.1</W>
+      </ColorAdd>
+      <ShadowMultiplier>
+        <X>0</X>
+        <Y>0</Y>
+        <Z>0</Z>
+        <W>0</W>
+      </ShadowMultiplier>
+      <LightMultiplier>
+        <X>0</X>
+        <Y>0</Y>
+        <Z>0</Z>
+        <W>0</W>
+      </LightMultiplier>
+      <Reflectivity>0</Reflectivity>
+      <Fresnel>0</Fresnel>
+      <ReflectionShadow>0</ReflectionShadow>
+      <Gloss>0</Gloss>
+      <GlossTextureAdd>0</GlossTextureAdd>
+      <SpecularColorFactor>0</SpecularColorFactor>
+      <IsFlareOccluder>false</IsFlareOccluder>
     </TransparentMaterial>
 
   </TransparentMaterials>

@@ -56,9 +56,10 @@ namespace DefenseShields
 
         public static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         private readonly Dictionary<IMyEntity, int> _voxelDamageCounter = new Dictionary<IMyEntity, int>();
-        public readonly List<DefenseShields> Components = new List<DefenseShields>();
         public bool[] SphereOnCamera = new bool[0];
 
+        public readonly List<Controllers> Controllers = new List<Controllers>();
+        public readonly List<DefenseShields> Components = new List<DefenseShields>();
         public readonly List<Modulators> Modulators = new List<Modulators>();
 
         public readonly List<IMyPlayer> Players = new List<IMyPlayer>();
@@ -178,11 +179,11 @@ namespace DefenseShields
 
                 foreach (var shield in Components)
                 {
-                    if (shield.ShieldActive && (shield.Shield.CubeGrid == blockGrid || shield.FriendlyCache.Contains(blockGrid)))
+                    if (shield.ShieldActive && shield.FriendlyCache.Contains(blockGrid))
                     {
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
-                        if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt) || hostileEnt == shield.Shield.CubeGrid)
+                        if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt))
                         {
                             shield.DeformEnabled = true;
                             continue;
@@ -200,6 +201,7 @@ namespace DefenseShields
 
                         if (hostileEnt != null && shield.Absorb < 1 && shield.BulletCoolDown == -1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity)
                         {
+                            Log.Line($"attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName} - {info.Type} - {info.Amount} - {shield.FriendlyCache.Contains(hostileEnt)} - {shield.IgnoreCache.Contains(hostileEnt)}");
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
                             var vertPos = CustomCollision.ClosestVert(shield.PhysicsOutside, blockPos);
@@ -397,6 +399,13 @@ namespace DefenseShields
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
             //ClientEnforcement(block.CubeGrid.GetPosition(), bytes, data.Sender);
             MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_ENFORCE, bytes, senderId);
+        }
+
+        public static void PacketizeControllerSettings(IMyCubeBlock block, ControllerSettings settings)
+        {
+            var data = new ControllerData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            ModulatorSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
         }
 
         public static void PacketizeModulatorSettings(IMyCubeBlock block, ModulatorSettings settings)

@@ -6,6 +6,56 @@ namespace DefenseShields
 {
     /// Used for serializing the settings.
     [ProtoContract]
+    public class ControllerSettings
+    {
+        [ProtoMember(1)]
+        public bool Enabled = false;
+
+        [ProtoMember(2), DefaultValue(-1)]
+        public float Width = -1f;
+
+        [ProtoMember(3), DefaultValue(-1)]
+        public float Height = -1f;
+
+        [ProtoMember(4), DefaultValue(-1)]
+        public float Depth = -1f;
+
+        [ProtoMember(5)]
+        public bool IdleInvisible = false;
+
+        [ProtoMember(6)]
+        public bool ActiveInvisible = false;
+
+        [ProtoMember(7), DefaultValue(-1)]
+        public float Rate = -1f;
+
+        [ProtoMember(8), DefaultValue(-1)]
+        public float Buffer = 0f;
+
+        [ProtoMember(9)]
+        public bool ModulateVoxels = false;
+
+        [ProtoMember(10)]
+        public bool ModulateGrids = false;
+
+        [ProtoMember(11)]
+        public bool ExtendFit = false;
+
+        [ProtoMember(12)]
+        public bool SphereFit = false;
+
+        [ProtoMember(13)]
+        public bool FortifyShield = false;
+
+        public override string ToString()
+        {
+            return $"Enabled = {Enabled}\nIdleVisible = {IdleInvisible}\nActiveVisible = {ActiveInvisible}\nWidth = {Math.Round(Width, 4)}" +
+                   $"\nHeight = {Math.Round(Height, 4)}\nDepth = {Math.Round(Depth, 4)}\nRate = {Math.Round(Rate, 4)}" +
+                   $"\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nExtendFit = {ExtendFit}\nSphereFit = {SphereFit}\nFortifyShield = {FortifyShield}";
+        }
+    }
+
+    [ProtoContract]
     public class DefenseShieldsModSettings
     {
         [ProtoMember(1)]
@@ -122,6 +172,40 @@ namespace DefenseShields
     }
 
     [ProtoContract]
+    public class ControllerData
+    {
+        [ProtoMember(1)]
+        public PacketType Type = PacketType.CONTROLLER;
+
+        [ProtoMember(2)]
+        public long EntityId = 0;
+
+        [ProtoMember(3)]
+        public ulong Sender = 0;
+
+        [ProtoMember(4)]
+        public ControllerSettings Settings = null;
+
+        public ControllerData() { } // empty ctor is required for deserialization
+
+        public ControllerData(ulong sender, long entityId, ControllerSettings settings)
+        {
+            Type = PacketType.CONTROLLER;
+            Sender = sender;
+            EntityId = entityId;
+            Settings = settings;
+        }
+
+        public ControllerData(ulong sender, long entityId, PacketType action)
+        {
+            Type = action;
+            Sender = sender;
+            EntityId = entityId;
+            Settings = null;
+        }
+    }
+
+    [ProtoContract]
     public class PacketData
     {
         [ProtoMember(1)]
@@ -227,5 +311,6 @@ namespace DefenseShields
         SETTINGS,
         ENFORCE,
         MODULATOR,
+        CONTROLLER
     }
 }

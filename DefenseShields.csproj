@@ -210,6 +210,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Entweb-Component.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Intersect-Component.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Modulators.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Controllers.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\SetDsControls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Shield-Settings.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Fields-Component.cs" />

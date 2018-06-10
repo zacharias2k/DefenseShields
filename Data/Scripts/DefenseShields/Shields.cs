@@ -157,7 +157,7 @@ namespace DefenseShields
             var myAabb = Shield.CubeGrid.PositionComp.LocalAABB;
             var shieldGrid = Shield.CubeGrid;
             var expandedAabb = myAabb;
-            foreach (var grid in _subGrids)
+            foreach (var grid in SGridComponent.GetSubGrids)
             {
                 if (grid != shieldGrid)
                 {
@@ -193,10 +193,7 @@ namespace DefenseShields
         public int BlockCount()
         {
             var blockCnt = 0;
-            for (int i = 0; i < _subGrids.Count; i++)
-            {
-                blockCnt += ((MyCubeGrid)_subGrids[i]).BlocksCount;
-            }
+            foreach (var subGrid in SGridComponent.GetSubGrids) blockCnt += ((MyCubeGrid)subGrid).BlocksCount;
             return blockCnt;
         }
 
@@ -220,19 +217,20 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - powerCnt: {_powerSources.Count.ToString()}");
         }
 
-        private bool ConnectCheck()
+        private bool ConnectCheck(bool createHalfExtents = false)
         {
             if (!Shield.Enabled) return true;
 
             var myGrid = Shield.CubeGrid;
             var myGridIsSub = false;
 
-            if (_subGrids.Count <= 1) return false;
-            CreateHalfExtents();
+            if (SGridComponent.GetSubGrids.Count <= 1) return false;
+
+            if (createHalfExtents) CreateHalfExtents();
 
             if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS")
             {
-                foreach (var grid in _subGrids)
+                foreach (var grid in SGridComponent.GetSubGrids)
                 {
                     if (grid != myGrid && grid.GridSizeEnum == MyCubeSize.Large)
                     {
@@ -242,7 +240,7 @@ namespace DefenseShields
             }
             else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS")
             {
-                foreach (var grid in _subGrids)
+                foreach (var grid in SGridComponent.GetSubGrids)
                 {
                     if (grid != myGrid && grid.GridSizeEnum == MyCubeSize.Large)
                     {
@@ -267,10 +265,9 @@ namespace DefenseShields
         private bool BlockFunctional()
         {
             if (!AllInited) return false;
-
+            
             if (Range.Equals(0)) // populate matrices and prep for smooth init.
             {
-                foreach (var subgrid in SGridComponent.GetSubGrids) _subGrids.Add(subgrid);
                 var blockCnt = BlockCount();
                 if (!_blocksChanged) _blocksChanged = blockCnt != _oldBlockCount;
                 _oldBlockCount = blockCnt;
@@ -385,12 +382,6 @@ namespace DefenseShields
                 _power = 0.0001f;
                 Sink.Update();
                 return false;
-            }
-
-            if (_lCount == 4 && _count == 4)
-            {
-                _subGrids.Clear();
-                foreach (var subgrid in SGridComponent.GetSubGrids) _subGrids.Add(subgrid);
             }
 
             var blockCount = BlockCount();
@@ -868,22 +859,32 @@ namespace DefenseShields
 
         private void UpdateIcon()
         {
-            UpdateCameraViewProjInvMatrix();
-            var hudPos = HudToWorld(new Vector2((float)_shieldIconPos.X, (float)_shieldIconPos.Y));
-            var material = MyStringId.GetOrCompute("DS_Control");
-            var cameraPos = MyAPIGateway.Session.Camera.WorldMatrix.Translation;
-            var dirA = hudPos - cameraPos;
-            dirA.Normalize();
-            const float scale = 6.5f;
-            const float dis = 50f;
-            var drawAt = cameraPos + dirA * dis;
+            var position = new Vector3D(_shieldIconPos.X, _shieldIconPos.Y, 0);
+            var fov = MyAPIGateway.Session.Camera.FovWithZoom;
+            double aspectratio = MyAPIGateway.Session.Camera.ViewportSize.X / MyAPIGateway.Session.Camera.ViewportSize.Y;
+            var scale = 0.075 * Math.Tan(fov / 2);
+
+            position.X *= scale * aspectratio;
+            position.Y *= scale;
+
+            var cameraWorldMatrix = MyAPIGateway.Session.Camera.WorldMatrix;
+            position = Vector3D.Transform(new Vector3D(position.X, position.Y, -.1), cameraWorldMatrix);
+
+            var material = MyStringId.GetOrCompute("DS_HUD");
+
+            var origin = position;
+            var left = cameraWorldMatrix.Left;
+            var up = cameraWorldMatrix.Up;
+            scale = 0.1 * scale;
+
             Color color;
-            if (_shieldPercent > 80) color = Color.White;
+            if (_shieldPercent > 80) color = Color.GhostWhite;
             else if (_shieldPercent > 60) color = Color.Blue;
             else if (_shieldPercent > 40) color = Color.Yellow;
             else if (_shieldPercent > 20) color = Color.Orange;
             else color = Color.DarkRed;
-            MyTransparentGeometry.AddBillboardOriented(material, color, drawAt, MyAPIGateway.Session.Camera.WorldMatrix.Left, MyAPIGateway.Session.Camera.WorldMatrix.Up, scale, BlendTypeEnum.SDR);
+
+            MyTransparentGeometry.AddBillboardOriented(material, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
         }
 
         public void Draw(int onCount, bool sphereOnCamera)
