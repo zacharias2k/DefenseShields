@@ -20,7 +20,7 @@ namespace DefenseShields
         private void WebEntities()
         {
             if (Session.Enforced.Debug == 1) Dsutil2.Sw.Restart();
-            var pruneSphere = new BoundingSphereD(_detectionCenter, Range);
+            var pruneSphere = new BoundingSphereD(_detectionCenter, SGridComponent.BoundingRange);
             var pruneList = new List<MyEntity>();
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
             for (int i = 0; i < pruneList.Count; i++)
@@ -30,7 +30,7 @@ namespace DefenseShields
                 if (ent == null || FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent)) continue;
 
                 var entCenter = ent.PositionComp.WorldVolume.Center;
-                if (ent.Physics == null && !(ent is IMyAutomaticRifleGun) || ent.MarkedForClose || ent is MyVoxelBase && !GridIsMobile
+                if (ent.Physics == null && !(ent is IMyAutomaticRifleGun) || ent.MarkedForClose || ent is MyVoxelBase && !SGridComponent.GridIsMobile
                     || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
 
                 var relation = EntType(ent);
@@ -69,20 +69,19 @@ namespace DefenseShields
                         }
                         if ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, _detectMatrixOutsideInv))
                         {
-                            inside = true;
                             FriendlyCache.Add(ent);
                             _webEnts.Remove(ent);
                             continue;
                         }
-                        _webEnts.Add(ent, new EntIntersectInfo(ent.EntityId, 0f, Vector3D.NegativeInfinity, _tick, _tick, relation, inside, new List<IMySlimBlock>(), new MyStorageData()));
+                        _webEnts.Add(ent, new EntIntersectInfo(ent.EntityId, 0f, Vector3D.NegativeInfinity, _tick, _tick, relation, new List<IMySlimBlock>(), new MyStorageData()));
                     }
                 }
             }
-            if (_enablePhysics || _shieldMoving || _shapeAdjusted)
+            if (_enablePhysics || SGridComponent.IsMoving || _shapeAdjusted)
             {
-                Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, PhysicsOutside);
-                Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, PhysicsOutsideLow);
-                Icosphere.ReturnPhysicsVerts(_detectMatrixInside, PhysicsInside);
+                Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, SGridComponent.PhysicsOutside);
+                Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, SGridComponent.PhysicsOutsideLow);
+                Icosphere.ReturnPhysicsVerts(_detectMatrixInside, SGridComponent.PhysicsInside);
             }
             if (_enablePhysics) MyAPIGateway.Parallel.Start(WebDispatch);
 
@@ -107,7 +106,7 @@ namespace DefenseShields
                 {
                     var entCenter = webent.PositionComp.WorldVolume.Center;
                     var entInfo = _webEnts[webent];
-                    if (entInfo.LastTick != _tick || entInfo.SpawnedInside) continue;
+                    if (entInfo.LastTick != _tick) continue;
                     if (entInfo.FirstTick == _tick && (_webEnts[webent].Relation == Ent.LargeNobodyGrid || _webEnts[webent].Relation == Ent.LargeEnemyGrid))
                         ((IMyCubeGrid)webent).GetBlocks(_webEnts[webent].CacheBlockList, CollectCollidableBlocks);
                     switch (_webEnts[webent].Relation)
@@ -210,7 +209,7 @@ namespace DefenseShields
         private Ent EntType(IMyEntity ent)
         {
             if (ent == null) return Ent.Ignore;
-            if (ent is MyVoxelBase && (Session.Enforced.DisableVoxelSupport == 1 || ModulateVoxels || !GridIsMobile)) return Ent.Ignore;
+            if (ent is MyVoxelBase && (Session.Enforced.DisableVoxelSupport == 1 || ModulateVoxels || !SGridComponent.GridIsMobile)) return Ent.Ignore;
             if (ent is IMyAutomaticRifleGun) return Ent.Weapon;
 
             if (ent is IMyCharacter)
@@ -232,7 +231,9 @@ namespace DefenseShields
                 {
                     if (modComp.ModulationPassword.Equals(Shield.CustomData))
                     {
-                        foreach (var subGrid in modComp.SubGrids) FriendlyCache.Add(subGrid);
+                        ShieldGridComponent sComponent;
+                        grid.Components.TryGet(out sComponent);
+                        foreach (var subGrid in sComponent.SubGrids) FriendlyCache.Add(subGrid);
                         return Ent.Authenticated;
                     }
                 }
@@ -253,7 +254,7 @@ namespace DefenseShields
             }
 
             if (ent is IMyMeteor || ent.GetType().Name.StartsWith("MyMissile")) return Ent.Other;
-            if (ent is MyVoxelBase && GridIsMobile) return Ent.VoxelBase;
+            if (ent is MyVoxelBase && SGridComponent.GridIsMobile) return Ent.VoxelBase;
             return 0;
         }
 

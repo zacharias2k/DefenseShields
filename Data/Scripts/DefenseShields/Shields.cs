@@ -15,12 +15,11 @@ using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage.Utils;
 using VRage.Voxels;
-using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
 namespace DefenseShields
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OreDetector), false, "DefenseShieldsLS", "DefenseShieldsSS", "DefenseShieldsST")]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OreDetector), false, "DSControlLarge", "DSControlSmall")]
     public partial class DefenseShields : MyGameLogicComponent
     {
         #region Simulation
@@ -35,14 +34,14 @@ namespace DefenseShields
                 if (ServerUpdate) SyncControlsServer();
                 SyncControlsClient();
 
-                if (GridIsMobile) MobileUpdate();
+                if (SGridComponent.GridIsMobile) MobileUpdate();
                 if (_updateDimensions) RefreshDimensions();
                 if (_fitChanged || (_lCount == 0 && _count == 0 && _blocksChanged))
                 {
                     _oldEllipsoidAdjust = _ellipsoidAdjust;
                     _fitChanged = false;
 
-                    if (GridIsMobile)
+                    if (SGridComponent.GridIsMobile)
                     {
                         CreateHalfExtents();
                         if (_shapeAdjusted) _shapeLoaded = true;
@@ -52,15 +51,14 @@ namespace DefenseShields
                     if (_blocksChanged)
                     {
                         MyAPIGateway.Parallel.StartBackground(BackGroundChecks);
-                        CheckShieldLineOfSight();
+                        CheckEmitters();
                         _blocksChanged = false;
                     } 
                 }
-                if (_shieldLineOfSight == false && !Session.DedicatedServer) DrawHelper();
 
-                ShieldActive = BlockWorking && _shieldLineOfSight;
-                if (_prevShieldActive == false && ShieldActive) _shieldStarting = true;
-                else if (_shieldStarting && _prevShieldActive && ShieldActive) _shieldStarting = false;
+                ShieldActive = SGridComponent.ControlBlockWorking && _emittersOnline;
+                if (_prevShieldActive == false && ShieldActive) SGridComponent.IsStarting = true;
+                else if (SGridComponent.IsStarting && _prevShieldActive && ShieldActive) SGridComponent.IsStarting = false;
                 _prevShieldActive = ShieldActive;
 
                 if (_count++ == 59)
@@ -74,7 +72,12 @@ namespace DefenseShields
                 if (_lCount == 9 && _count == 58) CleanUp(1);
                 if (_effectsCleanup && (_count == 1 || _count == 21 || _count == 41)) CleanUp(2);
                 if (_lCount == 6 && _count == 15 && (Session.DedicatedServer || Session.IsServer)) DsSet.SaveSettings();
-                if ((_lCount * 60 + _count + 1) % 100 == 0) _hierarchyUpdated = false;
+                if ((_hierarchyChanged || _hierarchyDelayed) && (_lCount * 60 + _count + 1) % 100 == 0)
+                {
+                    if (_hierarchyDelayed) HierarchyChanged(Shield.CubeGrid);
+                    _hierarchyDelayed = false;
+                    _hierarchyChanged = false;
+                }
                 if ((_lCount * 60 + _count + 1) % 150 == 0)
                 {
                     CleanUp(3);
@@ -105,9 +108,9 @@ namespace DefenseShields
                         GetModulationInfo();
                         if (_reModulationLoop > -1) return;
                     }
-                    if (_shieldStarting)
+                    if (SGridComponent.IsStarting)
                     {
-                        if (_shieldStarting && GridIsMobile && FieldShapeBlocked()) return;
+                        if (SGridComponent.IsStarting && SGridComponent.GridIsMobile && FieldShapeBlocked()) return;
                         if (!(_hidePassiveCheckBox.Getter(Shield).Equals(true))) _shellPassive.Render.UpdateRenderObject(true);
 
                         _shellActive.Render.UpdateRenderObject(true);
@@ -115,26 +118,12 @@ namespace DefenseShields
                         _shield.Render.Visible = true;
                         _shield.Render.UpdateRenderObject(true);
                         SyncThreadedEnts(true);
-                        if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(_detectMatrixOutsideInv);
+                        if (!SGridComponent.GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(_detectMatrixOutsideInv);
                         if (!_warmedUp) 
                         {
                             _warmedUp = true;
                             if (Session.Enforced.Debug == 1) Log.Line($"Warmup complete");
                             return;
-                        }
-                    }
-                    if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
-                    if ((!Session.DedicatedServer) && UtilsStatic.ShieldDistanceCheck(Shield, 1000, Range))
-                    {
-                        if (_shieldMoving || _shieldStarting) BlockParticleUpdate();
-                        var blockCam = Shield.PositionComp.WorldVolume;
-                        if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam))
-                        {
-                            if (_blockParticleStopped) BlockParticleStart();
-                            _blockParticleStopped = false;
-                            BlockMoveAnimation();
-
-                            if (_animationLoop++ == 599) _animationLoop = 0;
                         }
                     }
                     SyncThreadedEnts();
@@ -144,12 +133,17 @@ namespace DefenseShields
                 else
                 {
                     SyncThreadedEnts();
-                    if (!_blockParticleStopped) BlockParticleStop();
                 }
 
                 if (Session.Enforced.Debug == 1) Dsutil1.StopWatchReport($"MainLoop: ShieldId:{Shield.EntityId.ToString()} - Active: {ShieldActive} - Tick: {_tick} loop: {_lCount}-{_count}", 1);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
+        }
+
+        private void CheckEmitters()
+        {
+            bool test = true;
+            _emittersOnline = test;
         }
 
         public void CreateHalfExtents()
@@ -228,7 +222,7 @@ namespace DefenseShields
 
             if (createHalfExtents) CreateHalfExtents();
 
-            if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsSS")
+            if (ShieldMode == ShieldType.SmallGrid)
             {
                 foreach (var grid in SGridComponent.GetSubGrids)
                 {
@@ -238,7 +232,7 @@ namespace DefenseShields
                     }
                 }
             }
-            else if (Shield.BlockDefinition.SubtypeId == "DefenseShieldsLS")
+            else if (ShieldMode == ShieldType.LargeGrid)
             {
                 foreach (var grid in SGridComponent.GetSubGrids)
                 {
@@ -266,13 +260,13 @@ namespace DefenseShields
         {
             if (!AllInited) return false;
             
-            if (Range.Equals(0)) // populate matrices and prep for smooth init.
+            if (SGridComponent.BoundingRange.Equals(0)) // populate matrices and prep for smooth init.
             {
                 var blockCnt = BlockCount();
                 if (!_blocksChanged) _blocksChanged = blockCnt != _oldBlockCount;
                 _oldBlockCount = blockCnt;
 
-                if (GridIsMobile)
+                if (SGridComponent.GridIsMobile)
                 {
                     CreateHalfExtents();
                     GetShapeAdjust();
@@ -284,20 +278,20 @@ namespace DefenseShields
                     RefreshDimensions();
                 }
 
-                Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
+                Icosphere.ReturnPhysicsVerts(DetectionMatrix, SGridComponent.PhysicsOutside);
                 SyncControlsClient();
 
                 BackGroundChecks();
                 UpdateGridPower();
                 GetModulationInfo();
-                CheckShieldLineOfSight();
+                CheckEmitters();
                 _shapeAdjusted = false;
                 _blocksChanged = false;
-                BlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
+                SGridComponent.IsWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
                 if (Session.Enforced.Debug == 1) Log.Line($"range warmup enforced:\n{Session.Enforced}");
-                if (Session.Enforced.Debug == 1) Log.Line($"range warmup buffer:{ShieldBuffer} - BlockWorking:{BlockWorking} - LoS:{_shieldLineOfSight}");
+                if (Session.Enforced.Debug == 1) Log.Line($"range warmup buffer:{ShieldBuffer} - BlockWorking:{SGridComponent.IsWorking} - LoS:{_emittersOnline}");
 
-                return BlockWorking;
+                return SGridComponent.IsWorking;
             }
 
             if (_lCount == 4 && _count == 4 && Shield.Enabled && ConnectCheck()) return false;
@@ -323,10 +317,9 @@ namespace DefenseShields
             {
                 _shieldCurrentPower = Sink.CurrentInputByType(GId);
                 UpdateGridPower();
-                if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(MatrixD.Zero);
-                BlockParticleStop();
+                if (!SGridComponent.GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(MatrixD.Zero);
                 ShieldActive = false;
-                BlockWorking = false;
+                SGridComponent.IsWorking = false;
                 _prevShieldActive = false;
                 _shellPassive.Render.UpdateRenderObject(false);
                 _shellActive.Render.UpdateRenderObject(false);
@@ -388,97 +381,28 @@ namespace DefenseShields
             if (!_blocksChanged) _blocksChanged = blockCount != _oldBlockCount;
             _oldBlockCount = blockCount;
 
-            BlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
-            return BlockWorking;
+            SGridComponent.IsWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
+            return SGridComponent.IsWorking;
         }
         #endregion
 
         #region Field Check
-        private void CheckShieldLineOfSight()
-        {
-            if (GridIsMobile)
-            {
-                MobileUpdate();
-                Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
-            }
-            else RefreshDimensions();
-
-            _blocksLos.Clear();
-            _noBlocksLos.Clear();
-            _vertsSighted.Clear();
-            var testDist = Definition.FieldDist;
-
-            var testDir = _subpartRotor.PositionComp.WorldVolume.Center - Shield.PositionComp.WorldVolume.Center;
-            testDir.Normalize();
-            var testPos = Shield.PositionComp.WorldVolume.Center + testDir * testDist;
-            _sightPos = testPos;
-
-            MyAPIGateway.Parallel.For(0, PhysicsOutside.Length, i =>
-            {
-                var hit = Shield.CubeGrid.RayCastBlocks(testPos, PhysicsOutside[i]);
-                if (hit.HasValue)
-                {
-                    _blocksLos.Add(i);
-                    return;
-                }
-                _noBlocksLos.Add(i);
-            });
-            if (GridIsMobile)
-            {
-                MyAPIGateway.Parallel.For(0, _noBlocksLos.Count, i =>
-                {
-                    const int filter = CollisionLayers.VoxelCollisionLayer;
-                    IHitInfo hitInfo;
-                    var hit = MyAPIGateway.Physics.CastRay(testPos, PhysicsOutside[_noBlocksLos[i]], out hitInfo, filter);
-                    if (hit) _blocksLos.Add(_noBlocksLos[i]);
-                });
-            }
-
-            for (int i = 0; i < PhysicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
-            _shieldLineOfSight = _blocksLos.Count < 500;
-            if (Session.Enforced.Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {_shieldLineOfSight.ToString()}");
-        }
-
-        private void DrawHelper()
-        {
-            const float lineWidth = 0.025f;
-            var lineDist = Definition.HelperDist;
-
-            foreach (var blocking in _blocksLos)
-            {
-                var blockedDir = PhysicsOutside[blocking] - _sightPos;
-                blockedDir.Normalize();
-                var blockedPos = _sightPos + blockedDir * lineDist;
-                DsDebugDraw.DrawLineToVec(_sightPos, blockedPos, Color.Black, lineWidth);
-            }
-
-            foreach (var sighted in _vertsSighted)
-            {
-                var sightedDir = PhysicsOutside[sighted] - _sightPos;
-                sightedDir.Normalize();
-                var sightedPos = _sightPos + sightedDir * lineDist;
-                DsDebugDraw.DrawLineToVec(_sightPos, sightedPos, Color.Blue, lineWidth);
-            }
-            if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("The shield emitter DOES NOT have a CLEAR ENOUGH LINE OF SIGHT to the shield, SHUTTING DOWN.", 960, "Red", Shield.OwnerId);
-            if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("Blue means clear line of sight, black means blocked......................................................................", 960, "Red", Shield.OwnerId);
-        }
-
         private bool FieldShapeBlocked()
         {
             if (ModulateVoxels) return false;
 
-            var pruneSphere = new BoundingSphereD(_detectionCenter, Range);
+            var pruneSphere = new BoundingSphereD(_detectionCenter, SGridComponent.BoundingRange);
             var pruneList = new List<MyVoxelBase>();
             MyGamePruningStructure.GetAllVoxelMapsInSphere(ref pruneSphere, pruneList);
 
             if (pruneList.Count == 0) return false;
             MobileUpdate();
-            Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, PhysicsOutsideLow);
+            Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, SGridComponent.PhysicsOutsideLow);
             foreach (var voxel in pruneList)
             {
                 if (voxel.RootVoxel == null) continue;
 
-                if (!CustomCollision.VoxelContact(Shield.CubeGrid, PhysicsOutsideLow, voxel, new MyStorageData(), _detectMatrixOutside)) continue;
+                if (!CustomCollision.VoxelContact(Shield.CubeGrid, SGridComponent.PhysicsOutsideLow, voxel, new MyStorageData(), _detectMatrixOutside)) continue;
 
                 Shield.Enabled = false;
                 MyVisualScriptLogicProvider.ShowNotification("The shield's field cannot form when in contact with a solid body", 6720, "Blue", Shield.OwnerId);
@@ -493,19 +417,19 @@ namespace DefenseShields
         {
             _sVelSqr = Shield.CubeGrid.Physics.LinearVelocity.LengthSquared();
             _sAvelSqr = Shield.CubeGrid.Physics.AngularVelocity.LengthSquared();
-            if (_sVelSqr > 0.00001 || _sAvelSqr > 0.00001 || _shieldStarting) _shieldMoving = true;
-            else _shieldMoving = false;
+            if (_sVelSqr > 0.00001 || _sAvelSqr > 0.00001 || SGridComponent.IsStarting) SGridComponent.IsMoving = true;
+            else SGridComponent.IsMoving = false;
 
             _shapeAdjusted = !_ellipsoidAdjust.Equals(_oldEllipsoidAdjust) || !_gridHalfExtents.Equals(_oldGridHalfExtents);
             _oldGridHalfExtents = _gridHalfExtents;
             _oldEllipsoidAdjust = _ellipsoidAdjust;
-            _entityChanged = Shield.CubeGrid.Physics.IsMoving || _shieldStarting;
-            if (_entityChanged || Range <= 0 || _shieldStarting) CreateShieldShape();
+            _entityChanged = Shield.CubeGrid.Physics.IsMoving || SGridComponent.IsStarting;
+            if (_entityChanged || SGridComponent.BoundingRange <= 0 || SGridComponent.IsStarting) CreateShieldShape();
         }
 
         private void CreateShieldShape()
         {
-            if (GridIsMobile)
+            if (SGridComponent.GridIsMobile)
             {
                 _shieldGridMatrix = Shield.CubeGrid.WorldMatrix;
                 if (_shapeAdjusted) CreateMobileShape();
@@ -538,7 +462,7 @@ namespace DefenseShields
                 _shieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
                 EllipsoidSa.Update(_detectMatrixOutside.Scale.X, _detectMatrixOutside.Scale.Y, _detectMatrixOutside.Scale.Z);
             }
-            Range = ShieldSize.AbsMax() + 5f;
+            SGridComponent.BoundingRange = ShieldSize.AbsMax() + 5f;
             _ellipsoidSurfaceArea = EllipsoidSa.Surface;
             SetShieldShape();
         }
@@ -569,7 +493,7 @@ namespace DefenseShields
             _shield.PositionComp.SetWorldMatrix(matrix);
             _shield.PositionComp.SetPosition(_detectionCenter);
 
-            if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(_detectMatrixOutsideInv);
+            if (!SGridComponent.GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(_detectMatrixOutsideInv);
         }
 
         private void RefreshDimensions()
@@ -578,7 +502,7 @@ namespace DefenseShields
             if (!_updateDimensions) return;
             _updateDimensions = false;
             CreateShieldShape();
-            Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
+            Icosphere.ReturnPhysicsVerts(DetectionMatrix, SGridComponent.PhysicsOutside);
             _entityChanged = true;
         }
         #endregion
@@ -733,114 +657,6 @@ namespace DefenseShields
         }
         #endregion
 
-        #region Block Animation
-        private void BlockMoveAnimationReset()
-        {
-            if (Session.Enforced.Debug == 1) Log.Line($"Resetting BlockMovement - Tick:{_tick.ToString()}");
-            _subpartRotor.Subparts.Clear();
-            Entity.TryGetSubpart("Rotor", out _subpartRotor);
-        }
-
-        private void BlockMoveAnimation()
-        {
-            const float ssTranslation = 0.00032f;
-            const float lsTranslation = 0.0018f;
-            const float stTranslation = 0.005f;
-
-            _time -= 1;
-            if (_animationLoop == 0) _time2 = 0;
-            if (_animationLoop < 299) _time2 += 1;
-            else _time2 -= 1;
-            if (_count == 0) _emissiveIntensity = 2;
-            if (_count < 30) _emissiveIntensity += 1;
-            else _emissiveIntensity -= 1;
-                
-            var temp1 = MatrixD.CreateRotationY(0.05f * _time);
-
-            MatrixD temp2;
-            if (GridIsMobile && Shield.CubeGrid.GridSizeEnum == MyCubeSize.Large) temp2 = MatrixD.CreateTranslation(0, lsTranslation * _time2, 0);
-            else if (GridIsMobile) temp2 = MatrixD.CreateTranslation(0, ssTranslation * _time2, 0);
-            else temp2 = MatrixD.CreateTranslation(0, stTranslation * _time2, 0);
-
-            _subpartRotor.PositionComp.LocalMatrix = temp1 * temp2;
-            _subpartRotor.SetEmissiveParts("PlasmaEmissive", Color.Aqua, 0.1f * _emissiveIntensity);
-        }
-
-        private void BlockParticleCreate()
-        {
-            var scale = Definition.ParticleScale;
-
-            for (int i = 0; i < _effects.Length; i++)
-            {
-                if (_effects[i] == null)
-                {
-                    if (Session.Enforced.Debug == 1) Log.Line($"Particle #{i.ToString()} is null, creating - tick:{_tick.ToString()}");
-                    MyParticlesManager.TryCreateParticleEffect("EmitterEffect", out _effects[i]);
-                    if (_effects[i] == null) continue;
-                    _effects[i].UserScale = 1f;
-                    _effects[i].UserRadiusMultiplier = scale;
-                    _effects[i].UserEmitterScale = 1f;
-                }
-
-                if (_effects[i] != null)
-                {
-                    _effects[i].WorldMatrix = _subpartRotor.WorldMatrix;
-                    _effects[i].Stop();
-                    _blockParticleStopped = true;
-                }
-            }
-        }
-
-        private void BlockParticleUpdate()
-        {
-
-            var testDist = Definition.ParticleDist;
-
-            var spawnDir = _subpartRotor.PositionComp.WorldVolume.Center - Shield.PositionComp.WorldVolume.Center;
-            spawnDir.Normalize();
-            var spawnPos = Shield.PositionComp.WorldVolume.Center + spawnDir * testDist;
-
-            var predictedMatrix = Shield.PositionComp.WorldMatrix;
-            predictedMatrix.Translation = spawnPos;
-            if (_sVelSqr > 4000) predictedMatrix.Translation = spawnPos + Shield.CubeGrid.Physics.GetVelocityAtPoint(Shield.PositionComp.WorldMatrix.Translation) * MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS;
-            for (int i = 0; i < _effects.Length; i++)
-                if (_effects[i] != null)
-                {
-                    _effects[i].WorldMatrix = predictedMatrix;
-                }
-        }
-
-        private void BlockParticleStop()
-        {
-            _blockParticleStopped = true;
-            for (int i = 0; i < _effects.Length; i++)
-            {
-                if (_effects[i] != null)
-                {
-                    _effects[i].Stop();
-                    _effects[i].Close(false, true);
-                }
-            }
-
-        }
-
-        private void BlockParticleStart()
-        {
-            var scale = Definition.ParticleScale;
-
-            for (int i = 0; i < _effects.Length; i++)
-            {
-                if (!_effects[i].IsStopped) continue;
-
-                MyParticlesManager.TryCreateParticleEffect("EmitterEffect", out _effects[i]);
-                _effects[i].UserScale = 1f;
-                _effects[i].UserRadiusMultiplier = scale;
-                _effects[i].UserEmitterScale = 1f;
-                BlockParticleUpdate();
-            }
-        }
-        #endregion
-
         #region Shield Draw
         private void UpdateCameraViewProjInvMatrix()
         {
@@ -870,7 +686,7 @@ namespace DefenseShields
             var cameraWorldMatrix = MyAPIGateway.Session.Camera.WorldMatrix;
             position = Vector3D.Transform(new Vector3D(position.X, position.Y, -.1), cameraWorldMatrix);
 
-            var material = MyStringId.GetOrCompute("DS_HUD");
+            var material = MyStringId.GetOrCompute("DS_GUI");
 
             var origin = position;
             var left = cameraWorldMatrix.Left;
@@ -1050,7 +866,6 @@ namespace DefenseShields
                 _shield?.Close();
                 _shellPassive?.Close();
                 _shellActive?.Close();
-                BlockParticleStop();
                 Shield?.CubeGrid.Components.Remove(typeof(ShieldGridComponent), this);
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
                 Session.Instance.Components.Remove(this);
@@ -1069,7 +884,6 @@ namespace DefenseShields
                 Icosphere = null;
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
                 if (AllInited) Sink.Update();
-                BlockParticleStop();
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
             base.Close();

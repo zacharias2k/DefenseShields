@@ -48,33 +48,23 @@ namespace DefenseShields.Support
         public static long ThereCanBeOnlyOne(IMyCubeBlock shield)
         {
             if (Session.Enforced.Debug == 1) Log.Line($"ThereCanBeOnlyOne start");
-            var gridStatic = shield.CubeGrid.Physics.IsStatic;
             var shieldBlocks = new List<MyCubeBlock>();
             foreach (var block in ((MyCubeGrid)shield.CubeGrid).GetFatBlocks())
             {
                 if (block == null) continue;
 
-                if (block.BlockDefinition.BlockPairName.Equals("DefenseShield") || block.BlockDefinition.BlockPairName.Equals("StationShield"))
+                if (block.BlockDefinition.BlockPairName == "DS_Control")
                 {
-                    if (gridStatic && shield.BlockDefinition.SubtypeId == "DefenseShieldsST")
-                    {
-                        if (block.IsWorking) return block.EntityId;
-                        shieldBlocks.Add(block);
-                    }
-                    else if (!gridStatic && (shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" || shield.BlockDefinition.SubtypeId == "DefenseShieldsSS"))
-                    {
-                        if (block.IsWorking) return block.EntityId;
-                        shieldBlocks.Add(block);
-                    }
+                    if (block.IsWorking) return block.EntityId;
+                    shieldBlocks.Add(block);
                 }
             }
+            Log.Line($"ThereCanBeOnlyOne: No working block found");
             var shieldDistFromCenter = double.MinValue;
             var shieldId = long.MinValue;
             foreach (var s in shieldBlocks)
             {
                 if (s == null) continue;
-                if (gridStatic && s.BlockDefinition.BlockPairName.Equals("DefenseShield")) continue;
-                if (!gridStatic && s.BlockDefinition.BlockPairName.Equals("StationShield")) continue;
 
                 var dist = Vector3D.DistanceSquared(s.PositionComp.WorldVolume.Center, shield.CubeGrid.WorldVolume.Center);
                 if (dist > shieldDistFromCenter)
@@ -90,7 +80,7 @@ namespace DefenseShields.Support
         public static bool CheckShieldType(IMyFunctionalBlock shield, bool warning, bool takeAction = false)
         {
             var realPlayerIds = new List<long>();
-            UtilsStatic.GetRealPlayers(shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
+            GetRealPlayers(shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
             foreach (var id in realPlayerIds)
             {
                 if (!warning && shield.BlockDefinition.SubtypeId == "DefenseShieldsST" && !shield.CubeGrid.Physics.IsStatic)

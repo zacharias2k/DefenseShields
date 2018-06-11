@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using DefenseShields.Control;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
+using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
@@ -16,6 +16,13 @@ namespace DefenseShields
 {
     public partial class DefenseShields
     {
+        public enum ShieldType
+        {
+            Station,
+            LargeGrid,
+            SmallGrid,
+        };
+
         #region Startup Logic
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
@@ -65,6 +72,29 @@ namespace DefenseShields
             var gotGroups = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Logical);
             SGridComponent.GetSubGrids.Clear();
             for (int i = 0; i < gotGroups.Count; i++) SGridComponent.GetSubGrids.Add(gotGroups[i]);
+            Log.Line($"SGridComponent.GetSubGrids: {SGridComponent.GetSubGrids.Count}");
+        }
+
+        private void SetShieldType()
+        {
+            if (Shield.CubeGrid.Physics.IsStatic) ShieldMode = ShieldType.Station;
+            else if (Shield.CubeGrid.GridSizeEnum == MyCubeSize.Large) ShieldMode = ShieldType.LargeGrid;
+            else ShieldMode = ShieldType.SmallGrid;
+
+            if (ShieldMode != ShieldType.Station) SGridComponent.GridIsMobile = true;
+
+            switch (ShieldMode)
+            {
+                case ShieldType.Station:
+                    _shieldRatio = Session.Enforced.StationRatio;
+                    break;
+                case ShieldType.LargeGrid:
+                    _shieldRatio = Session.Enforced.LargeShipRatio;
+                    break;
+                case ShieldType.SmallGrid:
+                    _shieldRatio = Session.Enforced.SmallShipRatio;
+                    break;
+            }
         }
 
         public override void UpdateAfterSimulation100()
@@ -85,7 +115,6 @@ namespace DefenseShields
 
                 if (!MainInit && Shield.IsFunctional)
                 {
-                    Definition = DefinitionManager.Get(Shield.BlockDefinition.SubtypeId);
 
                     var enableState = Shield.Enabled;
 
@@ -95,13 +124,13 @@ namespace DefenseShields
                         Shield.Enabled = true;
                     }
 
-                    if (Shield.CubeGrid.Physics.IsStatic)
+                    SetShieldType();
+
+                    if (ShieldMode == ShieldType.Station)
                     {
-                        GridIsMobile = false;
                         _shapeAdjusted = false;
                         _shapeLoaded = false;
                     }
-                    else if (!Shield.CubeGrid.Physics.IsStatic) GridIsMobile = true;
 
                     CreateUi();
                     PowerInit();
@@ -118,19 +147,6 @@ namespace DefenseShields
                     SpawnEntities();
                     CleanUp(3);
 
-                    switch (Definition.Name)
-                    {
-                        case "DefenseShieldsST":
-                            _shieldRatio = Session.Enforced.StationRatio;
-                            break;
-                        case "DefenseShieldsLS":
-                            _shieldRatio = Session.Enforced.LargeShipRatio;
-                            break;
-                        case "DefenseShieldsSS":
-                            _shieldRatio = Session.Enforced.SmallShipRatio;
-                            break;
-                    }
-
                     if (Session.Enforced.Debug == 1) Log.Line($"PhysicsInit complete");
 
                     PhysicsInit = true;
@@ -139,9 +155,6 @@ namespace DefenseShields
                 if (AllInited || !PhysicsInit || !MainInit || !Shield.IsFunctional) return;
 
                 if (Session.Enforced.Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - {Shield.BlockDefinition.SubtypeId} is functional - tick:{_tick.ToString()}");
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
-
-                if (!Session.DedicatedServer) BlockParticleCreate();
 
                 if (Session.Enforced.Debug == 1) Log.Line($"AnimateInit complete");
 
@@ -152,9 +165,7 @@ namespace DefenseShields
 
         private bool HealthCheck()
         {
-            HardDisable = false || Shield.EntityId != UtilsStatic.ThereCanBeOnlyOne(Shield) || Definition.Name == "DefenseShieldsST" &&
-                !Shield.CubeGrid.Physics.IsStatic || Definition.Name == "DefenseShieldsLS" && Shield.CubeGrid.Physics.IsStatic;
-
+            HardDisable = false || Shield.EntityId != UtilsStatic.ThereCanBeOnlyOne(Shield);
             if (!HardDisable) return true;
             if (Session.Enforced.Debug == 1) Log.Line($"HardDisable is triggered - {Shield.BlockDefinition.SubtypeId}");
 
@@ -165,9 +176,7 @@ namespace DefenseShields
 
         private void SpawnEntities()
         {
-            MyEntity parent;
-            if (GridIsMobile) parent = (MyEntity)Shield.CubeGrid;
-            else parent = (MyEntity)Shield.CubeGrid;
+            var parent = (MyEntity)Shield.CubeGrid;
 
             _shellPassive = Spawn.EmptyEntity("dShellPassive", $"{Session.Instance.ModPath()}\\Models\\Cubes\\ShieldPassive_LOD0.mwm", parent, true);
             _shellPassive.Render.CastShadows = false;
@@ -252,7 +261,7 @@ namespace DefenseShields
             UtilsStatic.RemoveOreUi();
             _chargeSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ChargeRate", "Shield Charge Rate", 20, 95, 50);
 
-            if (Definition.Name != "DefenseShieldsST")
+            if (ShieldMode != ShieldType.Station)
             {
                 _extendFit = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ExtendFit", "Extend Shield", false);
                 _sphereFit = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "SphereFit", "Sphere Fit", false);

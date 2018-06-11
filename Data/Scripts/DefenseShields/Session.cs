@@ -40,12 +40,18 @@ namespace DefenseShields
         private int _lCount;
         private int _extendedLoop;
 
+        public const ushort PACKET_ID_EMITTER = 62518; // network
+        public const ushort PACKET_ID_DISPLAY = 62519; // network
         public const ushort PACKET_ID_SETTINGS = 62520; // network
         public const ushort PACKET_ID_ENFORCE = 62521; // network
         public const ushort PACKET_ID_MODULATOR = 62522; // network
         private const long WORKSHOP_ID = 1365616918;
+        public readonly Guid EmitterGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811506");
+        public readonly Guid DisplayGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811507");
         public readonly Guid SettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
         public readonly Guid ModulatorGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811509");
+
+
 
         public string disabledBy = null;
 
@@ -58,7 +64,8 @@ namespace DefenseShields
         private readonly Dictionary<IMyEntity, int> _voxelDamageCounter = new Dictionary<IMyEntity, int>();
         public bool[] SphereOnCamera = new bool[0];
 
-        public readonly List<Controllers> Controllers = new List<Controllers>();
+        public readonly List<Emitters> Emitters = new List<Emitters>();
+        public readonly List<Displays> Displays = new List<Displays>();
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
         public readonly List<Modulators> Modulators = new List<Modulators>();
 
@@ -77,6 +84,8 @@ namespace DefenseShields
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_SETTINGS, PacketSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_ENFORCE, PacketEnforcementReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_MODULATOR, ModulatorSettingsReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_EMITTER, EmitterSettingsReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_MODULATOR, DisplaySettingsReceived);
                 MyAPIGateway.Utilities.RegisterMessageHandler(WORKSHOP_ID, ModMessageHandler);
                 if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter += CustomDataToPassword;
 
@@ -103,7 +112,7 @@ namespace DefenseShields
                 {
                     var s = Components[i];
                     if (!s.ShieldActive || !s.AllInited) continue;
-                    var sp = new BoundingSphereD(s.Entity.GetPosition(), s.Range);
+                    var sp = new BoundingSphereD(s.Entity.GetPosition(), s.SGridComponent.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {
                         SphereOnCamera[i] = false;
@@ -204,7 +213,7 @@ namespace DefenseShields
                             Log.Line($"attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName} - {info.Type} - {info.Amount} - {shield.FriendlyCache.Contains(hostileEnt)} - {shield.IgnoreCache.Contains(hostileEnt)}");
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
-                            var vertPos = CustomCollision.ClosestVert(shield.PhysicsOutside, blockPos);
+                            var vertPos = CustomCollision.ClosestVert(shield.SGridComponent.PhysicsOutside, blockPos);
                             shield.WorldImpactPosition = vertPos;
                             shield.ImpactSize = 5;
                         }
@@ -336,6 +345,120 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in PacketEnforcementReceived: {ex}"); }
         }
 
+        private static void EmitterSettingsReceived(byte[] bytes)
+        {
+            try
+            {
+                if (bytes.Length <= 2)
+                {
+                    Log.Line($"PacketReceived(); invalid length <= 2; length={bytes.Length.ToString()}");
+                    return;
+                }
+
+                var data = MyAPIGateway.Utilities.SerializeFromBinary<EmitterData>(bytes); // this will throw errors on invalid data
+
+                if (data == null)
+                {
+                    Log.Line($"PacketReceived(); no deserialized data!");
+                    return;
+                }
+
+                IMyEntity ent;
+                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
+                {
+                    Log.Line($"PacketReceived(); {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    return;
+                }
+
+                var logic = ent.GameLogic.GetAs<Emitters>();
+
+                if (logic == null)
+                {
+                    Log.Line($"PacketReceived(); {data.Type}; emitter doesn't have the gamelogic component!");
+                    return;
+                }
+
+                switch (data.Type)
+                {
+                    case PacketType.EMITTER:
+                        {
+                            if (data.Settings == null)
+                            {
+                                Log.Line($"PacketReceived(); {data.Type}; settings are null!");
+                                return;
+                            }
+
+                            if (Enforced.Debug == 1) Log.Line($"Packet received:\n{data.Settings}");
+                            logic.UpdateSettings(data.Settings);
+                            logic.SaveSettings();
+                            logic.ServerUpdate = true;
+
+                            if (IsServer)
+                                EmitterSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in EmitterSettingsReceived: {ex}"); }
+        }
+
+        private static void DisplaySettingsReceived(byte[] bytes)
+        {
+            try
+            {
+                if (bytes.Length <= 2)
+                {
+                    Log.Line($"PacketReceived(); invalid length <= 2; length={bytes.Length.ToString()}");
+                    return;
+                }
+
+                var data = MyAPIGateway.Utilities.SerializeFromBinary<DisplayData>(bytes); // this will throw errors on invalid data
+
+                if (data == null)
+                {
+                    Log.Line($"PacketReceived(); no deserialized data!");
+                    return;
+                }
+
+                IMyEntity ent;
+                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
+                {
+                    Log.Line($"PacketReceived(); {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    return;
+                }
+
+                var logic = ent.GameLogic.GetAs<Displays>();
+
+                if (logic == null)
+                {
+                    Log.Line($"PacketReceived(); {data.Type}; display doesn't have the gamelogic component!");
+                    return;
+                }
+
+                switch (data.Type)
+                {
+                    case PacketType.DISPLAY:
+                        {
+                            if (data.Settings == null)
+                            {
+                                Log.Line($"PacketReceived(); {data.Type}; settings are null!");
+                                return;
+                            }
+
+                            if (Enforced.Debug == 1) Log.Line($"Packet received:\n{data.Settings}");
+                            logic.UpdateSettings(data.Settings);
+                            logic.SaveSettings();
+                            logic.ServerUpdate = true;
+
+                            if (IsServer)
+                                DisplaySettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in DisplaySettingsReceived: {ex}"); }
+        }
+
         private static void ModulatorSettingsReceived(byte[] bytes)
         {
             try
@@ -401,11 +524,18 @@ namespace DefenseShields
             MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_ENFORCE, bytes, senderId);
         }
 
-        public static void PacketizeControllerSettings(IMyCubeBlock block, ControllerSettings settings)
+        public static void PacketizeEmitterSettings(IMyCubeBlock block, EmitterSettings settings)
         {
-            var data = new ControllerData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
+            var data = new EmitterData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            ModulatorSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+            EmitterSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        public static void PacketizeDisplaySettings(IMyCubeBlock block, DisplaySettings settings)
+        {
+            var data = new DisplayData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            DisplaySettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
         }
 
         public static void PacketizeModulatorSettings(IMyCubeBlock block, ModulatorSettings settings)
@@ -439,6 +569,48 @@ namespace DefenseShields
 
                 if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
                     MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_SETTINGS, bytes, p.SteamUserId);
+            }
+            players.Clear();
+        }
+
+        public static void EmitterSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        {
+            var localSteamId = MyAPIGateway.Multiplayer.MyId;
+            var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
+            distSq += 1000; // some safety padding, avoid desync
+            distSq *= distSq;
+
+            var players = Instance.Players;
+            players.Clear();
+            MyAPIGateway.Players.GetPlayers(players);
+
+            foreach (var p in players)
+            {
+                var id = p.SteamUserId;
+
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
+                    MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_EMITTER, bytes, p.SteamUserId);
+            }
+            players.Clear();
+        }
+
+        public static void DisplaySettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        {
+            var localSteamId = MyAPIGateway.Multiplayer.MyId;
+            var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
+            distSq += 1000; // some safety padding, avoid desync
+            distSq *= distSq;
+
+            var players = Instance.Players;
+            players.Clear();
+            MyAPIGateway.Players.GetPlayers(players);
+
+            foreach (var p in players)
+            {
+                var id = p.SteamUserId;
+
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
+                    MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_DISPLAY, bytes, p.SteamUserId);
             }
             players.Clear();
         }
@@ -498,8 +670,7 @@ namespace DefenseShields
             try
             {
                 if (block.BlockDefinition.SubtypeId == "LargeShieldModulator"  || block.BlockDefinition.SubtypeId == "SmallShieldModulator" 
-                    || block.BlockDefinition.SubtypeId == "DefenseShieldsST" || block.BlockDefinition.SubtypeId == "DefenseShieldsSS" 
-                    || block.BlockDefinition.SubtypeId == "DefenseShieldsLS")
+                    || block.BlockDefinition.SubtypeId == "DSControlLarge" || block.BlockDefinition.SubtypeId == "DSControlSmall")
                     SetCustomDataToPassword(myTerminalControls);
                 else if (!CustomDataReset) ResetCustomData(myTerminalControls);
             }

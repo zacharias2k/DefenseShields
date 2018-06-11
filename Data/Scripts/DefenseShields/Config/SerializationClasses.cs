@@ -6,7 +6,7 @@ namespace DefenseShields
 {
     /// Used for serializing the settings.
     [ProtoContract]
-    public class ControllerSettings
+    public class EmitterSettings
     {
         [ProtoMember(1)]
         public bool Enabled = false;
@@ -52,6 +52,24 @@ namespace DefenseShields
             return $"Enabled = {Enabled}\nIdleVisible = {IdleInvisible}\nActiveVisible = {ActiveInvisible}\nWidth = {Math.Round(Width, 4)}" +
                    $"\nHeight = {Math.Round(Height, 4)}\nDepth = {Math.Round(Depth, 4)}\nRate = {Math.Round(Rate, 4)}" +
                    $"\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nExtendFit = {ExtendFit}\nSphereFit = {SphereFit}\nFortifyShield = {FortifyShield}";
+        }
+    }
+
+    [ProtoContract]
+    public class DisplaySettings
+    {
+        [ProtoMember(1)]
+        public bool Enabled = false;
+
+        [ProtoMember(2)]
+        public bool ModulateVoxels = false;
+
+        [ProtoMember(3)]
+        public bool ModulateGrids = false;
+
+        public override string ToString()
+        {
+            return $"Enabled = {Enabled}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}";
         }
     }
 
@@ -172,10 +190,10 @@ namespace DefenseShields
     }
 
     [ProtoContract]
-    public class ControllerData
+    public class EmitterData
     {
         [ProtoMember(1)]
-        public PacketType Type = PacketType.CONTROLLER;
+        public PacketType Type = PacketType.EMITTER;
 
         [ProtoMember(2)]
         public long EntityId = 0;
@@ -184,19 +202,19 @@ namespace DefenseShields
         public ulong Sender = 0;
 
         [ProtoMember(4)]
-        public ControllerSettings Settings = null;
+        public EmitterSettings Settings = null;
 
-        public ControllerData() { } // empty ctor is required for deserialization
+        public EmitterData() { } // empty ctor is required for deserialization
 
-        public ControllerData(ulong sender, long entityId, ControllerSettings settings)
+        public EmitterData(ulong sender, long entityId, EmitterSettings settings)
         {
-            Type = PacketType.CONTROLLER;
+            Type = PacketType.EMITTER;
             Sender = sender;
             EntityId = entityId;
             Settings = settings;
         }
 
-        public ControllerData(ulong sender, long entityId, PacketType action)
+        public EmitterData(ulong sender, long entityId, PacketType action)
         {
             Type = action;
             Sender = sender;
@@ -204,6 +222,41 @@ namespace DefenseShields
             Settings = null;
         }
     }
+
+    [ProtoContract]
+    public class DisplayData
+    {
+        [ProtoMember(1)]
+        public PacketType Type = PacketType.DISPLAY;
+
+        [ProtoMember(2)]
+        public long EntityId = 0;
+
+        [ProtoMember(3)]
+        public ulong Sender = 0;
+
+        [ProtoMember(4)]
+        public DisplaySettings Settings = null;
+
+        public DisplayData() { } // empty ctor is required for deserialization
+
+        public DisplayData(ulong sender, long entityId, DisplaySettings settings)
+        {
+            Type = PacketType.DISPLAY;
+            Sender = sender;
+            EntityId = entityId;
+            Settings = settings;
+        }
+
+        public DisplayData(ulong sender, long entityId, PacketType action)
+        {
+            Type = action;
+            Sender = sender;
+            EntityId = entityId;
+            Settings = null;
+        }
+    }
+
 
     [ProtoContract]
     public class PacketData
@@ -311,6 +364,7 @@ namespace DefenseShields
         SETTINGS,
         ENFORCE,
         MODULATOR,
-        CONTROLLER
+        EMITTER,
+        DISPLAY
     }
 }

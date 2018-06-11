@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using DefenseShields.Support;
+﻿using DefenseShields.Support;
 
 namespace DefenseShields
 {
@@ -81,7 +76,7 @@ namespace DefenseShields
                 needsSync = true;
             }
 
-            if (!GridIsMobile)
+            if (!SGridComponent.GridIsMobile)
             {
                 if (!_widthSlider.Getter(Shield).Equals(Width)
                     || !_heightSlider.Getter(Shield).Equals(Height)
@@ -109,7 +104,7 @@ namespace DefenseShields
 
             if (needsSync)
             {
-                if (!GridIsMobile) _updateDimensions = true;
+                if (!SGridComponent.GridIsMobile) _updateDimensions = true;
                 DsSet.NetworkUpdate();
                 DsSet.SaveSettings();
                 if (Session.Enforced.Debug == 1) Log.Line($"Needed sync");

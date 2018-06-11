@@ -2,64 +2,12 @@
 <Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
     <CubeBlocks>
 	
-		<Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
-      <Id>
-        <TypeId>UpgradeModule</TypeId>
-        <SubtypeId>DS_Toroid</SubtypeId>
-      </Id>
-      <DisplayName>DS Toroid</DisplayName>
-      <Icon>Textures\Navball_icon.dds</Icon>
-      <CubeSize>Large</CubeSize>
-      <BlockTopology>TriangleMesh</BlockTopology>
-      <Size x="3" y="2" z="3" />
-      <ModelOffset x="0" y="0" z="0" />
-      <Model>Models\DS_Toroid.mwm</Model>
-      <Components>
-        <Component Subtype="SteelPlate" Count="80" />
-        <Component Subtype="Construction" Count="40" />
-        <Component Subtype="SmallTube" Count="20" />
-        <Component Subtype="LargeTube" Count="10" />
-        <Component Subtype="Motor" Count="2" />
-        <Component Subtype="SteelPlate" Count="20" />
-      </Components>
-      <CriticalComponent Subtype="Motor" Index="0" />
-      <BuildProgressModels>
-		<Model BuildPercentUpperBound="0.33" File="Models\DS_Toroid.mwm" />
-		<Model BuildPercentUpperBound="0.67" File="Models\DS_Toroid.mwm" />
-		<Model BuildPercentUpperBound="1.00" File="Models\DS_Toroid.mwm.mwm" />
-	</BuildProgressModels>
-	<MountPoints>
-		<MountPoint Side="Left" StartX="1.00" StartY="0.00" EndX="2.00" EndY="2.00" />
-		<MountPoint Side="Right" StartX="1.00" StartY="0.00" EndX="2.00" EndY="2.00" />
-		<MountPoint Side="Top" StartX="0.00" StartY="1.00" EndX="0.50" EndY="2.00" />
-		<MountPoint Side="Top" StartX="2.50" StartY="1.00" EndX="3.00" EndY="2.00" />
-		<MountPoint Side="Bottom" StartX="0.00" StartY="1.00" EndX="0.50" EndY="2.00" />
-		<MountPoint Side="Bottom" StartX="2.50" StartY="1.00" EndX="3.00" EndY="2.00" />
-	</MountPoints>
-      <BlockPairName>DS_Toroid</BlockPairName>
-      <MirroringX>Z</MirroringX>
-      <MirroringZ>X</MirroringZ>
-      <EdgeType>Light</EdgeType>
-      <Upgrades>
-        <MyUpgradeModuleInfo>
-          <UpgradeType>PowerEfficiency</UpgradeType>
-          <Modifier>1.2228445</Modifier>
-          <ModifierType>Multiplicative</ModifierType>
-        </MyUpgradeModuleInfo>
-      </Upgrades>
-      <PrimarySound>BlockModuleEfficiency</PrimarySound>
-      <DamageEffectName>Damage_Electrical_Damaged</DamageEffectName>
-      <DamagedSound>ParticleElectrical</DamagedSound>
-      <EmissiveColorPreset>Default</EmissiveColorPreset>
-      <DestroyEffect>BlockDestroyedExplosion_Large</DestroyEffect>
-      <DestroySound>WepSmallWarheadExpl</DestroySound>
-	  <GuiVisible>true</GuiVisible>
-    </Definition>
+
 	
-		<Definition xsi:type="MyObjectBuilder_TextPanelDefinition">
+		<Definition xsi:type="MyObjectBuilder_OreDetectorDefinition">
       <Id>
-        <TypeId>TextPanel</TypeId>
-        <SubtypeId>DS_Control</SubtypeId>
+        <TypeId>OreDetector</TypeId>
+        <SubtypeId>DSControlLarge</SubtypeId>
       </Id>
       <DisplayName>Shield Controller</DisplayName>
       <Icon>Textures\Icons\DS_Control.dds</Icon>
@@ -107,10 +55,61 @@
       <DestroySound>WepSmallWarheadExpl</DestroySound>
     </Definition>
 	
-			<Definition xsi:type="MyObjectBuilder_TextPanelDefinition">
+		<Definition xsi:type="MyObjectBuilder_OreDetectorDefinition">
+      <Id>
+        <TypeId>OreDetector</TypeId>
+        <SubtypeId>DSControlSmall</SubtypeId>
+      </Id>
+      <DisplayName>Shield Controller</DisplayName>
+      <Icon>Textures\Icons\DS_Control.dds</Icon>
+      <CubeSize>Small</CubeSize>
+      <GuiVisible>true</GuiVisible>
+      <BlockTopology>TriangleMesh</BlockTopology>
+      <Size x="1" y="1" z="2" />
+      <ModelOffset x="0" y="0" z="0" />
+      <Model>Models\DS_Control_small.mwm</Model>
+      <Components>
+        <Component Subtype="InteriorPlate" Count="1" />
+        <Component Subtype="Construction" Count="4" />
+        <Component Subtype="Computer" Count="4" />
+        <Component Subtype="Display" Count="3" />
+      </Components>
+      <CriticalComponent Subtype="Computer" Index="0" />
+      <MountPoints>
+		<MountPoint Side="Bottom" StartX="0.00" StartY="0.29" EndX="1.00" EndY="1.00" />
+	</MountPoints>
+      <BuildProgressModels>
+		<Model BuildPercentUpperBound="1.00" File="Models\DS_Control_Constr1.mwm" />
+	</BuildProgressModels>
+      <VoxelPlacement>
+        <!--Possible settings Both,InVoxel,OutsideVoxel,Volumetric. If volumetric set than MaxAllowed and MinAllowed will be used.-->
+        <StaticMode>
+          <PlacementMode>OutsideVoxel</PlacementMode>
+          <MaxAllowed>0.4</MaxAllowed>
+          <MinAllowed>0</MinAllowed>
+        </StaticMode>
+        <DynamicMode>
+          <PlacementMode>OutsideVoxel</PlacementMode>
+          <MaxAllowed>0.4</MaxAllowed>
+          <MinAllowed>0.01</MinAllowed>
+        </DynamicMode>
+      </VoxelPlacement>
+      <BlockPairName>DS_Control</BlockPairName>
+      <MirroringZ>Y</MirroringZ>
+      <EdgeType>Light</EdgeType>
+      <BuildTimeSeconds>3</BuildTimeSeconds>
+      <DamageEffectName>Damage_Electrical_Damaged</DamageEffectName>
+      <DamagedSound>ParticleElectrical</DamagedSound>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
+      <RequiredPowerInput>0.00002</RequiredPowerInput>
+      <DestroyEffect>BlockDestroyedExplosion_Small</DestroyEffect>
+      <DestroySound>WepSmallWarheadExpl</DestroySound>
+    </Definition>	
+	
+	<Definition xsi:type="MyObjectBuilder_TextPanelDefinition">
       <Id>
         <TypeId>TextPanel</TypeId>
-        <SubtypeId>DS_Control_LCD</SubtypeId>
+        <SubtypeId>DSControlLCD</SubtypeId>
       </Id>
       <DisplayName>Shield Controller LCD</DisplayName>
       <Icon>Textures\Icons\DS_Control.dds</Icon>
@@ -158,62 +157,7 @@
       <DestroySound>WepSmallWarheadExpl</DestroySound>
     </Definition>
 	
-		<Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
-      <Id>
-        <TypeId>UpgradeModule</TypeId>
-        <SubtypeId>DS_Toroid</SubtypeId>
-      </Id>
-      <DisplayName>DS Sprite</DisplayName>
-      <Icon>Textures\Navball_icon.dds</Icon>
-      <CubeSize>Large</CubeSize>
-      <BlockTopology>TriangleMesh</BlockTopology>
-      <Size x="1" y="1" z="1" />
-      <ModelOffset x="0" y="0" z="0" />
-      <Model>Models\DS_Sprite.mwm</Model>
-      <Components>
-        <Component Subtype="SteelPlate" Count="80" />
-        <Component Subtype="Construction" Count="40" />
-        <Component Subtype="SmallTube" Count="20" />
-        <Component Subtype="LargeTube" Count="10" />
-        <Component Subtype="Motor" Count="2" />
-        <Component Subtype="SteelPlate" Count="20" />
-      </Components>
-      <CriticalComponent Subtype="Motor" Index="0" />
-      <BuildProgressModels>
-		<Model BuildPercentUpperBound="0.33" File="Models\DS_Toroid.mwm" />
-		<Model BuildPercentUpperBound="0.67" File="Models\DS_Toroid.mwm" />
-		<Model BuildPercentUpperBound="1.00" File="Models\DS_Toroid.mwm.mwm" />
-	</BuildProgressModels>
-	<MountPoints>
-		<MountPoint Side="Left" StartX="1.00" StartY="0.00" EndX="2.00" EndY="2.00" />
-		<MountPoint Side="Right" StartX="1.00" StartY="0.00" EndX="2.00" EndY="2.00" />
-		<MountPoint Side="Top" StartX="0.00" StartY="1.00" EndX="0.50" EndY="2.00" />
-		<MountPoint Side="Top" StartX="2.50" StartY="1.00" EndX="3.00" EndY="2.00" />
-		<MountPoint Side="Bottom" StartX="0.00" StartY="1.00" EndX="0.50" EndY="2.00" />
-		<MountPoint Side="Bottom" StartX="2.50" StartY="1.00" EndX="3.00" EndY="2.00" />
-	</MountPoints>
-      <BlockPairName>DS_Toroid</BlockPairName>
-      <MirroringX>Z</MirroringX>
-      <MirroringZ>X</MirroringZ>
-      <EdgeType>Light</EdgeType>
-      <Upgrades>
-        <MyUpgradeModuleInfo>
-          <UpgradeType>PowerEfficiency</UpgradeType>
-          <Modifier>1.2228445</Modifier>
-          <ModifierType>Multiplicative</ModifierType>
-        </MyUpgradeModuleInfo>
-      </Upgrades>
-      <PrimarySound>BlockModuleEfficiency</PrimarySound>
-      <DamageEffectName>Damage_Electrical_Damaged</DamageEffectName>
-      <DamagedSound>ParticleElectrical</DamagedSound>
-      <EmissiveColorPreset>Default</EmissiveColorPreset>
-      <DestroyEffect>BlockDestroyedExplosion_Large</DestroyEffect>
-      <DestroySound>WepSmallWarheadExpl</DestroySound>
-	  <GuiVisible>true</GuiVisible>
-    </Definition>
-	
-	
-	    <Definition xsi:type="MyObjectBuilder_RefineryDefinition">
+	<Definition xsi:type="MyObjectBuilder_RefineryDefinition">
       <Id>
         <TypeId>Refinery</TypeId>
         <SubtypeId>DS_Supergen</SubtypeId>

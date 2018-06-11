@@ -70,11 +70,10 @@ namespace DefenseShields.Support
         public uint LastTick;
         public readonly uint FirstTick;
         public readonly DefenseShields.Ent Relation;
-        public readonly bool SpawnedInside;
         public List<IMySlimBlock> CacheBlockList;
         public readonly MyStorageData TempStorage;
 
-        public EntIntersectInfo(long entId, float damage, Vector3D contactPoint, uint firstTick, uint lastTick, DefenseShields.Ent relation, bool inside, List<IMySlimBlock> cacheBlockList, MyStorageData tempStorage)
+        public EntIntersectInfo(long entId, float damage, Vector3D contactPoint, uint firstTick, uint lastTick, DefenseShields.Ent relation, List<IMySlimBlock> cacheBlockList, MyStorageData tempStorage)
         {
             CacheBlockList = cacheBlockList;
             EntId = entId;
@@ -83,100 +82,7 @@ namespace DefenseShields.Support
             FirstTick = firstTick;
             LastTick = lastTick;
             Relation = relation;
-            SpawnedInside = inside;
             TempStorage = tempStorage;
-        }
-    }
-
-    public class ControllerGridComponent : MyEntityComponentBase
-    {
-        private static List<ControllerGridComponent> gridShield = new List<ControllerGridComponent>();
-        public HashSet<IMyCubeGrid> SubGrids = new HashSet<IMyCubeGrid>();
-        public readonly Controllers Controllers;
-
-        public string Password;
-        public bool Enabled;
-        public bool Voxels;
-        public bool Grids;
-
-        public ControllerGridComponent(Controllers controllers)
-        {
-            Controllers = controllers;
-        }
-
-        public override void OnAddedToContainer()
-        {
-            base.OnAddedToContainer();
-
-            if (Container.Entity.InScene)
-            {
-                gridShield.Add(this);
-            }
-        }
-
-        public override void OnBeforeRemovedFromContainer()
-        {
-
-            if (Container.Entity.InScene)
-            {
-                gridShield.Remove(this);
-            }
-
-            base.OnBeforeRemovedFromContainer();
-        }
-
-        public override void OnAddedToScene()
-        {
-            base.OnAddedToScene();
-
-            gridShield.Add(this);
-        }
-
-        public override void OnRemovedFromScene()
-        {
-            gridShield.Remove(this);
-
-            base.OnRemovedFromScene();
-        }
-
-        public override bool IsSerialized()
-        {
-            return true;
-        }
-
-        public HashSet<IMyCubeGrid> GetSubGrids
-        {
-            get { return SubGrids; }
-            set { SubGrids = value; }
-        }
-
-        public string ModulationPassword
-        {
-            get { return Password; }
-            set { Password = value; }
-        }
-
-        public bool ModulationEnabled
-        {
-            get { return Enabled; }
-            set { Enabled = value; }
-        }
-
-        public bool ModulateVoxels
-        {
-            get { return Voxels; }
-            set { Voxels = value; }
-        }
-
-        public bool ModulateGrids
-        {
-            get { return Grids; }
-            set { Grids = value; }
-        }
-
-        public override string ComponentTypeDebugString
-        {
-            get { return "Shield"; }
         }
     }
 
@@ -184,9 +90,18 @@ namespace DefenseShields.Support
     {
         private static List<ShieldGridComponent> gridShield = new List<ShieldGridComponent>();
         public HashSet<IMyCubeGrid> SubGrids = new HashSet<IMyCubeGrid>();
+        public HashSet<Emitters> OffEmitters = new HashSet<Emitters>();
         public readonly DefenseShields DefenseShields;
 
         public string Password;
+        public bool GridIsMobile;
+        public bool IsWorking;
+        public bool IsMoving;
+        public bool IsStarting;
+        public double Range;
+        public Vector3D[] PhysicsHigh = new Vector3D[642];
+        public Vector3D[] PhysicsLow = new Vector3D[162];
+        public Vector3D[] PhysicsIn = new Vector3D[642];
 
         public ShieldGridComponent(DefenseShields defenseShields)
         {
@@ -239,10 +154,58 @@ namespace DefenseShields.Support
             set { SubGrids = value; }
         }
 
+        public HashSet<Emitters> OfflineEmitters
+        {
+            get { return OffEmitters; }
+            set { OffEmitters = value; }
+        }
+
         public string ModulationPassword
         {
             get { return Password; }
             set { Password = value; }
+        }
+
+        public bool ControlBlockWorking
+        {
+            get { return IsWorking; }
+            set { IsWorking = value; }
+        }
+
+        public bool GridIsMoving
+        {
+            get { return IsMoving; }
+            set { IsMoving = value; }
+        }
+
+        public bool ShieldIsStarting
+        {
+            get { return IsStarting; }
+            set { IsStarting = value; }
+        }
+
+        public double BoundingRange
+        {
+            get { return Range; }
+            set { Range = value; }
+        }
+
+        public Vector3D[] PhysicsOutside
+        {
+            get { return PhysicsHigh; }
+            set { PhysicsHigh = value; }
+        }
+
+        public Vector3D[] PhysicsOutsideLow
+        {
+            get { return PhysicsLow; }
+            set { PhysicsLow = value; }
+        }
+
+        public Vector3D[] PhysicsInside
+        {
+            get { return PhysicsIn; }
+            set { PhysicsIn = value; }
         }
 
         public override string ComponentTypeDebugString
@@ -254,7 +217,6 @@ namespace DefenseShields.Support
     public class ModulatorGridComponent : MyEntityComponentBase
     {
         private static List<ModulatorGridComponent> gridModulator = new List<ModulatorGridComponent>();
-        public HashSet<IMyCubeGrid> SubGrids = new HashSet<IMyCubeGrid>();
         public readonly Modulators Modulators;
         public string Password;
         public bool Enabled;
@@ -305,12 +267,6 @@ namespace DefenseShields.Support
         public override bool IsSerialized()
         {
             return true;
-        }
-
-        public HashSet<IMyCubeGrid> GetSubGrids
-        {
-            get { return SubGrids; }
-            set { SubGrids = value; }
         }
 
         public string ModulationPassword

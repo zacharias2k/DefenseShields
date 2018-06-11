@@ -22,6 +22,7 @@ namespace DefenseShields
         private bool _hierarchyChanged;
         private bool _hierarchyDelayed;
 
+        internal bool MainInit;
         private uint _tick;
         private int _count = -1;
         private int _lCount;
@@ -31,6 +32,7 @@ namespace DefenseShields
         public MyModStorageComponentBase Storage { get; set; }
         internal ModulatorSettings Settings = new ModulatorSettings();
         internal ModulatorGridComponent MGridComponent;
+        internal ShieldGridComponent SGridComponent;
 
         private IMyUpgradeModule Modulator => (IMyUpgradeModule)Entity;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule> _modulateVoxels;
@@ -49,13 +51,13 @@ namespace DefenseShields
             {
                 base.Init(objectBuilder);
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
+                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
 
                 Modulator.CubeGrid.Components.Add(MGridComponent);
                 Session.Instance.Modulators.Add(this);
                 if (!_modulators.ContainsKey(Entity.EntityId)) _modulators.Add(Entity.EntityId, this);
                 CreateUi();
                 StorageSetup();
-                ((MyCubeGrid) Modulator.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -67,30 +69,33 @@ namespace DefenseShields
             UpdateSettings(Settings, false);
         }
 
-        private void HierarchyChanged(IMyCubeGrid myCubeGrid)
+        public override void UpdateBeforeSimulation()
         {
-            if (_hierarchyChanged)
+            _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+            if (_count++ == 59)
             {
-                _hierarchyDelayed = true;
-                return;
+                _count = 0;
+                _lCount++;
+                if (_lCount == 10) _lCount = 0;
             }
-            _hierarchyChanged = true;
-            var gotGroups = MyAPIGateway.GridGroups.GetGroup(Modulator.CubeGrid, GridLinkTypeEnum.Logical);
-            MGridComponent.GetSubGrids.Clear();
-            for (int i = 0; i < gotGroups.Count; i++) MGridComponent.GetSubGrids.Add(gotGroups[i]);
+
+            if (SGridComponent == null) MainInit = false;
+            if (!MainInit)
+            {
+                Modulator.CubeGrid.Components.TryGet(out SGridComponent);
+                if (SGridComponent == null)
+                {
+                    return;
+                }
+                MainInit = true;
+                Log.Line($"Modulator initted");
+            }
         }
 
         public override void UpdateBeforeSimulation100()
         {
+            if (!MainInit) return;
             _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-
-            _hierarchyChanged = false;
-
-            if (_hierarchyDelayed)
-            {
-                _hierarchyDelayed = false;
-                HierarchyChanged(Modulator.CubeGrid);
-            }
 
             if (ServerUpdate) SyncControlsServer();
             SyncControlsClient();

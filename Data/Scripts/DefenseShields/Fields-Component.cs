@@ -39,7 +39,6 @@ namespace DefenseShields
         private float _shieldConsumptionRate;
         private float _shieldFudge;
 
-        internal double Range;
         private double _ellipsoidAdjust = Math.Sqrt(2);
         private double _oldEllipsoidAdjust;
         private double _sAvelSqr;
@@ -53,10 +52,7 @@ namespace DefenseShields
         private int _shieldDownLoop = -1;
         private int _reModulationLoop = -1;
         private int _lCount;
-        private int _animationLoop;
-        private int _time;
-        private int _time2;
-        private int _emissiveIntensity;
+
         private int _prevLod;
         private int _onCount;
         private int _oldBlockCount;
@@ -67,16 +63,12 @@ namespace DefenseShields
         internal bool MainInit;
         internal bool PhysicsInit;
         internal bool AllInited;
-        internal bool GridIsMobile;
         internal bool ShieldActive;
-        internal bool BlockWorking;
         internal bool CheckGridRegister;
         internal bool HardDisable { get; private set; }
         private bool _enemy;
-        private bool _hierarchyUpdated;
         private bool _blocksChanged;
-        private bool _blockParticleStopped;
-        private bool _shieldLineOfSight;
+        private bool _emittersOnline;
         private bool _prevShieldActive;
         private bool _effectsCleanup;
         private bool _startupWarning;
@@ -87,25 +79,18 @@ namespace DefenseShields
         private bool _fitChanged;
         private bool _hierarchyChanged;
         private bool _hierarchyDelayed;
-        private bool _shieldStarting = true;
         private bool _entityChanged = true;
         private bool _enablePhysics = true;
-        private bool _shieldMoving = true;
         private bool _shapeLoaded = true;
 
-        private Vector2D _shieldIconPos = new Vector2D(0.975, -0.835);
+        private Vector2D _shieldIconPos = new Vector2D(-0.01, -0.89);
 
         internal Vector3D ShieldSize { get; set; }
         public Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         private Vector3D _localImpactPosition;
         private Vector3D _detectionCenter;
-        private Vector3D _sightPos;
         private Vector3D _gridHalfExtents;
         private Vector3D _oldGridHalfExtents;
-
-        public readonly Vector3D[] PhysicsOutside = new Vector3D[642];
-        public readonly Vector3D[] PhysicsOutsideLow = new Vector3D[162];
-        public readonly Vector3D[] PhysicsInside = new Vector3D[642];
 
         private MatrixD _viewProjInv;
         private MatrixD _shieldGridMatrix;
@@ -131,10 +116,6 @@ namespace DefenseShields
         private readonly DataStructures _dataStructures = new DataStructures();
         //private readonly StructureBuilder _structureBuilder = new StructureBuilder();
 
-        private readonly MyConcurrentList<int> _vertsSighted = new MyConcurrentList<int>();
-        private readonly MyConcurrentList<int> _noBlocksLos = new MyConcurrentList<int>();
-
-        private readonly MyConcurrentHashSet<int> _blocksLos = new MyConcurrentHashSet<int>();
         public readonly HashSet<IMyEntity> FriendlyCache = new HashSet<IMyEntity>();
         public readonly HashSet<IMyEntity> IgnoreCache = new HashSet<IMyEntity>();
 
@@ -152,9 +133,6 @@ namespace DefenseShields
         private readonly MyConcurrentQueue<IMyCharacter> _characterDmg = new MyConcurrentQueue<IMyCharacter>();
         private readonly MyConcurrentQueue<MyVoxelBase> _voxelDmg = new MyConcurrentQueue<MyVoxelBase>();
 
-        private readonly MyParticleEffect[] _effects = new MyParticleEffect[1];
-        private MyEntitySubpart _subpartRotor;
-
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _widthSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _heightSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _depthSlider;
@@ -168,9 +146,8 @@ namespace DefenseShields
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;
 
-        internal Definition Definition;
-
         public IMyOreDetector Shield => (IMyOreDetector)Entity;
+        public ShieldType ShieldMode;
         public MyEntity _shield;
         private MyEntity _shellPassive;
         private MyEntity _shellActive;
@@ -275,7 +252,7 @@ namespace DefenseShields
         }
         #endregion
 
-        #region constructors and Enums
+        #region constructors
         private MatrixD DetectionMatrix
         {
             get { return _detectMatrixOutside; }
