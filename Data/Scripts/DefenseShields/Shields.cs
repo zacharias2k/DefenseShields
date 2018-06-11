@@ -78,6 +78,7 @@ namespace DefenseShields
                     _hierarchyDelayed = false;
                     _hierarchyChanged = false;
                 }
+
                 if ((_lCount * 60 + _count + 1) % 150 == 0)
                 {
                     CleanUp(3);
