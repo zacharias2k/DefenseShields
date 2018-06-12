@@ -104,6 +104,9 @@ namespace DefenseShields
                 }
                 if (ShieldActive)
                 {
+                    Shield.SetEmissiveParts("iconlock", Color.Red, 100f);
+                    Shield.SetEmissiveParts("iconshieldrear", Color.Blue, 100f);
+
                     if (_lCount % 2 != 0 && _count == 20)
                     {
                         GetModulationInfo();
@@ -808,6 +811,7 @@ namespace DefenseShields
                         {
                             FriendlyCache.Clear();
                             FriendlyCache.IntersectWith(SGridComponent.GetSubGrids);
+                            Log.Line($"{Shield.CubeGrid.DisplayName}: f:{FriendlyCache.Count} - contains self:{FriendlyCache.Contains(Shield.CubeGrid)} - sgrid cnt:{SGridComponent.GetSubGrids.Count}");
                             FriendlyCache.Add(Shield.CubeGrid);
                             FriendlyCache.Add(_shield);
                         }
