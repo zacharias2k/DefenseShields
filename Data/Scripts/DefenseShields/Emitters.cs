@@ -89,11 +89,8 @@ namespace DefenseShields
             if (!MainInit)
             {
                 Emitter.CubeGrid.Components.TryGet(out ShieldComp);
-                if (ShieldComp == null)
-                {
-                    EmitterOnline = false;
-                    return;
-                }
+                if (ShieldComp == null) return;
+
                 MainInit = true;
                 ShieldComp.Emitters.Add(this);
                 Definition = DefinitionManager.Get(Emitter.BlockDefinition.SubtypeId);
@@ -101,11 +98,7 @@ namespace DefenseShields
                 if (!Session.DedicatedServer) BlockParticleCreate();
                 Log.Line($"Emitter initted");
             }
-            else if (ShieldComp == null)
-            {
-                EmitterOnline = false;
-                return;
-            }
+            else if (ShieldComp == null) return;
 
             if (ShieldComp.ControlBlockWorking)
             {
@@ -129,7 +122,6 @@ namespace DefenseShields
             else
             {
                 if (!_blockParticleStopped) BlockParticleStop();
-                EmitterOnline = false;
             }
         }
 
