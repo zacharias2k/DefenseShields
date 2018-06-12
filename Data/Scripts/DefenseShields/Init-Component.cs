@@ -61,7 +61,7 @@ namespace DefenseShields
             SGridComponent = new ShieldGridComponent(this);
         }
 
-        private void HierarchyChanged(IMyCubeGrid myCubeGrid)
+        private void HierarchyChanged(IMyCubeGrid myCubeGrid = null)
         {
             if (_hierarchyChanged)
             {

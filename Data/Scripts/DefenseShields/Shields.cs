@@ -115,7 +115,7 @@ namespace DefenseShields
                     if (SGridComponent.IsStarting)
                     {
                         if (SGridComponent.IsStarting && SGridComponent.GridIsMobile && FieldShapeBlocked()) return;
-                        if (!(_hidePassiveCheckBox.Getter(Shield).Equals(true))) _shellPassive.Render.UpdateRenderObject(true);
+                        if (!_hidePassiveCheckBox.Getter(Shield).Equals(true)) _shellPassive.Render.UpdateRenderObject(true);
 
                         _shellActive.Render.UpdateRenderObject(true);
                         _shellActive.Render.UpdateRenderObject(false);
@@ -266,6 +266,9 @@ namespace DefenseShields
             
             if (SGridComponent.BoundingRange.Equals(0)) // populate matrices and prep for smooth init.
             {
+                _hierarchyChanged = false;
+                _hierarchyDelayed = false;
+                HierarchyChanged();
                 var blockCnt = BlockCount();
                 if (!_blocksChanged) _blocksChanged = blockCnt != _oldBlockCount;
                 _oldBlockCount = blockCnt;
