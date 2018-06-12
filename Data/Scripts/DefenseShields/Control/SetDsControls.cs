@@ -76,7 +76,7 @@ namespace DefenseShields
                 needsSync = true;
             }
 
-            if (!SGridComponent.GridIsMobile)
+            if (!ShieldComp.GridIsMobile)
             {
                 if (!_widthSlider.Getter(Shield).Equals(Width)
                     || !_heightSlider.Getter(Shield).Equals(Height)
@@ -104,7 +104,7 @@ namespace DefenseShields
 
             if (needsSync)
             {
-                if (!SGridComponent.GridIsMobile) _updateDimensions = true;
+                if (!ShieldComp.GridIsMobile) _updateDimensions = true;
                 DsSet.NetworkUpdate();
                 DsSet.SaveSettings();
                 if (Session.Enforced.Debug == 1) Log.Line($"Needed sync");

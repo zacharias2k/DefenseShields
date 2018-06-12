@@ -22,7 +22,7 @@ namespace DefenseShields
         #region Setup
         private uint _tick;
         private uint _enforceTick;
-
+        private uint _hierarchyTick = 1;
         public float ImpactSize { get; set; } = 9f;
         public float Absorb { get; set; }
         private float _power = 0.0001f;
@@ -50,6 +50,7 @@ namespace DefenseShields
         public int EntityCoolDown { get; private set; } = -1;
         private int _count = -1;
         private int _shieldDownLoop = -1;
+        private int _genericDownLoop = -1;
         private int _reModulationLoop = -1;
         private int _lCount;
 
@@ -64,20 +65,18 @@ namespace DefenseShields
         internal bool PhysicsInit;
         internal bool AllInited;
         internal bool ShieldActive;
+        internal bool ShieldOffline;
         internal bool CheckGridRegister;
         internal bool HardDisable { get; private set; }
         private bool _enemy;
         private bool _blocksChanged;
-        private bool _emittersOnline;
         private bool _prevShieldActive;
         private bool _effectsCleanup;
         private bool _startupWarning;
         private bool _hideShield;
         private bool _updateDimensions;
         private bool _shapeAdjusted;
-        private bool _warmedUp;
         private bool _fitChanged;
-        private bool _hierarchyChanged;
         private bool _hierarchyDelayed;
         private bool _entityChanged = true;
         private bool _enablePhysics = true;
@@ -165,7 +164,7 @@ namespace DefenseShields
 
         public MyModStorageComponentBase Storage { get; set; }
         internal DefenseShieldsSettings DsSet;
-        internal ShieldGridComponent SGridComponent;
+        internal ShieldGridComponent ShieldComp;
 
         internal HashSet<ulong> playersToReceive = null;
 

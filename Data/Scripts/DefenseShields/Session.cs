@@ -40,7 +40,6 @@ namespace DefenseShields
         private int _lCount;
         private int _extendedLoop;
 
-        public const ushort PACKET_ID_EMITTER = 62518; // network
         public const ushort PACKET_ID_DISPLAY = 62519; // network
         public const ushort PACKET_ID_SETTINGS = 62520; // network
         public const ushort PACKET_ID_ENFORCE = 62521; // network
@@ -84,7 +83,6 @@ namespace DefenseShields
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_SETTINGS, PacketSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_ENFORCE, PacketEnforcementReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_MODULATOR, ModulatorSettingsReceived);
-                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_EMITTER, EmitterSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_MODULATOR, DisplaySettingsReceived);
                 MyAPIGateway.Utilities.RegisterMessageHandler(WORKSHOP_ID, ModMessageHandler);
                 if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter += CustomDataToPassword;
@@ -112,7 +110,7 @@ namespace DefenseShields
                 {
                     var s = Components[i];
                     if (!s.ShieldActive || !s.AllInited) continue;
-                    var sp = new BoundingSphereD(s.Entity.GetPosition(), s.SGridComponent.BoundingRange);
+                    var sp = new BoundingSphereD(s.Entity.GetPosition(), s.ShieldComp.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {
                         SphereOnCamera[i] = false;
@@ -213,7 +211,7 @@ namespace DefenseShields
                             Log.Line($"attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName} - {info.Type} - {info.Amount} - {shield.FriendlyCache.Contains(hostileEnt)} - {shield.IgnoreCache.Contains(hostileEnt)}");
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
-                            var vertPos = CustomCollision.ClosestVert(shield.SGridComponent.PhysicsOutside, blockPos);
+                            var vertPos = CustomCollision.ClosestVert(shield.ShieldComp.PhysicsOutside, blockPos);
                             shield.WorldImpactPosition = vertPos;
                             shield.ImpactSize = 5;
                         }
@@ -345,63 +343,6 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in PacketEnforcementReceived: {ex}"); }
         }
 
-        private static void EmitterSettingsReceived(byte[] bytes)
-        {
-            try
-            {
-                if (bytes.Length <= 2)
-                {
-                    Log.Line($"PacketReceived(); invalid length <= 2; length={bytes.Length.ToString()}");
-                    return;
-                }
-
-                var data = MyAPIGateway.Utilities.SerializeFromBinary<EmitterData>(bytes); // this will throw errors on invalid data
-
-                if (data == null)
-                {
-                    Log.Line($"PacketReceived(); no deserialized data!");
-                    return;
-                }
-
-                IMyEntity ent;
-                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
-                {
-                    Log.Line($"PacketReceived(); {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
-                    return;
-                }
-
-                var logic = ent.GameLogic.GetAs<Emitters>();
-
-                if (logic == null)
-                {
-                    Log.Line($"PacketReceived(); {data.Type}; emitter doesn't have the gamelogic component!");
-                    return;
-                }
-
-                switch (data.Type)
-                {
-                    case PacketType.EMITTER:
-                        {
-                            if (data.Settings == null)
-                            {
-                                Log.Line($"PacketReceived(); {data.Type}; settings are null!");
-                                return;
-                            }
-
-                            if (Enforced.Debug == 1) Log.Line($"Packet received:\n{data.Settings}");
-                            logic.UpdateSettings(data.Settings);
-                            logic.SaveSettings();
-                            logic.ServerUpdate = true;
-
-                            if (IsServer)
-                                EmitterSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
-                        }
-                        break;
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in EmitterSettingsReceived: {ex}"); }
-        }
-
         private static void DisplaySettingsReceived(byte[] bytes)
         {
             try
@@ -520,15 +461,7 @@ namespace DefenseShields
         {
             var data = new EnforceData(MyAPIGateway.Multiplayer.MyId, block.EntityId, Enforced);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            //ClientEnforcement(block.CubeGrid.GetPosition(), bytes, data.Sender);
             MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_ENFORCE, bytes, senderId);
-        }
-
-        public static void PacketizeEmitterSettings(IMyCubeBlock block, EmitterSettings settings)
-        {
-            var data = new EmitterData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            EmitterSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
         }
 
         public static void PacketizeDisplaySettings(IMyCubeBlock block, DisplaySettings settings)
@@ -569,27 +502,6 @@ namespace DefenseShields
 
                 if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
                     MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_SETTINGS, bytes, p.SteamUserId);
-            }
-            players.Clear();
-        }
-
-        public static void EmitterSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
-        {
-            var localSteamId = MyAPIGateway.Multiplayer.MyId;
-            var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
-            distSq += 1000; // some safety padding, avoid desync
-            distSq *= distSq;
-
-            var players = Instance.Players;
-            players.Clear();
-            MyAPIGateway.Players.GetPlayers(players);
-
-            foreach (var p in players)
-            {
-                var id = p.SteamUserId;
-
-                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
-                    MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_EMITTER, bytes, p.SteamUserId);
             }
             players.Clear();
         }

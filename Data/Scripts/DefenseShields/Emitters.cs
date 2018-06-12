@@ -21,12 +21,15 @@ namespace DefenseShields
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DefenseShieldsLS", "DefenseShieldsSS", "DefenseShieldsST")]
     public class Emitters : MyGameLogicComponent
     {
-        public bool ServerUpdate;
-        internal bool MainInit;
-        private bool _shieldLineOfSight;
         private uint _tick;
         private int _count = -1;
         private int _lCount;
+
+        public bool ServerUpdate;
+        internal bool MainInit;
+        internal bool EnablePrevState;
+        private bool _shieldLineOfSight;
+        public bool EmitterOnline;
 
         private readonly Dictionary<long, Emitters> _emitters = new Dictionary<long, Emitters>();
 
@@ -36,13 +39,9 @@ namespace DefenseShields
         private Vector3D _sightPos;
 
         public MyModStorageComponentBase Storage { get; set; }
-        internal EmitterSettings Settings = new EmitterSettings();
-
-        internal ShieldGridComponent SGridComponent;
+        internal ShieldGridComponent ShieldComp;
 
         private IMyUpgradeModule Emitter => (IMyUpgradeModule)Entity;
-        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule> _modulateVoxels;
-        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule> _modulateGrids;
 
         private MyEntitySubpart _subpartRotor;
         private int _animationLoop;
@@ -66,7 +65,6 @@ namespace DefenseShields
                 Session.Instance.Emitters.Add(this);
                 if (!_emitters.ContainsKey(Entity.EntityId)) _emitters.Add(Entity.EntityId, this);
                 StorageSetup();
-                CreateUi();
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -74,8 +72,7 @@ namespace DefenseShields
         private void StorageSetup()
         {
             Storage = Emitter.Storage;
-            LoadSettings();
-            UpdateSettings(Settings, false);
+            EnablePrevState = Emitter.Enabled;
         }
 
         public override void UpdateBeforeSimulation()
@@ -88,175 +85,97 @@ namespace DefenseShields
                 if (_lCount == 10) _lCount = 0;
             }
 
-            if (SGridComponent == null) MainInit = false;
+            if (ShieldComp == null) MainInit = false;
             if (!MainInit)
             {
-                Emitter.CubeGrid.Components.TryGet(out SGridComponent);
-                if (SGridComponent == null)
+                Emitter.CubeGrid.Components.TryGet(out ShieldComp);
+                if (ShieldComp == null)
                 {
+                    EmitterOnline = false;
                     return;
                 }
                 MainInit = true;
+                ShieldComp.Emitters.Add(this);
                 Definition = DefinitionManager.Get(Emitter.BlockDefinition.SubtypeId);
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
                 if (!Session.DedicatedServer) BlockParticleCreate();
                 Log.Line($"Emitter initted");
             }
-
-            _sVelSqr = Emitter.CubeGrid.Physics.LinearVelocity.LengthSquared();
-            if (SGridComponent.IsStarting)
+            else if (ShieldComp == null)
             {
-                CheckShieldLineOfSight();
-                if (!_shieldLineOfSight) SGridComponent.OffEmitters.Add(this);
+                EmitterOnline = false;
+                return;
             }
-            if (_shieldLineOfSight == false && !Session.DedicatedServer) DrawHelper();
 
-            if (SGridComponent.ControlBlockWorking)
+            if (ShieldComp.ControlBlockWorking)
             {
-                if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(); //if shield is active
+                if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(); 
 
-                if ((!Session.DedicatedServer) && UtilsStatic.ShieldDistanceCheck(Emitter, 1000, SGridComponent.BoundingRange))
+                if (!Session.DedicatedServer && EmitterOnline && UtilsStatic.ShieldDistanceCheck(Emitter, 1000, ShieldComp.BoundingRange))
                 {
-                    if (SGridComponent.IsMoving || SGridComponent.IsStarting) BlockParticleUpdate();
+                    _sVelSqr = Emitter.CubeGrid.Physics.LinearVelocity.LengthSquared();
+                    if (ShieldComp.IsMoving || ShieldComp.IsStarting) BlockParticleUpdate();
                     var blockCam = Emitter.PositionComp.WorldVolume;
-                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam))
-                    {
-                        if (_blockParticleStopped) BlockParticleStart();
-                        _blockParticleStopped = false;
-                        BlockMoveAnimation();
 
-                        if (_animationLoop++ == 599) _animationLoop = 0;
-                    }
+                    if (!MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam)) return;
+
+                    if (_blockParticleStopped) BlockParticleStart();
+                    _blockParticleStopped = false;
+                    BlockMoveAnimation();
+                    if (_animationLoop++ == 599) _animationLoop = 0;
                 }
+                else if (!_blockParticleStopped) BlockParticleStop();
             }
             else
             {
                 if (!_blockParticleStopped) BlockParticleStop();
+                EmitterOnline = false;
             }
-
-            if (ServerUpdate) SyncControlsServer();
-            SyncControlsClient();
         }
 
-        #region Create UI
-        private void CreateUi()
+        public override void UpdateAfterSimulation()
         {
-            Session.Instance.ControlsLoaded = true;
-            _modulateVoxels = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Emitter, "AllowVoxels", "Voxels may pass", true);
-            _modulateGrids = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Emitter, "AllowGrids", "Grids may pass", false);
-        }
-        #endregion
-
-        #region Settings
-        public bool Enabled
-        {
-            get { return Settings.Enabled; }
-            set { Settings.Enabled = value; }
-        }
-
-        public bool ModulateVoxels
-        {
-            get { return Settings.ModulateVoxels; }
-            set { Settings.ModulateVoxels = value; }
-        }
-
-        public bool ModulateGrids
-        {
-            get { return Settings.ModulateGrids; }
-            set { Settings.ModulateGrids = value; }
-        }
-
-        public void UpdateSettings(EmitterSettings newSettings, bool localOnly = true)
-        {
-            Enabled = newSettings.Enabled;
-            ModulateVoxels = newSettings.ModulateVoxels;
-            ModulateGrids = newSettings.ModulateGrids;
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings for emitter");
-        }
-
-        public void SaveSettings()
-        {
-            if (Emitter.Storage == null)
+            if (ShieldComp == null) return;
+            if (Emitter.Enabled != EnablePrevState)
             {
-                Log.Line($"EmitterId:{Emitter.EntityId.ToString()} - Storage = null");
-                Emitter.Storage = new MyModStorageComponent();
-            }
-            Emitter.Storage[Session.Instance.EmitterGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
-        }
-
-        public bool LoadSettings()
-        {
-            if (Emitter.Storage == null) return false;
-
-            string rawData;
-            bool loadedSomething = false;
-
-            if (Emitter.Storage.TryGetValue(Session.Instance.EmitterGuid, out rawData))
-            {
-                EmitterSettings loadedSettings = null;
-
-                try
+                if (Emitter.Enabled)
                 {
-                    loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<EmitterSettings>(rawData);
+                    EmitterOnline = true;
+                    ShieldComp.EmitterEvent = true;
+                    EnablePrevState = Emitter.Enabled;
                 }
-                catch (Exception e)
+                else
                 {
-                    loadedSettings = null;
-                    Log.Line($"EmitterId:{Emitter.EntityId.ToString()} - Error loading settings!\n{e}");
-                }
-
-                if (loadedSettings != null)
-                {
-                    Settings = loadedSettings;
-                    loadedSomething = true;
+                    EmitterOnline = false;
+                    ShieldComp.EmitterEvent = true;
+                    EnablePrevState = Emitter.Enabled;
                 }
             }
-            return loadedSomething;
-        }
+            if (!Emitter.Enabled) return;
 
-        private void SyncControlsServer()
-        {
-            if (Emitter != null && !Emitter.Enabled.Equals(Settings.Enabled))
+            if (ShieldComp.CheckEmitters)
             {
-                Enabled = Settings.Enabled;
+                CheckShieldLineOfSight();
+                if (_shieldLineOfSight)
+                {
+                    ShieldComp.Emitters.Add(this);
+                    if (!EmitterOnline) ShieldComp.EmitterEvent = true;
+                    EmitterOnline = true;
+                    return;
+                }
+                if (EmitterOnline && !_shieldLineOfSight)
+                {
+                    ShieldComp.Emitters.Remove(this);
+                    ShieldComp.EmitterEvent = true;
+                    EmitterOnline = false;
+                }
             }
 
-            if (_modulateVoxels != null && !_modulateVoxels.Getter(Emitter).Equals(Settings.ModulateVoxels))
+            if (Emitter.Enabled && !_shieldLineOfSight && !Session.DedicatedServer)
             {
-                _modulateVoxels.Setter(Emitter, Settings.ModulateVoxels);
-            }
-
-            if (_modulateGrids != null && !_modulateGrids.Getter(Emitter).Equals(Settings.ModulateGrids))
-            {
-                _modulateGrids.Setter(Emitter, Settings.ModulateGrids);
-            }
-
-            ServerUpdate = false;
-            SaveSettings();
-            if (Session.Enforced.Debug == 1) Log.Line($"SyncControlsServer (emitter)");
-        }
-
-        private void SyncControlsClient()
-        {
-            var needsSync = false;
-            if (!Enabled.Equals(Enabled) 
-                || !_modulateVoxels.Getter(Emitter).Equals(ModulateVoxels)
-                || !_modulateGrids.Getter(Emitter).Equals(ModulateGrids))
-            {
-                needsSync = true;
-                Enabled = Settings.Enabled;
-                ModulateVoxels = _modulateVoxels.Getter(Emitter);
-                ModulateGrids = _modulateGrids.Getter(Emitter);
-            }
-
-            if (needsSync)
-            {
-                NetworkUpdate();
-                SaveSettings();
-                if (Session.Enforced.Debug == 1) Log.Line($"Needed sync for emitter");
+                DrawHelper();
             }
         }
-        #endregion
 
         #region Block Animation
         private void BlockMoveAnimationReset()
@@ -361,8 +280,6 @@ namespace DefenseShields
         private void CheckShieldLineOfSight()
         {
 
-            // Get If Grid is Mobile and PhysicsVerts
-
             _blocksLos.Clear();
             _noBlocksLos.Clear();
             _vertsSighted.Clear();
@@ -373,9 +290,9 @@ namespace DefenseShields
             var testPos = Emitter.PositionComp.WorldVolume.Center + testDir * testDist;
             _sightPos = testPos;
 
-            MyAPIGateway.Parallel.For(0, SGridComponent.PhysicsOutside.Length, i =>
+            MyAPIGateway.Parallel.For(0, ShieldComp.PhysicsOutside.Length, i =>
             {
-                var hit = Emitter.CubeGrid.RayCastBlocks(testPos, SGridComponent.PhysicsOutside[i]);
+                var hit = Emitter.CubeGrid.RayCastBlocks(testPos, ShieldComp.PhysicsOutside[i]);
                 if (hit.HasValue)
                 {
                     _blocksLos.Add(i);
@@ -383,18 +300,18 @@ namespace DefenseShields
                 }
                 _noBlocksLos.Add(i);
             });
-            if (SGridComponent.GridIsMobile)
+            if (ShieldComp.GridIsMobile)
             {
                 MyAPIGateway.Parallel.For(0, _noBlocksLos.Count, i =>
                 {
                     const int filter = CollisionLayers.VoxelCollisionLayer;
                     IHitInfo hitInfo;
-                    var hit = MyAPIGateway.Physics.CastRay(testPos, SGridComponent.PhysicsOutside[_noBlocksLos[i]], out hitInfo, filter);
+                    var hit = MyAPIGateway.Physics.CastRay(testPos, ShieldComp.PhysicsOutside[_noBlocksLos[i]], out hitInfo, filter);
                     if (hit) _blocksLos.Add(_noBlocksLos[i]);
                 });
             }
 
-            for (int i = 0; i < SGridComponent.PhysicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
+            for (int i = 0; i < ShieldComp.PhysicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
             _shieldLineOfSight = _blocksLos.Count < 500;
             if (Session.Enforced.Debug == 1) Log.Line($"EmitterId:{Emitter.EntityId.ToString()} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {_shieldLineOfSight.ToString()}");
         }
@@ -406,7 +323,7 @@ namespace DefenseShields
 
             foreach (var blocking in _blocksLos)
             {
-                var blockedDir = SGridComponent.PhysicsOutside[blocking] - _sightPos;
+                var blockedDir = ShieldComp.PhysicsOutside[blocking] - _sightPos;
                 blockedDir.Normalize();
                 var blockedPos = _sightPos + blockedDir * lineDist;
                 DsDebugDraw.DrawLineToVec(_sightPos, blockedPos, Color.Black, lineWidth);
@@ -414,7 +331,7 @@ namespace DefenseShields
 
             foreach (var sighted in _vertsSighted)
             {
-                var sightedDir = SGridComponent.PhysicsOutside[sighted] - _sightPos;
+                var sightedDir = ShieldComp.PhysicsOutside[sighted] - _sightPos;
                 sightedDir.Normalize();
                 var sightedPos = _sightPos + sightedDir * lineDist;
                 DsDebugDraw.DrawLineToVec(_sightPos, sightedPos, Color.Blue, lineWidth);
@@ -423,23 +340,6 @@ namespace DefenseShields
             if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("Blue means clear line of sight, black means blocked......................................................................", 960, "Red", Emitter.OwnerId);
         }
 
-        #region Network
-        private void NetworkUpdate()
-        {
-
-            if (Session.IsServer)
-            {
-                if (Session.Enforced.Debug == 1) Log.Line($"server relaying network settings update for emitter {Emitter.EntityId}");
-                Session.PacketizeEmitterSettings(Emitter, Settings); // update clients with server's settings
-            }
-            else // client, send settings to server
-            {
-                if (Session.Enforced.Debug == 1) Log.Line($"client sent network settings update for emitter {Emitter.EntityId}");
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new EmitterData(MyAPIGateway.Multiplayer.MyId, Emitter.EntityId, Settings));
-                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PACKET_ID_EMITTER, bytes);
-            }
-        }
-        #endregion
         public override void OnRemovedFromScene()
         {
             try

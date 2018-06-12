@@ -4,57 +4,6 @@ using ProtoBuf;
 
 namespace DefenseShields
 {
-    /// Used for serializing the settings.
-    [ProtoContract]
-    public class EmitterSettings
-    {
-        [ProtoMember(1)]
-        public bool Enabled = false;
-
-        [ProtoMember(2), DefaultValue(-1)]
-        public float Width = -1f;
-
-        [ProtoMember(3), DefaultValue(-1)]
-        public float Height = -1f;
-
-        [ProtoMember(4), DefaultValue(-1)]
-        public float Depth = -1f;
-
-        [ProtoMember(5)]
-        public bool IdleInvisible = false;
-
-        [ProtoMember(6)]
-        public bool ActiveInvisible = false;
-
-        [ProtoMember(7), DefaultValue(-1)]
-        public float Rate = -1f;
-
-        [ProtoMember(8), DefaultValue(-1)]
-        public float Buffer = 0f;
-
-        [ProtoMember(9)]
-        public bool ModulateVoxels = false;
-
-        [ProtoMember(10)]
-        public bool ModulateGrids = false;
-
-        [ProtoMember(11)]
-        public bool ExtendFit = false;
-
-        [ProtoMember(12)]
-        public bool SphereFit = false;
-
-        [ProtoMember(13)]
-        public bool FortifyShield = false;
-
-        public override string ToString()
-        {
-            return $"Enabled = {Enabled}\nIdleVisible = {IdleInvisible}\nActiveVisible = {ActiveInvisible}\nWidth = {Math.Round(Width, 4)}" +
-                   $"\nHeight = {Math.Round(Height, 4)}\nDepth = {Math.Round(Depth, 4)}\nRate = {Math.Round(Rate, 4)}" +
-                   $"\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nExtendFit = {ExtendFit}\nSphereFit = {SphereFit}\nFortifyShield = {FortifyShield}";
-        }
-    }
-
     [ProtoContract]
     public class DisplaySettings
     {
@@ -186,40 +135,6 @@ namespace DefenseShields
         public override string ToString()
         {
             return $"Enabled = {Enabled}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}";
-        }
-    }
-
-    [ProtoContract]
-    public class EmitterData
-    {
-        [ProtoMember(1)]
-        public PacketType Type = PacketType.EMITTER;
-
-        [ProtoMember(2)]
-        public long EntityId = 0;
-
-        [ProtoMember(3)]
-        public ulong Sender = 0;
-
-        [ProtoMember(4)]
-        public EmitterSettings Settings = null;
-
-        public EmitterData() { } // empty ctor is required for deserialization
-
-        public EmitterData(ulong sender, long entityId, EmitterSettings settings)
-        {
-            Type = PacketType.EMITTER;
-            Sender = sender;
-            EntityId = entityId;
-            Settings = settings;
-        }
-
-        public EmitterData(ulong sender, long entityId, PacketType action)
-        {
-            Type = action;
-            Sender = sender;
-            EntityId = entityId;
-            Settings = null;
         }
     }
 
@@ -364,7 +279,6 @@ namespace DefenseShields
         SETTINGS,
         ENFORCE,
         MODULATOR,
-        EMITTER,
         DISPLAY
     }
 }

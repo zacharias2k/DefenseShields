@@ -32,7 +32,7 @@ namespace DefenseShields
         public MyModStorageComponentBase Storage { get; set; }
         internal ModulatorSettings Settings = new ModulatorSettings();
         internal ModulatorGridComponent MGridComponent;
-        internal ShieldGridComponent SGridComponent;
+        internal ShieldGridComponent ShieldComp;
 
         private IMyUpgradeModule Modulator => (IMyUpgradeModule)Entity;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule> _modulateVoxels;
@@ -79,11 +79,11 @@ namespace DefenseShields
                 if (_lCount == 10) _lCount = 0;
             }
 
-            if (SGridComponent == null) MainInit = false;
+            if (ShieldComp == null) MainInit = false;
             if (!MainInit)
             {
-                Modulator.CubeGrid.Components.TryGet(out SGridComponent);
-                if (SGridComponent == null)
+                Modulator.CubeGrid.Components.TryGet(out ShieldComp);
+                if (ShieldComp == null)
                 {
                     return;
                 }
