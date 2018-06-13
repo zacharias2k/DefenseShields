@@ -674,20 +674,21 @@ namespace DefenseShields
             return new Vector3D((vec4.X / vec4.W), (vec4.Y / vec4.W), (vec4.Z / vec4.W));
         }
 
-        private void UpdateIcon()
+// DS_Shield Inside Icon
+        private void UpdateIconInside()
         {
             var position = new Vector3D(_shieldIconPos.X, _shieldIconPos.Y, 0);
             var fov = MyAPIGateway.Session.Camera.FovWithZoom;
             double aspectratio = MyAPIGateway.Session.Camera.ViewportSize.X / MyAPIGateway.Session.Camera.ViewportSize.Y;
-            var scale = 0.075 * Math.Tan(fov / 2);
+            var scale = 0.095 * Math.Tan(fov / 2);
 
             position.X *= scale * aspectratio;
             position.Y *= scale;
 
             var cameraWorldMatrix = MyAPIGateway.Session.Camera.WorldMatrix;
-            position = Vector3D.Transform(new Vector3D(position.X, position.Y, -.1), cameraWorldMatrix);
+            position = Vector3D.Transform(new Vector3D(position.X, position.Y, -.13), cameraWorldMatrix);
 
-            var material = MyStringId.GetOrCompute("DS_GUI");
+			var material2 = MyStringId.GetOrCompute("DS_ShieldInside");
 
             var origin = position;
             var left = cameraWorldMatrix.Left;
@@ -695,15 +696,45 @@ namespace DefenseShields
             scale = 0.1 * scale;
 
             Color color;
-            if (_shieldPercent > 80) color = Color.GhostWhite;
+            if (_shieldPercent > 80) color = Color.White;
             else if (_shieldPercent > 60) color = Color.Blue;
             else if (_shieldPercent > 40) color = Color.Yellow;
             else if (_shieldPercent > 20) color = Color.Orange;
-            else color = Color.DarkRed;
+            else color = Color.Red;
+
+            MyTransparentGeometry.AddBillboardOriented(material2, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
+        }		
+		
+	//DS_Shield Outside Icon	
+        private void UpdateIconOutside()
+        {
+            var position = new Vector3D(_shieldIconPos.X, _shieldIconPos.Y, 0);
+            var fov = MyAPIGateway.Session.Camera.FovWithZoom;
+            double aspectratio = MyAPIGateway.Session.Camera.ViewportSize.X / MyAPIGateway.Session.Camera.ViewportSize.Y;
+            var scale = 0.095 * Math.Tan(fov / 2);
+
+            position.X *= scale * aspectratio;
+            position.Y *= scale;
+
+            var cameraWorldMatrix = MyAPIGateway.Session.Camera.WorldMatrix;
+            position = Vector3D.Transform(new Vector3D(position.X, position.Y, -.13), cameraWorldMatrix);
+
+            var material = MyStringId.GetOrCompute("DS_Shield");
+
+            var origin = position;
+            var left = cameraWorldMatrix.Left;
+            var up = cameraWorldMatrix.Up;
+			var right = cameraWorldMatrix.Right;
+            scale = 0.1 * scale;
+
+            Color color;
+            if (_shieldPercent > 1) color = Color.White;
+            else color = Color.White;
 
             MyTransparentGeometry.AddBillboardOriented(material, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
         }
 
+		
         public void Draw(int onCount, bool sphereOnCamera)
         {
             _onCount = onCount;
@@ -714,7 +745,8 @@ namespace DefenseShields
 
             if (!enemy && !MyAPIGateway.Session.Config.MinimalHud && FriendlyCache.Contains(MyAPIGateway.Session.Player.Character))
             {
-                UpdateIcon();
+				UpdateIconInside();
+                UpdateIconOutside();
             }
 
             var passiveVisible = !(_hidePassiveCheckBox.Getter(Shield).Equals(true) && !enemy);
