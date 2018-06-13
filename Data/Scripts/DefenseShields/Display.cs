@@ -65,7 +65,8 @@ namespace DefenseShields
         #region Create UI
         private void CreateUi()
         {
-            Session.Instance.ControlsLoaded = true;
+            //if (Session.Instance.DisplayControlsLoaded) return; // Fix get existing control
+            Session.Instance.DisplayControlsLoaded = true;
             _modulateVoxels = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyTextPanel>(Display, "AllowVoxels", "Voxels may pass", true);
             _modulateGrids = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyTextPanel>(Display, "AllowGrids", "Grids may pass", false);
         }

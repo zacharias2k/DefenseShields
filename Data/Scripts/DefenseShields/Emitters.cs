@@ -15,6 +15,7 @@ using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRageMath;
 using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
+using TExtensions = Sandbox.ModAPI.Interfaces.TerminalPropertyExtensions;
 
 namespace DefenseShields
 {

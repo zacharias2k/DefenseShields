@@ -133,6 +133,7 @@ namespace DefenseShields
                         _shapeLoaded = false;
                     }
 
+                    //InitControls(); // fix get existing controls
                     CreateUi();
                     PowerInit();
 
@@ -256,28 +257,36 @@ namespace DefenseShields
         #endregion
 
         #region Create UI
+
+        private void InitControls()
+        {
+            if (ShieldMode == ShieldType.SmallGrid && !Session.Instance.SmallShieldControlsLoaded)
+            {
+                Session.Instance.SmallShieldControlsLoaded = true;
+                CreateUi();
+            }
+            else if (ShieldMode != ShieldType.SmallGrid && !Session.Instance.LargeShieldControlsLoaded)
+            {
+                Session.Instance.LargeShieldControlsLoaded = true;
+                CreateUi();
+            }
+        }
+
         private void CreateUi()
         {
-            Session.Instance.ControlsLoaded = true;
             UtilsStatic.RemoveOreUi();
             _chargeSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ChargeRate", "Shield Charge Rate", 20, 95, 50);
 
-            Log.Line($"{ShieldMode}");
-            if (ShieldMode != ShieldType.Station)
-            {
-                _extendFit = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ExtendFit", "Extend Shield", false);
-                _sphereFit = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "SphereFit", "Sphere Fit", false);
-                _fortifyShield = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ShieldFortify", "Fortify Shield", false);
-            }
-            else
-            {
-                _widthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "WidthSlider", "Shield Size Width", 30, 600, 100);
-                _heightSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HeightSlider", "Shield Size Height", 30, 600, 100);
-                _depthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "DepthSlider", "Shield Size Depth", 30, 600, 100);
-            }
+            _extendFit = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ExtendFit", "Extend Shield", false);
+            _sphereFit = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "SphereFit", "Sphere Fit", false);
+            _fortifyShield = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ShieldFortify", "Fortify Shield", false);
+            _widthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "WidthSlider", "Shield Size Width", 30, 600, 100);
+            _heightSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HeightSlider", "Shield Size Height", 30, 600, 100);
+            _depthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "DepthSlider", "Shield Size Depth", 30, 600, 100);
 
             _hidePassiveCheckBox = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HidePassive", "Hide idle shield state", false);
             _hideActiveCheckBox = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HideActive", "Hide active shield state", false);
+
             if (Session.Enforced.Debug == 1) Log.Line($"CreateUI Complete");
         }
         #endregion

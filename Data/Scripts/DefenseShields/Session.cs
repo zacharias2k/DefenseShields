@@ -25,14 +25,24 @@ namespace DefenseShields
 
         internal bool SessionInit;
         internal bool DefinitionsLoaded;
-        public bool ControlsLoaded { get; set; }
+        internal bool CustomDataReset = true;
+        internal bool ShowOnHudReset = true;
+        public bool LargeShieldControlsLoaded { get; set; }
+        public bool SmallShieldControlsLoaded { get; set; }
+        public bool StationEmitterControlsLoaded { get; set; }
+        public bool LargeEmitterControlsLoaded { get; set; }
+        public bool SmallEmitterControlsLoaded { get; set; }
+        public bool ModulatorControlsLoaded { get; set; }
+        public bool DisplayControlsLoaded { get; set; }
+
         public bool Enabled = true;
         public static bool EnforceInit;
-        internal bool CustomDataReset = true;
         internal MyStringId Password = MyStringId.GetOrCompute("Password");
         internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Set the shield modulation password");
-
+        internal MyStringId MainEmitter = MyStringId.GetOrCompute("Master Emitter");
+        internal MyStringId MainEmitterTooltip = MyStringId.GetOrCompute("Set this emitter to the Master Emitter");
         public static readonly bool MpActive = MyAPIGateway.Multiplayer.MultiplayerActive;
+
         public static readonly bool IsServer = MyAPIGateway.Multiplayer.IsServer;
         public static readonly bool DedicatedServer = MyAPIGateway.Utilities.IsDedicated;
 
@@ -85,7 +95,7 @@ namespace DefenseShields
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_MODULATOR, ModulatorSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_MODULATOR, DisplaySettingsReceived);
                 MyAPIGateway.Utilities.RegisterMessageHandler(WORKSHOP_ID, ModMessageHandler);
-                if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter += CustomDataToPassword;
+                if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter += CustomControls;
 
                 if (DedicatedServer || IsServer)
                 {
@@ -577,14 +587,28 @@ namespace DefenseShields
             return modPath;
         }
 
-        private void CustomDataToPassword(IMyTerminalBlock block, List<IMyTerminalControl> myTerminalControls)
+        private void CustomControls(IMyTerminalBlock block, List<IMyTerminalControl> myTerminalControls)
         {
             try
             {
-                if (block.BlockDefinition.SubtypeId == "LargeShieldModulator"  || block.BlockDefinition.SubtypeId == "SmallShieldModulator" 
-                    || block.BlockDefinition.SubtypeId == "DSControlLarge" || block.BlockDefinition.SubtypeId == "DSControlSmall")
-                    SetCustomDataToPassword(myTerminalControls);
-                else if (!CustomDataReset) ResetCustomData(myTerminalControls);
+                switch (block.BlockDefinition.SubtypeId)
+                {
+                    case "LargeShieldModulator":
+                    case "SmallShieldModulator":
+                    case "DSControlLarge":
+                    case "DSControlSmall":
+                        SetCustomDataToPassword(myTerminalControls);
+                        break;
+                    case "DefenseShieldsLS":
+                    case "DefenseShieldsSS":
+                    case "DefenseShieldsST":
+                        SetShowOnHudToMainEmitter(myTerminalControls);
+                        break;
+                    default:
+                        if (!CustomDataReset) ResetCustomData(myTerminalControls);
+                        if (!ShowOnHudReset) ResetShowOnHud(myTerminalControls);
+                        break;
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in CustomDataToPassword: {ex}"); }
         }
@@ -598,6 +622,15 @@ namespace DefenseShields
             CustomDataReset = false;
         }
 
+        private void SetShowOnHudToMainEmitter(IEnumerable<IMyTerminalControl> controls)
+        {
+            var customData = controls.First((x) => x.Id.ToString() == "ShowOnHUD");
+            ((IMyTerminalControlTitleTooltip)customData).Title = MainEmitter;
+            ((IMyTerminalControlTitleTooltip)customData).Tooltip = MainEmitterTooltip;
+            customData.RedrawControl();
+            ShowOnHudReset = false;
+        }
+
         private void ResetCustomData(IEnumerable<IMyTerminalControl> controls)
         {
             var customData = controls.First((x) => x.Id.ToString() == "CustomData");
@@ -605,6 +638,15 @@ namespace DefenseShields
             ((IMyTerminalControlTitleTooltip)customData).Tooltip = MySpaceTexts.Terminal_CustomDataTooltip;
             customData.RedrawControl();
             CustomDataReset = true;
+        }
+
+        private void ResetShowOnHud(IEnumerable<IMyTerminalControl> controls)
+        {
+            var customData = controls.First((x) => x.Id.ToString() == "ShowOnHUD");
+            ((IMyTerminalControlTitleTooltip)customData).Title = MySpaceTexts.Terminal_ShowOnHUD;
+            ((IMyTerminalControlTitleTooltip)customData).Tooltip = MySpaceTexts.Terminal_ShowOnHUDToolTip;
+            customData.RedrawControl();
+            ShowOnHudReset = true;
         }
 
         public override void LoadData()
