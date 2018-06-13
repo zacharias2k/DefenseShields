@@ -25,14 +25,24 @@ namespace DefenseShields
 
         internal bool SessionInit;
         internal bool DefinitionsLoaded;
-        public bool ControlsLoaded { get; set; }
+        internal bool CustomDataReset = true;
+        internal bool ShowOnHudReset = true;
+        public bool LargeShieldControlsLoaded { get; set; }
+        public bool SmallShieldControlsLoaded { get; set; }
+        public bool StationEmitterControlsLoaded { get; set; }
+        public bool LargeEmitterControlsLoaded { get; set; }
+        public bool SmallEmitterControlsLoaded { get; set; }
+        public bool ModulatorControlsLoaded { get; set; }
+        public bool DisplayControlsLoaded { get; set; }
+
         public bool Enabled = true;
         public static bool EnforceInit;
-        internal bool CustomDataReset = true;
         internal MyStringId Password = MyStringId.GetOrCompute("Password");
         internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Set the shield modulation password");
-
+        internal MyStringId MainEmitter = MyStringId.GetOrCompute("Master Emitter");
+        internal MyStringId MainEmitterTooltip = MyStringId.GetOrCompute("Set this emitter to the Master Emitter");
         public static readonly bool MpActive = MyAPIGateway.Multiplayer.MultiplayerActive;
+
         public static readonly bool IsServer = MyAPIGateway.Multiplayer.IsServer;
         public static readonly bool DedicatedServer = MyAPIGateway.Utilities.IsDedicated;
 
@@ -40,7 +50,6 @@ namespace DefenseShields
         private int _lCount;
         private int _extendedLoop;
 
-        public const ushort PACKET_ID_EMITTER = 62518; // network
         public const ushort PACKET_ID_DISPLAY = 62519; // network
         public const ushort PACKET_ID_SETTINGS = 62520; // network
         public const ushort PACKET_ID_ENFORCE = 62521; // network
@@ -84,10 +93,9 @@ namespace DefenseShields
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_SETTINGS, PacketSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_ENFORCE, PacketEnforcementReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_MODULATOR, ModulatorSettingsReceived);
-                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_EMITTER, EmitterSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_MODULATOR, DisplaySettingsReceived);
                 MyAPIGateway.Utilities.RegisterMessageHandler(WORKSHOP_ID, ModMessageHandler);
-                if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter += CustomDataToPassword;
+                if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter += CustomControls;
 
                 if (DedicatedServer || IsServer)
                 {
@@ -112,7 +120,7 @@ namespace DefenseShields
                 {
                     var s = Components[i];
                     if (!s.ShieldActive || !s.AllInited) continue;
-                    var sp = new BoundingSphereD(s.Entity.GetPosition(), s.SGridComponent.BoundingRange);
+                    var sp = new BoundingSphereD(s.Entity.GetPosition(), s.ShieldComp.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {
                         SphereOnCamera[i] = false;
@@ -213,7 +221,7 @@ namespace DefenseShields
                             Log.Line($"attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName} - {info.Type} - {info.Amount} - {shield.FriendlyCache.Contains(hostileEnt)} - {shield.IgnoreCache.Contains(hostileEnt)}");
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
-                            var vertPos = CustomCollision.ClosestVert(shield.SGridComponent.PhysicsOutside, blockPos);
+                            var vertPos = CustomCollision.ClosestVert(shield.ShieldComp.PhysicsOutside, blockPos);
                             shield.WorldImpactPosition = vertPos;
                             shield.ImpactSize = 5;
                         }
@@ -345,63 +353,6 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in PacketEnforcementReceived: {ex}"); }
         }
 
-        private static void EmitterSettingsReceived(byte[] bytes)
-        {
-            try
-            {
-                if (bytes.Length <= 2)
-                {
-                    Log.Line($"PacketReceived(); invalid length <= 2; length={bytes.Length.ToString()}");
-                    return;
-                }
-
-                var data = MyAPIGateway.Utilities.SerializeFromBinary<EmitterData>(bytes); // this will throw errors on invalid data
-
-                if (data == null)
-                {
-                    Log.Line($"PacketReceived(); no deserialized data!");
-                    return;
-                }
-
-                IMyEntity ent;
-                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
-                {
-                    Log.Line($"PacketReceived(); {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
-                    return;
-                }
-
-                var logic = ent.GameLogic.GetAs<Emitters>();
-
-                if (logic == null)
-                {
-                    Log.Line($"PacketReceived(); {data.Type}; emitter doesn't have the gamelogic component!");
-                    return;
-                }
-
-                switch (data.Type)
-                {
-                    case PacketType.EMITTER:
-                        {
-                            if (data.Settings == null)
-                            {
-                                Log.Line($"PacketReceived(); {data.Type}; settings are null!");
-                                return;
-                            }
-
-                            if (Enforced.Debug == 1) Log.Line($"Packet received:\n{data.Settings}");
-                            logic.UpdateSettings(data.Settings);
-                            logic.SaveSettings();
-                            logic.ServerUpdate = true;
-
-                            if (IsServer)
-                                EmitterSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
-                        }
-                        break;
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in EmitterSettingsReceived: {ex}"); }
-        }
-
         private static void DisplaySettingsReceived(byte[] bytes)
         {
             try
@@ -520,15 +471,7 @@ namespace DefenseShields
         {
             var data = new EnforceData(MyAPIGateway.Multiplayer.MyId, block.EntityId, Enforced);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            //ClientEnforcement(block.CubeGrid.GetPosition(), bytes, data.Sender);
             MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_ENFORCE, bytes, senderId);
-        }
-
-        public static void PacketizeEmitterSettings(IMyCubeBlock block, EmitterSettings settings)
-        {
-            var data = new EmitterData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            EmitterSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
         }
 
         public static void PacketizeDisplaySettings(IMyCubeBlock block, DisplaySettings settings)
@@ -569,27 +512,6 @@ namespace DefenseShields
 
                 if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
                     MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_SETTINGS, bytes, p.SteamUserId);
-            }
-            players.Clear();
-        }
-
-        public static void EmitterSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
-        {
-            var localSteamId = MyAPIGateway.Multiplayer.MyId;
-            var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
-            distSq += 1000; // some safety padding, avoid desync
-            distSq *= distSq;
-
-            var players = Instance.Players;
-            players.Clear();
-            MyAPIGateway.Players.GetPlayers(players);
-
-            foreach (var p in players)
-            {
-                var id = p.SteamUserId;
-
-                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
-                    MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_EMITTER, bytes, p.SteamUserId);
             }
             players.Clear();
         }
@@ -665,14 +587,28 @@ namespace DefenseShields
             return modPath;
         }
 
-        private void CustomDataToPassword(IMyTerminalBlock block, List<IMyTerminalControl> myTerminalControls)
+        private void CustomControls(IMyTerminalBlock block, List<IMyTerminalControl> myTerminalControls)
         {
             try
             {
-                if (block.BlockDefinition.SubtypeId == "LargeShieldModulator"  || block.BlockDefinition.SubtypeId == "SmallShieldModulator" 
-                    || block.BlockDefinition.SubtypeId == "DSControlLarge" || block.BlockDefinition.SubtypeId == "DSControlSmall")
-                    SetCustomDataToPassword(myTerminalControls);
-                else if (!CustomDataReset) ResetCustomData(myTerminalControls);
+                switch (block.BlockDefinition.SubtypeId)
+                {
+                    case "LargeShieldModulator":
+                    case "SmallShieldModulator":
+                    case "DSControlLarge":
+                    case "DSControlSmall":
+                        SetCustomDataToPassword(myTerminalControls);
+                        break;
+                    case "DefenseShieldsLS":
+                    case "DefenseShieldsSS":
+                    case "DefenseShieldsST":
+                        SetShowOnHudToMainEmitter(myTerminalControls);
+                        break;
+                    default:
+                        if (!CustomDataReset) ResetCustomData(myTerminalControls);
+                        if (!ShowOnHudReset) ResetShowOnHud(myTerminalControls);
+                        break;
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in CustomDataToPassword: {ex}"); }
         }
@@ -686,6 +622,15 @@ namespace DefenseShields
             CustomDataReset = false;
         }
 
+        private void SetShowOnHudToMainEmitter(IEnumerable<IMyTerminalControl> controls)
+        {
+            var customData = controls.First((x) => x.Id.ToString() == "ShowOnHUD");
+            ((IMyTerminalControlTitleTooltip)customData).Title = MainEmitter;
+            ((IMyTerminalControlTitleTooltip)customData).Tooltip = MainEmitterTooltip;
+            customData.RedrawControl();
+            ShowOnHudReset = false;
+        }
+
         private void ResetCustomData(IEnumerable<IMyTerminalControl> controls)
         {
             var customData = controls.First((x) => x.Id.ToString() == "CustomData");
@@ -693,6 +638,15 @@ namespace DefenseShields
             ((IMyTerminalControlTitleTooltip)customData).Tooltip = MySpaceTexts.Terminal_CustomDataTooltip;
             customData.RedrawControl();
             CustomDataReset = true;
+        }
+
+        private void ResetShowOnHud(IEnumerable<IMyTerminalControl> controls)
+        {
+            var customData = controls.First((x) => x.Id.ToString() == "ShowOnHUD");
+            ((IMyTerminalControlTitleTooltip)customData).Title = MySpaceTexts.Terminal_ShowOnHUD;
+            ((IMyTerminalControlTitleTooltip)customData).Tooltip = MySpaceTexts.Terminal_ShowOnHUDToolTip;
+            customData.RedrawControl();
+            ShowOnHudReset = true;
         }
 
         public override void LoadData()

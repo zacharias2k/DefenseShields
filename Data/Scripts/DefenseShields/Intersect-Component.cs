@@ -19,7 +19,7 @@ namespace DefenseShields
             {
                 if (CustomCollision.AllCornersInShield(bOriBBoxD, _detectMatrixOutsideInv)) return true;
 
-                var ejectDir = CustomCollision.EjectDirection(grid, SGridComponent.PhysicsOutside, _dataStructures.p3VertTris, bOriBBoxD, _detectMatrixOutsideInv);
+                var ejectDir = CustomCollision.EjectDirection(grid, ShieldComp.PhysicsOutside, _dataStructures.p3VertTris, bOriBBoxD, _detectMatrixOutsideInv);
                 if (ejectDir == Vector3D.NegativeInfinity) return false;
                 Eject.TryAdd(grid, ejectDir);
 
@@ -78,12 +78,12 @@ namespace DefenseShields
             ShieldGridComponent shieldComponent;
             grid.Components.TryGet(out shieldComponent);
 
-            var dsVerts = shieldComponent.DefenseShields.SGridComponent.PhysicsOutside;
+            var dsVerts = shieldComponent.DefenseShields.ShieldComp.PhysicsOutside;
             var dsMatrixInv = shieldComponent.DefenseShields._detectMatrixOutsideInv;
             var myGrid = Shield.CubeGrid;
 
             var insidePoints = new List<Vector3D>();
-            CustomCollision.ShieldX2PointsInside(dsVerts, dsMatrixInv, SGridComponent.PhysicsOutside, _detectMatrixOutsideInv, insidePoints);
+            CustomCollision.ShieldX2PointsInside(dsVerts, dsMatrixInv, ShieldComp.PhysicsOutside, _detectMatrixOutsideInv, insidePoints);
 
             var bPhysics = grid.Physics;
             var sPhysics = myGrid.Physics;
@@ -119,7 +119,7 @@ namespace DefenseShields
         {
             EntIntersectInfo entInfo;
             _webEnts.TryGetValue(voxelBase, out entInfo);
-            var collision = CustomCollision.VoxelCollisionSphere(Shield.CubeGrid, SGridComponent.PhysicsOutsideLow, voxelBase, _sOriBBoxD, entInfo.TempStorage, _detectMatrixOutside);
+            var collision = CustomCollision.VoxelCollisionSphere(Shield.CubeGrid, ShieldComp.PhysicsOutsideLow, voxelBase, _sOriBBoxD, entInfo.TempStorage, _detectMatrixOutside);
 
             if (collision != Vector3D.NegativeInfinity)
             {

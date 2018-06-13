@@ -20,7 +20,7 @@ namespace DefenseShields
         private void WebEntities()
         {
             if (Session.Enforced.Debug == 1) Dsutil2.Sw.Restart();
-            var pruneSphere = new BoundingSphereD(_detectionCenter, SGridComponent.BoundingRange);
+            var pruneSphere = new BoundingSphereD(_detectionCenter, ShieldComp.BoundingRange);
             var pruneList = new List<MyEntity>();
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
             for (int i = 0; i < pruneList.Count; i++)
@@ -30,7 +30,7 @@ namespace DefenseShields
                 if (ent == null || FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent)) continue;
 
                 var entCenter = ent.PositionComp.WorldVolume.Center;
-                if (ent.Physics == null && !(ent is IMyAutomaticRifleGun) || ent.MarkedForClose || ent is MyVoxelBase && !SGridComponent.GridIsMobile
+                if (ent.Physics == null && !(ent is IMyAutomaticRifleGun) || ent.MarkedForClose || ent is MyVoxelBase && !ShieldComp.GridIsMobile
                     || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
 
                 var relation = EntType(ent);
@@ -77,11 +77,11 @@ namespace DefenseShields
                     }
                 }
             }
-            if (_enablePhysics || SGridComponent.IsMoving || _shapeAdjusted)
+            if (_enablePhysics || ShieldComp.IsMoving || _shapeAdjusted)
             {
-                Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, SGridComponent.PhysicsOutside);
-                Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, SGridComponent.PhysicsOutsideLow);
-                Icosphere.ReturnPhysicsVerts(_detectMatrixInside, SGridComponent.PhysicsInside);
+                Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, ShieldComp.PhysicsOutside);
+                Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, ShieldComp.PhysicsOutsideLow);
+                Icosphere.ReturnPhysicsVerts(_detectMatrixInside, ShieldComp.PhysicsInside);
             }
             if (_enablePhysics) MyAPIGateway.Parallel.Start(WebDispatch);
 
@@ -209,7 +209,7 @@ namespace DefenseShields
         private Ent EntType(IMyEntity ent)
         {
             if (ent == null) return Ent.Ignore;
-            if (ent is MyVoxelBase && (Session.Enforced.DisableVoxelSupport == 1 || ModulateVoxels || !SGridComponent.GridIsMobile)) return Ent.Ignore;
+            if (ent is MyVoxelBase && (Session.Enforced.DisableVoxelSupport == 1 || ModulateVoxels || !ShieldComp.GridIsMobile)) return Ent.Ignore;
             if (ent is IMyAutomaticRifleGun) return Ent.Weapon;
 
             if (ent is IMyCharacter)
@@ -254,7 +254,7 @@ namespace DefenseShields
             }
 
             if (ent is IMyMeteor || ent.GetType().Name.StartsWith("MyMissile")) return Ent.Other;
-            if (ent is MyVoxelBase && SGridComponent.GridIsMobile) return Ent.VoxelBase;
+            if (ent is MyVoxelBase && ShieldComp.GridIsMobile) return Ent.VoxelBase;
             return 0;
         }
 

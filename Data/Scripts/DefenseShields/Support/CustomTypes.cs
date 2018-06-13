@@ -2,7 +2,6 @@
 using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using VRage.ModAPI;
 using VRage.Utils;
 using VRage.Voxels;
 using VRageMath;
@@ -90,14 +89,18 @@ namespace DefenseShields.Support
     {
         private static List<ShieldGridComponent> gridShield = new List<ShieldGridComponent>();
         public HashSet<IMyCubeGrid> SubGrids = new HashSet<IMyCubeGrid>();
-        public HashSet<Emitters> OffEmitters = new HashSet<Emitters>();
+        public HashSet<Emitters> Emitters = new HashSet<Emitters>();
         public readonly DefenseShields DefenseShields;
 
         public string Password;
         public bool GridIsMobile;
-        public bool IsWorking;
+        public bool BlockWorking;
         public bool IsMoving;
         public bool IsStarting;
+        public bool Warm;
+        public bool EmitterUpdate;
+        public bool CheckEmitters;
+
         public double Range;
         public Vector3D[] PhysicsHigh = new Vector3D[642];
         public Vector3D[] PhysicsLow = new Vector3D[162];
@@ -154,10 +157,10 @@ namespace DefenseShields.Support
             set { SubGrids = value; }
         }
 
-        public HashSet<Emitters> OfflineEmitters
+        public HashSet<Emitters> RegisteredEmitters
         {
-            get { return OffEmitters; }
-            set { OffEmitters = value; }
+            get { return Emitters; }
+            set { Emitters = value; }
         }
 
         public string ModulationPassword
@@ -168,8 +171,8 @@ namespace DefenseShields.Support
 
         public bool ControlBlockWorking
         {
-            get { return IsWorking; }
-            set { IsWorking = value; }
+            get { return BlockWorking; }
+            set { BlockWorking = value; }
         }
 
         public bool GridIsMoving
@@ -182,6 +185,18 @@ namespace DefenseShields.Support
         {
             get { return IsStarting; }
             set { IsStarting = value; }
+        }
+
+        public bool WarmedUp
+        {
+            get { return Warm; }
+            set { Warm = value; }
+        }
+
+        public bool EmitterEvent
+        {
+            get { return EmitterUpdate; }
+            set { EmitterUpdate = value; }
         }
 
         public double BoundingRange
