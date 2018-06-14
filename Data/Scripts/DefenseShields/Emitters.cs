@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using DefenseShields.Control;
+using System.Runtime.CompilerServices;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game;
-using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Collections;
 using VRage.Game;
@@ -15,46 +14,46 @@ using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRageMath;
 using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
-using TExtensions = Sandbox.ModAPI.Interfaces.TerminalPropertyExtensions;
 
 namespace DefenseShields
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DefenseShieldsLS", "DefenseShieldsSS", "DefenseShieldsST")]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "EmitterL", "EmitterS", "EmitterST")]
     public class Emitters : MyGameLogicComponent
     {
         private uint _tick;
         private int _count = -1;
         private int _lCount;
+        private int _animationLoop;
+        private int _rotationTime;
+        private int _translationTime;
+        private int _emissiveIntensity;
+
+        private double _sVelSqr;
 
         public bool ServerUpdate;
         internal bool MainInit;
         internal bool EnablePrevState;
+        internal bool Master;
+        internal bool StandbyMaster;
         private bool _shieldLineOfSight;
         public bool EmitterOnline;
-
-        private readonly Dictionary<long, Emitters> _emitters = new Dictionary<long, Emitters>();
-
-        private readonly MyConcurrentList<int> _vertsSighted = new MyConcurrentList<int>();
-        private readonly MyConcurrentList<int> _noBlocksLos = new MyConcurrentList<int>();
-        private readonly MyConcurrentHashSet<int> _blocksLos = new MyConcurrentHashSet<int>();
+        private bool _blockParticleStopped;
         private Vector3D _sightPos;
 
         public MyModStorageComponentBase Storage { get; set; }
         internal ShieldGridComponent ShieldComp;
+        internal EmitterGridComponent EGridComp;
+        private MyEntitySubpart _subpartRotor;
+        private MyParticleEffect _effect = new MyParticleEffect();
+        internal Definition Definition;
+        internal DSUtils Dsutil1 = new DSUtils();
 
         private IMyUpgradeModule Emitter => (IMyUpgradeModule)Entity;
 
-        private MyEntitySubpart _subpartRotor;
-        private int _animationLoop;
-        private int _time;
-        private int _time2;
-        private int _emissiveIntensity;
-        private readonly MyParticleEffect[] _effects = new MyParticleEffect[1];
-        internal Definition Definition;
-        private bool _blockParticleStopped;
-        private double _sVelSqr;
-
-        internal DSUtils Dsutil1 = new DSUtils();
+        private readonly Dictionary<long, Emitters> _emitters = new Dictionary<long, Emitters>();
+        private readonly MyConcurrentList<int> _vertsSighted = new MyConcurrentList<int>();
+        private readonly MyConcurrentList<int> _noBlocksLos = new MyConcurrentList<int>();
+        private readonly MyConcurrentHashSet<int> _blocksLos = new MyConcurrentHashSet<int>();
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
@@ -78,95 +77,181 @@ namespace DefenseShields
 
         public override void UpdateBeforeSimulation()
         {
-            _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-            if (_count++ == 59)
+            try
             {
-                _count = 0;
-                _lCount++;
-                if (_lCount == 10) _lCount = 0;
-            }
+                _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+                if (_count++ == 59)
+                {
+                    _count = 0;
+                    _lCount++;
+                    if (_lCount == 10) _lCount = 0;
+                }
 
-            if (ShieldComp == null) MainInit = false;
-            if (!MainInit)
-            {
-                Emitter.CubeGrid.Components.TryGet(out ShieldComp);
-                if (ShieldComp == null) return;
+                if (!MainInit) PostInit();
+                if (ShieldComp == null || EGridComp?.MasterComp == null) return;
 
-                MainInit = true;
-                ShieldComp.Emitters.Add(this);
-                Definition = DefinitionManager.Get(Emitter.BlockDefinition.SubtypeId);
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                if (!Session.DedicatedServer) BlockParticleCreate();
-                Log.Line($"Emitter initted");
-            }
-            else if (ShieldComp == null) return;
+                if (Emitter.Enabled != EnablePrevState) UpdateEnableState();
 
-            if (ShieldComp.ControlBlockWorking)
-            {
-                if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(); 
+                if (Master && _shieldLineOfSight && Emitter.Enabled) ShieldComp.EmittersWorking = true;
+                else if (Master) ShieldComp.EmitterEvent = false;
 
-                if (!Session.DedicatedServer && EmitterOnline && UtilsStatic.ShieldDistanceCheck(Emitter, 1000, ShieldComp.BoundingRange))
+                if (!Emitter.Enabled || !ShieldComp.ControlBlockWorking)
+                {
+                    if (!_blockParticleStopped && !Session.DedicatedServer) BlockParticleStop();
+                    return;
+                }
+
+                if (Master && ShieldComp.CheckEmitters)
+                {
+                    ShieldComp.CheckEmitters = false;
+                    EGridComp.PerformEmitterDiagnostic = true;
+                }
+
+                if (!_shieldLineOfSight && !Session.DedicatedServer) DrawHelper();
+
+                if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
+
+                if (EmitterOnline && !Session.DedicatedServer && UtilsStatic.ShieldDistanceCheck(Emitter, 1000, ShieldComp.BoundingRange))
                 {
                     _sVelSqr = Emitter.CubeGrid.Physics.LinearVelocity.LengthSquared();
-                    if (ShieldComp.IsMoving || ShieldComp.IsStarting) BlockParticleUpdate();
+                    if (ShieldComp.GridIsMoving || ShieldComp.GridIsMoving) BlockParticleUpdate();
                     var blockCam = Emitter.PositionComp.WorldVolume;
 
-                    if (!MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam)) return;
-
-                    if (_blockParticleStopped) BlockParticleStart();
-                    _blockParticleStopped = false;
-                    BlockMoveAnimation();
-                    if (_animationLoop++ == 599) _animationLoop = 0;
+                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam))
+                    {
+                        if (_blockParticleStopped) BlockParticleStart();
+                        _blockParticleStopped = false;
+                        BlockMoveAnimation();
+                        if (_animationLoop++ == 599) _animationLoop = 0;
+                    }
                 }
-                else if (!_blockParticleStopped) BlockParticleStop();
+                else if (!_blockParticleStopped && !Session.DedicatedServer) BlockParticleStop();
             }
-            else
-            {
-                if (!_blockParticleStopped) BlockParticleStop();
-            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
 
         public override void UpdateAfterSimulation()
         {
+            try
+            {
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateAfterSimulation: {ex}"); }
+        }
+
+        private void PostInit()
+        {
+            Definition = DefinitionManager.Get(Emitter.BlockDefinition.SubtypeId);
+            Emitter.CubeGrid.Components.TryGet(out ShieldComp);
+            if (!Emitter.CubeGrid.Components.Has<ShieldGridComponent>() && Definition.Name.Equals("EmitterST"))
+            {
+                EGridComp = new EmitterGridComponent(this);
+                Emitter.CubeGrid.Components.Add(EGridComp);
+                EGridComp.MasterComp = this;
+                Master = true;
+                StandbyMaster = false;
+            }
+            else if (Definition.Name.Equals("EmitterST"))
+            {
+                Emitter.CubeGrid.Components.TryGet(out EGridComp);
+                EGridComp.MasterComp.StandbyMaster = true;
+                EGridComp.MasterComp = this;
+                Master = true;
+                StandbyMaster = false;
+            }
+            else Emitter.CubeGrid.Components.TryGet(out EGridComp);
+
             if (ShieldComp == null) return;
-            if (Emitter.Enabled != EnablePrevState)
-            {
-                if (Emitter.Enabled)
-                {
-                    EmitterOnline = true;
-                    ShieldComp.EmitterEvent = true;
-                    EnablePrevState = Emitter.Enabled;
-                }
-                else
-                {
-                    EmitterOnline = false;
-                    ShieldComp.EmitterEvent = true;
-                    EnablePrevState = Emitter.Enabled;
-                }
-            }
-            if (!Emitter.Enabled) return;
 
-            if (ShieldComp.CheckEmitters)
-            {
-                CheckShieldLineOfSight();
-                if (_shieldLineOfSight)
-                {
-                    ShieldComp.Emitters.Add(this);
-                    if (!EmitterOnline) ShieldComp.EmitterEvent = true;
-                    EmitterOnline = true;
-                    return;
-                }
-                if (EmitterOnline && !_shieldLineOfSight)
-                {
-                    ShieldComp.Emitters.Remove(this);
-                    ShieldComp.EmitterEvent = true;
-                    EmitterOnline = false;
-                }
-            }
+            Entity.TryGetSubpart("Rotor", out _subpartRotor);
+            CheckShieldLineOfSight();
+            if (!Session.DedicatedServer) BlockParticleCreate();
+            MainInit = true;
+            Log.Line($"Emitter initted");
+        }
 
-            if (Emitter.Enabled && !_shieldLineOfSight && !Session.DedicatedServer)
+        private void UpdateEnableState()
+        {
+            if (Emitter.Enabled)
             {
-                DrawHelper();
+                if (StandbyMaster)
+                {
+                    StandbyMaster = false;
+                    EGridComp.MasterComp.StandbyMaster = true;
+                }
+
+                EmitterOnline = true;
+                ShieldComp.EmitterEvent = true;
+                EnablePrevState = Emitter.Enabled;
+            }
+            else
+            {
+                EmitterOnline = false;
+                ShieldComp.EmitterEvent = true;
+                EnablePrevState = Emitter.Enabled;
+            }
+        }
+
+        private void EmitterSlaveAssignments()
+        {
+            var mPos = EGridComp.MasterComp.Emitter.Position;
+            var forwardMax = float.MinValue;
+            var backwardMax = float.MinValue;
+            var leftMax = float.MinValue;
+            var rightMax = float.MinValue;
+            var upMax = float.MinValue;
+            var downMax = float.MinValue;
+            Emitters forwardEmitter = null;
+            Emitters backwardEmitter = null;
+            Emitters leftEmitter = null;
+            Emitters rightEmitter = null;
+            Emitters upEmitter = null;
+            Emitters downEmitter = null;
+
+            foreach (var rse in EGridComp.RegisteredSlaveComps)
+            {
+                var sPos = rse.Emitter.Position;
+                var findfMax = Vector3.Dot(sPos - mPos, Vector3.Forward);
+                var findbMax = Vector3.Dot(sPos - mPos, Vector3.Backward);
+                var findlMax = Vector3.Dot(sPos - mPos, Vector3.Left);
+                var findrMax = Vector3.Dot(sPos - mPos, Vector3.Right);
+                var finduMax = Vector3.Dot(sPos - mPos, Vector3.Up);
+                var finddMax = Vector3.Dot(sPos - mPos, Vector3.Down);
+
+                if (findfMax > forwardMax)
+                {
+                    forwardMax = findfMax;
+                    forwardEmitter = rse;
+                }
+
+                if (findbMax > backwardMax)
+                {
+                    backwardMax = findbMax;
+                    backwardEmitter = rse;
+                }
+
+                if (findlMax > leftMax)
+                {
+                    leftMax = findlMax;
+                    leftEmitter = rse;
+                }
+
+                if (findrMax > rightMax)
+                {
+                    rightMax = findrMax;
+                    rightEmitter = rse;
+                }
+
+                if (finduMax > upMax)
+                {
+                    upMax = finduMax;
+                    upEmitter = rse;
+                }
+
+                if (finddMax > downMax)
+                {
+                    downMax = finddMax;
+                    downEmitter = rse;
+                }
             }
         }
 
@@ -180,48 +265,43 @@ namespace DefenseShields
 
         private void BlockMoveAnimation()
         {
-            _time -= 1;
-            if (_animationLoop == 0) _time2 = 0;
-            if (_animationLoop < 299) _time2 += 1;
-            else _time2 -= 1;
+            _rotationTime -= 1;
+            if (_animationLoop == 0) _translationTime = 0;
+            if (_animationLoop < 299) _translationTime += 1;
+            else _translationTime -= 1;
             if (_count == 0) _emissiveIntensity = 2;
             if (_count < 30) _emissiveIntensity += 1;
             else _emissiveIntensity -= 1;
 
-            var temp1 = MatrixD.CreateRotationY(0.05f * _time);
-            var temp2 = MatrixD.CreateTranslation(0, Definition.BlockMoveTranslation * _time2, 0);
+            var rotation = MatrixD.CreateRotationY(0.05f * _rotationTime);
+            var translation = MatrixD.CreateTranslation(0, Definition.BlockMoveTranslation * _translationTime, 0);
 
-            _subpartRotor.PositionComp.LocalMatrix = temp1 * temp2;
+            _subpartRotor.PositionComp.LocalMatrix = rotation * translation;
             _subpartRotor.SetEmissiveParts("PlasmaEmissive", Color.Aqua, 0.1f * _emissiveIntensity);
         }
 
         private void BlockParticleCreate()
         {
-            var scale = Definition.ParticleScale;
-
-            for (int i = 0; i < _effects.Length; i++)
+            if (_effect == null)
             {
-                if (_effects[i] == null)
-                {
-                    if (Session.Enforced.Debug == 1) Log.Line($"Particle #{i.ToString()} is null, creating - tick:{_tick.ToString()}");
-                    MyParticlesManager.TryCreateParticleEffect("EmitterEffect", out _effects[i]);
-                    if (_effects[i] == null) continue;
-                    _effects[i].UserScale = 1f;
-                    _effects[i].UserRadiusMultiplier = scale;
-                    _effects[i].UserEmitterScale = 1f;
-                }
-
-                if (_effects[i] != null)
-                {
-                    _effects[i].WorldMatrix = _subpartRotor.WorldMatrix;
-                    _effects[i].Stop();
-                    _blockParticleStopped = true;
-                }
+                if (Session.Enforced.Debug == 1) Log.Line($"Particle is null, creating - tick:{_tick.ToString()}");
+                var scale = Definition.ParticleScale;
+                MyParticlesManager.TryCreateParticleEffect("EmitterEffect", out _effect);
+                _effect.UserScale = 1f;
+                _effect.UserRadiusMultiplier = scale;
+                _effect.UserEmitterScale = 1f;
+            }
+            else
+            {
+                _effect.WorldMatrix = _subpartRotor.WorldMatrix;
+                _effect.Stop();
+                _blockParticleStopped = true;
             }
         }
 
         private void BlockParticleUpdate()
         {
+            if (_effect == null || !_effect.IsStopped) return; // added IsStopped might prevent from looping.
 
             var testDist = Definition.ParticleDist;
 
@@ -232,47 +312,33 @@ namespace DefenseShields
             var predictedMatrix = Emitter.PositionComp.WorldMatrix;
             predictedMatrix.Translation = spawnPos;
             if (_sVelSqr > 4000) predictedMatrix.Translation = spawnPos + Emitter.CubeGrid.Physics.GetVelocityAtPoint(Emitter.PositionComp.WorldMatrix.Translation) * MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS;
-            for (int i = 0; i < _effects.Length; i++)
-                if (_effects[i] != null)
-                {
-                    _effects[i].WorldMatrix = predictedMatrix;
-                }
+            _effect.WorldMatrix = predictedMatrix;
         }
 
         private void BlockParticleStop()
         {
             _blockParticleStopped = true;
-            for (int i = 0; i < _effects.Length; i++)
-            {
-                if (_effects[i] != null)
-                {
-                    _effects[i].Stop();
-                    _effects[i].Close(false, true);
-                }
-            }
+            if (_effect == null) return;
 
+            _effect.Stop();
+            _effect.Close(false, true);
         }
 
         private void BlockParticleStart()
         {
+            if (_effect == null || !_effect.IsStopped) return;
+
             var scale = Definition.ParticleScale;
-
-            for (int i = 0; i < _effects.Length; i++)
-            {
-                if (!_effects[i].IsStopped) continue;
-
-                MyParticlesManager.TryCreateParticleEffect("EmitterEffect", out _effects[i]);
-                _effects[i].UserScale = 1f;
-                _effects[i].UserRadiusMultiplier = scale;
-                _effects[i].UserEmitterScale = 1f;
-                BlockParticleUpdate();
-            }
+            MyParticlesManager.TryCreateParticleEffect("EmitterEffect", out _effect);
+            _effect.UserScale = 1f;
+            _effect.UserRadiusMultiplier = scale;
+            _effect.UserEmitterScale = 1f;
+            BlockParticleUpdate();
         }
         #endregion
 
         private void CheckShieldLineOfSight()
         {
-
             _blocksLos.Clear();
             _noBlocksLos.Clear();
             _vertsSighted.Clear();

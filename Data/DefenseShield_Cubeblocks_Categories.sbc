@@ -17,9 +17,9 @@
 		<string>DSControlLCD</string>
 		<string>DSControlLarge</string>
 		<string>DSControlSmall</string>
-		<string>DefenseShieldsLS</string>
-		<string>DefenseShieldsSS</string>
-		<string>DefenseShieldsST</string>
+		<string>EmitterL</string>
+		<string>EmitterS</string>
+		<string>EmitterST</string>
 		<string>DS_Supergen</string>
       </ItemIds>
     </Category>
@@ -186,52 +186,7 @@
       <DestroyEffect>BlockDestroyedExplosion_Small</DestroyEffect>
       <DestroySound>WepSmallWarheadExpl</DestroySound>
     </Definition> 
-    <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
-      <Id>
-        <TypeId>UpgradeModule</TypeId>
-        <SubtypeId>DefenseShieldsLS</SubtypeId>
-      </Id>
-      <DisplayName>Ship Shield Large</DisplayName>
-      <Icon>Textures\GUI\Icons\Cubes\ShipShield_Icon.dds</Icon>
-      <CubeSize>Large</CubeSize>
-      <BlockTopology>TriangleMesh</BlockTopology>
-	<Size x="1" y="1" z="1" />
-      <ModelOffset x="0" y="0" z="0" />
-	<Model>Models\Cubes\large\DefenseShieldBase_Large.mwm</Model>
-      <Components>
-        <Component Subtype="SteelPlate" Count="300" />
-        <Component Subtype="SmallTube" Count="40" />
-        <Component Subtype="Construction" Count="20" />
-		<Component Subtype="ShieldComponent" Count="400" />
-        <Component Subtype="Construction" Count="20" />
-        <Component Subtype="MetalGrid" Count="60" />
-        <Component Subtype="Superconductor" Count="200" />
-        <Component Subtype="Construction" Count="20" />
-		<Component Subtype="GravityGenerator" Count="40" />
-        <Component Subtype="Detector" Count="40" />
-        <Component Subtype="MetalGrid" Count="50" />
-        <Component Subtype="RadioCommunication" Count="20" />
-        <Component Subtype="Computer" Count="500" />
-        <Component Subtype="Construction" Count="20" />
-        <Component Subtype="SteelPlate" Count="300" />
-      </Components>
-      <CriticalComponent Subtype="Computer" Index="0" />
-      <MountPoints>
-		<MountPoint Side="Bottom" StartX="0.20" StartY="0.20" EndX="0.80" EndY="0.80" />
-      </MountPoints>
-      <BuildProgressModels>
-		<Model BuildPercentUpperBound="1.00" File="Models\Cubes\large\DefenseShieldBase_Large_Constr1.mwm" />
-      </BuildProgressModels>
-      <BlockPairName>DefenseShield</BlockPairName>
-      <EdgeType>Light</EdgeType>
-      <MirroringY>Z</MirroringY>
-      <MirroringZ>Y</MirroringZ>
-      <PrimarySound>Transporter</PrimarySound>
-      <BuildTimeSeconds>90</BuildTimeSeconds>
-      <RequiredPowerInput>500</RequiredPowerInput>
-      <DamageEffectId>214</DamageEffectId>
-      <DamagedSound>ParticleElectrical</DamagedSound>
-    </Definition>
+
 	<Definition xsi:type="MyObjectBuilder_RefineryDefinition">
       <Id>
         <TypeId>Refinery</TypeId>
@@ -300,12 +255,60 @@
       <DestroyEffect>BlockDestroyedExplosion_Large</DestroyEffect>
       <DestroySound>WepSmallWarheadExpl</DestroySound>
     </Definition>
+
     <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
         <TypeId>UpgradeModule</TypeId>
-        <SubtypeId>DefenseShieldsSS</SubtypeId>
+        <SubtypeId>EmitterL</SubtypeId>
       </Id>
-      <DisplayName>Ship Shield Small</DisplayName>
+      <DisplayName>Large Emitter</DisplayName>
+      <Icon>Textures\GUI\Icons\Cubes\ShipShield_Icon.dds</Icon>
+      <CubeSize>Large</CubeSize>
+      <BlockTopology>TriangleMesh</BlockTopology>
+      <Size x="1" y="1" z="1" />
+      <ModelOffset x="0" y="0" z="0" />
+      <Model>Models\Cubes\large\DefenseShieldBase_Large.mwm</Model>
+      <Components>
+        <Component Subtype="SteelPlate" Count="300" />
+        <Component Subtype="SmallTube" Count="40" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="ShieldComponent" Count="400" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="MetalGrid" Count="60" />
+        <Component Subtype="Superconductor" Count="200" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="GravityGenerator" Count="40" />
+        <Component Subtype="Detector" Count="40" />
+        <Component Subtype="MetalGrid" Count="50" />
+        <Component Subtype="RadioCommunication" Count="20" />
+        <Component Subtype="Computer" Count="500" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="SteelPlate" Count="300" />
+      </Components>
+      <CriticalComponent Subtype="Computer" Index="0" />
+      <MountPoints>
+        <MountPoint Side="Bottom" StartX="0.20" StartY="0.20" EndX="0.80" EndY="0.80" />
+      </MountPoints>
+      <BuildProgressModels>
+        <Model BuildPercentUpperBound="1.00" File="Models\Cubes\large\DefenseShieldBase_Large_Constr1.mwm" />
+      </BuildProgressModels>
+      <BlockPairName>Emitter</BlockPairName>
+      <EdgeType>Light</EdgeType>
+      <MirroringY>Z</MirroringY>
+      <MirroringZ>Y</MirroringZ>
+      <Sound>BlockGravityGen</Sound>
+      <BuildTimeSeconds>90</BuildTimeSeconds>
+      <RequiredPowerInput>500</RequiredPowerInput>
+      <DamageEffectId>214</DamageEffectId>
+      <DamagedSound>ParticleElectrical</DamagedSound>
+    </Definition>
+
+    <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
+      <Id>
+        <TypeId>UpgradeModule</TypeId>
+        <SubtypeId>EmitterS</SubtypeId>
+      </Id>
+      <DisplayName>Small Emitter</DisplayName>
       <Icon>Textures\GUI\Icons\Cubes\ShipShield_Icon.dds</Icon>
       <CubeSize>Small</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -337,11 +340,11 @@
       <BuildProgressModels>
 		<Model BuildPercentUpperBound="1.00" File="Models\Cubes\small\DefenseShieldBaseS_Small_Constr1.mwm" />
       </BuildProgressModels>
-      <BlockPairName>DefenseShield</BlockPairName>
+      <BlockPairName>Emitter</BlockPairName>
       <EdgeType>Light</EdgeType>
       <MirroringY>Z</MirroringY>
       <MirroringZ>Y</MirroringZ>
-      <PrimarySound>Transporter</PrimarySound>
+      <Sound>BlockGravityGen</Sound>
       <BuildTimeSeconds>45</BuildTimeSeconds>
       <RequiredPowerInput>25</RequiredPowerInput>
       <DamageEffectId>214</DamageEffectId>
@@ -351,9 +354,9 @@
     <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
         <TypeId>UpgradeModule</TypeId>
-        <SubtypeId>DefenseShieldsST</SubtypeId>
+        <SubtypeId>EmitterST</SubtypeId>
       </Id>
-      <DisplayName>Station Shield</DisplayName>
+      <DisplayName>Station Emitter</DisplayName>
       <Icon>Textures\GUI\Icons\Cubes\ShipShield_Icon.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -384,11 +387,11 @@
       <BuildProgressModels>
 		<Model BuildPercentUpperBound="1.00" File="Models\Cubes\large\DefenseShieldStation_Large_Constr1.mwm" />
       </BuildProgressModels>
-      <BlockPairName>StationShield</BlockPairName>
+      <BlockPairName>StationEmitter</BlockPairName>
       <EdgeType>Light</EdgeType>
       <MirroringY>Z</MirroringY>
       <MirroringZ>Y</MirroringZ>
-      <PrimarySound>Transporter</PrimarySound>
+      <Sound>BlockGravityGen</Sound>
       <BuildTimeSeconds>180</BuildTimeSeconds>
       <RequiredPowerInput>1000</RequiredPowerInput>
       <DamageEffectId>214</DamageEffectId>
@@ -483,37 +486,5 @@
       <PhysicalMaterial>Metal</PhysicalMaterial>
       <EmissiveColorPreset>Shield</EmissiveColorPreset>
     </Definition>
-	<!-- End Shield Modulator -->
-
-    <!--
-    <Definition>
-      <Id>
-        <TypeId>CubeBlock</TypeId>
-        <SubtypeId>dShield</SubtypeId>
-      </Id>
-      <DisplayName>Shield</DisplayName>
-      <Icon>Textures\GUI\Icons\Fake.dds</Icon>
-      <Public>false</Public>
-      <CubeSize>Large</CubeSize>
-      <BlockTopology>TriangleMesh</BlockTopology>
-      <Size x="1" y="1" z="1" />
-      <ModelOffset x="0" y="0" z="0" />
-      <Model></Model>
-      <Components>
-        <Component Subtype="SteelPlate" Count="12" />
-        <Component Subtype="Construction" Count="8" />
-        <Component Subtype="LargeTube" Count="4" />
-      </Components>
-      <CriticalComponent Subtype="Construction" Index="0" />
-      <MountPoints>
-        <MountPoint Side="Bottom" StartX="0" StartY="0.37" EndX="1" EndY="0.63" />
-        <MountPoint Side="Left" StartX="0.37" StartY="0" EndX="0.63" EndY="0.1" />
-        <MountPoint Side="Right" StartX="0.37" StartY="0" EndX="0.63" EndY="0.1" />
-      </MountPoints>
-      <BlockPairName>LargeShield</BlockPairName>
-      <EdgeType>Light</EdgeType>
-      <BuildTimeSeconds>10</BuildTimeSeconds>
-    </Definition>
-    -->
   </CubeBlocks> 
 </Definitions>

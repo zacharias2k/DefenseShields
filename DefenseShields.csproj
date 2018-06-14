@@ -185,14 +185,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Audio\ShieldHitNormalHigh.xwm" />
-    <None Include="Data\Audio.sbc" />
-    <None Include="Data\BlockCategories_DefenseShields.sbc" />
-    <None Include="Data\DefenseShields.sbc">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Data\EmitterEffect.sbc" />
-    <None Include="Data\EntityComponents.sbc" />
-    <None Include="Data\TransparentMaterials.sbc" />
+    <None Include="Data\DefenseShield_Audio.sbc" />
+    <None Include="Data\DefenseShield_Component_Blueprint.sbc" />
+    <None Include="Data\DefenseShield_Cubeblocks_Categories.sbc" />
+    <None Include="Data\DefenseShield_EmitterEffect.sbc" />
+    <None Include="Data\DefenseShield_EntityComponents.sbc" />
+    <None Include="Data\DefenseShield_TransparentMaterials.sbc" />
     <None Include="tools\Monitor DS.ps1" />
     <None Include="tools\Monitor SE Error Log.ps1" />
     <None Include="tools\Monitor SE Log.ps1" />
@@ -257,7 +255,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\Slider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Utils.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Render.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Shields.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Controller.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Structure\StructureBuilder.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\Triangle3.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\TriangleMeshShape.cs" />

@@ -27,6 +27,8 @@ namespace DefenseShields
         {
             try
             {
+
+
                 if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
                 if (!BlockFunctional()) return;
@@ -57,9 +59,9 @@ namespace DefenseShields
                     } 
                 }
 
-                ShieldActive = ShieldComp.ControlBlockWorking && ShieldComp.Emitters.Count != 0;
-                if (_prevShieldActive == false && ShieldActive) ShieldComp.IsStarting = true;
-                else if (ShieldComp.IsStarting && _prevShieldActive && ShieldActive) ShieldComp.IsStarting = false;
+                ShieldActive = ShieldComp.ControlBlockWorking && ShieldComp.EmittersWorking;
+                if (_prevShieldActive == false && ShieldActive) ShieldComp.ShieldIsStarting = true;
+                else if (ShieldComp.ShieldIsStarting && _prevShieldActive && ShieldActive) ShieldComp.ShieldIsStarting = false;
                 _prevShieldActive = ShieldActive;
 
                 Timing();
@@ -90,9 +92,9 @@ namespace DefenseShields
                         GetModulationInfo();
                         if (_reModulationLoop > -1) return;
                     }
-                    if (ShieldComp.IsStarting)
+                    if (ShieldComp.ShieldIsStarting)
                     {
-                        if (ShieldComp.IsStarting && ShieldComp.GridIsMobile && FieldShapeBlocked()) return;
+                        if (ShieldComp.ShieldIsStarting && ShieldComp.GridIsMobile && FieldShapeBlocked()) return;
                         if (!_hidePassiveCheckBox.Getter(Shield).Equals(true)) _shellPassive.Render.UpdateRenderObject(true);
 
                         _shellActive.Render.UpdateRenderObject(true);
@@ -285,9 +287,8 @@ namespace DefenseShields
             if (ShieldComp.EmitterEvent)
             {
                 Log.Line($"Emitter event detected");
-                var online = UpdateEmitterInfo();
                 ShieldComp.EmitterEvent = false;
-                if (!online) _genericDownLoop = 0;
+                if (!ShieldComp.EmittersWorking) _genericDownLoop = 0;
             }
 
             if (!Shield.IsWorking || !Shield.IsFunctional)
@@ -372,7 +373,7 @@ namespace DefenseShields
                 _genericDownLoop++;
                 if (_genericDownLoop == 60)
                 {
-                    if (!UpdateEmitterInfo()) _genericDownLoop = 0;
+                    if (!ShieldComp.EmittersWorking) _genericDownLoop = 0;
                     else
                     {
                         ShieldOffline = false;
@@ -386,7 +387,7 @@ namespace DefenseShields
             _shieldDownLoop++;
             if (_shieldDownLoop == 1200)
             {
-                if (!UpdateEmitterInfo()) _genericDownLoop = 0;
+                if (!ShieldComp.EmittersWorking) _genericDownLoop = 0;
                 else
                 {
                     ShieldOffline = false;
@@ -396,20 +397,6 @@ namespace DefenseShields
                 var nerfer = nerf ? Session.Enforced.Nerf : 1f;
                 ShieldBuffer = (_shieldMaxBuffer / 25) * nerfer; // replace this with something that scales based on charge rate
             }
-        }
-
-        private bool UpdateEmitterInfo()
-        {
-            var onlineEmitter = false;
-            foreach (var emitter in ShieldComp.Emitters)
-            {
-                if (emitter.EmitterOnline)
-                {
-                    onlineEmitter = true;
-                    break;
-                }
-            }
-            return onlineEmitter;
         }
 
         private bool WarmUpSequence()
@@ -479,14 +466,14 @@ namespace DefenseShields
         {
             _sVelSqr = Shield.CubeGrid.Physics.LinearVelocity.LengthSquared();
             _sAvelSqr = Shield.CubeGrid.Physics.AngularVelocity.LengthSquared();
-            if (_sVelSqr > 0.00001 || _sAvelSqr > 0.00001 || ShieldComp.IsStarting) ShieldComp.IsMoving = true;
-            else ShieldComp.IsMoving = false;
+            if (_sVelSqr > 0.00001 || _sAvelSqr > 0.00001 || ShieldComp.ShieldIsStarting) ShieldComp.GridIsMoving = true;
+            else ShieldComp.GridIsMoving = false;
 
             _shapeAdjusted = !_ellipsoidAdjust.Equals(_oldEllipsoidAdjust) || !_gridHalfExtents.Equals(_oldGridHalfExtents);
             _oldGridHalfExtents = _gridHalfExtents;
             _oldEllipsoidAdjust = _ellipsoidAdjust;
-            _entityChanged = Shield.CubeGrid.Physics.IsMoving || ShieldComp.IsStarting;
-            if (_entityChanged || ShieldComp.BoundingRange <= 0 || ShieldComp.IsStarting) CreateShieldShape();
+            _entityChanged = Shield.CubeGrid.Physics.IsMoving || ShieldComp.ShieldIsStarting;
+            if (_entityChanged || ShieldComp.BoundingRange <= 0 || ShieldComp.ShieldIsStarting) CreateShieldShape();
         }
 
         private void CreateShieldShape()
@@ -868,7 +855,7 @@ namespace DefenseShields
                     case 3:
                         {
                             FriendlyCache.Clear();
-                            foreach (var sub in ShieldComp.SubGrids) FriendlyCache.Add(sub);
+                            foreach (var sub in ShieldComp.GetSubGrids) FriendlyCache.Add(sub);
                             FriendlyCache.Add(_shield);
                         }
                         break;
@@ -927,7 +914,7 @@ namespace DefenseShields
                 _shield?.Close();
                 _shellPassive?.Close();
                 _shellActive?.Close();
-                Shield?.CubeGrid.Components.Remove(typeof(ShieldGridComponent), this);
+                //Shield?.CubeGrid.Components.Remove(typeof(ShieldGridComponent), this);
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
                 Session.Instance.Components.Remove(this);
             }
@@ -943,7 +930,6 @@ namespace DefenseShields
                 if (Session.Instance.Components.Contains(this)) Session.Instance.Components.Remove(this);
                 _power = 0f;
                 Icosphere = null;
-                //Shield?.CubeGrid.Components.Remove(typeof(ShieldGridComponent), this);
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
                 if (AllInited) Sink.Update();
             }

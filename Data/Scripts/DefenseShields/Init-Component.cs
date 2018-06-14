@@ -39,6 +39,7 @@ namespace DefenseShields
                 Sink.Init(MyStringHash.GetOrCompute("Defense"), ResourceInfo);
                 Sink.AddType(ref ResourceInfo);
 
+
                 base.Init(objectBuilder);
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
@@ -48,9 +49,10 @@ namespace DefenseShields
                 if (!_shields.ContainsKey(Entity.EntityId)) _shields.Add(Entity.EntityId, this);
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
                 Session.Instance.Components.Add(this);
-                Shield.CubeGrid.Components.Add(ShieldComp);
+
                 StorageSetup();
                 ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
+
                 if (Session.Enforced.Debug == 1) Log.Line($"pre-Init complete");
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
@@ -110,13 +112,16 @@ namespace DefenseShields
                     return;
                 }
 
-                if (AllInited || !Shield.IsFunctional || ConnectCheck(true)) return;
+                if (AllInited || !Shield.IsFunctional) return;
+
+                if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>()) Shield.CubeGrid.Components.Add(ShieldComp);
+
+                if (ConnectCheck(true)) return;
 
                 if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
 
                 if (!MainInit && Shield.IsFunctional)
                 {
-
                     var enableState = Shield.Enabled;
 
                     if (enableState)

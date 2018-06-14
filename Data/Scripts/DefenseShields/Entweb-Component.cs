@@ -77,7 +77,7 @@ namespace DefenseShields
                     }
                 }
             }
-            if (_enablePhysics || ShieldComp.IsMoving || _shapeAdjusted)
+            if (_enablePhysics || ShieldComp.GridIsMoving || _shapeAdjusted)
             {
                 Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, ShieldComp.PhysicsOutside);
                 Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, ShieldComp.PhysicsOutsideLow);
@@ -233,7 +233,7 @@ namespace DefenseShields
                     {
                         ShieldGridComponent sComponent;
                         grid.Components.TryGet(out sComponent);
-                        foreach (var subGrid in sComponent.SubGrids) FriendlyCache.Add(subGrid);
+                        foreach (var subGrid in sComponent.GetSubGrids) FriendlyCache.Add(subGrid);
                         return Ent.Authenticated;
                     }
                 }

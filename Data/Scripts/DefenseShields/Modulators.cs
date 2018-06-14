@@ -79,14 +79,10 @@ namespace DefenseShields
                 if (_lCount == 10) _lCount = 0;
             }
 
-            if (ShieldComp == null) MainInit = false;
             if (!MainInit)
             {
                 Modulator.CubeGrid.Components.TryGet(out ShieldComp);
-                if (ShieldComp == null)
-                {
-                    return;
-                }
+                if (ShieldComp == null) return;
                 MainInit = true;
                 Log.Line($"Modulator initted");
             }
@@ -259,12 +255,9 @@ namespace DefenseShields
         {
             try
             {
-                if (!Entity.MarkedForClose)
-                {
-                    return;
-                }
+                if (_modulators.ContainsKey(Modulator.EntityId)) _modulators.Remove(Modulator.EntityId);
                 Modulator?.CubeGrid.Components.Remove(typeof(ModulatorGridComponent), this);
-                Session.Instance.Modulators.Remove(this);
+                if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
@@ -274,7 +267,7 @@ namespace DefenseShields
         {
             try
             {
-                if (_modulators.ContainsKey(Entity.EntityId)) _modulators.Remove(Entity.EntityId);
+                Modulator?.CubeGrid.Components.Remove(typeof(ModulatorGridComponent), this);
                 if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }

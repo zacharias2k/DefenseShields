@@ -88,23 +88,7 @@ namespace DefenseShields.Support
     public class ShieldGridComponent : MyEntityComponentBase
     {
         private static List<ShieldGridComponent> gridShield = new List<ShieldGridComponent>();
-        public HashSet<IMyCubeGrid> SubGrids = new HashSet<IMyCubeGrid>();
-        public HashSet<Emitters> Emitters = new HashSet<Emitters>();
         public readonly DefenseShields DefenseShields;
-
-        public string Password;
-        public bool GridIsMobile;
-        public bool BlockWorking;
-        public bool IsMoving;
-        public bool IsStarting;
-        public bool Warm;
-        public bool EmitterUpdate;
-        public bool CheckEmitters;
-
-        public double Range;
-        public Vector3D[] PhysicsHigh = new Vector3D[642];
-        public Vector3D[] PhysicsLow = new Vector3D[162];
-        public Vector3D[] PhysicsIn = new Vector3D[642];
 
         public ShieldGridComponent(DefenseShields defenseShields)
         {
@@ -151,77 +135,33 @@ namespace DefenseShields.Support
             return true;
         }
 
-        public HashSet<IMyCubeGrid> GetSubGrids
-        {
-            get { return SubGrids; }
-            set { SubGrids = value; }
-        }
+        public HashSet<IMyCubeGrid> GetSubGrids { get; set; } = new HashSet<IMyCubeGrid>();
 
-        public HashSet<Emitters> RegisteredEmitters
-        {
-            get { return Emitters; }
-            set { Emitters = value; }
-        }
+        public Vector3D[] PhysicsOutside { get; set; } = new Vector3D[642];
 
-        public string ModulationPassword
-        {
-            get { return Password; }
-            set { Password = value; }
-        }
+        public Vector3D[] PhysicsOutsideLow { get; set; } = new Vector3D[162];
 
-        public bool ControlBlockWorking
-        {
-            get { return BlockWorking; }
-            set { BlockWorking = value; }
-        }
+        public Vector3D[] PhysicsInside { get; set; } = new Vector3D[642];
 
-        public bool GridIsMoving
-        {
-            get { return IsMoving; }
-            set { IsMoving = value; }
-        }
+        public bool EmittersWorking { get; set; }
 
-        public bool ShieldIsStarting
-        {
-            get { return IsStarting; }
-            set { IsStarting = value; }
-        }
+        public string ModulationPassword { get; set; }
 
-        public bool WarmedUp
-        {
-            get { return Warm; }
-            set { Warm = value; }
-        }
+        public bool ControlBlockWorking { get; set; }
 
-        public bool EmitterEvent
-        {
-            get { return EmitterUpdate; }
-            set { EmitterUpdate = value; }
-        }
+        public bool GridIsMobile { get; set; }
 
-        public double BoundingRange
-        {
-            get { return Range; }
-            set { Range = value; }
-        }
+        public bool CheckEmitters { get; set; }
 
-        public Vector3D[] PhysicsOutside
-        {
-            get { return PhysicsHigh; }
-            set { PhysicsHigh = value; }
-        }
+        public bool GridIsMoving { get; set; }
 
-        public Vector3D[] PhysicsOutsideLow
-        {
-            get { return PhysicsLow; }
-            set { PhysicsLow = value; }
-        }
+        public bool ShieldIsStarting { get; set; }
 
-        public Vector3D[] PhysicsInside
-        {
-            get { return PhysicsIn; }
-            set { PhysicsIn = value; }
-        }
+        public bool WarmedUp { get; set; }
+
+        public bool EmitterEvent { get; set; }
+
+        public double BoundingRange { get; set; }
 
         public override string ComponentTypeDebugString
         {
@@ -307,6 +247,66 @@ namespace DefenseShields.Support
             get { return Grids; }
             set { Grids = value; }
         }
+
+        public override string ComponentTypeDebugString
+        {
+            get { return "Shield"; }
+        }
+    }
+	public class EmitterGridComponent : MyEntityComponentBase
+    {
+        private static List<EmitterGridComponent> gridEmitters = new List<EmitterGridComponent>();
+        public Emitters MasterComp;
+
+        public EmitterGridComponent(Emitters masterComp)
+        {
+            MasterComp = masterComp;
+        }
+
+        public override void OnAddedToContainer()
+        {
+            base.OnAddedToContainer();
+
+            if (Container.Entity.InScene)
+            {
+                gridEmitters.Add(this);
+            }
+        }
+
+        public override void OnBeforeRemovedFromContainer()
+        {
+
+            if (Container.Entity.InScene)
+            {
+                gridEmitters.Remove(this);
+            }
+
+            base.OnBeforeRemovedFromContainer();
+        }
+
+        public override void OnAddedToScene()
+        {
+            base.OnAddedToScene();
+
+            gridEmitters.Add(this);
+        }
+
+        public override void OnRemovedFromScene()
+        {
+            gridEmitters.Remove(this);
+
+            base.OnRemovedFromScene();
+        }
+
+        public override bool IsSerialized()
+        {
+            return true;
+        }
+
+        public HashSet<Emitters> RegisteredSlaveComps { get; set; } = new HashSet<Emitters>();
+
+        public bool PerformEmitterDiagnostic { get; set; }
+
 
         public override string ComponentTypeDebugString
         {
