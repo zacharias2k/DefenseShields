@@ -180,6 +180,7 @@ namespace DefenseShields
                 {
                     StandbyMaster = false;
                     EGridComp.MasterComp.StandbyMaster = true;
+                    EGridComp.MasterComp = this;
                 }
 
                 EmitterOnline = true;
