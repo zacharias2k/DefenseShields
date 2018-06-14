@@ -722,6 +722,7 @@ namespace DefenseShields
             return new Vector3D((vec4.X / vec4.W), (vec4.Y / vec4.W), (vec4.Z / vec4.W));
         }
 
+// DS_Shield Inside Icon
         private void UpdateIcon()
         {
             var position = new Vector3D(_shieldIconPos.X, _shieldIconPos.Y, 0);
@@ -735,23 +736,23 @@ namespace DefenseShields
             var cameraWorldMatrix = MyAPIGateway.Session.Camera.WorldMatrix;
             position = Vector3D.Transform(new Vector3D(position.X, position.Y, -.1), cameraWorldMatrix);
 
-            var material = MyStringId.GetOrCompute("DS_GUI");
+			var material2 = MyStringId.GetOrCompute("DS_ShieldInside");
 
             var origin = position;
             var left = cameraWorldMatrix.Left;
             var up = cameraWorldMatrix.Up;
-            scale = 0.1 * scale;
+            scale = 0.07 * scale;
 
             Color color;
-            if (_shieldPercent > 80) color = Color.GhostWhite;
+            if (_shieldPercent > 80) color = Color.White;
             else if (_shieldPercent > 60) color = Color.Blue;
             else if (_shieldPercent > 40) color = Color.Yellow;
             else if (_shieldPercent > 20) color = Color.Orange;
-            else color = Color.DarkRed;
+            else color = Color.Red;
 
-            MyTransparentGeometry.AddBillboardOriented(material, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
-        }
-
+            MyTransparentGeometry.AddBillboardOriented(material2, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
+        }		
+		
         public void Draw(int onCount, bool sphereOnCamera)
         {
             _onCount = onCount;
@@ -762,7 +763,7 @@ namespace DefenseShields
 
             if (!enemy && !MyAPIGateway.Session.Config.MinimalHud && FriendlyCache.Contains(MyAPIGateway.Session.Player.Character))
             {
-                UpdateIcon();
+				UpdateIcon();
             }
 
             var passiveVisible = !(_hidePassiveCheckBox.Getter(Shield).Equals(true) && !enemy);
