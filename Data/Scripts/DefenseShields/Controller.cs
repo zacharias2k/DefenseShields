@@ -35,8 +35,11 @@ namespace DefenseShields
 
                 if (ServerUpdate) SyncControlsServer();
                 SyncControlsClient();
-
+                if (_count == 0) Log.Line($"{ShieldComp.EmitterEvent}- {ShieldComp.EmittersWorking} - {ShieldComp.EmitterEvent} - {ShieldComp.EmitterEvent}");
+                
                 if (ShieldComp.GridIsMobile) MobileUpdate();
+                else _shapeAdjusted = false;
+
                 if (_updateDimensions) RefreshDimensions();
 
                 if (_fitChanged || (_lCount == 0 && _count == 0 && _blocksChanged))
@@ -707,41 +710,25 @@ namespace DefenseShields
         #endregion
 
         #region Shield Draw
-        private void UpdateCameraViewProjInvMatrix()
-        {
-            var cam = MyAPIGateway.Session.Camera;
-            var aspectRatio = MyAPIGateway.Session.Camera.ViewportSize.X / MyAPIGateway.Session.Camera.ViewportSize.Y;
-            var projectionMatrix = MatrixD.CreatePerspectiveFieldOfView(cam.FovWithZoom, aspectRatio, Math.Min(4f, cam.NearPlaneDistance), cam.FarPlaneDistance);
-            _viewProjInv = MatrixD.Invert(cam.ViewMatrix * projectionMatrix);
-        }
-
-        private Vector3D HudToWorld(Vector2 hud)
-        {
-            var vec4 = new Vector4D(hud.X, hud.Y, 0d, 1d);
-            Vector4D.Transform(ref vec4, ref _viewProjInv, out vec4);
-            return new Vector3D((vec4.X / vec4.W), (vec4.Y / vec4.W), (vec4.Z / vec4.W));
-        }
-
-// DS_Shield Inside Icon
         private void UpdateIcon()
         {
+            var material = MyStringId.GetOrCompute("DS_ShieldInside");
+
             var position = new Vector3D(_shieldIconPos.X, _shieldIconPos.Y, 0);
             var fov = MyAPIGateway.Session.Camera.FovWithZoom;
             double aspectratio = MyAPIGateway.Session.Camera.ViewportSize.X / MyAPIGateway.Session.Camera.ViewportSize.Y;
             var scale = 0.075 * Math.Tan(fov / 2);
-
             position.X *= scale * aspectratio;
             position.Y *= scale;
 
             var cameraWorldMatrix = MyAPIGateway.Session.Camera.WorldMatrix;
             position = Vector3D.Transform(new Vector3D(position.X, position.Y, -.1), cameraWorldMatrix);
 
-			var material2 = MyStringId.GetOrCompute("DS_ShieldInside");
-
             var origin = position;
             var left = cameraWorldMatrix.Left;
             var up = cameraWorldMatrix.Up;
-            scale = 0.07 * scale;
+            const double scaler = 0.07d;
+            scale = scaler * scale;
 
             Color color;
             if (_shieldPercent > 80) color = Color.White;
@@ -750,7 +737,7 @@ namespace DefenseShields
             else if (_shieldPercent > 20) color = Color.Orange;
             else color = Color.Red;
 
-            MyTransparentGeometry.AddBillboardOriented(material2, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
+            MyTransparentGeometry.AddBillboardOriented(material, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
         }		
 		
         public void Draw(int onCount, bool sphereOnCamera)

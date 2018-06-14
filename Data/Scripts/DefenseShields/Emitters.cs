@@ -88,14 +88,25 @@ namespace DefenseShields
                 }
 
                 if (!MainInit) PostInit();
-                if (ShieldComp == null || EGridComp?.MasterComp == null) return;
+                Log.Line($"{Emitter.IsFunctional} - {Emitter.IsWorking}");
+                if (ShieldComp == null || EGridComp == null || !Emitter.IsFunctional || !Emitter.IsWorking) return;
+                if (EGridComp.MasterComp == null)
+                {
+                    if (StandbyMaster)
+                    {
+                        Log.Line($"standby master taking over MasterComp");
+                        EGridComp.MasterComp = this;
+                        StandbyMaster = false;
+                    }
+                    else return;
+                }
 
                 if (Emitter.Enabled != EnablePrevState) UpdateEnableState();
 
-                if (Master && _shieldLineOfSight && Emitter.Enabled) ShieldComp.EmittersWorking = true;
-                else if (Master) ShieldComp.EmitterEvent = false;
+                if (Master && !StandbyMaster && _shieldLineOfSight && Emitter.Enabled) ShieldComp.EmittersWorking = true;
+                else if (Master && !StandbyMaster) ShieldComp.EmittersWorking = false;
 
-                if (!Emitter.Enabled || !ShieldComp.ControlBlockWorking)
+                if (!Emitter.Enabled || !ShieldComp.ControlBlockWorking || StandbyMaster)
                 {
                     if (!_blockParticleStopped && !Session.DedicatedServer) BlockParticleStop();
                     return;
@@ -130,18 +141,9 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
 
-        public override void UpdateAfterSimulation()
-        {
-            try
-            {
-            }
-            catch (Exception ex) { Log.Line($"Exception in UpdateAfterSimulation: {ex}"); }
-        }
-
         private void PostInit()
         {
             Definition = DefinitionManager.Get(Emitter.BlockDefinition.SubtypeId);
-            Emitter.CubeGrid.Components.TryGet(out ShieldComp);
             if (!Emitter.CubeGrid.Components.Has<ShieldGridComponent>() && Definition.Name.Equals("EmitterST"))
             {
                 EGridComp = new EmitterGridComponent(this);
@@ -153,13 +155,14 @@ namespace DefenseShields
             else if (Definition.Name.Equals("EmitterST"))
             {
                 Emitter.CubeGrid.Components.TryGet(out EGridComp);
-                EGridComp.MasterComp.StandbyMaster = true;
+                if (EGridComp.MasterComp != null) EGridComp.MasterComp.StandbyMaster = true;
                 EGridComp.MasterComp = this;
                 Master = true;
                 StandbyMaster = false;
             }
             else Emitter.CubeGrid.Components.TryGet(out EGridComp);
 
+            Emitter.CubeGrid.Components.TryGet(out ShieldComp);
             if (ShieldComp == null) return;
 
             Entity.TryGetSubpart("Rotor", out _subpartRotor);
@@ -407,6 +410,14 @@ namespace DefenseShields
                 {
                     return;
                 }
+                Log.Line($"OnRemovedFromScene");
+                if (EGridComp?.MasterComp == this)
+                {
+                    Log.Line($"Master removed from scene");
+                    ShieldComp.EmittersWorking = false;
+                    ShieldComp.EmitterEvent = true;
+                    EGridComp.MasterComp = null;
+                }
                 Session.Instance.Emitters.Remove(this);
                 BlockParticleStop();
             }
@@ -418,8 +429,16 @@ namespace DefenseShields
         {
             try
             {
+                Log.Line($"Close");
                 if (_emitters.ContainsKey(Entity.EntityId)) _emitters.Remove(Entity.EntityId);
                 if (Session.Instance.Emitters.Contains(this)) Session.Instance.Emitters.Remove(this);
+                if (EGridComp?.MasterComp == this)
+                {
+                    Log.Line($"Master removed on close");
+                    ShieldComp.EmittersWorking = false;
+                    ShieldComp.EmitterEvent = true;
+                    EGridComp.MasterComp = null;
+                }
                 BlockParticleStop();
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }

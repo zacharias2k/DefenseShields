@@ -82,7 +82,7 @@ namespace DefenseShields
         private bool _enablePhysics = true;
         private bool _shapeLoaded = true;
 
-        private Vector2D _shieldIconPos = new Vector2D(-0.01, -0.89);
+        private Vector2D _shieldIconPos = new Vector2D(-0.91, -0.87);
 
         internal Vector3D ShieldSize { get; set; }
         public Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
