@@ -35,7 +35,7 @@ namespace DefenseShields
 
                 if (ServerUpdate) SyncControlsServer();
                 SyncControlsClient();
-                if (_count == 0) Log.Line($"{ShieldComp.EmitterEvent}- {ShieldComp.EmittersWorking} - {ShieldComp.EmitterEvent} - {ShieldComp.EmitterEvent}");
+                //if (_count == 0) Log.Line($"{ShieldComp.EmitterEvent}- {ShieldComp.EmittersWorking} - {ShieldComp.EmitterEvent} - {ShieldComp.EmitterEvent}");
                 
                 if (ShieldComp.GridIsMobile) MobileUpdate();
                 else _shapeAdjusted = false;
@@ -121,7 +121,6 @@ namespace DefenseShields
                 {
                     SyncThreadedEnts();
                 }
-
                 if (Session.Enforced.Debug == 1) Dsutil1.StopWatchReport($"MainLoop: ShieldId:{Shield.EntityId.ToString()} - Active: {ShieldActive} - Tick: {_tick} loop: {_lCount}-{_count}", 1);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
@@ -475,7 +474,7 @@ namespace DefenseShields
             _shapeAdjusted = !_ellipsoidAdjust.Equals(_oldEllipsoidAdjust) || !_gridHalfExtents.Equals(_oldGridHalfExtents);
             _oldGridHalfExtents = _gridHalfExtents;
             _oldEllipsoidAdjust = _ellipsoidAdjust;
-            _entityChanged = Shield.CubeGrid.Physics.IsMoving || ShieldComp.ShieldIsStarting;
+            _entityChanged = Shield.CubeGrid.Physics.IsMoving || ShieldComp.ShieldIsStarting || _shapeAdjusted;
             if (_entityChanged || ShieldComp.BoundingRange <= 0 || ShieldComp.ShieldIsStarting) CreateShieldShape();
         }
 
@@ -556,6 +555,7 @@ namespace DefenseShields
             CreateShieldShape();
             Icosphere.ReturnPhysicsVerts(DetectionMatrix, ShieldComp.PhysicsOutside);
             _entityChanged = true;
+            _shapeAdjusted = true;
         }
         #endregion
 
@@ -564,7 +564,9 @@ namespace DefenseShields
         {
             _gridMaxPower = 0;
             _gridCurrentPower = 0;
-
+            _gridAvailablePower = 0;
+            _shieldMaintaintPower = 0;
+            if (!ShieldActive) return;
             lock (_powerSources)
                 for (int i = 0; i < _powerSources.Count; i++)
                 {
@@ -600,7 +602,6 @@ namespace DefenseShields
             }
 
             _shieldCurrentPower = Sink.CurrentInputByType(GId);
-
             var otherPower = _gridMaxPower - _gridAvailablePower - _shieldCurrentPower;
             var cleanPower = _gridMaxPower - otherPower;
             powerForShield = (cleanPower * fPercent);

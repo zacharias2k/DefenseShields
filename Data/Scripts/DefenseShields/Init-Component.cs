@@ -142,9 +142,8 @@ namespace DefenseShields
                     CreateUi();
                     PowerInit();
 
-                    if (Session.Enforced.Debug == 1) Log.Line($"MainInit complete");
-
                     MainInit = true;
+                    if (Session.Enforced.Debug == 1) Log.Line($"MainInit complete");
                 }
 
                 if (!HealthCheck()) return;
