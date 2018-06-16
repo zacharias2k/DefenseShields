@@ -143,11 +143,15 @@ namespace DefenseShields.Support
 
         public Vector3D[] PhysicsInside { get; set; } = new Vector3D[642];
 
-        public bool EmittersWorking { get; set; }
+        public double ShieldVelocitySqr { get; set; }
 
         public string ModulationPassword { get; set; }
 
+        public bool EmittersWorking { get; set; } = true;
+
         public bool ControlBlockWorking { get; set; }
+
+        public bool ShieldActive { get; set; }
 
         public bool GridIsMobile { get; set; }
 
@@ -156,6 +160,8 @@ namespace DefenseShields.Support
         public bool GridIsMoving { get; set; }
 
         public bool ShieldIsStarting { get; set; }
+
+        public bool Warming { get; set; }
 
         public bool WarmedUp { get; set; }
 
@@ -307,7 +313,23 @@ namespace DefenseShields.Support
 
         public HashSet<Emitters> RegisteredSlaveComps { get; set; } = new HashSet<Emitters>();
 
+        public Matrix RotationMatrix { get; set; }
+
+        public Matrix PrimeMatrix { get; set; }
+
+        public Matrix BetaMatrix { get; set; }
+
+        public uint EmitterOnScreenTick { get; set; }
+
         public bool PerformEmitterDiagnostic { get; set; }
+
+        public int AnimationLoop { get; set; }
+
+        public int RotationTime { get; set; }
+
+        public int TranslationTime { get; set; }
+
+        public int EmissiveIntensity { get; set; }
 
         public override string ComponentTypeDebugString
         {

@@ -297,7 +297,7 @@ namespace DefenseShields.Support
                 Session.Enforced.DisableGridDamageSupport = !unPackedData.DisableGridDamageSupport.Equals(-1) ? unPackedData.DisableGridDamageSupport : disableGridDmg;
                 Session.Enforced.Debug = !unPackedData.Debug.Equals(-1) ? unPackedData.Debug : debug;
                 Session.Enforced.AltRecharge = unPackedData.AltRecharge;
-                Session.Enforced.Version = !unPackedData.Version.Equals(-1) ? unPackedData.Version : version;
+                Session.Enforced.Version = version;
 
                 unPackedData = null;
                 unPackCfg.Close();

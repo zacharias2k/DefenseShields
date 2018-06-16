@@ -42,7 +42,6 @@ namespace DefenseShields
         private double _ellipsoidAdjust = Math.Sqrt(2);
         private double _oldEllipsoidAdjust;
         private double _sAvelSqr;
-        private double _sVelSqr;
         private double _ellipsoidSurfaceArea;
         private double _sizeScaler;
 
@@ -64,7 +63,6 @@ namespace DefenseShields
         internal bool MainInit;
         internal bool PhysicsInit;
         internal bool AllInited;
-        internal bool ShieldActive;
         internal bool ShieldOffline;
         internal bool CheckGridRegister;
         internal bool HardDisable { get; private set; }

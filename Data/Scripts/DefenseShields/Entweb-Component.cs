@@ -247,7 +247,7 @@ namespace DefenseShields
                 ShieldGridComponent shieldComponent;
                 grid.Components.TryGet(out shieldComponent);
                 if (shieldComponent != null && !enemy) return Ent.Friend;
-                if (shieldComponent != null && !shieldComponent.DefenseShields.ShieldActive) return Ent.LargeEnemyGrid;
+                if (shieldComponent != null && !shieldComponent.DefenseShields.ShieldComp.ShieldActive) return Ent.LargeEnemyGrid;
                 if (shieldComponent != null) return Ent.Shielded; // not good if one of the grids is out of detect range it doesn't collide.
                 //if(shieldComponent != null) return Ent.Ignore; //only process the higher EntityID
                 return enemy ? Ent.LargeEnemyGrid : Ent.Friend;

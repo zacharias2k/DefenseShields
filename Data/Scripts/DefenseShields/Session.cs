@@ -120,7 +120,7 @@ namespace DefenseShields
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
-                    if (!s.ShieldActive || !s.AllInited) continue;
+                    if (!s.ShieldComp.ShieldActive || !s.AllInited) continue;
                     var sp = new BoundingSphereD(s.Entity.GetPosition(), s.ShieldComp.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {
@@ -130,7 +130,7 @@ namespace DefenseShields
                     SphereOnCamera[i] = true;
                     onCount++;
                 }
-                for (int i = 0; i < Components.Count; i++) if (Components[i].ShieldActive && Components[i].AllInited && SphereOnCamera[i]) Components[i].Draw(onCount, SphereOnCamera[i]);
+                for (int i = 0; i < Components.Count; i++) if (Components[i].ShieldComp.ShieldActive && Components[i].AllInited && SphereOnCamera[i]) Components[i].Draw(onCount, SphereOnCamera[i]);
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
         }
@@ -184,7 +184,7 @@ namespace DefenseShields
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
 
-                        if (shield.ShieldActive 
+                        if (shield.ShieldComp.ShieldActive
                             && shield.FriendlyCache.Contains(player) 
                             && (hostileEnt == null  || !shield.FriendlyCache.Contains(hostileEnt))) info.Amount = 0f;
                     }
@@ -197,7 +197,7 @@ namespace DefenseShields
 
                 foreach (var shield in Components)
                 {
-                    if (shield.ShieldActive && shield.FriendlyCache.Contains(blockGrid))
+                    if (shield.ShieldComp.ShieldActive && shield.FriendlyCache.Contains(blockGrid))
                     {
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);

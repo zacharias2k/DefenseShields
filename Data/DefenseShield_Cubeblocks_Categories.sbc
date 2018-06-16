@@ -19,6 +19,7 @@
 		<string>DSControlSmall</string>
 		<string>EmitterL</string>
 		<string>EmitterS</string>
+    <string>EmitterP</string>
 		<string>EmitterST</string>
 		<string>DS_Supergen</string>
       </ItemIds>
@@ -350,7 +351,52 @@
       <DamageEffectId>214</DamageEffectId>
       <DamagedSound>ParticleElectrical</DamagedSound>
     </Definition>
-  
+
+    <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
+      <Id>
+        <TypeId>UpgradeModule</TypeId>
+        <SubtypeId>EmitterP</SubtypeId>
+      </Id>
+      <DisplayName>Planetary Emitter</DisplayName>
+      <Icon>Textures\GUI\Icons\Cubes\ShipShield_Icon.dds</Icon>
+      <CubeSize>Large</CubeSize>
+      <BlockTopology>TriangleMesh</BlockTopology>
+      <Size x="21" y="19" z="21" />
+      <ModelOffset x="0" y="0" z="0" />
+      <Model>Models\Cubes\large\DefenseShieldPlanetary_Large.mwm</Model>
+      <Components>
+        <Component Subtype="SteelPlate" Count="3000" />
+        <Component Subtype="Girder" Count="1500" />
+        <Component Subtype="MetalGrid" Count="800" />
+        <Component Subtype="SmallTube" Count="1400" />
+        <Component Subtype="LargeTube" Count="500" />
+        <Component Subtype="Reactor" Count="500" />
+        <Component Subtype="PowerCell" Count="200" />
+        <Component Subtype="GravityGenerator" Count="250" />
+        <Component Subtype="Superconductor" Count="1200" />
+        <Component Subtype="Computer" Count="2500" />
+        <Component Subtype="RadioCommunication" Count="100" />
+        <Component Subtype="Construction" Count="2800" />
+        <Component Subtype="SteelPlate" Count="1300" />
+      </Components>
+      <CriticalComponent Subtype="Construction" Index="0" />
+      <MountPoints>
+        <MountPoint Side="Bottom" StartX="10.20" StartY="10.20" EndX="10.80" EndY="10.80" />
+      </MountPoints>
+      <BuildProgressModels>
+        <Model BuildPercentUpperBound="1.00" File="Models\Cubes\large\DefenseShieldPlanetary_Large_Constr1.mwm" />
+      </BuildProgressModels>
+      <BlockPairName>PlanetEmitter</BlockPairName>
+      <EdgeType>Light</EdgeType>
+      <MirroringY>Z</MirroringY>
+      <MirroringZ>Y</MirroringZ>
+      <Sound>BlockGravityGen</Sound>
+      <BuildTimeSeconds>45</BuildTimeSeconds>
+      <RequiredPowerInput>1000</RequiredPowerInput>
+      <DamageEffectId>214</DamageEffectId>
+      <DamagedSound>ParticleElectrical</DamagedSound>
+    </Definition>
+
     <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
         <TypeId>UpgradeModule</TypeId>
