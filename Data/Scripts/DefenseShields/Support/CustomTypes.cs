@@ -256,11 +256,13 @@ namespace DefenseShields.Support
 	public class EmitterGridComponent : MyEntityComponentBase
     {
         private static List<EmitterGridComponent> gridEmitters = new List<EmitterGridComponent>();
-        public Emitters MasterComp;
+        public Emitters PrimeComp;
+        public Emitters BetaComp;
 
-        public EmitterGridComponent(Emitters masterComp)
+        public EmitterGridComponent(Emitters emitter, bool prime)
         {
-            MasterComp = masterComp;
+            if (prime) PrimeComp = emitter;
+            else BetaComp = emitter;
         }
 
         public override void OnAddedToContainer()
@@ -306,7 +308,6 @@ namespace DefenseShields.Support
         public HashSet<Emitters> RegisteredSlaveComps { get; set; } = new HashSet<Emitters>();
 
         public bool PerformEmitterDiagnostic { get; set; }
-
 
         public override string ComponentTypeDebugString
         {

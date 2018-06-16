@@ -31,11 +31,11 @@ namespace DefenseShields
 
                 if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+                //if (_count == 0) Log.Line($"{ShieldComp.EmitterEvent}- {ShieldComp.EmittersWorking}");
                 if (!BlockFunctional()) return;
 
                 if (ServerUpdate) SyncControlsServer();
                 SyncControlsClient();
-                //if (_count == 0) Log.Line($"{ShieldComp.EmitterEvent}- {ShieldComp.EmittersWorking} - {ShieldComp.EmitterEvent} - {ShieldComp.EmitterEvent}");
                 
                 if (ShieldComp.GridIsMobile) MobileUpdate();
                 else _shapeAdjusted = false;
@@ -150,6 +150,16 @@ namespace DefenseShields
             {
                 CleanUp(3);
                 CleanUp(4);
+            }
+
+            if (_tick % 60 == 0 && FriendlyCache.Contains(MyAPIGateway.Session.Player.Controller.ControlledEntity.Entity))
+            {
+                var distFromShield = Vector3D.DistanceSquared(MyAPIGateway.Session.Player.Controller.ControlledEntity.Entity.PositionComp.WorldVolume.Center, _detectionCenter);
+                if (distFromShield < Session.HudShieldDist)
+                {
+                    Session.HudShieldDist = distFromShield;
+                    Session.HudComp = this;
+                }
             }
         }
 
@@ -325,7 +335,6 @@ namespace DefenseShields
 
             if (!ShieldComp.GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(MatrixD.Zero);
             ShieldActive = false;
-            ShieldComp.ControlBlockWorking = false;
             _prevShieldActive = false;
             _shellPassive.Render.UpdateRenderObject(false);
             _shellActive.Render.UpdateRenderObject(false);
@@ -749,7 +758,7 @@ namespace DefenseShields
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
             _enemy = enemy;
 
-            if (!enemy && !MyAPIGateway.Session.Config.MinimalHud && FriendlyCache.Contains(MyAPIGateway.Session.Player.Character))
+            if (!enemy && !MyAPIGateway.Session.Config.MinimalHud && Session.HudComp == this)
             {
 				UpdateIcon();
             }

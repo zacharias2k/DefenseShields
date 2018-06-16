@@ -50,6 +50,9 @@ namespace DefenseShields
         private int _lCount;
         private int _extendedLoop;
 
+        internal static DefenseShields HudComp;
+        internal static double HudShieldDist = double.MaxValue;
+
         public const ushort PACKET_ID_DISPLAY = 62519; // network
         public const ushort PACKET_ID_SETTINGS = 62520; // network
         public const ushort PACKET_ID_ENFORCE = 62521; // network
@@ -59,8 +62,6 @@ namespace DefenseShields
         public readonly Guid DisplayGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811507");
         public readonly Guid SettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
         public readonly Guid ModulatorGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811509");
-
-
 
         public string disabledBy = null;
 
