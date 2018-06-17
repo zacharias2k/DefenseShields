@@ -88,7 +88,7 @@ namespace DefenseShields.Support
     public class ShieldGridComponent : MyEntityComponentBase
     {
         private static List<ShieldGridComponent> gridShield = new List<ShieldGridComponent>();
-        public readonly DefenseShields DefenseShields;
+        public DefenseShields DefenseShields;
 
         public ShieldGridComponent(DefenseShields defenseShields)
         {

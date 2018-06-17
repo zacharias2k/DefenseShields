@@ -30,10 +30,10 @@ namespace DefenseShields
         internal bool Alpha;
         internal bool Beta;
         internal bool Zeta;
+        internal bool IsStatic;
         internal bool BlockIsWorking;
         internal bool BlockWasWorking;
         internal bool ShieldLineOfSight;
-        internal bool IsStatic;
         public bool EmitterOnline;
         private bool _blockParticleStopped;
         private Vector3D _sightPos;
@@ -176,13 +176,11 @@ namespace DefenseShields
                     EGridComp.PerformEmitterDiagnostic = true;
                 }
 
-                if (!ShieldLineOfSight && !Session.DedicatedServer) DrawHelper();
-
                 if (ShieldComp.ShieldActive && !Session.DedicatedServer && UtilsStatic.ShieldDistanceCheck(Emitter, 1000, ShieldComp.BoundingRange))
                 {
                     var primeTock = Prime && EGridComp.EmitterOnScreenTick >= _tick - 1;
                     var betaTock = Beta && !Zeta && EGridComp.EmitterOnScreenTick >= _tick - 1;
-
+                    //Log.Line($"{Definition.Name} - {primeTock} - {betaTock}");
                     if (ShieldComp.GridIsMoving || ShieldComp.GridIsMoving) BlockParticleUpdate();
                     var blockCam = Emitter.PositionComp.WorldVolume;
 
@@ -218,9 +216,16 @@ namespace DefenseShields
 
         private bool BlockWorking()
         {
-            if (Alpha || IsStatic && Beta && EGridComp.PrimeComp == null) return false;
+            if (Alpha || IsStatic && Beta && EGridComp.PrimeComp == null || ShieldComp.DefenseShields == null) return false;
 
             BlockIsWorking = ShieldLineOfSight && Emitter.IsWorking;
+            var nowOnline = BlockIsWorking && !BlockWasWorking;
+            var wasOnline = !BlockIsWorking && BlockWasWorking;
+
+            if (!BlockIsWorking && _tick % 300 == 0 || nowOnline) CheckShieldLineOfSight();
+            if (!BlockIsWorking && !Session.DedicatedServer) DrawHelper();
+
+            BlockWasWorking = BlockIsWorking;
 
             var isPrimed = IsStatic && Prime && BlockIsWorking;
             var notPrimed = Prime && !BlockIsWorking;
@@ -231,7 +236,6 @@ namespace DefenseShields
             else if (notPrimed) ShieldComp.EmittersWorking = false;
             else if (isBetaing) ShieldComp.EmittersWorking = true;
             else if (notBetaing) ShieldComp.EmittersWorking = false;
-
             if (!BlockIsWorking)
             {
                 if (!_blockParticleStopped && !Session.DedicatedServer) BlockParticleStop();
@@ -283,7 +287,7 @@ namespace DefenseShields
                     Prime = true;
                     Alpha = false;
                 }
-                else if (!IsStatic && EmitterMode != EmitterType.Station)
+                else if (EmitterMode != EmitterType.Station)
                 {
                     Emitter.CubeGrid.Components.TryGet(out EGridComp);
                     if (EGridComp.BetaComp != null) EGridComp.BetaComp.Zeta = true;
@@ -527,6 +531,13 @@ namespace DefenseShields
                     ShieldComp.EmitterEvent = true;
                     EGridComp.PrimeComp = null;
                 }
+                else if (EGridComp?.BetaComp == this)
+                {
+                    Log.Line($"Master removed from scene");
+                    ShieldComp.EmittersWorking = false;
+                    ShieldComp.EmitterEvent = true;
+                    EGridComp.BetaComp = null;
+                }
                 Session.Instance.Emitters.Remove(this);
                 BlockParticleStop();
             }
@@ -547,6 +558,13 @@ namespace DefenseShields
                     ShieldComp.EmittersWorking = false;
                     ShieldComp.EmitterEvent = true;
                     EGridComp.PrimeComp = null;
+                }
+                else if (EGridComp?.BetaComp == this)
+                {
+                    Log.Line($"Master removed from scene");
+                    ShieldComp.EmittersWorking = false;
+                    ShieldComp.EmitterEvent = true;
+                    EGridComp.BetaComp = null;
                 }
                 BlockParticleStop();
             }

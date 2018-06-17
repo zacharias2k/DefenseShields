@@ -98,7 +98,7 @@ namespace DefenseShields.Support
                 }
                 else if (!warning)
                 {
-                    MyVisualScriptLogicProvider.ShowNotification("Only one generator per grid in this version", 5000, "Red", id);
+                    MyVisualScriptLogicProvider.ShowNotification("Control station in standby while active unit is functional", 5000, "Red", id);
                     warning = true;
                 }
             }

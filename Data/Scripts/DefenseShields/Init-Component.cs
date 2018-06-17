@@ -52,7 +52,6 @@ namespace DefenseShields
 
                 StorageSetup();
                 ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
-
                 if (Session.Enforced.Debug == 1) Log.Line($"pre-Init complete");
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
@@ -114,7 +113,20 @@ namespace DefenseShields
 
                 if (AllInited || !Shield.IsFunctional) return;
 
+                if (!HealthCheck()) return;
+
                 if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>()) Shield.CubeGrid.Components.Add(ShieldComp);
+                else
+                {
+                    Shield.CubeGrid.Components.TryGet(out ShieldComp);
+                    ShieldComp.BoundingRange = 0f;
+                    ShieldComp.WarmedUp = false;
+                    ShieldComp.Warming = false;
+                    ShieldComp.ShieldActive = false;
+                    ShieldComp.ModulationPassword = null;
+                    ShieldComp.ShieldIsStarting = false;
+                    ShieldComp.DefenseShields = this;
+                }
 
                 if (ConnectCheck(true)) return;
 
@@ -126,9 +138,11 @@ namespace DefenseShields
 
                     if (enableState)
                     {
-                        Shield.Enabled = false;
+                        Shield.Enabled = false; 
                         Shield.Enabled = true;
                     }
+
+                    ((MyCubeBlock)Shield).ChangeOwner(Shield.CubeGrid.BigOwners[0], MyOwnershipShareModeEnum.Faction);
 
                     SetShieldType();
 
@@ -145,8 +159,6 @@ namespace DefenseShields
                     MainInit = true;
                     if (Session.Enforced.Debug == 1) Log.Line($"MainInit complete");
                 }
-
-                if (!HealthCheck()) return;
 
                 if (!PhysicsInit)
                 {

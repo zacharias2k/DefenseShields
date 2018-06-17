@@ -152,6 +152,51 @@ namespace DefenseShields
             }
         }
 
+        private bool BlockFunctional()
+        {
+            if (!AllInited || ShieldComp.DefenseShields != this && ShieldComp.DefenseShields != null) return false;
+            if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
+            if (ShieldComp.BoundingRange.Equals(0)) WarmUpSequence();
+            if (!ShieldComp.WarmedUp && !Shield.CubeGrid.Components.Has<EmitterGridComponent>()) return false;
+            if (!ShieldComp.WarmedUp) return ShieldComp.ControlBlockWorking;
+
+            if (_lCount == 4 && _count == 4 && Shield.Enabled && ConnectCheck()) return false;
+
+            if (((MyCubeGrid)Shield.CubeGrid).GetFatBlocks().Count < 2 && ShieldComp.ShieldActive && !Session.MpActive)
+            {
+                if (Session.Enforced.Debug == 1) Log.Line($"Shield going critical");
+                MyVisualScriptLogicProvider.CreateExplosion(Shield.PositionComp.WorldVolume.Center, (float)Shield.PositionComp.WorldVolume.Radius * 1.25f, 2500);
+                return false;
+            }
+
+            if (ShieldComp.EmitterEvent)
+            {
+                Log.Line($"Emitter event detected");
+                ShieldComp.EmitterEvent = false;
+                if (!ShieldComp.EmittersWorking) _genericDownLoop = 0;
+            }
+
+            if (!Shield.IsWorking || !Shield.IsFunctional)
+            {
+                if (!ShieldOffline) OfflineShield();
+                return false;
+            }
+
+            if (_shieldDownLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
+            {
+                FailureConditions();
+                return false;
+            }
+
+            var blockCount = BlockCount();
+            if (!_blocksChanged) _blocksChanged = blockCount != _oldBlockCount;
+            _oldBlockCount = blockCount;
+
+            ShieldComp.CheckEmitters = false;
+            ShieldComp.ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
+            return ShieldComp.ControlBlockWorking;
+        }
+
         private void HudCheck()
         {
             if (_tick % 60 != 0) return;
@@ -283,50 +328,6 @@ namespace DefenseShields
                 Shield.Enabled = false;
             }
             return myGridIsSub;
-        }
-
-        private bool BlockFunctional()
-        {
-            if (!AllInited) return false;
-            if (ShieldComp.BoundingRange.Equals(0)) WarmUpSequence();
-            if (!ShieldComp.WarmedUp && !Shield.CubeGrid.Components.Has<EmitterGridComponent>()) return false;
-            if (!ShieldComp.WarmedUp) return ShieldComp.ControlBlockWorking;
-
-            if (_lCount == 4 && _count == 4 && Shield.Enabled && ConnectCheck()) return false;
-
-            if (((MyCubeGrid)Shield.CubeGrid).GetFatBlocks().Count < 2 && ShieldComp.ShieldActive && !Session.MpActive)
-            {
-                if (Session.Enforced.Debug == 1) Log.Line($"Shield going critical");
-                MyVisualScriptLogicProvider.CreateExplosion(Shield.PositionComp.WorldVolume.Center, (float)Shield.PositionComp.WorldVolume.Radius * 1.25f, 2500);
-                return false;
-            }
-
-            if (ShieldComp.EmitterEvent)
-            {
-                Log.Line($"Emitter event detected");
-                ShieldComp.EmitterEvent = false;
-                if (!ShieldComp.EmittersWorking) _genericDownLoop = 0;
-            }
-
-            if (!Shield.IsWorking || !Shield.IsFunctional)
-            {
-                if (!ShieldOffline) OfflineShield();
-                return false;
-            }
-
-            if (_shieldDownLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
-            {
-                FailureConditions();
-                return false;
-            }
-
-            var blockCount = BlockCount();
-            if (!_blocksChanged) _blocksChanged = blockCount != _oldBlockCount;
-            _oldBlockCount = blockCount;
-
-            ShieldComp.CheckEmitters = false;
-            ShieldComp.ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
-            return ShieldComp.ControlBlockWorking;
         }
         #endregion
 
@@ -916,6 +917,7 @@ namespace DefenseShields
                 _shield?.Close();
                 _shellPassive?.Close();
                 _shellActive?.Close();
+                if (ShieldComp?.DefenseShields == this) ShieldComp.DefenseShields = null;
                 //Shield?.CubeGrid.Components.Remove(typeof(ShieldGridComponent), this);
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
                 Session.Instance.Components.Remove(this);
@@ -934,6 +936,7 @@ namespace DefenseShields
                 Icosphere = null;
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
                 if (AllInited) Sink.Update();
+                if (ShieldComp?.DefenseShields == this) ShieldComp.DefenseShields = null;
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
             base.Close();
