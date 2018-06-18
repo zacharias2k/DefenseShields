@@ -54,6 +54,15 @@ namespace DefenseShields.Support
             return Color.DarkRed;
         }
 
+        public static Color GetEmissiveColorFromFloatEmitter(float percent)
+        {
+            if (percent > 80) return Color.White;
+            if (percent > 60) return Color.Blue;
+            if (percent > 40) return Color.Yellow;
+            if (percent > 20) return Color.Orange;
+            return Color.Red;
+        }
+
         public static long ThereCanBeOnlyOne(IMyCubeBlock shield)
         {
             if (Session.Enforced.Debug == 1) Log.Line($"ThereCanBeOnlyOne start");

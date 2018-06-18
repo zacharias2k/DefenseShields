@@ -29,7 +29,6 @@ namespace DefenseShields
             {
                 if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-                //if (_count == 0) Log.Line($"{ShieldComp.EmitterEvent}- {ShieldComp.EmittersWorking}");
                 if (!BlockFunctional()) return;
 
                 if (ServerUpdate) SyncControlsServer();
@@ -85,8 +84,8 @@ namespace DefenseShields
                 }
                 if (ShieldComp.ShieldActive)
                 {
-                    Shield.SetEmissiveParts("iconlock", Color.Red, 100f);
-                    Shield.SetEmissiveParts("iconshieldrear", Color.Blue, 100f);
+                    //Shield.SetEmissiveParts("iconlock", Color.Red, 100f);
+                    //Shield.SetEmissiveParts("iconshieldrear", Color.Blue, 100f);
 
                     if (_lCount % 2 != 0 && _count == 20)
                     {

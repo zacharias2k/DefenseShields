@@ -166,6 +166,13 @@ namespace DefenseShields.Support
         public bool EmitterEvent { get; set; }
 
         public float ShieldPercent { get; set; }
+
+        public float XRange { get; set; }
+
+        public float YRange { get; set; }
+
+        public float ZRange { get; set; }
+
         public double BoundingRange { get; set; }
 
         public double ShieldVelocitySqr { get; set; }
@@ -312,7 +319,9 @@ namespace DefenseShields.Support
             return true;
         }
 
-        public HashSet<Emitters> RegisteredSlaveComps { get; set; } = new HashSet<Emitters>();
+        public HashSet<Emitters> RegisteredComps { get; set; } = new HashSet<Emitters>();
+
+        public Dictionary<Vector3, Emitters> OriginatedEmitters { get; set; } = new Dictionary<Vector3, Emitters>();
 
         public Matrix RotationMatrix { get; set; }
 
