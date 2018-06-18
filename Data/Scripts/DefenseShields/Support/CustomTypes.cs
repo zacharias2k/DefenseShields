@@ -143,8 +143,6 @@ namespace DefenseShields.Support
 
         public Vector3D[] PhysicsInside { get; set; } = new Vector3D[642];
 
-        public double ShieldVelocitySqr { get; set; }
-
         public string ModulationPassword { get; set; }
 
         public bool EmittersWorking { get; set; } = true;
@@ -167,7 +165,10 @@ namespace DefenseShields.Support
 
         public bool EmitterEvent { get; set; }
 
+        public float ShieldPercent { get; set; }
         public double BoundingRange { get; set; }
+
+        public double ShieldVelocitySqr { get; set; }
 
         public override string ComponentTypeDebugString
         {

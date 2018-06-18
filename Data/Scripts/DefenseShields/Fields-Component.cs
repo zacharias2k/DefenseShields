@@ -35,7 +35,6 @@ namespace DefenseShields
         private float _shieldDps;
         private float _shieldCurrentPower;
         private float _shieldMaintaintPower;
-        private float _shieldPercent;
         private float _shieldConsumptionRate;
         private float _shieldFudge;
 

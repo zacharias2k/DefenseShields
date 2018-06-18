@@ -26,6 +26,7 @@ namespace DefenseShields
 
         public bool ServerUpdate;
         internal bool AllInited;
+        internal bool Suspended;
         internal bool Prime;
         internal bool Alpha;
         internal bool Beta;
@@ -35,9 +36,9 @@ namespace DefenseShields
         internal bool BlockWasWorking;
         internal bool ShieldLineOfSight;
         public bool EmitterOnline;
-        private bool _blockParticleStopped;
         private Vector3D _sightPos;
 
+        public Vector3[] Directions = new Vector3[6] {Vector3.Forward, Vector3.Backward, Vector3.Left, Vector3.Right, Vector3.Up, Vector3.Down};
         public MyModStorageComponentBase Storage { get; set; }
         internal ShieldGridComponent ShieldComp;
         internal EmitterGridComponent EGridComp;
@@ -119,7 +120,6 @@ namespace DefenseShields
             }
             Entity.TryGetSubpart("Rotor", out _subpartRotor);
             CheckShieldLineOfSight();
-            if (!Session.DedicatedServer) BlockParticleCreate();
             AllInited = true;
 
             return true;
@@ -148,7 +148,6 @@ namespace DefenseShields
             }
             Entity.TryGetSubpart("Rotor", out _subpartRotor);
             CheckShieldLineOfSight();
-            if (!Session.DedicatedServer) BlockParticleCreate();
             AllInited = true;
             return true;
         }
@@ -160,7 +159,9 @@ namespace DefenseShields
                 Dsutil1.Sw.Restart();
                 IsStatic = Emitter.CubeGrid.Physics.IsStatic;
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-                if (Prime && !IsStatic || NotWorking()) return;
+
+                if (Suspended && _effect != null && !Session.DedicatedServer) BlockParticleStop();
+                if (Suspended || Prime && !IsStatic || NotWorking()) return;
 
                 if (!AllInited && EmitterMode == EmitterType.Station && !InitStation()) return;
                 if (!AllInited && !InitOther()) return;
@@ -178,27 +179,29 @@ namespace DefenseShields
 
                 if (ShieldComp.ShieldActive && !Session.DedicatedServer && UtilsStatic.ShieldDistanceCheck(Emitter, 1000, ShieldComp.BoundingRange))
                 {
-                    var primeTock = Prime && EGridComp.EmitterOnScreenTick >= _tick - 1;
-                    var betaTock = Beta && !Zeta && EGridComp.EmitterOnScreenTick >= _tick - 1;
-                    //Log.Line($"{Definition.Name} - {primeTock} - {betaTock}");
+
+                    var leader = Beta && !Zeta;
+                    var primeTock = Prime && EGridComp.EmitterOnScreenTick >= _tick - 60;
+                    var leaderTock =  leader && EGridComp.EmitterOnScreenTick >= _tick - 60;
                     if (ShieldComp.GridIsMoving || ShieldComp.GridIsMoving) BlockParticleUpdate();
                     var blockCam = Emitter.PositionComp.WorldVolume;
 
-                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) || primeTock || betaTock)
+                    if ((Prime || !IsStatic && leader)) EmitterSlaveAssignments();
+
+                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) || primeTock || leaderTock)
                     {
-                        var slaved = Beta && !Zeta;
-                        //Log.Line($"name:{Definition.Name} - id:{Emitter.EntityId} - p:{Prime} - pt:{primeTock} - b:{Beta} - bt:{betaTock} - z:{Zeta}");
-                        if (!Prime && !slaved)
-                        {
-                            EGridComp.EmitterOnScreenTick = _tick;
-                        }
-                        if (_blockParticleStopped) BlockParticleStart();
-                        _blockParticleStopped = false;
+                        //Log.Line($"name:{Definition.Name} - id:{Emitter.EntityId} - p:{Prime} - pt:{primeTock} - lt:{leaderTock} - b:{Beta} - z:{Zeta}");
+                        if (leader && !leaderTock) EGridComp.EmitterOnScreenTick = _tick;
+                        else if (Prime && !primeTock) EGridComp.EmitterOnScreenTick = _tick;
+                        else if (Zeta) EGridComp.EmitterOnScreenTick = _tick;
+
+                        if (_effect == null && ShieldComp.ShieldPercent <= 97) BlockParticleStart();
+                        else if (_effect != null && ShieldComp.ShieldPercent > 97f) BlockParticleStop();
 
                         BlockMoveAnimation();
                     }
                 }
-                else if (!_blockParticleStopped && !Session.DedicatedServer) BlockParticleStop();
+                else if (_effect != null && !Session.DedicatedServer) BlockParticleStop();
                 if (_count == 0) Dsutil1.StopWatchReport("Emitter", 4);
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
@@ -238,7 +241,7 @@ namespace DefenseShields
             else if (notBetaing) ShieldComp.EmittersWorking = false;
             if (!BlockIsWorking)
             {
-                if (!_blockParticleStopped && !Session.DedicatedServer) BlockParticleStop();
+                if (_effect != null && !Session.DedicatedServer) BlockParticleStop();
                 return false;
             }
             return true;
@@ -301,66 +304,87 @@ namespace DefenseShields
 
         private void EmitterSlaveAssignments()
         {
-            var mPos = EGridComp.PrimeComp.Emitter.Position;
-            var forwardMax = float.MinValue;
-            var backwardMax = float.MinValue;
-            var leftMax = float.MinValue;
-            var rightMax = float.MinValue;
-            var upMax = float.MinValue;
-            var downMax = float.MinValue;
-            Emitters forwardEmitter = null;
-            Emitters backwardEmitter = null;
-            Emitters leftEmitter = null;
-            Emitters rightEmitter = null;
-            Emitters upEmitter = null;
-            Emitters downEmitter = null;
+            Vector3I mPos;
+            if (Beta) mPos = (Vector3I) Emitter.CubeGrid.PositionComp.LocalAABB.Center;
+            else mPos = EGridComp.PrimeComp.Emitter.Position;
+            var dirDefs = new EmitterDefinition();
+            var primaries = new HashSet<Emitters>();
+            var reassign = new Dictionary<Vector3, Emitters>();
 
-            foreach (var rse in EGridComp.RegisteredSlaveComps)
+            foreach (var rse in Session.Instance.Emitters)
             {
+                if (rse.Prime) continue;
+
                 var sPos = rse.Emitter.Position;
-                var findfMax = Vector3.Dot(sPos - mPos, Vector3.Forward);
-                var findbMax = Vector3.Dot(sPos - mPos, Vector3.Backward);
-                var findlMax = Vector3.Dot(sPos - mPos, Vector3.Left);
-                var findrMax = Vector3.Dot(sPos - mPos, Vector3.Right);
-                var finduMax = Vector3.Dot(sPos - mPos, Vector3.Up);
-                var finddMax = Vector3.Dot(sPos - mPos, Vector3.Down);
-
-                if (findfMax > forwardMax)
+                foreach (var dir in Directions)
                 {
-                    forwardMax = findfMax;
-                    forwardEmitter = rse;
-                }
+                    var myDir = dirDefs.Get(dir);
+                    var findMax = Vector3.Dot(sPos - mPos, dir);
 
-                if (findbMax > backwardMax)
-                {
-                    backwardMax = findbMax;
-                    backwardEmitter = rse;
-                }
-
-                if (findlMax > leftMax)
-                {
-                    leftMax = findlMax;
-                    leftEmitter = rse;
-                }
-
-                if (findrMax > rightMax)
-                {
-                    rightMax = findrMax;
-                    rightEmitter = rse;
-                }
-
-                if (finduMax > upMax)
-                {
-                    upMax = finduMax;
-                    upEmitter = rse;
-                }
-
-                if (finddMax > downMax)
-                {
-                    downMax = finddMax;
-                    downEmitter = rse;
+                    if (findMax > myDir.Max)
+                    {
+                        myDir.Max = findMax;
+                        myDir.Primary = rse;
+                        myDir.Assigned = rse;
+                    }
+                    else if (findMax.Equals(myDir.Max)) myDir.Secondary = rse;
                 }
             }
+
+            foreach (var val in dirDefs.Def)
+            {
+                primaries.Add(val.Value.Primary);
+                Emitters first = null;
+                Emitters second = null;
+
+                foreach (var val2 in dirDefs.Def.Values)
+                {
+                    if (val.Value.Primary == val2.Primary)
+                    {
+                        if (first == null) first = val2.Primary;
+                        else second = val2.Primary;
+                    }
+                }
+                if (second != null) reassign.Add(val.Key, val.Value.Secondary);
+            }
+
+            foreach (var keypair in reassign)
+            {
+                var dir = keypair.Key;
+                var emitter = keypair.Value;
+                if (!primaries.Contains(emitter))
+                {
+                    primaries.Add(emitter);
+                    dirDefs.Get(dir).Assigned = emitter;
+                }
+            }
+
+            foreach (var emitter in Session.Instance.Emitters)
+            {
+                if (emitter.Prime || emitter.Alpha) continue;
+                if (!primaries.Contains(emitter) && emitter.Beta && !emitter.Zeta)
+                {
+                    emitter._subpartRotor.SetEmissiveParts("PlasmaEmissive", Color.White, 0f);
+                    emitter.Suspended = true;
+                    EGridComp.BetaComp = null;
+                }
+                else if (!primaries.Contains(emitter))
+                {
+                    emitter._subpartRotor.SetEmissiveParts("PlasmaEmissive", Color.White, 0f);
+                    emitter.Suspended = true;
+                }
+                else emitter.Suspended = false;
+            }
+
+            //Log.Line($"fMax:{dirDefs.Get(Vector3.Forward).Max} - bMax:{dirDefs.Get(Vector3.Backward).Max} - lMax:{dirDefs.Get(Vector3.Left).Max} - rMax:{dirDefs.Get(Vector3.Right).Max} - uMax:{dirDefs.Get(Vector3.Up).Max} - dMax:{dirDefs.Get(Vector3.Down).Max}");
+            //Log.Line($"Primary   : fId:{dirDefs.Get(Vector3.Forward).Primary?.Emitter?.NumberInGrid} - bId:{dirDefs.Get(Vector3.Backward).Primary?.Emitter?.NumberInGrid} - lId:{dirDefs.Get(Vector3.Left).Primary?.Emitter?.NumberInGrid} - rId:{dirDefs.Get(Vector3.Right).Primary?.Emitter?.NumberInGrid} - uId:{dirDefs.Get(Vector3.Up).Primary?.Emitter?.NumberInGrid} - dId:{dirDefs.Get(Vector3.Down).Primary?.Emitter?.NumberInGrid}");
+            //Log.Line($"Secondary : fId:{dirDefs.Get(Vector3.Forward).Secondary?.Emitter?.NumberInGrid} - bId:{dirDefs.Get(Vector3.Backward).Secondary?.Emitter?.NumberInGrid} - lId:{dirDefs.Get(Vector3.Left).Secondary?.Emitter?.NumberInGrid} - rId:{dirDefs.Get(Vector3.Right).Secondary?.Emitter?.NumberInGrid} - uId:{dirDefs.Get(Vector3.Up).Secondary?.Emitter?.NumberInGrid} - dId:{dirDefs.Get(Vector3.Down).Secondary?.Emitter?.NumberInGrid}");
+            //DsDebugDraw.DrawSingleVec(dirDefs.Get(Vector3.Forward).Assigned.Emitter.PositionComp.WorldVolume.Center, 1.5f, Color.White);
+            //DsDebugDraw.DrawSingleVec(dirDefs.Get(Vector3.Backward).Assigned.Emitter.PositionComp.WorldVolume.Center, 1.5f, Color.Black);
+            //DsDebugDraw.DrawSingleVec(dirDefs.Get(Vector3.Left).Assigned.Emitter.PositionComp.WorldVolume.Center, 1.5f, Color.Blue);
+            //DsDebugDraw.DrawSingleVec(dirDefs.Get(Vector3.Right).Assigned.Emitter.PositionComp.WorldVolume.Center, 1.5f, Color.Red);
+            //DsDebugDraw.DrawSingleVec(dirDefs.Get(Vector3.Up).Assigned.Emitter.PositionComp.WorldVolume.Center, 1.5f, Color.Green);
+            //DsDebugDraw.DrawSingleVec(dirDefs.Get(Vector3.Down).Assigned.Emitter.PositionComp.WorldVolume.Center, 1.5f, Color.Purple);
         }
 
         #region Block Animation
@@ -393,34 +417,18 @@ namespace DefenseShields
             var matrix = Prime ? EGridComp.PrimeMatrix : EGridComp.BetaMatrix;
 
             _subpartRotor.PositionComp.LocalMatrix = matrix;
-            _subpartRotor.SetEmissiveParts("PlasmaEmissive", Color.Aqua, 0.1f * EGridComp.EmissiveIntensity);
+            _subpartRotor.SetEmissiveParts("PlasmaEmissive", UtilsStatic.GetEmissiveColorFromFloat(ShieldComp.ShieldPercent), 0.1f * EGridComp.EmissiveIntensity);
 
             if ((IsStatic && Prime && !Alpha || !IsStatic && Beta && !Zeta) && EGridComp.AnimationLoop++ == 599) EGridComp.AnimationLoop = 0;
         }
 
-        private void BlockParticleCreate()
+        private void BlockParticleUpdate()
         {
             if (_effect == null)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"Particle is null, creating - tick:{_tick.ToString()}");
-                var scale = Definition.ParticleScale;
-                MyParticlesManager.TryCreateParticleEffect("EmitterEffect", out _effect);
-                _effect.UserScale = 1f;
-                _effect.UserRadiusMultiplier = scale;
-                _effect.UserEmitterScale = 1f;
-            }
-            else
-            {
-                _effect.WorldMatrix = _subpartRotor.WorldMatrix;
-                _effect.Stop();
-                _blockParticleStopped = true;
-            }
-        }
-
-        private void BlockParticleUpdate()
-        {
-            if (_effect == null || !_effect.IsStopped) return; // added IsStopped might prevent from looping.
-
+                return;
+            } 
+            Log.Line($"particle updating and not null");
             var testDist = Definition.ParticleDist;
 
             var spawnDir = _subpartRotor.PositionComp.WorldVolume.Center - Emitter.PositionComp.WorldVolume.Center;
@@ -435,17 +443,17 @@ namespace DefenseShields
 
         private void BlockParticleStop()
         {
-            _blockParticleStopped = true;
             if (_effect == null) return;
+            Log.Line($"particle stopping and not null");
 
             _effect.Stop();
             _effect.Close(false, true);
+            _effect = null;
         }
 
         private void BlockParticleStart()
         {
-            if (_effect == null || !_effect.IsStopped) return;
-
+            Log.Line($"particle starting and not null");
             var scale = Definition.ParticleScale;
             MyParticlesManager.TryCreateParticleEffect("EmitterEffect", out _effect);
             _effect.UserScale = 1f;

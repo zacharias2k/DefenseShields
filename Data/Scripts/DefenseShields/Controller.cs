@@ -644,6 +644,13 @@ namespace DefenseShields
                 else _shieldMaxChargeRate = 0f;
             }
 
+            if (_count != -2)
+            {
+                if (ShieldBuffer < _shieldMaxBuffer) ShieldComp.ShieldPercent = (ShieldBuffer / _shieldMaxBuffer) * 100;
+                else if (ShieldBuffer <= 1) ShieldComp.ShieldPercent = 0f;
+                else ShieldComp.ShieldPercent = 100f;
+            }
+
             if (_shieldMaxChargeRate < 0.001f)
             {
                 _shieldChargeRate = 0f;
@@ -655,12 +662,6 @@ namespace DefenseShields
             if (ShieldBuffer < _shieldMaxBuffer && _count == 29)
             {
                 ShieldBuffer += _shieldChargeRate;
-            }
-            if (_count == 29)
-            {
-                _shieldPercent = 100f;
-                if (ShieldBuffer < _shieldMaxBuffer) _shieldPercent = (ShieldBuffer / _shieldMaxBuffer) * 100;
-                else _shieldPercent = 100f;
             }
         }
 
@@ -746,10 +747,10 @@ namespace DefenseShields
             scale = scaler * scale;
 
             Color color;
-            if (_shieldPercent > 80) color = Color.White;
-            else if (_shieldPercent > 60) color = Color.Blue;
-            else if (_shieldPercent > 40) color = Color.Yellow;
-            else if (_shieldPercent > 20) color = Color.Orange;
+            if (ShieldComp.ShieldPercent > 80) color = Color.White;
+            else if (ShieldComp.ShieldPercent > 60) color = Color.Blue;
+            else if (ShieldComp.ShieldPercent > 40) color = Color.Yellow;
+            else if (ShieldComp.ShieldPercent > 20) color = Color.Orange;
             else color = Color.Red;
 
             MyTransparentGeometry.AddBillboardOriented(material, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
@@ -807,7 +808,7 @@ namespace DefenseShields
                 var prevlod = _prevLod;
                 var lod = CalculateLod(_onCount);
                 if (_shapeAdjusted || lod != prevlod) Icosphere.CalculateTransform(_shieldShapeMatrix, lod);
-                Icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, _shieldPercent, passiveVisible, activeVisible);
+                Icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, ShieldComp.ShieldPercent, passiveVisible, activeVisible);
                 _entityChanged = false;
             }
             if (sphereOnCamera && Shield.IsWorking) Icosphere.Draw(GetRenderId());

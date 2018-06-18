@@ -214,6 +214,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Config\Shield-Settings.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Fields-Component.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Init-Component.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\EmitterDirMappingDef.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\DefinitionManager.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Spawn.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SyncEnts-Component.cs" />

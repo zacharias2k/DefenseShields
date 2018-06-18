@@ -243,14 +243,7 @@ namespace DefenseShields.Support
                 if (_charge && _impactsFinished && prevLod == _lod) ChargeColorAssignments(prevLod);
                 if (_impactsFinished && prevLod == _lod) return;
 
-                if (_active)
-                {
-                    if (_shieldPercent > 80) _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.LightBlue, 100f);
-                    else if (_shieldPercent > 60) _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.DarkBlue, 100f);
-                    else if (_shieldPercent > 40) _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.GreenYellow, 100f);
-                    else if (_shieldPercent > 20) _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.OrangeRed, 100f);
-                    else _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.DarkRed, 100f);
-                }
+                if (_active) _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", UtilsStatic.GetEmissiveColorFromFloat(_shieldPercent), 100f);
 
                 ImpactColorAssignments(prevLod);
                 //_dsutil2.StopWatchReport("colorcalc", 1);
