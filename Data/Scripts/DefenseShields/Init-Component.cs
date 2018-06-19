@@ -288,6 +288,36 @@ namespace DefenseShields
             }
         }
 
+        private void SetW(IMyTerminalBlock b, float v)
+        {
+            Width = v;
+        }
+
+        private void SetH(IMyTerminalBlock b, float v)
+        {
+            Height = v;
+        }
+
+        private void SetD(IMyTerminalBlock b, float v)
+        {
+            Depth = v;
+        }
+
+        private float GetW(IMyTerminalBlock b)
+        {
+            return Width;
+        }
+
+        private float GetH(IMyTerminalBlock b)
+        {
+            return Height;
+        }
+
+        private float GetD(IMyTerminalBlock b)
+        {
+            return Depth;
+        }
+
         private void CreateUi()
         {
             UtilsStatic.RemoveOreUi();
@@ -299,6 +329,26 @@ namespace DefenseShields
             _widthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "WidthSlider", "Shield Size Width", 30, 600, 100);
             _heightSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HeightSlider", "Shield Size Height", 30, 600, 100);
             _depthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "DepthSlider", "Shield Size Depth", 30, 600, 100);
+
+            /*
+            if (Shield.CubeGrid.Physics.IsStatic)
+            {
+                _widthSlider = TerminalHelpers.AddSlider(Shield, "WidthSlider", "Shield Size Height", "Shield Size Height", GetW, SetW);
+                _widthSlider.SetLimits(0, ShieldComp.ZRange);
+                _widthSlider.Visible = block => true;
+                _widthSlider.Enabled = block => true;
+
+                _heightSlider = TerminalHelpers.AddSlider(Shield, "HeightSlider", "Shield Size Height", "Shield Size Height", GetH, SetH);
+                _heightSlider.SetLimits(0, ShieldComp.YRange);
+                _heightSlider.Visible = block => true;
+                _heightSlider.Enabled = block => true;
+
+                _depthSlider = TerminalHelpers.AddSlider(Shield, "DepthSlider", "Shield Size Depth", "Shield Size Depth", GetD, SetD);
+                _depthSlider.SetLimits(0, ShieldComp.XRange);
+                _depthSlider.Visible = block => true;
+                _depthSlider.Enabled = block => true;
+            }
+            */
 
             _hidePassiveCheckBox = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HidePassive", "Hide idle shield state", false);
             _hideActiveCheckBox = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HideActive", "Hide active shield state", false);

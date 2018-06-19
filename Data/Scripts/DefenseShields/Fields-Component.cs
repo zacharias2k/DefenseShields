@@ -5,6 +5,7 @@ using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
+using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Collections;
 using VRage.Game;
 using VRage.Game.Components;
@@ -132,6 +133,9 @@ namespace DefenseShields
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _widthSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _heightSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _depthSlider;
+        //private IMyTerminalControlSlider _widthSlider;
+        //private IMyTerminalControlSlider _heightSlider;
+        //private IMyTerminalControlSlider _depthSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _chargeSlider;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _extendFit;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _sphereFit;

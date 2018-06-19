@@ -198,6 +198,7 @@
   <ItemGroup>
     <Compile Include="Data\Scripts\DefenseShields\API\dsApi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Enforcements.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Control\TerminalHelpers.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Display.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\BaseControl.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\ButtonControl.cs" />

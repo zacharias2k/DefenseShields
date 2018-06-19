@@ -165,7 +165,6 @@ namespace DefenseShields
 
                 if (Suspended && _effect != null && !Session.DedicatedServer) BlockParticleStop();
                 if (Suspended || Prime && !IsStatic || NotWorking()) return;
-
                 if (!AllInited && EmitterMode == EmitterType.Station && !InitStation()) return;
                 if (!AllInited && !InitOther()) return;
 
@@ -182,22 +181,22 @@ namespace DefenseShields
 
                 if (ShieldComp.ShieldActive && !Session.DedicatedServer && UtilsStatic.ShieldDistanceCheck(Emitter, 1000, ShieldComp.BoundingRange))
                 {
-                    var leader = Beta && !Zeta;
-                    var primeTock = Prime && EGridComp.EmitterOnScreenTick >= _tick - 60;
-                    var leaderTock =  leader && EGridComp.EmitterOnScreenTick >= _tick - 60;
+
                     if (ShieldComp.GridIsMoving || ShieldComp.GridIsMoving) BlockParticleUpdate();
-                    var blockCam = Emitter.PositionComp.WorldVolume;
+
+                    var leader = Beta && !Zeta;
+                    var leaderTock = leader && EGridComp.EmitterOnScreenTick >= _tick - 1;
 
                     if (Prime || !IsStatic && leader) EmitterSlaveAssignments();
                     if (Prime) SetStationShieldDims();
 
-                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) || primeTock || leaderTock)
+                    var primeTock = Prime && EGridComp.EmitterOnScreenTick >= _tick - 1;
+                    var blockCam = Emitter.PositionComp.WorldVolume;
+                    var onCam = MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam);
+                    if (onCam || primeTock || leaderTock)
                     {
-                        //Log.Line($"name:{Definition.Name} - id:{Emitter.EntityId} - p:{Prime} - pt:{primeTock} - lt:{leaderTock} - b:{Beta} - z:{Zeta}");
-                        if (leader && !leaderTock) EGridComp.EmitterOnScreenTick = _tick;
-                        else if (Prime && !primeTock) EGridComp.EmitterOnScreenTick = _tick;
-                        else if (Zeta) EGridComp.EmitterOnScreenTick = _tick;
-
+                        //if (IsStatic) Log.Line($"name:{Definition.Name} - id:{Emitter.EntityId} - p:{Prime} - pt:{primeTock} - lt:{leaderTock} - b:{Beta} - z:{Zeta}");
+                        if (onCam) EGridComp.EmitterOnScreenTick = _tick;
                         if (_effect == null && ShieldComp.ShieldPercent <= 97) BlockParticleStart();
                         else if (_effect != null && ShieldComp.ShieldPercent > 97f) BlockParticleStop();
 
@@ -263,13 +262,25 @@ namespace DefenseShields
 
         private void SetStationShieldDims()
         {
+            var pListWorld = new List<Vector3D>();
+            var pMax = EGridComp.PrimeComp.Emitter.PositionComp.WorldAABB.Max;
             foreach (var keypair in EGridComp.OriginatedEmitters)
             {
-                var mPos = EGridComp.PrimeComp.Emitter.PositionComp.WorldAABB.Center;
-                var sPos = keypair.Value.Emitter.PositionComp.WorldAABB.Center;
-                var findMax = Vector3D.Dot(sPos - mPos, keypair.Key);
-                //Log.Line($"{keypair.Key.ToString()} - {findMax}");
+                if (keypair.Value?.Emitter == null) continue;
+                pListWorld.Add(keypair.Value.Emitter.PositionComp.WorldAABB.Max);
             }
+            pListWorld.Add(pMax);
+
+            var box = BoundingBoxD.CreateFromPoints(pListWorld);
+            ShieldComp.XRange = (float)box.Extents.X;
+            ShieldComp.YRange = (float)box.Extents.Y;
+            ShieldComp.ZRange = (float)box.Extents.Z;
+            //Log.Line($"{ ShieldComp.XRange} - { ShieldComp.YRange} - { ShieldComp.ZRange}");
+            var sphere = DSUtils.CreateFromPointsList(pListWorld);
+            sphere.Radius = sphere.Radius + sphere.Radius * 0.25f;
+            //DsDebugDraw.DrawSphere(sphere, Color.Red);
+            //[max([abs(dot(pt - center, axis) for pt in points]) for axis in axes]
+            //var axisXPlus = Vector3D.Max(Vector3D.Abs(new Vector3D(Vector3D.Dot(Vector3D.Forwar - mPosW, Vector3.UnitX))), p);
         }
 
         private void MasterElection()
@@ -324,11 +335,12 @@ namespace DefenseShields
 
             var dirDefs = new EmitterDefinition();
             var reassign = new Dictionary<Vector3, Emitters>();
+            EGridComp.OriginatedEmitters.Clear();
             var oriEmitters = EGridComp.OriginatedEmitters;
-            oriEmitters.Clear();
-            
             foreach (var rse in EGridComp.RegisteredComps)
             {
+                if (rse?.Emitter == null) continue;
+
                 var sPos = rse.Emitter.Position;
                 foreach (var dir in Directions)
                 {
@@ -365,6 +377,7 @@ namespace DefenseShields
             {
                 var dir = keypair.Key;
                 var emitter = keypair.Value;
+                if (emitter?.Emitter == null) continue;
                 if (!oriEmitters.ContainsValue(emitter))
                 {
                     oriEmitters[dir] = emitter;
@@ -374,7 +387,7 @@ namespace DefenseShields
 
             foreach (var emitter in EGridComp.RegisteredComps)
             {
-                if (emitter.Prime || emitter.Alpha) continue;
+                if (emitter == null || emitter.Prime || emitter.Alpha) continue;
                 if (!oriEmitters.ContainsValue(emitter) && emitter.Beta && !emitter.Zeta)
                 {
                     emitter._subpartRotor.SetEmissiveParts("PlasmaEmissive", Color.White, 0f);
@@ -538,6 +551,7 @@ namespace DefenseShields
                 {
                     return;
                 }
+                if (EGridComp.RegisteredComps.Contains(this)) EGridComp.RegisteredComps.Remove(this);
                 if (EGridComp?.PrimeComp == this)
                 {
                     ShieldComp.EmittersWorking = false;
@@ -563,6 +577,7 @@ namespace DefenseShields
             {
                 if (_emitters.ContainsKey(Entity.EntityId)) _emitters.Remove(Entity.EntityId);
                 if (Session.Instance.Emitters.Contains(this)) Session.Instance.Emitters.Remove(this);
+                if (EGridComp.RegisteredComps.Contains(this)) EGridComp.RegisteredComps.Remove(this);
                 if (EGridComp?.PrimeComp == this)
                 {
                     ShieldComp.EmittersWorking = false;

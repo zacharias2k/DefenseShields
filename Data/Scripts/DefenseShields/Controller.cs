@@ -11,6 +11,7 @@ using VRage.Game.ModAPI;
 using VRage.Game.Components;
 using VRage.ModAPI;
 using System.Linq;
+using DefenseShields.Control;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage.Utils;
@@ -68,9 +69,20 @@ namespace DefenseShields
                 UpdateGridPower();
                 CalculatePowerCharge();
                 SetPower();
-
+                /*
                 if (_count == 29)
                 {
+                    if (ShieldComp != null)
+                    {
+                        _widthSlider?.SetLimits(30, ShieldComp.YRange);
+                        _heightSlider?.SetLimits(30, ShieldComp.YRange);
+                        _depthSlider?.SetLimits(30, ShieldComp.XRange);
+                    }
+                }
+                */
+                if (_count == 29)
+                {
+
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
                     {
                         Shield.ShowInToolbarConfig = false;
