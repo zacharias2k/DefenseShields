@@ -48,7 +48,7 @@ namespace DefenseShields
 
         private int _count = -1;
         private int _lCount;
-        private int _extendedLoop;
+        private int _eCount;
 
         internal static DefenseShields HudComp;
         internal static double HudShieldDist = double.MaxValue;
@@ -94,7 +94,7 @@ namespace DefenseShields
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_SETTINGS, PacketSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_ENFORCE, PacketEnforcementReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_MODULATOR, ModulatorSettingsReceived);
-                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_MODULATOR, DisplaySettingsReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_DISPLAY, DisplaySettingsReceived);
                 MyAPIGateway.Utilities.RegisterMessageHandler(WORKSHOP_ID, ModMessageHandler);
                 if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter += CustomControls;
 
@@ -112,7 +112,7 @@ namespace DefenseShields
         public override void Draw()
         {
             if (DedicatedServer) return;
-            if (Enforced.Debug == 1 && _extendedLoop == 0 & _lCount == 0 && _count == 0) Log.Line($"Shields in the world: {Components.Count.ToString()}");
+            if (Enforced.Debug == 1 && _eCount == 0 & _lCount == 0 && _count == 0) Log.Line($"Shields in the world: {Components.Count.ToString()}");
             try
             {
                 if (!SessionInit || Components.Count == 0) return;
@@ -121,7 +121,7 @@ namespace DefenseShields
                 {
                     var s = Components[i];
                     if (!s.ShieldComp.ShieldActive || !s.AllInited) continue;
-                    var sp = new BoundingSphereD(s.Entity.GetPosition(), s.ShieldComp.BoundingRange);
+                    var sp = new BoundingSphereD(s._detectionCenter, s.ShieldComp.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {
                         SphereOnCamera[i] = false;
@@ -130,7 +130,13 @@ namespace DefenseShields
                     SphereOnCamera[i] = true;
                     onCount++;
                 }
-                for (int i = 0; i < Components.Count; i++) if (Components[i].ShieldComp.ShieldActive && Components[i].AllInited && SphereOnCamera[i]) Components[i].Draw(onCount, SphereOnCamera[i]);
+
+                for (int i = 0; i < Components.Count; i++)
+                {
+                    var s = Components[i];
+                    if (s.ShieldComp.ShieldActive && s.AllInited && SphereOnCamera[i]) s.Draw(onCount, SphereOnCamera[i]);
+                    else if (!s.Icosphere.ImpactsFinished && s.AllInited) s.Icosphere.StepEffects();
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
         }
@@ -150,8 +156,8 @@ namespace DefenseShields
                     if (_lCount == 10)
                     {
                         _lCount = 0;
-                        _extendedLoop++;
-                        if (_extendedLoop == 10) _extendedLoop = 0;
+                        _eCount++;
+                        if (_eCount == 10) _eCount = 0;
                     }
                 }
 

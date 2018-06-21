@@ -30,7 +30,7 @@ namespace DefenseShields
                 if (ent == null || FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent)) continue;
 
                 var entCenter = ent.PositionComp.WorldVolume.Center;
-                if (ent.Physics == null && !(ent is IMyAutomaticRifleGun) || ent.MarkedForClose || ent is MyVoxelBase && !ShieldComp.GridIsMobile
+                if (ent.Physics == null && !(ent is IMyAutomaticRifleGun) || ent.MarkedForClose || ent is MyVoxelBase && !_gridIsMobile
                     || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
 
                 var relation = EntType(ent);
@@ -209,7 +209,7 @@ namespace DefenseShields
         private Ent EntType(IMyEntity ent)
         {
             if (ent == null) return Ent.Ignore;
-            if (ent is MyVoxelBase && (Session.Enforced.DisableVoxelSupport == 1 || ModulateVoxels || !ShieldComp.GridIsMobile)) return Ent.Ignore;
+            if (ent is MyVoxelBase && (Session.Enforced.DisableVoxelSupport == 1 || ModulateVoxels || !_gridIsMobile)) return Ent.Ignore;
             if (ent is IMyAutomaticRifleGun) return Ent.Weapon;
 
             if (ent is IMyCharacter)
@@ -254,7 +254,7 @@ namespace DefenseShields
             }
 
             if (ent is IMyMeteor || ent.GetType().Name.StartsWith("MyMissile")) return Ent.Other;
-            if (ent is MyVoxelBase && ShieldComp.GridIsMobile) return Ent.VoxelBase;
+            if (ent is MyVoxelBase && _gridIsMobile) return Ent.VoxelBase;
             return 0;
         }
 

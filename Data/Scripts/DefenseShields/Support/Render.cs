@@ -141,7 +141,7 @@ namespace DefenseShields.Support
             private Vector4 _defaultColor = Color.FromNonPremultiplied(0, 0, 0, 255);
             private Vector4 _chargeColor = Color.FromNonPremultiplied(255, 255, 255, 255);
 
-            private bool _impactsFinished = true;
+            public bool ImpactsFinished = true;
             private bool _impact;
             private bool _charge;
             private bool _passive;
@@ -240,8 +240,8 @@ namespace DefenseShields.Support
                 }
 
                 StepEffects();
-                if (_charge && _impactsFinished && prevLod == _lod) ChargeColorAssignments(prevLod);
-                if (_impactsFinished && prevLod == _lod) return;
+                if (_charge && ImpactsFinished && prevLod == _lod) ChargeColorAssignments(prevLod);
+                if (ImpactsFinished && prevLod == _lod) return;
 
                 if (_active) _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", UtilsStatic.GetEmissiveColorFromFloat(_shieldPercent), 100f);
 
@@ -283,7 +283,7 @@ namespace DefenseShields.Support
                             for (int c = 0; c < _triColorBuffer.Length; c++)
                                 _triColorBuffer[c] = _defaultColor;
                         }
-                        if (!_impactsFinished)
+                        if (!ImpactsFinished)
                         {
                             for (int s = 5; s > -1; s--)
                             {
@@ -349,7 +349,7 @@ namespace DefenseShields.Support
                 ///_dsutil1.Sw.Start();
                 try
                 {
-                    if (_impactsFinished && !_charge) return;
+                    if (ImpactsFinished && !_charge) return;
                     var faceMaterial = _faceIdle;
                     var ib = _backing.IndexBuffer[_lod];
                     var v20 = new Vector2(.5f);
@@ -402,7 +402,7 @@ namespace DefenseShields.Support
                 }
             }
 
-            private void StepEffects()
+            public void StepEffects()
             {
                 _mainLoop++;
                 if (_mainLoop == 61)
@@ -425,7 +425,7 @@ namespace DefenseShields.Support
                 }
                 if (_impact)
                 {
-                    if (_impactsFinished)
+                    if (ImpactsFinished)
                     {
                         if (_active)
                         {
@@ -434,7 +434,7 @@ namespace DefenseShields.Support
                         }
                     }
 
-                    _impactsFinished = false;
+                    ImpactsFinished = false;
                     _charge = false;
                     _chargeDrawStep = 0;
                 }
@@ -450,7 +450,7 @@ namespace DefenseShields.Support
                             _triColorBuffer[i] = _defaultColor;
                     }
                 }
-                if (!_impactsFinished)
+                if (!ImpactsFinished)
                 {
                     //Log.Line($"{_impactCnt[0]} - {_impactCnt[1]} - {_impactCnt[2]} - {_impactCnt[3]} - {_impactCnt[4]} - {_impactCnt[5]}");
                     for (int i = 0; i < _impactCnt.Length; i++)
@@ -467,7 +467,7 @@ namespace DefenseShields.Support
                     {
                         _shellActive.Render.UpdateRenderObject(false);
                         if (_passive) _shellPassive.Render.UpdateRenderObject(true);
-                        _impactsFinished = true;
+                        ImpactsFinished = true;
                         for (int i = 0; i < _triColorBuffer.Length; i++)
                             _triColorBuffer[i] = _defaultColor;
                     }

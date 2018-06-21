@@ -12,7 +12,7 @@ namespace DefenseShields.Control
     {
         private static Func<IMyTerminalBlock, bool> GetDefaultEnabled(IMyTerminalBlock block)
         {
-            return b => b.BlockDefinition.SubtypeId.EndsWith("ParticleEmitter");
+            return b => b.BlockDefinition.SubtypeId.EndsWith("DSControlLarge");
         }
 
         public static IMyTerminalControlColor AddColorEditor<T>(T block, string name, string title, string tooltip, Func<IMyTerminalBlock, Color> getter, Action<IMyTerminalBlock, Color> setter, Func<IMyTerminalBlock, bool> enabledGetter = null, Func<IMyTerminalBlock, bool> visibleGetter = null) where T : IMyTerminalBlock

@@ -5,7 +5,6 @@ using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Collections;
 using VRage.Game;
 using VRage.Game.Components;
@@ -48,10 +47,12 @@ namespace DefenseShields
         public int BulletCoolDown { get; private set; } = -1;
         public int EntityCoolDown { get; private set; } = -1;
         private int _count = -1;
+        private int _lCount;
+        private int _eCount;
+        private int _randomCount = -1;
         private int _shieldDownLoop = -1;
         private int _genericDownLoop = -1;
         private int _reModulationLoop = -1;
-        private int _lCount;
 
         private int _prevLod;
         private int _onCount;
@@ -60,12 +61,15 @@ namespace DefenseShields
 
         public bool ServerUpdate;
         public bool DeformEnabled;
+        internal bool ControlBlockWorking;
         internal bool MainInit;
         internal bool PhysicsInit;
         internal bool AllInited;
         internal bool ShieldOffline;
         internal bool CheckGridRegister;
+        internal bool WarmedUp;
         internal bool HardDisable { get; private set; }
+        private bool _gridIsMobile;
         private bool _enemy;
         private bool _blocksChanged;
         private bool _prevShieldActive;
@@ -85,7 +89,7 @@ namespace DefenseShields
         internal Vector3D ShieldSize { get; set; }
         public Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         private Vector3D _localImpactPosition;
-        private Vector3D _detectionCenter;
+        public Vector3D _detectionCenter;
         private Vector3D _gridHalfExtents;
         private Vector3D _oldGridHalfExtents;
 
@@ -103,7 +107,7 @@ namespace DefenseShields
         private BoundingSphereD _shieldSphere;
         private MyOrientedBoundingBoxD _sOriBBoxD;
         private Quaternion _sQuaternion;
-
+        private Random _random = new Random();
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
         private readonly List<KeyValuePair<IMyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<IMyEntity, EntIntersectInfo>>();
@@ -133,9 +137,6 @@ namespace DefenseShields
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _widthSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _heightSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _depthSlider;
-        //private IMyTerminalControlSlider _widthSlider;
-        //private IMyTerminalControlSlider _heightSlider;
-        //private IMyTerminalControlSlider _depthSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _chargeSlider;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _extendFit;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _sphereFit;
