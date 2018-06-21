@@ -11,7 +11,7 @@
       <DisplayName>DarkStar</DisplayName>
       <Name>DarkStar_Shield_MFG_INC</Name>
       <ItemIds>
-        <string>DS_Toroid</string>
+        
 		<string>SmallShieldModulator</string>
         <string>LargeShieldModulator</string>
 		<string>DSControlLCD</string>
@@ -143,7 +143,7 @@
         <SubtypeId>DSControlLCD</SubtypeId>
       </Id>
       <DisplayName>Shield Controller LCD</DisplayName>
-      <Icon>Textures\Icons\DS_Control.dds</Icon>
+      <Icon>Textures\Icons\DS_LCD.dds</Icon>
       <CubeSize>Large</CubeSize>
       <GuiVisible>true</GuiVisible>
       <BlockTopology>TriangleMesh</BlockTopology>
