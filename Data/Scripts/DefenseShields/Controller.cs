@@ -13,6 +13,7 @@ using VRage.ModAPI;
 using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
+using Sandbox.ModAPI.Interfaces;
 using VRage.Utils;
 using VRage.Voxels;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
@@ -815,7 +816,7 @@ namespace DefenseShields
             if (BulletCoolDown > 9) BulletCoolDown = -1;
             if (EntityCoolDown > -1) EntityCoolDown++;
             if (EntityCoolDown > 9) EntityCoolDown = -1;
-
+            ((MyCubeBlock) Shield).Render.ColorMaskHsv = Color.Red;
             var impactPos = WorldImpactPosition;
             _localImpactPosition = Vector3D.NegativeInfinity;
             if (impactPos != Vector3D.NegativeInfinity & ((BulletCoolDown == -1 && EntityCoolDown == -1)))

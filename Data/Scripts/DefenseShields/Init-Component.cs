@@ -11,6 +11,7 @@ using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRage.Utils;
 using VRageMath;
+using IMyOreDetector = Sandbox.ModAPI.Ingame.IMyOreDetector;
 
 namespace DefenseShields
 {
