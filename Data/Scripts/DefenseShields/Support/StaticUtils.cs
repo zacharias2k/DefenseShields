@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Sandbox.Definitions;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
@@ -14,6 +15,36 @@ namespace DefenseShields.Support
 {
     internal static class UtilsStatic
     {
+        private static readonly Dictionary<float, float> DmgTable = new Dictionary<float, float>
+        {
+            [0.0000000001f] = 0.1f,
+            [0.0000000002f] = 0.2f,
+            [0.0000000003f] = 0.3f,
+            [0.0000000004f] = 0.4f,
+            [0.0000000005f] = 0.5f,
+            [0.0000000006f] = 0.6f,
+            [0.0000000007f] = 0.7f,
+            [0.0000000008f] = 0.8f,
+            [0.0000000009f] = 0.9f,
+            [0.0000000010f] = 1,
+            [0.0000000020f] = 2,
+            [0.0000000030f] = 3,
+            [0.0000000040f] = 4,
+            [0.0000000050f] = 5,
+            [0.0000000060f] = 6,
+            [0.0000000070f] = 7,
+            [0.0000000080f] = 8,
+            [0.0000000090f] = 9,
+            [0.0000000010f] = 10,
+        };
+
+        public static float GetDmgMulti(float damage)
+        {
+            float tableVal;
+            DmgTable.TryGetValue(damage, out tableVal);
+            return tableVal;
+        }
+
         public static void GetRealPlayers(Vector3D center, float radius, List<long> realPlayers)
         {
             List<IMyIdentity> realPlayersIdentities = new List<IMyIdentity>();
@@ -52,6 +83,15 @@ namespace DefenseShields.Support
             if (percent > 40) return Color.GreenYellow;
             if (percent > 20) return Color.OrangeRed;
             return Color.DarkRed;
+        }
+
+        public static Color GetEmissiveColorFromFloatIcon(float percent)
+        {
+            if (percent > 80) return Color.White;
+            if (percent > 60) return Color.Blue;
+            if (percent > 40) return Color.Yellow;
+            if (percent > 20) return Color.Orange;
+            return Color.Red;
         }
 
         public static Color GetEmissiveColorFromFloatEmitter(float percent)

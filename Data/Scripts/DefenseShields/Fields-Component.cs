@@ -84,6 +84,10 @@ namespace DefenseShields
         private bool _enablePhysics = true;
         private bool _shapeLoaded = true;
 
+        private const string SpaceWolf = "Space_Wolf";
+        private const string MyMissile = "MyMissile";
+        private const string MyDebrisBase = "MyDebrisBase";
+
         private Vector2D _shieldIconPos = new Vector2D(-0.91, -0.87);
 
         internal Vector3D ShieldSize { get; set; }
@@ -143,6 +147,7 @@ namespace DefenseShields
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _fortifyShield;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _hidePassiveCheckBox;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _hideActiveCheckBox;
+        private readonly MyStringId _hudIcon = MyStringId.GetOrCompute("DS_ShieldInside");
 
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;

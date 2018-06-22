@@ -137,7 +137,7 @@ namespace DefenseShields
             var character = ent as IMyCharacter;
             if (character == null) return;
             var npcname = character.ToString();
-            if (npcname.Equals("Space_Wolf"))
+            if (npcname.Equals(SpaceWolf))
             {
                 _characterDmg.Enqueue(character);
                 return;

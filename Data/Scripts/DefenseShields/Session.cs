@@ -134,8 +134,8 @@ namespace DefenseShields
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
-                    if (s.ShieldComp.ShieldActive && s.AllInited && SphereOnCamera[i]) s.Draw(onCount, SphereOnCamera[i]);
-                    else if (!s.Icosphere.ImpactsFinished && s.AllInited) s.Icosphere.StepEffects();
+                    if (s.ShieldComp.ShieldActive && SphereOnCamera[i]) s.Draw(onCount, SphereOnCamera[i]);
+                    else if (s.ShieldComp.ShieldActive && !s.Icosphere.ImpactsFinished) s.Icosphere.StepEffects();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }

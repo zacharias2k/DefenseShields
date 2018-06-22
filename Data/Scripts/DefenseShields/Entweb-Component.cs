@@ -31,7 +31,7 @@ namespace DefenseShields
 
                 var entCenter = ent.PositionComp.WorldVolume.Center;
                 if (ent.Physics == null && !(ent is IMyAutomaticRifleGun) || ent.MarkedForClose || ent is MyVoxelBase && !_gridIsMobile
-                    || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
+                    || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == MyDebrisBase) continue;
 
                 var relation = EntType(ent);
                 switch (relation)
@@ -61,7 +61,6 @@ namespace DefenseShields
                     }
                     else
                     {
-                        var inside = false;
                         if (relation == Ent.Other && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv))
                         {
                             IgnoreCache.Add(ent);
@@ -253,7 +252,7 @@ namespace DefenseShields
                 return enemy ? Ent.LargeEnemyGrid : Ent.Friend;
             }
 
-            if (ent is IMyMeteor || ent.GetType().Name.StartsWith("MyMissile")) return Ent.Other;
+            if (ent is IMyMeteor || ent.GetType().Name.StartsWith(MyMissile)) return Ent.Other;
             if (ent is MyVoxelBase && _gridIsMobile) return Ent.VoxelBase;
             return 0;
         }
@@ -294,7 +293,14 @@ namespace DefenseShields
                 return damage;
             }
 
-            if (ammoInfo.BackKickForce < 0) damage = float.NegativeInfinity;
+            var dmgMulti = UtilsStatic.GetDmgMulti(ammoInfo.BackKickForce);
+            if (dmgMulti > 0)
+            {
+                if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.5f)) * 7.5f * dmgMulti;
+                else damage = ammoInfo.Mass * ammoInfo.Speed * dmgMulti;
+                return damage;
+            }
+            if (ammoInfo.BackKickForce < 0 && dmgMulti.Equals(0)) damage = float.NegativeInfinity;
             else if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.5f)) * 7.5f;
             else damage = ammoInfo.Mass * ammoInfo.Speed;
 

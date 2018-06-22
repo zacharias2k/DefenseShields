@@ -118,6 +118,8 @@ namespace DefenseShields.Support
             private Vector3D _chargePoint;
             private MatrixD _matrix;
 
+            private const string ShieldEmissiveAlpha = "ShieldEmissiveAlpha";
+
             private static readonly Random Random = new Random();
 
             private readonly int[] _impactCnt = new int[6];
@@ -243,7 +245,7 @@ namespace DefenseShields.Support
                 if (_charge && ImpactsFinished && prevLod == _lod) ChargeColorAssignments(prevLod);
                 if (ImpactsFinished && prevLod == _lod) return;
 
-                if (_active) _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", UtilsStatic.GetEmissiveColorFromFloat(_shieldPercent), 100f);
+                if (_active) _shellActive.SetEmissiveParts(ShieldEmissiveAlpha, UtilsStatic.GetEmissiveColorFromFloat(_shieldPercent), 100f);
 
                 ImpactColorAssignments(prevLod);
                 //_dsutil2.StopWatchReport("colorcalc", 1);

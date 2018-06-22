@@ -25,6 +25,7 @@ namespace DefenseShields
 
         public MyModStorageComponentBase Storage { get; set; }
         internal DisplaySettings Settings = new DisplaySettings();
+        internal ShieldGridComponent ShieldComp;
 
         private IMyTextPanel Display => (IMyTextPanel)Entity;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyTextPanel> _modulateVoxels;
@@ -37,7 +38,7 @@ namespace DefenseShields
             try
             {
                 base.Init(objectBuilder);
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
+                NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
 
                 Session.Instance.Displays.Add(this);
                 if (!_displays.ContainsKey(Entity.EntityId)) _displays.Add(Entity.EntityId, this);
@@ -54,12 +55,14 @@ namespace DefenseShields
             UpdateSettings(Settings, false);
         }
 
-        public override void UpdateBeforeSimulation10()
+        public override void UpdateBeforeSimulation100()
         {
             _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-
-            if (ServerUpdate) SyncControlsServer();
-            SyncControlsClient();
+            if (ShieldComp == null) Display.CubeGrid.Components.TryGet(out ShieldComp);
+            if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.ShieldActive) return;
+            Display.WritePublicText(ShieldComp.DefenseShields.Shield.CustomInfo);
+            //if (ServerUpdate) SyncControlsServer();
+            //SyncControlsClient();
         }
 
         #region Create UI

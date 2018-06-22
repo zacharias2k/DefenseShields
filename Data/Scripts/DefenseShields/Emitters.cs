@@ -40,6 +40,10 @@ namespace DefenseShields
         internal bool BlockWasWorking;
         internal bool ShieldLineOfSight;
         public bool EmitterOnline;
+
+        private const string PlasmaEmissive = "PlasmaEmissive";
+        private const string EmitterEffect = "EmitterEffect";
+
         private Vector3D _sightPos;
 
         public MyModStorageComponentBase Storage { get; set; }
@@ -341,7 +345,7 @@ namespace DefenseShields
             var matrix = rotationMatrix * MatrixD.CreateTranslation(0, Definition.BlockMoveTranslation * TranslationTime, 0);
 
             _subpartRotor.PositionComp.LocalMatrix = matrix;
-            _subpartRotor.SetEmissiveParts("PlasmaEmissive", UtilsStatic.GetEmissiveColorFromFloatEmitter(ShieldComp.ShieldPercent), 0.1f * EmissiveIntensity);
+            _subpartRotor.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetEmissiveColorFromFloatEmitter(ShieldComp.ShieldPercent), 0.1f * EmissiveIntensity);
 
             if (AnimationLoop++ == 599) AnimationLoop = 0;
         }
@@ -373,7 +377,7 @@ namespace DefenseShields
         private void BlockParticleStart()
         {
             var scale = Definition.ParticleScale;
-            MyParticlesManager.TryCreateParticleEffect("EmitterEffect", out _effect);
+            MyParticlesManager.TryCreateParticleEffect(EmitterEffect, out _effect);
             _effect.UserScale = 1f;
             _effect.UserRadiusMultiplier = scale;
             _effect.UserEmitterScale = 1f;

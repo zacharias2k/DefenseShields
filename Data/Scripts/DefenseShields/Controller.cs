@@ -71,7 +71,6 @@ namespace DefenseShields
                 SetPower();
                 if (_count == 29)
                 {
-
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
                     {
                         Shield.ShowInToolbarConfig = false;
@@ -85,8 +84,8 @@ namespace DefenseShields
                 }
                 if (ShieldComp.ShieldActive)
                 {
-                    //Shield.SetEmissiveParts("iconlock", Color.Red, 100f);
-                    //Shield.SetEmissiveParts("iconshieldrear", Color.Blue, 100f);
+                    //Shield.SetEmissiveParts("iconlock", Color.Transparent, 0f);
+                    //Shield.SetEmissiveParts("iconshieldrear", Color.Black, 0f);
                     if (_lCount % 2 != 0 && _count == 20)
                     {
                         GetModulationInfo();
@@ -757,7 +756,6 @@ namespace DefenseShields
         #region Shield Draw
         private void UpdateIcon()
         {
-            var material = MyStringId.GetOrCompute("DS_ShieldInside");
 
             var position = new Vector3D(_shieldIconPos.X, _shieldIconPos.Y, 0);
             var fov = MyAPIGateway.Session.Camera.FovWithZoom;
@@ -774,15 +772,8 @@ namespace DefenseShields
             var up = cameraWorldMatrix.Up;
             const double scaler = 0.07d;
             scale = scaler * scale;
-
-            Color color;
-            if (ShieldComp.ShieldPercent > 80) color = Color.White;
-            else if (ShieldComp.ShieldPercent > 60) color = Color.Blue;
-            else if (ShieldComp.ShieldPercent > 40) color = Color.Yellow;
-            else if (ShieldComp.ShieldPercent > 20) color = Color.Orange;
-            else color = Color.Red;
-
-            MyTransparentGeometry.AddBillboardOriented(material, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
+            var color = UtilsStatic.GetEmissiveColorFromFloat(ShieldComp.ShieldPercent);
+            MyTransparentGeometry.AddBillboardOriented(_hudIcon, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
         }		
 		
         public void Draw(int onCount, bool sphereOnCamera)
@@ -793,10 +784,7 @@ namespace DefenseShields
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
             _enemy = enemy;
 
-            if (!enemy && !MyAPIGateway.Session.Config.MinimalHud && Session.HudComp == this)
-            {
-				UpdateIcon();
-            }
+            if (!enemy && !MyAPIGateway.Session.Config.MinimalHud && Session.HudComp == this) UpdateIcon();
 
             var passiveVisible = !(_hidePassiveCheckBox.Getter(Shield).Equals(true) && !enemy);
             var activeVisible = !(_hideActiveCheckBox.Getter(Shield).Equals(true) && !enemy);
@@ -816,7 +804,6 @@ namespace DefenseShields
             if (BulletCoolDown > 9) BulletCoolDown = -1;
             if (EntityCoolDown > -1) EntityCoolDown++;
             if (EntityCoolDown > 9) EntityCoolDown = -1;
-            ((MyCubeBlock) Shield).Render.ColorMaskHsv = Color.Red;
             var impactPos = WorldImpactPosition;
             _localImpactPosition = Vector3D.NegativeInfinity;
             if (impactPos != Vector3D.NegativeInfinity & ((BulletCoolDown == -1 && EntityCoolDown == -1)))
