@@ -179,12 +179,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Audio\RealBlockGravityGenEnd3d.wav" />
-    <Content Include="Audio\RealBlockGravityGenLoop3d.wav" />
-    <Content Include="Audio\RealBlockGravityGenStart3d.wav" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Audio\ShieldHitNormalHigh.xwm" />
     <None Include="Data\DefenseShield_Audio.sbc" />
     <None Include="Data\DefenseShield_Component_Blueprint.sbc" />
     <None Include="Data\DefenseShield_Cubeblocks_Categories.sbc" />
@@ -207,37 +201,25 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\Controls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Seperator.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\UpdateDsSettings.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Entweb-Component.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Intersect-Component.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Entweb-DSComp.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\GridComps\EmitterGridComp.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\GridComps\ModulatorGridComp.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\GridComps\ShieldGridComp.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Intersect-DSComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Modulators.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Emitters.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\SetDsControls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Shield-Settings.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Fields-Component.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Init-Component.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\EmitterDirMappingDef.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\DefinitionManager.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Fields-DSComp.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Init-DSComp.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Definitions\EmitterDirMappingDef.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Definitions\EmitterDefinitions.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Spawn.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\SyncEnts-Component.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SyncEnts-DSComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\StaticUtils.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\EllipsoidOxygenProvider.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\SurfaceArea\EllipsoidSA.cs" />
-    <Compile Include="test\port\Coord3D.cs" />
-    <Compile Include="test\port\Ellipsoid.cs" />
-    <Compile Include="test\port\GeometRi3D.cs" />
-    <Compile Include="test\Box3d.cs" />
-    <Compile Include="test\Circle3D.cs" />
-    <Compile Include="test\Coord3D.cs" />
-    <Compile Include="test\Ellipse.cs" />
-    <Compile Include="test\Ellipsoid.cs" />
-    <Compile Include="test\GeometRi3D.cs" />
-    <Compile Include="test\Interface.cs" />
-    <Compile Include="test\Line3D.cs" />
-    <Compile Include="test\Matrix3D.cs" />
-    <Compile Include="test\Plane3D.cs" />
-    <Compile Include="test\port\Point3D.cs" />
-    <Compile Include="test\Point3D.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\EllipsoidOxygenProvider.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\EllipsoidSA.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\SerializationClasses.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CustomCollision.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\BoxShape.cs" />
@@ -251,27 +233,20 @@
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\Octree.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\ResourcePool.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\Shapes.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\DebugDraw.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Debug\DebugDraw.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Distiance\DistPoint3Triangle3.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Logging.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Slider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Utils.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Render.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Controller.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DSController.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Structure\StructureBuilder.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\Triangle3.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\TriangleMeshShape.cs" />
-    <Compile Include="test\Quaternion.cs" />
-    <Compile Include="test\Ray3D.cs" />
-    <Compile Include="test\Rotation.cs" />
-    <Compile Include="test\Segment3D.cs" />
-    <Compile Include="test\Sphere.cs" />
-    <Compile Include="test\Triangle.cs" />
-    <Compile Include="test\Vector3D.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Audio\" />
     <Folder Include="Models\" />
-    <Folder Include="prod\" />
     <Folder Include="Textures\GUI\Icons\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSHARP.Targets" />
