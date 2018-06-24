@@ -76,6 +76,7 @@ namespace DefenseShields.Support
             }
         }
 
+        /*
         public static Color GetEmissiveColorFromFloat(float percent)
         {
             if (percent > 80) return Color.LightBlue;
@@ -84,23 +85,45 @@ namespace DefenseShields.Support
             if (percent > 20) return Color.OrangeRed;
             return Color.DarkRed;
         }
+        */
+
+        public static Color GetEmissiveColorFromFloat(float percent)
+        {
+            if (percent > 90) return Color.White;
+            if (percent > 80) return Color.DeepSkyBlue;
+            if (percent > 70) return Color.Purple;
+            if (percent > 60) return Color.DarkBlue;
+            if (percent > 50) return Color.Green;
+            if (percent > 40) return Color.Yellow;
+            if (percent > 30) return Color.OrangeRed;
+            if (percent > 20) return Color.Red;
+            return Color.Black;
+        }
 
         public static Color GetEmissiveColorFromFloatIcon(float percent)
         {
-            if (percent > 80) return Color.White;
-            if (percent > 60) return Color.Blue;
+            if (percent > 90) return Color.White;
+            if (percent > 80) return Color.DeepSkyBlue;
+            if (percent > 70) return Color.Purple;
+            if (percent > 60) return Color.DarkBlue;
+            if (percent > 50) return Color.Green;
             if (percent > 40) return Color.Yellow;
-            if (percent > 20) return Color.Orange;
-            return Color.Red;
+            if (percent > 30) return Color.OrangeRed;
+            if (percent > 20) return Color.Red;
+            return Color.DarkRed;
         }
 
         public static Color GetEmissiveColorFromFloatEmitter(float percent)
         {
-            if (percent > 80) return Color.White;
-            if (percent > 60) return Color.Blue;
+            if (percent > 90) return Color.White;
+            if (percent > 80) return Color.DeepSkyBlue;
+            if (percent > 70) return Color.Purple;
+            if (percent > 60) return Color.DarkBlue;
+            if (percent > 50) return Color.Green;
             if (percent > 40) return Color.Yellow;
-            if (percent > 20) return Color.Orange;
-            return Color.Red;
+            if (percent > 30) return Color.OrangeRed;
+            if (percent > 20) return Color.Red;
+            return Color.Black;
         }
 
         public static long ThereCanBeOnlyOne(IMyCubeBlock shield)
@@ -117,7 +140,6 @@ namespace DefenseShields.Support
                     shieldBlocks.Add(block);
                 }
             }
-            Log.Line($"ThereCanBeOnlyOne: No working block found");
             var shieldDistFromCenter = double.MinValue;
             var shieldId = long.MinValue;
             foreach (var s in shieldBlocks)
@@ -214,7 +236,7 @@ namespace DefenseShields.Support
                     if (Session.AmmoCollection.ContainsKey(shot.MissileModelName)) continue;
                     Session.AmmoCollection.Add(shot.MissileModelName, new AmmoInfo(shot.IsExplosive, shot.MissileExplosionDamage, shot.MissileExplosionRadius, shot.DesiredSpeed, shot.MissileMass, shot.BackkickForce));
                 }
-                Log.Line($"Definitions Loaded");
+                if (Session.Enforced.Debug == 1) Log.Line($"Definitions Loaded");
             }
             catch (Exception ex) { Log.Line($"Exception in GetAmmoDefinitions: {ex}"); }
         }
@@ -224,7 +246,7 @@ namespace DefenseShields.Support
             var blockPoints = new Vector3D[8];
             var blocks = new List<IMySlimBlock>();
 
-            var subGrids = MyAPIGateway.GridGroups.GetGroup(shield.CubeGrid, GridLinkTypeEnum.Logical);
+            var subGrids = MyAPIGateway.GridGroups.GetGroup(shield.CubeGrid, GridLinkTypeEnum.Mechanical);
             foreach (var grid in subGrids) grid.GetBlocks(blocks);
 
             var sqrt2 = Math.Sqrt(2);
@@ -270,7 +292,7 @@ namespace DefenseShields.Support
             var blockPoints = new Vector3D[8];
             var blocks = new List<IMySlimBlock>();
 
-            var subGrids = MyAPIGateway.GridGroups.GetGroup(shield.CubeGrid, GridLinkTypeEnum.Logical);
+            var subGrids = MyAPIGateway.GridGroups.GetGroup(shield.CubeGrid, GridLinkTypeEnum.Mechanical);
             foreach (var grid in subGrids) grid.GetBlocks(blocks);
 
             var sqrt3 = Math.Sqrt(3);
@@ -313,7 +335,7 @@ namespace DefenseShields.Support
 
         public static int BlockCount(IMyCubeBlock shield)
         {
-            var subGrids = MyAPIGateway.GridGroups.GetGroup(shield.CubeGrid, GridLinkTypeEnum.Logical);
+            var subGrids = MyAPIGateway.GridGroups.GetGroup(shield.CubeGrid, GridLinkTypeEnum.Mechanical);
             var blockCnt = 0;
             foreach (var grid in subGrids)
             {

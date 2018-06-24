@@ -53,6 +53,9 @@ namespace DefenseShields
         private int _shieldDownLoop = -1;
         private int _genericDownLoop = -1;
         private int _reModulationLoop = -1;
+        private const int ReModulationCount = 300;
+        private const int ShieldDownCount = 1200;
+        private const int GenericDownCount = 60;
 
         private int _prevLod;
         private int _onCount;
@@ -123,6 +126,7 @@ namespace DefenseShields
 
         public readonly HashSet<IMyEntity> FriendlyCache = new HashSet<IMyEntity>();
         public readonly HashSet<IMyEntity> IgnoreCache = new HashSet<IMyEntity>();
+        private List<IMyCubeGrid> _connectedGrids = new List<IMyCubeGrid>();
 
         private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<IMyEntity, Vector3D>();
         private readonly MyConcurrentDictionary<IMyEntity, EntIntersectInfo> _webEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();
@@ -147,6 +151,7 @@ namespace DefenseShields
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _fortifyShield;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _hidePassiveCheckBox;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _hideActiveCheckBox;
+        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _sendToHudCheckBoxe;
         private readonly MyStringId _hudIcon = MyStringId.GetOrCompute("DS_ShieldInside");
 
         internal MyResourceSinkInfo ResourceInfo;
@@ -239,6 +244,13 @@ namespace DefenseShields
             get { return DsSet.Settings.FortifyShield; }
             set { DsSet.Settings.FortifyShield = value; }
         }
+
+        public bool SendToHud
+        {
+            get { return DsSet.Settings.SendToHud; }
+            set { DsSet.Settings.SendToHud = value; }
+        }
+
         public float ShieldBuffer
         {
             get { return DsSet.Settings.Buffer; }

@@ -55,6 +55,11 @@ namespace DefenseShields
                 _hidePassiveCheckBox.Setter(Shield, DsSet.Settings.IdleInvisible);
             }
 
+            if (_sendToHudCheckBoxe != null && !_sendToHudCheckBoxe.Getter(Shield).Equals(DsSet.Settings.SendToHud))
+            {
+                _sendToHudCheckBoxe.Setter(Shield, DsSet.Settings.SendToHud);
+            }
+
             ServerUpdate = false;
             _updateDimensions = true;
             DsSet.SaveSettings();
@@ -92,11 +97,14 @@ namespace DefenseShields
             {
                 if (!_extendFit.Getter(Shield).Equals(ExtendFit)
                     || !_sphereFit.Getter(Shield).Equals(SphereFit)
-                    || !_fortifyShield.Getter(Shield).Equals(FortifyShield))
+                    || !_fortifyShield.Getter(Shield).Equals(FortifyShield)
+                    || !_sendToHudCheckBoxe.Getter(Shield).Equals(SendToHud))
                 {
                     ExtendFit = _extendFit.Getter(Shield);
                     SphereFit = _sphereFit.Getter(Shield);
                     FortifyShield = _fortifyShield.Getter(Shield);
+                    SendToHud = _sendToHudCheckBoxe.Getter(Shield);
+
                     needsSync = true;
                     _fitChanged = true;
                 }

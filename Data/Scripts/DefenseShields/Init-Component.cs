@@ -73,8 +73,9 @@ namespace DefenseShields
             }
             _hierarchyTick = _tick;
 
-            var gotGroups = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Logical);
+            var gotGroups = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Mechanical);
             ShieldComp.GetSubGrids.Clear();
+            _connectedGrids.Clear();
             for (int i = 0; i < gotGroups.Count; i++) ShieldComp.GetSubGrids.Add(gotGroups[i]);
         }
 
@@ -114,6 +115,8 @@ namespace DefenseShields
 
                 if (AllInited || !Shield.IsFunctional) return;
 
+                if (ConnectCheck(true)) return;
+
                 if (!HealthCheck()) return;
 
                 if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>()) Shield.CubeGrid.Components.Add(ShieldComp);
@@ -123,13 +126,13 @@ namespace DefenseShields
                     ShieldComp.BoundingRange = 0f;
                     WarmedUp = false;
                     ShieldComp.Warming = false;
+                    ShieldComp.Starting = false;
                     ShieldComp.ShieldActive = false;
                     ShieldComp.ModulationPassword = null;
-                    ShieldComp.ShieldIsStarting = false;
+                    ShieldComp.ComingOnline = false;
                     ShieldComp.DefenseShields = this;
                 }
 
-                if (ConnectCheck(true)) return;
 
                 if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
 
@@ -274,20 +277,20 @@ namespace DefenseShields
         #endregion
 
         #region Create UI
-
         private void CreateUi()
         {
             UtilsStatic.RemoveOreUi();
-            _chargeSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ChargeRate", "Shield Charge Rate", 20, 95, 50);
+            _chargeSlider = new RangeSlider<IMyOreDetector>(Shield, "ChargeRate", "Shield Charge Rate", 20, 95, 50);
 
-            _extendFit = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ExtendFit", "Extend Shield", false);
-            _sphereFit = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "SphereFit", "Sphere Fit", false);
-            _fortifyShield = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "ShieldFortify", "Fortify Shield", false);
-            _widthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "WidthSlider", "Shield Size Width", 30, 600, 100);
-            _heightSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HeightSlider", "Shield Size Height", 30, 600, 100);
-            _depthSlider = new RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "DepthSlider", "Shield Size Depth", 30, 600, 100);
-            _hidePassiveCheckBox = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HidePassive", "Hide idle shield state", false);
-            _hideActiveCheckBox = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector>(Shield, "HideActive", "Hide active shield state", false);
+            _extendFit = new RefreshCheckbox<IMyOreDetector>(Shield, "ExtendFit", "Extend Shield", false);
+            _sphereFit = new RefreshCheckbox<IMyOreDetector>(Shield, "SphereFit", "Sphere Fit      ", false);
+            _fortifyShield = new RefreshCheckbox<IMyOreDetector>(Shield, "ShieldFortify", "Fortify Shield ", false);
+            _widthSlider = new RangeSlider<IMyOreDetector>(Shield, "WidthSlider", "Shield Size Width", 30, 600, 100);
+            _heightSlider = new RangeSlider<IMyOreDetector>(Shield, "HeightSlider", "Shield Size Height", 30, 600, 100);
+            _depthSlider = new RangeSlider<IMyOreDetector>(Shield, "DepthSlider", "Shield Size Depth", 30, 600, 100);
+            _hidePassiveCheckBox = new RefreshCheckbox<IMyOreDetector>(Shield, "HidePassive", "Hide idle shield state            ", false);
+            _hideActiveCheckBox = new RefreshCheckbox<IMyOreDetector>(Shield, "HideActive", "Hide active shield state        ", false);
+            _sendToHudCheckBoxe = new RefreshCheckbox<IMyOreDetector>(Shield, "HideIcon", "Send status to nearby HUDs", true);
 
             if (Session.Enforced.Debug == 1) Log.Line($"CreateUI Complete");
         }

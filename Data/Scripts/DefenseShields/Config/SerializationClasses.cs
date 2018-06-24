@@ -64,11 +64,14 @@ namespace DefenseShields
         [ProtoMember(13)]
         public bool FortifyShield = false;
 
+        [ProtoMember(14)]
+        public bool SendToHud = false;
+
         public override string ToString()
         {
             return $"Enabled = {Enabled}\nIdleVisible = {IdleInvisible}\nActiveVisible = {ActiveInvisible}\nWidth = {Math.Round(Width, 4)}" +
                    $"\nHeight = {Math.Round(Height, 4)}\nDepth = {Math.Round(Depth, 4)}\nRate = {Math.Round(Rate, 4)}" +
-                   $"\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nExtendFit = {ExtendFit}\nSphereFit = {SphereFit}\nFortifyShield = {FortifyShield}";
+                   $"\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nExtendFit = {ExtendFit}\nSphereFit = {SphereFit}\nFortifyShield = {FortifyShield}\nSendToHud = {SendToHud}";
         }
     }
 

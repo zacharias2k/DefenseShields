@@ -13,8 +13,6 @@ using VRage.ModAPI;
 using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
-using Sandbox.ModAPI.Interfaces;
-using VRage.Utils;
 using VRage.Voxels;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
@@ -30,14 +28,13 @@ namespace DefenseShields
             {
                 if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-
                 if (!BlockFunctional()) return;
+
                 if (ServerUpdate) SyncControlsServer();
                 SyncControlsClient();
                 
                 if (_gridIsMobile) MobileUpdate();
                 else _shapeAdjusted = false;
-
                 if (_updateDimensions) RefreshDimensions();
 
                 if (_fitChanged || _lCount == 0 && _count == 0 && _blocksChanged)
@@ -60,9 +57,9 @@ namespace DefenseShields
                     } 
                 }
 
-                ShieldComp.ShieldActive = ControlBlockWorking && ShieldComp.EmittersWorking;
-                if (_prevShieldActive == false && ShieldComp.ShieldActive) ShieldComp.ShieldIsStarting = true;
-                else if (ShieldComp.ShieldIsStarting && _prevShieldActive && ShieldComp.ShieldActive) ShieldComp.ShieldIsStarting = false;
+                ShieldComp.ShieldActive = ControlBlockWorking && !ShieldOffline;
+                if (_prevShieldActive == false && ShieldComp.ShieldActive) ShieldComp.ComingOnline = true;
+                else if (ShieldComp.ComingOnline && _prevShieldActive && ShieldComp.ShieldActive) ShieldComp.ComingOnline = false;
                 _prevShieldActive = ShieldComp.ShieldActive;
 
                 Timing();
@@ -91,9 +88,9 @@ namespace DefenseShields
                         GetModulationInfo();
                         if (_reModulationLoop > -1) return;
                     }
-                    if (ShieldComp.ShieldIsStarting)
+                    if (ShieldComp.ComingOnline)
                     {
-                        if (ShieldComp.ShieldIsStarting && _gridIsMobile && FieldShapeBlocked()) return;
+                        if (ShieldComp.ComingOnline && _gridIsMobile && FieldShapeBlocked()) return;
                         if (!_hidePassiveCheckBox.Getter(Shield).Equals(true)) _shellPassive.Render.UpdateRenderObject(true);
 
                         _shellActive.Render.UpdateRenderObject(true);
@@ -163,12 +160,9 @@ namespace DefenseShields
             if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
             if (!AllInited || ShieldComp.DefenseShields != this || !WarmUpSequence()) return false;
 
-            if (_lCount == 4 && _count == 4 && Shield.Enabled && ConnectCheck()) return false;
-
-            if (_count == 33 && ShieldComp.ShieldActive && !Session.MpActive && ((MyCubeGrid)Shield.CubeGrid).GetFatBlocks().Count < 2 )
+            if (_shieldDownLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"Shield going critical");
-                MyVisualScriptLogicProvider.CreateExplosion(Shield.PositionComp.WorldVolume.Center, (float)Shield.PositionComp.WorldVolume.Radius * 1.25f, 2500);
+                FailureConditions();
                 return false;
             }
 
@@ -183,45 +177,53 @@ namespace DefenseShields
                 if (!ShieldComp.EmittersWorking) _genericDownLoop = 0;
             }
 
-            if (!Shield.IsWorking || !Shield.IsFunctional)
+            if (!Shield.IsWorking || !Shield.IsFunctional || !ShieldComp.EmittersWorking)
             {
-                if (!ShieldOffline) OfflineShield();
+                _genericDownLoop = 0;
                 return false;
             }
 
-            if (_shieldDownLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
-            {
-                FailureConditions();
-                return false;
-            }
+            if (_lCount == 4 && _count == 4 && Shield.Enabled && ConnectCheck()) return false;
 
             var blockCount = BlockCount();
             if (!_blocksChanged) _blocksChanged = blockCount != _oldBlockCount;
             _oldBlockCount = blockCount;
-
             ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
             return ControlBlockWorking;
         }
 
         private bool WarmUpSequence()
         {
-            if (ShieldComp.EmitterComp == null && ShieldComp.Warming)
+            if (ShieldComp.Warming) return true;
+
+            if (ShieldComp.Starting)
             {
                 EmitterGridComponent eComp;
                 Shield.CubeGrid.Components.TryGet(out eComp);
                 if (eComp != null)
                 {
                     ShieldComp.EmitterComp = eComp;
-                    if (!_gridIsMobile)
+                    if (_gridIsMobile)
+                    {
+                        CreateHalfExtents();
+                        GetShapeAdjust();
+                        MobileUpdate();
+                    }
+                    else
                     {
                         _updateDimensions = true;
                         RefreshDimensions();
                     }
+                    _shapeAdjusted = false;
+                    _blocksChanged = false;
+                    ShieldComp.CheckEmitters = true;
+                    Icosphere.ReturnPhysicsVerts(DetectionMatrix, ShieldComp.PhysicsOutside);
+                    SyncControlsClient();
+                    ShieldComp.Warming = true;
                     return false;
                 }
                 return false;
             }
-            if (ShieldComp.Warming) return true;
 
             _hierarchyDelayed = false;
             HierarchyChanged();
@@ -229,25 +231,13 @@ namespace DefenseShields
             if (!_blocksChanged) _blocksChanged = blockCnt != _oldBlockCount;
             _oldBlockCount = blockCnt;
 
-            if (_gridIsMobile)
-            {
-                CreateHalfExtents();
-                GetShapeAdjust();
-                MobileUpdate();
-            }
-
-            Icosphere.ReturnPhysicsVerts(DetectionMatrix, ShieldComp.PhysicsOutside);
-            SyncControlsClient();
-
             BackGroundChecks();
             UpdateGridPower();
             GetModulationInfo();
-            _shapeAdjusted = false;
-            _blocksChanged = false;
             ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
-            if (Session.Enforced.Debug == 1) Log.Line($"range warmup enforced:\n{Session.Enforced}");
-            if (Session.Enforced.Debug == 1) Log.Line($"range warmup buffer:{ShieldBuffer} - BlockWorking:{ControlBlockWorking} - Active:{ShieldComp.ShieldActive}");
-            ShieldComp.Warming = true;
+            if (Session.Enforced.Debug == 1) Log.Line($"start warmup enforced:\n{Session.Enforced}");
+            if (Session.Enforced.Debug == 1) Log.Line($"start warmup buffer:{ShieldBuffer} - BlockWorking:{ControlBlockWorking} - Active:{ShieldComp.ShieldActive}");
+            ShieldComp.Starting = true;
             return false;
         }
 
@@ -339,38 +329,47 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - powerCnt: {_powerSources.Count.ToString()}");
         }
 
-        private bool ConnectCheck(bool createHalfExtents = false)
+        private bool ConnectCheck(bool startUp = false)
         {
             if (!Shield.Enabled) return true;
 
             var myGrid = Shield.CubeGrid;
             var myGridIsSub = false;
+            if (startUp)
+            {
+                if (_connectedGrids.Count == 0) _connectedGrids = MyAPIGateway.GridGroups.GetGroup(myGrid, GridLinkTypeEnum.Physical);
+                foreach (var grid in _connectedGrids)
+                {
+                    if (myGrid == grid) continue;
+                    if (myGrid.PositionComp.WorldAABB.Volume <= grid.PositionComp.WorldAABB.Volume) return true;
+                }
+            }
 
             if (ShieldComp.GetSubGrids.Count <= 1) return false;
-
-            if (createHalfExtents) CreateHalfExtents();
-
-            if (ShieldMode == ShieldType.SmallGrid)
+            if (startUp)
             {
-                foreach (var grid in ShieldComp.GetSubGrids)
+                var gearLocked = MyAPIGateway.GridGroups.GetGroup(myGrid, GridLinkTypeEnum.NoContactDamage);
+                if (gearLocked.Count > 0)
                 {
-                    if (grid != myGrid && grid.GridSizeEnum == MyCubeSize.Large)
+                    Log.Line($"I am locked");
+                    foreach (var grid in gearLocked)
                     {
-                        if (myGrid.PositionComp.WorldAABB.Volume < grid.PositionComp.WorldAABB.Volume) myGridIsSub = true;
+                        if (grid != myGrid) Log.Line($"{grid.DisplayName}");
                     }
                 }
+                CreateHalfExtents();
             }
-            else if (ShieldMode == ShieldType.LargeGrid)
+
+            foreach (var grid in ShieldComp.GetSubGrids)
             {
-                foreach (var grid in ShieldComp.GetSubGrids)
+                if (grid == myGrid) continue;
+                if (myGrid.PositionComp.WorldAABB.Volume < grid.PositionComp.WorldAABB.Volume)
                 {
-                    if (grid != myGrid && grid.GridSizeEnum == MyCubeSize.Large)
-                    {
-                        if (myGrid.PositionComp.WorldAABB.Volume < grid.PositionComp.WorldAABB.Volume) myGridIsSub = true;
-                    }
+                    myGridIsSub = true;
+                    break;
                 }
             }
-            //if (subId != "DefenseShieldsST" && _expandedAabb.Volume() > myGrid.PositionComp.LocalAABB.Volume() * 3) myGridIsSub = true;
+
             if (myGridIsSub)
             {
                 var realPlayerIds = new List<long>();
@@ -404,6 +403,9 @@ namespace DefenseShields
             ShieldBuffer = 0;
             _shieldChargeRate = 0;
             _shieldMaxChargeRate = 0;
+            _shieldMaxBuffer = 0;
+            Shield.ShowInToolbarConfig = false;
+            Shield.ShowInToolbarConfig = true;
 
             CleanUp(0);
             CleanUp(1);
@@ -413,6 +415,8 @@ namespace DefenseShields
 
         private void FailureConditions()
         {
+            if (!ShieldOffline) ShieldComp.CheckEmitters = true;
+
             if (_shieldDownLoop == 0 || _reModulationLoop == 0)
             {
                 if (!ShieldOffline) OfflineShield();
@@ -430,7 +434,7 @@ namespace DefenseShields
             if (_reModulationLoop > -1)
             {
                 _reModulationLoop++;
-                if (_reModulationLoop == 300)
+                if (_reModulationLoop == ReModulationCount)
                 {
                     ShieldOffline = false;
                     _reModulationLoop = -1;
@@ -442,7 +446,7 @@ namespace DefenseShields
             if (_genericDownLoop > -1)
             {
                 _genericDownLoop++;
-                if (_genericDownLoop == 60)
+                if (_genericDownLoop == GenericDownCount)
                 {
                     if (!ShieldComp.EmittersWorking) _genericDownLoop = 0;
                     else
@@ -456,7 +460,7 @@ namespace DefenseShields
             }
 
             _shieldDownLoop++;
-            if (_shieldDownLoop == 1200)
+            if (_shieldDownLoop == ShieldDownCount)
             {
                 if (!ShieldComp.EmittersWorking) _genericDownLoop = 0;
                 else
@@ -501,14 +505,22 @@ namespace DefenseShields
         {
             ShieldComp.ShieldVelocitySqr = Shield.CubeGrid.Physics.LinearVelocity.LengthSquared();
             _sAvelSqr = Shield.CubeGrid.Physics.AngularVelocity.LengthSquared();
-            if (ShieldComp.ShieldVelocitySqr > 0.00001 || _sAvelSqr > 0.00001 || ShieldComp.ShieldIsStarting) ShieldComp.GridIsMoving = true;
+            if (ShieldComp.ShieldVelocitySqr > 0.00001 || _sAvelSqr > 0.00001 || ShieldComp.ComingOnline)
+            {
+                ShieldComp.GridIsMoving = true;
+                if (FortifyShield && Math.Sqrt(ShieldComp.ShieldVelocitySqr) > 15)
+                {
+                    _fitChanged = true;
+                    _fortifyShield.Setter(Shield, false);
+                }
+            }
             else ShieldComp.GridIsMoving = false;
 
             _shapeAdjusted = !_ellipsoidAdjust.Equals(_oldEllipsoidAdjust) || !_gridHalfExtents.Equals(_oldGridHalfExtents);
             _oldGridHalfExtents = _gridHalfExtents;
             _oldEllipsoidAdjust = _ellipsoidAdjust;
-            _entityChanged = Shield.CubeGrid.Physics.IsMoving || ShieldComp.ShieldIsStarting || _shapeAdjusted;
-            if (_entityChanged || ShieldComp.BoundingRange <= 0 || ShieldComp.ShieldIsStarting) CreateShieldShape();
+            _entityChanged = Shield.CubeGrid.Physics.IsMoving || ShieldComp.ComingOnline || _shapeAdjusted;
+            if (_entityChanged || ShieldComp.BoundingRange <= 0 || ShieldComp.ComingOnline) CreateShieldShape();
         }
 
         private void CreateShieldShape()
@@ -610,13 +622,14 @@ namespace DefenseShields
             _gridAvailablePower = 0;
             _shieldMaintaintPower = 0;
             if (!ShieldComp.ShieldActive) return;
+            var eId = MyResourceDistributorComponent.ElectricityId;
             lock (_powerSources)
                 for (int i = 0; i < _powerSources.Count; i++)
                 {
                     var source = _powerSources[i];
                     if (!source.Enabled || !source.ProductionEnabled) continue;
-                    _gridMaxPower += source.MaxOutput;
-                    _gridCurrentPower += source.CurrentOutput;
+                    _gridMaxPower += source.MaxOutputByType(eId);
+                    _gridCurrentPower += source.CurrentOutputByType(eId);
                 }
             _gridAvailablePower = _gridMaxPower - _gridCurrentPower;
             if (_gridCurrentPower <= 0) Shield.Enabled = false;
@@ -655,7 +668,7 @@ namespace DefenseShields
                 if (ShieldBuffer + (_shieldMaxChargeRate * nerfer) < _shieldMaxBuffer) _shieldChargeRate = (_shieldMaxChargeRate * nerfer);
                 else if (_shieldMaxBuffer - ShieldBuffer > 0) _shieldChargeRate = _shieldMaxBuffer - ShieldBuffer;
                 else _shieldMaxChargeRate = 0f;
-                _shieldConsumptionRate = _shieldChargeRate;
+                _shieldConsumptionRate = _shieldMaxChargeRate;
             }
             else if (ShieldBuffer + (_shieldMaxChargeRate / (_sizeScaler / nerfer)) < _shieldMaxBuffer)
             {
@@ -733,13 +746,18 @@ namespace DefenseShields
             Absorb = 0f;
         }
 
+        private string ShieldStatus()
+        {
+            return ShieldOffline ? "Offline" : "Online";
+        }
+
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
-            var shieldPercent = 100f;
             var secToFull = 0;
+            var shieldPercent = ShieldOffline ? 0f : 100f;
             if (ShieldBuffer < _shieldMaxBuffer) shieldPercent = (ShieldBuffer / _shieldMaxBuffer) * 100;
             if (_shieldChargeRate > 0) secToFull = (int) ((_shieldMaxBuffer - ShieldBuffer) / _shieldChargeRate);
-            stringBuilder.Append("[Shield Status] MaxHP: " + (_shieldMaxBuffer * Session.Enforced.Efficiency).ToString("N0") +
+            stringBuilder.Append("[Shield " + ShieldStatus() +"] MaxHP: " + (_shieldMaxBuffer * Session.Enforced.Efficiency).ToString("N0") +
                                  "\n" +
                                  "\n[Shield HP__]: " + (ShieldBuffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
                                  "\n[HP Per Sec_]: " + (_shieldChargeRate * Session.Enforced.Efficiency).ToString("N0") +
@@ -772,7 +790,8 @@ namespace DefenseShields
             var up = cameraWorldMatrix.Up;
             const double scaler = 0.07d;
             scale = scaler * scale;
-            var color = UtilsStatic.GetEmissiveColorFromFloat(ShieldComp.ShieldPercent);
+            var color = UtilsStatic.GetEmissiveColorFromFloatIcon(ShieldComp.ShieldPercent);
+            if (color == Color.DarkRed && _lCount % 2 == 0) color = Color.Transparent;
             MyTransparentGeometry.AddBillboardOriented(_hudIcon, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
         }		
 		
@@ -784,7 +803,7 @@ namespace DefenseShields
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
             _enemy = enemy;
 
-            if (!enemy && !MyAPIGateway.Session.Config.MinimalHud && Session.HudComp == this) UpdateIcon();
+            if (!enemy && SendToHud && !MyAPIGateway.Session.Config.MinimalHud && Session.HudComp == this) UpdateIcon();
 
             var passiveVisible = !(_hidePassiveCheckBox.Getter(Shield).Equals(true) && !enemy);
             var activeVisible = !(_hideActiveCheckBox.Getter(Shield).Equals(true) && !enemy);

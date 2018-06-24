@@ -155,7 +155,9 @@ namespace DefenseShields.Support
 
         public bool GridIsMoving { get; set; }
 
-        public bool ShieldIsStarting { get; set; }
+        public bool ComingOnline { get; set; }
+
+        public bool Starting { get; set; }
 
         public bool Warming { get; set; }
 
@@ -227,6 +229,8 @@ namespace DefenseShields.Support
         {
             return true;
         }
+
+        public HashSet<IMyCubeGrid> GetSubGrids { get; set; } = new HashSet<IMyCubeGrid>();
 
         public string ModulationPassword
         {
@@ -310,8 +314,6 @@ namespace DefenseShields.Support
         }
 
         public HashSet<Emitters> RegisteredComps { get; set; } = new HashSet<Emitters>();
-
-        public bool PerformEmitterDiagnostic { get; set; }
 
         public override string ComponentTypeDebugString
         {

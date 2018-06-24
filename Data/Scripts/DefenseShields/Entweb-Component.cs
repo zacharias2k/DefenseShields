@@ -230,9 +230,7 @@ namespace DefenseShields
                 {
                     if (modComp.ModulationPassword.Equals(Shield.CustomData))
                     {
-                        ShieldGridComponent sComponent;
-                        grid.Components.TryGet(out sComponent);
-                        foreach (var subGrid in sComponent.GetSubGrids) FriendlyCache.Add(subGrid);
+                        foreach (var subGrid in modComp.GetSubGrids) FriendlyCache.Add(subGrid);
                         return Ent.Authenticated;
                     }
                 }

@@ -70,6 +70,78 @@ namespace DefenseShields
             Small,
         };
 
+        public override void UpdateBeforeSimulation()
+        {
+            try
+            {
+                if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
+                IsStatic = Emitter.CubeGrid.Physics.IsStatic;
+                _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+
+                if (Suspend() || StoppedWorking() || !AllInited && !InitEmitter()) return;
+                if (Prime && EGridComp?.PrimeComp == null || Beta && EGridComp?.BetaComp == null) MasterElection();
+                Timing();
+
+                if (!BlockWorking()) return;
+
+                if (ShieldComp.ShieldActive && !Session.DedicatedServer && UtilsStatic.ShieldDistanceCheck(Emitter, 1000, ShieldComp.BoundingRange))
+                {
+                    if (ShieldComp.GridIsMoving) BlockParticleUpdate();
+
+                    var blockCam = Emitter.PositionComp.WorldVolume;
+                    var onCam = MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam);
+                    if (onCam)
+                    {
+                        if (_effect == null && ShieldComp.ShieldPercent <= 97) BlockParticleStart();
+                        else if (_effect != null && ShieldComp.ShieldPercent > 97f) BlockParticleStop();
+
+                        BlockMoveAnimation();
+                    }
+                }
+                else if (_effect != null && !Session.DedicatedServer) BlockParticleStop();
+                if (Session.Enforced.Debug == 1) Dsutil1.StopWatchReport($"Emitter - {EmitterMode}", 4);
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
+        }
+
+        private void Timing()
+        {
+            if (_count++ == 59)
+            {
+                _count = 0;
+                _lCount++;
+                if (_lCount == 10) _lCount = 0;
+            }
+        }
+
+        private bool BlockWorking()
+        {
+            if (Alpha || IsStatic && Beta || Zeta || ShieldComp.DefenseShields == null || !ShieldComp.Warming) return false;
+
+            if (ShieldComp.CheckEmitters) CheckShieldLineOfSight();
+            if (!ShieldLineOfSight && Emitter.IsFunctional && !Session.DedicatedServer) DrawHelper();
+
+            BlockIsWorking = ShieldLineOfSight && Emitter.IsWorking;
+            var isPrimed = IsStatic && Prime && BlockIsWorking;
+            var notPrimed = Prime && !BlockIsWorking;
+            var isBetaing = !IsStatic && Beta && BlockIsWorking;
+            var notBetaing = !IsStatic && Beta && !BlockIsWorking;
+
+            if (isPrimed) ShieldComp.EmittersWorking = true;
+            else if (notPrimed) ShieldComp.EmittersWorking = false;
+            else if (isBetaing) ShieldComp.EmittersWorking = true;
+            else if (notBetaing) ShieldComp.EmittersWorking = false;
+
+            BlockWasWorking = BlockIsWorking;
+
+            if (!BlockIsWorking)
+            {
+                if (_effect != null && !Session.DedicatedServer) BlockParticleStop();
+                return false;
+            }
+            return true;
+        }
+
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
             try
@@ -106,122 +178,71 @@ namespace DefenseShields
             }
         }
 
-        private bool InitStation()
+        private bool InitEmitter()
         {
-            Emitter.CubeGrid.Components.TryGet(out ShieldComp);
-            if (ShieldComp == null || !ShieldComp.Warming) return false;
-
-            Definition = DefinitionManager.Get(Emitter.BlockDefinition.SubtypeId);
-            if (!Emitter.CubeGrid.Components.Has<EmitterGridComponent>())
+            if (!AllInited && EmitterMode == EmitterType.Station)
             {
-                EGridComp = new EmitterGridComponent(this, true);
-                Emitter.CubeGrid.Components.Add(EGridComp);
-                EGridComp.PrimeComp = this;
-                Prime = true;
-            }
-            else
-            {
-                Emitter.CubeGrid.Components.TryGet(out EGridComp);
-                if (EGridComp.PrimeComp != null) EGridComp.PrimeComp.Alpha = true;
-                EGridComp.PrimeComp = this;
-                Prime = true;
-            }
-            Entity.TryGetSubpart("Rotor", out _subpartRotor);
-            CheckShieldLineOfSight();
-            EGridComp.RegisteredComps.Add(this);
-            ShieldComp.EmitterEvent = true;
-            AllInited = true;
+                Emitter.CubeGrid.Components.TryGet(out ShieldComp);
+                if (ShieldComp == null || !ShieldComp.Starting) return false;
 
-            return !Suspend();
-        }
-
-        private bool InitOther()
-        {
-            Emitter.CubeGrid.Components.TryGet(out ShieldComp);
-            var hasEComp = Emitter.CubeGrid.Components.Has<EmitterGridComponent>();
-            if (ShieldComp == null || IsStatic && !hasEComp || !ShieldComp.Warming) return false;
-
-            Definition = DefinitionManager.Get(Emitter.BlockDefinition.SubtypeId);
-            if (!hasEComp && !IsStatic)
-            {
-                EGridComp = new EmitterGridComponent(this, false);
-                Emitter.CubeGrid.Components.Add(EGridComp);
-                EGridComp.BetaComp = this;
-                Beta = true;
-            }
-            else
-            {
-                Emitter.CubeGrid.Components.TryGet(out EGridComp);
-                if (EGridComp.BetaComp != null) EGridComp.BetaComp.Zeta = true;
-                EGridComp.BetaComp = this;
-                Beta = true;
-            }
-            Entity.TryGetSubpart("Rotor", out _subpartRotor);
-            CheckShieldLineOfSight();
-            EGridComp.RegisteredComps.Add(this);
-            ShieldComp.EmitterEvent = true;
-            AllInited = true;
-            return !Suspend();
-        }
-
-        public override void UpdateBeforeSimulation()
-        {
-            try
-            {
-                Dsutil1.Sw.Restart();
-                IsStatic = Emitter.CubeGrid.Physics.IsStatic;
-                _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-
-                if (Suspend() || NotWorking()) return;
-                if (!AllInited && EmitterMode == EmitterType.Station && !InitStation()) return;
-                if (!AllInited && !InitOther()) return;
-                if (Prime && EGridComp?.PrimeComp == null || Beta && EGridComp?.BetaComp == null) MasterElection();
-                Timing();
-                if (!BlockWorking()) return;
-
-
-                if (ShieldComp.CheckEmitters)
+                Definition = DefinitionManager.Get(Emitter.BlockDefinition.SubtypeId);
+                if (!Emitter.CubeGrid.Components.Has<EmitterGridComponent>())
                 {
-                    ShieldComp.CheckEmitters = false;
-                    EGridComp.PerformEmitterDiagnostic = true;
+                    EGridComp = new EmitterGridComponent(this, true);
+                    Emitter.CubeGrid.Components.Add(EGridComp);
+                    EGridComp.PrimeComp = this;
+                    Prime = true;
                 }
-
-                if (ShieldComp.ShieldActive && !Session.DedicatedServer && UtilsStatic.ShieldDistanceCheck(Emitter, 1000, ShieldComp.BoundingRange))
+                else
                 {
-
-                    if (ShieldComp.GridIsMoving) BlockParticleUpdate();
-
-                    var blockCam = Emitter.PositionComp.WorldVolume;
-                    var onCam = MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam);
-                    if (onCam)
-                    {
-                        if (_effect == null && ShieldComp.ShieldPercent <= 97) BlockParticleStart();
-                        else if (_effect != null && ShieldComp.ShieldPercent > 97f) BlockParticleStop();
-
-                        BlockMoveAnimation();
-                    }
+                    Emitter.CubeGrid.Components.TryGet(out EGridComp);
+                    if (EGridComp.PrimeComp != null) EGridComp.PrimeComp.Alpha = true;
+                    EGridComp.PrimeComp = this;
+                    Prime = true;
                 }
-                else if (_effect != null && !Session.DedicatedServer) BlockParticleStop();
-                if (_count == 0) Dsutil1.StopWatchReport("Emitter", 4);
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                EGridComp.RegisteredComps.Add(this);
+                ShieldComp.EmitterEvent = true;
+                BlockWasWorking = true;
+                AllInited = true;
+                return !Suspend();
             }
-            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
-        }
-
-        private void Timing()
-        {
-            if (_count++ == 59)
+            if (!AllInited)
             {
-                _count = 0;
-                _lCount++;
-                if (_lCount == 10) _lCount = 0;
+                Emitter.CubeGrid.Components.TryGet(out ShieldComp);
+                var hasEComp = Emitter.CubeGrid.Components.Has<EmitterGridComponent>();
+                if (ShieldComp == null || IsStatic && !hasEComp || !ShieldComp.Starting) return false;
+
+                Definition = DefinitionManager.Get(Emitter.BlockDefinition.SubtypeId);
+                if (!hasEComp && !IsStatic)
+                {
+                    EGridComp = new EmitterGridComponent(this, false);
+                    Emitter.CubeGrid.Components.Add(EGridComp);
+                    EGridComp.BetaComp = this;
+                    Beta = true;
+                }
+                else
+                {
+                    Emitter.CubeGrid.Components.TryGet(out EGridComp);
+                    if (EGridComp.BetaComp != null) EGridComp.BetaComp.Zeta = true;
+                    EGridComp.BetaComp = this;
+                    Beta = true;
+                }
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                EGridComp.RegisteredComps.Add(this);
+                ShieldComp.EmitterEvent = true;
+                BlockWasWorking = true;
+                AllInited = true;
+                return !Suspend();
             }
+            return false;
         }
 
         private bool Suspend()
         {
             if (Beta && IsStatic)
             {
-                if(_effect != null && !Session.DedicatedServer) BlockParticleStop();
+                if (_effect != null && !Session.DedicatedServer) BlockParticleStop();
                 return true;
             }
 
@@ -234,36 +255,7 @@ namespace DefenseShields
             return false;
         }
 
-        private bool BlockWorking()
-        {
-            if (Alpha || IsStatic && Beta || Zeta || ShieldComp.DefenseShields == null) return false;
-
-            BlockIsWorking = ShieldLineOfSight && Emitter.IsWorking;
-            var nowOnline = BlockIsWorking && !BlockWasWorking;
-
-            if (!BlockIsWorking && _tick % 300 == 0 || nowOnline) CheckShieldLineOfSight();
-            if (!BlockIsWorking && !Session.DedicatedServer) DrawHelper();
-
-            BlockWasWorking = BlockIsWorking;
-
-            var isPrimed = IsStatic && Prime && BlockIsWorking;
-            var notPrimed = Prime && !BlockIsWorking;
-            var isBetaing = !IsStatic && Beta && BlockIsWorking;
-            var notBetaing = !IsStatic && Beta && !BlockIsWorking;
-
-            if (isPrimed) ShieldComp.EmittersWorking = true;
-            else if (notPrimed) ShieldComp.EmittersWorking = false;
-            else if (isBetaing) ShieldComp.EmittersWorking = true;
-            else if (notBetaing) ShieldComp.EmittersWorking = false;
-            if (!BlockIsWorking)
-            {
-                if (_effect != null && !Session.DedicatedServer) BlockParticleStop();
-                return false;
-            }
-            return true;
-        }
-
-        private bool NotWorking()
+        private bool StoppedWorking()
         {
             if (!Emitter.IsFunctional && BlockIsWorking)
             {
@@ -319,7 +311,6 @@ namespace DefenseShields
                     Zeta = false;
                 }
             }
-            CheckShieldLineOfSight();
         }
 
         #region Block Animation
@@ -418,7 +409,8 @@ namespace DefenseShields
             }
             for (int i = 0; i < ShieldComp.PhysicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
             ShieldLineOfSight = _blocksLos.Count < 510;
-            if (Session.Enforced.Debug == 0) Log.Line($"EmitterId:{Emitter.EntityId.ToString()} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {ShieldLineOfSight.ToString()}");
+            ShieldComp.CheckEmitters = false;
+            if (Session.Enforced.Debug == 1) Log.Line($"EmitterId: {Emitter.EntityId.ToString()} - Mode: {EmitterMode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {ShieldLineOfSight.ToString()}");
         }
 
         private void DrawHelper()

@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using DefenseShields.Control;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
+using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
+using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 
@@ -17,11 +19,13 @@ namespace DefenseShields
     {
 
         public bool ServerUpdate;
-        private bool _hierarchyChanged;
         private bool _hierarchyDelayed;
 
         internal bool MainInit;
+
         private uint _tick;
+        private uint _hierarchyTick = 1;
+
         private int _count = -1;
         private int _lCount;
 
@@ -29,7 +33,7 @@ namespace DefenseShields
 
         public MyModStorageComponentBase Storage { get; set; }
         internal ModulatorSettings Settings = new ModulatorSettings();
-        internal ModulatorGridComponent MGridComponent;
+        internal ModulatorGridComponent ModulatorComp;
         internal ShieldGridComponent ShieldComp;
 
         private IMyUpgradeModule Modulator => (IMyUpgradeModule)Entity;
@@ -40,7 +44,7 @@ namespace DefenseShields
 
         public Modulators()
         {
-            MGridComponent = new ModulatorGridComponent(this);
+            ModulatorComp = new ModulatorGridComponent(this);
         }
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
@@ -51,11 +55,12 @@ namespace DefenseShields
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
 
-                Modulator.CubeGrid.Components.Add(MGridComponent);
+                Modulator.CubeGrid.Components.Add(ModulatorComp);
                 Session.Instance.Modulators.Add(this);
                 if (!_modulators.ContainsKey(Entity.EntityId)) _modulators.Add(Entity.EntityId, this);
                 CreateUi();
                 StorageSetup();
+                ((MyCubeGrid)Modulator.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -67,23 +72,34 @@ namespace DefenseShields
             UpdateSettings(Settings, false);
         }
 
+        private void HierarchyChanged(IMyCubeGrid myCubeGrid = null)
+        {
+            if (_tick == _hierarchyTick || ShieldComp?.DefenseShields != null) return;
+            if (_hierarchyTick > _tick - 9)
+            {
+                _hierarchyDelayed = true;
+                return;
+            }
+            _hierarchyTick = _tick;
+            var gotGroups = MyAPIGateway.GridGroups.GetGroup(Modulator.CubeGrid, GridLinkTypeEnum.Mechanical);
+            ModulatorComp.GetSubGrids.Clear();
+            for (int i = 0; i < gotGroups.Count; i++) ModulatorComp.GetSubGrids.Add(gotGroups[i]);
+        }
+
         public override void UpdateBeforeSimulation()
         {
             _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-            if (_count++ == 59)
-            {
-                _count = 0;
-                _lCount++;
-                if (_lCount == 10) _lCount = 0;
-            }
+            Timing();
 
             if (!MainInit)
             {
                 Modulator.CubeGrid.Components.TryGet(out ShieldComp);
                 if (ShieldComp == null) return;
                 MainInit = true;
-                Log.Line($"Modulator initted");
+                if (Session.Enforced.Debug == 1) Log.Line($"Modulator initted");
             }
+            if (ShieldComp?.GetSubGrids != null && !ShieldComp.GetSubGrids.Equals(ModulatorComp.GetSubGrids))
+                ModulatorComp.GetSubGrids = ShieldComp.GetSubGrids;
         }
 
         public override void UpdateBeforeSimulation100()
@@ -94,11 +110,28 @@ namespace DefenseShields
             if (ServerUpdate) SyncControlsServer();
             SyncControlsClient();
 
-            if (Modulator.CustomData != MGridComponent.ModulationPassword)
+            if (Modulator.CustomData != ModulatorComp.ModulationPassword)
             {
-                MGridComponent.ModulationPassword = Modulator.CustomData;
+                ModulatorComp.ModulationPassword = Modulator.CustomData;
                 SaveSettings();
                 if (Session.Enforced.Debug == 1) Log.Line($"Updating modulator password");
+            }
+        }
+
+        private void Timing()
+        {
+            if (_count++ == 59)
+            {
+                _count = 0;
+                _lCount++;
+                if (_lCount == 10) _lCount = 0;
+            }
+
+            if (_hierarchyDelayed && _tick > _hierarchyTick + 9)
+            {
+                if (Session.Enforced.Debug == 1) Log.Line($"Delayed tick: {_tick} - hierarchytick: {_hierarchyTick}");
+                _hierarchyDelayed = false;
+                HierarchyChanged();
             }
         }
 
@@ -134,11 +167,11 @@ namespace DefenseShields
         public void UpdateSettings(ModulatorSettings newSettings, bool localOnly = true)
         {
             Enabled = newSettings.Enabled;
-            MGridComponent.Enabled = newSettings.Enabled;
+            ModulatorComp.Enabled = newSettings.Enabled;
             ModulateVoxels = newSettings.ModulateVoxels;
-            MGridComponent.Voxels = newSettings.ModulateVoxels;
+            ModulatorComp.Voxels = newSettings.ModulateVoxels;
             ModulateGrids = newSettings.ModulateGrids;
-            MGridComponent.Grids = newSettings.ModulateGrids;
+            ModulatorComp.Grids = newSettings.ModulateGrids;
             if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings for modulator");
         }
 
@@ -187,19 +220,19 @@ namespace DefenseShields
             if (Modulator != null && !Modulator.Enabled.Equals(Settings.Enabled))
             {
                 Enabled = Settings.Enabled;
-                MGridComponent.Enabled = Settings.Enabled;
+                ModulatorComp.Enabled = Settings.Enabled;
             }
 
             if (_modulateVoxels != null && !_modulateVoxels.Getter(Modulator).Equals(Settings.ModulateVoxels))
             {
                 _modulateVoxels.Setter(Modulator, Settings.ModulateVoxels);
-                MGridComponent.Voxels = Settings.ModulateVoxels;
+                ModulatorComp.Voxels = Settings.ModulateVoxels;
             }
 
             if (_modulateGrids != null && !_modulateGrids.Getter(Modulator).Equals(Settings.ModulateGrids))
             {
                 _modulateGrids.Setter(Modulator, Settings.ModulateGrids);
-                MGridComponent.Grids = Settings.ModulateGrids;
+                ModulatorComp.Grids = Settings.ModulateGrids;
             }
 
             ServerUpdate = false;
@@ -216,11 +249,11 @@ namespace DefenseShields
             {
                 needsSync = true;
                 Enabled = Settings.Enabled;
-                MGridComponent.Enabled = Settings.Enabled;
+                ModulatorComp.Enabled = Settings.Enabled;
                 ModulateVoxels = _modulateVoxels.Getter(Modulator);
-                MGridComponent.Voxels = _modulateVoxels.Getter(Modulator);
+                ModulatorComp.Voxels = _modulateVoxels.Getter(Modulator);
                 ModulateGrids = _modulateGrids.Getter(Modulator);
-                MGridComponent.Grids = _modulateGrids.Getter(Modulator);
+                ModulatorComp.Grids = _modulateGrids.Getter(Modulator);
             }
 
             if (needsSync)
@@ -253,9 +286,9 @@ namespace DefenseShields
         {
             try
             {
-                if (_modulators.ContainsKey(Modulator.EntityId)) _modulators.Remove(Modulator.EntityId);
-                Modulator?.CubeGrid.Components.Remove(typeof(ModulatorGridComponent), this);
-                if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
+                //if (_modulators.ContainsKey(Modulator.EntityId)) _modulators.Remove(Modulator.EntityId);
+                //Modulator?.CubeGrid.Components.Remove(typeof(ModulatorGridComponent), this);
+                //if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
@@ -265,8 +298,8 @@ namespace DefenseShields
         {
             try
             {
-                Modulator?.CubeGrid.Components.Remove(typeof(ModulatorGridComponent), this);
-                if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
+                //Modulator?.CubeGrid.Components.Remove(typeof(ModulatorGridComponent), this);
+                //if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
             base.Close();

@@ -16,6 +16,7 @@ namespace DefenseShields
             ExtendFit = newSettings.ExtendFit;
             SphereFit = newSettings.SphereFit;
             FortifyShield = newSettings.FortifyShield;
+            SendToHud = newSettings.SendToHud;
             ShieldBuffer = newSettings.Buffer;
             ModulateVoxels = newSettings.ModulateVoxels;
             ModulateGrids = newSettings.ModulateGrids;
