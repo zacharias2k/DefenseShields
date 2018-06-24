@@ -27,8 +27,8 @@ namespace DefenseShields
         internal bool DefinitionsLoaded;
         internal bool CustomDataReset = true;
         internal bool ShowOnHudReset = true;
-        public bool LargeShieldControlsLoaded { get; set; }
-        public bool SmallShieldControlsLoaded { get; set; }
+        public bool DSControl { get; set; }
+
         public bool StationEmitterControlsLoaded { get; set; }
         public bool LargeEmitterControlsLoaded { get; set; }
         public bool SmallEmitterControlsLoaded { get; set; }
@@ -37,10 +37,10 @@ namespace DefenseShields
 
         public bool Enabled = true;
         public static bool EnforceInit;
-        internal MyStringId Password = MyStringId.GetOrCompute("Password");
-        internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Set the shield modulation password");
-        internal MyStringId MainEmitter = MyStringId.GetOrCompute("Master Emitter");
-        internal MyStringId MainEmitterTooltip = MyStringId.GetOrCompute("Set this emitter to the Master Emitter");
+        internal MyStringId Password = MyStringId.GetOrCompute("Shield Access Frequency");
+        internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Match a shield's modulation frequency/code");
+        internal MyStringId ShieldFreq = MyStringId.GetOrCompute("Shield Frequency");
+        internal MyStringId ShieldFreqTooltip = MyStringId.GetOrCompute("Set this to the secret frequency/code used for shield access");
         public static readonly bool MpActive = MyAPIGateway.Multiplayer.MultiplayerActive;
 
         public static readonly bool IsServer = MyAPIGateway.Multiplayer.IsServer;
@@ -602,18 +602,14 @@ namespace DefenseShields
                 {
                     case "LargeShieldModulator":
                     case "SmallShieldModulator":
-                    case "DSControlLarge":
-                    case "DSControlSmall":
                         SetCustomDataToPassword(myTerminalControls);
                         break;
-                    case "DefenseShieldsLS":
-                    case "DefenseShieldsSS":
-                    case "DefenseShieldsST":
-                        SetShowOnHudToMainEmitter(myTerminalControls);
+                    case "DSControlLarge":
+                    case "DSControlSmall":
+                        SetCustomDataToShieldFreq(myTerminalControls);
                         break;
                     default:
                         if (!CustomDataReset) ResetCustomData(myTerminalControls);
-                        if (!ShowOnHudReset) ResetShowOnHud(myTerminalControls);
                         break;
                 }
             }
@@ -629,11 +625,11 @@ namespace DefenseShields
             CustomDataReset = false;
         }
 
-        private void SetShowOnHudToMainEmitter(IEnumerable<IMyTerminalControl> controls)
+        private void SetCustomDataToShieldFreq(IEnumerable<IMyTerminalControl> controls)
         {
-            var customData = controls.First((x) => x.Id.ToString() == "ShowOnHUD");
-            ((IMyTerminalControlTitleTooltip)customData).Title = MainEmitter;
-            ((IMyTerminalControlTitleTooltip)customData).Tooltip = MainEmitterTooltip;
+            var customData = controls.First((x) => x.Id.ToString() == "CustomData");
+            ((IMyTerminalControlTitleTooltip)customData).Title = ShieldFreq;
+            ((IMyTerminalControlTitleTooltip)customData).Tooltip = ShieldFreqTooltip;
             customData.RedrawControl();
             ShowOnHudReset = false;
         }
@@ -645,15 +641,6 @@ namespace DefenseShields
             ((IMyTerminalControlTitleTooltip)customData).Tooltip = MySpaceTexts.Terminal_CustomDataTooltip;
             customData.RedrawControl();
             CustomDataReset = true;
-        }
-
-        private void ResetShowOnHud(IEnumerable<IMyTerminalControl> controls)
-        {
-            var customData = controls.First((x) => x.Id.ToString() == "ShowOnHUD");
-            ((IMyTerminalControlTitleTooltip)customData).Title = MySpaceTexts.Terminal_ShowOnHUD;
-            ((IMyTerminalControlTitleTooltip)customData).Tooltip = MySpaceTexts.Terminal_ShowOnHUDToolTip;
-            customData.RedrawControl();
-            ShowOnHudReset = true;
         }
 
         public override void LoadData()

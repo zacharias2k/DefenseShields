@@ -134,7 +134,7 @@ namespace DefenseShields.Support
             {
                 if (block == null) continue;
 
-                if (block.BlockDefinition.BlockPairName == "DS_Control")
+                if (block.BlockDefinition.BlockPairName == "DS_Control" || block.BlockDefinition.BlockPairName == "DS_STControl")
                 {
                     if (block.IsWorking) return block.EntityId;
                     shieldBlocks.Add(block);
@@ -157,6 +157,7 @@ namespace DefenseShields.Support
             return shieldId;
         }
 
+        /*
         public static bool CheckShieldType(IMyFunctionalBlock shield, bool warning, bool takeAction = false)
         {
             var realPlayerIds = new List<long>();
@@ -190,6 +191,7 @@ namespace DefenseShields.Support
             }
             return warning;
         }
+        */
 
         public static bool ShieldDistanceCheck(IMyCubeBlock shield, int x, double range)
         {

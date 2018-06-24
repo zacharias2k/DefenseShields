@@ -5,6 +5,7 @@ using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
+using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Collections;
 using VRage.Game;
 using VRage.Game.Components;
@@ -142,6 +143,7 @@ namespace DefenseShields
         private readonly MyConcurrentQueue<IMyCharacter> _characterDmg = new MyConcurrentQueue<IMyCharacter>();
         private readonly MyConcurrentQueue<MyVoxelBase> _voxelDmg = new MyConcurrentQueue<MyVoxelBase>();
 
+        /*
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _widthSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _heightSlider;
         private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _depthSlider;
@@ -152,6 +154,19 @@ namespace DefenseShields
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _hidePassiveCheckBox;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _hideActiveCheckBox;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _sendToHudCheckBoxe;
+        */
+        private IMyTerminalControlSlider _widthSlider;
+        private IMyTerminalControlSlider _heightSlider;
+        private IMyTerminalControlSlider _depthSlider;
+        private IMyTerminalControlSlider _chargeSlider;
+
+        private IMyTerminalControlCheckbox _extendFit;
+        private IMyTerminalControlCheckbox _sphereFit;
+        private IMyTerminalControlCheckbox _fortifyShield;
+        private IMyTerminalControlCheckbox _hidePassiveCheckBox;
+        private IMyTerminalControlCheckbox _hideActiveCheckBox;
+        private IMyTerminalControlCheckbox _sendToHudCheckBoxe;
+
         private readonly MyStringId _hudIcon = MyStringId.GetOrCompute("DS_ShieldInside");
 
         internal MyResourceSinkInfo ResourceInfo;
@@ -191,10 +206,10 @@ namespace DefenseShields
             set { DsSet.Settings.Enabled = value; }
         }
 
-        public bool ShieldIdleVisible
+        public bool ShieldPassiveVisible
         {
-            get { return DsSet.Settings.IdleInvisible; }
-            set { DsSet.Settings.IdleInvisible = value; }
+            get { return DsSet.Settings.PassiveInvisible; }
+            set { DsSet.Settings.PassiveInvisible = value; }
         }
 
         public bool ShieldActiveVisible

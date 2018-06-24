@@ -12,13 +12,14 @@ using VRage.Game.Components;
 using VRage.ModAPI;
 using System.Linq;
 using DefenseShields.Support;
+using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using VRage.Voxels;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
 namespace DefenseShields
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OreDetector), false, "DSControlLarge", "DSControlSmall")]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OreDetector), false, "DSControlStation", "DSControlLarge", "DSControlSmall")]
     public partial class DefenseShields : MyGameLogicComponent
     {
         #region Simulation
@@ -31,7 +32,6 @@ namespace DefenseShields
                 if (!BlockFunctional()) return;
 
                 if (ServerUpdate) SyncControlsServer();
-                SyncControlsClient();
                 
                 if (_gridIsMobile) MobileUpdate();
                 else _shapeAdjusted = false;
@@ -81,6 +81,11 @@ namespace DefenseShields
                 }
                 if (ShieldComp.ShieldActive)
                 {
+                    //var def = MyDefinitionManager.Static.GetCubeBlockDefinition(new MyDefinitionId(typeof(MyObjectBuilder_OreDetector), "DSControlLarge"));
+                    //var test = MyCubeBuilder.Static.CubeBuilderState.CurrentBlockDefinition;
+                    //if (test != null && test != def)
+                        //test = MyCubeBuilder.Static.CubeBuilderState.CurrentBlockDefinition = def;
+                    //Log.Line($"selected block {test?.BlockPairName}");
                     //Shield.SetEmissiveParts("iconlock", Color.Transparent, 0f);
                     //Shield.SetEmissiveParts("iconshieldrear", Color.Black, 0f);
                     if (_lCount % 2 != 0 && _count == 20)
@@ -218,7 +223,6 @@ namespace DefenseShields
                     _blocksChanged = false;
                     ShieldComp.CheckEmitters = true;
                     Icosphere.ReturnPhysicsVerts(DetectionMatrix, ShieldComp.PhysicsOutside);
-                    SyncControlsClient();
                     ShieldComp.Warming = true;
                     return false;
                 }
@@ -643,8 +647,7 @@ namespace DefenseShields
             var shieldVol = _detectMatrixOutside.Scale.Volume;
             var powerForShield = 0f;
             const float ratio = 1.25f;
-            var rate = _chargeSlider?.Getter(Shield) ?? 20f;
-            var percent = rate * ratio;
+            var percent = Rate * ratio;
             var shieldMaintainCost = 1 / percent;
             _shieldMaintaintPower = shieldMaintainCost;
             var fPercent = (percent / ratio) / 100;

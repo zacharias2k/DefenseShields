@@ -29,28 +29,28 @@ namespace DefenseShields
         public bool Enabled = false;
 
         [ProtoMember(2), DefaultValue(-1)]
-        public float Width = -1f;
+        public float Width = 30f;
 
         [ProtoMember(3), DefaultValue(-1)]
-        public float Height = -1f;
+        public float Height = 30f;
 
         [ProtoMember(4), DefaultValue(-1)]
-        public float Depth = -1f;
+        public float Depth = 30f;
 
         [ProtoMember(5)]
-        public bool IdleInvisible = false;
+        public bool PassiveInvisible = false;
 
         [ProtoMember(6)]
         public bool ActiveInvisible = false;
 
         [ProtoMember(7), DefaultValue(-1)]
-        public float Rate = -1f;
+        public float Rate = 50f;
 
         [ProtoMember(8), DefaultValue(-1)]
         public float Buffer = 0f;
 
         [ProtoMember(9)]
-        public bool ModulateVoxels = false;
+        public bool ModulateVoxels = true;
 
         [ProtoMember(10)]
         public bool ModulateGrids = false;
@@ -65,11 +65,11 @@ namespace DefenseShields
         public bool FortifyShield = false;
 
         [ProtoMember(14)]
-        public bool SendToHud = false;
+        public bool SendToHud = true;
 
         public override string ToString()
         {
-            return $"Enabled = {Enabled}\nIdleVisible = {IdleInvisible}\nActiveVisible = {ActiveInvisible}\nWidth = {Math.Round(Width, 4)}" +
+            return $"Enabled = {Enabled}\nIdleVisible = {PassiveInvisible}\nActiveVisible = {ActiveInvisible}\nWidth = {Math.Round(Width, 4)}" +
                    $"\nHeight = {Math.Round(Height, 4)}\nDepth = {Math.Round(Depth, 4)}\nRate = {Math.Round(Rate, 4)}" +
                    $"\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nExtendFit = {ExtendFit}\nSphereFit = {SphereFit}\nFortifyShield = {FortifyShield}\nSendToHud = {SendToHud}";
         }

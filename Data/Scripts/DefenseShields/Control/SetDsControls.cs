@@ -10,6 +10,7 @@ namespace DefenseShields
             {
                 Enabled = DsSet.Settings.Enabled;
             }
+
             if (_widthSlider != null && !_widthSlider.Getter(Shield).Equals(DsSet.Settings.Width))
             {
                 _widthSlider.Setter(Shield, DsSet.Settings.Width);
@@ -50,9 +51,9 @@ namespace DefenseShields
                 _hideActiveCheckBox.Setter(Shield, DsSet.Settings.ActiveInvisible);
             }
 
-            if (_hidePassiveCheckBox != null && !_hidePassiveCheckBox.Getter(Shield).Equals(DsSet.Settings.IdleInvisible))
+            if (_hidePassiveCheckBox != null && !_hidePassiveCheckBox.Getter(Shield).Equals(DsSet.Settings.PassiveInvisible))
             {
-                _hidePassiveCheckBox.Setter(Shield, DsSet.Settings.IdleInvisible);
+                _hidePassiveCheckBox.Setter(Shield, DsSet.Settings.PassiveInvisible);
             }
 
             if (_sendToHudCheckBoxe != null && !_sendToHudCheckBoxe.Getter(Shield).Equals(DsSet.Settings.SendToHud))
@@ -64,59 +65,6 @@ namespace DefenseShields
             _updateDimensions = true;
             DsSet.SaveSettings();
             if (Session.Enforced.Debug == 1) Log.Line($"SyncControlsServer");
-        }
-
-        private void SyncControlsClient()
-        {
-            var needsSync = false;
-            if (!Enabled.Equals(Enabled)
-                || !_chargeSlider.Getter(Shield).Equals(Rate)
-                || !_hideActiveCheckBox.Getter(Shield).Equals(ShieldActiveVisible)
-                || !_hidePassiveCheckBox.Getter(Shield).Equals(ShieldIdleVisible))
-            {
-                Enabled = DsSet.Settings.Enabled;
-                Rate = _chargeSlider.Getter(Shield);
-                ShieldActiveVisible = _hideActiveCheckBox.Getter(Shield);
-                ShieldIdleVisible = _hidePassiveCheckBox.Getter(Shield);
-                needsSync = true;
-            }
-
-            if (!_gridIsMobile)
-            {
-                if (!_widthSlider.Getter(Shield).Equals(Width)
-                    || !_heightSlider.Getter(Shield).Equals(Height)
-                    || !_depthSlider.Getter(Shield).Equals(Depth))
-                {
-                    Width = _widthSlider.Getter(Shield);
-                    Height = _heightSlider.Getter(Shield);
-                    Depth = _depthSlider.Getter(Shield);
-                    needsSync = true;
-                }
-            }
-            else
-            {
-                if (!_extendFit.Getter(Shield).Equals(ExtendFit)
-                    || !_sphereFit.Getter(Shield).Equals(SphereFit)
-                    || !_fortifyShield.Getter(Shield).Equals(FortifyShield)
-                    || !_sendToHudCheckBoxe.Getter(Shield).Equals(SendToHud))
-                {
-                    ExtendFit = _extendFit.Getter(Shield);
-                    SphereFit = _sphereFit.Getter(Shield);
-                    FortifyShield = _fortifyShield.Getter(Shield);
-                    SendToHud = _sendToHudCheckBoxe.Getter(Shield);
-
-                    needsSync = true;
-                    _fitChanged = true;
-                }
-            }
-
-            if (needsSync)
-            {
-                if (!_gridIsMobile) _updateDimensions = true;
-                DsSet.NetworkUpdate();
-                DsSet.SaveSettings();
-                if (Session.Enforced.Debug == 1) Log.Line($"Needed sync");
-            }
         }
     }
 }
