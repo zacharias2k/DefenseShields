@@ -63,7 +63,6 @@ namespace DefenseShields
         private int _oldBlockCount;
         private int _shieldRatio;
 
-        public bool ServerUpdate;
         public bool DeformEnabled;
         internal bool ControlBlockWorking;
         internal bool MainInit;
@@ -80,7 +79,7 @@ namespace DefenseShields
         private bool _effectsCleanup;
         private bool _startupWarning;
         private bool _hideShield;
-        private bool _updateDimensions;
+        internal bool UpdateDimensions;
         private bool _shapeAdjusted;
         private bool _fitChanged;
         private bool _hierarchyDelayed;
@@ -155,17 +154,6 @@ namespace DefenseShields
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _hideActiveCheckBox;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _sendToHudCheckBoxe;
         */
-        private IMyTerminalControlSlider _widthSlider;
-        private IMyTerminalControlSlider _heightSlider;
-        private IMyTerminalControlSlider _depthSlider;
-        private IMyTerminalControlSlider _chargeSlider;
-
-        private IMyTerminalControlCheckbox _extendFit;
-        private IMyTerminalControlCheckbox _sphereFit;
-        private IMyTerminalControlCheckbox _fortifyShield;
-        private IMyTerminalControlCheckbox _hidePassiveCheckBox;
-        private IMyTerminalControlCheckbox _hideActiveCheckBox;
-        private IMyTerminalControlCheckbox _sendToHudCheckBoxe;
 
         private readonly MyStringId _hudIcon = MyStringId.GetOrCompute("DS_ShieldInside");
 
@@ -206,13 +194,13 @@ namespace DefenseShields
             set { DsSet.Settings.Enabled = value; }
         }
 
-        public bool ShieldPassiveVisible
+        public bool ShieldPassiveHide
         {
             get { return DsSet.Settings.PassiveInvisible; }
             set { DsSet.Settings.PassiveInvisible = value; }
         }
 
-        public bool ShieldActiveVisible
+        public bool ShieldActiveHide
         {
             get { return DsSet.Settings.ActiveInvisible; }
             set { DsSet.Settings.ActiveInvisible = value; }

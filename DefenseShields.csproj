@@ -192,6 +192,7 @@
   <ItemGroup>
     <Compile Include="Data\Scripts\DefenseShields\API\dsApi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Enforcements.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Control\DsStaticGetSet.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\TerminalHelpers.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Display.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\BaseControl.cs" />
@@ -208,7 +209,6 @@
     <Compile Include="Data\Scripts\DefenseShields\Intersect-DSComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Modulators.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Emitters.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Control\SetDsControls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Shield-Settings.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Fields-DSComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Init-DSComp.cs" />

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using DefenseShields.Control;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
@@ -70,6 +71,17 @@ namespace DefenseShields
         public readonly Icosphere Icosphere = new Icosphere(5);
         private DSUtils _dsutil1 = new DSUtils();
 
+        public IMyTerminalControlSlider WidthSlider;
+        public IMyTerminalControlSlider HeightSlider;
+        public IMyTerminalControlSlider DepthSlider;
+        public IMyTerminalControlSlider ChargeSlider;
+        public IMyTerminalControlCheckbox ExtendFit;
+        public IMyTerminalControlCheckbox SphereFit;
+        public IMyTerminalControlCheckbox FortifyShield;
+        public IMyTerminalControlCheckbox HidePassiveCheckBox;
+        public IMyTerminalControlCheckbox HideActiveCheckBox;
+        public IMyTerminalControlCheckbox SendToHudCheckBoxe;
+
         public static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         private readonly Dictionary<IMyEntity, int> _voxelDamageCounter = new Dictionary<IMyEntity, int>();
         public bool[] SphereOnCamera = new bool[0];
@@ -78,8 +90,9 @@ namespace DefenseShields
         public readonly List<Displays> Displays = new List<Displays>();
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
         public readonly List<Modulators> Modulators = new List<Modulators>();
-
         public readonly List<IMyPlayer> Players = new List<IMyPlayer>();
+        private readonly List<IMyTerminalControls> _dsControlList = new List<IMyTerminalControls>();
+
 
         public static DefenseShieldsEnforcement Enforced = new DefenseShieldsEnforcement();
 
@@ -287,9 +300,8 @@ namespace DefenseShields
 
                             if (Enforced.Debug == 1) Log.Line($"Packet Settings Packet received:- data:\n{data.Settings}");
                             logic.UpdateSettings(data.Settings);
+                            logic.UpdateDimensions = true;
                             logic.DsSet.SaveSettings();
-                            logic.ServerUpdate = true;
-
                             if (IsServer)
                                 ShieldSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                         }
@@ -641,6 +653,33 @@ namespace DefenseShields
             ((IMyTerminalControlTitleTooltip)customData).Tooltip = MySpaceTexts.Terminal_CustomDataTooltip;
             customData.RedrawControl();
             CustomDataReset = true;
+        }
+
+        public void CreateControls(IMyTerminalBlock block)
+        {
+            if (DSControl) return;
+            UtilsStatic.RemoveOreUi();
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            ChargeSlider = TerminalHelpers.AddSlider(comp?.Shield, "ChargeRate", "Shield Charge Rate", "Shield Charge Rate", DsGetSet.GetRate, DsGetSet.SetRate);
+            ChargeSlider.SetLimits(20, 95);
+
+            ExtendFit = TerminalHelpers.AddCheckbox(comp?.Shield, "ExtendFit", "Extend Shield", "Extend Shield", DsGetSet.GetExtend, DsGetSet.SetExtend);
+            SphereFit = TerminalHelpers.AddCheckbox(comp?.Shield, "SphereFit", "Sphere Fit      ", "Sphere Fit      ", DsGetSet.GetSphereFit, DsGetSet.SetSphereFit);
+            FortifyShield = TerminalHelpers.AddCheckbox(comp?.Shield, "ShieldFortify", "Fortify Shield ", "Fortify Shield ", DsGetSet.GetFortify, DsGetSet.SetFortify);
+
+            WidthSlider = TerminalHelpers.AddSlider(comp?.Shield, "WidthSlider", "Shield Size Width", "Shield Size Width", DsGetSet.GetWidth, DsGetSet.SetWidth);
+            WidthSlider.SetLimits(30, 600);
+
+            HeightSlider = TerminalHelpers.AddSlider(comp?.Shield, "HeightSlider", "Shield Size Height", "Shield Size Height", DsGetSet.GetHeight, DsGetSet.SetHeight);
+            HeightSlider.SetLimits(30, 600);
+
+            DepthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DepthSlider", "Shield Size Depth", "Shield Size Depth", DsGetSet.GetDepth, DsGetSet.SetDepth);
+            DepthSlider.SetLimits(30, 600);
+
+            HidePassiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HidePassive", "Hide idle shield state            ", "Hide idle shield state            ", DsGetSet.GetHidePassive, DsGetSet.SetHidePassive);
+            HideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HideActive", "Hide active shield state        ", "Hide active shield state        ", DsGetSet.GetHideActive, DsGetSet.SetHideActive);
+            SendToHudCheckBoxe = TerminalHelpers.AddCheckbox(comp?.Shield, "HideIcon", "Send status to nearby HUDs", "Send status to nearby HUDs", DsGetSet.GetSendToHud, DsGetSet.SetSendToHud);
+            DSControl = true;
         }
 
         public override void LoadData()

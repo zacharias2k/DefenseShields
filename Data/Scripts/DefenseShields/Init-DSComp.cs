@@ -65,18 +65,22 @@ namespace DefenseShields
 
         private void HierarchyChanged(IMyCubeGrid myCubeGrid = null)
         {
-            if (_tick == _hierarchyTick) return;
-            if (_hierarchyTick > _tick - 9)
+            try
             {
-                _hierarchyDelayed = true;
-                return;
-            }
-            _hierarchyTick = _tick;
+                if (_tick == _hierarchyTick) return;
+                if (_hierarchyTick > _tick - 9)
+                {
+                    _hierarchyDelayed = true;
+                    return;
+                }
+                _hierarchyTick = _tick;
 
-            var gotGroups = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Mechanical);
-            ShieldComp.GetSubGrids.Clear();
-            _connectedGrids.Clear();
-            for (int i = 0; i < gotGroups.Count; i++) ShieldComp.GetSubGrids.Add(gotGroups[i]);
+                var gotGroups = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Mechanical);
+                ShieldComp?.GetSubGrids.Clear();
+                _connectedGrids.Clear();
+                for (int i = 0; i < gotGroups.Count; i++) ShieldComp?.GetSubGrids.Add(gotGroups[i]);
+            }
+            catch (Exception ex) { Log.Line($"Exception in HierarchyChanged: {ex}"); }
         }
 
         private void SetShieldType()
@@ -279,185 +283,29 @@ namespace DefenseShields
         #region Create UI
         private void CreateUi()
         {
-            if (!Session.Instance.DSControl)
-            {
-                UtilsStatic.RemoveOreUi();
-                _chargeSlider = TerminalHelpers.AddSlider(Shield, "ChargeRate", "Shield Charge Rate", "Shield Charge Rate", GetRate, SetRate);
-                _chargeSlider.SetLimits(20, 95);
-
-                _extendFit = TerminalHelpers.AddCheckbox(Shield, "ExtendFit", "Extend Shield", "Extend Shield", GetExtend, SetExtend);
-                _sphereFit = TerminalHelpers.AddCheckbox(Shield, "SphereFit", "Sphere Fit      ", "Sphere Fit      ", GetSphereFit, SetSphereFit);
-                _fortifyShield = TerminalHelpers.AddCheckbox(Shield, "ShieldFortify", "Fortify Shield ", "Fortify Shield ", GetFortify, SetFortify);
-
-                _widthSlider = TerminalHelpers.AddSlider(Shield, "WidthSlider", "Shield Size Width", "Shield Size Width", GetWidth, SetWidth);
-                _widthSlider.SetLimits(30, 600);
-
-                _heightSlider = TerminalHelpers.AddSlider(Shield, "HeightSlider", "Shield Size Height", "Shield Size Height", GetHeight, SetHeight);
-                _heightSlider.SetLimits(30, 600);
-
-                _depthSlider = TerminalHelpers.AddSlider(Shield, "DepthSlider", "Shield Size Depth", "Shield Size Depth", GetDepth, SetDepth);
-                _depthSlider.SetLimits(30, 600);
-
-                _hidePassiveCheckBox = TerminalHelpers.AddCheckbox(Shield, "HidePassive", "Hide idle shield state            ", "Hide idle shield state            ", GetHidePassive, SetHidePassive);
-                _hideActiveCheckBox = TerminalHelpers.AddCheckbox(Shield, "HideActive", "Hide active shield state        ", "Hide active shield state        ", GetHideActive, SetHideActive);
-                _sendToHudCheckBoxe = TerminalHelpers.AddCheckbox(Shield, "HideIcon", "Send status to nearby HUDs", "Send status to nearby HUDs", GetSendToHud, SetSendToHud);
-                Session.Instance.DSControl = true;
-            }
-
-            _widthSlider.Visible = ShowSizeSlider;
-            _heightSlider.Visible = ShowSizeSlider;
-            _depthSlider.Visible = ShowSizeSlider;
-
-            _extendFit.Visible = ShowReSizeCheckBoxs;
-            _sphereFit.Visible = ShowReSizeCheckBoxs;
-            _fortifyShield.Visible = ShowReSizeCheckBoxs;
+            Session.Instance.CreateControls(Shield);
+            Session.Instance.WidthSlider.Visible = ShowSizeSlider;
+            Session.Instance.HeightSlider.Visible = ShowSizeSlider;
+            Session.Instance.DepthSlider.Visible = ShowSizeSlider;
+            
+            Session.Instance.ExtendFit.Visible = ShowReSizeCheckBoxs;
+            Session.Instance.SphereFit.Visible = ShowReSizeCheckBoxs;
+            Session.Instance.FortifyShield.Visible = ShowReSizeCheckBoxs;
             if (Session.Enforced.Debug == 1) Log.Line($"CreateUI Complete");
         }
 
-        private static bool ShowSizeSlider(IMyTerminalBlock myTerminalBlock)
+        private static bool ShowSizeSlider(IMyTerminalBlock block)
         {
-            //var test = ((MyCubeBlock) myTerminalBlock);
-            //if (myTerminalBlock.CubeGrid.IsStatic) Log.Line($"IsStatic");
-            var id = myTerminalBlock.BlockDefinition.SubtypeId;
-            var station = id == "DSControlStation";
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            var station = comp != null && comp.Shield.CubeGrid.Physics.IsStatic;
             return station;
         }
 
-        private static bool ShowReSizeCheckBoxs(IMyTerminalBlock myTerminalBlock)
+        private static bool ShowReSizeCheckBoxs(IMyTerminalBlock block)
         {
-            var id = myTerminalBlock.BlockDefinition.SubtypeId;
-            var station = id != "DSControlStation";
-            return station;
-        }
-
-        private float GetRate(IMyTerminalBlock myTerminalBlock)
-        {
-            return Rate;
-        }
-
-        private void SetRate(IMyTerminalBlock myTerminalBlock, float newRate)
-        {
-            Rate = newRate;
-            if (!_gridIsMobile) _updateDimensions = true;
-            DsSet.NetworkUpdate();
-            DsSet.SaveSettings();
-        }
-
-        private bool GetExtend(IMyTerminalBlock myTerminalBlock)
-        {
-            return ExtendFit;
-        }
-
-        private void SetExtend(IMyTerminalBlock myTerminalBlock, bool status)
-        {
-            ExtendFit = status;
-            if (!_gridIsMobile) _updateDimensions = true;
-            DsSet.NetworkUpdate();
-            DsSet.SaveSettings();
-        }
-
-        private bool GetSphereFit(IMyTerminalBlock myTerminalBlock)
-        {
-            return SphereFit;
-        }
-
-        private void SetSphereFit(IMyTerminalBlock myTerminalBlock, bool status)
-        {
-            SphereFit = status;
-            if (!_gridIsMobile) _updateDimensions = true;
-            DsSet.NetworkUpdate();
-            DsSet.SaveSettings();
-        }
-
-        private bool GetFortify(IMyTerminalBlock myTerminalBlock)
-        {
-            return FortifyShield;
-        }
-
-        private void SetFortify(IMyTerminalBlock myTerminalBlock, bool status)
-        {
-            FortifyShield = status;
-            if (!_gridIsMobile) _updateDimensions = true;
-            DsSet.NetworkUpdate();
-            DsSet.SaveSettings();
-        }
-
-        private float GetWidth(IMyTerminalBlock myTerminalBlock)
-        {
-            return Width;
-        }
-
-        private void SetWidth(IMyTerminalBlock myTerminalBlock, float newRate)
-        {
-            Width = newRate;
-            if (!_gridIsMobile) _updateDimensions = true;
-            DsSet.NetworkUpdate();
-            DsSet.SaveSettings();
-        }
-
-        private float GetHeight(IMyTerminalBlock myTerminalBlock)
-        {
-            return Height;
-        }
-
-        private void SetHeight(IMyTerminalBlock myTerminalBlock, float newRate)
-        {
-            Height = newRate;
-            if (!_gridIsMobile) _updateDimensions = true;
-            DsSet.NetworkUpdate();
-            DsSet.SaveSettings();
-        }
-
-        private float GetDepth(IMyTerminalBlock myTerminalBlock)
-        {
-            return Depth;
-        }
-
-        private void SetDepth(IMyTerminalBlock myTerminalBlock, float newRate)
-        {
-            Depth = newRate;
-            if (!_gridIsMobile) _updateDimensions = true;
-            DsSet.NetworkUpdate();
-            DsSet.SaveSettings();
-        }
-
-        private bool GetHidePassive(IMyTerminalBlock myTerminalBlock)
-        {
-            return ShieldPassiveVisible;
-        }
-
-        private void SetHidePassive(IMyTerminalBlock myTerminalBlock, bool status)
-        {
-            ShieldPassiveVisible = status;
-            if (!_gridIsMobile) _updateDimensions = true;
-            DsSet.NetworkUpdate();
-            DsSet.SaveSettings();
-        }
-
-        private bool GetHideActive(IMyTerminalBlock myTerminalBlock)
-        {
-            return ShieldActiveVisible;
-        }
-
-        private void SetHideActive(IMyTerminalBlock myTerminalBlock, bool status)
-        {
-            ShieldActiveVisible = status;
-            if (!_gridIsMobile) _updateDimensions = true;
-            DsSet.NetworkUpdate();
-            DsSet.SaveSettings();
-        }
-
-        private bool GetSendToHud(IMyTerminalBlock myTerminalBlock)
-        {
-            return SendToHud;
-        }
-
-        private void SetSendToHud(IMyTerminalBlock myTerminalBlock, bool status)
-        {
-            SendToHud = status;
-            if (!_gridIsMobile) _updateDimensions = true;
-            DsSet.NetworkUpdate();
-            DsSet.SaveSettings();
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            var notStation = comp != null && !comp.Shield.CubeGrid.Physics.IsStatic;
+            return notStation;
         }
         #endregion
     }

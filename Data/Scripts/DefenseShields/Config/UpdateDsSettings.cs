@@ -7,8 +7,8 @@ namespace DefenseShields
         public void UpdateSettings(DefenseShieldsModSettings newSettings)
         {
             Enabled = newSettings.Enabled;
-            ShieldPassiveVisible = newSettings.PassiveInvisible;
-            ShieldActiveVisible = newSettings.ActiveInvisible;
+            ShieldPassiveHide = newSettings.PassiveInvisible;
+            ShieldActiveHide = newSettings.ActiveInvisible;
             Width = newSettings.Width;
             Height = newSettings.Height;
             Depth = newSettings.Depth;

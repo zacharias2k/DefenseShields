@@ -61,7 +61,7 @@ namespace DefenseShields
             if (ShieldComp == null) Display.CubeGrid.Components.TryGet(out ShieldComp);
             if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.ShieldActive) return;
             Display.WritePublicText(ShieldComp.DefenseShields.Shield.CustomInfo);
-            //if (ServerUpdate) SyncControlsServer();
+            //if (ServerUpdate) SyncMisc();
             //SyncControlsClient();
         }
 
@@ -142,7 +142,7 @@ namespace DefenseShields
             return loadedSomething;
         }
 
-        private void SyncControlsServer()
+        private void SyncMisc()
         {
             if (Display != null && !Display.Enabled.Equals(Settings.Enabled))
             {
@@ -161,7 +161,7 @@ namespace DefenseShields
 
             ServerUpdate = false;
             SaveSettings();
-            if (Session.Enforced.Debug == 1) Log.Line($"SyncControlsServer (display)");
+            if (Session.Enforced.Debug == 1) Log.Line($"SyncMisc (display)");
         }
 
         private void SyncControlsClient()

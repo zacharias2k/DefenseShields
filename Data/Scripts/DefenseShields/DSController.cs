@@ -12,14 +12,13 @@ using VRage.Game.Components;
 using VRage.ModAPI;
 using System.Linq;
 using DefenseShields.Support;
-using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using VRage.Voxels;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
 namespace DefenseShields
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OreDetector), false, "DSControlStation", "DSControlLarge", "DSControlSmall")]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OreDetector), false, "DSControlLarge", "DSControlSmall")]
     public partial class DefenseShields : MyGameLogicComponent
     {
         #region Simulation
@@ -31,11 +30,9 @@ namespace DefenseShields
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
                 if (!BlockFunctional()) return;
 
-                if (ServerUpdate) SyncControlsServer();
-                
                 if (_gridIsMobile) MobileUpdate();
                 else _shapeAdjusted = false;
-                if (_updateDimensions) RefreshDimensions();
+                if (UpdateDimensions) RefreshDimensions();
 
                 if (_fitChanged || _lCount == 0 && _count == 0 && _blocksChanged)
                 {
@@ -70,6 +67,7 @@ namespace DefenseShields
                 {
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
                     {
+                        Shield.RefreshCustomInfo();
                         Shield.ShowInToolbarConfig = false;
                         Shield.ShowInToolbarConfig = true;
                     }
@@ -81,13 +79,6 @@ namespace DefenseShields
                 }
                 if (ShieldComp.ShieldActive)
                 {
-                    //var def = MyDefinitionManager.Static.GetCubeBlockDefinition(new MyDefinitionId(typeof(MyObjectBuilder_OreDetector), "DSControlLarge"));
-                    //var test = MyCubeBuilder.Static.CubeBuilderState.CurrentBlockDefinition;
-                    //if (test != null && test != def)
-                        //test = MyCubeBuilder.Static.CubeBuilderState.CurrentBlockDefinition = def;
-                    //Log.Line($"selected block {test?.BlockPairName}");
-                    //Shield.SetEmissiveParts("iconlock", Color.Transparent, 0f);
-                    //Shield.SetEmissiveParts("iconshieldrear", Color.Black, 0f);
                     if (_lCount % 2 != 0 && _count == 20)
                     {
                         GetModulationInfo();
@@ -96,7 +87,7 @@ namespace DefenseShields
                     if (ShieldComp.ComingOnline)
                     {
                         if (ShieldComp.ComingOnline && _gridIsMobile && FieldShapeBlocked()) return;
-                        if (!_hidePassiveCheckBox.Getter(Shield).Equals(true)) _shellPassive.Render.UpdateRenderObject(true);
+                        if (!ShieldPassiveHide) _shellPassive.Render.UpdateRenderObject(true);
 
                         _shellActive.Render.UpdateRenderObject(true);
                         _shellActive.Render.UpdateRenderObject(false);
@@ -175,7 +166,7 @@ namespace DefenseShields
             {
                 if (!_gridIsMobile && ShieldComp?.EmitterComp?.PrimeComp != null)
                 {
-                    _updateDimensions = true;
+                    UpdateDimensions = true;
                     RefreshDimensions();
                 }
                 ShieldComp.EmitterEvent = false;
@@ -216,7 +207,7 @@ namespace DefenseShields
                     }
                     else
                     {
-                        _updateDimensions = true;
+                        UpdateDimensions = true;
                         RefreshDimensions();
                     }
                     _shapeAdjusted = false;
@@ -515,7 +506,7 @@ namespace DefenseShields
                 if (FortifyShield && Math.Sqrt(ShieldComp.ShieldVelocitySqr) > 15)
                 {
                     _fitChanged = true;
-                    _fortifyShield.Setter(Shield, false);
+                    FortifyShield = false;
                 }
             }
             else ShieldComp.GridIsMoving = false;
@@ -609,8 +600,8 @@ namespace DefenseShields
         private void RefreshDimensions()
         {
 
-            if (!_updateDimensions) return;
-            _updateDimensions = false;
+            if (!UpdateDimensions) return;
+            UpdateDimensions = false;
             CreateShieldShape();
             Icosphere.ReturnPhysicsVerts(DetectionMatrix, ShieldComp.PhysicsOutside);
             _entityChanged = true;
@@ -793,7 +784,7 @@ namespace DefenseShields
             var up = cameraWorldMatrix.Up;
             const double scaler = 0.07d;
             scale = scaler * scale;
-            var color = UtilsStatic.GetEmissiveColorFromFloatIcon(ShieldComp.ShieldPercent);
+            var color = UtilsStatic.GetEmissiveColorFromFloat(ShieldComp.ShieldPercent);
             if (color == Color.DarkRed && _lCount % 2 == 0) color = Color.Transparent;
             MyTransparentGeometry.AddBillboardOriented(_hudIcon, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
         }		
@@ -808,8 +799,8 @@ namespace DefenseShields
 
             if (!enemy && SendToHud && !MyAPIGateway.Session.Config.MinimalHud && Session.HudComp == this) UpdateIcon();
 
-            var passiveVisible = !(_hidePassiveCheckBox.Getter(Shield).Equals(true) && !enemy);
-            var activeVisible = !(_hideActiveCheckBox.Getter(Shield).Equals(true) && !enemy);
+            var passiveVisible = !ShieldPassiveHide && !enemy;
+            var activeVisible = !ShieldActiveHide && !enemy;
 
             if (!passiveVisible && !_hideShield)
             {
@@ -912,7 +903,7 @@ namespace DefenseShields
         }
 
         #region Shield Support Blocks
-        private void GetModulationInfo()
+        public void GetModulationInfo()
         {
 
             ModulatorGridComponent modComp;

@@ -74,16 +74,20 @@ namespace DefenseShields
 
         private void HierarchyChanged(IMyCubeGrid myCubeGrid = null)
         {
-            if (_tick == _hierarchyTick || ShieldComp?.DefenseShields != null) return;
-            if (_hierarchyTick > _tick - 9)
+            try
             {
-                _hierarchyDelayed = true;
-                return;
+                if (_tick == _hierarchyTick || ShieldComp?.DefenseShields != null) return;
+                if (_hierarchyTick > _tick - 9)
+                {
+                    _hierarchyDelayed = true;
+                    return;
+                }
+                _hierarchyTick = _tick;
+                var gotGroups = MyAPIGateway.GridGroups.GetGroup(Modulator.CubeGrid, GridLinkTypeEnum.Mechanical);
+                ModulatorComp?.GetSubGrids.Clear();
+                for (int i = 0; i < gotGroups.Count; i++) ModulatorComp?.GetSubGrids.Add(gotGroups[i]);
             }
-            _hierarchyTick = _tick;
-            var gotGroups = MyAPIGateway.GridGroups.GetGroup(Modulator.CubeGrid, GridLinkTypeEnum.Mechanical);
-            ModulatorComp.GetSubGrids.Clear();
-            for (int i = 0; i < gotGroups.Count; i++) ModulatorComp.GetSubGrids.Add(gotGroups[i]);
+            catch (Exception ex) { Log.Line($"Exception in HierarchyChanged: {ex}"); }
         }
 
         public override void UpdateBeforeSimulation()
@@ -95,6 +99,8 @@ namespace DefenseShields
             {
                 Modulator.CubeGrid.Components.TryGet(out ShieldComp);
                 if (ShieldComp == null) return;
+                SyncControlsClient();
+                ShieldComp.DefenseShields?.GetModulationInfo();
                 MainInit = true;
                 if (Session.Enforced.Debug == 1) Log.Line($"Modulator initted");
             }
@@ -107,7 +113,7 @@ namespace DefenseShields
             if (!MainInit) return;
             _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
 
-            if (ServerUpdate) SyncControlsServer();
+            if (ServerUpdate) SyncMisc();
             SyncControlsClient();
 
             if (Modulator.CustomData != ModulatorComp.ModulationPassword)
@@ -215,7 +221,7 @@ namespace DefenseShields
             return loadedSomething;
         }
 
-        private void SyncControlsServer()
+        private void SyncMisc()
         {
             if (Modulator != null && !Modulator.Enabled.Equals(Settings.Enabled))
             {
@@ -237,7 +243,7 @@ namespace DefenseShields
 
             ServerUpdate = false;
             SaveSettings();
-            if (Session.Enforced.Debug == 1) Log.Line($"SyncControlsServer (modulator)");
+            if (Session.Enforced.Debug == 1) Log.Line($"SyncMisc (modulator)");
         }
 
         private void SyncControlsClient()

@@ -79,53 +79,44 @@ namespace DefenseShields.Support
         /*
         public static Color GetEmissiveColorFromFloat(float percent)
         {
-            if (percent > 80) return Color.LightBlue;
+            if (percent > 90) return Color.White;
+            if (percent > 80) return Color.DeepSkyBlue;
+            if (percent > 70) return Color.Purple;
             if (percent > 60) return Color.DarkBlue;
-            if (percent > 40) return Color.GreenYellow;
-            if (percent > 20) return Color.OrangeRed;
-            return Color.DarkRed;
+            if (percent > 50) return Color.Green;
+            if (percent > 40) return Color.Yellow;
+            if (percent > 30) return Color.OrangeRed;
+            if (percent > 20) return Color.Red;
+            return Color.Black;
         }
         */
 
         public static Color GetEmissiveColorFromFloat(float percent)
         {
-            if (percent > 90) return Color.White;
-            if (percent > 80) return Color.DeepSkyBlue;
-            if (percent > 70) return Color.Purple;
-            if (percent > 60) return Color.DarkBlue;
-            if (percent > 50) return Color.Green;
-            if (percent > 40) return Color.Yellow;
-            if (percent > 30) return Color.OrangeRed;
-            if (percent > 20) return Color.Red;
-            return Color.Black;
-        }
+            var white1 = new Color(255, 255, 255);
+            var white2 = new Color(245, 246, 255);
+            var white3 = new Color(191, 195, 255);
 
-        public static Color GetEmissiveColorFromFloatIcon(float percent)
-        {
-            if (percent > 90) return Color.White;
-            if (percent > 80) return Color.DeepSkyBlue;
-            if (percent > 70) return Color.Purple;
-            if (percent > 60) return Color.DarkBlue;
-            if (percent > 50) return Color.Green;
-            if (percent > 40) return Color.Yellow;
-            if (percent > 30) return Color.OrangeRed;
-            if (percent > 20) return Color.Red;
-            return Color.DarkRed;
-        }
+            var blue1 = new Color(57, 66, 255);
+            var blue2 = new Color(12, 16, 255);
+            var blue3 = new Color(0, 0, 238);
+            var blue4 = new Color(12, 0, 195);
 
-        public static Color GetEmissiveColorFromFloatEmitter(float percent)
-        {
-            if (percent > 90) return Color.White;
-            if (percent > 80) return Color.DeepSkyBlue;
-            if (percent > 70) return Color.Purple;
-            if (percent > 60) return Color.DarkBlue;
-            if (percent > 50) return Color.Green;
-            if (percent > 40) return Color.Yellow;
-            if (percent > 30) return Color.OrangeRed;
-            if (percent > 20) return Color.Red;
-            return Color.Black;
-        }
+            var red1 = new Color(87, 0, 66);
+            var red2 = new Color(121, 0, 13);
+            var red3 = new Color(255, 0, 0);
 
+            if (percent > 90) return white1;
+            if (percent > 80) return white2;
+            if (percent > 70) return white3;
+            if (percent > 60) return blue1;
+            if (percent > 50) return blue2;
+            if (percent > 40) return blue3;
+            if (percent > 30) return blue4;
+            if (percent > 20) return red1;
+            if (percent > 10) return red2;
+            return red3;
+        }
         public static long ThereCanBeOnlyOne(IMyCubeBlock shield)
         {
             if (Session.Enforced.Debug == 1) Log.Line($"ThereCanBeOnlyOne start");
