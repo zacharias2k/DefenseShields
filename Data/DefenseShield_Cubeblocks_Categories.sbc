@@ -33,7 +33,7 @@
         <TypeId>OreDetector</TypeId>
         <SubtypeId>DSControlLarge</SubtypeId>
       </Id>
-      <DisplayName>Table Shield Controller</DisplayName>
+      <DisplayName>Shield Controller Table</DisplayName>
       <Icon>Textures\Icons\DS_Control.dds</Icon>
       <CubeSize>Large</CubeSize>
       <GuiVisible>true</GuiVisible>
@@ -86,7 +86,7 @@
         <TypeId>OreDetector</TypeId>
         <SubtypeId>DSControlSmall</SubtypeId>
       </Id>
-      <DisplayName>Compact Shield Controller</DisplayName>
+      <DisplayName>Shield Controller Compact</DisplayName>
       <Icon>Textures\Icons\DS_Control.dds</Icon>
       <CubeSize>Small</CubeSize>
       <GuiVisible>true</GuiVisible>
@@ -264,7 +264,7 @@
         <TypeId>UpgradeModule</TypeId>
         <SubtypeId>EmitterL</SubtypeId>
       </Id>
-      <DisplayName>Emitter</DisplayName>
+      <DisplayName>Shield Emitter</DisplayName>
       <Icon>Textures\GUI\Icons\Cubes\ShipShield_Icon.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -311,7 +311,7 @@
         <TypeId>UpgradeModule</TypeId>
         <SubtypeId>EmitterS</SubtypeId>
       </Id>
-      <DisplayName>Emitter</DisplayName>
+      <DisplayName>Shield Emitter</DisplayName>
       <Icon>Textures\GUI\Icons\Cubes\ShipShield_Icon.dds</Icon>
       <CubeSize>Small</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -359,7 +359,7 @@
         <TypeId>UpgradeModule</TypeId>
         <SubtypeId>EmitterP</SubtypeId>
       </Id>
-      <DisplayName>Planetary Emitter</DisplayName>
+      <DisplayName>Planetary Shield Emitter</DisplayName>
       <Icon>Textures\GUI\Icons\Cubes\ShipShield_Icon.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -404,7 +404,7 @@
         <TypeId>UpgradeModule</TypeId>
         <SubtypeId>EmitterST</SubtypeId>
       </Id>
-      <DisplayName>Station Emitter</DisplayName>
+      <DisplayName>Station Shield Emitter</DisplayName>
       <Icon>Textures\GUI\Icons\Cubes\ShipShield_Icon.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>

@@ -423,7 +423,7 @@ namespace DefenseShields
                 var blockedDir = ShieldComp.PhysicsOutside[blocking] - _sightPos;
                 blockedDir.Normalize();
                 var blockedPos = _sightPos + blockedDir * lineDist;
-                DsDebugDraw.DrawLineToVec(_sightPos, blockedPos, Color.Black, lineWidth);
+                // DsDebugDraw.DrawLineToVec(_sightPos, blockedPos, Color.Black, lineWidth);
             }
 
             foreach (var sighted in _vertsSighted)
@@ -431,7 +431,7 @@ namespace DefenseShields
                 var sightedDir = ShieldComp.PhysicsOutside[sighted] - _sightPos;
                 sightedDir.Normalize();
                 var sightedPos = _sightPos + sightedDir * lineDist;
-                DsDebugDraw.DrawLineToVec(_sightPos, sightedPos, Color.Blue, lineWidth);
+                // DsDebugDraw.DrawLineToVec(_sightPos, sightedPos, Color.Blue, lineWidth);
             }
             if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("The shield emitter DOES NOT have a CLEAR ENOUGH LINE OF SIGHT to the shield, SHUTTING DOWN.", 960, "Red", Emitter.OwnerId);
             if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("Blue means clear line of sight, black means blocked......................................................................", 960, "Red", Emitter.OwnerId);
