@@ -183,7 +183,7 @@ namespace DefenseShields
 
         internal HashSet<ulong> playersToReceive = null;
 
-        internal MyStringId CustomDataTooltip = MyStringId.GetOrCompute("Shows and Editor for custom data to be used by scripts and mods");
+        internal MyStringId CustomDataTooltip = MyStringId.GetOrCompute("Shows an Editor for custom data to be used by scripts and mods");
         internal MyStringId CustomData = MyStringId.GetOrCompute("CustomData");
         internal MyStringId Password = MyStringId.GetOrCompute("Password");
         internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Set the shield modulation password");
