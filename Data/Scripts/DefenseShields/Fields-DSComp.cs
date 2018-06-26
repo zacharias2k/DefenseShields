@@ -139,7 +139,17 @@ namespace DefenseShields
         private readonly MyConcurrentQueue<IMyCharacter> _characterDmg = new MyConcurrentQueue<IMyCharacter>();
         private readonly MyConcurrentQueue<MyVoxelBase> _voxelDmg = new MyConcurrentQueue<MyVoxelBase>();
 
-        private readonly MyStringId _hudIcon = MyStringId.GetOrCompute("DS_ShieldInside");
+        private readonly MyStringId _hudIconOffline = MyStringId.GetOrCompute("DS_ShieldOffline");
+        private readonly MyStringId _hudIconHealth10 = MyStringId.GetOrCompute("DS_ShieldHealth10");
+        private readonly MyStringId _hudIconHealth20 = MyStringId.GetOrCompute("DS_ShieldHealth20");
+        private readonly MyStringId _hudIconHealth30 = MyStringId.GetOrCompute("DS_ShieldHealth30");
+        private readonly MyStringId _hudIconHealth40 = MyStringId.GetOrCompute("DS_ShieldHealth40");
+        private readonly MyStringId _hudIconHealth50 = MyStringId.GetOrCompute("DS_ShieldHealth50");
+        private readonly MyStringId _hudIconHealth60 = MyStringId.GetOrCompute("DS_ShieldHealth60");
+        private readonly MyStringId _hudIconHealth70 = MyStringId.GetOrCompute("DS_ShieldHealth70");
+        private readonly MyStringId _hudIconHealth80 = MyStringId.GetOrCompute("DS_ShieldHealth80");
+        private readonly MyStringId _hudIconHealth90 = MyStringId.GetOrCompute("DS_ShieldHealth90");
+        private readonly MyStringId _hudIconHealth100 = MyStringId.GetOrCompute("DS_ShieldHealth100");
 
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;
