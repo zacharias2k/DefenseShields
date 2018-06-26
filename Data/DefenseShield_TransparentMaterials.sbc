@@ -274,7 +274,7 @@
       <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <IgnoreDepth>false</IgnoreDepth>
       <SoftParticleDistanceScale>1</SoftParticleDistanceScale>
-      <Texture>Textures\DS_Shield.dds</Texture>
+      <!--<Texture>Textures\DS_Shield.dds</Texture> -->
       <!--<GlossTexture>Textures\Models\Cubes\AluminiumGlossy_ng.dds</GlossTexture> -->
       <UseAtlas>false</UseAtlas>
       <NeedSort>true</NeedSort>
