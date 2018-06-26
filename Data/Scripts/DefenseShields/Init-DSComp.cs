@@ -86,7 +86,7 @@ namespace DefenseShields
             else if (Shield.CubeGrid.GridSizeEnum == MyCubeSize.Large) ShieldMode = ShieldType.LargeGrid;
             else ShieldMode = ShieldType.SmallGrid;
 
-            if (ShieldMode != ShieldType.Station) _gridIsMobile = true;
+            if (ShieldMode != ShieldType.Station) GridIsMobile = true;
 
             switch (ShieldMode)
             {

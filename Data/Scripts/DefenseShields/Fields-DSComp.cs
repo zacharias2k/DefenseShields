@@ -71,7 +71,7 @@ namespace DefenseShields
         internal bool WarmedUp;
         internal bool UpdateDimensions;
         internal bool HardDisable { get; private set; }
-        internal bool _gridIsMobile;
+        internal bool GridIsMobile;
         private bool _blocksChanged;
         private bool _prevShieldActive;
         private bool _effectsCleanup;

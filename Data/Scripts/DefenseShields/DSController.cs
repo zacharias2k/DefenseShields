@@ -30,7 +30,7 @@ namespace DefenseShields
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
                 if (!BlockFunctional()) return;
 
-                if (_gridIsMobile) MobileUpdate();
+                if (GridIsMobile) MobileUpdate();
                 else _shapeAdjusted = false;
                 if (UpdateDimensions) RefreshDimensions();
 
@@ -39,7 +39,7 @@ namespace DefenseShields
                     _oldEllipsoidAdjust = _ellipsoidAdjust;
                     _fitChanged = false;
 
-                    if (_gridIsMobile)
+                    if (GridIsMobile)
                     {
                         CreateHalfExtents();
                         if (_shapeAdjusted) _shapeLoaded = true;
@@ -86,7 +86,7 @@ namespace DefenseShields
                     }
                     if (ShieldComp.ComingOnline)
                     {
-                        if (ShieldComp.ComingOnline && _gridIsMobile && FieldShapeBlocked()) return;
+                        if (ShieldComp.ComingOnline && GridIsMobile && FieldShapeBlocked()) return;
                         if (!ShieldPassiveHide) _shellPassive.Render.UpdateRenderObject(true);
 
                         _shellActive.Render.UpdateRenderObject(true);
@@ -94,7 +94,7 @@ namespace DefenseShields
                         ShieldEnt.Render.Visible = true;
                         ShieldEnt.Render.UpdateRenderObject(true);
                         SyncThreadedEnts(true);
-                        if (!_gridIsMobile) EllipsoidOxyProvider.UpdateMatrix(DetectMatrixOutsideInv);
+                        if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(DetectMatrixOutsideInv);
                         if (!WarmedUp) 
                         {
                             WarmedUp = true;
@@ -164,7 +164,7 @@ namespace DefenseShields
 
             if (ShieldComp.EmitterEvent)
             {
-                if (!_gridIsMobile && ShieldComp?.EmitterComp?.PrimeComp != null)
+                if (!GridIsMobile && ShieldComp?.EmitterComp?.PrimeComp != null)
                 {
                     UpdateDimensions = true;
                     RefreshDimensions();
@@ -199,7 +199,7 @@ namespace DefenseShields
                 if (eComp != null)
                 {
                     ShieldComp.EmitterComp = eComp;
-                    if (_gridIsMobile)
+                    if (GridIsMobile)
                     {
                         CreateHalfExtents();
                         GetShapeAdjust();
@@ -387,7 +387,7 @@ namespace DefenseShields
             _shieldCurrentPower = Sink.CurrentInputByType(GId);
             UpdateGridPower();
 
-            if (!_gridIsMobile) EllipsoidOxyProvider.UpdateMatrix(MatrixD.Zero);
+            if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(MatrixD.Zero);
             ShieldComp.ShieldActive = false;
             _prevShieldActive = false;
             _shellPassive.Render.UpdateRenderObject(false);
@@ -520,7 +520,7 @@ namespace DefenseShields
 
         private void CreateShieldShape()
         {
-            if (_gridIsMobile)
+            if (GridIsMobile)
             {
                 _shieldGridMatrix = Shield.CubeGrid.WorldMatrix;
                 if (_shapeAdjusted) CreateMobileShape();
@@ -582,7 +582,7 @@ namespace DefenseShields
             ShieldEnt.PositionComp.LocalAABB = _shieldAabb;
 
             MatrixD matrix;
-            if (!_gridIsMobile)
+            if (!GridIsMobile)
             {
                 EllipsoidOxyProvider.UpdateMatrix(DetectMatrixOutsideInv);
                 matrix = _shieldShapeMatrix * ShieldComp.EmitterComp.PrimeComp.Emitter.WorldMatrix;
@@ -890,7 +890,7 @@ namespace DefenseShields
                             PartlyProtectedCache.Clear();
                             foreach (var sub in ShieldComp.GetSubGrids)
                             {
-                                if (!_gridIsMobile && CustomCollision.NotAllCornersInShield(sub, DetectMatrixOutsideInv))
+                                if (!GridIsMobile && CustomCollision.NotAllCornersInShield(sub, DetectMatrixOutsideInv))
                                 {
                                     PartlyProtectedCache.Add(sub);
                                     continue;
