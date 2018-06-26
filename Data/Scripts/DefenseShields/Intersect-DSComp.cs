@@ -17,9 +17,9 @@ namespace DefenseShields
         {
             if (CustomCollision.PointInShield(grid.PositionComp.WorldVolume.Center, _detectInsideInv))
             {
-                if (CustomCollision.AllCornersInShield(bOriBBoxD, _detectMatrixOutsideInv)) return true;
+                if (CustomCollision.AllCornersInShield(bOriBBoxD, DetectMatrixOutsideInv)) return true;
 
-                var ejectDir = CustomCollision.EjectDirection(grid, ShieldComp.PhysicsOutside, _dataStructures.p3VertTris, bOriBBoxD, _detectMatrixOutsideInv);
+                var ejectDir = CustomCollision.EjectDirection(grid, ShieldComp.PhysicsOutside, _dataStructures.p3VertTris, bOriBBoxD, DetectMatrixOutsideInv);
                 if (ejectDir == Vector3D.NegativeInfinity) return false;
                 Eject.TryAdd(grid, ejectDir);
 
@@ -37,7 +37,7 @@ namespace DefenseShields
             _webEnts.TryGetValue(ent, out entInfo);
             if (entInfo == null) return;
 
-            CustomCollision.SmallIntersect(entInfo, _fewDmgBlocks, grid, _detectMatrixOutside, _detectMatrixOutsideInv);
+            CustomCollision.SmallIntersect(entInfo, _fewDmgBlocks, grid, _detectMatrixOutside, DetectMatrixOutsideInv);
             var contactpoint = entInfo.ContactPoint;
             entInfo.ContactPoint = Vector3D.NegativeInfinity;
             if (contactpoint != Vector3D.NegativeInfinity)
@@ -79,11 +79,11 @@ namespace DefenseShields
             grid.Components.TryGet(out shieldComponent);
 
             var dsVerts = shieldComponent.DefenseShields.ShieldComp.PhysicsOutside;
-            var dsMatrixInv = shieldComponent.DefenseShields._detectMatrixOutsideInv;
+            var dsMatrixInv = shieldComponent.DefenseShields.DetectMatrixOutsideInv;
             var myGrid = Shield.CubeGrid;
 
             var insidePoints = new List<Vector3D>();
-            CustomCollision.ShieldX2PointsInside(dsVerts, dsMatrixInv, ShieldComp.PhysicsOutside, _detectMatrixOutsideInv, insidePoints);
+            CustomCollision.ShieldX2PointsInside(dsVerts, dsMatrixInv, ShieldComp.PhysicsOutside, DetectMatrixOutsideInv, insidePoints);
 
             var bPhysics = grid.Physics;
             var sPhysics = myGrid.Physics;
@@ -158,7 +158,7 @@ namespace DefenseShields
         private void BlockIntersect(IMyCubeGrid breaching, MyOrientedBoundingBoxD bOriBBoxD, EntIntersectInfo entInfo)
         {
             var collisionAvg = Vector3D.Zero;
-            var transformInv = _detectMatrixOutsideInv;
+            var transformInv = DetectMatrixOutsideInv;
             var normalMat = MatrixD.Transpose(transformInv);
             var intersection = bOriBBoxD.Intersects(ref _sOriBBoxD);
             try
@@ -174,7 +174,7 @@ namespace DefenseShields
 
                     var stale = false;
                     var damage = 0f;
-                    Vector3I gc = breaching.WorldToGridInteger(_detectionCenter);
+                    Vector3I gc = breaching.WorldToGridInteger(DetectionCenter);
                     double rc = ShieldSize.AbsMax() / breaching.GridSize;
                     rc *= rc;
                     rc = rc + 1;
@@ -219,7 +219,7 @@ namespace DefenseShields
                         for (int j = 8; j > -1; j--)
                         {
                             var point = blockPoints[j];
-                            if (Vector3.Transform(point, _detectMatrixOutsideInv).LengthSquared() > 1) continue;
+                            if (Vector3.Transform(point, DetectMatrixOutsideInv).LengthSquared() > 1) continue;
 
                             collisionAvg += point;
                             c3++;

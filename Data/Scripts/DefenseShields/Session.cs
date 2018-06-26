@@ -83,7 +83,6 @@ namespace DefenseShields
         public IMyTerminalControlCheckbox SendToHudCheckBoxe;
 
         public static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
-        private readonly Dictionary<IMyEntity, int> _voxelDamageCounter = new Dictionary<IMyEntity, int>();
         public bool[] SphereOnCamera = new bool[0];
 
         public readonly List<Emitters> Emitters = new List<Emitters>();
@@ -91,11 +90,8 @@ namespace DefenseShields
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
         public readonly List<Modulators> Modulators = new List<Modulators>();
         public readonly List<IMyPlayer> Players = new List<IMyPlayer>();
-        private readonly List<IMyTerminalControls> _dsControlList = new List<IMyTerminalControls>();
-
 
         public static DefenseShieldsEnforcement Enforced = new DefenseShieldsEnforcement();
-
 
         public void Init()
         {
@@ -134,7 +130,7 @@ namespace DefenseShields
                 {
                     var s = Components[i];
                     if (!s.ShieldComp.ShieldActive || !s.AllInited) continue;
-                    var sp = new BoundingSphereD(s._detectionCenter, s.ShieldComp.BoundingRange);
+                    var sp = new BoundingSphereD(s.DetectionCenter, s.ShieldComp.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {
                         SphereOnCamera[i] = false;
@@ -230,7 +226,7 @@ namespace DefenseShields
                         {
                             shield.Absorb += info.Amount;
                             info.Amount = 0f;
-                            shield.WorldImpactPosition = shield._shield.Render.ColorMaskHsv;
+                            shield.WorldImpactPosition = shield.ShieldEnt.Render.ColorMaskHsv;
                             continue;
                         }
 
@@ -238,9 +234,35 @@ namespace DefenseShields
 
                         if (hostileEnt != null && shield.Absorb < 1 && shield.BulletCoolDown == -1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity)
                         {
-                            Log.Line($"attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName} - {info.Type} - {info.Amount} - {shield.FriendlyCache.Contains(hostileEnt)} - {shield.IgnoreCache.Contains(hostileEnt)}");
+                            Log.Line($"full - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName} - {info.Type} - {info.Amount} - {shield.FriendlyCache.Contains(hostileEnt)} - {shield.IgnoreCache.Contains(hostileEnt)}");
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
+                            var vertPos = CustomCollision.ClosestVert(shield.ShieldComp.PhysicsOutside, blockPos);
+                            shield.WorldImpactPosition = vertPos;
+                            shield.ImpactSize = 5;
+                        }
+
+                        shield.Absorb += info.Amount;
+                        info.Amount = 0f;
+                    }
+                    else if (shield.ShieldComp.ShieldActive && shield.PartlyProtectedCache.Contains(blockGrid))
+                    {
+                        MyEntity hostileEnt;
+                        MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
+                        if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt))
+                        {
+                            shield.DeformEnabled = true;
+                            continue;
+                        }
+
+                        if (shield.DeformEnabled) continue;
+
+                        if (hostileEnt != null && shield.Absorb < 1 && shield.BulletCoolDown == -1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity)
+                        {
+                            Log.Line($"part - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName} - {info.Type} - {info.Amount} - {shield.FriendlyCache.Contains(hostileEnt)} - {shield.IgnoreCache.Contains(hostileEnt)}");
+                            Vector3D blockPos;
+                            block.ComputeWorldCenter(out blockPos);
+                            if (!CustomCollision.PointInShield(blockPos, shield.DetectMatrixOutsideInv)) continue;
                             var vertPos = CustomCollision.ClosestVert(shield.ShieldComp.PhysicsOutside, blockPos);
                             shield.WorldImpactPosition = vertPos;
                             shield.ImpactSize = 5;
@@ -658,27 +680,27 @@ namespace DefenseShields
         public void CreateControls(IMyTerminalBlock block)
         {
             if (DSControl) return;
-            UtilsStatic.RemoveOreUi();
+            DsUi.RemoveOreUi();
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            ChargeSlider = TerminalHelpers.AddSlider(comp?.Shield, "ChargeRate", "Shield Charge Rate", "Shield Charge Rate", DsGetSet.GetRate, DsGetSet.SetRate);
+            ChargeSlider = TerminalHelpers.AddSlider(comp?.Shield, "ChargeRate", "Shield Charge Rate", "Shield Charge Rate", DsUi.GetRate, DsUi.SetRate);
             ChargeSlider.SetLimits(20, 95);
 
-            ExtendFit = TerminalHelpers.AddCheckbox(comp?.Shield, "ExtendFit", "Extend Shield", "Extend Shield", DsGetSet.GetExtend, DsGetSet.SetExtend);
-            SphereFit = TerminalHelpers.AddCheckbox(comp?.Shield, "SphereFit", "Sphere Fit      ", "Sphere Fit      ", DsGetSet.GetSphereFit, DsGetSet.SetSphereFit);
-            FortifyShield = TerminalHelpers.AddCheckbox(comp?.Shield, "ShieldFortify", "Fortify Shield ", "Fortify Shield ", DsGetSet.GetFortify, DsGetSet.SetFortify);
+            ExtendFit = TerminalHelpers.AddCheckbox(comp?.Shield, "ExtendFit", "Extend Shield", "Extend Shield", DsUi.GetExtend, DsUi.SetExtend);
+            SphereFit = TerminalHelpers.AddCheckbox(comp?.Shield, "SphereFit", "Sphere Fit      ", "Sphere Fit      ", DsUi.GetSphereFit, DsUi.SetSphereFit);
+            FortifyShield = TerminalHelpers.AddCheckbox(comp?.Shield, "ShieldFortify", "Fortify Shield ", "Fortify Shield ", DsUi.GetFortify, DsUi.SetFortify);
 
-            WidthSlider = TerminalHelpers.AddSlider(comp?.Shield, "WidthSlider", "Shield Size Width", "Shield Size Width", DsGetSet.GetWidth, DsGetSet.SetWidth);
+            WidthSlider = TerminalHelpers.AddSlider(comp?.Shield, "WidthSlider", "Shield Size Width", "Shield Size Width", DsUi.GetWidth, DsUi.SetWidth);
             WidthSlider.SetLimits(30, 600);
 
-            HeightSlider = TerminalHelpers.AddSlider(comp?.Shield, "HeightSlider", "Shield Size Height", "Shield Size Height", DsGetSet.GetHeight, DsGetSet.SetHeight);
+            HeightSlider = TerminalHelpers.AddSlider(comp?.Shield, "HeightSlider", "Shield Size Height", "Shield Size Height", DsUi.GetHeight, DsUi.SetHeight);
             HeightSlider.SetLimits(30, 600);
 
-            DepthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DepthSlider", "Shield Size Depth", "Shield Size Depth", DsGetSet.GetDepth, DsGetSet.SetDepth);
+            DepthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DepthSlider", "Shield Size Depth", "Shield Size Depth", DsUi.GetDepth, DsUi.SetDepth);
             DepthSlider.SetLimits(30, 600);
 
-            HidePassiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HidePassive", "Hide idle shield state            ", "Hide idle shield state            ", DsGetSet.GetHidePassive, DsGetSet.SetHidePassive);
-            HideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HideActive", "Hide active shield state        ", "Hide active shield state        ", DsGetSet.GetHideActive, DsGetSet.SetHideActive);
-            SendToHudCheckBoxe = TerminalHelpers.AddCheckbox(comp?.Shield, "HideIcon", "Send status to nearby HUDs", "Send status to nearby HUDs", DsGetSet.GetSendToHud, DsGetSet.SetSendToHud);
+            HidePassiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HidePassive", "Hide idle shield state            ", "Hide idle shield state            ", DsUi.GetHidePassive, DsUi.SetHidePassive);
+            HideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HideActive", "Hide active shield state        ", "Hide active shield state        ", DsUi.GetHideActive, DsUi.SetHideActive);
+            SendToHudCheckBoxe = TerminalHelpers.AddCheckbox(comp?.Shield, "HideIcon", "Send status to nearby HUDs", "Send status to nearby HUDs", DsUi.GetSendToHud, DsUi.SetSendToHud);
             DSControl = true;
         }
 

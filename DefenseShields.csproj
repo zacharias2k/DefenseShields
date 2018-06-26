@@ -192,7 +192,7 @@
   <ItemGroup>
     <Compile Include="Data\Scripts\DefenseShields\API\dsApi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Enforcements.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Control\DsStaticGetSet.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Control\DsUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\TerminalHelpers.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Display.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\BaseControl.cs" />
@@ -212,6 +212,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Config\Shield-Settings.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Fields-DSComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Init-DSComp.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\DistPoint3Triangle3.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Definitions\EmitterDirMappingDef.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Definitions\EmitterDefinitions.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Spawn.cs" />
@@ -222,19 +223,12 @@
     <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\EllipsoidSA.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\SerializationClasses.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CustomCollision.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\BoxShape.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\ConvexHullShape.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\Ellipsoid.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\CollisionMath.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\CustomTypes.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Structure\DataStructure.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\MinkowskiSumShape.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\MultiShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\Octree.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\ResourcePool.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\Shapes.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Debug\DebugDraw.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Distiance\DistPoint3Triangle3.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Logging.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Slider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Utils.cs" />
@@ -242,7 +236,6 @@
     <Compile Include="Data\Scripts\DefenseShields\DSController.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Structure\StructureBuilder.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\Triangle3.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Support\Collision\Shapes\TriangleMeshShape.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Audio\" />

@@ -91,10 +91,10 @@ namespace DefenseShields
 
                         _shellActive.Render.UpdateRenderObject(true);
                         _shellActive.Render.UpdateRenderObject(false);
-                        _shield.Render.Visible = true;
-                        _shield.Render.UpdateRenderObject(true);
+                        ShieldEnt.Render.Visible = true;
+                        ShieldEnt.Render.UpdateRenderObject(true);
                         SyncThreadedEnts(true);
-                        if (!_gridIsMobile) EllipsoidOxyProvider.UpdateMatrix(_detectMatrixOutsideInv);
+                        if (!_gridIsMobile) EllipsoidOxyProvider.UpdateMatrix(DetectMatrixOutsideInv);
                         if (!WarmedUp) 
                         {
                             WarmedUp = true;
@@ -251,7 +251,7 @@ namespace DefenseShields
                 return;
             }
 
-            var distFromShield = Vector3D.DistanceSquared(playerEnt.WorldVolume.Center, _detectionCenter);
+            var distFromShield = Vector3D.DistanceSquared(playerEnt.WorldVolume.Center, DetectionCenter);
             if (Session.HudComp != this && distFromShield <= Session.HudShieldDist)
             {
                 Session.HudShieldDist = distFromShield;
@@ -392,8 +392,8 @@ namespace DefenseShields
             _prevShieldActive = false;
             _shellPassive.Render.UpdateRenderObject(false);
             _shellActive.Render.UpdateRenderObject(false);
-            _shield.Render.Visible = false;
-            _shield.Render.UpdateRenderObject(false);
+            ShieldEnt.Render.Visible = false;
+            ShieldEnt.Render.UpdateRenderObject(false);
             Absorb = 0;
             ShieldBuffer = 0;
             _shieldChargeRate = 0;
@@ -474,7 +474,7 @@ namespace DefenseShields
         {
             if (ModulateVoxels) return false;
 
-            var pruneSphere = new BoundingSphereD(_detectionCenter, ShieldComp.BoundingRange);
+            var pruneSphere = new BoundingSphereD(DetectionCenter, ShieldComp.BoundingRange);
             var pruneList = new List<MyVoxelBase>();
             MyGamePruningStructure.GetAllVoxelMapsInSphere(ref pruneSphere, pruneList);
 
@@ -531,9 +531,9 @@ namespace DefenseShields
                 //_expandedMatrix = MatrixD.CreateFromTransformScale(_sQuaternion, _detectionCenter, newDir);
                 //DetectionMatrix = _shieldShapeMatrix * _expandedMatrix;
                 DetectionMatrix = _shieldShapeMatrix * _shieldGridMatrix;
-                _detectionCenter = Shield.CubeGrid.PositionComp.WorldVolume.Center;
+                DetectionCenter = Shield.CubeGrid.PositionComp.WorldVolume.Center;
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(Shield.CubeGrid.WorldMatrix);
-                _sOriBBoxD = new MyOrientedBoundingBoxD(_detectionCenter, ShieldSize, _sQuaternion);
+                _sOriBBoxD = new MyOrientedBoundingBoxD(DetectionCenter, ShieldSize, _sQuaternion);
                 //_sOriBBoxD = new MyOrientedBoundingBoxD(_detectionCenter, _expandedAabb.HalfExtents, _sQuaternion);
 
                 _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
@@ -547,9 +547,9 @@ namespace DefenseShields
                 DetectionMatrix = MatrixD.Rescale(_shieldGridMatrix, new Vector3D(Width, Height, Depth));
                 _shieldShapeMatrix = MatrixD.Rescale(emitter.LocalMatrix, new Vector3D(Width, Height, Depth));
                 ShieldSize = DetectionMatrix.Scale;
-                _detectionCenter = emitter.PositionComp.WorldVolume.Center;
+                DetectionCenter = emitter.PositionComp.WorldVolume.Center;
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(emitter.CubeGrid.WorldMatrix);
-                _sOriBBoxD = new MyOrientedBoundingBoxD(_detectionCenter, ShieldSize, _sQuaternion);
+                _sOriBBoxD = new MyOrientedBoundingBoxD(DetectionCenter, ShieldSize, _sQuaternion);
                 _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
                 _shieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
                 EllipsoidSa.Update(_detectMatrixOutside.Scale.X, _detectMatrixOutside.Scale.Y, _detectMatrixOutside.Scale.Z);
@@ -574,26 +574,26 @@ namespace DefenseShields
         {
             _shellPassive.PositionComp.LocalMatrix = Matrix.Zero;  // Bug - Cannot just change X coord, so I reset first.
             _shellActive.PositionComp.LocalMatrix = Matrix.Zero;
-            _shield.PositionComp.LocalMatrix = Matrix.Zero;
+            ShieldEnt.PositionComp.LocalMatrix = Matrix.Zero;
 
             _shellPassive.PositionComp.LocalMatrix = _shieldShapeMatrix;
             _shellActive.PositionComp.LocalMatrix = _shieldShapeMatrix;
-            _shield.PositionComp.LocalMatrix = _shieldShapeMatrix;
-            _shield.PositionComp.LocalAABB = _shieldAabb;
+            ShieldEnt.PositionComp.LocalMatrix = _shieldShapeMatrix;
+            ShieldEnt.PositionComp.LocalAABB = _shieldAabb;
 
             MatrixD matrix;
             if (!_gridIsMobile)
             {
-                EllipsoidOxyProvider.UpdateMatrix(_detectMatrixOutsideInv);
+                EllipsoidOxyProvider.UpdateMatrix(DetectMatrixOutsideInv);
                 matrix = _shieldShapeMatrix * ShieldComp.EmitterComp.PrimeComp.Emitter.WorldMatrix;
-                _shield.PositionComp.SetWorldMatrix(matrix);
-                _shield.PositionComp.SetPosition(_detectionCenter);
+                ShieldEnt.PositionComp.SetWorldMatrix(matrix);
+                ShieldEnt.PositionComp.SetPosition(DetectionCenter);
             }
             else
             {
                 matrix = _shieldShapeMatrix * Shield.WorldMatrix;
-                _shield.PositionComp.SetWorldMatrix(matrix);
-                _shield.PositionComp.SetPosition(_detectionCenter);
+                ShieldEnt.PositionComp.SetWorldMatrix(matrix);
+                ShieldEnt.PositionComp.SetPosition(DetectionCenter);
             }
         }
 
@@ -622,7 +622,7 @@ namespace DefenseShields
                 for (int i = 0; i < _powerSources.Count; i++)
                 {
                     var source = _powerSources[i];
-                    if (!source.Enabled || !source.ProductionEnabled) continue;
+                    if (!source.HasCapacityRemaining || !source.Enabled || !source.ProductionEnabled) continue;
                     _gridMaxPower += source.MaxOutputByType(eId);
                     _gridCurrentPower += source.CurrentOutputByType(eId);
                 }
@@ -795,7 +795,6 @@ namespace DefenseShields
             var enemy = false;
             var relation = MyAPIGateway.Session.Player.GetRelationTo(Shield.OwnerId);
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
-            _enemy = enemy;
 
             if (!enemy && SendToHud && !MyAPIGateway.Session.Config.MinimalHud && Session.HudComp == this) UpdateIcon();
 
@@ -888,8 +887,17 @@ namespace DefenseShields
                     case 3:
                         {
                             FriendlyCache.Clear();
-                            foreach (var sub in ShieldComp.GetSubGrids) FriendlyCache.Add(sub);
-                            FriendlyCache.Add(_shield);
+                            PartlyProtectedCache.Clear();
+                            foreach (var sub in ShieldComp.GetSubGrids)
+                            {
+                                if (CustomCollision.AnyCornerNotInShield(sub, DetectMatrixOutsideInv))
+                                {
+                                    PartlyProtectedCache.Add(sub);
+                                    continue;
+                                }
+                                FriendlyCache.Add(sub);
+                            }
+                            FriendlyCache.Add(ShieldEnt);
                         }
                         break;
                     case 4:
@@ -944,7 +952,7 @@ namespace DefenseShields
                 _power = 0f;
                 if (AllInited) Sink.Update();
                 Icosphere = null;
-                _shield?.Close();
+                ShieldEnt?.Close();
                 _shellPassive?.Close();
                 _shellActive?.Close();
                 if (ShieldComp?.DefenseShields == this) ShieldComp.DefenseShields = null;

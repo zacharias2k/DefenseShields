@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
 using Sandbox.Definitions;
-using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRageMath;
@@ -15,6 +11,17 @@ namespace DefenseShields.Support
 {
     internal static class UtilsStatic
     {
+        internal static Color White1 = new Color(255, 255, 255);
+        internal static Color White2 = new Color(245, 246, 255);
+        internal static Color White3 = new Color(191, 195, 255);
+        internal static Color Blue1 = new Color(57, 66, 255);
+        internal static Color Blue2 = new Color(12, 16, 255);
+        internal static Color Blue3 = new Color(0, 0, 238);
+        internal static Color Blue4 = new Color(12, 0, 195);
+        internal static Color Red1 = new Color(87, 0, 66);
+        internal static Color Red2 = new Color(121, 0, 13);
+        internal static Color Red3 = new Color(255, 0, 0);
+
         private static readonly Dictionary<float, float> DmgTable = new Dictionary<float, float>
         {
             [0.0000000001f] = 0.1f,
@@ -47,7 +54,7 @@ namespace DefenseShields.Support
 
         public static void GetRealPlayers(Vector3D center, float radius, List<long> realPlayers)
         {
-            List<IMyIdentity> realPlayersIdentities = new List<IMyIdentity>();
+            var realPlayersIdentities = new List<IMyIdentity>();
             MyAPIGateway.Players.GetAllIdentites(realPlayersIdentities, p => !string.IsNullOrEmpty(p?.DisplayName));
             var pruneSphere = new BoundingSphereD(center, radius);
             var pruneList = new List<MyEntity>();
@@ -76,47 +83,22 @@ namespace DefenseShields.Support
             }
         }
 
-        /*
         public static Color GetEmissiveColorFromFloat(float percent)
         {
-            if (percent > 90) return Color.White;
-            if (percent > 80) return Color.DeepSkyBlue;
-            if (percent > 70) return Color.Purple;
-            if (percent > 60) return Color.DarkBlue;
-            if (percent > 50) return Color.Green;
-            if (percent > 40) return Color.Yellow;
-            if (percent > 30) return Color.OrangeRed;
-            if (percent > 20) return Color.Red;
-            return Color.Black;
+
+
+            if (percent > 90) return White1;
+            if (percent > 80) return White2;
+            if (percent > 70) return White3;
+            if (percent > 60) return Blue1;
+            if (percent > 50) return Blue2;
+            if (percent > 40) return Blue3;
+            if (percent > 30) return Blue4;
+            if (percent > 20) return Red1;
+            if (percent > 10) return Red2;
+            return Red3;
         }
-        */
 
-        public static Color GetEmissiveColorFromFloat(float percent)
-        {
-            var white1 = new Color(255, 255, 255);
-            var white2 = new Color(245, 246, 255);
-            var white3 = new Color(191, 195, 255);
-
-            var blue1 = new Color(57, 66, 255);
-            var blue2 = new Color(12, 16, 255);
-            var blue3 = new Color(0, 0, 238);
-            var blue4 = new Color(12, 0, 195);
-
-            var red1 = new Color(87, 0, 66);
-            var red2 = new Color(121, 0, 13);
-            var red3 = new Color(255, 0, 0);
-
-            if (percent > 90) return white1;
-            if (percent > 80) return white2;
-            if (percent > 70) return white3;
-            if (percent > 60) return blue1;
-            if (percent > 50) return blue2;
-            if (percent > 40) return blue3;
-            if (percent > 30) return blue4;
-            if (percent > 20) return red1;
-            if (percent > 10) return red2;
-            return red3;
-        }
         public static long ThereCanBeOnlyOne(IMyCubeBlock shield)
         {
             if (Session.Enforced.Debug == 1) Log.Line($"ThereCanBeOnlyOne start");
@@ -192,26 +174,6 @@ namespace DefenseShields.Support
             var cPosition = shield.CubeGrid.PositionComp.GetPosition();
             var dist = Vector3D.DistanceSquared(cPosition, pPosition) <= (x + range) * (x + range);
             return dist;
-        }
-
-        private static bool ShowControlOreDetectorControls(IMyTerminalBlock block)
-        {
-            return block.BlockDefinition.SubtypeName.Contains("OreDetector");
-        }
-
-        public static void RemoveOreUi()
-        {
-            var actions = new List<IMyTerminalAction>();
-            MyAPIGateway.TerminalControls.GetActions<Sandbox.ModAPI.Ingame.IMyOreDetector>(out actions);
-            var actionAntenna = actions.First((x) => x.Id.ToString() == "BroadcastUsingAntennas");
-            actionAntenna.Enabled = ShowControlOreDetectorControls;
-
-            var controls = new List<IMyTerminalControl>();
-            MyAPIGateway.TerminalControls.GetControls<Sandbox.ModAPI.Ingame.IMyOreDetector>(out controls);
-            var antennaControl = controls.First((x) => x.Id.ToString() == "BroadcastUsingAntennas");
-            antennaControl.Visible = ShowControlOreDetectorControls;
-            var radiusControl = controls.First((x) => x.Id.ToString() == "Range");
-            radiusControl.Visible = ShowControlOreDetectorControls;
         }
 
         public static void GetDefinitons()
@@ -382,9 +344,7 @@ namespace DefenseShields.Support
                 newCfg.Flush();
                 newCfg.Close();
 
-                if (Session.Enforced.Debug == 1)
-                    Log.Line(
-                        $"wrote modified config file - file exists: {MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg")}");
+                if (Session.Enforced.Debug == 1) Log.Line($"wrote modified config file - file exists: {MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg")}");
             }
             else
             {
@@ -406,8 +366,7 @@ namespace DefenseShields.Support
                 cfg.Flush();
                 cfg.Close();
 
-                if (Session.Enforced.Debug == 1)
-                    Log.Line($"wrote new config file - file exists: {MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg")}");
+                if (Session.Enforced.Debug == 1) Log.Line($"wrote new config file - file exists: {MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg")}");
             }
         }
 

@@ -1,5 +1,4 @@
 ﻿using System;
-using DefenseShields.Control;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -11,7 +10,6 @@ using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRage.Utils;
 using VRageMath;
-using IMyOreDetector = Sandbox.ModAPI.Ingame.IMyOreDetector;
 
 namespace DefenseShields
 {
@@ -46,7 +44,6 @@ namespace DefenseShields
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
 
-                //Shield.CubeGrid.OnIsStaticChanged += CheckStatic;
                 if (!_shields.ContainsKey(Entity.EntityId)) _shields.Add(Entity.EntityId, this);
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
                 Session.Instance.Components.Add(this);
@@ -160,8 +157,7 @@ namespace DefenseShields
                         _shapeLoaded = false;
                     }
 
-                    //InitControls(); // fix get existing controls
-                    CreateUi();
+                    DsUi.CreateUi(Shield);
                     PowerInit();
 
                     MainInit = true;
@@ -223,13 +219,13 @@ namespace DefenseShields
             _shellActive.Save = false;
             _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.Black, 0.01f);
 
-            _shield = Spawn.EmptyEntity("dShield", null, (MyEntity)Shield, false);
+            ShieldEnt = Spawn.EmptyEntity("dShield", null, (MyEntity)Shield, false);
             //_shield = Spawn.SpawnBlock("dShield", $"{Shield.EntityId}", true, false, false, false, true, Shield.OwnerId);
-            _shield.Render.CastShadows = false;
-            _shield.Render.RemoveRenderObjects();
-            _shield.Render.UpdateRenderObject(true);
-            _shield.Render.Visible = true;
-            _shield.Save = false;
+            ShieldEnt.Render.CastShadows = false;
+            ShieldEnt.Render.RemoveRenderObjects();
+            ShieldEnt.Render.UpdateRenderObject(true);
+            ShieldEnt.Render.Visible = true;
+            ShieldEnt.Save = false;
             if (Session.Enforced.Debug == 1) Log.Line($"SpawnEntities complete");
         }
 
@@ -277,35 +273,6 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 1) Log.Line($"PowerInit complete");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
-        }
-        #endregion
-
-        #region Create UI
-        private void CreateUi()
-        {
-            Session.Instance.CreateControls(Shield);
-            Session.Instance.WidthSlider.Visible = ShowSizeSlider;
-            Session.Instance.HeightSlider.Visible = ShowSizeSlider;
-            Session.Instance.DepthSlider.Visible = ShowSizeSlider;
-            
-            Session.Instance.ExtendFit.Visible = ShowReSizeCheckBoxs;
-            Session.Instance.SphereFit.Visible = ShowReSizeCheckBoxs;
-            Session.Instance.FortifyShield.Visible = ShowReSizeCheckBoxs;
-            if (Session.Enforced.Debug == 1) Log.Line($"CreateUI Complete");
-        }
-
-        private static bool ShowSizeSlider(IMyTerminalBlock block)
-        {
-            var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            var station = comp != null && comp.Shield.CubeGrid.Physics.IsStatic;
-            return station;
-        }
-
-        private static bool ShowReSizeCheckBoxs(IMyTerminalBlock block)
-        {
-            var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            var notStation = comp != null && !comp.Shield.CubeGrid.Physics.IsStatic;
-            return notStation;
         }
         #endregion
     }

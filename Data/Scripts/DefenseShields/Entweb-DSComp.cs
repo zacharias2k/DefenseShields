@@ -20,14 +20,14 @@ namespace DefenseShields
         private void WebEntities()
         {
             if (Session.Enforced.Debug == 1) Dsutil2.Sw.Restart();
-            var pruneSphere = new BoundingSphereD(_detectionCenter, ShieldComp.BoundingRange);
+            var pruneSphere = new BoundingSphereD(DetectionCenter, ShieldComp.BoundingRange);
             var pruneList = new List<MyEntity>();
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
             for (int i = 0; i < pruneList.Count; i++)
             {
 
                 var ent = pruneList[i];
-                if (ent == null || FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent)) continue;
+                if (ent == null || FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent)) continue;
 
                 var entCenter = ent.PositionComp.WorldVolume.Center;
                 if (ent.Physics == null && !(ent is IMyAutomaticRifleGun) || ent.MarkedForClose || ent is MyVoxelBase && !_gridIsMobile
@@ -41,8 +41,12 @@ namespace DefenseShields
                     case Ent.Ignore:
                     case Ent.Friend:
                     case Ent.Weapon:
-                        if ((relation == Ent.Friend || relation == Ent.Weapon) && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv))
+                        if ((relation == Ent.Friend || relation == Ent.Weapon) && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
                         {
+                            if (ent is MyCubeGrid && CustomCollision.AnyCornerNotInShield(ent as MyCubeGrid, DetectMatrixOutsideInv))
+                            {
+                                PartlyProtectedCache.Add(ent);
+                            }
                             FriendlyCache.Add(ent);
                             continue;
                         }
@@ -61,12 +65,12 @@ namespace DefenseShields
                     }
                     else
                     {
-                        if (relation == Ent.Other && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, _detectMatrixOutsideInv))
+                        if (relation == Ent.Other && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
                         {
                             IgnoreCache.Add(ent);
                             continue;
                         }
-                        if ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, _detectMatrixOutsideInv))
+                        if ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, DetectMatrixOutsideInv))
                         {
                             FriendlyCache.Add(ent);
                             _webEnts.Remove(ent);
@@ -113,7 +117,7 @@ namespace DefenseShields
                         case Ent.EnemyPlayer:
                             {
                                 ep++;
-                                if ((_count == 2 || _count == 17 || _count == 32 || _count == 47) && CustomCollision.PointInShield(entCenter, _detectMatrixOutsideInv))
+                                if ((_count == 2 || _count == 17 || _count == 32 || _count == 47) && CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
                                 {
                                     if (Session.Enforced.Debug == 1) Log.Line($"Ent: EnemyPlayer {((MyEntity)webent).DebugName}");
                                     MyAPIGateway.Parallel.Start(() => PlayerIntersect(webent));
@@ -159,7 +163,7 @@ namespace DefenseShields
                             {
                                 oo++;
                                 if (Session.Enforced.Debug == 1) Log.Line($"Ent: Other {((MyEntity)webent).DebugName}");
-                                if (CustomCollision.PointInShield(entCenter, _detectMatrixOutsideInv))
+                                if (CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
                                 {
                                     if (webent.MarkedForClose || webent.Closed) continue;
                                     if (webent is IMyMeteor) _meteorDmg.Enqueue(webent as IMyMeteor);
