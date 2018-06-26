@@ -234,7 +234,7 @@ namespace DefenseShields
 
                         if (hostileEnt != null && shield.Absorb < 1 && shield.BulletCoolDown == -1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity)
                         {
-                            Log.Line($"full - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName} - {info.Type} - {info.Amount} - {shield.FriendlyCache.Contains(hostileEnt)} - {shield.IgnoreCache.Contains(hostileEnt)}");
+                            //Log.Line($"full - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName} - {info.Type} - {info.Amount} - {shield.FriendlyCache.Contains(hostileEnt)} - {shield.IgnoreCache.Contains(hostileEnt)}");
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
                             var vertPos = CustomCollision.ClosestVert(shield.ShieldComp.PhysicsOutside, blockPos);
@@ -259,7 +259,7 @@ namespace DefenseShields
 
                         if (hostileEnt != null && shield.Absorb < 1 && shield.BulletCoolDown == -1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity)
                         {
-                            Log.Line($"part - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName} - {info.Type} - {info.Amount} - {shield.FriendlyCache.Contains(hostileEnt)} - {shield.IgnoreCache.Contains(hostileEnt)}");
+                            //Log.Line($"part - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName} - {info.Type} - {info.Amount} - {shield.FriendlyCache.Contains(hostileEnt)} - {shield.IgnoreCache.Contains(hostileEnt)}");
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
                             if (!CustomCollision.PointInShield(blockPos, shield.DetectMatrixOutsideInv)) continue;

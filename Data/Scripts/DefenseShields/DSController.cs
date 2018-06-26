@@ -890,7 +890,7 @@ namespace DefenseShields
                             PartlyProtectedCache.Clear();
                             foreach (var sub in ShieldComp.GetSubGrids)
                             {
-                                if (CustomCollision.AnyCornerNotInShield(sub, DetectMatrixOutsideInv))
+                                if (!_gridIsMobile && CustomCollision.NotAllCornersInShield(sub, DetectMatrixOutsideInv))
                                 {
                                     PartlyProtectedCache.Add(sub);
                                     continue;

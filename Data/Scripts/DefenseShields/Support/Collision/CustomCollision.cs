@@ -447,15 +447,17 @@ namespace DefenseShields.Support
             }
         }
 
-        public static bool AnyCornerNotInShield(IMyCubeGrid grid, MatrixD matrixInv)
+        public static bool NotAllCornersInShield(IMyCubeGrid grid, MatrixD matrixInv)
         {
 
             var gridCorners = grid.PositionComp.WorldAABB.GetCorners();
+            var c = 0;
             for (int i = 0; i < 8; i++)
             {
                 var point = gridCorners[i];
                 var pointInside = Vector3D.Transform(point, matrixInv).LengthSquared();
-                if (pointInside >= 1) return true;
+                if (pointInside >= 1) c++;
+                if (c > 1) return true;
             }
             return false;
         }

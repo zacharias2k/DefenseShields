@@ -41,19 +41,22 @@ namespace DefenseShields
                     case Ent.Ignore:
                     case Ent.Friend:
                     case Ent.Weapon:
-                        if ((relation == Ent.Friend || relation == Ent.Weapon) && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
+                        if ((relation == Ent.Friend || relation == Ent.Weapon))
                         {
-                            if (ent is MyCubeGrid && CustomCollision.AnyCornerNotInShield(ent as MyCubeGrid, DetectMatrixOutsideInv))
+                            if (ent is MyCubeGrid && CustomCollision.NotAllCornersInShield(ent as MyCubeGrid, DetectMatrixOutsideInv))
                             {
                                 PartlyProtectedCache.Add(ent);
+                                continue;
                             }
-                            FriendlyCache.Add(ent);
-                            continue;
+                            if (CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
+                            {
+                                FriendlyCache.Add(ent);
+                                continue;
+                            }
+                            IgnoreCache.Add(ent);
                         }
-                        IgnoreCache.Add(ent);
                         continue;
                 }
-
                 _enablePhysics = true;
                 lock (_webEnts)
                 {
