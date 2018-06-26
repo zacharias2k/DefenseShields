@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using DefenseShields.Control;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Collections;
 using VRage.Game;
 using VRage.Game.Components;
@@ -63,7 +61,7 @@ namespace DefenseShields
         private int _oldBlockCount;
         private int _shieldRatio;
 
-        public bool DeformEnabled;
+        internal bool DeformEnabled;
         internal bool ControlBlockWorking;
         internal bool MainInit;
         internal bool PhysicsInit;
@@ -71,15 +69,13 @@ namespace DefenseShields
         internal bool ShieldOffline;
         internal bool CheckGridRegister;
         internal bool WarmedUp;
+        internal bool UpdateDimensions;
         internal bool HardDisable { get; private set; }
-        private bool _gridIsMobile;
-        private bool _enemy;
+        internal bool GridIsMobile;
         private bool _blocksChanged;
         private bool _prevShieldActive;
         private bool _effectsCleanup;
-        private bool _startupWarning;
         private bool _hideShield;
-        internal bool UpdateDimensions;
         private bool _shapeAdjusted;
         private bool _fitChanged;
         private bool _hierarchyDelayed;
@@ -93,28 +89,28 @@ namespace DefenseShields
 
         private Vector2D _shieldIconPos = new Vector2D(-0.91, -0.87);
 
+        internal Vector3D DetectionCenter;
+        internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         internal Vector3D ShieldSize { get; set; }
-        public Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         private Vector3D _localImpactPosition;
-        public Vector3D _detectionCenter;
         private Vector3D _gridHalfExtents;
         private Vector3D _oldGridHalfExtents;
 
-        private MatrixD _viewProjInv;
+        internal MatrixD DetectMatrixOutsideInv;
         private MatrixD _shieldGridMatrix;
         private MatrixD _shieldShapeMatrix;
         private MatrixD _detectMatrixOutside;
-        private MatrixD _detectMatrixOutsideInv;
         private MatrixD _detectMatrixInside;
         private MatrixD _detectInsideInv;
         private MatrixD _expandedMatrix;
+        private MatrixD _viewProjInv;
 
         private BoundingBox _shieldAabb;
         private BoundingBox _expandedAabb;
         private BoundingSphereD _shieldSphere;
         private MyOrientedBoundingBoxD _sOriBBoxD;
         private Quaternion _sQuaternion;
-        private Random _random = new Random();
+        private readonly Random _random = new Random();
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
         private readonly List<KeyValuePair<IMyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<IMyEntity, EntIntersectInfo>>();
@@ -124,8 +120,9 @@ namespace DefenseShields
         private readonly DataStructures _dataStructures = new DataStructures();
         //private readonly StructureBuilder _structureBuilder = new StructureBuilder();
 
-        public readonly HashSet<IMyEntity> FriendlyCache = new HashSet<IMyEntity>();
-        public readonly HashSet<IMyEntity> IgnoreCache = new HashSet<IMyEntity>();
+        internal readonly HashSet<IMyEntity> FriendlyCache = new HashSet<IMyEntity>();
+        internal readonly HashSet<IMyEntity> PartlyProtectedCache = new HashSet<IMyEntity>();
+        internal readonly HashSet<IMyEntity> IgnoreCache = new HashSet<IMyEntity>();
         private List<IMyCubeGrid> _connectedGrids = new List<IMyCubeGrid>();
 
         private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<IMyEntity, Vector3D>();
@@ -142,27 +139,14 @@ namespace DefenseShields
         private readonly MyConcurrentQueue<IMyCharacter> _characterDmg = new MyConcurrentQueue<IMyCharacter>();
         private readonly MyConcurrentQueue<MyVoxelBase> _voxelDmg = new MyConcurrentQueue<MyVoxelBase>();
 
-        /*
-        private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _widthSlider;
-        private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _heightSlider;
-        private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _depthSlider;
-        private RangeSlider<Sandbox.ModAPI.Ingame.IMyOreDetector> _chargeSlider;
-        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _extendFit;
-        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _sphereFit;
-        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _fortifyShield;
-        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _hidePassiveCheckBox;
-        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _hideActiveCheckBox;
-        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyOreDetector> _sendToHudCheckBoxe;
-        */
-
         private readonly MyStringId _hudIcon = MyStringId.GetOrCompute("DS_ShieldInside");
 
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;
 
-        public IMyOreDetector Shield => (IMyOreDetector)Entity;
-        public ShieldType ShieldMode;
-        public MyEntity _shield;
+        internal IMyOreDetector Shield => (IMyOreDetector)Entity;
+        internal ShieldType ShieldMode;
+        internal MyEntity ShieldEnt;
         private MyEntity _shellPassive;
         private MyEntity _shellActive;
 
@@ -280,7 +264,7 @@ namespace DefenseShields
             set
             {
                 _detectMatrixOutside = value;
-                _detectMatrixOutsideInv = MatrixD.Invert(value);
+                DetectMatrixOutsideInv = MatrixD.Invert(value);
                 _detectMatrixInside = MatrixD.Rescale(value, 1d + (-6.0d / 100d));
                 _detectInsideInv = MatrixD.Invert(_detectMatrixInside);
             }

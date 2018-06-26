@@ -477,7 +477,7 @@ namespace DefenseShields
             {
                 if (_emitters.ContainsKey(Entity.EntityId)) _emitters.Remove(Entity.EntityId);
                 if (Session.Instance.Emitters.Contains(this)) Session.Instance.Emitters.Remove(this);
-                if (EGridComp.RegisteredComps.Contains(this)) EGridComp.RegisteredComps.Remove(this);
+                if (EGridComp?.RegisteredComps != null && EGridComp.RegisteredComps.Contains(this)) EGridComp.RegisteredComps.Remove(this);
                 if (EGridComp?.PrimeComp == this)
                 {
                     if (ShieldComp != null)

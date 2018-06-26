@@ -1,9 +1,59 @@
-﻿using Sandbox.ModAPI;
+﻿using System.Collections.Generic;
+using System.Linq;
+using Sandbox.ModAPI;
+using Sandbox.ModAPI.Interfaces.Terminal;
 
 namespace DefenseShields
 {
-    static class DsGetSet
+    internal static class DsUi
     {
+        #region Create UI
+        internal static bool ShowControlOreDetectorControls(IMyTerminalBlock block)
+        {
+            return block.BlockDefinition.SubtypeName.Contains("OreDetector");
+        }
+
+        internal static void RemoveOreUi()
+        {
+            var actions = new List<IMyTerminalAction>();
+            MyAPIGateway.TerminalControls.GetActions<Sandbox.ModAPI.Ingame.IMyOreDetector>(out actions);
+            var actionAntenna = actions.First((x) => x.Id.ToString() == "BroadcastUsingAntennas");
+            actionAntenna.Enabled = ShowControlOreDetectorControls;
+
+            var controls = new List<IMyTerminalControl>();
+            MyAPIGateway.TerminalControls.GetControls<Sandbox.ModAPI.Ingame.IMyOreDetector>(out controls);
+            var antennaControl = controls.First((x) => x.Id.ToString() == "BroadcastUsingAntennas");
+            antennaControl.Visible = ShowControlOreDetectorControls;
+            var radiusControl = controls.First((x) => x.Id.ToString() == "Range");
+            radiusControl.Visible = ShowControlOreDetectorControls;
+        }
+
+        internal static void CreateUi(IMyTerminalBlock shield)
+        {
+            Session.Instance.CreateControls(shield);
+            Session.Instance.WidthSlider.Visible = ShowSizeSlider;
+            Session.Instance.HeightSlider.Visible = ShowSizeSlider;
+            Session.Instance.DepthSlider.Visible = ShowSizeSlider;
+
+            Session.Instance.ExtendFit.Visible = ShowReSizeCheckBoxs;
+            Session.Instance.SphereFit.Visible = ShowReSizeCheckBoxs;
+            Session.Instance.FortifyShield.Visible = ShowReSizeCheckBoxs;
+        }
+
+        internal static bool ShowSizeSlider(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            var station = comp != null && comp.Shield.CubeGrid.Physics.IsStatic;
+            return station;
+        }
+
+        private static bool ShowReSizeCheckBoxs(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            var notStation = comp != null && !comp.Shield.CubeGrid.Physics.IsStatic;
+            return notStation;
+        }
+
         public static float GetRate(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
@@ -156,5 +206,6 @@ namespace DefenseShields
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();
         }
+        #endregion
     }
 }

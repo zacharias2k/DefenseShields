@@ -131,7 +131,7 @@ namespace DefenseShields.Support
             private int _chargeDrawStep;
             private int _lod;
 
-            private float _shieldPercent;
+            private float ShieldEntPercent;
 
             private const int ImpactSteps = 60;
             private const int ChargeSteps = 30;
@@ -227,7 +227,7 @@ namespace DefenseShields.Support
             {
                 _shellPassive = shellPassive;
                 _shellActive = shellActive;
-                _shieldPercent = shieldPercent;
+                ShieldEntPercent = shieldPercent;
                 _matrix = matrix;
                 _impactPosState = impactPos;
                 _passive = passiveVisible;
@@ -245,7 +245,7 @@ namespace DefenseShields.Support
                 if (_charge && ImpactsFinished && prevLod == _lod) ChargeColorAssignments(prevLod);
                 if (ImpactsFinished && prevLod == _lod) return;
 
-                if (_active) _shellActive.SetEmissiveParts(ShieldEmissiveAlpha, UtilsStatic.GetEmissiveColorFromFloat(_shieldPercent), 100f);
+                if (_active) _shellActive.SetEmissiveParts(ShieldEmissiveAlpha, UtilsStatic.GetEmissiveColorFromFloat(ShieldEntPercent), 100f);
 
                 ImpactColorAssignments(prevLod);
                 //_dsutil2.StopWatchReport("colorcalc", 1);

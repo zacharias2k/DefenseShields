@@ -13,7 +13,7 @@ namespace DefenseShields.Data.Scripts.DefenseShields.API
     {
         /// <summary>
         /// RayCast against shielded targets.  If returns null proceed with normal raycast,
-        /// but do not normal cast against entities in _shielded (hashset).
+        /// but do not normal cast against entities in ShieldEnted (hashset).
         /// </summary>
         /// 
         /// <param name="shield">the active shield to attack</param>
@@ -45,7 +45,7 @@ namespace DefenseShields.Data.Scripts.DefenseShields.API
             var block = (IMySlimBlock)cubeBlock.SlimBlock;
 
             if (block == null) return null;
-            // _shielded.Add(parent);
+            // ShieldEnted.Add(parent);
 
             /*
             if (Debug)
