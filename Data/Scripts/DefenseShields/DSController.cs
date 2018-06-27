@@ -13,6 +13,7 @@ using VRage.ModAPI;
 using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
+using VRage.Utils;
 using VRage.Voxels;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
@@ -785,11 +786,28 @@ namespace DefenseShields
             var up = cameraWorldMatrix.Up;
             const double scaler = 0.08d;
             scale = scaler * scale;
-            var color = UtilsStatic.GetEmissiveColorFromFloat(ShieldComp.ShieldPercent);
-            if (color == Color.DarkRed && _lCount % 2 == 0) color = Color.Transparent;
-            MyTransparentGeometry.AddBillboardOriented(_hudIconHealth100, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
-        }		
-		
+            var icon = GetHudIconFromFloat(ShieldComp.ShieldPercent);
+            Color color;
+            if (ShieldComp.ShieldPercent < 10 && _lCount % 2 == 0) color = Color.DarkRed;
+            else color = Color.White;
+            MyTransparentGeometry.AddBillboardOriented(icon, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
+        }
+
+        public static MyStringId GetHudIconFromFloat(float percent)
+        {
+            if (percent >= 99) return _hudIconHealth100;
+            if (percent >= 90) return _hudIconHealth90;
+            if (percent >= 80) return _hudIconHealth80;
+            if (percent >= 70) return _hudIconHealth70;
+            if (percent >= 60) return _hudIconHealth60;
+            if (percent >= 50) return _hudIconHealth50;
+            if (percent >= 40) return _hudIconHealth40;
+            if (percent >= 30) return _hudIconHealth30;
+            if (percent >= 20) return _hudIconHealth20;
+            if (percent > 0) return _hudIconHealth10;
+            return _hudIconOffline;
+        }
+
         public void Draw(int onCount, bool sphereOnCamera)
         {
             _onCount = onCount;

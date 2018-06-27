@@ -85,8 +85,6 @@ namespace DefenseShields.Support
 
         public static Color GetEmissiveColorFromFloat(float percent)
         {
-
-
             if (percent > 90) return White1;
             if (percent > 80) return White2;
             if (percent > 70) return White3;
