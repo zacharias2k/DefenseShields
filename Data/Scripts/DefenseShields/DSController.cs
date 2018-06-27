@@ -630,7 +630,7 @@ namespace DefenseShields
                     _gridCurrentPower += source.CurrentOutputByType(eId);
                 }
             _gridAvailablePower = _gridMaxPower - _gridCurrentPower;
-            if (_gridAvailablePower <= 0) Shield.Enabled = false;
+            if (_gridAvailablePower <= 0 && _gridCurrentPower <= 0) Shield.Enabled = false;
         }
 
         private void CalculatePowerCharge()
