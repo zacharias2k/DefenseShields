@@ -666,11 +666,12 @@ namespace DefenseShields
             ((IMyTerminalControlTitleTooltip)customData).Title = ShieldFreq;
             ((IMyTerminalControlTitleTooltip)customData).Tooltip = ShieldFreqTooltip;
             customData.RedrawControl();
-            ShowOnHudReset = false;
+            CustomDataReset = false;
         }
 
         private void ResetCustomData(IEnumerable<IMyTerminalControl> controls)
         {
+            Log.Line($"test reset custom data");
             var customData = controls.First((x) => x.Id.ToString() == "CustomData");
             ((IMyTerminalControlTitleTooltip)customData).Title = MySpaceTexts.Terminal_CustomData;
             ((IMyTerminalControlTitleTooltip)customData).Tooltip = MySpaceTexts.Terminal_CustomDataTooltip;
