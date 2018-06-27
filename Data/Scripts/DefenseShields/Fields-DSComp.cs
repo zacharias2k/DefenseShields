@@ -120,6 +120,7 @@ namespace DefenseShields
         private readonly DataStructures _dataStructures = new DataStructures();
         //private readonly StructureBuilder _structureBuilder = new StructureBuilder();
 
+        internal readonly HashSet<IMyEntity> AuthenticatedCache = new HashSet<IMyEntity>();
         internal readonly HashSet<IMyEntity> FriendlyCache = new HashSet<IMyEntity>();
         internal readonly HashSet<IMyEntity> PartlyProtectedCache = new HashSet<IMyEntity>();
         internal readonly HashSet<IMyEntity> IgnoreCache = new HashSet<IMyEntity>();

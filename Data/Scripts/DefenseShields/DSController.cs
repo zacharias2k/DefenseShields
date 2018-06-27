@@ -112,7 +112,6 @@ namespace DefenseShields
                 {
                     SyncThreadedEnts();
                 }
-                if (_count == 0) Log.CleanLine($"({((MyCubeGrid)Shield.CubeGrid).DebugName}) cached friend:{FriendlyCache.Contains(Shield.CubeGrid)} - Ignore:{IgnoreCache.Contains(Shield.CubeGrid)} - Part:{PartlyProtectedCache.Contains(Shield.CubeGrid)}");
                 if (Session.Enforced.Debug == 1) Dsutil1.StopWatchReport($"MainLoop: ShieldId:{Shield.EntityId.ToString()} - Active: {ShieldComp.ShieldActive} - Tick: {_tick} loop: {_lCount}-{_count}", 2);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
@@ -770,11 +769,10 @@ namespace DefenseShields
         #region Shield Draw
         private void UpdateIcon()
         {
-
             var position = new Vector3D(_shieldIconPos.X, _shieldIconPos.Y, 0);
             var fov = MyAPIGateway.Session.Camera.FovWithZoom;
             double aspectratio = MyAPIGateway.Session.Camera.ViewportSize.X / MyAPIGateway.Session.Camera.ViewportSize.Y;
-            var scale = 0.075 * Math.Tan(fov / 2);
+            var scale = 0.075f * (float)Math.Tan(fov / 2);
             position.X *= scale * aspectratio;
             position.Y *= scale;
 
@@ -784,13 +782,13 @@ namespace DefenseShields
             var origin = position;
             var left = cameraWorldMatrix.Left;
             var up = cameraWorldMatrix.Up;
-            const double scaler = 0.08d;
+            const float scaler = 0.08f;
             scale = scaler * scale;
             var icon = GetHudIconFromFloat(ShieldComp.ShieldPercent);
             Color color;
             if (ShieldComp.ShieldPercent < 10 && _lCount % 2 == 0) color = Color.DarkRed;
             else color = Color.White;
-            MyTransparentGeometry.AddBillboardOriented(icon, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
+            MyTransparentGeometry.AddBillboardOriented(icon, color, origin, left, up, scale, BlendTypeEnum.SDR);
         }
 
         public static MyStringId GetHudIconFromFloat(float percent)
