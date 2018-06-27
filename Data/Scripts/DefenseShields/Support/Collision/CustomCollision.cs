@@ -449,17 +449,15 @@ namespace DefenseShields.Support
 
         public static bool NotAllCornersInShield(IMyCubeGrid grid, MatrixD matrixInv)
         {
-
             var gridCorners = grid.PositionComp.WorldAABB.GetCorners();
             var c = 0;
             for (int i = 0; i < 8; i++)
             {
-                var point = gridCorners[i];
-                var pointInside = Vector3D.Transform(point, matrixInv).LengthSquared();
-                if (pointInside >= 1) c++;
-                if (c > 1) return true;
+                var pointInside = Vector3D.Transform(gridCorners[i], matrixInv).LengthSquared() <= 1;
+                if (pointInside) c++;
             }
-            return false;
+            Log.Line($"{c} - {c > 0 && c < 8}");
+            return c > 0 && c < 8;
         }
 
         public static Vector3D ClosestPointInShield(MyOrientedBoundingBoxD bOriBBoxD, MatrixD matrixInv)

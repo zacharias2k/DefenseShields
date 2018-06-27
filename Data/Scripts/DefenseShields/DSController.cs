@@ -111,7 +111,8 @@ namespace DefenseShields
                 {
                     SyncThreadedEnts();
                 }
-                if (Session.Enforced.Debug == 1) Dsutil1.StopWatchReport($"MainLoop: ShieldId:{Shield.EntityId.ToString()} - Active: {ShieldComp.ShieldActive} - Tick: {_tick} loop: {_lCount}-{_count}", 3);
+                if (_count == 0) Log.CleanLine($"({((MyCubeGrid)Shield.CubeGrid).DebugName}) cached friend:{FriendlyCache.Contains(Shield.CubeGrid)} - Ignore:{IgnoreCache.Contains(Shield.CubeGrid)} - Part:{PartlyProtectedCache.Contains(Shield.CubeGrid)}");
+                if (Session.Enforced.Debug == 1) Dsutil1.StopWatchReport($"MainLoop: ShieldId:{Shield.EntityId.ToString()} - Active: {ShieldComp.ShieldActive} - Tick: {_tick} loop: {_lCount}-{_count}", 2);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }

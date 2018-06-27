@@ -25,7 +25,6 @@ namespace DefenseShields
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
             for (int i = 0; i < pruneList.Count; i++)
             {
-
                 var ent = pruneList[i];
                 if (ent == null || FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent)) continue;
 
@@ -45,11 +44,13 @@ namespace DefenseShields
                         {
                             if (ent is MyCubeGrid && CustomCollision.NotAllCornersInShield(ent as MyCubeGrid, DetectMatrixOutsideInv))
                             {
+                                Log.Line($"part:{((MyCubeGrid)ent).DebugName}");
                                 PartlyProtectedCache.Add(ent);
                                 continue;
                             }
                             if (CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
                             {
+                                Log.Line($"center:{ent.DebugName}");
                                 FriendlyCache.Add(ent);
                                 continue;
                             }
