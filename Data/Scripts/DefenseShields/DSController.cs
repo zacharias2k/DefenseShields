@@ -783,11 +783,11 @@ namespace DefenseShields
             var origin = position;
             var left = cameraWorldMatrix.Left;
             var up = cameraWorldMatrix.Up;
-            const double scaler = 0.07d;
+            const double scaler = 0.08d;
             scale = scaler * scale;
             var color = UtilsStatic.GetEmissiveColorFromFloat(ShieldComp.ShieldPercent);
             if (color == Color.DarkRed && _lCount % 2 == 0) color = Color.Transparent;
-            MyTransparentGeometry.AddBillboardOriented(_hudIcon, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
+            MyTransparentGeometry.AddBillboardOriented(_hudIconHealth100, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
         }		
 		
         public void Draw(int onCount, bool sphereOnCamera)
