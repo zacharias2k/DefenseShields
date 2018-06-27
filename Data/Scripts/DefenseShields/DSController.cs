@@ -625,12 +625,12 @@ namespace DefenseShields
                 for (int i = 0; i < _powerSources.Count; i++)
                 {
                     var source = _powerSources[i];
-                    if (!source.HasCapacityRemaining || !source.Enabled || !source.ProductionEnabled) continue;
+                    if (!source.HasCapacityRemaining || !source.Enabled || !source.ProductionEnabled || !UseBatteries && source.Group.String.Equals("Battery")) continue;
                     _gridMaxPower += source.MaxOutputByType(eId);
                     _gridCurrentPower += source.CurrentOutputByType(eId);
                 }
             _gridAvailablePower = _gridMaxPower - _gridCurrentPower;
-            if (_gridCurrentPower <= 0) Shield.Enabled = false;
+            if (_gridAvailablePower <= 0) Shield.Enabled = false;
         }
 
         private void CalculatePowerCharge()

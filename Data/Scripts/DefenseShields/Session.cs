@@ -700,6 +700,7 @@ namespace DefenseShields
             DepthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DepthSlider", "Shield Size Depth", "Shield Size Depth", DsUi.GetDepth, DsUi.SetDepth);
             DepthSlider.SetLimits(30, 600);
 
+            HidePassiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "UseBatteries", "Shield may use batteries          ", "Shield may use batteries          ", DsUi.GetBatteries, DsUi.SetBatteries);
             HidePassiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HidePassive", "Hide idle shield state            ", "Hide idle shield state            ", DsUi.GetHidePassive, DsUi.SetHidePassive);
             HideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HideActive", "Hide active shield state        ", "Hide active shield state        ", DsUi.GetHideActive, DsUi.SetHideActive);
             SendToHudCheckBoxe = TerminalHelpers.AddCheckbox(comp?.Shield, "HideIcon", "Send status to nearby HUDs", "Send status to nearby HUDs", DsUi.GetSendToHud, DsUi.SetSendToHud);

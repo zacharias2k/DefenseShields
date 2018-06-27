@@ -242,6 +242,12 @@ namespace DefenseShields
             set { DsSet.Settings.FortifyShield = value; }
         }
 
+        public bool UseBatteries
+        {
+            get { return DsSet.Settings.UseBatteries; }
+            set { DsSet.Settings.UseBatteries = value; }
+        }
+
         public bool SendToHud
         {
             get { return DsSet.Settings.SendToHud; }
