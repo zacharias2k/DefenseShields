@@ -451,10 +451,10 @@
         <Y>1</Y>
       </UVSize>
       <Color>
-        <X>1</X>
-        <Y>1</Y>
-        <Z>1</Z>
-        <W>25</W>
+        <X>.5</X>
+        <Y>.5</Y>
+        <Z>.5</Z>
+        <W>1</W>
       </Color>
       <ColorAdd>
         <X>0</X>
@@ -504,10 +504,10 @@
         <Y>1</Y>
       </UVSize>
       <Color>
-        <X>1</X>
-        <Y>1</Y>
-        <Z>1</Z>
-        <W>25</W>
+        <X>.5</X>
+        <Y>.5</Y>
+        <Z>.5</Z>
+        <W>1</W>
       </Color>
       <ColorAdd>
         <X>0</X>
@@ -557,10 +557,10 @@
         <Y>1</Y>
       </UVSize>
       <Color>
-        <X>1</X>
-        <Y>1</Y>
-        <Z>1</Z>
-        <W>25</W>
+        <X>.5</X>
+        <Y>.5</Y>
+        <Z>.5</Z>
+        <W>1</W>
       </Color>
       <ColorAdd>
         <X>0</X>
@@ -610,10 +610,10 @@
         <Y>1</Y>
       </UVSize>
       <Color>
-        <X>1</X>
-        <Y>1</Y>
-        <Z>1</Z>
-        <W>25</W>
+        <X>.5</X>
+        <Y>.5</Y>
+        <Z>.5</Z>
+        <W>1</W>
       </Color>
       <ColorAdd>
         <X>0</X>
@@ -664,10 +664,10 @@
         <Y>1</Y>
       </UVSize>
       <Color>
-        <X>1</X>
-        <Y>1</Y>
-        <Z>1</Z>
-        <W>25</W>
+        <X>.5</X>
+        <Y>.5</Y>
+        <Z>.5</Z>
+        <W>1</W>
       </Color>
       <ColorAdd>
         <X>0</X>
@@ -717,10 +717,10 @@
         <Y>1</Y>
       </UVSize>
       <Color>
-        <X>1</X>
-        <Y>1</Y>
-        <Z>1</Z>
-        <W>25</W>
+        <X>.5</X>
+        <Y>.5</Y>
+        <Z>.5</Z>
+        <W>1</W>
       </Color>
       <ColorAdd>
         <X>0</X>
@@ -770,10 +770,10 @@
         <Y>1</Y>
       </UVSize>
       <Color>
-        <X>1</X>
-        <Y>1</Y>
-        <Z>1</Z>
-        <W>25</W>
+        <X>.5</X>
+        <Y>.5</Y>
+        <Z>.5</Z>
+        <W>1</W>
       </Color>
       <ColorAdd>
         <X>0</X>
@@ -823,10 +823,10 @@
         <Y>1</Y>
       </UVSize>
       <Color>
-        <X>1</X>
-        <Y>1</Y>
-        <Z>1</Z>
-        <W>25</W>
+        <X>.5</X>
+        <Y>.5</Y>
+        <Z>.5</Z>
+        <W>1</W>
       </Color>
       <ColorAdd>
         <X>0</X>
@@ -876,10 +876,10 @@
         <Y>1</Y>
       </UVSize>
       <Color>
-        <X>1</X>
-        <Y>1</Y>
-        <Z>1</Z>
-        <W>25</W>
+        <X>.5</X>
+        <Y>.5</Y>
+        <Z>.5</Z>
+        <W>1</W>
       </Color>
       <ColorAdd>
         <X>0</X>
@@ -929,10 +929,10 @@
         <Y>1</Y>
       </UVSize>
       <Color>
-        <X>1</X>
-        <Y>1</Y>
-        <Z>1</Z>
-        <W>25</W>
+        <X>.5</X>
+        <Y>.5</Y>
+        <Z>.5</Z>
+        <W>1</W>
       </Color>
       <ColorAdd>
         <X>0</X>
@@ -982,16 +982,16 @@
         <Y>1</Y>
       </UVSize>
       <Color>
-        <X>1</X>
-        <Y>1</Y>
-        <Z>1</Z>
-        <W>25</W>
+        <X>.5</X>
+        <Y>.5</Y>
+        <Z>.5</Z>
+        <W>1</W>
       </Color>
       <ColorAdd>
         <X>0</X>
         <Y>0</Y>
         <Z>0</Z>
-        <W>0.1</W>
+        <W>0</W>
       </ColorAdd>
       <ShadowMultiplier>
         <X>0</X>
