@@ -112,6 +112,7 @@ namespace DefenseShields
                 {
                     SyncThreadedEnts();
                 }
+                //Log.Line($"Ellipsoid area in BeforeSim {Ellipsoid.Volume} - {EllipsoidSa.Volume}");
                 if (Session.Enforced.Debug == 1) Dsutil1.StopWatchReport($"MainLoop: ShieldId:{Shield.EntityId.ToString()} - Active: {ShieldComp.ShieldActive} - Tick: {_tick} loop: {_lCount}-{_count}", 2);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
@@ -243,7 +244,7 @@ namespace DefenseShields
 
             var playerEnt = MyAPIGateway.Session.ControlledObject?.Entity;
             if (playerEnt?.Parent != null) playerEnt = playerEnt.Parent;
-            if (playerEnt == null || !FriendlyCache.Contains(playerEnt))
+            if (playerEnt == null || ShieldComp.ShieldActive && !FriendlyCache.Contains(playerEnt) || !ShieldComp.ShieldActive && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
             {
                 if (Session.HudComp != this) return;
 
@@ -397,6 +398,7 @@ namespace DefenseShields
             ShieldEnt.Render.UpdateRenderObject(false);
             Absorb = 0;
             ShieldBuffer = 0;
+            ShieldComp.ShieldPercent = 0f;
             _shieldChargeRate = 0;
             _shieldMaxChargeRate = 0;
             _shieldMaxBuffer = 0;
@@ -623,12 +625,13 @@ namespace DefenseShields
                 for (int i = 0; i < _powerSources.Count; i++)
                 {
                     var source = _powerSources[i];
-                    if (!source.HasCapacityRemaining || !source.Enabled || !source.ProductionEnabled) continue;
+                    if (!source.HasCapacityRemaining || !source.Enabled || !source.ProductionEnabled || !UseBatteries && source.Group.String.Equals("Battery")) continue;
                     _gridMaxPower += source.MaxOutputByType(eId);
                     _gridCurrentPower += source.CurrentOutputByType(eId);
                 }
             _gridAvailablePower = _gridMaxPower - _gridCurrentPower;
-            if (_gridCurrentPower <= 0) Shield.Enabled = false;
+            //Log.Line($"{_gridAvailablePower} - {_gridCurrentPower} - {_gridMaxPower}");
+            if (_gridAvailablePower <= 0 && _gridCurrentPower <= 0) Shield.Enabled = false; // this still has a bug where it can force off 
         }
 
         private void CalculatePowerCharge()
@@ -786,7 +789,8 @@ namespace DefenseShields
             scale = scaler * scale;
             var icon = GetHudIconFromFloat(ShieldComp.ShieldPercent);
             Color color;
-            if (ShieldComp.ShieldPercent < 10 && _lCount % 2 == 0) color = Color.DarkRed;
+            var p = ShieldComp.ShieldPercent;
+            if (p > 0 && p < 10 && _lCount % 2 == 0) color = Color.Red;
             else color = Color.White;
             MyTransparentGeometry.AddBillboardOriented(icon, color, origin, left, up, scale, BlendTypeEnum.SDR);
         }
@@ -806,6 +810,16 @@ namespace DefenseShields
             return _hudIconOffline;
         }
 
+        public void DrawShieldDownIcon()
+        {
+            if (!Session.DedicatedServer) HudCheck();
+            var enemy = false;
+            var relation = MyAPIGateway.Session.Player.GetRelationTo(Shield.OwnerId);
+            if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
+
+            if (!enemy && SendToHud && !MyAPIGateway.Session.Config.MinimalHud && Session.HudComp == this) UpdateIcon();
+        }
+
         public void Draw(int onCount, bool sphereOnCamera)
         {
             _onCount = onCount;
@@ -813,7 +827,9 @@ namespace DefenseShields
             var relation = MyAPIGateway.Session.Player.GetRelationTo(Shield.OwnerId);
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
 
-            if (!enemy && SendToHud && !MyAPIGateway.Session.Config.MinimalHud && Session.HudComp == this) UpdateIcon();
+            var config = MyAPIGateway.Session.Config;
+            var drawIcon = !enemy && SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
+            if (drawIcon) UpdateIcon();
 
             var passiveVisible = !ShieldPassiveHide && !enemy;
             var activeVisible = !ShieldActiveHide && !enemy;
@@ -905,9 +921,11 @@ namespace DefenseShields
                         {
                             FriendlyCache.Clear();
                             PartlyProtectedCache.Clear();
+                            AuthenticatedCache.Clear();
                             foreach (var sub in ShieldComp.GetSubGrids)
                             {
-                                if (!GridIsMobile && CustomCollision.NotAllCornersInShield(sub, DetectMatrixOutsideInv))
+                                var cornersInShield = CustomCollision.CornersInShield(sub, DetectMatrixOutsideInv);
+                                if (!GridIsMobile && cornersInShield > 0 && cornersInShield != 8)
                                 {
                                     PartlyProtectedCache.Add(sub);
                                     continue;

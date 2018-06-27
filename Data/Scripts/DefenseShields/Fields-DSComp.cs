@@ -87,7 +87,7 @@ namespace DefenseShields
         private const string MyMissile = "MyMissile";
         private const string MyDebrisBase = "MyDebrisBase";
 
-        private Vector2D _shieldIconPos = new Vector2D(-0.91, -0.87);
+        private Vector2D _shieldIconPos = new Vector2D(-0.89, -0.903);
 
         internal Vector3D DetectionCenter;
         internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
@@ -165,7 +165,6 @@ namespace DefenseShields
         internal readonly Spawn Spawn = new Spawn();
         internal readonly EllipsoidOxygenProvider EllipsoidOxyProvider = new EllipsoidOxygenProvider(Matrix.Zero);
         internal readonly EllipsoidSA EllipsoidSa = new EllipsoidSA(double.MinValue, double.MinValue, double.MinValue);
-
         internal DSUtils Dsutil1 = new DSUtils();
         internal DSUtils Dsutil2 = new DSUtils();
         internal DSUtils Dsutil3 = new DSUtils();
@@ -241,6 +240,12 @@ namespace DefenseShields
         {
             get { return DsSet.Settings.FortifyShield; }
             set { DsSet.Settings.FortifyShield = value; }
+        }
+
+        public bool UseBatteries
+        {
+            get { return DsSet.Settings.UseBatteries; }
+            set { DsSet.Settings.UseBatteries = value; }
         }
 
         public bool SendToHud

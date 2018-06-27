@@ -43,7 +43,6 @@ namespace DefenseShields
         internal MyStringId ShieldFreq = MyStringId.GetOrCompute("Shield Frequency");
         internal MyStringId ShieldFreqTooltip = MyStringId.GetOrCompute("Set this to the secret frequency/code used for shield access");
         public static readonly bool MpActive = MyAPIGateway.Multiplayer.MultiplayerActive;
-
         public static readonly bool IsServer = MyAPIGateway.Multiplayer.IsServer;
         public static readonly bool DedicatedServer = MyAPIGateway.Utilities.IsDedicated;
 
@@ -129,7 +128,7 @@ namespace DefenseShields
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
-                    if (!s.ShieldComp.ShieldActive || !s.AllInited) continue;
+                    if (!s.AllInited) continue;
                     var sp = new BoundingSphereD(s.DetectionCenter, s.ShieldComp.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {
@@ -145,6 +144,7 @@ namespace DefenseShields
                     var s = Components[i];
                     if (s.ShieldComp.ShieldActive && SphereOnCamera[i]) s.Draw(onCount, SphereOnCamera[i]);
                     else if (s.ShieldComp.ShieldActive && !s.Icosphere.ImpactsFinished) s.Icosphere.StepEffects();
+                    else if (!s.ShieldComp.ShieldActive && SphereOnCamera[i]) s.DrawShieldDownIcon();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
@@ -261,7 +261,7 @@ namespace DefenseShields
 
                         if (hostileEnt != null && shield.Absorb < 1 && shield.BulletCoolDown == -1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity)
                         {
-                            Log.Line($"part - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName} - {info.Type} - {info.Amount} - {shield.FriendlyCache.Contains(hostileEnt)} - {shield.IgnoreCache.Contains(hostileEnt)}");
+                            //Log.Line($"part - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName} - {info.Type} - {info.Amount} - {shield.FriendlyCache.Contains(hostileEnt)} - {shield.IgnoreCache.Contains(hostileEnt)}");
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
                             if (!CustomCollision.PointInShield(blockPos, shield.DetectMatrixOutsideInv)) continue;
@@ -269,7 +269,6 @@ namespace DefenseShields
                             shield.WorldImpactPosition = vertPos;
                             shield.ImpactSize = 5;
                         }
-
                         shield.Absorb += info.Amount;
                         info.Amount = 0f;
                     }
@@ -667,11 +666,12 @@ namespace DefenseShields
             ((IMyTerminalControlTitleTooltip)customData).Title = ShieldFreq;
             ((IMyTerminalControlTitleTooltip)customData).Tooltip = ShieldFreqTooltip;
             customData.RedrawControl();
-            ShowOnHudReset = false;
+            CustomDataReset = false;
         }
 
         private void ResetCustomData(IEnumerable<IMyTerminalControl> controls)
         {
+            Log.Line($"test reset custom data");
             var customData = controls.First((x) => x.Id.ToString() == "CustomData");
             ((IMyTerminalControlTitleTooltip)customData).Title = MySpaceTexts.Terminal_CustomData;
             ((IMyTerminalControlTitleTooltip)customData).Tooltip = MySpaceTexts.Terminal_CustomDataTooltip;
@@ -700,6 +700,7 @@ namespace DefenseShields
             DepthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DepthSlider", "Shield Size Depth", "Shield Size Depth", DsUi.GetDepth, DsUi.SetDepth);
             DepthSlider.SetLimits(30, 600);
 
+            HidePassiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "UseBatteries", "Shield may use batteries          ", "Shield may use batteries          ", DsUi.GetBatteries, DsUi.SetBatteries);
             HidePassiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HidePassive", "Hide idle shield state            ", "Hide idle shield state            ", DsUi.GetHidePassive, DsUi.SetHidePassive);
             HideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HideActive", "Hide active shield state        ", "Hide active shield state        ", DsUi.GetHideActive, DsUi.SetHideActive);
             SendToHudCheckBoxe = TerminalHelpers.AddCheckbox(comp?.Shield, "HideIcon", "Send status to nearby HUDs", "Send status to nearby HUDs", DsUi.GetSendToHud, DsUi.SetSendToHud);

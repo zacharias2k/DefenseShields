@@ -162,6 +162,21 @@ namespace DefenseShields
             comp.DsSet.SaveSettings();
         }
 
+        public static bool GetBatteries(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            return comp?.UseBatteries ?? false;
+        }
+
+        public static void SetBatteries(IMyTerminalBlock block, bool newValue)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            if (comp == null) return;
+            comp.UseBatteries = newValue;
+            comp.DsSet.NetworkUpdate();
+            comp.DsSet.SaveSettings();
+        }
+
         public static bool GetHidePassive(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
