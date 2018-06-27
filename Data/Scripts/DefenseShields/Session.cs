@@ -234,7 +234,9 @@ namespace DefenseShields
 
                         if (hostileEnt != null && shield.Absorb < 1 && shield.BulletCoolDown == -1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity)
                         {
-                            Log.Line($"full - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName} - {info.Type} - {info.Amount} - {shield.FriendlyCache.Contains(hostileEnt)} - {shield.IgnoreCache.Contains(hostileEnt)}");
+                            //Log.CleanLine("");
+                            //Log.CleanLine($"full: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
+                            //Log.CleanLine($"full: T:{info.Type} - A:{info.Amount} - HF:{shield.FriendlyCache.Contains(hostileEnt)} - HI:{shield.IgnoreCache.Contains(hostileEnt)} - PF:{shield.FriendlyCache.Contains(blockGrid)} - PI:{shield.IgnoreCache.Contains(blockGrid)}");
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
                             var vertPos = CustomCollision.ClosestVert(shield.ShieldComp.PhysicsOutside, blockPos);

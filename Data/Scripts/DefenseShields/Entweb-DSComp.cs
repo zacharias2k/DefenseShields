@@ -40,17 +40,19 @@ namespace DefenseShields
                     case Ent.Ignore:
                     case Ent.Friend:
                     case Ent.Weapon:
-                        if ((relation == Ent.Friend || relation == Ent.Weapon))
+                        if (relation == Ent.Friend || relation == Ent.Weapon)
                         {
-                            if (ent is MyCubeGrid && CustomCollision.NotAllCornersInShield(ent as MyCubeGrid, DetectMatrixOutsideInv))
+                            if (ent is MyCubeGrid)
                             {
-                                Log.Line($"part:{((MyCubeGrid)ent).DebugName}");
-                                PartlyProtectedCache.Add(ent);
-                                continue;
+                                var cornersInShield = CustomCollision.CornersInShield(ent as MyCubeGrid, DetectMatrixOutsideInv);
+                                if (cornersInShield > 0 && cornersInShield != 8)
+                                {
+                                    PartlyProtectedCache.Add(ent);
+                                    continue;
+                                }
                             }
                             if (CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
                             {
-                                Log.Line($"center:{ent.DebugName}");
                                 FriendlyCache.Add(ent);
                                 continue;
                             }
@@ -238,7 +240,19 @@ namespace DefenseShields
                 {
                     if (modComp.ModulationPassword.Equals(Shield.CustomData))
                     {
-                        foreach (var subGrid in modComp.GetSubGrids) FriendlyCache.Add(subGrid);
+                        foreach (var subGrid in modComp.GetSubGrids)
+                        {
+                            var cornersInShield = CustomCollision.CornersInShield(subGrid, DetectMatrixOutsideInv);
+                            if (cornersInShield > 0 && cornersInShield != 8)
+                            {
+                                PartlyProtectedCache.Add(ent);
+                            }
+                            else if (cornersInShield == 8)
+                            {
+                                FriendlyCache.Add(ent);
+                            }
+                            else AuthenticatedCache.Add(subGrid);
+                        }
                         return Ent.Authenticated;
                     }
                 }
