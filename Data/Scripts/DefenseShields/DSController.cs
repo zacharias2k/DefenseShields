@@ -665,7 +665,6 @@ namespace DefenseShields
                     //if (((IMyFunctionalBlock) source.Entity).CustomData.Equals("test")) c++;
                 }
             _gridAvailablePower = _gridMaxPower - _gridCurrentPower;
-            //Log.Line($"{_gridAvailablePower} - {_gridCurrentPower} - {_gridMaxPower}");
         }
 
         private void CalculatePowerCharge()
@@ -777,7 +776,7 @@ namespace DefenseShields
             var position = new Vector3D(_shieldIconPos.X, _shieldIconPos.Y, 0);
             var fov = MyAPIGateway.Session.Camera.FovWithZoom;
             double aspectratio = MyAPIGateway.Session.Camera.ViewportSize.X / MyAPIGateway.Session.Camera.ViewportSize.Y;
-            var scale = 0.075f * (float)Math.Tan(fov / 2);
+            var scale = 0.075 * Math.Tan(fov / 2);
             position.X *= scale * aspectratio;
             position.Y *= scale;
 
@@ -787,14 +786,14 @@ namespace DefenseShields
             var origin = position;
             var left = cameraWorldMatrix.Left;
             var up = cameraWorldMatrix.Up;
-            const float scaler = 0.08f;
+            const double scaler = 0.08;
             scale = scaler * scale;
             var icon = GetHudIconFromFloat(ShieldComp.ShieldPercent);
             Color color;
             var p = ShieldComp.ShieldPercent;
             if (p > 0 && p < 10 && _lCount % 2 == 0) color = Color.Red;
             else color = Color.White;
-            MyTransparentGeometry.AddBillboardOriented(icon, color, origin, left, up, scale, BlendTypeEnum.SDR);
+            MyTransparentGeometry.AddBillboardOriented(icon, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
         }
 
         public static MyStringId GetHudIconFromFloat(float percent)

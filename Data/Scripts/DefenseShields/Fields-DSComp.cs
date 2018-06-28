@@ -88,7 +88,7 @@ namespace DefenseShields
         private const string MyMissile = "MyMissile";
         private const string MyDebrisBase = "MyDebrisBase";
 
-        private Vector2D _shieldIconPos = new Vector2D(-0.89, -0.903);
+        private Vector2D _shieldIconPos = new Vector2D(-0.89, -0.86);
 
         internal Vector3D DetectionCenter;
         internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
