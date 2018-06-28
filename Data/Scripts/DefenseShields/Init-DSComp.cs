@@ -27,18 +27,7 @@ namespace DefenseShields
         {
             try
             {
-                Entity.Components.TryGet(out Sink);
-                ResourceInfo = new MyResourceSinkInfo()
-                {
-                    ResourceTypeId = GId,
-                    MaxRequiredInput = 0f,
-                    RequiredInputFunc = () => _power
-                };
-                Sink.RemoveType(ref ResourceInfo.ResourceTypeId);
-                Sink.Init(MyStringHash.GetOrCompute("Defense"), ResourceInfo);
-                Sink.AddType(ref ResourceInfo);
-
-
+                PowerPreInit();
                 base.Init(objectBuilder);
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
@@ -134,23 +123,15 @@ namespace DefenseShields
                     ShieldComp.DefenseShields = this;
                 }
 
-
                 if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
 
                 if (!MainInit && Shield.IsFunctional)
                 {
-                    var enableState = Shield.Enabled;
-
-                    if (enableState)
-                    {
-                        Shield.Enabled = false; 
-                        Shield.Enabled = true;
-                    }
+                    PowerInit();
 
                     ((MyCubeBlock)Shield).ChangeOwner(Shield.CubeGrid.BigOwners[0], MyOwnershipShareModeEnum.Faction);
 
                     SetShieldType();
-
                     if (ShieldMode == ShieldType.Station)
                     {
                         _shapeAdjusted = false;
@@ -158,8 +139,6 @@ namespace DefenseShields
                     }
 
                     DsUi.CreateUi(Shield);
-                    PowerInit();
-
                     MainInit = true;
                     if (Session.Enforced.Debug == 1) Log.Line($"MainInit complete");
                 }
@@ -168,18 +147,15 @@ namespace DefenseShields
                 {
                     SpawnEntities();
                     CleanUp(3);
-
-                    if (Session.Enforced.Debug == 1) Log.Line($"PhysicsInit complete");
-
                     PhysicsInit = true;
+                    if (Session.Enforced.Debug == 1) Log.Line($"PhysicsInit complete");
                 }
 
                 if (AllInited || !PhysicsInit || !MainInit || !Shield.IsFunctional) return;
 
-                if (Session.Enforced.Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - {Shield.BlockDefinition.SubtypeId} is functional - tick:{_tick.ToString()}");
+                if (!BlockReady()) return;
 
                 if (Session.Enforced.Debug == 1) Log.Line($"AnimateInit complete");
-
                 AllInited = true;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateAfterSimulation100: {ex}"); }
@@ -259,6 +235,20 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 1) Log.Line($"ServerEnforcementSetup\n{Session.Enforced}");
         }
 
+        private void PowerPreInit()
+        {
+            Entity.Components.TryGet(out Sink);
+            Sink.RemoveType(ref ResourceInfo.ResourceTypeId);
+            ResourceInfo = new MyResourceSinkInfo()
+            {
+                ResourceTypeId = GId,
+                MaxRequiredInput = 0f,
+                RequiredInputFunc = () => _power
+            };
+            Sink.Init(MyStringHash.GetOrCompute("Defense"), ResourceInfo);
+            Sink.AddType(ref ResourceInfo);
+        }
+
         private void PowerInit()
         {
             try
@@ -270,9 +260,25 @@ namespace DefenseShields
 
                 Shield.AppendingCustomInfo += AppendingCustomInfo;
                 Shield.RefreshCustomInfo();
+
+                var enableState = Shield.Enabled;
+                if (enableState)
+                {
+                    Shield.Enabled = false;
+                    Shield.Enabled = true;
+                }
                 if (Session.Enforced.Debug == 1) Log.Line($"PowerInit complete");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
+        }
+
+        private bool BlockReady()
+        {
+            if (Shield.IsWorking) return true;
+            Log.Line($"Block was not ready {_tick}");
+            Shield.Enabled = false;
+            Shield.Enabled = true;
+            return Shield.IsWorking;
         }
         #endregion
     }

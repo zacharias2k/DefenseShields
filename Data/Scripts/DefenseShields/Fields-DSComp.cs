@@ -24,7 +24,7 @@ namespace DefenseShields
         private uint _hierarchyTick = 1;
         public float ImpactSize { get; set; } = 9f;
         public float Absorb { get; set; }
-        private float _power = 0.0001f;
+        private float _power;
         private float _gridMaxPower;
         private float _gridCurrentPower;
         private float _gridAvailablePower;
@@ -49,7 +49,7 @@ namespace DefenseShields
         private int _lCount;
         private int _eCount;
         private int _randomCount = -1;
-        private int _shieldDownLoop = -1;
+        private int _overLoadLoop = -1;
         private int _genericDownLoop = -1;
         private int _reModulationLoop = -1;
         private const int ReModulationCount = 300;
@@ -65,6 +65,7 @@ namespace DefenseShields
         internal bool ControlBlockWorking;
         internal bool MainInit;
         internal bool PhysicsInit;
+        internal bool PowerInited;
         internal bool AllInited;
         internal bool ShieldOffline;
         internal bool CheckGridRegister;
@@ -140,17 +141,17 @@ namespace DefenseShields
         private readonly MyConcurrentQueue<IMyCharacter> _characterDmg = new MyConcurrentQueue<IMyCharacter>();
         private readonly MyConcurrentQueue<MyVoxelBase> _voxelDmg = new MyConcurrentQueue<MyVoxelBase>();
 
-        private static readonly MyStringId _hudIconOffline = MyStringId.GetOrCompute("DS_ShieldOffline");
-        private static readonly MyStringId _hudIconHealth10 = MyStringId.GetOrCompute("DS_ShieldHealth10");
-        private static readonly MyStringId _hudIconHealth20 = MyStringId.GetOrCompute("DS_ShieldHealth20");
-        private static readonly MyStringId _hudIconHealth30 = MyStringId.GetOrCompute("DS_ShieldHealth30");
-        private static readonly MyStringId _hudIconHealth40 = MyStringId.GetOrCompute("DS_ShieldHealth40");
-        private static readonly MyStringId _hudIconHealth50 = MyStringId.GetOrCompute("DS_ShieldHealth50");
-        private static readonly MyStringId _hudIconHealth60 = MyStringId.GetOrCompute("DS_ShieldHealth60");
-        private static readonly MyStringId _hudIconHealth70 = MyStringId.GetOrCompute("DS_ShieldHealth70");
-        private static readonly MyStringId _hudIconHealth80 = MyStringId.GetOrCompute("DS_ShieldHealth80");
-        private static readonly MyStringId _hudIconHealth90 = MyStringId.GetOrCompute("DS_ShieldHealth90");
-        private static readonly MyStringId _hudIconHealth100 = MyStringId.GetOrCompute("DS_ShieldHealth100");
+        private static readonly MyStringId HudIconOffline = MyStringId.GetOrCompute("DS_ShieldOffline");
+        private static readonly MyStringId HudIconHealth10 = MyStringId.GetOrCompute("DS_ShieldHealth10");
+        private static readonly MyStringId HudIconHealth20 = MyStringId.GetOrCompute("DS_ShieldHealth20");
+        private static readonly MyStringId HudIconHealth30 = MyStringId.GetOrCompute("DS_ShieldHealth30");
+        private static readonly MyStringId HudIconHealth40 = MyStringId.GetOrCompute("DS_ShieldHealth40");
+        private static readonly MyStringId HudIconHealth50 = MyStringId.GetOrCompute("DS_ShieldHealth50");
+        private static readonly MyStringId HudIconHealth60 = MyStringId.GetOrCompute("DS_ShieldHealth60");
+        private static readonly MyStringId HudIconHealth70 = MyStringId.GetOrCompute("DS_ShieldHealth70");
+        private static readonly MyStringId HudIconHealth80 = MyStringId.GetOrCompute("DS_ShieldHealth80");
+        private static readonly MyStringId HudIconHealth90 = MyStringId.GetOrCompute("DS_ShieldHealth90");
+        private static readonly MyStringId HudIconHealth100 = MyStringId.GetOrCompute("DS_ShieldHealth100");
 
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;

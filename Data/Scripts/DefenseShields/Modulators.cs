@@ -83,9 +83,9 @@ namespace DefenseShields
                     return;
                 }
                 _hierarchyTick = _tick;
-                var gotGroups = MyAPIGateway.GridGroups.GetGroup(Modulator.CubeGrid, GridLinkTypeEnum.Mechanical);
-                ModulatorComp?.GetSubGrids.Clear();
-                for (int i = 0; i < gotGroups.Count; i++) ModulatorComp?.GetSubGrids.Add(gotGroups[i]);
+                var gotGroups = MyAPIGateway.GridGroups.GetGroup(Modulator?.CubeGrid, GridLinkTypeEnum.Mechanical);
+                ModulatorComp?.GetSubGrids?.Clear();
+                for (int i = 0; i < gotGroups.Count; i++) ModulatorComp?.GetSubGrids?.Add(gotGroups[i]);
             }
             catch (Exception ex) { Log.Line($"Exception in HierarchyChanged: {ex}"); }
         }

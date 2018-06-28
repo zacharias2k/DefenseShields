@@ -52,18 +52,16 @@ namespace DefenseShields
                         ShieldComp.CheckEmitters = true;
                         MyAPIGateway.Parallel.StartBackground(BackGroundChecks);
                         _blocksChanged = false;
-                    } 
+                    }
                 }
 
-                ShieldComp.ShieldActive = ControlBlockWorking && !ShieldOffline;
+                ShieldComp.ShieldActive = ControlBlockWorking && !ShieldOffline && PowerOnline();
                 if (_prevShieldActive == false && ShieldComp.ShieldActive) ShieldComp.ComingOnline = true;
                 else if (ShieldComp.ComingOnline && _prevShieldActive && ShieldComp.ShieldActive) ShieldComp.ComingOnline = false;
                 _prevShieldActive = ShieldComp.ShieldActive;
 
                 Timing();
-                UpdateGridPower();
-                CalculatePowerCharge();
-                SetPower();
+
                 if (_count == 29)
                 {
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
@@ -78,6 +76,7 @@ namespace DefenseShields
                     }
                     _shieldDps = 0f;
                 }
+
                 if (ShieldComp.ShieldActive)
                 {
                     if (_lCount % 2 != 0 && _count == 20)
@@ -154,11 +153,10 @@ namespace DefenseShields
 
         private bool BlockFunctional()
         {
-
             if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
             if (!AllInited || ShieldComp.DefenseShields != this || !WarmUpSequence()) return false;
 
-            if (_shieldDownLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
+            if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
             {
                 FailureConditions();
                 return false;
@@ -172,7 +170,10 @@ namespace DefenseShields
                     RefreshDimensions();
                 }
                 ShieldComp.EmitterEvent = false;
-                if (!ShieldComp.EmittersWorking) _genericDownLoop = 0;
+                if (!ShieldComp.EmittersWorking)
+                {
+                    _genericDownLoop = 0;
+                }
             }
 
             if (!Shield.IsWorking || !Shield.IsFunctional || !ShieldComp.EmittersWorking)
@@ -188,6 +189,99 @@ namespace DefenseShields
             _oldBlockCount = blockCount;
             ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
             return ControlBlockWorking;
+        }
+
+        private void OfflineShield()
+        {
+            ShieldOffline = true;
+            _power = 0f;
+            Sink.Update();
+            _shieldCurrentPower = Sink.CurrentInputByType(GId);
+            UpdateGridPower();
+            if (_genericDownLoop > -1) Log.Line($"generic down - ShieldPower: {_shieldCurrentPower} - gridMax: {_gridMaxPower} - currentPower: {_gridCurrentPower}");
+
+            if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(MatrixD.Zero);
+            ShieldComp.ShieldActive = false;
+            _prevShieldActive = false;
+            _shellPassive.Render.UpdateRenderObject(false);
+            _shellActive.Render.UpdateRenderObject(false);
+            ShieldEnt.Render.Visible = false;
+            ShieldEnt.Render.UpdateRenderObject(false);
+            Absorb = 0;
+            ShieldBuffer = 0;
+            ShieldComp.ShieldPercent = 0f;
+            _shieldChargeRate = 0;
+            _shieldMaxChargeRate = 0;
+            _shieldMaxBuffer = 0;
+            Shield.RefreshCustomInfo();
+            Shield.ShowInToolbarConfig = false;
+            Shield.ShowInToolbarConfig = true;
+
+            CleanUp(0);
+            CleanUp(1);
+            CleanUp(3);
+            CleanUp(4);
+        }
+
+        private void FailureConditions()
+        {
+            if (!ShieldOffline) ShieldComp.CheckEmitters = true;
+
+            if (_overLoadLoop == 0 || _reModulationLoop == 0)
+            {
+                if (!ShieldOffline) OfflineShield();
+                var realPlayerIds = new List<long>();
+                UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
+                foreach (var id in realPlayerIds)
+                {
+                    if (_overLoadLoop == 0) MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 19200, "Red", id);
+                    if (_reModulationLoop == 0) MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield remodulating, restarting in 5 seconds.", 4800, "White", id);
+                }
+
+            }
+            else if (_genericDownLoop == 0 && !ShieldOffline) OfflineShield();
+
+            if (_reModulationLoop > -1)
+            {
+                _reModulationLoop++;
+                if (_reModulationLoop == ReModulationCount)
+                {
+                    ShieldOffline = false;
+                    _reModulationLoop = -1;
+                    return;
+                }
+                return;
+            }
+
+            if (_genericDownLoop > -1)
+            {
+                _genericDownLoop++;
+                if (_genericDownLoop == GenericDownCount)
+                {
+                    if (!ShieldComp.EmittersWorking) _genericDownLoop = 0;
+                    else
+                    {
+                        ShieldOffline = false;
+                        _genericDownLoop = -1;
+                    }
+                    return;
+                }
+                return;
+            }
+
+            _overLoadLoop++;
+            if (_overLoadLoop == ShieldDownCount)
+            {
+                if (!ShieldComp.EmittersWorking) _genericDownLoop = 0;
+                else
+                {
+                    ShieldOffline = false;
+                    _overLoadLoop = -1;
+                }
+                var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
+                var nerfer = nerf ? Session.Enforced.Nerf : 1f;
+                ShieldBuffer = (_shieldMaxBuffer / 25) * nerfer; // replace this with something that scales based on charge rate
+            }
         }
 
         private bool WarmUpSequence()
@@ -346,7 +440,7 @@ namespace DefenseShields
             if (startUp)
             {
                 var gearLocked = MyAPIGateway.GridGroups.GetGroup(myGrid, GridLinkTypeEnum.NoContactDamage);
-                if (gearLocked.Count > 0)
+                if (gearLocked.Count > 1)
                 {
                     Log.Line($"I am locked");
                     foreach (var grid in gearLocked)
@@ -380,97 +474,6 @@ namespace DefenseShields
             return myGridIsSub;
         }
         #endregion
-
-        private void OfflineShield()
-        {
-            ShieldOffline = true;
-            _power = 0.0001f;
-            Sink.Update();
-            _shieldCurrentPower = Sink.CurrentInputByType(GId);
-            UpdateGridPower();
-
-            if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(MatrixD.Zero);
-            ShieldComp.ShieldActive = false;
-            _prevShieldActive = false;
-            _shellPassive.Render.UpdateRenderObject(false);
-            _shellActive.Render.UpdateRenderObject(false);
-            ShieldEnt.Render.Visible = false;
-            ShieldEnt.Render.UpdateRenderObject(false);
-            Absorb = 0;
-            ShieldBuffer = 0;
-            ShieldComp.ShieldPercent = 0f;
-            _shieldChargeRate = 0;
-            _shieldMaxChargeRate = 0;
-            _shieldMaxBuffer = 0;
-            Shield.ShowInToolbarConfig = false;
-            Shield.ShowInToolbarConfig = true;
-
-            CleanUp(0);
-            CleanUp(1);
-            CleanUp(3);
-            CleanUp(4);
-        }
-
-        private void FailureConditions()
-        {
-            if (!ShieldOffline) ShieldComp.CheckEmitters = true;
-
-            if (_shieldDownLoop == 0 || _reModulationLoop == 0)
-            {
-                if (!ShieldOffline) OfflineShield();
-                var realPlayerIds = new List<long>();
-                UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
-                foreach (var id in realPlayerIds)
-                {
-                    if (_shieldDownLoop == 0) MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 19200, "Red", id);
-                    if (_reModulationLoop == 0) MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield remodulating, restarting in 5 seconds.", 4800, "White", id);
-                }
-
-            }
-            else if (_genericDownLoop == 0 && !ShieldOffline) OfflineShield();
-
-            if (_reModulationLoop > -1)
-            {
-                _reModulationLoop++;
-                if (_reModulationLoop == ReModulationCount)
-                {
-                    ShieldOffline = false;
-                    _reModulationLoop = -1;
-                    return;
-                }
-                return;
-            }
-
-            if (_genericDownLoop > -1)
-            {
-                _genericDownLoop++;
-                if (_genericDownLoop == GenericDownCount)
-                {
-                    if (!ShieldComp.EmittersWorking) _genericDownLoop = 0;
-                    else
-                    {
-                        ShieldOffline = false;
-                        _genericDownLoop = -1;
-                    }
-                    return;
-                }
-                return;
-            }
-
-            _shieldDownLoop++;
-            if (_shieldDownLoop == ShieldDownCount)
-            {
-                if (!ShieldComp.EmittersWorking) _genericDownLoop = 0;
-                else
-                {
-                    ShieldOffline = false;
-                    _shieldDownLoop = -1;
-                }
-                var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
-                var nerfer = nerf ? Session.Enforced.Nerf : 1f;
-                ShieldBuffer = (_shieldMaxBuffer / 25) * nerfer; // replace this with something that scales based on charge rate
-            }
-        }
 
         #region Field Check
         private bool FieldShapeBlocked()
@@ -613,13 +616,44 @@ namespace DefenseShields
         #endregion
 
         #region Block Power Logic
+        private bool PowerOnline()
+        {
+            UpdateGridPower();
+            CalculatePowerCharge();
+
+            _power = _shieldConsumptionRate + _gridMaxPower * _shieldMaintaintPower;
+            if (_shieldMaxChargeRate < _shieldMaintaintPower && ShieldBuffer.Equals(0) && _genericDownLoop == -1 || float.IsNaN(_power))
+            {
+                Log.Line($"{_power} - {_shieldMaxChargeRate} - {_shieldMaintaintPower} - {ShieldBuffer}");
+                if (float.IsNaN(_power)) Log.Line($"Power is NaN {float.IsNaN(_power)}");
+                _genericDownLoop = 0;
+                return false;
+            }
+            if (_power < 0) _power = 0f;
+            Sink.Update();
+            _shieldCurrentPower = Sink.CurrentInputByType(GId);
+
+            if (Absorb > 0)
+            {
+                _shieldDps += Absorb;
+                _effectsCleanup = true;
+                ShieldBuffer -= (Absorb / Session.Enforced.Efficiency);
+            }
+            else if (Absorb < 0) ShieldBuffer += (Absorb / Session.Enforced.Efficiency);
+
+            if (ShieldBuffer < 0) _overLoadLoop = 0;
+            else if (ShieldBuffer > _shieldMaxBuffer) ShieldBuffer = _shieldMaxBuffer;
+
+            Absorb = 0f;
+            return _power > 0;
+        }
+
         private void UpdateGridPower()
         {
             _gridMaxPower = 0;
             _gridCurrentPower = 0;
             _gridAvailablePower = 0;
             _shieldMaintaintPower = 0;
-            if (!ShieldComp.ShieldActive) return;
             var eId = MyResourceDistributorComponent.ElectricityId;
             lock (_powerSources)
                 for (int i = 0; i < _powerSources.Count; i++)
@@ -628,10 +662,10 @@ namespace DefenseShields
                     if (!source.HasCapacityRemaining || !source.Enabled || !source.ProductionEnabled || !UseBatteries && source.Group.String.Equals("Battery")) continue;
                     _gridMaxPower += source.MaxOutputByType(eId);
                     _gridCurrentPower += source.CurrentOutputByType(eId);
+                    //if (((IMyFunctionalBlock) source.Entity).CustomData.Equals("test")) c++;
                 }
             _gridAvailablePower = _gridMaxPower - _gridCurrentPower;
             //Log.Line($"{_gridAvailablePower} - {_gridCurrentPower} - {_gridMaxPower}");
-            if (_gridAvailablePower <= 0 && _gridCurrentPower <= 0) Shield.Enabled = false; // this still has a bug where it can force off 
         }
 
         private void CalculatePowerCharge()
@@ -647,12 +681,6 @@ namespace DefenseShields
             _shieldMaintaintPower = shieldMaintainCost;
             var fPercent = (percent / ratio) / 100;
             _sizeScaler = (shieldVol / _ellipsoidSurfaceArea) / 2.40063050674088;
-
-            if (ShieldBuffer > 0 && _shieldCurrentPower < 0.00000000001f) 
-            {
-                if (ShieldBuffer > _gridMaxPower * shieldMaintainCost) ShieldBuffer -= _gridMaxPower * shieldMaintainCost;
-                else ShieldBuffer = 0f;
-            }
 
             _shieldCurrentPower = Sink.CurrentInputByType(GId);
             var otherPower = _gridMaxPower - _gridAvailablePower - _shieldCurrentPower;
@@ -680,7 +708,6 @@ namespace DefenseShields
                     _shieldChargeRate = _shieldMaxBuffer - ShieldBuffer;
                     _shieldConsumptionRate = _shieldChargeRate;
                 }
-                else _shieldMaxChargeRate = 0f;
             }
 
             if (_count != -2)
@@ -690,18 +717,17 @@ namespace DefenseShields
                 else ShieldComp.ShieldPercent = 100f;
             }
 
-            if (_shieldMaxChargeRate < 0.001f)
+            if (_shieldMaxChargeRate < shieldMaintainCost)
             {
+                var shieldLoss = shieldMaintainCost - _shieldMaxChargeRate;
+                Log.Line($"ShieldLoss: {shieldLoss} - old buffer: {ShieldBuffer} - new buffer: {ShieldBuffer - shieldLoss}");
                 _shieldChargeRate = 0f;
                 _shieldConsumptionRate = 0f;
-                if (ShieldBuffer > _shieldMaxBuffer)  ShieldBuffer = _shieldMaxBuffer;
+                if (ShieldBuffer - shieldLoss > 0) ShieldBuffer = ShieldBuffer - shieldLoss;
+                else ShieldBuffer = 0f;
                 return;
             }
-
-            if (ShieldBuffer < _shieldMaxBuffer && _count == 29)
-            {
-                ShieldBuffer += _shieldChargeRate;
-            }
+            if (ShieldBuffer < _shieldMaxBuffer && _count == 29) ShieldBuffer += _shieldChargeRate;
         }
 
         private double PowerCalculation(IMyEntity breaching)
@@ -718,30 +744,6 @@ namespace DefenseShields
             var powerCorrectionInJoules = wattsPerNewton * linearImpulse.Length();
 
             return powerCorrectionInJoules * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
-        }
-
-        private void SetPower()
-        {
-            _power = _shieldConsumptionRate + _gridMaxPower * _shieldMaintaintPower;
-            if (_power <= 0 || float.IsNaN(_power)) _power = 0.0001f; // temporary definitely 100% will fix this to do - Find ThE NaN!
-            Sink.Update();
-
-            _shieldCurrentPower = Sink.CurrentInputByType(GId);
-            if (Absorb > 0)
-            {
-                _shieldDps += Absorb;
-                _effectsCleanup = true;
-                ShieldBuffer -= (Absorb / Session.Enforced.Efficiency);
-            }
-            else if (Absorb < 0) ShieldBuffer += (Absorb / Session.Enforced.Efficiency);
-
-            if (ShieldBuffer < 0)
-            {
-                _shieldDownLoop = 0;
-            }
-            else if (ShieldBuffer > _shieldMaxBuffer) ShieldBuffer = _shieldMaxBuffer;
-
-            Absorb = 0f;
         }
 
         private string ShieldStatus()
@@ -797,17 +799,17 @@ namespace DefenseShields
 
         public static MyStringId GetHudIconFromFloat(float percent)
         {
-            if (percent >= 99) return _hudIconHealth100;
-            if (percent >= 90) return _hudIconHealth90;
-            if (percent >= 80) return _hudIconHealth80;
-            if (percent >= 70) return _hudIconHealth70;
-            if (percent >= 60) return _hudIconHealth60;
-            if (percent >= 50) return _hudIconHealth50;
-            if (percent >= 40) return _hudIconHealth40;
-            if (percent >= 30) return _hudIconHealth30;
-            if (percent >= 20) return _hudIconHealth20;
-            if (percent > 0) return _hudIconHealth10;
-            return _hudIconOffline;
+            if (percent >= 99) return HudIconHealth100;
+            if (percent >= 90) return HudIconHealth90;
+            if (percent >= 80) return HudIconHealth80;
+            if (percent >= 70) return HudIconHealth70;
+            if (percent >= 60) return HudIconHealth60;
+            if (percent >= 50) return HudIconHealth50;
+            if (percent >= 40) return HudIconHealth40;
+            if (percent >= 30) return HudIconHealth30;
+            if (percent >= 20) return HudIconHealth20;
+            if (percent > 0) return HudIconHealth10;
+            return HudIconOffline;
         }
 
         public void DrawShieldDownIcon()
@@ -817,7 +819,8 @@ namespace DefenseShields
             var relation = MyAPIGateway.Session.Player.GetRelationTo(Shield.OwnerId);
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
 
-            if (!enemy && SendToHud && !MyAPIGateway.Session.Config.MinimalHud && Session.HudComp == this) UpdateIcon();
+            var config = MyAPIGateway.Session.Config;
+            if (!enemy && SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible) UpdateIcon();
         }
 
         public void Draw(int onCount, bool sphereOnCamera)
