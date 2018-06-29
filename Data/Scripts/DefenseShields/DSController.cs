@@ -89,6 +89,7 @@ namespace DefenseShields
                         if (ShieldComp.ComingOnline && GridIsMobile && FieldShapeBlocked()) return;
                         if (!ShieldPassiveHide) _shellPassive.Render.UpdateRenderObject(true);
 
+                        _offlineCnt = -1;
                         _shellActive.Render.UpdateRenderObject(true);
                         _shellActive.Render.UpdateRenderObject(false);
                         ShieldEnt.Render.Visible = true;
@@ -193,43 +194,48 @@ namespace DefenseShields
 
         private void OfflineShield()
         {
+            Dsutil5.Sw.Restart();
             ShieldOffline = true;
-            _power = 0f;
-            Sink.Update();
-            _shieldCurrentPower = Sink.CurrentInputByType(GId);
-            UpdateGridPower();
-            if (_genericDownLoop > -1) Log.Line($"generic down - ShieldPower: {_shieldCurrentPower} - gridMax: {_gridMaxPower} - currentPower: {_gridCurrentPower}");
+            _offlineCnt++;
 
-            if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(MatrixD.Zero);
+            if (_offlineCnt == 1 || _offlineCnt % 10 == 0)
+            {
+                if (!_power.Equals(0.0001f)) _power = 0.001f;
+                Sink.Update();
+                _shieldCurrentPower = Sink.CurrentInputByType(GId);
+                BackGroundChecks();
+                if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(MatrixD.Zero);
+
+                ShieldEnt.Render.Visible = false;
+                ShieldEnt.Render.UpdateRenderObject(false);
+
+                CleanUp(0);
+                CleanUp(1);
+                CleanUp(3);
+                CleanUp(4);
+            }
+
+            Absorb = 0f;
+            ShieldBuffer = 0f;
+            ShieldComp.ShieldPercent = 0f;
+            Shield.RefreshCustomInfo();
+            Shield.ShowInToolbarConfig = false;
+            Shield.ShowInToolbarConfig = true;
             ShieldComp.ShieldActive = false;
             _prevShieldActive = false;
             _shellPassive.Render.UpdateRenderObject(false);
             _shellActive.Render.UpdateRenderObject(false);
-            ShieldEnt.Render.Visible = false;
-            ShieldEnt.Render.UpdateRenderObject(false);
-            Absorb = 0;
-            ShieldBuffer = 0;
-            ShieldComp.ShieldPercent = 0f;
-            _shieldChargeRate = 0;
-            _shieldMaxChargeRate = 0;
-            _shieldMaxBuffer = 0;
-            Shield.RefreshCustomInfo();
-            Shield.ShowInToolbarConfig = false;
-            Shield.ShowInToolbarConfig = true;
 
-            CleanUp(0);
-            CleanUp(1);
-            CleanUp(3);
-            CleanUp(4);
+            Dsutil5.StopWatchReport("ShieldOffline", -1);
+            if (Session.Enforced.Debug == 1) Log.Line($"[Generic down] Count: {_offlineCnt} - ShieldPower: {_shieldCurrentPower} - gridMax: {_gridMaxPower} - currentPower: {_gridCurrentPower} - maint: {_shieldMaintaintPower}");
         }
 
         private void FailureConditions()
         {
-            if (!ShieldOffline) ShieldComp.CheckEmitters = true;
-
             if (_overLoadLoop == 0 || _reModulationLoop == 0)
             {
                 if (!ShieldOffline) OfflineShield();
+                ShieldComp.CheckEmitters = true;
                 var realPlayerIds = new List<long>();
                 UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
                 foreach (var id in realPlayerIds)
@@ -622,14 +628,13 @@ namespace DefenseShields
             CalculatePowerCharge();
 
             _power = _shieldConsumptionRate + _gridMaxPower * _shieldMaintaintPower;
-            if (_shieldMaxChargeRate < _shieldMaintaintPower && ShieldBuffer.Equals(0) && _genericDownLoop == -1 || float.IsNaN(_power))
+            if (_shieldConsumptionRate.Equals(0.01f) && ShieldBuffer.Equals(0.01f) && _genericDownLoop == -1)
             {
-                Log.Line($"{_power} - {_shieldMaxChargeRate} - {_shieldMaintaintPower} - {ShieldBuffer}");
-                if (float.IsNaN(_power)) Log.Line($"Power is NaN {float.IsNaN(_power)}");
+                _power = 0.0001f;
                 _genericDownLoop = 0;
                 return false;
             }
-            if (_power < 0) _power = 0f;
+            if (_power < 0.0001f) _power = 0.001f;
             Sink.Update();
             _shieldCurrentPower = Sink.CurrentInputByType(GId);
 
@@ -642,10 +647,9 @@ namespace DefenseShields
             else if (Absorb < 0) ShieldBuffer += (Absorb / Session.Enforced.Efficiency);
 
             if (ShieldBuffer < 0) _overLoadLoop = 0;
-            else if (ShieldBuffer > _shieldMaxBuffer) ShieldBuffer = _shieldMaxBuffer;
 
             Absorb = 0f;
-            return _power > 0;
+            return true;
         }
 
         private void UpdateGridPower()
@@ -653,7 +657,6 @@ namespace DefenseShields
             _gridMaxPower = 0;
             _gridCurrentPower = 0;
             _gridAvailablePower = 0;
-            _shieldMaintaintPower = 0;
             var eId = MyResourceDistributorComponent.ElectricityId;
             lock (_powerSources)
                 for (int i = 0; i < _powerSources.Count; i++)
@@ -680,6 +683,7 @@ namespace DefenseShields
             _shieldMaintaintPower = shieldMaintainCost;
             var fPercent = (percent / ratio) / 100;
             _sizeScaler = (shieldVol / _ellipsoidSurfaceArea) / 2.40063050674088;
+            var bufferScaler = 100 / percent * Session.Enforced.BaseScaler / (float)_sizeScaler * nerfer;
 
             _shieldCurrentPower = Sink.CurrentInputByType(GId);
             var otherPower = _gridMaxPower - _gridAvailablePower - _shieldCurrentPower;
@@ -687,10 +691,10 @@ namespace DefenseShields
             powerForShield = (cleanPower * fPercent);
 
             _shieldMaxChargeRate = powerForShield > 0 ? powerForShield : 0f;
-            _shieldMaxBuffer = ((_gridMaxPower * (100 / percent) * Session.Enforced.BaseScaler) / (float)_sizeScaler) * nerfer;
+            _shieldMaxBuffer = _gridMaxPower * bufferScaler;
             if (_sizeScaler < 1)
             {
-                if (ShieldBuffer + (_shieldMaxChargeRate * nerfer) < _shieldMaxBuffer) _shieldChargeRate = (_shieldMaxChargeRate * nerfer);
+                if (ShieldBuffer + _shieldMaxChargeRate * nerfer < _shieldMaxBuffer) _shieldChargeRate = _shieldMaxChargeRate * nerfer;
                 else if (_shieldMaxBuffer - ShieldBuffer > 0) _shieldChargeRate = _shieldMaxBuffer - ShieldBuffer;
                 else _shieldMaxChargeRate = 0f;
                 _shieldConsumptionRate = _shieldMaxChargeRate;
@@ -716,16 +720,22 @@ namespace DefenseShields
                 else ShieldComp.ShieldPercent = 100f;
             }
 
-            if (_shieldMaxChargeRate < shieldMaintainCost)
+            if (_shieldConsumptionRate < 0.01 || _gridMaxPower * shieldMaintainCost > _gridAvailablePower)
             {
-                var shieldLoss = shieldMaintainCost - _shieldMaxChargeRate;
-                Log.Line($"ShieldLoss: {shieldLoss} - old buffer: {ShieldBuffer} - new buffer: {ShieldBuffer - shieldLoss}");
-                _shieldChargeRate = 0f;
-                _shieldConsumptionRate = 0f;
-                if (ShieldBuffer - shieldLoss > 0) ShieldBuffer = ShieldBuffer - shieldLoss;
-                else ShieldBuffer = 0f;
+                _powerLossLoop++;
+                _shieldConsumptionRate = 0.01f;
+                var shieldLoss = ShieldBuffer * (_powerLossLoop * 0.00016666666f);
+                ShieldBuffer = ShieldBuffer - shieldLoss;
+                if (ShieldBuffer < 0.01f) ShieldBuffer = 0.01f;
+                if (Session.Enforced.Debug == 1) Log.Line($"ShieldLoss: {shieldLoss} - old buffer: {ShieldBuffer} - new buffer: {ShieldBuffer - shieldLoss}");
                 return;
             }
+            _powerLossLoop = 0;
+
+            var change = (ShieldBuffer - _shieldMaxBuffer) / Math.Abs(_shieldMaxBuffer) * 100;
+
+            if (change < 0.5 || change > 0.5) ShieldBuffer = _shieldMaxBuffer;
+
             if (ShieldBuffer < _shieldMaxBuffer && _count == 29) ShieldBuffer += _shieldChargeRate;
         }
 
@@ -747,7 +757,9 @@ namespace DefenseShields
 
         private string ShieldStatus()
         {
-            return ShieldOffline ? "Offline" : "Online";
+            if (ShieldOffline && !_overLoadLoop.Equals(-1)) return "Shield Overloaded";
+            if (ShieldOffline && _power.Equals(0.0001f)) return "Insufficient Power";
+            return ShieldOffline ? "Shield Offline" : "Shield Online";
         }
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
@@ -756,17 +768,28 @@ namespace DefenseShields
             var shieldPercent = ShieldOffline ? 0f : 100f;
             if (ShieldBuffer < _shieldMaxBuffer) shieldPercent = (ShieldBuffer / _shieldMaxBuffer) * 100;
             if (_shieldChargeRate > 0) secToFull = (int) ((_shieldMaxBuffer - ShieldBuffer) / _shieldChargeRate);
-            stringBuilder.Append("[Shield " + ShieldStatus() +"] MaxHP: " + (_shieldMaxBuffer * Session.Enforced.Efficiency).ToString("N0") +
-                                 "\n" +
-                                 "\n[Shield HP__]: " + (ShieldBuffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
-                                 "\n[HP Per Sec_]: " + (_shieldChargeRate * Session.Enforced.Efficiency).ToString("N0") +
-                                 "\n[DPS_______]: " + (_shieldDps).ToString("N0") +
-                                 "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
-                                 "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
-                                 "\n[Efficiency__]: " + Session.Enforced.Efficiency.ToString("0.0") +
-                                 "\n[Maintenance]: " + (_gridMaxPower * _shieldMaintaintPower).ToString("0.0") + " Mw" +
-                                 "\n[Availabile]: " + _gridAvailablePower.ToString("0.0") + " Mw" +
-                                 "\n[Current__]: " + Sink.CurrentInputByType(GId).ToString("0.0"));
+            var status = ShieldStatus();
+            if (status == "Shield Online")
+            {
+                stringBuilder.Append("[" + status + "] MaxHP: " + (_shieldMaxBuffer * Session.Enforced.Efficiency).ToString("N0") +
+                                     "\n" +
+                                     "\n[Shield HP__]: " + (ShieldBuffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
+                                     "\n[HP Per Sec_]: " + (_shieldChargeRate * Session.Enforced.Efficiency).ToString("N0") +
+                                     "\n[DPS_______]: " + (_shieldDps).ToString("N0") +
+                                     "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
+                                     "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
+                                     "\n[Efficiency__]: " + Session.Enforced.Efficiency.ToString("0.0") +
+                                     "\n[Maintenance]: " + (_gridMaxPower * _shieldMaintaintPower).ToString("0.0") + " Mw" +
+                                     "\n[Availabile]: " + _gridAvailablePower.ToString("0.0") + " Mw" +
+                                     "\n[Current__]: " + Sink.CurrentInputByType(GId).ToString("0.0"));
+            }
+            else
+            {
+                stringBuilder.Append("[" + status + "]" +
+                                     "\n" +
+                                     "\n[Maintenance]: " + (_gridMaxPower * _shieldMaintaintPower).ToString("0.000") + " Mw" +
+                                     "\n[Availabile]: " + _gridAvailablePower.ToString("0.000") + " Mw");
+            }
         }
         #endregion
 
@@ -776,7 +799,7 @@ namespace DefenseShields
             var position = new Vector3D(_shieldIconPos.X, _shieldIconPos.Y, 0);
             var fov = MyAPIGateway.Session.Camera.FovWithZoom;
             double aspectratio = MyAPIGateway.Session.Camera.ViewportSize.X / MyAPIGateway.Session.Camera.ViewportSize.Y;
-            var scale = 0.075 * Math.Tan(fov / 2);
+            var scale = 0.075 * Math.Tan(fov * 0.5);
             position.X *= scale * aspectratio;
             position.Y *= scale;
 
@@ -828,7 +851,6 @@ namespace DefenseShields
             var enemy = false;
             var relation = MyAPIGateway.Session.Player.GetRelationTo(Shield.OwnerId);
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
-
             var config = MyAPIGateway.Session.Config;
             var drawIcon = !enemy && SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
             if (drawIcon) UpdateIcon();
@@ -986,7 +1008,7 @@ namespace DefenseShields
                 {
                     return;
                 }
-                _power = 0f;
+                _power = 0.0001f;
                 if (AllInited) Sink.Update();
                 Icosphere = null;
                 ShieldEnt?.Close();
@@ -1007,7 +1029,7 @@ namespace DefenseShields
             try
             {
                 if (Session.Instance.Components.Contains(this)) Session.Instance.Components.Remove(this);
-                _power = 0f;
+                _power = 0.0001f;
                 Icosphere = null;
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
                 if (AllInited) Sink.Update();

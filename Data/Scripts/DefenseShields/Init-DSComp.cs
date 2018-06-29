@@ -105,9 +105,12 @@ namespace DefenseShields
 
                 if (AllInited || !Shield.IsFunctional) return;
 
-                if (ConnectCheck(true)) return;
-
-                if (!HealthCheck()) return;
+                if (!HealthInited)
+                {
+                    if (ConnectCheck(true)) return;
+                    if (!HealthCheck()) return;
+                    HealthInited = true;
+                }
 
                 if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>()) Shield.CubeGrid.Components.Add(ShieldComp);
                 else
@@ -254,7 +257,6 @@ namespace DefenseShields
             try
             {
                 HardDisable = false;
-                _power = 0.0000000001f;
                 _shieldCurrentPower = _power;
                 Sink.Update();
 
