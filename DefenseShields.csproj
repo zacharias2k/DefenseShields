@@ -236,10 +236,10 @@
     <Compile Include="Data\Scripts\DefenseShields\DSController.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Structure\StructureBuilder.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\Triangle3.cs" />
+    <Compile Include="HoldingArea\test.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Audio\" />
-    <Folder Include="HoldingArea\" />
     <Folder Include="Models\" />
     <Folder Include="Textures\GUI\Icons\" />
   </ItemGroup>
