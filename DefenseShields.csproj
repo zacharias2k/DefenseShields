@@ -190,7 +190,7 @@
     <None Include="tools\Monitor SE Log.ps1" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Data\Scripts\DefenseShields\API\dsApi.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Config\API\dsApi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Enforcements.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\DsUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\TerminalHelpers.cs" />
@@ -239,6 +239,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Audio\" />
+    <Folder Include="HoldingArea\" />
     <Folder Include="Models\" />
     <Folder Include="Textures\GUI\Icons\" />
   </ItemGroup>
