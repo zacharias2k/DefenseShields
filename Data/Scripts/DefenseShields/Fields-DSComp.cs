@@ -27,6 +27,8 @@ namespace DefenseShields
         private float _power = 0.001f;
         private float _gridMaxPower;
         private float _gridCurrentPower;
+        private float _powerNeeded;
+        private float _otherPower;
         private float _gridAvailablePower;
         private float _shieldMaxBuffer;
         private float _shieldMaxChargeRate;
@@ -56,7 +58,7 @@ namespace DefenseShields
         private int _reModulationLoop = -1;
         private const int ReModulationCount = 300;
         private const int ShieldDownCount = 1200;
-        private const int GenericDownCount = 180;
+        private const int GenericDownCount = 300;
 
         private int _prevLod;
         private int _onCount;

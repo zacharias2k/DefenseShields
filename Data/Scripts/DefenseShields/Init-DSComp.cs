@@ -103,7 +103,7 @@ namespace DefenseShields
                     return;
                 }
 
-                if (AllInited || !Shield.IsFunctional) return;
+                if (AllInited || !Shield.IsFunctional || _tick < 300) return;
 
                 if (!HealthInited)
                 {

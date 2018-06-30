@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
+using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRageMath;
 
 namespace DefenseShields.Support
@@ -381,6 +383,22 @@ namespace DefenseShields.Support
             Session.Enforced = data;
 
             if (Session.Enforced.Debug == 1) Log.Line($"Writing settings to mod:\n{data}");
+        }
+
+        private static double PowerCalculation(IMyEntity breaching, IMyCubeGrid grid)
+        {
+            var bPhysics = breaching.Physics;
+            var sPhysics = grid.Physics;
+
+            const double wattsPerNewton = (3.36e6 / 288000);
+            var velTarget = sPhysics.GetVelocityAtPoint(breaching.Physics.CenterOfMassWorld);
+            var accelLinear = sPhysics.LinearAcceleration;
+            var velTargetNext = velTarget + accelLinear * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
+            var velModifyNext = bPhysics.LinearVelocity;
+            var linearImpulse = bPhysics.Mass * (velTargetNext - velModifyNext);
+            var powerCorrectionInJoules = wattsPerNewton * linearImpulse.Length();
+
+            return powerCorrectionInJoules * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
         }
     }
 }
