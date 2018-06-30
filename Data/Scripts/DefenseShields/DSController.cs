@@ -324,14 +324,13 @@ namespace DefenseShields
                 return false;
             }
             if (!PowerOnline()) return false;
-
             _hierarchyDelayed = false;
+
             HierarchyChanged();
             UpdateBlockCount();
-
             BackGroundChecks();
-            //UpdateGridPower();
             GetModulationInfo();
+
             ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
             if (Session.Enforced.Debug == 1) Log.Line($"start warmup enforced:\n{Session.Enforced}");
             if (Session.Enforced.Debug == 1) Log.Line($"start warmup buffer:{ShieldBuffer} - BlockWorking:{ControlBlockWorking} - Active:{ShieldComp.ShieldActive}");

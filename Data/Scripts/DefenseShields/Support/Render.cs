@@ -339,7 +339,7 @@ namespace DefenseShields.Support
                         var waveMultiplier = Pi / ChargeSteps;
                         var wavePosition = waveMultiplier * _chargeDrawStep;
                         var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
-                        if (relativeToWavefront < .10) _triColorBuffer[j] = _chargeColor;
+                        if (relativeToWavefront < .05) _triColorBuffer[j] = _chargeColor;
                         else _triColorBuffer[j] = _defaultColor;
                     }
                 }
@@ -348,7 +348,6 @@ namespace DefenseShields.Support
 
             public void Draw(uint renderId)
             {
-                ///_dsutil1.Sw.Start();
                 try
                 {
                     if (ImpactsFinished && !_charge) return;
@@ -380,7 +379,6 @@ namespace DefenseShields.Support
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in IcoSphere Draw - renderId {renderId.ToString()}: {ex}"); }
-                //_dsutil1.StopWatchReport("Draw", -1);
             }
 
             private void ComputeImpacts()
