@@ -537,9 +537,9 @@
     </Definition>
 	
 <!-- Shield Damage (Offensive) Booster -->
-  <Definition xsi:type="MyObjectBuilder_OreDetectorDefinition">
+  <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
-        <TypeId>OreDetector</TypeId>
+        <TypeId>UpgradeModule</TypeId>
         <SubtypeId>LargeDamageEnhancer</SubtypeId>
       </Id>
       <DisplayName>Shield Damage Enhancer</DisplayName>
