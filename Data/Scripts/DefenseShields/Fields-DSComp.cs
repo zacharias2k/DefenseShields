@@ -69,21 +69,23 @@ namespace DefenseShields
         internal bool ControlBlockWorking;
         internal bool MainInit;
         internal bool PhysicsInit;
+        internal bool PrePowerInit;
         internal bool PowerInited;
+        internal bool HadPowerBefore;
         internal bool AllInited;
         internal bool HealthInited;
         internal bool ShieldOffline;
         internal bool CheckGridRegister;
         internal bool WarmedUp;
         internal bool UpdateDimensions;
-        internal bool HardDisable { get; private set; }
+        internal bool FitChanged;
         internal bool GridIsMobile;
+        internal bool HardDisable { get; private set; }
         private bool _blocksChanged;
         private bool _prevShieldActive;
         private bool _effectsCleanup;
         private bool _hideShield;
         private bool _shapeAdjusted;
-        private bool _fitChanged;
         private bool _hierarchyDelayed;
         private bool _entityChanged = true;
         private bool _enablePhysics = true;
@@ -161,7 +163,7 @@ namespace DefenseShields
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;
 
-        internal IMyOreDetector Shield => (IMyOreDetector)Entity;
+        internal IMyUpgradeModule Shield => (IMyUpgradeModule)Entity;
         internal ShieldType ShieldMode;
         internal MyEntity ShieldEnt;
         private MyEntity _shellPassive;

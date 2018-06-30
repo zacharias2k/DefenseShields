@@ -21,7 +21,6 @@ namespace DefenseShields
             ShieldBuffer = newSettings.Buffer;
             ModulateVoxels = newSettings.ModulateVoxels;
             ModulateGrids = newSettings.ModulateGrids;
-
             if (Session.Enforced.Debug == 1) Log.Line($"Updated settings:\n{newSettings}");
         }
     }

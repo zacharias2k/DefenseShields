@@ -202,6 +202,10 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\Controls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Seperator.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\UpdateDsSettings.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\GridComps\O2GeneratorGridComp.cs" />
+    <Compile Include="HoldingArea\HyperSession.cs" />
+    <Compile Include="HoldingArea\Logger.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\O2Generator.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Entweb-DSComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\GridComps\EmitterGridComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\GridComps\ModulatorGridComp.cs" />
@@ -236,7 +240,7 @@
     <Compile Include="Data\Scripts\DefenseShields\DSController.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Structure\StructureBuilder.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\Triangle3.cs" />
-    <Compile Include="HoldingArea\test.cs" />
+    <Compile Include="HoldingArea\HyperComp.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Audio\" />

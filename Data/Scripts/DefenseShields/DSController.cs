@@ -18,7 +18,7 @@ using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
 namespace DefenseShields
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OreDetector), false, "DSControlLarge", "DSControlSmall")]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DSControlLarge", "DSControlSmall")]
     public partial class DefenseShields : MyGameLogicComponent
     {
         #region Simulation
@@ -34,7 +34,7 @@ namespace DefenseShields
                 else _shapeAdjusted = false;
                 if (UpdateDimensions) RefreshDimensions();
 
-                if (_fitChanged || _lCount == 1 && _count == 1 && _blocksChanged) BlockChanged();
+                if (FitChanged || _lCount == 1 && _count == 1 && _blocksChanged) BlockChanged();
 
                 SetShieldStatus();
                 Timing();
@@ -85,6 +85,7 @@ namespace DefenseShields
 
             if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
             {
+                //Log.Line($"fail: {_overLoadLoop} - {_reModulationLoop} - {_genericDownLoop}");
                 FailureConditions();
                 return false;
             }
@@ -102,6 +103,7 @@ namespace DefenseShields
 
             if (!Shield.IsWorking || !Shield.IsFunctional || !ShieldComp.EmittersWorking)
             {
+                //Log.Line($"Block/Emitter not working: {Shield.IsWorking} - {Shield.IsFunctional} - {ShieldComp.EmittersWorking}");
                 _genericDownLoop = 0;
                 return false;
             }
@@ -115,7 +117,7 @@ namespace DefenseShields
         private void BlockChanged()
         {
             _oldEllipsoidAdjust = _ellipsoidAdjust;
-            _fitChanged = false;
+            FitChanged = false;
 
             if (GridIsMobile)
             {
@@ -323,7 +325,9 @@ namespace DefenseShields
                 }
                 return false;
             }
+
             if (!PowerOnline()) return false;
+            HadPowerBefore = true;
             _hierarchyDelayed = false;
 
             HierarchyChanged();
@@ -447,7 +451,7 @@ namespace DefenseShields
 
                 var size = expandedAabb.HalfExtents.Max() * fortify;
                 _gridHalfExtents = new Vector3D(size, size, size);
-                _shieldFudge = (shieldGrid.GridSize * 4 * extend);
+                _shieldFudge = shieldGrid.GridSize * 4 * extend;
             }
             else _gridHalfExtents = expandedAabb.HalfExtents;
         }
@@ -466,8 +470,9 @@ namespace DefenseShields
             UpdateGridPower();
             CalculatePowerCharge();
             _power = _shieldConsumptionRate + _shieldMaintaintPower;
-            if (_shieldConsumptionRate.Equals(0f) && ShieldBuffer.Equals(0.01f) && _genericDownLoop == -1)
+            if (HadPowerBefore && _shieldConsumptionRate.Equals(0f) && ShieldBuffer.Equals(0.01f) && _genericDownLoop == -1)
             {
+                //Log.Line($"power failing: {_shieldConsumptionRate} - {ShieldBuffer}");
                 _power = 0.0001f;
                 _genericDownLoop = 0;
                 return false;
@@ -577,7 +582,7 @@ namespace DefenseShields
                 ShieldBuffer = ShieldBuffer - shieldLoss;
                 if (ShieldBuffer < 0.01f) ShieldBuffer = 0.01f;
 
-                //if (Session.Enforced.Debug == 1) Log.Line($"ShieldLoss: {shieldLoss} - Online: {ShieldComp.ShieldActive} - obuffer:{ShieldBuffer} - nbuffer:{ShieldBuffer - shieldLoss} - rawCharge:{rawMaxChargeRate} - neededPower:{_powerNeeded} - max:{_gridMaxPower} - other:{_otherPower}");
+                //Log.Line($"ShieldLoss: {shieldLoss} - Online: {ShieldComp.ShieldActive} - obuffer:{ShieldBuffer} - nbuffer:{ShieldBuffer - shieldLoss} - rawCharge:{rawMaxChargeRate} - neededPower:{_powerNeeded} - max:{_gridMaxPower} - other:{_otherPower}");
                 _shieldChargeRate = 0f;
                 _shieldConsumptionRate = 0f;
                 return;
@@ -667,7 +672,7 @@ namespace DefenseShields
                 ShieldComp.GridIsMoving = true;
                 if (FortifyShield && Math.Sqrt(ShieldComp.ShieldVelocitySqr) > 15)
                 {
-                    _fitChanged = true;
+                    FitChanged = true;
                     FortifyShield = false;
                 }
             }
