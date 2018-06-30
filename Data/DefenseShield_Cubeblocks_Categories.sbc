@@ -543,7 +543,7 @@
         <SubtypeId>LargeDamageEnhancer</SubtypeId>
       </Id>
       <DisplayName>Shield Damage Enhancer</DisplayName>
-      <Icon>Textures\GUI\Icons\Cubes\DamageEnhancerIcon.dds</Icon>
+      <Icon>Textures\GUI\Icons\DamageEnhancerIcon.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="1" z="1" />
