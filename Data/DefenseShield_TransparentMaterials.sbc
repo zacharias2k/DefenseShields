@@ -451,16 +451,16 @@
         <Y>1</Y>
       </UVSize>
       <Color>
-        <X>.95</X>
-        <Y>.95</Y>
-        <Z>.95</Z>
+        <X>1</X>
+        <Y>.25</Y>
+        <Z>.25</Z>
         <W>1</W>
       </Color>
       <ColorAdd>
-        <X>0</X>
-        <Y>0</Y>
-        <Z>0</Z>
-        <W>0.1</W>
+        <X>1</X>
+        <Y>.20</Y>
+        <Z>.20</Z>
+        <W>1</W>
       </ColorAdd>
       <ShadowMultiplier>
         <X>0</X>
