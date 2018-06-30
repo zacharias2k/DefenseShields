@@ -351,9 +351,11 @@ namespace DefenseShields
             var spawnPos = Emitter.PositionComp.WorldVolume.Center + spawnDir * testDist;
 
             var predictedMatrix = Emitter.PositionComp.WorldMatrix;
+
             predictedMatrix.Translation = spawnPos;
             if (ShieldComp.ShieldVelocitySqr > 4000) predictedMatrix.Translation = spawnPos + Emitter.CubeGrid.Physics.GetVelocityAtPoint(Emitter.PositionComp.WorldMatrix.Translation) * MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS;
             _effect.WorldMatrix = predictedMatrix;
+
         }
 
         private void BlockParticleStop()

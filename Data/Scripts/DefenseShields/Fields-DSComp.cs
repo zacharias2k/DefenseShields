@@ -24,9 +24,11 @@ namespace DefenseShields
         private uint _hierarchyTick = 1;
         public float ImpactSize { get; set; } = 9f;
         public float Absorb { get; set; }
-        private float _power;
+        private float _power = 0.001f;
         private float _gridMaxPower;
         private float _gridCurrentPower;
+        private float _powerNeeded;
+        private float _otherPower;
         private float _gridAvailablePower;
         private float _shieldMaxBuffer;
         private float _shieldMaxChargeRate;
@@ -48,13 +50,15 @@ namespace DefenseShields
         private int _count = -1;
         private int _lCount;
         private int _eCount;
+        private int _powerLossLoop;
         private int _randomCount = -1;
+        private int _offlineCnt = -1;
         private int _overLoadLoop = -1;
         private int _genericDownLoop = -1;
         private int _reModulationLoop = -1;
         private const int ReModulationCount = 300;
         private const int ShieldDownCount = 1200;
-        private const int GenericDownCount = 60;
+        private const int GenericDownCount = 300;
 
         private int _prevLod;
         private int _onCount;
@@ -67,6 +71,7 @@ namespace DefenseShields
         internal bool PhysicsInit;
         internal bool PowerInited;
         internal bool AllInited;
+        internal bool HealthInited;
         internal bool ShieldOffline;
         internal bool CheckGridRegister;
         internal bool WarmedUp;
@@ -88,7 +93,7 @@ namespace DefenseShields
         private const string MyMissile = "MyMissile";
         private const string MyDebrisBase = "MyDebrisBase";
 
-        private Vector2D _shieldIconPos = new Vector2D(-0.89, -0.903);
+        private Vector2D _shieldIconPos = new Vector2D(-0.89, -0.86);
 
         internal Vector3D DetectionCenter;
         internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
