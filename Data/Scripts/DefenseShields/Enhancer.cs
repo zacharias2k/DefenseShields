@@ -26,9 +26,12 @@ public class Enhancers : MyGameLogicComponent
     private MyEntitySubpart _subpartRotor;
 
     private void Damage_IsWorkingChanged(IMyCubeBlock obj) => NeedsUpdate = DamageMod.IsWorking ? MyEntityUpdateEnum.EACH_FRAME : MyEntityUpdateEnum.NONE;
-    
+    private uint _tick;
+
     public override void UpdateBeforeSimulation()
+
     {
+        _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
         if (MyAPIGateway.Utilities.IsDedicated) return;
         BlockMoveAnimation();
     }
@@ -37,7 +40,7 @@ public class Enhancers : MyGameLogicComponent
     {
         if (Session.Enforced.Debug == 1) Log.Line($"Resetting BlockMovement - Tick:{_tick.ToString()}");
         _subpartRotor.Subparts.Clear();
-        Entity.TryGetSubpart("Rotor", out _subpartRotor);
+        Entity.TryGetSubpart("DmgRotor", out _subpartRotor);
     }
 
     private void BlockMoveAnimation()
