@@ -8,26 +8,6 @@ namespace DefenseShields
     internal static class DsUi
     {
         #region Create UI
-        internal static bool ShowControlOreDetectorControls(IMyTerminalBlock block)
-        {
-            return block.BlockDefinition.SubtypeName.Contains("OreDetector");
-        }
-
-        internal static void RemoveOreUi()
-        {
-            var actions = new List<IMyTerminalAction>();
-            MyAPIGateway.TerminalControls.GetActions<Sandbox.ModAPI.Ingame.IMyOreDetector>(out actions);
-            var actionAntenna = actions.First((x) => x.Id.ToString() == "BroadcastUsingAntennas");
-            actionAntenna.Enabled = ShowControlOreDetectorControls;
-
-            var controls = new List<IMyTerminalControl>();
-            MyAPIGateway.TerminalControls.GetControls<Sandbox.ModAPI.Ingame.IMyOreDetector>(out controls);
-            var antennaControl = controls.First((x) => x.Id.ToString() == "BroadcastUsingAntennas");
-            antennaControl.Visible = ShowControlOreDetectorControls;
-            var radiusControl = controls.First((x) => x.Id.ToString() == "Range");
-            radiusControl.Visible = ShowControlOreDetectorControls;
-        }
-
         internal static void CreateUi(IMyTerminalBlock shield)
         {
             Session.Instance.CreateControls(shield);
@@ -80,6 +60,7 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
             comp.ExtendFit = newValue;
+            comp.FitChanged = true;
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();
         }
@@ -95,6 +76,7 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
             comp.SphereFit = newValue;
+            comp.FitChanged = true;
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();
         }
@@ -110,6 +92,7 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
             comp.FortifyShield = newValue;
+            comp.FitChanged = true;
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();
         }
@@ -125,6 +108,7 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
             comp.Width = newValue;
+            comp.FitChanged = true;
             comp.UpdateDimensions = true;
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();
@@ -141,6 +125,7 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
             comp.Height = newValue;
+            comp.FitChanged = true;
             comp.UpdateDimensions = true;
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();
@@ -157,6 +142,7 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
             comp.Depth = newValue;
+            comp.FitChanged = true;
             comp.UpdateDimensions = true;
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();

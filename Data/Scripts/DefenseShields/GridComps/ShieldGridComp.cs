@@ -69,6 +69,8 @@ namespace DefenseShields
 
         public bool EmittersWorking { get; set; } = true;
 
+        public bool O2Working { get; set; }
+
         public bool ShieldActive { get; set; }
 
         public bool CheckEmitters { get; set; }

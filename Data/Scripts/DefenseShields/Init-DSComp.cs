@@ -1,6 +1,7 @@
 ﻿using System;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
+using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
@@ -27,7 +28,6 @@ namespace DefenseShields
         {
             try
             {
-                PowerPreInit();
                 base.Init(objectBuilder);
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
@@ -38,6 +38,7 @@ namespace DefenseShields
                 Session.Instance.Components.Add(this);
 
                 StorageSetup();
+                PowerPreInit();
                 ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
                 if (Session.Enforced.Debug == 1) Log.Line($"pre-Init complete");
             }
@@ -103,7 +104,7 @@ namespace DefenseShields
                     return;
                 }
 
-                if (AllInited || !Shield.IsFunctional || _tick < 300) return;
+                if (AllInited || !Shield.IsFunctional || _tick < 200) return;
 
                 if (!HealthInited)
                 {
@@ -155,7 +156,6 @@ namespace DefenseShields
                 }
 
                 if (AllInited || !PhysicsInit || !MainInit || !Shield.IsFunctional) return;
-
                 if (!BlockReady()) return;
 
                 if (Session.Enforced.Debug == 1) Log.Line($"AnimateInit complete");
@@ -238,18 +238,27 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 1) Log.Line($"ServerEnforcementSetup\n{Session.Enforced}");
         }
 
-        private void PowerPreInit()
+        private bool PowerPreInit()
         {
-            Entity.Components.TryGet(out Sink);
-            Sink.RemoveType(ref ResourceInfo.ResourceTypeId);
-            ResourceInfo = new MyResourceSinkInfo()
+            try
             {
-                ResourceTypeId = GId,
-                MaxRequiredInput = 0f,
-                RequiredInputFunc = () => _power
-            };
-            Sink.Init(MyStringHash.GetOrCompute("Defense"), ResourceInfo);
-            Sink.AddType(ref ResourceInfo);
+                Entity?.Components?.TryGet(out Sink);
+                Sink?.RemoveType(ref ResourceInfo.ResourceTypeId);
+                if (Sink == null)
+                {
+                    Sink = new MyResourceSinkComponent();
+                }
+                ResourceInfo = new MyResourceSinkInfo()
+                {
+                    ResourceTypeId = GId,
+                    MaxRequiredInput = 0f,
+                    RequiredInputFunc = () => _power
+                };
+                Sink.Init(MyStringHash.GetOrCompute("Defense"), ResourceInfo);
+                Sink.AddType(ref ResourceInfo);
+            }
+            catch (Exception ex) { Log.Line($"Exception in PowerPreInit: {ex}"); }
+            return Sink != null;
         }
 
         private void PowerInit()

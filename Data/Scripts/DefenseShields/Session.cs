@@ -86,8 +86,9 @@ namespace DefenseShields
 
         public readonly List<Emitters> Emitters = new List<Emitters>();
         public readonly List<Displays> Displays = new List<Displays>();
-        public readonly List<DefenseShields> Components = new List<DefenseShields>();
+        public readonly List<O2Generators> O2Generators = new List<O2Generators>();
         public readonly List<Modulators> Modulators = new List<Modulators>();
+        public readonly List<DefenseShields> Components = new List<DefenseShields>();
         public readonly List<IMyPlayer> Players = new List<IMyPlayer>();
 
         public static DefenseShieldsEnforcement Enforced = new DefenseShieldsEnforcement();
@@ -682,7 +683,6 @@ namespace DefenseShields
         public void CreateControls(IMyTerminalBlock block)
         {
             if (DSControl) return;
-            DsUi.RemoveOreUi();
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             ChargeSlider = TerminalHelpers.AddSlider(comp?.Shield, "ChargeRate", "Shield Charge Rate", "Shield Charge Rate", DsUi.GetRate, DsUi.SetRate);
             ChargeSlider.SetLimits(20, 95);
