@@ -56,7 +56,7 @@ namespace DefenseShields
                         ShieldEnt.Render.Visible = true;
                         ShieldEnt.Render.UpdateRenderObject(true);
                         SyncThreadedEnts(true);
-                        if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(DetectMatrixOutsideInv);
+                        if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, ShieldComp.O2Level);
                         if (!WarmedUp) 
                         {
                             WarmedUp = true;
@@ -269,7 +269,7 @@ namespace DefenseShields
                 Sink.Update();
                 _shieldCurrentPower = Sink.CurrentInputByType(GId);
                 BackGroundChecks();
-                if (!GridIsMobile) EllipsoidOxyProvider.UpdateMatrix(MatrixD.Zero);
+                if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
 
                 ShieldEnt.Render.Visible = false;
                 ShieldEnt.Render.UpdateRenderObject(false);
@@ -723,6 +723,7 @@ namespace DefenseShields
             }
             ShieldComp.BoundingRange = ShieldSize.AbsMax() + 5f;
             _ellipsoidSurfaceArea = EllipsoidSa.Surface;
+            ShieldComp.ShieldVolume = _detectMatrixOutside.Scale.Volume;
             SetShieldShape();
         }
 
@@ -751,7 +752,7 @@ namespace DefenseShields
             MatrixD matrix;
             if (!GridIsMobile)
             {
-                EllipsoidOxyProvider.UpdateMatrix(DetectMatrixOutsideInv);
+                EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, ShieldComp.O2Level);
                 matrix = _shieldShapeMatrix * ShieldComp.EmitterComp.PrimeComp.Emitter.WorldMatrix;
                 ShieldEnt.PositionComp.SetWorldMatrix(matrix);
                 ShieldEnt.PositionComp.SetPosition(DetectionCenter);
