@@ -15,40 +15,65 @@ using Sandbox.Game;
 using SpaceEngineers.Game;
 using VRage.Game.Entity;
 using VRageMath;
+using DefenseShields.Support;
 
-namespace DefenseShields
+namespace DamageMod
 {
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "LargeDamageEnhancer", "SmallDamageEnhancer")]
-public class Enhancers : MyGameLogicComponent
-{
-    internal int RotationTime;
-    public IMyUpgradeModule DamageMod => (IMyUpgradeModule)Entity;
-    private MyEntitySubpart _subpartRotor;
-
-    private void Damage_IsWorkingChanged(IMyCubeBlock obj) => NeedsUpdate = DamageMod.IsWorking ? MyEntityUpdateEnum.EACH_FRAME : MyEntityUpdateEnum.NONE;
-    private uint _tick;
-
-    public override void UpdateBeforeSimulation()
-
+    public class Enhancers : MyGameLogicComponent
     {
-        _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-        if (MyAPIGateway.Utilities.IsDedicated) return;
-        BlockMoveAnimation();
-    }
+        private uint _tick;
+        internal int RotationTime;
+        internal bool init;
+        public IMyUpgradeModule DamageMod => (IMyUpgradeModule)Entity;
+        private MyEntitySubpart _subpartRotor;
 
-    private void BlockMoveAnimationReset()
-    {
-        if (Session.Enforced.Debug == 1) Log.Line($"Resetting BlockMovement - Tick:{_tick.ToString()}");
-        _subpartRotor.Subparts.Clear();
-        Entity.TryGetSubpart("DmgRotor", out _subpartRotor);
-    }
+        public override void Init(MyObjectBuilder_EntityBase objectBuilder)
+        {
+            try
+            {
+                base.Init(objectBuilder);
+                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+                // Session.Instance.Components.Add(this);
+            }
+            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
+        }
 
-    private void BlockMoveAnimation()
-    {
-        if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
-        RotationTime -= 1;
-        var rotationMatrix = MatrixD.CreateRotationY(0.05f * RotationTime);
-        _subpartRotor.PositionComp.LocalMatrix = rotationMatrix;
+        public override void UpdateBeforeSimulation()
+        {
+            try
+            {
+                if (MyAPIGateway.Utilities.IsDedicated) return;
+                if (!init)
+                {
+                    if (_subpartRotor == null)
+                    {
+                        Entity?.TryGetSubpart("Rotor", out _subpartRotor);
+                        Log.Line($"subpart is null, what is my name?  TELL ME MY NAME!");
+                        return;
+                    }
+                    init = true;
+                }
+                _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+                BlockMoveAnimation();
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
+        }
+
+        private void BlockMoveAnimationReset()
+        {
+            _subpartRotor.Subparts.Clear();
+            Entity.TryGetSubpart("Rotor", out _subpartRotor);
+        }
+
+        private void BlockMoveAnimation()
+        {
+            if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
+            RotationTime -= 1;
+            var rotationMatrix = MatrixD.CreateRotationY(0.05f * RotationTime);
+            _subpartRotor.PositionComp.LocalMatrix = rotationMatrix;
+        }
+
+
     }
-}
 }
