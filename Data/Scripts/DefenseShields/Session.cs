@@ -642,6 +642,7 @@ namespace DefenseShields
                         break;
                     case "DSControlLarge":
                     case "DSControlSmall":
+                    case "DSControlTable":
                         SetCustomDataToShieldFreq(myTerminalControls);
                         break;
                     default:

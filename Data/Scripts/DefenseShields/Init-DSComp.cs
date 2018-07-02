@@ -29,6 +29,7 @@ namespace DefenseShields
             try
             {
                 base.Init(objectBuilder);
+                PowerPreInit();
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
@@ -89,7 +90,6 @@ namespace DefenseShields
                 Session.Instance.Components.Add(this);
                 ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
 
-                PowerPreInit();
                 StorageSetup();
 
                 if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>())
@@ -251,8 +251,6 @@ namespace DefenseShields
         {
             try
             {
-                Entity?.Components?.TryGet(out Sink);
-                Sink?.RemoveType(ref ResourceInfo.ResourceTypeId);
                 if (Sink == null)
                 {
                     Sink = new MyResourceSinkComponent();
@@ -265,6 +263,7 @@ namespace DefenseShields
                 };
                 Sink.Init(MyStringHash.GetOrCompute("Defense"), ResourceInfo);
                 Sink.AddType(ref ResourceInfo);
+                Entity.Components.Add(Sink);
             }
             catch (Exception ex) { Log.Line($"Exception in PowerPreInit: {ex}"); }
         }

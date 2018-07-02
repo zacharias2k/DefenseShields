@@ -18,7 +18,7 @@ using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
 namespace DefenseShields
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DSControlLarge", "DSControlSmall")]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DSControlLarge", "DSControlSmall", "DSControlTable")]
     public partial class DefenseShields : MyGameLogicComponent
     {
         #region Simulation
@@ -288,6 +288,7 @@ namespace DefenseShields
             Absorb = 0f;
             ShieldBuffer = 0f;
             ShieldComp.ShieldPercent = 0f;
+            ShieldComp.IncreaseO2ByFPercent = 0f;
             Shield.RefreshCustomInfo();
             Shield.ShowInToolbarConfig = false;
             Shield.ShowInToolbarConfig = true;
