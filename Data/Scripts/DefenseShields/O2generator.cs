@@ -20,12 +20,12 @@ namespace DefenseShields
     {
         private uint _tick;
         private int _count = -1;
+        private int _airIPercent = -1;
         private int _lCount;
         internal int RotationTime;
         internal int AnimationLoop;
         internal int TranslationTime;
 
-        private float _defaultO2;
         private double _shieldVolFilled;
 
         internal float EmissiveIntensity;
@@ -92,30 +92,37 @@ namespace DefenseShields
             {
                 if (Suspended || Alpha || !AllInited || !ShieldComp.ShieldActive || !BlockIsWorking) return;
 
-                var o2DefaultFPercentToFull = 1 - _defaultO2;
-                var maxShieldVol = ShieldComp.ShieldVolume;
-                var defaultShieldVol = maxShieldVol * _defaultO2;
+                var sc = ShieldComp;
+                var shieldFullVol = sc.ShieldVolume;
 
-                if (defaultShieldVol > _shieldVolFilled) _shieldVolFilled = defaultShieldVol;
-                if (_shieldVolFilled < maxShieldVol)
+                var startingO2Fpercent = sc.DefaultO2 + sc.IncreaseO2ByFPercent;
+                _shieldVolFilled = shieldFullVol * startingO2Fpercent;
+                UpdateAirEmissives(startingO2Fpercent);
+
+                var shieldVolStillEmpty = shieldFullVol - _shieldVolFilled;
+                if (!(shieldVolStillEmpty > 0)) return;
+
+                var amount = _inventory.CurrentVolume.RawValue;
+                if (amount <= 0) return;
+                if (amount - 1000 > 0)
                 {
-                    var amount = _inventory.CurrentVolume.RawValue;
-                    if (amount <= 0) return;
-                    if (amount - 100 > 0)
-                    {
-                        _inventory.RemoveItems(0, 100);
-                        _shieldVolFilled += 100 * 261.333333333;
-                    }
-                    else
-                    {
-                        _inventory.RemoveItems(0, _inventory.CurrentVolume);
-                        _shieldVolFilled += amount * 261.333333333;
-                    }
-                    Log.Line($"ShieldO2Level:{ShieldComp.O2Level} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center)}");
-                    if (_shieldVolFilled > 0) ShieldComp.O2Level = maxShieldVol / _shieldVolFilled;
-                    else ShieldComp.O2Level = 0f;
-                    Log.Line($"ShieldO2Level:{ShieldComp.O2Level} - O2After:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center)}");
+                    _inventory.RemoveItems(0, 1000);
+                    _shieldVolFilled += 1000 * 261.333333333;
                 }
+                else
+                {
+                    _inventory.RemoveItems(0, _inventory.CurrentVolume);
+                    _shieldVolFilled += amount * 261.333333333;
+                }
+                if (_shieldVolFilled > shieldFullVol) _shieldVolFilled = shieldFullVol;
+
+                var shieldVolPercentFull = _shieldVolFilled * 100.0;
+                var fPercentToAddToDefaultO2Level = shieldVolPercentFull / shieldFullVol * 0.01 - sc.DefaultO2;
+
+                sc.IncreaseO2ByFPercent = fPercentToAddToDefaultO2Level;
+                sc.O2Updated = true;
+
+                //Log.Line($"default:{ShieldComp.DefaultO2} - Filled/(Max):{_shieldVolFilled}/({shieldFullVol}) - ShieldO2Level:{sc.IncreaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center)}");
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
@@ -134,12 +141,6 @@ namespace DefenseShields
             if (Alpha || !IsStatic || ShieldComp.DefenseShields == null || !ShieldComp.Warming) return false;
 
             BlockIsWorking = O2Generator.IsWorking;
-            var isPrimed = IsStatic && Prime && BlockIsWorking;
-            var notPrimed = Prime && !BlockIsWorking;
-
-            if (isPrimed) ShieldComp.O2Working = true;
-            else if (notPrimed) ShieldComp.O2Working = false;
-
             BlockWasWorking = BlockIsWorking;
 
             if (!BlockIsWorking)
@@ -181,8 +182,6 @@ namespace DefenseShields
                 Source.Enabled = false;
                 O2Generator.AutoRefill = false;
                 _inventory = O2Generator.GetInventory();
-                _defaultO2 = MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center);
-                ShieldComp.O2Level = _defaultO2;
                 if (!O2Generator.CubeGrid.Components.Has<O2GeneratorGridComponent>())
                 {
                     OGridComp = new O2GeneratorGridComponent(this);
@@ -197,6 +196,8 @@ namespace DefenseShields
                     OGridComp.Comp = this;
                     Prime = true;
                 }
+
+                ResetAirEmissives("");
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
                 OGridComp.RegisteredComps.Add(this);
                 BlockWasWorking = true;
@@ -222,7 +223,6 @@ namespace DefenseShields
             if (!O2Generator.IsFunctional && BlockIsWorking)
             {
                 BlockIsWorking = false;
-                if (ShieldComp != null && IsStatic && this == OGridComp?.Comp) ShieldComp.O2Working = false;
                 return true;
             }
             return !O2Generator.IsFunctional;
@@ -237,7 +237,6 @@ namespace DefenseShields
                 OGridComp = new O2GeneratorGridComponent(this);
                 O2Generator.CubeGrid.Components.Add(OGridComp);
                 _inventory = O2Generator.GetInventory();
-                _defaultO2 = MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center);
                 OGridComp.Comp = this;
                 Prime = true;
                 Alpha = false;
@@ -248,11 +247,44 @@ namespace DefenseShields
                 O2Generator.CubeGrid.Components.TryGet(out OGridComp);
                 if (OGridComp.Comp != null) OGridComp.Comp.Alpha = true;
                 _inventory = O2Generator.GetInventory();
-                _defaultO2 = MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center);
                 OGridComp.Comp = this;
                 Prime = true;
                 Alpha = false;
             }
+            ResetAirEmissives("");
+        }
+
+        private void UpdateAirEmissives(double fPercent)
+        {
+            var tenPercent = fPercent * 10;
+            if (tenPercent < 10 && (int)tenPercent != _airIPercent) _airIPercent = (int)tenPercent;
+            else return;
+            var airString = "Emissive" + _airIPercent;
+            ResetAirEmissives(airString);
+            O2Generator.SetEmissiveParts(airString, UtilsStatic.GetAirEmissiveColorFromDouble(tenPercent * 10), 1f);
+        }
+
+        private void ResetAirEmissives(string airString)
+        {
+            if (airString != "Emissive9") O2Generator.SetEmissiveParts("Emissive9", Color.Transparent, 0f);
+            else return;
+            if (airString != "Emissive8") O2Generator.SetEmissiveParts("Emissive8", Color.Transparent, 0f);
+            else return;
+            if (airString != "Emissive7") O2Generator.SetEmissiveParts("Emissive7", Color.Transparent, 0f);
+            else return;
+            if (airString != "Emissive6") O2Generator.SetEmissiveParts("Emissive6", Color.Transparent, 0f);
+            else return;
+            if (airString != "Emissive5") O2Generator.SetEmissiveParts("Emissive5", Color.Transparent, 0f);
+            else return;
+            if (airString != "Emissive4") O2Generator.SetEmissiveParts("Emissive4", Color.Transparent, 0f);
+            else return;
+            if (airString != "Emissive3") O2Generator.SetEmissiveParts("Emissive3", Color.Transparent, 0f);
+            else return;
+            if (airString != "Emissive2") O2Generator.SetEmissiveParts("Emissive2", Color.Transparent, 0f);
+            else return;
+            if (airString != "Emissive1") O2Generator.SetEmissiveParts("Emissive1", Color.Transparent, 0f);
+            else return;
+            if (airString != "Emissive0") O2Generator.SetEmissiveParts("Emissive0", Color.Transparent, 0f);
         }
 
         #region Block Animation

@@ -32,22 +32,9 @@ namespace DefenseShields
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
-
-                if (!_shields.ContainsKey(Entity.EntityId)) _shields.Add(Entity.EntityId, this);
-                MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
-                Session.Instance.Components.Add(this);
-
-                StorageSetup();
-                PowerPreInit();
-                ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
                 if (Session.Enforced.Debug == 1) Log.Line($"pre-Init complete");
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
-        }
-
-        public DefenseShields()
-        {
-            ShieldComp = new ShieldGridComponent(this);
         }
 
         private void HierarchyChanged(IMyCubeGrid myCubeGrid = null)
@@ -92,6 +79,41 @@ namespace DefenseShields
             }
         }
 
+        public override void UpdateOnceBeforeFrame()
+        {
+            base.UpdateOnceBeforeFrame();
+            try
+            {
+                _shields.Add(Entity.EntityId, this);
+                MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
+                Session.Instance.Components.Add(this);
+                ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
+
+                PowerPreInit();
+                StorageSetup();
+
+                if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>())
+                {
+                    Shield.CubeGrid.Components.Add(ShieldComp);
+                    ShieldComp.DefaultO2 = MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(Shield.PositionComp.WorldVolume.Center);
+                }
+                else
+                {
+                    Shield.CubeGrid.Components.TryGet(out ShieldComp);
+                    ShieldComp.BoundingRange = 0f;
+                    WarmedUp = false;
+                    ShieldComp.Warming = false;
+                    ShieldComp.Starting = false;
+                    ShieldComp.ShieldActive = false;
+                    ShieldComp.ModulationPassword = null;
+                    ShieldComp.ComingOnline = false;
+                    ShieldComp.DefenseShields = this;
+                }
+                if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
+        }
+
         public override void UpdateAfterSimulation100()
         {
             try
@@ -112,22 +134,6 @@ namespace DefenseShields
                     if (!HealthCheck()) return;
                     HealthInited = true;
                 }
-
-                if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>()) Shield.CubeGrid.Components.Add(ShieldComp);
-                else
-                {
-                    Shield.CubeGrid.Components.TryGet(out ShieldComp);
-                    ShieldComp.BoundingRange = 0f;
-                    WarmedUp = false;
-                    ShieldComp.Warming = false;
-                    ShieldComp.Starting = false;
-                    ShieldComp.ShieldActive = false;
-                    ShieldComp.ModulationPassword = null;
-                    ShieldComp.ComingOnline = false;
-                    ShieldComp.DefenseShields = this;
-                }
-
-                if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
 
                 if (!MainInit && Shield.IsFunctional)
                 {
@@ -212,8 +218,11 @@ namespace DefenseShields
         {
             Storage = Shield.Storage;
             DsSet = new DefenseShieldsSettings(Shield);
+            ShieldComp = new ShieldGridComponent(this, DsSet);
             DsSet.LoadSettings();
-            UpdateSettings(DsSet.Settings);
+            //Log.Line($"{DsSet.Settings.IncreaseO2ByFPercent} - {DsSet.Settings.Buffer} - {ShieldComp.IncreaseO2ByFPercent} - {ShieldBuffer}");
+            //UpdateSettings(DsSet.Settings);
+            Log.Line($"DsSet.IO2FP:{DsSet.Settings.IncreaseO2ByFPercent} - DsSet.Buffer:{DsSet.Settings.Buffer} - DsSet.ShieldActive {DsSet.Settings.ShieldActive} - IO2FP:{ShieldComp.IncreaseO2ByFPercent} - Buffer:{ShieldBuffer} - ShieldActive {ShieldComp.ShieldActive}");
             if (Session.Enforced.Debug == 1) Log.Line($"StorageSetup complete");
         }
 
@@ -238,7 +247,7 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 1) Log.Line($"ServerEnforcementSetup\n{Session.Enforced}");
         }
 
-        private bool PowerPreInit()
+        private void PowerPreInit()
         {
             try
             {
@@ -258,7 +267,6 @@ namespace DefenseShields
                 Sink.AddType(ref ResourceInfo);
             }
             catch (Exception ex) { Log.Line($"Exception in PowerPreInit: {ex}"); }
-            return Sink != null;
         }
 
         private void PowerInit()

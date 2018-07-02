@@ -129,7 +129,7 @@ namespace DefenseShields
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
-                    if (!s.AllInited) continue;
+                    if (!s.WarmedUp) continue;
                     var sp = new BoundingSphereD(s.DetectionCenter, s.ShieldComp.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {

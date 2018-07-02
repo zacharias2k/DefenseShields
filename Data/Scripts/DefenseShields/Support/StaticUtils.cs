@@ -99,6 +99,20 @@ namespace DefenseShields.Support
             return Red3;
         }
 
+        public static Color GetAirEmissiveColorFromDouble(double percent)
+        {
+            if (percent > 90) return Color.Green;
+            if (percent > 80) return Color.Green;
+            if (percent > 70) return Color.Yellow;
+            if (percent > 60) return Color.Yellow;
+            if (percent > 50) return Color.Yellow;
+            if (percent > 40) return Color.Yellow;
+            if (percent > 30) return Color.Yellow;
+            if (percent > 20) return Color.Yellow;
+            if (percent > 10) return Color.Red;
+            return Color.Red;
+        }
+
         public static long ThereCanBeOnlyOne(IMyCubeBlock shield)
         {
             if (Session.Enforced.Debug == 1) Log.Line($"ThereCanBeOnlyOne start");
