@@ -17,6 +17,7 @@
 		<string>DSControlLCD</string>
 		<string>DSControlLarge</string>
 		<string>DSControlSmall</string>
+		<string>DS_Control_Block</string>
 		<string>EmitterL</string>
 		<string>EmitterS</string>
     <string>EmitterP</string>
@@ -70,6 +71,64 @@
           <MinAllowed>0.01</MinAllowed>
         </DynamicMode>
       </VoxelPlacement>
+      <BlockPairName>DS_Control_Table</BlockPairName>
+      <MirroringZ>Y</MirroringZ>
+      <EdgeType>Light</EdgeType>
+      <BuildTimeSeconds>3</BuildTimeSeconds>
+      <DamageEffectName>Damage_Electrical_Damaged</DamageEffectName>
+      <DamagedSound>ParticleElectrical</DamagedSound>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
+      <RequiredPowerInput>0.00002</RequiredPowerInput>
+      <DestroyEffect>BlockDestroyedExplosion_Small</DestroyEffect>
+      <DestroySound>WepSmallWarheadExpl</DestroySound>
+    </Definition>
+	
+	  <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
+      <Id>
+        <TypeId>UpgradeModule</TypeId>
+        <SubtypeId>DSControlBlock</SubtypeId>
+      </Id>
+      <DisplayName>Shield Controller Block</DisplayName>
+      <Icon>Textures\Icons\DS_Control_Block.dds</Icon>
+      <CubeSize>Large</CubeSize>
+      <GuiVisible>true</GuiVisible>
+      <BlockTopology>TriangleMesh</BlockTopology>
+      <Size x="1" y="1" z="1" />
+      <ModelOffset x="0" y="0" z="0" />
+      <Model>Models\DS_Control_Block.mwm</Model>
+      <Components>
+        <Component Subtype="InteriorPlate" Count="1" />
+        <Component Subtype="Construction" Count="4" />
+        <Component Subtype="Computer" Count="4" />
+        <Component Subtype="Display" Count="3" />
+      </Components>
+      <CriticalComponent Subtype="Computer" Index="0" />
+	<MountPoints>
+		<MountPoint Side="Front" StartX="0.00" StartY="0.00" EndX="1.00" EndY="0.50" />
+		<MountPoint Side="Back" StartX="0.00" StartY="0.00" EndX="1.00" EndY="0.50" />
+		<MountPoint Side="Left" StartX="0.00" StartY="0.00" EndX="1.00" EndY="0.50" />
+		<MountPoint Side="Right" StartX="0.00" StartY="0.00" EndX="1.00" EndY="0.50" />
+		<MountPoint Side="Bottom" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Top" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+	</MountPoints>
+	    <BuildProgressModels>
+		<Model BuildPercentUpperBound="0.33" File="Models\DS_Control_Block_Constr1.mwm" />
+		<Model BuildPercentUpperBound="0.67" File="Models\DS_Control_Block_Constr2.mwm" />
+		<Model BuildPercentUpperBound="1.00" File="Models\DS_Control_Block_Constr3.mwm" />
+	</BuildProgressModels>
+      <VoxelPlacement>
+        <!--Possible settings Both,InVoxel,OutsideVoxel,Volumetric. If volumetric set than MaxAllowed and MinAllowed will be used.-->
+        <StaticMode>
+          <PlacementMode>OutsideVoxel</PlacementMode>
+          <MaxAllowed>0.4</MaxAllowed>
+          <MinAllowed>0</MinAllowed>
+        </StaticMode>
+        <DynamicMode>
+          <PlacementMode>OutsideVoxel</PlacementMode>
+          <MaxAllowed>0.4</MaxAllowed>
+          <MinAllowed>0.01</MinAllowed>
+        </DynamicMode>
+      </VoxelPlacement>
       <BlockPairName>DS_Control</BlockPairName>
       <MirroringZ>Y</MirroringZ>
       <EdgeType>Light</EdgeType>
@@ -82,13 +141,14 @@
       <DestroySound>WepSmallWarheadExpl</DestroySound>
     </Definition>
 	
+	
 		<Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
         <TypeId>UpgradeModule</TypeId>
         <SubtypeId>DSControlSmall</SubtypeId>
       </Id>
       <DisplayName>Shield Controller Compact</DisplayName>
-      <Icon>Textures\Icons\DS_Control.dds</Icon>
+      <Icon>Textures\Icons\DS_Control_Block.dds</Icon>
       <CubeSize>Small</CubeSize>
       <GuiVisible>true</GuiVisible>
       <BlockTopology>TriangleMesh</BlockTopology>
