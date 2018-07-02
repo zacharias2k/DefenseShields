@@ -4,7 +4,6 @@ using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
-using SpaceEngineers.Game.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
@@ -27,6 +26,7 @@ namespace DefenseShields
         internal int TranslationTime;
 
         private double _shieldVolFilled;
+        private double _oldShieldVol;
 
         internal float EmissiveIntensity;
 
@@ -94,8 +94,21 @@ namespace DefenseShields
 
                 var sc = ShieldComp;
                 var shieldFullVol = sc.ShieldVolume;
-
                 var startingO2Fpercent = sc.DefaultO2 + sc.IncreaseO2ByFPercent;
+
+                if (shieldFullVol < _oldShieldVol)
+                {
+                    var ratio = _oldShieldVol / shieldFullVol;
+                    if (startingO2Fpercent * ratio > 1) startingO2Fpercent = 1d;
+                    else startingO2Fpercent = startingO2Fpercent * ratio;
+                }
+                else if (shieldFullVol > _oldShieldVol)
+                {
+                    var ratio = _oldShieldVol / shieldFullVol;
+                    startingO2Fpercent = startingO2Fpercent * ratio;
+                }
+                _oldShieldVol = shieldFullVol;
+
                 _shieldVolFilled = shieldFullVol * startingO2Fpercent;
                 UpdateAirEmissives(startingO2Fpercent);
 
@@ -104,10 +117,10 @@ namespace DefenseShields
 
                 var amount = _inventory.CurrentVolume.RawValue;
                 if (amount <= 0) return;
-                if (amount - 1000 > 0)
+                if (amount - 10000 > 0)
                 {
-                    _inventory.RemoveItems(0, 1000);
-                    _shieldVolFilled += 1000 * 261.333333333;
+                    _inventory.RemoveItems(0, 10000);
+                    _shieldVolFilled += 10000 * 261.333333333;
                 }
                 else
                 {
@@ -122,7 +135,7 @@ namespace DefenseShields
                 sc.IncreaseO2ByFPercent = fPercentToAddToDefaultO2Level;
                 sc.O2Updated = true;
 
-                //Log.Line($"default:{ShieldComp.DefaultO2} - Filled/(Max):{_shieldVolFilled}/({shieldFullVol}) - ShieldO2Level:{sc.IncreaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center)}");
+                Log.Line($"default:{ShieldComp.DefaultO2} - Filled/(Max):{_shieldVolFilled}/({shieldFullVol}) - ShieldO2Level:{sc.IncreaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center)}");
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
@@ -177,7 +190,7 @@ namespace DefenseShields
             {
                 O2Generator.CubeGrid.Components.TryGet(out ShieldComp);
                 Source = O2Generator.Components.Get<MyResourceSourceComponent>();
-                if (ShieldComp == null || Source == null || !ShieldComp.Starting) return false;
+                if (ShieldComp == null || Source == null || !ShieldComp.Starting || ShieldComp.ShieldVolume <= 0) return false;
 
                 Source.Enabled = false;
                 O2Generator.AutoRefill = false;
@@ -197,7 +210,8 @@ namespace DefenseShields
                     Prime = true;
                 }
 
-                ResetAirEmissives("");
+                _oldShieldVol = ShieldComp.ShieldVolume;
+                ResetAirEmissives(-1);
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
                 OGridComp.RegisteredComps.Add(this);
                 BlockWasWorking = true;
@@ -251,40 +265,32 @@ namespace DefenseShields
                 Prime = true;
                 Alpha = false;
             }
-            ResetAirEmissives("");
+            _oldShieldVol = ShieldComp.ShieldVolume;
+            ResetAirEmissives(-1);
         }
 
         private void UpdateAirEmissives(double fPercent)
         {
             var tenPercent = fPercent * 10;
-            if (tenPercent < 10 && (int)tenPercent != _airIPercent) _airIPercent = (int)tenPercent;
+            if ((int)tenPercent != _airIPercent) _airIPercent = (int)tenPercent;
             else return;
-            var airString = "Emissive" + _airIPercent;
-            ResetAirEmissives(airString);
-            O2Generator.SetEmissiveParts(airString, UtilsStatic.GetAirEmissiveColorFromDouble(tenPercent * 10), 1f);
+            if (tenPercent > 9) tenPercent = 9;
+            ResetAirEmissives(tenPercent);
         }
 
-        private void ResetAirEmissives(string airString)
+        private void ResetAirEmissives(double tenPercent)
         {
-            if (airString != "Emissive9") O2Generator.SetEmissiveParts("Emissive9", Color.Transparent, 0f);
-            else return;
-            if (airString != "Emissive8") O2Generator.SetEmissiveParts("Emissive8", Color.Transparent, 0f);
-            else return;
-            if (airString != "Emissive7") O2Generator.SetEmissiveParts("Emissive7", Color.Transparent, 0f);
-            else return;
-            if (airString != "Emissive6") O2Generator.SetEmissiveParts("Emissive6", Color.Transparent, 0f);
-            else return;
-            if (airString != "Emissive5") O2Generator.SetEmissiveParts("Emissive5", Color.Transparent, 0f);
-            else return;
-            if (airString != "Emissive4") O2Generator.SetEmissiveParts("Emissive4", Color.Transparent, 0f);
-            else return;
-            if (airString != "Emissive3") O2Generator.SetEmissiveParts("Emissive3", Color.Transparent, 0f);
-            else return;
-            if (airString != "Emissive2") O2Generator.SetEmissiveParts("Emissive2", Color.Transparent, 0f);
-            else return;
-            if (airString != "Emissive1") O2Generator.SetEmissiveParts("Emissive1", Color.Transparent, 0f);
-            else return;
-            if (airString != "Emissive0") O2Generator.SetEmissiveParts("Emissive0", Color.Transparent, 0f);
+            for (int i = 0; i < 10; i++)
+            {
+                if (tenPercent < 0 || i > tenPercent)
+                {
+                    O2Generator.SetEmissiveParts("Emissive" + i, Color.Transparent, 0f);
+                }
+                else
+                {
+                    O2Generator.SetEmissiveParts("Emissive" + i, UtilsStatic.GetAirEmissiveColorFromDouble(i * 10), 1f);
+                }
+            }
         }
 
         #region Block Animation
