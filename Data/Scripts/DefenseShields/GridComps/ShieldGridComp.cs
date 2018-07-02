@@ -87,6 +87,10 @@ namespace DefenseShields
 
         public float ShieldPercent { get; set; }
 
+        public double ShieldVolume { get; set; }
+
+        public double O2Level { get; set; } = 0.1;
+
         public double BoundingRange { get; set; }
 
         public double ShieldVelocitySqr { get; set; }

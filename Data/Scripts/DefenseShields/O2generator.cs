@@ -1,18 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using DefenseShields.Support;
-using Sandbox.Common.ObjectBuilders.Definitions;
+using Sandbox.Common.ObjectBuilders;
+using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
+using SpaceEngineers.Game.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
+using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRageMath;
 
 namespace DefenseShields
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OxygenGeneratorDefinition), false, "DSSupergen")]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OxygenGenerator), false, "DSSupergen")]
     public class O2Generators : MyGameLogicComponent
     {
         private uint _tick;
@@ -21,6 +24,9 @@ namespace DefenseShields
         internal int RotationTime;
         internal int AnimationLoop;
         internal int TranslationTime;
+
+        private float _defaultO2;
+        private double _shieldVolFilled;
 
         internal float EmissiveIntensity;
 
@@ -40,13 +46,14 @@ namespace DefenseShields
         public MyModStorageComponentBase Storage { get; set; }
         internal ShieldGridComponent ShieldComp;
         internal O2GeneratorGridComponent OGridComp;
-
+        internal MyResourceSourceComponent Source;
         private MyEntitySubpart _subpartRotor;
         private MyParticleEffect _effect = new MyParticleEffect();
 
         internal DSUtils Dsutil1 = new DSUtils();
 
-        public IMyRefinery O2Generator => (IMyRefinery)Entity;
+        public IMyGasGenerator O2Generator => (IMyGasGenerator)Entity;
+        private IMyInventory _inventory;
 
         private readonly Dictionary<long, O2Generators> _o2Generator = new Dictionary<long, O2Generators>();
 
@@ -54,36 +61,64 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
                 IsStatic = O2Generator.CubeGrid.Physics.IsStatic;
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-
-                if (Suspend() || StoppedWorking() || !AllInited && !InitEmitter()) return;
+                if (Suspend() || StoppedWorking() || !AllInited && !InitO2Generator()) return;
                 if (Prime && OGridComp?.Comp == null) MasterElection();
                 Timing();
 
                 if (!BlockWorking()) return;
 
-                if (ShieldComp.ShieldActive && !Session.DedicatedServer && UtilsStatic.ShieldDistanceCheck(O2Generator, 1000, ShieldComp.BoundingRange))
+                if (ShieldComp.ShieldActive && BlockIsWorking)
                 {
-                    if (ShieldComp.GridIsMoving) BlockParticleUpdate();
-
                     var blockCam = O2Generator.PositionComp.WorldVolume;
                     var onCam = MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam);
-                    if (onCam)
+                    if (!Session.DedicatedServer && onCam && UtilsStatic.ShieldDistanceCheck(O2Generator, 1000, ShieldComp.BoundingRange))
                     {
-                        if (_effect == null && ShieldComp.ShieldPercent <= 97) BlockParticleStart();
-                        else if (_effect != null && ShieldComp.ShieldPercent > 97f) BlockParticleStop();
+                        //if (_effect == null && ShieldComp.ShieldPercent <= 97) BlockParticleStart();
+                        //else if (_effect != null && ShieldComp.ShieldPercent > 97f) BlockParticleStop();
 
-                        BlockMoveAnimation();
+                        //BlockMoveAnimation();
                     }
                 }
                 else if (_effect != null && !Session.DedicatedServer) BlockParticleStop();
-                if (Session.Enforced.Debug == 1) Dsutil1.StopWatchReport($"Emitter", 4);
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
 
+        public override void UpdateAfterSimulation100()
+        {
+            try
+            {
+                if (Suspended || Alpha || !AllInited || !ShieldComp.ShieldActive || !BlockIsWorking) return;
+
+                var o2DefaultFPercentToFull = 1 - _defaultO2;
+                var maxShieldVol = ShieldComp.ShieldVolume;
+                var defaultShieldVol = maxShieldVol * _defaultO2;
+
+                if (defaultShieldVol > _shieldVolFilled) _shieldVolFilled = defaultShieldVol;
+                if (_shieldVolFilled < maxShieldVol)
+                {
+                    var amount = _inventory.CurrentVolume.RawValue;
+                    if (amount <= 0) return;
+                    if (amount - 100 > 0)
+                    {
+                        _inventory.RemoveItems(0, 100);
+                        _shieldVolFilled += 100 * 261.333333333;
+                    }
+                    else
+                    {
+                        _inventory.RemoveItems(0, _inventory.CurrentVolume);
+                        _shieldVolFilled += amount * 261.333333333;
+                    }
+                    Log.Line($"ShieldO2Level:{ShieldComp.O2Level} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center)}");
+                    if (_shieldVolFilled > 0) ShieldComp.O2Level = maxShieldVol / _shieldVolFilled;
+                    else ShieldComp.O2Level = 0f;
+                    Log.Line($"ShieldO2Level:{ShieldComp.O2Level} - O2After:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center)}");
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
+        }
         private void Timing()
         {
             if (_count++ == 59)
@@ -109,7 +144,7 @@ namespace DefenseShields
 
             if (!BlockIsWorking)
             {
-                if (_effect != null && !Session.DedicatedServer) BlockParticleStop();
+                //if (_effect != null && !Session.DedicatedServer) BlockParticleStop();
                 return false;
             }
             return true;
@@ -120,11 +155,12 @@ namespace DefenseShields
             try
             {
                 base.Init(objectBuilder);
+                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-
+                NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
                 Session.Instance.O2Generators.Add(this);
                 if (!_o2Generator.ContainsKey(Entity.EntityId)) _o2Generator.Add(Entity.EntityId, this);
-                StorageSetup();
+                //StorageSetup();
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -134,14 +170,20 @@ namespace DefenseShields
             Storage = O2Generator.Storage;
         }
 
-        private bool InitEmitter()
+        private bool InitO2Generator()
         {
             if (!AllInited)
             {
                 O2Generator.CubeGrid.Components.TryGet(out ShieldComp);
-                if (ShieldComp == null || !ShieldComp.Starting) return false;
+                Source = O2Generator.Components.Get<MyResourceSourceComponent>();
+                if (ShieldComp == null || Source == null || !ShieldComp.Starting) return false;
 
-                if (!O2Generator.CubeGrid.Components.Has<EmitterGridComponent>())
+                Source.Enabled = false;
+                O2Generator.AutoRefill = false;
+                _inventory = O2Generator.GetInventory();
+                _defaultO2 = MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center);
+                ShieldComp.O2Level = _defaultO2;
+                if (!O2Generator.CubeGrid.Components.Has<O2GeneratorGridComponent>())
                 {
                     OGridComp = new O2GeneratorGridComponent(this);
                     O2Generator.CubeGrid.Components.Add(OGridComp);
@@ -157,7 +199,6 @@ namespace DefenseShields
                 }
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
                 OGridComp.RegisteredComps.Add(this);
-                ShieldComp.EmitterEvent = true;
                 BlockWasWorking = true;
                 AllInited = true;
                 return !Suspend();
@@ -181,7 +222,7 @@ namespace DefenseShields
             if (!O2Generator.IsFunctional && BlockIsWorking)
             {
                 BlockIsWorking = false;
-                if (ShieldComp != null && IsStatic && this == OGridComp?.Comp) ShieldComp.EmittersWorking = false;
+                if (ShieldComp != null && IsStatic && this == OGridComp?.Comp) ShieldComp.O2Working = false;
                 return true;
             }
             return !O2Generator.IsFunctional;
@@ -189,14 +230,15 @@ namespace DefenseShields
 
         private void MasterElection()
         {
-            var hasEComp = O2Generator.CubeGrid.Components.Has<EmitterGridComponent>();
-            if (!hasEComp)
+            var hasOComp = O2Generator.CubeGrid.Components.Has<O2GeneratorGridComponent>();
+            if (!hasOComp)
             {
                 if (!IsStatic) return;
                 OGridComp = new O2GeneratorGridComponent(this);
                 O2Generator.CubeGrid.Components.Add(OGridComp);
+                _inventory = O2Generator.GetInventory();
+                _defaultO2 = MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center);
                 OGridComp.Comp = this;
-                ShieldComp.EmitterEvent = true;
                 Prime = true;
                 Alpha = false;
             }
@@ -205,8 +247,9 @@ namespace DefenseShields
                 if (!IsStatic) return;
                 O2Generator.CubeGrid.Components.TryGet(out OGridComp);
                 if (OGridComp.Comp != null) OGridComp.Comp.Alpha = true;
+                _inventory = O2Generator.GetInventory();
+                _defaultO2 = MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center);
                 OGridComp.Comp = this;
-                ShieldComp.EmitterEvent = true;
                 Prime = true;
                 Alpha = false;
             }
