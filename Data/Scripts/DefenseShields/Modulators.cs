@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using DefenseShields.Control;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
@@ -39,6 +40,8 @@ namespace DefenseShields
         private IMyUpgradeModule Modulator => (IMyUpgradeModule)Entity;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule> _modulateVoxels;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule> _modulateGrids;
+        private RangeSlider<Sandbox.ModAPI.Ingame.IMyUpgradeModule> _modulateDamage;
+
 
         internal DSUtils Dsutil1 = new DSUtils();
 
@@ -61,6 +64,7 @@ namespace DefenseShields
                 CreateUi();
                 StorageSetup();
                 ((MyCubeGrid)Modulator.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
+                Modulator.AppendingCustomInfo += AppendingCustomInfo;
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -95,6 +99,14 @@ namespace DefenseShields
             _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
             Timing();
 
+            if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
+            {
+                SyncControlsClient();
+                Modulator.RefreshCustomInfo();
+                Modulator.ShowInToolbarConfig = false;
+                Modulator.ShowInToolbarConfig = true;
+            }
+
             if (!MainInit)
             {
                 Modulator.CubeGrid.Components.TryGet(out ShieldComp);
@@ -112,6 +124,8 @@ namespace DefenseShields
         {
             if (!MainInit) return;
             _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+
+            Modulator.RefreshCustomInfo();
 
             if (ServerUpdate) SyncMisc();
             SyncControlsClient();
@@ -148,6 +162,7 @@ namespace DefenseShields
             Session.Instance.ModulatorControlsLoaded = true;
             _modulateVoxels = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Modulator, "AllowVoxels", "Voxels may pass", true);
             _modulateGrids = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Modulator, "AllowGrids", "Grids may pass", false);
+            _modulateDamage = new RangeSlider<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Modulator, "ModulateDamage", "Energy <-Modulate Damage-> Kinetic", 20, 180, 100);
         }
         #endregion
 
@@ -158,26 +173,13 @@ namespace DefenseShields
             set { Settings.Enabled = value; }
         }
 
-        public bool ModulateVoxels
-        {
-            get { return Settings.ModulateVoxels; }
-            set { Settings.ModulateVoxels = value; }
-        }
-
-        public bool ModulateGrids
-        {
-            get { return Settings.ModulateGrids; }
-            set { Settings.ModulateGrids = value; }
-        }
-
         public void UpdateSettings(ModulatorSettings newSettings, bool localOnly = true)
         {
             Enabled = newSettings.Enabled;
             ModulatorComp.Enabled = newSettings.Enabled;
-            ModulateVoxels = newSettings.ModulateVoxels;
             ModulatorComp.Voxels = newSettings.ModulateVoxels;
-            ModulateGrids = newSettings.ModulateGrids;
             ModulatorComp.Grids = newSettings.ModulateGrids;
+            ModulatorComp.Damage = newSettings.ModulateDamage;
             if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings for modulator");
         }
 
@@ -241,6 +243,12 @@ namespace DefenseShields
                 ModulatorComp.Grids = Settings.ModulateGrids;
             }
 
+            if (_modulateDamage != null && !_modulateDamage.Getter(Modulator).Equals(Settings.ModulateDamage))
+            {
+                _modulateDamage.Setter(Modulator, Settings.ModulateDamage);
+                ModulatorComp.Damage = Settings.ModulateDamage;
+            }
+
             ServerUpdate = false;
             SaveSettings();
             if (Session.Enforced.Debug == 1) Log.Line($"SyncMisc (modulator)");
@@ -250,16 +258,16 @@ namespace DefenseShields
         {
             var needsSync = false;
             if (!Enabled.Equals(Enabled) 
-                || !_modulateVoxels.Getter(Modulator).Equals(ModulateVoxels)
-                || !_modulateGrids.Getter(Modulator).Equals(ModulateGrids))
+                || !_modulateVoxels.Getter(Modulator).Equals(ModulatorComp.Voxels)
+                || !_modulateGrids.Getter(Modulator).Equals(ModulatorComp.Grids)
+                || !_modulateDamage.Getter(Modulator).Equals(ModulatorComp.Damage))
             {
                 needsSync = true;
                 Enabled = Settings.Enabled;
                 ModulatorComp.Enabled = Settings.Enabled;
-                ModulateVoxels = _modulateVoxels.Getter(Modulator);
                 ModulatorComp.Voxels = _modulateVoxels.Getter(Modulator);
-                ModulateGrids = _modulateGrids.Getter(Modulator);
                 ModulatorComp.Grids = _modulateGrids.Getter(Modulator);
+                ModulatorComp.Damage = _modulateDamage.Getter(Modulator);
             }
 
             if (needsSync)
@@ -270,6 +278,27 @@ namespace DefenseShields
             }
         }
         #endregion
+
+        private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
+        {
+            if (ModulatorComp.Damage < 100)
+            {
+                ModulatorComp.Energy = _modulateDamage.Max + 20 - ModulatorComp.Damage;
+                ModulatorComp.Kinetic = ModulatorComp.Damage;
+            }
+            else if (ModulatorComp.Damage > 100)
+            {
+                ModulatorComp.Kinetic = _modulateDamage.Max + 20 - ModulatorComp.Damage;
+                ModulatorComp.Energy = ModulatorComp.Damage;
+            }
+            else
+            {
+                ModulatorComp.Kinetic = ModulatorComp.Damage;
+                ModulatorComp.Energy = ModulatorComp.Damage;
+            }
+            stringBuilder.Append("\n[Energy Protection_]: " + ModulatorComp.Energy.ToString("0") + "%" +
+                                 "\n[Kinetic Protection]: " + ModulatorComp.Kinetic.ToString("0") + "%");
+        }
 
         #region Network
         private void NetworkUpdate()

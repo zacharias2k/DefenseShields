@@ -103,7 +103,6 @@ namespace DefenseShields
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_SETTINGS, PacketSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_ENFORCE, PacketEnforcementReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_MODULATOR, ModulatorSettingsReceived);
-                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_DISPLAY, DisplaySettingsReceived);
                 MyAPIGateway.Utilities.RegisterMessageHandler(WORKSHOP_ID, ModMessageHandler);
                 if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter += CustomControls;
 
@@ -232,6 +231,18 @@ namespace DefenseShields
                         }
 
                         if (shield.DeformEnabled) continue;
+                        if (info.Type == MyDamageType.Deformation) info.Amount = 0f;
+
+                        if (info.Type == MyDamageType.Bullet)
+                        {
+                            Log.Line($"kinetic: {info.Amount} - {info.Amount * shield.ModulateKinetic} - {shield.ModulateKinetic}");
+                            info.Amount = info.Amount * shield.ModulateKinetic;
+                        }
+                        else
+                        {
+                            Log.Line($"energy: {info.Amount} - {info.Amount * shield.ModulateEnergy} - {shield.ModulateEnergy}");
+                            info.Amount = info.Amount * shield.ModulateEnergy;
+                        }
 
                         if (hostileEnt != null && shield.Absorb < 1 && shield.BulletCoolDown == -1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity)
                         {
@@ -396,63 +407,6 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in PacketEnforcementReceived: {ex}"); }
         }
 
-        private static void DisplaySettingsReceived(byte[] bytes)
-        {
-            try
-            {
-                if (bytes.Length <= 2)
-                {
-                    Log.Line($"PacketReceived(); invalid length <= 2; length={bytes.Length.ToString()}");
-                    return;
-                }
-
-                var data = MyAPIGateway.Utilities.SerializeFromBinary<DisplayData>(bytes); // this will throw errors on invalid data
-
-                if (data == null)
-                {
-                    Log.Line($"PacketReceived(); no deserialized data!");
-                    return;
-                }
-
-                IMyEntity ent;
-                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
-                {
-                    Log.Line($"PacketReceived(); {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
-                    return;
-                }
-
-                var logic = ent.GameLogic.GetAs<Displays>();
-
-                if (logic == null)
-                {
-                    Log.Line($"PacketReceived(); {data.Type}; display doesn't have the gamelogic component!");
-                    return;
-                }
-
-                switch (data.Type)
-                {
-                    case PacketType.DISPLAY:
-                        {
-                            if (data.Settings == null)
-                            {
-                                Log.Line($"PacketReceived(); {data.Type}; settings are null!");
-                                return;
-                            }
-
-                            if (Enforced.Debug == 1) Log.Line($"Packet received:\n{data.Settings}");
-                            logic.UpdateSettings(data.Settings);
-                            logic.SaveSettings();
-                            logic.ServerUpdate = true;
-
-                            if (IsServer)
-                                DisplaySettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
-                        }
-                        break;
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in DisplaySettingsReceived: {ex}"); }
-        }
-
         private static void ModulatorSettingsReceived(byte[] bytes)
         {
             try
@@ -517,13 +471,6 @@ namespace DefenseShields
             MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_ENFORCE, bytes, senderId);
         }
 
-        public static void PacketizeDisplaySettings(IMyCubeBlock block, DisplaySettings settings)
-        {
-            var data = new DisplayData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            DisplaySettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
-        }
-
         public static void PacketizeModulatorSettings(IMyCubeBlock block, ModulatorSettings settings)
         {
             var data = new ModulatorData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
@@ -555,27 +502,6 @@ namespace DefenseShields
 
                 if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
                     MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_SETTINGS, bytes, p.SteamUserId);
-            }
-            players.Clear();
-        }
-
-        public static void DisplaySettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
-        {
-            var localSteamId = MyAPIGateway.Multiplayer.MyId;
-            var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
-            distSq += 1000; // some safety padding, avoid desync
-            distSq *= distSq;
-
-            var players = Instance.Players;
-            players.Clear();
-            MyAPIGateway.Players.GetPlayers(players);
-
-            foreach (var p in players)
-            {
-                var id = p.SteamUserId;
-
-                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
-                    MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_DISPLAY, bytes, p.SteamUserId);
             }
             players.Clear();
         }
