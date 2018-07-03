@@ -12,6 +12,9 @@ namespace DefenseShields
         public bool Enabled;
         public bool Voxels;
         public bool Grids;
+        public float Damage;
+        public float Energy;
+        public float Kinetic;
 
 
         public ModulatorGridComponent(Modulators modulators)
@@ -83,6 +86,24 @@ namespace DefenseShields
         {
             get { return Grids; }
             set { Grids = value; }
+        }
+
+        public float ModulateDamage
+        {
+            get { return Damage; }
+            set { Damage = value; }
+        }
+
+        public float ModulateEnergy
+        {
+            get { return Energy; }
+            set { Energy = value; }
+        }
+
+        public float ModulateKinetic
+        {
+            get { return Kinetic; }
+            set { Kinetic = value; }
         }
 
         public override string ComponentTypeDebugString

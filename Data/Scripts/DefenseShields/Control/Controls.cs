@@ -37,7 +37,7 @@ namespace DefenseShields.Control
             string title,
             float min = 50.0f,
             float max = 300.0f,
-            float standard = 10.0f)
+            int standard = 10)
             : base(block, internalName, title, min, max, standard)
         {
         }
@@ -47,8 +47,8 @@ namespace DefenseShields.Control
             try
             {
                 builder.Clear();
-                var distanceString = Getter(block).ToString("0") + "m";
-                builder.Append(distanceString);
+                //var distanceString = Getter(block).ToString("0");
+                //builder.Append(distanceString);
                 block.RefreshCustomInfo();
             }
             catch (Exception ex)

@@ -146,46 +146,14 @@ namespace DefenseShields
         [ProtoMember(3)]
         public bool ModulateGrids = false;
 
+        [ProtoMember(4), DefaultValue(-1)]
+        public int ModulateDamage = -1;
+
         public override string ToString()
         {
-            return $"Enabled = {Enabled}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}";
+            return $"Enabled = {Enabled}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nModulateDamage = {ModulateDamage}";
         }
     }
-
-    [ProtoContract]
-    public class DisplayData
-    {
-        [ProtoMember(1)]
-        public PacketType Type = PacketType.DISPLAY;
-
-        [ProtoMember(2)]
-        public long EntityId = 0;
-
-        [ProtoMember(3)]
-        public ulong Sender = 0;
-
-        [ProtoMember(4)]
-        public DisplaySettings Settings = null;
-
-        public DisplayData() { } // empty ctor is required for deserialization
-
-        public DisplayData(ulong sender, long entityId, DisplaySettings settings)
-        {
-            Type = PacketType.DISPLAY;
-            Sender = sender;
-            EntityId = entityId;
-            Settings = settings;
-        }
-
-        public DisplayData(ulong sender, long entityId, PacketType action)
-        {
-            Type = action;
-            Sender = sender;
-            EntityId = entityId;
-            Settings = null;
-        }
-    }
-
 
     [ProtoContract]
     public class PacketData
@@ -293,6 +261,5 @@ namespace DefenseShields
         SETTINGS,
         ENFORCE,
         MODULATOR,
-        DISPLAY
     }
 }
