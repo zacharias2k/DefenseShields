@@ -70,11 +70,19 @@ namespace DefenseShields
         [ProtoMember(15)]
         public bool UseBatteries = true;
 
+        [ProtoMember(16), DefaultValue(-1)]
+        public double IncreaseO2ByFPercent = 0f;
+
+        [ProtoMember(17)]
+        public bool ShieldActive = false;
+
         public override string ToString()
         {
             return $"Enabled = {Enabled}\nIdleVisible = {PassiveInvisible}\nActiveVisible = {ActiveInvisible}\nWidth = {Math.Round(Width, 4)}" +
                    $"\nHeight = {Math.Round(Height, 4)}\nDepth = {Math.Round(Depth, 4)}\nRate = {Math.Round(Rate, 4)}" +
-                   $"\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nExtendFit = {ExtendFit}\nSphereFit = {SphereFit}\nFortifyShield = {FortifyShield}\nSendToHud = {SendToHud}\nUseBatteries = {UseBatteries}";
+                   $"\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nExtendFit = {ExtendFit}\nSphereFit = {SphereFit}" +
+                   $"\nFortifyShield = {FortifyShield}\nSendToHud = {SendToHud}\nUseBatteries = {UseBatteries}\nIncreaseO2ByFPercent = {Math.Round(IncreaseO2ByFPercent, 4)}" +
+                   $"\nShieldActive = {ShieldActive}";
         }
     }
 

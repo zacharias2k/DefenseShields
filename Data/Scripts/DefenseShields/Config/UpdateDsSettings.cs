@@ -19,6 +19,9 @@ namespace DefenseShields
             UseBatteries = newSettings.UseBatteries;
             SendToHud = newSettings.SendToHud;
             ShieldBuffer = newSettings.Buffer;
+            ShieldComp.IncreaseO2ByFPercent = newSettings.IncreaseO2ByFPercent;
+            ShieldComp.ShieldActive = newSettings.ShieldActive;
+
             ModulateVoxels = newSettings.ModulateVoxels;
             ModulateGrids = newSettings.ModulateGrids;
             if (Session.Enforced.Debug == 1) Log.Line($"Updated settings:\n{newSettings}");

@@ -15,9 +15,9 @@
 		<string>SmallShieldModulator</string>
     <string>LargeShieldModulator</string>
 		<string>DSControlLCD</string>
-		<string>DSControlLarge</string>
+		<string>DSControlTable</string>
 		<string>DSControlSmall</string>
-		<string>DS_Control_Block</string>
+		<string>DSControlLarge</string>
 		<string>EmitterL</string>
 		<string>EmitterS</string>
     <string>EmitterP</string>
@@ -33,7 +33,7 @@
   <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
         <TypeId>UpgradeModule</TypeId>
-        <SubtypeId>DSControlLarge</SubtypeId>
+        <SubtypeId>DSControlTable</SubtypeId>
       </Id>
       <DisplayName>Shield Controller Table</DisplayName>
       <Icon>Textures\Icons\DS_Control.dds</Icon>
@@ -86,7 +86,7 @@
 	  <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
         <TypeId>UpgradeModule</TypeId>
-        <SubtypeId>DSControlBlock</SubtypeId>
+        <SubtypeId>DSControlLarge</SubtypeId>
       </Id>
       <DisplayName>Shield Controller Block</DisplayName>
       <Icon>Textures\Icons\DS_Control_Block.dds</Icon>

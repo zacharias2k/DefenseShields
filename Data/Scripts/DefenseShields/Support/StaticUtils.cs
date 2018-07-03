@@ -99,6 +99,13 @@ namespace DefenseShields.Support
             return Red3;
         }
 
+        public static Color GetAirEmissiveColorFromDouble(double percent)
+        {
+            if (percent >= 80) return Color.Green;
+            if (percent > 10) return Color.Yellow;
+            return Color.Red;
+        }
+
         public static long ThereCanBeOnlyOne(IMyCubeBlock shield)
         {
             if (Session.Enforced.Debug == 1) Log.Line($"ThereCanBeOnlyOne start");
@@ -107,7 +114,7 @@ namespace DefenseShields.Support
             {
                 if (block == null) continue;
 
-                if (block.BlockDefinition.BlockPairName == "DS_Control" || block.BlockDefinition.BlockPairName == "DS_STControl")
+                if (block.BlockDefinition.BlockPairName == "DS_Control" || block.BlockDefinition.BlockPairName == "DS_Control_Table")
                 {
                     if (block.IsWorking) return block.EntityId;
                     shieldBlocks.Add(block);

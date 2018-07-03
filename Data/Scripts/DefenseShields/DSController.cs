@@ -18,7 +18,7 @@ using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
 namespace DefenseShields
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DSControlLarge", "DSControlSmall")]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DSControlLarge", "DSControlSmall", "DSControlTable")]
     public partial class DefenseShields : MyGameLogicComponent
     {
         #region Simulation
@@ -56,7 +56,6 @@ namespace DefenseShields
                         ShieldEnt.Render.Visible = true;
                         ShieldEnt.Render.UpdateRenderObject(true);
                         SyncThreadedEnts(true);
-                        if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, ShieldComp.O2Level);
                         if (!WarmedUp) 
                         {
                             WarmedUp = true;
@@ -80,9 +79,9 @@ namespace DefenseShields
 
         private bool BlockFunctional()
         {
+            if (!AllInited) return false;
             if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
-            if (!AllInited || ShieldComp.DefenseShields != this || !WarmUpSequence()) return false;
-
+            if (ShieldComp.DefenseShields != this || !WarmUpSequence()) return false;
             if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
             {
                 //Log.Line($"fail: {_overLoadLoop} - {_reModulationLoop} - {_genericDownLoop}");
@@ -142,6 +141,12 @@ namespace DefenseShields
             else if (ShieldComp.ComingOnline && _prevShieldActive && ShieldComp.ShieldActive) ShieldComp.ComingOnline = false;
 
             _prevShieldActive = ShieldComp.ShieldActive;
+
+            if (!GridIsMobile && (ShieldComp.ComingOnline || ShieldComp.O2Updated))
+            {
+                EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, ShieldComp.IncreaseO2ByFPercent);
+                ShieldComp.O2Updated = false;
+            }
         }
 
         private void Timing()
@@ -283,6 +288,7 @@ namespace DefenseShields
             Absorb = 0f;
             ShieldBuffer = 0f;
             ShieldComp.ShieldPercent = 0f;
+            ShieldComp.IncreaseO2ByFPercent = 0f;
             Shield.RefreshCustomInfo();
             Shield.ShowInToolbarConfig = false;
             Shield.ShowInToolbarConfig = true;
@@ -752,7 +758,7 @@ namespace DefenseShields
             MatrixD matrix;
             if (!GridIsMobile)
             {
-                EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, ShieldComp.O2Level);
+                //EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, ShieldComp.IncreaseO2ByFPercent);
                 matrix = _shieldShapeMatrix * ShieldComp.EmitterComp.PrimeComp.Emitter.WorldMatrix;
                 ShieldEnt.PositionComp.SetWorldMatrix(matrix);
                 ShieldEnt.PositionComp.SetPosition(DetectionCenter);
