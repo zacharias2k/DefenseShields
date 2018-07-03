@@ -653,5 +653,46 @@
       <PhysicalMaterial>Metal</PhysicalMaterial>
       <EmissiveColorPreset>Default</EmissiveColorPreset>
     </Definition>
+  <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
+      <Id>
+        <TypeId>UpgradeModule</TypeId>
+        <SubtypeId>SmallDamageEnhancer</SubtypeId>
+      </Id>
+      <DisplayName>Shield Damage Enhancer</DisplayName>
+      <Icon>Textures\GUI\Icons\Cubes\DamageEnhancerIcon.dds</Icon>
+      <CubeSize>Small</CubeSize>
+      <BlockTopology>TriangleMesh</BlockTopology>
+      <Size x="1" y="1" z="1" />
+      <ModelOffset x="0" y="0" z="0" />
+      <Model>Models\Cubes\DamageEnhancerSmall.mwm</Model>
+      <Components>
+        <Component Subtype="Girder" Count="2" />
+        <Component Subtype="BulletproofGlass" Count="2" />
+        <Component Subtype="MetalGrid" Count="1" />
+        <Component Subtype="Construction" Count="2" />
+		<Component Subtype="Motor" Count="1" />
+        <Component Subtype="InteriorPlate" Count="1" />
+		<Component Subtype="Superconductor" Count="2" />
+        <Component Subtype="Detector" Count="2" />
+        <Component Subtype="RadioCommunication" Count="2" />
+        <Component Subtype="Computer" Count="3" />
+        <Component Subtype="SteelPlate" Count="1" />
+      </Components>
+      <CriticalComponent Subtype="Computer" Index="0" />
+      <BuildProgressModels>
+        <Model BuildPercentUpperBound="1.00" File="Models\Cubes\DamageEnhancerSmall_Constr1.mwm" />
+      </BuildProgressModels>
+      <BlockPairName>ShieldDmgEnhance</BlockPairName>
+      <EdgeType>Light</EdgeType>
+      <BuildTimeSeconds>20</BuildTimeSeconds>
+      <MountPoints>
+        <MountPoint Side="Bottom" StartX="0.0" StartY="0.0" EndX="1.0" EndY="1.0" PropertiesMask="2" />
+      </MountPoints>
+      <IsAirTight>false</IsAirTight>
+      <MirroringZ>Y</MirroringZ>
+      <MirroringY>Z</MirroringY>
+      <PhysicalMaterial>Metal</PhysicalMaterial>
+      <EmissiveColorPreset>Default</EmissiveColorPreset>
+    </Definition>
   </CubeBlocks> 
 </Definitions>
