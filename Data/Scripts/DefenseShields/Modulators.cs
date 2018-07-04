@@ -70,9 +70,13 @@ namespace DefenseShields
             base.UpdateOnceBeforeFrame();
             try
             {
-                Modulator.CubeGrid.Components.Add(ModulatorComp);
+                if (!Modulator.CubeGrid.Components.Has<ModulatorGridComponent>())
+                    Modulator.CubeGrid.Components.Add(ModulatorComp);
+                else Modulator.CubeGrid.Components.TryGet(out ModulatorComp);
+                Modulator.CubeGrid.Components.TryGet(out ShieldComp);
+                ShieldComp?.DefenseShields?.GetModulationInfo();
                 Session.Instance.Modulators.Add(this);
-                if (!_modulators.ContainsKey(Entity.EntityId)) _modulators.Add(Entity.EntityId, this);
+                _modulators.Add(Entity.EntityId, this);
                 CreateUi();
                 StorageSetup();
                 ((MyCubeGrid)Modulator.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
@@ -86,7 +90,7 @@ namespace DefenseShields
         {
             Storage = Modulator.Storage;
             LoadSettings();
-            UpdateSettings(Settings, false);
+            //UpdateSettings(Settings, false);
         }
 
         private void HierarchyChanged(IMyCubeGrid myCubeGrid = null)
@@ -126,16 +130,6 @@ namespace DefenseShields
                     Modulator.ShowInToolbarConfig = false;
                     Modulator.ShowInToolbarConfig = true;
                 }
-
-                if (!MainInit)
-                {
-                    Modulator.CubeGrid.Components.TryGet(out ShieldComp);
-                    if (ShieldComp == null) return;
-                    SyncControlsClient();
-                    ShieldComp.DefenseShields?.GetModulationInfo();
-                    MainInit = true;
-                    if (Session.Enforced.Debug == 1) Log.Line($"Modulator initted");
-                }
                 if (ShieldComp?.GetSubGrids != null && !ShieldComp.GetSubGrids.Equals(ModulatorComp.GetSubGrids))
                     ModulatorComp.GetSubGrids = ShieldComp.GetSubGrids;
             }
@@ -146,13 +140,14 @@ namespace DefenseShields
         {
             try
             {
-                if (!MainInit) return;
+                if (ShieldComp == null) Modulator.CubeGrid.Components.TryGet(out ShieldComp);
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
 
-                Modulator.RefreshCustomInfo();
 
                 if (ServerUpdate) SyncMisc();
                 SyncControlsClient();
+                Modulator.RefreshCustomInfo();
+
                 if (Modulator.CustomData != ModulatorComp.ModulationPassword)
                 {
                     ModulatorComp.ModulationPassword = Modulator.CustomData;
@@ -183,8 +178,6 @@ namespace DefenseShields
         #region Create UI
         private void CreateUi()
         {
-            if (Session.Instance.ModulatorControlsLoaded) return;
-            //if (Session.Instance.ModulatorControlsLoaded) return; // fix get existing controls
             _modulateVoxels = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Modulator, "AllowVoxels", "Voxels may pass", true);
             _modulateGrids = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Modulator, "AllowGrids", "Grids may pass", false);
             _modulateDamage = new RangeSlider<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Modulator, "ModulateDamage", "Energy <-Modulate Damage-> Kinetic", 20, 180, 100);
@@ -281,6 +274,7 @@ namespace DefenseShields
 
         private void SyncControlsClient()
         {
+            Log.Line($"{_modulateVoxels == null} - {_modulateGrids == null} - {_modulateDamage == null} - {ModulatorComp == null}");
             var needsSync = false;
             if (!Enabled.Equals(Enabled) 
                 || !_modulateVoxels.Getter(Modulator).Equals(ModulatorComp.Voxels)
