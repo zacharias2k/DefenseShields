@@ -42,7 +42,7 @@ namespace DefenseShields
             entInfo.ContactPoint = Vector3D.NegativeInfinity;
             if (contactpoint != Vector3D.NegativeInfinity)
             {
-                Absorb += entInfo.Damage;
+                Absorb += (entInfo.Damage * ModulateKinetic);
                 ImpactSize += entInfo.Damage;
 
                 entInfo.Damage = 0;
@@ -112,7 +112,7 @@ namespace DefenseShields
             var bDamage = (bPhysics.Mass * bPhysics.LinearVelocity).Length();
             var sDamage = (sPhysics.Mass * sPhysics.LinearVelocity).Length();
             damage = bDamage < sDamage ? bDamage : sDamage;
-            Absorb += damage / 1000;
+            Absorb += (damage / 1000) * ModulateEnergy;
         }
 
         private void VoxelIntersect(MyVoxelBase voxelBase)
@@ -125,7 +125,7 @@ namespace DefenseShields
             {
                 var sPhysics = Shield.CubeGrid.Physics;
                 var momentum = sPhysics.Mass * sPhysics.LinearVelocity;
-                Absorb += momentum.Length() / 500;
+                Absorb += (momentum.Length() / 500) * ModulateKinetic;
                 WorldImpactPosition = collision;
                 _voxelDmg.Enqueue(voxelBase);
             }
@@ -245,7 +245,7 @@ namespace DefenseShields
                         bBlockCenter = collisionAvg;
                     }
                     entInfo.Damage = damage;
-                    Absorb += damage;
+                    Absorb += (damage) * ModulateKinetic;
                     if (bBlockCenter != Vector3D.NegativeInfinity) entInfo.ContactPoint = bBlockCenter;
                     //if (_count == 58) Log.Line($"[status] obb: true - blocks:{cacheBlockList.Count.ToString()} - sphered:{c1.ToString()} [{c5.ToString()}] - IsDestroyed:{c6.ToString()} not:[{c2.ToString()}] - bCenter Inside Ellipsoid:{c3.ToString()} - Damaged:{c4.ToString()}");
                 }

@@ -982,13 +982,17 @@ namespace DefenseShields
             Shield.CubeGrid.Components.TryGet(out modComp);
             if (modComp != null)
             {
-                var reModulate = ModulateVoxels != modComp.ModulateVoxels || ModulateGrids != modComp.ModulateGrids || !ModulateEnergy.Equals(modComp.ModulateEnergy) || !ModulateKinetic.Equals(modComp.ModulateKinetic);
+                var reModulate = ModulateVoxels != modComp.ModulateVoxels || ModulateGrids != modComp.ModulateGrids;
                 if (reModulate) _reModulationLoop = 0;
 
                 ModulateVoxels = modComp.ModulateVoxels;
                 ModulateGrids = modComp.ModulateGrids;
-                ModulateEnergy = modComp.ModulateEnergy;
-                ModulateKinetic = modComp.ModulateKinetic;
+
+                var energyDamage = modComp.KineticProtection * 0.01f;
+                var kineticDamage = modComp.EnergyProtection * 0.01f;
+
+                ModulateEnergy = energyDamage;
+                ModulateKinetic = kineticDamage;
             }
             else
             {

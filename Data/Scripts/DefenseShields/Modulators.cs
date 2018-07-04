@@ -129,7 +129,6 @@ namespace DefenseShields
 
             if (ServerUpdate) SyncMisc();
             SyncControlsClient();
-
             if (Modulator.CustomData != ModulatorComp.ModulationPassword)
             {
                 ModulatorComp.ModulationPassword = Modulator.CustomData;
@@ -158,11 +157,12 @@ namespace DefenseShields
         #region Create UI
         private void CreateUi()
         {
+            if (Session.Instance.ModulatorControlsLoaded) return;
             //if (Session.Instance.ModulatorControlsLoaded) return; // fix get existing controls
-            Session.Instance.ModulatorControlsLoaded = true;
             _modulateVoxels = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Modulator, "AllowVoxels", "Voxels may pass", true);
             _modulateGrids = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Modulator, "AllowGrids", "Grids may pass", false);
             _modulateDamage = new RangeSlider<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Modulator, "ModulateDamage", "Energy <-Modulate Damage-> Kinetic", 20, 180, 100);
+            Session.Instance.ModulatorControlsLoaded = true;
         }
         #endregion
 
@@ -288,8 +288,8 @@ namespace DefenseShields
             }
             else if (ModulatorComp.Damage > 100)
             {
-                ModulatorComp.Kinetic = _modulateDamage.Max + 20 - ModulatorComp.Damage;
-                ModulatorComp.Energy = ModulatorComp.Damage;
+                ModulatorComp.Energy = _modulateDamage.Max + 20 - ModulatorComp.Damage;
+                ModulatorComp.Kinetic = ModulatorComp.Damage;
             }
             else
             {
