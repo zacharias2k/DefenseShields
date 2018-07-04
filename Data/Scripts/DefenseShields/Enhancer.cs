@@ -51,7 +51,12 @@ namespace DefenseShields
             {
                 if (MyAPIGateway.Utilities.IsDedicated || !DamageMod.IsWorking) return;
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-                BlockMoveAnimation();
+
+                if (UtilsStatic.DistanceCheck(DamageMod, 1000, 1))
+                {
+                    var blockCam = DamageMod.PositionComp.WorldVolume;
+                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam)) BlockMoveAnimation();
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }

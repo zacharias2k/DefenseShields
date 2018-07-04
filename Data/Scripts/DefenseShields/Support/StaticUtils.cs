@@ -173,7 +173,7 @@ namespace DefenseShields.Support
         }
         */
 
-        public static bool ShieldDistanceCheck(IMyCubeBlock shield, int x, double range)
+        public static bool DistanceCheck(IMyCubeBlock shield, int x, double range)
         {
             if (MyAPIGateway.Session.Player.Character == null) return false;
 

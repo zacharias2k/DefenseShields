@@ -84,7 +84,7 @@ namespace DefenseShields
 
                 if (!BlockWorking()) return;
 
-                if (ShieldComp.ShieldActive && !Session.DedicatedServer && UtilsStatic.ShieldDistanceCheck(Emitter, 1000, ShieldComp.BoundingRange))
+                if (ShieldComp.ShieldActive && !Session.DedicatedServer && UtilsStatic.DistanceCheck(Emitter, 1000, ShieldComp.BoundingRange))
                 {
                     if (ShieldComp.GridIsMoving) BlockParticleUpdate();
 
