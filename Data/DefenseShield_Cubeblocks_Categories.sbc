@@ -694,5 +694,6 @@
       <PhysicalMaterial>Metal</PhysicalMaterial>
       <EmissiveColorPreset>Default</EmissiveColorPreset>
     </Definition>
+<!-- End Block Region -->
   </CubeBlocks> 
 </Definitions>
