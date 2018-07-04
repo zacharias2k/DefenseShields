@@ -83,6 +83,7 @@
       <RequiredPowerInput>0.00002</RequiredPowerInput>
       <DestroyEffect>BlockDestroyedExplosion_Small</DestroyEffect>
       <DestroySound>WepSmallWarheadExpl</DestroySound>
+      <Upgrades></Upgrades>
     </Definition>
 	
 	  <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
@@ -141,6 +142,7 @@
       <RequiredPowerInput>0.00002</RequiredPowerInput>
       <DestroyEffect>BlockDestroyedExplosion_Small</DestroyEffect>
       <DestroySound>WepSmallWarheadExpl</DestroySound>
+	    <Upgrades></Upgrades>
     </Definition>
 	
 	
@@ -198,6 +200,7 @@
       <RequiredPowerInput>0.00002</RequiredPowerInput>
       <DestroyEffect>BlockDestroyedExplosion_Small</DestroyEffect>
       <DestroySound>WepSmallWarheadExpl</DestroySound>
+		  <Upgrades></Upgrades>
     </Definition>	
 	
 	<Definition xsi:type="MyObjectBuilder_TextPanelDefinition">
@@ -382,6 +385,7 @@
       <RequiredPowerInput>500</RequiredPowerInput>
       <DamageEffectId>214</DamageEffectId>
       <DamagedSound>ParticleElectrical</DamagedSound>
+      <Upgrades></Upgrades>
     </Definition>
 
     <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
@@ -475,6 +479,7 @@
       <RequiredPowerInput>1000</RequiredPowerInput>
       <DamageEffectId>214</DamageEffectId>
       <DamagedSound>ParticleElectrical</DamagedSound>
+      <Upgrades></Upgrades>
     </Definition>
 
     <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
@@ -567,6 +572,7 @@
       <MirroringY>Z</MirroringY>
       <PhysicalMaterial>Metal</PhysicalMaterial>
       <EmissiveColorPreset>Default</EmissiveColorPreset>
+        <Upgrades></Upgrades>
     </Definition>
 
     <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
@@ -611,6 +617,7 @@
       <MirroringY>Z</MirroringY>
       <PhysicalMaterial>Metal</PhysicalMaterial>
       <EmissiveColorPreset>Shield</EmissiveColorPreset>
+      <Upgrades></Upgrades>
     </Definition>
 	
 <!-- Shield Damage (Offensive) Booster -->
@@ -654,7 +661,9 @@
       <MirroringY>Z</MirroringY>
       <PhysicalMaterial>Metal</PhysicalMaterial>
       <EmissiveColorPreset>Default</EmissiveColorPreset>
+      <Upgrades></Upgrades>
     </Definition>
+
   <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
         <TypeId>UpgradeModule</TypeId>
@@ -695,6 +704,7 @@
       <MirroringY>Z</MirroringY>
       <PhysicalMaterial>Metal</PhysicalMaterial>
       <EmissiveColorPreset>Default</EmissiveColorPreset>
+      <Upgrades></Upgrades>
     </Definition>
 <!-- End Block Region -->
   </CubeBlocks> 

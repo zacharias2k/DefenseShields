@@ -596,7 +596,6 @@ namespace DefenseShields
 
         private void ResetCustomData(IEnumerable<IMyTerminalControl> controls)
         {
-            Log.Line($"test reset custom data");
             var customData = controls.First((x) => x.Id.ToString() == "CustomData");
             ((IMyTerminalControlTitleTooltip)customData).Title = MySpaceTexts.Terminal_CustomData;
             ((IMyTerminalControlTitleTooltip)customData).Tooltip = MySpaceTexts.Terminal_CustomDataTooltip;

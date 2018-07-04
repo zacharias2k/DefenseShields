@@ -603,6 +603,7 @@ namespace DefenseShields
                 }
                 else _shieldConsumptionRate = 0f;
             }
+           
             else if (ShieldBuffer + _shieldMaxChargeRate / (_sizeScaler / nerfer) < _shieldMaxBuffer)
             {
                 _shieldChargeRate = _shieldMaxChargeRate / ((float)_sizeScaler / nerfer);
