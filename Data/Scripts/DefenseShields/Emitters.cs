@@ -332,7 +332,7 @@ namespace DefenseShields
             if (_count < 30) EmissiveIntensity += 1;
             else EmissiveIntensity -= 1;
 
-            var rotationMatrix = MatrixD.CreateRotationY(0.05f * RotationTime);
+            var rotationMatrix = MatrixD.CreateRotationY(0.025f * RotationTime);
             var matrix = rotationMatrix * MatrixD.CreateTranslation(0, Definition.BlockMoveTranslation * TranslationTime, 0);
 
             _subpartRotor.PositionComp.LocalMatrix = matrix;

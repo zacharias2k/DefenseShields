@@ -9,9 +9,11 @@ using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
+using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
+using VRageMath;
 
 namespace DefenseShields
 {
@@ -21,7 +23,7 @@ namespace DefenseShields
 
         public bool ServerUpdate;
         private bool _hierarchyDelayed;
-
+        internal int RotationTime;
         internal bool MainInit;
 
         private uint _tick;
@@ -36,6 +38,7 @@ namespace DefenseShields
         internal ModulatorSettings Settings = new ModulatorSettings();
         internal ModulatorGridComponent ModulatorComp;
         internal ShieldGridComponent ShieldComp;
+        private MyEntitySubpart _subpartRotor;
 
         private IMyUpgradeModule Modulator => (IMyUpgradeModule)Entity;
         private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule> _modulateVoxels;
@@ -55,9 +58,18 @@ namespace DefenseShields
             try
             {
                 base.Init(objectBuilder);
+                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+            }
+            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
+        }
 
+        public override void UpdateOnceBeforeFrame()
+        {
+            base.UpdateOnceBeforeFrame();
+            try
+            {
                 Modulator.CubeGrid.Components.Add(ModulatorComp);
                 Session.Instance.Modulators.Add(this);
                 if (!_modulators.ContainsKey(Entity.EntityId)) _modulators.Add(Entity.EntityId, this);
@@ -65,8 +77,9 @@ namespace DefenseShields
                 StorageSetup();
                 ((MyCubeGrid)Modulator.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
                 Modulator.AppendingCustomInfo += AppendingCustomInfo;
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
             }
-            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
+            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
 
         private void StorageSetup()
@@ -99,6 +112,7 @@ namespace DefenseShields
             _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
             Timing();
 
+            if (Modulator.IsWorking) BlockMoveAnimation();
             if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
             {
                 SyncControlsClient();
@@ -187,7 +201,6 @@ namespace DefenseShields
         {
             if (Modulator.Storage == null)
             {
-                Log.Line($"ModulatorId:{Modulator.EntityId.ToString()} - Storage = null");
                 Modulator.Storage = new MyModStorageComponent();
             }
             Modulator.Storage[Session.Instance.ModulatorGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
@@ -300,6 +313,20 @@ namespace DefenseShields
                                  "\n[Kinetic Protection]: " + ModulatorComp.Kinetic.ToString("0") + "%");
         }
 
+        private void BlockMoveAnimationReset()
+        {
+            _subpartRotor.Subparts.Clear();
+            Entity.TryGetSubpart("Rotor", out _subpartRotor);
+        }
+
+        private void BlockMoveAnimation()
+        {
+            if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
+            RotationTime -= 1;
+            var rotationMatrix = MatrixD.CreateRotationY(0.00625f * RotationTime);
+            _subpartRotor.PositionComp.LocalMatrix = rotationMatrix;
+        }
+
         #region Network
         private void NetworkUpdate()
         {
@@ -321,9 +348,7 @@ namespace DefenseShields
         {
             try
             {
-                //if (_modulators.ContainsKey(Modulator.EntityId)) _modulators.Remove(Modulator.EntityId);
-                //Modulator?.CubeGrid.Components.Remove(typeof(ModulatorGridComponent), this);
-                //if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
+                if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
@@ -333,8 +358,7 @@ namespace DefenseShields
         {
             try
             {
-                //Modulator?.CubeGrid.Components.Remove(typeof(ModulatorGridComponent), this);
-                //if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
+                if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
             base.Close();
