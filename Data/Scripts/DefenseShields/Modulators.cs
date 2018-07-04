@@ -109,51 +109,58 @@ namespace DefenseShields
 
         public override void UpdateBeforeSimulation()
         {
-            _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-            Timing();
+            try
+            {
+                _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+                Timing();
 
-            if (UtilsStatic.DistanceCheck(Modulator, 1000, 1))
-            {
-                var blockCam = Modulator.PositionComp.WorldVolume;
-                if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam)) BlockMoveAnimation();
-            }
-            if (Modulator.IsWorking) BlockMoveAnimation();
-            if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
-            {
-                SyncControlsClient();
-                Modulator.RefreshCustomInfo();
-                Modulator.ShowInToolbarConfig = false;
-                Modulator.ShowInToolbarConfig = true;
-            }
+                if (UtilsStatic.DistanceCheck(Modulator, 1000, 1))
+                {
+                    var blockCam = Modulator.PositionComp.WorldVolume;
+                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && Modulator.IsWorking) BlockMoveAnimation();
+                }
+                if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
+                {
+                    SyncControlsClient();
+                    Modulator.RefreshCustomInfo();
+                    Modulator.ShowInToolbarConfig = false;
+                    Modulator.ShowInToolbarConfig = true;
+                }
 
-            if (!MainInit)
-            {
-                Modulator.CubeGrid.Components.TryGet(out ShieldComp);
-                if (ShieldComp == null) return;
-                SyncControlsClient();
-                ShieldComp.DefenseShields?.GetModulationInfo();
-                MainInit = true;
-                if (Session.Enforced.Debug == 1) Log.Line($"Modulator initted");
+                if (!MainInit)
+                {
+                    Modulator.CubeGrid.Components.TryGet(out ShieldComp);
+                    if (ShieldComp == null) return;
+                    SyncControlsClient();
+                    ShieldComp.DefenseShields?.GetModulationInfo();
+                    MainInit = true;
+                    if (Session.Enforced.Debug == 1) Log.Line($"Modulator initted");
+                }
+                if (ShieldComp?.GetSubGrids != null && !ShieldComp.GetSubGrids.Equals(ModulatorComp.GetSubGrids))
+                    ModulatorComp.GetSubGrids = ShieldComp.GetSubGrids;
             }
-            if (ShieldComp?.GetSubGrids != null && !ShieldComp.GetSubGrids.Equals(ModulatorComp.GetSubGrids))
-                ModulatorComp.GetSubGrids = ShieldComp.GetSubGrids;
+            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation100: {ex}"); }
         }
 
         public override void UpdateBeforeSimulation100()
         {
-            if (!MainInit) return;
-            _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-
-            Modulator.RefreshCustomInfo();
-
-            if (ServerUpdate) SyncMisc();
-            SyncControlsClient();
-            if (Modulator.CustomData != ModulatorComp.ModulationPassword)
+            try
             {
-                ModulatorComp.ModulationPassword = Modulator.CustomData;
-                SaveSettings();
-                if (Session.Enforced.Debug == 1) Log.Line($"Updating modulator password");
+                if (!MainInit) return;
+                _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+
+                Modulator.RefreshCustomInfo();
+
+                if (ServerUpdate) SyncMisc();
+                SyncControlsClient();
+                if (Modulator.CustomData != ModulatorComp.ModulationPassword)
+                {
+                    ModulatorComp.ModulationPassword = Modulator.CustomData;
+                    SaveSettings();
+                    if (Session.Enforced.Debug == 1) Log.Line($"Updating modulator password");
+                }
             }
+            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation100: {ex}"); }
         }
 
         private void Timing()
