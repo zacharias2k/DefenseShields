@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
-using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
@@ -41,7 +40,7 @@ namespace DefenseShields
             try
             {
                 Session.Instance.Enhancers.Add(this);
-                Entity.TryGetSubpart("DmgRotor", out _subpartRotor);
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
@@ -60,7 +59,7 @@ namespace DefenseShields
         private void BlockMoveAnimationReset()
         {
             _subpartRotor.Subparts.Clear();
-            Entity.TryGetSubpart("DmgRotor", out _subpartRotor);
+            Entity.TryGetSubpart("Rotor", out _subpartRotor);
         }
 
         private void BlockMoveAnimation()
