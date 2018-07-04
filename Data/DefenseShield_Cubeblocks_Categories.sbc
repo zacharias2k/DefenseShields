@@ -13,18 +13,20 @@
       <ItemIds>
         
 		<string>SmallShieldModulator</string>
-    <string>LargeShieldModulator</string>
+		<string>LargeShieldModulator</string>
 		<string>DSControlLCD</string>
 		<string>DSControlTable</string>
 		<string>DSControlSmall</string>
 		<string>DSControlLarge</string>
 		<string>EmitterL</string>
 		<string>EmitterS</string>
-    <string>EmitterP</string>
+		<string>EmitterP</string>
 		<string>EmitterST</string>
 		<string>DS_Supergen</string>
 		<string>LargeDamageEnhancer</string>
-    <string>SmallDamageEnhancer</string>
+		<string>SmallDamageEnhancer</string>
+		<string>SmallArmorEmitter</string>
+		<string>LargeArmorEmitter</string>
 
       </ItemIds>
     </Category>
