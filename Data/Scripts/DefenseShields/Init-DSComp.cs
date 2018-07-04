@@ -97,21 +97,24 @@ namespace DefenseShields
                     Shield.CubeGrid.Components.Add(ShieldComp);
                     ShieldComp.DefaultO2 = MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(Shield.PositionComp.WorldVolume.Center);
                 }
-                else
-                {
-                    Shield.CubeGrid.Components.TryGet(out ShieldComp);
-                    ShieldComp.BoundingRange = 0f;
-                    WarmedUp = false;
-                    ShieldComp.Warming = false;
-                    ShieldComp.Starting = false;
-                    ShieldComp.ShieldActive = false;
-                    ShieldComp.ModulationPassword = null;
-                    ShieldComp.ComingOnline = false;
-                    ShieldComp.DefenseShields = this;
-                }
+                else Shield.CubeGrid.Components.TryGet(out ShieldComp);
                 if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
+        }
+
+        private bool MasterElection()
+        {
+            if (ShieldComp.DefenseShields != this && ShieldComp.DefenseShields != null) return true;
+            ShieldComp.BoundingRange = 0f;
+            ShieldComp.ShieldPercent = 0f;
+            ShieldComp.Warming = false;
+            ShieldComp.Starting = false;
+            ShieldComp.ShieldActive = false;
+            ShieldComp.ModulationPassword = null;
+            ShieldComp.ComingOnline = false;
+            ShieldComp.DefenseShields = this;
+            return false;
         }
 
         public override void UpdateAfterSimulation100()
@@ -126,8 +129,7 @@ namespace DefenseShields
                     return;
                 }
 
-                if (AllInited || !Shield.IsFunctional || _tick < 200) return;
-
+                if (AllInited || MasterElection() || !Shield.IsFunctional || _tick < 200) return;
                 if (!HealthInited)
                 {
                     if (ConnectCheck(true)) return;

@@ -86,6 +86,7 @@ namespace DefenseShields
 
         public readonly List<Emitters> Emitters = new List<Emitters>();
         public readonly List<Displays> Displays = new List<Displays>();
+        public readonly List<Enhancers> Enhancers = new List<Enhancers>();
         public readonly List<O2Generators> O2Generators = new List<O2Generators>();
         public readonly List<Modulators> Modulators = new List<Modulators>();
         public readonly List<DefenseShields> Components = new List<DefenseShields>();
@@ -142,6 +143,7 @@ namespace DefenseShields
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
+                    if (!s.WarmedUp) continue;
                     if (s.ShieldComp.ShieldActive && SphereOnCamera[i]) s.Draw(onCount, SphereOnCamera[i]);
                     else if (s.ShieldComp.ShieldActive && !s.Icosphere.ImpactsFinished) s.Icosphere.StepEffects();
                     else if (!s.ShieldComp.ShieldActive && SphereOnCamera[i]) s.DrawShieldDownIcon();

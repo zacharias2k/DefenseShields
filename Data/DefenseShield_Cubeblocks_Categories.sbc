@@ -24,6 +24,8 @@
 		<string>EmitterST</string>
 		<string>DS_Supergen</string>
 		<string>LargeDamageEnhancer</string>
+    <string>SmallDamageEnhancer</string>
+
       </ItemIds>
     </Category>
   </CategoryClasses>

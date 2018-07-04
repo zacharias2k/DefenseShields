@@ -79,9 +79,8 @@ namespace DefenseShields
 
         private bool BlockFunctional()
         {
-            if (!AllInited) return false;
-            if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
-            if (ShieldComp.DefenseShields != this || !WarmUpSequence()) return false;
+            if (!AllInited || !WarmUpSequence()) return false;
+
             if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
             {
                 //Log.Line($"fail: {_overLoadLoop} - {_reModulationLoop} - {_genericDownLoop}");

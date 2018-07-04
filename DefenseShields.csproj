@@ -204,6 +204,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\Controls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Seperator.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\UpdateDsSettings.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Enhancer.cs" />
     <Compile Include="Data\Scripts\DefenseShields\GridComps\O2GeneratorGridComp.cs" />
     <Compile Include="HoldingArea\HyperSession.cs" />
     <Compile Include="HoldingArea\Logger.cs" />
