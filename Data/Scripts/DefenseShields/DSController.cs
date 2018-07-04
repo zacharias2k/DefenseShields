@@ -614,7 +614,13 @@ namespace DefenseShields
             var secToFull = 0;
             var shieldPercent = ShieldOffline ? 0f : 100f;
             if (ShieldBuffer < _shieldMaxBuffer) shieldPercent = (ShieldBuffer / _shieldMaxBuffer) * 100;
-            if (_shieldChargeRate > 0) secToFull = (int)((_shieldMaxBuffer - ShieldBuffer) / _shieldChargeRate);
+            if (_shieldChargeRate > 0)
+            {
+                var toMax = _shieldMaxBuffer - ShieldBuffer;
+                var secs = toMax / _shieldChargeRate;
+                if (secs.Equals(1)) secToFull = 0;
+                else secToFull = (int)(secs);
+            }
             var status = GetShieldStatus();
             if (status == "Shield Online")
             {
@@ -623,12 +629,12 @@ namespace DefenseShields
                                      "\n[Shield HP__]: " + (ShieldBuffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
                                      "\n[HP Per Sec_]: " + (_shieldChargeRate * Session.Enforced.Efficiency).ToString("N0") +
                                      "\n[DPS_______]: " + (_shieldDps).ToString("N0") +
-                                     "\n[Charge Rate]: " + _shieldMaxChargeRate.ToString("0.0") + " Mw" +
+                                     "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
                                      "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
                                      "\n[Efficiency__]: " + Session.Enforced.Efficiency.ToString("0.0") +
                                      "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
                                      "\n[Power Usage]: " + _powerNeeded.ToString("0.0") + " (" + _gridMaxPower.ToString("0.0") + ") Mw" +
-                                     "\n[Shield Power]: " + Sink.CurrentInputByType(GId).ToString("0.0"));
+                                     "\n[Shield Power]: " + Sink.CurrentInputByType(GId).ToString("0.0") + " Mw");
             }
             else
             {

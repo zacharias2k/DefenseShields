@@ -274,7 +274,6 @@ namespace DefenseShields
 
         private void SyncControlsClient()
         {
-            Log.Line($"{_modulateVoxels == null} - {_modulateGrids == null} - {_modulateDamage == null} - {ModulatorComp == null}");
             var needsSync = false;
             if (!Enabled.Equals(Enabled) 
                 || !_modulateVoxels.Getter(Modulator).Equals(ModulatorComp.Voxels)
