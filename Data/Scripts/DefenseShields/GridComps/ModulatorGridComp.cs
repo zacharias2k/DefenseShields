@@ -94,13 +94,13 @@ namespace DefenseShields
             set { Damage = value; }
         }
 
-        public float ModulateEnergy
+        public float EnergyProtection
         {
             get { return Energy; }
             set { Energy = value; }
         }
 
-        public float ModulateKinetic
+        public float KineticProtection
         {
             get { return Kinetic; }
             set { Kinetic = value; }

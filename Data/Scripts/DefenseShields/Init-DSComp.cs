@@ -222,7 +222,6 @@ namespace DefenseShields
             DsSet.LoadSettings();
             //Log.Line($"{DsSet.Settings.IncreaseO2ByFPercent} - {DsSet.Settings.Buffer} - {ShieldComp.IncreaseO2ByFPercent} - {ShieldBuffer}");
             //UpdateSettings(DsSet.Settings);
-            Log.Line($"DsSet.IO2FP:{DsSet.Settings.IncreaseO2ByFPercent} - DsSet.Buffer:{DsSet.Settings.Buffer} - DsSet.ShieldActive {DsSet.Settings.ShieldActive} - IO2FP:{ShieldComp.IncreaseO2ByFPercent} - Buffer:{ShieldBuffer} - ShieldActive {ShieldComp.ShieldActive}");
             if (Session.Enforced.Debug == 1) Log.Line($"StorageSetup complete");
         }
 

@@ -78,7 +78,7 @@ namespace DefenseShields
                             if (ent == null || ent.MarkedForClose || ent.Closed) continue;
                             var destObj = ent as IMyDestroyableObject;
                             if (destObj == null) continue;
-                            var damage = ComputeAmmoDamage(ent);
+                            var damage = ComputeAmmoDamage(ent) * ModulateEnergy;
                             if (damage <= float.NegativeInfinity)
                             {
                                 FriendlyCache.Add(ent);
@@ -102,7 +102,7 @@ namespace DefenseShields
                         {
                             if (meteor == null || meteor.MarkedForClose || meteor.Closed) continue;
                             WorldImpactPosition = meteor.PositionComp.WorldVolume.Center;
-                            Absorb += 5000;
+                            Absorb += (5000 * ModulateKinetic);
                             meteor.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
                         }
                     }
