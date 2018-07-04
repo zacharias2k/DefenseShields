@@ -112,7 +112,10 @@ namespace DefenseShields
             _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
             Timing();
 
-            //if (Modulator.IsWorking) BlockMoveAnimation();
+            if (Modulator.IsWorking)
+            {
+                BlockMoveAnimation();
+            }
             if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
             {
                 SyncControlsClient();
