@@ -207,6 +207,21 @@ namespace DefenseShields
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();
         }
+
+        public static bool GetRaiseShield(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            return comp?.RaiseShield ?? false;
+        }
+
+        public static void SetRaiseShield(IMyTerminalBlock block, bool newValue)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            if (comp == null) return;
+            comp.RaiseShield = newValue;
+            comp.DsSet.NetworkUpdate();
+            comp.DsSet.SaveSettings();
+        }
         #endregion
     }
 }

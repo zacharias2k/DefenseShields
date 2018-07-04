@@ -184,9 +184,9 @@ namespace DefenseShields
                             if (block.IsDestroyed)
                             {
                                 ((MyCubeGrid)block.CubeGrid).EnqueueDestroyedBlock(block.Position);
+                                ((MyCubeGrid)block.CubeGrid).Close();
                                 continue;
                             }
-
                             block.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId); // set sync to true for multiplayer?
                             if (((MyCubeGrid)block.CubeGrid).BlocksCount == 0) block.CubeGrid.SyncObject.SendCloseRequest();
                         }

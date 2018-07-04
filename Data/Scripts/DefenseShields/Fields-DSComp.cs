@@ -83,6 +83,7 @@ namespace DefenseShields
         internal bool UpdateDimensions;
         internal bool FitChanged;
         internal bool GridIsMobile;
+        internal bool ShieldWasLowered;
         internal bool HardDisable { get; private set; }
         private bool _blocksChanged;
         private bool _prevShieldActive;
@@ -93,6 +94,7 @@ namespace DefenseShields
         private bool _entityChanged = true;
         private bool _enablePhysics = true;
         private bool _shapeLoaded = true;
+        private bool _powerChanged = true;
 
         private const string SpaceWolf = "Space_Wolf";
         private const string MyMissile = "MyMissile";
@@ -281,6 +283,12 @@ namespace DefenseShields
         {
             get { return DsSet.Settings.ModulateGrids; }
             set { DsSet.Settings.ModulateGrids = value; }
+        }
+
+        public bool RaiseShield
+        {
+            get { return DsSet.Settings.RaiseShield; }
+            set { DsSet.Settings.RaiseShield = value; }
         }
         #endregion
 
