@@ -79,7 +79,8 @@ namespace DefenseShields
         public IMyTerminalControlCheckbox FortifyShield;
         public IMyTerminalControlCheckbox HidePassiveCheckBox;
         public IMyTerminalControlCheckbox HideActiveCheckBox;
-        public IMyTerminalControlCheckbox SendToHudCheckBoxe;
+        public IMyTerminalControlCheckbox SendToHudCheckBox;
+        public IMyTerminalControlCheckbox ToggleShield;
 
         public static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         public bool[] SphereOnCamera = new bool[0];
@@ -129,7 +130,7 @@ namespace DefenseShields
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
-                    if (!s.WarmedUp) continue;
+                    if (!s.WarmedUp || !s.RaiseShield) continue;
                     var sp = new BoundingSphereD(s.DetectionCenter, s.ShieldComp.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {
@@ -143,7 +144,7 @@ namespace DefenseShields
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
-                    if (!s.WarmedUp) continue;
+                    if (!s.WarmedUp || !s.RaiseShield) continue;
                     if (s.ShieldComp.ShieldActive && SphereOnCamera[i]) s.Draw(onCount, SphereOnCamera[i]);
                     else if (s.ShieldComp.ShieldActive && !s.Icosphere.ImpactsFinished) s.Icosphere.StepEffects();
                     else if (!s.ShieldComp.ShieldActive && SphereOnCamera[i]) s.DrawShieldDownIcon();
@@ -214,7 +215,7 @@ namespace DefenseShields
 
                 foreach (var shield in Components)
                 {
-                    if (shield.ShieldComp.ShieldActive && shield.FriendlyCache.Contains(blockGrid))
+                    if (shield.ShieldComp.ShieldActive && shield.RaiseShield && shield.FriendlyCache.Contains(blockGrid))
                     {
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
@@ -252,7 +253,7 @@ namespace DefenseShields
                         shield.Absorb += info.Amount;
                         info.Amount = 0f;
                     }
-                    else if (shield.ShieldComp.ShieldActive && shield.PartlyProtectedCache.Contains(blockGrid))
+                    else if (shield.ShieldComp.ShieldActive && shield.RaiseShield && shield.PartlyProtectedCache.Contains(blockGrid))
                     {
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
@@ -623,10 +624,11 @@ namespace DefenseShields
             DepthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DepthSlider", "Shield Size Depth", "Shield Size Depth", DsUi.GetDepth, DsUi.SetDepth);
             DepthSlider.SetLimits(30, 600);
 
-            HidePassiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "UseBatteries", "Shield may use batteries          ", "Shield may use batteries          ", DsUi.GetBatteries, DsUi.SetBatteries);
+            HidePassiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "UseBatteries", "Shield may use batteries       ", "Shield may use batteries        ", DsUi.GetBatteries, DsUi.SetBatteries);
             HidePassiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HidePassive", "Hide idle shield state            ", "Hide idle shield state            ", DsUi.GetHidePassive, DsUi.SetHidePassive);
             HideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HideActive", "Hide active shield state        ", "Hide active shield state        ", DsUi.GetHideActive, DsUi.SetHideActive);
-            SendToHudCheckBoxe = TerminalHelpers.AddCheckbox(comp?.Shield, "HideIcon", "Send status to nearby HUDs", "Send status to nearby HUDs", DsUi.GetSendToHud, DsUi.SetSendToHud);
+            SendToHudCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HideIcon", "Send status to nearby HUDs", "Send status to nearby HUDs", DsUi.GetSendToHud, DsUi.SetSendToHud);
+            ToggleShield = TerminalHelpers.AddCheckbox(comp?.Shield, "ToggleShield", "Raise Shield                      ", "Raise Shield                   ", DsUi.GetRaiseShield, DsUi.SetRaiseShield);
             DSControl = true;
         }
 

@@ -83,6 +83,7 @@ namespace DefenseShields
         internal bool UpdateDimensions;
         internal bool FitChanged;
         internal bool GridIsMobile;
+        internal bool ShieldWasLowered;
         internal bool HardDisable { get; private set; }
         private bool _blocksChanged;
         private bool _prevShieldActive;
@@ -281,6 +282,12 @@ namespace DefenseShields
         {
             get { return DsSet.Settings.ModulateGrids; }
             set { DsSet.Settings.ModulateGrids = value; }
+        }
+
+        public bool RaiseShield
+        {
+            get { return DsSet.Settings.RaiseShield; }
+            set { DsSet.Settings.RaiseShield = value; }
         }
         #endregion
 
