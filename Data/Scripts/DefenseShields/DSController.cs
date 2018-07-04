@@ -14,6 +14,7 @@ using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage.Utils;
 using VRage.Voxels;
+using VRageRender.Animations;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
 namespace DefenseShields
@@ -40,7 +41,6 @@ namespace DefenseShields
                 Timing(true);
                 if (ShieldComp.ShieldActive)
                 {
-                    Log.Line($"test");
                     if (_lCount % 2 != 0 && _count == 20)
                     {
                         GetModulationInfo();
@@ -151,9 +151,10 @@ namespace DefenseShields
                     _shellActive.Render.UpdateRenderObject(false);
                     ShieldWasLowered = true;
                 }
-                var powerStatus = PowerOnline();
+                PowerOnline();
+
                 if (ShieldComp.EmitterEvent) EmitterEventDetected();
-                if (!powerStatus || !Shield.IsWorking || !ShieldComp.EmittersWorking)
+                if (!Shield.IsWorking || !ShieldComp.EmittersWorking)
                 {
                     _genericDownLoop = 0;
                     return false;
@@ -541,6 +542,7 @@ namespace DefenseShields
             if (ShieldBuffer < 0) _overLoadLoop = 0;
 
             Absorb = 0f;
+
             return true;
         }
 
@@ -572,6 +574,7 @@ namespace DefenseShields
             const float ratio = 1.25f;
             var percent = Rate * ratio;
             var shieldMaintainPercent = 1 / percent;
+            shieldMaintainPercent = shieldMaintainPercent * (ShieldComp.ShieldPercent * 0.01f);
             if (!RaiseShield) shieldMaintainPercent = shieldMaintainPercent * 0.5f;
             _shieldMaintaintPower = _gridMaxPower * shieldMaintainPercent;
             var fPercent = (percent / ratio) / 100;

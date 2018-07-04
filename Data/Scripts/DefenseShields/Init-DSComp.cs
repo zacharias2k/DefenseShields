@@ -89,7 +89,6 @@ namespace DefenseShields
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
                 Session.Instance.Components.Add(this);
                 ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
-
                 StorageSetup();
 
                 if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>())
@@ -101,6 +100,11 @@ namespace DefenseShields
                 if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
+        }
+
+        private float PowerAvail(MyDefinitionId resourceTypeId, MyResourceSinkComponent sink)
+        {
+            return 1;
         }
 
         private bool MasterElection()

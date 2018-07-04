@@ -80,7 +80,7 @@ namespace DefenseShields
         public IMyTerminalControlCheckbox HidePassiveCheckBox;
         public IMyTerminalControlCheckbox HideActiveCheckBox;
         public IMyTerminalControlCheckbox SendToHudCheckBox;
-        public IMyTerminalControlCheckbox ToggleShield;
+        public IMyTerminalControlOnOffSwitch ToggleShield;
 
         public static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         public bool[] SphereOnCamera = new bool[0];
@@ -608,12 +608,21 @@ namespace DefenseShields
         {
             if (DSControl) return;
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            var sep0 = TerminalHelpers.Separator(comp?.Shield, "sep0");
+            ToggleShield = TerminalHelpers.AddOnOff(comp?.Shield, "ToggleShield", "Shield Status", "Raise or Lower Shields", "Up", "Down", DsUi.GetRaiseShield, DsUi.SetRaiseShield);
+            var sep1 = TerminalHelpers.Separator(comp?.Shield, "sep1");
             ChargeSlider = TerminalHelpers.AddSlider(comp?.Shield, "ChargeRate", "Shield Charge Rate", "Shield Charge Rate", DsUi.GetRate, DsUi.SetRate);
             ChargeSlider.SetLimits(20, 95);
+
+            if (comp != null && comp.GridIsMobile)
+            {
+                var sep2 = TerminalHelpers.Separator(comp?.Shield, "sep2");
+            }
 
             ExtendFit = TerminalHelpers.AddCheckbox(comp?.Shield, "ExtendFit", "Extend Shield", "Extend Shield", DsUi.GetExtend, DsUi.SetExtend);
             SphereFit = TerminalHelpers.AddCheckbox(comp?.Shield, "SphereFit", "Sphere Fit      ", "Sphere Fit      ", DsUi.GetSphereFit, DsUi.SetSphereFit);
             FortifyShield = TerminalHelpers.AddCheckbox(comp?.Shield, "ShieldFortify", "Fortify Shield ", "Fortify Shield ", DsUi.GetFortify, DsUi.SetFortify);
+            var sep3 = TerminalHelpers.Separator(comp?.Shield, "sep3");
 
             WidthSlider = TerminalHelpers.AddSlider(comp?.Shield, "WidthSlider", "Shield Size Width", "Shield Size Width", DsUi.GetWidth, DsUi.SetWidth);
             WidthSlider.SetLimits(30, 600);
@@ -623,12 +632,13 @@ namespace DefenseShields
 
             DepthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DepthSlider", "Shield Size Depth", "Shield Size Depth", DsUi.GetDepth, DsUi.SetDepth);
             DepthSlider.SetLimits(30, 600);
+            var sep4 = TerminalHelpers.Separator(comp?.Shield, "sep4");
 
-            HidePassiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "UseBatteries", "Shield may use batteries       ", "Shield may use batteries        ", DsUi.GetBatteries, DsUi.SetBatteries);
+            HidePassiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "UseBatteries", "Batteries boost shields        ", "Batteries boost shields        ", DsUi.GetBatteries, DsUi.SetBatteries);
             HidePassiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HidePassive", "Hide idle shield state            ", "Hide idle shield state            ", DsUi.GetHidePassive, DsUi.SetHidePassive);
             HideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HideActive", "Hide active shield state        ", "Hide active shield state        ", DsUi.GetHideActive, DsUi.SetHideActive);
             SendToHudCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HideIcon", "Send status to nearby HUDs", "Send status to nearby HUDs", DsUi.GetSendToHud, DsUi.SetSendToHud);
-            ToggleShield = TerminalHelpers.AddCheckbox(comp?.Shield, "ToggleShield", "Raise Shield                      ", "Raise Shield                   ", DsUi.GetRaiseShield, DsUi.SetRaiseShield);
+           
             DSControl = true;
         }
 

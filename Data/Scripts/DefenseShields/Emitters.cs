@@ -16,7 +16,7 @@ using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 namespace DefenseShields
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "EmitterL", "EmitterS", "EmitterST")]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "EmitterL", "EmitterS", "EmitterST", "LargeArmorEmitter", "SmallArmorEmitter")]
     public class Emitters : MyGameLogicComponent
     {
         private uint _tick;
@@ -35,6 +35,7 @@ namespace DefenseShields
         internal bool Alpha;
         internal bool Beta;
         internal bool Zeta;
+        internal bool Armored;
         internal bool IsStatic;
         internal bool BlockIsWorking;
         internal bool BlockWasWorking;
@@ -86,19 +87,19 @@ namespace DefenseShields
 
                 if (ShieldComp.ShieldActive && !Session.DedicatedServer && UtilsStatic.DistanceCheck(Emitter, 1000, ShieldComp.BoundingRange))
                 {
-                    if (ShieldComp.GridIsMoving) BlockParticleUpdate();
+                    if (ShieldComp.GridIsMoving && !Armored) BlockParticleUpdate();
 
                     var blockCam = Emitter.PositionComp.WorldVolume;
                     var onCam = MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam);
                     if (onCam)
                     {
-                        if (_effect == null && ShieldComp.ShieldPercent <= 97) BlockParticleStart();
-                        else if (_effect != null && ShieldComp.ShieldPercent > 97f) BlockParticleStop();
+                        if (_effect == null && ShieldComp.ShieldPercent <= 97 && !Armored) BlockParticleStart();
+                        else if (_effect != null && ShieldComp.ShieldPercent > 97f && !Armored) BlockParticleStop();
 
                         BlockMoveAnimation();
                     }
                 }
-                else if (_effect != null && !Session.DedicatedServer) BlockParticleStop();
+                else if (_effect != null && !Session.DedicatedServer && !Armored) BlockParticleStop();
                 if (Session.Enforced.Debug == 1) Dsutil1.StopWatchReport($"Emitter - {EmitterMode}", 4);
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
@@ -136,7 +137,7 @@ namespace DefenseShields
 
             if (!BlockIsWorking)
             {
-                if (_effect != null && !Session.DedicatedServer) BlockParticleStop();
+                if (_effect != null && !Session.DedicatedServer && !Armored) BlockParticleStop();
                 return false;
             }
             return true;
@@ -170,10 +171,13 @@ namespace DefenseShields
                     EmitterMode = EmitterType.Station;
                     break;
                 case "EmitterL":
+                case "LargeArmorEmitter":
                     EmitterMode = EmitterType.Large;
+                    if (Emitter.BlockDefinition.SubtypeId != "EmitterL") Armored = true;
                     break;
                 default:
                     EmitterMode = EmitterType.Small;
+                    if (Emitter.BlockDefinition.SubtypeId != "EmitterS") Armored = true;
                     break;
             }
         }
@@ -242,7 +246,7 @@ namespace DefenseShields
         {
             if (Beta && IsStatic)
             {
-                if (_effect != null && !Session.DedicatedServer) BlockParticleStop();
+                if (_effect != null && !Session.DedicatedServer && !Armored) BlockParticleStop();
                 return true;
             }
 
@@ -323,6 +327,15 @@ namespace DefenseShields
 
         private void BlockMoveAnimation()
         {
+            if (Armored)
+            {
+                if (_count == 0) EmissiveIntensity = 2;
+                if (_count < 30) EmissiveIntensity += 1;
+                else EmissiveIntensity -= 1;
+                Emitter.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetEmissiveColorFromFloat(ShieldComp.ShieldPercent), 0.1f * EmissiveIntensity);
+                return;
+            }
+
             if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
             RotationTime -= 1;
             if (AnimationLoop == 0) TranslationTime = 0;
@@ -424,7 +437,7 @@ namespace DefenseShields
                 var blockedDir = ShieldComp.PhysicsOutside[blocking] - _sightPos;
                 blockedDir.Normalize();
                 var blockedPos = _sightPos + blockedDir * lineDist;
-                // DsDebugDraw.DrawLineToVec(_sightPos, blockedPos, Color.Black, lineWidth);
+                DsDebugDraw.DrawLineToVec(_sightPos, blockedPos, Color.Black, lineWidth);
             }
 
             foreach (var sighted in _vertsSighted)
@@ -432,7 +445,7 @@ namespace DefenseShields
                 var sightedDir = ShieldComp.PhysicsOutside[sighted] - _sightPos;
                 sightedDir.Normalize();
                 var sightedPos = _sightPos + sightedDir * lineDist;
-                // DsDebugDraw.DrawLineToVec(_sightPos, sightedPos, Color.Blue, lineWidth);
+                DsDebugDraw.DrawLineToVec(_sightPos, sightedPos, Color.Blue, lineWidth);
             }
             if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("The shield emitter DOES NOT have a CLEAR ENOUGH LINE OF SIGHT to the shield, SHUTTING DOWN.", 960, "Red", Emitter.OwnerId);
             if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("Blue means clear line of sight, black means blocked......................................................................", 960, "Red", Emitter.OwnerId);

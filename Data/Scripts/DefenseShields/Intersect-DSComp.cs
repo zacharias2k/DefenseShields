@@ -4,6 +4,7 @@ using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
 using VRage.Game.Components;
+using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;

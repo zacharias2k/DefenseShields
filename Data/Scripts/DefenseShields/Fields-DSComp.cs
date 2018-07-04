@@ -94,6 +94,7 @@ namespace DefenseShields
         private bool _entityChanged = true;
         private bool _enablePhysics = true;
         private bool _shapeLoaded = true;
+        private bool _powerChanged = true;
 
         private const string SpaceWolf = "Space_Wolf";
         private const string MyMissile = "MyMissile";
