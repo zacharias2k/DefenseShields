@@ -100,10 +100,10 @@ namespace DefenseShields
 
                 var amount = _inventory.CurrentVolume.RawValue;
                 if (amount <= 0) return;
-                if (amount - 10000 > 0)
+                if (amount - 1000 > 0)
                 {
-                    _inventory.RemoveItems(0, 10000);
-                    _shieldVolFilled += 10000 * 261.333333333;
+                    _inventory.RemoveItems(0, 1000);
+                    _shieldVolFilled += 1000 * 261.333333333;
                 }
                 else
                 {
