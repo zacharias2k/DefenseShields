@@ -954,7 +954,7 @@ namespace DefenseShields
             var p = ShieldComp.ShieldPercent;
             if (p > 0 && p < 10 && _lCount % 2 == 0) color = Color.Red;
             else color = Color.White;
-            MyTransparentGeometry.AddBillboardOriented(icon, color, origin, left, up, (float)scale, BlendTypeEnum.SDR);
+            MyTransparentGeometry.AddBillboardOriented(icon, color, origin, left, up, (float)scale, BlendTypeEnum.SDR); // LDR for mptest, SDR for public
         }
 
         public static MyStringId GetHudIconFromFloat(float percent)
