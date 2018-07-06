@@ -199,7 +199,7 @@ namespace DefenseShields
             _shellPassive.Render.UpdateRenderObject(false);
             _shellPassive.Save = false;
 
-            _shellActive = Spawn.EmptyEntity("dShellActive", $"{Session.Instance.ModPath()}\\Models\\Cubes\\ShieldActiveH_LOD3.mwm", parent, true);
+            _shellActive = Spawn.EmptyEntity("dShellActive", $"{Session.Instance.ModPath()}\\Models\\Cubes\\ShieldActiveBase.mwm", parent, true);
             _shellActive.Render.CastShadows = false;
             _shellActive.IsPreview = true;
             _shellActive.Render.Visible = true;
@@ -207,7 +207,7 @@ namespace DefenseShields
             _shellActive.Render.UpdateRenderObject(true);
             _shellActive.Render.UpdateRenderObject(false);
             _shellActive.Save = false;
-            _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.Black, 0.01f);
+            _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.Transparent, 0f);
 
             ShieldEnt = Spawn.EmptyEntity("dShield", null, (MyEntity)Shield, false);
             //_shield = Spawn.SpawnBlock("dShield", $"{Shield.EntityId}", true, false, false, false, true, Shield.OwnerId);

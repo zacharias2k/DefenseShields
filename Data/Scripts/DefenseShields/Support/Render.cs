@@ -143,6 +143,13 @@ namespace DefenseShields.Support
             private MyEntity _shellPassive;
             private MyEntity _shellActive;
 
+            private MyEntitySubpart _frontSide;
+            private MyEntitySubpart _backSide;
+            private MyEntitySubpart _leftSide;
+            private MyEntitySubpart _rightSide;
+            private MyEntitySubpart _upSide;
+            private MyEntitySubpart _downSide;
+
 
             private readonly MyStringId _faceIdle = MyStringId.GetOrCompute("CustomIdle");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private readonly MyStringId _faceWave = MyStringId.GetOrCompute("SunDisk");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
