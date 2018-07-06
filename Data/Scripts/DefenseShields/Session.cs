@@ -66,6 +66,7 @@ namespace DefenseShields
         public string disabledBy = null;
 
         public static Session Instance { get; private set; }
+
         public readonly MyModContext MyModContext = new MyModContext();
         public readonly Icosphere Icosphere = new Icosphere(5);
         private DSUtils _dsutil1 = new DSUtils();
@@ -83,6 +84,10 @@ namespace DefenseShields
         public IMyTerminalControlOnOffSwitch ToggleShield;
 
         public IMyTerminalControlSlider ModDamage;
+        public IMyTerminalControlCheckbox ModVoxels;
+        public IMyTerminalControlCheckbox ModGrids;
+        public IMyTerminalControlSeparator ModSep1;
+        public IMyTerminalControlSeparator ModSep2;
 
         public static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         public bool[] SphereOnCamera = new bool[0];
@@ -647,12 +652,12 @@ namespace DefenseShields
         {
             if (ModControl) return;
             var comp = block?.GameLogic?.GetAs<Modulators>();
-            var sep0 = TerminalHelpers.Separator(comp?.Modulator, "sep0");
+            ModSep1 = TerminalHelpers.Separator(comp?.Modulator, "sep1");
             ModDamage = TerminalHelpers.AddSlider(comp?.Modulator, "DamageModulation", "Balance Shield Protection", "Balance Shield Protection", ModUi.GetDamage, ModUi.SetDamage);
             ModDamage.SetLimits(20, 180);
-            var sep1 = TerminalHelpers.Separator(comp?.Modulator, "sep3");
-            var modVoxels = TerminalHelpers.AddCheckbox(comp?.Modulator, "ModulateVoxels", "Let voxels bypass shield", "Let voxels bypass shield", ModUi.GetVoxels, ModUi.SetVoxels);
-            var modGrids = TerminalHelpers.AddCheckbox(comp?.Modulator, "ModulateGrids", "Let grids bypass shield", "Let grid bypass shield", ModUi.GetGrids, ModUi.SetGrids);
+            ModSep2 = TerminalHelpers.Separator(comp?.Modulator, "sep2");
+            ModVoxels = TerminalHelpers.AddCheckbox(comp?.Modulator, "ModulateVoxels", "Let voxels bypass shield", "Let voxels bypass shield", ModUi.GetVoxels, ModUi.SetVoxels);
+            ModGrids = TerminalHelpers.AddCheckbox(comp?.Modulator, "ModulateGrids", "Let grids bypass shield", "Let grid bypass shield", ModUi.GetGrids, ModUi.SetGrids);
             ModControl = true;
         }
 

@@ -42,11 +42,6 @@ namespace DefenseShields
 
         internal DSUtils Dsutil1 = new DSUtils();
 
-        public Modulators()
-        {
-            ModulatorComp = new ModulatorGridComponent(this);
-        }
-
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
             try
@@ -64,16 +59,21 @@ namespace DefenseShields
             base.UpdateOnceBeforeFrame();
             try
             {
-                StorageSetup();
 
                 if (!Modulator.CubeGrid.Components.Has<ModulatorGridComponent>())
-                    Modulator.CubeGrid.Components.Add(ModulatorComp);
-                else Modulator.CubeGrid.Components.TryGet(out ModulatorComp);
+                    Modulator.CubeGrid.Components.Add(new ModulatorGridComponent(this));
+
+                Modulator.CubeGrid.Components.TryGet(out ModulatorComp);
                 Modulator.CubeGrid.Components.TryGet(out ShieldComp);
-                ShieldComp?.DefenseShields?.GetModulationInfo();
+
                 Session.Instance.Modulators.Add(this);
                 _modulators.Add(Entity.EntityId, this);
+
+                StorageSetup();
                 CreateUi();
+                ModUi.ComputeDamage(this, ModUi.GetDamage(Modulator));
+
+                ShieldComp?.DefenseShields?.GetModulationInfo();
                 ((MyCubeGrid)Modulator.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
                 Modulator.AppendingCustomInfo += AppendingCustomInfo;
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
@@ -86,8 +86,7 @@ namespace DefenseShields
             Storage = Modulator.Storage;
             ModSet = new ModulatorSettings(Modulator);
             ModSet.LoadSettings();
-            //ModulatorComp = new ModulatorGridComponent(this);
-            //UpdateSettings(Settings, false);
+            UpdateSettings(ModSet.Settings);
         }
 
         private void HierarchyChanged(IMyCubeGrid myCubeGrid = null)
@@ -112,7 +111,6 @@ namespace DefenseShields
         {
             try
             {
-                //Log.Line($"{ModSet.Settings.ModulateVoxels}");
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
                 Timing();
 
@@ -180,21 +178,6 @@ namespace DefenseShields
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
-            if (ModulatorComp.Damage < 100)
-            {
-                ModulatorComp.Energy = 200 - ModulatorComp.Damage;
-                ModulatorComp.Kinetic = ModulatorComp.Damage;
-            }
-            else if (ModulatorComp.Damage > 100)
-            {
-                ModulatorComp.Energy = 200 - ModulatorComp.Damage;
-                ModulatorComp.Kinetic = ModulatorComp.Damage;
-            }
-            else
-            {
-                ModulatorComp.Kinetic = ModulatorComp.Damage;
-                ModulatorComp.Energy = ModulatorComp.Damage;
-            }
             stringBuilder.Append("\n[Energy Protection_]: " + ModulatorComp.Energy.ToString("0") + "%" +
                                  "\n[Kinetic Protection]: " + ModulatorComp.Kinetic.ToString("0") + "%");
         }
@@ -219,7 +202,7 @@ namespace DefenseShields
             set { ModSet.Settings.Enabled = value; }
         }
 
-        public void UpdateSettings(ModulatorBlockSettings newSettings, bool localOnly = true)
+        public void UpdateSettings(ModulatorBlockSettings newSettings)
         {
             Enabled = newSettings.Enabled;
             ModulatorComp.Enabled = newSettings.Enabled;

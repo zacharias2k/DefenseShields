@@ -221,8 +221,7 @@ namespace DefenseShields
             DsSet = new DefenseShieldsSettings(Shield);
             ShieldComp = new ShieldGridComponent(this, DsSet);
             DsSet.LoadSettings();
-            //Log.Line($"{DsSet.Settings.IncreaseO2ByFPercent} - {DsSet.Settings.Buffer} - {ShieldComp.IncreaseO2ByFPercent} - {ShieldBuffer}");
-            //UpdateSettings(DsSet.Settings);
+            UpdateSettings(DsSet.Settings);
             if (Session.Enforced.Debug == 1) Log.Line($"StorageSetup complete");
         }
 

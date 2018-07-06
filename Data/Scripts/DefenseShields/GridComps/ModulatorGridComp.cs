@@ -12,7 +12,7 @@ namespace DefenseShields
         public bool Enabled;
         public bool Voxels;
         public bool Grids;
-        public float Damage;
+        public int Damage;
         public float Energy;
         public float Kinetic;
 
@@ -88,7 +88,7 @@ namespace DefenseShields
             set { Grids = value; }
         }
 
-        public float ModulateDamage
+        public int ModulateDamage
         {
             get { return Damage; }
             set { Damage = value; }
