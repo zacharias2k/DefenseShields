@@ -1,12 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using Sandbox.ModAPI;
-using VRage;
 using VRage.Game;
 using VRage.Game.Entity;
-using VRage.ModAPI;
-using VRage.ObjectBuilders;
 using VRage.Utils;
 using VRageMath;
 using static VRageMath.MathHelper;
@@ -127,21 +122,17 @@ namespace DefenseShields.Support
             private int _mainLoop;
             private int _lCount;
             private int _longerLoop;
-            private int _modelCount;
             private int _chargeDrawStep;
             private int _lod;
 
-            private float ShieldEntPercent;
+            private float _shieldEntPercent;
 
             private const int ImpactSteps = 60;
             private const int ChargeSteps = 30;
 
-            private Vector4 _hitColor;
-            private Vector4 _waveColor = Color.FromNonPremultiplied(0, 0, 0, 75);
-            private Vector4 _wavePassedColor;
-            private Vector4 _waveComingColor;
-            private Vector4 _defaultColor = Color.FromNonPremultiplied(0, 0, 0, 255);
-            private Vector4 _chargeColor = Color.FromNonPremultiplied(255, 255, 255, 255);
+            private readonly Vector4 _waveColor = Color.FromNonPremultiplied(0, 0, 0, 75);
+            private readonly Vector4 _defaultColor = Color.FromNonPremultiplied(0, 0, 0, 255);
+            private readonly Vector4 _chargeColor = Color.FromNonPremultiplied(255, 255, 255, 255);
 
             public bool ImpactsFinished = true;
             private bool _impact;
@@ -227,7 +218,7 @@ namespace DefenseShields.Support
             {
                 _shellPassive = shellPassive;
                 _shellActive = shellActive;
-                ShieldEntPercent = shieldPercent;
+                _shieldEntPercent = shieldPercent;
                 _matrix = matrix;
                 _impactPosState = impactPos;
                 _passive = passiveVisible;
@@ -245,7 +236,13 @@ namespace DefenseShields.Support
                 if (_charge && ImpactsFinished && prevLod == _lod) ChargeColorAssignments(prevLod);
                 if (ImpactsFinished && prevLod == _lod) return;
 
-                if (_active) _shellActive.SetEmissiveParts(ShieldEmissiveAlpha, UtilsStatic.GetEmissiveColorFromFloat(ShieldEntPercent), 100f);
+                if (_active)
+                {
+                    var color = UtilsStatic.GetEmissiveColorFromFloat(_shieldEntPercent);
+                    var emissive = 100f;
+                    if (color == Color.White || color == Color.Aquamarine) emissive = 2.5f;
+                    _shellActive.SetEmissiveParts(ShieldEmissiveAlpha, UtilsStatic.GetShieldColorFromFloat(_shieldEntPercent), emissive);
+                }
 
                 ImpactColorAssignments(prevLod);
                 //_dsutil2.StopWatchReport("colorcalc", 1);

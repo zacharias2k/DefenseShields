@@ -12,6 +12,7 @@ using VRage.Game.Components;
 using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
+using SpaceEngineers.Game.ModAPI;
 using VRage.Utils;
 using VRage.Voxels;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;

@@ -349,7 +349,7 @@ namespace DefenseShields
             var matrix = rotationMatrix * MatrixD.CreateTranslation(0, Definition.BlockMoveTranslation * TranslationTime, 0);
 
             _subpartRotor.PositionComp.LocalMatrix = matrix;
-            _subpartRotor.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetEmissiveColorFromFloat(ShieldComp.ShieldPercent), 0.1f * EmissiveIntensity);
+            _subpartRotor.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetShieldColorFromFloat(ShieldComp.ShieldPercent), 0.1f * EmissiveIntensity);
 
             if (AnimationLoop++ == 599) AnimationLoop = 0;
         }
