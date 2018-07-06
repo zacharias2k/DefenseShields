@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces.Terminal;
+﻿using Sandbox.ModAPI;
 
 namespace DefenseShields
 {
@@ -10,7 +7,7 @@ namespace DefenseShields
         #region Create UI
         internal static void CreateUi(IMyTerminalBlock shield)
         {
-            Session.Instance.CreateControls(shield);
+            Session.Instance.CreateControlerUi(shield);
             Session.Instance.WidthSlider.Visible = ShowSizeSlider;
             Session.Instance.HeightSlider.Visible = ShowSizeSlider;
             Session.Instance.DepthSlider.Visible = ShowSizeSlider;

@@ -24,7 +24,7 @@ namespace DefenseShields
         private uint _hierarchyTick = 1;
         public float ImpactSize { get; set; } = 9f;
         public float Absorb { get; set; }
-        public float ModulateEnergy;
+        public float ModulateEnergy =1f;
         public float ModulateKinetic;
         private float _power = 0.001f;
         private float _gridMaxPower;

@@ -102,11 +102,6 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
 
-        private float PowerAvail(MyDefinitionId resourceTypeId, MyResourceSinkComponent sink)
-        {
-            return 1;
-        }
-
         private bool MasterElection()
         {
             if (ShieldComp.DefenseShields != this && ShieldComp.DefenseShields != null) return true;
@@ -133,7 +128,7 @@ namespace DefenseShields
                     return;
                 }
 
-                if (AllInited || MasterElection() || !Shield.IsFunctional || _tick < 200) return;
+                if (AllInited || MasterElection() || !Shield.IsFunctional) return;
                 if (!HealthInited)
                 {
                     if (ConnectCheck(true)) return;

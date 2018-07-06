@@ -83,7 +83,6 @@ namespace DefenseShields
 
             if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
             {
-                //Log.Line($"fail: {_overLoadLoop} - {_reModulationLoop} - {_genericDownLoop}");
                 FailureConditions();
                 return false;
             }
@@ -92,7 +91,6 @@ namespace DefenseShields
 
             if (!Shield.IsWorking || !Shield.IsFunctional || !ShieldComp.EmittersWorking)
             {
-                //Log.Line($"Block/Emitter not working: {Shield.IsWorking} - {Shield.IsFunctional} - {ShieldComp.EmittersWorking}");
                 _genericDownLoop = 0;
                 return false;
             }
@@ -298,6 +296,7 @@ namespace DefenseShields
                 {
                     ShieldOffline = false;
                     _overLoadLoop = -1;
+                    DsSet.SaveSettings();
                 }
                 var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
                 var nerfer = nerf ? Session.Enforced.Nerf : 1f;
@@ -1043,6 +1042,7 @@ namespace DefenseShields
             Shield.CubeGrid.Components.TryGet(out modComp);
             if (modComp != null)
             {
+                Log.Line($"ModComp:{ModulateVoxels} - {modComp.ModulateVoxels} - {ModulateGrids} - {modComp.ModulateGrids}");
                 var reModulate = ModulateVoxels != modComp.ModulateVoxels || ModulateGrids != modComp.ModulateGrids;
                 if (reModulate) _reModulationLoop = 0;
 
@@ -1057,8 +1057,7 @@ namespace DefenseShields
             }
             else
             {
-                ModulateVoxels = false;
-                ModulateGrids = false;
+                Log.Line($"no-ModComp:{ModulateVoxels} - {ModulateGrids}");
                 ModulateEnergy = 1f;
                 ModulateKinetic = 1f;
             }

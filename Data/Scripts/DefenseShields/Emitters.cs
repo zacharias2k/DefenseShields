@@ -16,7 +16,7 @@ using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 namespace DefenseShields
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "EmitterL", "EmitterS", "EmitterST", "LargeArmorEmitter", "SmallArmorEmitter")]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "EmitterL", "EmitterS", "EmitterST", "EmitterLA", "EmitterSA")]
     public class Emitters : MyGameLogicComponent
     {
         private uint _tick;
@@ -171,7 +171,7 @@ namespace DefenseShields
                     EmitterMode = EmitterType.Station;
                     break;
                 case "EmitterL":
-                case "LargeArmorEmitter":
+                case "EmitterLA":
                     EmitterMode = EmitterType.Large;
                     if (Emitter.BlockDefinition.SubtypeId != "EmitterL") Armored = true;
                     break;
@@ -396,8 +396,8 @@ namespace DefenseShields
             _noBlocksLos.Clear();
             _vertsSighted.Clear();
             var testDist = Definition.FieldDist;
-
-            var testDir = _subpartRotor.PositionComp.WorldVolume.Center - Emitter.PositionComp.WorldVolume.Center;
+            var testDir = Emitter.PositionComp.WorldMatrix.Up;
+            if (!Armored) testDir = _subpartRotor.PositionComp.WorldVolume.Center - Emitter.PositionComp.WorldVolume.Center;
             testDir.Normalize();
             var testPos = Emitter.PositionComp.WorldVolume.Center + testDir * testDist;
             _sightPos = testPos;

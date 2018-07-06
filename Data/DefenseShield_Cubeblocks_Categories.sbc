@@ -22,11 +22,12 @@
 		<string>EmitterS</string>
 		<string>EmitterP</string>
 		<string>EmitterST</string>
+    <string>EmitterLA</string>
+    <string>EmitterSA</string>
 		<string>DS_Supergen</string>
 		<string>LargeDamageEnhancer</string>
 		<string>SmallDamageEnhancer</string>
-		<string>SmallArmorEmitter</string>
-		<string>LargeArmorEmitter</string>
+
 
       </ItemIds>
     </Category>
@@ -712,7 +713,7 @@
   <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
         <TypeId>UpgradeModule</TypeId>
-        <SubtypeId>LargeArmorEmitter</SubtypeId>
+        <SubtypeId>EmitterLA</SubtypeId>
       </Id>
       <DisplayName>Shield ArmoredEmitter</DisplayName>
       <Icon>Textures\GUI\Icons\Cubes\DamageEnhancerIcon.dds</Icon>
@@ -757,7 +758,7 @@
   <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
         <TypeId>UpgradeModule</TypeId>
-        <SubtypeId>SmallArmorEmitter</SubtypeId>
+        <SubtypeId>EmitterSA</SubtypeId>
       </Id>
       <DisplayName>Shield Armored Emitter</DisplayName>
       <Icon>Textures\GUI\Icons\Cubes\DamageEnhancerIcon.dds</Icon>
