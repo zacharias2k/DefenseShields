@@ -14,7 +14,6 @@ using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage.Utils;
 using VRage.Voxels;
-using VRageRender.Animations;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
 namespace DefenseShields
