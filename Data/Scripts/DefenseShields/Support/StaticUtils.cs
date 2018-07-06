@@ -14,15 +14,26 @@ namespace DefenseShields.Support
     internal static class UtilsStatic
     {
         internal static Color White1 = new Color(255, 255, 255);
-        internal static Color White2 = new Color(245, 246, 255);
-        internal static Color White3 = new Color(191, 195, 255);
-        internal static Color Blue1 = new Color(57, 66, 255);
-        internal static Color Blue2 = new Color(12, 16, 255);
-        internal static Color Blue3 = new Color(0, 0, 238);
-        internal static Color Blue4 = new Color(12, 0, 195);
+        internal static Color White2 = new Color(90, 118, 255);
+        internal static Color White3 = new Color(47, 86, 255);
+        internal static Color Blue1 = new Color(0, 66, 255);
+        internal static Color Blue2 = new Color(139, 139, 255, 255);
+        internal static Color Blue3 = new Color(0, 7, 255, 255);
+        internal static Color Blue4 = new Color(22, 0, 170);
         internal static Color Red1 = new Color(87, 0, 66);
         internal static Color Red2 = new Color(121, 0, 13);
         internal static Color Red3 = new Color(255, 0, 0);
+
+        internal static Color GWhite1 = new Color(255, 255, 255);
+        internal static Color GWhite2 = new Color(245, 246, 255);
+        internal static Color GWhite3 = new Color(191, 195, 255);
+        internal static Color GBlue1 = new Color(57, 66, 255);
+        internal static Color GBlue2 = new Color(12, 16, 255);
+        internal static Color GBlue3 = new Color(0, 0, 238);
+        internal static Color GBlue4 = new Color(12, 0, 195);
+        internal static Color GRed1 = new Color(87, 0, 66);
+        internal static Color GRed2 = new Color(121, 0, 13);
+        internal static Color GRed3 = new Color(255, 0, 0);
 
         private static readonly Dictionary<float, float> DmgTable = new Dictionary<float, float>
         {
@@ -87,11 +98,25 @@ namespace DefenseShields.Support
 
         public static Color GetEmissiveColorFromFloat(float percent)
         {
+            if (percent > 90) return GWhite1;
+            if (percent > 80) return GWhite2;
+            if (percent > 70) return GWhite3;
+            if (percent > 60) return GBlue1;
+            if (percent > 50) return GBlue2;
+            if (percent > 40) return GBlue3;
+            if (percent > 30) return GBlue4;
+            if (percent > 20) return GRed1;
+            if (percent > 10) return GRed2;
+            return GRed3;
+        }
+
+        public static Color GetShieldColorFromFloat(float percent)
+        {
             if (percent > 90) return White1;
             if (percent > 80) return White2;
             if (percent > 70) return White3;
-            if (percent > 60) return Blue1;
-            if (percent > 50) return Blue2;
+            if (percent > 60) return Color.Aquamarine;
+            if (percent > 50) return Blue1;
             if (percent > 40) return Blue3;
             if (percent > 30) return Blue4;
             if (percent > 20) return Red1;

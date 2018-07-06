@@ -12,9 +12,9 @@ using VRage.Game.Components;
 using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
+using SpaceEngineers.Game.ModAPI;
 using VRage.Utils;
 using VRage.Voxels;
-using VRageRender.Animations;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
 namespace DefenseShields
@@ -80,11 +80,16 @@ namespace DefenseShields
 
         private bool BlockFunctional()
         {
-            if (!AllInited || ShieldLowered() || !WarmUpSequence()) return false;
+            if (!AllInited)
+            {
+                PostInit();
+                return false;
+            }
+
+            if (ShieldLowered() || !WarmUpSequence()) return false;
 
             if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
             {
-                //Log.Line($"fail: {_overLoadLoop} - {_reModulationLoop} - {_genericDownLoop}");
                 FailureConditions();
                 return false;
             }
@@ -93,7 +98,6 @@ namespace DefenseShields
 
             if (!Shield.IsWorking || !Shield.IsFunctional || !ShieldComp.EmittersWorking)
             {
-                //Log.Line($"Block/Emitter not working: {Shield.IsWorking} - {Shield.IsFunctional} - {ShieldComp.EmittersWorking}");
                 _genericDownLoop = 0;
                 return false;
             }
@@ -101,7 +105,7 @@ namespace DefenseShields
             if (_lCount == 4 && _count == 4 && Shield.Enabled && ConnectCheck()) return false;
             UpdateBlockCount();
 
-            return ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional; 
+            return ControlBlockWorking = Shield.IsWorking && Shield.IsFunctional; 
         }
 
         private void BlockChanged()
@@ -299,6 +303,7 @@ namespace DefenseShields
                 {
                     ShieldOffline = false;
                     _overLoadLoop = -1;
+                    DsSet.SaveSettings();
                 }
                 var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
                 var nerfer = nerf ? Session.Enforced.Nerf : 1f;
@@ -1052,14 +1057,11 @@ namespace DefenseShields
 
                 var energyDamage = modComp.KineticProtection * 0.01f;
                 var kineticDamage = modComp.EnergyProtection * 0.01f;
-
                 ModulateEnergy = energyDamage;
                 ModulateKinetic = kineticDamage;
             }
             else
             {
-                ModulateVoxels = false;
-                ModulateGrids = false;
                 ModulateEnergy = 1f;
                 ModulateKinetic = 1f;
             }

@@ -194,6 +194,8 @@
   <ItemGroup>
     <Compile Include="Data\Scripts\DefenseShields\Config\API\dsApi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Enforcements.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Config\Modulator-Settings.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Control\ModUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\DsUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\TerminalHelpers.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Display.cs" />

@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using DefenseShields.Control;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
-using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
@@ -35,23 +33,14 @@ namespace DefenseShields
         private readonly Dictionary<long, Modulators> _modulators = new Dictionary<long, Modulators>();
 
         public MyModStorageComponentBase Storage { get; set; }
-        internal ModulatorSettings Settings = new ModulatorSettings();
         internal ModulatorGridComponent ModulatorComp;
         internal ShieldGridComponent ShieldComp;
         private MyEntitySubpart _subpartRotor;
+        internal ModulatorSettings ModSet;
 
-        private IMyUpgradeModule Modulator => (IMyUpgradeModule)Entity;
-        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule> _modulateVoxels;
-        private RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule> _modulateGrids;
-        private RangeSlider<Sandbox.ModAPI.Ingame.IMyUpgradeModule> _modulateDamage;
-
+        public IMyUpgradeModule Modulator => (IMyUpgradeModule)Entity;
 
         internal DSUtils Dsutil1 = new DSUtils();
-
-        public Modulators()
-        {
-            ModulatorComp = new ModulatorGridComponent(this);
-        }
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
@@ -70,15 +59,21 @@ namespace DefenseShields
             base.UpdateOnceBeforeFrame();
             try
             {
+
                 if (!Modulator.CubeGrid.Components.Has<ModulatorGridComponent>())
-                    Modulator.CubeGrid.Components.Add(ModulatorComp);
-                else Modulator.CubeGrid.Components.TryGet(out ModulatorComp);
+                    Modulator.CubeGrid.Components.Add(new ModulatorGridComponent(this));
+
+                Modulator.CubeGrid.Components.TryGet(out ModulatorComp);
                 Modulator.CubeGrid.Components.TryGet(out ShieldComp);
-                ShieldComp?.DefenseShields?.GetModulationInfo();
+
                 Session.Instance.Modulators.Add(this);
                 _modulators.Add(Entity.EntityId, this);
-                CreateUi();
+
                 StorageSetup();
+                CreateUi();
+                ModUi.ComputeDamage(this, ModUi.GetDamage(Modulator));
+
+                ShieldComp?.DefenseShields?.GetModulationInfo();
                 ((MyCubeGrid)Modulator.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
                 Modulator.AppendingCustomInfo += AppendingCustomInfo;
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
@@ -89,8 +84,9 @@ namespace DefenseShields
         private void StorageSetup()
         {
             Storage = Modulator.Storage;
-            LoadSettings();
-            //UpdateSettings(Settings, false);
+            ModSet = new ModulatorSettings(Modulator);
+            ModSet.LoadSettings();
+            UpdateSettings(ModSet.Settings);
         }
 
         private void HierarchyChanged(IMyCubeGrid myCubeGrid = null)
@@ -123,13 +119,7 @@ namespace DefenseShields
                     var blockCam = Modulator.PositionComp.WorldVolume;
                     if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && Modulator.IsWorking) BlockMoveAnimation();
                 }
-                if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
-                {
-                    SyncControlsClient();
-                    Modulator.RefreshCustomInfo();
-                    Modulator.ShowInToolbarConfig = false;
-                    Modulator.ShowInToolbarConfig = true;
-                }
+
                 if (ShieldComp?.GetSubGrids != null && !ShieldComp.GetSubGrids.Equals(ModulatorComp.GetSubGrids))
                     ModulatorComp.GetSubGrids = ShieldComp.GetSubGrids;
             }
@@ -143,15 +133,12 @@ namespace DefenseShields
                 if (ShieldComp == null) Modulator.CubeGrid.Components.TryGet(out ShieldComp);
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
 
-
-                if (ServerUpdate) SyncMisc();
-                SyncControlsClient();
                 Modulator.RefreshCustomInfo();
 
                 if (Modulator.CustomData != ModulatorComp.ModulationPassword)
                 {
                     ModulatorComp.ModulationPassword = Modulator.CustomData;
-                    SaveSettings();
+                    ModSet.SaveSettings();
                     if (Session.Enforced.Debug == 1) Log.Line($"Updating modulator password");
                 }
             }
@@ -167,6 +154,13 @@ namespace DefenseShields
                 if (_lCount == 10) _lCount = 0;
             }
 
+            if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
+            {
+                Modulator.RefreshCustomInfo();
+                Modulator.ShowInToolbarConfig = false;
+                Modulator.ShowInToolbarConfig = true;
+            }
+
             if (_hierarchyDelayed && _tick > _hierarchyTick + 9)
             {
                 if (Session.Enforced.Debug == 1) Log.Line($"Delayed tick: {_tick} - hierarchytick: {_hierarchyTick}");
@@ -178,142 +172,12 @@ namespace DefenseShields
         #region Create UI
         private void CreateUi()
         {
-            _modulateVoxels = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Modulator, "AllowVoxels", "Voxels may pass", true);
-            _modulateGrids = new RefreshCheckbox<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Modulator, "AllowGrids", "Grids may pass", false);
-            _modulateDamage = new RangeSlider<Sandbox.ModAPI.Ingame.IMyUpgradeModule>(Modulator, "ModulateDamage", "Energy <-Modulate Damage-> Kinetic", 20, 180, 100);
-            Session.Instance.ModulatorControlsLoaded = true;
-        }
-        #endregion
-
-        #region Settings
-        public bool Enabled
-        {
-            get { return Settings.Enabled; }
-            set { Settings.Enabled = value; }
-        }
-
-        public void UpdateSettings(ModulatorSettings newSettings, bool localOnly = true)
-        {
-            Enabled = newSettings.Enabled;
-            ModulatorComp.Enabled = newSettings.Enabled;
-            ModulatorComp.Voxels = newSettings.ModulateVoxels;
-            ModulatorComp.Grids = newSettings.ModulateGrids;
-            ModulatorComp.Damage = newSettings.ModulateDamage;
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings for modulator");
-        }
-
-        public void SaveSettings()
-        {
-            if (Modulator.Storage == null)
-            {
-                Modulator.Storage = new MyModStorageComponent();
-            }
-            Modulator.Storage[Session.Instance.ModulatorGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
-        }
-
-        public bool LoadSettings()
-        {
-            if (Modulator.Storage == null) return false;
-
-            string rawData;
-            bool loadedSomething = false;
-
-            if (Modulator.Storage.TryGetValue(Session.Instance.ModulatorGuid, out rawData))
-            {
-                ModulatorSettings loadedSettings = null;
-
-                try
-                {
-                    loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<ModulatorSettings>(rawData);
-                }
-                catch (Exception e)
-                {
-                    loadedSettings = null;
-                    Log.Line($"ModulatorId:{Modulator.EntityId.ToString()} - Error loading settings!\n{e}");
-                }
-
-                if (loadedSettings != null)
-                {
-                    Settings = loadedSettings;
-                    loadedSomething = true;
-                }
-            }
-            return loadedSomething;
-        }
-
-        private void SyncMisc()
-        {
-            if (Modulator != null && !Modulator.Enabled.Equals(Settings.Enabled))
-            {
-                Enabled = Settings.Enabled;
-                ModulatorComp.Enabled = Settings.Enabled;
-            }
-
-            if (_modulateVoxels != null && !_modulateVoxels.Getter(Modulator).Equals(Settings.ModulateVoxels))
-            {
-                _modulateVoxels.Setter(Modulator, Settings.ModulateVoxels);
-                ModulatorComp.Voxels = Settings.ModulateVoxels;
-            }
-
-            if (_modulateGrids != null && !_modulateGrids.Getter(Modulator).Equals(Settings.ModulateGrids))
-            {
-                _modulateGrids.Setter(Modulator, Settings.ModulateGrids);
-                ModulatorComp.Grids = Settings.ModulateGrids;
-            }
-
-            if (_modulateDamage != null && !_modulateDamage.Getter(Modulator).Equals(Settings.ModulateDamage))
-            {
-                _modulateDamage.Setter(Modulator, Settings.ModulateDamage);
-                ModulatorComp.Damage = Settings.ModulateDamage;
-            }
-
-            ServerUpdate = false;
-            SaveSettings();
-            if (Session.Enforced.Debug == 1) Log.Line($"SyncMisc (modulator)");
-        }
-
-        private void SyncControlsClient()
-        {
-            var needsSync = false;
-            if (!Enabled.Equals(Enabled) 
-                || !_modulateVoxels.Getter(Modulator).Equals(ModulatorComp.Voxels)
-                || !_modulateGrids.Getter(Modulator).Equals(ModulatorComp.Grids)
-                || !_modulateDamage.Getter(Modulator).Equals(ModulatorComp.Damage))
-            {
-                needsSync = true;
-                Enabled = Settings.Enabled;
-                ModulatorComp.Enabled = Settings.Enabled;
-                ModulatorComp.Voxels = _modulateVoxels.Getter(Modulator);
-                ModulatorComp.Grids = _modulateGrids.Getter(Modulator);
-                ModulatorComp.Damage = _modulateDamage.Getter(Modulator);
-            }
-
-            if (needsSync)
-            {
-                NetworkUpdate();
-                SaveSettings();
-                if (Session.Enforced.Debug == 1) Log.Line($"Needed sync for modulator");
-            }
+            ModUi.CreateUi(Modulator);
         }
         #endregion
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
-            if (ModulatorComp.Damage < 100)
-            {
-                ModulatorComp.Energy = _modulateDamage.Max + 20 - ModulatorComp.Damage;
-                ModulatorComp.Kinetic = ModulatorComp.Damage;
-            }
-            else if (ModulatorComp.Damage > 100)
-            {
-                ModulatorComp.Energy = _modulateDamage.Max + 20 - ModulatorComp.Damage;
-                ModulatorComp.Kinetic = ModulatorComp.Damage;
-            }
-            else
-            {
-                ModulatorComp.Kinetic = ModulatorComp.Damage;
-                ModulatorComp.Energy = ModulatorComp.Damage;
-            }
             stringBuilder.Append("\n[Energy Protection_]: " + ModulatorComp.Energy.ToString("0") + "%" +
                                  "\n[Kinetic Protection]: " + ModulatorComp.Kinetic.ToString("0") + "%");
         }
@@ -332,23 +196,22 @@ namespace DefenseShields
             _subpartRotor.PositionComp.LocalMatrix = rotationMatrix;
         }
 
-        #region Network
-        private void NetworkUpdate()
+        public bool Enabled
         {
-
-            if (Session.IsServer)
-            {
-                if (Session.Enforced.Debug == 1) Log.Line($"server relaying network settings update for modulator {Modulator.EntityId}");
-                Session.PacketizeModulatorSettings(Modulator, Settings); // update clients with server's settings
-            }
-            else // client, send settings to server
-            {
-                if (Session.Enforced.Debug == 1) Log.Line($"client sent network settings update for modulator {Modulator.EntityId}");
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new ModulatorData(MyAPIGateway.Multiplayer.MyId, Modulator.EntityId, Settings));
-                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PACKET_ID_MODULATOR, bytes);
-            }
+            get { return ModSet.Settings.Enabled; }
+            set { ModSet.Settings.Enabled = value; }
         }
-        #endregion
+
+        public void UpdateSettings(ModulatorBlockSettings newSettings)
+        {
+            Enabled = newSettings.Enabled;
+            ModulatorComp.Enabled = newSettings.Enabled;
+            ModulatorComp.Voxels = newSettings.ModulateVoxels;
+            ModulatorComp.Grids = newSettings.ModulateGrids;
+            ModulatorComp.Damage = newSettings.ModulateDamage;
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings for modulator");
+        }
+
         public override void OnRemovedFromScene()
         {
             try

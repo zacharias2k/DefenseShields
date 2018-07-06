@@ -50,7 +50,7 @@ namespace DefenseShields
         public float Buffer = 0f;
 
         [ProtoMember(9)]
-        public bool ModulateVoxels = true;
+        public bool ModulateVoxels = false;
 
         [ProtoMember(10)]
         public bool ModulateGrids = false;
@@ -77,7 +77,7 @@ namespace DefenseShields
         public bool ShieldActive = false;
 
         [ProtoMember(18)]
-        public bool RaiseShield = false;
+        public bool RaiseShield = true;
 
         public override string ToString()
         {
@@ -138,10 +138,10 @@ namespace DefenseShields
     }
 
     [ProtoContract]
-    public class ModulatorSettings
+    public class ModulatorBlockSettings
     {
         [ProtoMember(1)]
-        public bool Enabled = false;
+        public bool Enabled = true;
 
         [ProtoMember(2)]
         public bool ModulateVoxels = false;
@@ -150,7 +150,7 @@ namespace DefenseShields
         public bool ModulateGrids = false;
 
         [ProtoMember(4), DefaultValue(-1)]
-        public int ModulateDamage = -1;
+        public int ModulateDamage = 100;
 
         public override string ToString()
         {
@@ -239,11 +239,11 @@ namespace DefenseShields
         public ulong Sender = 0;
 
         [ProtoMember(4)]
-        public ModulatorSettings Settings = null;
+        public ModulatorBlockSettings Settings = null;
 
         public ModulatorData() { } // empty ctor is required for deserialization
 
-        public ModulatorData(ulong sender, long entityId, ModulatorSettings settings)
+        public ModulatorData(ulong sender, long entityId, ModulatorBlockSettings settings)
         {
             Type = PacketType.MODULATOR;
             Sender = sender;

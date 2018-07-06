@@ -29,11 +29,11 @@ namespace DefenseShields
         internal bool CustomDataReset = true;
         internal bool ShowOnHudReset = true;
         public bool DSControl { get; set; }
+        public bool ModControl { get; set; }
 
         public bool StationEmitterControlsLoaded { get; set; }
         public bool LargeEmitterControlsLoaded { get; set; }
         public bool SmallEmitterControlsLoaded { get; set; }
-        public bool ModulatorControlsLoaded { get; set; }
         public bool DisplayControlsLoaded { get; set; }
 
         public bool Enabled = true;
@@ -66,6 +66,7 @@ namespace DefenseShields
         public string disabledBy = null;
 
         public static Session Instance { get; private set; }
+
         public readonly MyModContext MyModContext = new MyModContext();
         public readonly Icosphere Icosphere = new Icosphere(5);
         private DSUtils _dsutil1 = new DSUtils();
@@ -81,6 +82,12 @@ namespace DefenseShields
         public IMyTerminalControlCheckbox HideActiveCheckBox;
         public IMyTerminalControlCheckbox SendToHudCheckBox;
         public IMyTerminalControlOnOffSwitch ToggleShield;
+
+        public IMyTerminalControlSlider ModDamage;
+        public IMyTerminalControlCheckbox ModVoxels;
+        public IMyTerminalControlCheckbox ModGrids;
+        public IMyTerminalControlSeparator ModSep1;
+        public IMyTerminalControlSeparator ModSep2;
 
         public static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         public bool[] SphereOnCamera = new bool[0];
@@ -449,7 +456,7 @@ namespace DefenseShields
 
                             if (Enforced.Debug == 1) Log.Line($"Packet received:\n{data.Settings}");
                             logic.UpdateSettings(data.Settings);
-                            logic.SaveSettings();
+                            logic.ModSet.SaveSettings();
                             logic.ServerUpdate = true;
 
                             if (IsServer)
@@ -468,7 +475,7 @@ namespace DefenseShields
             MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_ENFORCE, bytes, senderId);
         }
 
-        public static void PacketizeModulatorSettings(IMyCubeBlock block, ModulatorSettings settings)
+        public static void PacketizeModulatorSettings(IMyCubeBlock block, ModulatorBlockSettings settings)
         {
             var data = new ModulatorData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
@@ -603,7 +610,7 @@ namespace DefenseShields
             CustomDataReset = true;
         }
 
-        public void CreateControls(IMyTerminalBlock block)
+        public void CreateControlerUi(IMyTerminalBlock block)
         {
             if (DSControl) return;
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
@@ -639,6 +646,19 @@ namespace DefenseShields
             SendToHudCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HideIcon", "Send status to nearby HUDs", "Send status to nearby HUDs", DsUi.GetSendToHud, DsUi.SetSendToHud);
            
             DSControl = true;
+        }
+
+        public void CreateModulatorUi(IMyTerminalBlock block)
+        {
+            if (ModControl) return;
+            var comp = block?.GameLogic?.GetAs<Modulators>();
+            ModSep1 = TerminalHelpers.Separator(comp?.Modulator, "sep1");
+            ModDamage = TerminalHelpers.AddSlider(comp?.Modulator, "DamageModulation", "Balance Shield Protection", "Balance Shield Protection", ModUi.GetDamage, ModUi.SetDamage);
+            ModDamage.SetLimits(20, 180);
+            ModSep2 = TerminalHelpers.Separator(comp?.Modulator, "sep2");
+            ModVoxels = TerminalHelpers.AddCheckbox(comp?.Modulator, "ModulateVoxels", "Let voxels bypass shield", "Let voxels bypass shield", ModUi.GetVoxels, ModUi.SetVoxels);
+            ModGrids = TerminalHelpers.AddCheckbox(comp?.Modulator, "ModulateGrids", "Let grids bypass shield", "Let grid bypass shield", ModUi.GetGrids, ModUi.SetGrids);
+            ModControl = true;
         }
 
         public override void LoadData()

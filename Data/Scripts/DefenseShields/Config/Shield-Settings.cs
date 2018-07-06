@@ -18,7 +18,6 @@ namespace DefenseShields
         {
             if (Shield.Storage == null)
             {
-                Log.Line($"ShieldId:{Shield.EntityId.ToString()} - Storage = null");
                 Shield.Storage = new MyModStorageComponent();
             }
             Shield.Storage[Session.Instance.SettingsGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
