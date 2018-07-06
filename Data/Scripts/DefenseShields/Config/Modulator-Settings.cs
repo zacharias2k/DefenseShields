@@ -66,7 +66,7 @@ namespace DefenseShields
             {
                 if (Session.Enforced.Debug == 1) Log.Line($"client sent network settings update for modulator {Modulator.EntityId}");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new ModulatorData(MyAPIGateway.Multiplayer.MyId, Modulator.EntityId, Settings));
-                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PACKET_ID_MODULATOR, bytes);
+                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdModulator, bytes);
             }
         }
         #endregion

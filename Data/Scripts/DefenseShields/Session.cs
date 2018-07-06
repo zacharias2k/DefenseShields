@@ -24,20 +24,29 @@ namespace DefenseShields
     {
         private uint _tick;
 
+        public const ushort PacketIdDisplay = 62519; // network
+        public const ushort PacketIdSettings = 62520; // network
+        public const ushort PacketIdEnforce = 62521; // network
+        public const ushort PacketIdModulator = 62522; // network
+        private const long WorkshopId = 1365616918;
+
+        private int _count = -1;
+        private int _lCount;
+        private int _eCount;
+
         internal bool SessionInit;
         internal bool DefinitionsLoaded;
         internal bool CustomDataReset = true;
         internal bool ShowOnHudReset = true;
-        public bool DSControl { get; set; }
+        public static bool EnforceInit;
+        public bool DsControl { get; set; }
         public bool ModControl { get; set; }
-
         public bool StationEmitterControlsLoaded { get; set; }
         public bool LargeEmitterControlsLoaded { get; set; }
         public bool SmallEmitterControlsLoaded { get; set; }
         public bool DisplayControlsLoaded { get; set; }
-
         public bool Enabled = true;
-        public static bool EnforceInit;
+
         internal MyStringId Password = MyStringId.GetOrCompute("Shield Access Frequency");
         internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Match a shield's modulation frequency/code");
         internal MyStringId ShieldFreq = MyStringId.GetOrCompute("Shield Frequency");
@@ -46,24 +55,15 @@ namespace DefenseShields
         public static readonly bool IsServer = MyAPIGateway.Multiplayer.IsServer;
         public static readonly bool DedicatedServer = MyAPIGateway.Utilities.IsDedicated;
 
-        private int _count = -1;
-        private int _lCount;
-        private int _eCount;
-
         internal static DefenseShields HudComp;
         internal static double HudShieldDist = double.MaxValue;
 
-        public const ushort PACKET_ID_DISPLAY = 62519; // network
-        public const ushort PACKET_ID_SETTINGS = 62520; // network
-        public const ushort PACKET_ID_ENFORCE = 62521; // network
-        public const ushort PACKET_ID_MODULATOR = 62522; // network
-        private const long WORKSHOP_ID = 1365616918;
         public readonly Guid EmitterGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811506");
         public readonly Guid DisplayGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811507");
         public readonly Guid SettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
         public readonly Guid ModulatorGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811509");
 
-        public string disabledBy = null;
+        //public string disabledBy = null;
 
         public static Session Instance { get; private set; }
 
@@ -109,10 +109,9 @@ namespace DefenseShields
                 Log.Init("debugdevelop.log");
                 Log.Line($"Logging Started");
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
-                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_SETTINGS, PacketSettingsReceived);
-                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_ENFORCE, PacketEnforcementReceived);
-                MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID_MODULATOR, ModulatorSettingsReceived);
-                MyAPIGateway.Utilities.RegisterMessageHandler(WORKSHOP_ID, ModMessageHandler);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdSettings, PacketSettingsReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEnforce, PacketEnforcementReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdModulator, ModulatorSettingsReceived);
                 if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter += CustomControls;
 
                 if (DedicatedServer || IsServer)
@@ -472,7 +471,7 @@ namespace DefenseShields
         {
             var data = new EnforceData(MyAPIGateway.Multiplayer.MyId, block.EntityId, Enforced);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_ENFORCE, bytes, senderId);
+            MyAPIGateway.Multiplayer.SendMessageTo(PacketIdEnforce, bytes, senderId);
         }
 
         public static void PacketizeModulatorSettings(IMyCubeBlock block, ModulatorBlockSettings settings)
@@ -505,7 +504,7 @@ namespace DefenseShields
                 var id = p.SteamUserId;
 
                 if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
-                    MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_SETTINGS, bytes, p.SteamUserId);
+                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdSettings, bytes, p.SteamUserId);
             }
             players.Clear();
         }
@@ -526,33 +525,11 @@ namespace DefenseShields
                 var id = p.SteamUserId;
 
                 if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
-                    MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID_MODULATOR, bytes, p.SteamUserId);
+                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdModulator, bytes, p.SteamUserId);
             }
             players.Clear();
         }
         #endregion
-
-        private void ModMessageHandler(object obj)
-        {
-            try
-            {
-                if (obj is MyTuple<bool, string>)
-                {
-                    var data = (MyTuple<bool, string>)obj;
-                    Enabled = data.Item1;
-
-                    if (Enabled)
-                    {
-                        disabledBy = null;
-                    }
-                    else
-                    {
-                        disabledBy = data.Item2;
-                    }
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in ModMessageHandler: {ex}"); }
-        }
 
         public string ModPath()
         {
@@ -612,7 +589,7 @@ namespace DefenseShields
 
         public void CreateControlerUi(IMyTerminalBlock block)
         {
-            if (DSControl) return;
+            if (DsControl) return;
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             var sep0 = TerminalHelpers.Separator(comp?.Shield, "sep0");
             ToggleShield = TerminalHelpers.AddOnOff(comp?.Shield, "ToggleShield", "Shield Status", "Raise or Lower Shields", "Up", "Down", DsUi.GetRaiseShield, DsUi.SetRaiseShield);
@@ -645,7 +622,7 @@ namespace DefenseShields
             HideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HideActive", "Hide active shield state        ", "Hide active shield state        ", DsUi.GetHideActive, DsUi.SetHideActive);
             SendToHudCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "HideIcon", "Send status to nearby HUDs", "Send status to nearby HUDs", DsUi.GetSendToHud, DsUi.SetSendToHud);
            
-            DSControl = true;
+            DsControl = true;
         }
 
         public void CreateModulatorUi(IMyTerminalBlock block)

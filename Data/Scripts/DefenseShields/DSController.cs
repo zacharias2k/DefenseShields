@@ -59,6 +59,7 @@ namespace DefenseShields
                         SyncThreadedEnts(true);
                         if (!WarmedUp) 
                         {
+                            Log.Line($"test");
                             WarmedUp = true;
                             if (Session.Enforced.Debug == 1) Log.Line($"Warmup complete");
                             return;
@@ -83,7 +84,7 @@ namespace DefenseShields
             if (!AllInited)
             {
                 PostInit();
-                return false;
+                if (!AllInited) return false;
             }
 
             if (ShieldLowered() || !WarmUpSequence()) return false;

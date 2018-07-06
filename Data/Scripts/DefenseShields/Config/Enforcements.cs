@@ -34,7 +34,7 @@ namespace DefenseShields
                 Log.Line($"Client [{MyAPIGateway.Multiplayer.MyId}] requesting enforcement - current:\n{Session.Enforced}");
                 Session.Enforced.SenderId = MyAPIGateway.Multiplayer.MyId;
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new EnforceData(MyAPIGateway.Multiplayer.MyId, shieldId, Session.Enforced));
-                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PACKET_ID_ENFORCE, bytes);
+                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdEnforce, bytes);
             }
         }
 

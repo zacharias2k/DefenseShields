@@ -32,8 +32,6 @@ namespace DefenseShields
                 PowerPreInit();
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
 
                 if (Session.Enforced.Debug == 1) Log.Line($"pre-Init complete");
             }
@@ -125,7 +123,6 @@ namespace DefenseShields
                 if (AllInited) return;
                 if (!Session.EnforceInit)
                 {
-                    Log.Line($"Enfroce: {_tick}");
                     if (Session.IsServer) ServerEnforcementSetup();
                     else if (_enforceTick == 0 || _tick - _enforceTick > 60)
                     {

@@ -179,14 +179,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\DefenseShield_Audio.sbc" />
-    <None Include="Data\DefenseShield_Component_Blueprint.sbc" />
-    <None Include="Data\DefenseShield_Cubeblocks_Categories.sbc">
+    <None Include="Data\Audio.sbc" />
+    <None Include="Data\CompBlueprint.sbc" />
+    <None Include="Data\BlocksCategories.sbc">
       <SubType>Designer</SubType>
     </None>
-    <None Include="Data\DefenseShield_EmitterEffect.sbc" />
-    <None Include="Data\DefenseShield_EntityComponents.sbc" />
-    <None Include="Data\DefenseShield_TransparentMaterials.sbc" />
+    <None Include="Data\EmitterEffect.sbc" />
+    <None Include="Data\EntityComponents.sbc" />
+    <None Include="Data\TransparentMaterials.sbc" />
     <None Include="tools\Monitor DS.ps1" />
     <None Include="tools\Monitor SE Error Log.ps1" />
     <None Include="tools\Monitor SE Log.ps1" />
@@ -207,14 +207,14 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\Seperator.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\UpdateDsSettings.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Enhancer.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\GridComps\O2GeneratorGridComp.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\GridComps\O2GeneratorGridComp.cs" />
     <Compile Include="HoldingArea\HyperSession.cs" />
     <Compile Include="HoldingArea\Logger.cs" />
     <Compile Include="Data\Scripts\DefenseShields\O2Generator.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Entweb-DSComp.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\GridComps\EmitterGridComp.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\GridComps\ModulatorGridComp.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\GridComps\ShieldGridComp.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\GridComps\EmitterGridComp.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\GridComps\ModulatorGridComp.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\GridComps\ShieldGridComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Intersect-DSComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Modulators.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Emitters.cs" />

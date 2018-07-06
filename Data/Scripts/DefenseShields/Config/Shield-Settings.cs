@@ -66,7 +66,7 @@ namespace DefenseShields
             {
                 if (Session.Enforced.Debug == 1) Log.Line($"client sent network settings update for shield {Shield.EntityId}");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new PacketData(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, Settings));
-                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PACKET_ID_SETTINGS, bytes);
+                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdSettings, bytes);
             }
         }
     }
