@@ -56,7 +56,7 @@ namespace DefenseShields
 
         private readonly Dictionary<long, O2Generators> _o2Generator = new Dictionary<long, O2Generators>();
 
-        public override void UpdateAfterSimulation100()
+        public override void UpdateBeforeSimulation()
         {
             try
             {
@@ -67,14 +67,9 @@ namespace DefenseShields
 
                 if (!BlockWorking() || !ShieldComp.ShieldActive) return;
 
-                if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
-                {
-                    O2Generator.RefreshCustomInfo();
-                    O2Generator.ShowInToolbarConfig = false;
-                    O2Generator.ShowInToolbarConfig = true;
-                }
-                else O2Generator.RefreshCustomInfo();
+                Timing();
 
+                if (_count > 0) return;
                 var sc = ShieldComp;
                 var shieldFullVol = sc.ShieldVolume;
                 var startingO2Fpercent = sc.DefaultO2 + sc.IncreaseO2ByFPercent;
@@ -122,6 +117,25 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
 
+        private void Timing()
+        {
+            if (_count++ == 59)
+            {
+                _count = 0;
+                _lCount++;
+                if (_lCount == 10) _lCount = 0;
+            }
+
+
+            if (_count == 29 && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
+            {
+                O2Generator.RefreshCustomInfo();
+                O2Generator.ShowInToolbarConfig = false;
+                O2Generator.ShowInToolbarConfig = true;
+            }
+            else if (_lCount % 2 == 0 && _count == 0) O2Generator.RefreshCustomInfo();
+        }
+
         private bool BlockWorking()
         {
             if (Alpha || !IsStatic || ShieldComp.DefenseShields == null || !ShieldComp.Warming) return false;
@@ -143,7 +157,7 @@ namespace DefenseShields
             {
                 base.Init(objectBuilder);
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
+                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
                 Session.Instance.O2Generators.Add(this);
                 if (!_o2Generator.ContainsKey(Entity.EntityId)) _o2Generator.Add(Entity.EntityId, this);
             }

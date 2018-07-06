@@ -33,6 +33,8 @@ namespace DefenseShields
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
+                NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
+
                 if (Session.Enforced.Debug == 1) Log.Line($"pre-Init complete");
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
@@ -116,16 +118,21 @@ namespace DefenseShields
             return false;
         }
 
-        public override void UpdateAfterSimulation100()
+        public void PostInit()
         {
             try
             {
-                if (!Session.EnforceInit && (_enforceTick == 0 || _tick - _enforceTick > 60))
+                if (AllInited) return;
+                if (!Session.EnforceInit)
                 {
-                    _enforceTick = _tick;
+                    Log.Line($"Enfroce: {_tick}");
                     if (Session.IsServer) ServerEnforcementSetup();
-                    else ClientEnforcementRequest();
-                    return;
+                    else if (_enforceTick == 0 || _tick - _enforceTick > 60)
+                    {
+                        _enforceTick = _tick;
+                        ClientEnforcementRequest();
+                    }
+                    if (!Session.EnforceInit) return;
                 }
 
                 if (AllInited || MasterElection() || !Shield.IsFunctional) return;
@@ -166,7 +173,7 @@ namespace DefenseShields
                 if (!BlockReady()) return;
 
                 if (Session.Enforced.Debug == 1) Log.Line($"AnimateInit complete");
-                AllInited = true;
+                if (Session.EnforceInit) AllInited = true;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateAfterSimulation100: {ex}"); }
         }

@@ -80,7 +80,13 @@ namespace DefenseShields
 
         private bool BlockFunctional()
         {
-            if (!AllInited || ShieldLowered() || !WarmUpSequence()) return false;
+            if (!AllInited)
+            {
+                PostInit();
+                return false;
+            }
+
+            if (ShieldLowered() || !WarmUpSequence()) return false;
 
             if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
             {
@@ -99,7 +105,7 @@ namespace DefenseShields
             if (_lCount == 4 && _count == 4 && Shield.Enabled && ConnectCheck()) return false;
             UpdateBlockCount();
 
-            return ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional; 
+            return ControlBlockWorking = Shield.IsWorking && Shield.IsFunctional; 
         }
 
         private void BlockChanged()
