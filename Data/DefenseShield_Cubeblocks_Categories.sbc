@@ -723,7 +723,6 @@
       <Model>Models\Cubes\ArmoredEmitterLarge.mwm</Model>
       <Components>
         <Component Subtype="Girder" Count="32" />
-        <Component Subtype="BulletproofGlass" Count="20" />
         <Component Subtype="MetalGrid" Count="4" />
         <Component Subtype="Construction" Count="16" />
 		<Component Subtype="Motor" Count="2" />
@@ -736,7 +735,8 @@
       </Components>
       <CriticalComponent Subtype="Computer" Index="0" />
       <BuildProgressModels>
-        <Model BuildPercentUpperBound="1.00" File="Models\Cubes\DamageEnhancerLarge_Constr1.mwm" />
+        <Model BuildPercentUpperBound="0.66" File="Models\Cubes\ArmoredEmitterLarge_Constr1.mwm" />
+        <Model BuildPercentUpperBound="1.00" File="Models\Cubes\ArmoredEmitterLarge_Constr2.mwm" />
       </BuildProgressModels>
       <BlockPairName>ArmorEmitter</BlockPairName>
       <EdgeType>Light</EdgeType>
@@ -768,7 +768,6 @@
       <Model>Models\Cubes\ArmoredEmitterSmall.mwm</Model>
       <Components>
         <Component Subtype="Girder" Count="2" />
-        <Component Subtype="BulletproofGlass" Count="2" />
         <Component Subtype="MetalGrid" Count="1" />
         <Component Subtype="Construction" Count="2" />
 		<Component Subtype="Motor" Count="1" />
@@ -781,7 +780,8 @@
       </Components>
       <CriticalComponent Subtype="Computer" Index="0" />
       <BuildProgressModels>
-        <Model BuildPercentUpperBound="1.00" File="Models\Cubes\DamageEnhancerSmall_Constr1.mwm" />
+        <Model BuildPercentUpperBound="0.66" File="Models\Cubes\ArmoredEmitterSmall_Constr1.mwm" />
+        <Model BuildPercentUpperBound="1.00" File="Models\Cubes\ArmoredEmitterSmall_Constr2.mwm" />
       </BuildProgressModels>
       <BlockPairName>ArmorEmitter</BlockPairName>
       <EdgeType>Light</EdgeType>
