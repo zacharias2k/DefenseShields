@@ -149,13 +149,21 @@ namespace DefenseShields
             {
                 base.Init(objectBuilder);
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+            }
+            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
+        }
 
+        public override void UpdateOnceBeforeFrame()
+        {
+            base.UpdateOnceBeforeFrame();
+            try
+            {
                 Session.Instance.Emitters.Add(this);
                 if (!_emitters.ContainsKey(Entity.EntityId)) _emitters.Add(Entity.EntityId, this);
                 StorageSetup();
                 SetEmitterType();
             }
-            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
+            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
 
         private void StorageSetup()

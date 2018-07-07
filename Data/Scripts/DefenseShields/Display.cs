@@ -15,7 +15,6 @@ namespace DefenseShields
     public class Displays : MyGameLogicComponent
     {
         public bool ServerUpdate;
-        internal bool MainInit;
         private readonly Dictionary<long, Displays> _displays = new Dictionary<long, Displays>();
         internal ShieldGridComponent ShieldComp;
         private IMyTextPanel Display => (IMyTextPanel)Entity;
@@ -26,6 +25,7 @@ namespace DefenseShields
             try
             {
                 base.Init(objectBuilder);
+                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
@@ -36,6 +36,7 @@ namespace DefenseShields
             base.UpdateOnceBeforeFrame();
             try
             {
+                RemoveControls();
                 Session.Instance.Displays.Add(this);
                 _displays.Add(Entity.EntityId, this);
                 Display.ShowPublicTextOnScreen();
@@ -45,13 +46,6 @@ namespace DefenseShields
 
         public override void UpdateBeforeSimulation100()
         {
-            if (!MainInit)
-            {
-                RemoveControls();
-                Display.ShowPublicTextOnScreen();
-                MainInit = true;
-            }
-
             if (ShieldComp == null) Display.CubeGrid.Components.TryGet(out ShieldComp);
             if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.ShieldActive) return;
             Display.WritePublicText(ShieldComp.DefenseShields.Shield.CustomInfo);
@@ -94,7 +88,7 @@ namespace DefenseShields
 
         private static bool HideControls(IMyTerminalBlock block)
         {
-            return block.BlockDefinition.SubtypeName.Contains("TextPanel");
+            return block.BlockDefinition.SubtypeId != "DSControlLCD";
         }
 
         public static void RemoveControls()
