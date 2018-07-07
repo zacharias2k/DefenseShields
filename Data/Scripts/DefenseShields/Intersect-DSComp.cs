@@ -120,7 +120,7 @@ namespace DefenseShields
         {
             EntIntersectInfo entInfo;
             _webEnts.TryGetValue(voxelBase, out entInfo);
-            var collision = CustomCollision.VoxelCollisionSphere(Shield.CubeGrid, ShieldComp.PhysicsOutsideLow, voxelBase, _sOriBBoxD, entInfo.TempStorage, _detectMatrixOutside);
+            var collision = CustomCollision.VoxelCollisionSphere(Shield.CubeGrid, ShieldComp.PhysicsOutsideLow, voxelBase, SOriBBoxD, entInfo.TempStorage, _detectMatrixOutside);
 
             if (collision != Vector3D.NegativeInfinity)
             {
@@ -161,7 +161,7 @@ namespace DefenseShields
             var collisionAvg = Vector3D.Zero;
             var transformInv = DetectMatrixOutsideInv;
             var normalMat = MatrixD.Transpose(transformInv);
-            var intersection = bOriBBoxD.Intersects(ref _sOriBBoxD);
+            var intersection = bOriBBoxD.Intersects(ref SOriBBoxD);
             try
             {
                 if (intersection)

@@ -120,8 +120,8 @@ namespace DefenseShields
 
         private BoundingBox _shieldAabb;
         private BoundingBox _expandedAabb;
-        private BoundingSphereD _shieldSphere;
-        private MyOrientedBoundingBoxD _sOriBBoxD;
+        public BoundingSphereD ShieldSphere;
+        public MyOrientedBoundingBoxD SOriBBoxD;
         private Quaternion _sQuaternion;
         private readonly Random _random = new Random();
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();

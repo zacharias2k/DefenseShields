@@ -773,11 +773,11 @@ namespace DefenseShields
                 DetectionMatrix = _shieldShapeMatrix * _shieldGridMatrix;
                 DetectionCenter = Shield.CubeGrid.PositionComp.WorldVolume.Center;
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(Shield.CubeGrid.WorldMatrix);
-                _sOriBBoxD = new MyOrientedBoundingBoxD(DetectionCenter, ShieldSize, _sQuaternion);
+                SOriBBoxD = new MyOrientedBoundingBoxD(DetectionCenter, ShieldSize, _sQuaternion);
                 //_sOriBBoxD = new MyOrientedBoundingBoxD(_detectionCenter, _expandedAabb.HalfExtents, _sQuaternion);
 
                 _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
-                _shieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
+                ShieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
                 EllipsoidSa.Update(_detectMatrixOutside.Scale.X, _detectMatrixOutside.Scale.Y, _detectMatrixOutside.Scale.Z);
             }
             else
@@ -789,9 +789,9 @@ namespace DefenseShields
                 ShieldSize = DetectionMatrix.Scale;
                 DetectionCenter = emitter.PositionComp.WorldVolume.Center;
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(emitter.CubeGrid.WorldMatrix);
-                _sOriBBoxD = new MyOrientedBoundingBoxD(DetectionCenter, ShieldSize, _sQuaternion);
+                SOriBBoxD = new MyOrientedBoundingBoxD(DetectionCenter, ShieldSize, _sQuaternion);
                 _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
-                _shieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
+                ShieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
                 EllipsoidSa.Update(_detectMatrixOutside.Scale.X, _detectMatrixOutside.Scale.Y, _detectMatrixOutside.Scale.Z);
             }
             ShieldComp.BoundingRange = ShieldSize.AbsMax() + 5f;
