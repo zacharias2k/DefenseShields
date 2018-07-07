@@ -124,12 +124,18 @@ namespace DefenseShields.Support
             private int _longerLoop;
             private int _chargeDrawStep;
             private int _lod;
+            private int _leftLoop;
+            private int _rightLoop;
+            private int _upLoop;
+            private int _downLoop;
+            private int _forwardLoop;
+            private int _backLoop;
 
-            private float _shieldEntPercent;
-
+            private const int SideSteps = 60;
             private const int ImpactSteps = 60;
             private const int ChargeSteps = 30;
 
+            private Color _activeColor = Color.Transparent;
             private readonly Vector4 _waveColor = Color.FromNonPremultiplied(0, 0, 0, 75);
             private readonly Vector4 _defaultColor = Color.FromNonPremultiplied(0, 0, 0, 255);
             private readonly Vector4 _chargeColor = Color.FromNonPremultiplied(255, 255, 255, 255);
@@ -139,6 +145,7 @@ namespace DefenseShields.Support
             private bool _charge;
             private bool _passive;
             private bool _active;
+            private bool _colorUpdate;
 
             private MyEntity _shellPassive;
             private MyEntity _shellActive;
@@ -149,7 +156,6 @@ namespace DefenseShields.Support
             private MyEntitySubpart _rightSide;
             private MyEntitySubpart _upSide;
             private MyEntitySubpart _downSide;
-
 
             private readonly MyStringId _faceIdle = MyStringId.GetOrCompute("CustomIdle");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private readonly MyStringId _faceWave = MyStringId.GetOrCompute("SunDisk");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
@@ -223,9 +229,17 @@ namespace DefenseShields.Support
 
             public void ComputeEffects(MatrixD matrix, Vector3D impactPos, MyEntity shellPassive, MyEntity shellActive, int prevLod, float shieldPercent, bool passiveVisible, bool activeVisible)
             {
-                _shellPassive = shellPassive;
-                _shellActive = shellActive;
-                _shieldEntPercent = shieldPercent;
+                if (_shellPassive == null) ComputePassive(shellPassive);
+                if (_shellActive == null) ComputeSides(shellActive);
+
+                var newActiveColor = UtilsStatic.GetShieldColorFromFloat(shieldPercent);
+                if (_activeColor != newActiveColor)
+                {
+                    _colorUpdate = true;
+                    _activeColor = newActiveColor;
+                }
+                else _colorUpdate = false;
+
                 _matrix = matrix;
                 _impactPosState = impactPos;
                 _passive = passiveVisible;
@@ -243,13 +257,7 @@ namespace DefenseShields.Support
                 if (_charge && ImpactsFinished && prevLod == _lod) ChargeColorAssignments(prevLod);
                 if (ImpactsFinished && prevLod == _lod) return;
 
-                if (_active)
-                {
-                    var color = UtilsStatic.GetEmissiveColorFromFloat(_shieldEntPercent);
-                    var emissive = 100f;
-                    if (color == Color.White || color == Color.Aquamarine) emissive = 2.5f;
-                    _shellActive.SetEmissiveParts(ShieldEmissiveAlpha, UtilsStatic.GetShieldColorFromFloat(_shieldEntPercent), emissive);
-                }
+                if (_active && _colorUpdate) UpdateColor();
 
                 ImpactColorAssignments(prevLod);
                 //_dsutil2.StopWatchReport("colorcalc", 1);
@@ -406,6 +414,30 @@ namespace DefenseShields.Support
                 }
             }
 
+            public void ComputePassive(MyEntity shellPassive)
+            {
+                _shellPassive = shellPassive;
+            }
+
+            public void ComputeSides(MyEntity shellActive)
+            {
+                if (shellActive == null) return;
+                shellActive.TryGetSubpart("ShieldLeft", out _leftSide);
+                shellActive.TryGetSubpart("ShieldRight", out _rightSide);
+                shellActive.TryGetSubpart("ShieldTop", out _upSide);
+                shellActive.TryGetSubpart("ShieldBottom", out _downSide);
+                shellActive.TryGetSubpart("ShieldFront", out _frontSide);
+                shellActive.TryGetSubpart("ShieldBack", out _backSide);
+                _shellActive = shellActive;
+            }
+
+            private void UpdateColor()
+            {
+                var emissive = 100f;
+                if (_activeColor == Color.White || _activeColor == Color.Aquamarine) emissive = 2.5f;
+                _shellActive.SetEmissiveParts(ShieldEmissiveAlpha, _activeColor, emissive);
+            }
+
             public void StepEffects()
             {
                 _mainLoop++;
@@ -429,13 +461,15 @@ namespace DefenseShields.Support
                 }
                 if (_impact)
                 {
+                    if (_active)
+                    {
+                        var impactSide = ClosestSide(_impactPosState);
+                        impactSide.Render.UpdateRenderObject(true);
+                        _shellPassive.Render.UpdateRenderObject(false);
+                    }
                     if (ImpactsFinished)
                     {
-                        if (_active)
-                        {
-                            _shellActive.Render.UpdateRenderObject(true);
-                            _shellPassive.Render.UpdateRenderObject(false);
-                        }
+
                     }
 
                     ImpactsFinished = false;
@@ -476,6 +510,55 @@ namespace DefenseShields.Support
                             _triColorBuffer[i] = _defaultColor;
                     }
                 }
+            }
+
+            public double[] DistArray = {
+                0, 0, 0, 0, 0, 0
+            };
+
+            public string[] SideArray = {
+                "ShieldLeft", "ShieldRight", "ShieldTop", "ShieldBottom", "ShieldFront", "ShieldBack"
+            };
+
+            private MyEntitySubpart ClosestSide(Vector3D impactPos)
+            {
+                var impactTransNorm = impactPos - _matrix.Translation;
+
+                DistArray[1] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Left);
+                DistArray[0] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Right);
+                DistArray[2] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Up);
+                DistArray[3] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Down);
+                DistArray[5] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Forward);
+                DistArray[4] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Backward);
+                var lowestNum = Lowest(DistArray);
+                switch (lowestNum)
+                {
+                    case 0:
+                        return _leftSide;
+                    case 1:
+                        return _rightSide;
+                    case 2:
+                        return _upSide;
+                    case 3:
+                        return _downSide;
+                    case 4:
+                        return _frontSide;
+                    default:
+                        return _backSide;
+                }
+            }
+
+            private static int Lowest(params double[] inputs)
+            {
+                var lowest = inputs[0];
+                var lowestNum = 0;
+                for (int i = 0; i < 6; i++)
+                {
+                    if (!(inputs[i] < lowest)) continue;
+                    lowest = inputs[i];
+                    lowestNum = i;
+                }
+                return lowestNum;
             }
         }
     }

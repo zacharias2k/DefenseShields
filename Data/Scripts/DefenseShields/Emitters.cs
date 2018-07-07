@@ -332,7 +332,7 @@ namespace DefenseShields
                 if (_count == 0) EmissiveIntensity = 2;
                 if (_count < 30) EmissiveIntensity += 1;
                 else EmissiveIntensity -= 1;
-                Emitter.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetEmissiveColorFromFloat(ShieldComp.ShieldPercent), 0.1f * EmissiveIntensity);
+                Emitter.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetShieldColorFromFloat(ShieldComp.ShieldPercent), 0.1f * EmissiveIntensity);
                 return;
             }
 
