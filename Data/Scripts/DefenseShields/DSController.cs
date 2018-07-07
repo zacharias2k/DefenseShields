@@ -358,7 +358,7 @@ namespace DefenseShields
             {
                 EmitterGridComponent eComp;
                 Shield.CubeGrid.Components.TryGet(out eComp);
-                if (eComp != null)
+                if (eComp?.PrimeComp != null || eComp?.BetaComp != null)
                 {
                     ShieldComp.EmitterComp = eComp;
                     if (GridIsMobile)
