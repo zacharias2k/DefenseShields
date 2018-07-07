@@ -716,22 +716,22 @@
         <SubtypeId>EmitterLA</SubtypeId>
       </Id>
       <DisplayName>Shield ArmoredEmitter</DisplayName>
-      <Icon>Textures\GUI\Icons\Cubes\DamageEnhancerIcon.dds</Icon>
+      <Icon>Textures\GUI\Icons\Cubes\ArmoredEmitterIcon.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="1" z="2" />
       <ModelOffset x="0" y="0" z="0" />
       <Model>Models\Cubes\ArmoredEmitterLarge.mwm</Model>
       <Components>
-        <Component Subtype="Girder" Count="32" />
-        <Component Subtype="MetalGrid" Count="4" />
+        <Component Subtype="SteelPlate" Count="32" />
+        <Component Subtype="MetalGrid" Count="10" />
         <Component Subtype="Construction" Count="16" />
-		<Component Subtype="Motor" Count="2" />
+		<Component Subtype="Motor" Count="4" />
         <Component Subtype="InteriorPlate" Count="16" />
-		<Component Subtype="Superconductor" Count="6" />
+		<Component Subtype="Superconductor" Count="8" />
         <Component Subtype="Detector" Count="6" />
         <Component Subtype="RadioCommunication" Count="16" />
-        <Component Subtype="Computer" Count="40" />
+        <Component Subtype="Computer" Count="120" />
         <Component Subtype="SteelPlate" Count="16" />
       </Components>
       <CriticalComponent Subtype="Computer" Index="0" />
@@ -761,23 +761,23 @@
         <SubtypeId>EmitterSA</SubtypeId>
       </Id>
       <DisplayName>Shield Armored Emitter</DisplayName>
-      <Icon>Textures\GUI\Icons\Cubes\DamageEnhancerIcon.dds</Icon>
+      <Icon>Textures\GUI\Icons\Cubes\ArmoredEmitterIcon.dds</Icon>
       <CubeSize>Small</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="1" z="2" />
       <ModelOffset x="0" y="0" z="0" />
       <Model>Models\Cubes\ArmoredEmitterSmall.mwm</Model>
       <Components>
-        <Component Subtype="Girder" Count="2" />
-        <Component Subtype="MetalGrid" Count="1" />
+        <Component Subtype="SteelPlate" Count="4" />
+        <Component Subtype="MetalGrid" Count="2" />
         <Component Subtype="Construction" Count="2" />
 		<Component Subtype="Motor" Count="1" />
         <Component Subtype="InteriorPlate" Count="1" />
 		<Component Subtype="Superconductor" Count="2" />
         <Component Subtype="Detector" Count="2" />
         <Component Subtype="RadioCommunication" Count="2" />
-        <Component Subtype="Computer" Count="3" />
-        <Component Subtype="SteelPlate" Count="1" />
+        <Component Subtype="Computer" Count="4" />
+        <Component Subtype="SteelPlate" Count="2" />
       </Components>
       <CriticalComponent Subtype="Computer" Index="0" />
       <BuildProgressModels>
