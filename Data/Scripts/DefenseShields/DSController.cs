@@ -802,12 +802,10 @@ namespace DefenseShields
 
         private void CreateMobileShape()
         {
-
             var shieldSize = _gridHalfExtents * _ellipsoidAdjust + _shieldFudge;
             ShieldSize = shieldSize;
             var mobileMatrix = MatrixD.CreateScale(shieldSize);
             mobileMatrix.Translation = Shield.CubeGrid.PositionComp.LocalVolume.Center;
-            //mobileMatrix.Translation = _expandedAabb.Center;
             _shieldShapeMatrix = mobileMatrix;
         }
 
@@ -825,7 +823,6 @@ namespace DefenseShields
             MatrixD matrix;
             if (!GridIsMobile)
             {
-                //EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, ShieldComp.IncreaseO2ByFPercent);
                 matrix = _shieldShapeMatrix * ShieldComp.EmitterComp.PrimeComp.Emitter.WorldMatrix;
                 ShieldEnt.PositionComp.SetWorldMatrix(matrix);
                 ShieldEnt.PositionComp.SetPosition(DetectionCenter);
@@ -861,8 +858,8 @@ namespace DefenseShields
             var drawIcon = !enemy && SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
             if (drawIcon) UpdateIcon();
 
-            var passiveVisible = !ShieldPassiveHide && !enemy;
-            var activeVisible = !ShieldActiveHide && !enemy;
+            var passiveVisible = !ShieldPassiveHide;
+            var activeVisible = !ShieldActiveHide;
 
             if (!passiveVisible && !_hideShield)
             {
@@ -998,13 +995,14 @@ namespace DefenseShields
                 {
                     case 0:
                         IMyCubeGrid grid;
-                        while (_staleGrids.TryDequeue(out grid)) lock (_webEnts) _webEnts.Remove(grid);
+                        while (_staleGrids.TryDequeue(out grid)) lock (WebEnts) WebEnts.Remove(grid);
                         break;
                     case 1:
-                        lock (_webEnts)
+                        lock (WebEnts)
                         {
-                            _webEntsTmp.AddRange(_webEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1));
-                            foreach (var webent in _webEntsTmp) _webEnts.Remove(webent.Key);
+                            EnemyShields.Clear();
+                            _webEntsTmp.AddRange(WebEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1));
+                            foreach (var webent in _webEntsTmp) WebEnts.Remove(webent.Key);
                         }
                         break;
                     case 2:

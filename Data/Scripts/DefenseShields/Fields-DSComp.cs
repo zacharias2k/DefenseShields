@@ -137,10 +137,12 @@ namespace DefenseShields
         internal readonly HashSet<IMyEntity> FriendlyCache = new HashSet<IMyEntity>();
         internal readonly HashSet<IMyEntity> PartlyProtectedCache = new HashSet<IMyEntity>();
         internal readonly HashSet<IMyEntity> IgnoreCache = new HashSet<IMyEntity>();
+        internal readonly HashSet<MyEntity> EnemyShields = new HashSet<MyEntity>();
+
         private List<IMyCubeGrid> _connectedGrids = new List<IMyCubeGrid>();
 
         private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<IMyEntity, Vector3D>();
-        private readonly MyConcurrentDictionary<IMyEntity, EntIntersectInfo> _webEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();
+        public readonly MyConcurrentDictionary<IMyEntity, EntIntersectInfo> WebEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();
 
         private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
 

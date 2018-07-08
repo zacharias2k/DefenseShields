@@ -4,7 +4,6 @@ using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
 using VRage.Game.Components;
-using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
@@ -35,7 +34,7 @@ namespace DefenseShields
             if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.WorldAABB))) return;
 
             EntIntersectInfo entInfo;
-            _webEnts.TryGetValue(ent, out entInfo);
+            WebEnts.TryGetValue(ent, out entInfo);
             if (entInfo == null) return;
 
             CustomCollision.SmallIntersect(entInfo, _fewDmgBlocks, grid, _detectMatrixOutside, DetectMatrixOutsideInv);
@@ -53,11 +52,11 @@ namespace DefenseShields
 
         private void GridIntersect(IMyEntity ent)
         {
-            lock (_webEnts)
+            lock (WebEnts)
             {
                 var grid = (IMyCubeGrid)ent;
                 EntIntersectInfo entInfo;
-                _webEnts.TryGetValue(ent, out entInfo);
+                WebEnts.TryGetValue(ent, out entInfo);
                 if (entInfo == null) return;
 
                 var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.WorldAABB);
@@ -88,8 +87,25 @@ namespace DefenseShields
 
             var bPhysics = grid.Physics;
             var sPhysics = myGrid.Physics;
-            var momentum = bPhysics.Mass * bPhysics.LinearVelocity + sPhysics.Mass * sPhysics.LinearVelocity;
-            var resultVelocity = momentum / (bPhysics.Mass + sPhysics.Mass);
+            var bMass = bPhysics.Mass;
+            var sMass = sPhysics.Mass;
+            var bVelocity = bPhysics.LinearVelocity;
+            var sVelocity = sPhysics.LinearVelocity;
+
+            if (bMass <= 0) bMass = float.MaxValue;
+            if (sMass <= 0) sMass = float.MaxValue;
+
+            var momentum = bMass * bPhysics.LinearVelocity + sMass * sPhysics.LinearVelocity;
+            var resultVelocity = momentum / (bMass + sMass);
+            var damage = 1f;
+            var bDamage1 = (bMass * bVelocity).Length();
+            var bDamage2 = (bMass * sVelocity).Length();
+            var bDamage = bDamage1 >  bDamage2 ? bDamage1: bDamage2;
+            var sDamage1 = (sMass * bVelocity).Length();
+            var sDamage2 = (sMass * sVelocity).Length();
+            var sDamage = sDamage1 > sDamage2 ? sDamage1 : sDamage2;
+
+            damage = bDamage < sDamage ? bDamage : sDamage;
 
             var collisionAvg = Vector3D.Zero;
             for (int i = 0; i < insidePoints.Count; i++)
@@ -97,29 +113,26 @@ namespace DefenseShields
                 collisionAvg += insidePoints[i];
             }
 
-            if (insidePoints.Count > 0 && !bPhysics.IsStatic) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bPhysics.Mass, bPhysics.CenterOfMassWorld);
-            if (insidePoints.Count > 0 && !sPhysics.IsStatic) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sPhysics.Mass, sPhysics.CenterOfMassWorld);
+            if (insidePoints.Count > 0 && !bPhysics.IsStatic) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass, bPhysics.CenterOfMassWorld);
+            if (insidePoints.Count > 0 && !sPhysics.IsStatic) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sMass, sPhysics.CenterOfMassWorld);
 
             collisionAvg /= insidePoints.Count;
-            if (insidePoints.Count > 0 && !sPhysics.IsStatic) sPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * sPhysics.Mass, null, Vector3D.Zero, MathHelper.Clamp(sPhysics.LinearVelocity.Length(), 10f, 50f));
-            if (insidePoints.Count > 0 && !bPhysics.IsStatic) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - bPhysics.CenterOfMassWorld) * bPhysics.Mass, null, Vector3D.Zero, MathHelper.Clamp(bPhysics.LinearVelocity.Length(), 10f, 50f));
+            if (insidePoints.Count > 0 && !sPhysics.IsStatic) sPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * sMass , null, Vector3D.Zero, MathHelper.Clamp(sPhysics.LinearVelocity.Length(), 10f, 50f));
+            if (insidePoints.Count > 0 && !bPhysics.IsStatic) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - bPhysics.CenterOfMassWorld) * bMass, null, Vector3D.Zero, MathHelper.Clamp(bPhysics.LinearVelocity.Length(), 10f, 50f));
 
             if (insidePoints.Count <= 0) return;
 
             var contactPoint = DSUtils.CreateFromPointsList(insidePoints).Center; // replace with average
             WorldImpactPosition = contactPoint;
             shieldComponent.DefenseShields.WorldImpactPosition = contactPoint;
-            var damage = 1f;
-            var bDamage = (bPhysics.Mass * bPhysics.LinearVelocity).Length();
-            var sDamage = (sPhysics.Mass * sPhysics.LinearVelocity).Length();
-            damage = bDamage < sDamage ? bDamage : sDamage;
-            Absorb += (damage / 1000) * ModulateEnergy;
+
+            Absorb += (damage / 100) * ModulateEnergy;
         }
 
         private void VoxelIntersect(MyVoxelBase voxelBase)
         {
             EntIntersectInfo entInfo;
-            _webEnts.TryGetValue(voxelBase, out entInfo);
+            WebEnts.TryGetValue(voxelBase, out entInfo);
             var collision = CustomCollision.VoxelCollisionSphere(Shield.CubeGrid, ShieldComp.PhysicsOutsideLow, voxelBase, SOriBBoxD, entInfo.TempStorage, _detectMatrixOutside);
 
             if (collision != Vector3D.NegativeInfinity)
@@ -134,7 +147,7 @@ namespace DefenseShields
 
         private void PlayerIntersect(IMyEntity ent)
         {
-            var playerInfo = _webEnts[ent];
+            var playerInfo = WebEnts[ent];
             var character = ent as IMyCharacter;
             if (character == null) return;
             var npcname = character.ToString();
@@ -148,7 +161,7 @@ namespace DefenseShields
 
             var insideTime = (int)playerInfo.LastTick - (int)playerInfo.FirstTick;
             if (insideTime < 3000) return;
-            _webEnts.Remove(ent);
+            WebEnts.Remove(ent);
 
             var hydrogenId = MyCharacterOxygenComponent.HydrogenId;
             var playerGasLevel = character.GetSuitGasFillLevel(hydrogenId);

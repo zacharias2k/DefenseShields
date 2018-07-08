@@ -23,6 +23,7 @@ namespace DefenseShields
             var pruneSphere = new BoundingSphereD(DetectionCenter, ShieldComp.BoundingRange);
             var pruneList = new List<MyEntity>();
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
+            foreach (var eShield in EnemyShields) pruneList.Add(eShield);
             for (int i = 0; i < pruneList.Count; i++)
             {
                 var ent = pruneList[i];
@@ -61,10 +62,10 @@ namespace DefenseShields
                         continue;
                 }
                 _enablePhysics = true;
-                lock (_webEnts)
+                lock (WebEnts)
                 {
                     EntIntersectInfo entInfo;
-                    _webEnts.TryGetValue(ent, out entInfo);
+                    WebEnts.TryGetValue(ent, out entInfo);
                     if (entInfo != null)
                     {
                         entInfo.LastTick = _tick;
@@ -79,10 +80,10 @@ namespace DefenseShields
                         if ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, DetectMatrixOutsideInv))
                         {
                             FriendlyCache.Add(ent);
-                            _webEnts.Remove(ent);
+                            WebEnts.Remove(ent);
                             continue;
                         }
-                        _webEnts.Add(ent, new EntIntersectInfo(ent.EntityId, 0f, Vector3D.NegativeInfinity, _tick, _tick, relation, new List<IMySlimBlock>(), new MyStorageData()));
+                        WebEnts.Add(ent, new EntIntersectInfo(ent.EntityId, 0f, Vector3D.NegativeInfinity, _tick, _tick, relation, new List<IMySlimBlock>(), new MyStorageData()));
                     }
                 }
             }
@@ -109,16 +110,16 @@ namespace DefenseShields
             var oo = 0;
             var vv = 0;
             var xx = 0;
-            lock (_webEnts)
+            lock (WebEnts)
             {
-                foreach (var webent in _webEnts.Keys)
+                foreach (var webent in WebEnts.Keys)
                 {
                     var entCenter = webent.PositionComp.WorldVolume.Center;
-                    var entInfo = _webEnts[webent];
+                    var entInfo = WebEnts[webent];
                     if (entInfo.LastTick != _tick) continue;
-                    if (entInfo.FirstTick == _tick && (_webEnts[webent].Relation == Ent.LargeNobodyGrid || _webEnts[webent].Relation == Ent.LargeEnemyGrid))
-                        ((IMyCubeGrid)webent).GetBlocks(_webEnts[webent].CacheBlockList, CollectCollidableBlocks);
-                    switch (_webEnts[webent].Relation)
+                    if (entInfo.FirstTick == _tick && (WebEnts[webent].Relation == Ent.LargeNobodyGrid || WebEnts[webent].Relation == Ent.LargeEnemyGrid))
+                        ((IMyCubeGrid)webent).GetBlocks(WebEnts[webent].CacheBlockList, CollectCollidableBlocks);
+                    switch (WebEnts[webent].Relation)
                     {
                         case Ent.EnemyPlayer:
                             {
@@ -193,7 +194,7 @@ namespace DefenseShields
             }
 
             if (Session.Enforced.Debug == 1 && _lCount == 5 && _count == 5)
-                lock (_webEnts) if (_webEnts.Count > 7 || FriendlyCache.Count > 15 || IgnoreCache.Count > 15) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - friend:{FriendlyCache.Count} - ignore:{IgnoreCache.Count} - total:{_webEnts.Count} ep:{ep} ns:{ns} nl:{nl} es:{es} el:{el} ss:{ss} oo:{oo} vv:{vv} xx:{xx}");
+                lock (WebEnts) if (WebEnts.Count > 7 || FriendlyCache.Count > 15 || IgnoreCache.Count > 15) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - friend:{FriendlyCache.Count} - ignore:{IgnoreCache.Count} - total:{WebEnts.Count} ep:{ep} ns:{ns} nl:{nl} es:{es} el:{el} ss:{ss} oo:{oo} vv:{vv} xx:{xx}");
             if (Session.Enforced.Debug == 1) Dsutil3.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - webDispatch", 3);
         }
         #endregion
@@ -265,10 +266,20 @@ namespace DefenseShields
 
                 ShieldGridComponent shieldComponent;
                 grid.Components.TryGet(out shieldComponent);
-                if (shieldComponent != null && !enemy) return Ent.Friend;
-                if (shieldComponent != null && !shieldComponent.DefenseShields.ShieldComp.ShieldActive) return Ent.LargeEnemyGrid;
-                if (shieldComponent != null) return Ent.Shielded; // not good if one of the grids is out of detect range it doesn't collide.
-                //if(shieldComponent != null) return Ent.Ignore; //only process the higher EntityID
+                if (shieldComponent?.DefenseShields?.ShieldComp != null)
+                {
+                    var dsComp = shieldComponent.DefenseShields;
+                    var shieldEntity = (MyEntity)Shield.Parent;
+                    if (!enemy) return Ent.Friend;
+                    if (!dsComp.ShieldComp.ShieldActive)
+                    {
+                        lock (WebEnts) if (WebEnts.Remove(ent))
+                        return Ent.LargeEnemyGrid;
+                    }
+                    dsComp.EnemyShields.Add(shieldEntity);
+                    return Ent.Shielded;
+                }
+
                 return enemy ? Ent.LargeEnemyGrid : Ent.Friend;
             }
 
