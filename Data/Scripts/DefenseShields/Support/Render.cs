@@ -98,6 +98,18 @@ namespace DefenseShields.Support
         {
             private readonly Icosphere _backing;
 
+            public double[] SideDistArray = {
+                0, 0, 0, 0, 0, 0
+            };
+
+            public string[] SideNameArray = {
+                "ShieldLeft", "ShieldRight", "ShieldTop", "ShieldBottom", "ShieldFront", "ShieldBack"
+            };
+
+            public MyEntitySubpart[] SidePartArray = {
+                null, null, null, null, null, null
+            };
+
             private readonly Vector3D[] _impactPos = {Vector3D.NegativeInfinity, Vector3D.NegativeInfinity,
                 Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity};
             private readonly Vector3D[] _localImpacts = {Vector3D.NegativeInfinity, Vector3D.NegativeInfinity,
@@ -118,18 +130,13 @@ namespace DefenseShields.Support
             private static readonly Random Random = new Random();
 
             private readonly int[] _impactCnt = new int[6];
+            private readonly int[] _sideLoops = new int[6];
 
             private int _mainLoop;
             private int _lCount;
             private int _longerLoop;
             private int _chargeDrawStep;
             private int _lod;
-            private int _leftLoop;
-            private int _rightLoop;
-            private int _upLoop;
-            private int _downLoop;
-            private int _forwardLoop;
-            private int _backLoop;
 
             private const int SideSteps = 60;
             private const int ImpactSteps = 60;
@@ -145,17 +152,9 @@ namespace DefenseShields.Support
             private bool _charge;
             private bool _passive;
             private bool _active;
-            private bool _colorUpdate;
 
             private MyEntity _shellPassive;
             private MyEntity _shellActive;
-
-            private MyEntitySubpart _frontSide;
-            private MyEntitySubpart _backSide;
-            private MyEntitySubpart _leftSide;
-            private MyEntitySubpart _rightSide;
-            private MyEntitySubpart _upSide;
-            private MyEntitySubpart _downSide;
 
             private readonly MyStringId _faceIdle = MyStringId.GetOrCompute("CustomIdle");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private readonly MyStringId _faceWave = MyStringId.GetOrCompute("SunDisk");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
@@ -235,10 +234,8 @@ namespace DefenseShields.Support
                 var newActiveColor = UtilsStatic.GetShieldColorFromFloat(shieldPercent);
                 if (_activeColor != newActiveColor)
                 {
-                    _colorUpdate = true;
                     _activeColor = newActiveColor;
                 }
-                else _colorUpdate = false;
 
                 _matrix = matrix;
                 _impactPosState = impactPos;
@@ -256,8 +253,6 @@ namespace DefenseShields.Support
                 StepEffects();
                 if (_charge && ImpactsFinished && prevLod == _lod) ChargeColorAssignments(prevLod);
                 if (ImpactsFinished && prevLod == _lod) return;
-
-                if (_active && _colorUpdate) UpdateColor();
 
                 ImpactColorAssignments(prevLod);
                 //_dsutil2.StopWatchReport("colorcalc", 1);
@@ -422,20 +417,20 @@ namespace DefenseShields.Support
             public void ComputeSides(MyEntity shellActive)
             {
                 if (shellActive == null) return;
-                shellActive.TryGetSubpart("ShieldLeft", out _leftSide);
-                shellActive.TryGetSubpart("ShieldRight", out _rightSide);
-                shellActive.TryGetSubpart("ShieldTop", out _upSide);
-                shellActive.TryGetSubpart("ShieldBottom", out _downSide);
-                shellActive.TryGetSubpart("ShieldFront", out _frontSide);
-                shellActive.TryGetSubpart("ShieldBack", out _backSide);
+                shellActive.TryGetSubpart("ShieldLeft", out SidePartArray[0]);
+                shellActive.TryGetSubpart("ShieldRight", out SidePartArray[1]);
+                shellActive.TryGetSubpart("ShieldTop", out SidePartArray[2]);
+                shellActive.TryGetSubpart("ShieldBottom", out SidePartArray[3]);
+                shellActive.TryGetSubpart("ShieldFront", out SidePartArray[4]);
+                shellActive.TryGetSubpart("ShieldBack", out SidePartArray[5]);
                 _shellActive = shellActive;
             }
 
-            private void UpdateColor()
+            private void UpdateColor(MyEntitySubpart _shellSide)
             {
                 var emissive = 100f;
                 if (_activeColor == Color.White || _activeColor == Color.Aquamarine) emissive = 2.5f;
-                _shellActive.SetEmissiveParts(ShieldEmissiveAlpha, _activeColor, emissive);
+                _shellSide.SetEmissiveParts(ShieldEmissiveAlpha, _activeColor, emissive);
             }
 
             public void StepEffects()
@@ -463,13 +458,11 @@ namespace DefenseShields.Support
                 {
                     if (_active)
                     {
-                        var impactSide = ClosestSide(_impactPosState);
-                        impactSide.Render.UpdateRenderObject(true);
+                        var sideNum = ClosestSideNum(_impactPosState);
+                        _sideLoops[sideNum] = 1;
+                        SidePartArray[sideNum].Render.UpdateRenderObject(true);
+                        UpdateColor(SidePartArray[sideNum]);
                         _shellPassive.Render.UpdateRenderObject(false);
-                    }
-                    if (ImpactsFinished)
-                    {
-
                     }
 
                     ImpactsFinished = false;
@@ -491,6 +484,17 @@ namespace DefenseShields.Support
                 if (!ImpactsFinished)
                 {
                     //Log.Line($"{_impactCnt[0]} - {_impactCnt[1]} - {_impactCnt[2]} - {_impactCnt[3]} - {_impactCnt[4]} - {_impactCnt[5]}");
+                    for (int i = 0; i < _sideLoops.Length; i++)
+                    {
+                        if (_sideLoops[i] != 0) _sideLoops[i]++;
+                        else continue;
+
+                        if (_sideLoops[i] == SideSteps + 1)
+                        {
+                            SidePartArray[i].Render.UpdateRenderObject(false);
+                            _sideLoops[i] = 0;
+                        }
+                    }
                     for (int i = 0; i < _impactCnt.Length; i++)
                     {
                         if (_impactPos[i] != Vector3D.NegativeInfinity) _impactCnt[i] += 1;
@@ -512,40 +516,17 @@ namespace DefenseShields.Support
                 }
             }
 
-            public double[] DistArray = {
-                0, 0, 0, 0, 0, 0
-            };
-
-            public string[] SideArray = {
-                "ShieldLeft", "ShieldRight", "ShieldTop", "ShieldBottom", "ShieldFront", "ShieldBack"
-            };
-
-            private MyEntitySubpart ClosestSide(Vector3D impactPos)
+            private int ClosestSideNum(Vector3D impactPos)
             {
                 var impactTransNorm = impactPos - _matrix.Translation;
 
-                DistArray[1] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Left);
-                DistArray[0] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Right);
-                DistArray[2] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Up);
-                DistArray[3] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Down);
-                DistArray[5] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Forward);
-                DistArray[4] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Backward);
-                var lowestNum = Lowest(DistArray);
-                switch (lowestNum)
-                {
-                    case 0:
-                        return _leftSide;
-                    case 1:
-                        return _rightSide;
-                    case 2:
-                        return _upSide;
-                    case 3:
-                        return _downSide;
-                    case 4:
-                        return _frontSide;
-                    default:
-                        return _backSide;
-                }
+                SideDistArray[1] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Left);
+                SideDistArray[0] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Right);
+                SideDistArray[2] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Up);
+                SideDistArray[3] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Down);
+                SideDistArray[5] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Forward);
+                SideDistArray[4] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Backward);
+                return Lowest(SideDistArray);
             }
 
             private static int Lowest(params double[] inputs)

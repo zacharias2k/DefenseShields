@@ -252,8 +252,8 @@ namespace DefenseShields
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
                             var line = new LineD(blockPos, hostileEnt.PositionComp.WorldAABB.Center);
-                            var obbCheck = shield.SOriBBoxD.Intersects(ref line);
-                            if (obbCheck == null) return;
+                            var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? float.MaxValue;
+
 
                             var testDir = line.From - line.To;
                             testDir.Normalize();
@@ -261,7 +261,11 @@ namespace DefenseShields
                             var worldSphere = shield.ShieldSphere;
                             worldSphere.Center = shield.Shield.CubeGrid.PositionComp.WorldVolume.Center;
                             var sphereCheck = worldSphere.Intersects(ray);
-                            if (sphereCheck == null) return;
+                            if (sphereCheck == null)
+                            {
+                                Log.Line($"impossibe spereCheck");
+                                return;
+                            }
 
                             var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
                             Vector3 hitPos = line.From + testDir * -(double)furthestHit;
@@ -289,11 +293,14 @@ namespace DefenseShields
 
                         if (hostileEnt != null && shield.Absorb < 1 && shield.BulletCoolDown == -1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity)
                         {
+                            //Log.CleanLine("");
+                            //Log.CleanLine($"part: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
+                            //Log.CleanLine($"part: T:{info.Type} - A:{info.Amount} - HF:{shield.FriendlyCache.Contains(hostileEnt)} - HI:{shield.IgnoreCache.Contains(hostileEnt)} - PF:{shield.FriendlyCache.Contains(blockGrid)} - PI:{shield.IgnoreCache.Contains(blockGrid)}");
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
+                            if (!CustomCollision.PointInShield(blockPos, shield.DetectMatrixOutsideInv)) continue;
                             var line = new LineD(blockPos, hostileEnt.PositionComp.WorldAABB.Center);
-                            var obbCheck = shield.SOriBBoxD.Intersects(ref line);
-                            if (obbCheck == null) return;
+                            var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? float.MaxValue;
 
                             var testDir = line.From - line.To;
                             testDir.Normalize();
@@ -301,7 +308,11 @@ namespace DefenseShields
                             var worldSphere = shield.ShieldSphere;
                             worldSphere.Center = shield.Shield.CubeGrid.PositionComp.WorldVolume.Center;
                             var sphereCheck = worldSphere.Intersects(ray);
-                            if (sphereCheck == null) return;
+                            if (sphereCheck == null)
+                            {
+                                Log.Line($"part - impossibe spereCheck");
+                                return;
+                            }
 
                             var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
                             Vector3 hitPos = line.From + testDir * -(double)furthestHit;

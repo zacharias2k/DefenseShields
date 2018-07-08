@@ -95,7 +95,6 @@ namespace DefenseShields
                     {
                         if (_effect == null && ShieldComp.ShieldPercent <= 97 && !Armored) BlockParticleStart();
                         else if (_effect != null && ShieldComp.ShieldPercent > 97f && !Armored) BlockParticleStop();
-
                         BlockMoveAnimation();
                     }
                 }
@@ -161,7 +160,6 @@ namespace DefenseShields
                 Session.Instance.Emitters.Add(this);
                 if (!_emitters.ContainsKey(Entity.EntityId)) _emitters.Add(Entity.EntityId, this);
                 StorageSetup();
-                SetEmitterType();
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
@@ -173,7 +171,8 @@ namespace DefenseShields
 
         private void SetEmitterType()
         {
-            switch (Emitter.BlockDefinition.SubtypeId)
+            Definition = DefinitionManager.Get(Emitter.BlockDefinition.SubtypeId);
+            switch (Definition.Name) 
             {
                 case "EmitterST":
                     EmitterMode = EmitterType.Station;
@@ -181,23 +180,24 @@ namespace DefenseShields
                 case "EmitterL":
                 case "EmitterLA":
                     EmitterMode = EmitterType.Large;
-                    if (Emitter.BlockDefinition.SubtypeId != "EmitterL") Armored = true;
+                    if (Definition.Name == "EmitterLA") Armored = true;
                     break;
-                default:
+                case "EmitterS":
+                case "EmitterSA":
                     EmitterMode = EmitterType.Small;
-                    if (Emitter.BlockDefinition.SubtypeId != "EmitterS") Armored = true;
+                    if (Definition.Name == "EmitterSA") Armored = true;
                     break;
             }
         }
 
         private bool InitEmitter()
         {
+            if (Definition == null) SetEmitterType();
             if (!AllInited && EmitterMode == EmitterType.Station)
             {
                 Emitter.CubeGrid.Components.TryGet(out ShieldComp);
                 if (ShieldComp == null || !ShieldComp.Starting) return false;
 
-                Definition = DefinitionManager.Get(Emitter.BlockDefinition.SubtypeId);
                 if (!Emitter.CubeGrid.Components.Has<EmitterGridComponent>())
                 {
                     EGridComp = new EmitterGridComponent(this, true);
@@ -225,7 +225,6 @@ namespace DefenseShields
                 var hasEComp = Emitter.CubeGrid.Components.Has<EmitterGridComponent>();
                 if (ShieldComp == null || IsStatic && !hasEComp || !ShieldComp.Starting) return false;
 
-                Definition = DefinitionManager.Get(Emitter.BlockDefinition.SubtypeId);
                 if (!hasEComp && !IsStatic)
                 {
                     EGridComp = new EmitterGridComponent(this, false);
