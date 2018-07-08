@@ -244,7 +244,7 @@ namespace DefenseShields
                         if (info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Deformation) info.Amount = info.Amount * shield.ModulateKinetic;
                         else info.Amount = info.Amount * shield.ModulateEnergy;
 
-                        if (hostileEnt != null && shield.Absorb < 1 && shield.BulletCoolDown == -1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity)
+                        if (hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity)
                         {
                             //Log.CleanLine("");
                             //Log.CleanLine($"full: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
@@ -291,7 +291,7 @@ namespace DefenseShields
                         if (info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Deformation) info.Amount = info.Amount * shield.ModulateKinetic;
                         else info.Amount = info.Amount * shield.ModulateEnergy;
 
-                        if (hostileEnt != null && shield.Absorb < 1 && shield.BulletCoolDown == -1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity)
+                        if (hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity)
                         {
                             //Log.CleanLine("");
                             //Log.CleanLine($"part: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
