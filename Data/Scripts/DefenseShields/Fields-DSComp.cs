@@ -99,6 +99,7 @@ namespace DefenseShields
         private const string SpaceWolf = "Space_Wolf";
         private const string MyMissile = "MyMissile";
         private const string MyDebrisBase = "MyDebrisBase";
+        private string _shieldModel = "\\Models\\Cubes\\ShieldActiveBase.mwm";
 
         private Vector2D _shieldIconPos = new Vector2D(-0.89, -0.86);
 
