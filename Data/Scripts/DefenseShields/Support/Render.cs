@@ -131,6 +131,7 @@ namespace DefenseShields.Support
 
             private readonly int[] _impactCnt = new int[6];
             private readonly int[] _sideLoops = new int[6];
+            private readonly List<int> _hitFaces = new List<int>();
 
             private int _mainLoop;
             private int _lCount;
@@ -232,10 +233,7 @@ namespace DefenseShields.Support
                 if (_shellActive == null) ComputeSides(shellActive);
 
                 var newActiveColor = UtilsStatic.GetShieldColorFromFloat(shieldPercent);
-                if (_activeColor != newActiveColor)
-                {
-                    _activeColor = newActiveColor;
-                }
+                _activeColor = newActiveColor;
 
                 _matrix = matrix;
                 _impactPosState = impactPos;
@@ -458,10 +456,23 @@ namespace DefenseShields.Support
                 {
                     if (_active)
                     {
+                        /*
                         var sideNum = ClosestSideNum(_impactPosState);
                         _sideLoops[sideNum] = 1;
                         SidePartArray[sideNum].Render.UpdateRenderObject(true);
                         UpdateColor(SidePartArray[sideNum]);
+                        */
+                        var impactTransNorm = _impactPosState - _matrix.Translation;
+                        _hitFaces.Clear();
+                        _dsutil1.Sw.Restart();
+                        GetIntersectingFace(_matrix, impactTransNorm, _hitFaces);
+                        foreach (var face in _hitFaces)
+                        {
+                            _sideLoops[face] = 1;
+                            SidePartArray[face].Render.UpdateRenderObject(true);
+                            UpdateColor(SidePartArray[face]);
+                        }
+                        _dsutil1.StopWatchReport("test", -1 );
                         _shellPassive.Render.UpdateRenderObject(false);
                     }
 
@@ -540,6 +551,40 @@ namespace DefenseShields.Support
                     lowestNum = i;
                 }
                 return lowestNum;
+            }
+
+            private static void GetIntersectingFace(MatrixD matrix, Vector3D hitPosLocal, List<int> impactFaces)
+            {
+                var boxMax = matrix.Backward + matrix.Right + matrix.Up;
+                var boxMin = -boxMax;
+                var box = new BoundingBoxD(boxMin, boxMax);
+
+                var maxWidth = box.Max.LengthSquared();
+                var testLine = new LineD(Vector3D.Zero, Vector3D.Normalize(hitPosLocal) * maxWidth); //This is to ensure we intersect the box
+                LineD testIntersection;
+                box.Intersect(ref testLine, out testIntersection);
+
+                var intersection = testIntersection.To;
+
+                var projFront = VectorProjection(intersection, matrix.Forward);
+                if (projFront.LengthSquared() >= 0.65 * matrix.Forward.LengthSquared()) //if within the side thickness
+                    impactFaces.Add(intersection.Dot(matrix.Forward) > 0 ? 5 : 4);
+
+                var projLeft = VectorProjection(intersection, matrix.Left);
+                if (projLeft.LengthSquared() >= 0.65 * matrix.Left.LengthSquared()) //if within the side thickness
+                    impactFaces.Add(intersection.Dot(matrix.Left) > 0 ? 1 : 0);
+
+                var projUp = VectorProjection(intersection, matrix.Up);
+                if (projUp.LengthSquared() >= 0.65 * matrix.Up.LengthSquared()) //if within the side thickness
+                    impactFaces.Add(intersection.Dot(matrix.Up) > 0 ? 2 : 3);
+            }
+
+            private static Vector3D VectorProjection(Vector3D a, Vector3D b)
+            {
+                if (Vector3D.IsZero(b))
+                    return Vector3D.Zero;
+
+                return a.Dot(b) / b.LengthSquared() * b;
             }
         }
     }
