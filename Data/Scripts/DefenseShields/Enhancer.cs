@@ -29,7 +29,6 @@ namespace DefenseShields
                 base.Init(objectBuilder);
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-                if (!_enhancers.ContainsKey(Entity.EntityId)) _enhancers.Add(Entity.EntityId, this);
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -39,6 +38,7 @@ namespace DefenseShields
             base.UpdateOnceBeforeFrame();
             try
             {
+                if (!_enhancers.ContainsKey(Entity.EntityId)) _enhancers.Add(Entity.EntityId, this);
                 Session.Instance.Enhancers.Add(this);
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
             }

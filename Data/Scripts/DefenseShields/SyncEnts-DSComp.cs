@@ -44,7 +44,7 @@ namespace DefenseShields
                 {
                     if (destroyedLen != 0)
                     {
-                        lock (_webEnts)
+                        lock (WebEnts)
                         {
                             IMySlimBlock block;
                             var nullCount = 0;
@@ -52,14 +52,14 @@ namespace DefenseShields
                             {
                                 if (block?.CubeGrid == null) continue;
                                 EntIntersectInfo entInfo;
-                                _webEnts.TryGetValue(block.CubeGrid, out entInfo);
+                                WebEnts.TryGetValue(block.CubeGrid, out entInfo);
                                 if (entInfo == null)
                                 {
                                     nullCount++;
                                     ((MyCubeGrid)block.CubeGrid).EnqueueDestroyedBlock(block.Position);
                                     continue;
                                 }
-                                if (nullCount > 0) _webEnts.Remove(block.CubeGrid);
+                                if (nullCount > 0) WebEnts.Remove(block.CubeGrid);
                                 entInfo.CacheBlockList.Remove(block);
                                 ((MyCubeGrid)block.CubeGrid).EnqueueDestroyedBlock(block.Position);
                             }

@@ -158,10 +158,19 @@ namespace DefenseShields
                 base.Init(objectBuilder);
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+            }
+            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
+        }
+
+        public override void UpdateOnceBeforeFrame()
+        {
+            base.UpdateOnceBeforeFrame();
+            try
+            {
                 Session.Instance.O2Generators.Add(this);
                 if (!_o2Generator.ContainsKey(Entity.EntityId)) _o2Generator.Add(Entity.EntityId, this);
             }
-            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
+            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
 
         private bool InitO2Generator()

@@ -59,7 +59,6 @@ namespace DefenseShields
                         SyncThreadedEnts(true);
                         if (!WarmedUp) 
                         {
-                            Log.Line($"test");
                             WarmedUp = true;
                             if (Session.Enforced.Debug == 1) Log.Line($"Warmup complete");
                             return;
@@ -358,7 +357,7 @@ namespace DefenseShields
             {
                 EmitterGridComponent eComp;
                 Shield.CubeGrid.Components.TryGet(out eComp);
-                if (eComp != null)
+                if (eComp?.PrimeComp != null || eComp?.BetaComp != null)
                 {
                     ShieldComp.EmitterComp = eComp;
                     if (GridIsMobile)
@@ -774,11 +773,11 @@ namespace DefenseShields
                 DetectionMatrix = _shieldShapeMatrix * _shieldGridMatrix;
                 DetectionCenter = Shield.CubeGrid.PositionComp.WorldVolume.Center;
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(Shield.CubeGrid.WorldMatrix);
-                _sOriBBoxD = new MyOrientedBoundingBoxD(DetectionCenter, ShieldSize, _sQuaternion);
+                SOriBBoxD = new MyOrientedBoundingBoxD(DetectionCenter, ShieldSize, _sQuaternion);
                 //_sOriBBoxD = new MyOrientedBoundingBoxD(_detectionCenter, _expandedAabb.HalfExtents, _sQuaternion);
 
                 _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
-                _shieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
+                ShieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
                 EllipsoidSa.Update(_detectMatrixOutside.Scale.X, _detectMatrixOutside.Scale.Y, _detectMatrixOutside.Scale.Z);
             }
             else
@@ -790,9 +789,9 @@ namespace DefenseShields
                 ShieldSize = DetectionMatrix.Scale;
                 DetectionCenter = emitter.PositionComp.WorldVolume.Center;
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(emitter.CubeGrid.WorldMatrix);
-                _sOriBBoxD = new MyOrientedBoundingBoxD(DetectionCenter, ShieldSize, _sQuaternion);
+                SOriBBoxD = new MyOrientedBoundingBoxD(DetectionCenter, ShieldSize, _sQuaternion);
                 _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
-                _shieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
+                ShieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
                 EllipsoidSa.Update(_detectMatrixOutside.Scale.X, _detectMatrixOutside.Scale.Y, _detectMatrixOutside.Scale.Z);
             }
             ShieldComp.BoundingRange = ShieldSize.AbsMax() + 5f;
@@ -803,12 +802,10 @@ namespace DefenseShields
 
         private void CreateMobileShape()
         {
-
             var shieldSize = _gridHalfExtents * _ellipsoidAdjust + _shieldFudge;
             ShieldSize = shieldSize;
             var mobileMatrix = MatrixD.CreateScale(shieldSize);
             mobileMatrix.Translation = Shield.CubeGrid.PositionComp.LocalVolume.Center;
-            //mobileMatrix.Translation = _expandedAabb.Center;
             _shieldShapeMatrix = mobileMatrix;
         }
 
@@ -826,7 +823,6 @@ namespace DefenseShields
             MatrixD matrix;
             if (!GridIsMobile)
             {
-                //EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, ShieldComp.IncreaseO2ByFPercent);
                 matrix = _shieldShapeMatrix * ShieldComp.EmitterComp.PrimeComp.Emitter.WorldMatrix;
                 ShieldEnt.PositionComp.SetWorldMatrix(matrix);
                 ShieldEnt.PositionComp.SetPosition(DetectionCenter);
@@ -862,8 +858,8 @@ namespace DefenseShields
             var drawIcon = !enemy && SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
             if (drawIcon) UpdateIcon();
 
-            var passiveVisible = !ShieldPassiveHide && !enemy;
-            var activeVisible = !ShieldActiveHide && !enemy;
+            var passiveVisible = !ShieldPassiveHide;
+            var activeVisible = !ShieldActiveHide;
 
             if (!passiveVisible && !_hideShield)
             {
@@ -999,13 +995,14 @@ namespace DefenseShields
                 {
                     case 0:
                         IMyCubeGrid grid;
-                        while (_staleGrids.TryDequeue(out grid)) lock (_webEnts) _webEnts.Remove(grid);
+                        while (_staleGrids.TryDequeue(out grid)) lock (WebEnts) WebEnts.Remove(grid);
                         break;
                     case 1:
-                        lock (_webEnts)
+                        lock (WebEnts)
                         {
-                            _webEntsTmp.AddRange(_webEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1));
-                            foreach (var webent in _webEntsTmp) _webEnts.Remove(webent.Key);
+                            EnemyShields.Clear();
+                            _webEntsTmp.AddRange(WebEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1));
+                            foreach (var webent in _webEntsTmp) WebEnts.Remove(webent.Key);
                         }
                         break;
                     case 2:

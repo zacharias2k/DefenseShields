@@ -308,11 +308,11 @@ namespace DefenseShields.Support
         public static void PrepConfigFile()
         {
             const int baseScaler = 30;
-            const float nerf = 0f;
+            const float nerf = 1f;
             const float efficiency = 100f;
             const int stationRatio = 1;
             const int largeShipRate = 2;
-            const int smallShipRatio = 1;
+            const int smallShipRatio = 2;
             const int disableVoxel = 0;
             const int disableGridDmg = 0;
             const int debug = 0;
