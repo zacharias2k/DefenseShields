@@ -62,7 +62,11 @@ namespace DefenseShields
         {
             if (Shield.CubeGrid.Physics.IsStatic) ShieldMode = ShieldType.Station;
             else if (Shield.CubeGrid.GridSizeEnum == MyCubeSize.Large) ShieldMode = ShieldType.LargeGrid;
-            else ShieldMode = ShieldType.SmallGrid;
+            else
+            {
+                ShieldMode = ShieldType.SmallGrid;
+                _shieldModel = "\\Models\\Cubes\\ShieldActiveBase_LOD4.mwm";
+            }
 
             if (ShieldMode != ShieldType.Station) GridIsMobile = true;
 
@@ -199,7 +203,7 @@ namespace DefenseShields
             _shellPassive.Render.UpdateRenderObject(false);
             _shellPassive.Save = false;
 
-            _shellActive = Spawn.EmptyEntity("dShellActive", $"{Session.Instance.ModPath()}\\Models\\Cubes\\ShieldActiveBase.mwm", parent, true);
+            _shellActive = Spawn.EmptyEntity("dShellActive", $"{Session.Instance.ModPath()}{_shieldModel}", parent, true);
             _shellActive.Render.CastShadows = false;
             _shellActive.IsPreview = true;
             _shellActive.Render.Visible = true;

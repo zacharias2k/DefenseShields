@@ -312,7 +312,7 @@ namespace DefenseShields.Support
                                 var wavePosition = waveMultiplier * _impactCnt[s];
                                 var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
                                 if (impactFactor < wavePosition && relativeToWavefront >= 0 && relativeToWavefront < 0.2) _triColorBuffer[j] = _waveColor;
-                                if (impactFactor < wavePosition && relativeToWavefront >= 0.2 || relativeToWavefront < 0) _triColorBuffer[j] = _defaultColor;
+                                if (impactFactor < wavePosition && relativeToWavefront >= -0.2 && relativeToWavefront < 0 || relativeToWavefront > 0.2 && relativeToWavefront <= 0.4) _triColorBuffer[j] = _defaultColor;
 
                             }
                         }
@@ -395,6 +395,15 @@ namespace DefenseShields.Support
             private void ComputeImpacts()
             {
                 _impact = true;
+                int slot = (int) ((_mainLoop + 1) * 0.1);
+                if (slot == 6) slot = 0;
+                if (_impactPos[slot] == Vector3D.NegativeInfinity)
+                {
+                    _impactPos[slot] = _impactPosState;
+                    _localImpacts[slot] = _impactPos[slot] - _matrix.Translation;
+                    _localImpacts[slot].Normalize();
+                }
+                /*
                 for (var i = 5; i >= 0; i--)
                 {
                     if (_impactPos[i] != Vector3D.NegativeInfinity) continue;
@@ -411,6 +420,7 @@ namespace DefenseShields.Support
                         break;
                     }
                 }
+                */
             }
 
             public void ComputeSides(MyEntity shellActive)
@@ -465,7 +475,6 @@ namespace DefenseShields.Support
                         */
                         var impactTransNorm = _impactPosState - _matrix.Translation;
                         _hitFaces.Clear();
-                        _dsutil1.Sw.Restart();
                         GetIntersectingFace(_matrix, impactTransNorm, _hitFaces);
                         foreach (var face in _hitFaces)
                         {
@@ -473,7 +482,6 @@ namespace DefenseShields.Support
                             SidePartArray[face].Render.UpdateRenderObject(true);
                             UpdateColor(SidePartArray[face]);
                         }
-                        _dsutil1.StopWatchReport("test", -1 );
                         _shellPassive.Render.UpdateRenderObject(false);
                     }
 
