@@ -24,6 +24,7 @@ namespace DefenseShields
             var pruneList = new List<MyEntity>();
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
             foreach (var eShield in EnemyShields) pruneList.Add(eShield);
+
             for (int i = 0; i < pruneList.Count; i++)
             {
                 var ent = pruneList[i];

@@ -229,7 +229,7 @@ namespace DefenseShields.Support
 
             public void ComputeEffects(MatrixD matrix, Vector3D impactPos, MyEntity shellPassive, MyEntity shellActive, int prevLod, float shieldPercent, bool passiveVisible, bool activeVisible)
             {
-                if (_shellPassive == null) ComputePassive(shellPassive);
+                _shellPassive = shellPassive;
                 if (_shellActive == null) ComputeSides(shellActive);
 
                 var newActiveColor = UtilsStatic.GetShieldColorFromFloat(shieldPercent);
@@ -241,6 +241,7 @@ namespace DefenseShields.Support
                 _active = activeVisible;
                 if (impactPos == Vector3D.NegativeInfinity) _impact = false;
                 else ComputeImpacts();
+
                 if (prevLod != _lod) 
                 {
                     var ib = _backing.IndexBuffer[_lod];
@@ -249,6 +250,11 @@ namespace DefenseShields.Support
                 }
 
                 StepEffects();
+
+                //if(!ImpactsFinished) Log.CleanLine($"impactPos:{_impactPos[0].Sum} - {_impactPos[1].Sum} - {_impactPos[2].Sum} - {_impactPos[3].Sum} - {_impactPos[4].Sum} - {_impactPos[5].Sum}");
+                //if (!ImpactsFinished) Log.CleanLine($"localImpacts:{_localImpacts[0].Sum} - {_localImpacts[1].Sum} - {_localImpacts[2].Sum} - {_localImpacts[3].Sum} - {_localImpacts[4].Sum} - {_localImpacts[5].Sum}");
+                if (!ImpactsFinished) Log.CleanLine($"impactCnt:{_impactCnt[0]} - {_impactCnt[1]} - {_impactCnt[2]} - {_impactCnt[3]} - {_impactCnt[4]} - {_impactCnt[5]}");
+                //if (ImpactsFinished) Log.CleanLine($"Idle");
                 if (_charge && ImpactsFinished && prevLod == _lod) ChargeColorAssignments(prevLod);
                 if (ImpactsFinished && prevLod == _lod) return;
 
@@ -305,8 +311,8 @@ namespace DefenseShields.Support
                                 var waveMultiplier = Pi / ImpactSteps;
                                 var wavePosition = waveMultiplier * _impactCnt[s];
                                 var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
-                                if (impactFactor < wavePosition && relativeToWavefront >= 0 && relativeToWavefront < 0.3) _triColorBuffer[j] = _waveColor;
-                                if (impactFactor < wavePosition && relativeToWavefront >= 0.3 || relativeToWavefront < 0) _triColorBuffer[j] = _defaultColor;
+                                if (impactFactor < wavePosition && relativeToWavefront >= 0 && relativeToWavefront < 0.2) _triColorBuffer[j] = _waveColor;
+                                if (impactFactor < wavePosition && relativeToWavefront >= 0.2 || relativeToWavefront < 0) _triColorBuffer[j] = _defaultColor;
 
                             }
                         }
@@ -405,11 +411,6 @@ namespace DefenseShields.Support
                         break;
                     }
                 }
-            }
-
-            public void ComputePassive(MyEntity shellPassive)
-            {
-                _shellPassive = shellPassive;
             }
 
             public void ComputeSides(MyEntity shellActive)
@@ -511,6 +512,7 @@ namespace DefenseShields.Support
                         if (_impactPos[i] != Vector3D.NegativeInfinity) _impactCnt[i] += 1;
                         if (_impactCnt[i] == ImpactSteps +1)
                         {
+                            Log.Line($"resetting cnt/pos for slot:{i}");
                             _impactCnt[i] = 0;
                             _impactPos[i] = Vector3D.NegativeInfinity;
                             _localImpacts[i] = Vector3D.NegativeInfinity;

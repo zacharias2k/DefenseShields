@@ -872,16 +872,16 @@ namespace DefenseShields
                 _shellPassive.Render.UpdateRenderObject(true);
             }
 
-            if (BulletCoolDown > -1) BulletCoolDown++;
-            if (BulletCoolDown > 9) BulletCoolDown = -1;
-            if (EntityCoolDown > -1) EntityCoolDown++;
-            if (EntityCoolDown > 9) EntityCoolDown = -1;
+            //if (BulletCoolDown > -1) BulletCoolDown++;
+            //if (BulletCoolDown > 9) BulletCoolDown = -1;
+            //if (EntityCoolDown > -1) EntityCoolDown++;
+            //if (EntityCoolDown > 9) EntityCoolDown = -1;
             var impactPos = WorldImpactPosition;
             _localImpactPosition = Vector3D.NegativeInfinity;
-            if (impactPos != Vector3D.NegativeInfinity & ((BulletCoolDown == -1 && EntityCoolDown == -1)))
+            if (impactPos != Vector3D.NegativeInfinity)
             {
-                if (EntityCoolDown == -1 && ImpactSize > 5) EntityCoolDown = 0;
-                BulletCoolDown = 0;
+                //if (EntityCoolDown == -1 && ImpactSize > 5) EntityCoolDown = 0;
+                //BulletCoolDown = 0;
 
                 var cubeBlockLocalMatrix = Shield.CubeGrid.LocalMatrix;
                 var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
