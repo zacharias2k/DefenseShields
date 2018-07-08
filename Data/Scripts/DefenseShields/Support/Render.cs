@@ -270,7 +270,7 @@ namespace DefenseShields.Support
                 // triangleCom is another direction
                 // Dot product is the cosine of the angle between them
                 // Acos gives you that angle in radians
-                // Multiplying by the sphere radius(1 for the unit sphere in question) gives the arc length..
+                // Multiplying by the sphere radius(1 for the unit sphere in question) gives the arc length.
             }
 
             private void ImpactColorAssignments(int prevLod)
