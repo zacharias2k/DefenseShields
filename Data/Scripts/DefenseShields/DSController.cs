@@ -874,7 +874,7 @@ namespace DefenseShields
 
             var impactPos = WorldImpactPosition;
             _localImpactPosition = Vector3D.NegativeInfinity;
-            if (impactPos != Vector3D.NegativeInfinity)
+            if (impactPos != Vector3D.NegativeInfinity && BulletCoolDown < 0)
             {
                 BulletCoolDown = 0;
 

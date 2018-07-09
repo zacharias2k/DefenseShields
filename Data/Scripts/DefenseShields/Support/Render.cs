@@ -133,7 +133,7 @@ namespace DefenseShields.Support
             private readonly int[] _sideLoops = new int[6];
             private readonly List<int> _hitFaces = new List<int>();
 
-            private int _mainLoop;
+            private int _mainLoop = -1;
             private int _lCount;
             private int _longerLoop;
             private int _chargeDrawStep;
@@ -144,20 +144,18 @@ namespace DefenseShields.Support
             private const int ChargeSteps = 30;
 
             private Color _activeColor = Color.Transparent;
-            private readonly Vector4 _waveColor = Color.FromNonPremultiplied(0, 0, 0, 75);
+            private readonly Vector4 _waveColor = Color.FromNonPremultiplied(0, 0, 0, 55);
             private readonly Vector4 _defaultColor = Color.FromNonPremultiplied(0, 0, 0, 255);
             private readonly Vector4 _chargeColor = Color.FromNonPremultiplied(255, 255, 255, 255);
-
             public bool ImpactsFinished = true;
             private bool _impact;
             private bool _charge;
-            private bool _passive;
             private bool _active;
 
-            private MyEntity _shellPassive;
             private MyEntity _shellActive;
 
             private readonly MyStringId _faceIdle = MyStringId.GetOrCompute("CustomIdle");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
+            private readonly MyStringId _faceCharge = MyStringId.GetOrCompute("Charge");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private readonly MyStringId _faceWave = MyStringId.GetOrCompute("SunDisk");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
 
             private DSUtils _dsutil1 = new DSUtils();
@@ -229,7 +227,6 @@ namespace DefenseShields.Support
 
             public void ComputeEffects(MatrixD matrix, Vector3D impactPos, MyEntity shellPassive, MyEntity shellActive, int prevLod, float shieldPercent, bool passiveVisible, bool activeVisible)
             {
-                _shellPassive = shellPassive;
                 if (_shellActive == null) ComputeSides(shellActive);
 
                 var newActiveColor = UtilsStatic.GetShieldColorFromFloat(shieldPercent);
@@ -237,12 +234,9 @@ namespace DefenseShields.Support
 
                 _matrix = matrix;
                 _impactPosState = impactPos;
-                _passive = passiveVisible;
                 _active = activeVisible;
-                if (impactPos == Vector3D.NegativeInfinity) _impact = false;
-                else ComputeImpacts();
 
-                if (prevLod != _lod) 
+                if (prevLod != _lod)
                 {
                     var ib = _backing.IndexBuffer[_lod];
                     Array.Resize(ref _preCalcNormLclPos, ib.Length / 3);
@@ -251,10 +245,10 @@ namespace DefenseShields.Support
 
                 StepEffects();
 
-                //if(!ImpactsFinished) Log.CleanLine($"impactPos:{_impactPos[0].Sum} - {_impactPos[1].Sum} - {_impactPos[2].Sum} - {_impactPos[3].Sum} - {_impactPos[4].Sum} - {_impactPos[5].Sum}");
-                //if (!ImpactsFinished) Log.CleanLine($"localImpacts:{_localImpacts[0].Sum} - {_localImpacts[1].Sum} - {_localImpacts[2].Sum} - {_localImpacts[3].Sum} - {_localImpacts[4].Sum} - {_localImpacts[5].Sum}");
-                if (!ImpactsFinished) Log.CleanLine($"impactCnt:{_impactCnt[0]} - {_impactCnt[1]} - {_impactCnt[2]} - {_impactCnt[3]} - {_impactCnt[4]} - {_impactCnt[5]}");
-                //if (ImpactsFinished) Log.CleanLine($"Idle");
+                //if (!ImpactsFinished) Log.CleanLine($"{_mainLoop}:impactPos:{_impactPos[0].X} - {_impactPos[1].X} - {_impactPos[2].X} - {_impactPos[3].X} - {_impactPos[4].X} - {_impactPos[5].X}");
+                //if (!ImpactsFinished) Log.CleanLine($"{_mainLoop}:localImpacts:{_localImpacts[0].X} - {_localImpacts[1].X} - {_localImpacts[2].X} - {_localImpacts[3].X} - {_localImpacts[4].X} - {_localImpacts[5].X}");
+                //if (!ImpactsFinished) Log.CleanLine($"{_mainLoop}:impactCnt:{_impactCnt[0]} - {_impactCnt[1]} - {_impactCnt[2]} - {_impactCnt[3]} - {_impactCnt[4]} - {_impactCnt[5]}");
+                //if (ImpactsFinished) Log.CleanLine($"{_mainLoop}:Idle");
                 if (_charge && ImpactsFinished && prevLod == _lod) ChargeColorAssignments(prevLod);
                 if (ImpactsFinished && prevLod == _lod) return;
 
@@ -307,12 +301,11 @@ namespace DefenseShields.Support
                                 if (_localImpacts[s] == Vector3D.NegativeInfinity) continue;
                                 var dotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _localImpacts[s]);
                                 var impactFactor = Math.Acos(dotOfNormLclImpact);
-
                                 var waveMultiplier = Pi / ImpactSteps;
                                 var wavePosition = waveMultiplier * _impactCnt[s];
                                 var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
-                                if (impactFactor < wavePosition && relativeToWavefront >= 0 && relativeToWavefront < 0.2) _triColorBuffer[j] = _waveColor;
-                                if (impactFactor < wavePosition && relativeToWavefront >= -0.2 && relativeToWavefront < 0 || relativeToWavefront > 0.2 && relativeToWavefront <= 0.4) _triColorBuffer[j] = _defaultColor;
+                                if (impactFactor < wavePosition && relativeToWavefront >= 0 && relativeToWavefront < 0.25) _triColorBuffer[j] = _waveColor;
+                                if (impactFactor < wavePosition && relativeToWavefront >= -0.25 && relativeToWavefront < 0 || relativeToWavefront > 0.25 && relativeToWavefront <= 0.5) _triColorBuffer[j] = _defaultColor;
 
                             }
                         }
@@ -371,7 +364,7 @@ namespace DefenseShields.Support
                     {
                         var color = _triColorBuffer[j];
                         if (color == _waveColor) faceMaterial = _faceWave;
-                        else if (color == _chargeColor) faceMaterial = _faceIdle;
+                        else if (color == _chargeColor) faceMaterial = _faceCharge;
                         else continue;
 
                         var i0 = ib[i];
@@ -395,32 +388,16 @@ namespace DefenseShields.Support
             private void ComputeImpacts()
             {
                 _impact = true;
-                int slot = (int) ((_mainLoop + 1) * 0.1);
-                if (slot == 6) slot = 0;
-                if (_impactPos[slot] == Vector3D.NegativeInfinity)
+                for (int i = 0; i < _impactPos.Length; i++)
                 {
-                    _impactPos[slot] = _impactPosState;
-                    _localImpacts[slot] = _impactPos[slot] - _matrix.Translation;
-                    _localImpacts[slot].Normalize();
-                }
-                /*
-                for (var i = 5; i >= 0; i--)
-                {
-                    if (_impactPos[i] != Vector3D.NegativeInfinity) continue;
-                    _impactPos[i] = _impactPosState;
-                    break;
-                }
-                for (int i = 5; i >= 0; i--)
-                {
-                    if (_localImpacts[i] == Vector3D.NegativeInfinity)
+                    if (_impactPos[i] == Vector3D.NegativeInfinity)
                     {
-                        if (_impactPos[i] != _impactPosState) continue; 
+                        _impactPos[i] = _impactPosState;
                         _localImpacts[i] = _impactPos[i] - _matrix.Translation;
                         _localImpacts[i].Normalize();
                         break;
                     }
                 }
-                */
             }
 
             public void ComputeSides(MyEntity shellActive)
@@ -438,14 +415,14 @@ namespace DefenseShields.Support
             private void UpdateColor(MyEntitySubpart _shellSide)
             {
                 var emissive = 100f;
-                if (_activeColor == Color.White || _activeColor == Color.Aquamarine) emissive = 2.5f;
+                //if (_activeColor == Color.White || _activeColor == Color.Aquamarine) emissive = 2.5f;
                 _shellSide.SetEmissiveParts(ShieldEmissiveAlpha, _activeColor, emissive);
             }
 
             public void StepEffects()
             {
                 _mainLoop++;
-                if (_mainLoop == 61)
+                if (_mainLoop == 60)
                 {
                     _mainLoop = 0;
                     _lCount++;
@@ -463,16 +440,14 @@ namespace DefenseShields.Support
                         if (_longerLoop == 6) _longerLoop = 0;
                     }
                 }
+
+                if (_impactPosState != Vector3D.NegativeInfinity) ComputeImpacts(); ;
+
                 if (_impact)
                 {
+                    _impact = false;
                     if (_active)
                     {
-                        /*
-                        var sideNum = ClosestSideNum(_impactPosState);
-                        _sideLoops[sideNum] = 1;
-                        SidePartArray[sideNum].Render.UpdateRenderObject(true);
-                        UpdateColor(SidePartArray[sideNum]);
-                        */
                         var impactTransNorm = _impactPosState - _matrix.Translation;
                         _hitFaces.Clear();
                         GetIntersectingFace(_matrix, impactTransNorm, _hitFaces);
@@ -482,7 +457,6 @@ namespace DefenseShields.Support
                             SidePartArray[face].Render.UpdateRenderObject(true);
                             UpdateColor(SidePartArray[face]);
                         }
-                        _shellPassive.Render.UpdateRenderObject(false);
                     }
 
                     ImpactsFinished = false;
@@ -520,7 +494,6 @@ namespace DefenseShields.Support
                         if (_impactPos[i] != Vector3D.NegativeInfinity) _impactCnt[i] += 1;
                         if (_impactCnt[i] == ImpactSteps +1)
                         {
-                            Log.Line($"resetting cnt/pos for slot:{i}");
                             _impactCnt[i] = 0;
                             _impactPos[i] = Vector3D.NegativeInfinity;
                             _localImpacts[i] = Vector3D.NegativeInfinity;
@@ -529,38 +502,11 @@ namespace DefenseShields.Support
                     if (_impactCnt[0] == 0 && _impactCnt[1] == 0 && _impactCnt[2] == 0 && _impactCnt[3] == 0 && _impactCnt[4] == 0 && _impactCnt[5] == 0)
                     {
                         _shellActive.Render.UpdateRenderObject(false);
-                        if (_passive) _shellPassive.Render.UpdateRenderObject(true);
                         ImpactsFinished = true;
                         for (int i = 0; i < _triColorBuffer.Length; i++)
                             _triColorBuffer[i] = _defaultColor;
                     }
                 }
-            }
-
-            private int ClosestSideNum(Vector3D impactPos)
-            {
-                var impactTransNorm = impactPos - _matrix.Translation;
-
-                SideDistArray[1] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Left);
-                SideDistArray[0] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Right);
-                SideDistArray[2] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Up);
-                SideDistArray[3] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Down);
-                SideDistArray[5] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Forward);
-                SideDistArray[4] = Vector3D.DistanceSquared(impactTransNorm, _matrix.Backward);
-                return Lowest(SideDistArray);
-            }
-
-            private static int Lowest(params double[] inputs)
-            {
-                var lowest = inputs[0];
-                var lowestNum = 0;
-                for (int i = 0; i < 6; i++)
-                {
-                    if (!(inputs[i] < lowest)) continue;
-                    lowest = inputs[i];
-                    lowestNum = i;
-                }
-                return lowestNum;
             }
 
             private static void GetIntersectingFace(MatrixD matrix, Vector3D hitPosLocal, List<int> impactFaces)

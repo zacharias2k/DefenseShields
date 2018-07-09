@@ -48,7 +48,7 @@ namespace DefenseShields
         private double _ellipsoidSurfaceArea;
         private double _sizeScaler;
 
-        public int BulletCoolDown { get; private set; } = -1;
+        public int BulletCoolDown { get; internal set; } = -1;
         public int EntityCoolDown { get; private set; } = -1;
         private int _count = -1;
         private int _lCount;

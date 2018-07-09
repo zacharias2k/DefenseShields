@@ -12,6 +12,61 @@
       <IgnoreDepth>false</IgnoreDepth>
       <SoftParticleDistanceScale>1</SoftParticleDistanceScale>
       <Texture>Textures\Particles\CockpitFighterGlassInside_ca.dds</Texture>
+      <!--<GlossTexture>Textures\Models\Cubes\Chrome_ng.dds</GlossTexture> -->
+      <UseAtlas>false</UseAtlas>
+      <NeedSort>true</NeedSort>
+      <UVOffset>
+        <X>0</X>
+        <Y>0</Y>
+      </UVOffset>
+      <UVSize>
+        <X>0.25</X>
+        <Y>0.25</Y>
+      </UVSize>
+      <Color>
+        <X>0</X>
+        <Y>0</Y>
+        <Z>0</Z>
+        <W>0</W>
+      </Color>
+      <ColorAdd>
+        <X>0.0</X>
+        <Y>0.0</Y>
+        <Z>0.0</Z>
+        <W>0.1</W>
+      </ColorAdd>
+      <ShadowMultiplier>
+        <X>0</X>
+        <Y>0</Y>
+        <Z>0</Z>
+        <W>0</W>
+      </ShadowMultiplier>
+      <LightMultiplier>
+        <X>0</X>
+        <Y>0</Y>
+        <Z>0</Z>
+        <W>0</W>
+      </LightMultiplier>
+      <Reflectivity>1</Reflectivity>
+      <Fresnel>0</Fresnel>
+      <ReflectionShadow>1</ReflectionShadow>
+      <Gloss>0</Gloss>
+      <GlossTextureAdd>0</GlossTextureAdd>
+      <SpecularColorFactor>255</SpecularColorFactor>
+      <IsFlareOccluder>false</IsFlareOccluder>
+    </TransparentMaterial>
+
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>Charge</SubtypeId>
+      </Id>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <IgnoreDepth>false</IgnoreDepth>
+      <SoftParticleDistanceScale>1</SoftParticleDistanceScale>
+      <Texture>Textures\Particles\CockpitFighterGlassInside_ca.dds</Texture>
       <GlossTexture>Textures\Models\Cubes\Chrome_ng.dds</GlossTexture>
       <UseAtlas>false</UseAtlas>
       <NeedSort>true</NeedSort>
@@ -100,60 +155,6 @@
 	    <Fresnel>0.2</Fresnel> <!-- Suggest 1 to 1.5 for windows; Hard to explain, sort of like reflectivity angle; Suggest 0 for no effect on 'force fields' -->
 	    <IsFlareOccluder>false</IsFlareOccluder> <!-- Hides sprite flares from stuff like the sun, lights, and thrusters; Suggest 'false' usually, use at your own discretion -->
     </TransparentMaterial>   
-    <TransparentMaterial>
-      <Id>
-          <TypeId>TransparentMaterialDefinition</TypeId>
-          <SubtypeId>ShieldActiveGlass</SubtypeId>
-      </Id>
-      <AlphaMistingEnable>false</AlphaMistingEnable>
-      <AlphaSaturation>1</AlphaSaturation>
-      <CanBeAffectedByOtherLights>true</CanBeAffectedByOtherLights>
-      <IgnoreDepth>false</IgnoreDepth>
-      <SoftParticleDistanceScale>1</SoftParticleDistanceScale>
-      <Texture>Textures\Particles\SquareWindowDirtInside_ca.dds</Texture>
-      <!--<GlossTexture>Textures\Models\Cubes\AluminiumGlossy_ng.dds</GlossTexture> -->
-      <UseAtlas>false</UseAtlas>
-      <NeedSort>true</NeedSort>
-      <UVOffset>
-        <X>0</X>
-        <Y>0</Y>
-      </UVOffset>
-      <UVSize>
-        <X>1</X>
-        <Y>1</Y>
-      </UVSize>
-      <Color>
-        <X>0</X>
-        <Y>0</Y>
-        <Z>0</Z>
-        <W>0</W>
-      </Color>
-      <ColorAdd>
-        <X>0.0</X>
-        <Y>0.0</Y>
-        <Z>0.0</Z>
-        <W>0.1</W>
-      </ColorAdd>
-      <ShadowMultiplier>
-        <X>0</X>
-        <Y>0</Y>
-        <Z>0</Z>
-        <W>0</W>
-      </ShadowMultiplier>
-      <LightMultiplier>
-        <X>0</X>
-        <Y>0</Y>
-        <Z>0</Z>
-        <W>0</W>
-      </LightMultiplier>
-      <Reflectivity>0</Reflectivity>
-      <Fresnel>15</Fresnel>
-      <ReflectionShadow>1</ReflectionShadow>
-      <Gloss>0</Gloss>
-      <GlossTextureAdd>0.8</GlossTextureAdd>
-      <SpecularColorFactor>255</SpecularColorFactor>
-      <IsFlareOccluder>true</IsFlareOccluder>
-    </TransparentMaterial>
 
     <TransparentMaterial>
       <Id>

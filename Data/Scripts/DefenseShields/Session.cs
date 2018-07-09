@@ -136,6 +136,11 @@ namespace DefenseShields
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
+                    if (s.BulletCoolDown > -1)
+                    {
+                        s.BulletCoolDown++;
+                        if (s.BulletCoolDown == 9) s.BulletCoolDown = -1;
+                    }
                     if (!s.WarmedUp || !s.RaiseShield) continue;
                     var sp = new BoundingSphereD(s.DetectionCenter, s.ShieldComp.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
@@ -244,7 +249,7 @@ namespace DefenseShields
                         if (info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Deformation) info.Amount = info.Amount * shield.ModulateKinetic;
                         else info.Amount = info.Amount * shield.ModulateEnergy;
 
-                        if (hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity)
+                        if (hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
                         {
                             //Log.CleanLine("");
                             //Log.CleanLine($"full: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
@@ -291,7 +296,7 @@ namespace DefenseShields
                         if (info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Deformation) info.Amount = info.Amount * shield.ModulateKinetic;
                         else info.Amount = info.Amount * shield.ModulateEnergy;
 
-                        if (hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity)
+                        if (hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
                         {
                             //Log.CleanLine("");
                             //Log.CleanLine($"part: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
