@@ -189,6 +189,7 @@ namespace DefenseShields
 
         public MyModStorageComponentBase Storage { get; set; }
         internal DefenseShieldsSettings DsSet;
+
         internal ShieldGridComponent ShieldComp;
 
         internal HashSet<ulong> playersToReceive = null;

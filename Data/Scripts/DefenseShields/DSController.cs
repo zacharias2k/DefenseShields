@@ -12,7 +12,6 @@ using VRage.Game.Components;
 using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
-using SpaceEngineers.Game.ModAPI;
 using VRage.Utils;
 using VRage.Voxels;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
@@ -104,7 +103,7 @@ namespace DefenseShields
 
             if (_lCount == 4 && _count == 4 && Shield.Enabled && ConnectCheck()) return false;
             UpdateBlockCount();
-
+            
             return ControlBlockWorking = Shield.IsWorking && Shield.IsFunctional; 
         }
 

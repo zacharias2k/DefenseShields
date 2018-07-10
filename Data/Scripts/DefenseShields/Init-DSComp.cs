@@ -9,6 +9,7 @@ using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
+using VRage.Sync;
 using VRage.Utils;
 using VRageMath;
 
@@ -42,6 +43,7 @@ namespace DefenseShields
         {
             try
             {
+                Log.Line($"HierarchyChanged");
                 if (_tick == _hierarchyTick) return;
                 if (_hierarchyTick > _tick - 9)
                 {
@@ -93,6 +95,7 @@ namespace DefenseShields
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
                 Session.Instance.Components.Add(this);
                 ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
+
                 StorageSetup();
 
                 if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>())
@@ -176,7 +179,7 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 1) Log.Line($"AnimateInit complete");
                 if (Session.EnforceInit) AllInited = true;
             }
-            catch (Exception ex) { Log.Line($"Exception in UpdateAfterSimulation100: {ex}"); }
+            catch (Exception ex) { Log.Line($"Exception in DSControl PostInit: {ex}"); }
         }
 
         private bool HealthCheck()
