@@ -43,7 +43,6 @@ namespace DefenseShields
         {
             try
             {
-                Log.Line($"HierarchyChanged");
                 if (_tick == _hierarchyTick) return;
                 if (_hierarchyTick > _tick - 9)
                 {

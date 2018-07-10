@@ -22,14 +22,13 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 1) Dsutil2.Sw.Restart();
             var pruneSphere = new BoundingSphereD(DetectionCenter, ShieldComp.BoundingRange);
             var pruneList = new List<MyEntity>();
-            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList, MyEntityQueryType.Dynamic);
+            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
             foreach (var eShield in EnemyShields) pruneList.Add(eShield);
 
             for (int i = 0; i < pruneList.Count; i++)
             {
                 var ent = pruneList[i];
                 if (ent == null || FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent)) continue;
-                Log.Line($"{ent.DebugName}");
                 var entCenter = ent.PositionComp.WorldVolume.Center;
                 if (ent.Physics == null && !(ent is IMyGunBaseUser) || ent.MarkedForClose || ent is MyVoxelBase && !GridIsMobile
                     || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == MyDebrisBase) continue;
