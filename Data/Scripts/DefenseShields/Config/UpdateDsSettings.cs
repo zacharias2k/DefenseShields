@@ -21,6 +21,7 @@ namespace DefenseShields
             ShieldBuffer = newSettings.Buffer;
             ShieldComp.IncreaseO2ByFPercent = newSettings.IncreaseO2ByFPercent;
             ShieldComp.ShieldActive = newSettings.ShieldActive;
+            ShieldComp.RaiseShield = newSettings.RaiseShield;
 
             ModulateVoxels = newSettings.ModulateVoxels;
             ModulateGrids = newSettings.ModulateGrids;

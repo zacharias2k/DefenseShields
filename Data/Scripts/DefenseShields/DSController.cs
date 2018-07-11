@@ -24,6 +24,7 @@ namespace DefenseShields
         #region Simulation
         public override void UpdateBeforeSimulation()
         {
+
             try
             {
                 if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
@@ -48,13 +49,15 @@ namespace DefenseShields
                     if (ShieldComp.ComingOnline)
                     {
                         if (ShieldComp.ComingOnline && GridIsMobile && FieldShapeBlocked()) return;
+                        ShieldComp.ComingOnline = false;
+
                         if (!ShieldPassiveHide) _shellPassive.Render.UpdateRenderObject(true);
 
                         _offlineCnt = -1;
                         _shellActive.Render.UpdateRenderObject(true);
                         _shellActive.Render.UpdateRenderObject(false);
-                        ShieldEnt.Render.Visible = true;
-                        ShieldEnt.Render.UpdateRenderObject(true);
+                        //ShieldEnt.Render.Visible = true;
+                        //ShieldEnt.Render.UpdateRenderObject(true);
                         SyncThreadedEnts(true);
                         if (!WarmedUp) 
                         {
@@ -62,6 +65,8 @@ namespace DefenseShields
                             if (Session.Enforced.Debug == 1) Log.Line($"Warmup complete");
                             return;
                         }
+                        DsSet.NetworkUpdate();
+                        DsSet.SaveSettings();
                     }
                     SyncThreadedEnts();
                     _enablePhysics = false;
@@ -145,13 +150,22 @@ namespace DefenseShields
 
         private bool ShieldLowered()
         {
-            if (!RaiseShield && WarmedUp && ShieldComp.ShieldActive)
+            if (!ShieldComp.RaiseShield && WarmedUp && ShieldComp.ShieldActive)
             {
                 Timing(false);
                 if (!ShieldWasLowered)
                 {
+                    if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
+
+                    ShieldEnt.PositionComp.SetWorldMatrix(MatrixD.Zero);
+                    //ShieldEnt.PositionComp.SetPosition(Vector3D.Zero);
+                    //ShieldEnt.Render.Visible = false;
+                    //ShieldEnt.Render.UpdateRenderObject(false);
+                    ShieldComp.IncreaseO2ByFPercent = 0f;
                     _shellPassive.Render.UpdateRenderObject(false);
                     _shellActive.Render.UpdateRenderObject(false);
+                    DsSet.NetworkUpdate();
+                    DsSet.SaveSettings();
                     ShieldWasLowered = true;
                 }
                 PowerOnline();
@@ -163,19 +177,25 @@ namespace DefenseShields
                     return false;
                 }
 
-                if (GridIsMobile) MobileUpdate();
-                else _shapeAdjusted = false;
-                if (UpdateDimensions) RefreshDimensions();
-
+                if (GridIsMobile && _lCount == 0 && _count == 0)
+                {
+                    _createMobileShape = true;
+                    MobileUpdate();
+                }
+                else if (_lCount == 0 && _count == 0) RefreshDimensions();
                 return true;
             }
             if (ShieldWasLowered && ShieldComp.ShieldActive && Shield.IsWorking)
             {
                 if (!ShieldPassiveHide) _shellPassive.Render.UpdateRenderObject(true);
-                _shellActive.Render.UpdateRenderObject(true);
+                if (GridIsMobile) _createMobileShape = true;
+                else UpdateDimensions = true;
+
                 _shellActive.Render.UpdateRenderObject(false);
-                ShieldEnt.Render.Visible = true;
-                ShieldEnt.Render.UpdateRenderObject(true);
+                //ShieldEnt.Render.Visible = true;
+                //ShieldEnt.Render.UpdateRenderObject(true);
+                DsSet.NetworkUpdate();
+                DsSet.SaveSettings();
                 ShieldWasLowered = false;
             }
             return false;
@@ -235,7 +255,7 @@ namespace DefenseShields
             if (!GridIsMobile && ShieldComp.EmitterComp?.PrimeComp != null)
             {
                 UpdateDimensions = true;
-                RefreshDimensions();
+                if (UpdateDimensions) RefreshDimensions();
             }
             ShieldComp.EmitterEvent = false;
             if (!ShieldComp.EmittersWorking) _genericDownLoop = 0;
@@ -302,7 +322,6 @@ namespace DefenseShields
                 {
                     ShieldOffline = false;
                     _overLoadLoop = -1;
-                    DsSet.SaveSettings();
                 }
                 var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
                 var nerfer = nerf ? Session.Enforced.Nerf : 1f;
@@ -317,15 +336,28 @@ namespace DefenseShields
 
             if (_offlineCnt == 1 || _offlineCnt % 10 == 0)
             {
+                if (_offlineCnt == 1)
+                {
+                    DsSet.NetworkUpdate();
+                    DsSet.SaveSettings();
+                }
+
                 if (!_power.Equals(0.0001f)) _power = 0.001f;
                 Sink.Update();
                 _shieldCurrentPower = Sink.CurrentInputByType(GId);
                 BackGroundChecks();
-                if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
 
-                ShieldEnt.Render.Visible = false;
-                ShieldEnt.Render.UpdateRenderObject(false);
-
+                if (GridIsMobile) _createMobileShape = true;
+                else
+                {
+                    EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
+                    ShieldComp.IncreaseO2ByFPercent = 0f;
+                    UpdateDimensions = true;
+                }
+                ShieldEnt.PositionComp.SetWorldMatrix(MatrixD.Zero);
+                //ShieldEnt.PositionComp.SetPosition(Vector3D.Zero);
+                //ShieldEnt.Render.Visible = false;
+                //ShieldEnt.Render.UpdateRenderObject(false);
                 CleanUp(0);
                 CleanUp(1);
                 CleanUp(3);
@@ -368,7 +400,7 @@ namespace DefenseShields
                     else
                     {
                         UpdateDimensions = true;
-                        RefreshDimensions();
+                        if (UpdateDimensions) RefreshDimensions();
                     }
                     _shapeAdjusted = false;
                     _blocksChanged = false;
@@ -430,16 +462,21 @@ namespace DefenseShields
             if (!Shield.Enabled) return true;
 
             var myGrid = Shield.CubeGrid;
+            if (myGrid.IsStatic && Shield.BlockDefinition.SubtypeId == "DSControlSmall") return true;
             var myGridIsSub = false;
+            var stayOnline = true;
             if (startUp)
             {
                 if (_connectedGrids.Count == 0) _connectedGrids = MyAPIGateway.GridGroups.GetGroup(myGrid, GridLinkTypeEnum.Physical);
                 foreach (var grid in _connectedGrids)
                 {
                     if (myGrid == grid) continue;
-                    if (myGrid.PositionComp.WorldAABB.Volume <= grid.PositionComp.WorldAABB.Volume) return true;
+                    if (!myGrid.IsStatic && grid.IsStatic) stayOnline = false;
+                    if (myGrid.GridSizeEnum == MyCubeSize.Small && grid.GridSizeEnum == MyCubeSize.Large) stayOnline = false;
+                    if (myGrid.PositionComp.WorldAABB.Volume < grid.PositionComp.WorldAABB.Volume) stayOnline = false;
                 }
             }
+            if (!stayOnline) return true;
 
             if (ShieldComp.GetSubGrids.Count <= 1) return false;
             if (startUp)
@@ -450,7 +487,7 @@ namespace DefenseShields
                     Log.Line($"I am locked");
                     foreach (var grid in gearLocked)
                     {
-                        if (grid != myGrid) Log.Line($"{grid.DisplayName}");
+                        if (grid != myGrid) Log.Line($"{grid.DisplayName} - {grid.IsStatic}");
                     }
                 }
                 CreateHalfExtents();
@@ -563,7 +600,6 @@ namespace DefenseShields
                     if (!source.HasCapacityRemaining || !source.Enabled || !source.ProductionEnabled || !UseBatteries && source.Group.String.Equals("Battery")) continue;
                     _gridMaxPower += source.MaxOutputByType(eId);
                     _gridCurrentPower += source.CurrentOutputByType(eId);
-                    //if (((IMyFunctionalBlock) source.Entity).CustomData.Equals("test")) c++;
                 }
             _gridAvailablePower = _gridMaxPower - _gridCurrentPower;
         }
@@ -579,7 +615,7 @@ namespace DefenseShields
             var percent = Rate * ratio;
             var shieldMaintainPercent = 1 / percent;
             shieldMaintainPercent = shieldMaintainPercent * (ShieldComp.ShieldPercent * 0.01f);
-            if (!RaiseShield) shieldMaintainPercent = shieldMaintainPercent * 0.5f;
+            if (!ShieldComp.RaiseShield) shieldMaintainPercent = shieldMaintainPercent * 0.5f;
             _shieldMaintaintPower = _gridMaxPower * shieldMaintainPercent;
             var fPercent = (percent / ratio) / 100;
             _sizeScaler = (shieldVol / _ellipsoidSurfaceArea) / 2.40063050674088;
@@ -623,7 +659,7 @@ namespace DefenseShields
                 else _shieldConsumptionRate = 0f;
             }
             _powerNeeded = _shieldMaintaintPower + _shieldConsumptionRate + _otherPower;
-            //Log.Line($"powerNeeded: {_powerNeeded} - {_shieldMaintaintPower} - {_shieldConsumptionRate} - {_otherPower} - {powerForShield} - ");
+            //Log.Line($"powerNeeded: {_powerNeeded} - {_shieldMaintaintPower} - {_shieldConsumptionRate} - {_otherPower} - {powerForShield} - {ShieldBuffer} - {_shieldMaxBuffer}");
             if (_count != -2)
             {
                 if (ShieldBuffer < _shieldMaxBuffer) ShieldComp.ShieldPercent = (ShieldBuffer / _shieldMaxBuffer) * 100;
@@ -666,7 +702,7 @@ namespace DefenseShields
         {
             if (ShieldOffline && !_overLoadLoop.Equals(-1)) return "Shield Overloaded";
             if (ShieldOffline && _power.Equals(0.0001f)) return "Insufficient Power";
-            if (!RaiseShield && !ShieldOffline) return "Shield Down"; 
+            if (!ShieldComp.RaiseShield && !ShieldOffline) return "Shield Down"; 
             return ShieldOffline ? "Shield Offline" : "Shield Up";
         }
 
@@ -753,14 +789,15 @@ namespace DefenseShields
             _shapeAdjusted = !_ellipsoidAdjust.Equals(_oldEllipsoidAdjust) || !_gridHalfExtents.Equals(_oldGridHalfExtents);
             _oldGridHalfExtents = _gridHalfExtents;
             _oldEllipsoidAdjust = _ellipsoidAdjust;
-            _entityChanged = Shield.CubeGrid.Physics.IsMoving || ShieldComp.ComingOnline || _shapeAdjusted;
-            if (_entityChanged || ShieldComp.BoundingRange <= 0 || ShieldComp.ComingOnline) CreateShieldShape();
+            _entityChanged = Shield.CubeGrid.Physics.IsMoving || ShieldComp.ComingOnline || _shapeAdjusted || _createMobileShape;
+            if (_entityChanged || ShieldComp.BoundingRange <= 0) CreateShieldShape();
         }
 
         private void CreateShieldShape()
         {
             if (GridIsMobile)
             {
+                _createMobileShape = false;
                 _shieldGridMatrix = Shield.CubeGrid.WorldMatrix;
                 if (_shapeAdjusted) CreateMobileShape();
                 //DsDebugDraw.DrawSingleVec(_detectionCenter, 10f, Color.Blue);
@@ -796,7 +833,7 @@ namespace DefenseShields
             ShieldComp.BoundingRange = ShieldSize.AbsMax() + 5f;
             _ellipsoidSurfaceArea = EllipsoidSa.Surface;
             ShieldComp.ShieldVolume = _detectMatrixOutside.Scale.Volume;
-            SetShieldShape();
+            if (!ShieldWasLowered) SetShieldShape();
         }
 
         private void CreateMobileShape()
@@ -836,11 +873,9 @@ namespace DefenseShields
 
         private void RefreshDimensions()
         {
-            if (!UpdateDimensions) return;
             UpdateDimensions = false;
             CreateShieldShape();
             Icosphere.ReturnPhysicsVerts(DetectionMatrix, ShieldComp.PhysicsOutside);
-            _entityChanged = true;
             _shapeAdjusted = true;
         }
         #endregion
@@ -891,7 +926,6 @@ namespace DefenseShields
                 var lod = CalculateLod(_onCount);
                 if (_shapeAdjusted || lod != prevlod) Icosphere.CalculateTransform(_shieldShapeMatrix, lod);
                 Icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, ShieldComp.ShieldPercent, passiveVisible, activeVisible);
-                _entityChanged = false;
             }
             if (sphereOnCamera && Shield.IsWorking) Icosphere.Draw(renderId);
         }

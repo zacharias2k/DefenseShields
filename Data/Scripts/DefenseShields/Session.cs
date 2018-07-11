@@ -145,7 +145,7 @@ namespace DefenseShields
                         s.BulletCoolDown++;
                         if (s.BulletCoolDown == 9) s.BulletCoolDown = -1;
                     }
-                    if (!s.WarmedUp || !s.RaiseShield) continue;
+                    if (!s.WarmedUp || !s.ShieldComp.RaiseShield) continue;
                     var sp = new BoundingSphereD(s.DetectionCenter, s.ShieldComp.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {
@@ -159,7 +159,7 @@ namespace DefenseShields
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
-                    if (!s.WarmedUp || !s.RaiseShield) continue;
+                    if (!s.WarmedUp || !s.ShieldComp.RaiseShield) continue;
                     if (s.ShieldComp.ShieldActive && SphereOnCamera[i]) s.Draw(onCount, SphereOnCamera[i]);
                     else if (s.ShieldComp.ShieldActive && !s.Icosphere.ImpactsFinished) s.Icosphere.StepEffects();
                     else if (!s.ShieldComp.ShieldActive && SphereOnCamera[i]) s.DrawShieldDownIcon();
@@ -230,13 +230,20 @@ namespace DefenseShields
 
                 foreach (var shield in Components)
                 {
-                    if (shield.ShieldComp.ShieldActive && shield.RaiseShield && shield.FriendlyCache.Contains(blockGrid))
+                    if (shield.ShieldComp.ShieldActive && shield.ShieldComp.RaiseShield && shield.FriendlyCache.Contains(blockGrid))
                     {
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
                         if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt))
                         {
                             shield.DeformEnabled = true;
+                            continue;
+                        }
+
+                        if (hostileEnt is IMyGunBaseUser && CustomCollision.PointInShield(hostileEnt.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
+                        {
+                            shield.DeformEnabled = true;
+                            shield.FriendlyCache.Add(hostileEnt);
                             continue;
                         }
 
@@ -255,9 +262,9 @@ namespace DefenseShields
 
                         if (hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
                         {
-                            if (hostileEnt != null) Log.CleanLine($"{hostileEnt is IMyGunBaseUser} - {hostileEnt is IMyUserControllableGun}");
-                            Log.CleanLine($"full: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
-                            Log.CleanLine($"full: T:{info.Type} - A:{info.Amount} - HF:{shield.FriendlyCache.Contains(hostileEnt)} - HI:{shield.IgnoreCache.Contains(hostileEnt)} - PF:{shield.FriendlyCache.Contains(blockGrid)} - PI:{shield.IgnoreCache.Contains(blockGrid)}");
+                            //if (hostileEnt != null) Log.CleanLine($"{hostileEnt is IMyGunBaseUser} - {hostileEnt is IMyUserControllableGun}");
+                            //Log.CleanLine($"full: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
+                            //Log.CleanLine($"full: T:{info.Type} - A:{info.Amount} - HF:{shield.FriendlyCache.Contains(hostileEnt)} - HI:{shield.IgnoreCache.Contains(hostileEnt)} - PF:{shield.FriendlyCache.Contains(blockGrid)} - PI:{shield.IgnoreCache.Contains(blockGrid)}");
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
                             var line = new LineD(blockPos, hostileEnt.PositionComp.WorldAABB.Center);
@@ -285,13 +292,20 @@ namespace DefenseShields
                         shield.Absorb += info.Amount;
                         info.Amount = 0f;
                     }
-                    else if (shield.ShieldComp.ShieldActive && shield.RaiseShield && shield.PartlyProtectedCache.Contains(blockGrid))
+                    else if (shield.ShieldComp.ShieldActive && shield.ShieldComp.RaiseShield && shield.PartlyProtectedCache.Contains(blockGrid))
                     {
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
                         if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt))
                         {
                             shield.DeformEnabled = true;
+                            continue;
+                        }
+
+                        if (hostileEnt is IMyGunBaseUser && CustomCollision.PointInShield(hostileEnt.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
+                        {
+                            shield.DeformEnabled = true;
+                            shield.FriendlyCache.Add(hostileEnt);
                             continue;
                         }
 
@@ -302,9 +316,9 @@ namespace DefenseShields
 
                         if (hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
                         {
-                            Log.CleanLine("");
-                            Log.CleanLine($"part: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
-                            Log.CleanLine($"part: T:{info.Type} - A:{info.Amount} - HF:{shield.FriendlyCache.Contains(hostileEnt)} - HI:{shield.IgnoreCache.Contains(hostileEnt)} - PF:{shield.FriendlyCache.Contains(blockGrid)} - PI:{shield.IgnoreCache.Contains(blockGrid)}");
+                            //Log.CleanLine("");
+                            //Log.CleanLine($"part: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
+                            //Log.CleanLine($"part: T:{info.Type} - A:{info.Amount} - HF:{shield.FriendlyCache.Contains(hostileEnt)} - HI:{shield.IgnoreCache.Contains(hostileEnt)} - PF:{shield.FriendlyCache.Contains(blockGrid)} - PI:{shield.IgnoreCache.Contains(blockGrid)}");
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
                             if (!CustomCollision.PointInShield(blockPos, shield.DetectMatrixOutsideInv)) continue;

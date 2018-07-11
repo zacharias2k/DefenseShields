@@ -111,13 +111,16 @@ namespace DefenseShields
         private bool MasterElection()
         {
             if (ShieldComp.DefenseShields != this && ShieldComp.DefenseShields != null) return true;
-            ShieldComp.BoundingRange = 0f;
-            ShieldComp.ShieldPercent = 0f;
-            ShieldComp.Warming = false;
-            ShieldComp.Starting = false;
-            ShieldComp.ShieldActive = false;
-            ShieldComp.ModulationPassword = null;
-            ShieldComp.ComingOnline = false;
+            if (ShieldComp.Warming)
+            {
+                ShieldComp.Warming = false;
+                ShieldComp.BoundingRange = 0f;
+                ShieldComp.ShieldPercent = 0f;
+                ShieldComp.Starting = false;
+                ShieldComp.ShieldActive = false;
+                ShieldComp.ModulationPassword = null;
+                ShieldComp.ComingOnline = false;
+            }
             ShieldComp.DefenseShields = this;
             return false;
         }
@@ -141,8 +144,17 @@ namespace DefenseShields
                 if (AllInited || MasterElection() || !Shield.IsFunctional) return;
                 if (!HealthInited)
                 {
-                    if (ConnectCheck(true)) return;
-                    if (!HealthCheck()) return;
+                    if (ConnectCheck(true))
+                    {
+                        if (Session.Enforced.Debug == 1) Log.Line($"PostInit CheckConnect failed");
+                        return;
+                    }
+
+                    if (!HealthCheck())
+                    {
+                        if (Session.Enforced.Debug == 1) Log.Line($"PostInit HealthCheck Failed");
+                        return;
+                    }
                     HealthInited = true;
                 }
 

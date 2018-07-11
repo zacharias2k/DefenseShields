@@ -94,7 +94,7 @@
         <TypeId>UpgradeModule</TypeId>
         <SubtypeId>DSControlLarge</SubtypeId>
       </Id>
-      <DisplayName>Shield Controller Block</DisplayName>
+      <DisplayName>Shield Controller</DisplayName>
       <Icon>Textures\Icons\DS_Control_Block.dds</Icon>
       <CubeSize>Large</CubeSize>
       <GuiVisible>true</GuiVisible>
@@ -154,7 +154,7 @@
         <TypeId>UpgradeModule</TypeId>
         <SubtypeId>DSControlSmall</SubtypeId>
       </Id>
-      <DisplayName>Shield Controller Compact</DisplayName>
+      <DisplayName>Shield Control</DisplayName>
       <Icon>Textures\Icons\DS_Control_Block.dds</Icon>
       <CubeSize>Small</CubeSize>
       <GuiVisible>true</GuiVisible>

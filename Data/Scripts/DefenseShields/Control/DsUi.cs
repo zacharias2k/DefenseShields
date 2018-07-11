@@ -36,7 +36,7 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return null;
 
-            return comp.RaiseShield ? "On" : "Off";
+            return comp.ShieldComp.RaiseShield ? "On" : "Off";
         }
 
         public static float GetRate(IMyTerminalBlock block)
@@ -216,14 +216,14 @@ namespace DefenseShields
         public static bool GetRaiseShield(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            return comp?.RaiseShield ?? false;
+            return comp?.ShieldComp.RaiseShield ?? false;
         }
 
         public static void SetRaiseShield(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
-            comp.RaiseShield = newValue;
+            comp.ShieldComp.RaiseShield = newValue;
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();
         }

@@ -178,7 +178,9 @@ namespace DefenseShields
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
-            stringBuilder.Append("\n[Energy Protection_]: " + ModulatorComp.Energy.ToString("0") + "%" +
+            stringBuilder.Append("[Remodulating Shield]: " + (ShieldComp != null) +
+                                 "\n" +
+                                 "\n[Energy Protection]: " + ModulatorComp.Energy.ToString("0") + "%" +
                                  "\n[Kinetic Protection]: " + ModulatorComp.Kinetic.ToString("0") + "%");
         }
 

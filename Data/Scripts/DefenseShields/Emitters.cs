@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game;
@@ -78,11 +79,9 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
                 IsStatic = Emitter.CubeGrid.Physics.IsStatic;
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-
                 if (Suspend() || StoppedWorking() || !AllInited && !InitEmitter()) return;
                 if (Prime && EGridComp?.PrimeComp == null || Beta && EGridComp?.BetaComp == null) MasterElection();
                 Timing();
-
                 if (!BlockWorking()) return;
 
                 if (ShieldComp.ShieldActive && !Session.DedicatedServer && UtilsStatic.DistanceCheck(Emitter, 1000, ShieldComp.BoundingRange))
@@ -112,6 +111,13 @@ namespace DefenseShields
                 _lCount++;
                 if (_lCount == 10) _lCount = 0;
             }
+            if (_count == 29 && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
+            {
+                Emitter.RefreshCustomInfo();
+                Emitter.ShowInToolbarConfig = false;
+                Emitter.ShowInToolbarConfig = true;
+            }
+            //else if (_lCount % 2 == 0 && _count == 0) Emitter.RefreshCustomInfo();
         }
 
         private bool BlockWorking()
@@ -197,7 +203,6 @@ namespace DefenseShields
             {
                 Emitter.CubeGrid.Components.TryGet(out ShieldComp);
                 if (ShieldComp == null || !ShieldComp.Starting) return false;
-
                 if (!Emitter.CubeGrid.Components.Has<EmitterGridComponent>())
                 {
                     EGridComp = new EmitterGridComponent(this, true);
@@ -217,6 +222,8 @@ namespace DefenseShields
                 ShieldComp.EmitterEvent = true;
                 BlockWasWorking = true;
                 AllInited = true;
+                Emitter.AppendingCustomInfo += AppendingCustomInfo;
+                Emitter.RefreshCustomInfo();
                 return !Suspend();
             }
             if (!AllInited)
@@ -224,7 +231,6 @@ namespace DefenseShields
                 Emitter.CubeGrid.Components.TryGet(out ShieldComp);
                 var hasEComp = Emitter.CubeGrid.Components.Has<EmitterGridComponent>();
                 if (ShieldComp == null || IsStatic && !hasEComp || !ShieldComp.Starting) return false;
-
                 if (!hasEComp && !IsStatic)
                 {
                     EGridComp = new EmitterGridComponent(this, false);
@@ -456,6 +462,21 @@ namespace DefenseShields
             }
             if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("The shield emitter DOES NOT have a CLEAR ENOUGH LINE OF SIGHT to the shield, SHUTTING DOWN.", 960, "Red", Emitter.OwnerId);
             if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("Blue means clear line of sight, black means blocked......................................................................", 960, "Red", Emitter.OwnerId);
+        }
+
+        private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
+        {
+            if (!ShieldComp.ShieldActive)
+            {
+                stringBuilder.Append("[ Shield Offline ]");
+            }
+            else
+            {
+                stringBuilder.Append("[Emitter Type]: " + (EmitterMode) +
+                                     "\n[Line of Sight]: " + ShieldLineOfSight +
+                                     "\n[Is a Backup]: " + (Alpha || Beta) +
+                                     "\n[Is Suspended]: " + Suspended);
+            }
         }
 
         public override void OnRemovedFromScene()

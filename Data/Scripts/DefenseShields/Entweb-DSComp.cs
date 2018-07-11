@@ -30,7 +30,7 @@ namespace DefenseShields
                 var ent = pruneList[i];
                 if (ent == null || FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent)) continue;
                 var entCenter = ent.PositionComp.WorldVolume.Center;
-                if (ent.Physics == null && !(ent is IMyGunBaseUser) || ent.MarkedForClose || ent is MyVoxelBase && !GridIsMobile
+                if (ent.Physics == null || ent.MarkedForClose || ent is MyVoxelBase && !GridIsMobile
                     || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == MyDebrisBase) continue;
 
                 var relation = EntType(ent);
@@ -40,8 +40,8 @@ namespace DefenseShields
                         continue;
                     case Ent.Ignore:
                     case Ent.Friend:
-                    case Ent.Weapon:
-                        if (relation == Ent.Friend || relation == Ent.Weapon)
+                    //case Ent.Weapon:
+                        if (relation == Ent.Friend) //|| relation == Ent.Weapon)
                         {
                             if (ent is MyCubeGrid)
                             {
@@ -181,7 +181,7 @@ namespace DefenseShields
                         case Ent.VoxelBase:
                             {
                                 vv++;
-                                if (Session.Enforced.Debug == 1) Log.Line($"Ent: VoxelBase {((MyEntity)webent).DebugName}");
+                                //if (Session.Enforced.Debug == 1) Log.Line($"Ent: VoxelBase {((MyEntity)webent).DebugName}");
                                 MyAPIGateway.Parallel.Start(() => VoxelIntersect(webent as MyVoxelBase));
                                 continue;
                             }
@@ -220,7 +220,7 @@ namespace DefenseShields
         {
             if (ent == null) return Ent.Ignore;
             if (ent is MyVoxelBase && (Session.Enforced.DisableVoxelSupport == 1 || ModulateVoxels || !GridIsMobile)) return Ent.Ignore;
-            if (ent is IMyGunBaseUser) return Ent.Weapon;
+            //if (ent is IMyGunBaseUser) return Ent.Weapon;
 
             if (ent is IMyCharacter)
             {

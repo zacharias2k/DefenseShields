@@ -81,6 +81,12 @@ namespace DefenseShields
             set { Settings.Settings.ShieldActive = value; }
         }
 
+        public bool RaiseShield
+        {
+            get { return Settings.Settings.RaiseShield; }
+            set { Settings.Settings.RaiseShield = value; }
+        }
+
         public bool CheckEmitters { get; set; }
 
         public bool GridIsMoving { get; set; }

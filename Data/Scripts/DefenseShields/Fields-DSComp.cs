@@ -91,10 +91,10 @@ namespace DefenseShields
         private bool _hideShield;
         private bool _shapeAdjusted;
         private bool _hierarchyDelayed;
-        private bool _entityChanged = true;
+        private bool _entityChanged;
         private bool _enablePhysics = true;
         private bool _shapeLoaded = true;
-        private bool _powerChanged = true;
+        private bool _createMobileShape = true;
 
         private const string SpaceWolf = "Space_Wolf";
         private const string MyMissile = "MyMissile";
@@ -287,12 +287,6 @@ namespace DefenseShields
         {
             get { return DsSet.Settings.ModulateGrids; }
             set { DsSet.Settings.ModulateGrids = value; }
-        }
-
-        public bool RaiseShield
-        {
-            get { return DsSet.Settings.RaiseShield; }
-            set { DsSet.Settings.RaiseShield = value; }
         }
         #endregion
 

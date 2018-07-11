@@ -65,7 +65,16 @@ namespace DefenseShields
                 if (Suspend() || StoppedWorking() || !AllInited && !InitO2Generator()) return;
                 if (Prime && OGridComp?.Comp == null) MasterElection();
 
-                if (!BlockWorking() || !ShieldComp.ShieldActive) return;
+                if (!BlockWorking() || !ShieldComp.ShieldActive || !ShieldComp.RaiseShield)
+                {
+                    if (BlockIsWorking)
+                    {
+                        Timing();
+                        UpdateAirEmissives(0f);
+                        O2Generator.RefreshCustomInfo();
+                    }
+                    return;
+                }
 
                 Timing();
 
@@ -125,7 +134,6 @@ namespace DefenseShields
                 _lCount++;
                 if (_lCount == 10) _lCount = 0;
             }
-
 
             if (_count == 29 && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
             {
@@ -284,12 +292,20 @@ namespace DefenseShields
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
-            stringBuilder.Append("\n" +
-                                 "\n[Ice-to-Air volumetric ratio]: 261.3" +
-                                 "\n[Shield Volume]: " + ShieldComp.ShieldVolume.ToString("N0") +
-                                 "\n[Volume Filled]: " + _shieldVolFilled.ToString("N0") +
-                                 "\n[Internal O2 Lvl]: " + ((ShieldComp.IncreaseO2ByFPercent + ShieldComp.DefaultO2) * 100).ToString("0") + "%" +
-                                 "\n[External O2 Lvl]: " + (ShieldComp.DefaultO2 * 100).ToString("0") + "%");
+            if (!ShieldComp.ShieldActive || !ShieldComp.RaiseShield)
+            {
+                stringBuilder.Append("\n" +
+                                     "\n[ Shield Offline ]");
+            }
+            else
+            {
+                stringBuilder.Append("\n" +
+                                     "\n[Ice-to-Air volumetric ratio]: 261.3" +
+                                     "\n[Shield Volume]: " + ShieldComp.ShieldVolume.ToString("N0") +
+                                     "\n[Volume Filled]: " + _shieldVolFilled.ToString("N0") +
+                                     "\n[Internal O2 Lvl]: " + ((ShieldComp.IncreaseO2ByFPercent + ShieldComp.DefaultO2) * 100).ToString("0") + "%" +
+                                     "\n[External O2 Lvl]: " + (ShieldComp.DefaultO2 * 100).ToString("0") + "%");
+            }
         }
 
         public override void OnRemovedFromScene()
