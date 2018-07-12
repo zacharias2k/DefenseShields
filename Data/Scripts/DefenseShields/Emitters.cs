@@ -41,6 +41,7 @@ namespace DefenseShields
         internal bool BlockIsWorking;
         internal bool BlockWasWorking;
         internal bool ShieldLineOfSight;
+        internal bool TookControl;
         public bool EmitterOnline;
 
         private const string PlasmaEmissive = "PlasmaEmissive";
@@ -101,8 +102,7 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
                 IsStatic = Emitter.CubeGrid.Physics.IsStatic;
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-                if (Suspend() || StoppedWorking() || !AllInited && !InitEmitter()) return;
-                if (Prime && ShieldComp?.EmitterPrime == null || Beta && ShieldComp?.EmitterBeta == null) MasterElection();
+                if (!AllInited && !InitEmitter() || Suspend() || StoppedWorking()) return;
                 Timing();
                 if (!BlockWorking()) return;
 
@@ -144,13 +144,21 @@ namespace DefenseShields
 
         private bool InitEmitter()
         {
-            SetEmitterType();
+            if (Definition == null) SetEmitterType();
+
+            Emitter.CubeGrid.Components.TryGet(out ShieldComp);
+            if (ShieldComp == null) return false;
+
+            ShieldComp.EmitterMode = (int)EmitterMode;
+            if (!ShieldComp.Starting) return false;
+
             if (!AllInited && EmitterMode == EmitterType.Station)
             {
-                Emitter.CubeGrid.Components.TryGet(out ShieldComp);
-                if (ShieldComp == null || !ShieldComp.Starting) return false;
-                ShieldComp.EmitterMode = (int) EmitterMode;
-                if (ShieldComp.EmitterPrime != null) ShieldComp.EmitterPrime.Alpha = true;
+                if (ShieldComp.EmitterPrime != null)
+                {
+                    ShieldComp.EmitterPrime.Alpha = true;
+                    TookControl = true;
+                }
                 ShieldComp.EmitterPrime = this;
                 Prime = true;
 
@@ -164,11 +172,12 @@ namespace DefenseShields
             }
             if (!AllInited)
             {
-                Emitter.CubeGrid.Components.TryGet(out ShieldComp);
-                if (ShieldComp == null || IsStatic || !ShieldComp.Starting) return false;
-                ShieldComp.EmitterMode = (int)EmitterMode;
-
-                if (ShieldComp.EmitterBeta != null) ShieldComp.EmitterBeta.Zeta = true;
+                if (ShieldComp.EmitterBeta != null)
+                {
+                    ShieldComp.EmitterBeta.Zeta = true;
+                    TookControl = true;
+                    Suspended = true;
+                }
                 ShieldComp.EmitterBeta = this;
                 Beta = true;
 
@@ -185,7 +194,7 @@ namespace DefenseShields
         {
             if (ShieldComp.DefenseShields == null || !ShieldComp.Warming) return false;
 
-            if (ShieldComp.CheckEmitters) CheckShieldLineOfSight();
+            if (ShieldComp.CheckEmitters || TookControl) CheckShieldLineOfSight();
             if (!ShieldLineOfSight && Emitter.IsFunctional && !Session.DedicatedServer) DrawHelper();
 
             BlockIsWorking = ShieldLineOfSight && Emitter.IsWorking;
@@ -211,13 +220,33 @@ namespace DefenseShields
 
         private bool Suspend()
         {
-            if (Alpha || Zeta || Prime && !IsStatic || Beta && IsStatic || Prime && ShieldComp.EmitterPrime != this || Beta && ShieldComp.EmitterBeta != this)
+            if (Suspended && (Alpha && ShieldComp.EmitterPrime == null || Zeta && ShieldComp.EmitterBeta == null) )
+            {
+                ShieldComp.EmitterMode = (int)EmitterMode;
+                if (Prime)
+                {
+                    Alpha = false;
+                    ShieldComp.EmitterPrime = this;
+                    TookControl = true;
+                }
+                else
+                {
+                    Zeta = false;
+                    ShieldComp.EmitterBeta = this;
+                    TookControl = true;
+                }
+
+                ShieldComp.EmitterEvent = true;
+            }
+            else if (Alpha || Zeta || Prime && !IsStatic || Beta && IsStatic || Prime && ShieldComp.EmitterPrime != this || Beta && ShieldComp.EmitterBeta != this)
             {
                 if (_effect != null && !Session.DedicatedServer && !Armored) BlockParticleStop();
+                if (_tick % 600 == 0) Emitter.RefreshCustomInfo();
                 Suspended = true;
                 return Suspended;
             }
-            if (Suspended) ShieldComp.EmitterMode = (int) EmitterMode;
+
+
             Suspended = false;
             return Suspended;
         }
@@ -231,24 +260,6 @@ namespace DefenseShields
                 return true;
             }
             return !Emitter.IsFunctional;
-        }
-
-        private void MasterElection()
-        {
-            if (EmitterMode == EmitterType.Station)
-            {
-                ShieldComp.EmitterPrime = this;
-                ShieldComp.EmitterEvent = true;
-                Prime = true;
-                Alpha = false;
-            }
-            else if (EmitterMode != EmitterType.Station)
-            {
-                ShieldComp.EmitterBeta = this;
-                ShieldComp.EmitterEvent = true;
-                Beta = true;
-                Zeta = false;
-            }
         }
 
         private void SetEmitterType()
@@ -347,6 +358,7 @@ namespace DefenseShields
 
         private void CheckShieldLineOfSight()
         {
+            TookControl = false;
             _blocksLos.Clear();
             _noBlocksLos.Clear();
             _vertsSighted.Clear();

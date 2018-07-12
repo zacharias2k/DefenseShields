@@ -7,7 +7,6 @@ namespace DefenseShields
         #region Create UI
         internal static void CreateUi(IMyTerminalBlock shield)
         {
-            Session.Instance.CreateControlerUi(shield);
             Session.Instance.WidthSlider.Visible = ShowSizeSlider;
             Session.Instance.HeightSlider.Visible = ShowSizeSlider;
             Session.Instance.DepthSlider.Visible = ShowSizeSlider;

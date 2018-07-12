@@ -84,8 +84,8 @@ namespace DefenseShields
 
         private void SetShieldType()
         {
-            if (Shield.CubeGrid.Physics.IsStatic) ShieldMode = ShieldType.Station;
-            else if (Shield.CubeGrid.GridSizeEnum == MyCubeSize.Large) ShieldMode = ShieldType.LargeGrid;
+            if (ShieldComp.EmitterMode == 0) ShieldMode = ShieldType.Station;
+            else if (ShieldComp.EmitterMode == 1) ShieldMode = ShieldType.LargeGrid;
             else
             {
                 ShieldMode = ShieldType.SmallGrid;
@@ -108,23 +108,6 @@ namespace DefenseShields
             }
         }
 
-        private bool MasterElection()
-        {
-            if (ShieldComp.DefenseShields != this && ShieldComp.DefenseShields != null) return true;
-            if (ShieldComp.Warming)
-            {
-                ShieldComp.Warming = false;
-                ShieldComp.BoundingRange = 0f;
-                ShieldComp.ShieldPercent = 0f;
-                ShieldComp.Starting = false;
-                ShieldComp.ShieldActive = false;
-                ShieldComp.ModulationPassword = null;
-                ShieldComp.ComingOnline = false;
-            }
-            ShieldComp.DefenseShields = this;
-            return false;
-        }
-
         public void PostInit()
         {
             try
@@ -141,22 +124,8 @@ namespace DefenseShields
                     if (!Session.EnforceInit) return;
                 }
 
-                if (AllInited || MasterElection() || !Shield.IsFunctional) return;
-                if (!HealthInited)
-                {
-                    if (ConnectCheck(true))
-                    {
-                        if (Session.Enforced.Debug == 1) Log.Line($"PostInit CheckConnect failed");
-                        return;
-                    }
+                if (AllInited || !Shield.IsFunctional || ShieldComp.EmitterMode < 0) return;
 
-                    if (!HealthCheck())
-                    {
-                        if (Session.Enforced.Debug == 1) Log.Line($"PostInit HealthCheck Failed");
-                        return;
-                    }
-                    HealthInited = true;
-                }
 
                 if (!MainInit && Shield.IsFunctional)
                 {
@@ -171,7 +140,7 @@ namespace DefenseShields
                         _shapeLoaded = false;
                     }
 
-                    DsUi.CreateUi(Shield);
+                    Session.Instance.CreateControllerElements(Shield);
                     MainInit = true;
                     if (Session.Enforced.Debug == 1) Log.Line($"MainInit complete");
                 }
@@ -184,24 +153,73 @@ namespace DefenseShields
                     if (Session.Enforced.Debug == 1) Log.Line($"PhysicsInit complete");
                 }
 
-                if (AllInited || !PhysicsInit || !MainInit || !Shield.IsFunctional) return;
-                if (!BlockReady()) return;
+                if (AllInited || !PhysicsInit || !MainInit || !Shield.IsFunctional || !BlockReady()) return;
 
-                if (Session.Enforced.Debug == 1) Log.Line($"AnimateInit complete");
+                RegisterEmitter(true);
                 if (Session.EnforceInit) AllInited = true;
+                if (Session.Enforced.Debug == 1) Log.Line($"AnimateInit complete");
             }
             catch (Exception ex) { Log.Line($"Exception in DSControl PostInit: {ex}"); }
         }
 
-        private bool HealthCheck()
+        private void RegisterEmitter(bool firstRun)
         {
-            HardDisable = false || Shield.EntityId != UtilsStatic.ThereCanBeOnlyOne(Shield);
-            if (!HardDisable) return true;
-            if (Session.Enforced.Debug == 1) Log.Line($"HardDisable is triggered - {Shield.BlockDefinition.SubtypeId}");
+            if (!firstRun)
+            {
+                SetShieldType();
+                if (ShieldMode == ShieldType.Station)
+                {
+                    _shapeAdjusted = false;
+                    _shapeLoaded = false;
+                }
+            }
+            DsUi.CreateUi(Shield);
 
-            //_startupWarning = UtilsStatic.CheckShieldType(Shield, _startupWarning);
+            /*
+            if (ConnectCheck(true))
+            {
+                if (Session.Enforced.Debug == 1) Log.Line($"PostInit CheckConnect failed");
+            }
+            */
+        }
 
-            return false;
+        private bool Election()
+        {
+            if (ShieldComp.DefenseShields != null) return false;
+            ShieldComp.Warming = false;
+            ShieldComp.BoundingRange = 0f;
+            ShieldComp.ShieldPercent = 0f;
+            ShieldComp.Starting = false;
+            ShieldComp.ShieldActive = false;
+            ShieldComp.ModulationPassword = null;
+            ShieldComp.ComingOnline = false;
+            ShieldComp.DefenseShields = this;
+            RegisterEmitter(false);
+            return true;
+        }
+
+        private bool Suspend()
+        {
+            var isStatic = Shield.CubeGrid.IsStatic;
+            if (ShieldMode != ShieldType.Station && isStatic) Suspended = true;
+            else if (ShieldMode == ShieldType.Station && !isStatic) Suspended = true;
+            else
+            {
+                if (Suspended)
+                {
+                    RegisterEmitter(false);
+                    _genericDownLoop = 0;
+                }d
+                Suspended = false;
+            }
+
+            if (Suspended)
+            {
+                ShieldComp.BoundingRange = 0f;
+                _genericDownLoop = 0;
+            }
+
+            return Suspended;
         }
 
         private void SpawnEntities()
@@ -293,7 +311,6 @@ namespace DefenseShields
         {
             try
             {
-                HardDisable = false;
                 _shieldCurrentPower = _power;
                 Sink.Update();
 

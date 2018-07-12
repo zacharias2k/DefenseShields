@@ -84,13 +84,15 @@ namespace DefenseShields
 
         private bool BlockFunctional()
         {
+            if (_count == 0) Log.Line($"SM:{ShieldMode} - EM:{ShieldComp.EmitterMode} - R:{ShieldComp.BoundingRange} - H:{Height} - W:{Width} - D:{Depth} - {GridIsMobile}");
             if (!AllInited)
             {
                 PostInit();
                 if (!AllInited) return false;
             }
 
-            if (ShieldLowered() || !WarmUpSequence()) return false;
+            if (Suspend() || Election() || !WarmUpSequence() || ShieldLowered()) return false;
+
 
             if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
             {
@@ -382,6 +384,7 @@ namespace DefenseShields
 
         private bool WarmUpSequence()
         {
+            if (ShieldComp.DefenseShields != this) return false;
             if (ShieldComp.Warming) return true;
 
             if (ShieldComp.Starting)
@@ -697,6 +700,7 @@ namespace DefenseShields
 
         private string GetShieldStatus()
         {
+            if (ShieldComp.Warming && !WarmedUp) return "Controller Standby";
             if (ShieldOffline && !_overLoadLoop.Equals(-1)) return "Shield Overloaded";
             if (ShieldOffline && _power.Equals(0.0001f)) return "Insufficient Power";
             if (!ShieldComp.RaiseShield && !ShieldOffline) return "Shield Down"; 
@@ -1129,6 +1133,9 @@ namespace DefenseShields
                 if (Session.Instance.Components.Contains(this)) Session.Instance.Components.Remove(this);
                 _power = 0.0001f;
                 Icosphere = null;
+                ShieldEnt?.Close();
+                _shellPassive?.Close();
+                _shellActive?.Close();
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
                 if (AllInited) Sink.Update();
                 if (ShieldComp?.DefenseShields == this) ShieldComp.DefenseShields = null;

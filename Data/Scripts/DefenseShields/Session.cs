@@ -686,7 +686,7 @@ namespace DefenseShields
             CustomDataReset = true;
         }
 
-        public void CreateControlerUi(IMyTerminalBlock block)
+        public void CreateControllerElements(IMyTerminalBlock block)
         {
             try
             {
