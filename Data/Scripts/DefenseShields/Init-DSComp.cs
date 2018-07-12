@@ -208,7 +208,7 @@ namespace DefenseShields
         {
             var parent = (MyEntity)Shield.CubeGrid;
 
-            _shellPassive = Spawn.EmptyEntity("dShellPassive", $"{Session.Instance.ModPath()}\\Models\\Cubes\\ShieldPassive_LOD0.mwm", parent, true);
+            _shellPassive = Spawn.EmptyEntity("dShellPassive", $"{Session.Instance.ModPath()}\\Models\\Cubes\\ShieldPassive.mwm", parent, true);
             _shellPassive.Render.CastShadows = false;
             _shellPassive.IsPreview = true;
             _shellPassive.Render.Visible = true;

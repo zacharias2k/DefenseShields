@@ -80,7 +80,7 @@ namespace DefenseShields
             {
                 IsStatic = O2Generator.CubeGrid.Physics.IsStatic;
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-                if (Suspend() || !AllInited && !InitO2Generator()) return;
+                if (!AllInited && !InitO2Generator() || Suspend()) return;
 
                 if (!BlockWorking() || !ShieldComp.ShieldActive || !ShieldComp.RaiseShield)
                 {
@@ -150,6 +150,7 @@ namespace DefenseShields
                 if (ShieldComp == null) O2Generator.CubeGrid.Components.TryGet(out ShieldComp);
 
                 if (ShieldComp == null || ShieldComp?.ActiveO2Generator != null || !ShieldComp.Starting || ShieldComp.ShieldVolume <= 0) return false;
+                ShieldComp.ActiveO2Generator = this;
                 RemoveControls();
                 O2Generator.AppendingCustomInfo += AppendingCustomInfo;
                 Source.Enabled = false;
