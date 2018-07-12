@@ -65,7 +65,11 @@ namespace DefenseShields
 
         public Vector3D[] PhysicsInside { get; set; } = new Vector3D[642];
 
-        public EmitterGridComponent EmitterComp { get; set; }
+        public int EmitterMode { get; set; }
+        public Emitters EmitterPrime { get; set; }
+        public Emitters EmitterBeta { get; set; }
+
+        public O2Generators ActiveO2Generator { get; set; }
 
         public string ModulationPassword { get; set; }
 

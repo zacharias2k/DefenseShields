@@ -39,6 +39,29 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
 
+        public override void UpdateOnceBeforeFrame()
+        {
+            base.UpdateOnceBeforeFrame();
+            try
+            {
+                _shields.Add(Entity.EntityId, this);
+                MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
+                Session.Instance.Components.Add(this);
+                ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
+
+                StorageSetup();
+
+                if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>())
+                {
+                    Shield.CubeGrid.Components.Add(ShieldComp);
+                    ShieldComp.DefaultO2 = MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(Shield.PositionComp.WorldVolume.Center);
+                }
+                else Shield.CubeGrid.Components.TryGet(out ShieldComp);
+                if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
+        }
+
         private void HierarchyChanged(IMyCubeGrid myCubeGrid = null)
         {
             try
@@ -83,29 +106,6 @@ namespace DefenseShields
                     _shieldRatio = Session.Enforced.SmallShipRatio;
                     break;
             }
-        }
-
-        public override void UpdateOnceBeforeFrame()
-        {
-            base.UpdateOnceBeforeFrame();
-            try
-            {
-                _shields.Add(Entity.EntityId, this);
-                MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
-                Session.Instance.Components.Add(this);
-                ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
-
-                StorageSetup();
-
-                if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>())
-                {
-                    Shield.CubeGrid.Components.Add(ShieldComp);
-                    ShieldComp.DefaultO2 = MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(Shield.PositionComp.WorldVolume.Center);
-                }
-                else Shield.CubeGrid.Components.TryGet(out ShieldComp);
-                if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
-            }
-            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
 
         private bool MasterElection()

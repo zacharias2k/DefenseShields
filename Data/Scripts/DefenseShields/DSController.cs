@@ -252,7 +252,7 @@ namespace DefenseShields
 
         private void EmitterEventDetected()
         {
-            if (!GridIsMobile && ShieldComp.EmitterComp?.PrimeComp != null)
+            if (!GridIsMobile && ShieldComp.EmitterPrime != null && !ShieldComp.EmitterPrime.Suspended && !ShieldComp.EmitterPrime.Alpha)
             {
                 UpdateDimensions = true;
                 if (UpdateDimensions) RefreshDimensions();
@@ -386,11 +386,8 @@ namespace DefenseShields
 
             if (ShieldComp.Starting)
             {
-                EmitterGridComponent eComp;
-                Shield.CubeGrid.Components.TryGet(out eComp);
-                if (eComp?.PrimeComp != null || eComp?.BetaComp != null)
+                if (ShieldComp?.EmitterPrime != null || ShieldComp?.EmitterBeta != null)
                 {
-                    ShieldComp.EmitterComp = eComp;
                     if (GridIsMobile)
                     {
                         CreateHalfExtents();
@@ -818,7 +815,7 @@ namespace DefenseShields
             }
             else
             {
-                var emitter = ShieldComp.EmitterComp.PrimeComp.Emitter;
+                var emitter = ShieldComp.EmitterPrime.Emitter;
                 _shieldGridMatrix = emitter.WorldMatrix;
                 DetectionMatrix = MatrixD.Rescale(_shieldGridMatrix, new Vector3D(Width, Height, Depth));
                 _shieldShapeMatrix = MatrixD.Rescale(emitter.LocalMatrix, new Vector3D(Width, Height, Depth));
@@ -859,7 +856,7 @@ namespace DefenseShields
             MatrixD matrix;
             if (!GridIsMobile)
             {
-                matrix = _shieldShapeMatrix * ShieldComp.EmitterComp.PrimeComp.Emitter.WorldMatrix;
+                matrix = _shieldShapeMatrix * ShieldComp.EmitterPrime.Emitter.WorldMatrix;
                 ShieldEnt.PositionComp.SetWorldMatrix(matrix);
                 ShieldEnt.PositionComp.SetPosition(DetectionCenter);
             }

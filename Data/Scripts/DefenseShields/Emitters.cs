@@ -50,7 +50,6 @@ namespace DefenseShields
 
         public MyModStorageComponentBase Storage { get; set; }
         internal ShieldGridComponent ShieldComp;
-        internal EmitterGridComponent EGridComp;
         private MyEntitySubpart _subpartRotor;
         private MyParticleEffect _effect = new MyParticleEffect();
 
@@ -72,6 +71,29 @@ namespace DefenseShields
             Small,
         };
 
+        public override void Init(MyObjectBuilder_EntityBase objectBuilder)
+        {
+            try
+            {
+                base.Init(objectBuilder);
+                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+            }
+            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
+        }
+
+        public override void UpdateOnceBeforeFrame()
+        {
+            base.UpdateOnceBeforeFrame();
+            try
+            {
+                Session.Instance.Emitters.Add(this);
+                if (!_emitters.ContainsKey(Entity.EntityId)) _emitters.Add(Entity.EntityId, this);
+                Storage = Emitter.Storage;
+
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
+        }
+
         public override void UpdateBeforeSimulation()
         {
             try
@@ -80,7 +102,7 @@ namespace DefenseShields
                 IsStatic = Emitter.CubeGrid.Physics.IsStatic;
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
                 if (Suspend() || StoppedWorking() || !AllInited && !InitEmitter()) return;
-                if (Prime && EGridComp?.PrimeComp == null || Beta && EGridComp?.BetaComp == null) MasterElection();
+                if (Prime && ShieldComp?.EmitterPrime == null || Beta && ShieldComp?.EmitterBeta == null) MasterElection();
                 Timing();
                 if (!BlockWorking()) return;
 
@@ -117,12 +139,51 @@ namespace DefenseShields
                 Emitter.ShowInToolbarConfig = false;
                 Emitter.ShowInToolbarConfig = true;
             }
-            //else if (_lCount % 2 == 0 && _count == 0) Emitter.RefreshCustomInfo();
+            //else if (_lCount == 0 && _count == 0) Emitter.RefreshCustomInfo();
+        }
+
+        private bool InitEmitter()
+        {
+            SetEmitterType();
+            if (!AllInited && EmitterMode == EmitterType.Station)
+            {
+                Emitter.CubeGrid.Components.TryGet(out ShieldComp);
+                if (ShieldComp == null || !ShieldComp.Starting) return false;
+                ShieldComp.EmitterMode = (int) EmitterMode;
+                if (ShieldComp.EmitterPrime != null) ShieldComp.EmitterPrime.Alpha = true;
+                ShieldComp.EmitterPrime = this;
+                Prime = true;
+
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                ShieldComp.EmitterEvent = true;
+                BlockWasWorking = true;
+                AllInited = true;
+                Emitter.AppendingCustomInfo += AppendingCustomInfo;
+                Emitter.RefreshCustomInfo();
+                return !Suspend();
+            }
+            if (!AllInited)
+            {
+                Emitter.CubeGrid.Components.TryGet(out ShieldComp);
+                if (ShieldComp == null || IsStatic || !ShieldComp.Starting) return false;
+                ShieldComp.EmitterMode = (int)EmitterMode;
+
+                if (ShieldComp.EmitterBeta != null) ShieldComp.EmitterBeta.Zeta = true;
+                ShieldComp.EmitterBeta = this;
+                Beta = true;
+
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                ShieldComp.EmitterEvent = true;
+                BlockWasWorking = true;
+                AllInited = true;
+                return !Suspend();
+            }
+            return false;
         }
 
         private bool BlockWorking()
         {
-            if (Alpha || IsStatic && Beta || Zeta || ShieldComp.DefenseShields == null || !ShieldComp.Warming) return false;
+            if (ShieldComp.DefenseShields == null || !ShieldComp.Warming) return false;
 
             if (ShieldComp.CheckEmitters) CheckShieldLineOfSight();
             if (!ShieldLineOfSight && Emitter.IsFunctional && !Session.DedicatedServer) DrawHelper();
@@ -148,37 +209,52 @@ namespace DefenseShields
             return true;
         }
 
-        public override void Init(MyObjectBuilder_EntityBase objectBuilder)
+        private bool Suspend()
         {
-            try
+            if (Alpha || Zeta || Prime && !IsStatic || Beta && IsStatic || Prime && ShieldComp.EmitterPrime != this || Beta && ShieldComp.EmitterBeta != this)
             {
-                base.Init(objectBuilder);
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+                if (_effect != null && !Session.DedicatedServer && !Armored) BlockParticleStop();
+                Suspended = true;
+                return Suspended;
             }
-            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
+            if (Suspended) ShieldComp.EmitterMode = (int) EmitterMode;
+            Suspended = false;
+            return Suspended;
         }
 
-        public override void UpdateOnceBeforeFrame()
+        private bool StoppedWorking()
         {
-            base.UpdateOnceBeforeFrame();
-            try
+            if (!Emitter.IsFunctional && BlockIsWorking)
             {
-                Session.Instance.Emitters.Add(this);
-                if (!_emitters.ContainsKey(Entity.EntityId)) _emitters.Add(Entity.EntityId, this);
-                StorageSetup();
+                BlockIsWorking = false;
+                if (ShieldComp != null && (IsStatic && this == ShieldComp?.EmitterPrime || !IsStatic && this == ShieldComp?.EmitterBeta)) ShieldComp.EmittersWorking = false;
+                return true;
             }
-            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
+            return !Emitter.IsFunctional;
         }
 
-        private void StorageSetup()
+        private void MasterElection()
         {
-            Storage = Emitter.Storage;
+            if (EmitterMode == EmitterType.Station)
+            {
+                ShieldComp.EmitterPrime = this;
+                ShieldComp.EmitterEvent = true;
+                Prime = true;
+                Alpha = false;
+            }
+            else if (EmitterMode != EmitterType.Station)
+            {
+                ShieldComp.EmitterBeta = this;
+                ShieldComp.EmitterEvent = true;
+                Beta = true;
+                Zeta = false;
+            }
         }
 
         private void SetEmitterType()
         {
             Definition = DefinitionManager.Get(Emitter.BlockDefinition.SubtypeId);
-            switch (Definition.Name) 
+            switch (Definition.Name)
             {
                 case "EmitterST":
                     EmitterMode = EmitterType.Station;
@@ -193,140 +269,6 @@ namespace DefenseShields
                     EmitterMode = EmitterType.Small;
                     if (Definition.Name == "EmitterSA") Armored = true;
                     break;
-            }
-        }
-
-        private bool InitEmitter()
-        {
-            if (Definition == null) SetEmitterType();
-            if (!AllInited && EmitterMode == EmitterType.Station)
-            {
-                Emitter.CubeGrid.Components.TryGet(out ShieldComp);
-                if (ShieldComp == null || !ShieldComp.Starting) return false;
-                if (!Emitter.CubeGrid.Components.Has<EmitterGridComponent>())
-                {
-                    EGridComp = new EmitterGridComponent(this, true);
-                    Emitter.CubeGrid.Components.Add(EGridComp);
-                    EGridComp.PrimeComp = this;
-                    Prime = true;
-                }
-                else
-                {
-                    Emitter.CubeGrid.Components.TryGet(out EGridComp);
-                    if (EGridComp.PrimeComp != null) EGridComp.PrimeComp.Alpha = true;
-                    EGridComp.PrimeComp = this;
-                    Prime = true;
-                }
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                EGridComp.RegisteredComps.Add(this);
-                ShieldComp.EmitterEvent = true;
-                BlockWasWorking = true;
-                AllInited = true;
-                Emitter.AppendingCustomInfo += AppendingCustomInfo;
-                Emitter.RefreshCustomInfo();
-                return !Suspend();
-            }
-            if (!AllInited)
-            {
-                Emitter.CubeGrid.Components.TryGet(out ShieldComp);
-                var hasEComp = Emitter.CubeGrid.Components.Has<EmitterGridComponent>();
-                if (ShieldComp == null || IsStatic && !hasEComp || !ShieldComp.Starting) return false;
-                if (!hasEComp && !IsStatic)
-                {
-                    EGridComp = new EmitterGridComponent(this, false);
-                    Emitter.CubeGrid.Components.Add(EGridComp);
-                    EGridComp.BetaComp = this;
-                    Beta = true;
-                }
-                else
-                {
-                    Emitter.CubeGrid.Components.TryGet(out EGridComp);
-                    if (EGridComp.BetaComp != null) EGridComp.BetaComp.Zeta = true;
-                    EGridComp.BetaComp = this;
-                    Beta = true;
-                }
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                EGridComp.RegisteredComps.Add(this);
-                ShieldComp.EmitterEvent = true;
-                BlockWasWorking = true;
-                AllInited = true;
-                return !Suspend();
-            }
-            return false;
-        }
-
-        private bool Suspend()
-        {
-            if (Beta && IsStatic)
-            {
-                if (_effect != null && !Session.DedicatedServer && !Armored) BlockParticleStop();
-                return true;
-            }
-
-            if (Prime && !IsStatic)
-            {
-                if (_effect != null && !Session.DedicatedServer) BlockParticleStop();
-                return true;
-            }
-
-            return false;
-        }
-
-        private bool StoppedWorking()
-        {
-            if (!Emitter.IsFunctional && BlockIsWorking)
-            {
-                BlockIsWorking = false;
-                if (ShieldComp != null && (IsStatic && this == EGridComp?.PrimeComp || !IsStatic && this == EGridComp?.BetaComp)) ShieldComp.EmittersWorking = false;
-                return true;
-            }
-            return !Emitter.IsFunctional;
-        }
-
-        private void MasterElection()
-        {
-            var hasEComp = Emitter.CubeGrid.Components.Has<EmitterGridComponent>();
-            if (!hasEComp)
-            {
-                if (IsStatic && EmitterMode == EmitterType.Station)
-                {
-                    EGridComp = new EmitterGridComponent(this, true);
-                    Emitter.CubeGrid.Components.Add(EGridComp);
-                    EGridComp.PrimeComp = this;
-                    ShieldComp.EmitterEvent = true;
-                    Prime = true;
-                    Alpha = false;
-                }
-                else if (!IsStatic && EmitterMode != EmitterType.Station)
-                {
-                    EGridComp = new EmitterGridComponent(this, false);
-                    Emitter.CubeGrid.Components.Add(EGridComp);
-                    EGridComp.BetaComp = this;
-                    ShieldComp.EmitterEvent = true;
-                    Beta = true;
-                    Zeta = false;
-                }
-            }
-            else 
-            {
-                if (IsStatic && EmitterMode == EmitterType.Station)
-                {
-                    Emitter.CubeGrid.Components.TryGet(out EGridComp);
-                    if (EGridComp.PrimeComp != null) EGridComp.PrimeComp.Alpha = true;
-                    EGridComp.PrimeComp = this;
-                    ShieldComp.EmitterEvent = true;
-                    Prime = true;
-                    Alpha = false;
-                }
-                else if (EmitterMode != EmitterType.Station)
-                {
-                    Emitter.CubeGrid.Components.TryGet(out EGridComp);
-                    if (EGridComp.BetaComp != null) EGridComp.BetaComp.Zeta = true;
-                    EGridComp.BetaComp = this;
-                    ShieldComp.EmitterEvent = true;
-                    Beta = true;
-                    Zeta = false;
-                }
             }
         }
 
@@ -487,24 +429,23 @@ namespace DefenseShields
                 {
                     return;
                 }
-                if (EGridComp.RegisteredComps.Contains(this)) EGridComp.RegisteredComps.Remove(this);
-                if (EGridComp?.PrimeComp == this)
+                if (ShieldComp?.EmitterPrime == this)
                 {
                     if (ShieldComp != null)
                     {
                         ShieldComp.EmittersWorking = false;
                         ShieldComp.EmitterEvent = true;
                     }
-                    EGridComp.PrimeComp = null;
+                    ShieldComp.EmitterPrime = null;
                 }
-                else if (EGridComp?.BetaComp == this)
+                else if (ShieldComp?.EmitterBeta == this)
                 {
                     if (ShieldComp != null)
                     {
                         ShieldComp.EmittersWorking = false;
                         ShieldComp.EmitterEvent = true;
                     }
-                    EGridComp.BetaComp = null;
+                    ShieldComp.EmitterBeta = null;
                 }
                 if (Session.Instance.Emitters.Contains(this)) Session.Instance.Emitters.Remove(this);
                 BlockParticleStop();
@@ -519,24 +460,23 @@ namespace DefenseShields
             {
                 if (_emitters.ContainsKey(Entity.EntityId)) _emitters.Remove(Entity.EntityId);
                 if (Session.Instance.Emitters.Contains(this)) Session.Instance.Emitters.Remove(this);
-                if (EGridComp?.RegisteredComps != null && EGridComp.RegisteredComps.Contains(this)) EGridComp.RegisteredComps.Remove(this);
-                if (EGridComp?.PrimeComp == this)
+                if (ShieldComp?.EmitterPrime == this)
                 {
                     if (ShieldComp != null)
                     {
                         ShieldComp.EmittersWorking = false;
                         ShieldComp.EmitterEvent = true;
                     }
-                    EGridComp.PrimeComp = null;
+                    ShieldComp.EmitterPrime = null;
                 }
-                else if (EGridComp?.BetaComp == this)
+                else if (ShieldComp?.EmitterBeta == this)
                 {
                     if (ShieldComp != null)
                     {
                         ShieldComp.EmittersWorking = false;
                         ShieldComp.EmitterEvent = true;
                     }
-                    EGridComp.BetaComp = null;
+                    ShieldComp.EmitterBeta = null;
                 }
                 BlockParticleStop();
             }

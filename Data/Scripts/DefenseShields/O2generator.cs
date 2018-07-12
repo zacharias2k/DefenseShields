@@ -9,7 +9,6 @@ using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Game;
 using VRage.Game.Components;
-using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
@@ -36,8 +35,6 @@ namespace DefenseShields
         public bool ServerUpdate;
         internal bool AllInited;
         internal bool Suspended;
-        internal bool Prime;
-        internal bool Alpha;
         internal bool IsStatic;
         internal bool BlockIsWorking;
         internal bool BlockWasWorking;
@@ -45,9 +42,7 @@ namespace DefenseShields
 
         public MyModStorageComponentBase Storage { get; set; }
         internal ShieldGridComponent ShieldComp;
-        internal O2GeneratorGridComponent OGridComp;
         internal MyResourceSourceComponent Source;
-        private MyEntitySubpart _subpartRotor;
 
         internal DSUtils Dsutil1 = new DSUtils();
 
@@ -56,14 +51,36 @@ namespace DefenseShields
 
         private readonly Dictionary<long, O2Generators> _o2Generator = new Dictionary<long, O2Generators>();
 
+        public override void Init(MyObjectBuilder_EntityBase objectBuilder)
+        {
+            try
+            {
+                base.Init(objectBuilder);
+                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+            }
+            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
+        }
+
+        public override void UpdateOnceBeforeFrame()
+        {
+            base.UpdateOnceBeforeFrame();
+            try
+            {
+                Session.Instance.O2Generators.Add(this);
+                _o2Generator.Add(Entity.EntityId, this);
+                Source = O2Generator.Components.Get<MyResourceSourceComponent>();
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
+        }
+
         public override void UpdateBeforeSimulation()
         {
             try
             {
                 IsStatic = O2Generator.CubeGrid.Physics.IsStatic;
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-                if (Suspend() || StoppedWorking() || !AllInited && !InitO2Generator()) return;
-                if (Prime && OGridComp?.Comp == null) MasterElection();
+                if (Suspend() || !AllInited && !InitO2Generator()) return;
 
                 if (!BlockWorking() || !ShieldComp.ShieldActive || !ShieldComp.RaiseShield)
                 {
@@ -126,6 +143,28 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
 
+        private bool InitO2Generator()
+        {
+            if (!AllInited)
+            {
+                if (ShieldComp == null) O2Generator.CubeGrid.Components.TryGet(out ShieldComp);
+
+                if (ShieldComp == null || ShieldComp?.ActiveO2Generator != null || !ShieldComp.Starting || ShieldComp.ShieldVolume <= 0) return false;
+                RemoveControls();
+                O2Generator.AppendingCustomInfo += AppendingCustomInfo;
+                Source.Enabled = false;
+                O2Generator.AutoRefill = false;
+                _inventory = O2Generator.GetInventory();
+
+                _oldShieldVol = ShieldComp.ShieldVolume;
+                ResetAirEmissives(-1);
+                BlockWasWorking = true;
+                AllInited = true;
+                return !Suspend();
+            }
+            return false;
+        }
+
         private void Timing()
         {
             if (_count++ == 59)
@@ -146,124 +185,27 @@ namespace DefenseShields
 
         private bool BlockWorking()
         {
-            if (Alpha || !IsStatic || ShieldComp.DefenseShields == null || !ShieldComp.Warming) return false;
+            if (ShieldComp.DefenseShields == null || !ShieldComp.Warming) return false;
 
             BlockIsWorking = O2Generator.IsWorking;
             BlockWasWorking = BlockIsWorking;
 
-            if (!BlockIsWorking)
-            {
-                //if (_effect != null && !Session.DedicatedServer) BlockParticleStop();
-                return false;
-            }
-            return true;
-        }
-
-        public override void Init(MyObjectBuilder_EntityBase objectBuilder)
-        {
-            try
-            {
-                base.Init(objectBuilder);
-                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-            }
-            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
-        }
-
-        public override void UpdateOnceBeforeFrame()
-        {
-            base.UpdateOnceBeforeFrame();
-            try
-            {
-                Session.Instance.O2Generators.Add(this);
-                if (!_o2Generator.ContainsKey(Entity.EntityId)) _o2Generator.Add(Entity.EntityId, this);
-            }
-            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
-        }
-
-        private bool InitO2Generator()
-        {
-            if (!AllInited)
-            {
-                O2Generator.CubeGrid.Components.TryGet(out ShieldComp);
-                Source = O2Generator.Components.Get<MyResourceSourceComponent>();
-                if (ShieldComp == null || Source == null || !ShieldComp.Starting || ShieldComp.ShieldVolume <= 0) return false;
-                RemoveControls();
-                O2Generator.AppendingCustomInfo += AppendingCustomInfo;
-                Source.Enabled = false;
-                O2Generator.AutoRefill = false;
-                _inventory = O2Generator.GetInventory();
-                if (!O2Generator.CubeGrid.Components.Has<O2GeneratorGridComponent>())
-                {
-                    OGridComp = new O2GeneratorGridComponent(this);
-                    O2Generator.CubeGrid.Components.Add(OGridComp);
-                    OGridComp.Comp = this;
-                    Prime = true;
-                }
-                else
-                {
-                    O2Generator.CubeGrid.Components.TryGet(out OGridComp);
-                    if (OGridComp.Comp != null) OGridComp.Comp.Alpha = true;
-                    OGridComp.Comp = this;
-                    Prime = true;
-                }
-
-                _oldShieldVol = ShieldComp.ShieldVolume;
-                ResetAirEmissives(-1);
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                OGridComp.RegisteredComps.Add(this);
-                BlockWasWorking = true;
-                AllInited = true;
-                return !Suspend();
-            }
-            return false;
+            return BlockIsWorking;
         }
 
         private bool Suspend()
         {
-            if (Prime && !IsStatic)
+            if (ShieldComp?.ActiveO2Generator != this || !IsStatic)
             {
                 return true;
             }
-
-            return false;
-        }
-
-        private bool StoppedWorking()
-        {
             if (!O2Generator.IsFunctional && BlockIsWorking)
             {
                 BlockIsWorking = false;
                 return true;
             }
-            return !O2Generator.IsFunctional;
-        }
 
-        private void MasterElection()
-        {
-            var hasOComp = O2Generator.CubeGrid.Components.Has<O2GeneratorGridComponent>();
-            if (!hasOComp)
-            {
-                if (!IsStatic) return;
-                OGridComp = new O2GeneratorGridComponent(this);
-                O2Generator.CubeGrid.Components.Add(OGridComp);
-                _inventory = O2Generator.GetInventory();
-                OGridComp.Comp = this;
-                Prime = true;
-                Alpha = false;
-            }
-            else 
-            {
-                if (!IsStatic) return;
-                O2Generator.CubeGrid.Components.TryGet(out OGridComp);
-                if (OGridComp.Comp != null) OGridComp.Comp.Alpha = true;
-                _inventory = O2Generator.GetInventory();
-                OGridComp.Comp = this;
-                Prime = true;
-                Alpha = false;
-            }
-            _oldShieldVol = ShieldComp.ShieldVolume;
-            ResetAirEmissives(-1);
+            return false;
         }
 
         private void UpdateAirEmissives(double fPercent)
