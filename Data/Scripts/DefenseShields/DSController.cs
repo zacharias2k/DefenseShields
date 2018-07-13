@@ -84,7 +84,6 @@ namespace DefenseShields
 
         private bool BlockFunctional()
         {
-            if (_count == 0) Log.Line($"SM:{ShieldMode} - EM:{ShieldComp.EmitterMode} - R:{ShieldComp.BoundingRange} - H:{Height} - W:{Width} - D:{Depth} - {GridIsMobile}");
             if (!AllInited)
             {
                 PostInit();
@@ -92,7 +91,6 @@ namespace DefenseShields
             }
 
             if (Suspend() || Election() || !WarmUpSequence() || ShieldLowered()) return false;
-
 
             if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
             {
@@ -357,9 +355,6 @@ namespace DefenseShields
                     UpdateDimensions = true;
                 }
                 ShieldEnt.PositionComp.SetWorldMatrix(MatrixD.Zero);
-                //ShieldEnt.PositionComp.SetPosition(Vector3D.Zero);
-                //ShieldEnt.Render.Visible = false;
-                //ShieldEnt.Render.UpdateRenderObject(false);
                 CleanUp(0);
                 CleanUp(1);
                 CleanUp(3);
@@ -378,7 +373,6 @@ namespace DefenseShields
             ShieldWasLowered = false;
             _shellPassive.Render.UpdateRenderObject(false);
             _shellActive.Render.UpdateRenderObject(false);
-
             if (Session.Enforced.Debug == 1) Log.Line($"[Shield Down] Count: {_offlineCnt} - ShieldPower: {_shieldCurrentPower} - gridMax: {_gridMaxPower} - currentPower: {_gridCurrentPower} - maint: {_shieldMaintaintPower}");
         }
 
@@ -925,7 +919,8 @@ namespace DefenseShields
             {
                 var prevlod = _prevLod;
                 var lod = CalculateLod(_onCount);
-                if (_shapeAdjusted || lod != prevlod) Icosphere.CalculateTransform(_shieldShapeMatrix, lod);
+                if (_shapeAdjusted || _updateRender || lod != prevlod) Icosphere.CalculateTransform(_shieldShapeMatrix, lod);
+                _updateRender = false;
                 Icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, ShieldComp.ShieldPercent, passiveVisible, activeVisible);
             }
             if (sphereOnCamera && Shield.IsWorking) Icosphere.Draw(renderId);

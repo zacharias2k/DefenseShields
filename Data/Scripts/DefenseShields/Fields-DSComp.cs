@@ -70,7 +70,6 @@ namespace DefenseShields
         internal bool DeformEnabled;
         internal bool ControlBlockWorking;
         internal bool MainInit;
-        internal bool PhysicsInit;
         internal bool PrePowerInit;
         internal bool PowerInited;
         internal bool HadPowerBefore;
@@ -94,6 +93,8 @@ namespace DefenseShields
         private bool _enablePhysics = true;
         private bool _shapeLoaded = true;
         private bool _createMobileShape = true;
+        private bool _updateRender;
+
 
         private const string SpaceWolf = "Space_Wolf";
         private const string MyMissile = "MyMissile";

@@ -165,9 +165,9 @@ namespace DefenseShields
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
                 ShieldComp.EmitterEvent = true;
                 BlockWasWorking = true;
-                AllInited = true;
                 Emitter.AppendingCustomInfo += AppendingCustomInfo;
                 Emitter.RefreshCustomInfo();
+                AllInited = true;
                 return !Suspend();
             }
             if (!AllInited)
@@ -184,6 +184,8 @@ namespace DefenseShields
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
                 ShieldComp.EmitterEvent = true;
                 BlockWasWorking = true;
+                Emitter.AppendingCustomInfo += AppendingCustomInfo;
+                Emitter.RefreshCustomInfo();
                 AllInited = true;
                 return !Suspend();
             }
@@ -246,7 +248,7 @@ namespace DefenseShields
                 return Suspended;
             }
 
-
+            if (Suspended) ShieldComp.EmitterMode = (int)EmitterMode;
             Suspended = false;
             return Suspended;
         }
@@ -428,7 +430,7 @@ namespace DefenseShields
             {
                 stringBuilder.Append("[Emitter Type]: " + (EmitterMode) +
                                      "\n[Line of Sight]: " + ShieldLineOfSight +
-                                     "\n[Is a Backup]: " + (Alpha || Beta) +
+                                     "\n[Is a Backup]: " + (Alpha || Zeta) +
                                      "\n[Is Suspended]: " + Suspended);
             }
         }
