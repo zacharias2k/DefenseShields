@@ -11,9 +11,7 @@ using VRage.ModAPI;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Localization;
-using Sandbox.Game.Weapons;
 using Sandbox.ModAPI.Interfaces.Terminal;
-using Sandbox.ModAPI.Weapons;
 using VRage.Game.Entity;
 using VRage.Utils;
 using VRageMath;
@@ -645,7 +643,7 @@ namespace DefenseShields
         {
             foreach (var a in actions)
             {
-                if (!a.Id.StartsWith("DSM_")) a.Enabled = terminalBlock => false;
+                if (!a.Id.StartsWith("DSM_") && a.Id.StartsWith("DSC_")) a.Enabled = terminalBlock => false;
                 else a.Enabled = terminalBlock => true;
             }
         }
@@ -654,7 +652,7 @@ namespace DefenseShields
         {
             foreach (var a in actions)
             {
-                if (!a.Id.StartsWith("DSC_")) a.Enabled = terminalBlock => false;
+                if (!a.Id.StartsWith("DSC_") && a.Id.StartsWith("DSM_")) a.Enabled = terminalBlock => false;
                 else a.Enabled = terminalBlock => true;
             }
         }
