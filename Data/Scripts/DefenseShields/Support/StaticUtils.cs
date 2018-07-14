@@ -55,7 +55,7 @@ namespace DefenseShields.Support
             return tableVal;
         }
 
-        public static void GetRealPlayers(Vector3D center, float radius, List<long> realPlayers)
+        public static void GetRealPlayers(Vector3D center, float radius, HashSet<long> realPlayers)
         {
             var realPlayersIdentities = new List<IMyIdentity>();
             MyAPIGateway.Players.GetAllIdentites(realPlayersIdentities, p => !string.IsNullOrEmpty(p?.DisplayName));
@@ -174,12 +174,12 @@ namespace DefenseShields.Support
         }
         */
 
-        public static bool DistanceCheck(IMyCubeBlock shield, int x, double range)
+        public static bool DistanceCheck(IMyCubeBlock block, int x, double range)
         {
             if (MyAPIGateway.Session.Player.Character == null) return false;
 
-            var pPosition = MyAPIGateway.Session.Player.Character.GetPosition();
-            var cPosition = shield.CubeGrid.PositionComp.GetPosition();
+            var pPosition = MyAPIGateway.Session.Player.Character.PositionComp.WorldVolume.Center;
+            var cPosition = block.CubeGrid.PositionComp.WorldVolume.Center;
             var dist = Vector3D.DistanceSquared(cPosition, pPosition) <= (x + range) * (x + range);
             return dist;
         }

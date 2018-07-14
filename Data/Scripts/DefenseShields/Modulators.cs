@@ -4,13 +4,16 @@ using System.Text;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
+using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
+using VRage.Game.ObjectBuilders.Definitions;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
+using VRage.Utils;
 using VRageMath;
 
 namespace DefenseShields
@@ -23,12 +26,15 @@ namespace DefenseShields
         private bool _hierarchyDelayed;
         internal int RotationTime;
         internal bool MainInit;
+        internal bool Online;
 
         private uint _tick;
         private uint _hierarchyTick = 1;
 
         private int _count = -1;
         private int _lCount;
+
+        private float _power = 0.01f;
 
         private readonly Dictionary<long, Modulators> _modulators = new Dictionary<long, Modulators>();
 
@@ -37,6 +43,11 @@ namespace DefenseShields
         internal ShieldGridComponent ShieldComp;
         private MyEntitySubpart _subpartRotor;
         internal ModulatorSettings ModSet;
+        internal MyResourceSinkInfo ResourceInfo;
+        internal MyResourceSinkComponent Sink;
+
+        private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
+
 
         public IMyUpgradeModule Modulator => (IMyUpgradeModule)Entity;
 
@@ -47,8 +58,8 @@ namespace DefenseShields
             try
             {
                 base.Init(objectBuilder);
+                PowerPreInit();
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
@@ -74,11 +85,50 @@ namespace DefenseShields
                 ModUi.ComputeDamage(this, ModUi.GetDamage(Modulator));
 
                 ShieldComp?.DefenseShields?.GetModulationInfo();
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                PowerInit();
                 ((MyCubeGrid)Modulator.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
                 Modulator.AppendingCustomInfo += AppendingCustomInfo;
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                Modulator.RefreshCustomInfo();
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
+        }
+
+        private void PowerPreInit()
+        {
+            try
+            {
+                if (Sink == null)
+                {
+                    Sink = new MyResourceSinkComponent();
+                }
+                ResourceInfo = new MyResourceSinkInfo()
+                {
+                    ResourceTypeId = GId,
+                    MaxRequiredInput = 0f,
+                    RequiredInputFunc = () => _power
+                };
+                Sink.Init(MyStringHash.GetOrCompute("Utility"), ResourceInfo);
+                Sink.AddType(ref ResourceInfo);
+                Entity.Components.Add(Sink);
+            }
+            catch (Exception ex) { Log.Line($"Exception in PowerPreInit: {ex}"); }
+        }
+
+        private void PowerInit()
+        {
+            try
+            {
+                var enableState = Modulator.Enabled;
+                if (enableState)
+                {
+                    Modulator.Enabled = false;
+                    Modulator.Enabled = true;
+                }
+                Sink.Update();
+                if (Session.Enforced.Debug == 1) Log.Line($"PowerInit complete");
+            }
+            catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }
 
         private void StorageSetup()
@@ -112,6 +162,19 @@ namespace DefenseShields
             try
             {
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+
+                if (Sink.CurrentInputByType(GId) < 0.01f || Modulator.CubeGrid == null || !Modulator.Enabled)
+                {
+                    if (_tick % 300 == 0)
+                    {
+                        Modulator.RefreshCustomInfo();
+                        Modulator.ShowInToolbarConfig = false;
+                        Modulator.ShowInToolbarConfig = true;
+                    }
+                    Online = false;
+                    return;
+                }
+
                 Timing();
 
                 if (UtilsStatic.DistanceCheck(Modulator, 1000, 1))
@@ -122,27 +185,23 @@ namespace DefenseShields
 
                 if (ShieldComp?.GetSubGrids != null && !ShieldComp.GetSubGrids.Equals(ModulatorComp.GetSubGrids))
                     ModulatorComp.GetSubGrids = ShieldComp.GetSubGrids;
-            }
-            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation100: {ex}"); }
-        }
 
-        public override void UpdateBeforeSimulation100()
-        {
-            try
-            {
-                if (ShieldComp == null) Modulator.CubeGrid.Components.TryGet(out ShieldComp);
-                _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-
-                Modulator.RefreshCustomInfo();
-
-                if (Modulator.CustomData != ModulatorComp.ModulationPassword)
+                if (_count == 0)
                 {
-                    ModulatorComp.ModulationPassword = Modulator.CustomData;
-                    ModSet.SaveSettings();
-                    if (Session.Enforced.Debug == 1) Log.Line($"Updating modulator password");
+                    Online = true;
+                    if (ShieldComp == null) Modulator.CubeGrid.Components.TryGet(out ShieldComp);
+
+                    Modulator.RefreshCustomInfo();
+
+                    if (Modulator.CustomData != ModulatorComp.ModulationPassword)
+                    {
+                        ModulatorComp.ModulationPassword = Modulator.CustomData;
+                        ModSet.SaveSettings();
+                        if (Session.Enforced.Debug == 1) Log.Line($"Updating modulator password");
+                    }
                 }
             }
-            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation100: {ex}"); }
+            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
 
         private void Timing()
@@ -178,7 +237,8 @@ namespace DefenseShields
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
-            stringBuilder.Append("[Remodulating Shield]: " + (ShieldComp != null) +
+            stringBuilder.Append("[Online]: " + Online +
+                                 "\n[Remodulating Shield]: " + (ShieldComp != null && Online) +
                                  "\n" +
                                  "\n[Energy Protection]: " + ModulatorComp.Energy.ToString("0") + "%" +
                                  "\n[Kinetic Protection]: " + ModulatorComp.Kinetic.ToString("0") + "%");

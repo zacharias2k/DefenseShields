@@ -106,7 +106,7 @@ namespace DefenseShields
                 return false;
             }
 
-            if (_lCount == 4 && _count == 4 && Shield.Enabled && ConnectCheck()) return false;
+            //if (_lCount == 4 && _count == 4 && Shield.Enabled && ConnectCheck()) return false;
             UpdateBlockCount();
             
             return ControlBlockWorking = Shield.IsWorking && Shield.IsFunctional; 
@@ -267,7 +267,7 @@ namespace DefenseShields
             {
                 if (!ShieldOffline) OfflineShield();
                 ShieldComp.CheckEmitters = true;
-                var realPlayerIds = new List<long>();
+                var realPlayerIds = new HashSet<long>();
                 UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
                 foreach (var id in realPlayerIds)
                 {
@@ -478,7 +478,6 @@ namespace DefenseShields
                 var gearLocked = MyAPIGateway.GridGroups.GetGroup(myGrid, GridLinkTypeEnum.NoContactDamage);
                 if (gearLocked.Count > 1)
                 {
-                    Log.Line($"I am locked");
                     foreach (var grid in gearLocked)
                     {
                         if (grid != myGrid) Log.Line($"{grid.DisplayName} - {grid.IsStatic}");
@@ -499,7 +498,7 @@ namespace DefenseShields
 
             if (myGridIsSub)
             {
-                var realPlayerIds = new List<long>();
+                var realPlayerIds = new HashSet<long>();
                 UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
                 foreach (var id in realPlayerIds)
                 {
@@ -975,15 +974,25 @@ namespace DefenseShields
             var up = cameraWorldMatrix.Up;
             const double scaler = 0.08;
             scale = scaler * scale;
-            var icon = GetHudIconFromFloat(ShieldComp.ShieldPercent);
+            var icon2FState = _shieldChargeRate * Session.Enforced.Efficiency;
+            var icon2Charging = true;
+            if (_shieldDps > 1)
+            {
+                icon2FState = _shieldDps;
+                icon2Charging = false;
+            }
+            var icon1 = GetHudIcon1FromFloat(ShieldComp.ShieldPercent);
+            var icon2 = GetHudIcon2FromFloat(icon2FState, icon2Charging);
             Color color;
             var p = ShieldComp.ShieldPercent;
             if (p > 0 && p < 10 && _lCount % 2 == 0) color = Color.Red;
             else color = Color.White;
-            MyTransparentGeometry.AddBillboardOriented(icon, color, origin, left, up, (float)scale, BlendTypeEnum.SDR); // LDR for mptest, SDR for public
+            MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.SDR); // LDR for mptest, SDR for public
+            MyTransparentGeometry.AddBillboardOriented(icon2, color, origin, left, up, (float)scale, BlendTypeEnum.SDR); // LDR for mptest, SDR for public
+
         }
 
-        public static MyStringId GetHudIconFromFloat(float percent)
+        public static MyStringId GetHudIcon1FromFloat(float percent)
         {
             if (percent >= 99) return HudIconHealth100;
             if (percent >= 90) return HudIconHealth90;
@@ -996,6 +1005,37 @@ namespace DefenseShields
             if (percent >= 20) return HudIconHealth20;
             if (percent > 0) return HudIconHealth10;
             return HudIconOffline;
+        }
+
+        public static MyStringId GetHudIcon2FromFloat(float fState, bool charging)
+        {
+            if (charging)
+            {
+                if (fState >= 99) return HudIconHeal100;
+                if (fState >= 90) return HudIconHeal90;
+                if (fState >= 80) return HudIconHeal80;
+                if (fState >= 70) return HudIconHeal70;
+                if (fState >= 60) return HudIconHeal60;
+                if (fState >= 50) return HudIconHeal50;
+                if (fState >= 40) return HudIconHeal40;
+                if (fState >= 30) return HudIconHeal30;
+                if (fState >= 20) return HudIconHeal20;
+                if (fState > 0) return HudIconHeal10;
+                return HudIconHeal;
+            }
+
+            if (fState >= 99) return HudIconDps100;
+            if (fState >= 90) return HudIconDps90;
+            if (fState >= 80) return HudIconDps80;
+            if (fState >= 70) return HudIconDps70;
+            if (fState >= 60) return HudIconDps60;
+            if (fState >= 50) return HudIconDps50;
+            if (fState >= 40) return HudIconDps40;
+            if (fState >= 30) return HudIconDps30;
+            if (fState >= 20) return HudIconDps20;
+            if (fState > 0) return HudIconDps10;
+            return HudIconDps;
+
         }
 
         public void DrawShieldDownIcon()
