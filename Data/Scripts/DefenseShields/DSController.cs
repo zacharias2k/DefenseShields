@@ -1030,11 +1030,18 @@ namespace DefenseShields
                         }
                         break;
                     case 2:
-                        lock (_functionalBlocks)
+                        if (ShieldComp.ShieldActive && !ShieldWasLowered)
                         {
-                            foreach (var funcBlock in _functionalBlocks) funcBlock.SetDamageEffect(false);
-                            _effectsCleanup = false;
+                            lock (_functionalBlocks)
+                            {
+                                foreach (var funcBlock in _functionalBlocks)
+                                {
+                                    if (funcBlock.IsFunctional) funcBlock.SetDamageEffect(false);
+                                }
+                            }
                         }
+                        _effectsCleanup = false;
+
                         break;
                     case 3:
                         {
