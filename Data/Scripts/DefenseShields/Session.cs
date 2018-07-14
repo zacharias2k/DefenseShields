@@ -47,6 +47,7 @@ namespace DefenseShields
         public bool DisplayControlsLoaded { get; set; }
         public bool Enabled = true;
 
+        internal MyStringHash Bypass = MyStringHash.GetOrCompute("bypass");
         internal MyStringId Password = MyStringId.GetOrCompute("Shield Access Frequency");
         internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Match a shield's modulation frequency/code");
         internal MyStringId ShieldFreq = MyStringId.GetOrCompute("Shield Frequency");
@@ -230,6 +231,12 @@ namespace DefenseShields
                 {
                     if (shield.ShieldComp.ShieldActive && shield.ShieldComp.RaiseShield && shield.FriendlyCache.Contains(blockGrid))
                     {
+                        if (info.Type == Bypass)
+                        {
+                            shield.DeformEnabled = true;
+                            continue;
+                        }
+
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
                         if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt))
@@ -292,6 +299,12 @@ namespace DefenseShields
                     }
                     else if (shield.ShieldComp.ShieldActive && shield.ShieldComp.RaiseShield && shield.PartlyProtectedCache.Contains(blockGrid))
                     {
+                        if (info.Type == Bypass)
+                        {
+                            shield.DeformEnabled = true;
+                            continue;
+                        }
+
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
                         if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt))
@@ -593,6 +606,82 @@ namespace DefenseShields
             return modPath;
         }
 
+        public void CreateControllerElements(IMyTerminalBlock block)
+        {
+            try
+            {
+                if (DsControl) return;
+                var comp = block?.GameLogic?.GetAs<DefenseShields>();
+                var sep0 = TerminalHelpers.Separator(comp?.Shield, "DS-C_sep0");
+                ToggleShield = TerminalHelpers.AddOnOff(comp?.Shield, "DS-C_ToggleShield", "Shield Status", "Raise or Lower Shields", "Up", "Down", DsUi.GetRaiseShield, DsUi.SetRaiseShield);
+                var sep1 = TerminalHelpers.Separator(comp?.Shield, "DS-C_sep1");
+                ChargeSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_ChargeRate", "Shield Charge Rate", "Shield Charge Rate", DsUi.GetRate, DsUi.SetRate);
+                ChargeSlider.SetLimits(20, 95);
+
+                if (comp != null && comp.GridIsMobile)
+                {
+                    var sep2 = TerminalHelpers.Separator(comp?.Shield, "DS-C_sep2");
+                }
+
+                ExtendFit = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_ExtendFit", "Extend Shield", "Extend Shield", DsUi.GetExtend, DsUi.SetExtend);
+                SphereFit = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_SphereFit", "Sphere Shield", "Sphere Shield", DsUi.GetSphereFit, DsUi.SetSphereFit);
+                FortifyShield = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_ShieldFortify", "Fortify Shield ", "Fortify Shield ", DsUi.GetFortify, DsUi.SetFortify);
+                var sep3 = TerminalHelpers.Separator(comp?.Shield, "DS-C_sep3");
+
+                WidthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_WidthSlider", "Shield Size Width", "Shield Size Width", DsUi.GetWidth, DsUi.SetWidth);
+                WidthSlider.SetLimits(30, 600);
+
+                HeightSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_HeightSlider", "Shield Size Height", "Shield Size Height", DsUi.GetHeight, DsUi.SetHeight);
+                HeightSlider.SetLimits(30, 600);
+
+                DepthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_DepthSlider", "Shield Size Depth", "Shield Size Depth", DsUi.GetDepth, DsUi.SetDepth);
+                DepthSlider.SetLimits(30, 600);
+                var sep4 = TerminalHelpers.Separator(comp?.Shield, "DS-C_sep4");
+
+                HidePassiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_HidePassive", "Make Shield Invisible To Allies", "Make Shield Invisible To Allies", DsUi.GetHidePassive, DsUi.SetHidePassive);
+                HideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_HideActive", "Hide Shield Health On Hit", "Hide Shield Health On Hit", DsUi.GetHideActive, DsUi.SetHideActive);
+                SendToHudCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_HideIcon", "Broadcast Shield Status To Huds", "Broadcast Shield Status To Huds", DsUi.GetSendToHud, DsUi.SetSendToHud);
+                BatteryBoostCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_UseBatteries", "Batteries Contribute To Shields", "Batteries Contribute To Shields", DsUi.GetBatteries, DsUi.SetBatteries);
+
+                CreateAction<IMyUpgradeModule>(ToggleShield);
+
+                CreateActionChargeRate<IMyUpgradeModule>(ChargeSlider);
+
+                CreateAction<IMyUpgradeModule>(ExtendFit);
+                CreateAction<IMyUpgradeModule>(SphereFit);
+                CreateAction<IMyUpgradeModule>(FortifyShield);
+
+                CreateAction<IMyUpgradeModule>(HidePassiveCheckBox);
+                CreateAction<IMyUpgradeModule>(HideActiveCheckBox);
+                CreateAction<IMyUpgradeModule>(SendToHudCheckBox);
+                CreateAction<IMyUpgradeModule>(BatteryBoostCheckBox);
+                DsControl = true;
+            }
+            catch (Exception ex) { Log.Line($"Exception in CreateControlerUi: {ex}"); }
+        }
+
+        public void CreateModulatorUi(IMyTerminalBlock block)
+        {
+            try
+            {
+                if (ModControl) return;
+                var comp = block?.GameLogic?.GetAs<Modulators>();
+                ModSep1 = TerminalHelpers.Separator(comp?.Modulator, "DS-M_sep1");
+                ModDamage = TerminalHelpers.AddSlider(comp?.Modulator, "DS-M_DamageModulation", "Balance Shield Protection", "Balance Shield Protection", ModUi.GetDamage, ModUi.SetDamage);
+                ModDamage.SetLimits(20, 180);
+                ModSep2 = TerminalHelpers.Separator(comp?.Modulator, "DS-M_sep2");
+                ModVoxels = TerminalHelpers.AddCheckbox(comp?.Modulator, "DS-M_ModulateVoxels", "Let voxels bypass shield", "Let voxels bypass shield", ModUi.GetVoxels, ModUi.SetVoxels);
+                ModGrids = TerminalHelpers.AddCheckbox(comp?.Modulator, "DS-M_ModulateGrids", "Let grids bypass shield", "Let grid bypass shield", ModUi.GetGrids, ModUi.SetGrids);
+
+                CreateActionDamageModRate<IMyUpgradeModule>(ModDamage);
+
+                CreateAction<IMyUpgradeModule>(ModVoxels);
+                CreateAction<IMyUpgradeModule>(ModGrids);
+                ModControl = true;
+            }
+            catch (Exception ex) { Log.Line($"Exception in CreateModulatorUi: {ex}"); }
+        }
+
         private void CustomControls(IMyTerminalBlock block, List<IMyTerminalControl> myTerminalControls)
         {
             try
@@ -631,20 +720,34 @@ namespace DefenseShields
                     case "DSControlTable":
                         ControllerShowHideActions(actions);
                         break;
-                    default:
-                        //if (!CustomDataReset) ResetCustomData(myTerminalControls);
+                    case "EmitterL":
+                    case "EmitterS":
+                    case "EmitterST":
+                    case "EmitterLA":
+                    case "EmitterSA":
+                    case "LargeDamageEnhancer":
+                    case "SmallDamageEnhancer":
+                        HideAllActions(actions);
                         break;
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in CustomDataToPassword: {ex}"); }
         }
 
+        private static void HideAllActions(List<IMyTerminalAction> actions)
+        {
+            foreach (var a in actions)
+            {
+                if (a.Id.StartsWith("DS-")) a.Enabled = terminalBlock => false;
+            }
+        }
+
         private static void ModulatorShowHideActions(List<IMyTerminalAction> actions)
         {
             foreach (var a in actions)
             {
-                if (!a.Id.StartsWith("DSM_") && a.Id.StartsWith("DSC_")) a.Enabled = terminalBlock => false;
-                else a.Enabled = terminalBlock => true;
+                if (!a.Id.StartsWith("DS-M_") && a.Id.StartsWith("DS-")) a.Enabled = terminalBlock => false;
+                else if (a.Id.StartsWith("DS-M_")) a.Enabled = terminalBlock => true;
             }
         }
 
@@ -652,8 +755,8 @@ namespace DefenseShields
         {
             foreach (var a in actions)
             {
-                if (!a.Id.StartsWith("DSC_") && a.Id.StartsWith("DSM_")) a.Enabled = terminalBlock => false;
-                else a.Enabled = terminalBlock => true;
+                if (!a.Id.StartsWith("DS-C_") && a.Id.StartsWith("DS-")) a.Enabled = terminalBlock => false;
+                else if (a.Id.StartsWith("DS-C_")) a.Enabled = terminalBlock => true;
             }
         }
 
@@ -682,82 +785,6 @@ namespace DefenseShields
             ((IMyTerminalControlTitleTooltip)customData).Tooltip = MySpaceTexts.Terminal_CustomDataTooltip;
             customData.RedrawControl();
             CustomDataReset = true;
-        }
-
-        public void CreateControllerElements(IMyTerminalBlock block)
-        {
-            try
-            {
-                if (DsControl) return;
-                var comp = block?.GameLogic?.GetAs<DefenseShields>();
-                var sep0 = TerminalHelpers.Separator(comp?.Shield, "DSC_sep0");
-                ToggleShield = TerminalHelpers.AddOnOff(comp?.Shield, "DSC_ToggleShield", "Shield Status", "Raise or Lower Shields", "Up", "Down", DsUi.GetRaiseShield, DsUi.SetRaiseShield);
-                var sep1 = TerminalHelpers.Separator(comp?.Shield, "DSC_sep1");
-                ChargeSlider = TerminalHelpers.AddSlider(comp?.Shield, "DSC_ChargeRate", "Shield Charge Rate", "Shield Charge Rate", DsUi.GetRate, DsUi.SetRate);
-                ChargeSlider.SetLimits(20, 95);
-
-                if (comp != null && comp.GridIsMobile)
-                {
-                    var sep2 = TerminalHelpers.Separator(comp?.Shield, "DSC_sep2");
-                }
-
-                ExtendFit = TerminalHelpers.AddCheckbox(comp?.Shield, "DSC_ExtendFit", "Extend Shield", "Extend Shield", DsUi.GetExtend, DsUi.SetExtend);
-                SphereFit = TerminalHelpers.AddCheckbox(comp?.Shield, "DSC_SphereFit", "Sphere Shield", "Sphere Shield", DsUi.GetSphereFit, DsUi.SetSphereFit);
-                FortifyShield = TerminalHelpers.AddCheckbox(comp?.Shield, "DSC_ShieldFortify", "Fortify Shield ", "Fortify Shield ", DsUi.GetFortify, DsUi.SetFortify);
-                var sep3 = TerminalHelpers.Separator(comp?.Shield, "DSC_sep3");
-
-                WidthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DSC_WidthSlider", "Shield Size Width", "Shield Size Width", DsUi.GetWidth, DsUi.SetWidth);
-                WidthSlider.SetLimits(30, 600);
-
-                HeightSlider = TerminalHelpers.AddSlider(comp?.Shield, "DSC_HeightSlider", "Shield Size Height", "Shield Size Height", DsUi.GetHeight, DsUi.SetHeight);
-                HeightSlider.SetLimits(30, 600);
-
-                DepthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DSC_DepthSlider", "Shield Size Depth", "Shield Size Depth", DsUi.GetDepth, DsUi.SetDepth);
-                DepthSlider.SetLimits(30, 600);
-                var sep4 = TerminalHelpers.Separator(comp?.Shield, "DSC_sep4");
-
-                HidePassiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DSC_HidePassive", "Make Shield Invisible To Allies", "Make Shield Invisible To Allies", DsUi.GetHidePassive, DsUi.SetHidePassive);
-                HideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DSC_HideActive", "Hide Shield Health On Hit", "Hide Shield Health On Hit", DsUi.GetHideActive, DsUi.SetHideActive);
-                SendToHudCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DSC_HideIcon", "Broadcast Shield Status To Huds", "Broadcast Shield Status To Huds", DsUi.GetSendToHud, DsUi.SetSendToHud);
-                BatteryBoostCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DSC_UseBatteries", "Batteries Contribute To Shields", "Batteries Contribute To Shields", DsUi.GetBatteries, DsUi.SetBatteries);
-
-                CreateAction<IMyUpgradeModule>(ToggleShield);
-
-                CreateActionChargeRate<IMyUpgradeModule>(ChargeSlider);
-
-                CreateAction<IMyUpgradeModule>(ExtendFit);
-                CreateAction<IMyUpgradeModule>(SphereFit);
-                CreateAction<IMyUpgradeModule>(FortifyShield);
-
-                CreateAction<IMyUpgradeModule>(HidePassiveCheckBox);
-                CreateAction<IMyUpgradeModule>(HideActiveCheckBox);
-                CreateAction<IMyUpgradeModule>(SendToHudCheckBox);
-                CreateAction<IMyUpgradeModule>(BatteryBoostCheckBox);
-                DsControl = true;
-            }
-            catch (Exception ex) { Log.Line($"Exception in CreateControlerUi: {ex}"); }
-        }
-
-        public void CreateModulatorUi(IMyTerminalBlock block)
-        {
-            try
-            {
-                if (ModControl) return;
-                var comp = block?.GameLogic?.GetAs<Modulators>();
-                ModSep1 = TerminalHelpers.Separator(comp?.Modulator, "DSM_sep1");
-                ModDamage = TerminalHelpers.AddSlider(comp?.Modulator, "DSM_DamageModulation", "Balance Shield Protection", "Balance Shield Protection", ModUi.GetDamage, ModUi.SetDamage);
-                ModDamage.SetLimits(20, 180);
-                ModSep2 = TerminalHelpers.Separator(comp?.Modulator, "DSM_sep2");
-                ModVoxels = TerminalHelpers.AddCheckbox(comp?.Modulator, "DSM_ModulateVoxels", "Let voxels bypass shield", "Let voxels bypass shield", ModUi.GetVoxels, ModUi.SetVoxels);
-                ModGrids = TerminalHelpers.AddCheckbox(comp?.Modulator, "DSM_ModulateGrids", "Let grids bypass shield", "Let grid bypass shield", ModUi.GetGrids, ModUi.SetGrids);
-
-                CreateActionDamageModRate<IMyUpgradeModule>(ModDamage);
-
-                CreateAction<IMyUpgradeModule>(ModVoxels);
-                CreateAction<IMyUpgradeModule>(ModGrids);
-                ModControl = true;
-            }
-            catch (Exception ex) { Log.Line($"Exception in CreateModulatorUi: {ex}"); }
         }
 
         public void CreateAction<T>(IMyTerminalControlOnOffSwitch c)
@@ -934,7 +961,7 @@ namespace DefenseShields
             {
                 var controls = new List<IMyTerminalControl>();
                 MyAPIGateway.TerminalControls.GetControls<IMyUpgradeModule>(out controls);
-                var chargeRate = controls.First((x) => x.Id.ToString() == "DSC_ChargeRate");
+                var chargeRate = controls.First((x) => x.Id.ToString() == "DS-C_ChargeRate");
                 var c = ((IMyTerminalControlSlider)chargeRate);
                 if (c.Getter(b) > 94)
                 {
@@ -952,7 +979,7 @@ namespace DefenseShields
             {
                 var controls = new List<IMyTerminalControl>();
                 MyAPIGateway.TerminalControls.GetControls<IMyUpgradeModule>(out controls);
-                var chargeRate = controls.First((x) => x.Id.ToString() == "DSC_ChargeRate");
+                var chargeRate = controls.First((x) => x.Id.ToString() == "DS-C_ChargeRate");
                 var c = ((IMyTerminalControlSlider)chargeRate);
                 if (c.Getter(b) < 21)
                 {
@@ -1029,7 +1056,7 @@ namespace DefenseShields
             {
                 var controls = new List<IMyTerminalControl>();
                 MyAPIGateway.TerminalControls.GetControls<IMyUpgradeModule>(out controls);
-                var damageMod = controls.First((x) => x.Id.ToString() == "DSM_DamageModulation");
+                var damageMod = controls.First((x) => x.Id.ToString() == "DS-M_DamageModulation");
                 var c = ((IMyTerminalControlSlider)damageMod);
                 if (c.Getter(b) > 179)
                 {
@@ -1047,7 +1074,7 @@ namespace DefenseShields
             {
                 var controls = new List<IMyTerminalControl>();
                 MyAPIGateway.TerminalControls.GetControls<IMyUpgradeModule>(out controls);
-                var chargeRate = controls.First((x) => x.Id.ToString() == "DSM_DamageModulation");
+                var chargeRate = controls.First((x) => x.Id.ToString() == "DS-M_DamageModulation");
                 var c = ((IMyTerminalControlSlider)chargeRate);
                 if (c.Getter(b) < 21)
                 {

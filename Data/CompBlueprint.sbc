@@ -12,10 +12,10 @@
       <Icon>Textures\Icons\Shield_Comp1.dds</Icon>
       <Prerequisites>
 	  <!-- Define Required Items List based on classnames-->
-        <Item Amount="80" TypeId="Ingot" SubtypeId="Platinum" />
-		<Item Amount="120" TypeId="Ingot" SubtypeId="Iron" />
-		<Item Amount="40" TypeId="Ingot" SubtypeId="Silicon" />
-		<Item Amount="30" TypeId="Ingot" SubtypeId="Gold" />
+        <Item Amount="8" TypeId="Ingot" SubtypeId="Platinum" />
+		<Item Amount="80" TypeId="Ingot" SubtypeId="Iron" />
+		<Item Amount="20" TypeId="Ingot" SubtypeId="Silicon" />
+		<Item Amount="15" TypeId="Ingot" SubtypeId="Gold" />
       </Prerequisites>
       <Result Amount="1" TypeId="Component" SubtypeId="ShieldComponent" />
       <BaseProductionTimeInSeconds>7</BaseProductionTimeInSeconds>

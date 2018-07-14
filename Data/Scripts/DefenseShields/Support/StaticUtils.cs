@@ -26,6 +26,7 @@ namespace DefenseShields.Support
 
         private static readonly Dictionary<float, float> DmgTable = new Dictionary<float, float>
         {
+            [0.00000000001f] = -1f,
             [0.0000000001f] = 0.1f,
             [0.0000000002f] = 0.2f,
             [0.0000000003f] = 0.3f,

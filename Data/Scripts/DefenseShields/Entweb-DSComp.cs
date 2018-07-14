@@ -304,40 +304,5 @@ namespace DefenseShields
                    && mySlimBlock.BlockDefinition.Id.SubtypeId != MyStringHash.TryGet("SmallLight");
         }
         #endregion
-
-        #region Compute Missile Intersect Damage
-        private float ComputeAmmoDamage(IMyEntity ammoEnt)
-        {
-            //bypass < 0 kickback
-            //Ignores Shield entirely.
-            //
-            //healing < 0 mass ,  radius 0
-            //Heals Shield, converting weapon damage to healing value.
-            //Values as close to Zero (0) as possible, to best results, and less unintentional Results.
-            //Shield-Damage: All values such as projectile Velocity & Mass for non-explosive types and Explosive-damage when dealing with Explosive-types.
-            AmmoInfo ammoInfo;
-            Session.AmmoCollection.TryGetValue(ammoEnt.Model.AssetName, out ammoInfo);
-            var damage = 10f;
-            if (ammoInfo == null)
-            {
-                Log.Line($"ShieldId:{Shield.EntityId.ToString()} - No Missile Ammo Match Found for {((MyEntity)ammoEnt).DebugName}! Let wepaon mod author know their ammo definition has improper model path");
-                return damage;
-            }
-
-            var dmgMulti = UtilsStatic.GetDmgMulti(ammoInfo.BackKickForce);
-            if (dmgMulti > 0)
-            {
-                if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.5f)) * 7.5f * dmgMulti;
-                else damage = ammoInfo.Mass * ammoInfo.Speed * dmgMulti;
-                return damage;
-            }
-            if (ammoInfo.BackKickForce < 0 && dmgMulti.Equals(0)) damage = float.NegativeInfinity;
-            else if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.5f)) * 7.5f;
-            else damage = ammoInfo.Mass * ammoInfo.Speed;
-
-            if (ammoInfo.Mass < 0 && ammoInfo.Radius <= 0) damage = -damage;
-            return damage;
-        }
-        #endregion
     }
 }

@@ -78,13 +78,17 @@ namespace DefenseShields
                             if (ent == null || ent.MarkedForClose || ent.Closed) continue;
                             var destObj = ent as IMyDestroyableObject;
                             if (destObj == null) continue;
-                            var damage = ComputeAmmoDamage(ent) * ModulateEnergy;
-                            if (damage <= float.NegativeInfinity)
+
+                            var computedDamage = ComputeAmmoDamage(ent);
+                            if (computedDamage <= float.NegativeInfinity)
                             {
                                 FriendlyCache.Add(ent);
                                 continue;
                             }
-                            //Log.Line($"{((MyEntity)ent).DebugName} damage: {damage}");
+
+                            var damage = computedDamage * ModulateEnergy;
+                            if (computedDamage < 0) damage = computedDamage;
+
                             WorldImpactPosition = ent.PositionComp.WorldVolume.Center;
                             Absorb += damage;
                             destObj.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);

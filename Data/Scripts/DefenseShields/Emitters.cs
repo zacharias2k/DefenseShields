@@ -102,7 +102,7 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
                 IsStatic = Emitter.CubeGrid.Physics.IsStatic;
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-                if (!AllInited && !InitEmitter() || Suspend() || StoppedWorking()) return;
+                if (!AllInited && !InitEmitter() || Suspend()) return;
                 Timing();
                 if (!BlockWorking()) return;
 
@@ -192,12 +192,57 @@ namespace DefenseShields
             return false;
         }
 
+        private bool Suspend()
+        {
+            var funtional = Emitter.IsFunctional;
+            var working = Emitter.IsWorking;
+            if (Suspended && funtional && working && (Alpha && ShieldComp.EmitterPrime == null || Zeta && ShieldComp.EmitterBeta == null))
+            {
+                ShieldComp.EmitterMode = (int)EmitterMode;
+                if (Prime)
+                {
+                    Alpha = false;
+                    ShieldComp.EmitterPrime = this;
+                    TookControl = true;
+                }
+                else
+                {
+                    Zeta = false;
+                    ShieldComp.EmitterBeta = this;
+                    TookControl = true;
+                }
+
+                ShieldComp.EmitterEvent = true;
+            }
+            else if (!funtional || !working || Alpha || Zeta || Prime && !IsStatic || Beta && IsStatic || Prime && ShieldComp.EmitterPrime != this || Beta && ShieldComp.EmitterBeta != this)
+            {
+                if (_effect != null && !Session.DedicatedServer && !Armored) BlockParticleStop();
+                if (_tick % 600 == 0) Emitter.RefreshCustomInfo();
+                if (Prime && ShieldComp.EmittersWorking && ShieldComp.EmitterPrime == this)
+                {
+                    ShieldComp.EmittersWorking = false;
+                    ShieldComp.EmitterEvent = true;
+                }
+                else if (Beta && ShieldComp.EmittersWorking && ShieldComp.EmitterBeta == this)
+                {
+                    ShieldComp.EmittersWorking = false;
+                    ShieldComp.EmitterEvent = true;
+                }
+                Suspended = true;
+                return Suspended;
+            }
+
+            if (Suspended) ShieldComp.EmitterMode = (int)EmitterMode;
+            Suspended = false;
+            return Suspended;
+        }
+
         private bool BlockWorking()
         {
             if (ShieldComp.DefenseShields == null || !ShieldComp.Warming) return false;
 
             if (ShieldComp.CheckEmitters || TookControl) CheckShieldLineOfSight();
-            if (!ShieldLineOfSight && Emitter.IsFunctional && !Session.DedicatedServer) DrawHelper();
+            if (!ShieldLineOfSight && !Session.DedicatedServer) DrawHelper();
 
             BlockIsWorking = ShieldLineOfSight && Emitter.IsWorking;
             var isPrimed = IsStatic && Prime && BlockIsWorking;
@@ -218,50 +263,6 @@ namespace DefenseShields
                 return false;
             }
             return true;
-        }
-
-        private bool Suspend()
-        {
-            if (Suspended && (Alpha && ShieldComp.EmitterPrime == null || Zeta && ShieldComp.EmitterBeta == null) )
-            {
-                ShieldComp.EmitterMode = (int)EmitterMode;
-                if (Prime)
-                {
-                    Alpha = false;
-                    ShieldComp.EmitterPrime = this;
-                    TookControl = true;
-                }
-                else
-                {
-                    Zeta = false;
-                    ShieldComp.EmitterBeta = this;
-                    TookControl = true;
-                }
-
-                ShieldComp.EmitterEvent = true;
-            }
-            else if (Alpha || Zeta || Prime && !IsStatic || Beta && IsStatic || Prime && ShieldComp.EmitterPrime != this || Beta && ShieldComp.EmitterBeta != this)
-            {
-                if (_effect != null && !Session.DedicatedServer && !Armored) BlockParticleStop();
-                if (_tick % 600 == 0) Emitter.RefreshCustomInfo();
-                Suspended = true;
-                return Suspended;
-            }
-
-            if (Suspended) ShieldComp.EmitterMode = (int)EmitterMode;
-            Suspended = false;
-            return Suspended;
-        }
-
-        private bool StoppedWorking()
-        {
-            if (!Emitter.IsFunctional && BlockIsWorking)
-            {
-                BlockIsWorking = false;
-                if (ShieldComp != null && (IsStatic && this == ShieldComp?.EmitterPrime || !IsStatic && this == ShieldComp?.EmitterBeta)) ShieldComp.EmittersWorking = false;
-                return true;
-            }
-            return !Emitter.IsFunctional;
         }
 
         private void SetEmitterType()
@@ -286,11 +287,15 @@ namespace DefenseShields
         }
 
         #region Block Animation
-        private void BlockMoveAnimationReset()
+        private void BlockMoveAnimationReset(bool isNull)
         {
             if (Session.Enforced.Debug == 1) Log.Line($"Resetting BlockMovement - Tick:{_tick.ToString()}");
-            _subpartRotor.Subparts.Clear();
-            Entity.TryGetSubpart("Rotor", out _subpartRotor);
+            if (isNull) Entity.TryGetSubpart("Rotor", out _subpartRotor);
+            else
+            {
+                _subpartRotor.Subparts.Clear();
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
+            }
         }
 
         private void BlockMoveAnimation()
@@ -304,7 +309,7 @@ namespace DefenseShields
                 return;
             }
 
-            if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
+            if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(false);
             RotationTime -= 1;
             if (AnimationLoop == 0) TranslationTime = 0;
             if (AnimationLoop < 299) TranslationTime += 1;
@@ -360,6 +365,8 @@ namespace DefenseShields
 
         private void CheckShieldLineOfSight()
         {
+            var subNull = _subpartRotor == null;
+            if (subNull || _subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(subNull);
             TookControl = false;
             _blocksLos.Clear();
             _noBlocksLos.Clear();

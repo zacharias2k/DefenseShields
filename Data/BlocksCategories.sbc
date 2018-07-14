@@ -359,7 +359,7 @@
         <Component Subtype="SteelPlate" Count="300" />
         <Component Subtype="SmallTube" Count="40" />
         <Component Subtype="Construction" Count="20" />
-        <Component Subtype="ShieldComponent" Count="400" />
+        <Component Subtype="ShieldComponent" Count="200" />
         <Component Subtype="Construction" Count="20" />
         <Component Subtype="MetalGrid" Count="60" />
         <Component Subtype="Superconductor" Count="200" />
@@ -405,21 +405,21 @@
       <ModelOffset x="0" y="0" z="0" />
 	<Model>Models\Cubes\small\DefenseShieldBaseS_Small.mwm</Model>
       <Components>
-        <Component Subtype="SteelPlate" Count="3" />
-        <Component Subtype="SmallTube" Count="4" />
+        <Component Subtype="SteelPlate" Count="2" />
+        <Component Subtype="SmallTube" Count="2" />
         <Component Subtype="Construction" Count="2" />
-		<Component Subtype="ShieldComponent" Count="40" />
+        <Component Subtype="ShieldComponent" Count="150" />
         <Component Subtype="Construction" Count="2" />
         <Component Subtype="MetalGrid" Count="2" />
-        <Component Subtype="Superconductor" Count="8" />
+        <Component Subtype="Superconductor" Count="2" />
         <Component Subtype="Construction" Count="2" />
-		<Component Subtype="GravityGenerator" Count="3" />
-        <Component Subtype="Detector" Count="4" />
+        <Component Subtype="GravityGenerator" Count="1" />
+        <Component Subtype="Detector" Count="2" />
         <Component Subtype="MetalGrid" Count="2" />
         <Component Subtype="RadioCommunication" Count="1" />
         <Component Subtype="Computer" Count="5" />
         <Component Subtype="Construction" Count="2" />
-        <Component Subtype="SteelPlate" Count="3" />
+        <Component Subtype="SteelPlate" Count="1" />
       </Components>
       <CriticalComponent Subtype="Computer" Index="0" />
       <MountPoints>
@@ -452,19 +452,21 @@
       <ModelOffset x="0" y="0" z="0" />
       <Model>Models\Cubes\large\DefenseShieldPlanetary_Large.mwm</Model>
       <Components>
-        <Component Subtype="SteelPlate" Count="3000" />
-        <Component Subtype="Girder" Count="1500" />
-        <Component Subtype="MetalGrid" Count="800" />
-        <Component Subtype="SmallTube" Count="1400" />
-        <Component Subtype="LargeTube" Count="500" />
-        <Component Subtype="Reactor" Count="500" />
-        <Component Subtype="PowerCell" Count="200" />
-        <Component Subtype="GravityGenerator" Count="250" />
-        <Component Subtype="Superconductor" Count="1200" />
-        <Component Subtype="Computer" Count="2500" />
-        <Component Subtype="RadioCommunication" Count="100" />
-        <Component Subtype="Construction" Count="2800" />
-        <Component Subtype="SteelPlate" Count="1300" />
+        <Component Subtype="SteelPlate" Count="30000" />
+        <Component Subtype="SmallTube" Count="4000" />
+        <Component Subtype="Construction" Count="2000" />
+        <Component Subtype="ShieldComponent" Count="2000" />
+        <Component Subtype="Construction" Count="2000" />
+        <Component Subtype="MetalGrid" Count="600" />
+        <Component Subtype="Superconductor" Count="9800" />
+        <Component Subtype="Construction" Count="2000" />
+        <Component Subtype="GravityGenerator" Count="1200" />
+        <Component Subtype="Detector" Count="800" />
+        <Component Subtype="MetalGrid" Count="500" />
+        <Component Subtype="RadioCommunication" Count="2000" />
+        <Component Subtype="Computer" Count="12000" />
+        <Component Subtype="Construction" Count="2000" />
+        <Component Subtype="SteelPlate" Count="30000" />
       </Components>
       <CriticalComponent Subtype="Construction" Index="0" />
       <MountPoints>
@@ -501,12 +503,12 @@
         <Component Subtype="SteelPlate" Count="3000" />
         <Component Subtype="SmallTube" Count="400" />
         <Component Subtype="Construction" Count="20" />
-		<Component Subtype="ShieldComponent" Count="4000" />
+		    <Component Subtype="ShieldComponent" Count="250" />
         <Component Subtype="Construction" Count="20" />
         <Component Subtype="MetalGrid" Count="60" />
         <Component Subtype="Superconductor" Count="980" />
         <Component Subtype="Construction" Count="20" />
-		<Component Subtype="GravityGenerator" Count="120" />
+		    <Component Subtype="GravityGenerator" Count="120" />
         <Component Subtype="Detector" Count="80" />
         <Component Subtype="MetalGrid" Count="50" />
         <Component Subtype="RadioCommunication" Count="200" />
@@ -710,36 +712,41 @@
       <Upgrades></Upgrades>
     </Definition>
 <!-- Armored Emitters -->
-  <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
-      <Id>
-        <TypeId>UpgradeModule</TypeId>
-        <SubtypeId>EmitterLA</SubtypeId>
-      </Id>
-      <DisplayName>Shield ArmoredEmitter</DisplayName>
-      <Icon>Textures\GUI\Icons\Cubes\ArmoredEmitterIcon.dds</Icon>
-      <CubeSize>Large</CubeSize>
-      <BlockTopology>TriangleMesh</BlockTopology>
-      <Size x="1" y="1" z="2" />
-      <ModelOffset x="0" y="0" z="0" />
-      <Model>Models\Cubes\ArmoredEmitterLarge.mwm</Model>
+    <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
+        <Id>
+          <TypeId>UpgradeModule</TypeId>
+          <SubtypeId>EmitterLA</SubtypeId>
+        </Id>
+        <DisplayName>Shield ArmoredEmitter</DisplayName>
+        <Icon>Textures\GUI\Icons\Cubes\ArmoredEmitterIcon.dds</Icon>
+        <CubeSize>Large</CubeSize>
+        <BlockTopology>TriangleMesh</BlockTopology>
+        <Size x="1" y="1" z="2" />
+        <ModelOffset x="0" y="0" z="0" />
+        <Model>Models\Cubes\ArmoredEmitterLarge.mwm</Model>
       <Components>
-        <Component Subtype="SteelPlate" Count="32" />
-        <Component Subtype="MetalGrid" Count="10" />
-        <Component Subtype="Construction" Count="16" />
-		<Component Subtype="Motor" Count="4" />
-        <Component Subtype="InteriorPlate" Count="16" />
-		<Component Subtype="Superconductor" Count="8" />
-        <Component Subtype="Detector" Count="6" />
-        <Component Subtype="RadioCommunication" Count="16" />
-        <Component Subtype="Computer" Count="120" />
-        <Component Subtype="SteelPlate" Count="16" />
+        <Component Subtype="SteelPlate" Count="300" />
+        <Component Subtype="SmallTube" Count="40" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="ShieldComponent" Count="200" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="MetalGrid" Count="60" />
+        <Component Subtype="Superconductor" Count="200" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="GravityGenerator" Count="40" />
+        <Component Subtype="Detector" Count="40" />
+        <Component Subtype="MetalGrid" Count="50" />
+        <Component Subtype="RadioCommunication" Count="20" />
+        <Component Subtype="Computer" Count="500" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="SteelPlate" Count="300" />
       </Components>
       <CriticalComponent Subtype="Computer" Index="0" />
       <BuildProgressModels>
         <Model BuildPercentUpperBound="0.66" File="Models\Cubes\ArmoredEmitterLarge_Constr1.mwm" />
         <Model BuildPercentUpperBound="1.00" File="Models\Cubes\ArmoredEmitterLarge_Constr2.mwm" />
       </BuildProgressModels>
-      <BlockPairName>ArmorEmitter</BlockPairName>
+      <BlockPairName>CompactEmitter</BlockPairName>
       <EdgeType>Light</EdgeType>
       <BuildTimeSeconds>20</BuildTimeSeconds>
       <MountPoints>
@@ -768,23 +775,28 @@
       <ModelOffset x="0" y="0" z="0" />
       <Model>Models\Cubes\ArmoredEmitterSmall.mwm</Model>
       <Components>
-        <Component Subtype="SteelPlate" Count="4" />
-        <Component Subtype="MetalGrid" Count="2" />
-        <Component Subtype="Construction" Count="2" />
-		<Component Subtype="Motor" Count="1" />
-        <Component Subtype="InteriorPlate" Count="1" />
-		<Component Subtype="Superconductor" Count="2" />
-        <Component Subtype="Detector" Count="2" />
-        <Component Subtype="RadioCommunication" Count="2" />
-        <Component Subtype="Computer" Count="4" />
         <Component Subtype="SteelPlate" Count="2" />
+        <Component Subtype="SmallTube" Count="2" />
+        <Component Subtype="Construction" Count="2" />
+		    <Component Subtype="ShieldComponent" Count="150" />
+        <Component Subtype="Construction" Count="2" />
+        <Component Subtype="MetalGrid" Count="2" />
+        <Component Subtype="Superconductor" Count="2" />
+        <Component Subtype="Construction" Count="2" />
+		    <Component Subtype="GravityGenerator" Count="1" />
+        <Component Subtype="Detector" Count="2" />
+        <Component Subtype="MetalGrid" Count="2" />
+        <Component Subtype="RadioCommunication" Count="1" />
+        <Component Subtype="Computer" Count="5" />
+        <Component Subtype="Construction" Count="2" />
+        <Component Subtype="SteelPlate" Count="1" />
       </Components>
       <CriticalComponent Subtype="Computer" Index="0" />
       <BuildProgressModels>
         <Model BuildPercentUpperBound="0.66" File="Models\Cubes\ArmoredEmitterSmall_Constr1.mwm" />
         <Model BuildPercentUpperBound="1.00" File="Models\Cubes\ArmoredEmitterSmall_Constr2.mwm" />
       </BuildProgressModels>
-      <BlockPairName>ArmorEmitter</BlockPairName>
+      <BlockPairName>CompactEmitter</BlockPairName>
       <EdgeType>Light</EdgeType>
       <BuildTimeSeconds>20</BuildTimeSeconds>
       <MountPoints>
