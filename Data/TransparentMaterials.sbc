@@ -1653,6 +1653,7 @@
     <SpecularColorFactor>0</SpecularColorFactor>
     <IsFlareOccluder>false</IsFlareOccluder>
   </TransparentMaterial>
+
   <TransparentMaterial>
     <Id>
       <TypeId>TransparentMaterialDefinition</TypeId>
@@ -1663,7 +1664,7 @@
     <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
     <IgnoreDepth>false</IgnoreDepth>
     <SoftParticleDistanceScale>1</SoftParticleDistanceScale>
-    <Texture>Textures\Icons\IconDp30.dds</Texture>
+    <Texture>Textures\Icons\IconDps30.dds</Texture>
     <UseAtlas>false</UseAtlas>
     <NeedSort>true</NeedSort>
     <UVOffset>

@@ -974,21 +974,25 @@ namespace DefenseShields
             var up = cameraWorldMatrix.Up;
             const double scaler = 0.08;
             scale = scaler * scale;
-            var icon2FState = _shieldChargeRate * Session.Enforced.Efficiency;
+            /*
+            //var icon2FState = _shieldChargeRate * Session.Enforced.Efficiency;
+            var icon2FState = 30f;
+            _shieldDps = 90f;
             var icon2Charging = true;
             if (_shieldDps > 1)
             {
                 icon2FState = _shieldDps;
                 icon2Charging = false;
             }
+            */
             var icon1 = GetHudIcon1FromFloat(ShieldComp.ShieldPercent);
-            var icon2 = GetHudIcon2FromFloat(icon2FState, icon2Charging);
+            //var icon2 = GetHudIcon2FromFloat(icon2FState, icon2Charging);
             Color color;
             var p = ShieldComp.ShieldPercent;
             if (p > 0 && p < 10 && _lCount % 2 == 0) color = Color.Red;
             else color = Color.White;
             MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.SDR); // LDR for mptest, SDR for public
-            MyTransparentGeometry.AddBillboardOriented(icon2, color, origin, left, up, (float)scale, BlendTypeEnum.SDR); // LDR for mptest, SDR for public
+            //if (icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale, BlendTypeEnum.SDR); // LDR for mptest, SDR for public
 
         }
 
@@ -1021,7 +1025,7 @@ namespace DefenseShields
                 if (fState >= 30) return HudIconHeal30;
                 if (fState >= 20) return HudIconHeal20;
                 if (fState > 0) return HudIconHeal10;
-                return HudIconHeal;
+                return MyStringId.NullOrEmpty;
             }
 
             if (fState >= 99) return HudIconDps100;
@@ -1034,7 +1038,7 @@ namespace DefenseShields
             if (fState >= 30) return HudIconDps30;
             if (fState >= 20) return HudIconDps20;
             if (fState > 0) return HudIconDps10;
-            return HudIconDps;
+            return MyStringId.NullOrEmpty;
 
         }
 
