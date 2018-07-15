@@ -34,8 +34,7 @@ namespace DefenseShields
                 if (GridIsMobile) MobileUpdate();
                 else _shapeAdjusted = false;
                 if (UpdateDimensions) RefreshDimensions();
-
-                if (FitChanged || _lCount == 1 && _count == 1 && _blocksChanged) BlockChanged();
+                if (FitChanged || (_lCount == 1 || _lCount == 6) && _count == 1 && _blocksChanged) BlockChanged();
 
                 SetShieldStatus();
                 Timing(true);
@@ -436,16 +435,24 @@ namespace DefenseShields
             lock (_powerSources) _powerSources.Clear();
             lock (_functionalBlocks) _functionalBlocks.Clear();
 
-            foreach (var block in ((MyCubeGrid)Shield.CubeGrid).GetFatBlocks())
+            var gotGroups = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Physical);
+
+            foreach (var grid in gotGroups)
             {
-                lock (_functionalBlocks) if (block.IsFunctional) _functionalBlocks.Add(block);
-                var source = block.Components.Get<MyResourceSourceComponent>();
-                if (source == null) continue;
-                foreach (var type in source.ResourceTypes)
+                var physical = MyAPIGateway.GridGroups.HasConnection(Shield.CubeGrid, grid, GridLinkTypeEnum.Physical);
+                var mechanical = MyAPIGateway.GridGroups.HasConnection(Shield.CubeGrid, grid, GridLinkTypeEnum.Mechanical);
+
+                foreach (var block in ((MyCubeGrid)grid).GetFatBlocks())
                 {
-                    if (type != MyResourceDistributorComponent.ElectricityId) continue;
-                    lock (_powerSources) _powerSources.Add(source);
-                    break;
+                    lock (_functionalBlocks) if (block.IsFunctional && mechanical) _functionalBlocks.Add(block);
+                    var source = block.Components.Get<MyResourceSourceComponent>();
+                    if (!physical || source == null) continue;
+                    foreach (var type in source.ResourceTypes)
+                    {
+                        if (type != MyResourceDistributorComponent.ElectricityId) continue;
+                        lock (_powerSources) _powerSources.Add(source);
+                        break;
+                    }
                 }
             }
             if (Session.Enforced.Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - powerCnt: {_powerSources.Count.ToString()}");
@@ -562,8 +569,7 @@ namespace DefenseShields
                 return false;
             }
             if (_power < 0.0001f) _power = 0.001f;
-            Sink.Update();
-            _shieldCurrentPower = Sink.CurrentInputByType(GId);
+            if (_power < _shieldCurrentPower || _count == 28) Sink.Update();
 
             if (Absorb > 0)
             {
@@ -576,7 +582,6 @@ namespace DefenseShields
             if (ShieldBuffer < 0) _overLoadLoop = 0;
 
             Absorb = 0f;
-
             return true;
         }
 
@@ -585,16 +590,35 @@ namespace DefenseShields
             _gridMaxPower = 0;
             _gridCurrentPower = 0;
             _gridAvailablePower = 0;
+            _batteryMaxPower = 0;
+            _batteryCurrentPower = 0;
             var eId = MyResourceDistributorComponent.ElectricityId;
             lock (_powerSources)
                 for (int i = 0; i < _powerSources.Count; i++)
                 {
                     var source = _powerSources[i];
-                    if (!source.HasCapacityRemaining || !source.Enabled || !source.ProductionEnabled || !UseBatteries && source.Group.String.Equals("Battery")) continue;
-                    _gridMaxPower += source.MaxOutputByType(eId);
-                    _gridCurrentPower += source.CurrentOutputByType(eId);
+
+                    if (!source.HasCapacityRemaining || !source.Enabled || !source.ProductionEnabled) continue;
+                    if (source.Entity is IMyBatteryBlock)
+                    {
+                        _batteryMaxPower += source.MaxOutputByType(eId);
+                        _batteryCurrentPower += source.CurrentOutputByType(eId);
+                        //Log.Line($"{source.HasCapacityRemaining} - {source.ProductionEnabled} - {source.Enabled} - {battery.CurrentInput} - {battery.CurrentOutput} - {battery.IsCharging} - {battery.MaxOutput} - {source.MaxOutputByType(GId)}- {source.CurrentOutputByType(GId)}");
+                    }
+                    else
+                    {
+                        _gridMaxPower += source.MaxOutputByType(eId);
+                        _gridCurrentPower += source.CurrentOutputByType(eId);
+                    }
                 }
+
+            if (UseBatteries)
+            {
+                _gridMaxPower += _batteryMaxPower;
+                _gridCurrentPower += _batteryCurrentPower;
+            }
             _gridAvailablePower = _gridMaxPower - _gridCurrentPower;
+            _shieldCurrentPower = Sink.CurrentInputByType(GId);
         }
 
         private void CalculatePowerCharge()
@@ -614,11 +638,11 @@ namespace DefenseShields
             _sizeScaler = (shieldVol / _ellipsoidSurfaceArea) / 2.40063050674088;
             var bufferScaler = 100 / percent * Session.Enforced.BaseScaler / (float)_sizeScaler * nerfer;
 
-            _shieldCurrentPower = Sink.CurrentInputByType(GId);
-            _otherPower = _gridMaxPower - _gridAvailablePower - _shieldCurrentPower;
-            var cleanPower = _gridMaxPower - _otherPower;
-            powerForShield = (cleanPower * fPercent) - _shieldMaintaintPower;
+            //_shieldCurrentPower = Sink.CurrentInputByType(GId);
 
+            var cleanPower = _gridAvailablePower + _shieldCurrentPower;
+            _otherPower = _gridMaxPower - cleanPower;
+            powerForShield = (cleanPower * fPercent) - _shieldMaintaintPower;
             var rawMaxChargeRate = powerForShield > 0 ? powerForShield : 0f;
             _shieldMaxChargeRate = rawMaxChargeRate;
             _shieldMaxBuffer = _gridMaxPower * bufferScaler;
@@ -652,7 +676,9 @@ namespace DefenseShields
                 else _shieldConsumptionRate = 0f;
             }
             _powerNeeded = _shieldMaintaintPower + _shieldConsumptionRate + _otherPower;
-            //Log.Line($"powerNeeded: {_powerNeeded} - {_shieldMaintaintPower} - {_shieldConsumptionRate} - {_otherPower} - {powerForShield} - {ShieldBuffer} - {_shieldMaxBuffer}");
+            //if (ShieldMode == ShieldType.Station) Log.Line($"(Other:{_otherPower} - {powerForShield}])- Clean:{cleanPower} - NEW:{cleanPower * fPercent} - OLD:{_shieldCurrentPower} - MAX:{_gridMaxPower} - CON:{_shieldConsumptionRate}");
+
+            //if (ShieldMode == ShieldType.Station) Log.CleanLine($"[{_tick}] PN:{_powerNeeded} - OP:{_otherPower} - MAINT:{_shieldMaintaintPower} - GAVAIL:{_gridAvailablePower} - GMAX:{_gridMaxPower} - PFS:{powerForShield} - C:{_shieldConsumptionRate} - MAXC:{_shieldMaxChargeRate}");
             if (_count != -2)
             {
                 if (ShieldBuffer < _shieldMaxBuffer) ShieldComp.ShieldPercent = (ShieldBuffer / _shieldMaxBuffer) * 100;
@@ -712,6 +738,18 @@ namespace DefenseShields
                 if (secs.Equals(1)) secToFull = 0;
                 else secToFull = (int)(secs);
             }
+
+            var shieldPowerNeeds = _powerNeeded;
+            var powerUsage = shieldPowerNeeds;
+            var otherPower = _otherPower;
+            var gridMaxPower = _gridMaxPower;
+            if (!UseBatteries)
+            {
+                powerUsage = powerUsage + _batteryCurrentPower;
+                otherPower = _otherPower + _batteryCurrentPower;
+                gridMaxPower = gridMaxPower + _batteryMaxPower;
+            } 
+
             var status = GetShieldStatus();
             if (status == "Shield Up" || status == "Shield Down")
             {
@@ -724,7 +762,7 @@ namespace DefenseShields
                                      "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
                                      "\n[Efficiency__]: " + Session.Enforced.Efficiency.ToString("0.0") +
                                      "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
-                                     "\n[Power Usage]: " + _powerNeeded.ToString("0.0") + " (" + _gridMaxPower.ToString("0.0") + ") Mw" +
+                                     "\n[Power Usage]: " + powerUsage.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw" +
                                      "\n[Shield Power]: " + Sink.CurrentInputByType(GId).ToString("0.0") + " Mw");
             }
             else
@@ -732,8 +770,8 @@ namespace DefenseShields
                 stringBuilder.Append("[" + status + "]" +
                                      "\n" +
                                      "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
-                                     "\n[Other Power]: " + (_otherPower).ToString("0.0") + " Mw" +
-                                     "\n[Power Usage]: " + _powerNeeded.ToString("0.0") + " (" + _gridMaxPower.ToString("0.0") + ") Mw");
+                                     "\n[Other Power]: " + otherPower.ToString("0.0") + " Mw" +
+                                     "\n[Needed Power]: " + shieldPowerNeeds.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw");
             }
         }
         #endregion

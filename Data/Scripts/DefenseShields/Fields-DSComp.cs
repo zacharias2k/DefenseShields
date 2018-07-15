@@ -32,6 +32,8 @@ namespace DefenseShields
         private float _powerNeeded;
         private float _otherPower;
         private float _gridAvailablePower;
+        private float _batteryMaxPower;
+        private float _batteryCurrentPower;
         private float _shieldMaxBuffer;
         private float _shieldMaxChargeRate;
         private float _shieldChargeRate;

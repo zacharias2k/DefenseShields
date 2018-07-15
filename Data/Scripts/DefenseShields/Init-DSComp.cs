@@ -73,7 +73,7 @@ namespace DefenseShields
                     return;
                 }
                 _hierarchyTick = _tick;
-
+                _oldBlockCount = -1;
                 var gotGroups = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Mechanical);
                 ShieldComp?.GetSubGrids.Clear();
                 _connectedGrids.Clear();
