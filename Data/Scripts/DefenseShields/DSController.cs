@@ -24,7 +24,6 @@ namespace DefenseShields
         #region Simulation
         public override void UpdateBeforeSimulation()
         {
-
             try
             {
                 if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
