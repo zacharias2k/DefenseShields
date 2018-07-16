@@ -261,7 +261,7 @@ namespace DefenseShields
                     Shield.ShowInToolbarConfig = true;
                 }
                 else if (_lCount == 0 || _lCount == 5) Shield.RefreshCustomInfo();
-                _shieldDps = 0f;
+                _damageCounter = 0f;
             }
             if (_eCount == 0 && _lCount == 0 && _count == 0) _randomCount = _random.Next(0, 10);
 
@@ -608,7 +608,7 @@ namespace DefenseShields
 
             if (Absorb > 0)
             {
-                _shieldDps += Absorb;
+                _damageCounter += Absorb;
                 _effectsCleanup = true;
                 ShieldBuffer -= (Absorb / Session.Enforced.Efficiency);
             }
@@ -792,7 +792,7 @@ namespace DefenseShields
                                      "\n" +
                                      "\n[Shield HP__]: " + (ShieldBuffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
                                      "\n[HP Per Sec_]: " + (_shieldChargeRate * Session.Enforced.Efficiency).ToString("N0") +
-                                     "\n[DPS_______]: " + _shieldDps.ToString("N0") +
+                                     "\n[Damage In__]: " + _damageCounter.ToString("N0") +
                                      "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
                                      "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
                                      "\n[Efficiency__]: " + Session.Enforced.Efficiency.ToString("0.0") +
@@ -957,10 +957,14 @@ namespace DefenseShields
             var renderId = Shield.CubeGrid.Render.GetRenderObjectID();
             var config = MyAPIGateway.Session.Config;
             var drawIcon = !enemy && SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
-            if (drawIcon) UpdateIcon();
+            if (drawIcon)
+            {
+                CalculateIcon2Status();
+                UpdateIcon();
+            }
 
             var passiveVisible = !ShieldPassiveHide || enemy;
-            var activeVisible = !ShieldActiveHide && !enemy;
+            var activeVisible = !ShieldActiveHide || enemy;
 
             if (!passiveVisible && !_hideShield)
             {
@@ -1047,25 +1051,47 @@ namespace DefenseShields
             var up = cameraWorldMatrix.Up;
             const double scaler = 0.08;
             scale = scaler * scale;
-            /*
-            //var icon2FState = _shieldChargeRate * Session.Enforced.Efficiency;
-            var icon2FState = 30f;
-            _shieldDps = 90f;
-            var icon2Charging = true;
-            if (_shieldDps > 1)
-            {
-                icon2FState = _shieldDps;
-                icon2Charging = false;
-            }
-            */
+
+            var icon2FSelect = GetIconMeterfloat();
+
             var icon1 = GetHudIcon1FromFloat(ShieldComp.ShieldPercent);
-            //var icon2 = GetHudIcon2FromFloat(icon2FState, icon2Charging);
+            //if (ShieldMode == ShieldType.Station)Log.Line($"{icon2FSelect} - {_shieldDps}");
+            var icon2 = GetHudIcon2FromFloat(icon2FSelect);
+
             Color color;
             var p = ShieldComp.ShieldPercent;
             if (p > 0 && p < 10 && _lCount % 2 == 0) color = Color.Red;
             else color = Color.White;
             MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.SDR); // LDR for mptest, SDR for public
-            //if (icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale, BlendTypeEnum.SDR); // LDR for mptest, SDR for public
+            if (icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.SDR);
+        }
+
+        private void CalculateIcon2Status()
+        {
+            var targetedBuffer = _oldToBuffer + _oldChargeRate;
+            var toBuffer = _shieldMaxBuffer - ShieldBuffer;
+            var bufferDiff = targetedBuffer - toBuffer;
+            if (_oldToBuffer > 0 && bufferDiff < 0)
+            {
+                _shieldDps = DpsAverage.Add((int)bufferDiff * -1);
+            }
+            if (bufferDiff > 0)_shieldHps = Hpsverage.Add((int)bufferDiff);
+            _shieldCps = _shieldHps - _shieldDps;
+            //if (ShieldMode == ShieldType.Station && ShieldComp.BoundingRange > 100 && _count == 0) Log.Line($"dps:{_shieldDps} - hps:{_shieldHps} - cps:{_shieldHps - _shieldDps}({_shieldCps})");
+            _oldChargeRate = _shieldChargeRate;
+            _oldToBuffer = toBuffer;
+        }
+
+        private float GetIconMeterfloat()
+        {
+            if (_shieldCps > 0)
+            {
+                return _shieldCps;
+            }
+            else
+            {
+                return _shieldCps;
+            }
         }
 
         public static MyStringId GetHudIcon1FromFloat(float percent)
@@ -1083,35 +1109,34 @@ namespace DefenseShields
             return HudIconOffline;
         }
 
-        public static MyStringId GetHudIcon2FromFloat(float fState, bool charging)
+        public static MyStringId GetHudIcon2FromFloat(float fState)
         {
-            if (charging)
+            if (fState > 0)
             {
-                if (fState >= 99) return HudIconHeal100;
-                if (fState >= 90) return HudIconHeal90;
-                if (fState >= 80) return HudIconHeal80;
-                if (fState >= 70) return HudIconHeal70;
-                if (fState >= 60) return HudIconHeal60;
-                if (fState >= 50) return HudIconHeal50;
-                if (fState >= 40) return HudIconHeal40;
-                if (fState >= 30) return HudIconHeal30;
-                if (fState >= 20) return HudIconHeal20;
-                if (fState > 0) return HudIconHeal10;
-                return MyStringId.NullOrEmpty;
+                if (fState <= 1) return HudIconHeal100;
+                if (fState <= 10) return HudIconHeal90;
+                if (fState <= 20) return HudIconHeal80;
+                if (fState <= 30) return HudIconHeal70;
+                if (fState <= 40) return HudIconHeal60;
+                if (fState <= 50) return HudIconHeal50;
+                if (fState <= 60) return HudIconHeal40;
+                if (fState <= 70) return HudIconHeal30;
+                if (fState <= 80) return HudIconHeal20;
+                if (fState <= 90) return HudIconHeal10;
+                if (fState > 90) return MyStringId.NullOrEmpty;
             }
 
-            if (fState >= 99) return HudIconDps100;
-            if (fState >= 90) return HudIconDps90;
-            if (fState >= 80) return HudIconDps80;
-            if (fState >= 70) return HudIconDps70;
-            if (fState >= 60) return HudIconDps60;
-            if (fState >= 50) return HudIconDps50;
-            if (fState >= 40) return HudIconDps40;
-            if (fState >= 30) return HudIconDps30;
-            if (fState >= 20) return HudIconDps20;
-            if (fState > 0) return HudIconDps10;
+            if (fState <= -99) return HudIconDps100;
+            if (fState <= -90) return HudIconDps90;
+            if (fState <= -80) return HudIconDps80;
+            if (fState <= -70) return HudIconDps70;
+            if (fState <= -60) return HudIconDps60;
+            if (fState <= -50) return HudIconDps50;
+            if (fState <= -40) return HudIconDps40;
+            if (fState <= -30) return HudIconDps30;
+            if (fState <= -20) return HudIconDps20;
+            if (fState < -10) return HudIconDps10;
             return MyStringId.NullOrEmpty;
-
         }
 
         public void DrawShieldDownIcon()

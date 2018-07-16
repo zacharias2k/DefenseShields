@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using VRageMath;
 
@@ -101,6 +102,38 @@ namespace DefenseShields.Support
             boundingSphereD.Center = result4;
             boundingSphereD.Radius = num1;
             return boundingSphereD;
+        }
+
+    }
+    class RunningAverage
+    {
+        int _size;
+        int[] _values = null;
+        int _valuesIndex = 0;
+        int _valueCount = 0;
+        int _sum = 0;
+
+        public RunningAverage(int size)
+        {
+            _size = Math.Max(size, 1);
+            _values = new int[_size];
+        }
+
+        public int Add(int newValue)
+        {
+            // calculate new value to add to sum by subtracting the 
+            // value that is replaced from the new value; 
+            int temp = newValue - _values[_valuesIndex];
+            _values[_valuesIndex] = newValue;
+            _sum += temp;
+
+            _valuesIndex++;
+            _valuesIndex %= _size;
+
+            if (_valueCount < _size)
+                _valueCount++;
+
+            return _sum / _valueCount;
         }
     }
 }

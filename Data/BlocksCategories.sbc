@@ -717,7 +717,7 @@
           <TypeId>UpgradeModule</TypeId>
           <SubtypeId>EmitterLA</SubtypeId>
         </Id>
-        <DisplayName>Shield ArmoredEmitter</DisplayName>
+        <DisplayName>Shield Compact Emitter</DisplayName>
         <Icon>Textures\GUI\Icons\Cubes\ArmoredEmitterIcon.dds</Icon>
         <CubeSize>Large</CubeSize>
         <BlockTopology>TriangleMesh</BlockTopology>
@@ -767,7 +767,7 @@
         <TypeId>UpgradeModule</TypeId>
         <SubtypeId>EmitterSA</SubtypeId>
       </Id>
-      <DisplayName>Shield Armored Emitter</DisplayName>
+      <DisplayName>Shield Compact Emitter</DisplayName>
       <Icon>Textures\GUI\Icons\Cubes\ArmoredEmitterIcon.dds</Icon>
       <CubeSize>Small</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
