@@ -339,8 +339,8 @@ namespace DefenseShields.Support
                 if (unPackedData.Version == 56)
                 {
                     Session.Enforced.StationRatio = 1;
-                    Session.Enforced.LargeShipRatio = 2;
-                    Session.Enforced.SmallShipRatio = 2;
+                    Session.Enforced.LargeShipRatio = 1;
+                    Session.Enforced.SmallShipRatio = 1;
                 }
                 Session.Enforced.DisableVoxelSupport = !unPackedData.DisableVoxelSupport.Equals(-1) ? unPackedData.DisableVoxelSupport : disableVoxel;
                 Session.Enforced.DisableGridDamageSupport = !unPackedData.DisableGridDamageSupport.Equals(-1) ? unPackedData.DisableGridDamageSupport : disableGridDmg;

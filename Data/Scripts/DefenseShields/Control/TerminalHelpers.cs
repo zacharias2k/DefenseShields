@@ -33,6 +33,19 @@ namespace DefenseShields.Control
             return c;
         }
 
+        public static IMyTerminalControlButton AddButton<T>(T block, string name, string title, string tooltip, Func<IMyTerminalBlock, bool> visibleGetter = null) where T : IMyTerminalBlock
+        {
+            var c = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlButton, T>(name);
+            var d = GetDefaultEnabled(block);
+
+            c.Title = MyStringId.GetOrCompute(title);
+            c.Tooltip = MyStringId.GetOrCompute(tooltip);
+            c.Visible = visibleGetter ?? d;
+
+            MyAPIGateway.TerminalControls.AddControl<T>(c);
+            return c;
+        }
+
         public static IMyTerminalControlSeparator Separator<T>(T block, string name, Func<IMyTerminalBlock, bool> enabledGetter = null, Func<IMyTerminalBlock, bool> visibleGetter = null) where T : IMyTerminalBlock
         {
             var c = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlSeparator, T>(name);

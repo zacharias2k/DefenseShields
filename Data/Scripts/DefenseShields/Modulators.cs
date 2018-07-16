@@ -152,7 +152,12 @@ namespace DefenseShields
                 _hierarchyTick = _tick;
                 var gotGroups = MyAPIGateway.GridGroups.GetGroup(Modulator?.CubeGrid, GridLinkTypeEnum.Mechanical);
                 ModulatorComp?.GetSubGrids?.Clear();
-                for (int i = 0; i < gotGroups.Count; i++) ModulatorComp?.GetSubGrids?.Add(gotGroups[i]);
+                for (int i = 0; i < gotGroups.Count; i++)
+                {
+                    var sub = gotGroups[i];
+                    if (sub == null) continue;
+                    ModulatorComp?.GetSubGrids?.Add(sub);
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in HierarchyChanged: {ex}"); }
         }

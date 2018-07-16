@@ -40,19 +40,19 @@ namespace DefenseShields
                         continue;
                     case Ent.Ignore:
                     case Ent.Friend:
-                    //case Ent.Weapon:
-                        if (relation == Ent.Friend) //|| relation == Ent.Weapon)
+                        if (relation == Ent.Friend) 
                         {
-                            if (ent is MyCubeGrid)
+                            var grid = ent as MyCubeGrid;
+                            if (grid != null)
                             {
-                                var cornersInShield = CustomCollision.CornersInShield(ent as MyCubeGrid, DetectMatrixOutsideInv);
-                                if (cornersInShield > 0 && cornersInShield != 8)
+                                if (ShieldEnt.PositionComp.WorldVolume.Intersects(grid.PositionComp.WorldVolume))
                                 {
-                                    PartlyProtectedCache.Add(ent);
-                                    continue;
+                                    var cornersInShield = CustomCollision.NotAllCornersInShield(grid, DetectMatrixOutsideInv);
+                                    if (cornersInShield > 0 && cornersInShield != 8) PartlyProtectedCache.Add(ent);
+                                    else if (cornersInShield == 8) FriendlyCache.Add(ent);
                                 }
                             }
-                            if (CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
+                            else if (CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
                             {
                                 FriendlyCache.Add(ent);
                                 continue;
@@ -243,14 +243,11 @@ namespace DefenseShields
                     {
                         foreach (var subGrid in modComp.GetSubGrids)
                         {
-                            var cornersInShield = CustomCollision.CornersInShield(subGrid, DetectMatrixOutsideInv);
-                            if (cornersInShield > 0 && cornersInShield != 8)
+                            if (ShieldEnt.PositionComp.WorldVolume.Intersects(grid.PositionComp.WorldVolume))
                             {
-                                PartlyProtectedCache.Add(ent);
-                            }
-                            else if (cornersInShield == 8)
-                            {
-                                FriendlyCache.Add(ent);
+                                var cornersInShield = CustomCollision.NotAllCornersInShield(grid, DetectMatrixOutsideInv);
+                                if (cornersInShield > 0 && cornersInShield != 8) PartlyProtectedCache.Add(ent);
+                                else if (cornersInShield == 8) FriendlyCache.Add(ent);
                             }
                             else AuthenticatedCache.Add(subGrid);
                         }

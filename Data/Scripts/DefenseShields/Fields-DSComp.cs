@@ -85,6 +85,7 @@ namespace DefenseShields
         internal bool GridIsMobile;
         internal bool ShieldWasLowered;
         internal bool Suspended;
+        internal bool ShieldWasSleeping;
         private bool _blocksChanged;
         private bool _prevShieldActive;
         private bool _effectsCleanup;

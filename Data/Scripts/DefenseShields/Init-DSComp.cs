@@ -79,7 +79,9 @@ namespace DefenseShields
                 _connectedGrids.Clear();
                 for (int i = 0; i < gotGroups.Count; i++)
                 {
-                    ShieldComp?.GetSubGrids.Add(gotGroups[i]);
+                    var sub = gotGroups[i];
+                    if (sub == null) continue;
+                    ShieldComp?.GetSubGrids.Add(sub);
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in HierarchyChanged: {ex}"); }
@@ -210,6 +212,8 @@ namespace DefenseShields
                     GetModulationInfo();
                     _genericDownLoop = 0;
                     _updateRender = true;
+                    Suspended = false;
+                    return true;
                 }
                 Suspended = false;
             }

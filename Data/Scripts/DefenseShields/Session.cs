@@ -144,7 +144,7 @@ namespace DefenseShields
                         s.BulletCoolDown++;
                         if (s.BulletCoolDown == 9) s.BulletCoolDown = -1;
                     }
-                    if (!s.WarmedUp || !s.ShieldComp.RaiseShield) continue;
+                    if (!s.WarmedUp || !s.ShieldComp.RaiseShield || s.ShieldComp.EmittersSuspended) continue;
                     var sp = new BoundingSphereD(s.DetectionCenter, s.ShieldComp.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {
@@ -158,7 +158,7 @@ namespace DefenseShields
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
-                    if (!s.WarmedUp || !s.ShieldComp.RaiseShield) continue;
+                    if (!s.WarmedUp || !s.ShieldComp.RaiseShield || s.ShieldComp.EmittersSuspended) continue;
                     if (s.ShieldComp.ShieldActive && SphereOnCamera[i]) s.Draw(onCount, SphereOnCamera[i]);
                     else if (s.ShieldComp.ShieldActive && !s.Icosphere.ImpactsFinished) s.Icosphere.StepEffects();
                     else if (!s.ShieldComp.ShieldActive && SphereOnCamera[i]) s.DrawShieldDownIcon();
@@ -273,20 +273,14 @@ namespace DefenseShields
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
                             var line = new LineD(blockPos, hostileEnt.PositionComp.WorldAABB.Center);
-                            var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? float.MaxValue;
-
+                            var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
 
                             var testDir = line.From - line.To;
                             testDir.Normalize();
                             var ray = new RayD(line.From, -testDir);
                             var worldSphere = shield.ShieldSphere;
                             worldSphere.Center = shield.Shield.CubeGrid.PositionComp.WorldVolume.Center;
-                            var sphereCheck = worldSphere.Intersects(ray);
-                            if (sphereCheck == null)
-                            {
-                                Log.Line($"impossibe spereCheck");
-                                return;
-                            }
+                            var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
 
                             var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
                             Vector3 hitPos = line.From + testDir * -(double)furthestHit;
@@ -334,19 +328,14 @@ namespace DefenseShields
                             block.ComputeWorldCenter(out blockPos);
                             if (!CustomCollision.PointInShield(blockPos, shield.DetectMatrixOutsideInv)) continue;
                             var line = new LineD(blockPos, hostileEnt.PositionComp.WorldAABB.Center);
-                            var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? float.MaxValue;
+                            var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
 
                             var testDir = line.From - line.To;
                             testDir.Normalize();
                             var ray = new RayD(line.From, -testDir);
-                            var worldSphere = shield.ShieldSphere;
+                            var worldSphere = shield.ShieldSphere ;
                             worldSphere.Center = shield.Shield.CubeGrid.PositionComp.WorldVolume.Center;
-                            var sphereCheck = worldSphere.Intersects(ray);
-                            if (sphereCheck == null)
-                            {
-                                Log.Line($"part - impossibe spereCheck");
-                                return;
-                            }
+                            var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
 
                             var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
                             Vector3 hitPos = line.From + testDir * -(double)furthestHit;
@@ -612,21 +601,21 @@ namespace DefenseShields
             {
                 if (DsControl) return;
                 var comp = block?.GameLogic?.GetAs<DefenseShields>();
-                var sep0 = TerminalHelpers.Separator(comp?.Shield, "DS-C_sep0");
+                TerminalHelpers.Separator(comp?.Shield, "DS-C_sep0");
                 ToggleShield = TerminalHelpers.AddOnOff(comp?.Shield, "DS-C_ToggleShield", "Shield Status", "Raise or Lower Shields", "Up", "Down", DsUi.GetRaiseShield, DsUi.SetRaiseShield);
-                var sep1 = TerminalHelpers.Separator(comp?.Shield, "DS-C_sep1");
+                TerminalHelpers.Separator(comp?.Shield, "DS-C_sep1");
                 ChargeSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_ChargeRate", "Shield Charge Rate", "Shield Charge Rate", DsUi.GetRate, DsUi.SetRate);
                 ChargeSlider.SetLimits(20, 95);
 
                 if (comp != null && comp.GridIsMobile)
                 {
-                    var sep2 = TerminalHelpers.Separator(comp?.Shield, "DS-C_sep2");
+                TerminalHelpers.Separator(comp?.Shield, "DS-C_sep2");
                 }
 
                 ExtendFit = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_ExtendFit", "Extend Shield", "Extend Shield", DsUi.GetExtend, DsUi.SetExtend);
                 SphereFit = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_SphereFit", "Sphere Shield", "Sphere Shield", DsUi.GetSphereFit, DsUi.SetSphereFit);
                 FortifyShield = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_ShieldFortify", "Fortify Shield ", "Fortify Shield ", DsUi.GetFortify, DsUi.SetFortify);
-                var sep3 = TerminalHelpers.Separator(comp?.Shield, "DS-C_sep3");
+                TerminalHelpers.Separator(comp?.Shield, "DS-C_sep3");
 
                 WidthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_WidthSlider", "Shield Size Width", "Shield Size Width", DsUi.GetWidth, DsUi.SetWidth);
                 WidthSlider.SetLimits(30, 600);
@@ -636,7 +625,7 @@ namespace DefenseShields
 
                 DepthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_DepthSlider", "Shield Size Depth", "Shield Size Depth", DsUi.GetDepth, DsUi.SetDepth);
                 DepthSlider.SetLimits(30, 600);
-                var sep4 = TerminalHelpers.Separator(comp?.Shield, "DS-C_sep4");
+                TerminalHelpers.Separator(comp?.Shield, "DS-C_sep4");
 
                 HidePassiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_HidePassive", "Make Shield Invisible To Allies", "Make Shield Invisible To Allies", DsUi.GetHidePassive, DsUi.SetHidePassive);
                 HideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_HideActive", "Hide Shield Health On Hit", "Hide Shield Health On Hit", DsUi.GetHideActive, DsUi.SetHideActive);

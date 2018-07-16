@@ -54,8 +54,6 @@ namespace DefenseShields
                         _offlineCnt = -1;
                         _shellActive.Render.UpdateRenderObject(true);
                         _shellActive.Render.UpdateRenderObject(false);
-                        //ShieldEnt.Render.Visible = true;
-                        //ShieldEnt.Render.UpdateRenderObject(true);
                         SyncThreadedEnts(true);
                         if (!WarmedUp) 
                         {
@@ -88,8 +86,7 @@ namespace DefenseShields
                 if (!AllInited) return false;
             }
 
-            if (Suspend() || Election() || !WarmUpSequence() || ShieldLowered()) return false;
-
+            if (Suspend() || Election() || !WarmUpSequence() || ShieldSleeping() || ShieldLowered()) return false;
             if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
             {
                 FailureConditions();
@@ -197,6 +194,41 @@ namespace DefenseShields
                 ShieldWasLowered = false;
             }
             return false;
+        }
+
+        private bool ShieldSleeping()
+        {
+            if (ShieldComp.EmittersSuspended)
+            {
+                if (!ShieldWasSleeping)
+                {
+                    if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
+
+                    ShieldEnt.PositionComp.SetWorldMatrix(MatrixD.Zero);
+                    ShieldComp.IncreaseO2ByFPercent = 0f;
+                    _shellPassive.Render.UpdateRenderObject(false);
+                    _shellActive.Render.UpdateRenderObject(false);
+                    DsSet.NetworkUpdate();
+                    DsSet.SaveSettings();
+                }
+
+                ShieldWasSleeping = true;
+                return ShieldWasSleeping;
+            }
+
+            if (ShieldWasSleeping)
+            {
+                if (!ShieldPassiveHide) _shellPassive.Render.UpdateRenderObject(true);
+                if (GridIsMobile) _createMobileShape = true;
+                else UpdateDimensions = true;
+
+                _shellActive.Render.UpdateRenderObject(false);
+                DsSet.NetworkUpdate();
+                DsSet.SaveSettings();
+            }
+
+            ShieldWasSleeping = false;
+            return ShieldWasSleeping;
         }
 
         private void Timing(bool cleanUp)
@@ -423,7 +455,11 @@ namespace DefenseShields
         public void UpdateBlockCount()
         {
             var blockCnt = 0;
-            foreach (var subGrid in ShieldComp.GetSubGrids) blockCnt += ((MyCubeGrid)subGrid).BlocksCount;
+            foreach (var subGrid in ShieldComp.GetSubGrids)
+            {
+                if (subGrid == null) continue;
+                blockCnt += ((MyCubeGrid)subGrid).BlocksCount;
+            }
 
             if (!_blocksChanged) _blocksChanged = blockCnt != _oldBlockCount;
             _oldBlockCount = blockCnt;
@@ -522,7 +558,7 @@ namespace DefenseShields
             var expandedAabb = myAabb;
             foreach (var grid in ShieldComp.GetSubGrids)
             {
-                if (grid != shieldGrid)
+                if (grid != null && grid != shieldGrid)
                 {
                     var shieldMatrix = shieldGrid.WorldMatrixNormalizedInv;
                     var gQuaternion = Quaternion.CreateFromRotationMatrix(grid.WorldMatrix);
@@ -1030,7 +1066,6 @@ namespace DefenseShields
             else color = Color.White;
             MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.SDR); // LDR for mptest, SDR for public
             //if (icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale, BlendTypeEnum.SDR); // LDR for mptest, SDR for public
-
         }
 
         public static MyStringId GetHudIcon1FromFloat(float percent)
@@ -1117,6 +1152,7 @@ namespace DefenseShields
                             {
                                 foreach (var funcBlock in _functionalBlocks)
                                 {
+                                    if (funcBlock == null) continue;
                                     if (funcBlock.IsFunctional) funcBlock.SetDamageEffect(false);
                                 }
                             }
@@ -1131,10 +1167,13 @@ namespace DefenseShields
                             AuthenticatedCache.Clear();
                             foreach (var sub in ShieldComp.GetSubGrids)
                             {
-                                var cornersInShield = CustomCollision.CornersInShield(sub, DetectMatrixOutsideInv);
-                                if (!GridIsMobile && cornersInShield > 0 && cornersInShield != 8)
+                                if (sub == null) continue;
+
+                                if (!GridIsMobile && ShieldEnt.PositionComp.WorldVolume.Intersects(sub.PositionComp.WorldVolume))
                                 {
-                                    PartlyProtectedCache.Add(sub);
+                                    var cornersInShield = CustomCollision.NotAllCornersInShield(sub, DetectMatrixOutsideInv);
+                                    if (cornersInShield != 8) PartlyProtectedCache.Add(sub);
+                                    else if (cornersInShield == 8) FriendlyCache.Add(sub);
                                     continue;
                                 }
                                 FriendlyCache.Add(sub);

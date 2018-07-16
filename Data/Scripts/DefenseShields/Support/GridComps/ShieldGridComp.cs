@@ -75,6 +75,8 @@ namespace DefenseShields
 
         public bool EmittersWorking { get; set; } = true;
 
+        public bool EmittersSuspended { get; set; }
+
         public bool O2Updated { get; set; }
 
         public float DefaultO2 { get; set; }
