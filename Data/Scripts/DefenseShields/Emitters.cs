@@ -102,7 +102,7 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
                 IsStatic = Emitter.CubeGrid.Physics.IsStatic;
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-                if (!AllInited && !InitEmitter() || Suspend()) return;
+                if (!Emitter.IsFunctional || !Emitter.IsWorking || !AllInited && !InitEmitter() || Suspend()) return;
                 Timing();
                 if (!BlockWorking()) return;
 
