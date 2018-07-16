@@ -139,11 +139,11 @@ namespace DefenseShields
             UpdateSettings(ModSet.Settings);
         }
 
-        private void HierarchyChanged(IMyCubeGrid myCubeGrid = null)
+        private void HierarchyChanged(MyCubeGrid myCubeGrid = null)
         {
             try
             {
-                if (_tick == _hierarchyTick || ShieldComp?.DefenseShields != null) return;
+                if (myCubeGrid == null || _tick == _hierarchyTick || ShieldComp?.DefenseShields != null) return;
                 if (_hierarchyTick > _tick - 9)
                 {
                     _hierarchyDelayed = true;

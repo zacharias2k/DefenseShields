@@ -62,11 +62,11 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
 
-        private void HierarchyChanged(IMyCubeGrid myCubeGrid = null)
+        private void HierarchyChanged(MyCubeGrid myCubeGrid = null)
         {
             try
             {
-                if (_tick == _hierarchyTick) return;
+                if (myCubeGrid == null || ShieldComp == null || Shield?.CubeGrid == null || _tick == _hierarchyTick) return;
                 if (_hierarchyTick > _tick - 9)
                 {
                     _hierarchyDelayed = true;
