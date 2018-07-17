@@ -312,8 +312,8 @@ namespace DefenseShields.Support
             const float nerf = 1f;
             const float efficiency = 100f;
             const int stationRatio = 1;
-            const int largeShipRate = 2;
-            const int smallShipRatio = 2;
+            const int largeShipRate = 1;
+            const int smallShipRatio = 1;
             const int disableVoxel = 0;
             const int disableGridDmg = 0;
             const int debug = 0;
@@ -336,7 +336,7 @@ namespace DefenseShields.Support
                 Session.Enforced.StationRatio = !unPackedData.StationRatio.Equals(-1) ? unPackedData.StationRatio : stationRatio;
                 Session.Enforced.LargeShipRatio = !unPackedData.LargeShipRatio.Equals(-1) ? unPackedData.LargeShipRatio : largeShipRate;
                 Session.Enforced.SmallShipRatio = !unPackedData.SmallShipRatio.Equals(-1) ? unPackedData.SmallShipRatio : smallShipRatio;
-                if (unPackedData.Version == 56)
+                if (unPackedData.Version <= 56)
                 {
                     Session.Enforced.StationRatio = 1;
                     Session.Enforced.LargeShipRatio = 1;

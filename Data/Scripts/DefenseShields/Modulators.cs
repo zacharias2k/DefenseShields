@@ -143,7 +143,7 @@ namespace DefenseShields
         {
             try
             {
-                if (myCubeGrid == null || _tick == _hierarchyTick || ShieldComp?.DefenseShields != null) return;
+                if (_tick == _hierarchyTick || ShieldComp?.DefenseShields != null) return;
                 if (_hierarchyTick > _tick - 9)
                 {
                     _hierarchyDelayed = true;

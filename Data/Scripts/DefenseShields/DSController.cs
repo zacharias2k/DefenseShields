@@ -26,6 +26,7 @@ namespace DefenseShields
         {
             try
             {
+
                 if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
                 if (!BlockFunctional()) return;
@@ -86,7 +87,7 @@ namespace DefenseShields
                 if (!AllInited) return false;
             }
 
-            if (Suspend() || Election() || !WarmUpSequence() || ShieldSleeping() || ShieldLowered()) return false;
+            if (Election() || Suspend() || !WarmUpSequence() || ShieldSleeping() || ShieldLowered()) return false;
             if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
             {
                 FailureConditions();
@@ -210,6 +211,7 @@ namespace DefenseShields
                     _shellActive.Render.UpdateRenderObject(false);
                     DsSet.NetworkUpdate();
                     DsSet.SaveSettings();
+                    if (Session.Enforced.Debug == 1) Log.Line($"Controller Sleep: Shield controller detected sleeping emitter, shield mode: {ShieldMode}");
                 }
 
                 ShieldWasSleeping = true;
@@ -225,6 +227,7 @@ namespace DefenseShields
                 _shellActive.Render.UpdateRenderObject(false);
                 DsSet.NetworkUpdate();
                 DsSet.SaveSettings();
+                if (Session.Enforced.Debug == 1) Log.Line($"Controller Sleep: Shield was sleeping but is now waking, shield mode: {ShieldMode}");
             }
 
             ShieldWasSleeping = false;
@@ -288,7 +291,11 @@ namespace DefenseShields
                 if (UpdateDimensions) RefreshDimensions();
             }
             ShieldComp.EmitterEvent = false;
-            if (!ShieldComp.EmittersWorking) _genericDownLoop = 0;
+            if (!ShieldComp.EmittersWorking)
+            {
+                _genericDownLoop = 0;
+                if (Session.Enforced.Debug == 1) Log.Line($"Controller EmitterEvent: Shield detected an emitter event and no emitter is working, shield mode: {ShieldMode}");
+            }
         }
 
         private void FailureConditions()
@@ -1245,7 +1252,13 @@ namespace DefenseShields
 
         public override void OnAddedToScene()
         {
-            try { }
+            try
+            {
+                Log.Line($"OnAddedToScene: {this.Entity.EntityId} - {ShieldMode}");
+                if (!AllInited) return;
+                //InitEntities(true, false);
+                //MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
+            }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
 
@@ -1253,20 +1266,19 @@ namespace DefenseShields
         {
             try
             {
-                if (!Entity.MarkedForClose)
+                Log.Line($"OnRemovedFromScene: {this.Entity.EntityId} - {ShieldMode}");
+                //_power = 0.0001f;
+                //if (AllInited) Sink.Update();
+                //InitEntities(false, false);
+                //MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
+                
+                /*
+                if (ShieldComp?.DefenseShields == this)
                 {
-                    return;
+                    ShieldComp.DefenseShields = null;
+                    ShieldComp = null;
                 }
-                _power = 0.0001f;
-                if (AllInited) Sink.Update();
-                Icosphere = null;
-                ShieldEnt?.Close();
-                _shellPassive?.Close();
-                _shellActive?.Close();
-                if (ShieldComp?.DefenseShields == this) ShieldComp.DefenseShields = null;
-                //Shield?.CubeGrid.Components.Remove(typeof(ShieldGridComponent), this);
-                MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
-                Session.Instance.Components.Remove(this);
+                */
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
@@ -1277,15 +1289,19 @@ namespace DefenseShields
         {
             try
             {
+                Log.Line($"Close: {Entity.EntityId} - {ShieldMode}");
                 if (Session.Instance.Components.Contains(this)) Session.Instance.Components.Remove(this);
-                _power = 0.0001f;
                 Icosphere = null;
-                ShieldEnt?.Close();
-                _shellPassive?.Close();
-                _shellActive?.Close();
+                InitEntities(false, false);
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
+
+                _power = 0.0001f;
                 if (AllInited) Sink.Update();
-                if (ShieldComp?.DefenseShields == this) ShieldComp.DefenseShields = null;
+                if (ShieldComp?.DefenseShields == this)
+                {
+                    ShieldComp.DefenseShields = null;
+                    ShieldComp = null;
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
             base.Close();
@@ -1293,7 +1309,10 @@ namespace DefenseShields
 
         public override void MarkForClose()
         {
-            try { }
+            try
+            {
+                Log.Line($"MarkForClose: {Entity.EntityId} - {ShieldMode}");
+            }
             catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
             base.MarkForClose();
         }

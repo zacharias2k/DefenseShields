@@ -95,6 +95,8 @@ namespace DefenseShields
 
         public bool CheckEmitters { get; set; }
 
+        public bool Station { get; set; }
+
         public bool GridIsMoving { get; set; }
 
         public bool ComingOnline { get; set; }
