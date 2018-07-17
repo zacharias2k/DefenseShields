@@ -247,7 +247,11 @@ namespace DefenseShields
                     if (_eCount == 10) _eCount = 0;
                 }
             }
-
+            if (_count == 29 || _count == 59)
+            {
+                if (_damageCounter > 2) _damageCounter = _damageCounter * 0.25f;
+                else _damageCounter = 0;
+            }
             if (_hierarchyDelayed && _tick > _hierarchyTick + 9)
             {
                 if (Session.Enforced.Debug == 1) Log.Line($"Delayed tick: {_tick} - hierarchytick: {_hierarchyTick}");
@@ -264,7 +268,6 @@ namespace DefenseShields
                     Shield.ShowInToolbarConfig = true;
                 }
                 else if (_lCount == 0 || _lCount == 5) Shield.RefreshCustomInfo();
-                _damageCounter = 0f;
             }
             if (_eCount == 0 && _lCount == 0 && _count == 0) _randomCount = _random.Next(0, 10);
 
@@ -758,64 +761,6 @@ namespace DefenseShields
                 _shieldConsumptionRate = 0f;
             }
         }
-
-        private string GetShieldStatus()
-        {
-            if (ShieldComp.Warming && !WarmedUp) return "Controller Standby";
-            if (ShieldOffline && !_overLoadLoop.Equals(-1)) return "Shield Overloaded";
-            if (ShieldOffline && _power.Equals(0.0001f)) return "Insufficient Power";
-            if (!ShieldComp.RaiseShield && !ShieldOffline) return "Shield Down"; 
-            return ShieldOffline ? "Shield Offline" : "Shield Up";
-        }
-
-        private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
-        {
-            var secToFull = 0;
-            var shieldPercent = ShieldOffline ? 0f : 100f;
-            if (ShieldBuffer < _shieldMaxBuffer) shieldPercent = (ShieldBuffer / _shieldMaxBuffer) * 100;
-            if (_shieldChargeRate > 0)
-            {
-                var toMax = _shieldMaxBuffer - ShieldBuffer;
-                var secs = toMax / _shieldChargeRate;
-                if (secs.Equals(1)) secToFull = 0;
-                else secToFull = (int)(secs);
-            }
-
-            var shieldPowerNeeds = _powerNeeded;
-            var powerUsage = shieldPowerNeeds;
-            var otherPower = _otherPower;
-            var gridMaxPower = _gridMaxPower;
-            if (!UseBatteries)
-            {
-                powerUsage = powerUsage + _batteryCurrentPower;
-                otherPower = _otherPower + _batteryCurrentPower;
-                gridMaxPower = gridMaxPower + _batteryMaxPower;
-            } 
-
-            var status = GetShieldStatus();
-            if (status == "Shield Up" || status == "Shield Down")
-            {
-                stringBuilder.Append("[" + status + "] MaxHP: " + (_shieldMaxBuffer * Session.Enforced.Efficiency).ToString("N0") +
-                                     "\n" +
-                                     "\n[Shield HP__]: " + (ShieldBuffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
-                                     "\n[HP Per Sec_]: " + (_shieldChargeRate * Session.Enforced.Efficiency).ToString("N0") +
-                                     "\n[Damage In__]: " + _damageCounter.ToString("N0") +
-                                     "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
-                                     "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
-                                     "\n[Efficiency__]: " + Session.Enforced.Efficiency.ToString("0.0") +
-                                     "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
-                                     "\n[Power Usage]: " + powerUsage.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw" +
-                                     "\n[Shield Power]: " + Sink.CurrentInputByType(GId).ToString("0.0") + " Mw");
-            }
-            else
-            {
-                stringBuilder.Append("[" + status + "]" +
-                                     "\n" +
-                                     "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
-                                     "\n[Other Power]: " + otherPower.ToString("0.0") + " Mw" +
-                                     "\n[Needed Power]: " + shieldPowerNeeds.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw");
-            }
-        }
         #endregion
 
         #region Field Check
@@ -966,7 +911,6 @@ namespace DefenseShields
             var drawIcon = !enemy && SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
             if (drawIcon)
             {
-                CalculateIcon2Status();
                 UpdateIcon();
             }
 
@@ -1073,31 +1017,23 @@ namespace DefenseShields
             if (icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.SDR);
         }
 
-        private void CalculateIcon2Status()
-        {
-            var targetedBuffer = _oldToBuffer + _oldChargeRate;
-            var toBuffer = _shieldMaxBuffer - ShieldBuffer;
-            var bufferDiff = targetedBuffer - toBuffer;
-            if (_oldToBuffer > 0 && bufferDiff < 0)
-            {
-                _shieldDps = DpsAverage.Add((int)bufferDiff * -1);
-            }
-            if (bufferDiff > 0)_shieldHps = Hpsverage.Add((int)bufferDiff);
-            _shieldCps = _shieldHps - _shieldDps;
-            //if (ShieldMode == ShieldType.Station && ShieldComp.BoundingRange > 100 && _count == 0) Log.Line($"dps:{_shieldDps} - hps:{_shieldHps} - cps:{_shieldHps - _shieldDps}({_shieldCps})");
-            _oldChargeRate = _shieldChargeRate;
-            _oldToBuffer = toBuffer;
-        }
-
         private float GetIconMeterfloat()
         {
-            if (_shieldCps > 0)
+            var dps = 1f;
+            if (_damageCounter > 1) dps = _damageCounter / Session.Enforced.Efficiency;
+
+            var healing = _shieldChargeRate - dps;
+            var damage = dps - _shieldChargeRate;
+
+            if (healing > 0 && _damageCounter > 1)
             {
-                return _shieldCps;
+                //Log.Line($"healing - cps:{healing}({_shieldChargeRate})-{_shieldHps}-{_shieldCps} - dps:{damage}({_damageCounter / Session.Enforced.Efficiency})");
+                return healing;
             }
             else
             {
-                return _shieldCps;
+                //Log.Line($"damage - dps:{damage}({_damageCounter / Session.Enforced.Efficiency}) - cps:{healing}({_shieldChargeRate})-{_shieldHps}-{_shieldCps}");
+                return -damage;
             }
         }
 
@@ -1155,6 +1091,64 @@ namespace DefenseShields
 
             var config = MyAPIGateway.Session.Config;
             if (!enemy && SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible) UpdateIcon();
+        }
+
+        private string GetShieldStatus()
+        {
+            if (ShieldComp.Warming && !WarmedUp) return "Controller Standby";
+            if (ShieldOffline && !_overLoadLoop.Equals(-1)) return "Shield Overloaded";
+            if (ShieldOffline && _power.Equals(0.0001f)) return "Insufficient Power";
+            if (!ShieldComp.RaiseShield && !ShieldOffline) return "Shield Down";
+            return ShieldOffline ? "Shield Offline" : "Shield Up";
+        }
+
+        private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
+        {
+            var secToFull = 0;
+            var shieldPercent = ShieldOffline ? 0f : 100f;
+            if (ShieldBuffer < _shieldMaxBuffer) shieldPercent = (ShieldBuffer / _shieldMaxBuffer) * 100;
+            if (_shieldChargeRate > 0)
+            {
+                var toMax = _shieldMaxBuffer - ShieldBuffer;
+                var secs = toMax / _shieldChargeRate;
+                if (secs.Equals(1)) secToFull = 0;
+                else secToFull = (int)(secs);
+            }
+
+            var shieldPowerNeeds = _powerNeeded;
+            var powerUsage = shieldPowerNeeds;
+            var otherPower = _otherPower;
+            var gridMaxPower = _gridMaxPower;
+            if (!UseBatteries)
+            {
+                powerUsage = powerUsage + _batteryCurrentPower;
+                otherPower = _otherPower + _batteryCurrentPower;
+                gridMaxPower = gridMaxPower + _batteryMaxPower;
+            }
+
+            var status = GetShieldStatus();
+            if (status == "Shield Up" || status == "Shield Down")
+            {
+                stringBuilder.Append("[" + status + "] MaxHP: " + (_shieldMaxBuffer * Session.Enforced.Efficiency).ToString("N0") +
+                                     "\n" +
+                                     "\n[Shield HP__]: " + (ShieldBuffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
+                                     "\n[HP Per Sec_]: " + (_shieldChargeRate * Session.Enforced.Efficiency).ToString("N0") +
+                                     "\n[Damage In__]: " + _damageCounter.ToString("N0") +
+                                     "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
+                                     "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
+                                     "\n[Efficiency__]: " + Session.Enforced.Efficiency.ToString("0.0") +
+                                     "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
+                                     "\n[Power Usage]: " + powerUsage.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw" +
+                                     "\n[Shield Power]: " + Sink.CurrentInputByType(GId).ToString("0.0") + " Mw");
+            }
+            else
+            {
+                stringBuilder.Append("[" + status + "]" +
+                                     "\n" +
+                                     "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
+                                     "\n[Other Power]: " + otherPower.ToString("0.0") + " Mw" +
+                                     "\n[Needed Power]: " + shieldPowerNeeds.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw");
+            }
         }
         #endregion
 

@@ -38,15 +38,10 @@ namespace DefenseShields
         private float _shieldMaxChargeRate;
         private float _shieldChargeRate;
         private float _damageCounter;
-        private float _shieldDps;
-        private float _shieldHps;
-        private float _shieldCps;
         private float _shieldCurrentPower;
         private float _shieldMaintaintPower;
         private float _shieldConsumptionRate;
         private float _shieldFudge;
-        private float _oldToBuffer;
-        private float _oldChargeRate;
 
         private double _ellipsoidAdjust = Math.Sqrt(2);
         private double _oldEllipsoidAdjust;
@@ -218,8 +213,6 @@ namespace DefenseShields
         internal DSUtils Dsutil3 = new DSUtils();
         internal DSUtils Dsutil4 = new DSUtils();
         internal DSUtils Dsutil5 = new DSUtils();
-        internal RunningAverage DpsAverage = new RunningAverage(120);
-        internal RunningAverage Hpsverage = new RunningAverage(180);
 
         public MyModStorageComponentBase Storage { get; set; }
         internal DefenseShieldsSettings DsSet;
