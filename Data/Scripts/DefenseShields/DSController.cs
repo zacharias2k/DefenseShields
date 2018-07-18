@@ -101,7 +101,6 @@ namespace DefenseShields
                 return false;
             }
 
-            //if (_lCount == 4 && _count == 4 && Shield.Enabled && ConnectCheck()) return false;
             UpdateBlockCount();
             
             return ControlBlockWorking = Shield.IsWorking && Shield.IsFunctional; 
