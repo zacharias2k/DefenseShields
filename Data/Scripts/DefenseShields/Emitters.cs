@@ -4,6 +4,7 @@ using System.Text;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game;
+using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Collections;
 using VRage.Game;
@@ -32,6 +33,7 @@ namespace DefenseShields
         public bool ServerUpdate;
         internal bool AllInited;
         internal bool Suspended;
+        internal bool GoToSleep;
         internal bool Prime;
         internal bool Alpha;
         internal bool Beta;
@@ -100,7 +102,7 @@ namespace DefenseShields
             try
             {
                 if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
-                IsStatic = Emitter.CubeGrid.Physics.IsStatic;
+                IsStatic = Emitter.CubeGrid.IsStatic;
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
                 Timing();
 
@@ -173,6 +175,7 @@ namespace DefenseShields
 
                 if (!Compact) Entity.TryGetSubpart("Rotor", out _subpartRotor);
                 BlockWasWorking = true;
+                BlockMoveAnimationReset(true);
                 AllInited = true;
                 return true;
             }
@@ -192,6 +195,7 @@ namespace DefenseShields
 
                 if (!Compact) Entity.TryGetSubpart("Rotor", out _subpartRotor);
                 BlockWasWorking = true;
+                BlockMoveAnimationReset(true);
                 AllInited = true;
                 return true;
             }
@@ -205,6 +209,49 @@ namespace DefenseShields
             var otherMode = Prime && !ShieldComp.Station || Beta && ShieldComp.Station;
             var modeSwitch = working && otherMode && (IsStatic && EmitterMode == EmitterType.Station || !IsStatic && EmitterMode != EmitterType.Station);
             var modeOpen = working && Suspended && (Prime && ShieldComp.EmitterPrime == null || Beta && ShieldComp.EmitterBeta == null);
+            var terminalConnected = ShieldComp.GetLinkedGrids.Count - ShieldComp.GetSubGrids.Count > 0;
+
+            if (!IsStatic && ShieldComp.Starting && terminalConnected && !GoToSleep || GoToSleep && _count == 0 && _lCount % 2 == 0)
+            {
+                var foundStatic = false;
+                foreach (var sub in ShieldComp.GetLinkedGrids)
+                {
+                    if (sub == Emitter.CubeGrid) continue;
+
+                    if (sub.IsStatic)
+                    {
+                        foundStatic = true;
+                        break;
+                    }
+                }
+
+                if (foundStatic)
+                {
+                    if (!GoToSleep)
+                    {
+                        if (Session.Enforced.Debug == 1) Log.Line($"Emitter: Going to sleep");
+                        ShieldComp.EmitterEvent = true;
+                        ShieldComp.EmittersSuspended = true;
+                        ShieldComp.DefenseShields.Shield.RefreshCustomInfo();
+                    }
+                }
+                else if (GoToSleep && ShieldComp.EmittersSuspended)
+                {
+                    if (Session.Enforced.Debug == 1) Log.Line($"Emitter: Waking Up");
+                    ShieldComp.EmitterEvent = true;
+                    ShieldComp.EmittersSuspended = false;
+                    GoToSleep = false;
+                }
+                GoToSleep = foundStatic;
+                Suspended = GoToSleep;
+                if (Suspended)
+                {
+                    if (_effect != null && !Session.DedicatedServer && !Compact) BlockParticleStop();
+                    if (!Session.DedicatedServer && !EmissiveIntensity.Equals(0)) BlockMoveAnimationReset(true);
+                    return Suspended;
+                }
+            }
+            else if (GoToSleep) return GoToSleep;
 
             if (ShieldComp == null)
             {
@@ -257,7 +304,7 @@ namespace DefenseShields
                 if (!modeSwitch)
                 {
                     if (_effect != null && !Session.DedicatedServer && !Compact) BlockParticleStop();
-                    if (!Session.DedicatedServer && !EmissiveIntensity.Equals(0)) BlockMoveAnimationReset(false, true);
+                    if (!Session.DedicatedServer && !EmissiveIntensity.Equals(0)) BlockMoveAnimationReset(true);
                     Suspended = true;
                     return Suspended;
                 }
@@ -297,7 +344,7 @@ namespace DefenseShields
             if (!BlockIsWorking)
             {
                 if (_effect != null && !Session.DedicatedServer && !Compact) BlockParticleStop();
-                if (!Session.DedicatedServer && !EmissiveIntensity.Equals(0)) BlockMoveAnimationReset(false, true);
+                if (!Session.DedicatedServer && !EmissiveIntensity.Equals(0)) BlockMoveAnimationReset(true);
                 return false;
             }
             return true;
@@ -330,7 +377,7 @@ namespace DefenseShields
         }
 
         #region Block Animation
-        private void BlockMoveAnimationReset(bool isNull, bool clearAnimation)
+        private void BlockMoveAnimationReset(bool clearAnimation)
         {
             if (clearAnimation)
             {
@@ -350,17 +397,9 @@ namespace DefenseShields
                 return;
             }
 
-            if (isNull)
-            {
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                if (Session.Enforced.Debug == 1) Log.Line($"Resetting BlockMovement, [EmitterType: {Definition.Name} - Compact({Compact})] - was Null - Tick:{_tick.ToString()}");
-            }
-            else
-            {
-                _subpartRotor.Subparts.Clear();
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                if (Session.Enforced.Debug == 1) Log.Line($"Resetting BlockMovement, [EmitterType: {Definition.Name} - Compact({Compact})] - not null - Tick:{_tick.ToString()}");
-            }
+            _subpartRotor.Subparts.Clear();
+            Entity.TryGetSubpart("Rotor", out _subpartRotor);
+            if (Session.Enforced.Debug == 1) Log.Line($"Resetting BlockMovement, [EmitterType: {Definition.Name} - Compact({Compact})] - not null - Tick:{_tick.ToString()}");
         }
 
         private void BlockMoveAnimation()
@@ -374,7 +413,7 @@ namespace DefenseShields
                 return;
             }
 
-            if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(false, false);
+            if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(false);
             RotationTime -= 1;
             if (AnimationLoop == 0) TranslationTime = 0;
             if (AnimationLoop < 299) TranslationTime += 1;
@@ -431,8 +470,7 @@ namespace DefenseShields
 
         private void CheckShieldLineOfSight()
         {
-            var subNull = _subpartRotor == null;
-            if (!Compact && (subNull || _subpartRotor.Closed.Equals(true))) BlockMoveAnimationReset(subNull, false);
+            if (!Compact && _subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(false);
             TookControl = false;
             _blocksLos.Clear();
             _noBlocksLos.Clear();

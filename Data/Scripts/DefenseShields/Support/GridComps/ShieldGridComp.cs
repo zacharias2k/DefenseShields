@@ -58,6 +58,7 @@ namespace DefenseShields
         }
 
         public HashSet<IMyCubeGrid> GetSubGrids { get; set; } = new HashSet<IMyCubeGrid>();
+        public HashSet<IMyCubeGrid> GetLinkedGrids { get; set; } = new HashSet<IMyCubeGrid>();
 
         public Vector3D[] PhysicsOutside { get; set; } = new Vector3D[642];
 

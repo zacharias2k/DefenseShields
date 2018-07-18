@@ -50,7 +50,7 @@ namespace DefenseShields
         private double _sizeScaler;
 
         public int BulletCoolDown { get; internal set; } = -1;
-        public int EntityCoolDown { get; private set; } = -1;
+        public int HitCoolDown { get; private set; } = -11;
         private int _count = -1;
         private int _lCount;
         private int _eCount;
@@ -80,6 +80,8 @@ namespace DefenseShields
         internal bool ShieldOffline;
         internal bool CheckGridRegister;
         internal bool WarmedUp;
+        internal bool PrevShieldActive;
+
         internal bool UpdateDimensions;
         internal bool FitChanged;
         internal bool GridIsMobile;
@@ -87,7 +89,6 @@ namespace DefenseShields
         internal bool Suspended;
         internal bool ShieldWasSleeping;
         private bool _blocksChanged;
-        private bool _prevShieldActive;
         private bool _effectsCleanup;
         private bool _hideShield;
         private bool _shapeAdjusted;
@@ -119,11 +120,8 @@ namespace DefenseShields
         private MatrixD _detectMatrixOutside;
         private MatrixD _detectMatrixInside;
         private MatrixD _detectInsideInv;
-        private MatrixD _expandedMatrix;
-        private MatrixD _viewProjInv;
 
         private BoundingBox _shieldAabb;
-        private BoundingBox _expandedAabb;
         public BoundingSphereD ShieldSphere;
         public MyOrientedBoundingBoxD SOriBBoxD;
         private Quaternion _sQuaternion;
@@ -142,8 +140,6 @@ namespace DefenseShields
         internal readonly HashSet<IMyEntity> PartlyProtectedCache = new HashSet<IMyEntity>();
         internal readonly HashSet<IMyEntity> IgnoreCache = new HashSet<IMyEntity>();
         internal readonly HashSet<MyEntity> EnemyShields = new HashSet<MyEntity>();
-
-        private List<IMyCubeGrid> _connectedGrids = new List<IMyCubeGrid>();
 
         private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<IMyEntity, Vector3D>();
         public readonly MyConcurrentDictionary<IMyEntity, EntIntersectInfo> WebEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();

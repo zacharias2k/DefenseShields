@@ -19,14 +19,14 @@ namespace DefenseShields
         internal static bool ShowSizeSlider(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            var station = comp != null && comp.Shield.CubeGrid.Physics.IsStatic;
+            var station = comp != null && comp.Shield.CubeGrid.IsStatic;
             return station;
         }
 
         private static bool ShowReSizeCheckBoxs(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            var notStation = comp != null && !comp.Shield.CubeGrid.Physics.IsStatic;
+            var notStation = comp != null && !comp.Shield.CubeGrid.IsStatic;
             return notStation;
         }
 
