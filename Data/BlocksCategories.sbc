@@ -20,7 +20,7 @@
 		<string>DSControlLarge</string>
 		<string>EmitterL</string>
 		<string>EmitterS</string>
-		<string>EmitterP</string>
+<!--<string>EmitterP</string>-->
 		<string>EmitterST</string>
     <string>EmitterLA</string>
     <string>EmitterSA</string>
@@ -439,7 +439,7 @@
       <DamagedSound>ParticleElectrical</DamagedSound>
     </Definition>
 
-    <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
+    <!--<Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
         <TypeId>UpgradeModule</TypeId>
         <SubtypeId>EmitterP</SubtypeId>
@@ -485,7 +485,7 @@
       <DamageEffectId>214</DamageEffectId>
       <DamagedSound>ParticleElectrical</DamagedSound>
       <Upgrades></Upgrades>
-    </Definition>
+    </Definition> -->
 
     <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
