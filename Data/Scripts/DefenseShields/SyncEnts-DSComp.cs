@@ -197,7 +197,7 @@ namespace DefenseShields
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in fewBlocks: {ex}"); }
-                if (Session.Enforced.Debug == 1) Dsutil4.StopWatchReport($"ShieldId:{Shield.EntityId.ToString()} - syncEnt", 3);
+                if (Session.Enforced.Debug == 1) Dsutil4.StopWatchReport($"SyncEnt: ShieldId [{Shield.EntityId}]", 3);
             }
             catch (Exception ex) { Log.Line($"Exception in DamageGrids: {ex}"); }
         }

@@ -119,7 +119,7 @@ namespace DefenseShields
 
                 if (DedicatedServer || IsServer)
                 {
-                    Log.Line($"This is a server, loading config");
+                    Log.Line($"LoadConf - Session: This is a server");
                     UtilsStatic.PrepConfigFile();
                     UtilsStatic.ReadConfigFile();
                 }
@@ -131,7 +131,7 @@ namespace DefenseShields
         public override void Draw()
         {
             if (DedicatedServer) return;
-            if (Enforced.Debug == 1 && _eCount == 0 & _lCount == 0 && _count == 0) Log.Line($"Shields in the world: {Components.Count.ToString()}");
+            if (Enforced.Debug == 1 && _eCount == 0 & _lCount == 0 && _count == 0) Log.Line($"Draw - Session: Comps in the world: {Components.Count.ToString()}");
             try
             {
                 if (!SessionInit || Components.Count == 0) return;
@@ -411,7 +411,7 @@ namespace DefenseShields
         {
             try
             {
-                if (!IsServer) Log.Line($"client received enforcement");
+                if (!IsServer) Log.Line($"EnforceData - Session: packet received");
                 if (bytes.Length <= 2)
                 {
                     Log.Line($"PacketReceived(); invalid length <= 2; length={bytes.Length.ToString()}");

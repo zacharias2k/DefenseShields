@@ -199,7 +199,7 @@ namespace DefenseShields.Support
                     if (Session.AmmoCollection.ContainsKey(shot.MissileModelName)) continue;
                     Session.AmmoCollection.Add(shot.MissileModelName, new AmmoInfo(shot.IsExplosive, shot.MissileExplosionDamage, shot.MissileExplosionRadius, shot.DesiredSpeed, shot.MissileMass, shot.BackkickForce));
                 }
-                if (Session.Enforced.Debug == 1) Log.Line($"Definitions Loaded");
+                if (Session.Enforced.Debug == 1) Log.Line($"Definitions - Session");
             }
             catch (Exception ex) { Log.Line($"Exception in GetAmmoDefinitions: {ex}"); }
         }

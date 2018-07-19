@@ -434,7 +434,8 @@
     <TransparentMaterial>
       <Id>
         <TypeId>TransparentMaterialDefinition</TypeId>
-        <SubtypeId>DS_ShieldOffline</SubtypeId>
+        <SubtypeId>DS_
+          </SubtypeId>
       </Id>
       <AlphaMistingEnable>false</AlphaMistingEnable>
       <AlphaSaturation>1</AlphaSaturation>

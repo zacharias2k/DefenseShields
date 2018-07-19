@@ -29,14 +29,16 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
                 if (!BlockFunctional()) return;
-
                 if (GridIsMobile) MobileUpdate();
                 else _shapeAdjusted = false;
                 if (UpdateDimensions) RefreshDimensions();
-                if (FitChanged || (_lCount == 1 || _lCount == 6) && _count == 1 && _blocksChanged) BlockChanged();
+                if (_tick == _unsuspendTick) _blocksChanged = true;
+                else if (_tick < _unsuspendTick) return;
+                if (FitChanged || (_lCount == 1 || _lCount == 6) && _count == 1 && _blocksChanged) BlockChanged(true);
 
                 SetShieldStatus();
                 Timing(true);
+
                 if (ShieldComp.ShieldActive)
                 {
                     if (_lCount % 2 != 0 && _count == 20)
@@ -58,7 +60,7 @@ namespace DefenseShields
                         if (!WarmedUp) 
                         {
                             WarmedUp = true;
-                            if (Session.Enforced.Debug == 1) Log.Line($"Warmup complete");
+                            if (Session.Enforced.Debug == 1) Log.Line($"Warmup: ShieldId [{Shield.EntityId}]");
                             return;
                         }
                         DsSet.NetworkUpdate();
@@ -73,7 +75,7 @@ namespace DefenseShields
                 {
                     SyncThreadedEnts();
                 }
-                if (Session.Enforced.Debug == 1) Dsutil1.StopWatchReport($"MainLoop: ShieldId:{Shield.EntityId.ToString()} - Active: {ShieldComp.ShieldActive} - Tick: {_tick} loop: {_lCount}-{_count}", 2);
+                if (Session.Enforced.Debug == 1) Dsutil1.StopWatchReport($"PerfCon: Active: {ShieldComp.ShieldActive} - Tick: {_tick} loop: {_lCount}-{_count}", 4);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
@@ -86,7 +88,10 @@ namespace DefenseShields
                 if (!AllInited) return false;
             }
 
-            if (Election() || Suspend() || !WarmUpSequence() || ShieldSleeping() || ShieldLowered()) return false;
+            if (_blockChanged) BlockMonitor();
+
+            if (Suspend() || !WarmUpSequence() || ShieldSleeping() || ShieldLowered()) return false;
+
             if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
             {
                 FailureConditions();
@@ -101,8 +106,6 @@ namespace DefenseShields
                 return false;
             }
 
-            UpdateBlockCount();
-            
             return ControlBlockWorking = Shield.IsWorking && Shield.IsFunctional; 
         }
 
@@ -126,7 +129,7 @@ namespace DefenseShields
             }
             if (_hierarchyDelayed && _tick > _hierarchyTick + 9)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"Delayed tick: {_tick} - hierarchytick: {_hierarchyTick}");
+                if (Session.Enforced.Debug == 1) Log.Line($"HierarchyWasDelayed: this:{_tick} - delayedTick: {_hierarchyTick} - ShieldId [{Shield.EntityId}]");
                 _hierarchyDelayed = false;
                 HierarchyChanged();
             }
@@ -174,7 +177,7 @@ namespace DefenseShields
             }
         }
 
-        private void BlockChanged()
+        private void BlockChanged(bool backGround)
         {
             _oldEllipsoidAdjust = _ellipsoidAdjust;
             FitChanged = false;
@@ -183,13 +186,23 @@ namespace DefenseShields
             {
                 CreateHalfExtents();
                 if (_shapeAdjusted) _shapeLoaded = true;
-                else if (_shapeLoaded) MyAPIGateway.Parallel.StartBackground(GetShapeAdjust);
+                else if (_shapeLoaded && backGround) MyAPIGateway.Parallel.StartBackground(GetShapeAdjust);
+                else if (_shapeLoaded) GetShapeAdjust();
             }
 
             if (_blocksChanged)
             {
+                var check = !ShieldWasSleeping && !Suspended;
+                if (Session.Enforced.Debug == 1) Log.Line($"BlockChanged: check:{check} + functional:{_functionalsChanged} - Sleeping:{ShieldWasSleeping} - Suspend:{Suspended} - ShieldId [{Shield.EntityId}]");
+                if (!check) return;
+
                 ShieldComp.CheckEmitters = true;
-                MyAPIGateway.Parallel.StartBackground(BackGroundChecks);
+                if (_functionalsChanged)
+                {
+                    if (backGround) _backGround = MyAPIGateway.Parallel.StartBackground(BackGroundChecks);
+                    else BackGroundChecks();
+                    _functionalsChanged = false;
+                }
                 _blocksChanged = false;
             }
         }
@@ -212,18 +225,15 @@ namespace DefenseShields
             lock (_powerSources) _powerSources.Clear();
             lock (_functionalBlocks) _functionalBlocks.Clear();
 
-            var gotGroups = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Physical);
-
-            foreach (var grid in gotGroups)
+            foreach (var grid in ShieldComp.GetLinkedGrids)
             {
-                var physical = MyAPIGateway.GridGroups.HasConnection(Shield.CubeGrid, grid, GridLinkTypeEnum.Physical);
-                var mechanical = MyAPIGateway.GridGroups.HasConnection(Shield.CubeGrid, grid, GridLinkTypeEnum.Mechanical);
+                var mechanical = ShieldComp.GetSubGrids.Contains(grid);
 
                 foreach (var block in ((MyCubeGrid)grid).GetFatBlocks())
                 {
                     lock (_functionalBlocks) if (block.IsFunctional && mechanical) _functionalBlocks.Add(block);
                     var source = block.Components.Get<MyResourceSourceComponent>();
-                    if (!physical || source == null) continue;
+                    if (source == null) continue;
                     foreach (var type in source.ResourceTypes)
                     {
                         if (type != MyResourceDistributorComponent.ElectricityId) continue;
@@ -232,7 +242,7 @@ namespace DefenseShields
                     }
                 }
             }
-            if (Session.Enforced.Debug == 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - powerCnt: {_powerSources.Count.ToString()}");
+            if (Session.Enforced.Debug == 1) Log.Line($"PowerCount: {_powerSources.Count.ToString()} - ShieldId [{Shield.EntityId}]");
         }
 
         private void EmitterEventDetected()
@@ -246,7 +256,7 @@ namespace DefenseShields
             if (!ShieldComp.EmittersWorking)
             {
                 _genericDownLoop = 0;
-                if (Session.Enforced.Debug == 1) Log.Line($"Controller EmitterEvent: Shield detected an emitter event and no emitter is working, shield mode: {ShieldMode}");
+                if (Session.Enforced.Debug == 1) Log.Line($"EmitterEvent: detected an emitter event and no emitter is working, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
         }
 
@@ -320,29 +330,29 @@ namespace DefenseShields
 
         private void OfflineShield()
         {
-            ShieldOffline = true;
             _offlineCnt++;
-
-            if (_offlineCnt == 1 || _offlineCnt % 10 == 0)
+            if (_offlineCnt == 0)
             {
-                if (_offlineCnt == 1)
-                {
-                    DsSet.NetworkUpdate();
-                    DsSet.SaveSettings();
-                }
+                if (Session.Enforced.Debug == 1) Log.Line($"Offline count: {_offlineCnt} - resetting all");
+                DsSet.NetworkUpdate();
+                DsSet.SaveSettings();
 
                 if (!_power.Equals(0.0001f)) _power = 0.001f;
                 Sink.Update();
                 _shieldCurrentPower = Sink.CurrentInputByType(GId);
-                BackGroundChecks();
-
-                if (GridIsMobile) _createMobileShape = true;
+                _blockChanged = true;
+                _functionalChanged = true;
+                _shapeLoaded = true;
+                UpdateSubGrids();
+                BlockMonitor();
+                BlockChanged(false);
+                if (GridIsMobile) MobileUpdate();
                 else
                 {
-                    EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
-                    ShieldComp.IncreaseO2ByFPercent = 0f;
                     UpdateDimensions = true;
+                    if (UpdateDimensions) RefreshDimensions();
                 }
+
                 ShieldEnt.PositionComp.SetWorldMatrix(MatrixD.Zero);
                 CleanUp(0);
                 CleanUp(1);
@@ -362,7 +372,8 @@ namespace DefenseShields
             ShieldWasLowered = false;
             _shellPassive.Render.UpdateRenderObject(false);
             _shellActive.Render.UpdateRenderObject(false);
-            if (Session.Enforced.Debug == 1) Log.Line($"[Shield Down] Count: {_offlineCnt} - ShieldPower: {_shieldCurrentPower} - gridMax: {_gridMaxPower} - currentPower: {_gridCurrentPower} - maint: {_shieldMaintaintPower}");
+            ShieldOffline = true;
+            if (Session.Enforced.Debug == 1) Log.Line($"ShieldDown: Count: {_offlineCnt} - ShieldPower: {_shieldCurrentPower} - gridMax: {_gridMaxPower} - currentPower: {_gridCurrentPower} - maint: {_shieldMaintaintPower} - ShieldId [{Shield.EntityId}]");
         }
 
         private bool ShieldLowered()
@@ -375,9 +386,6 @@ namespace DefenseShields
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
 
                     ShieldEnt.PositionComp.SetWorldMatrix(MatrixD.Zero);
-                    //ShieldEnt.PositionComp.SetPosition(Vector3D.Zero);
-                    //ShieldEnt.Render.Visible = false;
-                    //ShieldEnt.Render.UpdateRenderObject(false);
                     ShieldComp.IncreaseO2ByFPercent = 0f;
                     _shellPassive.Render.UpdateRenderObject(false);
                     _shellActive.Render.UpdateRenderObject(false);
@@ -409,8 +417,6 @@ namespace DefenseShields
                 else UpdateDimensions = true;
 
                 _shellActive.Render.UpdateRenderObject(false);
-                //ShieldEnt.Render.Visible = true;
-                //ShieldEnt.Render.UpdateRenderObject(true);
                 DsSet.NetworkUpdate();
                 DsSet.SaveSettings();
                 ShieldWasLowered = false;
@@ -434,7 +440,7 @@ namespace DefenseShields
                     DsSet.SaveSettings();
                     ShieldWasSleeping = true;
                     Shield.RefreshCustomInfo();
-                    if (Session.Enforced.Debug == 1) Log.Line($"Controller Sleep: Shield controller detected sleeping emitter, shield mode: {ShieldMode}");
+                    if (Session.Enforced.Debug == 1) Log.Line($"Sleep: controller detected sleeping emitter, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 }
 
                 ShieldWasSleeping = true;
@@ -443,21 +449,22 @@ namespace DefenseShields
 
             if (ShieldWasSleeping)
             {
+                ShieldWasSleeping = false;
                 if (!ShieldPassiveHide) _shellPassive.Render.UpdateRenderObject(true);
-                UpdateSubGrids();
-                BackGroundChecks();
                 _shapeLoaded = true;
-                _blocksChanged = true;
-                BlockChanged();
+                _blockChanged = true;
+                _functionalChanged = true;
+                UpdateSubGrids();
+                BlockMonitor();
+                BlockChanged(false);
                 if (GridIsMobile) _createMobileShape = true;
                 else UpdateDimensions = true;
 
                 _shellActive.Render.UpdateRenderObject(false);
                 DsSet.NetworkUpdate();
                 DsSet.SaveSettings();
-                ShieldWasSleeping = false;
                 Shield.RefreshCustomInfo();
-                if (Session.Enforced.Debug == 1) Log.Line($"Controller Sleep: Shield was sleeping but is now waking, shield mode: {ShieldMode}");
+                if (Session.Enforced.Debug == 1) Log.Line($"Sleep: Controller was sleeping but is now waking, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
 
             ShieldWasSleeping = false;
@@ -1005,7 +1012,7 @@ namespace DefenseShields
 
         private string GetShieldStatus()
         {
-            if (Suspended) return "Controller Standby";
+            if (Suspended || ShieldMode == ShieldType.Unknown) return "Controller Standby";
             if (ShieldOffline && !_overLoadLoop.Equals(-1)) return "Overloaded";
             if (ShieldOffline && _power.Equals(0.0001f)) return "Insufficient Power";
             if (!ShieldComp.RaiseShield && !ShieldOffline) return "Shield Down";
@@ -1160,10 +1167,13 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"OnAddedToScene: {this.Entity.EntityId} - {ShieldMode}");
+                if (Session.Enforced.Debug == 1) Log.Line($"OnAddedToScene: - {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 if (!AllInited) return;
-                //InitEntities(true, false);
-                //MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
+                if (Shield.CubeGrid.IsStatic != IsStatic)
+                {
+                    Election();
+                    RegisterEvents();
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
@@ -1172,33 +1182,36 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"OnRemovedFromScene: {this.Entity.EntityId} - {ShieldMode}");
-                //_power = 0.0001f;
-                //if (AllInited) Sink.Update();
-                //InitEntities(false, false);
-                //MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
-                
-                /*
-                if (ShieldComp?.DefenseShields == this)
-                {
-                    ShieldComp.DefenseShields = null;
-                    ShieldComp = null;
-                }
-                */
+                IsStatic = Shield.CubeGrid.IsStatic;
+                RegisterEvents(false);
+                InitEntities(false);
+                _shellPassive.Render.RemoveRenderObjects();
+                _shellActive.Render.RemoveRenderObjects();
+                ShieldEnt.Render.RemoveRenderObjects();
+
+                if (Session.Enforced.Debug == 1) Log.Line($"OnRemovedFromScene: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
 
-        public override void OnAddedToContainer() { if (Entity.InScene) OnAddedToScene(); }
-        public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
+        public override void OnAddedToContainer()
+        {
+            if (Entity.InScene) OnAddedToScene();
+        }
+
+        public override void OnBeforeRemovedFromContainer()
+        {
+            if (Entity.InScene) OnRemovedFromScene();
+        }
+
         public override void Close()
         {
             try
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"Close: {Entity.EntityId} - {ShieldMode}");
+                if (Session.Enforced.Debug == 1) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 if (Session.Instance.Components.Contains(this)) Session.Instance.Components.Remove(this);
                 Icosphere = null;
-                InitEntities(false, false);
+                InitEntities(false);
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
 
                 _power = 0.0001f;
@@ -1217,7 +1230,7 @@ namespace DefenseShields
         {
             try
             {
-                Log.Line($"MarkForClose: {Entity.EntityId} - {ShieldMode}");
+                if (Session.Enforced.Debug == 1) Log.Line($"MarkForClose: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
             base.MarkForClose();

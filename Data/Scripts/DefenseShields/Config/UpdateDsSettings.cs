@@ -25,7 +25,7 @@ namespace DefenseShields
 
             ModulateVoxels = newSettings.ModulateVoxels;
             ModulateGrids = newSettings.ModulateGrids;
-            if (Session.Enforced.Debug == 1) Log.Line($"Updated settings:\n{newSettings}");
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdateSet - EmitterId [{Shield.EntityId}]:\n{newSettings}");
         }
     }
 }

@@ -21,10 +21,10 @@ namespace DefenseShields.Support
             double ns = 1000000000.0 * ticks / Stopwatch.Frequency;
             double ms = ns / 1000000.0;
             double s = ms / 1000;
-            if (log <= -1) Log.Line($"{message} - ms:{(float)ms} last-ms:{(float)Last} s:{(int)s}");
+            if (log <= -1) Log.Line($"{message} ms:{(float)ms} last-ms:{(float)Last} s:{(int)s}");
             else
             {
-                if (ms >= log) Log.Line($"{message} - ms:{(float)ms} last-ms:{(float)Last} s:{(int)s}");
+                if (ms >= log) Log.Line($"{message} ms:{(float)ms} last-ms:{(float)Last} s:{(int)s}");
             }
             Last = ms;
             Sw.Reset();

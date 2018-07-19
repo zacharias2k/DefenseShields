@@ -59,12 +59,12 @@ namespace DefenseShields
 
             if (Session.IsServer)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"server relaying network settings update for modulator {Modulator.EntityId}");
+                if (Session.Enforced.Debug == 1) Log.Line($"ServRelay - EmitterId [{Modulator.EntityId}]: network settings update for modulator");
                 Session.PacketizeModulatorSettings(Modulator, Settings); // update clients with server's settings
             }
             else // client, send settings to server
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"client sent network settings update for modulator {Modulator.EntityId}");
+                if (Session.Enforced.Debug == 1) Log.Line($"ClientRelat - EmitterId [{Modulator.EntityId}]: sent network settings update for modulator");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new ModulatorData(MyAPIGateway.Multiplayer.MyId, Modulator.EntityId, Settings));
                 MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdModulator, bytes);
             }

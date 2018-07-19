@@ -154,7 +154,7 @@ namespace DefenseShields.Support
             private bool _charge;
             private bool _active;
 
-            private MyEntity _shellActive;
+            public MyEntity ShellActive;
 
             private readonly MyStringId _faceCharge = MyStringId.GetOrCompute("Charge");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private readonly MyStringId _faceWave = MyStringId.GetOrCompute("GlassOutside");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
@@ -229,7 +229,7 @@ namespace DefenseShields.Support
 
             public void ComputeEffects(MatrixD matrix, Vector3D impactPos, MyEntity shellPassive, MyEntity shellActive, int prevLod, float shieldPercent, bool passiveVisible, bool activeVisible)
             {
-                if (_shellActive == null) ComputeSides(shellActive);
+                if (ShellActive == null) ComputeSides(shellActive);
 
                 var newActiveColor = UtilsStatic.GetShieldColorFromFloat(shieldPercent);
                 _activeColor = newActiveColor;
@@ -380,7 +380,7 @@ namespace DefenseShields.Support
                 shellActive.TryGetSubpart("ShieldBottom", out SidePartArray[3]);
                 shellActive.TryGetSubpart("ShieldFront", out SidePartArray[4]);
                 shellActive.TryGetSubpart("ShieldBack", out SidePartArray[5]);
-                _shellActive = shellActive;
+                ShellActive = shellActive;
             }
 
             private void UpdateColor(MyEntitySubpart _shellSide)
@@ -474,7 +474,7 @@ namespace DefenseShields.Support
                     }
                     if (_impactCnt[0] == 0 && _impactCnt[1] == 0 && _impactCnt[2] == 0 && _impactCnt[3] == 0 && _impactCnt[4] == 0 && _impactCnt[5] == 0)
                     {
-                        _shellActive.Render.UpdateRenderObject(false);
+                        ShellActive.Render.UpdateRenderObject(false);
                         ImpactsFinished = true;
                         for (int i = 0; i < _triColorBuffer.Length; i++) _triColorBuffer[i] = 0;
                     }

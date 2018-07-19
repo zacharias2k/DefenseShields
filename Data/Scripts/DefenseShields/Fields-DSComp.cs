@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using DefenseShields.Support;
+using ParallelTasks;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
@@ -22,6 +23,8 @@ namespace DefenseShields
         private uint _tick;
         private uint _enforceTick;
         private uint _hierarchyTick = 1;
+        private uint _unsuspendTick;
+
         public float ImpactSize { get; set; } = 9f;
         public float Absorb { get; set; }
         public float ModulateEnergy = 1f;
@@ -81,6 +84,7 @@ namespace DefenseShields
         internal bool CheckGridRegister;
         internal bool WarmedUp;
         internal bool PrevShieldActive;
+        internal bool IsStatic;
 
         internal bool UpdateDimensions;
         internal bool FitChanged;
@@ -88,17 +92,25 @@ namespace DefenseShields
         internal bool ShieldWasLowered;
         internal bool Suspended;
         internal bool ShieldWasSleeping;
-        private bool _blocksChanged;
         private bool _effectsCleanup;
         private bool _hideShield;
         private bool _shapeAdjusted;
         private bool _hierarchyDelayed;
         private bool _entityChanged;
+        private bool _updateRender;
+        private bool _functionalAdded;
+        private bool _functionalRemoved;
+        private bool _functionalChanged;
+        private bool _functionalsChanged;
+        private bool _blockAdded;
+        private bool _blockRemoved;
+        private bool _blockChanged;
+        private bool _blocksChanged;
         private bool _enablePhysics = true;
         private bool _shapeLoaded = true;
         private bool _createMobileShape = true;
-        private bool _updateRender;
 
+        private Task _backGround;
 
         private const string SpaceWolf = "Space_Wolf";
         private const string MyMissile = "MyMissile";
