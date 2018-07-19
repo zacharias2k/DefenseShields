@@ -4,15 +4,17 @@ using System.Text;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game;
-using Sandbox.Game.Entities;
+using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Collections;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
+using VRage.Game.ObjectBuilders.Definitions;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
+using VRage.Utils;
 using VRageMath;
 using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
@@ -28,8 +30,10 @@ namespace DefenseShields
         internal int AnimationLoop;
         internal int TranslationTime;
 
+        private float _power = 0.01f;
         internal float EmissiveIntensity;
 
+        internal bool Online;
         public bool ServerUpdate;
         internal bool AllInited;
         internal bool Suspended;
@@ -55,6 +59,8 @@ namespace DefenseShields
         internal ShieldGridComponent ShieldComp;
         private MyEntitySubpart _subpartRotor;
         private MyParticleEffect _effect = new MyParticleEffect();
+        internal MyResourceSinkInfo ResourceInfo;
+        internal MyResourceSinkComponent Sink;
 
         internal Definition Definition;
         internal DSUtils Dsutil1 = new DSUtils();
@@ -66,6 +72,8 @@ namespace DefenseShields
         private readonly MyConcurrentList<int> _vertsSighted = new MyConcurrentList<int>();
         private readonly MyConcurrentList<int> _noBlocksLos = new MyConcurrentList<int>();
         private readonly MyConcurrentHashSet<int> _blocksLos = new MyConcurrentHashSet<int>();
+
+        private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
         public enum EmitterType
         {
@@ -80,6 +88,7 @@ namespace DefenseShields
             try
             {
                 base.Init(objectBuilder);
+                PowerPreInit();
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
@@ -93,8 +102,47 @@ namespace DefenseShields
                 Session.Instance.Emitters.Add(this);
                 _emitters.Add(Entity.EntityId, this);
                 Storage = Emitter.Storage;
+                PowerInit();
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
+        }
+
+        private void PowerPreInit()
+        {
+            try
+            {
+                if (Sink == null)
+                {
+                    Sink = new MyResourceSinkComponent();
+                }
+                ResourceInfo = new MyResourceSinkInfo()
+                {
+                    ResourceTypeId = GId,
+                    MaxRequiredInput = 0f,
+                    RequiredInputFunc = () => _power
+                };
+                Sink.Init(MyStringHash.GetOrCompute("Utility"), ResourceInfo);
+                Sink.AddType(ref ResourceInfo);
+                Entity.Components.Add(Sink);
+                Sink.Update();
+            }
+            catch (Exception ex) { Log.Line($"Exception in PowerPreInit: {ex}"); }
+        }
+
+        private void PowerInit()
+        {
+            try
+            {
+                var enableState = Emitter.Enabled;
+                if (enableState)
+                {
+                    Emitter.Enabled = false;
+                    Emitter.Enabled = true;
+                }
+                Sink.Update();
+                if (Session.Enforced.Debug == 1) Log.Line($"PowerInit complete");
+            }
+            catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }
 
         public override void UpdateBeforeSimulation()
@@ -336,14 +384,26 @@ namespace DefenseShields
 
         private bool BlockWorking()
         {
-            if (!Emitter.IsFunctional || !Emitter.IsWorking || ShieldComp?.DefenseShields == null || !ShieldComp.Warming) return false;
+            if (Sink.CurrentInputByType(GId) < 0.01f || Emitter.CubeGrid == null || ShieldComp == null || !Emitter.Enabled || !Emitter.IsFunctional)
+            {
+                if (_tick % 300 == 0)
+                {
+                    Emitter.RefreshCustomInfo();
+                    Emitter.ShowInToolbarConfig = false;
+                    Emitter.ShowInToolbarConfig = true;
+                }
+                Online = false;
+            }
+            else Online = true;
 
-            if (ShieldComp.CheckEmitters || TookControl) CheckShieldLineOfSight();
+            if (ShieldComp?.DefenseShields == null || !ShieldComp.Warming) return false;
+
+            if (Online && (ShieldComp.CheckEmitters || TookControl)) CheckShieldLineOfSight();
             if (!ShieldLineOfSight && !Session.DedicatedServer) DrawHelper();
 
             BlockIsWorking = ShieldLineOfSight && Emitter.IsWorking && Emitter.IsFunctional;
 
-            ShieldComp.EmittersWorking = BlockIsWorking;
+            ShieldComp.EmittersWorking = BlockIsWorking && Online;
 
             BlockWasWorking = BlockIsWorking;
 
