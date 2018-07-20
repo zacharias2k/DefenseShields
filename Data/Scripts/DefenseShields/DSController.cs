@@ -88,6 +88,9 @@ namespace DefenseShields
                 if (!AllInited) return false;
             }
 
+            if (ShieldComp.ShieldActive && !ShieldWasLowered && !Suspended && !ShieldWasSleeping) ((MyCubeGrid)Shield.CubeGrid).GridGeneralDamageModifier = -1f;
+            else ((MyCubeGrid)Shield.CubeGrid).GridGeneralDamageModifier = 1f;
+
             if (_blockChanged) BlockMonitor();
 
             if (Suspend() || !WarmUpSequence() || ShieldSleeping() || ShieldLowered()) return false;
@@ -107,6 +110,45 @@ namespace DefenseShields
             }
 
             return ControlBlockWorking = Shield.IsWorking && Shield.IsFunctional; 
+        }
+
+        private void WhyKeen(bool addOnly = false)
+        {
+            if (!GridIsMobile) return;
+            var count = _count;
+            var lCount = _lCount;
+            if (count++ == 59)
+            {
+                count = 0;
+                lCount++;
+                if (lCount == 10) lCount = 0;
+            }
+
+            var active = !ShieldWasLowered && !Suspended && !ShieldOffline && ShieldComp.ShieldActive;
+            var time = (lCount * 60 + count + 1) % 150 == 0;
+            if (ShieldComp.ShieldActive && !time)
+            {
+                foreach (var friend in IgnoreCache)
+                {
+                    var fGrid = friend as MyCubeGrid;
+                    if (fGrid != null)
+                    {
+                        fGrid.GridGeneralDamageModifier = -1f;
+                    }
+                }
+            }
+            else if (!addOnly)
+            {
+
+                foreach (var friend in FriendlyCache)
+                {
+                    var fGrid = friend as MyCubeGrid;
+                    if (fGrid != null)
+                    {
+                        fGrid.GridGeneralDamageModifier = 1f;
+                    }
+                }
+            }
         }
 
         private void Timing(bool cleanUp)
@@ -330,6 +372,8 @@ namespace DefenseShields
 
         private void OfflineShield()
         {
+            ((MyCubeGrid)Shield.CubeGrid).GridGeneralDamageModifier = 1f;
+
             _offlineCnt++;
             if (_offlineCnt == 0)
             {
@@ -359,7 +403,6 @@ namespace DefenseShields
                 CleanUp(3);
                 CleanUp(4);
             }
-
             Absorb = 0f;
             ShieldBuffer = 0f;
             ShieldComp.ShieldPercent = 0f;
@@ -938,8 +981,8 @@ namespace DefenseShields
             var p = ShieldComp.ShieldPercent;
             if (p > 0 && p < 10 && _lCount % 2 == 0) color = Color.Red;
             else color = Color.White;
-            MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.SDR); // LDR for mptest, SDR for public
-            if (icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.SDR);
+            MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.LDR); // LDR for mptest, SDR for public
+            if (icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.LDR);
         }
 
         private float GetIconMeterfloat()

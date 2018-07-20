@@ -35,7 +35,7 @@ namespace DefenseShields.Support
 
                 try
                 {
-                    MyAPIGateway.Utilities.ShowNotification(name, 5000);
+                    //MyAPIGateway.Utilities.ShowNotification(name, 5000);
                     GetInstance()._fileName = name;
                     GetInstance()._file = MyAPIGateway.Utilities.WriteFileInLocalStorage(name, typeof(Log));
                     output = true;

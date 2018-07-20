@@ -109,6 +109,7 @@ namespace DefenseShields
             try
             {
                 Log.Init("debugdevelop.log");
+                MyAPIGateway.Utilities.ShowNotification("DefenseShields Bug [Major], the recent update broke the mods ability to prevent some damage, see steam page for details", 10000, "Red");
                 Log.Line($"Logging Started");
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdSettings, PacketSettingsReceived);
@@ -231,6 +232,8 @@ namespace DefenseShields
                 {
                     if (shield.ShieldComp.ShieldActive && shield.ShieldComp.RaiseShield && shield.FriendlyCache.Contains(blockGrid))
                     {
+                        if (info.Amount < 0) info.Amount = info.Amount * -1;
+
                         if (info.Type == Bypass)
                         {
                             shield.DeformEnabled = true;
@@ -241,13 +244,17 @@ namespace DefenseShields
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
                         if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt))
                         {
-                            shield.DeformEnabled = true;
+                            //block.IncreaseMountLevel(1000f, 0, null, 1000f, true);
+                            //block.FixBones(0, 0);
+                            //shield.DeformEnabled = true;
                             continue;
                         }
 
                         if (hostileEnt is IMyGunBaseUser && CustomCollision.PointInShield(hostileEnt.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
                         {
-                            shield.DeformEnabled = true;
+                            //block.IncreaseMountLevel(1000f, 0, null, 1000f, true);
+                            //block.FixBones(0, 0);
+                            //shield.DeformEnabled = true;
                             shield.FriendlyCache.Add(hostileEnt);
                             continue;
                         }
@@ -293,6 +300,8 @@ namespace DefenseShields
                     }
                     else if (shield.ShieldComp.ShieldActive && shield.ShieldComp.RaiseShield && shield.PartlyProtectedCache.Contains(blockGrid))
                     {
+                        if (info.Amount < 0) info.Amount = info.Amount * -1;
+
                         if (info.Type == Bypass)
                         {
                             shield.DeformEnabled = true;
@@ -303,13 +312,13 @@ namespace DefenseShields
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
                         if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt))
                         {
-                            shield.DeformEnabled = true;
+                            //shield.DeformEnabled = true;
                             continue;
                         }
 
                         if (hostileEnt is IMyGunBaseUser && CustomCollision.PointInShield(hostileEnt.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
                         {
-                            shield.DeformEnabled = true;
+                            //shield.DeformEnabled = true;
                             shield.FriendlyCache.Add(hostileEnt);
                             continue;
                         }
@@ -342,6 +351,7 @@ namespace DefenseShields
                             shield.WorldImpactPosition = hitPos;
                             shield.ImpactSize = 5;
                         }
+                        block.IncreaseMountLevel(1000f, 0, null, 1000f, true);
                         shield.Absorb += info.Amount;
                         info.Amount = 0f;
                     }

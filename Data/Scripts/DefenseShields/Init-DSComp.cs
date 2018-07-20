@@ -52,7 +52,6 @@ namespace DefenseShields
                 ((MyCubeGrid)Shield.CubeGrid).OnBlockRemoved += BlockRemoved;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockAdded += FatBlockAdded;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockRemoved += FatBlockRemoved;
-
                 StorageSetup();
 
                 if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>())
