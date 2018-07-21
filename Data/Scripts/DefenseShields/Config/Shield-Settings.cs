@@ -41,7 +41,7 @@ namespace DefenseShields
                 catch (Exception e)
                 {
                     loadedSettings = null;
-                    Log.Line($"Load - EmitterId [{Shield.EntityId}]: - Error loading settings!\n{e}");
+                    Log.Line($"Load - ShieldId [{Shield.EntityId}]: - Error loading settings!\n{e}");
                 }
 
                 if (loadedSettings != null)
@@ -49,7 +49,7 @@ namespace DefenseShields
                     Settings = loadedSettings;
                     loadedSomething = true;
                 }
-                if (Session.Enforced.Debug == 1) Log.Line($"Loaded - EmitterId [{Shield.EntityId}]:\n{Settings.ToString()}");
+                if (Session.Enforced.Debug == 1) Log.Line($"Loaded - ShieldId [{Shield.EntityId}]:\n{Settings.ToString()}");
             }
             return loadedSomething;
         }
@@ -59,12 +59,12 @@ namespace DefenseShields
 
             if (Session.IsServer)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"ServRelay - EmitterId [{Shield.EntityId}]: network settings update for shield");
+                if (Session.Enforced.Debug == 1) Log.Line($"ServRelay - ShieldId [{Shield.EntityId}]: network settings update for shield");
                 Session.PacketizeShieldSettings(Shield, Settings); // update clients with server's settings
             }
             else // client, send settings to server
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"ClientRelat - EmitterId [{Shield.EntityId}]: network settings update for shield");
+                if (Session.Enforced.Debug == 1) Log.Line($"ClientRelay - ShieldId [{Shield.EntityId}]: network settings update for shield");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new PacketData(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, Settings));
                 MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdSettings, bytes);
             }

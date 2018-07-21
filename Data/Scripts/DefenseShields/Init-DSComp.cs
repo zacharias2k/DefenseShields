@@ -52,6 +52,7 @@ namespace DefenseShields
                 ((MyCubeGrid)Shield.CubeGrid).OnBlockRemoved += BlockRemoved;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockAdded += FatBlockAdded;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockRemoved += FatBlockRemoved;
+
                 StorageSetup();
 
                 if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>())
@@ -59,7 +60,11 @@ namespace DefenseShields
                     Shield.CubeGrid.Components.Add(ShieldComp);
                     ShieldComp.DefaultO2 = MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(Shield.PositionComp.WorldVolume.Center);
                 }
-                else Shield.CubeGrid.Components.TryGet(out ShieldComp);
+                else
+                {
+                    Shield.CubeGrid.Components.TryGet(out ShieldComp);
+                    if (ShieldComp != null && ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
+                }
                 if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
             }
             catch (Exception ex) { Log.Line($"Exception in Controller UpdateOnceBeforeFrame: {ex}"); }
@@ -87,30 +92,46 @@ namespace DefenseShields
 
         private void BlockAdded(IMySlimBlock mySlimBlock)
         {
-            if (Session.Enforced.Debug == 1) Log.Line($"BlockAdded: ShieldId [{Shield.EntityId}]");
-            _blockAdded = true;
-            _blockChanged = true;
+            try
+            {
+                if (Session.Enforced.Debug == 1) Log.Line($"BlockAdded: ShieldId [{Shield?.EntityId}]");
+                _blockAdded = true;
+                _blockChanged = true;
+            }
+            catch (Exception ex) { Log.Line($"Exception in Controller BlockAdded: {ex}"); }
         }
         
         private void BlockRemoved(IMySlimBlock mySlimBlock)
         {
-            if (Session.Enforced.Debug == 1) Log.Line($"BlockRemoved: ShieldId [{Shield.EntityId}]");
-            _blockRemoved = true;
-            _blockChanged = true;
+            try
+            {
+                if (Session.Enforced.Debug == 1) Log.Line($"BlockRemoved: ShieldId [{Shield?.EntityId}]");
+                _blockRemoved = true;
+                _blockChanged = true;
+            }
+            catch (Exception ex) { Log.Line($"Exception in Controller BlockRemoved: {ex}"); }
         } 
 
         private void FatBlockAdded(MyCubeBlock mySlimBlock)
         {
-            if (Session.Enforced.Debug == 1) Log.Line($"FatBlockAdded: ShieldId [{Shield.EntityId}]");
-            _functionalAdded = true;
-            _functionalChanged = true;
+            try
+            {
+                if (Session.Enforced.Debug == 1) Log.Line($"FatBlockAdded: ShieldId [{Shield?.EntityId}]");
+                _functionalAdded = true;
+                _functionalChanged = true;
+            }
+            catch (Exception ex) { Log.Line($"Exception in Controller FatBlockAdded: {ex}"); }
         }
         
         private void FatBlockRemoved(MyCubeBlock myCubeBlock)
         {
-            if (Session.Enforced.Debug == 1) Log.Line($"FatBlockRemoved: ShieldId [{Shield.EntityId}]");
-            _functionalRemoved = true;
-            _functionalChanged = true;
+            try
+            {
+                if (Session.Enforced.Debug == 1) Log.Line($"FatBlockRemoved: ShieldId [{Shield?.EntityId}]");
+                _functionalRemoved = true;
+                _functionalChanged = true;
+            }
+            catch (Exception ex) { Log.Line($"Exception in Controller FatBlockRemoved: {ex}"); }
         }
 
         private void HierarchyChanged(MyCubeGrid myCubeGrid = null)
@@ -416,12 +437,27 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 1) Log.Line($"Election: controller election was held, new mode is: {ShieldMode} - ShieldId [{Shield.EntityId}]");
         }
 
+        private void CheckForSwitch()
+        {
+            if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
+        }
+
         private bool Suspend()
         {
             var isStatic = Shield.CubeGrid.IsStatic;
             if (ShieldMode != ShieldType.Station && isStatic) Suspended = true;
             else if (ShieldMode == ShieldType.Station && !isStatic) Suspended = true;
             else if (ShieldMode == ShieldType.Unknown) Suspended = true;
+            else if (ShieldComp.DefenseShields != this)
+            {
+                if (!Suspended)
+                {
+                    Suspended = true;
+                    Shield.RefreshCustomInfo();
+                }
+                CheckForSwitch();
+                Suspended = true;
+            }
             else
             {
                 if (Suspended)

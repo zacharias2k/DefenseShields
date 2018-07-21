@@ -28,7 +28,7 @@ namespace DefenseShields
         public float ImpactSize { get; set; } = 9f;
         public float Absorb { get; set; }
         public float ModulateEnergy = 1f;
-        public float ModulateKinetic;
+        public float ModulateKinetic = 1f;
         private float _power = 0.001f;
         private float _gridMaxPower;
         private float _gridCurrentPower;
@@ -152,6 +152,7 @@ namespace DefenseShields
         internal readonly HashSet<IMyEntity> PartlyProtectedCache = new HashSet<IMyEntity>();
         internal readonly HashSet<IMyEntity> IgnoreCache = new HashSet<IMyEntity>();
         internal readonly HashSet<MyEntity> EnemyShields = new HashSet<MyEntity>();
+        internal readonly HashSet<MyEntity> MissileCache = new HashSet<MyEntity>();
 
         private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<IMyEntity, Vector3D>();
         public readonly MyConcurrentDictionary<IMyEntity, EntIntersectInfo> WebEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();

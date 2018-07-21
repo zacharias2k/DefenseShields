@@ -19,14 +19,25 @@ namespace DefenseShields
         #region Web Entities
         private void WebEntities()
         {
-            if (Session.Enforced.Debug == 1) Dsutil2.Sw.Restart();
             var pruneSphere = new BoundingSphereD(DetectionCenter, ShieldComp.BoundingRange);
             var pruneList = new List<MyEntity>();
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
+            if (_count == 0)Dsutil5.Sw.Restart();
+            if (_count == 0 || _count == 15 || _count == 30 || _count == 45)
+            {
+                MissileCache.Clear();
+                var pruneMissile = new BoundingSphereD(DetectionCenter, 6000);
+                var missileList = new List<MyEntity>();
+                MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneMissile, missileList, MyEntityQueryType.Dynamic);
+                foreach (var ent in missileList) if ((ent.Flags & EntityFlags.IsNotGamePrunningStructureObject) != 0 && ent.GetType().Name.Equals(MyMissile)) MissileCache.Add(ent);
+            }
+
+            foreach (var missile in MissileCache) pruneList.Add(missile);
             foreach (var eShield in EnemyShields) pruneList.Add(eShield);
 
             for (int i = 0; i < pruneList.Count; i++)
             {
+
                 var ent = pruneList[i];
                 if (ent == null || FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent)) continue;
                 var entCenter = ent.PositionComp.WorldVolume.Center;
@@ -232,7 +243,7 @@ namespace DefenseShields
             }
             if (ent is IMyCubeGrid)
             {
-                if (ModulateGrids) return Ent.Ignore;
+                if (ModulateGrids || Session.Enforced.DisableGridDamageSupport == 1) return Ent.Ignore;
 
                 var grid = ent as IMyCubeGrid;
                 ModulatorGridComponent modComp;

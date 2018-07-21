@@ -109,7 +109,6 @@ namespace DefenseShields
             try
             {
                 Log.Init("debugdevelop.log");
-                MyAPIGateway.Utilities.ShowNotification("DefenseShields Bug [Major], the recent update broke the mods ability to prevent some damage, see steam page for details", 10000, "Red");
                 Log.Line($"Logging Started");
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdSettings, PacketSettingsReceived);
@@ -232,8 +231,6 @@ namespace DefenseShields
                 {
                     if (shield.ShieldComp.ShieldActive && shield.ShieldComp.RaiseShield && shield.FriendlyCache.Contains(blockGrid))
                     {
-                        if (info.Amount < 0) info.Amount = info.Amount * -1;
-
                         if (info.Type == Bypass)
                         {
                             shield.DeformEnabled = true;
@@ -244,17 +241,13 @@ namespace DefenseShields
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
                         if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt))
                         {
-                            //block.IncreaseMountLevel(1000f, 0, null, 1000f, true);
-                            //block.FixBones(0, 0);
-                            //shield.DeformEnabled = true;
+                            shield.DeformEnabled = true;
                             continue;
                         }
 
                         if (hostileEnt is IMyGunBaseUser && CustomCollision.PointInShield(hostileEnt.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
                         {
-                            //block.IncreaseMountLevel(1000f, 0, null, 1000f, true);
-                            //block.FixBones(0, 0);
-                            //shield.DeformEnabled = true;
+                            shield.DeformEnabled = true;
                             shield.FriendlyCache.Add(hostileEnt);
                             continue;
                         }
@@ -300,8 +293,6 @@ namespace DefenseShields
                     }
                     else if (shield.ShieldComp.ShieldActive && shield.ShieldComp.RaiseShield && shield.PartlyProtectedCache.Contains(blockGrid))
                     {
-                        if (info.Amount < 0) info.Amount = info.Amount * -1;
-
                         if (info.Type == Bypass)
                         {
                             shield.DeformEnabled = true;
@@ -312,13 +303,13 @@ namespace DefenseShields
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
                         if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt))
                         {
-                            //shield.DeformEnabled = true;
+                            shield.DeformEnabled = true;
                             continue;
                         }
 
                         if (hostileEnt is IMyGunBaseUser && CustomCollision.PointInShield(hostileEnt.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
                         {
-                            //shield.DeformEnabled = true;
+                            shield.DeformEnabled = true;
                             shield.FriendlyCache.Add(hostileEnt);
                             continue;
                         }
@@ -367,7 +358,7 @@ namespace DefenseShields
             {
                 if (bytes.Length <= 2)
                 {
-                    Log.Line($"PacketReceived(); invalid length <= 2; length={bytes.Length.ToString()}");
+                    Log.Line($"Controler PacketReceived; invalid length <= 2; length={bytes.Length.ToString()}");
                     return;
                 }
 
@@ -375,14 +366,14 @@ namespace DefenseShields
 
                 if (data == null)
                 {
-                    Log.Line($"PacketReceived(); no deserialized data!");
+                    Log.Line($"Controler PacketReceived; no deserialized data!");
                     return;
                 }
 
                 IMyEntity ent;
                 if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
                 {
-                    Log.Line($"PacketReceived(); {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    Log.Line($"Controler PacketReceived; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
                     return;
                 }
 
@@ -390,7 +381,7 @@ namespace DefenseShields
 
                 if (logic == null)
                 {
-                    Log.Line($"PacketReceived(); {data.Type}; shield doesn't have the gamelogic component!");
+                    Log.Line($"Controler PacketReceived; {data.Type}; shield doesn't have the gamelogic component!");
                     return;
                 }
 
@@ -400,7 +391,7 @@ namespace DefenseShields
                         {
                             if (data.Settings == null)
                             {
-                                Log.Line($"PacketReceived(); {data.Type}; settings are null!");
+                                Log.Line($"Controler PacketReceived; {data.Type}; settings are null!");
                                 return;
                             }
 
@@ -424,7 +415,7 @@ namespace DefenseShields
                 if (!IsServer) Log.Line($"EnforceData - Session: packet received");
                 if (bytes.Length <= 2)
                 {
-                    Log.Line($"PacketReceived(); invalid length <= 2; length={bytes.Length.ToString()}");
+                    Log.Line($"EnforceData Received; invalid length <= 2; length={bytes.Length.ToString()}");
                     return;
                 }
 
@@ -432,14 +423,14 @@ namespace DefenseShields
 
                 if (data == null)
                 {
-                    Log.Line($"PacketReceived(); no deserialized data!");
+                    Log.Line($"EnforceData Received; no deserialized data!");
                     return;
                 }
 
                 IMyEntity ent;
                 if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
                 {
-                    Log.Line($"PacketReceived(); {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    Log.Line($"EnforceData Received; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
                     return;
                 }
 
@@ -447,7 +438,7 @@ namespace DefenseShields
 
                 if (logic == null)
                 {
-                    Log.Line($"PacketReceived(); {data.Type}; shield doesn't have the gamelogic component!");
+                    Log.Line($"EnforceData Received; {data.Type}; shield doesn't have the gamelogic component!");
                     return;
                 }
 
@@ -457,11 +448,11 @@ namespace DefenseShields
                         {
                             if (data.Enforce == null)
                             {
-                                Log.Line($"PacketReceived(); {data.Type}; Enforce is null!");
+                                Log.Line($"EnforceData Received; {data.Type}; Enforce is null!");
                                 return;
                             }
 
-                            if (Enforced.Debug == 1) Log.Line($"PacketReceived(); Enforce - Server:\n{data.Enforce}");
+                            if (Enforced.Debug == 1) Log.Line($"EnforceData Received; Enforce - Server:\n{data.Enforce}");
                             if (!IsServer)
                             {
                                 Enforcements.UpdateEnforcement(data.Enforce);
@@ -484,7 +475,7 @@ namespace DefenseShields
             {
                 if (bytes.Length <= 2)
                 {
-                    Log.Line($"PacketReceived(); invalid length <= 2; length={bytes.Length.ToString()}");
+                    Log.Line($"Modulator PacketReceived; invalid length <= 2; length={bytes.Length.ToString()}");
                     return;
                 }
 
@@ -492,14 +483,14 @@ namespace DefenseShields
 
                 if (data == null)
                 {
-                    Log.Line($"PacketReceived(); no deserialized data!");
+                    Log.Line($"Modulator PacketReceive; no deserialized data!");
                     return;
                 }
 
                 IMyEntity ent;
                 if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
                 {
-                    Log.Line($"PacketReceived(); {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    Log.Line($"Modulator PacketReceive; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
                     return;
                 }
 
@@ -507,7 +498,7 @@ namespace DefenseShields
 
                 if (logic == null)
                 {
-                    Log.Line($"PacketReceived(); {data.Type}; shield doesn't have the gamelogic component!");
+                    Log.Line($"Modulator PacketReceive; {data.Type}; shield doesn't have the gamelogic component!");
                     return;
                 }
 
@@ -517,11 +508,11 @@ namespace DefenseShields
                         {
                             if (data.Settings == null)
                             {
-                                Log.Line($"PacketReceived(); {data.Type}; settings are null!");
+                                Log.Line($"Modulator PacketReceive; {data.Type}; settings are null!");
                                 return;
                             }
 
-                            if (Enforced.Debug == 1) Log.Line($"Packet received:\n{data.Settings}");
+                            if (Enforced.Debug == 1) Log.Line($"Modulator received:\n{data.Settings}");
                             logic.UpdateSettings(data.Settings);
                             logic.ModSet.SaveSettings();
                             logic.ServerUpdate = true;

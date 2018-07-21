@@ -88,8 +88,8 @@ namespace DefenseShields
                 if (!AllInited) return false;
             }
 
-            if (ShieldComp.ShieldActive && !ShieldWasLowered && !Suspended && !ShieldWasSleeping) ((MyCubeGrid)Shield.CubeGrid).GridGeneralDamageModifier = -1f;
-            else ((MyCubeGrid)Shield.CubeGrid).GridGeneralDamageModifier = 1f;
+            var myGrid = (MyCubeGrid) Shield.CubeGrid;
+            if (myGrid.GridGeneralDamageModifier < 1) myGrid.GridGeneralDamageModifier = 1f;
 
             if (_blockChanged) BlockMonitor();
 
@@ -110,45 +110,6 @@ namespace DefenseShields
             }
 
             return ControlBlockWorking = Shield.IsWorking && Shield.IsFunctional; 
-        }
-
-        private void WhyKeen(bool addOnly = false)
-        {
-            if (!GridIsMobile) return;
-            var count = _count;
-            var lCount = _lCount;
-            if (count++ == 59)
-            {
-                count = 0;
-                lCount++;
-                if (lCount == 10) lCount = 0;
-            }
-
-            var active = !ShieldWasLowered && !Suspended && !ShieldOffline && ShieldComp.ShieldActive;
-            var time = (lCount * 60 + count + 1) % 150 == 0;
-            if (ShieldComp.ShieldActive && !time)
-            {
-                foreach (var friend in IgnoreCache)
-                {
-                    var fGrid = friend as MyCubeGrid;
-                    if (fGrid != null)
-                    {
-                        fGrid.GridGeneralDamageModifier = -1f;
-                    }
-                }
-            }
-            else if (!addOnly)
-            {
-
-                foreach (var friend in FriendlyCache)
-                {
-                    var fGrid = friend as MyCubeGrid;
-                    if (fGrid != null)
-                    {
-                        fGrid.GridGeneralDamageModifier = 1f;
-                    }
-                }
-            }
         }
 
         private void Timing(bool cleanUp)
@@ -372,14 +333,12 @@ namespace DefenseShields
 
         private void OfflineShield()
         {
-            ((MyCubeGrid)Shield.CubeGrid).GridGeneralDamageModifier = 1f;
-
             _offlineCnt++;
             if (_offlineCnt == 0)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"Offline count: {_offlineCnt} - resetting all");
-                DsSet.NetworkUpdate();
-                DsSet.SaveSettings();
+                if (Session.Enforced.Debug == 1) Log.Line($"Offline count: {_offlineCnt} - resetting all - was: Buffer:{ShieldBuffer} - Absorb:{Absorb} - Percent:{ShieldComp.ShieldPercent} - O2:{ShieldComp.IncreaseO2ByFPercent} - Lowered:{ShieldWasLowered}");
+                //DsSet.NetworkUpdate();
+                //DsSet.SaveSettings();
 
                 if (!_power.Equals(0.0001f)) _power = 0.001f;
                 Sink.Update();
@@ -1187,6 +1146,7 @@ namespace DefenseShields
             if (modComp != null)
             {
                 var reModulate = ModulateVoxels != modComp.ModulateVoxels || ModulateGrids != modComp.ModulateGrids;
+                if (Session.Enforced.Debug == 1 && reModulate) Log.Line($"Remodulate: ModComp change - voxels:[was:{ModulateVoxels} is:{modComp.ModulateVoxels}] Grids:[was:{ModulateGrids} is:{modComp.ModulateGrids}] - ShieldId [{Shield.EntityId}]");
                 if (reModulate) _reModulationLoop = 0;
 
                 ModulateVoxels = modComp.ModulateVoxels;
@@ -1199,6 +1159,8 @@ namespace DefenseShields
             }
             else
             {
+                if (Session.Enforced.Debug == 1 && (!ModulateEnergy.Equals(1f) || !ModulateKinetic.Equals(1f))) Log.Line($"Remodulate: no modComp found, value not default (1f): Energy:{ModulateEnergy} - Kinetic:{ModulateKinetic} - ShieldId [{Shield.EntityId}]");
+
                 ModulateEnergy = 1f;
                 ModulateKinetic = 1f;
             }
@@ -1225,14 +1187,13 @@ namespace DefenseShields
         {
             try
             {
+                if (Session.Enforced.Debug == 1) Log.Line($"OnRemovedFromScene: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 IsStatic = Shield.CubeGrid.IsStatic;
                 RegisterEvents(false);
                 InitEntities(false);
                 _shellPassive.Render.RemoveRenderObjects();
                 _shellActive.Render.RemoveRenderObjects();
                 ShieldEnt.Render.RemoveRenderObjects();
-
-                if (Session.Enforced.Debug == 1) Log.Line($"OnRemovedFromScene: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
@@ -1254,6 +1215,7 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 1) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 if (Session.Instance.Components.Contains(this)) Session.Instance.Components.Remove(this);
                 Icosphere = null;
+                RegisterEvents(false);
                 InitEntities(false);
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
 

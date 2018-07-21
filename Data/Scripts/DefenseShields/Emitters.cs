@@ -264,6 +264,7 @@ namespace DefenseShields
             var wrongMode = !modeOpen && !modeSwitch && (IsStatic && EmitterMode != EmitterType.Station || IsStatic && EmitterMode != EmitterType.Station);
 
             var terminalConnected = ShieldComp.GetLinkedGrids.Count - ShieldComp.GetSubGrids.Count > 0;
+
             if (!IsStatic && ShieldComp.Starting && terminalConnected && !GoToSleep || GoToSleep && _count == 0 && _lCount % 2 == 0)
             {
                 var foundStatic = false;
@@ -377,7 +378,6 @@ namespace DefenseShields
                 ShieldComp.Station = EmitterMode == EmitterType.Station;
                 if (Session.Enforced.Debug == 1) Log.Line($"Unsuspend: modeOpen:{modeOpen} - modeSwitch {modeSwitch} - Mode:{EmitterMode} - Station: {ShieldComp.Station} - CompMode: {ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - EmitterId [{Emitter.EntityId}]");
             }
-
             Suspended = false;
             return Suspended;
         }
@@ -396,10 +396,15 @@ namespace DefenseShields
             }
             else Online = true;
 
-            if (ShieldComp?.DefenseShields == null || !ShieldComp.Warming) return false;
+            if (ShieldComp?.DefenseShields == null || !ShieldComp.Warming)
+            {
+                if (_effect != null && !Session.DedicatedServer && !Compact) BlockParticleStop();
+                if (!Session.DedicatedServer && !EmissiveIntensity.Equals(0)) BlockMoveAnimationReset(true);
+                return false;
+            }
 
             if (Online && (ShieldComp.CheckEmitters || TookControl)) CheckShieldLineOfSight();
-            if (!ShieldLineOfSight && !Session.DedicatedServer) DrawHelper();
+            if (Online && !ShieldLineOfSight && !Session.DedicatedServer) DrawHelper();
 
             BlockIsWorking = ShieldLineOfSight && Emitter.IsWorking && Emitter.IsFunctional;
 
