@@ -141,18 +141,13 @@ namespace DefenseShields
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
         private readonly List<KeyValuePair<IMyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<IMyEntity, EntIntersectInfo>>();
-
-        private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
-
-        private readonly DataStructures _dataStructures = new DataStructures();
-        //private readonly StructureBuilder _structureBuilder = new StructureBuilder();
+        internal readonly List<MyEntity> MissileCache = new List<MyEntity>();
 
         internal readonly HashSet<IMyEntity> AuthenticatedCache = new HashSet<IMyEntity>();
         internal readonly HashSet<IMyEntity> FriendlyCache = new HashSet<IMyEntity>();
         internal readonly HashSet<IMyEntity> PartlyProtectedCache = new HashSet<IMyEntity>();
         internal readonly HashSet<IMyEntity> IgnoreCache = new HashSet<IMyEntity>();
         internal readonly HashSet<MyEntity> EnemyShields = new HashSet<MyEntity>();
-        internal readonly HashSet<MyEntity> MissileCache = new HashSet<MyEntity>();
 
         private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<IMyEntity, Vector3D>();
         public readonly MyConcurrentDictionary<IMyEntity, EntIntersectInfo> WebEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();
@@ -206,6 +201,9 @@ namespace DefenseShields
 
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;
+        private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
+        private readonly DataStructures _dataStructures = new DataStructures();
+        //private readonly StructureBuilder _structureBuilder = new StructureBuilder();
 
         internal IMyUpgradeModule Shield => (IMyUpgradeModule)Entity;
         internal ShieldType ShieldMode;

@@ -142,7 +142,7 @@ namespace DefenseShields
                 var momentum = sPhysics.Mass * sPhysics.LinearVelocity;
                 Absorb += (momentum.Length() / 500) * ModulateKinetic;
                 WorldImpactPosition = collision;
-                _voxelDmg.Enqueue(voxelBase);
+                if (!Session.MpActive) _voxelDmg.Enqueue(voxelBase);
             }
         }
 

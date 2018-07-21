@@ -941,7 +941,7 @@ namespace DefenseShields
             if (p > 0 && p < 10 && _lCount % 2 == 0) color = Color.Red;
             else color = Color.White;
             MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.LDR); // LDR for mptest, SDR for public
-            if (icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.LDR);
+            if (!ShieldOffline && icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.LDR);
         }
 
         private float GetIconMeterfloat()
