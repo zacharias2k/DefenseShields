@@ -64,7 +64,7 @@ namespace DefenseShields
             }
             else // client, send settings to server
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"ClientRelat - EmitterId [{Modulator.EntityId}]: sent network settings update for modulator");
+                if (Session.Enforced.Debug == 1) Log.Line($"ClientRelay - EmitterId [{Modulator.EntityId}]: sent network settings update for modulator");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new ModulatorData(MyAPIGateway.Multiplayer.MyId, Modulator.EntityId, Settings));
                 MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdModulator, bytes);
             }

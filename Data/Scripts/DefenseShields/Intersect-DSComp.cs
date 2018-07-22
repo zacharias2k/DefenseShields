@@ -142,7 +142,7 @@ namespace DefenseShields
                 var momentum = sPhysics.Mass * sPhysics.LinearVelocity;
                 Absorb += (momentum.Length() / 500) * ModulateKinetic;
                 WorldImpactPosition = collision;
-                _voxelDmg.Enqueue(voxelBase);
+                if (!Session.MpActive) _voxelDmg.Enqueue(voxelBase);
             }
         }
 
@@ -300,7 +300,7 @@ namespace DefenseShields
                 damage = -damage;
                 return damage;
             }
-            if (ammoInfo.BackKickForce < 0 && dmgMulti.Equals(0)) damage = float.NegativeInfinity;
+            if (ammoInfo.BackKickForce < 0 && dmgMulti.Equals(0)) {damage = float.NegativeInfinity;}
             else if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.5f)) * 7.5f;
             else damage = ammoInfo.Mass * ammoInfo.Speed;
 

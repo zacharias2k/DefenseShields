@@ -342,6 +342,7 @@ namespace DefenseShields
                             shield.WorldImpactPosition = hitPos;
                             shield.ImpactSize = 5;
                         }
+                        block.IncreaseMountLevel(1000f, 0, null, 1000f, true);
                         shield.Absorb += info.Amount;
                         info.Amount = 0f;
                     }
@@ -357,7 +358,7 @@ namespace DefenseShields
             {
                 if (bytes.Length <= 2)
                 {
-                    Log.Line($"PacketReceived(); invalid length <= 2; length={bytes.Length.ToString()}");
+                    Log.Line($"Controler PacketReceived; invalid length <= 2; length={bytes.Length.ToString()}");
                     return;
                 }
 
@@ -365,14 +366,14 @@ namespace DefenseShields
 
                 if (data == null)
                 {
-                    Log.Line($"PacketReceived(); no deserialized data!");
+                    Log.Line($"Controler PacketReceived; no deserialized data!");
                     return;
                 }
 
                 IMyEntity ent;
                 if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
                 {
-                    Log.Line($"PacketReceived(); {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    Log.Line($"Controler PacketReceived; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
                     return;
                 }
 
@@ -380,7 +381,7 @@ namespace DefenseShields
 
                 if (logic == null)
                 {
-                    Log.Line($"PacketReceived(); {data.Type}; shield doesn't have the gamelogic component!");
+                    Log.Line($"Controler PacketReceived; {data.Type}; shield doesn't have the gamelogic component!");
                     return;
                 }
 
@@ -390,7 +391,7 @@ namespace DefenseShields
                         {
                             if (data.Settings == null)
                             {
-                                Log.Line($"PacketReceived(); {data.Type}; settings are null!");
+                                Log.Line($"Controler PacketReceived; {data.Type}; settings are null!");
                                 return;
                             }
 
@@ -414,7 +415,7 @@ namespace DefenseShields
                 if (!IsServer) Log.Line($"EnforceData - Session: packet received");
                 if (bytes.Length <= 2)
                 {
-                    Log.Line($"PacketReceived(); invalid length <= 2; length={bytes.Length.ToString()}");
+                    Log.Line($"EnforceData Received; invalid length <= 2; length={bytes.Length.ToString()}");
                     return;
                 }
 
@@ -422,14 +423,14 @@ namespace DefenseShields
 
                 if (data == null)
                 {
-                    Log.Line($"PacketReceived(); no deserialized data!");
+                    Log.Line($"EnforceData Received; no deserialized data!");
                     return;
                 }
 
                 IMyEntity ent;
                 if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
                 {
-                    Log.Line($"PacketReceived(); {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    Log.Line($"EnforceData Received; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
                     return;
                 }
 
@@ -437,7 +438,7 @@ namespace DefenseShields
 
                 if (logic == null)
                 {
-                    Log.Line($"PacketReceived(); {data.Type}; shield doesn't have the gamelogic component!");
+                    Log.Line($"EnforceData Received; {data.Type}; shield doesn't have the gamelogic component!");
                     return;
                 }
 
@@ -447,11 +448,11 @@ namespace DefenseShields
                         {
                             if (data.Enforce == null)
                             {
-                                Log.Line($"PacketReceived(); {data.Type}; Enforce is null!");
+                                Log.Line($"EnforceData Received; {data.Type}; Enforce is null!");
                                 return;
                             }
 
-                            if (Enforced.Debug == 1) Log.Line($"PacketReceived(); Enforce - Server:\n{data.Enforce}");
+                            if (Enforced.Debug == 1) Log.Line($"EnforceData Received; Enforce - Server:\n{data.Enforce}");
                             if (!IsServer)
                             {
                                 Enforcements.UpdateEnforcement(data.Enforce);
@@ -474,7 +475,7 @@ namespace DefenseShields
             {
                 if (bytes.Length <= 2)
                 {
-                    Log.Line($"PacketReceived(); invalid length <= 2; length={bytes.Length.ToString()}");
+                    Log.Line($"Modulator PacketReceived; invalid length <= 2; length={bytes.Length.ToString()}");
                     return;
                 }
 
@@ -482,14 +483,14 @@ namespace DefenseShields
 
                 if (data == null)
                 {
-                    Log.Line($"PacketReceived(); no deserialized data!");
+                    Log.Line($"Modulator PacketReceive; no deserialized data!");
                     return;
                 }
 
                 IMyEntity ent;
                 if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
                 {
-                    Log.Line($"PacketReceived(); {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    Log.Line($"Modulator PacketReceive; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
                     return;
                 }
 
@@ -497,7 +498,7 @@ namespace DefenseShields
 
                 if (logic == null)
                 {
-                    Log.Line($"PacketReceived(); {data.Type}; shield doesn't have the gamelogic component!");
+                    Log.Line($"Modulator PacketReceive; {data.Type}; shield doesn't have the gamelogic component!");
                     return;
                 }
 
@@ -507,11 +508,11 @@ namespace DefenseShields
                         {
                             if (data.Settings == null)
                             {
-                                Log.Line($"PacketReceived(); {data.Type}; settings are null!");
+                                Log.Line($"Modulator PacketReceive; {data.Type}; settings are null!");
                                 return;
                             }
 
-                            if (Enforced.Debug == 1) Log.Line($"Packet received:\n{data.Settings}");
+                            if (Enforced.Debug == 1) Log.Line($"Modulator received:\n{data.Settings}");
                             logic.UpdateSettings(data.Settings);
                             logic.ModSet.SaveSettings();
                             logic.ServerUpdate = true;

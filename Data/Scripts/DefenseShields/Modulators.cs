@@ -70,7 +70,6 @@ namespace DefenseShields
             base.UpdateOnceBeforeFrame();
             try
             {
-
                 if (!Modulator.CubeGrid.Components.Has<ModulatorGridComponent>())
                     Modulator.CubeGrid.Components.Add(new ModulatorGridComponent(this));
 
@@ -168,9 +167,9 @@ namespace DefenseShields
             {
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
 
-                if (Sink.CurrentInputByType(GId) < 0.01f || Modulator.CubeGrid == null || !Modulator.Enabled)
+                if (Sink.CurrentInputByType(GId) < 0.01f || Modulator?.CubeGrid == null || !Modulator.Enabled)
                 {
-                    if (_tick % 300 == 0)
+                    if (Modulator != null && _tick % 300 == 0)
                     {
                         Modulator.RefreshCustomInfo();
                         Modulator.ShowInToolbarConfig = false;
@@ -182,7 +181,7 @@ namespace DefenseShields
 
                 Timing();
 
-                if (UtilsStatic.DistanceCheck(Modulator, 1000, 1))
+                if (!Session.DedicatedServer && UtilsStatic.DistanceCheck(Modulator, 1000, 1))
                 {
                     var blockCam = Modulator.PositionComp.WorldVolume;
                     if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && Modulator.IsWorking) BlockMoveAnimation();
@@ -195,6 +194,7 @@ namespace DefenseShields
                 {
                     Online = true;
                     if (ShieldComp == null) Modulator.CubeGrid.Components.TryGet(out ShieldComp);
+                    if (ShieldComp == null) return;
 
                     Modulator.RefreshCustomInfo();
 
@@ -294,6 +294,8 @@ namespace DefenseShields
             try
             {
                 if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
+                if (Modulator.CubeGrid.Components.Has<ModulatorGridComponent>()) Modulator.CubeGrid.Components.Remove<ModulatorGridComponent>();
+                if ((MyCubeGrid)Modulator?.CubeGrid != null) ((MyCubeGrid)Modulator.CubeGrid).OnHierarchyUpdated -= HierarchyChanged;
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
             base.Close();

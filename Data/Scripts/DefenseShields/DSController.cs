@@ -88,6 +88,9 @@ namespace DefenseShields
                 if (!AllInited) return false;
             }
 
+            var myGrid = (MyCubeGrid) Shield.CubeGrid;
+            if (myGrid.GridGeneralDamageModifier < 1) myGrid.GridGeneralDamageModifier = 1f;
+
             if (_blockChanged) BlockMonitor();
 
             if (Suspend() || !WarmUpSequence() || ShieldSleeping() || ShieldLowered()) return false;
@@ -333,9 +336,9 @@ namespace DefenseShields
             _offlineCnt++;
             if (_offlineCnt == 0)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"Offline count: {_offlineCnt} - resetting all");
-                DsSet.NetworkUpdate();
-                DsSet.SaveSettings();
+                if (Session.Enforced.Debug == 1) Log.Line($"Offline count: {_offlineCnt} - resetting all - was: Buffer:{ShieldBuffer} - Absorb:{Absorb} - Percent:{ShieldComp.ShieldPercent} - O2:{ShieldComp.IncreaseO2ByFPercent} - Lowered:{ShieldWasLowered}");
+                //DsSet.NetworkUpdate();
+                //DsSet.SaveSettings();
 
                 if (!_power.Equals(0.0001f)) _power = 0.001f;
                 Sink.Update();
@@ -359,7 +362,6 @@ namespace DefenseShields
                 CleanUp(3);
                 CleanUp(4);
             }
-
             Absorb = 0f;
             ShieldBuffer = 0f;
             ShieldComp.ShieldPercent = 0f;
@@ -938,8 +940,8 @@ namespace DefenseShields
             var p = ShieldComp.ShieldPercent;
             if (p > 0 && p < 10 && _lCount % 2 == 0) color = Color.Red;
             else color = Color.White;
-            MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.SDR); // LDR for mptest, SDR for public
-            if (icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.SDR);
+            MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.LDR); // LDR for mptest, SDR for public
+            if (!ShieldOffline && icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.LDR);
         }
 
         private float GetIconMeterfloat()
@@ -1144,6 +1146,7 @@ namespace DefenseShields
             if (modComp != null)
             {
                 var reModulate = ModulateVoxels != modComp.ModulateVoxels || ModulateGrids != modComp.ModulateGrids;
+                if (Session.Enforced.Debug == 1 && reModulate) Log.Line($"Remodulate: ModComp change - voxels:[was:{ModulateVoxels} is:{modComp.ModulateVoxels}] Grids:[was:{ModulateGrids} is:{modComp.ModulateGrids}] - ShieldId [{Shield.EntityId}]");
                 if (reModulate) _reModulationLoop = 0;
 
                 ModulateVoxels = modComp.ModulateVoxels;
@@ -1156,6 +1159,8 @@ namespace DefenseShields
             }
             else
             {
+                if (Session.Enforced.Debug == 1 && (!ModulateEnergy.Equals(1f) || !ModulateKinetic.Equals(1f))) Log.Line($"Remodulate: no modComp found, value not default (1f): Energy:{ModulateEnergy} - Kinetic:{ModulateKinetic} - ShieldId [{Shield.EntityId}]");
+
                 ModulateEnergy = 1f;
                 ModulateKinetic = 1f;
             }
@@ -1182,14 +1187,13 @@ namespace DefenseShields
         {
             try
             {
+                if (Session.Enforced.Debug == 1) Log.Line($"OnRemovedFromScene: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 IsStatic = Shield.CubeGrid.IsStatic;
                 RegisterEvents(false);
                 InitEntities(false);
                 _shellPassive.Render.RemoveRenderObjects();
                 _shellActive.Render.RemoveRenderObjects();
                 ShieldEnt.Render.RemoveRenderObjects();
-
-                if (Session.Enforced.Debug == 1) Log.Line($"OnRemovedFromScene: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
@@ -1211,6 +1215,7 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 1) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 if (Session.Instance.Components.Contains(this)) Session.Instance.Components.Remove(this);
                 Icosphere = null;
+                RegisterEvents(false);
                 InitEntities(false);
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
 

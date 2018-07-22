@@ -11,7 +11,7 @@ namespace DefenseShields
         public bool Enabled = false;
 
         [ProtoMember(2)]
-        public bool ModulateVoxels = true;
+        public bool ModulateVoxels = false;
 
         [ProtoMember(3)]
         public bool ModulateGrids = false;
@@ -50,7 +50,7 @@ namespace DefenseShields
         public float Buffer = 0f;
 
         [ProtoMember(9)]
-        public bool ModulateVoxels = true;
+        public bool ModulateVoxels = false;
 
         [ProtoMember(10)]
         public bool ModulateGrids = false;

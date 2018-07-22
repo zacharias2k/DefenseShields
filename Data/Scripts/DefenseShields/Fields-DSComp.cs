@@ -28,7 +28,7 @@ namespace DefenseShields
         public float ImpactSize { get; set; } = 9f;
         public float Absorb { get; set; }
         public float ModulateEnergy = 1f;
-        public float ModulateKinetic;
+        public float ModulateKinetic = 1f;
         private float _power = 0.001f;
         private float _gridMaxPower;
         private float _gridCurrentPower;
@@ -141,11 +141,7 @@ namespace DefenseShields
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
         private readonly List<KeyValuePair<IMyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<IMyEntity, EntIntersectInfo>>();
-
-        private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
-
-        private readonly DataStructures _dataStructures = new DataStructures();
-        //private readonly StructureBuilder _structureBuilder = new StructureBuilder();
+        internal readonly List<MyEntity> MissileCache = new List<MyEntity>();
 
         internal readonly HashSet<IMyEntity> AuthenticatedCache = new HashSet<IMyEntity>();
         internal readonly HashSet<IMyEntity> FriendlyCache = new HashSet<IMyEntity>();
@@ -205,6 +201,9 @@ namespace DefenseShields
 
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;
+        private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
+        private readonly DataStructures _dataStructures = new DataStructures();
+        //private readonly StructureBuilder _structureBuilder = new StructureBuilder();
 
         internal IMyUpgradeModule Shield => (IMyUpgradeModule)Entity;
         internal ShieldType ShieldMode;
