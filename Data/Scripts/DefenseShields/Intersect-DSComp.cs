@@ -43,11 +43,21 @@ namespace DefenseShields
             entInfo.ContactPoint = Vector3D.NegativeInfinity;
             if (contactpoint != Vector3D.NegativeInfinity)
             {
-                Absorb += (entInfo.Damage * ModulateKinetic);
-                ImpactSize += entInfo.Damage;
-
+                var damage = entInfo.Damage * ModulateKinetic;
+                if (Session.MpActive)
+                {
+                    if (Session.IsServer)
+                    {
+                        ShieldDoDamage(damage, grid.EntityId);
+                    }
+                }
+                else
+                {
+                    Absorb += damage;
+                    ImpactSize = entInfo.Damage;
+                    WorldImpactPosition = contactpoint;
+                }
                 entInfo.Damage = 0;
-                WorldImpactPosition = contactpoint;
             }
         }
 
@@ -55,18 +65,19 @@ namespace DefenseShields
         {
             lock (WebEnts)
             {
-                var grid = (IMyCubeGrid)ent;
+                var grid = (MyCubeGrid)ent;
                 EntIntersectInfo entInfo;
                 WebEnts.TryGetValue(ent, out entInfo);
                 if (entInfo == null) return;
 
-                var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.WorldAABB);
+                var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB);
                 if (entInfo.Relation != Ent.LargeEnemyGrid && GridInside(grid, bOriBBoxD)) return;
                 BlockIntersect(grid, bOriBBoxD, entInfo);
                 var contactpoint = entInfo.ContactPoint;
                 entInfo.ContactPoint = Vector3D.NegativeInfinity;
                 if (contactpoint == Vector3D.NegativeInfinity) return;
-                ImpactSize += entInfo.Damage;
+
+                ImpactSize = entInfo.Damage;
 
                 entInfo.Damage = 0;
                 WorldImpactPosition = contactpoint;
@@ -88,17 +99,17 @@ namespace DefenseShields
 
             var bPhysics = grid.Physics;
             var sPhysics = myGrid.Physics;
-            var bMass = bPhysics.Mass;
-            var sMass = sPhysics.Mass;
+            var bMass = ((MyCubeGrid)grid).GetCurrentMass();
+            var sMass = ((MyCubeGrid)myGrid).GetCurrentMass();
             var bVelocity = bPhysics.LinearVelocity;
             var sVelocity = sPhysics.LinearVelocity;
 
-            if (bMass <= 0) bMass = float.MaxValue;
-            if (sMass <= 0) sMass = float.MaxValue;
+            if (bMass <= 0) bMass = int.MaxValue;
+            if (sMass <= 0) sMass = int.MaxValue;
 
             var momentum = bMass * bPhysics.LinearVelocity + sMass * sPhysics.LinearVelocity;
             var resultVelocity = momentum / (bMass + sMass);
-            var damage = 1f;
+            var rawDamage = 1f;
             var bDamage1 = (bMass * bVelocity).Length();
             var bDamage2 = (bMass * sVelocity).Length();
             var bDamage = bDamage1 >  bDamage2 ? bDamage1: bDamage2;
@@ -106,7 +117,7 @@ namespace DefenseShields
             var sDamage2 = (sMass * sVelocity).Length();
             var sDamage = sDamage1 > sDamage2 ? sDamage1 : sDamage2;
 
-            damage = bDamage < sDamage ? bDamage : sDamage;
+            rawDamage = bDamage < sDamage ? bDamage : sDamage;
 
             var collisionAvg = Vector3D.Zero;
             for (int i = 0; i < insidePoints.Count; i++)
@@ -124,23 +135,38 @@ namespace DefenseShields
             if (insidePoints.Count <= 0) return;
 
             var contactPoint = DSUtils.CreateFromPointsList(insidePoints).Center; // replace with average
-            WorldImpactPosition = contactPoint;
-            shieldComponent.DefenseShields.WorldImpactPosition = contactPoint;
+            var damage = rawDamage / 100 * ModulateEnergy;
 
-            Absorb += (damage / 100) * ModulateEnergy;
+            if (Session.MpActive)
+            {
+                if (Session.IsServer)
+                {
+                    ShieldDoDamage(damage, grid.EntityId);
+                }
+            }
+            else
+            {
+                WorldImpactPosition = contactPoint;
+                shieldComponent.DefenseShields.WorldImpactPosition = contactPoint;
+                Absorb += damage;
+                ImpactSize = damage;
+            }
         }
 
         private void VoxelIntersect(MyVoxelBase voxelBase)
         {
             EntIntersectInfo entInfo;
             WebEnts.TryGetValue(voxelBase, out entInfo);
-            var collision = CustomCollision.VoxelCollisionSphere(Shield.CubeGrid, ShieldComp.PhysicsOutsideLow, voxelBase, SOriBBoxD, entInfo.TempStorage, _detectMatrixOutside);
+            var myGrid = (MyCubeGrid) Shield.CubeGrid;
+            var collision = CustomCollision.VoxelCollisionSphere(myGrid, ShieldComp.PhysicsOutsideLow, voxelBase, SOriBBoxD, _detectMatrixOutside);
 
             if (collision != Vector3D.NegativeInfinity)
             {
+                var mass = myGrid.GetCurrentMass();
                 var sPhysics = Shield.CubeGrid.Physics;
-                var momentum = sPhysics.Mass * sPhysics.LinearVelocity;
+                var momentum = mass * sPhysics.LinearVelocity;
                 Absorb += (momentum.Length() / 500) * ModulateKinetic;
+                ImpactSize = 12000;
                 WorldImpactPosition = collision;
                 if (!Session.MpActive) _voxelDmg.Enqueue(voxelBase);
             }
@@ -183,12 +209,14 @@ namespace DefenseShields
                     var cacheBlockList = entInfo.CacheBlockList;
                     var bPhysics = breaching.Physics;
                     var sPhysics = Shield.CubeGrid.Physics;
-                    var momentum = bPhysics.Mass * bPhysics.LinearVelocity + sPhysics.Mass * sPhysics.LinearVelocity;
-                    var resultVelocity = momentum / (bPhysics.Mass + sPhysics.Mass);
+                    var bMass = ((MyCubeGrid)breaching).GetCurrentMass();
+                    var sMass = ((MyCubeGrid)Shield.CubeGrid).GetCurrentMass();
+                    var momentum = bMass * bPhysics.LinearVelocity + sMass * sPhysics.LinearVelocity;
+                    var resultVelocity = momentum / (bMass + sMass);
                     var bBlockCenter = Vector3D.NegativeInfinity;
 
                     var stale = false;
-                    var damage = 0f;
+                    var rawDamage = 0f;
                     Vector3I gc = breaching.WorldToGridInteger(DetectionCenter);
                     double rc = ShieldSize.AbsMax() / breaching.GridSize;
                     rc *= rc;
@@ -241,7 +269,7 @@ namespace DefenseShields
 
                             if (_dmgBlocks.Count > 50) break;
                             c4++;
-                            damage += block.Mass;
+                            rawDamage += block.Mass;
                             _dmgBlocks.Enqueue(block);
                             break;
                         }
@@ -249,9 +277,9 @@ namespace DefenseShields
                     if (collisionAvg != Vector3D.Zero)
                     {
                         collisionAvg /= c3;
-                        if (!bPhysics.IsStatic) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bPhysics.Mass, bPhysics.CenterOfMassWorld);
-                        if (!sPhysics.IsStatic) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sPhysics.Mass, sPhysics.CenterOfMassWorld);
-                        var surfaceMass = (bPhysics.Mass > sPhysics.Mass) ? sPhysics.Mass : bPhysics.Mass;
+                        if (!bPhysics.IsStatic) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass, bPhysics.CenterOfMassWorld);
+                        if (!sPhysics.IsStatic) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sMass, sPhysics.CenterOfMassWorld);
+                        var surfaceMass = (bMass > sMass) ? sMass : bMass;
                         var surfaceMulti = (c3 > 5) ? 5 : c3;
                         var localNormal = Vector3D.Transform(collisionAvg, transformInv);
                         var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
@@ -259,9 +287,21 @@ namespace DefenseShields
                         if (!sPhysics.IsStatic) sPhysics.ApplyImpulse(surfaceMulti * (surfaceMass / 20) * -Vector3D.Dot(sPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
                         bBlockCenter = collisionAvg;
                     }
+                    var damage = rawDamage / 100 * ModulateKinetic;
                     entInfo.Damage = damage;
-                    Absorb += (damage) * ModulateKinetic;
-                    if (bBlockCenter != Vector3D.NegativeInfinity) entInfo.ContactPoint = bBlockCenter;
+
+                    if (Session.MpActive)
+                    {
+                        if (Session.IsServer && bBlockCenter != Vector3D.NegativeInfinity)
+                        {
+                            ShieldDoDamage(damage, breaching.EntityId);
+                        }
+                    }
+                    else
+                    {
+                        Absorb += damage;
+                        if (bBlockCenter != Vector3D.NegativeInfinity) entInfo.ContactPoint = bBlockCenter;
+                    }
                     //if (_count == 58) Log.Line($"[status] obb: true - blocks:{cacheBlockList.Count.ToString()} - sphered:{c1.ToString()} [{c5.ToString()}] - IsDestroyed:{c6.ToString()} not:[{c2.ToString()}] - bCenter Inside Ellipsoid:{c3.ToString()} - Damaged:{c4.ToString()}");
                 }
             }
@@ -287,11 +327,10 @@ namespace DefenseShields
                 Log.Line($"ShieldId:{Shield.EntityId.ToString()} - No Missile Ammo Match Found for {((MyEntity)ammoEnt).DebugName}! Let wepaon mod author know their ammo definition has improper model path");
                 return damage;
             }
-
             var dmgMulti = UtilsStatic.GetDmgMulti(ammoInfo.BackKickForce);
             if (dmgMulti > 0)
             {
-                if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.5f)) * 7.5f * dmgMulti;
+                if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.6f)) * 7.5f * dmgMulti;
                 else damage = ammoInfo.Mass * ammoInfo.Speed * dmgMulti;
                 return damage;
             }
@@ -301,7 +340,7 @@ namespace DefenseShields
                 return damage;
             }
             if (ammoInfo.BackKickForce < 0 && dmgMulti.Equals(0)) {damage = float.NegativeInfinity;}
-            else if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.5f)) * 7.5f;
+            else if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.6f)) * 7.5f;
             else damage = ammoInfo.Mass * ammoInfo.Speed;
 
             if (ammoInfo.Mass < 0 && ammoInfo.Radius <= 0) damage = -damage;

@@ -87,7 +87,7 @@ namespace DefenseShields
                 PostInit();
                 if (!AllInited) return false;
             }
-
+            Shield.RefreshCustomInfo();
             var myGrid = (MyCubeGrid) Shield.CubeGrid;
             if (myGrid.GridGeneralDamageModifier < 1) myGrid.GridGeneralDamageModifier = 1f;
 
@@ -498,8 +498,11 @@ namespace DefenseShields
             }
             else if (WarmedUp && Absorb < 0) ShieldBuffer += (Absorb / Session.Enforced.Efficiency);
 
-            if (WarmedUp && ShieldBuffer < 0) _overLoadLoop = 0;
-
+            if (WarmedUp && ShieldBuffer < 0)
+            {
+                //DsSet.NetworkUpdate();
+                _overLoadLoop = 0;
+            }
             Absorb = 0f;
             return true;
         }
@@ -749,7 +752,7 @@ namespace DefenseShields
                 ShieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
                 EllipsoidSa.Update(_detectMatrixOutside.Scale.X, _detectMatrixOutside.Scale.Y, _detectMatrixOutside.Scale.Z);
             }
-            ShieldComp.BoundingRange = ShieldSize.AbsMax() + 5f;
+            ShieldComp.BoundingRange = ShieldSize.AbsMax();
             _ellipsoidSurfaceArea = EllipsoidSa.Surface;
             ShieldComp.ShieldVolume = _detectMatrixOutside.Scale.Volume;
             if (!ShieldWasLowered) SetShieldShape();
@@ -823,7 +826,7 @@ namespace DefenseShields
             if (impactPos != Vector3D.NegativeInfinity && BulletCoolDown < 0)
             {
                 BulletCoolDown = 0;
-
+                HitParticleStart();
                 var cubeBlockLocalMatrix = Shield.CubeGrid.LocalMatrix;
                 var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
                 var worldDirection = impactPos - referenceWorldPosition;
@@ -852,6 +855,37 @@ namespace DefenseShields
 
             _prevLod = lod;
             return lod;
+        }
+
+        private void HitParticleStart()
+        {
+            var pos = WorldImpactPosition;
+            var matrix = MatrixD.CreateTranslation(pos);
+
+            MyParticlesManager.TryCreateParticleEffect(6667, out _effect, ref matrix, ref pos, _shieldEntRendId, true); // 15, 16, 24, 25, 28, (31, 32) 211 215 53
+            if (_effect == null) return;
+            var playerDist = Vector3D.Distance(MyAPIGateway.Session.Player.GetPosition(), pos);
+            var radius = playerDist * 0.15d;
+            var scale = (playerDist + playerDist * 0.001) / playerDist * 0.03;
+            if (ImpactSize < 150)
+            {
+                scale = scale * 0.3;
+                radius = radius * 9;
+            }
+            else if (ImpactSize > 12000) scale = 0.1;
+            else if (ImpactSize > 3600) scale = scale * (ImpactSize / 3600);
+            //Log.Line($"D:{playerDist} - R:{radius} - S:{scale} - I:{ImpactSize}");
+            _effect.UserRadiusMultiplier = (float)radius;
+            _effect.UserEmitterScale = (float) scale;
+            _effect.Play();
+        }
+
+        public void HitParticleStop()
+        {
+            if (_effect == null) return;
+            _effect.Stop();
+            _effect.Close(false, true);
+            _effect = null;
         }
 
         private void CalcualteVisibility(bool passiveVisible, bool activeVisible)
@@ -935,13 +969,13 @@ namespace DefenseShields
 
             var icon1 = GetHudIcon1FromFloat(ShieldComp.ShieldPercent);
             var icon2 = GetHudIcon2FromFloat(icon2FSelect);
-
+            var showIcon2 = !ShieldOffline && ShieldComp.ShieldActive;
             Color color;
             var p = ShieldComp.ShieldPercent;
             if (p > 0 && p < 10 && _lCount % 2 == 0) color = Color.Red;
             else color = Color.White;
             MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.LDR); // LDR for mptest, SDR for public
-            if (!ShieldOffline && icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.LDR);
+            if (showIcon2 && icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.LDR);
         }
 
         private float GetIconMeterfloat()
@@ -1068,7 +1102,9 @@ namespace DefenseShields
                                      "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
                                      "\n[Other Power]: " + otherPower.ToString("0.0") + " Mw" +
                                      "\n[HP Stored]: " + (ShieldBuffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
-                                     "\n[Needed Power]: " + shieldPowerNeeds.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw");
+                                     "\n[Needed Power]: " + shieldPowerNeeds.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw" +
+                                     "\n[Controller Detected]: " + ShieldComp.EmittersWorking);
+
             }
         }
         #endregion
@@ -1164,6 +1200,12 @@ namespace DefenseShields
                 ModulateEnergy = 1f;
                 ModulateKinetic = 1f;
             }
+        }
+
+        private void ShieldDoDamage(float damage, long entityId)
+        {
+            ImpactSize = damage;
+            ((IMySlimBlock)((MyCubeBlock)Shield).SlimBlock).DoDamage(damage, MPdamage, true, null, entityId);
         }
         #endregion
 

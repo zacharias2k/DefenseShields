@@ -221,7 +221,12 @@ namespace DefenseShields
 
                 if (AllInited || !MainInit || !Shield.IsFunctional || !BlockReady()) return;
 
-                if (Session.EnforceInit) AllInited = true;
+                if (Session.EnforceInit)
+                {
+                    AllInited = true;
+                    ShieldComp.Starting = false;
+                    ShieldComp.Warming = false;
+                }
                 if (Session.Enforced.Debug == 1) Log.Line($"AllInited: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in Controller PostInit: {ex}"); }
@@ -408,6 +413,7 @@ namespace DefenseShields
             ShieldEnt.Render.UpdateRenderObject(true);
             ShieldEnt.Render.Visible = true;
             ShieldEnt.Save = false;
+            _shieldEntRendId = ShieldEnt.Render.GetRenderObjectID();
 
             if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
             if (Session.Enforced.Debug == 1) Log.Line($"InitEntities: mode: {ShieldMode}, spawn complete - ShieldId [{Shield.EntityId}]");
@@ -448,7 +454,7 @@ namespace DefenseShields
             if (ShieldMode != ShieldType.Station && isStatic) Suspended = true;
             else if (ShieldMode == ShieldType.Station && !isStatic) Suspended = true;
             else if (ShieldMode == ShieldType.Unknown) Suspended = true;
-            else if (ShieldComp.DefenseShields != this)
+            else if (ShieldComp.DefenseShields != this || ShieldMode == ShieldType.Station && isStatic && ShieldComp.EmitterPrime == null)
             {
                 if (!Suspended)
                 {

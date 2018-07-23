@@ -69,9 +69,8 @@ namespace DefenseShields.Support
         public readonly uint FirstTick;
         public readonly DefenseShields.Ent Relation;
         public List<IMySlimBlock> CacheBlockList;
-        public readonly MyStorageData TempStorage;
 
-        public EntIntersectInfo(long entId, float damage, Vector3D contactPoint, uint firstTick, uint lastTick, DefenseShields.Ent relation, List<IMySlimBlock> cacheBlockList, MyStorageData tempStorage)
+        public EntIntersectInfo(long entId, float damage, Vector3D contactPoint, uint firstTick, uint lastTick, DefenseShields.Ent relation, List<IMySlimBlock> cacheBlockList)
         {
             CacheBlockList = cacheBlockList;
             EntId = entId;
@@ -80,7 +79,6 @@ namespace DefenseShields.Support
             FirstTick = firstTick;
             LastTick = lastTick;
             Relation = relation;
-            TempStorage = tempStorage;
         }
     }
 }

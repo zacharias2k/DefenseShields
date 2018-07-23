@@ -120,7 +120,7 @@ namespace DefenseShields.Support
             }
         }
 
-        public static Vector3D VoxelCollisionSphere(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, MyVoxelBase voxelBase, MyOrientedBoundingBoxD sOriBBoxD, MyStorageData tempStorage, MatrixD detectMatrix)
+        public static Vector3D VoxelCollisionSphere(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, MyVoxelBase voxelBase, MyOrientedBoundingBoxD sOriBBoxD, MatrixD detectMatrix)
         {
             var collisionAvg = Vector3D.Zero;
 
@@ -131,25 +131,26 @@ namespace DefenseShields.Support
                 var sAvelSqr = shieldGrid.Physics.AngularVelocity.LengthSquared();
                 var voxelSphere = voxelBase.RootVoxel.PositionComp.WorldVolume;
                 var voxelHitVecs = new List<Vector3D>();
-                if ((sVelSqr > 0.00001 || sAvelSqr > 0.00001))
+                if (sVelSqr > 0.00001 || sAvelSqr > 0.00001)
                 {
                     var obbSphereTest = sOriBBoxD.Intersects(ref voxelSphere);
                     if (!obbSphereTest || voxelBase.Closed) return Vector3D.NegativeInfinity;
-                    var leftBottomCorner = voxelBase.PositionLeftBottomCorner;
-                    var storageMin = voxelBase.StorageMin;
-                    var map = voxelBase as IMyVoxelMap;
-                    var storage = (IMyStorage)voxelBase.Storage;
-                    const float radius = 0.01f;
+                    var map = voxelBase as MyVoxelMap;
+
                     //var dsutil = new DSUtils();
-                    //dsutil.Sw.Start();
+                    //dsutil.Sw.Restart();
+                    var box = new BoundingBoxD();
                     for (int i = 0; i < 162; i++)
                     {
+                        if (map == null) continue;
                         var from = physicsVerts[i];
-                        var hit = DoOverlapSphereTest(from, radius, tempStorage, map, storage, leftBottomCorner, storageMin);
-
-                        if (hit) voxelHitVecs.Add(from);
+                        box.Min = from - Vector3D.One * 0.5;
+                        box.Max = from + Vector3D.One * 0.5;
+                        var hit2 = map.GetIntersectionWithAABB(ref box);
+                        if (hit2) voxelHitVecs.Add(from);
                     }
-                    //dsutil.StopWatchReport("sphereVoxel", -1);
+                    //dsutil.StopWatchReport($"boxhit - hits:{voxelHitVecs.Count}", -1);
+                    //if (voxelHitVecs.Count > 0) Log.Line($"hitCount:{voxelHitVecs.Count}");
                 }
 
                 if (voxelHitVecs.Count == 0) return Vector3D.NegativeInfinity;
@@ -158,14 +159,15 @@ namespace DefenseShields.Support
                 var aSpeed = sPhysics.AngularVelocity.Length() * 20;
                 var speed = 0f;
                 speed = lSpeed > aSpeed ? lSpeed : aSpeed;
-
+                Vector3D collisionAdd = Vector3D.Zero;
                 for (int i = 0; i < voxelHitVecs.Count; i++)
                 {
                     var point = voxelHitVecs[i];
-                    collisionAvg += point;
-
-                    shieldGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(point - sPhysics.CenterOfMassWorld) * sPhysics.Mass, null, Vector3D.Zero, MathHelper.Clamp(speed, 1f, 20f));
+                    collisionAdd += point;
                 }
+                collisionAvg = collisionAdd / voxelHitVecs.Count;
+
+                shieldGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * ((MyCubeGrid)shieldGrid).GetCurrentMass(), null, Vector3D.Zero, MathHelper.Clamp(speed, 1f, 20f));
             }
             catch (Exception ex) { Log.Line($"Exception in VoxelCollisionSphere: {ex}"); }
 

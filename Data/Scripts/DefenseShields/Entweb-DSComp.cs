@@ -9,7 +9,6 @@ using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
-using VRage.Voxels;
 using VRageMath;
 
 namespace DefenseShields
@@ -19,30 +18,24 @@ namespace DefenseShields
         #region Web Entities
         private void WebEntities()
         {
-            var pruneSphere = new BoundingSphereD(DetectionCenter, ShieldComp.BoundingRange);
+            if (Session.Enforced.Debug == 1) Dsutil2.Sw.Restart();
+
+            var pruneSphere = new BoundingSphereD(DetectionCenter, ShieldComp.BoundingRange + 3000);
             var pruneList = new List<MyEntity>();
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
-            if (_count == 0)Dsutil5.Sw.Restart();
-            if (_count == 0 || _count == 15 || _count == 30 || _count == 45)
-            {
-                MissileCache.Clear();
-                var pruneMissile = new BoundingSphereD(DetectionCenter, 6000);
-                var missileList = new List<MyEntity>();
-                MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneMissile, missileList, MyEntityQueryType.Dynamic);
-                foreach (var ent in missileList) if ((ent.Flags & EntityFlags.IsNotGamePrunningStructureObject) != 0 && ent.GetType().Name.Equals(MyMissile)) MissileCache.Add(ent);
-            }
-
-            foreach (var missile in MissileCache) pruneList.Add(missile);
             foreach (var eShield in EnemyShields) pruneList.Add(eShield);
 
+            var boundingSqr = ShieldComp.BoundingRange * ShieldComp.BoundingRange;
             for (int i = 0; i < pruneList.Count; i++)
             {
-
                 var ent = pruneList[i];
-                if (ent == null || FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent)) continue;
+                if (ent == null || ent.MarkedForClose || !GridIsMobile && ent is MyVoxelBase) continue;
+
                 var entCenter = ent.PositionComp.WorldVolume.Center;
-                if (ent.Physics == null || ent.MarkedForClose || ent is MyVoxelBase && !GridIsMobile
-                    || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == MyDebrisBase) continue;
+
+                var missileCheck = Vector3D.DistanceSquared(entCenter, DetectionCenter) > boundingSqr && !((ent.Flags & EntityFlags.IsNotGamePrunningStructureObject) != 0 && ent.GetType().Name.Equals(MyMissile));
+                if (missileCheck) continue;
+                if (FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent) || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
 
                 var relation = EntType(ent);
                 switch (relation)
@@ -94,7 +87,7 @@ namespace DefenseShields
                             WebEnts.Remove(ent);
                             continue;
                         }
-                        WebEnts.Add(ent, new EntIntersectInfo(ent.EntityId, 0f, Vector3D.NegativeInfinity, _tick, _tick, relation, new List<IMySlimBlock>(), new MyStorageData()));
+                        WebEnts.Add(ent, new EntIntersectInfo(ent.EntityId, 0f, Vector3D.NegativeInfinity, _tick, _tick, relation, new List<IMySlimBlock>()));
                     }
                 }
             }
@@ -105,7 +98,6 @@ namespace DefenseShields
                 Icosphere.ReturnPhysicsVerts(_detectMatrixInside, ShieldComp.PhysicsInside);
             }
             if (_enablePhysics) MyAPIGateway.Parallel.Start(WebDispatch);
-
             if (Session.Enforced.Debug == 1) Dsutil2.StopWatchReport($"Web: ShieldId [{Shield.EntityId}]", 3);
         }
 
@@ -291,7 +283,7 @@ namespace DefenseShields
                 return enemy ? Ent.LargeEnemyGrid : Ent.Friend;
             }
 
-            if (ent is IMyMeteor || ent.GetType().Name.StartsWith(MyMissile)) return Ent.Other;
+            if (ent is IMyMeteor || ent.GetType().Name.Equals(MyMissile)) return Ent.Other;
             if (ent is MyVoxelBase && GridIsMobile) return Ent.VoxelBase;
             return 0;
         }

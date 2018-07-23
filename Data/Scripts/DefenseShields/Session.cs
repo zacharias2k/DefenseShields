@@ -47,6 +47,7 @@ namespace DefenseShields
         public bool DisplayControlsLoaded { get; set; }
         public bool Enabled = true;
 
+        internal MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
         internal MyStringHash Bypass = MyStringHash.GetOrCompute("bypass");
         internal MyStringId Password = MyStringId.GetOrCompute("Shield Access Frequency");
         internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Match a shield's modulation frequency/code");
@@ -142,7 +143,11 @@ namespace DefenseShields
                     if (s.BulletCoolDown > -1)
                     {
                         s.BulletCoolDown++;
-                        if (s.BulletCoolDown == 9) s.BulletCoolDown = -1;
+                        if (s.BulletCoolDown == 9)
+                        {
+                            //s.HitParticleStop();
+                            s.BulletCoolDown = -1;
+                        }
                     }
                     if (!s.WarmedUp || !s.ShieldComp.RaiseShield || s.ShieldComp.EmittersSuspended) continue;
                     var sp = new BoundingSphereD(s.DetectionCenter, s.ShieldComp.BoundingRange);
@@ -217,16 +222,16 @@ namespace DefenseShields
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
 
                         if (shield.ShieldComp.ShieldActive
-                            && shield.FriendlyCache.Contains(player) 
-                            && (hostileEnt == null  || !shield.FriendlyCache.Contains(hostileEnt))) info.Amount = 0f;
+                            && shield.FriendlyCache.Contains(player)
+                            && (hostileEnt == null || !shield.FriendlyCache.Contains(hostileEnt))) info.Amount = 0f;
                     }
                     return;
                 }
 
                 var block = target as IMySlimBlock;
                 if (block == null) return;
-                var blockGrid = (MyCubeGrid)block.CubeGrid;
 
+                var blockGrid = (MyCubeGrid)block.CubeGrid;
                 foreach (var shield in Components)
                 {
                     if (shield.ShieldComp.ShieldActive && shield.ShieldComp.RaiseShield && shield.FriendlyCache.Contains(blockGrid))
@@ -239,6 +244,36 @@ namespace DefenseShields
 
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
+                        if (info.Type == MPdamage)
+                        {
+
+                            if (!shield.ShieldComp.ShieldActive || !shield.ShieldComp.RaiseShield || shield.ShieldBuffer <= 0 || hostileEnt == null)
+                            {
+                                info.Amount = 0;
+                                continue;
+                            }
+
+                            Vector3D blockPos;
+                            block.ComputeWorldCenter(out blockPos);
+                            var line = new LineD(blockPos, hostileEnt.PositionComp.WorldAABB.Center);
+                            var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
+
+                            var testDir = line.From - line.To;
+                            testDir.Normalize();
+                            var ray = new RayD(line.From, -testDir);
+                            var worldSphere = shield.ShieldSphere;
+                            worldSphere.Center = shield.Shield.CubeGrid.PositionComp.WorldVolume.Center;
+                            var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
+
+                            var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
+                            Vector3 hitPos = line.From + testDir * -furthestHit;
+                            shield.WorldImpactPosition = hitPos;
+                            shield.ImpactSize = info.Amount;
+                            shield.Absorb += info.Amount;
+                            info.Amount = 0f;
+                            continue;
+                        }
+
                         if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt))
                         {
                             shield.DeformEnabled = true;
@@ -285,7 +320,7 @@ namespace DefenseShields
                             var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
                             Vector3 hitPos = line.From + testDir * -(double)furthestHit;
                             shield.WorldImpactPosition = hitPos;
-                            shield.ImpactSize = 5;
+                            shield.ImpactSize = info.Amount;
                         }
 
                         shield.Absorb += info.Amount;
@@ -301,6 +336,36 @@ namespace DefenseShields
 
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
+                        if (info.Type == MPdamage)
+                        {
+
+                            if (!shield.ShieldComp.ShieldActive || !shield.ShieldComp.RaiseShield || shield.ShieldBuffer <= 0 || hostileEnt == null)
+                            {
+                                info.Amount = 0;
+                                continue;
+                            }
+
+                            Vector3D blockPos;
+                            block.ComputeWorldCenter(out blockPos);
+                            var line = new LineD(blockPos, hostileEnt.PositionComp.WorldAABB.Center);
+                            var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
+
+                            var testDir = line.From - line.To;
+                            testDir.Normalize();
+                            var ray = new RayD(line.From, -testDir);
+                            var worldSphere = shield.ShieldSphere;
+                            worldSphere.Center = shield.Shield.CubeGrid.PositionComp.WorldVolume.Center;
+                            var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
+
+                            var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
+                            Vector3 hitPos = line.From + testDir * -furthestHit;
+                            shield.WorldImpactPosition = hitPos;
+                            shield.ImpactSize = info.Amount;
+                            shield.Absorb += info.Amount;
+                            info.Amount = 0f;
+                            continue;
+                        }
+
                         if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt))
                         {
                             shield.DeformEnabled = true;
@@ -340,7 +405,7 @@ namespace DefenseShields
                             var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
                             Vector3 hitPos = line.From + testDir * -(double)furthestHit;
                             shield.WorldImpactPosition = hitPos;
-                            shield.ImpactSize = 5;
+                            shield.ImpactSize = info.Amount;
                         }
                         block.IncreaseMountLevel(1000f, 0, null, 1000f, true);
                         shield.Absorb += info.Amount;

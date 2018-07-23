@@ -45,7 +45,7 @@ namespace DefenseShields.Support
             [0.0000000070f] = 7,
             [0.0000000080f] = 8,
             [0.0000000090f] = 9,
-            [0.0000000010f] = 10,
+            [0.0000000100f] = 10,
         };
 
         public static float GetDmgMulti(float damage)
