@@ -12,7 +12,7 @@
 	  <Loopable>true</Loopable>
       <Waves>
   		<Wave Type="D2">
-          <Start>Audio\RealBlockGravityGenLoop3d.wav</Start>
+          <Start>Audio\REAL\BLOCK\RealBlockGravityGenLoop3d.wav</Start>
         </Wave>
       </Waves>
     </Sound>
@@ -28,7 +28,7 @@
     <Loopable>true</Loopable>
     <Waves>
       <Wave Type="D2">
-        <Start>Audio\RealBlockGravityGenLoop3d.wav</Start>
+        <Start>Audio\REAL\BLOCK\RealBlockGravityGenLoop3d.wav</Start>
       </Wave>
     </Waves>
   </Sound>
@@ -43,7 +43,7 @@
     <Loopable>true</Loopable>
     <Waves>
       <Wave Type="D2">
-        <Start>Audio\RealBlockGravityGenLoop3d.wav</Start>
+        <Start>Audio\REAL\BLOCK\RealBlockGravityGenLoop3d.wav</Start>
       </Wave>
     </Waves>
   </Sound>
