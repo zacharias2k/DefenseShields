@@ -20,12 +20,12 @@ namespace DefenseShields
         {
             if (Session.Enforced.Debug == 1) Dsutil2.Sw.Restart();
 
-            var pruneSphere = new BoundingSphereD(DetectionCenter, ShieldComp.BoundingRange + 3000);
+            var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange + 3000);
             var pruneList = new List<MyEntity>();
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
             foreach (var eShield in EnemyShields) pruneList.Add(eShield);
 
-            var boundingSqr = ShieldComp.BoundingRange * ShieldComp.BoundingRange;
+            var boundingSqr = BoundingRange * BoundingRange;
             for (int i = 0; i < pruneList.Count; i++)
             {
                 var ent = pruneList[i];

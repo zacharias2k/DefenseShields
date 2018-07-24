@@ -49,7 +49,7 @@ namespace DefenseShields
         internal bool BlockWasWorking;
         internal bool ShieldLineOfSight;
         internal bool TookControl;
-        internal bool NoController;
+        internal bool ControllerFound;
         public bool EmitterOnline;
 
         private const string PlasmaEmissive = "PlasmaEmissive";
@@ -122,7 +122,7 @@ namespace DefenseShields
 
                 if (!AllInited && !InitEmitter() || Suspend() || !BlockWorking()) return;
 
-                if (ShieldComp.ShieldActive && !Session.DedicatedServer && UtilsStatic.DistanceCheck(Emitter, 1000, ShieldComp.BoundingRange))
+                if (ShieldComp.ShieldActive && !Session.DedicatedServer && UtilsStatic.DistanceCheck(Emitter, 1000, ShieldComp.DefenseShields.BoundingRange))
                 {
                     if (ShieldComp.GridIsMoving && !Compact) BlockParticleUpdate();
 
@@ -165,12 +165,12 @@ namespace DefenseShields
             }
             else Online = true;
 
-            if (ShieldComp?.DefenseShields == null || !ShieldComp.Warming)
+            if (ShieldComp?.DefenseShields == null || !ShieldComp.DefenseShields.Warming)
             {
                 BlockReset();
                 return false;
             }
-            NoController = false;
+            ControllerFound = true;
 
             if (Online && (ShieldComp.CheckEmitters || TookControl)) CheckShieldLineOfSight();
             if (Online && !ShieldLineOfSight && !Session.DedicatedServer) DrawHelper();
@@ -353,10 +353,10 @@ namespace DefenseShields
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
-            if (!ShieldComp.ShieldActive || NoController)
+            if (ShieldComp == null || !ShieldComp.ShieldActive || !ControllerFound)
             {
-                stringBuilder.Append("[ Shield Offline ]" +
-                                     "\n[Controller Found]: " + !NoController);
+                stringBuilder.Append("[ Emitter Offline ]" +
+                                     "\n[Controller Link]: " + ControllerFound);
 
             }
             else
@@ -403,7 +403,7 @@ namespace DefenseShields
                     Emitter.Enabled = true;
                 }
                 Sink.Update();
-                if (Session.Enforced.Debug == 1) Log.Line($"PowerInit complete");
+                if (Session.Enforced.Debug == 1) Log.Line($"PowerInit complete - EmitterId [{Emitter.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }
@@ -411,9 +411,9 @@ namespace DefenseShields
         private bool InitEmitter()
         {
             Emitter.CubeGrid.Components.TryGet(out ShieldComp);
-            if (!Emitter.IsFunctional || ShieldComp == null) return false;
             if (Definition == null) SetEmitterType();
-            if (!ShieldComp.Starting)
+            if (!Emitter.IsFunctional || ShieldComp?.DefenseShields == null) return false;
+            if (!ShieldComp.DefenseShields.Starting)
             {
                 if (Session.Enforced.Debug == 1) Log.Line($"Init: {EmitterMode}) is not starting, setting mode and looping - EmitterId [{Emitter.EntityId}]");
                 ShieldComp.EmitterMode = (int)EmitterMode;
@@ -489,12 +489,23 @@ namespace DefenseShields
 
         private bool Suspend()
         {
-            NoController = true;
-            if (ShieldComp == null)
+            ControllerFound = false;
+            if (ShieldComp?.DefenseShields == null)
             {
                 Emitter.CubeGrid.Components.TryGet(out ShieldComp);
-                if (Session.Enforced.Debug == 1) Log.Line($"Suspend: had a null ShieldComp, trying.... {ShieldComp != null} - EmitterId [{Emitter.EntityId}]");
-                if (ShieldComp == null) return true;
+                if (Session.Enforced.Debug == 1 && _lCount == 0 && _count == 0) Log.Line($"Suspend: had a null ShieldComp, trying.... {ShieldComp != null} - DefenseComp... {ShieldComp?.DefenseShields != null} - EmitterId [{Emitter.EntityId}]");
+                if (ShieldComp?.DefenseShields == null || !ShieldComp.DefenseShields.ControllerGridAccess)
+                {
+                    if (!Suspended) BlockReset();
+                    Suspended = true;
+                    return true;
+                }
+            }
+            else if (!ShieldComp.DefenseShields.ControllerGridAccess)
+            {
+                if (!Suspended) BlockReset();
+                Suspended = true;
+                return true;
             }
 
             var working = Emitter.IsWorking && Emitter.IsFunctional;
@@ -506,7 +517,7 @@ namespace DefenseShields
 
             var terminalConnected = ShieldComp.GetLinkedGrids.Count - ShieldComp.GetSubGrids.Count > 0;
 
-            if (!IsStatic && ShieldComp.Starting && terminalConnected && !GoToSleep || GoToSleep && _count == 0 && _lCount % 2 == 0)
+            if (!IsStatic && ShieldComp.DefenseShields.Starting && terminalConnected && !GoToSleep || GoToSleep && _count == 0 && _lCount % 2 == 0)
             {
                 var foundStatic = false;
                 foreach (var sub in ShieldComp.GetLinkedGrids)

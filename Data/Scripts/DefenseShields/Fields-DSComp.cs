@@ -26,10 +26,10 @@ namespace DefenseShields
         private uint _hierarchyTick = 1;
         private uint _unsuspendTick;
 
-        public float ImpactSize { get; set; } = 9f;
-        public float Absorb { get; set; }
-        public float ModulateEnergy = 1f;
-        public float ModulateKinetic = 1f;
+        internal float ImpactSize { get; set; } = 9f;
+        internal float Absorb { get; set; }
+        internal float ModulateEnergy = 1f;
+        internal float ModulateKinetic = 1f;
         private float _power = 0.001f;
         private float _gridMaxPower;
         private float _gridCurrentPower;
@@ -47,6 +47,7 @@ namespace DefenseShields
         private float _shieldConsumptionRate;
         private float _shieldFudge;
 
+        internal double BoundingRange;
         private double _ellipsoidAdjust = Math.Sqrt(2);
         private double _oldEllipsoidAdjust;
         private double _sAvelSqr;
@@ -76,6 +77,9 @@ namespace DefenseShields
         internal bool DeformEnabled;
         internal bool ExplosionEnabled;
         internal bool ControlBlockWorking;
+        internal bool ControllerGridAccess;
+        internal bool IsOwner;
+        internal bool InFaction;
         internal bool MainInit;
         internal bool PrePowerInit;
         internal bool PowerInited;
@@ -87,6 +91,9 @@ namespace DefenseShields
         internal bool WarmedUp;
         internal bool PrevShieldActive;
         internal bool IsStatic;
+        internal bool ComingOnline;
+        internal bool Warming;
+        internal bool Starting;
 
         internal bool UpdateDimensions;
         internal bool FitChanged;

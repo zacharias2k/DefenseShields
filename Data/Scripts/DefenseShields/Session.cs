@@ -150,7 +150,7 @@ namespace DefenseShields
                         }
                     }
                     if (!s.WarmedUp || !s.ShieldComp.RaiseShield || s.ShieldComp.EmittersSuspended) continue;
-                    var sp = new BoundingSphereD(s.DetectionCenter, s.ShieldComp.BoundingRange);
+                    var sp = new BoundingSphereD(s.DetectionCenter, s.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {
                         SphereOnCamera[i] = false;

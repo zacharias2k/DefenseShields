@@ -46,10 +46,11 @@ namespace DefenseShields
                         GetModulationInfo();
                         if (_reModulationLoop > -1) return;
                     }
-                    if (ShieldComp.ComingOnline)
+                    if (ComingOnline)
                     {
-                        if (ShieldComp.ComingOnline && GridIsMobile && FieldShapeBlocked()) return;
-                        ShieldComp.ComingOnline = false;
+                        if (!GridOwnsController()) return;
+                        if (ComingOnline && GridIsMobile && FieldShapeBlocked()) return;
+                        ComingOnline = false;
 
                         if (!ShieldPassiveHide) _shellPassive.Render.UpdateRenderObject(true);
 
@@ -87,14 +88,12 @@ namespace DefenseShields
                 PostInit();
                 if (!AllInited) return false;
             }
-            Shield.RefreshCustomInfo();
             var myGrid = (MyCubeGrid) Shield.CubeGrid;
             if (myGrid.GridGeneralDamageModifier < 1) myGrid.GridGeneralDamageModifier = 1f;
 
             if (_blockChanged) BlockMonitor();
 
             if (Suspend() || !WarmUpSequence() || ShieldSleeping() || ShieldLowered()) return false;
-
             if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
             {
                 FailureConditions();
@@ -168,12 +167,12 @@ namespace DefenseShields
         {
             ShieldComp.ShieldActive = ControlBlockWorking && !ShieldOffline && PowerOnline();
 
-            if (!PrevShieldActive && ShieldComp.ShieldActive) ShieldComp.ComingOnline = true;
-            else if (ShieldComp.ComingOnline && PrevShieldActive && ShieldComp.ShieldActive) ShieldComp.ComingOnline = false;
+            if (!PrevShieldActive && ShieldComp.ShieldActive) ComingOnline = true;
+            else if (ComingOnline && PrevShieldActive && ShieldComp.ShieldActive) ComingOnline = false;
 
             PrevShieldActive = ShieldComp.ShieldActive;
 
-            if (!GridIsMobile && (ShieldComp.ComingOnline || ShieldComp.O2Updated))
+            if (!GridIsMobile && (ComingOnline || ShieldComp.O2Updated))
             {
                 EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, ShieldComp.IncreaseO2ByFPercent);
                 ShieldComp.O2Updated = false;
@@ -642,7 +641,7 @@ namespace DefenseShields
         {
             if (ModulateVoxels) return false;
 
-            var pruneSphere = new BoundingSphereD(DetectionCenter, ShieldComp.BoundingRange);
+            var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange);
             var pruneList = new List<MyVoxelBase>();
             MyGamePruningStructure.GetAllVoxelMapsInSphere(ref pruneSphere, pruneList);
 
@@ -705,7 +704,7 @@ namespace DefenseShields
         {
             ShieldComp.ShieldVelocitySqr = Shield.CubeGrid.Physics.LinearVelocity.LengthSquared();
             _sAvelSqr = Shield.CubeGrid.Physics.AngularVelocity.LengthSquared();
-            if (ShieldComp.ShieldVelocitySqr > 0.00001 || _sAvelSqr > 0.00001 || ShieldComp.ComingOnline)
+            if (ShieldComp.ShieldVelocitySqr > 0.00001 || _sAvelSqr > 0.00001 || ComingOnline)
             {
                 ShieldComp.GridIsMoving = true;
                 if (FortifyShield && Math.Sqrt(ShieldComp.ShieldVelocitySqr) > 15)
@@ -719,8 +718,8 @@ namespace DefenseShields
             _shapeAdjusted = !_ellipsoidAdjust.Equals(_oldEllipsoidAdjust) || !_gridHalfExtents.Equals(_oldGridHalfExtents);
             _oldGridHalfExtents = _gridHalfExtents;
             _oldEllipsoidAdjust = _ellipsoidAdjust;
-            _entityChanged = Shield.CubeGrid.Physics.IsMoving || ShieldComp.ComingOnline || _shapeAdjusted || _createMobileShape;
-            if (_entityChanged || ShieldComp.BoundingRange <= 0) CreateShieldShape();
+            _entityChanged = Shield.CubeGrid.Physics.IsMoving || ComingOnline || _shapeAdjusted || _createMobileShape;
+            if (_entityChanged || BoundingRange <= 0) CreateShieldShape();
         }
 
         private void CreateShieldShape()
@@ -752,7 +751,7 @@ namespace DefenseShields
                 ShieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
                 EllipsoidSa.Update(_detectMatrixOutside.Scale.X, _detectMatrixOutside.Scale.Y, _detectMatrixOutside.Scale.Z);
             }
-            ShieldComp.BoundingRange = ShieldSize.AbsMax();
+            BoundingRange = ShieldSize.AbsMax();
             _ellipsoidSurfaceArea = EllipsoidSa.Surface;
             ShieldComp.ShieldVolume = _detectMatrixOutside.Scale.Volume;
             if (!ShieldWasLowered) SetShieldShape();
@@ -1048,7 +1047,10 @@ namespace DefenseShields
 
         private string GetShieldStatus()
         {
+            if (!ControllerGridAccess) return "Invalid Owner";
             if (Suspended || ShieldMode == ShieldType.Unknown) return "Controller Standby";
+            if (!Shield.IsWorking || !Shield.IsFunctional) return "Controller Failure";
+            if (ShieldComp.EmitterMode < 0 || !ShieldComp.EmittersWorking) return "Emitter Failure";
             if (ShieldOffline && !_overLoadLoop.Equals(-1)) return "Overloaded";
             if (ShieldOffline && _power.Equals(0.0001f)) return "Insufficient Power";
             if (!ShieldComp.RaiseShield && !ShieldOffline) return "Shield Down";
@@ -1103,7 +1105,10 @@ namespace DefenseShields
                                      "\n[Other Power]: " + otherPower.ToString("0.0") + " Mw" +
                                      "\n[HP Stored]: " + (ShieldBuffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
                                      "\n[Needed Power]: " + shieldPowerNeeds.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw" +
-                                     "\n[Controller Detected]: " + ShieldComp.EmittersWorking);
+                                     "\n[Emitter Detected]: " + ShieldComp.EmittersWorking +
+                                     "\n" +
+                                     "\n[Grid Owns Controller]: "+ IsOwner +
+                                     "\n[In Grid's Faction]: "+ InFaction);
 
             }
         }
@@ -1233,9 +1238,9 @@ namespace DefenseShields
                 IsStatic = Shield.CubeGrid.IsStatic;
                 RegisterEvents(false);
                 InitEntities(false);
-                _shellPassive.Render.RemoveRenderObjects();
-                _shellActive.Render.RemoveRenderObjects();
-                ShieldEnt.Render.RemoveRenderObjects();
+                _shellPassive?.Render?.RemoveRenderObjects();
+                _shellActive?.Render?.RemoveRenderObjects();
+                ShieldEnt?.Render?.RemoveRenderObjects();
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
