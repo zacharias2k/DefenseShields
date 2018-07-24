@@ -20,10 +20,10 @@
 		<string>DSControlLarge</string>
 		<string>EmitterL</string>
 		<string>EmitterS</string>
-<!--<string>EmitterP</string>-->
+	<!--<string>EmitterP</string>-->
 		<string>EmitterST</string>
-    <string>EmitterLA</string>
-    <string>EmitterSA</string>
+		<string>EmitterLA</string>
+		<string>EmitterSA</string>
 		<string>DS_Supergen</string>
 		<string>LargeDamageEnhancer</string>
 		<string>SmallDamageEnhancer</string>
@@ -103,10 +103,10 @@
       <ModelOffset x="0" y="0" z="0" />
       <Model>Models\DS_Control_Block.mwm</Model>
       <Components>
-        <Component Subtype="InteriorPlate" Count="1" />
-        <Component Subtype="Construction" Count="4" />
-        <Component Subtype="Computer" Count="4" />
-        <Component Subtype="Display" Count="3" />
+        <Component Subtype="InteriorPlate" Count="10" />
+        <Component Subtype="Construction" Count="12" />
+        <Component Subtype="Computer" Count="18" />
+        <Component Subtype="Display" Count="6" />
       </Components>
       <CriticalComponent Subtype="Computer" Index="0" />
 	<MountPoints>
@@ -359,7 +359,7 @@
         <Component Subtype="SteelPlate" Count="300" />
         <Component Subtype="SmallTube" Count="40" />
         <Component Subtype="Construction" Count="20" />
-        <Component Subtype="ShieldComponent" Count="200" />
+        <Component Subtype="ShieldComponent" Count="400" />
         <Component Subtype="Construction" Count="20" />
         <Component Subtype="MetalGrid" Count="60" />
         <Component Subtype="Superconductor" Count="200" />
@@ -408,7 +408,7 @@
         <Component Subtype="SteelPlate" Count="2" />
         <Component Subtype="SmallTube" Count="2" />
         <Component Subtype="Construction" Count="2" />
-        <Component Subtype="ShieldComponent" Count="150" />
+        <Component Subtype="ShieldComponent" Count="50" />
         <Component Subtype="Construction" Count="2" />
         <Component Subtype="MetalGrid" Count="2" />
         <Component Subtype="Superconductor" Count="2" />
@@ -503,7 +503,7 @@
         <Component Subtype="SteelPlate" Count="3000" />
         <Component Subtype="SmallTube" Count="400" />
         <Component Subtype="Construction" Count="20" />
-		    <Component Subtype="ShieldComponent" Count="250" />
+		    <Component Subtype="ShieldComponent" Count="850" />
         <Component Subtype="Construction" Count="20" />
         <Component Subtype="MetalGrid" Count="60" />
         <Component Subtype="Superconductor" Count="980" />
@@ -640,7 +640,6 @@
       <Model>Models\Cubes\DamageEnhancerLarge.mwm</Model>
       <Components>
         <Component Subtype="Girder" Count="32" />
-        <Component Subtype="BulletproofGlass" Count="20" />
         <Component Subtype="MetalGrid" Count="4" />
         <Component Subtype="Construction" Count="16" />
 		<Component Subtype="Motor" Count="2" />
@@ -683,7 +682,6 @@
       <Model>Models\Cubes\DamageEnhancerSmall.mwm</Model>
       <Components>
         <Component Subtype="Girder" Count="2" />
-        <Component Subtype="BulletproofGlass" Count="2" />
         <Component Subtype="MetalGrid" Count="1" />
         <Component Subtype="Construction" Count="2" />
 		<Component Subtype="Motor" Count="1" />
@@ -728,7 +726,7 @@
         <Component Subtype="SteelPlate" Count="300" />
         <Component Subtype="SmallTube" Count="40" />
         <Component Subtype="Construction" Count="20" />
-        <Component Subtype="ShieldComponent" Count="200" />
+        <Component Subtype="ShieldComponent" Count="400" />
         <Component Subtype="Construction" Count="20" />
         <Component Subtype="MetalGrid" Count="60" />
         <Component Subtype="Superconductor" Count="200" />
@@ -778,12 +776,12 @@
         <Component Subtype="SteelPlate" Count="2" />
         <Component Subtype="SmallTube" Count="2" />
         <Component Subtype="Construction" Count="2" />
-		    <Component Subtype="ShieldComponent" Count="150" />
+		<Component Subtype="ShieldComponent" Count="50" />
         <Component Subtype="Construction" Count="2" />
         <Component Subtype="MetalGrid" Count="2" />
         <Component Subtype="Superconductor" Count="2" />
         <Component Subtype="Construction" Count="2" />
-		    <Component Subtype="GravityGenerator" Count="1" />
+		<Component Subtype="GravityGenerator" Count="1" />
         <Component Subtype="Detector" Count="2" />
         <Component Subtype="MetalGrid" Count="2" />
         <Component Subtype="RadioCommunication" Count="1" />
