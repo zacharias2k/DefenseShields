@@ -193,6 +193,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\Scripts\DefenseShields\Config\API\dsApi.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Config\Shield-Stats.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Enforcements.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Modulator-Settings.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\ModUi.cs" />
@@ -216,7 +217,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Intersect-DSComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Modulators.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Emitters.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Config\Shield-Settings.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Config\Controller-Settings.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Fields-DSComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Init-DSComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\DistPoint3Triangle3.cs" />

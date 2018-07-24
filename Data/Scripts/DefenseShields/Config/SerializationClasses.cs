@@ -5,6 +5,24 @@ using ProtoBuf;
 namespace DefenseShields
 {
     [ProtoContract]
+    public class ShieldStats
+    {
+        [ProtoMember(1)]
+        public bool Enabled = false;
+
+        [ProtoMember(2)]
+        public bool ModulateVoxels = false;
+
+        [ProtoMember(3)]
+        public bool ModulateGrids = false;
+
+        public override string ToString()
+        {
+            return $"Enabled = {Enabled}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}";
+        }
+    }
+
+    [ProtoContract]
     public class DisplaySettings
     {
         [ProtoMember(1)]
@@ -159,6 +177,40 @@ namespace DefenseShields
     }
 
     [ProtoContract]
+    public class StatsData
+    {
+        [ProtoMember(1)]
+        public PacketType Type = PacketType.STATS;
+
+        [ProtoMember(2)]
+        public long EntityId = 0;
+
+        [ProtoMember(3)]
+        public ulong Sender = 0;
+
+        [ProtoMember(4)]
+        public ShieldStats Stats = null;
+
+        public StatsData() { } // empty ctor is required for deserialization
+
+        public StatsData(ulong sender, long entityId, ShieldStats stats)
+        {
+            Type = PacketType.STATS;
+            Sender = sender;
+            EntityId = entityId;
+            Stats = stats;
+        }
+
+        public StatsData(ulong sender, long entityId, PacketType action)
+        {
+            Type = action;
+            Sender = sender;
+            EntityId = entityId;
+            Stats = null;
+        }
+    }
+
+    [ProtoContract]
     public class PacketData
     {
         [ProtoMember(1)]
@@ -261,6 +313,7 @@ namespace DefenseShields
     }
     public enum PacketType : byte
     {
+        STATS,
         SETTINGS,
         ENFORCE,
         MODULATOR,
