@@ -63,7 +63,7 @@ namespace DefenseShields
         public Vector3D[] PhysicsOutside { get; set; } = new Vector3D[642];
 
         public Vector3D[] PhysicsOutsideLow { get; set; } = new Vector3D[162];
-
+        
         public Vector3D[] PhysicsInside { get; set; } = new Vector3D[642];
 
         public int EmitterMode { get; set; } = -1;
@@ -74,7 +74,7 @@ namespace DefenseShields
 
         public string ModulationPassword { get; set; }
 
-        public bool EmittersWorking { get; set; } = true;
+        public bool EmittersWorking { get; set; }
 
         public bool EmittersSuspended { get; set; }
 
@@ -100,11 +100,11 @@ namespace DefenseShields
 
         public bool GridIsMoving { get; set; }
 
-        public bool ComingOnline { get; set; }
+        //public bool ComingOnline { get; set; }
 
-        public bool Starting { get; set; }
+        //public bool Starting { get; set; }
 
-        public bool Warming { get; set; }
+        //public bool Warming { get; set; }
 
         public bool EmitterEvent { get; set; }
 
@@ -118,7 +118,7 @@ namespace DefenseShields
             set { Settings.Settings.IncreaseO2ByFPercent = value; }
         }
 
-        public double BoundingRange { get; set; }
+        //public double BoundingRange { get; set; }
 
         public double ShieldVelocitySqr { get; set; }
 

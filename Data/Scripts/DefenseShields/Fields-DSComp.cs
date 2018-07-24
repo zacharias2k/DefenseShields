@@ -21,14 +21,15 @@ namespace DefenseShields
     {
         #region Setup
         private uint _tick;
+        private uint _shieldEntRendId;
         private uint _enforceTick;
         private uint _hierarchyTick = 1;
         private uint _unsuspendTick;
 
-        public float ImpactSize { get; set; } = 9f;
-        public float Absorb { get; set; }
-        public float ModulateEnergy = 1f;
-        public float ModulateKinetic = 1f;
+        internal float ImpactSize { get; set; } = 9f;
+        internal float Absorb { get; set; }
+        internal float ModulateEnergy = 1f;
+        internal float ModulateKinetic = 1f;
         private float _power = 0.001f;
         private float _gridMaxPower;
         private float _gridCurrentPower;
@@ -46,6 +47,7 @@ namespace DefenseShields
         private float _shieldConsumptionRate;
         private float _shieldFudge;
 
+        internal double BoundingRange;
         private double _ellipsoidAdjust = Math.Sqrt(2);
         private double _oldEllipsoidAdjust;
         private double _sAvelSqr;
@@ -73,7 +75,11 @@ namespace DefenseShields
         private int _shieldRatio;
 
         internal bool DeformEnabled;
+        internal bool ExplosionEnabled;
         internal bool ControlBlockWorking;
+        internal bool ControllerGridAccess;
+        internal bool IsOwner;
+        internal bool InFaction;
         internal bool MainInit;
         internal bool PrePowerInit;
         internal bool PowerInited;
@@ -85,6 +91,9 @@ namespace DefenseShields
         internal bool WarmedUp;
         internal bool PrevShieldActive;
         internal bool IsStatic;
+        internal bool ComingOnline;
+        internal bool Warming;
+        internal bool Starting;
 
         internal bool UpdateDimensions;
         internal bool FitChanged;
@@ -114,7 +123,6 @@ namespace DefenseShields
 
         private const string SpaceWolf = "Space_Wolf";
         private const string MyMissile = "MyMissile";
-        private const string MyDebrisBase = "MyDebrisBase";
         private string _shieldModel = "\\Models\\Cubes\\ShieldActiveBase.mwm";
 
         private Vector2D _shieldIconPos = new Vector2D(-0.89, -0.86);
@@ -141,7 +149,6 @@ namespace DefenseShields
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
         private readonly List<KeyValuePair<IMyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<IMyEntity, EntIntersectInfo>>();
-        internal readonly List<MyEntity> MissileCache = new List<MyEntity>();
 
         internal readonly HashSet<IMyEntity> AuthenticatedCache = new HashSet<IMyEntity>();
         internal readonly HashSet<IMyEntity> FriendlyCache = new HashSet<IMyEntity>();
@@ -199,6 +206,8 @@ namespace DefenseShields
         private static readonly MyStringId HudIconDps90 = MyStringId.GetOrCompute("DS_ShieldDps90");
         private static readonly MyStringId HudIconDps100 = MyStringId.GetOrCompute("DS_ShieldDps100");
 
+        private static readonly MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
+
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;
         private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
@@ -211,6 +220,7 @@ namespace DefenseShields
         private MyEntity _shellPassive;
         private MyEntity _shellActive;
 
+        private MyParticleEffect _effect = new MyParticleEffect();
         internal Icosphere.Instance Icosphere;
         internal readonly Spawn Spawn = new Spawn();
         internal readonly EllipsoidOxygenProvider EllipsoidOxyProvider = new EllipsoidOxygenProvider(Matrix.Zero);

@@ -149,7 +149,7 @@ namespace DefenseShields
             {
                 if (ShieldComp == null) O2Generator.CubeGrid.Components.TryGet(out ShieldComp);
 
-                if (ShieldComp == null || ShieldComp?.ActiveO2Generator != null || !ShieldComp.Starting || ShieldComp.ShieldVolume <= 0) return false;
+                if (ShieldComp?.DefenseShields == null || ShieldComp?.ActiveO2Generator != null || !ShieldComp.DefenseShields.Starting || ShieldComp.ShieldVolume <= 0) return false;
                 ShieldComp.ActiveO2Generator = this;
                 RemoveControls();
                 O2Generator.AppendingCustomInfo += AppendingCustomInfo;
@@ -186,7 +186,7 @@ namespace DefenseShields
 
         private bool BlockWorking()
         {
-            if (ShieldComp.DefenseShields == null || !ShieldComp.Warming) return false;
+            if (ShieldComp?.DefenseShields == null || !ShieldComp.DefenseShields.Warming) return false;
 
             BlockIsWorking = O2Generator.IsWorking;
             BlockWasWorking = BlockIsWorking;

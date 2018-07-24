@@ -77,8 +77,8 @@ namespace DefenseShields
                         {
                             if (ent == null || ent.MarkedForClose || ent.Closed) continue;
                             var destObj = ent as IMyDestroyableObject;
+                            if (destObj == null) Log.Line($"missile is null");
                             if (destObj == null) continue;
-
                             var computedDamage = ComputeAmmoDamage(ent);
                             if (computedDamage <= float.NegativeInfinity)
                             {
@@ -89,9 +89,21 @@ namespace DefenseShields
                             var damage = computedDamage * ModulateEnergy;
                             if (computedDamage < 0) damage = computedDamage;
 
-                            WorldImpactPosition = ent.PositionComp.WorldVolume.Center;
-                            Absorb += damage;
-                            destObj.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
+                            if (Session.MpActive)
+                            {
+                                if (Session.IsServer)
+                                {
+                                    ShieldDoDamage(damage, ent.EntityId);
+                                    destObj.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
+                                }
+                            }
+                            else
+                            {
+                                WorldImpactPosition = ent.PositionComp.WorldVolume.Center;
+                                Absorb += damage;
+                                ImpactSize = damage;
+                                destObj.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
+                            }
                         }
                     }
                 }
@@ -105,9 +117,22 @@ namespace DefenseShields
                         while (_meteorDmg.TryDequeue(out meteor))
                         {
                             if (meteor == null || meteor.MarkedForClose || meteor.Closed) continue;
-                            WorldImpactPosition = meteor.PositionComp.WorldVolume.Center;
-                            Absorb += (5000 * ModulateKinetic);
-                            meteor.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
+                            var damage = 5000 * ModulateKinetic;
+                            if (Session.MpActive)
+                            {
+                                if (Session.IsServer)
+                                {
+                                    ShieldDoDamage(damage, meteor.EntityId);
+                                    meteor.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
+                                }
+                            }
+                            else
+                            {
+                                WorldImpactPosition = meteor.PositionComp.WorldVolume.Center;
+                                Absorb += damage;
+                                ImpactSize = damage;
+                                meteor.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
+                            }
                         }
                     }
                 }

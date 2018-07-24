@@ -24,6 +24,7 @@ namespace DefenseShields
     {
         private uint _tick;
 
+        public const ushort PacketIdStats = 62518; // network
         public const ushort PacketIdDisplay = 62519; // network
         public const ushort PacketIdSettings = 62520; // network
         public const ushort PacketIdEnforce = 62521; // network
@@ -47,6 +48,7 @@ namespace DefenseShields
         public bool DisplayControlsLoaded { get; set; }
         public bool Enabled = true;
 
+        internal MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
         internal MyStringHash Bypass = MyStringHash.GetOrCompute("bypass");
         internal MyStringId Password = MyStringId.GetOrCompute("Shield Access Frequency");
         internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Match a shield's modulation frequency/code");
@@ -59,6 +61,7 @@ namespace DefenseShields
         internal static DefenseShields HudComp;
         internal static double HudShieldDist = double.MaxValue;
 
+        public readonly Guid ShieldGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811505");
         public readonly Guid EmitterGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811506");
         public readonly Guid DisplayGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811507");
         public readonly Guid SettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
@@ -128,6 +131,7 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in SessionInit: {ex}"); }
         }
 
+        #region Draw
         public override void Draw()
         {
             if (DedicatedServer) return;
@@ -145,7 +149,7 @@ namespace DefenseShields
                         if (s.BulletCoolDown == 9) s.BulletCoolDown = -1;
                     }
                     if (!s.WarmedUp || !s.ShieldComp.RaiseShield || s.ShieldComp.EmittersSuspended) continue;
-                    var sp = new BoundingSphereD(s.DetectionCenter, s.ShieldComp.BoundingRange);
+                    var sp = new BoundingSphereD(s.DetectionCenter, s.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {
                         SphereOnCamera[i] = false;
@@ -166,6 +170,8 @@ namespace DefenseShields
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
         }
+        #endregion
+
 
         public override void UpdateBeforeSimulation()
         {
@@ -202,6 +208,7 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in SessionBeforeSim: {ex}"); }
         }
 
+        #region DamageHandler
         public void CheckDamage(object target, ref MyDamageInformation info)
         {
             try
@@ -217,16 +224,16 @@ namespace DefenseShields
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
 
                         if (shield.ShieldComp.ShieldActive
-                            && shield.FriendlyCache.Contains(player) 
-                            && (hostileEnt == null  || !shield.FriendlyCache.Contains(hostileEnt))) info.Amount = 0f;
+                            && shield.FriendlyCache.Contains(player)
+                            && (hostileEnt == null || !shield.FriendlyCache.Contains(hostileEnt))) info.Amount = 0f;
                     }
                     return;
                 }
 
                 var block = target as IMySlimBlock;
                 if (block == null) return;
-                var blockGrid = (MyCubeGrid)block.CubeGrid;
 
+                var blockGrid = (MyCubeGrid)block.CubeGrid;
                 foreach (var shield in Components)
                 {
                     if (shield.ShieldComp.ShieldActive && shield.ShieldComp.RaiseShield && shield.FriendlyCache.Contains(blockGrid))
@@ -239,6 +246,36 @@ namespace DefenseShields
 
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
+                        if (info.Type == MPdamage)
+                        {
+
+                            if (!shield.ShieldComp.ShieldActive || !shield.ShieldComp.RaiseShield || shield.ShieldBuffer <= 0 || hostileEnt == null)
+                            {
+                                info.Amount = 0;
+                                continue;
+                            }
+
+                            Vector3D blockPos;
+                            block.ComputeWorldCenter(out blockPos);
+                            var line = new LineD(blockPos, hostileEnt.PositionComp.WorldAABB.Center);
+                            var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
+
+                            var testDir = line.From - line.To;
+                            testDir.Normalize();
+                            var ray = new RayD(line.From, -testDir);
+                            var worldSphere = shield.ShieldSphere;
+                            worldSphere.Center = shield.Shield.CubeGrid.PositionComp.WorldVolume.Center;
+                            var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
+
+                            var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
+                            Vector3 hitPos = line.From + testDir * -furthestHit;
+                            shield.WorldImpactPosition = hitPos;
+                            shield.ImpactSize = info.Amount;
+                            shield.Absorb += info.Amount;
+                            info.Amount = 0f;
+                            continue;
+                        }
+
                         if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt))
                         {
                             shield.DeformEnabled = true;
@@ -285,7 +322,7 @@ namespace DefenseShields
                             var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
                             Vector3 hitPos = line.From + testDir * -(double)furthestHit;
                             shield.WorldImpactPosition = hitPos;
-                            shield.ImpactSize = 5;
+                            shield.ImpactSize = info.Amount;
                         }
 
                         shield.Absorb += info.Amount;
@@ -301,6 +338,36 @@ namespace DefenseShields
 
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
+                        if (info.Type == MPdamage)
+                        {
+
+                            if (!shield.ShieldComp.ShieldActive || !shield.ShieldComp.RaiseShield || shield.ShieldBuffer <= 0 || hostileEnt == null)
+                            {
+                                info.Amount = 0;
+                                continue;
+                            }
+
+                            Vector3D blockPos;
+                            block.ComputeWorldCenter(out blockPos);
+                            var line = new LineD(blockPos, hostileEnt.PositionComp.WorldAABB.Center);
+                            var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
+
+                            var testDir = line.From - line.To;
+                            testDir.Normalize();
+                            var ray = new RayD(line.From, -testDir);
+                            var worldSphere = shield.ShieldSphere;
+                            worldSphere.Center = shield.Shield.CubeGrid.PositionComp.WorldVolume.Center;
+                            var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
+
+                            var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
+                            Vector3 hitPos = line.From + testDir * -furthestHit;
+                            shield.WorldImpactPosition = hitPos;
+                            shield.ImpactSize = info.Amount;
+                            shield.Absorb += info.Amount;
+                            info.Amount = 0f;
+                            continue;
+                        }
+
                         if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt))
                         {
                             shield.DeformEnabled = true;
@@ -333,14 +400,14 @@ namespace DefenseShields
                             var testDir = line.From - line.To;
                             testDir.Normalize();
                             var ray = new RayD(line.From, -testDir);
-                            var worldSphere = shield.ShieldSphere ;
+                            var worldSphere = shield.ShieldSphere;
                             worldSphere.Center = shield.Shield.CubeGrid.PositionComp.WorldVolume.Center;
                             var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
 
                             var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
                             Vector3 hitPos = line.From + testDir * -(double)furthestHit;
                             shield.WorldImpactPosition = hitPos;
-                            shield.ImpactSize = 5;
+                            shield.ImpactSize = info.Amount;
                         }
                         block.IncreaseMountLevel(1000f, 0, null, 1000f, true);
                         shield.Absorb += info.Amount;
@@ -350,8 +417,65 @@ namespace DefenseShields
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDamageHandler: {ex}"); }
         }
+        #endregion
 
         #region Network sync
+        private static void PacketStatsReceived(byte[] bytes)
+        {
+            try
+            {
+                if (bytes.Length <= 2)
+                {
+                    Log.Line($"Stats PacketReceived; invalid length <= 2; length={bytes.Length.ToString()}");
+                    return;
+                }
+
+                var data = MyAPIGateway.Utilities.SerializeFromBinary<StatsData>(bytes); // this will throw errors on invalid data
+
+                if (data == null)
+                {
+                    Log.Line($"Stats PacketReceived; no deserialized data!");
+                    return;
+                }
+
+                IMyEntity ent;
+                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
+                {
+                    Log.Line($"Stats PacketReceived; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    return;
+                }
+
+                var logic = ent.GameLogic.GetAs<DefenseShields>();
+
+                if (logic == null)
+                {
+                    Log.Line($"Stats PacketReceived; {data.Type}; shield doesn't have the gamelogic component!");
+                    return;
+                }
+
+                switch (data.Type)
+                {
+                    case PacketType.STATS:
+                        {
+                            if (data.Stats == null)
+                            {
+                                Log.Line($"Stats PacketReceived; {data.Type}; stats are null!");
+                                return;
+                            }
+
+                            if (Enforced.Debug == 1) Log.Line($"Packet Stats Packet received:- data:\n{data.Settings}");
+                            logic.UpdateStats(data.Stats);
+                            //logic.DsSet.SaveSettings();
+                            if (IsServer)
+                                ShieldStatsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in PacketStatsReceived: {ex}"); }
+        }
+
+
         private static void PacketSettingsReceived(byte[] bytes)
         {
             try
@@ -590,12 +714,7 @@ namespace DefenseShields
         }
         #endregion
 
-        public string ModPath()
-        {
-            var modPath = ModContext.ModPath;
-            return modPath;
-        }
-
+        #region UI Config
         public void CreateControllerElements(IMyTerminalBlock block)
         {
             try
@@ -610,7 +729,7 @@ namespace DefenseShields
 
                 if (comp != null && comp.GridIsMobile)
                 {
-                TerminalHelpers.Separator(comp?.Shield, "DS-C_sep2");
+                    TerminalHelpers.Separator(comp?.Shield, "DS-C_sep2");
                 }
 
                 ExtendFit = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_ExtendFit", "Extend Shield", "Extend Shield", DsUi.GetExtend, DsUi.SetExtend);
@@ -825,7 +944,7 @@ namespace DefenseShields
             bool addOnOff = false,
             string iconPack = null,
             string iconToggle = null,
-            string iconOn = null,   
+            string iconOn = null,
             string iconOff = null)
         {
             try
@@ -1103,6 +1222,14 @@ namespace DefenseShields
                 MyAPIGateway.TerminalControls.AddAction<T>(a);
             }
         }
+        #endregion
+
+        #region Misc
+        public string ModPath()
+        {
+            var modPath = ModContext.ModPath;
+            return modPath;
+        }
 
         public override void LoadData()
         {
@@ -1115,6 +1242,8 @@ namespace DefenseShields
             Log.Line("Logging stopped.");
             Log.Close();
         }
+        #endregion
+
     }
     #endregion
 }
