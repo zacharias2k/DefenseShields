@@ -70,6 +70,7 @@ namespace DefenseShields
             base.UpdateOnceBeforeFrame();
             try
             {
+                if (Modulator.CubeGrid.Physics == null) return;
                 if (!Modulator.CubeGrid.Components.Has<ModulatorGridComponent>())
                     Modulator.CubeGrid.Components.Add(new ModulatorGridComponent(this));
 
@@ -165,6 +166,7 @@ namespace DefenseShields
         {
             try
             {
+                if (Modulator.CubeGrid.Physics == null) return;
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
 
                 if (Sink.CurrentInputByType(GId) < 0.01f || Modulator?.CubeGrid == null || !Modulator.Enabled)

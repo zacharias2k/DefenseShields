@@ -18,14 +18,12 @@ using VRageMath;
 
 namespace DefenseShields
 {
-    #region Session+protection Class
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
     public class Session : MySessionComponentBase
     {
         private uint _tick;
 
-        public const ushort PacketIdStats = 62518; // network
-        public const ushort PacketIdDisplay = 62519; // network
+        public const ushort PacketIdStats = 62519; // network
         public const ushort PacketIdSettings = 62520; // network
         public const ushort PacketIdEnforce = 62521; // network
         public const ushort PacketIdModulator = 62522; // network
@@ -107,6 +105,7 @@ namespace DefenseShields
 
         public static DefenseShieldsEnforcement Enforced = new DefenseShieldsEnforcement();
 
+        #region Simulation / Init
         public void Init()
         {
             try
@@ -130,6 +129,42 @@ namespace DefenseShields
             }
             catch (Exception ex) { Log.Line($"Exception in SessionInit: {ex}"); }
         }
+
+        public override void UpdateBeforeSimulation()
+        {
+            try
+            {
+                _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+
+                for (int i = 0; i < Components.Count; i++) Components[i].DeformEnabled = false;
+                if (SphereOnCamera.Length != Components.Count) Array.Resize(ref SphereOnCamera, Components.Count);
+                if (_count++ == 59)
+                {
+                    _count = 0;
+                    _lCount++;
+                    if (_lCount == 10)
+                    {
+                        _lCount = 0;
+                        _eCount++;
+                        if (_eCount == 10) _eCount = 0;
+                    }
+                }
+
+                if (!SessionInit)
+                {
+                    if (DedicatedServer) Init();
+                    else if (MyAPIGateway.Session != null) Init();
+                }
+
+                if (!DefinitionsLoaded && SessionInit && _tick > 200)
+                {
+                    DefinitionsLoaded = true;
+                    UtilsStatic.GetDefinitons();
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in SessionBeforeSim: {ex}"); }
+        }
+        #endregion
 
         #region Draw
         public override void Draw()
@@ -171,42 +206,6 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
         }
         #endregion
-
-
-        public override void UpdateBeforeSimulation()
-        {
-            try
-            {
-                _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-
-                for (int i = 0; i < Components.Count; i++) Components[i].DeformEnabled = false;
-                if (SphereOnCamera.Length != Components.Count) Array.Resize(ref SphereOnCamera, Components.Count);
-                if (_count++ == 59)
-                {
-                    _count = 0;
-                    _lCount++;
-                    if (_lCount == 10)
-                    {
-                        _lCount = 0;
-                        _eCount++;
-                        if (_eCount == 10) _eCount = 0;
-                    }
-                }
-
-                if (!SessionInit)
-                {
-                    if (DedicatedServer) Init();
-                    else if (MyAPIGateway.Session != null) Init();
-                }
-
-                if (!DefinitionsLoaded && SessionInit && _tick > 200)
-                {
-                    DefinitionsLoaded = true;
-                    UtilsStatic.GetDefinitons();
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in SessionBeforeSim: {ex}"); }
-        }
 
         #region DamageHandler
         public void CheckDamage(object target, ref MyDamageInformation info)
@@ -463,7 +462,7 @@ namespace DefenseShields
                                 return;
                             }
 
-                            if (Enforced.Debug == 1) Log.Line($"Packet Stats Packet received:- data:\n{data.Settings}");
+                            if (Enforced.Debug == 1) Log.Line($"Packet Stats Packet received:- data:\n{data.Stats}");
                             logic.UpdateStats(data.Stats);
                             //logic.DsSet.SaveSettings();
                             if (IsServer)
@@ -657,6 +656,13 @@ namespace DefenseShields
             MyAPIGateway.Multiplayer.SendMessageTo(PacketIdEnforce, bytes, senderId);
         }
 
+        public static void PacketizeStats(IMyCubeBlock block, ShieldStats stats)
+        {
+            var data = new StatsData(MyAPIGateway.Multiplayer.MyId, block.EntityId, stats);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            ShieldSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
         public static void PacketizeModulatorSettings(IMyCubeBlock block, ModulatorBlockSettings settings)
         {
             var data = new ModulatorData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
@@ -669,6 +675,27 @@ namespace DefenseShields
             var data = new PacketData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
             ShieldSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        public static void ShieldStatsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        {
+            var localSteamId = MyAPIGateway.Multiplayer.MyId;
+            var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
+            distSq += 1000; // some safety padding, avoid desync
+            distSq *= distSq;
+
+            var players = Instance.Players;
+            players.Clear();
+            MyAPIGateway.Players.GetPlayers(players);
+
+            foreach (var p in players)
+            {
+                var id = p.SteamUserId;
+
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
+                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdModulator, bytes, p.SteamUserId);
+            }
+            players.Clear();
         }
 
         public static void ShieldSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
@@ -1245,5 +1272,4 @@ namespace DefenseShields
         #endregion
 
     }
-    #endregion
 }

@@ -44,6 +44,7 @@ namespace DefenseShields
             base.UpdateOnceBeforeFrame();
             try
             {
+                if (Shield.CubeGrid.Physics == null) return;
                 _shields.Add(Entity.EntityId, this);
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
                 Session.Instance.Components.Add(this);
@@ -178,7 +179,7 @@ namespace DefenseShields
         {
             try
             {
-                if (AllInited) return;
+                if (AllInited || Shield.CubeGrid.Physics == null) return;
                 if (!Session.EnforceInit)
                 {
                     if (Session.IsServer) ServerEnforcementSetup();

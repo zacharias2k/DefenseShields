@@ -21,20 +21,24 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 1) Dsutil2.Sw.Restart();
 
             var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange + 3000);
+            var pruneSphere2 = new BoundingSphereD(DetectionCenter, BoundingRange);
             var pruneList = new List<MyEntity>();
-            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
+            var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || ModulateVoxels;
+            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList, MyEntityQueryType.Dynamic);
+            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere2, pruneList, MyEntityQueryType.Static);
+
             foreach (var eShield in EnemyShields) pruneList.Add(eShield);
 
             var boundingSqr = BoundingRange * BoundingRange;
             for (int i = 0; i < pruneList.Count; i++)
             {
                 var ent = pruneList[i];
-                if (ent == null || ent.MarkedForClose || !GridIsMobile && ent is MyVoxelBase) continue;
-
+                var voxel = ent as MyVoxelBase;
+                if (ent == null || ent.MarkedForClose || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel) continue;
                 var entCenter = ent.PositionComp.WorldVolume.Center;
 
                 var missileCheck = Vector3D.DistanceSquared(entCenter, DetectionCenter) > boundingSqr && !((ent.Flags & EntityFlags.IsNotGamePrunningStructureObject) != 0 && ent.GetType().Name.Equals(MyMissile));
-                if (missileCheck) continue;
+                if (voxel == null && missileCheck) continue;
                 if (FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent) || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
 
                 var relation = EntType(ent);
@@ -98,7 +102,7 @@ namespace DefenseShields
                 Icosphere.ReturnPhysicsVerts(_detectMatrixInside, ShieldComp.PhysicsInside);
             }
             if (_enablePhysics) MyAPIGateway.Parallel.Start(WebDispatch);
-            if (Session.Enforced.Debug == 1) Dsutil2.StopWatchReport($"Web: ShieldId [{Shield.EntityId}]", 3);
+            if (Session.Enforced.Debug == 1) Dsutil2.StopWatchReport($"Web: ShieldId [{Shield.EntityId}]", 4);
         }
 
         private void WebDispatch()
@@ -184,7 +188,7 @@ namespace DefenseShields
                         case Ent.VoxelBase:
                             {
                                 vv++;
-                                if (Session.Enforced.Debug == 2) Log.Line($"Ent VoxelBase: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
+                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent VoxelBase: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
                                 MyAPIGateway.Parallel.Start(() => VoxelIntersect(webent as MyVoxelBase));
                                 continue;
                             }

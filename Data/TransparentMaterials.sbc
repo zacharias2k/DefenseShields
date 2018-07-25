@@ -209,7 +209,7 @@
       <Gloss>0.4</Gloss>
       <GlossTextureAdd>0.8</GlossTextureAdd>
       <SpecularColorFactor>255</SpecularColorFactor>
-      <IsFlareOccluder>true</IsFlareOccluder>
+      <IsFlareOccluder>false</IsFlareOccluder>
     </TransparentMaterial>
 
  <TransparentMaterial>

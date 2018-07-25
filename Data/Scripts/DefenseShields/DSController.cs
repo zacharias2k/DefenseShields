@@ -13,7 +13,6 @@ using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage.Utils;
-using VRage.Voxels;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
 namespace DefenseShields
@@ -88,9 +87,6 @@ namespace DefenseShields
                 PostInit();
                 if (!AllInited) return false;
             }
-            var myGrid = (MyCubeGrid) Shield.CubeGrid;
-            if (myGrid.GridGeneralDamageModifier < 1) myGrid.GridGeneralDamageModifier = 1f;
-
             if (_blockChanged) BlockMonitor();
 
             if (Suspend() || !WarmUpSequence() || ShieldSleeping() || ShieldLowered()) return false;
@@ -639,7 +635,7 @@ namespace DefenseShields
         #region Field Check
         private bool FieldShapeBlocked()
         {
-            if (ModulateVoxels) return false;
+            if (ModulateVoxels || Session.Enforced.DisableVoxelSupport == 1) return false;
 
             var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange);
             var pruneList = new List<MyVoxelBase>();
@@ -650,9 +646,8 @@ namespace DefenseShields
             Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, ShieldComp.PhysicsOutsideLow);
             foreach (var voxel in pruneList)
             {
-                if (voxel.RootVoxel == null) continue;
-
-                if (!CustomCollision.VoxelContact(Shield.CubeGrid, ShieldComp.PhysicsOutsideLow, voxel, new MyStorageData(), _detectMatrixOutside)) continue;
+                if (voxel.RootVoxel == null || voxel != voxel.RootVoxel) continue;
+                if (!CustomCollision.VoxelContact(ShieldComp.PhysicsOutsideLow, voxel)) continue;
 
                 Shield.Enabled = false;
                 MyVisualScriptLogicProvider.ShowNotification("The shield's field cannot form when in contact with a solid body", 6720, "Blue", Shield.OwnerId);

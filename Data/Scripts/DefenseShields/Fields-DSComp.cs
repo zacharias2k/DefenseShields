@@ -74,10 +74,10 @@ namespace DefenseShields
         private int _oldBlockCount;
         private int _shieldRatio;
 
+        internal bool ControllerGridAccess = true;
         internal bool DeformEnabled;
         internal bool ExplosionEnabled;
         internal bool ControlBlockWorking;
-        internal bool ControllerGridAccess;
         internal bool IsOwner;
         internal bool InFaction;
         internal bool MainInit;

@@ -25,7 +25,13 @@ namespace DefenseShields
 
             ModulateVoxels = newSettings.ModulateVoxels;
             ModulateGrids = newSettings.ModulateGrids;
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdateSet - ShieldId [{Shield.EntityId}]:\n{newSettings}");
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings - ShieldId [{Shield.EntityId}]:\n{newSettings}");
+        }
+
+        public void UpdateStats(ShieldStats stats)
+        {
+            ModulateVoxels = stats.ModulateVoxels;
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdateStats - ShieldId [{Shield.EntityId}]:\n{stats}");
         }
     }
 }
