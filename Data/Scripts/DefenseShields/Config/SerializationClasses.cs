@@ -23,24 +23,6 @@ namespace DefenseShields
     }
 
     [ProtoContract]
-    public class DisplaySettings
-    {
-        [ProtoMember(1)]
-        public bool Enabled = false;
-
-        [ProtoMember(2)]
-        public bool ModulateVoxels = false;
-
-        [ProtoMember(3)]
-        public bool ModulateGrids = false;
-
-        public override string ToString()
-        {
-            return $"Enabled = {Enabled}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}";
-        }
-    }
-
-    [ProtoContract]
     public class DefenseShieldsModSettings
     {
         [ProtoMember(1)]
@@ -68,7 +50,7 @@ namespace DefenseShields
         public float Buffer = 0f;
 
         [ProtoMember(9)]
-        public bool ModulateVoxels = false;
+        public bool ModulateVoxels = true;
 
         [ProtoMember(10)]
         public bool ModulateGrids = false;
@@ -162,7 +144,7 @@ namespace DefenseShields
         public bool Enabled = true;
 
         [ProtoMember(2)]
-        public bool ModulateVoxels = false;
+        public bool ModulateVoxels = true;
 
         [ProtoMember(3)]
         public bool ModulateGrids = false;

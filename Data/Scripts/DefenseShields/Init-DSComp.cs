@@ -175,48 +175,6 @@ namespace DefenseShields
             _functionalChanged = true;
         }
 
-        public void PostInit()
-        {
-            try
-            {
-                if (AllInited || Shield.CubeGrid.Physics == null) return;
-                if (!Session.EnforceInit)
-                {
-                    if (Session.IsServer) ServerEnforcementSetup();
-                    else if (_enforceTick == 0 || _tick - _enforceTick > 60)
-                    {
-                        _enforceTick = _tick;
-                        ClientEnforcementRequest();
-                    }
-                    if (!Session.EnforceInit) return;
-                }
-                if (AllInited || !Shield.IsFunctional || ShieldComp.EmitterMode < 0)
-                {
-                    if (_tick % 600 == 0) Shield.RefreshCustomInfo();
-                    return;
-                }
-
-                if (!MainInit && Shield.IsFunctional)
-                {
-                    Session.Instance.CreateControllerElements(Shield);
-                    SetShieldType(false, true);
-
-                    CleanUp(3);
-                    MainInit = true;
-                    if (Session.Enforced.Debug == 1) Log.Line($"MainInit: ShieldId [{Shield.EntityId}]");
-                }
-
-                if (AllInited || !MainInit || !Shield.IsFunctional || !BlockReady()) return;
-
-                if (Session.EnforceInit)
-                {
-                    AllInited = true;
-                }
-                if (Session.Enforced.Debug == 1) Log.Line($"AllInited: ShieldId [{Shield.EntityId}]");
-            }
-            catch (Exception ex) { Log.Line($"Exception in Controller PostInit: {ex}"); }
-        }
-
         private void StorageSetup()
         {
             Storage = Shield.Storage;
@@ -445,8 +403,8 @@ namespace DefenseShields
         private bool Suspend()
         {
             var isStatic = Shield.CubeGrid.IsStatic;
-            var primeMode = ShieldMode == ShieldType.Station && isStatic && ShieldComp.EmitterPrime == null;
-            var betaMode = ShieldMode != ShieldType.Station && !isStatic && ShieldComp.EmitterBeta == null;
+            var primeMode = ShieldMode == ShieldType.Station && isStatic && ShieldComp.StationEmitter == null;
+            var betaMode = ShieldMode != ShieldType.Station && !isStatic && ShieldComp.ShipEmitter == null;
 
             if (ShieldMode != ShieldType.Station && isStatic) InitSuspend();
             else if (ShieldMode == ShieldType.Station && !isStatic) InitSuspend();
@@ -525,34 +483,59 @@ namespace DefenseShields
             return ControllerGridAccess;
         }
 
+        public void PostInit()
+        {
+            try
+            {
+                if (AllInited || Shield.CubeGrid.Physics == null) return;
+                if (!Session.EnforceInit)
+                {
+                    if (Session.IsServer) ServerEnforcementSetup();
+                    else if (_enforceTick == 0 || _tick - _enforceTick > 60)
+                    {
+                        _enforceTick = _tick;
+                        ClientEnforcementRequest();
+                    }
+                    if (!Session.EnforceInit) return;
+                }
+                if (AllInited || !Shield.IsFunctional || ShieldComp.EmitterMode < 0)
+                {
+                    if (_tick % 600 == 0) Shield.RefreshCustomInfo();
+                    return;
+                }
+
+                if (!MainInit && Shield.IsFunctional)
+                {
+                    Session.Instance.CreateControllerElements(Shield);
+                    SetShieldType(false, true);
+
+                    CleanUp(3);
+                    MainInit = true;
+                    if (Session.Enforced.Debug == 1) Log.Line($"MainInit: ShieldId [{Shield.EntityId}]");
+                }
+
+                if (AllInited || !MainInit || !Shield.IsFunctional || !BlockReady()) return;
+
+                if (Session.EnforceInit)
+                {
+                    AllInited = true;
+                }
+                if (Session.Enforced.Debug == 1) Log.Line($"AllInited: ShieldId [{Shield.EntityId}]");
+            }
+            catch (Exception ex) { Log.Line($"Exception in Controller PostInit: {ex}"); }
+        }
+
         private bool WarmUpSequence()
         {
-            if (ShieldComp?.DefenseShields != this) return false;
+            //if (ShieldComp?.DefenseShields != this) return false;
             if (Warming) return true;
-
+            //if (Starting && !ShieldComp.EmittersWorking) return false;
             if (Starting)
             {
-                if (ShieldComp?.EmitterPrime != null || ShieldComp?.EmitterBeta != null)
-                {
-                    if (GridIsMobile)
-                    {
-                        CreateHalfExtents();
-                        GetShapeAdjust();
-                        MobileUpdate();
-                    }
-                    else
-                    {
-                        UpdateDimensions = true;
-                        if (UpdateDimensions) RefreshDimensions();
-                    }
-                    _shapeAdjusted = false;
-                    ShieldComp.CheckEmitters = true;
-                    Icosphere.ReturnPhysicsVerts(DetectionMatrix, ShieldComp.PhysicsOutside);
-                    Warming = true;
-                    return false;
-                }
-                return false;
+                Warming = true;
+                return true;
             }
+
             if (!PowerOnline()) return false;
             HadPowerBefore = true;
             _blockChanged = true;
@@ -565,6 +548,20 @@ namespace DefenseShields
 
             ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
             if (Session.Enforced.Debug == 1) Log.Line($"Warming: buffer:{ShieldBuffer} - BlockWorking:{ControlBlockWorking} - Active:{ShieldComp.ShieldActive} - ShieldId [{Shield.EntityId}]");
+            if (GridIsMobile)
+            {
+                CreateHalfExtents();
+                GetShapeAdjust();
+                MobileUpdate();
+            }
+            else
+            {
+                UpdateDimensions = true;
+                if (UpdateDimensions) RefreshDimensions();
+            }
+            _shapeAdjusted = false;
+            ShieldComp.CheckEmitters = true;
+            Icosphere.ReturnPhysicsVerts(DetectionMatrix, ShieldComp.PhysicsOutside);
             Starting = true;
             return false;
         }

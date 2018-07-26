@@ -85,7 +85,7 @@ namespace DefenseShields
             if (!AllInited)
             {
                 PostInit();
-                if (!AllInited) return false;
+                return false;
             }
             if (_blockChanged) BlockMonitor();
 
@@ -245,7 +245,7 @@ namespace DefenseShields
 
         private void EmitterEventDetected()
         {
-            if (!GridIsMobile && ShieldComp.EmitterPrime != null && !ShieldComp.EmitterPrime.Suspended && !ShieldComp.EmitterPrime.Alpha)
+            if (!GridIsMobile)
             {
                 UpdateDimensions = true;
                 if (UpdateDimensions) RefreshDimensions();
@@ -734,7 +734,7 @@ namespace DefenseShields
             }
             else
             {
-                var emitter = ShieldComp.EmitterPrime.Emitter;
+                var emitter = ShieldComp.StationEmitter.Emitter;
                 _shieldGridMatrix = emitter.WorldMatrix;
                 DetectionMatrix = MatrixD.Rescale(_shieldGridMatrix, new Vector3D(Width, Height, Depth));
                 _shieldShapeMatrix = MatrixD.Rescale(emitter.LocalMatrix, new Vector3D(Width, Height, Depth));
@@ -775,7 +775,7 @@ namespace DefenseShields
             MatrixD matrix;
             if (!GridIsMobile)
             {
-                matrix = _shieldShapeMatrix * ShieldComp.EmitterPrime.Emitter.WorldMatrix;
+                matrix = _shieldShapeMatrix * ShieldComp.StationEmitter.Emitter.WorldMatrix;
                 ShieldEnt.PositionComp.SetWorldMatrix(matrix);
                 ShieldEnt.PositionComp.SetPosition(DetectionCenter);
             }
@@ -1044,12 +1044,12 @@ namespace DefenseShields
         {
             if (!ControllerGridAccess) return "Invalid Owner";
             if (Suspended || ShieldMode == ShieldType.Unknown) return "Controller Standby";
+            if (ShieldWasSleeping) return "Docked";
             if (!Shield.IsWorking || !Shield.IsFunctional) return "Controller Failure";
             if (ShieldComp.EmitterMode < 0 || !ShieldComp.EmittersWorking) return "Emitter Failure";
             if (ShieldOffline && !_overLoadLoop.Equals(-1)) return "Overloaded";
             if (ShieldOffline && _power.Equals(0.0001f)) return "Insufficient Power";
             if (!ShieldComp.RaiseShield && !ShieldOffline) return "Shield Down";
-            if (ShieldWasSleeping) return "Docked";
             return ShieldOffline ? "Offline" : "Shield Up";
         }
 

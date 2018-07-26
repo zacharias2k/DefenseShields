@@ -16,6 +16,7 @@ using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRage.Utils;
 using VRageMath;
+using VRageRender;
 using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 namespace DefenseShields
@@ -36,21 +37,15 @@ namespace DefenseShields
 
         internal bool Online;
         public bool ServerUpdate;
-        internal bool AllInited;
         internal bool Suspended;
         internal bool GoToSleep;
-        internal bool Prime;
-        internal bool Alpha;
-        internal bool Beta;
-        internal bool Zeta;
+        internal bool Backup;
         internal bool Compact;
         internal bool IsStatic;
         internal bool BlockIsWorking;
-        internal bool BlockWasWorking;
         internal bool ShieldLineOfSight;
         internal bool TookControl;
         internal bool ControllerFound;
-        public bool EmitterOnline;
 
         private const string PlasmaEmissive = "PlasmaEmissive";
 
@@ -81,7 +76,6 @@ namespace DefenseShields
             Station,
             Large,
             Small,
-            Unknown
         };
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
@@ -108,6 +102,7 @@ namespace DefenseShields
                 Storage = Emitter.Storage;
                 PowerInit();
                 _myRenderId = Emitter.Render.GetRenderObjectID();
+                SetEmitterType();
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
@@ -122,7 +117,7 @@ namespace DefenseShields
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
                 Timing();
 
-                if (!AllInited && !InitEmitter() || Suspend() || !BlockWorking()) return;
+                if (Suspend() || !BlockWorking()) return;
 
                 if (ShieldComp.ShieldActive && !Session.DedicatedServer && UtilsStatic.DistanceCheck(Emitter, 1000, ShieldComp.DefenseShields.BoundingRange))
                 {
@@ -159,44 +154,12 @@ namespace DefenseShields
             }
         }
 
-        private bool BlockWorking()
-        {
-            if (Sink.CurrentInputByType(GId) < 0.01f || Emitter.CubeGrid == null || ShieldComp == null || !Emitter.Enabled || !Emitter.IsFunctional)
-            {
-                Online = false;
-            }
-            else Online = true;
-
-            if (ShieldComp?.DefenseShields == null || !ShieldComp.DefenseShields.Warming)
-            {
-                BlockReset();
-                return false;
-            }
-            ControllerFound = true;
-
-            if (Online && (ShieldComp.CheckEmitters || TookControl)) CheckShieldLineOfSight();
-            if (Online && !ShieldLineOfSight && !Session.DedicatedServer) DrawHelper();
-
-            BlockIsWorking = ShieldLineOfSight && Emitter.IsWorking && Emitter.IsFunctional;
-
-            ShieldComp.EmittersWorking = BlockIsWorking && Online;
-
-            BlockWasWorking = BlockIsWorking;
-
-            if (!BlockIsWorking)
-            {
-                BlockReset();
-                return false;
-            }
-            return true;
-        }
-
         #region Block Animation
 
-        private void BlockReset()
+        private void BlockReset(bool force = false)
         {
             if (_effect != null && !Session.DedicatedServer && !Compact) BlockParticleStop();
-            if (!Session.DedicatedServer && !EmissiveIntensity.Equals(0)) BlockMoveAnimationReset(true);
+            if (!Session.DedicatedServer && !EmissiveIntensity.Equals(0) || !Session.DedicatedServer && force) BlockMoveAnimationReset(true);
         }
 
         private void BlockMoveAnimationReset(bool clearAnimation)
@@ -213,7 +176,7 @@ namespace DefenseShields
                     var rotationMatrix = MatrixD.CreateRotationY(0);
                     var matrix = rotationMatrix * MatrixD.CreateTranslation(0, 0, 0);
                     _subpartRotor.PositionComp.LocalMatrix = matrix;
-                    _subpartRotor.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetShieldColorFromFloat(ShieldComp.ShieldPercent), 0.1f * EmissiveIntensity);
+                    _subpartRotor.SetEmissiveParts(PlasmaEmissive, Color.Transparent, 0);
                 }
                 else Emitter.SetEmissiveParts(PlasmaEmissive, Color.Transparent, 0);
                 return;
@@ -355,20 +318,32 @@ namespace DefenseShields
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
+            var compatible = IsStatic && EmitterMode == EmitterType.Station || !IsStatic && EmitterMode != EmitterType.Station;
             if (ShieldComp == null || !ShieldComp.ShieldActive || !ControllerFound)
             {
                 stringBuilder.Append("[ Emitter Offline ]" +
-                                     "\n[Controller Link]: " + ControllerFound);
-
+                                     "\n" +
+                                     "\n[Emitter Type]: " + EmitterMode +
+                                     "\n[Grid Compatible]: " + compatible +
+                                     "\n[Line of Sight]: " + ShieldLineOfSight +
+                                     "\n[Is a Backup]: " + Backup +
+                                     "\n[Is Suspended]: " + Suspended +
+                                     "\n[Is Docked]: " + GoToSleep +
+                                     "\n[Controller Link]: " + ControllerFound +
+                                     "\n[Grid Access]: " + ShieldComp?.DefenseShields?.ControllerGridAccess);
             }
             else
             {
-                stringBuilder.Append("[Emitter Type]: " + (EmitterMode) +
+                stringBuilder.Append("[ Emitter Online ]" +
+                                     "\n" +
+                                     "\n[Emitter Type]: " + EmitterMode +
+                                     "\n[Grid Compatible]: " + compatible +
                                      "\n[Line of Sight]: " + ShieldLineOfSight +
-                                     "\n[Is a Backup]: " + (Alpha || Zeta) +
+                                     "\n[Is a Backup]: " + Backup +
                                      "\n[Is Suspended]: " + Suspended +
-                                     "\n[Is Initted]: " + AllInited);
-
+                                     "\n[Is Docked]: " + GoToSleep +
+                                     "\n[Controller Link]: " + ControllerFound +
+                                     "\n[Grid Access]: " + ShieldComp?.DefenseShields?.ControllerGridAccess);
             }
         }
 
@@ -410,60 +385,6 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }
 
-        private bool InitEmitter()
-        {
-            Emitter.CubeGrid.Components.TryGet(out ShieldComp);
-            if (Definition == null) SetEmitterType();
-            if (!Emitter.IsFunctional || ShieldComp?.DefenseShields == null) return false;
-            if (!ShieldComp.DefenseShields.Starting)
-            {
-                if (Session.Enforced.Debug == 1) Log.Line($"Init: {EmitterMode} is not starting, setting mode and looping - EmitterId [{Emitter.EntityId}]");
-                ShieldComp.EmitterMode = (int)EmitterMode;
-            }
-
-            if (!AllInited && EmitterMode == EmitterType.Station)
-            {
-                if (ShieldComp.EmitterPrime != null) ShieldComp.EmitterPrime.Alpha = true;
-
-                if ((int)EmitterMode == ShieldComp.EmitterMode)
-                {
-                    TookControl = true;
-                    ShieldComp.EmitterEvent = true;
-                    if (Session.Enforced.Debug == 1) Log.Line($"Init: {EmitterMode} is taking control of prime - EmitterId [{Emitter.EntityId}]");
-                }
-
-                ShieldComp.EmitterPrime = this;
-                Prime = true;
-
-                if (!Compact) Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                BlockWasWorking = true;
-                BlockMoveAnimationReset(true);
-                AllInited = true;
-                return true;
-            }
-            if (!AllInited)
-            {
-                if (ShieldComp.EmitterBeta != null) ShieldComp.EmitterBeta.Zeta = true;
-
-                if ((int)EmitterMode == ShieldComp.EmitterMode)
-                {
-                    TookControl = true;
-                    ShieldComp.EmitterEvent = true;
-                    if (Session.Enforced.Debug == 1) Log.Line($"Init: {EmitterMode} is taking control of beta - EmitterId [{Emitter.EntityId}]");
-                }
-
-                ShieldComp.EmitterBeta = this;
-                Beta = true;
-
-                if (!Compact) Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                BlockWasWorking = true;
-                BlockMoveAnimationReset(true);
-                AllInited = true;
-                return true;
-            }
-            return false;
-        }
-
         private void SetEmitterType()
         {
             Definition = DefinitionManager.Get(Emitter.BlockDefinition.SubtypeId);
@@ -471,22 +392,47 @@ namespace DefenseShields
             {
                 case "EmitterST":
                     EmitterMode = EmitterType.Station;
+                    Entity.TryGetSubpart("Rotor", out _subpartRotor);
                     break;
                 case "EmitterL":
                 case "EmitterLA":
                     EmitterMode = EmitterType.Large;
                     if (Definition.Name == "EmitterLA") Compact = true;
+                    else Entity.TryGetSubpart("Rotor", out _subpartRotor);
                     break;
                 case "EmitterS":
                 case "EmitterSA":
                     EmitterMode = EmitterType.Small;
                     if (Definition.Name == "EmitterSA") Compact = true;
-                    break;
-                default:
-                    EmitterMode = EmitterType.Unknown;
+                    else Entity.TryGetSubpart("Rotor", out _subpartRotor);
                     break;
             }
             Emitter.AppendingCustomInfo += AppendingCustomInfo;
+        }
+
+        private bool BlockWorking()
+        {
+            if (Sink.CurrentInputByType(GId) < 0.01f || Emitter.CubeGrid == null || !Emitter.Enabled || !Emitter.IsFunctional)
+            {
+                Online = false;
+            }
+            else Online = true;
+
+
+            if (Online && ShieldComp.DefenseShields.Starting && (ShieldComp.CheckEmitters || TookControl)) CheckShieldLineOfSight();
+            if (Online && ShieldComp.DefenseShields.Starting && !ShieldLineOfSight && !Session.DedicatedServer) DrawHelper();
+
+            BlockIsWorking = ShieldLineOfSight && Emitter.IsWorking && Emitter.IsFunctional;
+
+            ShieldComp.EmittersWorking = BlockIsWorking && Online;
+
+            if (!BlockIsWorking || !ShieldComp.ShieldActive)
+            {
+                BlockReset();
+                return false;
+            }
+            ControllerFound = true;
+            return true;
         }
 
         private bool Suspend()
@@ -495,27 +441,40 @@ namespace DefenseShields
             if (ShieldComp?.DefenseShields == null)
             {
                 Emitter.CubeGrid.Components.TryGet(out ShieldComp);
-                if (Session.Enforced.Debug == 1 && _lCount == 0 && _count == 0) Log.Line($"Suspend: had a null ShieldComp, trying.... {ShieldComp != null} - DefenseComp... {ShieldComp?.DefenseShields != null} - EmitterId [{Emitter.EntityId}]");
                 if (ShieldComp?.DefenseShields == null || !ShieldComp.DefenseShields.ControllerGridAccess)
                 {
-                    if (!Suspended) BlockReset();
+                    if (!Suspended)
+                    {
+                        BlockReset(true);
+                        if (Session.Enforced.Debug == 1) Log.Line($"Suspend: null detected - ShieldComp: {ShieldComp != null} - DefenseComp: {ShieldComp?.DefenseShields != null} - EmitterId [{Emitter.EntityId}]");
+                    }
                     Suspended = true;
                     return true;
                 }
             }
             else if (!ShieldComp.DefenseShields.ControllerGridAccess)
             {
-                if (!Suspended) BlockReset();
+                if (!Suspended)
+                {
+                    BlockReset(true);
+                    if (Session.Enforced.Debug == 1) Log.Line($"No Access: EmitterId [{Emitter.EntityId}]");
+                }
                 Suspended = true;
                 return true;
             }
 
             var working = Emitter.IsWorking && Emitter.IsFunctional;
+            var stationMode = EmitterMode == EmitterType.Station;
+            var shipMode = EmitterMode != EmitterType.Station;
+            var modes = IsStatic && stationMode || !IsStatic && shipMode;
+            var mySlotNull = stationMode && ShieldComp.StationEmitter == null || shipMode && ShieldComp.ShipEmitter == null;
+            var myComp = stationMode && ShieldComp.StationEmitter == this || shipMode && ShieldComp.ShipEmitter == this;
 
-            var otherMode = Prime && !ShieldComp.Station || Beta && ShieldComp.Station;
-            var modeSwitch = working && otherMode && (IsStatic && EmitterMode == EmitterType.Station || !IsStatic && EmitterMode != EmitterType.Station);
-            var modeOpen = working && Suspended && (Prime && ShieldComp.EmitterPrime == null || Beta && ShieldComp.EmitterBeta == null);
-            var wrongMode = !modeOpen && !modeSwitch && (IsStatic && EmitterMode != EmitterType.Station || !IsStatic && EmitterMode == EmitterType.Station);
+            var myMode = working && modes;
+            var mySlotOpen = working && mySlotNull;
+            var myShield = myMode && myComp;
+            var iStopped = !working && myComp && modes;
+            //Log.Line($"!myMode: {Definition.Name} suspending - iStopped:{iStopped} - myMode: {myMode} - myShield: {myShield} - Match:{(int)EmitterMode == ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{Suspended} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
 
             var terminalConnected = ShieldComp.GetLinkedGrids.Count - ShieldComp.GetSubGrids.Count > 0;
 
@@ -540,6 +499,7 @@ namespace DefenseShields
                         if (Session.Enforced.Debug == 1) Log.Line($"Sleep: Going to sleep - EmitterId [{Emitter.EntityId}]");
                         ShieldComp.EmitterEvent = true;
                         ShieldComp.EmittersSuspended = true;
+                        BlockReset(true);
                     }
                 }
                 else if (GoToSleep && ShieldComp.EmittersSuspended)
@@ -551,83 +511,94 @@ namespace DefenseShields
                 }
                 GoToSleep = foundStatic;
                 Suspended = GoToSleep;
-                if (Suspended)
-                {
-                    BlockReset();
-                    return Suspended;
-                }
+                if (Suspended) return Suspended;
             }
             else if (GoToSleep) return GoToSleep;
 
-            if (modeOpen)
+            if (mySlotOpen)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"Suspend-to-Active: Name:{Definition?.Name} - Mode:({EmitterMode}) - CompNull:{ShieldComp == null} F:({!Emitter.IsFunctional}) - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{Suspended} - EmitterId [{Emitter.EntityId}]");
-                if (Prime)
+                if (stationMode)
                 {
-                    Alpha = false;
-                    ShieldComp.EmitterPrime = this;
-                    TookControl = true;
-                    if (modeSwitch)
+                    Backup = false;
+                    ShieldComp.StationEmitter = this;
+                    if (myMode)
                     {
-                        if (ShieldComp.EmitterBeta != null) ShieldComp.EmitterBeta.Suspended = true;
+                        TookControl = true;
                         ShieldComp.EmitterMode = (int)EmitterMode;
-                        ShieldComp.Station = EmitterMode == EmitterType.Station;
                         ShieldComp.EmitterEvent = true;
                         ShieldComp.EmittersSuspended = false;
                         Suspended = false;
+                        myShield = true;
+                        Backup = false;
                     }
-
-                    if (Session.Enforced.Debug == 1) Log.Line($"Suspend-to-Active: {Definition.Name} is taking control of prime - M-Match:{(int)EmitterMode == ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{Suspended} - EmitterId [{Emitter.EntityId}]");
+                    else
+                    {
+                        Suspended = true;
+                        BlockReset(true);
+                    }
                 }
                 else
                 {
-                    Zeta = false;
-                    ShieldComp.EmitterBeta = this;
-                    TookControl = true;
+                    Backup = false;
+                    ShieldComp.ShipEmitter = this;
 
-                    if (modeSwitch)
+                    if (myMode)
                     {
-                        if (ShieldComp.EmitterPrime != null) ShieldComp.EmitterPrime.Suspended = true;
+                        TookControl = true;
                         ShieldComp.EmitterMode = (int)EmitterMode;
-                        ShieldComp.Station = EmitterMode == EmitterType.Station;
                         ShieldComp.EmitterEvent = true;
                         ShieldComp.EmittersSuspended = false;
                         Suspended = false;
+                        myShield = true;
+                        Backup = false;
                     }
-
-                    if (Session.Enforced.Debug == 1) Log.Line($"Suspend: {Definition.Name} is taking control of beta - modeSwitch {modeSwitch} - {IsStatic} - Mode:{EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ModeM:{(int)EmitterMode == ShieldComp.EmitterMode} - S:{Suspended} - EmitterId [{Emitter.EntityId}]");
-                }
-            }
-            else if (otherMode || wrongMode)
-            {
-                if (Session.Enforced.Debug == 1) Log.Line($"Other/WrongMode: {Definition.Name} suspending - Other:{otherMode} - Wrong:{wrongMode} - Open:{modeOpen} - Match:{(int)EmitterMode == ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{Suspended} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
-                if (!modeSwitch)
-                {
-                    var compMode = ShieldComp.EmitterMode;
-                    if (!Suspended && wrongMode && (compMode == 0 && !IsStatic || compMode != 0 && IsStatic))
+                    else
                     {
-                        ShieldComp.EmittersSuspended = true;
-                        ShieldComp.EmittersWorking = false;
-                        ShieldComp.EmitterEvent = true;
+                        Suspended = true;
+                        BlockReset(true);
                     }
-                    BlockReset();
-                    Suspended = true;
-                    return Suspended;
                 }
-
-                ShieldComp.EmitterMode = (int)EmitterMode;
-                ShieldComp.Station = EmitterMode == EmitterType.Station;
-                ShieldComp.EmitterEvent = true;
-                ShieldComp.EmittersSuspended = false;
+                if (Session.Enforced.Debug == 1) Log.Line($"mySlotOpen: {Definition.Name} - myMode:{myMode} - MyShield:{myShield} - Mode:{EmitterMode} - Static:{IsStatic} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ModeM:{(int)EmitterMode == ShieldComp.EmitterMode} - S:{Suspended} - EmitterId [{Emitter.EntityId}]");
+            }
+            else if (!myMode)
+            {
+                var compMode = ShieldComp.EmitterMode;
+                if (!Suspended && (compMode == 0 && !IsStatic || compMode != 0 && IsStatic) || iStopped)
+                {
+                    ShieldComp.EmittersSuspended = true;
+                    ShieldComp.EmittersWorking = false;
+                    ShieldComp.EmitterEvent = true;
+                    BlockReset(true);
+                    if (Session.Enforced.Debug == 1) Log.Line($"!myMode: {Definition.Name} suspending - myMode: {myMode} - myShield: {myShield} - Match:{(int)EmitterMode == ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{Suspended} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
+                }
+                else if (!Suspended)
+                {
+                    if (Session.Enforced.Debug == 1) Log.Line($"!myMode: {Definition.Name} suspending - myMode: {myMode} - myShield: {myShield} - Match:{(int)EmitterMode == ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{Suspended} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
+                    BlockReset(true);
+                }
+                Suspended = true;
             }
 
-            if (!otherMode && Suspended)
+            if (!myShield)
+            {
+                if (!Suspended)
+                {
+                    Backup = true;
+                    BlockReset(true);
+                }
+                Suspended = true;
+            }
+
+            if (myShield && Suspended)
             {
                 ShieldComp.EmittersSuspended = false;
                 ShieldComp.EmitterMode = (int)EmitterMode;
-                ShieldComp.Station = EmitterMode == EmitterType.Station;
-                if (Session.Enforced.Debug == 1) Log.Line($"Unsuspend - !otherMode: isStatic:{IsStatic} - modeOpen:{modeOpen} - modeSwitch {modeSwitch} - Mode:{EmitterMode} - Station: {ShieldComp.Station} - CompMode: {ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - EmitterId [{Emitter.EntityId}]");
+                ShieldComp.EmitterEvent = true;
+                Backup = false;
+                if (Session.Enforced.Debug == 1) Log.Line($"Unsuspend - !otherMode: {Definition.Name} - isStatic:{IsStatic} - myShield:{myShield} - myMode {myMode} - Mode:{EmitterMode} - Station: {ShieldComp.Station} - CompMode: {ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - EmitterId [{Emitter.EntityId}]");
             }
+            else if (Suspended) return Suspended;
+
             Suspended = false;
             return Suspended;
         }
@@ -637,7 +608,6 @@ namespace DefenseShields
             try
             {
                 if (Session.Enforced.Debug == 1) Log.Line($"OnAddedToScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
-                if (!AllInited) return;
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
@@ -660,23 +630,23 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 1) Log.Line($"Close: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
                 if (_emitters.ContainsKey(Entity.EntityId)) _emitters.Remove(Entity.EntityId);
                 if (Session.Instance.Emitters.Contains(this)) Session.Instance.Emitters.Remove(this);
-                if (ShieldComp?.EmitterPrime == this)
+                if (ShieldComp?.StationEmitter == this)
                 {
                     if (ShieldComp != null && (int)EmitterMode == ShieldComp.EmitterMode)
                     {
                         ShieldComp.EmittersWorking = false;
                         ShieldComp.EmitterEvent = true;
                     }
-                    ShieldComp.EmitterPrime = null;
+                    ShieldComp.StationEmitter = null;
                 }
-                else if (ShieldComp?.EmitterBeta == this)
+                else if (ShieldComp?.ShipEmitter == this)
                 {
                     if (ShieldComp != null && (int)EmitterMode == ShieldComp.EmitterMode)
                     {
                         ShieldComp.EmittersWorking = false;
                         ShieldComp.EmitterEvent = true;
                     }
-                    ShieldComp.EmitterBeta = null;
+                    ShieldComp.ShipEmitter = null;
                 }
                 BlockParticleStop();
             }

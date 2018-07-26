@@ -168,7 +168,7 @@ namespace DefenseShields
                 Absorb += (momentum.Length() / 500) * ModulateKinetic;
                 ImpactSize = 12000;
                 WorldImpactPosition = collision;
-                if (!Session.MpActive && !(voxelBase is MyPlanet)) _voxelDmg.Enqueue(voxelBase);
+                //if (!Session.MpActive && !(voxelBase is MyPlanet)) _voxelDmg.Enqueue(voxelBase);
             }
         }
 

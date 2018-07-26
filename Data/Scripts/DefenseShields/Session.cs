@@ -33,7 +33,6 @@ namespace DefenseShields
         private int _lCount;
         private int _eCount;
 
-        internal bool SessionInit;
         internal bool DefinitionsLoaded;
         internal bool CustomDataReset = true;
         internal bool ShowOnHudReset = true;
@@ -106,7 +105,7 @@ namespace DefenseShields
         public static DefenseShieldsEnforcement Enforced = new DefenseShieldsEnforcement();
 
         #region Simulation / Init
-        public void Init()
+        public override void BeforeStart()
         {
             try
             {
@@ -125,9 +124,8 @@ namespace DefenseShields
                     UtilsStatic.PrepConfigFile();
                     UtilsStatic.ReadConfigFile();
                 }
-                SessionInit = true;
             }
-            catch (Exception ex) { Log.Line($"Exception in SessionInit: {ex}"); }
+            catch (Exception ex) { Log.Line($"Exception in BeforeStart: {ex}"); }
         }
 
         public override void UpdateBeforeSimulation()
@@ -150,13 +148,7 @@ namespace DefenseShields
                     }
                 }
 
-                if (!SessionInit)
-                {
-                    if (DedicatedServer) Init();
-                    else if (MyAPIGateway.Session != null) Init();
-                }
-
-                if (!DefinitionsLoaded && SessionInit && _tick > 200)
+                if (!DefinitionsLoaded && _tick > 100)
                 {
                     DefinitionsLoaded = true;
                     UtilsStatic.GetDefinitons();
@@ -173,7 +165,7 @@ namespace DefenseShields
             if (Enforced.Debug == 1 && _eCount == 0 & _lCount == 0 && _count == 0) Log.Line($"Draw - Session: Comps in the world: {Components.Count.ToString()}");
             try
             {
-                if (!SessionInit || Components.Count == 0) return;
+                if (Components.Count == 0) return;
                 var onCount = 0;
                 for (int i = 0; i < Components.Count; i++)
                 {
