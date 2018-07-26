@@ -438,6 +438,17 @@ namespace DefenseShields
         private bool Suspend()
         {
             ControllerFound = false;
+            if (_subpartRotor == null)
+            {
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                if (_subpartRotor == null)
+                {
+                    Suspended = true;
+                    return true;
+                }
+                return true;
+            }
+
             if (ShieldComp?.DefenseShields == null)
             {
                 Emitter.CubeGrid.Components.TryGet(out ShieldComp);
@@ -595,6 +606,7 @@ namespace DefenseShields
                 ShieldComp.EmitterMode = (int)EmitterMode;
                 ShieldComp.EmitterEvent = true;
                 Backup = false;
+                //if (!Compact && _subpartRotor == null) Entity.TryGetSubpart("Rotor", out _subpartRotor);
                 if (Session.Enforced.Debug == 1) Log.Line($"Unsuspend - !otherMode: {Definition.Name} - isStatic:{IsStatic} - myShield:{myShield} - myMode {myMode} - Mode:{EmitterMode} - Station: {ShieldComp.Station} - CompMode: {ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - EmitterId [{Emitter.EntityId}]");
             }
             else if (Suspended) return Suspended;
