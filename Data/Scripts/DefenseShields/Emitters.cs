@@ -438,7 +438,7 @@ namespace DefenseShields
         private bool Suspend()
         {
             ControllerFound = false;
-            if (_subpartRotor == null)
+            if (!Compact && _subpartRotor == null)
             {
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
                 if (_subpartRotor == null)
