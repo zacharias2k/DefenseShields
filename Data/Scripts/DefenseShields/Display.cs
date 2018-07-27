@@ -5,20 +5,26 @@ using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
+using VRage.Game;
 using VRage.Game.Components;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
+using VRageMath;
 
 namespace DefenseShields
 {
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_TextPanel), false, "DSControlLCD")]
     public class Displays : MyGameLogicComponent
     {
+        private uint _tick;
+        private int _count = -1;
+        private int _lCount;
         public bool ServerUpdate;
         private readonly Dictionary<long, Displays> _displays = new Dictionary<long, Displays>();
         internal ShieldGridComponent ShieldComp;
         private IMyTextPanel Display => (IMyTextPanel)Entity;
         internal DSUtils Dsutil1 = new DSUtils();
+        private const string PlasmaEmissive = "Emissive";
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
@@ -26,7 +32,7 @@ namespace DefenseShields
             {
                 base.Init(objectBuilder);
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
+                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -44,11 +50,26 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
 
-        public override void UpdateBeforeSimulation100()
+        public override void UpdateBeforeSimulation()
         {
+            _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+            Timing();
             if (ShieldComp == null) Display.CubeGrid.Components.TryGet(out ShieldComp);
             if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.ShieldActive) return;
-            Display.WritePublicText(ShieldComp.DefenseShields.Shield.CustomInfo);
+            if (_count == 29)
+            {
+                Display.WritePublicText(ShieldComp.DefenseShields.Shield.CustomInfo);
+            }
+        }
+
+        private void Timing()
+        {
+            if (_count++ == 59)
+            {
+                _count = 0;
+                _lCount++;
+                if (_lCount == 10) _lCount = 0;
+            }
         }
 
         public override void OnRemovedFromScene()

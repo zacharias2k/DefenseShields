@@ -42,6 +42,7 @@ namespace DefenseShields
         private float _shieldMaxChargeRate;
         private float _shieldChargeRate;
         private float _damageCounter;
+        private float _damageReadOut;
         private float _shieldCurrentPower;
         private float _shieldMaintaintPower;
         private float _shieldConsumptionRate;
@@ -235,6 +236,7 @@ namespace DefenseShields
         internal DefenseShieldsSettings DsSet;
 
         internal ShieldGridComponent ShieldComp;
+        internal RunningAverage DpsAvg = new RunningAverage(8);
 
         internal HashSet<ulong> playersToReceive = null;
 

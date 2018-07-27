@@ -120,11 +120,12 @@ namespace DefenseShields
                     if (_eCount == 10) _eCount = 0;
                 }
             }
-            if (_count == 29 || _count == 59)
-            {
-                if (_damageCounter > 2) _damageCounter = _damageCounter * 0.25f;
-                else _damageCounter = 0;
-            }
+            // damage counter hack - tempoary
+            if (_damageReadOut > 0 && _damageCounter > _damageReadOut) _damageCounter = _damageReadOut;
+            else if (_damageCounter < _damageReadOut) _damageCounter = _damageReadOut;
+            else if (_damageCounter > 1) _damageCounter = _damageCounter * .9835f;
+            else _damageCounter = 0f;
+            //
             if (_hierarchyDelayed && _tick > _hierarchyTick + 9)
             {
                 if (Session.Enforced.Debug == 1) Log.Line($"HierarchyWasDelayed: this:{_tick} - delayedTick: {_hierarchyTick} - ShieldId [{Shield.EntityId}]");
@@ -134,13 +135,13 @@ namespace DefenseShields
 
             if (_count == 29)
             {
+                Shield.RefreshCustomInfo();
                 if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
                 {
-                    Shield.RefreshCustomInfo();
                     Shield.ShowInToolbarConfig = false;
                     Shield.ShowInToolbarConfig = true;
                 }
-                else if (_lCount == 0 || _lCount == 5) Shield.RefreshCustomInfo();
+                _damageReadOut = 0;
             }
             if (_eCount == 0 && _lCount == 0 && _count == 0) _randomCount = _random.Next(0, 10);
 
@@ -488,6 +489,7 @@ namespace DefenseShields
             if (WarmedUp && Absorb > 0)
             {
                 _damageCounter += Absorb;
+                _damageReadOut += Absorb;
                 _effectsCleanup = true;
                 ShieldBuffer -= (Absorb / Session.Enforced.Efficiency);
             }
@@ -977,7 +979,7 @@ namespace DefenseShields
             var dps = 1f;
             if (_damageCounter > 1) dps = _damageCounter / Session.Enforced.Efficiency;
 
-            var healing = _shieldChargeRate - dps;
+            var healing = _shieldChargeRate / Session.Enforced.Efficiency - dps;
             var damage = dps - _shieldChargeRate;
 
             if (healing > 0 && _damageCounter > 1) return healing;
@@ -1084,7 +1086,7 @@ namespace DefenseShields
                                      "\n" +
                                      "\n[Shield HP__]: " + (ShieldBuffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
                                      "\n[HP Per Sec_]: " + (_shieldChargeRate * Session.Enforced.Efficiency).ToString("N0") +
-                                     "\n[Damage In__]: " + _damageCounter.ToString("N0") +
+                                     "\n[Damage In__]: " + _damageReadOut.ToString("N0") +
                                      "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
                                      "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
                                      "\n[Efficiency__]: " + Session.Enforced.Efficiency.ToString("0.0") +
