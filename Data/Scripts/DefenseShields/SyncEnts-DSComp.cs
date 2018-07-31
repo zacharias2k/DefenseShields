@@ -33,12 +33,13 @@ namespace DefenseShields
                     _dmgBlocks.Clear();
                     return;
                 }
+                /*
                 if (Eject.Count != 0)
                 {
                     foreach (var e in Eject) e.Key.SetPosition(Vector3D.Lerp(e.Key.GetPosition(), e.Value, 0.1d));
                     Eject.Clear();
                 }
-
+                */
                 var destroyedLen = _destroyedBlocks.Count;
                 try
                 {

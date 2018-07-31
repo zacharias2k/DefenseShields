@@ -192,7 +192,6 @@
     <None Include="tools\Monitor SE Log.ps1" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Data\Scripts\DefenseShields\Distributor.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\API\dsApi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Shield-Stats.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Enforcements.cs" />

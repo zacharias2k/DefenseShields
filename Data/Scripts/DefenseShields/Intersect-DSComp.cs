@@ -16,7 +16,7 @@ namespace DefenseShields
         #region Intersect
         private bool GridInside(IMyCubeGrid grid, MyOrientedBoundingBoxD bOriBBoxD)
         {
-            if (CustomCollision.PointInShield(grid.PositionComp.WorldVolume.Center, _detectInsideInv))
+            if (grid != null && CustomCollision.PointInShield(grid.PositionComp.WorldVolume.Center, _detectInsideInv))
             {
                 if (CustomCollision.AllCornersInShield(bOriBBoxD, DetectMatrixOutsideInv)) return true;
                 //var ejectDir = CustomCollision.EjectDirection(grid, ShieldComp.PhysicsOutside, _dataStructures.p3VertTris, bOriBBoxD, DetectMatrixOutsideInv);
@@ -30,6 +30,8 @@ namespace DefenseShields
         private void SmallGridIntersect(IMyEntity ent)
         {
             var grid = (IMyCubeGrid)ent;
+            if (ent == null || grid == null) return;
+
             if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.WorldAABB))) return;
 
             EntIntersectInfo entInfo;
@@ -61,9 +63,11 @@ namespace DefenseShields
 
         private void GridIntersect(IMyEntity ent)
         {
+            var grid = (MyCubeGrid)ent;
+            if (grid == null) return;
+
             lock (WebEnts)
             {
-                var grid = (MyCubeGrid)ent;
                 EntIntersectInfo entInfo;
                 WebEnts.TryGetValue(ent, out entInfo);
                 if (entInfo == null) return;
@@ -84,6 +88,8 @@ namespace DefenseShields
 
         private void ShieldIntersect(IMyCubeGrid grid)
         {
+            if (grid == null) return;
+
             if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.WorldAABB))) return;
             ShieldGridComponent shieldComponent;
             grid.Components.TryGet(out shieldComponent);

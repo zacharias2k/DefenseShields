@@ -24,7 +24,6 @@ namespace DefenseShields
         internal ShieldGridComponent ShieldComp;
         private IMyTextPanel Display => (IMyTextPanel)Entity;
         internal DSUtils Dsutil1 = new DSUtils();
-        private const string PlasmaEmissive = "Emissive";
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {

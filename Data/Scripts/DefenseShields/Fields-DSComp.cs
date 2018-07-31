@@ -61,6 +61,7 @@ namespace DefenseShields
         private int _lCount;
         private int _eCount;
         private int _powerLossLoop;
+        private int _powerNoticeLoop;
         private int _randomCount = -1;
         private int _offlineCnt = -1;
         private int _overLoadLoop = -1;
@@ -69,6 +70,7 @@ namespace DefenseShields
         private const int ReModulationCount = 300;
         private const int ShieldDownCount = 1200;
         private const int GenericDownCount = 300;
+        private const int PowerNoticeCount = 600;
 
         private int _prevLod;
         private int _onCount;
@@ -95,7 +97,7 @@ namespace DefenseShields
         internal bool ComingOnline;
         internal bool Warming;
         internal bool Starting;
-
+        internal bool ShieldPowerLoss;
         internal bool UpdateDimensions;
         internal bool FitChanged;
         internal bool GridIsMobile;
@@ -121,7 +123,7 @@ namespace DefenseShields
         private bool _createMobileShape = true;
 
         private Task _backGround;
-
+        
         private const string SpaceWolf = "Space_Wolf";
         private const string MyMissile = "MyMissile";
         private string _shieldModel = "\\Models\\Cubes\\ShieldActiveBase.mwm";
@@ -148,6 +150,7 @@ namespace DefenseShields
         private Quaternion _sQuaternion;
         private readonly Random _random = new Random();
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
+        private readonly List<MyResourceSourceComponent> _batterySources = new List<MyResourceSourceComponent>();
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
         private readonly List<KeyValuePair<IMyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<IMyEntity, EntIntersectInfo>>();
 
@@ -211,6 +214,8 @@ namespace DefenseShields
 
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;
+        //internal MyResourceDistributorComponent MyGridSystem;
+
         private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
         private readonly DataStructures _dataStructures = new DataStructures();
         //private readonly StructureBuilder _structureBuilder = new StructureBuilder();

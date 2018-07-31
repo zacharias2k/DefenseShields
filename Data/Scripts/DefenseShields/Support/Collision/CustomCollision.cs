@@ -4,7 +4,6 @@ using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Collections;
 using VRage.Game.Components;
-using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Voxels;
@@ -301,25 +300,30 @@ namespace DefenseShields.Support
 
         public static void SmallIntersect(EntIntersectInfo entInfo, MyConcurrentQueue<IMySlimBlock> fewDmgBlocks, IMyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
         {
-            var contactPoint = ContactPointOutside(grid, matrix);
-            if (!(Vector3D.Transform(contactPoint, matrixInv).LengthSquared() <= 1)) return;
-            entInfo.ContactPoint = contactPoint;
-
-            var approching = Vector3.Dot(grid.Physics.LinearVelocity, grid.PositionComp.WorldVolume.Center - contactPoint) < 0;
-            if (approching) grid.Physics.LinearVelocity = grid.Physics.LinearVelocity * -0.25f;
-
-            var dmgblockCnt = fewDmgBlocks.Count;
-            if (dmgblockCnt == 25) return;
-            var getBlocks = new List<IMySlimBlock>();
-            grid.GetBlocks(getBlocks);
-            var damage = 0f;
-            for (int i = 0; i < getBlocks.Count && i < 25 - dmgblockCnt; i++)
+            try
             {
-                var block = getBlocks[i];
-                damage += block.Mass;
-                fewDmgBlocks.Enqueue(block);
+                if (grid == null) return;
+                var contactPoint = ContactPointOutside(grid, matrix);
+                if (!(Vector3D.Transform(contactPoint, matrixInv).LengthSquared() <= 1)) return;
+                entInfo.ContactPoint = contactPoint;
+
+                var approching = Vector3.Dot(grid.Physics.LinearVelocity, grid.PositionComp.WorldVolume.Center - contactPoint) < 0;
+                if (approching) grid.Physics.LinearVelocity = grid.Physics.LinearVelocity * -0.25f;
+
+                var dmgblockCnt = fewDmgBlocks.Count;
+                if (dmgblockCnt == 25) return;
+                var getBlocks = new List<IMySlimBlock>();
+                grid.GetBlocks(getBlocks);
+                var damage = 0f;
+                for (int i = 0; i < getBlocks.Count && i < 25 - dmgblockCnt; i++)
+                {
+                    var block = getBlocks[i];
+                    damage += block.Mass;
+                    fewDmgBlocks.Enqueue(block);
+                }
+                entInfo.Damage = damage;
             }
-            entInfo.Damage = damage;
+            catch (Exception ex) { Log.Line($"Exception in SmallIntersect: {ex}"); }
         }
 
         public static Vector3D EjectDirection(IMyCubeGrid grid, Vector3D[] physicsOutside, int[][] vertTris, MyOrientedBoundingBoxD obb, MatrixD matrixInv)

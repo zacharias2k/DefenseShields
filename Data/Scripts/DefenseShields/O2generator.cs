@@ -121,10 +121,10 @@ namespace DefenseShields
 
                 var amount = _inventory.CurrentVolume.RawValue;
                 if (amount <= 0) return;
-                if (amount - 1000 > 0)
+                if (amount - 10.3316326531 > 0)
                 {
-                    _inventory.RemoveItems(0, 1000);
-                    _shieldVolFilled += 1000 * 261.333333333;
+                    _inventory.RemoveItems(0, 2700);
+                    _shieldVolFilled += 10.3316326531 * 261.333333333;
                 }
                 else
                 {
@@ -138,7 +138,7 @@ namespace DefenseShields
 
                 sc.IncreaseO2ByFPercent = fPercentToAddToDefaultO2Level;
                 sc.O2Updated = true;
-                if (Session.Enforced.Debug == 1) Log.Line($"default:{ShieldComp.DefaultO2} - Filled/(Max):{_shieldVolFilled}/({shieldFullVol}) - ShieldO2Level:{sc.IncreaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center)}");
+                if (Session.Enforced.Debug == 0) Log.Line($"default:{ShieldComp.DefaultO2} - Filled/(Max):{_shieldVolFilled}/({shieldFullVol}) - ShieldO2Level:{sc.IncreaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center)}");
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }

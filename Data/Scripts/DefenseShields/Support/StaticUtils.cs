@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using Sandbox.Common.ObjectBuilders;
 using Sandbox.Definitions;
 using Sandbox.Game.Entities;
+using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Entity;
@@ -138,42 +141,6 @@ namespace DefenseShields.Support
             return shieldId;
         }
 
-        /*
-        public static bool CheckShieldType(IMyFunctionalBlock shield, bool warning, bool takeAction = false)
-        {
-            var realPlayerIds = new List<long>();
-            GetRealPlayers(shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
-            foreach (var id in realPlayerIds)
-            {
-                if (!warning && shield.BlockDefinition.SubtypeId == "DefenseShieldsST" && !shield.CubeGrid.Physics.IsStatic)
-                {
-                    MyVisualScriptLogicProvider.ShowNotification("Station shields only allowed on stations", 5000, "Red", id);
-                    warning = true;
-                }
-                else if (!warning && shield.BlockDefinition.SubtypeId == "DefenseShieldsLS" && shield.CubeGrid.Physics.IsStatic)
-                {
-                    MyVisualScriptLogicProvider.ShowNotification("Large Ship Shields only allowed on ships, not stations", 5000, "Red", id);
-                    warning = true;
-                }
-                else if (!warning && takeAction)
-                {
-                }
-                else if (!warning)
-                {
-                    MyVisualScriptLogicProvider.ShowNotification("Control station in standby while active unit is functional", 5000, "Red", id);
-                    warning = true;
-                }
-            }
-
-            if (takeAction && warning)
-            {
-                warning = false;
-                shield.Enabled = false;
-            }
-            return warning;
-        }
-        */
-
         public static bool DistanceCheck(IMyCubeBlock block, int x, double range)
         {
             if (MyAPIGateway.Session.Player.Character == null) return false;
@@ -212,6 +179,7 @@ namespace DefenseShields.Support
             var subGrids = MyAPIGateway.GridGroups.GetGroup(shield.CubeGrid, GridLinkTypeEnum.Mechanical);
             foreach (var grid in subGrids) grid.GetBlocks(blocks);
 
+            var bQuaternion = Quaternion.CreateFromRotationMatrix(shield.CubeGrid.WorldMatrix);
             var sqrt2 = Math.Sqrt(2);
             var sqrt3 = Math.Sqrt(3);
             const double percent = 0.1;
@@ -223,18 +191,27 @@ namespace DefenseShields.Support
 
                 var shieldSize = gridHalfExtents * ellipsoidAdjust;
                 var mobileMatrix = MatrixD.CreateScale(shieldSize);
-                mobileMatrix.Translation = shield.CubeGrid.PositionComp.LocalVolume.Center;
+                mobileMatrix.Translation = shield.CubeGrid.PositionComp.LocalAABB.Center;
                 var matrixInv = MatrixD.Invert(mobileMatrix * shield.CubeGrid.WorldMatrix);
 
                 var c = 0;
                 foreach (var block in blocks)
                 {
                     BoundingBoxD blockBox;
-                    block.GetWorldBoundingBox(out blockBox);
+                    Vector3D center;
+                    block.ComputeWorldCenter(out center);
+                    if (block.FatBlock != null)
+                    {
+                        blockBox = block.FatBlock.Model.BoundingBox;
+                        blockBox.Translate(center);
+                    }
+                    else block.GetWorldBoundingBox(out blockBox);
 
-                    blockBox.GetCorners(blockPoints);
+                    var bOriBBoxD = new MyOrientedBoundingBoxD(center, blockBox.HalfExtents, bQuaternion);
 
-                    foreach (var point in blockPoints) if (!CustomCollision.PointInShield(point, matrixInv)) c++;
+                    bOriBBoxD.GetCorners(blockPoints, 0);
+                    foreach (var point in blockPoints)
+                        if (!CustomCollision.PointInShield(point, matrixInv)) c++;
                 }
 
                 if (c == last) repeat++;
@@ -258,6 +235,7 @@ namespace DefenseShields.Support
             var subGrids = MyAPIGateway.GridGroups.GetGroup(shield.CubeGrid, GridLinkTypeEnum.Mechanical);
             foreach (var grid in subGrids) grid.GetBlocks(blocks);
 
+            var bQuaternion = Quaternion.CreateFromRotationMatrix(shield.CubeGrid.WorldMatrix);
             var sqrt3 = Math.Sqrt(3);
             var sqrt5 = Math.Sqrt(5);
             const double percent = 0.1;
@@ -276,11 +254,20 @@ namespace DefenseShields.Support
                 foreach (var block in blocks)
                 {
                     BoundingBoxD blockBox;
-                    block.GetWorldBoundingBox(out blockBox);
+                    Vector3D center;
+                    block.ComputeWorldCenter(out center);
+                    if (block.FatBlock != null)
+                    {
+                        blockBox = block.FatBlock.Model.BoundingBox;
+                        blockBox.Translate(center);
+                    }
+                    else block.GetWorldBoundingBox(out blockBox);
 
-                    blockBox.GetCorners(blockPoints);
+                    var bOriBBoxD = new MyOrientedBoundingBoxD(center, blockBox.HalfExtents, bQuaternion);
 
-                    foreach (var point in blockPoints) if (!CustomCollision.PointInShield(point, matrixInv)) c++;
+                    bOriBBoxD.GetCorners(blockPoints, 0);
+                    foreach (var point in blockPoints)
+                        if (!CustomCollision.PointInShield(point, matrixInv)) c++;
                 }
 
                 if (c == last) repeat++;
@@ -413,6 +400,51 @@ namespace DefenseShields.Support
             var powerCorrectionInJoules = wattsPerNewton * linearImpulse.Length();
 
             return powerCorrectionInJoules * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
+        }
+
+        private const string OB = @"<?xml version=""1.0"" encoding=""utf-16""?>
+<MyObjectBuilder_Cockpit xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"">
+   <SubtypeName>LargeBlockCockpit</SubtypeName>
+   <Owner>0</Owner>
+   <CustomName>Control Stations</CustomName>
+</MyObjectBuilder_Cockpit> ";
+
+        private static Random _random = new Random();
+        /// <summary>
+        /// Hacky way to get the ResourceDistributorComponent from a grid
+        /// without benefit of the GridSystems.
+        /// <para>Unfriendly to performance. Use sparingly and cache result.</para>
+        /// </summary>
+        /// <param name="grid"></param>
+        /// <returns></returns>
+        public static MyResourceDistributorComponent GetDistributor(MyCubeGrid grid)
+        {
+            if (grid == null || !grid.CubeBlocks.Any())
+                return null;
+
+            //attempt to grab the distributor from an extant ship controller
+            var controller = grid.GetFatBlocks().FirstOrDefault(b => (b as MyShipController)?.GridResourceDistributor != null);
+            if (controller != null)
+                return ((MyShipController)controller).GridResourceDistributor;
+            //didn't find a controller, so let's make one
+
+            var ob = MyAPIGateway.Utilities.SerializeFromXML<MyObjectBuilder_Cockpit>(OB);
+            //assign a random entity ID and hope we don't get collisions
+            ob.EntityId = _random.Next(int.MinValue, int.MaxValue);
+            //block position to something that will probably not have a block there already
+            ob.Min = grid.WorldToGridInteger(grid.PositionComp.WorldAABB.Min) - new Vector3I(2);
+            //note that this will slightly inflate the grid's boundingbox, but the Raze call later triggers a bounds recalc in 30 seconds
+
+            //not exposed in the class but is in the interface???
+            //also not synced
+            var blk = ((IMyCubeGrid)grid).AddBlock(ob, false);
+            var distributor = (blk.FatBlock as MyShipController)?.GridResourceDistributor;
+            //hack to make it work on clients (removal not synced)
+            grid.RazeBlocksClient(new List<Vector3I>() { blk.Position });
+            //we don't need the block itself, we grabbed the distributor earlier
+            blk.FatBlock?.Close();
+
+            return distributor;
         }
     }
 }

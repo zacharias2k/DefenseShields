@@ -48,8 +48,9 @@ namespace DefenseShields
                 _shields.Add(Entity.EntityId, this);
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
                 Session.Instance.Components.Add(this);
+                //MyGridSystem = UtilsStatic.GetDistributor((MyCubeGrid)Shield.CubeGrid);
                 ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
-                ((MyCubeGrid) Shield.CubeGrid).OnBlockAdded += BlockAdded;
+                ((MyCubeGrid)Shield.CubeGrid).OnBlockAdded += BlockAdded;
                 ((MyCubeGrid)Shield.CubeGrid).OnBlockRemoved += BlockRemoved;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockAdded += FatBlockAdded;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockRemoved += FatBlockRemoved;

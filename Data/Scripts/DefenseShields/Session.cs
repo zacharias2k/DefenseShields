@@ -51,9 +51,9 @@ namespace DefenseShields
         internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Match a shield's modulation frequency/code");
         internal MyStringId ShieldFreq = MyStringId.GetOrCompute("Shield Frequency");
         internal MyStringId ShieldFreqTooltip = MyStringId.GetOrCompute("Set this to the secret frequency/code used for shield access");
-        public static readonly bool MpActive = MyAPIGateway.Multiplayer.MultiplayerActive;
-        public static readonly bool IsServer = MyAPIGateway.Multiplayer.IsServer;
-        public static readonly bool DedicatedServer = MyAPIGateway.Utilities.IsDedicated;
+        public static bool MpActive => MyAPIGateway.Multiplayer.MultiplayerActive;
+        public static bool IsServer => MyAPIGateway.Multiplayer.IsServer;
+        public static bool DedicatedServer => MyAPIGateway.Utilities.IsDedicated;
 
         internal static DefenseShields HudComp;
         internal static double HudShieldDist = double.MaxValue;
@@ -204,7 +204,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Components.Count == 0 || info.Type == MyDamageType.Destruction || info.Type == MyDamageType.Drill || info.Type == MyDamageType.Grind || info.Type == MyDamageType.Environment) return;
+                if (Components.Count == 0 || info.Type == MyDamageType.Destruction || info.Type == MyDamageType.Drill || info.Type == MyDamageType.Grind || info.Type == MyDamageType.Environment || info.Type == MyDamageType.LowPressure) return;
 
                 var player = target as IMyCharacter;
                 if (player != null)
@@ -227,6 +227,12 @@ namespace DefenseShields
                 var blockGrid = (MyCubeGrid)block.CubeGrid;
                 foreach (var shield in Components)
                 {
+                    if (!IsServer && (!shield.ShieldComp.ShieldActive || !shield.ShieldComp.RaiseShield) && info.Type == MPdamage)
+                    {
+                        info.Amount = 0;
+                        continue;
+                    }
+
                     if (shield.ShieldComp.ShieldActive && shield.ShieldComp.RaiseShield && shield.FriendlyCache.Contains(blockGrid))
                     {
                         if (info.Type == Bypass)
@@ -239,7 +245,6 @@ namespace DefenseShields
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
                         if (info.Type == MPdamage)
                         {
-
                             if (!shield.ShieldComp.ShieldActive || !shield.ShieldComp.RaiseShield || shield.ShieldBuffer <= 0 || hostileEnt == null)
                             {
                                 info.Amount = 0;
