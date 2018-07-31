@@ -319,18 +319,26 @@ namespace DefenseShields
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
             var compatible = IsStatic && EmitterMode == EmitterType.Station || !IsStatic && EmitterMode != EmitterType.Station;
-            if (ShieldComp == null || !ShieldComp.ShieldActive || !ControllerFound)
+            if (!ShieldComp.ShieldActive)
             {
                 stringBuilder.Append("[ Emitter Offline ]" +
                                      "\n" +
                                      "\n[Emitter Type]: " + EmitterMode +
                                      "\n[Grid Compatible]: " + compatible +
                                      "\n[Line of Sight]: " + ShieldLineOfSight +
-                                     "\n[Is a Backup]: " + Backup +
+                                     "\n[Grid Access]: " + ShieldComp?.DefenseShields?.ControllerGridAccess +
                                      "\n[Is Suspended]: " + Suspended +
-                                     "\n[Is Docked]: " + GoToSleep +
-                                     "\n[Controller Link]: " + ControllerFound +
-                                     "\n[Grid Access]: " + ShieldComp?.DefenseShields?.ControllerGridAccess);
+                                     "\n[Is a Backup]: " + Backup +
+                                     "\n[Is Docked]: " + GoToSleep);
+            }
+            else if (ShieldComp == null || !ControllerFound)
+            {
+                stringBuilder.Append("[ No Valid Controller ]" +
+                                     "\n" +
+                                     "\n[Emitter Type]: " + EmitterMode +
+                                     "\n[Grid Compatible]: " + compatible +
+                                     "\n[Invalid Protocol]: " + (ShieldComp?.DefenseShields == null) +
+                                     "\n[Controller Link]: " + ControllerFound);
             }
             else
             {
@@ -338,12 +346,12 @@ namespace DefenseShields
                                      "\n" +
                                      "\n[Emitter Type]: " + EmitterMode +
                                      "\n[Grid Compatible]: " + compatible +
-                                     "\n[Line of Sight]: " + ShieldLineOfSight +
-                                     "\n[Is a Backup]: " + Backup +
-                                     "\n[Is Suspended]: " + Suspended +
-                                     "\n[Is Docked]: " + GoToSleep +
                                      "\n[Controller Link]: " + ControllerFound +
-                                     "\n[Grid Access]: " + ShieldComp?.DefenseShields?.ControllerGridAccess);
+                                     "\n[Line of Sight]: " + ShieldLineOfSight +
+                                     "\n[Grid Access]: " + ShieldComp?.DefenseShields?.ControllerGridAccess +
+                                     "\n[Is Suspended]: " + Suspended +
+                                     "\n[Is a Backup]: " + Backup +
+                                     "\n[Is Docked]: " + GoToSleep);
             }
         }
 

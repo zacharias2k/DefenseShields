@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
+using Sandbox.ModAPI;
+using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
@@ -205,6 +207,8 @@ namespace DefenseShields
             var collisionAvg = Vector3D.Zero;
             var transformInv = DetectMatrixOutsideInv;
             var normalMat = MatrixD.Transpose(transformInv);
+            var massMulti = 1000;
+            if (ShieldMode == ShieldType.Station) massMulti = 1;
             var intersection = bOriBBoxD.Intersects(ref SOriBBoxD);
             try
             {
@@ -271,9 +275,9 @@ namespace DefenseShields
                             collisionAvg += point;
                             c3++;
 
-                            if (_dmgBlocks.Count > 50) break;
+                            if (_dmgBlocks.Count > 5) break;
                             c4++;
-                            rawDamage += block.Mass;
+                            rawDamage += block.Mass * massMulti;
                             _dmgBlocks.Enqueue(block);
                             break;
                         }
@@ -281,32 +285,45 @@ namespace DefenseShields
                     if (collisionAvg != Vector3D.Zero)
                     {
                         collisionAvg /= c3;
+
+                        var sLSpeed = sPhysics.LinearVelocity;
+                        var sASpeed = sPhysics.AngularVelocity * 50;
+                        var sLSpeedLen = sLSpeed.LengthSquared();
+                        var sASpeedLen = sASpeed.LengthSquared();
+                        var sSpeed = sLSpeedLen > sASpeedLen ? sLSpeed : sASpeed;
+                        var sSpeedLen = sLSpeedLen > sASpeedLen ? sLSpeed.LengthSquared() : sASpeed.LengthSquared();
+
+                        var bLSpeed = bPhysics.LinearVelocity;
+                        var bASpeed = bPhysics.AngularVelocity * 50;
+                        var bLSpeedLen = bLSpeed.LengthSquared();
+                        var bASpeedLen = bASpeed.LengthSquared();
+                        var bSpeed = bLSpeedLen > bASpeedLen ? bLSpeed : bASpeed;
+                        var bSpeedLen = bLSpeedLen > bASpeedLen ? bLSpeed.LengthSquared() : bASpeed.LengthSquared();
+
                         if (!bPhysics.IsStatic) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass, bPhysics.CenterOfMassWorld);
                         if (!sPhysics.IsStatic) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sMass, sPhysics.CenterOfMassWorld);
                         var surfaceMass = (bMass > sMass) ? sMass : bMass;
                         var surfaceMulti = (c3 > 5) ? 5 : c3;
                         var localNormal = Vector3D.Transform(collisionAvg, transformInv);
                         var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
-                        if (!bPhysics.IsStatic) bPhysics.ApplyImpulse(surfaceMulti * (surfaceMass / 20) * -Vector3D.Dot(bPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
-                        if (!sPhysics.IsStatic) sPhysics.ApplyImpulse(surfaceMulti * (surfaceMass / 20) * -Vector3D.Dot(sPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
+                        if (!bPhysics.IsStatic) bPhysics.ApplyImpulse(surfaceMulti * (surfaceMass / 40) * -Vector3D.Dot(bPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
+                        if (!sPhysics.IsStatic) sPhysics.ApplyImpulse(surfaceMulti * (surfaceMass / 40) * -Vector3D.Dot(sPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
+                        if (!sPhysics.IsStatic) sPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * sMass, null, Vector3D.Zero, MathHelper.Clamp(sSpeedLen, 10f, 20f));
+                        if (!bPhysics.IsStatic) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - bPhysics.CenterOfMassWorld) * bMass, null, Vector3D.Zero, MathHelper.Clamp(bSpeedLen, 10f, 20f));
                         bBlockCenter = collisionAvg;
                     }
                     var damage = rawDamage / 100 * ModulateKinetic;
                     entInfo.Damage = damage;
-
                     if (Session.MpActive)
                     {
-                        if (Session.IsServer && bBlockCenter != Vector3D.NegativeInfinity)
-                        {
-                            ShieldDoDamage(damage, breaching.EntityId);
-                        }
+                        if (Session.IsServer && bBlockCenter != Vector3D.NegativeInfinity) ShieldDoDamage(damage, breaching.EntityId);
                     }
                     else
                     {
                         Absorb += damage;
                         if (bBlockCenter != Vector3D.NegativeInfinity) entInfo.ContactPoint = bBlockCenter;
                     }
-                    //if (_count == 58) Log.Line($"[status] obb: true - blocks:{cacheBlockList.Count.ToString()} - sphered:{c1.ToString()} [{c5.ToString()}] - IsDestroyed:{c6.ToString()} not:[{c2.ToString()}] - bCenter Inside Ellipsoid:{c3.ToString()} - Damaged:{c4.ToString()}");
+                    //Log.Line($"[status] obb: true - blocks:{cacheBlockList.Count.ToString()} - sphered:{c1.ToString()} [{c5.ToString()}] - IsDestroyed:{c6.ToString()} not:[{c2.ToString()}] - bCenter Inside Ellipsoid:{c3.ToString()} - Damaged:{c4.ToString()}");
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in BlockIntersect: {ex}"); }

@@ -38,7 +38,7 @@ namespace DefenseShields
                 if (ent == null || ent.MarkedForClose || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel || !(ent is MyVoxelBase) && ent.Physics == null) continue;
 
                 var entCenter = ent.PositionComp.WorldVolume.Center;
-                var missileCheck = Vector3D.DistanceSquared(entCenter, DetectionCenter) > boundingSqr && !((ent.Flags & EntityFlags.IsNotGamePrunningStructureObject) != 0 && ent.GetType().Name.Equals(MyMissile));
+                var missileCheck = !pruneSphere2.Intersects(ent.PositionComp.WorldVolume) && !((ent.Flags & EntityFlags.IsNotGamePrunningStructureObject) != 0 && ent.GetType().Name.Equals(MyMissile));
                 if (voxel == null && missileCheck) continue;
                 if (FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent) || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
 

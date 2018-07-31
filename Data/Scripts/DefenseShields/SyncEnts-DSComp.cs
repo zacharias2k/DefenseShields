@@ -3,6 +3,7 @@ using DefenseShields.Support;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
+using Sandbox.Game.Entities.Cube;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.ModAPI;
@@ -188,6 +189,8 @@ namespace DefenseShields
                     if (_dmgBlocks.Count != 0)
                     {
                         IMySlimBlock block;
+                        var damageMulti = 350;
+                        if (ShieldMode == ShieldType.Station) damageMulti = 5000;
                         while (_dmgBlocks.TryDequeue(out block))
                         {
                             if (block == null) continue;
@@ -196,7 +199,7 @@ namespace DefenseShields
                                 ((MyCubeGrid)block.CubeGrid).EnqueueDestroyedBlock(block.Position);
                                 continue;
                             }
-                            block.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId); // set  to true for multiplayer?
+                            block.DoDamage(damageMulti, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId); // set  to true for multiplayer?
                             if (((MyCubeGrid)block.CubeGrid).BlocksCount == 0) block.CubeGrid.SyncObject.SendCloseRequest();
                         }
                     }
