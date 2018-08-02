@@ -253,14 +253,13 @@ namespace DefenseShields
 
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
-                            var line = new LineD(blockPos, hostileEnt.PositionComp.WorldAABB.Center);
+                            var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, blockPos);
                             var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
 
                             var testDir = line.From - line.To;
                             testDir.Normalize();
                             var ray = new RayD(line.From, -testDir);
                             var worldSphere = shield.ShieldSphere;
-                            worldSphere.Center = shield.Shield.CubeGrid.PositionComp.WorldVolume.Center;
                             var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
 
                             var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
@@ -305,18 +304,17 @@ namespace DefenseShields
                             //Log.CleanLine($"full: T:{info.Type} - A:{info.Amount} - HF:{shield.FriendlyCache.Contains(hostileEnt)} - HI:{shield.IgnoreCache.Contains(hostileEnt)} - PF:{shield.FriendlyCache.Contains(blockGrid)} - PI:{shield.IgnoreCache.Contains(blockGrid)}");
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
-                            var line = new LineD(blockPos, hostileEnt.PositionComp.WorldAABB.Center);
+                            var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, blockPos);
                             var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
 
                             var testDir = line.From - line.To;
                             testDir.Normalize();
                             var ray = new RayD(line.From, -testDir);
                             var worldSphere = shield.ShieldSphere;
-                            worldSphere.Center = shield.Shield.CubeGrid.PositionComp.WorldVolume.Center;
                             var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
 
                             var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
-                            Vector3 hitPos = line.From + testDir * -(double)furthestHit;
+                            Vector3 hitPos = line.From + testDir * -furthestHit;
                             shield.WorldImpactPosition = hitPos;
                             shield.ImpactSize = info.Amount;
                         }
@@ -345,14 +343,13 @@ namespace DefenseShields
 
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
-                            var line = new LineD(blockPos, hostileEnt.PositionComp.WorldAABB.Center);
+                            var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, blockPos);
                             var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
 
                             var testDir = line.From - line.To;
                             testDir.Normalize();
                             var ray = new RayD(line.From, -testDir);
                             var worldSphere = shield.ShieldSphere;
-                            worldSphere.Center = shield.Shield.CubeGrid.PositionComp.WorldVolume.Center;
                             var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
 
                             var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
@@ -390,18 +387,17 @@ namespace DefenseShields
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
                             if (!CustomCollision.PointInShield(blockPos, shield.DetectMatrixOutsideInv)) continue;
-                            var line = new LineD(blockPos, hostileEnt.PositionComp.WorldAABB.Center);
+                            var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, blockPos);
                             var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
 
                             var testDir = line.From - line.To;
                             testDir.Normalize();
                             var ray = new RayD(line.From, -testDir);
                             var worldSphere = shield.ShieldSphere;
-                            worldSphere.Center = shield.Shield.CubeGrid.PositionComp.WorldVolume.Center;
                             var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
 
                             var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
-                            Vector3 hitPos = line.From + testDir * -(double)furthestHit;
+                            Vector3 hitPos = line.From + testDir * -furthestHit;
                             shield.WorldImpactPosition = hitPos;
                             shield.ImpactSize = info.Amount;
                         }

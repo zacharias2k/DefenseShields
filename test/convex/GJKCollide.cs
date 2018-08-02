@@ -23,7 +23,7 @@ using VRageMath;
 
 namespace DefenseShields.Support
 {
-    public interface ISupportMappable
+    public interface ISupportMappable2
     {
         /// <summary>
         /// SupportMapping. Finds the point in the shape furthest away from the given direction.

@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using DefenseShields.Support;
+using Havok;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
-using Sandbox.ModAPI;
-using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
@@ -35,12 +34,11 @@ namespace DefenseShields
             if (ent == null || grid == null) return;
 
             if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.WorldAABB))) return;
-
             EntIntersectInfo entInfo;
             WebEnts.TryGetValue(ent, out entInfo);
             if (entInfo == null) return;
 
-            CustomCollision.SmallIntersect(entInfo, _fewDmgBlocks, grid, _detectMatrixOutside, DetectMatrixOutsideInv);
+            CustomCollision.SmallIntersect(entInfo, _fewDmgBlocks, grid, DetectMatrixOutside, DetectMatrixOutsideInv);
             var contactpoint = entInfo.ContactPoint;
             entInfo.ContactPoint = Vector3D.NegativeInfinity;
             if (contactpoint != Vector3D.NegativeInfinity)
@@ -164,7 +162,7 @@ namespace DefenseShields
             EntIntersectInfo entInfo;
             WebEnts.TryGetValue(voxelBase, out entInfo);
             var myGrid = (MyCubeGrid) Shield.CubeGrid;
-            var collision = CustomCollision.VoxelCollisionSphere(myGrid, ShieldComp.PhysicsOutsideLow, voxelBase, SOriBBoxD, _detectMatrixOutside);
+            var collision = CustomCollision.VoxelCollisionSphere(myGrid, ShieldComp.PhysicsOutsideLow, voxelBase, SOriBBoxD, DetectMatrixOutside);
 
             if (collision != Vector3D.NegativeInfinity)
             {

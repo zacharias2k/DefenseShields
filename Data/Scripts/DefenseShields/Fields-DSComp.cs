@@ -140,7 +140,7 @@ namespace DefenseShields
         internal MatrixD DetectMatrixOutsideInv;
         private MatrixD _shieldGridMatrix;
         private MatrixD _shieldShapeMatrix;
-        private MatrixD _detectMatrixOutside;
+        internal MatrixD DetectMatrixOutside;
         private MatrixD _detectMatrixInside;
         private MatrixD _detectInsideInv;
 
@@ -241,6 +241,7 @@ namespace DefenseShields
         internal DefenseShieldsSettings DsSet;
 
         internal ShieldGridComponent ShieldComp;
+        internal ModulatorGridComponent ModComp;
         internal RunningAverage DpsAvg = new RunningAverage(8);
 
         internal HashSet<ulong> playersToReceive = null;
@@ -327,27 +328,15 @@ namespace DefenseShields
             get { return DsSet.Settings.Buffer; }
             set { DsSet.Settings.Buffer = value; }
         }
-
-        public bool ModulateVoxels
-        {
-            get { return DsSet.Settings.ModulateVoxels; }
-            set { DsSet.Settings.ModulateVoxels = value; }
-        }
-
-        public bool ModulateGrids
-        {
-            get { return DsSet.Settings.ModulateGrids; }
-            set { DsSet.Settings.ModulateGrids = value; }
-        }
         #endregion
 
         #region constructors
         private MatrixD DetectionMatrix
         {
-            get { return _detectMatrixOutside; }
+            get { return DetectMatrixOutside; }
             set
             {
-                _detectMatrixOutside = value;
+                DetectMatrixOutside = value;
                 DetectMatrixOutsideInv = MatrixD.Invert(value);
                 _detectMatrixInside = MatrixD.Rescale(value, 1d + (-6.0d / 100d));
                 _detectInsideInv = MatrixD.Invert(_detectMatrixInside);

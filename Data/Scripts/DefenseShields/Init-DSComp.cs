@@ -187,6 +187,13 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 1) Log.Line($"StorageSetup: ShieldId [{Shield.EntityId}]");
         }
 
+        public override bool IsSerialized()
+        {
+            DsSet.SaveSettings();
+            if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: saved before replication - ShieldId [{Shield.EntityId}]");
+            return false;
+        }
+
         private void BlockMonitor()
         {
             if (_blockChanged) _blocksChanged = true;

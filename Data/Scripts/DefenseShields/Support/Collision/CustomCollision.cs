@@ -8,12 +8,62 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Voxels;
 using VRageMath;
+using VRageRender.Utils;
 using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 namespace DefenseShields.Support
 {
     internal static class CustomCollision
     {
+        private static double RayEllipsoid(Vector3D rayOrigin, Vector3D rayVec, Vector3D ellRadius, Vector3D[] ellAxis)
+        {
+            Vector3D xAxis = ellAxis[0] * ellRadius.X;
+            Vector3D yAxis = ellAxis[1] * ellRadius.Y;
+            Vector3D zAxis = ellAxis[2] * ellRadius.Z;
+            MatrixD toEllipsoid = new MatrixD(xAxis.X, xAxis.Y, xAxis.Z, yAxis.X, yAxis.Y, yAxis.Z, zAxis.X, zAxis.Y, zAxis.Z);
+
+            //ToEllipsoid(0, 0) = xAxis.X;
+            //ToEllipsoid(1, 0) = xAxis.Y;
+            //ToEllipsoid(2, 0) = xAxis.Z;
+            //ToEllipsoid(0, 1) = yAxis.X;
+            //ToEllipsoid(1, 1) = yAxis.Y;
+            //ToEllipsoid(2, 1) = yAxis.Z;
+            //ToEllipsoid(0, 2) = zAxis.X;
+            //ToEllipsoid(1, 2) = zAxis.Y;
+            //ToEllipsoid(2, 2) = zAxis.Z;
+
+            //D3DXVec3TransformCoord(rayOrigin, rayOrigin, toEllipsoid);
+            //D3DXVec3TransformNormal(rayVec, rayVec, toEllipsoid);
+
+            //Since it is in ellipsoid space, the center = 1.0f and the radius is 0,0,0
+
+            double Radius = 1.0d;
+            Vector3D Center = Vector3D.Zero;
+            Vector3D m = rayOrigin - Center;
+            double b = Vector3D.Dot(m, rayVec);
+            double c = Vector3D.Dot(m, m) - Radius * Radius;
+
+            // Exit if r’s origin outside s (c > 0) and r pointing away from s (b > 0)
+
+            if (c > 0.0d && b > 0.0d) return -1.0d;
+
+            double discr = b * b - c;
+
+            // A negative discriminant corresponds to ray missing sphere
+
+            if (discr < 0.0d) return -1.0d;
+
+            // Ray now found to intersect sphere, compute smallest t value of intersection
+
+            double t = -b - Math.Sqrt(discr);
+
+            // If t is negative, ray started inside sphere so clamp t to zero
+
+            if (t < 0.0d) t = 0.0d;
+
+            return (rayOrigin + t * rayVec).Length();
+        }
+
         public static bool VoxelContact(Vector3D[] physicsVerts, MyVoxelBase voxelBase)
         {
             try
@@ -189,31 +239,66 @@ namespace DefenseShields.Support
             return num1 * num1 + num2 * num2 + num3 * num3;
         }
 
-        public static double? IntersectRayEllipsoid(Vector3D rayPos, Vector3D rayDir)
+        public static double? IntersectEllipsoid(MatrixD rawEllipsoidMatrix, MatrixD ellipsoidMatrixInv, Vector3D rayPos, Vector3D rayDir)
         {
-            MatrixD T = MatrixD.CreateTranslation(Vector3D.Zero);
-            MatrixD S = MatrixD.CreateScale(Vector3D.One);
-            MatrixD R = MatrixD.CreateFromQuaternion(Quaternion.Zero);
+            MatrixD T = MatrixD.CreateTranslation(rawEllipsoidMatrix.Translation);
+            MatrixD S = MatrixD.CreateScale(rawEllipsoidMatrix.Scale);
+            MatrixD R = rawEllipsoidMatrix.GetOrientation();
+            //MatrixD R = MatrixD.CreateFromQuaternion(Rotation);
+
 
             MatrixD ellipsoidMatrix = MatrixD.Multiply(MatrixD.Multiply(T, R), S);
 
             MatrixD inverseEllipsoidMatrix = MatrixD.Invert(ellipsoidMatrix);
 
-            Vector3D krayPos = Vector3D.Transform(rayPos, inverseEllipsoidMatrix);
-            Vector3D krayDir = Vector3D.Transform(rayDir, inverseEllipsoidMatrix);
+            Vector3D krayPos = Vector3D.Transform(rayPos, ellipsoidMatrixInv);
+            Vector3D krayDir = Vector3D.Transform(rayDir, ellipsoidMatrixInv);
 
+            MyAPIGateway.Utilities.ShowNotification("" + rayPos + " " + rayDir, 66);
+            MyAPIGateway.Utilities.ShowNotification("" + krayPos + " " + krayDir, 66);
 
-            //MyAPIGateway.Utilities.ShowNotification("" + rayPos + " " + rayDir, 66);
-            //MyAPIGateway.Utilities.ShowNotification("" + krayPos + " " + krayDir, 66);
             krayDir.Normalize();
 
             BoundingSphereD sphere = new BoundingSphereD(Vector3.Zero, 1d);
 
+            //RayD kRay = new RayD(krayPos, krayDir);
             RayD kRay = new RayD(krayPos, krayDir);
 
+            var tmin = 0d;
+            var tmax = 0d;
+            var test = sphere.IntersectRaySphere(kRay, out tmin, out tmax);
+            Log.Line($"{test} - {tmin} - {tmax}");
             double? hitMult = sphere.Intersects(kRay);
 
             return hitMult;
+        }
+        public static bool RayIntersectsTriangle(Vector3D rayOrigin, Vector3D rayVector, Vector3D v0, Vector3D v1, Vector3D v2, Vector3D outIntersectionPoint)
+        {
+            const double epsilon = 0.0000001;
+            var edge1 = v1 - v0;
+            var edge2 = v2 - v0;
+            var h = rayVector.Cross(edge2);
+            var a = edge1.Dot(h);
+            if (a > -epsilon && a < epsilon) return false;
+
+            var f = 1 / a;
+            var s = rayOrigin - v0;
+            var u = f * (s.Dot(h));
+            if (u < 0.0 || u > 1.0) return false;
+
+            var q = s.Cross(edge1);
+            var v = f * rayVector.Dot(q);
+            if (v < 0.0 || u + v > 1.0) return false;
+            
+            // At this stage we can compute t to find out where the intersection point is on the line.
+            var t = f * edge2.Dot(q);
+            if (t > epsilon) // ray intersection
+            {
+                outIntersectionPoint = rayOrigin + rayVector * t;
+                return true;
+            }
+            // This means that there is a line intersection but not a ray intersection.
+            return false;
         }
 
         public static void MeshCollisionStaticSphere(IMyCubeBlock block, BoundingSphereD shieldSphere, Vector3D[] physicsVerts, MatrixD matrix, MyOrientedBoundingBoxD sOriBBoxD)
