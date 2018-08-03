@@ -264,6 +264,9 @@ namespace DefenseShields
             testDir.Normalize();
             var testPos = Emitter.PositionComp.WorldVolume.Center + testDir * testDist;
             _sightPos = testPos;
+
+            ShieldComp.DefenseShields.ResetShape();
+
             MyAPIGateway.Parallel.For(0, ShieldComp.PhysicsOutside.Length, i =>
             {
                 var hit = Emitter.CubeGrid.RayCastBlocks(testPos, ShieldComp.PhysicsOutside[i]);

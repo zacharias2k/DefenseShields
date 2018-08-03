@@ -15,6 +15,34 @@ namespace DefenseShields.Support
 {
     internal static class CustomCollision
     {
+        public static double? IntersectEllipsoid(MatrixD rawEllipsoidMatrix, MatrixD ellipsoidMatrixInv, Vector3D rayPos, Vector3D rayDir)
+        {
+            /*
+            MatrixD T = MatrixD.CreateTranslation(rawEllipsoidMatrix.Translation);
+            MatrixD S = MatrixD.CreateScale(rawEllipsoidMatrix.Scale);
+            MatrixD R = rawEllipsoidMatrix.GetOrientation();
+            //MatrixD R = MatrixD.CreateFromQuaternion(Rotation);
+
+
+            MatrixD ellipsoidMatrix = MatrixD.Multiply(MatrixD.Multiply(T, R), S);
+            
+            MatrixD inverseEllipsoidMatrix = MatrixD.Invert(ellipsoidMatrix);
+            */
+            Vector3D krayPos = Vector3D.Transform(rayPos, ellipsoidMatrixInv);
+            Vector3D krayDir = Vector3D.Transform(rayDir, ellipsoidMatrixInv);
+
+            krayDir.Normalize();
+
+            BoundingSphereD sphere = new BoundingSphereD(Vector3.Zero, 1d);
+
+            RayD kRay = new RayD(krayPos, krayDir);
+
+            double? hitMult = sphere.Intersects(kRay);
+            if (hitMult.HasValue)Log.Line($"{hitMult}");
+
+            return hitMult;
+        }
+
         private static double RayEllipsoid(Vector3D rayOrigin, Vector3D rayVec, Vector3D ellRadius, Vector3D[] ellAxis)
         {
             Vector3D xAxis = ellAxis[0] * ellRadius.X;
@@ -239,39 +267,6 @@ namespace DefenseShields.Support
             return num1 * num1 + num2 * num2 + num3 * num3;
         }
 
-        public static double? IntersectEllipsoid(MatrixD rawEllipsoidMatrix, MatrixD ellipsoidMatrixInv, Vector3D rayPos, Vector3D rayDir)
-        {
-            MatrixD T = MatrixD.CreateTranslation(rawEllipsoidMatrix.Translation);
-            MatrixD S = MatrixD.CreateScale(rawEllipsoidMatrix.Scale);
-            MatrixD R = rawEllipsoidMatrix.GetOrientation();
-            //MatrixD R = MatrixD.CreateFromQuaternion(Rotation);
-
-
-            MatrixD ellipsoidMatrix = MatrixD.Multiply(MatrixD.Multiply(T, R), S);
-
-            MatrixD inverseEllipsoidMatrix = MatrixD.Invert(ellipsoidMatrix);
-
-            Vector3D krayPos = Vector3D.Transform(rayPos, ellipsoidMatrixInv);
-            Vector3D krayDir = Vector3D.Transform(rayDir, ellipsoidMatrixInv);
-
-            MyAPIGateway.Utilities.ShowNotification("" + rayPos + " " + rayDir, 66);
-            MyAPIGateway.Utilities.ShowNotification("" + krayPos + " " + krayDir, 66);
-
-            krayDir.Normalize();
-
-            BoundingSphereD sphere = new BoundingSphereD(Vector3.Zero, 1d);
-
-            //RayD kRay = new RayD(krayPos, krayDir);
-            RayD kRay = new RayD(krayPos, krayDir);
-
-            var tmin = 0d;
-            var tmax = 0d;
-            var test = sphere.IntersectRaySphere(kRay, out tmin, out tmax);
-            Log.Line($"{test} - {tmin} - {tmax}");
-            double? hitMult = sphere.Intersects(kRay);
-
-            return hitMult;
-        }
         public static bool RayIntersectsTriangle(Vector3D rayOrigin, Vector3D rayVector, Vector3D v0, Vector3D v1, Vector3D v2, Vector3D outIntersectionPoint)
         {
             const double epsilon = 0.0000001;

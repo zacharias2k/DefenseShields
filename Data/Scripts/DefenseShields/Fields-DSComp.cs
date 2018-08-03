@@ -126,7 +126,17 @@ namespace DefenseShields
         
         private const string SpaceWolf = "Space_Wolf";
         private const string MyMissile = "MyMissile";
-        private string _shieldModel = "\\Models\\Cubes\\ShieldActiveBase.mwm";
+        private string _modelActive = "\\Models\\Cubes\\ShieldActiveBase.mwm";
+        private string _modelPassive = "";
+
+        private const string ShieldModelPassive = "\\Models\\Cubes\\ShieldPassive.mwm";
+        private const string ShieldModelPassive11 = "\\Models\\Cubes\\ShieldPassive11.mwm";
+        private const string ShieldModelPassive10 = "\\Models\\Cubes\\ShieldPassive10.mwm";
+        private const string ShieldModelPassive09 = "\\Models\\Cubes\\ShieldPassive09.mwm";
+        private const string ShieldModelPassive08 = "\\Models\\Cubes\\ShieldPassive08.mwm";
+        private const string ShieldModelPassive07 = "\\Models\\Cubes\\ShieldPassive07.mwm";
+        private const string ShieldModelPassive06 = "\\Models\\Cubes\\ShieldPassive06.mwm";
+        private const string ShieldModelPassive05 = "\\Models\\Cubes\\ShieldPassive05.mwm";
 
         private Vector2D _shieldIconPos = new Vector2D(-0.89, -0.86);
 
@@ -327,6 +337,12 @@ namespace DefenseShields
         {
             get { return DsSet.Settings.Buffer; }
             set { DsSet.Settings.Buffer = value; }
+        }
+
+        public long ShieldShell
+        {
+            get { return DsSet.Settings.ShieldShell; }
+            set { DsSet.Settings.ShieldShell = value; }
         }
         #endregion
 

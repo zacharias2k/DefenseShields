@@ -67,13 +67,16 @@ namespace DefenseShields
         [ProtoMember(16)]
         public bool RaiseShield = true;
 
+        [ProtoMember(17)]
+        public long ShieldShell = 0;
+
         public override string ToString()
         {
             return $"Enabled = {Enabled}\nIdleVisible = {PassiveInvisible}\nActiveVisible = {ActiveInvisible}\nWidth = {Math.Round(Width, 4)}" +
                    $"\nHeight = {Math.Round(Height, 4)}\nDepth = {Math.Round(Depth, 4)}\nRate = {Math.Round(Rate, 4)}" +
                    $"\nExtendFit = {ExtendFit}\nSphereFit = {SphereFit}" +
                    $"\nFortifyShield = {FortifyShield}\nSendToHud = {SendToHud}\nUseBatteries = {UseBatteries}\nIncreaseO2ByFPercent = {Math.Round(IncreaseO2ByFPercent, 4)}" +
-                   $"\nShieldActive = {ShieldActive}\nRaiseShield = {RaiseShield}";
+                   $"\nShieldActive = {ShieldActive}\nRaiseShield = {RaiseShield}\n ShieldShell = {ShieldShell}";
         }
     }
 

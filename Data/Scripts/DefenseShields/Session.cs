@@ -84,6 +84,8 @@ namespace DefenseShields
         public IMyTerminalControlCheckbox HideActiveCheckBox;
         public IMyTerminalControlCheckbox SendToHudCheckBox;
         public IMyTerminalControlOnOffSwitch ToggleShield;
+        public IMyTerminalControlCombobox ShellSelect;
+
 
         public IMyTerminalControlSlider ModDamage;
         public IMyTerminalControlCheckbox ModVoxels;
@@ -772,6 +774,7 @@ namespace DefenseShields
                 SendToHudCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_HideIcon", "Broadcast Shield Status To Huds", "Broadcast Shield Status To Huds", DsUi.GetSendToHud, DsUi.SetSendToHud);
                 BatteryBoostCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_UseBatteries", "Batteries Contribute To Shields", "Batteries Contribute To Shields", DsUi.GetBatteries, DsUi.SetBatteries);
 
+                ShellSelect = TerminalHelpers.AddCombobox(comp?.Shield, "DS-C_ShellSelect", "Select Shield Look", "Select shield's shell texture", DsUi.GetShell, DsUi.SetShell, DsUi.ListShell);
                 CreateAction<IMyUpgradeModule>(ToggleShield);
 
                 CreateActionChargeRate<IMyUpgradeModule>(ChargeSlider);
@@ -915,6 +918,7 @@ namespace DefenseShields
             customData.RedrawControl();
             CustomDataReset = true;
         }
+
 
         public void CreateAction<T>(IMyTerminalControlOnOffSwitch c)
         {
@@ -1215,7 +1219,7 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in ActionSubtractDamageMod: {ex}"); }
         }
 
-        private void CreateAction<T>(IMyTerminalControlCombobox c,
+        private void CreateActionCombobox<T>(IMyTerminalControlCombobox c,
             string[] itemIds = null,
             string[] itemNames = null,
             string icon = null)

@@ -1,4 +1,7 @@
-﻿using Sandbox.ModAPI;
+﻿using System.Collections.Generic;
+using Sandbox.ModAPI;
+using VRage.ModAPI;
+using VRage.Utils;
 
 namespace DefenseShields
 {
@@ -226,6 +229,40 @@ namespace DefenseShields
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();
         }
+
+        public static long GetShell(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            return comp?.ShieldShell ?? 0;
+        }
+
+        public static void SetShell(IMyTerminalBlock block, long newValue)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            if (comp == null) return;
+            comp.ShieldShell = newValue;
+            comp.SelectPassiveShell();
+            comp.UpdatePassiveModel();
+            comp.DsSet.NetworkUpdate();
+            comp.DsSet.SaveSettings();
+        }
+
+        public static void ListShell(List<MyTerminalControlComboBoxItem> shellList)
+        {
+            foreach (var shell in ShellList) shellList.Add(shell);
+        }
+
+        private static readonly List<MyTerminalControlComboBoxItem> ShellList = new List<MyTerminalControlComboBoxItem>()
+        {
+            new MyTerminalControlComboBoxItem() { Key = 0, Value = MyStringId.GetOrCompute("High Reflective") },
+            new MyTerminalControlComboBoxItem() { Key = 1, Value = MyStringId.GetOrCompute("Medium Reflective") },
+            new MyTerminalControlComboBoxItem() { Key = 2, Value = MyStringId.GetOrCompute("Low Reflective") },
+            new MyTerminalControlComboBoxItem() { Key = 3, Value = MyStringId.GetOrCompute("Medium Reflective Red Tint") },
+            new MyTerminalControlComboBoxItem() { Key = 4, Value = MyStringId.GetOrCompute("Medium Reflective Blue Tint") },
+            new MyTerminalControlComboBoxItem() { Key = 5, Value = MyStringId.GetOrCompute("Medium Reflective Green Tint") },
+            new MyTerminalControlComboBoxItem() { Key = 6, Value = MyStringId.GetOrCompute("Medium Reflective Purple Tint") },
+            new MyTerminalControlComboBoxItem() { Key = 7, Value = MyStringId.GetOrCompute("Medium Reflective Gold Tint") },
+        };
         #endregion
     }
 }

@@ -178,7 +178,6 @@ namespace DefenseShields
 
         private void BlockChanged(bool backGround)
         {
-            //_oldEllipsoidAdjust = _ellipsoidAdjust;
             FitChanged = false;
 
             if (GridIsMobile)
@@ -223,7 +222,6 @@ namespace DefenseShields
         {
             lock (_powerSources) _powerSources.Clear();
             lock (_functionalBlocks) _functionalBlocks.Clear();
-            //lock (_batterySources) _batterySources.Clear();
 
             foreach (var grid in ShieldComp.GetLinkedGrids)
             {
@@ -238,7 +236,6 @@ namespace DefenseShields
                     {
                         if (type != MyResourceDistributorComponent.ElectricityId) continue;
                         lock (_powerSources) _powerSources.Add(source);
-                        //if (source.Entity is IMyBatteryBlock) lock (_batterySources) _batterySources.Add(source);
                         break;
                     }
                 }
@@ -266,8 +263,7 @@ namespace DefenseShields
             if (_overLoadLoop == 0 || _reModulationLoop == 0)
             {
                 if (!ShieldOffline) OfflineShield();
-                else ResetShape();
-                ShieldComp.CheckEmitters = true;
+                else ResetShape(true);
                 var realPlayerIds = new HashSet<long>();
                 UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
                 foreach (var id in realPlayerIds)
@@ -278,7 +274,7 @@ namespace DefenseShields
 
             }
             else if (_genericDownLoop == 0 && !ShieldOffline) OfflineShield();
-            else if (_genericDownLoop == 0) ResetShape();
+            else if (_genericDownLoop == 0) ResetShape(true);
 
             if (_reModulationLoop > -1)
             {
@@ -295,11 +291,11 @@ namespace DefenseShields
             if (_genericDownLoop > -1)
             {
                 _genericDownLoop++;
+                if (_genericDownLoop == GenericDownCount - 1) ShieldComp.CheckEmitters = true;
                 if (_genericDownLoop == GenericDownCount)
                 {
                     if (!ShieldComp.EmittersWorking)
                     {
-                        ShieldComp.CheckEmitters = true;
                         _genericDownLoop = 0;
                     }
                     else
@@ -313,11 +309,11 @@ namespace DefenseShields
             }
 
             _overLoadLoop++;
+            if (_overLoadLoop == ShieldDownCount - 1) ShieldComp.CheckEmitters = true;
             if (_overLoadLoop == ShieldDownCount)
             {
                 if (!ShieldComp.EmittersWorking)
                 {
-                    ShieldComp.CheckEmitters = true;
                     _genericDownLoop = 0;
                 }
                 else
@@ -341,11 +337,7 @@ namespace DefenseShields
                 if (!_power.Equals(0.0001f)) _power = 0.001f;
                 Sink.Update();
                 _shieldCurrentPower = Sink.CurrentInputByType(GId);
-                _blockChanged = true;
-                _functionalChanged = true;
-                _shapeLoaded = true;
-                UpdateSubGrids();
-                ResetShape();
+                ResetShape(true);
                 ShieldEnt.PositionComp.SetWorldMatrix(MatrixD.Zero);
                 CleanUp(0);
                 CleanUp(1);
@@ -713,11 +705,17 @@ namespace DefenseShields
         #endregion
 
         #region Shield Shape
-        private void ResetShape()
+        public void ResetShape(bool newShape = false)
         {
-            if (Session.Enforced.Debug == 1) Log.Line($"ResetShape: Offline:{ShieldOffline} - offCnt:{_offlineCnt} - blockChanged:{_blocksChanged} - functional:{_functionalsChanged} - Sleeping:{ShieldWasSleeping} - Suspend:{Suspended} - EWorking:{ShieldComp.EmittersWorking} - ELoS:{ShieldComp.EmittersLos} - ShieldId [{Shield.EntityId}]");
-            BlockMonitor();
-            if (_blocksChanged) BlockChanged(true);
+            if (Session.Enforced.Debug == 1) Log.Line($"ResetShape: newShape {newShape} - Offline:{ShieldOffline} - offCnt:{_offlineCnt} - blockChanged:{_blocksChanged} - functional:{_functionalsChanged} - Sleeping:{ShieldWasSleeping} - Suspend:{Suspended} - EWorking:{ShieldComp.EmittersWorking} - ELoS:{ShieldComp.EmittersLos} - ShieldId [{Shield.EntityId}]");
+
+            if (newShape)
+            {
+                UpdateSubGrids(true);
+                BlockMonitor();
+                if (_blocksChanged) BlockChanged(true);
+                return;
+            }
 
             if (GridIsMobile)
             {
@@ -1026,6 +1024,7 @@ namespace DefenseShields
 
         private void UpdateIcon()
         {
+            //Moving average of the average of the two values, then moving average if the difference from the average.
             var position = new Vector3D(_shieldIconPos.X, _shieldIconPos.Y, 0);
             var fov = MyAPIGateway.Session.Camera.FovWithZoom;
             double aspectratio = MyAPIGateway.Session.Camera.ViewportSize.X / MyAPIGateway.Session.Camera.ViewportSize.Y;
