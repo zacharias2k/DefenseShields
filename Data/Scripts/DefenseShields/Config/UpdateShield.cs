@@ -23,14 +23,11 @@ namespace DefenseShields
             ShieldComp.ShieldActive = newSettings.ShieldActive;
             ShieldComp.RaiseShield = newSettings.RaiseShield;
 
-            ModulateVoxels = newSettings.ModulateVoxels;
-            ModulateGrids = newSettings.ModulateGrids;
             if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings - ShieldId [{Shield.EntityId}]:\n{newSettings}");
         }
 
         public void UpdateStats(ShieldStats stats)
         {
-            ModulateVoxels = stats.ModulateVoxels;
             if (Session.Enforced.Debug == 1) Log.Line($"UpdateStats - ShieldId [{Shield.EntityId}]:\n{stats}");
         }
     }

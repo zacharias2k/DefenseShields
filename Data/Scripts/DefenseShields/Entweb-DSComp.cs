@@ -23,7 +23,7 @@ namespace DefenseShields
             var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange + 3000);
             var pruneSphere2 = new BoundingSphereD(DetectionCenter, BoundingRange);
             var pruneList = new List<MyEntity>();
-            var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || ModulateVoxels;
+            var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || ModComp == null || ModComp.ModulateVoxels;
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList, MyEntityQueryType.Dynamic);
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere2, pruneList, MyEntityQueryType.Static);
 
@@ -98,8 +98,8 @@ namespace DefenseShields
             }
             if (_enablePhysics || ShieldComp.GridIsMoving || _shapeAdjusted)
             {
-                Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, ShieldComp.PhysicsOutside);
-                Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, ShieldComp.PhysicsOutsideLow);
+                Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutside);
+                Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
                 Icosphere.ReturnPhysicsVerts(_detectMatrixInside, ShieldComp.PhysicsInside);
             }
             if (_enablePhysics) MyAPIGateway.Parallel.Start(WebDispatch);
@@ -227,7 +227,7 @@ namespace DefenseShields
         private Ent EntType(IMyEntity ent)
         {
             if (ent == null) return Ent.Ignore;
-            if (ent is MyVoxelBase && (Session.Enforced.DisableVoxelSupport == 1 || ModulateVoxels || !GridIsMobile)) return Ent.Ignore;
+            if (ent is MyVoxelBase && (Session.Enforced.DisableVoxelSupport == 1 || ModComp == null || ModComp.ModulateVoxels || !GridIsMobile)) return Ent.Ignore;
             //if (ent is IMyGunBaseUser) return Ent.Weapon;
 
             if (ent is IMyCharacter)
@@ -240,7 +240,7 @@ namespace DefenseShields
             }
             if (ent is IMyCubeGrid)
             {
-                if (ModulateGrids || Session.Enforced.DisableGridDamageSupport == 1) return Ent.Ignore;
+                if (ModComp != null && ModComp.ModulateGrids || Session.Enforced.DisableGridDamageSupport == 1) return Ent.Ignore;
 
                 var grid = ent as IMyCubeGrid;
                 ModulatorGridComponent modComp;

@@ -126,7 +126,17 @@ namespace DefenseShields
         
         private const string SpaceWolf = "Space_Wolf";
         private const string MyMissile = "MyMissile";
-        private string _shieldModel = "\\Models\\Cubes\\ShieldActiveBase.mwm";
+        private string _modelActive = "\\Models\\Cubes\\ShieldActiveBase.mwm";
+        private string _modelPassive = "";
+
+        private const string ShieldModelPassive = "\\Models\\Cubes\\ShieldPassive.mwm";
+        private const string ShieldModelPassive11 = "\\Models\\Cubes\\ShieldPassive11.mwm";
+        private const string ShieldModelPassive10 = "\\Models\\Cubes\\ShieldPassive10.mwm";
+        private const string ShieldModelPassive09 = "\\Models\\Cubes\\ShieldPassive09.mwm";
+        private const string ShieldModelPassive08 = "\\Models\\Cubes\\ShieldPassive08.mwm";
+        private const string ShieldModelPassive07 = "\\Models\\Cubes\\ShieldPassive07.mwm";
+        private const string ShieldModelPassive06 = "\\Models\\Cubes\\ShieldPassive06.mwm";
+        private const string ShieldModelPassive05 = "\\Models\\Cubes\\ShieldPassive05.mwm";
 
         private Vector2D _shieldIconPos = new Vector2D(-0.89, -0.86);
 
@@ -140,7 +150,7 @@ namespace DefenseShields
         internal MatrixD DetectMatrixOutsideInv;
         private MatrixD _shieldGridMatrix;
         private MatrixD _shieldShapeMatrix;
-        private MatrixD _detectMatrixOutside;
+        internal MatrixD DetectMatrixOutside;
         private MatrixD _detectMatrixInside;
         private MatrixD _detectInsideInv;
 
@@ -241,6 +251,7 @@ namespace DefenseShields
         internal DefenseShieldsSettings DsSet;
 
         internal ShieldGridComponent ShieldComp;
+        internal ModulatorGridComponent ModComp;
         internal RunningAverage DpsAvg = new RunningAverage(8);
 
         internal HashSet<ulong> playersToReceive = null;
@@ -328,26 +339,20 @@ namespace DefenseShields
             set { DsSet.Settings.Buffer = value; }
         }
 
-        public bool ModulateVoxels
+        public long ShieldShell
         {
-            get { return DsSet.Settings.ModulateVoxels; }
-            set { DsSet.Settings.ModulateVoxels = value; }
-        }
-
-        public bool ModulateGrids
-        {
-            get { return DsSet.Settings.ModulateGrids; }
-            set { DsSet.Settings.ModulateGrids = value; }
+            get { return DsSet.Settings.ShieldShell; }
+            set { DsSet.Settings.ShieldShell = value; }
         }
         #endregion
 
         #region constructors
         private MatrixD DetectionMatrix
         {
-            get { return _detectMatrixOutside; }
+            get { return DetectMatrixOutside; }
             set
             {
-                _detectMatrixOutside = value;
+                DetectMatrixOutside = value;
                 DetectMatrixOutsideInv = MatrixD.Invert(value);
                 _detectMatrixInside = MatrixD.Rescale(value, 1d + (-6.0d / 100d));
                 _detectInsideInv = MatrixD.Invert(_detectMatrixInside);

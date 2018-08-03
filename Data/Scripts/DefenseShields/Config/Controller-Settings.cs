@@ -16,11 +16,9 @@ namespace DefenseShields
 
         public void SaveSettings()
         {
-            if (Shield.Storage == null)
-            {
-                Shield.Storage = new MyModStorageComponent();
-            }
-            Shield.Storage[Session.Instance.SettingsGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
+            if (Shield.Storage == null) Shield.Storage = new MyModStorageComponent();
+            var binary = MyAPIGateway.Utilities.SerializeToBinary(Settings);
+            Shield.Storage[Session.Instance.SettingsGuid] = Convert.ToBase64String(binary);
         }
 
         public bool LoadSettings()
@@ -36,7 +34,18 @@ namespace DefenseShields
 
                 try
                 {
-                    loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsModSettings>(rawData);
+                    if (rawData.IndexOf('<', 0, 10) != -1)
+                    {
+                        Log.Line($"loaded xml");
+                        loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsModSettings>(rawData);
+                    }
+                    else
+                    {
+                        Log.Line($"loaded base64");
+                        var base64 = Convert.FromBase64String(rawData);
+                        loadedSettings = MyAPIGateway.Utilities.SerializeFromBinary<DefenseShieldsModSettings>(base64);
+                    }
+
                 }
                 catch (Exception e)
                 {

@@ -143,14 +143,14 @@ namespace DefenseShields
                 }
                 _damageReadOut = 0;
             }
-            if (_eCount == 0 && _lCount == 0 && _count == 0) _randomCount = _random.Next(0, 10);
+            if (_eCount % 2 == 0 && _lCount == 0 && _count == 0) _randomCount = _random.Next(0, 10);
 
             if (cleanUp)
             {
                 if (_staleGrids.Count != 0) CleanUp(0);
                 if (_lCount == 9 && _count == 58) CleanUp(1);
                 if (_effectsCleanup && (_count == 1 || _count == 21 || _count == 41)) CleanUp(2);
-                if (_eCount == 0 && _lCount == _randomCount && _count == 15 && (Session.DedicatedServer || Session.IsServer)) DsSet.SaveSettings();
+                if (_eCount % 2 == 0 && _lCount == _randomCount && _count == 15 && (Session.DedicatedServer || Session.IsServer)) DsSet.SaveSettings();
 
                 if ((_lCount * 60 + _count + 1) % 150 == 0)
                 {
@@ -178,7 +178,6 @@ namespace DefenseShields
 
         private void BlockChanged(bool backGround)
         {
-            //_oldEllipsoidAdjust = _ellipsoidAdjust;
             FitChanged = false;
 
             if (GridIsMobile)
@@ -223,7 +222,6 @@ namespace DefenseShields
         {
             lock (_powerSources) _powerSources.Clear();
             lock (_functionalBlocks) _functionalBlocks.Clear();
-            //lock (_batterySources) _batterySources.Clear();
 
             foreach (var grid in ShieldComp.GetLinkedGrids)
             {
@@ -238,7 +236,6 @@ namespace DefenseShields
                     {
                         if (type != MyResourceDistributorComponent.ElectricityId) continue;
                         lock (_powerSources) _powerSources.Add(source);
-                        //if (source.Entity is IMyBatteryBlock) lock (_batterySources) _batterySources.Add(source);
                         break;
                     }
                 }
@@ -266,17 +263,18 @@ namespace DefenseShields
             if (_overLoadLoop == 0 || _reModulationLoop == 0)
             {
                 if (!ShieldOffline) OfflineShield();
-                ShieldComp.CheckEmitters = true;
+                else ResetShape(true);
                 var realPlayerIds = new HashSet<long>();
                 UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
                 foreach (var id in realPlayerIds)
                 {
                     if (_overLoadLoop == 0) MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 8000, "Red", id);
-                    if (_reModulationLoop == 0) MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield remodulating, restarting in 5 seconds.", 4800, "White", id);
+                    if (_reModulationLoop == 0) MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield remodremodulating, restarting in 5 seconds.", 4800, "White", id);
                 }
 
             }
             else if (_genericDownLoop == 0 && !ShieldOffline) OfflineShield();
+            else if (_genericDownLoop == 0) ResetShape(true);
 
             if (_reModulationLoop > -1)
             {
@@ -293,11 +291,11 @@ namespace DefenseShields
             if (_genericDownLoop > -1)
             {
                 _genericDownLoop++;
+                if (_genericDownLoop == GenericDownCount - 1) ShieldComp.CheckEmitters = true;
                 if (_genericDownLoop == GenericDownCount)
                 {
                     if (!ShieldComp.EmittersWorking)
                     {
-                        ShieldComp.CheckEmitters = true;
                         _genericDownLoop = 0;
                     }
                     else
@@ -311,11 +309,11 @@ namespace DefenseShields
             }
 
             _overLoadLoop++;
+            if (_overLoadLoop == ShieldDownCount - 1) ShieldComp.CheckEmitters = true;
             if (_overLoadLoop == ShieldDownCount)
             {
                 if (!ShieldComp.EmittersWorking)
                 {
-                    ShieldComp.CheckEmitters = true;
                     _genericDownLoop = 0;
                 }
                 else
@@ -339,19 +337,7 @@ namespace DefenseShields
                 if (!_power.Equals(0.0001f)) _power = 0.001f;
                 Sink.Update();
                 _shieldCurrentPower = Sink.CurrentInputByType(GId);
-                _blockChanged = true;
-                _functionalChanged = true;
-                _shapeLoaded = true;
-                UpdateSubGrids();
-                BlockMonitor();
-                BlockChanged(false);
-                if (GridIsMobile) MobileUpdate();
-                else
-                {
-                    UpdateDimensions = true;
-                    if (UpdateDimensions) RefreshDimensions();
-                }
-
+                ResetShape(true);
                 ShieldEnt.PositionComp.SetWorldMatrix(MatrixD.Zero);
                 CleanUp(0);
                 CleanUp(1);
@@ -580,7 +566,7 @@ namespace DefenseShields
             var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
             var rawNerf = nerf ? Session.Enforced.Nerf : 1f;
             var nerfer = rawNerf / _shieldRatio;
-            var shieldVol = _detectMatrixOutside.Scale.Volume;
+            var shieldVol = DetectMatrixOutside.Scale.Volume;
             var powerForShield = 0f;
             const float ratio = 1.25f;
             var percent = Rate * ratio;
@@ -694,7 +680,9 @@ namespace DefenseShields
         #region Field Check
         private bool FieldShapeBlocked()
         {
-            if (ModulateVoxels || Session.Enforced.DisableVoxelSupport == 1) return false;
+            ModulatorGridComponent modComp;
+            Shield.CubeGrid.Components.TryGet(out modComp);
+            if (modComp == null || modComp.ModulateVoxels || Session.Enforced.DisableVoxelSupport == 1) return false;
 
             var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange);
             var pruneList = new List<MyVoxelBase>();
@@ -702,7 +690,7 @@ namespace DefenseShields
 
             if (pruneList.Count == 0) return false;
             MobileUpdate();
-            Icosphere.ReturnPhysicsVerts(_detectMatrixOutside, ShieldComp.PhysicsOutsideLow);
+            Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
             foreach (var voxel in pruneList)
             {
                 if (voxel.RootVoxel == null || voxel != voxel.RootVoxel) continue;
@@ -717,6 +705,31 @@ namespace DefenseShields
         #endregion
 
         #region Shield Shape
+        public void ResetShape(bool newShape = false)
+        {
+            if (Session.Enforced.Debug == 1) Log.Line($"ResetShape: newShape {newShape} - Offline:{ShieldOffline} - offCnt:{_offlineCnt} - blockChanged:{_blocksChanged} - functional:{_functionalsChanged} - Sleeping:{ShieldWasSleeping} - Suspend:{Suspended} - EWorking:{ShieldComp.EmittersWorking} - ELoS:{ShieldComp.EmittersLos} - ShieldId [{Shield.EntityId}]");
+
+            if (newShape)
+            {
+                UpdateSubGrids(true);
+                BlockMonitor();
+                if (_blocksChanged) BlockChanged(true);
+                return;
+            }
+
+            if (GridIsMobile)
+            {
+                _createMobileShape = true;
+                MobileUpdate();
+            }
+            else
+            {
+                UpdateDimensions = true;
+                if (UpdateDimensions) RefreshDimensions();
+            }
+            Icosphere.ReturnPhysicsVerts(DetectionMatrix, ShieldComp.PhysicsOutside);
+        }
+
         public void CreateHalfExtents()
         {
             var myAabb = Shield.CubeGrid.PositionComp.LocalAABB;
@@ -796,8 +809,8 @@ namespace DefenseShields
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(Shield.CubeGrid.WorldMatrix);
                 SOriBBoxD = new MyOrientedBoundingBoxD(DetectionCenter, ShieldSize, _sQuaternion);
                 _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
-                ShieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
-                EllipsoidSa.Update(_detectMatrixOutside.Scale.X, _detectMatrixOutside.Scale.Y, _detectMatrixOutside.Scale.Z);
+                ShieldSphere = new BoundingSphereD(Shield.PositionComp.LocalAABB.Center, ShieldSize.AbsMax()) { Center = DetectionCenter };
+                EllipsoidSa.Update(DetectMatrixOutside.Scale.X, DetectMatrixOutside.Scale.Y, DetectMatrixOutside.Scale.Z);
             }
             else
             {
@@ -810,12 +823,12 @@ namespace DefenseShields
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(emitter.CubeGrid.WorldMatrix);
                 SOriBBoxD = new MyOrientedBoundingBoxD(DetectionCenter, ShieldSize, _sQuaternion);
                 _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
-                ShieldSphere = new BoundingSphereD(Shield.PositionComp.LocalVolume.Center, ShieldSize.AbsMax());
-                EllipsoidSa.Update(_detectMatrixOutside.Scale.X, _detectMatrixOutside.Scale.Y, _detectMatrixOutside.Scale.Z);
+                ShieldSphere = new BoundingSphereD(Shield.PositionComp.LocalAABB.Center, ShieldSize.AbsMax()) { Center = DetectionCenter };
+                EllipsoidSa.Update(DetectMatrixOutside.Scale.X, DetectMatrixOutside.Scale.Y, DetectMatrixOutside.Scale.Z);
             }
             BoundingRange = ShieldSize.AbsMax();
             _ellipsoidSurfaceArea = EllipsoidSa.Surface;
-            ShieldComp.ShieldVolume = _detectMatrixOutside.Scale.Volume;
+            ShieldComp.ShieldVolume = DetectMatrixOutside.Scale.Volume;
             if (!ShieldWasLowered) SetShieldShape();
         }
 
@@ -925,7 +938,7 @@ namespace DefenseShields
 
             MyParticlesManager.TryCreateParticleEffect(6667, out _effect, ref matrix, ref pos, _shieldEntRendId, true); // 15, 16, 24, 25, 28, (31, 32) 211 215 53
             if (_effect == null) return;
-            var playerDist = Vector3D.Distance(MyAPIGateway.Session.Player.GetPosition(), pos);
+            var playerDist = Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos);
             var radius = playerDist * 0.15d;
             var scale = (playerDist + playerDist * 0.001) / playerDist * 0.03;
             if (ImpactSize < 150)
@@ -935,7 +948,8 @@ namespace DefenseShields
             }
             else if (ImpactSize > 12000) scale = 0.1;
             else if (ImpactSize > 3600) scale = scale * (ImpactSize / 3600);
-            //Log.Line($"D:{playerDist} - R:{radius} - S:{scale} - I:{ImpactSize}");
+            if (scale > 0.1) scale = 0.1;
+            //Log.Line($"D:{playerDist} - R:{radius} - S:{scale} - I:{ImpactSize} - {MyAPIGateway.Session.IsCameraUserControlledSpectator} = {MyAPIGateway.Session.CameraTargetDistance} - {Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos)}");
             _effect.UserRadiusMultiplier = (float)radius;
             _effect.UserEmitterScale = (float) scale;
             _effect.Play();
@@ -1010,6 +1024,7 @@ namespace DefenseShields
 
         private void UpdateIcon()
         {
+            //Moving average of the average of the two values, then moving average if the difference from the average.
             var position = new Vector3D(_shieldIconPos.X, _shieldIconPos.Y, 0);
             var fov = MyAPIGateway.Session.Camera.FovWithZoom;
             double aspectratio = MyAPIGateway.Session.Camera.ViewportSize.X / MyAPIGateway.Session.Camera.ViewportSize.Y;
@@ -1244,19 +1259,11 @@ namespace DefenseShields
         #region Shield Support Blocks
         public void GetModulationInfo()
         {
-            ModulatorGridComponent modComp;
-            Shield.CubeGrid.Components.TryGet(out modComp);
-            if (modComp != null)
+            Shield.CubeGrid.Components.TryGet(out ModComp);
+            if (ModComp != null)
             {
-                var reModulate = ModulateVoxels != modComp.ModulateVoxels || ModulateGrids != modComp.ModulateGrids;
-                if (Session.Enforced.Debug == 1 && reModulate) Log.Line($"Remodulate: ModComp change - voxels:[was:{ModulateVoxels} is:{modComp.ModulateVoxels}] Grids:[was:{ModulateGrids} is:{modComp.ModulateGrids}] - ShieldId [{Shield.EntityId}]");
-                if (reModulate) _reModulationLoop = 0;
-
-                ModulateVoxels = modComp.ModulateVoxels;
-                ModulateGrids = modComp.ModulateGrids;
-
-                var energyDamage = modComp.KineticProtection * 0.01f;
-                var kineticDamage = modComp.EnergyProtection * 0.01f;
+                var energyDamage = ModComp.KineticProtection * 0.01f;
+                var kineticDamage = ModComp.EnergyProtection * 0.01f;
                 ModulateEnergy = energyDamage;
                 ModulateKinetic = kineticDamage;
             }

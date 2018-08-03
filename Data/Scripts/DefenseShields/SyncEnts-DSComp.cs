@@ -148,7 +148,7 @@ namespace DefenseShields
                         while (_voxelDmg.TryDequeue(out voxel))
                         {
                             if (voxel == null || voxel.RootVoxel.MarkedForClose || voxel.RootVoxel.Closed) continue;
-                            voxel.RootVoxel.RequestVoxelOperationElipsoid(Vector3.One * 1.0f, _detectMatrixOutside, 0, MyVoxelBase.OperationType.Cut);
+                            voxel.RootVoxel.RequestVoxelOperationElipsoid(Vector3.One * 1.0f, DetectMatrixOutside, 0, MyVoxelBase.OperationType.Cut);
                         }
                     }
                 }

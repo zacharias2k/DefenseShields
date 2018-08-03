@@ -16,7 +16,6 @@ using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRage.Utils;
 using VRageMath;
-using VRageRender;
 using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 namespace DefenseShields
@@ -43,7 +42,6 @@ namespace DefenseShields
         internal bool Compact;
         internal bool IsStatic;
         internal bool BlockIsWorking;
-        internal bool ShieldLineOfSight;
         internal bool TookControl;
         internal bool ControllerFound;
 
@@ -266,6 +264,9 @@ namespace DefenseShields
             testDir.Normalize();
             var testPos = Emitter.PositionComp.WorldVolume.Center + testDir * testDist;
             _sightPos = testPos;
+
+            ShieldComp.DefenseShields.ResetShape();
+
             MyAPIGateway.Parallel.For(0, ShieldComp.PhysicsOutside.Length, i =>
             {
                 var hit = Emitter.CubeGrid.RayCastBlocks(testPos, ShieldComp.PhysicsOutside[i]);
@@ -287,9 +288,9 @@ namespace DefenseShields
                 });
             }
             for (int i = 0; i < ShieldComp.PhysicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
-            ShieldLineOfSight = _blocksLos.Count < 510;
+            ShieldComp.EmittersLos = _blocksLos.Count < 530;
             ShieldComp.CheckEmitters = false;
-            if (Session.Enforced.Debug == 1) Log.Line($"LOS: Mode: {EmitterMode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {ShieldLineOfSight.ToString()} - EmitterId [{Emitter.EntityId}]");
+            if (Session.Enforced.Debug == 1) Log.Line($"LOS: Mode: {EmitterMode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {ShieldComp.EmittersLos.ToString()} - EmitterId [{Emitter.EntityId}]");
         }
 
         private void DrawHelper()
@@ -319,19 +320,8 @@ namespace DefenseShields
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
             var compatible = IsStatic && EmitterMode == EmitterType.Station || !IsStatic && EmitterMode != EmitterType.Station;
-            if (!ShieldComp.ShieldActive)
-            {
-                stringBuilder.Append("[ Emitter Offline ]" +
-                                     "\n" +
-                                     "\n[Emitter Type]: " + EmitterMode +
-                                     "\n[Grid Compatible]: " + compatible +
-                                     "\n[Line of Sight]: " + ShieldLineOfSight +
-                                     "\n[Grid Access]: " + ShieldComp?.DefenseShields?.ControllerGridAccess +
-                                     "\n[Is Suspended]: " + Suspended +
-                                     "\n[Is a Backup]: " + Backup +
-                                     "\n[Is Docked]: " + GoToSleep);
-            }
-            else if (ShieldComp == null || !ControllerFound)
+
+            if (ShieldComp == null || !ControllerFound)
             {
                 stringBuilder.Append("[ No Valid Controller ]" +
                                      "\n" +
@@ -340,6 +330,19 @@ namespace DefenseShields
                                      "\n[Invalid Protocol]: " + (ShieldComp?.DefenseShields == null) +
                                      "\n[Controller Link]: " + ControllerFound);
             }
+            else if (!ShieldComp.ShieldActive)
+            {
+                stringBuilder.Append("[ Emitter Offline ]" +
+                                     "\n" +
+                                     "\n[Emitter Type]: " + EmitterMode +
+                                     "\n[Grid Compatible]: " + compatible +
+                                     "\n[Controller Link]: " + ShieldComp?.DefenseShields?.Shield?.IsWorking +
+                                     "\n[Line of Sight]: " + ShieldComp.EmittersLos +
+                                     "\n[Grid Access]: " + ShieldComp?.DefenseShields?.ControllerGridAccess +
+                                     "\n[Is Suspended]: " + Suspended +
+                                     "\n[Is a Backup]: " + Backup +
+                                     "\n[Is Docked]: " + GoToSleep);
+            }
             else
             {
                 stringBuilder.Append("[ Emitter Online ]" +
@@ -347,7 +350,7 @@ namespace DefenseShields
                                      "\n[Emitter Type]: " + EmitterMode +
                                      "\n[Grid Compatible]: " + compatible +
                                      "\n[Controller Link]: " + ControllerFound +
-                                     "\n[Line of Sight]: " + ShieldLineOfSight +
+                                     "\n[Line of Sight]: " + ShieldComp.EmittersLos +
                                      "\n[Grid Access]: " + ShieldComp?.DefenseShields?.ControllerGridAccess +
                                      "\n[Is Suspended]: " + Suspended +
                                      "\n[Is a Backup]: " + Backup +
@@ -428,9 +431,9 @@ namespace DefenseShields
 
 
             if (Online && ShieldComp.DefenseShields.Starting && (ShieldComp.CheckEmitters || TookControl)) CheckShieldLineOfSight();
-            if (Online && ShieldComp.DefenseShields.Starting && !ShieldLineOfSight && !Session.DedicatedServer) DrawHelper();
+            if (Online && ShieldComp.DefenseShields.Starting && !ShieldComp.EmittersLos && !Session.DedicatedServer) DrawHelper();
 
-            BlockIsWorking = ShieldLineOfSight && Emitter.IsWorking && Emitter.IsFunctional;
+            BlockIsWorking = ShieldComp.EmittersLos && Emitter.IsWorking && Emitter.IsFunctional;
 
             ShieldComp.EmittersWorking = BlockIsWorking && Online;
 

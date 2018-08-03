@@ -10,15 +10,9 @@ namespace DefenseShields
         [ProtoMember(1)]
         public bool Enabled = false;
 
-        [ProtoMember(2)]
-        public bool ModulateVoxels = false;
-
-        [ProtoMember(3)]
-        public bool ModulateGrids = false;
-
         public override string ToString()
         {
-            return $"Enabled = {Enabled}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}";
+            return $"Enabled = {Enabled}";
         }
     }
 
@@ -50,42 +44,39 @@ namespace DefenseShields
         public float Buffer = 0f;
 
         [ProtoMember(9)]
-        public bool ModulateVoxels = true;
-
-        [ProtoMember(10)]
-        public bool ModulateGrids = false;
-
-        [ProtoMember(11)]
         public bool ExtendFit = false;
 
-        [ProtoMember(12)]
+        [ProtoMember(10)]
         public bool SphereFit = false;
 
-        [ProtoMember(13)]
+        [ProtoMember(11)]
         public bool FortifyShield = false;
 
-        [ProtoMember(14)]
+        [ProtoMember(12)]
         public bool SendToHud = true;
 
-        [ProtoMember(15)]
+        [ProtoMember(13)]
         public bool UseBatteries = true;
 
-        [ProtoMember(16), DefaultValue(-1)]
+        [ProtoMember(14), DefaultValue(-1)]
         public double IncreaseO2ByFPercent = 0f;
 
-        [ProtoMember(17)]
+        [ProtoMember(15)]
         public bool ShieldActive = false;
 
-        [ProtoMember(18)]
+        [ProtoMember(16)]
         public bool RaiseShield = true;
+
+        [ProtoMember(17)]
+        public long ShieldShell = 0;
 
         public override string ToString()
         {
             return $"Enabled = {Enabled}\nIdleVisible = {PassiveInvisible}\nActiveVisible = {ActiveInvisible}\nWidth = {Math.Round(Width, 4)}" +
                    $"\nHeight = {Math.Round(Height, 4)}\nDepth = {Math.Round(Depth, 4)}\nRate = {Math.Round(Rate, 4)}" +
-                   $"\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nExtendFit = {ExtendFit}\nSphereFit = {SphereFit}" +
+                   $"\nExtendFit = {ExtendFit}\nSphereFit = {SphereFit}" +
                    $"\nFortifyShield = {FortifyShield}\nSendToHud = {SendToHud}\nUseBatteries = {UseBatteries}\nIncreaseO2ByFPercent = {Math.Round(IncreaseO2ByFPercent, 4)}" +
-                   $"\nShieldActive = {ShieldActive}\nRaiseShield = {RaiseShield}";
+                   $"\nShieldActive = {ShieldActive}\nRaiseShield = {RaiseShield}\n ShieldShell = {ShieldShell}";
         }
     }
 

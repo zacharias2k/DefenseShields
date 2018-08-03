@@ -71,7 +71,7 @@ namespace DefenseShields.Support
         new[] { 9, 39, 41, 2, 41, 40, 39, 40, 41, 9, 41, 17, 2, 27, 41, 41, 27, 17  }
         };
 
-        public int[][] p3VertTris = new int[642][]
+        public static int[][] p3VertTris = new int[642][]
         {
             new[] {0, 162, 164, 0, 192, 162, 0, 499, 501, 0, 164, 499, 0, 501, 192},
             new[] {1, 180, 182, 1, 182, 283, 1, 283, 309, 1, 523, 180, 1, 309, 523},

@@ -140,7 +140,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug == 1 && myCubeGrid != null) Log.Line($"HierarchyChanged: {myCubeGrid.DebugName} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 2 && myCubeGrid != null) Log.Line($"HierarchyChanged: {myCubeGrid.DebugName} - ShieldId [{Shield.EntityId}]");
                 if (ShieldComp == null ||_tick == _hierarchyTick) return;
                 if (_hierarchyTick > _tick - 9)
                 {
@@ -153,14 +153,14 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in Controller HierarchyChanged: {ex}"); }
         }
 
-        private void UpdateSubGrids()
+        private void UpdateSubGrids(bool force = false)
         {
             var checkGroups = Shield.IsWorking && Shield.IsFunctional && !ShieldOffline;
-            if (Session.Enforced.Debug == 1) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Offline:{ShieldOffline} - ShieldId [{Shield.EntityId}]");
-            if (!checkGroups) return;
+            if (Session.Enforced.Debug >= 2) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Offline:{ShieldOffline} - ShieldId [{Shield.EntityId}]");
+            if (!checkGroups && !force) return;
             var gotGroups = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Physical);
-            if (Session.Enforced.Debug == 1) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.GetLinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.GetLinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
             if (gotGroups.Count == ShieldComp.GetLinkedGrids.Count) return;
+            if (Session.Enforced.Debug == 1) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.GetLinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.GetLinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
 
             lock (ShieldComp.GetSubGrids) ShieldComp.GetSubGrids.Clear();
             lock (ShieldComp.GetLinkedGrids) ShieldComp.GetLinkedGrids.Clear();
@@ -185,6 +185,13 @@ namespace DefenseShields
             DsSet.LoadSettings();
             UpdateSettings(DsSet.Settings);
             if (Session.Enforced.Debug == 1) Log.Line($"StorageSetup: ShieldId [{Shield.EntityId}]");
+        }
+
+        public override bool IsSerialized()
+        {
+            DsSet.SaveSettings();
+            if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: saved before replication - ShieldId [{Shield.EntityId}]");
+            return false;
         }
 
         private void BlockMonitor()
@@ -321,7 +328,7 @@ namespace DefenseShields
                     _createMobileShape = true;
                     break;
                 case ShieldType.SmallGrid:
-                    _shieldModel = "\\Models\\Cubes\\ShieldActiveBase_LOD4.mwm";
+                    _modelActive = "\\Models\\Cubes\\ShieldActiveBase_LOD4.mwm";
                     _createMobileShape = true;
                     break;
             }
@@ -330,6 +337,49 @@ namespace DefenseShields
 
             DsUi.CreateUi(Shield);
             InitEntities(true);
+        }
+
+        public void SelectPassiveShell()
+        {
+            switch (ShieldShell)
+            {
+                case 0:
+                    _modelPassive = ShieldModelPassive;
+                    break;
+                case 1:
+                    _modelPassive = ShieldModelPassive11;
+                    break;
+                case 2:
+                    _modelPassive = ShieldModelPassive10;
+                    break;
+                case 3:
+                    _modelPassive = ShieldModelPassive09;
+                    break;
+                case 4:
+                    _modelPassive = ShieldModelPassive08;
+                    break;
+                case 5:
+                    _modelPassive = ShieldModelPassive07;
+                    break;
+                case 6:
+                    _modelPassive = ShieldModelPassive06;
+                    break;
+                case 7:
+                    _modelPassive = ShieldModelPassive05;
+                    break;
+                default:
+                    _modelPassive = ShieldModelPassive;
+                    break;
+            }
+        }
+
+        public void UpdatePassiveModel()
+        {
+            _shellPassive.Render.Visible = true;
+            _shellPassive.RefreshModels($"{Session.Instance.ModPath()}{_modelPassive}", null);
+            _shellPassive.Render.RemoveRenderObjects();
+            _shellPassive.Render.UpdateRenderObject(true);
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdatePassiveModel: modelString:{_modelPassive} - ShellNumber:{ShieldShell} - ShieldId [{Shield.EntityId}]");
         }
 
         private void InitEntities(bool fullInit)
@@ -345,7 +395,8 @@ namespace DefenseShields
             }
 
             var parent = (MyEntity)Shield.CubeGrid;
-            _shellPassive = Spawn.EmptyEntity("dShellPassive", $"{Session.Instance.ModPath()}\\Models\\Cubes\\ShieldPassive.mwm", parent, true);
+            SelectPassiveShell();
+            _shellPassive = Spawn.EmptyEntity("dShellPassive", $"{Session.Instance.ModPath()}{_modelPassive}", parent, true);
             _shellPassive.Render.CastShadows = false;
             _shellPassive.IsPreview = true;
             _shellPassive.Render.Visible = true;
@@ -353,8 +404,9 @@ namespace DefenseShields
             _shellPassive.Render.UpdateRenderObject(true);
             _shellPassive.Render.UpdateRenderObject(false);
             _shellPassive.Save = false;
+            _shellPassive.SyncFlag = false;
 
-            _shellActive = Spawn.EmptyEntity("dShellActive", $"{Session.Instance.ModPath()}{_shieldModel}", parent, true);
+            _shellActive = Spawn.EmptyEntity("dShellActive", $"{Session.Instance.ModPath()}{_modelActive}", parent, true);
             _shellActive.Render.CastShadows = false;
             _shellActive.IsPreview = true;
             _shellActive.Render.Visible = true;
@@ -362,10 +414,10 @@ namespace DefenseShields
             _shellActive.Render.UpdateRenderObject(true);
             _shellActive.Render.UpdateRenderObject(false);
             _shellActive.Save = false;
+            _shellActive.SyncFlag = false;
             _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.Transparent, 0f);
 
             ShieldEnt = Spawn.EmptyEntity("dShield", null, (MyEntity)Shield, false);
-            //_shield = Spawn.SpawnBlock("dShield", $"{Shield.EntityId}", true, false, false, false, true, Shield.OwnerId);
             ShieldEnt.Render.CastShadows = false;
             ShieldEnt.Render.RemoveRenderObjects();
             ShieldEnt.Render.UpdateRenderObject(true);
