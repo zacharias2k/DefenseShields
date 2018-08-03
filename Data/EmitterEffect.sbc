@@ -4521,7 +4521,7 @@
     <ParticleEffect xsi:type="MyObjectBuilder_ParticleEffect">
       <Id>
         <TypeId>ParticleEffect</TypeId>
-        <SubtypeId>Warp</SubtypeId>
+        <SubtypeId>ShieldImpact</SubtypeId>
       </Id>
       <Version>0</Version>
       <ParticleId>6667</ParticleId>
