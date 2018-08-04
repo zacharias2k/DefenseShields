@@ -192,6 +192,9 @@
     <None Include="tools\Monitor SE Log.ps1" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Data\Scripts\DefenseShields\ShieldDraw.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ShieldShape.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ShieldStates.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\API\dsApi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Shield-Stats.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Enforcements.cs" />
@@ -211,20 +214,20 @@
     <Compile Include="HoldingArea\HyperSession.cs" />
     <Compile Include="HoldingArea\Logger.cs" />
     <Compile Include="Data\Scripts\DefenseShields\O2Generator.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Entweb-DSComp.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ShieldEntweb.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\GridComps\ModulatorGridComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\GridComps\ShieldGridComp.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Intersect-DSComp.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ShieldIntersect.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Modulators.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Emitters.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Controller-Settings.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Fields-DSComp.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Init-DSComp.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ShieldFields.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ShieldInit.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\DistPoint3Triangle3.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Definitions\EmitterDirMappingDef.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Definitions\EmitterDefinitions.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Spawn.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\SyncEnts-DSComp.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ShieldSyncEnts.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\StaticUtils.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Ellipsoid\EllipsoidOxygenProvider.cs" />
@@ -241,7 +244,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\Slider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Utils.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Render.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\DSController.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ShieldMain.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Structure\StructureBuilder.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\Triangle3.cs" />
     <Compile Include="HoldingArea\HyperComp.cs" />

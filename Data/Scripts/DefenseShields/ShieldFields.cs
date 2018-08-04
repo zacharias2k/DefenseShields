@@ -24,7 +24,8 @@ namespace DefenseShields
         private uint _shieldEntRendId;
         private uint _enforceTick;
         private uint _hierarchyTick = 1;
-        private uint _unsuspendTick;
+        private uint _shapeTick;
+        internal uint UnsuspendTick;
 
         internal float ImpactSize { get; set; } = 9f;
         internal float Absorb { get; set; }
@@ -47,6 +48,7 @@ namespace DefenseShields
         private float _shieldMaintaintPower;
         private float _shieldConsumptionRate;
         private float _shieldFudge;
+        private float _oldextents;
 
         internal double BoundingRange;
         private double _ellipsoidAdjust = Math.Sqrt(2);
@@ -106,21 +108,21 @@ namespace DefenseShields
         internal bool ShieldWasSleeping;
         private bool _effectsCleanup;
         private bool _hideShield;
-        private bool _shapeAdjusted;
+        private bool _shapeChanged;
         private bool _hierarchyDelayed;
         private bool _entityChanged;
         private bool _updateRender;
         private bool _functionalAdded;
         private bool _functionalRemoved;
         private bool _functionalChanged;
-        private bool _functionalsChanged;
+        private bool _functionalEvent;
         private bool _blockAdded;
         private bool _blockRemoved;
         private bool _blockChanged;
-        private bool _blocksChanged;
+        private bool _blockEvent;
+        private bool _shapeEvent;
         private bool _enablePhysics = true;
-        private bool _shapeLoaded = true;
-        private bool _createMobileShape = true;
+        private bool _updateMobileShape = true;
 
         private Task _backGround;
         
@@ -129,14 +131,14 @@ namespace DefenseShields
         private string _modelActive = "\\Models\\Cubes\\ShieldActiveBase.mwm";
         private string _modelPassive = "";
 
-        private const string ShieldModelPassive = "\\Models\\Cubes\\ShieldPassive.mwm";
-        private const string ShieldModelPassive11 = "\\Models\\Cubes\\ShieldPassive11.mwm";
-        private const string ShieldModelPassive10 = "\\Models\\Cubes\\ShieldPassive10.mwm";
-        private const string ShieldModelPassive09 = "\\Models\\Cubes\\ShieldPassive09.mwm";
-        private const string ShieldModelPassive08 = "\\Models\\Cubes\\ShieldPassive08.mwm";
-        private const string ShieldModelPassive07 = "\\Models\\Cubes\\ShieldPassive07.mwm";
-        private const string ShieldModelPassive06 = "\\Models\\Cubes\\ShieldPassive06.mwm";
-        private const string ShieldModelPassive05 = "\\Models\\Cubes\\ShieldPassive05.mwm";
+        private const string ModelMediumReflective = "\\Models\\Cubes\\ShieldPassive11.mwm";
+        private const string ModelHighReflective = "\\Models\\Cubes\\ShieldPassive.mwm";
+        private const string ModelLowReflective = "\\Models\\Cubes\\ShieldPassive10.mwm";
+        private const string ModelRed = "\\Models\\Cubes\\ShieldPassive09.mwm";
+        private const string ModelBlue = "\\Models\\Cubes\\ShieldPassive08.mwm";
+        private const string ModelGreen = "\\Models\\Cubes\\ShieldPassive07.mwm";
+        private const string ModelPurple = "\\Models\\Cubes\\ShieldPassive06.mwm";
+        private const string ModelGold = "\\Models\\Cubes\\ShieldPassive05.mwm";
 
         private Vector2D _shieldIconPos = new Vector2D(-0.89, -0.86);
 

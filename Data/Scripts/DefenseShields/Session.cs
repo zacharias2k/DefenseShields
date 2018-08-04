@@ -163,6 +163,7 @@ namespace DefenseShields
         #region Draw
         public override void Draw()
         {
+            _dsutil1.Sw.Restart();
             if (DedicatedServer) return;
             if (Enforced.Debug == 1 && _eCount == 0 & _lCount == 0 && _count == 0) Log.Line($"Draw - Session: Comps in the world: {Components.Count.ToString()}");
             try
@@ -187,7 +188,7 @@ namespace DefenseShields
                     SphereOnCamera[i] = true;
                     onCount++;
                 }
-
+                    
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
@@ -198,6 +199,7 @@ namespace DefenseShields
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
+            _dsutil1.StopWatchReport("draw", 1);
         }
         #endregion
 
@@ -226,16 +228,25 @@ namespace DefenseShields
                 var block = target as IMySlimBlock;
                 if (block == null) return;
 
-                var blockGrid = (MyCubeGrid)block.CubeGrid;
                 foreach (var shield in Components)
                 {
-                    if (!IsServer && (!shield.ShieldComp.ShieldActive || !shield.ShieldComp.RaiseShield) && info.Type == MPdamage)
+                    var shieldActive = shield.ShieldComp.ShieldActive && shield.ShieldComp.RaiseShield;
+                    var shieldInactive = !shield.ShieldComp.ShieldActive || !shield.ShieldComp.RaiseShield;
+
+                    if (shieldActive && !shield.DeformEnabled && info.IsDeformation && info.AttackerId == 0)
                     {
                         info.Amount = 0;
                         continue;
                     }
 
-                    if (shield.ShieldComp.ShieldActive && shield.ShieldComp.RaiseShield && shield.FriendlyCache.Contains(blockGrid))
+                    if (!IsServer && shieldInactive && info.Type == MPdamage)
+                    {
+                        info.Amount = 0;
+                        continue;
+                    }
+
+                    var blockGrid = (MyCubeGrid)block.CubeGrid;
+                    if (shieldActive && shield.FriendlyCache.Contains(blockGrid))
                     {
                         if (info.Type == Bypass)
                         {
@@ -247,7 +258,7 @@ namespace DefenseShields
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
                         if (info.Type == MPdamage)
                         {
-                            if (!shield.ShieldComp.ShieldActive || !shield.ShieldComp.RaiseShield || shield.ShieldBuffer <= 0 || hostileEnt == null)
+                            if (shieldInactive || shield.ShieldBuffer <= 0 || hostileEnt == null)
                             {
                                 info.Amount = 0;
                                 continue;
@@ -256,13 +267,13 @@ namespace DefenseShields
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
                             var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, blockPos);
-                            var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
+                            var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? Vector3D.Distance(hostileEnt.PositionComp.WorldVolume.Center, blockPos);
 
                             var testDir = line.From - line.To;
                             testDir.Normalize();
                             var ray = new RayD(line.From, -testDir);
                             var worldSphere = shield.ShieldSphere;
-                            var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
+                            var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(hostileEnt.PositionComp.WorldVolume.Center, blockPos);
 
                             var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
                             Vector3 hitPos = line.From + testDir * -furthestHit;
@@ -272,7 +283,6 @@ namespace DefenseShields
                             info.Amount = 0f;
                             continue;
                         }
-
                         if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt))
                         {
                             shield.DeformEnabled = true;
@@ -299,7 +309,7 @@ namespace DefenseShields
                         if (info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Deformation) info.Amount = info.Amount * shield.ModulateKinetic;
                         else info.Amount = info.Amount * shield.ModulateEnergy;
 
-                        if (hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
+                        if (!DedicatedServer && hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
                         {
                             //if (hostileEnt != null) Log.CleanLine($"{hostileEnt is IMyGunBaseUser} - {hostileEnt is IMyUserControllableGun}");
                             //Log.CleanLine($"full: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
@@ -307,13 +317,13 @@ namespace DefenseShields
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
                             var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, blockPos);
-                            var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
+                            var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? Vector3D.Distance(hostileEnt.PositionComp.WorldVolume.Center, blockPos);
 
                             var testDir = line.From - line.To;
                             testDir.Normalize();
                             var ray = new RayD(line.From, -testDir);
                             var worldSphere = shield.ShieldSphere;
-                            var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
+                            var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(hostileEnt.PositionComp.WorldVolume.Center, blockPos);
 
                             var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
                             Vector3 hitPos = line.From + testDir * -furthestHit;
@@ -324,7 +334,7 @@ namespace DefenseShields
                         shield.Absorb += info.Amount;
                         info.Amount = 0f;
                     }
-                    else if (shield.ShieldComp.ShieldActive && shield.ShieldComp.RaiseShield && shield.PartlyProtectedCache.Contains(blockGrid))
+                    else if (shieldActive && shield.PartlyProtectedCache.Contains(blockGrid))
                     {
                         if (info.Type == Bypass)
                         {
@@ -337,7 +347,7 @@ namespace DefenseShields
                         if (info.Type == MPdamage)
                         {
 
-                            if (!shield.ShieldComp.ShieldActive || !shield.ShieldComp.RaiseShield || shield.ShieldBuffer <= 0 || hostileEnt == null)
+                            if (shieldInactive || shield.ShieldBuffer <= 0 || hostileEnt == null)
                             {
                                 info.Amount = 0;
                                 continue;
@@ -346,13 +356,13 @@ namespace DefenseShields
                             Vector3D blockPos;
                             block.ComputeWorldCenter(out blockPos);
                             var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, blockPos);
-                            var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
+                            var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? Vector3D.Distance(hostileEnt.PositionComp.WorldVolume.Center, blockPos);
 
                             var testDir = line.From - line.To;
                             testDir.Normalize();
                             var ray = new RayD(line.From, -testDir);
                             var worldSphere = shield.ShieldSphere;
-                            var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
+                            var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(hostileEnt.PositionComp.WorldVolume.Center, blockPos);
 
                             var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
                             Vector3 hitPos = line.From + testDir * -furthestHit;
@@ -381,7 +391,7 @@ namespace DefenseShields
                         if (info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Deformation) info.Amount = info.Amount * shield.ModulateKinetic;
                         else info.Amount = info.Amount * shield.ModulateEnergy;
 
-                        if (hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
+                        if (!DedicatedServer && hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
                         {
                             //Log.CleanLine("");
                             //Log.CleanLine($"part: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
@@ -390,20 +400,18 @@ namespace DefenseShields
                             block.ComputeWorldCenter(out blockPos);
                             if (!CustomCollision.PointInShield(blockPos, shield.DetectMatrixOutsideInv)) continue;
                             var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, blockPos);
-                            var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
+                            var obbCheck = shield.SOriBBoxD.Intersects(ref line) ?? Vector3D.Distance(hostileEnt.PositionComp.WorldVolume.Center, blockPos);
 
                             var testDir = line.From - line.To;
                             testDir.Normalize();
                             var ray = new RayD(line.From, -testDir);
                             var worldSphere = shield.ShieldSphere;
-                            var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(blockPos, hostileEnt.PositionComp.WorldVolume.Center);
-
+                            var sphereCheck = worldSphere.Intersects(ray) ?? Vector3D.Distance(hostileEnt.PositionComp.WorldVolume.Center, blockPos);
                             var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
                             Vector3 hitPos = line.From + testDir * -furthestHit;
                             shield.WorldImpactPosition = hitPos;
                             shield.ImpactSize = info.Amount;
                         }
-                        block.IncreaseMountLevel(1000f, 0, null, 1000f, true);
                         shield.Absorb += info.Amount;
                         info.Amount = 0f;
                     }

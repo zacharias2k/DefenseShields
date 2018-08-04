@@ -264,8 +264,7 @@ namespace DefenseShields
             testDir.Normalize();
             var testPos = Emitter.PositionComp.WorldVolume.Center + testDir * testDist;
             _sightPos = testPos;
-
-            ShieldComp.DefenseShields.ResetShape();
+            ShieldComp.DefenseShields.ResetShape(false, false);
 
             MyAPIGateway.Parallel.For(0, ShieldComp.PhysicsOutside.Length, i =>
             {
@@ -429,9 +428,10 @@ namespace DefenseShields
             }
             else Online = true;
 
-
-            if (Online && ShieldComp.DefenseShields.Starting && (ShieldComp.CheckEmitters || TookControl)) CheckShieldLineOfSight();
-            if (Online && ShieldComp.DefenseShields.Starting && !ShieldComp.EmittersLos && !Session.DedicatedServer) DrawHelper();
+            var logic = ShieldComp.DefenseShields;
+            var losCheckReq = Online && logic.Starting && !logic.Suspended && logic.UnsuspendTick == uint.MinValue;
+            if (losCheckReq && (ShieldComp.CheckEmitters || TookControl)) CheckShieldLineOfSight();
+            if (losCheckReq && !ShieldComp.EmittersLos && !Session.DedicatedServer) DrawHelper();
 
             BlockIsWorking = ShieldComp.EmittersLos && Emitter.IsWorking && Emitter.IsFunctional;
 

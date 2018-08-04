@@ -254,8 +254,8 @@ namespace DefenseShields
 
         private static readonly List<MyTerminalControlComboBoxItem> ShellList = new List<MyTerminalControlComboBoxItem>()
         {
-            new MyTerminalControlComboBoxItem() { Key = 0, Value = MyStringId.GetOrCompute("High Reflective") },
-            new MyTerminalControlComboBoxItem() { Key = 1, Value = MyStringId.GetOrCompute("Medium Reflective") },
+            new MyTerminalControlComboBoxItem() { Key = 0, Value = MyStringId.GetOrCompute("Medium Reflective") },
+            new MyTerminalControlComboBoxItem() { Key = 1, Value = MyStringId.GetOrCompute("High Reflective") },
             new MyTerminalControlComboBoxItem() { Key = 2, Value = MyStringId.GetOrCompute("Low Reflective") },
             new MyTerminalControlComboBoxItem() { Key = 3, Value = MyStringId.GetOrCompute("Medium Reflective Red Tint") },
             new MyTerminalControlComboBoxItem() { Key = 4, Value = MyStringId.GetOrCompute("Medium Reflective Blue Tint") },

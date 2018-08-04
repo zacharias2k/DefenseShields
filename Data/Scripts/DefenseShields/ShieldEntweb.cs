@@ -96,7 +96,7 @@ namespace DefenseShields
                     }
                 }
             }
-            if (_enablePhysics || ShieldComp.GridIsMoving || _shapeAdjusted)
+            if (_enablePhysics || ShieldComp.GridIsMoving || _shapeChanged)
             {
                 Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutside);
                 Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);

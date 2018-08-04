@@ -36,12 +36,10 @@ namespace DefenseShields
                 {
                     if (rawData.IndexOf('<', 0, 10) != -1)
                     {
-                        Log.Line($"loaded xml");
                         loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsModSettings>(rawData);
                     }
                     else
                     {
-                        Log.Line($"loaded base64");
                         var base64 = Convert.FromBase64String(rawData);
                         loadedSettings = MyAPIGateway.Utilities.SerializeFromBinary<DefenseShieldsModSettings>(base64);
                     }

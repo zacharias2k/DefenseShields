@@ -48,7 +48,6 @@ namespace DefenseShields
                 _shields.Add(Entity.EntityId, this);
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
                 Session.Instance.Components.Add(this);
-                //MyGridSystem = UtilsStatic.GetDistributor((MyCubeGrid)Shield.CubeGrid);
                 ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
                 ((MyCubeGrid)Shield.CubeGrid).OnBlockAdded += BlockAdded;
                 ((MyCubeGrid)Shield.CubeGrid).OnBlockRemoved += BlockRemoved;
@@ -194,20 +193,6 @@ namespace DefenseShields
             return false;
         }
 
-        private void BlockMonitor()
-        {
-            if (_blockChanged) _blocksChanged = true;
-            if (_functionalChanged) _functionalsChanged = true;
-
-            _functionalAdded = false;
-            _functionalRemoved = false;
-            _functionalChanged = false;
-
-            _blockChanged = false;
-            _blockRemoved = false;
-            _blockAdded = false;
-        }
-
         private void ClientEnforcementRequest()
         {
             if (Session.Enforced.Version > 0)
@@ -320,16 +305,15 @@ namespace DefenseShields
             switch (ShieldMode)
             {
                 case ShieldType.Station:
-                    _shapeAdjusted = false;
-                    _shapeLoaded = false;
+                    _shapeChanged = false;
                     UpdateDimensions = true;
                     break;
                 case ShieldType.LargeGrid:
-                    _createMobileShape = true;
+                    _updateMobileShape = true;
                     break;
                 case ShieldType.SmallGrid:
                     _modelActive = "\\Models\\Cubes\\ShieldActiveBase_LOD4.mwm";
-                    _createMobileShape = true;
+                    _updateMobileShape = true;
                     break;
             }
 
@@ -344,31 +328,31 @@ namespace DefenseShields
             switch (ShieldShell)
             {
                 case 0:
-                    _modelPassive = ShieldModelPassive;
+                    _modelPassive = ModelMediumReflective;
                     break;
                 case 1:
-                    _modelPassive = ShieldModelPassive11;
+                    _modelPassive = ModelHighReflective;
                     break;
                 case 2:
-                    _modelPassive = ShieldModelPassive10;
+                    _modelPassive = ModelLowReflective;
                     break;
                 case 3:
-                    _modelPassive = ShieldModelPassive09;
+                    _modelPassive = ModelRed;
                     break;
                 case 4:
-                    _modelPassive = ShieldModelPassive08;
+                    _modelPassive = ModelBlue;
                     break;
                 case 5:
-                    _modelPassive = ShieldModelPassive07;
+                    _modelPassive = ModelGreen;
                     break;
                 case 6:
-                    _modelPassive = ShieldModelPassive06;
+                    _modelPassive = ModelPurple;
                     break;
                 case 7:
-                    _modelPassive = ShieldModelPassive05;
+                    _modelPassive = ModelGold;
                     break;
                 default:
-                    _modelPassive = ShieldModelPassive;
+                    _modelPassive = ModelMediumReflective;
                     break;
             }
         }
@@ -472,19 +456,19 @@ namespace DefenseShields
                     Suspended = false;
                     _blockChanged = true;
                     _functionalChanged = true;
-                    _shapeLoaded = true;
                     ShieldComp.GetLinkedGrids.Clear();
                     ShieldComp.GetSubGrids.Clear();
                     UpdateSubGrids();
                     BlockMonitor();
                     BlockChanged(false);
+                    CheckExtents(false);
                     if (Session.Enforced.Debug == 1) Log.Line($"Suspend: controller mode was: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                     SetShieldType(false, false);
                     if (Session.Enforced.Debug == 1) Log.Line($"Suspend: controller mode is now: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                     _shellPassive.Render.UpdateRenderObject(true);
                     Icosphere.ShellActive = null;
                     GetModulationInfo();
-                    _unsuspendTick = _tick + 10;
+                    UnsuspendTick = _tick + 1800;
                     _updateRender = true;
                     if (Session.Enforced.Debug == 1) Log.Line($"Unsuspended: CM:{ShieldMode} - EM:{ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
                 }
@@ -580,9 +564,7 @@ namespace DefenseShields
 
         private bool WarmUpSequence()
         {
-            //if (ShieldComp?.DefenseShields != this) return false;
             if (Warming) return true;
-            //if (Starting && !ShieldComp.EmittersWorking) return false;
             if (Starting)
             {
                 Warming = true;
@@ -590,32 +572,19 @@ namespace DefenseShields
             }
 
             if (!PowerOnline()) return false;
+
             HadPowerBefore = true;
             _blockChanged = true;
             _functionalChanged = true;
-            _shapeLoaded = true;
-            UpdateSubGrids();
-            BlockMonitor();
-            BlockChanged(false);
+
+            ResetShape(false, true);
+            ResetShape(false, false);
+
             GetModulationInfo();
 
+            Starting = true;
             ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
             if (Session.Enforced.Debug == 1) Log.Line($"Warming: buffer:{ShieldBuffer} - BlockWorking:{ControlBlockWorking} - Active:{ShieldComp.ShieldActive} - ShieldId [{Shield.EntityId}]");
-            if (GridIsMobile)
-            {
-                CreateHalfExtents();
-                GetShapeAdjust();
-                MobileUpdate();
-            }
-            else
-            {
-                UpdateDimensions = true;
-                if (UpdateDimensions) RefreshDimensions();
-            }
-            _shapeAdjusted = false;
-            ShieldComp.CheckEmitters = true;
-            Icosphere.ReturnPhysicsVerts(DetectionMatrix, ShieldComp.PhysicsOutside);
-            Starting = true;
             return false;
         }
         #endregion

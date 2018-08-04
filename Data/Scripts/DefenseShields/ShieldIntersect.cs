@@ -20,10 +20,6 @@ namespace DefenseShields
             if (grid != null && CustomCollision.PointInShield(grid.PositionComp.WorldVolume.Center, _detectInsideInv))
             {
                 if (CustomCollision.AllCornersInShield(bOriBBoxD, DetectMatrixOutsideInv)) return true;
-                //var ejectDir = CustomCollision.EjectDirection(grid, ShieldComp.PhysicsOutside, _dataStructures.p3VertTris, bOriBBoxD, DetectMatrixOutsideInv);
-                //if (ejectDir == Vector3D.NegativeInfinity) return false;
-                //Eject.TryAdd(grid, ejectDir);
-                //return true;
             }
             return false;
         }
