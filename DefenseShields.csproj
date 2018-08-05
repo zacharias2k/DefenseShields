@@ -184,7 +184,7 @@
     <None Include="Data\BlocksCategories.sbc">
       <SubType>Designer</SubType>
     </None>
-    <None Include="Data\EmitterEffect.sbc" />
+    <None Include="Data\ParticleEffects.sbc" />
     <None Include="Data\EntityComponents.sbc" />
     <None Include="Data\TransparentMaterials.sbc" />
     <None Include="tools\Monitor DS.ps1" />
