@@ -111,6 +111,7 @@ namespace DefenseShields
                 DetectionMatrix = _shieldShapeMatrix * _shieldGridMatrix;
                 DetectionCenter = Shield.CubeGrid.PositionComp.WorldVolume.Center;
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(Shield.CubeGrid.WorldMatrix);
+                ShieldSphere = new BoundingSphereD(Shield.PositionComp.LocalAABB.Center, ShieldSize.AbsMax()) { Center = DetectionCenter };
             }
             else
             {
@@ -121,11 +122,11 @@ namespace DefenseShields
                 ShieldSize = DetectionMatrix.Scale;
                 DetectionCenter = emitter.PositionComp.WorldVolume.Center;
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(emitter.CubeGrid.WorldMatrix);
+                ShieldSphere = new BoundingSphereD(emitter.PositionComp.LocalAABB.Center, ShieldSize.AbsMax()) { Center = DetectionCenter };
             }
 
             SOriBBoxD = new MyOrientedBoundingBoxD(DetectionCenter, ShieldSize, _sQuaternion);
             _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
-            ShieldSphere = new BoundingSphereD(Shield.PositionComp.LocalAABB.Center, ShieldSize.AbsMax()) { Center = DetectionCenter };
 
             if (_shapeChanged)
             {

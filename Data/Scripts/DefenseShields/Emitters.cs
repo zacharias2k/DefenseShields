@@ -119,14 +119,14 @@ namespace DefenseShields
 
                 if (ShieldComp.ShieldActive && !Session.DedicatedServer && UtilsStatic.DistanceCheck(Emitter, 1000, ShieldComp.DefenseShields.BoundingRange))
                 {
-                    if (ShieldComp.GridIsMoving && !Compact) BlockParticleUpdate();
+                    //if (ShieldComp.GridIsMoving && !Compact) BlockParticleUpdate();
 
                     var blockCam = Emitter.PositionComp.WorldVolume;
                     var onCam = MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam);
                     if (onCam)
                     {
-                        if (_effect == null && ShieldComp.ShieldPercent <= 97 && !Compact) BlockParticleStart();
-                        else if (_effect != null && ShieldComp.ShieldPercent > 97f && !Compact) BlockParticleStop();
+                        //if (_effect == null && ShieldComp.ShieldPercent <= 97 && !Compact) BlockParticleStart();
+                        //else if (_effect != null && ShieldComp.ShieldPercent > 97f && !Compact) BlockParticleStop();
                         BlockMoveAnimation();
                     }
                 }
@@ -156,7 +156,7 @@ namespace DefenseShields
 
         private void BlockReset(bool force = false)
         {
-            if (_effect != null && !Session.DedicatedServer && !Compact) BlockParticleStop();
+            //if (_effect != null && !Session.DedicatedServer && !Compact) BlockParticleStop();
             if (!Session.DedicatedServer && !EmissiveIntensity.Equals(0) || !Session.DedicatedServer && force) BlockMoveAnimationReset(true);
         }
 

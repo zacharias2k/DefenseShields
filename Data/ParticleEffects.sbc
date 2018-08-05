@@ -4,7 +4,7 @@
   <ParticleEffect xsi:type="MyObjectBuilder_ParticleEffect">
     <Id>
       <TypeId>ParticleEffect</TypeId>
-      <SubtypeId>Damage_Electrical_Damaged_Antenna</SubtypeId>
+      <SubtypeId>EmitterEffect</SubtypeId>
     </Id>
     <Version>0</Version>
     <ParticleId>6666</ParticleId>
