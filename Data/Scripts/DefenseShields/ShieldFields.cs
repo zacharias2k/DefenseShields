@@ -153,8 +153,11 @@ namespace DefenseShields
         private MatrixD _shieldGridMatrix;
         private MatrixD _shieldShapeMatrix;
         internal MatrixD DetectMatrixOutside;
-        private MatrixD _detectMatrixInside;
-        private MatrixD _detectInsideInv;
+        internal MatrixD ShieldMatrix;
+        internal MatrixD OldShieldMatrix;
+
+        //private MatrixD _detectMatrixInside;
+        //private MatrixD _detectInsideInv;
 
         private BoundingBox _shieldAabb;
         public BoundingSphereD ShieldSphere;
@@ -356,8 +359,8 @@ namespace DefenseShields
             {
                 DetectMatrixOutside = value;
                 DetectMatrixOutsideInv = MatrixD.Invert(value);
-                _detectMatrixInside = MatrixD.Rescale(value, 1d + (-6.0d / 100d));
-                _detectInsideInv = MatrixD.Invert(_detectMatrixInside);
+                //_detectMatrixInside = MatrixD.Rescale(value, 1d + (-6.0d / 100d));
+                //_detectInsideInv = MatrixD.Invert(_detectMatrixInside);
             }
         }
         #endregion

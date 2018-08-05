@@ -17,7 +17,7 @@ namespace DefenseShields
         #region Intersect
         private bool GridInside(IMyCubeGrid grid, MyOrientedBoundingBoxD bOriBBoxD)
         {
-            if (grid != null && CustomCollision.PointInShield(grid.PositionComp.WorldVolume.Center, _detectInsideInv))
+            if (grid != null && CustomCollision.PointInShield(grid.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
             {
                 if (CustomCollision.AllCornersInShield(bOriBBoxD, DetectMatrixOutsideInv)) return true;
             }
@@ -39,6 +39,7 @@ namespace DefenseShields
             entInfo.ContactPoint = Vector3D.NegativeInfinity;
             if (contactpoint != Vector3D.NegativeInfinity)
             {
+                entInfo.Touched = true;
                 var damage = entInfo.Damage * ModulateKinetic;
                 if (Session.MpActive)
                 {
@@ -75,6 +76,7 @@ namespace DefenseShields
                 entInfo.ContactPoint = Vector3D.NegativeInfinity;
                 if (contactpoint == Vector3D.NegativeInfinity) return;
 
+                entInfo.Touched = true;
                 ImpactSize = entInfo.Damage;
 
                 entInfo.Damage = 0;

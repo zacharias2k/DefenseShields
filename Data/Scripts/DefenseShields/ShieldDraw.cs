@@ -4,7 +4,6 @@ using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Utils;
 using VRageMath;
-using VRageRender;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
 namespace DefenseShields
@@ -60,8 +59,8 @@ namespace DefenseShields
         {
             var lod = 4;
 
-            if (onCount > 20) lod = 2;
-            else if (onCount > 10) lod = 3;
+            if (onCount > 9) lod = 2;
+            else if (onCount > 3) lod = 3;
 
             _prevLod = lod;
             return lod;

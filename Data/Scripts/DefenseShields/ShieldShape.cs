@@ -177,9 +177,9 @@ namespace DefenseShields
         private void RefreshDimensions()
         {
             UpdateDimensions = false;
+            _shapeChanged = true;
             CreateShieldShape();
             Icosphere.ReturnPhysicsVerts(DetectionMatrix, ShieldComp.PhysicsOutside);
-            _shapeChanged = true;
         }
         #endregion
     }

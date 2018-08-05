@@ -25,7 +25,7 @@ namespace DefenseShields
             try
             {
                 if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
-                if (!ShieldAlive()) return;
+                if (!ShieldControllerReady()) return;
 
                 if (ShieldComp.ShieldActive)
                 {
@@ -35,55 +35,35 @@ namespace DefenseShields
                         GetModulationInfo();
                         if (_reModulationLoop > -1) return;
                     }
-                    if (ComingOnline)
-                    {
-                        if (!GridOwnsController()) return;
-                        if (ComingOnline && GridIsMobile && FieldShapeBlocked()) return;
-                        ComingOnline = false;
 
-                        if (!ShieldPassiveHide) _shellPassive.Render.UpdateRenderObject(true);
+                    if (ComingOnline && !ShieldStarted()) return;
 
-                        _offlineCnt = -1;
-                        _shellActive.Render.UpdateRenderObject(true);
-                        _shellActive.Render.UpdateRenderObject(false);
-                        SyncThreadedEnts(true);
-                        if (!WarmedUp) 
-                        {
-                            WarmedUp = true;
-                            if (Session.Enforced.Debug == 1) Log.Line($"Warmup: ShieldId [{Shield.EntityId}]");
-                            return;
-                        }
-                        DsSet.NetworkUpdate();
-                        DsSet.SaveSettings();
-                    }
                     SyncThreadedEnts();
-                    _enablePhysics = false;
                     WebEntities();
                     if (_tick % 60 != 0 && !Session.DedicatedServer) HudCheck();
                 }
-                else
-                {
-                    SyncThreadedEnts();
-                }
+                else SyncThreadedEnts();
+
                 if (Session.Enforced.Debug == 1) Dsutil1.StopWatchReport($"PerfCon: Active: {ShieldComp.ShieldActive} - Tick: {_tick} loop: {_lCount}-{_count}", 4);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
 
-        private bool ShieldAlive()
+        private bool ShieldControllerReady()
         {
             _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-            if (!BlockFunctional()) return false;
+            if (!ControllerFunctional()) return false;
             if (GridIsMobile) MobileUpdate();
             if (UpdateDimensions) RefreshDimensions();
-            if (!ShieldReady()) return false;
+            if (!ShieldWaking()) return false;
 
-            SetShieldStatus();
+            var powerState = PowerOnline();
+            SetShieldStatus(powerState);
             Timing(true);
             return true;
         }
 
-        private bool BlockFunctional()
+        private bool ControllerFunctional()
         {
             if (!AllInited)
             {
@@ -108,6 +88,71 @@ namespace DefenseShields
             }
 
             return ControlBlockWorking = Shield.IsWorking && Shield.IsFunctional; 
+        }
+
+        private bool ShieldStarted()
+        {
+            if (!GridOwnsController()) return false;
+            if (ComingOnline && GridIsMobile && FieldShapeBlocked()) return false;
+            ComingOnline = false;
+
+            if (!ShieldPassiveHide) _shellPassive.Render.UpdateRenderObject(true);
+
+            _offlineCnt = -1;
+            _shellActive.Render.UpdateRenderObject(true);
+            _shellActive.Render.UpdateRenderObject(false);
+            SyncThreadedEnts(true);
+            if (!WarmedUp)
+            {
+                WarmedUp = true;
+                if (Session.Enforced.Debug == 1) Log.Line($"Warmup: ShieldId [{Shield.EntityId}]");
+                return false;
+            }
+            DsSet.NetworkUpdate();
+            return true;
+        }
+
+        private void SetShieldStatus(bool powerState)
+        {
+            ShieldComp.ShieldActive = ControlBlockWorking && !ShieldOffline && powerState;
+
+            if (!PrevShieldActive && ShieldComp.ShieldActive) ComingOnline = true;
+            else if (ComingOnline && PrevShieldActive && ShieldComp.ShieldActive) ComingOnline = false;
+
+            PrevShieldActive = ShieldComp.ShieldActive;
+
+            if (!GridIsMobile && (ComingOnline || ShieldComp.O2Updated))
+            {
+                EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, ShieldComp.IncreaseO2ByFPercent);
+                ShieldComp.O2Updated = false;
+            }
+        }
+
+        private bool ShieldWaking()
+        {
+            if (_tick < UnsuspendTick)
+            {
+                var realPlayerIds = new HashSet<long>();
+                UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
+                foreach (var id in realPlayerIds)
+                {
+                    MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- new emitter is initializing and connecting to controller, startup in 30 seconds!", 4816, "Red", id);
+                }
+                _genericDownLoop = 0;
+                return false;
+            }
+            if (UnsuspendTick != uint.MinValue && _tick >= UnsuspendTick)
+            {
+                _blockEvent = true;
+                _shapeEvent = true;
+                UnsuspendTick = uint.MinValue;
+            }
+            else if (_shapeTick != uint.MinValue && _tick >= _shapeTick)
+            {
+                _shapeEvent = true;
+                _shapeTick = uint.MinValue;
+            }
+            return true;
         }
 
         private void Timing(bool cleanUp)
@@ -165,49 +210,6 @@ namespace DefenseShields
                     CleanUp(4);
                 }
             }
-        }
-
-        private void SetShieldStatus()
-        {
-            ShieldComp.ShieldActive = ControlBlockWorking && !ShieldOffline && PowerOnline();
-
-            if (!PrevShieldActive && ShieldComp.ShieldActive) ComingOnline = true;
-            else if (ComingOnline && PrevShieldActive && ShieldComp.ShieldActive) ComingOnline = false;
-
-            PrevShieldActive = ShieldComp.ShieldActive;
-
-            if (!GridIsMobile && (ComingOnline || ShieldComp.O2Updated))
-            {
-                EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, ShieldComp.IncreaseO2ByFPercent);
-                ShieldComp.O2Updated = false;
-            }
-        }
-
-        private bool ShieldReady()
-        {
-            if (_tick < UnsuspendTick)
-            {
-                var realPlayerIds = new HashSet<long>();
-                UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
-                foreach (var id in realPlayerIds)
-                {
-                    MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- new emitter is initializing and connecting to controller, startup in 30 seconds!", 4816, "Red", id);
-                }
-                _genericDownLoop = 0;
-                return false;
-            }
-            if (UnsuspendTick != uint.MinValue && _tick >= UnsuspendTick)
-            {
-                _blockEvent = true;
-                _shapeEvent = true;
-                UnsuspendTick = uint.MinValue;
-            }
-            else if (_shapeTick != uint.MinValue && _tick >= _shapeTick)
-            {
-                _shapeEvent = true;
-                _shapeTick = uint.MinValue;
-            }
-            return true;
         }
 
         private void BlockMonitor()

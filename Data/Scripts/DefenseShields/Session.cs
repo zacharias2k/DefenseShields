@@ -33,6 +33,9 @@ namespace DefenseShields
         private int _lCount;
         private int _eCount;
 
+        internal int OnCount;
+
+        internal bool OnCountThrottle;
         internal bool DefinitionsLoaded;
         internal bool CustomDataReset = true;
         internal bool ShowOnHudReset = true;
@@ -163,13 +166,13 @@ namespace DefenseShields
         #region Draw
         public override void Draw()
         {
-            _dsutil1.Sw.Restart();
             if (DedicatedServer) return;
             if (Enforced.Debug == 1 && _eCount == 0 & _lCount == 0 && _count == 0) Log.Line($"Draw - Session: Comps in the world: {Components.Count.ToString()}");
             try
             {
                 if (Components.Count == 0) return;
-                var onCount = 0;
+                if (_count == 0 && _lCount == 0) OnCountThrottle = false;
+                 var onCount = 0;
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
@@ -186,20 +189,26 @@ namespace DefenseShields
                         continue;
                     }
                     SphereOnCamera[i] = true;
-                    onCount++;
+                    if (!s.Icosphere.ImpactsFinished) onCount++;
                 }
-                    
+
+                if (onCount >= OnCount)
+                {
+                    OnCount = onCount;
+                    OnCountThrottle = true;
+                }
+                else if (!OnCountThrottle && _count == 59 && _lCount == 9) OnCount = onCount;
+                
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
                     if (!s.WarmedUp || !s.ShieldComp.RaiseShield || s.ShieldComp.EmittersSuspended) continue;
-                    if (s.ShieldComp.ShieldActive && SphereOnCamera[i]) s.Draw(onCount, SphereOnCamera[i]);
+                    if (s.ShieldComp.ShieldActive && SphereOnCamera[i]) s.Draw(OnCount, SphereOnCamera[i]);
                     else if (s.ShieldComp.ShieldActive && !s.Icosphere.ImpactsFinished) s.Icosphere.StepEffects();
                     else if (!s.ShieldComp.ShieldActive && SphereOnCamera[i]) s.DrawShieldDownIcon();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
-            _dsutil1.StopWatchReport("draw", 1);
         }
         #endregion
 

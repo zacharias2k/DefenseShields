@@ -21,15 +21,18 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 1) Dsutil2.Sw.Restart();
 
             var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange + 3000);
-            var pruneSphere2 = new BoundingSphereD(DetectionCenter, BoundingRange);
+            var pruneSphere2 = new BoundingSphereD(DetectionCenter, BoundingRange + 5);
             var pruneList = new List<MyEntity>();
-            var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || ModComp == null || ModComp.ModulateVoxels;
+
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList, MyEntityQueryType.Dynamic);
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere2, pruneList, MyEntityQueryType.Static);
 
             foreach (var eShield in EnemyShields) pruneList.Add(eShield);
 
-            var boundingSqr = BoundingRange * BoundingRange;
+            var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || ModComp == null || ModComp.ModulateVoxels;
+            var entChanged = false;
+
+            _enablePhysics = false;
             for (int i = 0; i < pruneList.Count; i++)
             {
                 var ent = pruneList[i];
@@ -70,13 +73,21 @@ namespace DefenseShields
                         }
                         continue;
                 }
-                _enablePhysics = true;
                 lock (WebEnts)
                 {
                     EntIntersectInfo entInfo;
                     WebEnts.TryGetValue(ent, out entInfo);
                     if (entInfo != null)
                     {
+                        var interestingEnts = relation == Ent.LargeEnemyGrid || relation == Ent.LargeNobodyGrid || relation == Ent.SmallEnemyGrid || relation == Ent.SmallNobodyGrid;
+                        if (ent.Physics != null && ent.Physics.IsMoving) entChanged = true;
+                        else if (entInfo.Touched || _count == 0 && interestingEnts && !ent.PositionComp.LocalAABB.Equals(entInfo.Box))
+                        {
+                            entInfo.Box = ent.PositionComp.LocalAABB;
+                            entChanged = true;
+                        }
+
+                        _enablePhysics = true;
                         entInfo.LastTick = _tick;
                     }
                     else
@@ -92,18 +103,24 @@ namespace DefenseShields
                             WebEnts.Remove(ent);
                             continue;
                         }
-                        WebEnts.Add(ent, new EntIntersectInfo(ent.EntityId, 0f, Vector3D.NegativeInfinity, _tick, _tick, relation, new List<IMySlimBlock>()));
+                        entChanged = true;
+                        _enablePhysics = true;
+                        WebEnts.Add(ent, new EntIntersectInfo(ent.EntityId, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, _tick, _tick, relation, new List<IMySlimBlock>()));
                     }
                 }
             }
-            if (_enablePhysics || ShieldComp.GridIsMoving || _shapeChanged)
+
+            ShieldMatrix = ShieldEnt.PositionComp.WorldMatrix;
+            if (_enablePhysics && !ShieldMatrix.EqualsFast(ref OldShieldMatrix))
             {
+                OldShieldMatrix = ShieldMatrix;
                 Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutside);
-                Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
-                Icosphere.ReturnPhysicsVerts(_detectMatrixInside, ShieldComp.PhysicsInside);
+                if (!disableVoxels) Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
             }
-            if (_enablePhysics) MyAPIGateway.Parallel.Start(WebDispatch);
-            if (Session.Enforced.Debug == 1) Dsutil2.StopWatchReport($"Web: ShieldId [{Shield.EntityId}]", 4);
+
+            if (_enablePhysics && (ShieldComp.GridIsMoving || entChanged)) MyAPIGateway.Parallel.Start(WebDispatch);
+
+            if (Session.Enforced.Debug == 1) Dsutil2.StopWatchReport($"Web: ShieldId [{Shield.EntityId}]", 3);
         }
 
         private void WebDispatch()

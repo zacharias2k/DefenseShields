@@ -64,17 +64,22 @@ namespace DefenseShields.Support
     {
         public readonly long EntId;
         public float Damage;
+        public bool Touched;
+        public BoundingBox Box;
+
         public Vector3D ContactPoint;
         public uint LastTick;
         public readonly uint FirstTick;
         public readonly DefenseShields.Ent Relation;
         public List<IMySlimBlock> CacheBlockList;
 
-        public EntIntersectInfo(long entId, float damage, Vector3D contactPoint, uint firstTick, uint lastTick, DefenseShields.Ent relation, List<IMySlimBlock> cacheBlockList)
+        public EntIntersectInfo(long entId, float damage, bool touched, BoundingBox box, Vector3D contactPoint, uint firstTick, uint lastTick, DefenseShields.Ent relation, List<IMySlimBlock> cacheBlockList)
         {
             CacheBlockList = cacheBlockList;
             EntId = entId;
             Damage = damage;
+            Touched = touched;
+            Box = box;
             ContactPoint = contactPoint;
             FirstTick = firstTick;
             LastTick = lastTick;
