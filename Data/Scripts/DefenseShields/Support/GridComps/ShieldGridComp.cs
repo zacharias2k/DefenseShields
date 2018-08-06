@@ -66,6 +66,8 @@ namespace DefenseShields
         
         public Vector3D[] PhysicsInside { get; set; } = new Vector3D[642];
 
+        public Enhancers Enhancer { get; set; }
+
         public int EmitterMode { get; set; } = -1;
         public Emitters StationEmitter { get; set; }
         public Emitters ShipEmitter { get; set; }

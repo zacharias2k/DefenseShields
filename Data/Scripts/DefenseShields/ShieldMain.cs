@@ -12,7 +12,6 @@ using VRage.Game.Components;
 using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
-using VRageRender;
 
 namespace DefenseShields
 {
@@ -33,6 +32,7 @@ namespace DefenseShields
                     if (_lCount % 2 != 0 && _count == 20)
                     {
                         GetModulationInfo();
+                        GetEnhancernInfo();
                         if (_reModulationLoop > -1) return;
                     }
 
@@ -136,7 +136,7 @@ namespace DefenseShields
                 UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
                 foreach (var id in realPlayerIds)
                 {
-                    MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- new emitter is initializing and connecting to controller, startup in 30 seconds!", 4816, "Red", id);
+                    MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- emitter is initializing and connecting to controller, startup in 30 seconds!", 4816, "Red", id);
                 }
                 _genericDownLoop = 0;
                 return false;
@@ -379,12 +379,15 @@ namespace DefenseShields
             const float ratio = 1.25f;
             var percent = Rate * ratio;
             var shieldMaintainPercent = 1 / percent;
-            shieldMaintainPercent = shieldMaintainPercent * (ShieldComp.ShieldPercent * 0.01f);
+            shieldMaintainPercent = (shieldMaintainPercent * _enhancerPowerMulti) * (ShieldComp.ShieldPercent * 0.01f);
             if (!ShieldComp.RaiseShield) shieldMaintainPercent = shieldMaintainPercent * 0.5f;
             _shieldMaintaintPower = _gridMaxPower * shieldMaintainPercent;
             var fPercent = (percent / ratio) / 100;
             _sizeScaler = (shieldVol / _ellipsoidSurfaceArea) / 2.40063050674088;
-            var bufferScaler = 100 / percent * Session.Enforced.BaseScaler / (float)_sizeScaler * nerfer;
+
+            float bufferScaler;
+            if (ShieldMode == ShieldType.Station && _enhancerOnline) bufferScaler = 100 / percent * Session.Enforced.BaseScaler * nerfer;
+            else bufferScaler = 100 / percent * Session.Enforced.BaseScaler / (float)_sizeScaler * nerfer;
 
             var cleanPower = _gridAvailablePower + _shieldCurrentPower;
             _otherPower = _gridMaxPower - cleanPower;
@@ -513,70 +516,75 @@ namespace DefenseShields
 
         private string GetShieldStatus()
         {
-            if (!ControllerGridAccess) return "Invalid Owner";
-            if (Suspended || ShieldMode == ShieldType.Unknown) return "Controller Standby";
-            if (ShieldWasSleeping) return "Docked";
-            if (!Shield.IsWorking || !Shield.IsFunctional) return "Controller Failure";
-            if (ShieldComp.EmitterMode < 0 || !ShieldComp.EmittersWorking) return "Emitter Failure";
-            if (ShieldOffline && !_overLoadLoop.Equals(-1)) return "Overloaded";
-            if (ShieldOffline && _power.Equals(0.0001f)) return "Insufficient Power";
-            if (!ShieldComp.RaiseShield && !ShieldOffline) return "Shield Down";
-            return ShieldOffline ? "Offline" : "Shield Up";
+            if (!Shield.IsWorking || !Shield.IsFunctional) return "[Controller Failure]";
+            if (ShieldOffline && _power.Equals(0.0001f)) return "[Insufficient Power]";
+            if (ShieldOffline && !_overLoadLoop.Equals(-1)) return "[Overloaded]";
+            if (!ControllerGridAccess) return "[Invalid Owner]";
+            if (Suspended || ShieldMode == ShieldType.Unknown) return "[Controller Standby]";
+            if (ShieldWasSleeping) return "[Docked]";
+            if (ShieldComp.EmitterMode < 0 || !ShieldComp.EmittersWorking) return "[Emitter Failure]";
+            if (UnsuspendTick != uint.MinValue) return "[Controller Starting]";
+            if (!ShieldComp.RaiseShield && !ShieldOffline) return "[Shield Down]";
+            return ShieldOffline ? "[Offline]" : "[Shield Up]";
         }
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
-            var secToFull = 0;
-            var shieldPercent = ShieldOffline ? 0f : 100f;
-            if (ShieldBuffer < _shieldMaxBuffer) shieldPercent = (ShieldBuffer / _shieldMaxBuffer) * 100;
-            if (_shieldChargeRate > 0)
+            try
             {
-                var toMax = _shieldMaxBuffer - ShieldBuffer;
-                var secs = toMax / _shieldChargeRate;
-                if (secs.Equals(1)) secToFull = 0;
-                else secToFull = (int)(secs);
-            }
+                var secToFull = 0;
+                var shieldPercent = ShieldOffline ? 0f : 100f;
+                if (ShieldBuffer < _shieldMaxBuffer) shieldPercent = (ShieldBuffer / _shieldMaxBuffer) * 100;
+                if (_shieldChargeRate > 0)
+                {
+                    var toMax = _shieldMaxBuffer - ShieldBuffer;
+                    var secs = toMax / _shieldChargeRate;
+                    if (secs.Equals(1)) secToFull = 0;
+                    else secToFull = (int)(secs);
+                }
 
-            var shieldPowerNeeds = _powerNeeded;
-            var powerUsage = shieldPowerNeeds;
-            var otherPower = _otherPower;
-            var gridMaxPower = _gridMaxPower;
-            if (!UseBatteries)
-            {
-                powerUsage = powerUsage + _batteryCurrentPower;
-                otherPower = _otherPower + _batteryCurrentPower;
-                gridMaxPower = gridMaxPower + _batteryMaxPower;
-            }
+                var shieldPowerNeeds = _powerNeeded;
+                var powerUsage = shieldPowerNeeds;
+                var otherPower = _otherPower;
+                var gridMaxPower = _gridMaxPower;
+                if (!UseBatteries)
+                {
+                    powerUsage = powerUsage + _batteryCurrentPower;
+                    otherPower = _otherPower + _batteryCurrentPower;
+                    gridMaxPower = gridMaxPower + _batteryMaxPower;
+                }
 
-            var status = GetShieldStatus();
-            if (status == "Shield Up" || status == "Shield Down")
-            {
-                stringBuilder.Append("[" + status + "] MaxHP: " + (_shieldMaxBuffer * Session.Enforced.Efficiency).ToString("N0") +
-                                     "\n" +
-                                     "\n[Shield HP__]: " + (ShieldBuffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
-                                     "\n[HP Per Sec_]: " + (_shieldChargeRate * Session.Enforced.Efficiency).ToString("N0") +
-                                     "\n[Damage In__]: " + _damageReadOut.ToString("N0") +
-                                     "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
-                                     "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
-                                     "\n[Efficiency__]: " + Session.Enforced.Efficiency.ToString("0.0") +
-                                     "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
-                                     "\n[Power Usage]: " + powerUsage.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw" +
-                                     "\n[Shield Power]: " + Sink.CurrentInputByType(GId).ToString("0.0") + " Mw");
-            }
-            else
-            {
-                stringBuilder.Append("Shield Status [" + status + "]" +
-                                     "\n" +
-                                     "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
-                                     "\n[Other Power]: " + otherPower.ToString("0.0") + " Mw" +
-                                     "\n[HP Stored]: " + (ShieldBuffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
-                                     "\n[Needed Power]: " + shieldPowerNeeds.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw" +
-                                     "\n[Emitter Detected]: " + ShieldComp.EmittersWorking +
-                                     "\n" +
-                                     "\n[Grid Owns Controller]: "+ IsOwner +
-                                     "\n[In Grid's Faction]: "+ InFaction);
+                var status = GetShieldStatus();
+                if (status == "[Shield Up]" || status == "[Shield Down]")
+                {
+                    stringBuilder.Append(status + " MaxHP: " + (_shieldMaxBuffer * Session.Enforced.Efficiency).ToString("N0") +
+                                         "\n" +
+                                         "\n[Shield HP__]: " + (ShieldBuffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
+                                         "\n[HP Per Sec_]: " + (_shieldChargeRate * Session.Enforced.Efficiency).ToString("N0") +
+                                         "\n[Damage In__]: " + _damageReadOut.ToString("N0") +
+                                         "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
+                                         "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
+                                         "\n[Efficiency__]: " + Session.Enforced.Efficiency.ToString("0.0") +
+                                         "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
+                                         "\n[Power Usage]: " + powerUsage.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw" +
+                                         "\n[Shield Power]: " + Sink.CurrentInputByType(GId).ToString("0.0") + " Mw");
+                }
+                else
+                {
+                    stringBuilder.Append("Shield Status " + status +
+                                         "\n" +
+                                         "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
+                                         "\n[Other Power]: " + otherPower.ToString("0.0") + " Mw" +
+                                         "\n[HP Stored]: " + (ShieldBuffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
+                                         "\n[Needed Power]: " + shieldPowerNeeds.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw" +
+                                         "\n[Emitter Detected]: " + ShieldComp.EmittersWorking +
+                                         "\n" +
+                                         "\n[Grid Owns Controller]: " + IsOwner +
+                                         "\n[In Grid's Faction]: " + InFaction);
 
+                }
             }
+            catch (Exception ex) { Log.Line($"Exception in Controller AppendingCustomInfo: {ex}"); }
         }
         #endregion
 
@@ -597,6 +605,22 @@ namespace DefenseShields
 
                 ModulateEnergy = 1f;
                 ModulateKinetic = 1f;
+            }
+        }
+
+        public void GetEnhancernInfo()
+        {
+            if (ShieldComp.Enhancer != null && ShieldComp.Enhancer.Online)
+            {
+                _enhancerPowerMulti = 2;
+                _enhancerProtMulti = 1000;
+                _enhancerOnline = true;
+            }
+            else
+            {
+                _enhancerPowerMulti = 1;
+                _enhancerProtMulti = 1;
+                _enhancerOnline = false;
             }
         }
 

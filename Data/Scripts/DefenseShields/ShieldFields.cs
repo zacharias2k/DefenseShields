@@ -69,6 +69,9 @@ namespace DefenseShields
         private int _overLoadLoop = -1;
         private int _genericDownLoop = -1;
         private int _reModulationLoop = -1;
+        private int _enhancerPowerMulti = 1;
+        private int _enhancerProtMulti = 1;
+
         private const int ReModulationCount = 300;
         private const int ShieldDownCount = 1200;
         private const int GenericDownCount = 300;
@@ -121,6 +124,7 @@ namespace DefenseShields
         private bool _blockChanged;
         private bool _blockEvent;
         private bool _shapeEvent;
+        private bool _enhancerOnline;
         private bool _enablePhysics = true;
         private bool _updateMobileShape = true;
 
@@ -139,6 +143,8 @@ namespace DefenseShields
         private const string ModelGreen = "\\Models\\Cubes\\ShieldPassive07.mwm";
         private const string ModelPurple = "\\Models\\Cubes\\ShieldPassive06.mwm";
         private const string ModelGold = "\\Models\\Cubes\\ShieldPassive05.mwm";
+        private const string ModelOrange = "\\Models\\Cubes\\ShieldPassive04.mwm";
+        private const string ModelCyan = "\\Models\\Cubes\\ShieldPassive03.mwm";
 
         private Vector2D _shieldIconPos = new Vector2D(-0.89, -0.86);
 

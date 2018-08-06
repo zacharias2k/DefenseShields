@@ -190,7 +190,7 @@ namespace DefenseShields
                     {
                         IMySlimBlock block;
                         var damageMulti = 350;
-                        if (ShieldMode == ShieldType.Station) damageMulti = 5000;
+                        if (ShieldMode == ShieldType.Station && _enhancerOnline) damageMulti = 10000;
                         while (_dmgBlocks.TryDequeue(out block))
                         {
                             if (block == null) continue;
@@ -199,7 +199,7 @@ namespace DefenseShields
                                 ((MyCubeGrid)block.CubeGrid).EnqueueDestroyedBlock(block.Position);
                                 continue;
                             }
-                            block.DoDamage(damageMulti, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId); // set  to true for multiplayer?
+                            block.DoDamage(damageMulti, MyDamageType.Fire, true, null, Shield.CubeGrid.EntityId); // set  to true for multiplayer?
                             if (((MyCubeGrid)block.CubeGrid).BlocksCount == 0) block.CubeGrid.SyncObject.SendCloseRequest();
                         }
                     }
@@ -220,7 +220,7 @@ namespace DefenseShields
                                 ((MyCubeGrid)block.CubeGrid).Close();
                                 continue;
                             }
-                            block.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId); // set sync to true for multiplayer?
+                            block.DoDamage(10000f, MyDamageType.Bullet, true, null, Shield.CubeGrid.EntityId); // set sync to true for multiplayer?
                             if (((MyCubeGrid)block.CubeGrid).BlocksCount == 0) block.CubeGrid.SyncObject.SendCloseRequest();
                         }
                     }

@@ -203,8 +203,13 @@ namespace DefenseShields
             var collisionAvg = Vector3D.Zero;
             var transformInv = DetectMatrixOutsideInv;
             var normalMat = MatrixD.Transpose(transformInv);
-            var massMulti = 1000;
-            if (ShieldMode == ShieldType.Station) massMulti = 1;
+            var massMulti = 1000f;
+            var blockDmgNum = 5;
+            if (ShieldMode == ShieldType.Station && _enhancerOnline)
+            {
+                blockDmgNum = 50;
+                massMulti = massMulti / _enhancerProtMulti;
+            }
             var intersection = bOriBBoxD.Intersects(ref SOriBBoxD);
             try
             {
@@ -271,7 +276,7 @@ namespace DefenseShields
                             collisionAvg += point;
                             c3++;
 
-                            if (_dmgBlocks.Count > 5) break;
+                            if (_dmgBlocks.Count > blockDmgNum) break;
                             c4++;
                             rawDamage += block.Mass * massMulti;
                             _dmgBlocks.Enqueue(block);

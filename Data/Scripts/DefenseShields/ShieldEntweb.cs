@@ -281,7 +281,7 @@ namespace DefenseShields
                 }
 
                 if (((MyCubeGrid)grid).BlocksCount < 3 && grid.BigOwners.Count == 0) return Ent.SmallNobodyGrid;
-                if (grid.BigOwners.Count <= 0) return Ent.LargeNobodyGrid;
+                if (grid.BigOwners.Count == 0) return Ent.LargeNobodyGrid;
 
                 var enemy = GridEnemy(grid);
                 if (enemy && ((MyCubeGrid)grid).BlocksCount < 3) return Ent.SmallEnemyGrid;

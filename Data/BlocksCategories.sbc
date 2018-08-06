@@ -25,8 +25,8 @@
 		<string>EmitterLA</string>
 		<string>EmitterSA</string>
 		<string>DS_Supergen</string>
-		<string>LargeDamageEnhancer</string>
-		<string>SmallDamageEnhancer</string>
+		<string>LargeEnhancer</string>
+		<string>SmallEnhancer</string>
 
 
       </ItemIds>
@@ -629,9 +629,9 @@
   <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
         <TypeId>UpgradeModule</TypeId>
-        <SubtypeId>LargeDamageEnhancer</SubtypeId>
+        <SubtypeId>LargeEnhancer</SubtypeId>
       </Id>
-      <DisplayName>Shield Damage Enhancer</DisplayName>
+      <DisplayName>Shield Enhancer</DisplayName>
       <Icon>Textures\GUI\Icons\Cubes\DamageEnhancerIcon.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -654,7 +654,7 @@
       <BuildProgressModels>
         <Model BuildPercentUpperBound="1.00" File="Models\Cubes\DamageEnhancerLarge_Constr1.mwm" />
       </BuildProgressModels>
-      <BlockPairName>ShieldDmgEnhance</BlockPairName>
+      <BlockPairName>ShieldEnhancer</BlockPairName>
       <EdgeType>Light</EdgeType>
       <BuildTimeSeconds>20</BuildTimeSeconds>
       <MountPoints>
@@ -671,9 +671,9 @@
   <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
         <TypeId>UpgradeModule</TypeId>
-        <SubtypeId>SmallDamageEnhancer</SubtypeId>
+        <SubtypeId>SmallEnhancer</SubtypeId>
       </Id>
-      <DisplayName>Shield Damage Enhancer</DisplayName>
+      <DisplayName>Shield Enhancer</DisplayName>
       <Icon>Textures\GUI\Icons\Cubes\DamageEnhancerIcon.dds</Icon>
       <CubeSize>Small</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -696,7 +696,7 @@
       <BuildProgressModels>
         <Model BuildPercentUpperBound="1.00" File="Models\Cubes\DamageEnhancerSmall_Constr1.mwm" />
       </BuildProgressModels>
-      <BlockPairName>ShieldDmgEnhance</BlockPairName>
+      <BlockPairName>ShieldEnhancer</BlockPairName>
       <EdgeType>Light</EdgeType>
       <BuildTimeSeconds>20</BuildTimeSeconds>
       <MountPoints>

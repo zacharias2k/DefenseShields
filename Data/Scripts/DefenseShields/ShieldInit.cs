@@ -188,8 +188,12 @@ namespace DefenseShields
 
         public override bool IsSerialized()
         {
-            DsSet.SaveSettings();
-            if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: saved before replication - ShieldId [{Shield.EntityId}]");
+            if (Session.IsServer)
+            {
+                DsSet.SaveSettings();
+                DsSet.NetworkUpdate();
+                if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: saved before replication - ShieldId [{Shield.EntityId}]");
+            }
             return false;
         }
 
@@ -351,6 +355,12 @@ namespace DefenseShields
                 case 7:
                     _modelPassive = ModelGold;
                     break;
+                case 8:
+                    _modelPassive = ModelOrange;
+                    break;
+                case 9:
+                    _modelPassive = ModelCyan;
+                    break;
                 default:
                     _modelPassive = ModelMediumReflective;
                     break;
@@ -494,6 +504,12 @@ namespace DefenseShields
 
         private bool GridOwnsController()
         {
+            if (Shield.CubeGrid.BigOwners.Count == 0)
+            {
+                ControllerGridAccess = false;
+                return ControllerGridAccess;
+            }
+
             var controlToGridRelataion = ((MyCubeBlock) Shield).GetUserRelationToOwner(Shield.CubeGrid.BigOwners[0]);
             var faction = MyRelationsBetweenPlayerAndBlock.FactionShare;
             var owner = MyRelationsBetweenPlayerAndBlock.Owner;
@@ -537,7 +553,11 @@ namespace DefenseShields
                 }
                 if (AllInited || !Shield.IsFunctional || ShieldComp.EmitterMode < 0)
                 {
-                    if (_tick % 600 == 0) Shield.RefreshCustomInfo();
+                    if (_tick % 600 == 0)
+                    {
+                        GridOwnsController();
+                        Shield.RefreshCustomInfo();
+                    }
                     return;
                 }
 

@@ -52,7 +52,7 @@ namespace DefenseShields
         public MyModStorageComponentBase Storage { get; set; }
         internal ShieldGridComponent ShieldComp;
         private MyEntitySubpart _subpartRotor;
-        private MyParticleEffect _effect = new MyParticleEffect();
+        //private MyParticleEffect _effect = new MyParticleEffect();
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;
 
@@ -214,6 +214,7 @@ namespace DefenseShields
             if (AnimationLoop++ == 599) AnimationLoop = 0;
         }
 
+        /*
         private void BlockParticleUpdate()
         {
             if (_effect == null) return;
@@ -249,6 +250,7 @@ namespace DefenseShields
             _effect.Play();
             BlockParticleUpdate();
         }
+        */
         #endregion
 
         private void CheckShieldLineOfSight()
@@ -318,43 +320,47 @@ namespace DefenseShields
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
-            var compatible = IsStatic && EmitterMode == EmitterType.Station || !IsStatic && EmitterMode != EmitterType.Station;
+            try
+            {
+                var compatible = IsStatic && EmitterMode == EmitterType.Station || !IsStatic && EmitterMode != EmitterType.Station;
 
-            if (ShieldComp == null || !ControllerFound)
-            {
-                stringBuilder.Append("[ No Valid Controller ]" +
-                                     "\n" +
-                                     "\n[Emitter Type]: " + EmitterMode +
-                                     "\n[Grid Compatible]: " + compatible +
-                                     "\n[Invalid Protocol]: " + (ShieldComp?.DefenseShields == null) +
-                                     "\n[Controller Link]: " + ControllerFound);
+                if (ShieldComp == null || !ControllerFound)
+                {
+                    stringBuilder.Append("[ No Valid Controller ]" +
+                                         "\n" +
+                                         "\n[Emitter Type]: " + EmitterMode +
+                                         "\n[Grid Compatible]: " + compatible +
+                                         "\n[Invalid Protocol]: " + (ShieldComp?.DefenseShields == null) +
+                                         "\n[Controller Link]: " + ControllerFound);
+                }
+                else if (!ShieldComp.ShieldActive)
+                {
+                    stringBuilder.Append("[ Emitter Offline ]" +
+                                         "\n" +
+                                         "\n[Emitter Type]: " + EmitterMode +
+                                         "\n[Grid Compatible]: " + compatible +
+                                         "\n[Controller Link]: " + ShieldComp?.DefenseShields?.Shield?.IsWorking +
+                                         "\n[Line of Sight]: " + ShieldComp.EmittersLos +
+                                         "\n[Grid Access]: " + ShieldComp?.DefenseShields?.ControllerGridAccess +
+                                         "\n[Is Suspended]: " + Suspended +
+                                         "\n[Is a Backup]: " + Backup +
+                                         "\n[Is Docked]: " + GoToSleep);
+                }
+                else
+                {
+                    stringBuilder.Append("[ Emitter Online ]" +
+                                         "\n" +
+                                         "\n[Emitter Type]: " + EmitterMode +
+                                         "\n[Grid Compatible]: " + compatible +
+                                         "\n[Controller Link]: " + ControllerFound +
+                                         "\n[Line of Sight]: " + ShieldComp.EmittersLos +
+                                         "\n[Grid Access]: " + ShieldComp?.DefenseShields?.ControllerGridAccess +
+                                         "\n[Is Suspended]: " + Suspended +
+                                         "\n[Is a Backup]: " + Backup +
+                                         "\n[Is Docked]: " + GoToSleep);
+                }
             }
-            else if (!ShieldComp.ShieldActive)
-            {
-                stringBuilder.Append("[ Emitter Offline ]" +
-                                     "\n" +
-                                     "\n[Emitter Type]: " + EmitterMode +
-                                     "\n[Grid Compatible]: " + compatible +
-                                     "\n[Controller Link]: " + ShieldComp?.DefenseShields?.Shield?.IsWorking +
-                                     "\n[Line of Sight]: " + ShieldComp.EmittersLos +
-                                     "\n[Grid Access]: " + ShieldComp?.DefenseShields?.ControllerGridAccess +
-                                     "\n[Is Suspended]: " + Suspended +
-                                     "\n[Is a Backup]: " + Backup +
-                                     "\n[Is Docked]: " + GoToSleep);
-            }
-            else
-            {
-                stringBuilder.Append("[ Emitter Online ]" +
-                                     "\n" +
-                                     "\n[Emitter Type]: " + EmitterMode +
-                                     "\n[Grid Compatible]: " + compatible +
-                                     "\n[Controller Link]: " + ControllerFound +
-                                     "\n[Line of Sight]: " + ShieldComp.EmittersLos +
-                                     "\n[Grid Access]: " + ShieldComp?.DefenseShields?.ControllerGridAccess +
-                                     "\n[Is Suspended]: " + Suspended +
-                                     "\n[Is a Backup]: " + Backup +
-                                     "\n[Is Docked]: " + GoToSleep);
-            }
+            catch (Exception ex) { Log.Line($"Exception in AppendingCustomInfo: {ex}"); }
         }
 
         private void PowerPreInit()
@@ -640,7 +646,7 @@ namespace DefenseShields
             try
             {
                 if (Session.Enforced.Debug == 1) Log.Line($"OnRemovedFromScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
-                BlockParticleStop();
+                //BlockParticleStop();
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
@@ -671,7 +677,7 @@ namespace DefenseShields
                     }
                     ShieldComp.ShipEmitter = null;
                 }
-                BlockParticleStop();
+                //BlockParticleStop();
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
             base.Close();

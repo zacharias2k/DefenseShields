@@ -17,7 +17,7 @@ using VRageMath;
 
 namespace DefenseShields
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "LargeDamageEnhancer", "SmallDamageEnhancer")]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "LargeEnhancer", "SmallEnhancer")]
     public class Enhancers : MyGameLogicComponent
     {
         private uint _tick;
@@ -28,6 +28,7 @@ namespace DefenseShields
         private float _power = 0.01f;
 
         internal bool Online;
+        internal bool Backup;
 
         private readonly Dictionary<long, Enhancers> _enhancers = new Dictionary<long, Enhancers>();
         public IMyUpgradeModule Enhancer => (IMyUpgradeModule)Entity;
@@ -118,29 +119,58 @@ namespace DefenseShields
         {
             try
             {
-                if (MyAPIGateway.Utilities.IsDedicated || !Enhancer.IsWorking) return;
+                if (Enhancer.CubeGrid.Physics == null) return;
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-                if (Sink.CurrentInputByType(GId) < 0.01f || Enhancer.CubeGrid == null || ShieldComp == null || !Enhancer.Enabled)
-                {
-                    if (_tick % 300 == 0)
-                    {
-                        Enhancer.RefreshCustomInfo();
-                        Enhancer.ShowInToolbarConfig = false;
-                        Enhancer.ShowInToolbarConfig = true;
-                    }
-                    Enhancer?.CubeGrid?.Components.TryGet(out ShieldComp);
-                    Online = false;
-                    return;
-                }
+
+                if (!EnhancerReady()) return;
+
                 Timing();
 
-                if (UtilsStatic.DistanceCheck(Enhancer, 1000, 1))
+                if (!Session.DedicatedServer && UtilsStatic.DistanceCheck(Enhancer, 1000, 1))
                 {
                     var blockCam = Enhancer.PositionComp.WorldVolume;
-                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam)) BlockMoveAnimation();
+                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && Enhancer.IsWorking) BlockMoveAnimation();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
+        }
+
+        private bool EnhancerReady()
+        {
+            if (ShieldComp == null || Sink.CurrentInputByType(GId) < 0.01f || Enhancer?.CubeGrid == null || !Enhancer.Enabled || !Enhancer.IsFunctional || !Enhancer.IsWorking)
+            {
+                if (Enhancer != null && _tick % 300 == 0)
+                {
+                    Enhancer.RefreshCustomInfo();
+                    Enhancer.ShowInToolbarConfig = false;
+                    Enhancer.ShowInToolbarConfig = true;
+                }
+                Enhancer?.CubeGrid?.Components.TryGet(out ShieldComp);
+                Online = false;
+                return Online;
+            }
+
+            if (ShieldComp.Enhancer == null)
+            {
+                ShieldComp.Enhancer = this;
+            }
+            else if (ShieldComp.Enhancer != this)
+            {
+                Backup = true;
+
+                if (Enhancer != null && _tick % 300 == 0)
+                {
+                    Enhancer.RefreshCustomInfo();
+                    Enhancer.ShowInToolbarConfig = false;
+                    Enhancer.ShowInToolbarConfig = true;
+                }
+                Online = false;
+                return Online;
+            }
+
+            Backup = false;
+            Online = true;
+            return Online;
         }
 
         private void Timing()
@@ -159,6 +189,7 @@ namespace DefenseShields
                 Enhancer.ShowInToolbarConfig = true;
             }
         }
+
         private void BlockMoveAnimationReset()
         {
             _subpartRotor.Subparts.Clear();
@@ -182,10 +213,29 @@ namespace DefenseShields
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
-            stringBuilder.Append("[Online]: "+ Online +
-                                 "\n[Amplifying Shield]: " + (ShieldComp != null && Online) +
-                                 "\n" +
-                                 "\n[Enhancer Mode]: " + _power.ToString("0") + "%");
+            if (ShieldComp?.DefenseShields == null)
+            {
+                stringBuilder.Append("[Controller Link]: False");
+            }
+            else if (!Backup && ShieldComp.DefenseShields.ShieldMode == DefenseShields.ShieldType.Station)
+            {
+                stringBuilder.Append("[Online]: " + Online +
+                                     "\n" +
+                                     "\n[Amplifying Shield]: " + Online +
+                                     "\n[Enhancer Mode]: Fortress" +
+                                     "\n[Bonsus] MaxHP, Repel Grids");
+            }
+            else if (!Backup)
+            {
+                stringBuilder.Append("[Online]: " + Online +
+                                     "\n" +
+                                     "\n[Amplifying Shield]: " + (ShieldComp != null && Online) +
+                                     "\n[Enhancer Mode]: " + _power.ToString("0") + "%");
+            }
+            else
+            {
+                stringBuilder.Append("[Backup]: " + Backup);
+            }
         }
 
         public void UpdateSettings(ModulatorBlockSettings newSettings)
@@ -208,6 +258,10 @@ namespace DefenseShields
             try
             {
                 if (Session.Instance.Enhancers.Contains(this)) Session.Instance.Enhancers.Remove(this);
+                if (ShieldComp?.Enhancer == this)
+                {
+                    ShieldComp.Enhancer = null;
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
             base.Close();
