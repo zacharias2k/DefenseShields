@@ -29,8 +29,6 @@ namespace DefenseShields
 
         internal float ImpactSize { get; set; } = 9f;
         internal float Absorb { get; set; }
-        internal float ModulateEnergy = 1f;
-        internal float ModulateKinetic = 1f;
         private float _power = 0.001f;
         private float _gridMaxPower;
         private float _gridCurrentPower;
@@ -69,8 +67,6 @@ namespace DefenseShields
         private int _overLoadLoop = -1;
         private int _genericDownLoop = -1;
         private int _reModulationLoop = -1;
-        private int _enhancerPowerMulti = 1;
-        private int _enhancerProtMulti = 1;
 
         private const int ReModulationCount = 300;
         private const int ShieldDownCount = 1200;
@@ -94,7 +90,6 @@ namespace DefenseShields
         internal bool HadPowerBefore;
         internal bool AllInited;
         internal bool HealthInited;
-        internal bool ShieldOffline;
         internal bool CheckGridRegister;
         internal bool WarmedUp;
         internal bool PrevShieldActive;
@@ -124,9 +119,8 @@ namespace DefenseShields
         private bool _blockChanged;
         private bool _blockEvent;
         private bool _shapeEvent;
-        private bool _enhancerOnline;
         private bool _enablePhysics = true;
-        private bool _updateMobileShape = true;
+        private bool _updateMobileShape;
 
         private Task _backGround;
         
@@ -260,6 +254,7 @@ namespace DefenseShields
 
         public MyModStorageComponentBase Storage { get; set; }
         internal DefenseShieldsSettings DsSet;
+        internal ShieldStatus DsStatus;
 
         internal ShieldGridComponent ShieldComp;
         internal ModulatorGridComponent ModComp;
@@ -346,8 +341,8 @@ namespace DefenseShields
 
         public float ShieldBuffer
         {
-            get { return DsSet.Settings.Buffer; }
-            set { DsSet.Settings.Buffer = value; }
+            get { return DsStatus.State.Buffer; }
+            set { DsStatus.State.Buffer = value; }
         }
 
         public long ShieldShell

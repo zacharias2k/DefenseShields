@@ -1,12 +1,118 @@
 ﻿using System.Collections.Generic;
 using DefenseShields.Support;
 using Sandbox.Game;
+using Sandbox.Game.Entities;
+using Sandbox.ModAPI;
+using VRage.Game;
 using VRageMath;
 
 namespace DefenseShields
 {
     public partial class DefenseShields
     {
+        public enum PlayerNotice
+        {
+            EmitterInit,
+            FieldBlocked,
+            OverLoad,
+            Remodulate,
+            NoPower,
+            NoLos
+        };
+
+        private void PlayerMessages(PlayerNotice notice)
+        {
+            var realPlayerIds = new HashSet<long>();
+            switch (notice)
+            {
+                case PlayerNotice.EmitterInit:
+                    UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
+                    foreach (var id in realPlayerIds)
+                    {
+                        MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- emitter is initializing and connecting to controller, startup in 30 seconds!", 4816, "Red", id);
+                    }
+
+                    break;
+                case PlayerNotice.FieldBlocked:
+                    MyVisualScriptLogicProvider.ShowNotification("The shield's field cannot form when in contact with a solid body", 6720, "Blue", Shield.OwnerId);
+                    break;
+                case PlayerNotice.OverLoad:
+                    UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
+                    foreach (var id in realPlayerIds)
+                    {
+                        MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 8000, "Red", id);
+                    }
+
+                    break;
+                case PlayerNotice.Remodulate:
+                    UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
+                    foreach (var id in realPlayerIds)
+                    {
+                        MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield remodremodulating, restarting in 5 seconds.", 4800, "White", id);
+                    }
+
+                    break;
+                case PlayerNotice.NoLos:
+                    break;
+                case PlayerNotice.NoPower:
+                    UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, (float)BoundingRange, realPlayerIds);
+                    foreach (var id in realPlayerIds)
+                    {
+                        MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- Insufficient Power, shield is failing!", 5000, "Red", id);
+                    }
+                    break;
+            }
+        }
+
+        private bool ShieldWaking()
+        {
+            if (_tick < UnsuspendTick)
+            {
+                _genericDownLoop = 0;
+                DsStatus.State.Waking = true;
+                return DsStatus.State.Waking;
+            }
+            if (UnsuspendTick != uint.MinValue && _tick >= UnsuspendTick)
+            {
+                _blockEvent = true;
+                _shapeEvent = true;
+                UnsuspendTick = uint.MinValue;
+            }
+            else if (_shapeTick != uint.MinValue && _tick >= _shapeTick)
+            {
+                _shapeEvent = true;
+                _shapeTick = uint.MinValue;
+            }
+            DsStatus.State.Waking = false;
+            return DsStatus.State.Waking;
+        }
+
+        private bool FieldShapeBlocked()
+        {
+            ModulatorGridComponent modComp;
+            Shield.CubeGrid.Components.TryGet(out modComp);
+            if (modComp == null || modComp.ModulateVoxels || Session.Enforced.DisableVoxelSupport == 1) return false;
+
+            var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange);
+            var pruneList = new List<MyVoxelBase>();
+            MyGamePruningStructure.GetAllVoxelMapsInSphere(ref pruneSphere, pruneList);
+
+            if (pruneList.Count == 0) return false;
+            //MobileUpdate();
+            //Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
+            foreach (var voxel in pruneList)
+            {
+                if (voxel.RootVoxel == null || voxel != voxel.RootVoxel) continue;
+                if (!CustomCollision.VoxelContact(ShieldComp.PhysicsOutsideLow, voxel)) continue;
+
+                Shield.Enabled = false;
+                DsStatus.State.FieldBlocked = true;
+                return true;
+            }
+            DsStatus.State.FieldBlocked = false;
+            return false;
+        }
+
         private void EmitterEventDetected()
         {
             if (!GridIsMobile)
@@ -24,33 +130,31 @@ namespace DefenseShields
 
         private void FailureConditions()
         {
-            if (_overLoadLoop == 0 || _reModulationLoop == 0 || _genericDownLoop == 0) ResetShape(true, true);
-            if (_overLoadLoop == 0 || _reModulationLoop == 0)
+            //if (_overLoadLoop == 0 || _reModulationLoop == 0 || _genericDownLoop == 0) ResetShape(true, true);
+            if (_overLoadLoop == 0 || _reModulationLoop == 0 || _genericDownLoop == 0)
             {
-                if (!ShieldOffline) OfflineShield();
-                var realPlayerIds = new HashSet<long>();
-                UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
-                foreach (var id in realPlayerIds)
+                if (DsStatus.State.Online)
                 {
-                    if (_overLoadLoop == 0) MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 8000, "Red", id);
-                    if (_reModulationLoop == 0) MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield remodremodulating, restarting in 5 seconds.", 4800, "White", id);
+                    DsStatus.State.Online = false;
+                    if (_overLoadLoop != -1) DsStatus.State.Overload = true;
+                    if (_reModulationLoop != -1) DsStatus.State.Remodulate = true;
+                    ShieldChangeState();
                 }
-
+                //if (_overLoadLoop == 0) PlayerMessages(PlayerNotice.OverLoad);
+                //else if (_reModulationLoop == 0) PlayerMessages(PlayerNotice.Remodulate);
             }
-            else if (_genericDownLoop == 0 && !ShieldOffline) OfflineShield();
+            //else if (_genericDownLoop == 0 && !ShieldOffline) OfflineShield();
 
-            if (_shapeChanged && !_ellipsoidAdjust.Equals(_oldEllipsoidAdjust) || !_gridHalfExtents.Equals(_oldGridHalfExtents)) ResetShape(false, false);
+            //if (_shapeChanged && !_ellipsoidAdjust.Equals(_oldEllipsoidAdjust) || !_gridHalfExtents.Equals(_oldGridHalfExtents)) ResetShape(false, false);
 
             if (_reModulationLoop > -1)
             {
                 _reModulationLoop++;
                 if (_reModulationLoop == ReModulationCount)
                 {
-                    ShieldOffline = false;
+                     DsStatus.State.Remodulate = false;
                     _reModulationLoop = -1;
-                    return;
                 }
-                return;
             }
 
             if (_genericDownLoop > -1)
@@ -65,26 +169,26 @@ namespace DefenseShields
                     }
                     else
                     {
-                        ShieldOffline = false;
                         _genericDownLoop = -1;
                     }
-                    return;
                 }
-                return;
             }
 
-            _overLoadLoop++;
-            if (_overLoadLoop == ShieldDownCount - 1) ShieldComp.CheckEmitters = true;
-            if (_overLoadLoop == ShieldDownCount)
+            if (_overLoadLoop > -1)
             {
-                if (!ShieldComp.EmittersWorking)
+                _overLoadLoop++;
+                if (_overLoadLoop == ShieldDownCount - 1) ShieldComp.CheckEmitters = true;
+                if (_overLoadLoop == ShieldDownCount)
                 {
-                    _genericDownLoop = 0;
-                }
-                else
-                {
-                    ShieldOffline = false;
-                    _overLoadLoop = -1;
+                    if (!ShieldComp.EmittersWorking)
+                    {
+                        _genericDownLoop = 0;
+                    }
+                    else
+                    {
+                        DsStatus.State.Overload = false;
+                        _overLoadLoop = -1;
+                    }
                 }
                 var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
                 var nerfer = nerf ? Session.Enforced.Nerf : 1f;
@@ -97,7 +201,7 @@ namespace DefenseShields
             _offlineCnt++;
             if (_offlineCnt == 0)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"Offline count: {_offlineCnt} - resetting all - was: Buffer:{ShieldBuffer} - Absorb:{Absorb} - Percent:{ShieldComp.ShieldPercent} - O2:{ShieldComp.IncreaseO2ByFPercent} - Lowered:{ShieldWasLowered}");
+                if (Session.Enforced.Debug == 1) Log.Line($"Offline count: {_offlineCnt} - resetting all - was: Buffer:{ShieldBuffer} - Absorb:{Absorb} - Percent:{ShieldComp.ShieldPercent} - O2:{DsStatus.State.IncreaseO2ByFPercent} - Lowered:{ShieldWasLowered}");
 
                 if (!_power.Equals(0.0001f)) _power = 0.001f;
                 Sink.Update();
@@ -108,20 +212,21 @@ namespace DefenseShields
                 CleanUp(1);
                 CleanUp(3);
                 CleanUp(4);
+
+                Absorb = 0f;
+                ShieldBuffer = 0f;
+                ShieldComp.ShieldPercent = 0f;
+                DsStatus.State.IncreaseO2ByFPercent = 0f;
+                ShieldComp.ShieldActive = false;
+                PrevShieldActive = false;
+                ShieldWasLowered = false;
+                ShellVisibility(true);
             }
-            Absorb = 0f;
-            ShieldBuffer = 0f;
-            ShieldComp.ShieldPercent = 0f;
-            ShieldComp.IncreaseO2ByFPercent = 0f;
+
             Shield.RefreshCustomInfo();
             Shield.ShowInToolbarConfig = false;
             Shield.ShowInToolbarConfig = true;
-            ShieldComp.ShieldActive = false;
-            PrevShieldActive = false;
-            ShieldWasLowered = false;
-            _shellPassive.Render.UpdateRenderObject(false);
-            _shellActive.Render.UpdateRenderObject(false);
-            ShieldOffline = true;
+
             if (Session.Enforced.Debug == 1) Log.Line($"ShieldDown: Count: {_offlineCnt} - ShieldPower: {_shieldCurrentPower} - gridMax: {_gridMaxPower} - currentPower: {_gridCurrentPower} - maint: {_shieldMaintaintPower} - ShieldId [{Shield.EntityId}]");
         }
 
@@ -135,11 +240,10 @@ namespace DefenseShields
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
 
                     ShieldEnt.PositionComp.SetWorldMatrix(MatrixD.Zero);
-                    ShieldComp.IncreaseO2ByFPercent = 0f;
-                    _shellPassive.Render.UpdateRenderObject(false);
-                    _shellActive.Render.UpdateRenderObject(false);
-                    DsSet.NetworkUpdate();
+                    DsStatus.State.IncreaseO2ByFPercent = 0f;
+                    ShellVisibility(true);
                     DsSet.SaveSettings();
+                    DsSet.NetworkUpdate();
                     ShieldWasLowered = true;
                 }
                 PowerOnline();
@@ -161,13 +265,12 @@ namespace DefenseShields
             }
             if (ShieldWasLowered && ShieldComp.ShieldActive && Shield.IsWorking)
             {
-                if (!ShieldPassiveHide) _shellPassive.Render.UpdateRenderObject(true);
+                ShellVisibility();
                 if (GridIsMobile) _updateMobileShape = true;
                 else UpdateDimensions = true;
 
-                _shellActive.Render.UpdateRenderObject(false);
-                DsSet.NetworkUpdate();
                 DsSet.SaveSettings();
+                DsSet.NetworkUpdate();
                 ShieldWasLowered = false;
             }
             return false;
@@ -182,11 +285,10 @@ namespace DefenseShields
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
 
                     ShieldEnt.PositionComp.SetWorldMatrix(MatrixD.Zero);
-                    ShieldComp.IncreaseO2ByFPercent = 0f;
-                    _shellPassive.Render.UpdateRenderObject(false);
-                    _shellActive.Render.UpdateRenderObject(false);
-                    DsSet.NetworkUpdate();
+                    DsStatus.State.IncreaseO2ByFPercent = 0f;
+                    ShellVisibility(true);
                     DsSet.SaveSettings();
+                    DsSet.NetworkUpdate();
                     ShieldWasSleeping = true;
                     Shield.RefreshCustomInfo();
                     if (Session.Enforced.Debug == 1) Log.Line($"Sleep: controller detected sleeping emitter, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
@@ -199,7 +301,7 @@ namespace DefenseShields
             if (ShieldWasSleeping)
             {
                 ShieldWasSleeping = false;
-                if (!ShieldPassiveHide) _shellPassive.Render.UpdateRenderObject(true);
+                ShellVisibility();
                 _blockChanged = true;
                 _functionalChanged = true;
                 UpdateSubGrids();
@@ -208,15 +310,126 @@ namespace DefenseShields
                 if (GridIsMobile) _updateMobileShape = true;
                 else UpdateDimensions = true;
 
-                _shellActive.Render.UpdateRenderObject(false);
-                DsSet.NetworkUpdate();
                 DsSet.SaveSettings();
+                DsSet.NetworkUpdate();
                 Shield.RefreshCustomInfo();
                 if (Session.Enforced.Debug == 1) Log.Line($"Sleep: Controller was sleeping but is now waking, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
 
             ShieldWasSleeping = false;
             return ShieldWasSleeping;
+        }
+        private void Election()
+        {
+            if (ShieldComp == null || !Shield.CubeGrid.Components.Has<ShieldGridComponent>())
+            {
+                if (Session.Enforced.Debug == 1) Log.Line($"Election: ShieldComp is null, mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                var girdHasShieldComp = Shield.CubeGrid.Components.Has<ShieldGridComponent>();
+
+                if (girdHasShieldComp)
+                {
+                    Shield.CubeGrid.Components.TryGet(out ShieldComp);
+                    if (Session.Enforced.Debug == 1) Log.Line($"Election: grid had Comp, mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                }
+                else
+                {
+                    Shield.CubeGrid.Components.Add(ShieldComp);
+                    if (Session.Enforced.Debug == 1) Log.Line($"Election: grid didn't have Comp, mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                }
+                ShieldMode = ShieldType.Unknown;
+                Shield.RefreshCustomInfo();
+                if (ShieldComp != null) ShieldComp.DefaultO2 = MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(Shield.PositionComp.WorldVolume.Center);
+            }
+            if (Session.Enforced.Debug == 1) Log.Line($"Election: controller election was held, new mode is: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+        }
+
+        private bool Suspend()
+        {
+            var isStatic = Shield.CubeGrid.IsStatic;
+            var primeMode = ShieldMode == ShieldType.Station && isStatic && ShieldComp.StationEmitter == null;
+            var betaMode = ShieldMode != ShieldType.Station && !isStatic && ShieldComp.ShipEmitter == null;
+
+            if (ShieldMode != ShieldType.Station && isStatic) InitSuspend();
+            else if (ShieldMode == ShieldType.Station && !isStatic) InitSuspend();
+            else if (ShieldMode == ShieldType.Unknown) InitSuspend();
+            else if (ShieldComp.DefenseShields != this || primeMode || betaMode) InitSuspend(true);
+            else if (!GridOwnsController()) InitSuspend(true);
+            else
+            {
+                if (Suspended)
+                {
+                    if (Session.Enforced.Debug == 1) Log.Line($"Suspend: controller unsuspending - ShieldId [{Shield.EntityId}]");
+                    Suspended = false;
+                    _blockChanged = true;
+                    _functionalChanged = true;
+                    ShieldComp.GetLinkedGrids.Clear();
+                    ShieldComp.GetSubGrids.Clear();
+                    UpdateSubGrids();
+                    BlockMonitor();
+                    BlockChanged(false);
+                    CheckExtents(false);
+                    if (Session.Enforced.Debug == 1) Log.Line($"Suspend: controller mode was: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                    SetShieldType(false, false);
+                    if (Session.Enforced.Debug == 1) Log.Line($"Suspend: controller mode is now: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                    ShellVisibility(true);
+                    Icosphere.ShellActive = null;
+                    GetModulationInfo();
+                    UnsuspendTick = _tick + 1800;
+                    _updateRender = true;
+                    if (Session.Enforced.Debug == 1) Log.Line($"Unsuspended: CM:{ShieldMode} - EM:{ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
+                }
+                Suspended = false;
+            }
+
+            if (Suspended) SetShieldType(true, true);
+            return Suspended;
+        }
+
+        private void InitSuspend(bool cleanEnts = false)
+        {
+            if (!Suspended)
+            {
+                if (cleanEnts) InitEntities(false);
+
+                Suspended = true;
+                Shield.RefreshCustomInfo();
+            }
+            if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
+            Suspended = true;
+        }
+
+        private bool GridOwnsController()
+        {
+            if (Shield.CubeGrid.BigOwners.Count == 0)
+            {
+                ControllerGridAccess = false;
+                return ControllerGridAccess;
+            }
+
+            var controlToGridRelataion = ((MyCubeBlock)Shield).GetUserRelationToOwner(Shield.CubeGrid.BigOwners[0]);
+            var faction = MyRelationsBetweenPlayerAndBlock.FactionShare;
+            var owner = MyRelationsBetweenPlayerAndBlock.Owner;
+            InFaction = controlToGridRelataion == faction;
+            IsOwner = controlToGridRelataion == owner;
+
+            if (controlToGridRelataion != owner && controlToGridRelataion != faction)
+            {
+                if (ControllerGridAccess)
+                {
+                    ControllerGridAccess = false;
+                    Shield.RefreshCustomInfo();
+                }
+                ControllerGridAccess = false;
+                return ControllerGridAccess;
+            }
+
+            if (!ControllerGridAccess)
+            {
+                ControllerGridAccess = true;
+                Shield.RefreshCustomInfo();
+            }
+            ControllerGridAccess = true;
+            return ControllerGridAccess;
         }
     }
 }

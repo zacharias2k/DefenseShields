@@ -251,8 +251,8 @@
       </Color>
       <ColorAdd>
         <X>0.00</X>
-        <Y>0.005</Y>
-        <Z>0.02</Z>
+        <Y>0.0025</Y>
+        <Z>0.01</Z>
         <W>0.1</W>
       </ColorAdd>
       <ShadowMultiplier>

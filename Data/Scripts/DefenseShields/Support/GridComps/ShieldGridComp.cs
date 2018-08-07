@@ -9,12 +9,10 @@ namespace DefenseShields
     {
         private static List<ShieldGridComponent> gridShield = new List<ShieldGridComponent>();
         public DefenseShields DefenseShields;
-        public DefenseShieldsSettings Settings;
 
-        public ShieldGridComponent(DefenseShields defenseShields, DefenseShieldsSettings settings)
+        public ShieldGridComponent(DefenseShields defenseShields)
         {
             DefenseShields = defenseShields;
-            Settings = settings;
         }
 
         public override void OnAddedToContainer()
@@ -88,14 +86,14 @@ namespace DefenseShields
 
         public bool ShieldActive
         {
-            get { return Settings.Settings.ShieldActive; }
-            set { Settings.Settings.ShieldActive = value; }
+            get { return DefenseShields.DsSet.Settings.ShieldActive; }
+            set { DefenseShields.DsSet.Settings.ShieldActive = value; }
         }
 
         public bool RaiseShield
         {
-            get { return Settings.Settings.RaiseShield; }
-            set { Settings.Settings.RaiseShield = value; }
+            get { return DefenseShields.DsSet.Settings.RaiseShield; }
+            set { DefenseShields.DsSet.Settings.RaiseShield = value; }
         }
 
         public bool CheckEmitters { get; set; }
@@ -115,12 +113,6 @@ namespace DefenseShields
         public float ShieldPercent { get; set; }
 
         public double ShieldVolume { get; set; }
-
-        public double IncreaseO2ByFPercent
-        {
-            get { return Settings.Settings.IncreaseO2ByFPercent; }
-            set { Settings.Settings.IncreaseO2ByFPercent = value; }
-        }
 
         //public double BoundingRange { get; set; }
 

@@ -98,7 +98,8 @@ namespace DefenseShields
                 if (_count > 0) return;
                 var sc = ShieldComp;
                 var shieldFullVol = sc.ShieldVolume;
-                var startingO2Fpercent = sc.DefaultO2 + sc.IncreaseO2ByFPercent;
+                var IncreaseO2ByFPercent = sc.DefenseShields.DsStatus.State.IncreaseO2ByFPercent;
+                var startingO2Fpercent = sc.DefaultO2 + IncreaseO2ByFPercent;
 
                 if (shieldFullVol < _oldShieldVol)
                 {
@@ -136,9 +137,9 @@ namespace DefenseShields
                 var shieldVolPercentFull = _shieldVolFilled * 100.0;
                 var fPercentToAddToDefaultO2Level = shieldVolPercentFull / shieldFullVol * 0.01 - sc.DefaultO2;
 
-                sc.IncreaseO2ByFPercent = fPercentToAddToDefaultO2Level;
+                IncreaseO2ByFPercent = fPercentToAddToDefaultO2Level;
                 sc.O2Updated = true;
-                if (Session.Enforced.Debug == 0) Log.Line($"default:{ShieldComp.DefaultO2} - Filled/(Max):{_shieldVolFilled}/({shieldFullVol}) - ShieldO2Level:{sc.IncreaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center)}");
+                if (Session.Enforced.Debug == 0) Log.Line($"default:{ShieldComp.DefaultO2} - Filled/(Max):{_shieldVolFilled}/({shieldFullVol}) - ShieldO2Level:{IncreaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center)}");
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
@@ -246,7 +247,7 @@ namespace DefenseShields
                                      "\n[Ice-to-Air volumetric ratio]: 261.3" +
                                      "\n[Shield Volume]: " + ShieldComp.ShieldVolume.ToString("N0") +
                                      "\n[Volume Filled]: " + _shieldVolFilled.ToString("N0") +
-                                     "\n[Internal O2 Lvl]: " + ((ShieldComp.IncreaseO2ByFPercent + ShieldComp.DefaultO2) * 100).ToString("0") + "%" +
+                                     "\n[Internal O2 Lvl]: " + ((ShieldComp.DefenseShields.DsStatus.State.IncreaseO2ByFPercent + ShieldComp.DefaultO2) * 100).ToString("0") + "%" +
                                      "\n[External O2 Lvl]: " + (ShieldComp.DefaultO2 * 100).ToString("0") + "%");
             }
         }

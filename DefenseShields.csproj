@@ -196,7 +196,7 @@
     <Compile Include="Data\Scripts\DefenseShields\ShieldShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldStates.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\API\dsApi.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Config\Shield-Stats.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Config\Shield-State.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Enforcements.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Modulator-Settings.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\ModUi.cs" />

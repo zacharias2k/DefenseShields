@@ -154,8 +154,8 @@ namespace DefenseShields
 
         private void UpdateSubGrids(bool force = false)
         {
-            var checkGroups = Shield.IsWorking && Shield.IsFunctional && !ShieldOffline;
-            if (Session.Enforced.Debug >= 2) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Offline:{ShieldOffline} - ShieldId [{Shield.EntityId}]");
+            var checkGroups = Shield.IsWorking && Shield.IsFunctional && DsStatus.State.Online;
+            if (Session.Enforced.Debug >= 2) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Offline:{DsStatus.State.Online} - ShieldId [{Shield.EntityId}]");
             if (!checkGroups && !force) return;
             var gotGroups = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Physical);
             if (gotGroups.Count == ShieldComp.GetLinkedGrids.Count) return;
@@ -179,10 +179,11 @@ namespace DefenseShields
         {
             Storage = Shield.Storage;
             if (DsSet == null) DsSet = new DefenseShieldsSettings(Shield);
-            if (ShieldComp == null) ShieldComp = new ShieldGridComponent(this, DsSet);
-            else if (ShieldComp.Settings == null) ShieldComp.Settings = DsSet;
+            if (DsStatus == null) DsStatus = new ShieldStatus(Shield);
+            if (ShieldComp == null) ShieldComp = new ShieldGridComponent(this);
             DsSet.LoadSettings();
             UpdateSettings(DsSet.Settings);
+            DsStatus.LoadState();
             if (Session.Enforced.Debug == 1) Log.Line($"StorageSetup: ShieldId [{Shield.EntityId}]");
         }
 
@@ -190,8 +191,7 @@ namespace DefenseShields
         {
             if (Session.IsServer)
             {
-                DsSet.SaveSettings();
-                DsSet.NetworkUpdate();
+                DsStatus.SaveState();
                 if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: saved before replication - ShieldId [{Shield.EntityId}]");
             }
             return false;
@@ -423,119 +423,6 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 1) Log.Line($"InitEntities: mode: {ShieldMode}, spawn complete - ShieldId [{Shield.EntityId}]");
         }
 
-        private void Election()
-        {
-            if (ShieldComp == null || !Shield.CubeGrid.Components.Has<ShieldGridComponent>())
-            {
-                if (Session.Enforced.Debug == 1) Log.Line($"Election: ShieldComp is null, mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-                var girdHasShieldComp = Shield.CubeGrid.Components.Has<ShieldGridComponent>();
-
-                if (girdHasShieldComp)
-                {
-                    Shield.CubeGrid.Components.TryGet(out ShieldComp);
-                    if (Session.Enforced.Debug == 1) Log.Line($"Election: grid had Comp, mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-                }
-                else
-                {
-                    Shield.CubeGrid.Components.Add(ShieldComp);
-                    if (Session.Enforced.Debug == 1) Log.Line($"Election: grid didn't have Comp, mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-                }
-                ShieldMode = ShieldType.Unknown;
-                Shield.RefreshCustomInfo();
-                if (ShieldComp != null) ShieldComp.DefaultO2 = MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(Shield.PositionComp.WorldVolume.Center);
-            }
-            if (Session.Enforced.Debug == 1) Log.Line($"Election: controller election was held, new mode is: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-        }
-
-        private bool Suspend()
-        {
-            var isStatic = Shield.CubeGrid.IsStatic;
-            var primeMode = ShieldMode == ShieldType.Station && isStatic && ShieldComp.StationEmitter == null;
-            var betaMode = ShieldMode != ShieldType.Station && !isStatic && ShieldComp.ShipEmitter == null;
-
-            if (ShieldMode != ShieldType.Station && isStatic) InitSuspend();
-            else if (ShieldMode == ShieldType.Station && !isStatic) InitSuspend();
-            else if (ShieldMode == ShieldType.Unknown) InitSuspend();
-            else if (ShieldComp.DefenseShields != this || primeMode || betaMode) InitSuspend(true);
-            else if (!GridOwnsController()) InitSuspend(true);
-            else
-            {
-                if (Suspended)
-                {
-                    if (Session.Enforced.Debug == 1) Log.Line($"Suspend: controller unsuspending - ShieldId [{Shield.EntityId}]");
-                    Suspended = false;
-                    _blockChanged = true;
-                    _functionalChanged = true;
-                    ShieldComp.GetLinkedGrids.Clear();
-                    ShieldComp.GetSubGrids.Clear();
-                    UpdateSubGrids();
-                    BlockMonitor();
-                    BlockChanged(false);
-                    CheckExtents(false);
-                    if (Session.Enforced.Debug == 1) Log.Line($"Suspend: controller mode was: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-                    SetShieldType(false, false);
-                    if (Session.Enforced.Debug == 1) Log.Line($"Suspend: controller mode is now: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-                    _shellPassive.Render.UpdateRenderObject(true);
-                    Icosphere.ShellActive = null;
-                    GetModulationInfo();
-                    UnsuspendTick = _tick + 1800;
-                    _updateRender = true;
-                    if (Session.Enforced.Debug == 1) Log.Line($"Unsuspended: CM:{ShieldMode} - EM:{ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
-                }
-                Suspended = false;
-            }
-
-            if (Suspended) SetShieldType(true, true);
-            return Suspended;
-        }
-
-        private void InitSuspend(bool cleanEnts = false)
-        {
-            if (!Suspended)
-            {
-                if (cleanEnts) InitEntities(false);
-
-                Suspended = true;
-                Shield.RefreshCustomInfo();
-            }
-            if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
-            Suspended = true;
-        }
-
-        private bool GridOwnsController()
-        {
-            if (Shield.CubeGrid.BigOwners.Count == 0)
-            {
-                ControllerGridAccess = false;
-                return ControllerGridAccess;
-            }
-
-            var controlToGridRelataion = ((MyCubeBlock) Shield).GetUserRelationToOwner(Shield.CubeGrid.BigOwners[0]);
-            var faction = MyRelationsBetweenPlayerAndBlock.FactionShare;
-            var owner = MyRelationsBetweenPlayerAndBlock.Owner;
-            InFaction = controlToGridRelataion == faction;
-            IsOwner = controlToGridRelataion == owner;
-
-            if (controlToGridRelataion != owner && controlToGridRelataion != faction)
-            {
-                if (ControllerGridAccess)
-                {
-                    ControllerGridAccess = false;
-                    Shield.RefreshCustomInfo();
-                }
-                ControllerGridAccess = false;
-                return ControllerGridAccess;
-            }
-
-            if (!ControllerGridAccess)
-            {
-                ControllerGridAccess = true;
-                Shield.RefreshCustomInfo();
-            }
-            ControllerGridAccess = true;
-            return ControllerGridAccess;
-        }
-
         public void PostInit()
         {
             try
@@ -592,14 +479,14 @@ namespace DefenseShields
             }
 
             if (!PowerOnline()) return false;
-
             HadPowerBefore = true;
             _blockChanged = true;
             _functionalChanged = true;
 
             ResetShape(false, true);
             ResetShape(false, false);
-
+            _oldGridHalfExtents = _gridHalfExtents;
+            _oldEllipsoidAdjust = _ellipsoidAdjust;
             GetModulationInfo();
 
             Starting = true;

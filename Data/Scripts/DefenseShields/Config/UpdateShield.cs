@@ -18,17 +18,25 @@ namespace DefenseShields
             FortifyShield = newSettings.FortifyShield;
             UseBatteries = newSettings.UseBatteries;
             SendToHud = newSettings.SendToHud;
-            ShieldBuffer = newSettings.Buffer;
-            ShieldComp.IncreaseO2ByFPercent = newSettings.IncreaseO2ByFPercent;
             ShieldComp.ShieldActive = newSettings.ShieldActive;
             ShieldComp.RaiseShield = newSettings.RaiseShield;
 
             if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings - ShieldId [{Shield.EntityId}]:\n{newSettings}");
         }
 
-        public void UpdateStats(ShieldStats stats)
+        public void UpdateState(ShieldState state)
         {
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdateStats - ShieldId [{Shield.EntityId}]:\n{stats}");
+            if (!DsStatus.State.Online)
+            {
+                if (DsStatus.State.Overload) PlayerMessages(PlayerNotice.OverLoad);
+                else if (DsStatus.State.Waking) PlayerMessages(PlayerNotice.EmitterInit);
+                else if (DsStatus.State.FieldBlocked) PlayerMessages(PlayerNotice.FieldBlocked);
+                else if (DsStatus.State.Remodulate) PlayerMessages(PlayerNotice.Remodulate);
+                OfflineShield();
+            }
+            else ResetShape(false, false);
+
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdateState - ShieldId [{Shield.EntityId}]:\n{state}");
         }
     }
 }

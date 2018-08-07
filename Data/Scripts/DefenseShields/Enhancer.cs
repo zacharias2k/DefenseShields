@@ -110,7 +110,7 @@ namespace DefenseShields
                     Enhancer.Enabled = true;
                 }
                 Sink.Update();
-                if (Session.Enforced.Debug == 1) Log.Line($"PowerInit complete");
+                if (Session.Enforced.Debug == 1) Log.Line($"PowerInit: EnhancerId [{Enhancer.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }
@@ -240,7 +240,7 @@ namespace DefenseShields
 
         public void UpdateSettings(ModulatorBlockSettings newSettings)
         {
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings for modulator");
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings: EnhancerId [{Enhancer.EntityId}]");
         }
 
         public override void OnRemovedFromScene()

@@ -10,6 +10,20 @@ namespace DefenseShields
 {
     public partial class DefenseShields
     {
+        private void ShellVisibility(bool forceInvisible = false)
+        {
+            if (forceInvisible)
+            {
+                _shellPassive.Render.UpdateRenderObject(false);
+                _shellActive.Render.UpdateRenderObject(false);
+                return;
+            }
+
+            if (!ShieldPassiveHide) _shellPassive.Render.UpdateRenderObject(true);
+            _shellActive.Render.UpdateRenderObject(true);
+            _shellActive.Render.UpdateRenderObject(false);
+        }
+
         public void Draw(int onCount, bool sphereOnCamera)
         {
             _onCount = onCount;
@@ -180,7 +194,7 @@ namespace DefenseShields
 
             var icon1 = GetHudIcon1FromFloat(ShieldComp.ShieldPercent);
             var icon2 = GetHudIcon2FromFloat(icon2FSelect);
-            var showIcon2 = !ShieldOffline && ShieldComp.ShieldActive;
+            var showIcon2 = DsStatus.State.Online;
             Color color;
             var p = ShieldComp.ShieldPercent;
             if (p > 0 && p < 10 && _lCount % 2 == 0) color = Color.Red;

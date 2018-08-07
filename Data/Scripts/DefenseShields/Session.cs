@@ -23,7 +23,7 @@ namespace DefenseShields
     {
         private uint _tick;
 
-        public const ushort PacketIdStats = 62519; // network
+        public const ushort PacketIdState = 62519; // network
         public const ushort PacketIdSettings = 62520; // network
         public const ushort PacketIdEnforce = 62521; // network
         public const ushort PacketIdModulator = 62522; // network
@@ -117,6 +117,7 @@ namespace DefenseShields
                 Log.Init("debugdevelop.log");
                 Log.Line($"Logging Started");
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdState, PacketStateReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdSettings, PacketSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEnforce, PacketEnforcementReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdModulator, ModulatorSettingsReceived);
@@ -242,12 +243,6 @@ namespace DefenseShields
                     var shieldActive = shield.ShieldComp.ShieldActive && shield.ShieldComp.RaiseShield;
                     var shieldInactive = !shield.ShieldComp.ShieldActive || !shield.ShieldComp.RaiseShield;
 
-                    if (shieldActive && !shield.DeformEnabled && info.IsDeformation && info.AttackerId == 0)
-                    {
-                        info.Amount = 0;
-                        continue;
-                    }
-
                     if (!IsServer && shieldInactive && info.Type == MPdamage)
                     {
                         info.Amount = 0;
@@ -257,6 +252,12 @@ namespace DefenseShields
                     var blockGrid = (MyCubeGrid)block.CubeGrid;
                     if (shieldActive && shield.FriendlyCache.Contains(blockGrid))
                     {
+                        if (shieldActive && !shield.DeformEnabled && info.IsDeformation && info.AttackerId == 0)
+                        {
+                            info.Amount = 0;
+                            continue;
+                        }
+
                         if (info.Type == Bypass)
                         {
                             shield.DeformEnabled = true;
@@ -320,10 +321,10 @@ namespace DefenseShields
                             continue;
                         }
 
-                        if (shield.DeformEnabled) continue;
+                        if (info.IsDeformation && shield.DeformEnabled) continue;
 
-                        if (info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Deformation) info.Amount = info.Amount * shield.ModulateKinetic;
-                        else info.Amount = info.Amount * shield.ModulateEnergy;
+                        if (info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Deformation) info.Amount = info.Amount * shield.DsStatus.State.ModulateKinetic;
+                        else info.Amount = info.Amount * shield.DsStatus.State.ModulateEnergy;
 
                         if (!DedicatedServer && hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
                         {
@@ -356,6 +357,12 @@ namespace DefenseShields
                     }
                     else if (shieldActive && shield.PartlyProtectedCache.Contains(blockGrid))
                     {
+                        if (shieldActive && !shield.DeformEnabled && info.IsDeformation && info.AttackerId == 0)
+                        {
+                            info.Amount = 0;
+                            continue;
+                        }
+
                         if (info.Type == Bypass)
                         {
                             shield.DeformEnabled = true;
@@ -413,10 +420,10 @@ namespace DefenseShields
                             continue;
                         }
 
-                        if (shield.DeformEnabled) continue;
+                        if (info.IsDeformation && shield.DeformEnabled) continue;
 
-                        if (info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Deformation) info.Amount = info.Amount * shield.ModulateKinetic;
-                        else info.Amount = info.Amount * shield.ModulateEnergy;
+                        if (info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Deformation) info.Amount = info.Amount * shield.DsStatus.State.ModulateKinetic;
+                        else info.Amount = info.Amount * shield.DsStatus.State.ModulateEnergy;
 
                         if (!DedicatedServer && hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
                         {
@@ -454,28 +461,28 @@ namespace DefenseShields
         #endregion
 
         #region Network sync
-        private static void PacketStatsReceived(byte[] bytes)
+        private static void PacketStateReceived(byte[] bytes)
         {
             try
             {
                 if (bytes.Length <= 2)
                 {
-                    Log.Line($"Stats PacketReceived; invalid length <= 2; length={bytes.Length.ToString()}");
+                    Log.Line($"State PacketReceived; invalid length <= 2; length={bytes.Length.ToString()}");
                     return;
                 }
 
-                var data = MyAPIGateway.Utilities.SerializeFromBinary<StatsData>(bytes); // this will throw errors on invalid data
+                var data = MyAPIGateway.Utilities.SerializeFromBinary<StateData>(bytes); // this will throw errors on invalid data
 
                 if (data == null)
                 {
-                    Log.Line($"Stats PacketReceived; no deserialized data!");
+                    Log.Line($"State PacketReceived; no deserialized data!");
                     return;
                 }
 
                 IMyEntity ent;
                 if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
                 {
-                    Log.Line($"Stats PacketReceived; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    Log.Line($"State PacketReceived; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
                     return;
                 }
 
@@ -483,25 +490,26 @@ namespace DefenseShields
 
                 if (logic == null)
                 {
-                    Log.Line($"Stats PacketReceived; {data.Type}; shield doesn't have the gamelogic component!");
+                    Log.Line($"State PacketReceived; {data.Type}; shield doesn't have the gamelogic component!");
                     return;
                 }
 
                 switch (data.Type)
                 {
-                    case PacketType.STATS:
+                    case PacketType.STATE:
                         {
-                            if (data.Stats == null)
+                            if (data.State == null)
                             {
-                                Log.Line($"Stats PacketReceived; {data.Type}; stats are null!");
+                                Log.Line($"State PacketReceived; {data.Type}; stats are null!");
                                 return;
                             }
 
-                            if (Enforced.Debug == 1) Log.Line($"Packet Stats Packet received:- data:\n{data.Stats}");
-                            logic.UpdateStats(data.Stats);
-                            //logic.DsSet.SaveSettings();
+                            if (Enforced.Debug == 1) Log.Line($"Packet State Packet received:- data:\n{data.State}");
+                            logic.UpdateState(data.State);
                             if (IsServer)
-                                ShieldStatsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                            {
+                                ShieldStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                            }
                         }
                         break;
                 }
@@ -691,11 +699,11 @@ namespace DefenseShields
             MyAPIGateway.Multiplayer.SendMessageTo(PacketIdEnforce, bytes, senderId);
         }
 
-        public static void PacketizeStats(IMyCubeBlock block, ShieldStats stats)
+        public static void PacketizeState(IMyCubeBlock block, ShieldState state)
         {
-            var data = new StatsData(MyAPIGateway.Multiplayer.MyId, block.EntityId, stats);
+            var data = new StateData(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            ShieldSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+            ShieldStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
         }
 
         public static void PacketizeModulatorSettings(IMyCubeBlock block, ModulatorBlockSettings settings)
@@ -712,11 +720,11 @@ namespace DefenseShields
             ShieldSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
         }
 
-        public static void ShieldStatsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        public static void ShieldStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
             var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
-            distSq += 1000; // some safety padding, avoid desync
+            distSq += 3000; // some safety padding, avoid desync
             distSq *= distSq;
 
             var players = Instance.Players;
@@ -728,7 +736,8 @@ namespace DefenseShields
                 var id = p.SteamUserId;
 
                 if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
-                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdModulator, bytes, p.SteamUserId);
+
+                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdState, bytes, p.SteamUserId);
             }
             players.Clear();
         }
@@ -737,7 +746,7 @@ namespace DefenseShields
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
             var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
-            distSq += 1000; // some safety padding, avoid desync
+            distSq += 3000; // some safety padding, avoid desync
             distSq *= distSq;
 
             var players = Instance.Players;
@@ -758,7 +767,7 @@ namespace DefenseShields
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
             var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
-            distSq += 1000; // some safety padding, avoid desync
+            distSq += 3000; // some safety padding, avoid desync
             distSq *= distSq;
 
             var players = Instance.Players;

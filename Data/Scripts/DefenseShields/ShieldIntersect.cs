@@ -40,7 +40,7 @@ namespace DefenseShields
             if (contactpoint != Vector3D.NegativeInfinity)
             {
                 entInfo.Touched = true;
-                var damage = entInfo.Damage * ModulateKinetic;
+                var damage = entInfo.Damage * DsStatus.State.ModulateKinetic;
                 if (Session.MpActive)
                 {
                     if (Session.IsServer)
@@ -137,7 +137,7 @@ namespace DefenseShields
             if (insidePoints.Count <= 0) return;
 
             var contactPoint = DSUtils.CreateFromPointsList(insidePoints).Center; // replace with average
-            var damage = rawDamage / 100 * ModulateEnergy;
+            var damage = rawDamage / 100 * DsStatus.State.ModulateEnergy;
 
             if (Session.MpActive)
             {
@@ -167,7 +167,7 @@ namespace DefenseShields
                 var mass = myGrid.GetCurrentMass();
                 var sPhysics = Shield.CubeGrid.Physics;
                 var momentum = mass * sPhysics.LinearVelocity;
-                Absorb += (momentum.Length() / 500) * ModulateKinetic;
+                Absorb += (momentum.Length() / 500) * DsStatus.State.ModulateKinetic;
                 ImpactSize = 12000;
                 WorldImpactPosition = collision;
                 //if (!Session.MpActive && !(voxelBase is MyPlanet)) _voxelDmg.Enqueue(voxelBase);
@@ -205,10 +205,10 @@ namespace DefenseShields
             var normalMat = MatrixD.Transpose(transformInv);
             var massMulti = 1000f;
             var blockDmgNum = 5;
-            if (ShieldMode == ShieldType.Station && _enhancerOnline)
+            if (ShieldMode == ShieldType.Station && DsStatus.State.Enhancer)
             {
                 blockDmgNum = 50;
-                massMulti = massMulti / _enhancerProtMulti;
+                massMulti = massMulti / DsStatus.State.EnhancerProtMulti;
             }
             var intersection = bOriBBoxD.Intersects(ref SOriBBoxD);
             try
@@ -313,7 +313,7 @@ namespace DefenseShields
                         if (!bPhysics.IsStatic) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - bPhysics.CenterOfMassWorld) * bMass, null, Vector3D.Zero, MathHelper.Clamp(bSpeedLen, 10f, 20f));
                         bBlockCenter = collisionAvg;
                     }
-                    var damage = rawDamage / 100 * ModulateKinetic;
+                    var damage = rawDamage / 100 * DsStatus.State.ModulateKinetic;
                     entInfo.Damage = damage;
                     if (Session.MpActive)
                     {
