@@ -53,8 +53,8 @@ namespace DefenseShields
                 ((MyCubeGrid)Shield.CubeGrid).OnBlockRemoved += BlockRemoved;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockAdded += FatBlockAdded;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockRemoved += FatBlockRemoved;
-
                 StorageSetup();
+
                 PowerInit();
                 if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>())
                 {
@@ -191,10 +191,11 @@ namespace DefenseShields
         {
             if (Session.IsServer)
             {
-                /*
-                DsStatus.SaveState();
-                DsSet.SaveSettings();
-                */
+                if (Storage != null && AllInited)
+                {
+                    DsStatus.SaveState();
+                    DsSet.SaveSettings();
+                }
                 if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: saved before replication - ShieldId [{Shield.EntityId}]");
             }
             return false;
