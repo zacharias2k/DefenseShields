@@ -82,7 +82,7 @@ namespace DefenseShields
                 _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
                 if (!AllInited && !InitO2Generator() || Suspend()) return;
 
-                if (!BlockWorking() || !ShieldComp.ShieldActive || !ShieldComp.RaiseShield)
+                if (!BlockWorking() || ShieldComp?.DefenseShields == null || !ShieldComp.DefenseShields.DsStatus.State.Online || ShieldComp.DefenseShields.DsStatus.State.Lowered)
                 {
                     if (BlockIsWorking)
                     {
@@ -236,7 +236,7 @@ namespace DefenseShields
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
-            if (!ShieldComp.ShieldActive || !ShieldComp.RaiseShield)
+            if (ShieldComp?.DefenseShields == null || !ShieldComp.DefenseShields.DsStatus.State.Online || ShieldComp.DefenseShields.DsStatus.State.Lowered)
             {
                 stringBuilder.Append("\n" +
                                      "\n[ Shield Offline ]");

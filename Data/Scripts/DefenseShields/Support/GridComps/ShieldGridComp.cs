@@ -84,37 +84,17 @@ namespace DefenseShields
 
         public float DefaultO2 { get; set; }
 
-        public bool ShieldActive
-        {
-            get { return DefenseShields.DsSet.Settings.ShieldActive; }
-            set { DefenseShields.DsSet.Settings.ShieldActive = value; }
-        }
-
-        public bool RaiseShield
-        {
-            get { return DefenseShields.DsSet.Settings.RaiseShield; }
-            set { DefenseShields.DsSet.Settings.RaiseShield = value; }
-        }
-
         public bool CheckEmitters { get; set; }
 
         public bool Station { get; set; }
 
         public bool GridIsMoving { get; set; }
 
-        //public bool ComingOnline { get; set; }
-
-        //public bool Starting { get; set; }
-
-        //public bool Warming { get; set; }
-
         public bool EmitterEvent { get; set; }
 
         public float ShieldPercent { get; set; }
 
         public double ShieldVolume { get; set; }
-
-        //public double BoundingRange { get; set; }
 
         public double ShieldVelocitySqr { get; set; }
 

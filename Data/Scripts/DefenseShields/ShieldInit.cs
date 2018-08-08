@@ -191,7 +191,10 @@ namespace DefenseShields
         {
             if (Session.IsServer)
             {
+                /*
                 DsStatus.SaveState();
+                DsSet.SaveSettings();
+                */
                 if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: saved before replication - ShieldId [{Shield.EntityId}]");
             }
             return false;
@@ -286,7 +289,7 @@ namespace DefenseShields
                     break;
                 default:
                     ShieldMode = ShieldType.Unknown;
-                    Suspended = true;
+                    DsStatus.State.Suspended = true;
                     break;
             }
             if (ShieldMode == oldMode) noChange = true;
@@ -329,7 +332,7 @@ namespace DefenseShields
 
         public void SelectPassiveShell()
         {
-            switch (ShieldShell)
+            switch (DsSet.Settings.ShieldShell)
             {
                 case 0:
                     _modelPassive = ModelMediumReflective;
@@ -373,7 +376,7 @@ namespace DefenseShields
             _shellPassive.RefreshModels($"{Session.Instance.ModPath()}{_modelPassive}", null);
             _shellPassive.Render.RemoveRenderObjects();
             _shellPassive.Render.UpdateRenderObject(true);
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdatePassiveModel: modelString:{_modelPassive} - ShellNumber:{ShieldShell} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdatePassiveModel: modelString:{_modelPassive} - ShellNumber:{DsSet.Settings.ShieldShell} - ShieldId [{Shield.EntityId}]");
         }
 
         private void InitEntities(bool fullInit)
@@ -388,28 +391,31 @@ namespace DefenseShields
                 return;
             }
 
-            var parent = (MyEntity)Shield.CubeGrid;
             SelectPassiveShell();
-            _shellPassive = Spawn.EmptyEntity("dShellPassive", $"{Session.Instance.ModPath()}{_modelPassive}", parent, true);
-            _shellPassive.Render.CastShadows = false;
-            _shellPassive.IsPreview = true;
-            _shellPassive.Render.Visible = true;
-            _shellPassive.Render.RemoveRenderObjects();
-            _shellPassive.Render.UpdateRenderObject(true);
-            _shellPassive.Render.UpdateRenderObject(false);
-            _shellPassive.Save = false;
-            _shellPassive.SyncFlag = false;
+            if (!Session.DedicatedServer)
+            {
+                var parent = (MyEntity)Shield.CubeGrid;
+                _shellPassive = Spawn.EmptyEntity("dShellPassive", $"{Session.Instance.ModPath()}{_modelPassive}", parent, true);
+                _shellPassive.Render.CastShadows = false;
+                _shellPassive.IsPreview = true;
+                _shellPassive.Render.Visible = true;
+                _shellPassive.Render.RemoveRenderObjects();
+                _shellPassive.Render.UpdateRenderObject(true);
+                _shellPassive.Render.UpdateRenderObject(false);
+                _shellPassive.Save = false;
+                _shellPassive.SyncFlag = false;
 
-            _shellActive = Spawn.EmptyEntity("dShellActive", $"{Session.Instance.ModPath()}{_modelActive}", parent, true);
-            _shellActive.Render.CastShadows = false;
-            _shellActive.IsPreview = true;
-            _shellActive.Render.Visible = true;
-            _shellActive.Render.RemoveRenderObjects();
-            _shellActive.Render.UpdateRenderObject(true);
-            _shellActive.Render.UpdateRenderObject(false);
-            _shellActive.Save = false;
-            _shellActive.SyncFlag = false;
-            _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.Transparent, 0f);
+                _shellActive = Spawn.EmptyEntity("dShellActive", $"{Session.Instance.ModPath()}{_modelActive}", parent, true);
+                _shellActive.Render.CastShadows = false;
+                _shellActive.IsPreview = true;
+                _shellActive.Render.Visible = true;
+                _shellActive.Render.RemoveRenderObjects();
+                _shellActive.Render.UpdateRenderObject(true);
+                _shellActive.Render.UpdateRenderObject(false);
+                _shellActive.Save = false;
+                _shellActive.SyncFlag = false;
+                _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.Transparent, 0f);
+            }
 
             ShieldEnt = Spawn.EmptyEntity("dShield", null, (MyEntity)Shield, false);
             ShieldEnt.Render.CastShadows = false;
@@ -485,13 +491,13 @@ namespace DefenseShields
 
             ResetShape(false, true);
             ResetShape(false, false);
-            _oldGridHalfExtents = _gridHalfExtents;
-            _oldEllipsoidAdjust = _ellipsoidAdjust;
+            _oldGridHalfExtents = DsStatus.State.GridHalfExtents;
+            _oldEllipsoidAdjust = DsStatus.State.EllipsoidAdjust;
             GetModulationInfo();
 
             Starting = true;
             ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
-            if (Session.Enforced.Debug == 1) Log.Line($"Warming: buffer:{ShieldBuffer} - BlockWorking:{ControlBlockWorking} - Active:{ShieldComp.ShieldActive} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 1) Log.Line($"Warming: buffer:{DsStatus.State.Buffer} - BlockWorking:{ControlBlockWorking} - Active:{DsStatus.State.Online} - ShieldId [{Shield.EntityId}]");
             return false;
         }
         #endregion

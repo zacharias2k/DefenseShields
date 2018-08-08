@@ -10,7 +10,7 @@ namespace DefenseShields
         #region Shield Shape
         public void ResetShape(bool background, bool newShape = false)
         {
-            if (Session.Enforced.Debug == 1) Log.Line($"ResetShape: newShape {newShape} - Offline:{!DsStatus.State.Online} - offCnt:{_offlineCnt} - blockChanged:{_blockEvent} - functional:{_functionalEvent} - Sleeping:{ShieldWasSleeping} - Suspend:{Suspended} - EWorking:{ShieldComp.EmittersWorking} - ELoS:{ShieldComp.EmittersLos} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 1) Log.Line($"ResetShape: newShape {newShape} - Offline:{!DsStatus.State.Online} - offCnt:{_offlineCnt} - blockChanged:{_blockEvent} - functional:{_functionalEvent} - Sleeping:{DsStatus.State.Sleeping} - Suspend:{DsStatus.State.Suspended} - EWorking:{ShieldComp.EmittersWorking} - ELoS:{ShieldComp.EmittersLos} - ShieldId [{Shield.EntityId}]");
 
             if (newShape)
             {
@@ -39,10 +39,11 @@ namespace DefenseShields
             var myAabb = Shield.CubeGrid.PositionComp.LocalAABB;
             var shieldGrid = Shield.CubeGrid;
             var expandedAabb = myAabb;
-            foreach (var grid in ShieldComp.GetSubGrids)
+            if (ShieldComp.GetSubGrids.Count > 1)
             {
-                if (grid != null && grid != shieldGrid)
+                foreach (var grid in ShieldComp.GetSubGrids)
                 {
+                    if (grid == null || grid == shieldGrid) continue;
                     var shieldMatrix = shieldGrid.WorldMatrixNormalizedInv;
                     var gQuaternion = Quaternion.CreateFromRotationMatrix(grid.WorldMatrix);
                     var gOriBBoxD = new MyOrientedBoundingBox(grid.PositionComp.WorldAABB.Center, grid.PositionComp.LocalAABB.HalfExtents, gQuaternion);
@@ -51,32 +52,32 @@ namespace DefenseShields
                 }
             }
 
-            if (SphereFit || FortifyShield)
+            if (DsSet.Settings.SphereFit || DsSet.Settings.FortifyShield)
             {
-                var extend = ExtendFit ? 2 : 1;
-                var fortify = FortifyShield ? 3 : 1;
+                var extend = DsSet.Settings.ExtendFit ? 2 : 1;
+                var fortify = DsSet.Settings.FortifyShield ? 3 : 1;
                 var size = expandedAabb.HalfExtents.Max() * fortify;
                 var scaler = 4;
-                if (shieldGrid.GridSizeEnum == MyCubeSize.Small && !ExtendFit) scaler = 5;
+                if (shieldGrid.GridSizeEnum == MyCubeSize.Small && !DsSet.Settings.ExtendFit) scaler = 5;
                 var vectorSize = new Vector3D(size, size, size);
                 var fudge = shieldGrid.GridSize * scaler * extend;
-                var extentsDiff = _gridHalfExtents.LengthSquared() - vectorSize.LengthSquared();
-                if (extentsDiff < -1 || extentsDiff > 1 || _gridHalfExtents == Vector3D.Zero || !fudge.Equals(_shieldFudge)) _gridHalfExtents = vectorSize;
+                var extentsDiff = DsStatus.State.GridHalfExtents.LengthSquared() - vectorSize.LengthSquared();
+                if (extentsDiff < -1 || extentsDiff > 1 || DsStatus.State.GridHalfExtents == Vector3D.Zero || !fudge.Equals(_shieldFudge)) DsStatus.State.GridHalfExtents = vectorSize;
                 _shieldFudge = fudge;
             }
             else
             {
                 _shieldFudge = 0f;
-                var extentsDiff = _gridHalfExtents.LengthSquared() - expandedAabb.HalfExtents.LengthSquared();
-                if (extentsDiff < -1 || extentsDiff > 1 || _gridHalfExtents == Vector3D.Zero) _gridHalfExtents = expandedAabb.HalfExtents;
+                var extentsDiff = DsStatus.State.GridHalfExtents.LengthSquared() - expandedAabb.HalfExtents.LengthSquared();
+                if (extentsDiff < -1 || extentsDiff > 1 || DsStatus.State.GridHalfExtents == Vector3D.Zero) DsStatus.State.GridHalfExtents = expandedAabb.HalfExtents;
             }
         }
 
         private void GetShapeAdjust()
         {
-            if (SphereFit || FortifyShield) _ellipsoidAdjust = 1f;
-            else if (!ExtendFit) _ellipsoidAdjust = UtilsStatic.CreateNormalFit(Shield, _gridHalfExtents);
-            else _ellipsoidAdjust = UtilsStatic.CreateExtendedFit(Shield, _gridHalfExtents);
+            if (DsSet.Settings.SphereFit || DsSet.Settings.FortifyShield) DsStatus.State.EllipsoidAdjust = 1f;
+            else if (!DsSet.Settings.ExtendFit) DsStatus.State.EllipsoidAdjust = UtilsStatic.CreateNormalFit(Shield, DsStatus.State.GridHalfExtents);
+            else DsStatus.State.EllipsoidAdjust = UtilsStatic.CreateExtendedFit(Shield, DsStatus.State.GridHalfExtents);
         }
 
         private void MobileUpdate()
@@ -86,18 +87,18 @@ namespace DefenseShields
             if (ShieldComp.ShieldVelocitySqr > 0.00001 || _sAvelSqr > 0.00001 || ComingOnline)
             {
                 ShieldComp.GridIsMoving = true;
-                if (FortifyShield && Math.Sqrt(ShieldComp.ShieldVelocitySqr) > 15)
+                if (DsSet.Settings.FortifyShield && Math.Sqrt(ShieldComp.ShieldVelocitySqr) > 15)
                 {
                     FitChanged = true;
-                    FortifyShield = false;
+                    DsSet.Settings.FortifyShield = false;
                 }
             }
             else ShieldComp.GridIsMoving = false;
 
-            _shapeChanged = !_ellipsoidAdjust.Equals(_oldEllipsoidAdjust) || !_gridHalfExtents.Equals(_oldGridHalfExtents) || _updateMobileShape;
+            _shapeChanged = !DsStatus.State.EllipsoidAdjust.Equals(_oldEllipsoidAdjust) || !DsStatus.State.GridHalfExtents.Equals(_oldGridHalfExtents) || _updateMobileShape;
             _entityChanged = Shield.CubeGrid.Physics.IsMoving || ComingOnline || _shapeChanged;
-            _oldGridHalfExtents = _gridHalfExtents;
-            _oldEllipsoidAdjust = _ellipsoidAdjust;
+            _oldGridHalfExtents = DsStatus.State.GridHalfExtents;
+            _oldEllipsoidAdjust = DsStatus.State.EllipsoidAdjust;
             if (_entityChanged || BoundingRange <= 0) CreateShieldShape();
         }
 
@@ -117,8 +118,8 @@ namespace DefenseShields
             {
                 var emitter = ShieldComp.StationEmitter.Emitter;
                 _shieldGridMatrix = emitter.WorldMatrix;
-                DetectionMatrix = MatrixD.Rescale(_shieldGridMatrix, new Vector3D(Width, Height, Depth));
-                _shieldShapeMatrix = MatrixD.Rescale(emitter.LocalMatrix, new Vector3D(Width, Height, Depth));
+                DetectionMatrix = MatrixD.Rescale(_shieldGridMatrix, new Vector3D(DsSet.Settings.Width, DsSet.Settings.Height, DsSet.Settings.Depth));
+                _shieldShapeMatrix = MatrixD.Rescale(emitter.LocalMatrix, new Vector3D(DsSet.Settings.Width, DsSet.Settings.Height, DsSet.Settings.Depth));
                 ShieldSize = DetectionMatrix.Scale;
                 DetectionCenter = emitter.PositionComp.WorldVolume.Center;
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(emitter.CubeGrid.WorldMatrix);
@@ -137,12 +138,12 @@ namespace DefenseShields
                 ShieldComp.CheckEmitters = true;
                 if (Session.Enforced.Debug == 1) Log.Line($"CreateShape: shapeChanged - GridMobile:{GridIsMobile} - ShieldId [{Shield.EntityId}]");
             }
-            if (!ShieldWasLowered) SetShieldShape();
+            if (!DsStatus.State.Lowered) SetShieldShape();
         }
 
         private void CreateMobileShape()
         {
-            var shieldSize = _gridHalfExtents * _ellipsoidAdjust + _shieldFudge;
+            var shieldSize = DsStatus.State.GridHalfExtents * DsStatus.State.EllipsoidAdjust + _shieldFudge;
             ShieldSize = shieldSize;
             var mobileMatrix = MatrixD.CreateScale(shieldSize);
             mobileMatrix.Translation = Shield.CubeGrid.PositionComp.LocalVolume.Center;
@@ -151,12 +152,15 @@ namespace DefenseShields
 
         private void SetShieldShape()
         {
-            _shellPassive.PositionComp.LocalMatrix = Matrix.Zero;  // Bug - Cannot just change X coord, so I reset first.
-            _shellActive.PositionComp.LocalMatrix = Matrix.Zero;
-            ShieldEnt.PositionComp.LocalMatrix = Matrix.Zero;
+            if (!Session.DedicatedServer)
+            {
+                _shellPassive.PositionComp.LocalMatrix = Matrix.Zero;  // Bug - Cannot just change X coord, so I reset first.
+                _shellActive.PositionComp.LocalMatrix = Matrix.Zero;
+                _shellPassive.PositionComp.LocalMatrix = _shieldShapeMatrix;
+                _shellActive.PositionComp.LocalMatrix = _shieldShapeMatrix;
+            }
 
-            _shellPassive.PositionComp.LocalMatrix = _shieldShapeMatrix;
-            _shellActive.PositionComp.LocalMatrix = _shieldShapeMatrix;
+            ShieldEnt.PositionComp.LocalMatrix = Matrix.Zero;
             ShieldEnt.PositionComp.LocalMatrix = _shieldShapeMatrix;
             ShieldEnt.PositionComp.LocalAABB = _shieldAabb;
 

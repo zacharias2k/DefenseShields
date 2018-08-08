@@ -182,7 +182,7 @@ namespace DefenseShields
                         s.BulletCoolDown++;
                         if (s.BulletCoolDown == 9) s.BulletCoolDown = -1;
                     }
-                    if (!s.WarmedUp || !s.ShieldComp.RaiseShield || s.ShieldComp.EmittersSuspended) continue;
+                    if (!s.WarmedUp || !s.DsSet.Settings.RaiseShield || s.ShieldComp.EmittersSuspended) continue;
                     var sp = new BoundingSphereD(s.DetectionCenter, s.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {
@@ -203,10 +203,10 @@ namespace DefenseShields
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
-                    if (!s.WarmedUp || !s.ShieldComp.RaiseShield || s.ShieldComp.EmittersSuspended) continue;
-                    if (s.ShieldComp.ShieldActive && SphereOnCamera[i]) s.Draw(OnCount, SphereOnCamera[i]);
-                    else if (s.ShieldComp.ShieldActive && !s.Icosphere.ImpactsFinished) s.Icosphere.StepEffects();
-                    else if (!s.ShieldComp.ShieldActive && SphereOnCamera[i]) s.DrawShieldDownIcon();
+                    if (!s.WarmedUp || !s.DsSet.Settings.RaiseShield || s.ShieldComp.EmittersSuspended) continue;
+                    if (s.DsStatus.State.Online && SphereOnCamera[i]) s.Draw(OnCount, SphereOnCamera[i]);
+                    else if (s.DsStatus.State.Online && !s.Icosphere.ImpactsFinished) s.Icosphere.StepEffects();
+                    else if (!s.DsStatus.State.Online && SphereOnCamera[i]) s.DrawShieldDownIcon();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
@@ -228,7 +228,7 @@ namespace DefenseShields
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
 
-                        if (shield.ShieldComp.ShieldActive
+                        if (shield.DsStatus.State.Online
                             && shield.FriendlyCache.Contains(player)
                             && (hostileEnt == null || !shield.FriendlyCache.Contains(hostileEnt))) info.Amount = 0f;
                     }
@@ -240,10 +240,9 @@ namespace DefenseShields
 
                 foreach (var shield in Components)
                 {
-                    var shieldActive = shield.ShieldComp.ShieldActive && shield.ShieldComp.RaiseShield;
-                    var shieldInactive = !shield.ShieldComp.ShieldActive || !shield.ShieldComp.RaiseShield;
+                    var shieldActive = shield.DsStatus.State.Online && shield.DsSet.Settings.RaiseShield;
 
-                    if (!IsServer && shieldInactive && info.Type == MPdamage)
+                    if (!IsServer && !shieldActive && info.Type == MPdamage)
                     {
                         info.Amount = 0;
                         continue;
@@ -268,7 +267,7 @@ namespace DefenseShields
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
                         if (info.Type == MPdamage)
                         {
-                            if (shieldInactive || shield.ShieldBuffer <= 0 || hostileEnt == null)
+                            if (!shieldActive || shield.DsStatus.State.Buffer <= 0 || hostileEnt == null)
                             {
                                 info.Amount = 0;
                                 continue;
@@ -374,7 +373,7 @@ namespace DefenseShields
                         if (info.Type == MPdamage)
                         {
 
-                            if (shieldInactive || shield.ShieldBuffer <= 0 || hostileEnt == null)
+                            if (!shieldActive || shield.DsStatus.State.Buffer <= 0 || hostileEnt == null)
                             {
                                 info.Amount = 0;
                                 continue;
@@ -563,7 +562,7 @@ namespace DefenseShields
 
                             if (Enforced.Debug == 1) Log.Line($"Packet Settings Packet received:- data:\n{data.Settings}");
                             logic.UpdateSettings(data.Settings);
-                            logic.UpdateDimensions = true;
+                            if (!logic.GridIsMobile) logic.UpdateDimensions = true;
                             logic.DsSet.SaveSettings();
                             if (IsServer)
                                 ShieldSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);

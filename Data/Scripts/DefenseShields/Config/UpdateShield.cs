@@ -6,21 +6,7 @@ namespace DefenseShields
     {
         public void UpdateSettings(DefenseShieldsModSettings newSettings)
         {
-            Enabled = newSettings.Enabled;
-            ShieldPassiveHide = newSettings.PassiveInvisible;
-            ShieldActiveHide = newSettings.ActiveInvisible;
-            Width = newSettings.Width;
-            Height = newSettings.Height;
-            Depth = newSettings.Depth;
-            Rate = newSettings.Rate;
-            ExtendFit = newSettings.ExtendFit;
-            SphereFit = newSettings.SphereFit;
-            FortifyShield = newSettings.FortifyShield;
-            UseBatteries = newSettings.UseBatteries;
-            SendToHud = newSettings.SendToHud;
-            ShieldComp.ShieldActive = newSettings.ShieldActive;
-            ShieldComp.RaiseShield = newSettings.RaiseShield;
-
+            DsSet.Settings = newSettings;
             if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings - ShieldId [{Shield.EntityId}]:\n{newSettings}");
         }
 

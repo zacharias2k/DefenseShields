@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using ProtoBuf;
+using VRageMath;
 
 namespace DefenseShields
 {
@@ -40,11 +41,15 @@ namespace DefenseShields
         [ProtoMember(16)]
         public bool IsOwner = false;
         [ProtoMember(17)]
-        public bool ControllerGridAccess = false;
+        public bool ControllerGridAccess = true;
         [ProtoMember(18)]
         public bool ResetShape = false;
         [ProtoMember(19)]
         public bool Enhancer = false;
+        [ProtoMember(20), DefaultValue(-1)]
+        public double EllipsoidAdjust = Math.Sqrt(2);
+        [ProtoMember(21)]
+        public Vector3D GridHalfExtents;
 
         public override string ToString()
         {

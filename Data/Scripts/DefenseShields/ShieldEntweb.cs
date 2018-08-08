@@ -19,7 +19,6 @@ namespace DefenseShields
         private void WebEntities()
         {
             if (Session.Enforced.Debug == 1) Dsutil2.Sw.Restart();
-
             var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange + 3000);
             var pruneSphere2 = new BoundingSphereD(DetectionCenter, BoundingRange + 5);
             var pruneList = new List<MyEntity>();
@@ -293,7 +292,7 @@ namespace DefenseShields
                     var dsComp = shieldComponent.DefenseShields;
                     var shieldEntity = (MyEntity)Shield.Parent;
                     if (!enemy) return Ent.Friend;
-                    if (!dsComp.ShieldComp.ShieldActive)
+                    if (!dsComp.DsStatus.State.Online)
                     {
                         lock (WebEnts) if (WebEnts.Remove(ent))
                         return Ent.LargeEnemyGrid;

@@ -19,6 +19,8 @@ namespace DefenseShields
 {
     public partial class DefenseShields 
     {
+        public Vector3D GridHalfExtents;
+        public double EllipsoidAdjust = Math.Sqrt(2);
         #region Setup
         private uint _tick;
         private uint _shieldEntRendId;
@@ -46,10 +48,8 @@ namespace DefenseShields
         private float _shieldMaintaintPower;
         private float _shieldConsumptionRate;
         private float _shieldFudge;
-        private float _oldextents;
 
         internal double BoundingRange;
-        private double _ellipsoidAdjust = Math.Sqrt(2);
         private double _oldEllipsoidAdjust;
         private double _sAvelSqr;
         private double _ellipsoidSurfaceArea;
@@ -62,7 +62,6 @@ namespace DefenseShields
         private int _eCount;
         private int _powerLossLoop;
         private int _powerNoticeLoop;
-        private int _randomCount = -1;
         private int _offlineCnt = -1;
         private int _overLoadLoop = -1;
         private int _genericDownLoop = -1;
@@ -78,12 +77,9 @@ namespace DefenseShields
         private int _oldBlockCount;
         private int _shieldRatio;
 
-        internal bool ControllerGridAccess = true;
         internal bool DeformEnabled;
         internal bool ExplosionEnabled;
         internal bool ControlBlockWorking;
-        internal bool IsOwner;
-        internal bool InFaction;
         internal bool MainInit;
         internal bool PrePowerInit;
         internal bool PowerInited;
@@ -101,9 +97,6 @@ namespace DefenseShields
         internal bool UpdateDimensions;
         internal bool FitChanged;
         internal bool GridIsMobile;
-        internal bool ShieldWasLowered;
-        internal bool Suspended;
-        internal bool ShieldWasSleeping;
         private bool _effectsCleanup;
         private bool _hideShield;
         private bool _shapeChanged;
@@ -122,8 +115,6 @@ namespace DefenseShields
         private bool _enablePhysics = true;
         private bool _updateMobileShape;
 
-        private Task _backGround;
-        
         private const string SpaceWolf = "Space_Wolf";
         private const string MyMissile = "MyMissile";
         private string _modelActive = "\\Models\\Cubes\\ShieldActiveBase.mwm";
@@ -146,7 +137,6 @@ namespace DefenseShields
         internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         internal Vector3D ShieldSize { get; set; }
         private Vector3D _localImpactPosition;
-        private Vector3D _gridHalfExtents;
         private Vector3D _oldGridHalfExtents;
 
         internal MatrixD DetectMatrixOutsideInv;
@@ -266,90 +256,6 @@ namespace DefenseShields
         internal MyStringId CustomData = MyStringId.GetOrCompute("CustomData");
         internal MyStringId Password = MyStringId.GetOrCompute("Password");
         internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Set the shield modulation password");
-
-        public bool Enabled
-        {
-            get { return DsSet.Settings.Enabled; }
-            set { DsSet.Settings.Enabled = value; }
-        }
-
-        public bool ShieldPassiveHide
-        {
-            get { return DsSet.Settings.PassiveInvisible; }
-            set { DsSet.Settings.PassiveInvisible = value; }
-        }
-
-        public bool ShieldActiveHide
-        {
-            get { return DsSet.Settings.ActiveInvisible; }
-            set { DsSet.Settings.ActiveInvisible = value; }
-        }
-
-        public float Width
-        {
-            get { return DsSet.Settings.Width; }
-            set { DsSet.Settings.Width = value; }
-        }
-
-        public float Height
-        {
-            get { return DsSet.Settings.Height; }
-            set { DsSet.Settings.Height = value; }
-        }
-
-        public float Depth
-        {
-            get { return DsSet.Settings.Depth; }
-            set { DsSet.Settings.Depth = value; }
-        }
-
-        public float Rate
-        {
-            get { return DsSet.Settings.Rate; }
-            set { DsSet.Settings.Rate = value; }
-        }
-
-        public bool ExtendFit
-        {
-            get { return DsSet.Settings.ExtendFit; }
-            set { DsSet.Settings.ExtendFit = value; }
-        }
-
-        public bool SphereFit
-        {
-            get { return DsSet.Settings.SphereFit; }
-            set { DsSet.Settings.SphereFit = value; }
-        }
-
-        public bool FortifyShield
-        {
-            get { return DsSet.Settings.FortifyShield; }
-            set { DsSet.Settings.FortifyShield = value; }
-        }
-
-        public bool UseBatteries
-        {
-            get { return DsSet.Settings.UseBatteries; }
-            set { DsSet.Settings.UseBatteries = value; }
-        }
-
-        public bool SendToHud
-        {
-            get { return DsSet.Settings.SendToHud; }
-            set { DsSet.Settings.SendToHud = value; }
-        }
-
-        public float ShieldBuffer
-        {
-            get { return DsStatus.State.Buffer; }
-            set { DsStatus.State.Buffer = value; }
-        }
-
-        public long ShieldShell
-        {
-            get { return DsSet.Settings.ShieldShell; }
-            set { DsSet.Settings.ShieldShell = value; }
-        }
         #endregion
 
         #region constructors

@@ -19,7 +19,7 @@ namespace DefenseShields
                 return;
             }
 
-            if (!ShieldPassiveHide) _shellPassive.Render.UpdateRenderObject(true);
+            if (!DsSet.Settings.PassiveInvisible) _shellPassive.Render.UpdateRenderObject(true);
             _shellActive.Render.UpdateRenderObject(true);
             _shellActive.Render.UpdateRenderObject(false);
         }
@@ -32,14 +32,14 @@ namespace DefenseShields
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
             var renderId = Shield.CubeGrid.Render.GetRenderObjectID();
             var config = MyAPIGateway.Session.Config;
-            var drawIcon = !enemy && SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
+            var drawIcon = !enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
             if (drawIcon)
             {
                 UpdateIcon();
             }
 
-            var passiveVisible = !ShieldPassiveHide || enemy;
-            var activeVisible = !ShieldActiveHide || enemy;
+            var passiveVisible = !DsSet.Settings.PassiveInvisible || enemy;
+            var activeVisible = !DsSet.Settings.ActiveInvisible || enemy;
             CalcualteVisibility(passiveVisible, activeVisible);
 
             var impactPos = WorldImpactPosition;
@@ -154,7 +154,7 @@ namespace DefenseShields
         {
             var playerEnt = MyAPIGateway.Session.ControlledObject?.Entity;
             if (playerEnt?.Parent != null) playerEnt = playerEnt.Parent;
-            if (playerEnt == null || ShieldComp.ShieldActive && !FriendlyCache.Contains(playerEnt) || !ShieldComp.ShieldActive && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
+            if (playerEnt == null || DsStatus.State.Online && !FriendlyCache.Contains(playerEnt) || !DsStatus.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
             {
                 if (Session.HudComp != this) return;
 
@@ -268,7 +268,7 @@ namespace DefenseShields
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
 
             var config = MyAPIGateway.Session.Config;
-            if (!enemy && SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible) UpdateIcon();
+            if (!enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible) UpdateIcon();
         }
     }
 }

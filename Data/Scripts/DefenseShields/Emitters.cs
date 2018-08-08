@@ -117,7 +117,7 @@ namespace DefenseShields
 
                 if (Suspend() || !BlockWorking()) return;
 
-                if (ShieldComp.ShieldActive && !Session.DedicatedServer && UtilsStatic.DistanceCheck(Emitter, 1000, ShieldComp.DefenseShields.BoundingRange))
+                if (ShieldComp.DefenseShields.DsStatus.State.Online && !Session.DedicatedServer && UtilsStatic.DistanceCheck(Emitter, 1000, ShieldComp.DefenseShields.BoundingRange))
                 {
                     //if (ShieldComp.GridIsMoving && !Compact) BlockParticleUpdate();
 
@@ -324,7 +324,7 @@ namespace DefenseShields
             {
                 var compatible = IsStatic && EmitterMode == EmitterType.Station || !IsStatic && EmitterMode != EmitterType.Station;
 
-                if (ShieldComp == null || !ControllerFound)
+                if (ShieldComp?.DefenseShields == null || !ControllerFound)
                 {
                     stringBuilder.Append("[ No Valid Controller ]" +
                                          "\n" +
@@ -333,15 +333,15 @@ namespace DefenseShields
                                          "\n[Invalid Protocol]: " + (ShieldComp?.DefenseShields == null) +
                                          "\n[Controller Link]: " + ControllerFound);
                 }
-                else if (!ShieldComp.ShieldActive)
+                else if (!ShieldComp.DefenseShields.DsStatus.State.Online)
                 {
                     stringBuilder.Append("[ Emitter Offline ]" +
                                          "\n" +
                                          "\n[Emitter Type]: " + EmitterMode +
                                          "\n[Grid Compatible]: " + compatible +
-                                         "\n[Controller Link]: " + ShieldComp?.DefenseShields?.Shield?.IsWorking +
+                                         "\n[Controller Link]: " + ShieldComp.DefenseShields.Shield?.IsWorking +
                                          "\n[Line of Sight]: " + ShieldComp.EmittersLos +
-                                         "\n[Grid Access]: " + ShieldComp?.DefenseShields?.ControllerGridAccess +
+                                         "\n[Grid Access]: " + ShieldComp.DefenseShields.DsStatus.State.ControllerGridAccess +
                                          "\n[Is Suspended]: " + Suspended +
                                          "\n[Is a Backup]: " + Backup +
                                          "\n[Is Docked]: " + GoToSleep);
@@ -354,7 +354,7 @@ namespace DefenseShields
                                          "\n[Grid Compatible]: " + compatible +
                                          "\n[Controller Link]: " + ControllerFound +
                                          "\n[Line of Sight]: " + ShieldComp.EmittersLos +
-                                         "\n[Grid Access]: " + ShieldComp?.DefenseShields?.ControllerGridAccess +
+                                         "\n[Grid Access]: " + ShieldComp.DefenseShields.DsStatus.State.ControllerGridAccess +
                                          "\n[Is Suspended]: " + Suspended +
                                          "\n[Is a Backup]: " + Backup +
                                          "\n[Is Docked]: " + GoToSleep);
@@ -435,7 +435,7 @@ namespace DefenseShields
             else Online = true;
 
             var logic = ShieldComp.DefenseShields;
-            var losCheckReq = Online && logic.Starting && !logic.Suspended && logic.UnsuspendTick == uint.MinValue;
+            var losCheckReq = Online && logic.Starting && !logic.DsStatus.State.Suspended && logic.UnsuspendTick == uint.MinValue;
             if (losCheckReq && (ShieldComp.CheckEmitters || TookControl)) CheckShieldLineOfSight();
             if (losCheckReq && !ShieldComp.EmittersLos && !Session.DedicatedServer) DrawHelper();
 
@@ -443,7 +443,7 @@ namespace DefenseShields
 
             ShieldComp.EmittersWorking = BlockIsWorking && Online;
 
-            if (!BlockIsWorking || !ShieldComp.ShieldActive)
+            if (!BlockIsWorking || !ShieldComp.DefenseShields.DsStatus.State.Online)
             {
                 BlockReset();
                 return false;
@@ -469,7 +469,7 @@ namespace DefenseShields
             if (ShieldComp?.DefenseShields == null)
             {
                 Emitter.CubeGrid.Components.TryGet(out ShieldComp);
-                if (ShieldComp?.DefenseShields == null || !ShieldComp.DefenseShields.ControllerGridAccess)
+                if (ShieldComp?.DefenseShields == null || !ShieldComp.DefenseShields.DsStatus.State.ControllerGridAccess)
                 {
                     if (!Suspended)
                     {
@@ -480,7 +480,7 @@ namespace DefenseShields
                     return true;
                 }
             }
-            else if (!ShieldComp.DefenseShields.ControllerGridAccess)
+            else if (!ShieldComp.DefenseShields.DsStatus.State.ControllerGridAccess)
             {
                 if (!Suspended)
                 {

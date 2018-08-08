@@ -192,7 +192,7 @@ namespace DefenseShields
                 }
                 var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
                 var nerfer = nerf ? Session.Enforced.Nerf : 1f;
-                ShieldBuffer = (_shieldMaxBuffer / 25) * nerfer; // replace this with something that scales based on charge rate
+                DsStatus.State.Buffer = (_shieldMaxBuffer / 25) * nerfer; // replace this with something that scales based on charge rate
             }
         }
 
@@ -201,7 +201,7 @@ namespace DefenseShields
             _offlineCnt++;
             if (_offlineCnt == 0)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"Offline count: {_offlineCnt} - resetting all - was: Buffer:{ShieldBuffer} - Absorb:{Absorb} - Percent:{ShieldComp.ShieldPercent} - O2:{DsStatus.State.IncreaseO2ByFPercent} - Lowered:{ShieldWasLowered}");
+                if (Session.Enforced.Debug == 1) Log.Line($"Offline count: {_offlineCnt} - resetting all - was: Buffer:{DsStatus.State.Buffer} - Absorb:{Absorb} - Percent:{ShieldComp.ShieldPercent} - O2:{DsStatus.State.IncreaseO2ByFPercent} - Lowered:{DsStatus.State.Lowered}");
 
                 if (!_power.Equals(0.0001f)) _power = 0.001f;
                 Sink.Update();
@@ -214,12 +214,12 @@ namespace DefenseShields
                 CleanUp(4);
 
                 Absorb = 0f;
-                ShieldBuffer = 0f;
+                DsStatus.State.Buffer = 0f;
                 ShieldComp.ShieldPercent = 0f;
                 DsStatus.State.IncreaseO2ByFPercent = 0f;
-                ShieldComp.ShieldActive = false;
+                if (Session.IsServer) DsSet.Settings.ShieldActive = false;
                 PrevShieldActive = false;
-                ShieldWasLowered = false;
+                DsStatus.State.Lowered = false;
                 ShellVisibility(true);
             }
 
@@ -232,10 +232,10 @@ namespace DefenseShields
 
         private bool ShieldLowered()
         {
-            if (!ShieldComp.RaiseShield && WarmedUp && ShieldComp.ShieldActive)
+            if (!DsSet.Settings.RaiseShield && WarmedUp && DsSet.Settings.ShieldActive)
             {
                 Timing(false);
-                if (!ShieldWasLowered)
+                if (!DsStatus.State.Lowered)
                 {
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
 
@@ -244,7 +244,7 @@ namespace DefenseShields
                     ShellVisibility(true);
                     DsSet.SaveSettings();
                     DsSet.NetworkUpdate();
-                    ShieldWasLowered = true;
+                    DsStatus.State.Lowered = true;
                 }
                 PowerOnline();
 
@@ -263,7 +263,7 @@ namespace DefenseShields
                 else if (_lCount == 0 && _count == 0) RefreshDimensions();
                 return true;
             }
-            if (ShieldWasLowered && ShieldComp.ShieldActive && Shield.IsWorking)
+            if (DsStatus.State.Lowered && DsSet.Settings.ShieldActive && Shield.IsWorking)
             {
                 ShellVisibility();
                 if (GridIsMobile) _updateMobileShape = true;
@@ -271,7 +271,7 @@ namespace DefenseShields
 
                 DsSet.SaveSettings();
                 DsSet.NetworkUpdate();
-                ShieldWasLowered = false;
+                DsStatus.State.Lowered = false;
             }
             return false;
         }
@@ -280,7 +280,7 @@ namespace DefenseShields
         {
             if (ShieldComp.EmittersSuspended)
             {
-                if (!ShieldWasSleeping)
+                if (!DsStatus.State.Sleeping)
                 {
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
 
@@ -289,18 +289,18 @@ namespace DefenseShields
                     ShellVisibility(true);
                     DsSet.SaveSettings();
                     DsSet.NetworkUpdate();
-                    ShieldWasSleeping = true;
+                    DsStatus.State.Sleeping = true;
                     Shield.RefreshCustomInfo();
                     if (Session.Enforced.Debug == 1) Log.Line($"Sleep: controller detected sleeping emitter, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 }
 
-                ShieldWasSleeping = true;
-                return ShieldWasSleeping;
+                DsStatus.State.Sleeping = true;
+                return DsStatus.State.Sleeping;
             }
 
-            if (ShieldWasSleeping)
+            if (DsStatus.State.Sleeping)
             {
-                ShieldWasSleeping = false;
+                DsStatus.State.Sleeping = false;
                 ShellVisibility();
                 _blockChanged = true;
                 _functionalChanged = true;
@@ -316,8 +316,8 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 1) Log.Line($"Sleep: Controller was sleeping but is now waking, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
 
-            ShieldWasSleeping = false;
-            return ShieldWasSleeping;
+            DsStatus.State.Sleeping = false;
+            return DsStatus.State.Sleeping;
         }
         private void Election()
         {
@@ -356,10 +356,10 @@ namespace DefenseShields
             else if (!GridOwnsController()) InitSuspend(true);
             else
             {
-                if (Suspended)
+                if (DsStatus.State.Suspended)
                 {
                     if (Session.Enforced.Debug == 1) Log.Line($"Suspend: controller unsuspending - ShieldId [{Shield.EntityId}]");
-                    Suspended = false;
+                    DsStatus.State.Suspended = false;
                     _blockChanged = true;
                     _functionalChanged = true;
                     ShieldComp.GetLinkedGrids.Clear();
@@ -378,58 +378,58 @@ namespace DefenseShields
                     _updateRender = true;
                     if (Session.Enforced.Debug == 1) Log.Line($"Unsuspended: CM:{ShieldMode} - EM:{ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
                 }
-                Suspended = false;
+                DsStatus.State.Suspended = false;
             }
 
-            if (Suspended) SetShieldType(true, true);
-            return Suspended;
+            if (DsStatus.State.Suspended) SetShieldType(true, true);
+            return DsStatus.State.Suspended;
         }
 
         private void InitSuspend(bool cleanEnts = false)
         {
-            if (!Suspended)
+            if (!DsStatus.State.Suspended)
             {
                 if (cleanEnts) InitEntities(false);
 
-                Suspended = true;
+                DsStatus.State.Suspended = true;
                 Shield.RefreshCustomInfo();
             }
             if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
-            Suspended = true;
+            DsStatus.State.Suspended = true;
         }
 
         private bool GridOwnsController()
         {
             if (Shield.CubeGrid.BigOwners.Count == 0)
             {
-                ControllerGridAccess = false;
-                return ControllerGridAccess;
+                DsStatus.State.ControllerGridAccess = false;
+                return DsStatus.State.ControllerGridAccess;
             }
 
             var controlToGridRelataion = ((MyCubeBlock)Shield).GetUserRelationToOwner(Shield.CubeGrid.BigOwners[0]);
             var faction = MyRelationsBetweenPlayerAndBlock.FactionShare;
             var owner = MyRelationsBetweenPlayerAndBlock.Owner;
-            InFaction = controlToGridRelataion == faction;
-            IsOwner = controlToGridRelataion == owner;
+            DsStatus.State.InFaction = controlToGridRelataion == faction;
+            DsStatus.State.IsOwner = controlToGridRelataion == owner;
 
             if (controlToGridRelataion != owner && controlToGridRelataion != faction)
             {
-                if (ControllerGridAccess)
+                if (DsStatus.State.ControllerGridAccess)
                 {
-                    ControllerGridAccess = false;
+                    DsStatus.State.ControllerGridAccess = false;
                     Shield.RefreshCustomInfo();
                 }
-                ControllerGridAccess = false;
-                return ControllerGridAccess;
+                DsStatus.State.ControllerGridAccess = false;
+                return DsStatus.State.ControllerGridAccess;
             }
 
-            if (!ControllerGridAccess)
+            if (!DsStatus.State.ControllerGridAccess)
             {
-                ControllerGridAccess = true;
+                DsStatus.State.ControllerGridAccess = true;
                 Shield.RefreshCustomInfo();
             }
-            ControllerGridAccess = true;
-            return ControllerGridAccess;
+            DsStatus.State.ControllerGridAccess = true;
+            return DsStatus.State.ControllerGridAccess;
         }
     }
 }

@@ -38,20 +38,20 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return null;
 
-            return comp.ShieldComp.RaiseShield ? "On" : "Off";
+            return comp.DsSet.Settings.RaiseShield ? "On" : "Off";
         }
 
         public static float GetRate(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            return comp?.Rate ?? 0f;
+            return comp?.DsSet.Settings.Rate ?? 0f;
         }
 
         public static void SetRate(IMyTerminalBlock block, float newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
-            comp.Rate = newValue;
+            comp.DsSet.Settings.Rate = newValue;
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();
         }
@@ -59,14 +59,14 @@ namespace DefenseShields
         public static bool GetExtend(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            return comp?.ExtendFit ?? false;
+            return comp?.DsSet.Settings.ExtendFit ?? false;
         }
 
         public static void SetExtend(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
-            comp.ExtendFit = newValue;
+            comp.DsSet.Settings.ExtendFit = newValue;
             comp.FitChanged = true;
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();
@@ -75,14 +75,14 @@ namespace DefenseShields
         public static bool GetSphereFit(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            return comp?.SphereFit ?? false;
+            return comp?.DsSet.Settings.SphereFit ?? false;
         }
 
         public static void SetSphereFit(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
-            comp.SphereFit = newValue;
+            comp.DsSet.Settings.SphereFit = newValue;
             comp.FitChanged = true;
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();
@@ -91,14 +91,14 @@ namespace DefenseShields
         public static bool GetFortify(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            return comp?.FortifyShield ?? false;
+            return comp?.DsSet.Settings.FortifyShield ?? false;
         }
 
         public static void SetFortify(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
-            comp.FortifyShield = newValue;
+            comp.DsSet.Settings.FortifyShield = newValue;
             comp.FitChanged = true;
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();
@@ -107,14 +107,14 @@ namespace DefenseShields
         public static float GetWidth(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            return comp?.Width ?? 0f;
+            return comp?.DsSet.Settings.Width ?? 0f;
         }
 
         public static void SetWidth(IMyTerminalBlock block, float newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
-            comp.Width = newValue;
+            comp.DsSet.Settings.Width = newValue;
             comp.FitChanged = true;
             comp.UpdateDimensions = true;
             comp.DsSet.NetworkUpdate();
@@ -124,14 +124,14 @@ namespace DefenseShields
         public static float GetHeight(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            return comp?.Height ?? 0f;
+            return comp?.DsSet.Settings.Height ?? 0f;
         }
 
         public static void SetHeight(IMyTerminalBlock block, float newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
-            comp.Height = newValue;
+            comp.DsSet.Settings.Height = newValue;
             comp.FitChanged = true;
             comp.UpdateDimensions = true;
             comp.DsSet.NetworkUpdate();
@@ -141,14 +141,14 @@ namespace DefenseShields
         public static float GetDepth(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            return comp?.Depth ?? 0f;
+            return comp?.DsSet.Settings.Depth ?? 0f;
         }
 
         public static void SetDepth(IMyTerminalBlock block, float newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
-            comp.Depth = newValue;
+            comp.DsSet.Settings.Depth = newValue;
             comp.FitChanged = true;
             comp.UpdateDimensions = true;
             comp.DsSet.NetworkUpdate();
@@ -158,14 +158,14 @@ namespace DefenseShields
         public static bool GetBatteries(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            return comp?.UseBatteries ?? false;
+            return comp?.DsSet.Settings.UseBatteries ?? false;
         }
 
         public static void SetBatteries(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
-            comp.UseBatteries = newValue;
+            comp.DsSet.Settings.UseBatteries = newValue;
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();
         }
@@ -173,14 +173,14 @@ namespace DefenseShields
         public static bool GetHidePassive(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            return comp?.ShieldPassiveHide ?? false;
+            return comp?.DsSet.Settings.PassiveInvisible ?? false;
         }
 
         public static void SetHidePassive(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
-            comp.ShieldPassiveHide = newValue;
+            comp.DsSet.Settings.PassiveInvisible = newValue;
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();
         }
@@ -188,14 +188,14 @@ namespace DefenseShields
         public static bool GetHideActive(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            return comp?.ShieldActiveHide ?? false;
+            return comp?.DsSet.Settings.ActiveInvisible ?? false;
         }
 
         public static void SetHideActive(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
-            comp.ShieldActiveHide = newValue;
+            comp.DsSet.Settings.ActiveInvisible = newValue;
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();
         }
@@ -203,14 +203,14 @@ namespace DefenseShields
         public static bool GetSendToHud(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            return comp?.SendToHud ?? false;
+            return comp?.DsSet.Settings.SendToHud ?? false;
         }
 
         public static void SetSendToHud(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
-            comp.SendToHud = newValue;
+            comp.DsSet.Settings.SendToHud = newValue;
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();
         }
@@ -218,14 +218,14 @@ namespace DefenseShields
         public static bool GetRaiseShield(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            return comp?.ShieldComp.RaiseShield ?? false;
+            return comp?.DsSet.Settings.RaiseShield ?? false;
         }
 
         public static void SetRaiseShield(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
-            comp.ShieldComp.RaiseShield = newValue;
+            comp.DsSet.Settings.RaiseShield = newValue;
             comp.DsSet.NetworkUpdate();
             comp.DsSet.SaveSettings();
         }
@@ -233,14 +233,14 @@ namespace DefenseShields
         public static long GetShell(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            return comp?.ShieldShell ?? 0;
+            return comp?.DsSet.Settings.ShieldShell ?? 0;
         }
 
         public static void SetShell(IMyTerminalBlock block, long newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
-            comp.ShieldShell = newValue;
+            comp.DsSet.Settings.ShieldShell = newValue;
             comp.SelectPassiveShell();
             comp.UpdatePassiveModel();
             comp.DsSet.NetworkUpdate();
