@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using DefenseShields.Support;
-using ParallelTasks;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
@@ -19,8 +18,6 @@ namespace DefenseShields
 {
     public partial class DefenseShields 
     {
-        public Vector3D GridHalfExtents;
-        public double EllipsoidAdjust = Math.Sqrt(2);
         #region Setup
         private uint _tick;
         private uint _shieldEntRendId;
@@ -243,8 +240,8 @@ namespace DefenseShields
         internal DSUtils Dsutil5 = new DSUtils();
 
         public MyModStorageComponentBase Storage { get; set; }
-        internal DefenseShieldsSettings DsSet;
-        internal ShieldStatus DsStatus;
+        internal ControllerSettings DsSet;
+        internal ControllerState DsState;
 
         internal ShieldGridComponent ShieldComp;
         internal ModulatorGridComponent ModComp;

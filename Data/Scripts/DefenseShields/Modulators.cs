@@ -43,6 +43,7 @@ namespace DefenseShields
         internal ShieldGridComponent ShieldComp;
         private MyEntitySubpart _subpartRotor;
         internal ModulatorSettings ModSet;
+        internal ModulatorState ModState;
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;
 
@@ -134,8 +135,19 @@ namespace DefenseShields
         private void StorageSetup()
         {
             Storage = Modulator.Storage;
-            ModSet = new ModulatorSettings(Modulator);
+            if (ModSet == null)
+            {
+                ModSet = new ModulatorSettings(Modulator);
+                ModSet.SaveSettings();
+            }
+
+            if (ModState == null)
+            {
+                ModState = new ModulatorState(Modulator);
+                ModState.SaveState();
+            }
             ModSet.LoadSettings();
+            //ModState.LoadState();
             UpdateSettings(ModSet.Settings);
         }
 
@@ -271,7 +283,7 @@ namespace DefenseShields
             set { ModSet.Settings.Enabled = value; }
         }
 
-        public void UpdateSettings(ModulatorBlockSettings newSettings)
+        public void UpdateSettings(ProtoModulatorSettings newSettings)
         {
             Enabled = newSettings.Enabled;
             ModulatorComp.Enabled = newSettings.Enabled;
@@ -279,6 +291,12 @@ namespace DefenseShields
             ModulatorComp.Grids = newSettings.ModulateGrids;
             ModulatorComp.Damage = newSettings.ModulateDamage;
             if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings for modulator");
+        }
+
+        public void UpdateState(ProtoModulatorState state)
+        {
+
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdateState - ModId [{Modulator.EntityId}]:\n{state}");
         }
 
         public override void OnRemovedFromScene()

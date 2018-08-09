@@ -88,7 +88,7 @@ namespace DefenseShields
                                 continue;
                             }
 
-                            var damage = computedDamage * DsStatus.State.ModulateEnergy;
+                            var damage = computedDamage * DsState.State.ModulateEnergy;
                             if (computedDamage < 0) damage = computedDamage;
 
                             if (Session.MpActive)
@@ -119,7 +119,7 @@ namespace DefenseShields
                         while (_meteorDmg.TryDequeue(out meteor))
                         {
                             if (meteor == null || meteor.MarkedForClose || meteor.Closed) continue;
-                            var damage = 5000 * DsStatus.State.ModulateKinetic;
+                            var damage = 5000 * DsState.State.ModulateKinetic;
                             if (Session.MpActive)
                             {
                                 if (Session.IsServer)
@@ -190,7 +190,7 @@ namespace DefenseShields
                     {
                         IMySlimBlock block;
                         var damageMulti = 350;
-                        if (ShieldMode == ShieldType.Station && DsStatus.State.Enhancer) damageMulti = 10000;
+                        if (ShieldMode == ShieldType.Station && DsState.State.Enhancer) damageMulti = 10000;
                         while (_dmgBlocks.TryDequeue(out block))
                         {
                             if (block == null) continue;

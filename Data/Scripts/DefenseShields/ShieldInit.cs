@@ -95,7 +95,6 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"BlockAdded: ShieldId [{Shield?.EntityId}]");
                 _blockAdded = true;
                 _blockChanged = true;
             }
@@ -106,7 +105,6 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"BlockRemoved: ShieldId [{Shield?.EntityId}]");
                 _blockRemoved = true;
                 _blockChanged = true;
             }
@@ -117,7 +115,6 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"FatBlockAdded: ShieldId [{Shield?.EntityId}]");
                 _functionalAdded = true;
                 _functionalChanged = true;
             }
@@ -128,7 +125,6 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"FatBlockRemoved: ShieldId [{Shield?.EntityId}]");
                 _functionalRemoved = true;
                 _functionalChanged = true;
             }
@@ -139,7 +135,6 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug >= 2 && myCubeGrid != null) Log.Line($"HierarchyChanged: {myCubeGrid.DebugName} - ShieldId [{Shield.EntityId}]");
                 if (ShieldComp == null ||_tick == _hierarchyTick) return;
                 if (_hierarchyTick > _tick - 9)
                 {
@@ -154,8 +149,8 @@ namespace DefenseShields
 
         private void UpdateSubGrids(bool force = false)
         {
-            var checkGroups = Shield.IsWorking && Shield.IsFunctional && DsStatus.State.Online;
-            if (Session.Enforced.Debug >= 2) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Offline:{DsStatus.State.Online} - ShieldId [{Shield.EntityId}]");
+            var checkGroups = Shield.IsWorking && Shield.IsFunctional && DsState.State.Online;
+            if (Session.Enforced.Debug >= 2) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Offline:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
             if (!checkGroups && !force) return;
             var gotGroups = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Physical);
             if (gotGroups.Count == ShieldComp.GetLinkedGrids.Count) return;
@@ -178,12 +173,20 @@ namespace DefenseShields
         private void StorageSetup()
         {
             Storage = Shield.Storage;
-            if (DsSet == null) DsSet = new DefenseShieldsSettings(Shield);
-            if (DsStatus == null) DsStatus = new ShieldStatus(Shield);
+            if (DsSet == null)
+            {
+                DsSet = new ControllerSettings(Shield);
+                DsSet.SaveSettings();
+            }
+            if (DsState == null)
+            {
+                DsState = new ControllerState(Shield);
+                DsState.SaveState();
+            }
+
             if (ShieldComp == null) ShieldComp = new ShieldGridComponent(this);
             DsSet.LoadSettings();
             UpdateSettings(DsSet.Settings);
-            DsStatus.LoadState();
             if (Session.Enforced.Debug == 1) Log.Line($"StorageSetup: ShieldId [{Shield.EntityId}]");
         }
 
@@ -193,10 +196,11 @@ namespace DefenseShields
             {
                 if (Storage != null && AllInited)
                 {
-                    DsStatus.SaveState();
+                    DsState.SaveState();
                     DsSet.SaveSettings();
+                    if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: saved before replication - ShieldId [{Shield.EntityId}]");
                 }
-                if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: saved before replication - ShieldId [{Shield.EntityId}]");
+                else if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: not saved - AllInited:{AllInited} - StoageNull:{Storage == null} - ShieldId [{Shield.EntityId}]");
             }
             return false;
         }
@@ -273,7 +277,7 @@ namespace DefenseShields
             return Shield.IsWorking;
         }
 
-        private void SetShieldType(bool quickCheck, bool hideShells)
+        private void SetShieldType(bool quickCheck)
         {
             var noChange = false;
             var oldMode = ShieldMode;
@@ -290,7 +294,7 @@ namespace DefenseShields
                     break;
                 default:
                     ShieldMode = ShieldType.Unknown;
-                    DsStatus.State.Suspended = true;
+                    DsState.State.Suspended = true;
                     break;
             }
             if (ShieldMode == oldMode) noChange = true;
@@ -449,7 +453,7 @@ namespace DefenseShields
                 {
                     if (_tick % 600 == 0)
                     {
-                        GridOwnsController();
+                        if (Session.IsServer) GridOwnsController();
                         Shield.RefreshCustomInfo();
                     }
                     return;
@@ -458,7 +462,7 @@ namespace DefenseShields
                 if (!MainInit && Shield.IsFunctional)
                 {
                     Session.Instance.CreateControllerElements(Shield);
-                    SetShieldType(false, true);
+                    SetShieldType(false);
 
                     CleanUp(3);
                     MainInit = true;
@@ -492,13 +496,13 @@ namespace DefenseShields
 
             ResetShape(false, true);
             ResetShape(false, false);
-            _oldGridHalfExtents = DsStatus.State.GridHalfExtents;
-            _oldEllipsoidAdjust = DsStatus.State.EllipsoidAdjust;
+            _oldGridHalfExtents = DsState.State.GridHalfExtents;
+            _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
             GetModulationInfo();
 
             Starting = true;
             ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
-            if (Session.Enforced.Debug == 1) Log.Line($"Warming: buffer:{DsStatus.State.Buffer} - BlockWorking:{ControlBlockWorking} - Active:{DsStatus.State.Online} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 1) Log.Line($"Warming: buffer:{DsState.State.Buffer} - BlockWorking:{ControlBlockWorking} - Active:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
             return false;
         }
         #endregion

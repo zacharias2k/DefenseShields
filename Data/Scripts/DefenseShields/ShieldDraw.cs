@@ -154,7 +154,7 @@ namespace DefenseShields
         {
             var playerEnt = MyAPIGateway.Session.ControlledObject?.Entity;
             if (playerEnt?.Parent != null) playerEnt = playerEnt.Parent;
-            if (playerEnt == null || DsStatus.State.Online && !FriendlyCache.Contains(playerEnt) || !DsStatus.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
+            if (playerEnt == null || DsState.State.Online && !FriendlyCache.Contains(playerEnt) || !DsState.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
             {
                 if (Session.HudComp != this) return;
 
@@ -194,7 +194,7 @@ namespace DefenseShields
 
             var icon1 = GetHudIcon1FromFloat(ShieldComp.ShieldPercent);
             var icon2 = GetHudIcon2FromFloat(icon2FSelect);
-            var showIcon2 = DsStatus.State.Online;
+            var showIcon2 = DsState.State.Online;
             Color color;
             var p = ShieldComp.ShieldPercent;
             if (p > 0 && p < 10 && _lCount % 2 == 0) color = Color.Red;

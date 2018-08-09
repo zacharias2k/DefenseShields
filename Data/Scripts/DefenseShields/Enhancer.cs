@@ -34,7 +34,9 @@ namespace DefenseShields
         public IMyUpgradeModule Enhancer => (IMyUpgradeModule)Entity;
         public MyModStorageComponentBase Storage { get; set; }
         internal ShieldGridComponent ShieldComp;
-        internal ModulatorSettings ModSet;
+        //internal EnhancerSettings EnhSet;
+        internal EnhancerState EnhState;
+
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;
         private MyEntitySubpart _subpartRotor;
@@ -73,9 +75,16 @@ namespace DefenseShields
         private void StorageSetup()
         {
             Storage = Enhancer.Storage;
-            ModSet = new ModulatorSettings(Enhancer);
-            ModSet.LoadSettings();
-            UpdateSettings(ModSet.Settings);
+            //if (EnhSet == null) EnhSet = new EnhancerSettings(Enhancer);
+            if (EnhState == null)
+            {
+                EnhState = new EnhancerState(Enhancer);
+                EnhState.SaveState();
+            }
+            EnhState.LoadState();
+            //EnhSet.LoadSettings();
+            //UpdateSettings(EnhSet.Settings);
+            //EnhState.LoadSettings();
         }
 
         private void PowerPreInit()
@@ -137,7 +146,7 @@ namespace DefenseShields
 
         private bool EnhancerReady()
         {
-            if (ShieldComp == null || Sink.CurrentInputByType(GId) < 0.01f || Enhancer?.CubeGrid == null || !Enhancer.Enabled || !Enhancer.IsFunctional || !Enhancer.IsWorking)
+            if (ShieldComp?.DefenseShields == null || Sink.CurrentInputByType(GId) < 0.01f || Enhancer?.CubeGrid == null || !Enhancer.Enabled || !Enhancer.IsFunctional || !Enhancer.IsWorking)
             {
                 if (Enhancer != null && _tick % 300 == 0)
                 {
@@ -238,9 +247,9 @@ namespace DefenseShields
             }
         }
 
-        public void UpdateSettings(ModulatorBlockSettings newSettings)
+        public void UpdateState(ProtoEnhancerState newState)
         {
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings: EnhancerId [{Enhancer.EntityId}]");
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdateState: EnhancerId [{Enhancer.EntityId}]");
         }
 
         public override void OnRemovedFromScene()

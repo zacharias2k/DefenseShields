@@ -53,7 +53,7 @@ namespace DefenseShields
             _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
             Timing();
             if (ShieldComp == null) Display.CubeGrid.Components.TryGet(out ShieldComp);
-            if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.DefenseShields.DsStatus.State.Online) return;
+            if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.DefenseShields.DsState.State.Online) return;
             if (_count == 29)
             {
                 Display.WritePublicText(ShieldComp.DefenseShields.Shield.CustomInfo);

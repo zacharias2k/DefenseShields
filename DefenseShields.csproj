@@ -192,13 +192,14 @@
     <None Include="tools\Monitor SE Log.ps1" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Data\Scripts\DefenseShields\Config\O2GeneratorData.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Config\EnhancerData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldDraw.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldStates.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\API\dsApi.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Config\Shield-State.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Enforcements.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Config\Modulator-Settings.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Config\ModulatorData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\ModUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\DsUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\TerminalHelpers.cs" />
@@ -209,7 +210,6 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\ColorControl.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Controls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Seperator.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Config\UpdateShield.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Enhancer.cs" />
     <Compile Include="HoldingArea\HyperSession.cs" />
     <Compile Include="HoldingArea\Logger.cs" />
@@ -220,7 +220,7 @@
     <Compile Include="Data\Scripts\DefenseShields\ShieldIntersect.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Modulators.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Emitters.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Config\Controller-Settings.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Config\ControllerData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldFields.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldInit.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\DistPoint3Triangle3.cs" />

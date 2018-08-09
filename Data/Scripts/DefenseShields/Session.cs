@@ -23,10 +23,14 @@ namespace DefenseShields
     {
         private uint _tick;
 
-        public const ushort PacketIdState = 62519; // network
-        public const ushort PacketIdSettings = 62520; // network
-        public const ushort PacketIdEnforce = 62521; // network
-        public const ushort PacketIdModulator = 62522; // network
+        public const ushort PacketIdO2GeneratorState = 62517; 
+        public const ushort PacketIdEnhancerState = 62518;
+        public const ushort PacketIdControllerState = 62519; 
+        public const ushort PacketIdControllerSettings = 62520; 
+        public const ushort PacketIdEnforce = 62521; 
+        public const ushort PacketIdModulatorSettings = 62522; 
+        public const ushort PacketIdModulatorState = 62523; // 
+
         private const long WorkshopId = 1365616918;
 
         private int _count = -1;
@@ -61,11 +65,14 @@ namespace DefenseShields
         internal static DefenseShields HudComp;
         internal static double HudShieldDist = double.MaxValue;
 
-        public readonly Guid ShieldGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811505");
-        public readonly Guid EmitterGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811506");
-        public readonly Guid DisplayGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811507");
-        public readonly Guid SettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
-        public readonly Guid ModulatorGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811509");
+        public readonly Guid EnhancerStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811503");
+        public readonly Guid O2GeneratorStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811504");
+        public readonly Guid ControllerStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811505");
+        public readonly Guid EmitterSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811506");
+        public readonly Guid DisplaySettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811507");
+        public readonly Guid ControllerSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
+        public readonly Guid ModulatorSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811509");
+        public readonly Guid ModulatorStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811510");
 
         //public string disabledBy = null;
 
@@ -117,10 +124,14 @@ namespace DefenseShields
                 Log.Init("debugdevelop.log");
                 Log.Line($"Logging Started");
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
-                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdState, PacketStateReceived);
-                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdSettings, PacketSettingsReceived);
-                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEnforce, PacketEnforcementReceived);
-                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdModulator, ModulatorSettingsReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdControllerState, ControllerStateReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdControllerSettings, ControllerSettingsReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEnforce, EnforcementReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdModulatorSettings, ModulatorSettingsReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdModulatorState, ModulatorStateReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdModulatorSettings, EnhancerStateReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdO2GeneratorState, O2GeneratorStateReceived);
+
                 if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter += CustomControls;
                 if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomActionGetter += ShowHideActions;
 
@@ -204,9 +215,9 @@ namespace DefenseShields
                 {
                     var s = Components[i];
                     if (!s.WarmedUp || !s.DsSet.Settings.RaiseShield || s.ShieldComp.EmittersSuspended) continue;
-                    if (s.DsStatus.State.Online && SphereOnCamera[i]) s.Draw(OnCount, SphereOnCamera[i]);
-                    else if (s.DsStatus.State.Online && !s.Icosphere.ImpactsFinished) s.Icosphere.StepEffects();
-                    else if (!s.DsStatus.State.Online && SphereOnCamera[i]) s.DrawShieldDownIcon();
+                    if (s.DsState.State.Online && SphereOnCamera[i]) s.Draw(OnCount, SphereOnCamera[i]);
+                    else if (s.DsState.State.Online && !s.Icosphere.ImpactsFinished) s.Icosphere.StepEffects();
+                    else if (!s.DsState.State.Online && SphereOnCamera[i]) s.DrawShieldDownIcon();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
@@ -228,7 +239,7 @@ namespace DefenseShields
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
 
-                        if (shield.DsStatus.State.Online
+                        if (shield.DsState.State.Online
                             && shield.FriendlyCache.Contains(player)
                             && (hostileEnt == null || !shield.FriendlyCache.Contains(hostileEnt))) info.Amount = 0f;
                     }
@@ -240,7 +251,7 @@ namespace DefenseShields
 
                 foreach (var shield in Components)
                 {
-                    var shieldActive = shield.DsStatus.State.Online && shield.DsSet.Settings.RaiseShield;
+                    var shieldActive = shield.DsState.State.Online && shield.DsSet.Settings.RaiseShield;
 
                     if (!IsServer && !shieldActive && info.Type == MPdamage)
                     {
@@ -267,7 +278,7 @@ namespace DefenseShields
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
                         if (info.Type == MPdamage)
                         {
-                            if (!shieldActive || shield.DsStatus.State.Buffer <= 0 || hostileEnt == null)
+                            if (!shieldActive || shield.DsState.State.Buffer <= 0 || hostileEnt == null)
                             {
                                 info.Amount = 0;
                                 continue;
@@ -322,8 +333,8 @@ namespace DefenseShields
 
                         if (info.IsDeformation && shield.DeformEnabled) continue;
 
-                        if (info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Deformation) info.Amount = info.Amount * shield.DsStatus.State.ModulateKinetic;
-                        else info.Amount = info.Amount * shield.DsStatus.State.ModulateEnergy;
+                        if (info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Deformation) info.Amount = info.Amount * shield.DsState.State.ModulateKinetic;
+                        else info.Amount = info.Amount * shield.DsState.State.ModulateEnergy;
 
                         if (!DedicatedServer && hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
                         {
@@ -373,7 +384,7 @@ namespace DefenseShields
                         if (info.Type == MPdamage)
                         {
 
-                            if (!shieldActive || shield.DsStatus.State.Buffer <= 0 || hostileEnt == null)
+                            if (!shieldActive || shield.DsState.State.Buffer <= 0 || hostileEnt == null)
                             {
                                 info.Amount = 0;
                                 continue;
@@ -421,8 +432,8 @@ namespace DefenseShields
 
                         if (info.IsDeformation && shield.DeformEnabled) continue;
 
-                        if (info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Deformation) info.Amount = info.Amount * shield.DsStatus.State.ModulateKinetic;
-                        else info.Amount = info.Amount * shield.DsStatus.State.ModulateEnergy;
+                        if (info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Deformation) info.Amount = info.Amount * shield.DsState.State.ModulateKinetic;
+                        else info.Amount = info.Amount * shield.DsState.State.ModulateEnergy;
 
                         if (!DedicatedServer && hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
                         {
@@ -460,137 +471,15 @@ namespace DefenseShields
         #endregion
 
         #region Network sync
-        private static void PacketStateReceived(byte[] bytes)
+        private static void EnforcementReceived(byte[] bytes)
         {
             try
             {
-                if (bytes.Length <= 2)
-                {
-                    Log.Line($"State PacketReceived; invalid length <= 2; length={bytes.Length.ToString()}");
-                    return;
-                }
+                if (bytes.Length <= 2) return;
 
-                var data = MyAPIGateway.Utilities.SerializeFromBinary<StateData>(bytes); // this will throw errors on invalid data
+                var data = MyAPIGateway.Utilities.SerializeFromBinary<DataEnforce>(bytes); // this will throw errors on invalid data
 
-                if (data == null)
-                {
-                    Log.Line($"State PacketReceived; no deserialized data!");
-                    return;
-                }
-
-                IMyEntity ent;
-                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
-                {
-                    Log.Line($"State PacketReceived; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
-                    return;
-                }
-
-                var logic = ent.GameLogic.GetAs<DefenseShields>();
-
-                if (logic == null)
-                {
-                    Log.Line($"State PacketReceived; {data.Type}; shield doesn't have the gamelogic component!");
-                    return;
-                }
-
-                switch (data.Type)
-                {
-                    case PacketType.STATE:
-                        {
-                            if (data.State == null)
-                            {
-                                Log.Line($"State PacketReceived; {data.Type}; stats are null!");
-                                return;
-                            }
-
-                            if (Enforced.Debug == 1) Log.Line($"Packet State Packet received:- data:\n{data.State}");
-                            logic.UpdateState(data.State);
-                            if (IsServer)
-                            {
-                                ShieldStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
-                            }
-                        }
-                        break;
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in PacketStatsReceived: {ex}"); }
-        }
-
-
-        private static void PacketSettingsReceived(byte[] bytes)
-        {
-            try
-            {
-                if (bytes.Length <= 2)
-                {
-                    Log.Line($"Controler PacketReceived; invalid length <= 2; length={bytes.Length.ToString()}");
-                    return;
-                }
-
-                var data = MyAPIGateway.Utilities.SerializeFromBinary<PacketData>(bytes); // this will throw errors on invalid data
-
-                if (data == null)
-                {
-                    Log.Line($"Controler PacketReceived; no deserialized data!");
-                    return;
-                }
-
-                IMyEntity ent;
-                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
-                {
-                    Log.Line($"Controler PacketReceived; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
-                    return;
-                }
-
-                var logic = ent.GameLogic.GetAs<DefenseShields>();
-
-                if (logic == null)
-                {
-                    Log.Line($"Controler PacketReceived; {data.Type}; shield doesn't have the gamelogic component!");
-                    return;
-                }
-
-                switch (data.Type)
-                {
-                    case PacketType.SETTINGS:
-                        {
-                            if (data.Settings == null)
-                            {
-                                Log.Line($"Controler PacketReceived; {data.Type}; settings are null!");
-                                return;
-                            }
-
-                            if (Enforced.Debug == 1) Log.Line($"Packet Settings Packet received:- data:\n{data.Settings}");
-                            logic.UpdateSettings(data.Settings);
-                            if (!logic.GridIsMobile) logic.UpdateDimensions = true;
-                            logic.DsSet.SaveSettings();
-                            if (IsServer)
-                                ShieldSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
-                        }
-                        break;
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in PacketSettingsReceived: {ex}"); }
-        }
-
-        private static void PacketEnforcementReceived(byte[] bytes)
-        {
-            try
-            {
-                if (!IsServer) Log.Line($"EnforceData - Session: packet received");
-                if (bytes.Length <= 2)
-                {
-                    Log.Line($"EnforceData Received; invalid length <= 2; length={bytes.Length.ToString()}");
-                    return;
-                }
-
-                var data = MyAPIGateway.Utilities.SerializeFromBinary<EnforceData>(bytes); // this will throw errors on invalid data
-
-                if (data == null)
-                {
-                    Log.Line($"EnforceData Received; no deserialized data!");
-                    return;
-                }
+                if (data == null) return;
 
                 IMyEntity ent;
                 if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
@@ -601,21 +490,13 @@ namespace DefenseShields
 
                 var logic = ent.GameLogic.GetAs<DefenseShields>();
 
-                if (logic == null)
-                {
-                    Log.Line($"EnforceData Received; {data.Type}; shield doesn't have the gamelogic component!");
-                    return;
-                }
+                if (logic == null) return;
 
                 switch (data.Type)
                 {
-                    case PacketType.ENFORCE:
+                    case PacketType.Enforce:
                         {
-                            if (data.Enforce == null)
-                            {
-                                Log.Line($"EnforceData Received; {data.Type}; Enforce is null!");
-                                return;
-                            }
+                            if (data.Enforce == null) return;
 
                             if (Enforced.Debug == 1) Log.Line($"EnforceData Received; Enforce - Server:\n{data.Enforce}");
                             if (!IsServer)
@@ -634,23 +515,96 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in PacketEnforcementReceived: {ex}"); }
         }
 
+        private static void ControllerStateReceived(byte[] bytes)
+        {
+            try
+            {
+                if (bytes.Length <= 2) return;
+
+                var data = MyAPIGateway.Utilities.SerializeFromBinary<DataControllerState>(bytes); // this will throw errors on invalid data
+
+                if (data == null) return;
+
+                IMyEntity ent;
+                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
+                {
+                    Log.Line($"State PacketReceived; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    return;
+                }
+
+                var logic = ent.GameLogic.GetAs<DefenseShields>();
+
+                if (logic == null) return;
+
+                switch (data.Type)
+                {
+                    case PacketType.Controllerstate:
+                        {
+                            if (data.State == null) return;
+
+                            if (Enforced.Debug == 1) Log.Line($"Packet State Packet received:- data:\n{data.State}");
+                            logic.UpdateState(data.State);
+                            if (IsServer)
+                            {
+                                ControllerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                            }
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in PacketStatsReceived: {ex}"); }
+        }
+
+
+        private static void ControllerSettingsReceived(byte[] bytes)
+        {
+            try
+            {
+                if (bytes.Length <= 2) return;
+
+                var data = MyAPIGateway.Utilities.SerializeFromBinary<DataControllerSettings>(bytes); // this will throw errors on invalid data
+
+                if (data == null) return;
+
+                IMyEntity ent;
+                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
+                {
+                    Log.Line($"Controler PacketReceived; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    return;
+                }
+
+                var logic = ent.GameLogic.GetAs<DefenseShields>();
+
+                if (logic == null) return;
+
+                switch (data.Type)
+                {
+                    case PacketType.Controllersettings:
+                        {
+                            if (data.Settings == null) return;
+
+                            if (Enforced.Debug == 1) Log.Line($"Packet Settings Packet received:- data:\n{data.Settings}");
+                            logic.UpdateSettings(data.Settings);
+                            if (!logic.GridIsMobile) logic.UpdateDimensions = true;
+                            logic.DsSet.SaveSettings();
+                            if (IsServer)
+                                ControllerSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in PacketSettingsReceived: {ex}"); }
+        }
+
         private static void ModulatorSettingsReceived(byte[] bytes)
         {
             try
             {
-                if (bytes.Length <= 2)
-                {
-                    Log.Line($"Modulator PacketReceived; invalid length <= 2; length={bytes.Length.ToString()}");
-                    return;
-                }
+                if (bytes.Length <= 2)return;
 
-                var data = MyAPIGateway.Utilities.SerializeFromBinary<ModulatorData>(bytes); // this will throw errors on invalid data
+                var data = MyAPIGateway.Utilities.SerializeFromBinary<DataModulatorSettings>(bytes); // this will throw errors on invalid data
 
-                if (data == null)
-                {
-                    Log.Line($"Modulator PacketReceive; no deserialized data!");
-                    return;
-                }
+                if (data == null) return;
 
                 IMyEntity ent;
                 if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
@@ -661,21 +615,13 @@ namespace DefenseShields
 
                 var logic = ent.GameLogic.GetAs<Modulators>();
 
-                if (logic == null)
-                {
-                    Log.Line($"Modulator PacketReceive; {data.Type}; shield doesn't have the gamelogic component!");
-                    return;
-                }
+                if (logic == null) return;
 
                 switch (data.Type)
                 {
-                    case PacketType.MODULATOR:
+                    case PacketType.Modulatorsettings:
                         {
-                            if (data.Settings == null)
-                            {
-                                Log.Line($"Modulator PacketReceive; {data.Type}; settings are null!");
-                                return;
-                            }
+                            if (data.Settings == null) return;
 
                             if (Enforced.Debug == 1) Log.Line($"Modulator received:\n{data.Settings}");
                             logic.UpdateSettings(data.Settings);
@@ -691,35 +637,177 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in ModulatorSettingsReceived: {ex}"); }
         }
 
+        private static void ModulatorStateReceived(byte[] bytes)
+        {
+            try
+            {
+                if (bytes.Length <= 2) return;
+
+                var data = MyAPIGateway.Utilities.SerializeFromBinary<DataModulatorState>(bytes); // this will throw errors on invalid data
+
+                if (data == null) return;
+
+                IMyEntity ent;
+                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
+                {
+                    Log.Line($"Modulator PacketReceive; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    return;
+                }
+
+                var logic = ent.GameLogic.GetAs<Modulators>();
+
+                if (logic == null) return;
+
+                switch (data.Type)
+                {
+                    case PacketType.Modulatorstate:
+                    {                                                                                
+                        if (data.State == null) return;
+
+                        if (Enforced.Debug == 1) Log.Line($"Modulator received:\n{data.State}");
+                        logic.UpdateState(data.State);
+                        logic.ModState.SaveState();
+                        logic.ServerUpdate = true;
+
+                        if (IsServer)
+                            ModulatorStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                    }
+                        break;
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in ModulatorSettingsReceived: {ex}"); }
+        }
+
+        private static void O2GeneratorStateReceived(byte[] bytes)
+        {
+            try
+            {
+                if (bytes.Length <= 2) return;
+
+                var data = MyAPIGateway.Utilities.SerializeFromBinary<DataO2GeneratorState>(bytes); // this will throw errors on invalid data
+
+                if (data == null) return;
+
+                IMyEntity ent;
+                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
+                {
+                    Log.Line($"Modulator PacketReceive; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    return;
+                }
+
+                var logic = ent.GameLogic.GetAs<O2Generators>();
+
+                if (logic == null) return;
+
+                switch (data.Type)
+                {
+                    case PacketType.O2Generatorstate:
+                    {
+                        if (data.State == null) return;
+
+                        if (Enforced.Debug == 1) Log.Line($"Modulator received:\n{data.State}");
+                        logic.UpdateState(data.State);
+                        logic.O2State.SaveState();
+
+                        if (IsServer)
+                            O2GeneratorStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                    }
+                        break;
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in ModulatorSettingsReceived: {ex}"); }
+        }
+
+        private static void EnhancerStateReceived(byte[] bytes)
+        {
+            try
+            {
+                if (bytes.Length <= 2) return;
+
+                var data = MyAPIGateway.Utilities.SerializeFromBinary<DataEnhancerState>(bytes); // this will throw errors on invalid data
+
+                if (data == null) return;
+
+                IMyEntity ent;
+                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
+                {
+                    Log.Line($"Modulator PacketReceive; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    return;
+                }
+
+                var logic = ent.GameLogic.GetAs<Enhancers>();
+
+                if (logic == null) return;
+
+                switch (data.Type)
+                {
+                    case PacketType.Enhancerstate:
+                    {
+                        if (data.State == null) return;
+
+                        if (Enforced.Debug == 1) Log.Line($"Modulator received:\n{data.State}");
+                        logic.UpdateState(data.State);
+                        logic.EnhState.SaveState();
+
+                        if (IsServer)
+                            EnhancerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                    }
+                        break;
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in ModulatorSettingsReceived: {ex}"); }
+        }
+
         public static void PacketizeEnforcements(IMyCubeBlock block, ulong senderId)
         {
-            var data = new EnforceData(MyAPIGateway.Multiplayer.MyId, block.EntityId, Enforced);
+            var data = new DataEnforce(MyAPIGateway.Multiplayer.MyId, block.EntityId, Enforced);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
             MyAPIGateway.Multiplayer.SendMessageTo(PacketIdEnforce, bytes, senderId);
         }
 
-        public static void PacketizeState(IMyCubeBlock block, ShieldState state)
+        public static void PacketizeControllerState(IMyCubeBlock block, ProtoControllerState state)
         {
-            var data = new StateData(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
+            var data = new DataControllerState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            ShieldStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+            ControllerStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
         }
 
-        public static void PacketizeModulatorSettings(IMyCubeBlock block, ModulatorBlockSettings settings)
+        public static void PacketizeControllerSettings(IMyCubeBlock block, ProtoControllerSettings settings)
         {
-            var data = new ModulatorData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
+            var data = new DataControllerSettings(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            ControllerSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        public static void PacketizeModulatorSettings(IMyCubeBlock block, ProtoModulatorSettings settings)
+        {
+            var data = new DataModulatorSettings(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
             ModulatorSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
         }
 
-        public static void PacketizeShieldSettings(IMyCubeBlock block, DefenseShieldsModSettings settings)
+        public static void PacketizeModulatorState(IMyCubeBlock block, ProtoModulatorState state)
         {
-            var data = new PacketData(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
+            var data = new DataModulatorState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            ShieldSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+            ModulatorSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
         }
 
-        public static void ShieldStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        public static void PacketizeO2GeneratorState(IMyCubeBlock block, ProtoO2GeneratorState state)
+        {
+            var data = new DataO2GeneratorState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            ModulatorSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        public static void PacketizeEnhancerState(IMyCubeBlock block, ProtoEnhancerState state)
+        {
+            var data = new DataEnhancerState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            ModulatorSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        public static void ControllerStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
             var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
@@ -736,12 +824,12 @@ namespace DefenseShields
 
                 if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
 
-                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdState, bytes, p.SteamUserId);
+                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdControllerState, bytes, p.SteamUserId);
             }
             players.Clear();
         }
 
-        public static void ShieldSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        public static void ControllerSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
             var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
@@ -757,7 +845,7 @@ namespace DefenseShields
                 var id = p.SteamUserId;
 
                 if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
-                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdSettings, bytes, p.SteamUserId);
+                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdControllerSettings, bytes, p.SteamUserId);
             }
             players.Clear();
         }
@@ -778,7 +866,72 @@ namespace DefenseShields
                 var id = p.SteamUserId;
 
                 if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
-                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdModulator, bytes, p.SteamUserId);
+                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdModulatorSettings, bytes, p.SteamUserId);
+            }
+            players.Clear();
+        }
+
+        public static void ModulatorStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        {
+            var localSteamId = MyAPIGateway.Multiplayer.MyId;
+            var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
+            distSq += 3000; // some safety padding, avoid desync
+            distSq *= distSq;
+
+            var players = Instance.Players;
+            players.Clear();
+            MyAPIGateway.Players.GetPlayers(players);
+
+            foreach (var p in players)
+            {
+                var id = p.SteamUserId;
+
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
+                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdModulatorState, bytes, p.SteamUserId);
+            }
+            players.Clear();
+        }
+
+        public static void O2GeneratorStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        {
+            var localSteamId = MyAPIGateway.Multiplayer.MyId;
+            var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
+            distSq += 3000; // some safety padding, avoid desync
+            distSq *= distSq;
+
+            var players = Instance.Players;
+            players.Clear();
+            MyAPIGateway.Players.GetPlayers(players);
+
+            foreach (var p in players)
+            {
+                var id = p.SteamUserId;
+
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
+
+                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdO2GeneratorState, bytes, p.SteamUserId);
+            }
+            players.Clear();
+        }
+
+        public static void EnhancerStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        {
+            var localSteamId = MyAPIGateway.Multiplayer.MyId;
+            var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
+            distSq += 3000; // some safety padding, avoid desync
+            distSq *= distSq;
+
+            var players = Instance.Players;
+            players.Clear();
+            MyAPIGateway.Players.GetPlayers(players);
+
+            foreach (var p in players)
+            {
+                var id = p.SteamUserId;
+
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
+
+                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdEnhancerState, bytes, p.SteamUserId);
             }
             players.Clear();
         }

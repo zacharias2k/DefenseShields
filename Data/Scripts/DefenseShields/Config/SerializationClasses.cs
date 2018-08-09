@@ -6,7 +6,55 @@ using VRageMath;
 namespace DefenseShields
 {
     [ProtoContract]
-    public class ShieldState
+    public class DefenseShieldsEnforcement
+    {
+        [ProtoMember(1), DefaultValue(-1)]
+        public float Nerf = -1f;
+
+        [ProtoMember(2), DefaultValue(-1)]
+        public int BaseScaler = -1;
+
+        [ProtoMember(3), DefaultValue(-1)]
+        public float Efficiency = -1f;
+
+        [ProtoMember(4), DefaultValue(-1)]
+        public int StationRatio = -1;
+
+        [ProtoMember(5), DefaultValue(-1)]
+        public int LargeShipRatio = -1;
+
+        [ProtoMember(6), DefaultValue(-1)]
+        public int SmallShipRatio = -1;
+
+        [ProtoMember(7), DefaultValue(-1)]
+        public int DisableVoxelSupport = -1;
+
+        [ProtoMember(8), DefaultValue(-1)]
+        public int DisableGridDamageSupport = -1;
+
+        [ProtoMember(9), DefaultValue(-1)]
+        public int Debug = -1;
+
+        [ProtoMember(10)]
+        public bool AltRecharge = false;
+
+        [ProtoMember(11), DefaultValue(-1)]
+        public int Version = -1;
+
+        [ProtoMember(12)]
+        public ulong SenderId = 0;
+
+        public override string ToString()
+        {
+            return $"Nerf = {Math.Round(Nerf, 4)}\nBaseScaler = {BaseScaler}\nEfficiency = {Math.Round(Efficiency, 4)}\nStationRatio = {StationRatio}\nLargeShipRatio = {LargeShipRatio}" +
+                   $"\nSmallShipRatio = {SmallShipRatio}\nDisableVoxelSupport = {DisableVoxelSupport}\nDisableGridDamageSupport = {DisableGridDamageSupport}" +
+                   $"\nDebug = {Debug}\nAltRecharge = {AltRecharge}\nVersion = {Version}\nSenderId = {SenderId}";
+        }
+
+    }
+
+    [ProtoContract]
+    public class ProtoControllerState
     {
         [ProtoMember(1), DefaultValue(-1)]
         public float Buffer;
@@ -43,13 +91,17 @@ namespace DefenseShields
         [ProtoMember(17)]
         public bool ControllerGridAccess = true;
         [ProtoMember(18)]
-        public bool ResetShape = false;
+        public bool NoPower = false;
         [ProtoMember(19)]
         public bool Enhancer = false;
         [ProtoMember(20), DefaultValue(-1)]
         public double EllipsoidAdjust = Math.Sqrt(2);
         [ProtoMember(21)]
         public Vector3D GridHalfExtents;
+        [ProtoMember(22)]
+        public int Mode = 4;
+        [ProtoMember(23)]
+        public bool EmitterWorking = false;
 
         public override string ToString()
         {
@@ -58,7 +110,7 @@ namespace DefenseShields
     }
 
     [ProtoContract]
-    public class DefenseShieldsModSettings
+    public class ProtoControllerSettings
     {
         [ProtoMember(1)]
         public bool Enabled = false;
@@ -116,55 +168,7 @@ namespace DefenseShields
     }
 
     [ProtoContract]
-    public class DefenseShieldsEnforcement
-    {
-        [ProtoMember(1), DefaultValue(-1)]
-        public float Nerf = -1f;
-
-        [ProtoMember(2), DefaultValue(-1)]
-        public int BaseScaler = -1;
-
-        [ProtoMember(3), DefaultValue(-1)]
-        public float Efficiency = -1f;
-
-        [ProtoMember(4), DefaultValue(-1)]
-        public int StationRatio = -1;
-
-        [ProtoMember(5), DefaultValue(-1)]
-        public int LargeShipRatio = -1;
-
-        [ProtoMember(6), DefaultValue(-1)]
-        public int SmallShipRatio = -1;
-
-        [ProtoMember(7), DefaultValue(-1)]
-        public int DisableVoxelSupport = -1;
-
-        [ProtoMember(8), DefaultValue(-1)]
-        public int DisableGridDamageSupport = -1;
-
-        [ProtoMember(9), DefaultValue(-1)]
-        public int Debug = -1;
-
-        [ProtoMember(10)]
-        public bool AltRecharge = false;
-
-        [ProtoMember(11), DefaultValue(-1)]
-        public int Version = -1;
-
-        [ProtoMember(12)]
-        public ulong SenderId = 0;
-
-        public override string ToString()
-        {
-            return $"Nerf = {Math.Round(Nerf, 4)}\nBaseScaler = {BaseScaler}\nEfficiency = {Math.Round(Efficiency, 4)}\nStationRatio = {StationRatio}\nLargeShipRatio = {LargeShipRatio}" +
-                   $"\nSmallShipRatio = {SmallShipRatio}\nDisableVoxelSupport = {DisableVoxelSupport}\nDisableGridDamageSupport = {DisableGridDamageSupport}" +
-                   $"\nDebug = {Debug}\nAltRecharge = {AltRecharge}\nVersion = {Version}\nSenderId = {SenderId}";
-        }
-
-    }
-
-    [ProtoContract]
-    public class ModulatorBlockSettings
+    public class ProtoModulatorState
     {
         [ProtoMember(1)]
         public bool Enabled = true;
@@ -185,78 +189,119 @@ namespace DefenseShields
     }
 
     [ProtoContract]
-    public class StateData
+    public class ProtoModulatorSettings
     {
         [ProtoMember(1)]
-        public PacketType Type = PacketType.STATE;
+        public bool Enabled = true;
 
         [ProtoMember(2)]
-        public long EntityId = 0;
+        public bool ModulateVoxels = true;
 
         [ProtoMember(3)]
-        public ulong Sender = 0;
+        public bool ModulateGrids = false;
 
-        [ProtoMember(4)]
-        public ShieldState State = null;
+        [ProtoMember(4), DefaultValue(-1)]
+        public int ModulateDamage = 100;
 
-        public StateData() { } // empty ctor is required for deserialization
-
-        public StateData(ulong sender, long entityId, ShieldState state)
+        public override string ToString()
         {
-            Type = PacketType.STATE;
-            Sender = sender;
-            EntityId = entityId;
-            State = state;
-        }
-
-        public StateData(ulong sender, long entityId, PacketType action)
-        {
-            Type = action;
-            Sender = sender;
-            EntityId = entityId;
-            State = null;
+            return $"Enabled = {Enabled}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nModulateDamage = {ModulateDamage}";
         }
     }
 
     [ProtoContract]
-    public class PacketData
+    public class ProtoO2GeneratorState
     {
         [ProtoMember(1)]
-        public PacketType Type = PacketType.SETTINGS;
+        public bool Pressurized = false;
 
-        [ProtoMember(2)]
-        public long EntityId = 0;
+        [ProtoMember(2), DefaultValue(-1)]
+        public float DefaultO2 = 0;
 
-        [ProtoMember(3)]
-        public ulong Sender = 0;
+        [ProtoMember(3), DefaultValue(-1)]
+        public double ShieldVolume = 0;
 
-        [ProtoMember(4)]
-        public DefenseShieldsModSettings Settings = null;
+        [ProtoMember(4), DefaultValue(-1)]
+        public double VolFilled = 0;
 
-        public PacketData() { } // empty ctor is required for deserialization
+        [ProtoMember(5), DefaultValue(-1)]
+        public double O2Level = 0;
 
-        public PacketData(ulong sender, long entityId, DefenseShieldsModSettings settings)
+        public override string ToString()
         {
-            Type = PacketType.SETTINGS;
-            Sender = sender;
-            EntityId = entityId;
-            Settings = settings;
-        }
+            return $"";
 
-        public PacketData(ulong sender, long entityId, PacketType action)
-        {
-            Type = action;
-            Sender = sender;
-            EntityId = entityId;
-            Settings = null;
         }
     }
 
     [ProtoContract]
-    public class EnforceData
+    public class ProtoO2GeneratorSettings
     {
         [ProtoMember(1)]
-        public PacketType Type = PacketType.ENFORCE;
+        public bool Enabled = true;
+
+        [ProtoMember(2)]
+        public bool ModulateVoxels = true;
+
+        [ProtoMember(3)]
+        public bool ModulateGrids = false;
+
+        [ProtoMember(4), DefaultValue(-1)]
+        public int ModulateDamage = 100;
+
+        public override string ToString()
+        {
+            return $"Enabled = {Enabled}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nModulateDamage = {ModulateDamage}";
+        }
+    }
+
+    [ProtoContract]
+    public class ProtoEnhancerState
+    {
+        [ProtoMember(1)]
+        public bool Enabled = true;
+
+        [ProtoMember(2)]
+        public bool ModulateVoxels = true;
+
+        [ProtoMember(3)]
+        public bool ModulateGrids = false;
+
+        [ProtoMember(4), DefaultValue(-1)]
+        public int ModulateDamage = 100;
+
+        public override string ToString()
+        {
+            return $"Enabled = {Enabled}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nModulateDamage = {ModulateDamage}";
+        }
+    }
+
+    [ProtoContract]
+    public class ProtoEnhancerSettings
+    {
+        [ProtoMember(1)]
+        public bool Enabled = true;
+
+        [ProtoMember(2)]
+        public bool ModulateVoxels = true;
+
+        [ProtoMember(3)]
+        public bool ModulateGrids = false;
+
+        [ProtoMember(4), DefaultValue(-1)]
+        public int ModulateDamage = 100;
+
+        public override string ToString()
+        {
+            return $"Enabled = {Enabled}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nModulateDamage = {ModulateDamage}";
+        }
+    }
+
+    [ProtoContract]
+    public class DataEnforce
+    {
+        [ProtoMember(1)]
+        public PacketType Type = PacketType.Enforce;
 
         [ProtoMember(2)]
         public long EntityId = 0;
@@ -267,17 +312,17 @@ namespace DefenseShields
         [ProtoMember(4)]
         public DefenseShieldsEnforcement Enforce = null;
 
-        public EnforceData() { } // empty ctor is required for deserialization
+        public DataEnforce() { } // empty ctor is required for deserialization
 
-        public EnforceData(ulong sender, long entityId, DefenseShieldsEnforcement enforce)
+        public DataEnforce(ulong sender, long entityId, DefenseShieldsEnforcement enforce)
         {
-            Type = PacketType.ENFORCE;
+            Type = PacketType.Enforce;
             Sender = sender;
             EntityId = entityId;
             Enforce = enforce;
         }
 
-        public EnforceData(ulong sender, long entityId, PacketType action)
+        public DataEnforce(ulong sender, long entityId, PacketType action)
         {
             Type = action;
             Sender = sender;
@@ -287,10 +332,10 @@ namespace DefenseShields
     }
 
     [ProtoContract]
-    public class ModulatorData
+    public class DataControllerState
     {
         [ProtoMember(1)]
-        public PacketType Type = PacketType.MODULATOR;
+        public PacketType Type = PacketType.Controllerstate;
 
         [ProtoMember(2)]
         public long EntityId = 0;
@@ -299,19 +344,53 @@ namespace DefenseShields
         public ulong Sender = 0;
 
         [ProtoMember(4)]
-        public ModulatorBlockSettings Settings = null;
+        public ProtoControllerState State = null;
 
-        public ModulatorData() { } // empty ctor is required for deserialization
+        public DataControllerState() { } // empty ctor is required for deserialization
 
-        public ModulatorData(ulong sender, long entityId, ModulatorBlockSettings settings)
+        public DataControllerState(ulong sender, long entityId, ProtoControllerState state)
         {
-            Type = PacketType.MODULATOR;
+            Type = PacketType.Controllerstate;
+            Sender = sender;
+            EntityId = entityId;
+            State = state;
+        }
+
+        public DataControllerState(ulong sender, long entityId, PacketType action)
+        {
+            Type = action;
+            Sender = sender;
+            EntityId = entityId;
+            State = null;
+        }
+    }
+
+    [ProtoContract]
+    public class DataControllerSettings
+    {
+        [ProtoMember(1)]
+        public PacketType Type = PacketType.Controllersettings;
+
+        [ProtoMember(2)]
+        public long EntityId = 0;
+
+        [ProtoMember(3)]
+        public ulong Sender = 0;
+
+        [ProtoMember(4)]
+        public ProtoControllerSettings Settings = null;
+
+        public DataControllerSettings() { } // empty ctor is required for deserialization
+
+        public DataControllerSettings(ulong sender, long entityId, ProtoControllerSettings settings)
+        {
+            Type = PacketType.Controllersettings;
             Sender = sender;
             EntityId = entityId;
             Settings = settings;
         }
 
-        public ModulatorData(ulong sender, long entityId, PacketType action)
+        public DataControllerSettings(ulong sender, long entityId, PacketType action)
         {
             Type = action;
             Sender = sender;
@@ -319,11 +398,221 @@ namespace DefenseShields
             Settings = null;
         }
     }
+
+    [ProtoContract]
+    public class DataModulatorState
+    {
+        [ProtoMember(1)]
+        public PacketType Type = PacketType.Modulatorstate;
+
+        [ProtoMember(2)]
+        public long EntityId = 0;
+
+        [ProtoMember(3)]
+        public ulong Sender = 0;
+
+        [ProtoMember(4)]
+        public ProtoModulatorState State = null;
+
+        public DataModulatorState() { } // empty ctor is required for deserialization
+
+        public DataModulatorState(ulong sender, long entityId, ProtoModulatorState state)
+        {
+            Type = PacketType.Modulatorsettings;
+            Sender = sender;
+            EntityId = entityId;
+            State = state;
+        }
+
+        public DataModulatorState(ulong sender, long entityId, PacketType action)
+        {
+            Type = action;
+            Sender = sender;
+            EntityId = entityId;
+            State = null;
+        }
+    }
+
+    [ProtoContract]
+    public class DataModulatorSettings
+    {
+        [ProtoMember(1)]
+        public PacketType Type = PacketType.Modulatorsettings;
+
+        [ProtoMember(2)]
+        public long EntityId = 0;
+
+        [ProtoMember(3)]
+        public ulong Sender = 0;
+
+        [ProtoMember(4)]
+        public ProtoModulatorSettings Settings = null;
+
+        public DataModulatorSettings() { } // empty ctor is required for deserialization
+
+        public DataModulatorSettings(ulong sender, long entityId, ProtoModulatorSettings settings)
+        {
+            Type = PacketType.Modulatorsettings;
+            Sender = sender;
+            EntityId = entityId;
+            Settings = settings;
+        }
+
+        public DataModulatorSettings(ulong sender, long entityId, PacketType action)
+        {
+            Type = action;
+            Sender = sender;
+            EntityId = entityId;
+            Settings = null;
+        }
+    }
+
+    [ProtoContract]
+    public class DataO2GeneratorState
+    {
+        [ProtoMember(1)]
+        public PacketType Type = PacketType.O2Generatorstate;
+
+        [ProtoMember(2)]
+        public long EntityId = 0;
+
+        [ProtoMember(3)]
+        public ulong Sender = 0;
+
+        [ProtoMember(4)]
+        public ProtoO2GeneratorState State = null;
+
+        public DataO2GeneratorState() { } // empty ctor is required for deserialization
+
+        public DataO2GeneratorState(ulong sender, long entityId, ProtoO2GeneratorState state)
+        {
+            Type = PacketType.O2Generatorstate;
+            Sender = sender;
+            EntityId = entityId;
+            State = state;
+        }
+
+        public DataO2GeneratorState(ulong sender, long entityId, PacketType action)
+        {
+            Type = action;
+            Sender = sender;
+            EntityId = entityId;
+            State = null;
+        }
+    }
+
+    [ProtoContract]
+    public class DataO2GeneratorSettings
+    {
+        [ProtoMember(1)]
+        public PacketType Type = PacketType.O2Generatorsettings;
+
+        [ProtoMember(2)]
+        public long EntityId = 0;
+
+        [ProtoMember(3)]
+        public ulong Sender = 0;
+
+        [ProtoMember(4)]
+        public ProtoO2GeneratorSettings Settings = null;
+
+        public DataO2GeneratorSettings() { } // empty ctor is required for deserialization
+
+        public DataO2GeneratorSettings(ulong sender, long entityId, ProtoO2GeneratorSettings settings)
+        {
+            Type = PacketType.O2Generatorsettings;
+            Sender = sender;
+            EntityId = entityId;
+            Settings = settings;
+        }
+
+        public DataO2GeneratorSettings(ulong sender, long entityId, PacketType action)
+        {
+            Type = action;
+            Sender = sender;
+            EntityId = entityId;
+            Settings = null;
+        }
+    }
+
+    [ProtoContract]
+    public class DataEnhancerState
+    {
+        [ProtoMember(1)]
+        public PacketType Type = PacketType.Enhancerstate;
+
+        [ProtoMember(2)]
+        public long EntityId = 0;
+
+        [ProtoMember(3)]
+        public ulong Sender = 0;
+
+        [ProtoMember(4)]
+        public ProtoEnhancerState State = null;
+
+        public DataEnhancerState() { } // empty ctor is required for deserialization
+
+        public DataEnhancerState(ulong sender, long entityId, ProtoEnhancerState state)
+        {
+            Type = PacketType.Enhancerstate;
+            Sender = sender;
+            EntityId = entityId;
+            State = state;
+        }
+
+        public DataEnhancerState(ulong sender, long entityId, PacketType action)
+        {
+            Type = action;
+            Sender = sender;
+            EntityId = entityId;
+            State = null;
+        }
+    }
+
+    [ProtoContract]
+    public class DataEnhancerSettings
+    {
+        [ProtoMember(1)]
+        public PacketType Type = PacketType.Enhancersettings;
+
+        [ProtoMember(2)]
+        public long EntityId = 0;
+
+        [ProtoMember(3)]
+        public ulong Sender = 0;
+
+        [ProtoMember(4)]
+        public ProtoEnhancerSettings Settings = null;
+
+        public DataEnhancerSettings() { } // empty ctor is required for deserialization
+
+        public DataEnhancerSettings(ulong sender, long entityId, ProtoEnhancerSettings settings)
+        {
+            Type = PacketType.Enhancersettings;
+            Sender = sender;
+            EntityId = entityId;
+            Settings = settings;
+        }
+
+        public DataEnhancerSettings(ulong sender, long entityId, PacketType action)
+        {
+            Type = action;
+            Sender = sender;
+            EntityId = entityId;
+            Settings = null;
+        }
+    }
+
     public enum PacketType : byte
     {
-        STATE,
-        SETTINGS,
-        ENFORCE,
-        MODULATOR,
+        Enforce,
+        Controllerstate,
+        Controllersettings,
+        Modulatorsettings,
+        Modulatorstate,
+        O2Generatorsettings,
+        O2Generatorstate,
+        Enhancersettings,
+        Enhancerstate,
     }
 }
