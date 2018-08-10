@@ -21,8 +21,9 @@ namespace DefenseShields
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
     public class Session : MySessionComponentBase
     {
-        private uint _tick;
+        public uint Tick;
 
+        public const ushort PacketIdEmitterState = 62516;
         public const ushort PacketIdO2GeneratorState = 62517; 
         public const ushort PacketIdEnhancerState = 62518;
         public const ushort PacketIdControllerState = 62519; 
@@ -68,7 +69,7 @@ namespace DefenseShields
         public readonly Guid EnhancerStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811503");
         public readonly Guid O2GeneratorStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811504");
         public readonly Guid ControllerStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811505");
-        public readonly Guid EmitterSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811506");
+        public readonly Guid EmitterStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811506");
         public readonly Guid DisplaySettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811507");
         public readonly Guid ControllerSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
         public readonly Guid ModulatorSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811509");
@@ -149,7 +150,7 @@ namespace DefenseShields
         {
             try
             {
-                _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+                Tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
 
                 for (int i = 0; i < Components.Count; i++) Components[i].DeformEnabled = false;
                 if (SphereOnCamera.Length != Components.Count) Array.Resize(ref SphereOnCamera, Components.Count);
@@ -165,7 +166,7 @@ namespace DefenseShields
                     }
                 }
 
-                if (!DefinitionsLoaded && _tick > 100)
+                if (!DefinitionsLoaded && Tick > 100)
                 {
                     DefinitionsLoaded = true;
                     UtilsStatic.GetDefinitons();
@@ -489,7 +490,6 @@ namespace DefenseShields
                 }
 
                 var logic = ent.GameLogic.GetAs<DefenseShields>();
-
                 if (logic == null) return;
 
                 switch (data.Type)
@@ -504,7 +504,7 @@ namespace DefenseShields
                                 Enforcements.UpdateEnforcement(data.Enforce);
                                 logic.DsSet.SaveSettings();
                                 EnforceInit = true;
-                                Log.Line($"client accepted enforcement");
+                                if (Enforced.Debug == 1) Log.Line($"client accepted enforcement");
                                 if (Enforced.Debug == 1) Log.Line($"Client EnforceInit Complete with enforcements:\n{data.Enforce}");
                             }
                             else PacketizeEnforcements(logic.Shield, data.Enforce.SenderId);
@@ -533,7 +533,6 @@ namespace DefenseShields
                 }
 
                 var logic = ent.GameLogic.GetAs<DefenseShields>();
-
                 if (logic == null) return;
 
                 switch (data.Type)
@@ -544,9 +543,18 @@ namespace DefenseShields
 
                             if (Enforced.Debug == 1) Log.Line($"Packet State Packet received:- data:\n{data.State}");
                             logic.UpdateState(data.State);
-                            if (IsServer)
+
+                            if (IsServer && logic.OldEmitterId != data.EntityId) ControllerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                            else
                             {
-                                ControllerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                                IMyEntity emitter;
+                                MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out emitter);
+                                if (emitter != null)
+                                {
+                                    logic.Emitter = (IMyUpgradeModule)emitter;
+                                    logic.OldEmitterId = data.EntityId;
+                                }
+                                else Log.Line($"Emitter not found! This is a multiplayer bug, please report");
                             }
                         }
                         break;
@@ -574,7 +582,6 @@ namespace DefenseShields
                 }
 
                 var logic = ent.GameLogic.GetAs<DefenseShields>();
-
                 if (logic == null) return;
 
                 switch (data.Type)
@@ -583,12 +590,9 @@ namespace DefenseShields
                         {
                             if (data.Settings == null) return;
 
-                            if (Enforced.Debug == 1) Log.Line($"Packet Settings Packet received:- data:\n{data.Settings}");
                             logic.UpdateSettings(data.Settings);
-                            if (!logic.GridIsMobile) logic.UpdateDimensions = true;
-                            logic.DsSet.SaveSettings();
-                            if (IsServer)
-                                ControllerSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                            if (IsServer) ControllerSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                            if (Enforced.Debug == 1) Log.Line($"Packet Settings Packet received:- data:\n{data.Settings}");
                         }
                         break;
                 }
@@ -614,7 +618,6 @@ namespace DefenseShields
                 }
 
                 var logic = ent.GameLogic.GetAs<Modulators>();
-
                 if (logic == null) return;
 
                 switch (data.Type)
@@ -623,13 +626,9 @@ namespace DefenseShields
                         {
                             if (data.Settings == null) return;
 
-                            if (Enforced.Debug == 1) Log.Line($"Modulator received:\n{data.Settings}");
                             logic.UpdateSettings(data.Settings);
-                            logic.ModSet.SaveSettings();
-                            logic.ServerUpdate = true;
-
-                            if (IsServer)
-                                ModulatorSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                            if (IsServer) ModulatorSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                            if (Enforced.Debug == 1) Log.Line($"Modulator received:\n{data.Settings}");
                         }
                         break;
                 }
@@ -666,16 +665,13 @@ namespace DefenseShields
 
                         if (Enforced.Debug == 1) Log.Line($"Modulator received:\n{data.State}");
                         logic.UpdateState(data.State);
-                        logic.ModState.SaveState();
-                        logic.ServerUpdate = true;
 
-                        if (IsServer)
-                            ModulatorStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                        if (IsServer) ModulatorStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                     }
                         break;
                 }
             }
-            catch (Exception ex) { Log.Line($"Exception in ModulatorSettingsReceived: {ex}"); }
+            catch (Exception ex) { Log.Line($"Exception in ModulatorStateReceived: {ex}"); }
         }
 
         private static void O2GeneratorStateReceived(byte[] bytes)
@@ -691,7 +687,7 @@ namespace DefenseShields
                 IMyEntity ent;
                 if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
                 {
-                    Log.Line($"Modulator PacketReceive; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    Log.Line($"O2Generator PacketReceive; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
                     return;
                 }
 
@@ -705,17 +701,15 @@ namespace DefenseShields
                     {
                         if (data.State == null) return;
 
-                        if (Enforced.Debug == 1) Log.Line($"Modulator received:\n{data.State}");
+                        if (Enforced.Debug == 1) Log.Line($"O2Generator received:\n{data.State}");
                         logic.UpdateState(data.State);
-                        logic.O2State.SaveState();
 
-                        if (IsServer)
-                            O2GeneratorStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                        if (IsServer) O2GeneratorStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                     }
                         break;
                 }
             }
-            catch (Exception ex) { Log.Line($"Exception in ModulatorSettingsReceived: {ex}"); }
+            catch (Exception ex) { Log.Line($"Exception in O2GeneratorStateReceived: {ex}"); }
         }
 
         private static void EnhancerStateReceived(byte[] bytes)
@@ -731,7 +725,7 @@ namespace DefenseShields
                 IMyEntity ent;
                 if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
                 {
-                    Log.Line($"Modulator PacketReceive; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    Log.Line($"Enhancer PacketReceive; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
                     return;
                 }
 
@@ -745,17 +739,53 @@ namespace DefenseShields
                     {
                         if (data.State == null) return;
 
-                        if (Enforced.Debug == 1) Log.Line($"Modulator received:\n{data.State}");
+                        if (Enforced.Debug == 1) Log.Line($"Enhancer received:\n{data.State}");
                         logic.UpdateState(data.State);
-                        logic.EnhState.SaveState();
 
-                        if (IsServer)
-                            EnhancerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                        if (IsServer) EnhancerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                     }
                         break;
                 }
             }
-            catch (Exception ex) { Log.Line($"Exception in ModulatorSettingsReceived: {ex}"); }
+            catch (Exception ex) { Log.Line($"Exception in EnhancerStateReceived: {ex}"); }
+        }
+
+        private static void EmitterStateReceived(byte[] bytes)
+        {
+            try
+            {
+                if (bytes.Length <= 2) return;
+
+                var data = MyAPIGateway.Utilities.SerializeFromBinary<DataEmitterState>(bytes); // this will throw errors on invalid data
+
+                if (data == null) return;
+
+                IMyEntity ent;
+                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
+                {
+                    Log.Line($"Emitter PacketReceive; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    return;
+                }
+
+                var logic = ent.GameLogic.GetAs<Emitters>();
+
+                if (logic == null) return;
+
+                switch (data.Type)
+                {
+                    case PacketType.Emitterstate:
+                    {
+                        if (data.State == null) return;
+
+                        if (Enforced.Debug == 1) Log.Line($"Emitter received:\n{data.State}");
+                        logic.UpdateState(data.State);
+
+                        if (IsServer) EmitterStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                    }
+                        break;
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in EmitterStateReceived: {ex}"); }
         }
 
         public static void PacketizeEnforcements(IMyCubeBlock block, ulong senderId)
@@ -805,6 +835,13 @@ namespace DefenseShields
             var data = new DataEnhancerState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
             ModulatorSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        public static void PacketizeEmitterState(IMyCubeBlock block, ProtoEmitterState state)
+        {
+            var data = new DataEmitterState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+           EmitterStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
         }
 
         public static void ControllerStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
@@ -932,6 +969,28 @@ namespace DefenseShields
                 if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
 
                     MyAPIGateway.Multiplayer.SendMessageTo(PacketIdEnhancerState, bytes, p.SteamUserId);
+            }
+            players.Clear();
+        }
+
+        public static void EmitterStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        {
+            var localSteamId = MyAPIGateway.Multiplayer.MyId;
+            var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
+            distSq += 3000; // some safety padding, avoid desync
+            distSq *= distSq;
+
+            var players = Instance.Players;
+            players.Clear();
+            MyAPIGateway.Players.GetPlayers(players);
+
+            foreach (var p in players)
+            {
+                var id = p.SteamUserId;
+
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
+
+                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdEmitterState, bytes, p.SteamUserId);
             }
             players.Clear();
         }

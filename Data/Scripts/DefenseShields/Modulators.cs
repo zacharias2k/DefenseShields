@@ -22,11 +22,10 @@ namespace DefenseShields
     public class Modulators : MyGameLogicComponent
     {
 
-        public bool ServerUpdate;
         private bool _hierarchyDelayed;
         internal int RotationTime;
         internal bool MainInit;
-        internal bool Online;
+        internal bool SettingsUpdated;
 
         private uint _tick;
         private uint _hierarchyTick = 1;
@@ -53,6 +52,131 @@ namespace DefenseShields
         public IMyUpgradeModule Modulator => (IMyUpgradeModule)Entity;
 
         internal DSUtils Dsutil1 = new DSUtils();
+
+        public override void UpdateBeforeSimulation()
+        {
+            try
+            {
+                if (Modulator.CubeGrid.Physics == null) return;
+                _tick = Session.Instance.Tick;
+                var isServer = Session.IsServer;
+
+                if (!ModulatorReady(isServer)) return;
+
+                Timing();
+
+                if (!Session.DedicatedServer && UtilsStatic.DistanceCheck(Modulator, 1000, 1))
+                {
+                    var blockCam = Modulator.PositionComp.WorldVolume;
+                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && Modulator.IsWorking) BlockMoveAnimation();
+                }
+
+                if (isServer)
+                {
+                    if (ShieldComp?.GetSubGrids != null && !ShieldComp.GetSubGrids.Equals(ModulatorComp.GetSubGrids))
+                        ModulatorComp.GetSubGrids = ShieldComp.GetSubGrids;
+
+                    if (_count == 0)
+                    {
+                        if (ShieldComp == null) Modulator.CubeGrid.Components.TryGet(out ShieldComp);
+                        if (ShieldComp == null) return;
+                        if (!ModState.State.Online) NeedUpdate();
+
+                        Modulator.RefreshCustomInfo();
+
+                        if (Modulator.CustomData != ModulatorComp.ModulationPassword)
+                        {
+                            ModulatorComp.ModulationPassword = Modulator.CustomData;
+                            ModSet.SaveSettings();
+                            if (Session.Enforced.Debug == 1) Log.Line($"Updating modulator password");
+                        }
+                    }
+                }
+                else if (_count == 0) Modulator.RefreshCustomInfo();
+
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
+        }
+
+        private bool ModulatorReady(bool server)
+        {
+            if (server)
+            {
+                if (ModulatorComp == null)
+                {
+                    Modulator.CubeGrid.Components.Add(new ModulatorGridComponent(this));
+                }
+                else if (ModulatorComp != null && ModulatorComp.Modulators == null) ModulatorComp.Modulators = this;
+                else if (ModulatorComp != null && ModulatorComp.Modulators != this)
+                {
+                    if (ModState.State.Online)
+                    {
+                        ModState.State.Online = false;
+                        NeedUpdate(true);
+                    }
+                    return false;
+                }
+
+                if (Sink.CurrentInputByType(GId) < 0.01f || Modulator?.CubeGrid == null || !Modulator.Enabled || !Modulator.IsFunctional)
+                {
+                    if (Modulator != null && _tick % 300 == 0)
+                    {
+                        Modulator.RefreshCustomInfo();
+                        Modulator.ShowInToolbarConfig = false;
+                        Modulator.ShowInToolbarConfig = true;
+                    }
+
+                    if (ModState.State.Online)
+                    {
+                        ModState.State.Online = false;
+                        NeedUpdate(true);
+                    }
+                    return false;
+                }
+            }
+            else if (!ModState.State.Online || !Modulator.IsFunctional) return false;
+
+            return _subpartRotor != null || BlockMoveAnimationReset();
+        }
+
+        private void Timing()
+        {
+            if (_count++ == 59)
+            {
+                _count = 0;
+                _lCount++;
+                if (_lCount == 10) _lCount = 0;
+            }
+
+            if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
+            {
+                Modulator.RefreshCustomInfo();
+                Modulator.ShowInToolbarConfig = false;
+                Modulator.ShowInToolbarConfig = true;
+            }
+
+            if ((_lCount == 1 || _lCount == 6) && _count == 1)
+            {
+                if (SettingsUpdated)
+                {
+                    SettingsUpdated = false;
+                    ModSet.SaveSettings();
+                }
+            }
+
+            if (_hierarchyDelayed && _tick > _hierarchyTick + 9)
+            {
+                if (Session.Enforced.Debug == 1) Log.Line($"Delayed tick: {_tick} - hierarchytick: {_hierarchyTick}");
+                _hierarchyDelayed = false;
+                HierarchyChanged();
+            }
+        }
+
+        private void NeedUpdate(bool force = false)
+        {
+            if (!force) ModState.State.Online = true;
+            ModState.NetworkUpdate();
+        }
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
@@ -85,7 +209,6 @@ namespace DefenseShields
                 CreateUi();
                 ModUi.ComputeDamage(this, ModUi.GetDamage(Modulator));
 
-                ShieldComp?.DefenseShields?.GetModulationInfo();
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
                 PowerInit();
                 ((MyCubeGrid)Modulator.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
@@ -135,18 +258,11 @@ namespace DefenseShields
         private void StorageSetup()
         {
             Storage = Modulator.Storage;
-            if (ModSet == null)
-            {
-                ModSet = new ModulatorSettings(Modulator);
-                ModSet.SaveSettings();
-            }
+            if (ModSet == null) ModSet = new ModulatorSettings(Modulator);
 
-            if (ModState == null)
-            {
-                ModState = new ModulatorState(Modulator);
-                ModState.SaveState();
-            }
+            if (ModState == null) ModState = new ModulatorState(Modulator);
             ModSet.LoadSettings();
+            ModState.LoadState();
             //ModState.LoadState();
             UpdateSettings(ModSet.Settings);
         }
@@ -174,79 +290,6 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in HierarchyChanged: {ex}"); }
         }
 
-        public override void UpdateBeforeSimulation()
-        {
-            try
-            {
-                if (Modulator.CubeGrid.Physics == null) return;
-                _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-
-                if (Sink.CurrentInputByType(GId) < 0.01f || Modulator?.CubeGrid == null || !Modulator.Enabled)
-                {
-                    if (Modulator != null && _tick % 300 == 0)
-                    {
-                        Modulator.RefreshCustomInfo();
-                        Modulator.ShowInToolbarConfig = false;
-                        Modulator.ShowInToolbarConfig = true;
-                    }
-                    Online = false;
-                    return;
-                }
-
-                Timing();
-
-                if (!Session.DedicatedServer && UtilsStatic.DistanceCheck(Modulator, 1000, 1))
-                {
-                    var blockCam = Modulator.PositionComp.WorldVolume;
-                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && Modulator.IsWorking) BlockMoveAnimation();
-                }
-
-                if (ShieldComp?.GetSubGrids != null && !ShieldComp.GetSubGrids.Equals(ModulatorComp.GetSubGrids))
-                    ModulatorComp.GetSubGrids = ShieldComp.GetSubGrids;
-
-                if (_count == 0)
-                {
-                    Online = true;
-                    if (ShieldComp == null) Modulator.CubeGrid.Components.TryGet(out ShieldComp);
-                    if (ShieldComp == null) return;
-
-                    Modulator.RefreshCustomInfo();
-
-                    if (Modulator.CustomData != ModulatorComp.ModulationPassword)
-                    {
-                        ModulatorComp.ModulationPassword = Modulator.CustomData;
-                        ModSet.SaveSettings();
-                        if (Session.Enforced.Debug == 1) Log.Line($"Updating modulator password");
-                    }
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
-        }
-
-        private void Timing()
-        {
-            if (_count++ == 59)
-            {
-                _count = 0;
-                _lCount++;
-                if (_lCount == 10) _lCount = 0;
-            }
-
-            if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
-            {
-                Modulator.RefreshCustomInfo();
-                Modulator.ShowInToolbarConfig = false;
-                Modulator.ShowInToolbarConfig = true;
-            }
-
-            if (_hierarchyDelayed && _tick > _hierarchyTick + 9)
-            {
-                if (Session.Enforced.Debug == 1) Log.Line($"Delayed tick: {_tick} - hierarchytick: {_hierarchyTick}");
-                _hierarchyDelayed = false;
-                HierarchyChanged();
-            }
-        }
-
         #region Create UI
         private void CreateUi()
         {
@@ -256,17 +299,22 @@ namespace DefenseShields
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
-            stringBuilder.Append("[Online]: " + Online +
-                                 "\n[Remodulating Shield]: " + (ShieldComp != null && Online) +
+            stringBuilder.Append("[Online]: " + ModState.State.Online +
+                                 "\n[Remodulating Shield]: " + (ModState.State.Online) +
                                  "\n" +
-                                 "\n[Energy Protection]: " + ModulatorComp.Energy.ToString("0") + "%" +
-                                 "\n[Kinetic Protection]: " + ModulatorComp.Kinetic.ToString("0") + "%");
+                                 "\n[Energy Protection]: " + ModState.State.ModulateEnergy.ToString("0") + "%" +
+                                 "\n[Kinetic Protection]: " + ModState.State.ModulateKinetic.ToString("0") + "%");
         }
 
-        private void BlockMoveAnimationReset()
+        private bool BlockMoveAnimationReset()
         {
+            if (_subpartRotor == null)
+            {
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                if (_subpartRotor == null) return false;
+            }
             _subpartRotor.Subparts.Clear();
-            Entity.TryGetSubpart("Rotor", out _subpartRotor);
+            return true;
         }
 
         private void BlockMoveAnimation()
@@ -277,26 +325,17 @@ namespace DefenseShields
             _subpartRotor.PositionComp.LocalMatrix = rotationMatrix;
         }
 
-        public bool Enabled
-        {
-            get { return ModSet.Settings.Enabled; }
-            set { ModSet.Settings.Enabled = value; }
-        }
-
         public void UpdateSettings(ProtoModulatorSettings newSettings)
         {
-            Enabled = newSettings.Enabled;
-            ModulatorComp.Enabled = newSettings.Enabled;
-            ModulatorComp.Voxels = newSettings.ModulateVoxels;
-            ModulatorComp.Grids = newSettings.ModulateGrids;
-            ModulatorComp.Damage = newSettings.ModulateDamage;
+            SettingsUpdated = true;
+            ModSet.Settings = newSettings;
             if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings for modulator");
         }
 
-        public void UpdateState(ProtoModulatorState state)
+        public void UpdateState(ProtoModulatorState newState)
         {
-
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdateState - ModId [{Modulator.EntityId}]:\n{state}");
+            ModState.State = newState;
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdateState - ModId [{Modulator.EntityId}]:\n{ModState.State}");
         }
 
         public override void OnRemovedFromScene()

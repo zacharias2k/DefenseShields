@@ -3,7 +3,6 @@ using System.Text;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
-using VRage.Game;
 using VRage.Game.ModAPI;
 using VRage.Game.Components;
 using System.Linq;
@@ -21,15 +20,17 @@ namespace DefenseShields
             try
             {
                 if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
+                var isServer = Session.IsServer;
+                var isDedicated = Session.DedicatedServer;
 
-                if (!ShieldReady(Session.IsServer)) return;
+                if (!ShieldReady(isServer)) return;
 
                 if (DsState.State.Online)
                 {
-                    if (ComingOnline) ComingOnlineSetup(Session.IsServer, Session.DedicatedServer);
-                    if (!Session.DedicatedServer && _tick % 60 == 0) HudCheck();
+                    if (ComingOnline) ComingOnlineSetup(isServer, isDedicated);
+                    if (!isDedicated && _tick % 60 == 0) HudCheck();
 
-                    if (Session.IsServer)
+                    if (isServer)
                     {
                         var createHeTiming = _count == 6 && (_lCount == 1 || _lCount == 6);
                         if (GridIsMobile && createHeTiming) CreateHalfExtents();
@@ -64,12 +65,16 @@ namespace DefenseShields
 
         private bool ShieldReady(bool server)
         {
-            _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+            _tick = Session.Instance.Tick;
             if (server)
             {
                 if (!ControllerFunctional() || ShieldWaking())
                 {
-                    if (PrevShieldActive) ShieldChangeState();
+                    if (PrevShieldActive)
+                    {
+                        ShieldChangeState();
+                        PrevShieldActive = false;
+                    }
                     return false;
                 }
 
@@ -201,7 +206,17 @@ namespace DefenseShields
                 }
             }
 
-            if ((_lCount == 1 || _lCount == 6) && _count == 1 && _blockEvent) BlockChanged(true);
+            if ((_lCount == 1 || _lCount == 6) && _count == 1)
+            {
+                if (SettingsUpdated)
+                {
+                    SettingsUpdated = false;
+                    DsSet.SaveSettings();
+                    Log.Line($"save settings");
+                }
+                if (_blockEvent) BlockChanged(true);
+            }
+
             if (Session.IsServer && (_shapeEvent || FitChanged)) CheckExtents(true);
 
             // damage counter hack - tempoary
@@ -520,7 +535,7 @@ namespace DefenseShields
             if (!DsState.State.ControllerGridAccess) return "[Invalid Owner]";
             if (DsState.State.Suspended || DsState.State.Mode == 4) return "[Controller Standby]";
             if (DsState.State.Sleeping) return "[Docked]";
-            if (ShieldComp.EmitterMode < 0 || !DsState.State.EmitterWorking) return "[Emitter Failure]";
+            if (!DsState.State.EmitterWorking) return "[Emitter Failure]";
             if (!DsState.State.Online) return "[Shield Down]";
             return "[Shield Up]";
         }
@@ -589,12 +604,10 @@ namespace DefenseShields
         public void GetModulationInfo()
         {
             Shield.CubeGrid.Components.TryGet(out ModComp);
-            if (ModComp != null)
+            if (ShieldComp.Modulator != null)
             {
-                var energyDamage = ModComp.KineticProtection * 0.01f;
-                var kineticDamage = ModComp.EnergyProtection * 0.01f;
-                DsState.State.ModulateEnergy = energyDamage;
-                DsState.State.ModulateKinetic = kineticDamage;
+                DsState.State.ModulateEnergy = ShieldComp.Modulator.ModState.State.ModulateEnergy * 0.01f;
+                DsState.State.ModulateKinetic = ShieldComp.Modulator.ModState.State.ModulateKinetic * 0.01f;
             }
             else
             {
@@ -607,7 +620,7 @@ namespace DefenseShields
 
         public void GetEnhancernInfo()
         {
-            if (ShieldComp.Enhancer != null && ShieldComp.Enhancer.Online)
+            if (ShieldComp.Enhancer != null && ShieldComp.Enhancer.EnhState.State.Online)
             {
                 DsState.State.EnhancerPowerMulti = 2;
                 DsState.State.EnhancerProtMulti = 1000;

@@ -26,6 +26,8 @@ namespace DefenseShields
         private uint _shapeTick;
         internal uint UnsuspendTick;
 
+        internal long OldEmitterId;
+
         internal float ImpactSize { get; set; } = 9f;
         internal float Absorb { get; set; }
         private float _power = 0.001f;
@@ -74,6 +76,7 @@ namespace DefenseShields
         private int _oldBlockCount;
         private int _shieldRatio;
 
+        internal bool SettingsUpdated;
         internal bool DeformEnabled;
         internal bool ExplosionEnabled;
         internal bool ControlBlockWorking;
@@ -223,6 +226,7 @@ namespace DefenseShields
         //private readonly StructureBuilder _structureBuilder = new StructureBuilder();
 
         internal IMyUpgradeModule Shield => (IMyUpgradeModule)Entity;
+        internal IMyUpgradeModule Emitter;
         internal ShieldType ShieldMode;
         internal MyEntity ShieldEnt;
         private MyEntity _shellPassive;

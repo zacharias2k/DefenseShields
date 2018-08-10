@@ -19,7 +19,6 @@ namespace DefenseShields
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OxygenGenerator), false, "DSSupergen")]
     public class O2Generators : MyGameLogicComponent
     {
-        private uint _tick;
         private int _count = -1;
         private int _airIPercent = -1;
         private int _lCount;
@@ -27,10 +26,10 @@ namespace DefenseShields
         internal int AnimationLoop;
         internal int TranslationTime;
 
+        private double _shieldVolFilled;
         private double _oldShieldVol;
         internal float EmissiveIntensity;
 
-        public bool ServerUpdate;
         internal bool AllInited;
         internal bool Suspended;
         internal bool IsStatic;
@@ -83,15 +82,10 @@ namespace DefenseShields
                 O2Set.SaveSettings();
             }
             */
-            if (O2State == null)
-            {
-                O2State = new O2GeneratorState(O2Generator);
-
-                O2State.SaveState();
-            }
+            if (O2State == null) O2State = new O2GeneratorState(O2Generator);
+            O2State.LoadState();
 
             //O2Set.LoadSettings();
-            //O2State.LoadState();
             //UpdateSettings(O2Set.Settings);
         }
 
@@ -100,33 +94,27 @@ namespace DefenseShields
             try
             {
                 IsStatic = O2Generator.CubeGrid.Physics.IsStatic;
-                _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
 
                 if (!O2GenReady(Session.IsServer)) return;
                 Timing();
 
                 if (_count > 0) return;
+
                 if (Session.IsServer)
                 {
                     Pressurize();
+                    NeedUpdate();
                 }
                 else UpdateVisuals();
 
-                if (ServerUpdate)
-                {
-                    Log.Line($"server update");
-                }
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
 
         private bool O2GenReady(bool server)
         {
-            ServerUpdate = false;
-
             if (server)
             {
-                O2State.State.Pressurized = false;
                 if (!AllInited && !InitO2Generator() || Suspend()) return false;
                 if (!BlockWorking() || ShieldComp?.DefenseShields == null || !ShieldComp.DefenseShields.DsState.State.Online || ShieldComp.DefenseShields.DsState.State.Lowered)
                 {
@@ -135,6 +123,12 @@ namespace DefenseShields
                         Timing();
                         UpdateAirEmissives(0f);
                         O2Generator.RefreshCustomInfo();
+                        if (O2State.State.Pressurized)
+                        {
+                            O2State.State.Pressurized = false;
+                            NeedUpdate(true);
+
+                        }
                     }
                     return false;
                 }
@@ -146,7 +140,6 @@ namespace DefenseShields
                     Timing();
                     UpdateAirEmissives(0f);
                     O2Generator.RefreshCustomInfo();
-                    if (O2State.State.Pressurized) ServerUpdate = true;
                     return false;
                 }
             }
@@ -157,14 +150,7 @@ namespace DefenseShields
         {
             var sc = ShieldComp;
             var shieldFullVol = sc.ShieldVolume;
-            var increaseO2ByFPercent = sc.DefenseShields.DsState.State.IncreaseO2ByFPercent;
-            var newO2Level = sc.DefaultO2 + increaseO2ByFPercent;
-
-            if (!O2State.State.O2Level.Equals(newO2Level)) ServerUpdate = true;
-
             var startingO2Fpercent = sc.DefaultO2 + sc.DefenseShields.DsState.State.IncreaseO2ByFPercent;
-
-            O2State.State.DefaultO2 = sc.DefaultO2;
 
             if (shieldFullVol < _oldShieldVol)
             {
@@ -176,19 +162,13 @@ namespace DefenseShields
             {
                 var ratio = _oldShieldVol / shieldFullVol;
                 startingO2Fpercent = startingO2Fpercent * ratio;
-                ServerUpdate = true;
             }
             _oldShieldVol = shieldFullVol;
-            var newVolVilled = shieldFullVol * O2State.State.O2Level;
-            if (!O2State.State.VolFilled.Equals(newVolVilled)) ServerUpdate = true;
-            O2State.State.VolFilled = shieldFullVol * startingO2Fpercent;
-            if (!Session.DedicatedServer) UpdateAirEmissives(O2State.State.O2Level);
 
-            var shieldVolStillEmpty = shieldFullVol - O2State.State.VolFilled;
-            if (O2State.State.VolFilled > 0) O2State.State.Pressurized = true;
-            O2State.State.O2Level = startingO2Fpercent;
+            _shieldVolFilled = shieldFullVol * startingO2Fpercent;
+            UpdateAirEmissives(startingO2Fpercent);
 
-            Log.Line($"{O2State.State.O2Level} - {O2State.State.DefaultO2} - {O2State.State.VolFilled} - {O2State.State.ShieldVolume} - {O2State.State.Pressurized}");
+            var shieldVolStillEmpty = shieldFullVol - _shieldVolFilled;
             if (!(shieldVolStillEmpty > 0)) return;
 
             var amount = _inventory.CurrentVolume.RawValue;
@@ -196,28 +176,42 @@ namespace DefenseShields
             if (amount - 10.3316326531 > 0)
             {
                 _inventory.RemoveItems(0, 2700);
-                O2State.State.VolFilled += 10.3316326531 * 261.333333333;
-                ServerUpdate = true;
+                _shieldVolFilled += 10.3316326531 * 261.333333333;
             }
             else
             {
                 _inventory.RemoveItems(0, _inventory.CurrentVolume);
-                O2State.State.VolFilled += amount * 261.333333333;
-                ServerUpdate = true;
+                _shieldVolFilled += amount * 261.333333333;
             }
-            if (O2State.State.VolFilled > shieldFullVol) O2State.State.VolFilled = shieldFullVol;
+            if (_shieldVolFilled > shieldFullVol) _shieldVolFilled = shieldFullVol;
 
-            var shieldVolPercentFull = O2State.State.VolFilled * 100.0;
+            var shieldVolPercentFull = _shieldVolFilled * 100.0;
             var fPercentToAddToDefaultO2Level = shieldVolPercentFull / shieldFullVol * 0.01 - sc.DefaultO2;
 
-            increaseO2ByFPercent = fPercentToAddToDefaultO2Level;
+            sc.DefenseShields.DsState.State.IncreaseO2ByFPercent = fPercentToAddToDefaultO2Level;
             sc.O2Updated = true;
-            if (Session.Enforced.Debug == 1) Log.Line($"default:{ShieldComp.DefaultO2} - Filled/(Max):{O2State.State.VolFilled}/({shieldFullVol}) - ShieldO2Level:{increaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center)}");
+            if (Session.Enforced.Debug == 1) Log.Line($"default:{ShieldComp.DefaultO2} - Filled/(Max):{O2State.State.VolFilled}/({shieldFullVol}) - ShieldO2Level:{sc.DefenseShields.DsState.State.IncreaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center)}");
         }
 
         private void UpdateVisuals()
         {
             UpdateAirEmissives(O2State.State.O2Level);
+        }
+
+        private void NeedUpdate(bool force = false)
+        {
+            var o2State = O2State.State;
+            var conState = ShieldComp.DefenseShields.DsState.State;
+            var o2Level = conState.IncreaseO2ByFPercent + ShieldComp.DefaultO2;
+            if (force || !o2State.VolFilled.Equals(_shieldVolFilled) || !o2State.DefaultO2.Equals(ShieldComp.DefaultO2) || !o2State.ShieldVolume.Equals(ShieldComp.ShieldVolume) || o2State.O2Level.Equals(o2Level))
+            {
+                if (!force) o2State.Pressurized = true;
+                o2State.VolFilled = _shieldVolFilled;
+                o2State.DefaultO2 = ShieldComp.DefaultO2;
+                o2State.O2Level = o2Level;
+                o2State.ShieldVolume = ShieldComp.ShieldVolume;
+                O2State.NetworkUpdate();
+            }
         }
 
         private bool InitO2Generator()
@@ -332,10 +326,10 @@ namespace DefenseShields
             }
         }
 
-        public void UpdateState(ProtoO2GeneratorState state)
+        public void UpdateState(ProtoO2GeneratorState newState)
         {
-
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdateState - O2GenId [{O2Generator.EntityId}]:\n{state}");
+            O2State.State = newState;
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdateState - O2GenId [{O2Generator.EntityId}]:\n{newState}");
         }
 
         public override void OnRemovedFromScene()

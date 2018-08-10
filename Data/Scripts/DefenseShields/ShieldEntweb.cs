@@ -75,7 +75,7 @@ namespace DefenseShields
 
             foreach (var eShield in EnemyShields) pruneList.Add(eShield);
 
-            var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || ModComp == null || ModComp.ModulateVoxels;
+            var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || ShieldComp.Modulator == null || ShieldComp.Modulator.ModSet.Settings.ModulateVoxels;
             var entChanged = false;
 
             _enablePhysics = false;
@@ -290,7 +290,7 @@ namespace DefenseShields
         private Ent EntType(IMyEntity ent)
         {
             if (ent == null) return Ent.Ignore;
-            if (ent is MyVoxelBase && (Session.Enforced.DisableVoxelSupport == 1 || ModComp == null || ModComp.ModulateVoxels || !GridIsMobile)) return Ent.Ignore;
+            if (ent is MyVoxelBase && (Session.Enforced.DisableVoxelSupport == 1 || ShieldComp.Modulator == null || ShieldComp.Modulator.ModSet.Settings.ModulateVoxels || !GridIsMobile)) return Ent.Ignore;
             //if (ent is IMyGunBaseUser) return Ent.Weapon;
 
             if (ent is IMyCharacter)
@@ -303,7 +303,7 @@ namespace DefenseShields
             }
             if (ent is IMyCubeGrid)
             {
-                if (ModComp != null && ModComp.ModulateGrids || Session.Enforced.DisableGridDamageSupport == 1) return Ent.Ignore;
+                if (ShieldComp.Modulator != null && ShieldComp.Modulator.ModSet.Settings.ModulateGrids || Session.Enforced.DisableGridDamageSupport == 1) return Ent.Ignore;
 
                 var grid = ent as IMyCubeGrid;
                 ModulatorGridComponent modComp;

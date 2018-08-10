@@ -91,7 +91,7 @@ namespace DefenseShields
         {
             ModulatorGridComponent modComp;
             Shield.CubeGrid.Components.TryGet(out modComp);
-            if (modComp == null || modComp.ModulateVoxels || Session.Enforced.DisableVoxelSupport == 1) return false;
+            if (ShieldComp.Modulator == null || ShieldComp.Modulator.ModSet.Settings.ModulateVoxels || Session.Enforced.DisableVoxelSupport == 1) return false;
 
             var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange);
             var pruneList = new List<MyVoxelBase>();
@@ -123,9 +123,11 @@ namespace DefenseShields
             ShieldComp.EmitterEvent = false;
             if (!ShieldComp.EmittersWorking)
             {
+                DsState.State.EmitterWorking = false;
                 _genericDownLoop = 0;
                 if (Session.Enforced.Debug == 1) Log.Line($"EmitterEvent: detected an emitter event and no emitter is working, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
+            DsState.State.EmitterWorking = true;
         }
 
         private void FailureConditions()
@@ -159,10 +161,12 @@ namespace DefenseShields
                 {
                     if (!ShieldComp.EmittersWorking)
                     {
+                        DsState.State.EmitterWorking = false;
                         _genericDownLoop = 0;
                     }
                     else
                     {
+                        DsState.State.EmitterWorking = true;
                         _genericDownLoop = -1;
                     }
                 }
@@ -287,7 +291,6 @@ namespace DefenseShields
                     Shield.RefreshCustomInfo();
                     if (Session.Enforced.Debug == 1) Log.Line($"Sleep: controller detected sleeping emitter, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 }
-
                 DsState.State.Sleeping = true;
                 return DsState.State.Sleeping;
             }
@@ -370,7 +373,7 @@ namespace DefenseShields
                     GetModulationInfo();
                     UnsuspendTick = _tick + 1800;
                     _updateRender = true;
-                    if (Session.Enforced.Debug == 1) Log.Line($"Unsuspended: CM:{ShieldMode} - EM:{ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 1) Log.Line($"Unsuspended: CM:{ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.Suspended = false;
             }
@@ -429,11 +432,14 @@ namespace DefenseShields
         public void UpdateSettings(ProtoControllerSettings newSettings)
         {
             DsSet.Settings = newSettings;
+            SettingsUpdated = true;
+            if (!GridIsMobile) UpdateDimensions = true;
             if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings - ShieldId [{Shield.EntityId}]:\n{newSettings}");
         }
 
         public void UpdateState(ProtoControllerState state)
         {
+            DsState.State = state;
             if (!DsState.State.Online)
             {
                 if (DsState.State.Overload) PlayerMessages(PlayerNotice.OverLoad);

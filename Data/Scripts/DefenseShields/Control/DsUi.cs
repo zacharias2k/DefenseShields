@@ -53,7 +53,7 @@ namespace DefenseShields
             if (comp == null) return;
             comp.DsSet.Settings.Rate = newValue;
             comp.DsSet.NetworkUpdate();
-            comp.DsSet.SaveSettings();
+            comp.SettingsUpdated = true;
         }
 
         public static bool GetExtend(IMyTerminalBlock block)
@@ -69,7 +69,7 @@ namespace DefenseShields
             comp.DsSet.Settings.ExtendFit = newValue;
             comp.FitChanged = true;
             comp.DsSet.NetworkUpdate();
-            comp.DsSet.SaveSettings();
+            comp.SettingsUpdated = true;
         }
 
         public static bool GetSphereFit(IMyTerminalBlock block)
@@ -85,7 +85,7 @@ namespace DefenseShields
             comp.DsSet.Settings.SphereFit = newValue;
             comp.FitChanged = true;
             comp.DsSet.NetworkUpdate();
-            comp.DsSet.SaveSettings();
+            comp.SettingsUpdated = true;
         }
 
         public static bool GetFortify(IMyTerminalBlock block)
@@ -101,7 +101,7 @@ namespace DefenseShields
             comp.DsSet.Settings.FortifyShield = newValue;
             comp.FitChanged = true;
             comp.DsSet.NetworkUpdate();
-            comp.DsSet.SaveSettings();
+            comp.SettingsUpdated = true;
         }
 
         public static float GetWidth(IMyTerminalBlock block)
@@ -118,7 +118,7 @@ namespace DefenseShields
             comp.FitChanged = true;
             comp.UpdateDimensions = true;
             comp.DsSet.NetworkUpdate();
-            comp.DsSet.SaveSettings();
+            comp.SettingsUpdated = true;
         }
 
         public static float GetHeight(IMyTerminalBlock block)
@@ -135,7 +135,7 @@ namespace DefenseShields
             comp.FitChanged = true;
             comp.UpdateDimensions = true;
             comp.DsSet.NetworkUpdate();
-            comp.DsSet.SaveSettings();
+            comp.SettingsUpdated = true;
         }
 
         public static float GetDepth(IMyTerminalBlock block)
@@ -152,7 +152,7 @@ namespace DefenseShields
             comp.FitChanged = true;
             comp.UpdateDimensions = true;
             comp.DsSet.NetworkUpdate();
-            comp.DsSet.SaveSettings();
+            comp.SettingsUpdated = true;
         }
 
         public static bool GetBatteries(IMyTerminalBlock block)
@@ -167,7 +167,7 @@ namespace DefenseShields
             if (comp == null) return;
             comp.DsSet.Settings.UseBatteries = newValue;
             comp.DsSet.NetworkUpdate();
-            comp.DsSet.SaveSettings();
+            comp.SettingsUpdated = true;
         }
 
         public static bool GetHidePassive(IMyTerminalBlock block)
@@ -182,7 +182,7 @@ namespace DefenseShields
             if (comp == null) return;
             comp.DsSet.Settings.PassiveInvisible = newValue;
             comp.DsSet.NetworkUpdate();
-            comp.DsSet.SaveSettings();
+            comp.SettingsUpdated = true;
         }
 
         public static bool GetHideActive(IMyTerminalBlock block)
@@ -197,7 +197,7 @@ namespace DefenseShields
             if (comp == null) return;
             comp.DsSet.Settings.ActiveInvisible = newValue;
             comp.DsSet.NetworkUpdate();
-            comp.DsSet.SaveSettings();
+            comp.SettingsUpdated = true;
         }
 
         public static bool GetSendToHud(IMyTerminalBlock block)
@@ -212,7 +212,7 @@ namespace DefenseShields
             if (comp == null) return;
             comp.DsSet.Settings.SendToHud = newValue;
             comp.DsSet.NetworkUpdate();
-            comp.DsSet.SaveSettings();
+            comp.SettingsUpdated = true;
         }
 
         public static bool GetRaiseShield(IMyTerminalBlock block)
@@ -227,7 +227,7 @@ namespace DefenseShields
             if (comp == null) return;
             comp.DsSet.Settings.RaiseShield = newValue;
             comp.DsSet.NetworkUpdate();
-            comp.DsSet.SaveSettings();
+            comp.SettingsUpdated = true;
         }
 
         public static long GetShell(IMyTerminalBlock block)
@@ -244,7 +244,7 @@ namespace DefenseShields
             comp.SelectPassiveShell();
             comp.UpdatePassiveModel();
             comp.DsSet.NetworkUpdate();
-            comp.DsSet.SaveSettings();
+            comp.SettingsUpdated = true;
         }
 
         public static void ListShell(List<MyTerminalControlComboBoxItem> shellList)

@@ -102,6 +102,8 @@ namespace DefenseShields
         public int Mode = 4;
         [ProtoMember(23)]
         public bool EmitterWorking = false;
+        [ProtoMember(24), DefaultValue(-1)]
+        public long EmitterId;
 
         public override string ToString()
         {
@@ -171,20 +173,20 @@ namespace DefenseShields
     public class ProtoModulatorState
     {
         [ProtoMember(1)]
-        public bool Enabled = true;
+        public bool Online;
 
-        [ProtoMember(2)]
-        public bool ModulateVoxels = true;
+        [ProtoMember(2), DefaultValue(1f)]
+        public float ModulateEnergy = 1f;
 
-        [ProtoMember(3)]
-        public bool ModulateGrids = false;
+        [ProtoMember(3), DefaultValue(1)]
+        public float ModulateKinetic = 1f;
 
-        [ProtoMember(4), DefaultValue(-1)]
+        [ProtoMember(4), DefaultValue(100)]
         public int ModulateDamage = 100;
 
         public override string ToString()
         {
-            return $"Enabled = {Enabled}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nModulateDamage = {ModulateDamage}";
+            return $"Enabled = {Online}\nModulateVoxels";
         }
     }
 
@@ -192,7 +194,7 @@ namespace DefenseShields
     public class ProtoModulatorSettings
     {
         [ProtoMember(1)]
-        public bool Enabled = true;
+        public bool Unused = true;
 
         [ProtoMember(2)]
         public bool ModulateVoxels = true;
@@ -205,7 +207,7 @@ namespace DefenseShields
 
         public override string ToString()
         {
-            return $"Enabled = {Enabled}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nModulateDamage = {ModulateDamage}";
+            return $"Enabled = {Unused}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nModulateDamage = {ModulateDamage}";
         }
     }
 
@@ -259,20 +261,14 @@ namespace DefenseShields
     public class ProtoEnhancerState
     {
         [ProtoMember(1)]
-        public bool Enabled = true;
+        public bool Online;
 
         [ProtoMember(2)]
-        public bool ModulateVoxels = true;
-
-        [ProtoMember(3)]
-        public bool ModulateGrids = false;
-
-        [ProtoMember(4), DefaultValue(-1)]
-        public int ModulateDamage = 100;
+        public bool Backup;
 
         public override string ToString()
         {
-            return $"Enabled = {Enabled}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nModulateDamage = {ModulateDamage}";
+            return $"";
         }
     }
 
@@ -294,6 +290,36 @@ namespace DefenseShields
         public override string ToString()
         {
             return $"Enabled = {Enabled}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nModulateDamage = {ModulateDamage}";
+        }
+    }
+
+    [ProtoContract]
+    public class ProtoEmitterState
+    {
+        [ProtoMember(1)]
+        public bool Online;
+
+        [ProtoMember(2)]
+        public bool Los;
+
+        [ProtoMember(3)]
+        public bool Link;
+
+        [ProtoMember(4)]
+        public bool Suspend;
+
+        [ProtoMember(5)]
+        public bool Backup;
+
+        [ProtoMember(6)]
+        public bool Compatible;
+
+        [ProtoMember(7), DefaultValue(-1)]
+        public int Mode;
+
+        public override string ToString()
+        {
+            return $"";
         }
     }
 
@@ -603,6 +629,40 @@ namespace DefenseShields
         }
     }
 
+    [ProtoContract]
+    public class DataEmitterState
+    {
+        [ProtoMember(1)]
+        public PacketType Type = PacketType.Emitterstate;
+
+        [ProtoMember(2)]
+        public long EntityId = 0;
+
+        [ProtoMember(3)]
+        public ulong Sender = 0;
+
+        [ProtoMember(4)]
+        public ProtoEmitterState State = null;
+
+        public DataEmitterState() { } // empty ctor is required for deserialization
+
+        public DataEmitterState(ulong sender, long entityId, ProtoEmitterState state)
+        {
+            Type = PacketType.Emitterstate;
+            Sender = sender;
+            EntityId = entityId;
+            State = state;
+        }
+
+        public DataEmitterState(ulong sender, long entityId, PacketType action)
+        {
+            Type = action;
+            Sender = sender;
+            EntityId = entityId;
+            State = null;
+        }
+    }
+
     public enum PacketType : byte
     {
         Enforce,
@@ -614,5 +674,6 @@ namespace DefenseShields
         O2Generatorstate,
         Enhancersettings,
         Enhancerstate,
+        Emitterstate
     }
 }

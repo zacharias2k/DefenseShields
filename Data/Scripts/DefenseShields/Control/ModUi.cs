@@ -41,26 +41,28 @@ namespace DefenseShields
             comp.ModSet.Settings.ModulateDamage = (int)newValue;
             comp.ModSet.NetworkUpdate();
             comp.ModSet.SaveSettings();
+            comp.ModState.NetworkUpdate();
+            comp.ModState.SaveState();
         }
 
         public static void ComputeDamage(Modulators comp, float newValue)
         {
             if (newValue < 100)
             {
-                comp.ModulatorComp.Energy = 200 - newValue;
-                comp.ModulatorComp.Kinetic = newValue;
+                comp.ModState.State.ModulateEnergy = 200 - newValue;
+                comp.ModState.State.ModulateKinetic = newValue;
             }
             else if (newValue > 100)
             {
-                comp.ModulatorComp.Energy = 200 - newValue;
-                comp.ModulatorComp.Kinetic = newValue;
+                comp.ModState.State.ModulateEnergy = 200 - newValue;
+                comp.ModState.State.ModulateKinetic = newValue;
             }
             else
             {
-                comp.ModulatorComp.Kinetic = newValue;
-                comp.ModulatorComp.Energy = newValue;
+                comp.ModState.State.ModulateKinetic = newValue;
+                comp.ModState.State.ModulateEnergy = newValue;
             }
-            comp.ModulatorComp.ModulateDamage = (int)newValue;
+            comp.ModState.State.ModulateDamage = (int)newValue;
         }
 
         public static bool GetVoxels(IMyTerminalBlock block)
@@ -74,7 +76,6 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<Modulators>();
             if (comp == null) return;
             comp.ModSet.Settings.ModulateVoxels = newValue;
-            comp.ModulatorComp.ModulateVoxels = newValue;
             comp.ModSet.NetworkUpdate();
             comp.ModSet.SaveSettings();
         }
@@ -90,7 +91,6 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<Modulators>();
             if (comp == null) return;
             comp.ModSet.Settings.ModulateGrids = newValue;
-            comp.ModulatorComp.ModulateGrids = newValue;
             comp.ModSet.NetworkUpdate();
             comp.ModSet.SaveSettings();
         }

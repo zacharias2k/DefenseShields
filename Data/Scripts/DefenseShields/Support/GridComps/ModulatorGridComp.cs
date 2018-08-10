@@ -7,15 +7,8 @@ namespace DefenseShields
     public class ModulatorGridComponent : MyEntityComponentBase
     {
         private static List<ModulatorGridComponent> gridModulator = new List<ModulatorGridComponent>();
-        public readonly Modulators Modulators;
+        public Modulators Modulators;
         public string Password;
-        public bool Enabled;
-        public bool Voxels;
-        public bool Grids;
-        public int Damage;
-        public float Energy;
-        public float Kinetic;
-
 
         public ModulatorGridComponent(Modulators modulators)
         {
@@ -64,46 +57,12 @@ namespace DefenseShields
 
         public HashSet<IMyCubeGrid> GetSubGrids { get; set; } = new HashSet<IMyCubeGrid>();
 
+        public bool ModulatorOnline => Modulators.ModState.State.Online;
+
         public string ModulationPassword
         {
             get { return Password; }
             set { Password = value; }
-        }
-
-        public bool ModulationEnabled
-        {
-            get { return Enabled; }
-            set { Enabled = value; }
-        }
-
-        public bool ModulateVoxels
-        {
-            get { return Voxels; }
-            set { Voxels = value; }
-        }
-
-        public bool ModulateGrids
-        {
-            get { return Grids; }
-            set { Grids = value; }
-        }
-
-        public int ModulateDamage
-        {
-            get { return Damage; }
-            set { Damage = value; }
-        }
-
-        public float EnergyProtection
-        {
-            get { return Energy; }
-            set { Energy = value; }
-        }
-
-        public float KineticProtection
-        {
-            get { return Kinetic; }
-            set { Kinetic = value; }
         }
 
         public override string ComponentTypeDebugString

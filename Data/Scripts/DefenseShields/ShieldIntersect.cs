@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using DefenseShields.Support;
-using Havok;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
 using VRage.Game.Components;

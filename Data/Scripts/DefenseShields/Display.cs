@@ -50,7 +50,7 @@ namespace DefenseShields
 
         public override void UpdateBeforeSimulation()
         {
-            _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+            _tick = Session.Instance.Tick;
             Timing();
             if (ShieldComp == null) Display.CubeGrid.Components.TryGet(out ShieldComp);
             if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.DefenseShields.DsState.State.Online) return;

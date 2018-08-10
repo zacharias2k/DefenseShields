@@ -27,9 +27,6 @@ namespace DefenseShields
 
         private float _power = 0.01f;
 
-        internal bool Online;
-        internal bool Backup;
-
         private readonly Dictionary<long, Enhancers> _enhancers = new Dictionary<long, Enhancers>();
         public IMyUpgradeModule Enhancer => (IMyUpgradeModule)Entity;
         public MyModStorageComponentBase Storage { get; set; }
@@ -42,6 +39,80 @@ namespace DefenseShields
         private MyEntitySubpart _subpartRotor;
 
         private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
+
+        public override void UpdateBeforeSimulation()
+        {
+            try
+            {
+                if (Enhancer.CubeGrid.Physics == null) return;
+                _tick = Session.Instance.Tick;
+                var isServer = Session.IsServer;
+
+                if (!EnhancerReady(isServer)) return;
+
+                Timing();
+
+                if (!Session.DedicatedServer && UtilsStatic.DistanceCheck(Enhancer, 1000, 1))
+                {
+                    var blockCam = Enhancer.PositionComp.WorldVolume;
+                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && Enhancer.IsWorking) BlockMoveAnimation();
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
+        }
+
+        private bool EnhancerReady(bool server)
+        {
+            if (server)
+            {
+                if (ShieldComp?.DefenseShields == null || ShieldComp.Enhancer != null && ShieldComp.Enhancer != this ||Sink.CurrentInputByType(GId) < 0.01f ||
+                    Enhancer?.CubeGrid == null || !Enhancer.Enabled || !Enhancer.IsFunctional)
+                {
+                    if (Enhancer != null && _tick % 300 == 0)
+                    {
+                        Enhancer.RefreshCustomInfo();
+                        Enhancer.ShowInToolbarConfig = false;
+                        Enhancer.ShowInToolbarConfig = true;
+                    }
+
+                    if (EnhState.State.Online)
+                    {
+                        EnhState.State.Online = false;
+                        NeedUpdate(true);
+                    }
+
+                    return false;
+                }
+                if (ShieldComp.Enhancer == null) ShieldComp.Enhancer = this;
+                EnhState.State.Online = true;
+            }
+            else if (!EnhState.State.Online || !Enhancer.IsFunctional) return false;
+
+            return _subpartRotor != null || BlockMoveAnimationReset();
+        }
+
+        private void Timing()
+        {
+            if (_count++ == 59)
+            {
+                _count = 0;
+                _lCount++;
+                if (_lCount == 10) _lCount = 0;
+            }
+
+            if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
+            {
+                Enhancer.RefreshCustomInfo();
+                Enhancer.ShowInToolbarConfig = false;
+                Enhancer.ShowInToolbarConfig = true;
+            }
+        }
+
+        private void NeedUpdate(bool force = false)
+        {
+            if (!force) EnhState.State.Online = true;
+            EnhState.NetworkUpdate();
+        }
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
@@ -76,12 +147,9 @@ namespace DefenseShields
         {
             Storage = Enhancer.Storage;
             //if (EnhSet == null) EnhSet = new EnhancerSettings(Enhancer);
-            if (EnhState == null)
-            {
-                EnhState = new EnhancerState(Enhancer);
-                EnhState.SaveState();
-            }
+            if (EnhState == null) EnhState = new EnhancerState(Enhancer);
             EnhState.LoadState();
+            
             //EnhSet.LoadSettings();
             //UpdateSettings(EnhSet.Settings);
             //EnhState.LoadSettings();
@@ -124,85 +192,15 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }
 
-        public override void UpdateBeforeSimulation()
+        private bool BlockMoveAnimationReset()
         {
-            try
+            if (_subpartRotor == null)
             {
-                if (Enhancer.CubeGrid.Physics == null) return;
-                _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-
-                if (!EnhancerReady()) return;
-
-                Timing();
-
-                if (!Session.DedicatedServer && UtilsStatic.DistanceCheck(Enhancer, 1000, 1))
-                {
-                    var blockCam = Enhancer.PositionComp.WorldVolume;
-                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && Enhancer.IsWorking) BlockMoveAnimation();
-                }
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                if (_subpartRotor == null) return false;
             }
-            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
-        }
-
-        private bool EnhancerReady()
-        {
-            if (ShieldComp?.DefenseShields == null || Sink.CurrentInputByType(GId) < 0.01f || Enhancer?.CubeGrid == null || !Enhancer.Enabled || !Enhancer.IsFunctional || !Enhancer.IsWorking)
-            {
-                if (Enhancer != null && _tick % 300 == 0)
-                {
-                    Enhancer.RefreshCustomInfo();
-                    Enhancer.ShowInToolbarConfig = false;
-                    Enhancer.ShowInToolbarConfig = true;
-                }
-                Enhancer?.CubeGrid?.Components.TryGet(out ShieldComp);
-                Online = false;
-                return Online;
-            }
-
-            if (ShieldComp.Enhancer == null)
-            {
-                ShieldComp.Enhancer = this;
-            }
-            else if (ShieldComp.Enhancer != this)
-            {
-                Backup = true;
-
-                if (Enhancer != null && _tick % 300 == 0)
-                {
-                    Enhancer.RefreshCustomInfo();
-                    Enhancer.ShowInToolbarConfig = false;
-                    Enhancer.ShowInToolbarConfig = true;
-                }
-                Online = false;
-                return Online;
-            }
-
-            Backup = false;
-            Online = true;
-            return Online;
-        }
-
-        private void Timing()
-        {
-            if (_count++ == 59)
-            {
-                _count = 0;
-                _lCount++;
-                if (_lCount == 10) _lCount = 0;
-            }
-
-            if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
-            {
-                Enhancer.RefreshCustomInfo();
-                Enhancer.ShowInToolbarConfig = false;
-                Enhancer.ShowInToolbarConfig = true;
-            }
-        }
-
-        private void BlockMoveAnimationReset()
-        {
             _subpartRotor.Subparts.Clear();
-            Entity.TryGetSubpart("Rotor", out _subpartRotor);
+            return true;
         }
 
         private void BlockMoveAnimation()
@@ -226,29 +224,31 @@ namespace DefenseShields
             {
                 stringBuilder.Append("[Controller Link]: False");
             }
-            else if (!Backup && ShieldComp.DefenseShields.ShieldMode == DefenseShields.ShieldType.Station)
+            else if (!EnhState.State.Backup && ShieldComp.DefenseShields.ShieldMode == DefenseShields.ShieldType.Station)
             {
-                stringBuilder.Append("[Online]: " + Online +
+                stringBuilder.Append("[Online]: " + EnhState.State.Online +
                                      "\n" +
-                                     "\n[Amplifying Shield]: " + Online +
+                                     "\n[Amplifying Shield]: " + EnhState.State.Online +
                                      "\n[Enhancer Mode]: Fortress" +
                                      "\n[Bonsus] MaxHP, Repel Grids");
             }
-            else if (!Backup)
+            else if (!EnhState.State.Backup)
             {
-                stringBuilder.Append("[Online]: " + Online +
+                stringBuilder.Append("[Online]: " + EnhState.State.Online +
                                      "\n" +
-                                     "\n[Amplifying Shield]: " + (ShieldComp != null && Online) +
+                                     "\n[Amplifying Shield]: " + EnhState.State.Online +
                                      "\n[Enhancer Mode]: " + _power.ToString("0") + "%");
             }
             else
             {
-                stringBuilder.Append("[Backup]: " + Backup);
+                stringBuilder.Append("[Backup]: " + EnhState.State.Backup);
             }
         }
 
         public void UpdateState(ProtoEnhancerState newState)
         {
+            EnhState.State = newState;
+
             if (Session.Enforced.Debug == 1) Log.Line($"UpdateState: EnhancerId [{Enhancer.EntityId}]");
         }
 

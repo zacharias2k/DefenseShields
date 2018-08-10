@@ -58,6 +58,7 @@ namespace DefenseShields
 
         internal Definition Definition;
         internal DSUtils Dsutil1 = new DSUtils();
+        internal EmitterState EmiState;
 
         public IMyUpgradeModule Emitter => (IMyUpgradeModule)Entity;
         public EmitterType EmitterMode;
@@ -76,35 +77,6 @@ namespace DefenseShields
             Small,
         };
 
-        public override void Init(MyObjectBuilder_EntityBase objectBuilder)
-        {
-            try
-            {
-                base.Init(objectBuilder);
-                PowerPreInit();
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-
-            }
-            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
-        }
-
-        public override void UpdateOnceBeforeFrame()
-        {
-            base.UpdateOnceBeforeFrame();
-            try
-            {
-                if (Emitter.CubeGrid.Physics == null) return;
-                Session.Instance.Emitters.Add(this);
-                _emitters.Add(Entity.EntityId, this);
-                Storage = Emitter.Storage;
-                PowerInit();
-                _myRenderId = Emitter.Render.GetRenderObjectID();
-                SetEmitterType();
-            }
-            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
-        }
-
         public override void UpdateBeforeSimulation()
         {
             try
@@ -112,12 +84,39 @@ namespace DefenseShields
                 if (Emitter.CubeGrid.Physics == null) return;
                 if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
                 IsStatic = Emitter.CubeGrid.IsStatic;
-                _tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+                _tick = Session.Instance.Tick;
+                var isServer = Session.IsServer;
+                var isDedicated = Session.DedicatedServer;
+
                 Timing();
 
-                if (Suspend() || !BlockWorking()) return;
+                if (isServer)
+                {
+                    if (Suspend() || !BlockWorking())
+                    {
+                        if (EmiState.State.Online)
+                        {
+                            EmiState.State.Online = false;
+                            NeedUpdate(true);
+                        }
+                        return;
+                    }
 
-                if (ShieldComp.DefenseShields.DsState.State.Online && !Session.DedicatedServer && UtilsStatic.DistanceCheck(Emitter, 1000, ShieldComp.DefenseShields.BoundingRange))
+                    if (!EmiState.State.Online)
+                    {
+                        NeedUpdate();
+                    }
+                }
+                else
+                {
+                    if (!EmiState.State.Link)
+                    {
+                        if (!EmissiveIntensity.Equals(0)) BlockMoveAnimationReset(true);
+                        return;
+                    }
+                }
+
+                if (!isDedicated && EmiState.State.Link && UtilsStatic.DistanceCheck(Emitter, 1000, ShieldComp.DefenseShields.BoundingRange))
                 {
                     //if (ShieldComp.GridIsMoving && !Compact) BlockParticleUpdate();
 
@@ -130,7 +129,7 @@ namespace DefenseShields
                         BlockMoveAnimation();
                     }
                 }
-                else BlockReset();
+                else if (!isDedicated) BlockReset();
                 if (Session.Enforced.Debug == 1) Dsutil1.StopWatchReport($"PerfMod: EmitterId [{Emitter.EntityId}]", 4);
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
@@ -152,8 +151,24 @@ namespace DefenseShields
             }
         }
 
-        #region Block Animation
+        private void NeedUpdate(bool force = false)
+        {
+            if (!force) EmiState.State.Online = true;
+            EmiState.State.Backup = Backup;
+            EmiState.State.Link = ControllerFound;
+            EmiState.State.Suspend = Suspended;
+            EmiState.State.Mode = (int)EmitterMode;
+            EmiState.State.Compatible = IsStatic && EmitterMode == EmitterType.Station || !IsStatic && EmitterMode != EmitterType.Station;
+            EmiState.NetworkUpdate();
+        }
 
+        public void UpdateState(ProtoEmitterState newState)
+        {
+            EmiState.State = newState;
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdateState - ModId [{Emitter.EntityId}]:\n{EmiState.State}");
+        }
+
+        #region Block Animation
         private void BlockReset(bool force = false)
         {
             //if (_effect != null && !Session.DedicatedServer && !Compact) BlockParticleStop();
@@ -253,177 +268,43 @@ namespace DefenseShields
         */
         #endregion
 
-        private void CheckShieldLineOfSight()
-        {
-            if (!Compact && _subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(false);
-            TookControl = false;
-            _blocksLos.Clear();
-            _noBlocksLos.Clear();
-            _vertsSighted.Clear();
-            var testDist = Definition.FieldDist;
-            var testDir = Emitter.PositionComp.WorldMatrix.Up;
-            if (!Compact) testDir = _subpartRotor.PositionComp.WorldVolume.Center - Emitter.PositionComp.WorldVolume.Center;
-            testDir.Normalize();
-            var testPos = Emitter.PositionComp.WorldVolume.Center + testDir * testDist;
-            _sightPos = testPos;
-            ShieldComp.DefenseShields.ResetShape(false, false);
-
-            MyAPIGateway.Parallel.For(0, ShieldComp.PhysicsOutside.Length, i =>
-            {
-                var hit = Emitter.CubeGrid.RayCastBlocks(testPos, ShieldComp.PhysicsOutside[i]);
-                if (hit.HasValue)
-                {
-                    _blocksLos.Add(i);
-                    return;
-                }
-                _noBlocksLos.Add(i);
-            });
-            if (!IsStatic)
-            {
-                MyAPIGateway.Parallel.For(0, _noBlocksLos.Count, i =>
-                {
-                    const int filter = CollisionLayers.VoxelCollisionLayer;
-                    IHitInfo hitInfo;
-                    var hit = MyAPIGateway.Physics.CastRay(testPos, ShieldComp.PhysicsOutside[_noBlocksLos[i]], out hitInfo, filter);
-                    if (hit) _blocksLos.Add(_noBlocksLos[i]);
-                });
-            }
-            for (int i = 0; i < ShieldComp.PhysicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
-            ShieldComp.EmittersLos = _blocksLos.Count < 530;
-            ShieldComp.CheckEmitters = false;
-            if (Session.Enforced.Debug == 1) Log.Line($"LOS: Mode: {EmitterMode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {ShieldComp.EmittersLos.ToString()} - EmitterId [{Emitter.EntityId}]");
-        }
-
-        private void DrawHelper()
-        {
-            const float lineWidth = 0.025f;
-            var lineDist = Definition.HelperDist;
-
-            foreach (var blocking in _blocksLos)
-            {
-                var blockedDir = ShieldComp.PhysicsOutside[blocking] - _sightPos;
-                blockedDir.Normalize();
-                var blockedPos = _sightPos + blockedDir * lineDist;
-                DsDebugDraw.DrawLineToVec(_sightPos, blockedPos, Color.Black, lineWidth);
-            }
-
-            foreach (var sighted in _vertsSighted)
-            {
-                var sightedDir = ShieldComp.PhysicsOutside[sighted] - _sightPos;
-                sightedDir.Normalize();
-                var sightedPos = _sightPos + sightedDir * lineDist;
-                DsDebugDraw.DrawLineToVec(_sightPos, sightedPos, Color.Blue, lineWidth);
-            }
-            if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("The shield emitter DOES NOT have a CLEAR ENOUGH LINE OF SIGHT to the shield, SHUTTING DOWN.", 960, "Red", Emitter.OwnerId);
-            if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("Blue means clear line of sight, black means blocked......................................................................", 960, "Red", Emitter.OwnerId);
-        }
-
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
             try
             {
-                var compatible = IsStatic && EmitterMode == EmitterType.Station || !IsStatic && EmitterMode != EmitterType.Station;
-
-                if (ShieldComp?.DefenseShields == null || !ControllerFound)
+                var mode = Enum.GetName(typeof(EmitterType), EmiState.State.Mode);
+                if (!EmiState.State.Link)
                 {
                     stringBuilder.Append("[ No Valid Controller ]" +
                                          "\n" +
-                                         "\n[Emitter Type]: " + EmitterMode +
-                                         "\n[Grid Compatible]: " + compatible +
-                                         "\n[Invalid Protocol]: " + (ShieldComp?.DefenseShields == null) +
-                                         "\n[Controller Link]: " + ControllerFound);
+                                         "\n[Emitter Type]: " + mode +
+                                         "\n[Grid Compatible]: " + EmiState.State.Compatible +
+                                         "\n[Controller Link]: " + EmiState.State.Link);
                 }
-                else if (!ShieldComp.DefenseShields.DsState.State.Online)
+                else if (!EmiState.State.Online)
                 {
                     stringBuilder.Append("[ Emitter Offline ]" +
                                          "\n" +
-                                         "\n[Emitter Type]: " + EmitterMode +
-                                         "\n[Grid Compatible]: " + compatible +
-                                         "\n[Controller Link]: " + ShieldComp.DefenseShields.Shield?.IsWorking +
-                                         "\n[Line of Sight]: " + ShieldComp.EmittersLos +
-                                         "\n[Grid Access]: " + ShieldComp.DefenseShields.DsState.State.ControllerGridAccess +
-                                         "\n[Is Suspended]: " + Suspended +
-                                         "\n[Is a Backup]: " + Backup +
-                                         "\n[Is Docked]: " + GoToSleep);
+                                         "\n[Emitter Type]: " + mode +
+                                         "\n[Grid Compatible]: " + EmiState.State.Compatible +
+                                         "\n[Controller Link]: " + EmiState.State.Link +
+                                         "\n[Line of Sight]: " + EmiState.State.Los +
+                                         "\n[Is Suspended]: " + EmiState.State.Suspend +
+                                         "\n[Is a Backup]: " + EmiState.State.Backup);
                 }
                 else
                 {
                     stringBuilder.Append("[ Emitter Online ]" +
                                          "\n" +
-                                         "\n[Emitter Type]: " + EmitterMode +
-                                         "\n[Grid Compatible]: " + compatible +
-                                         "\n[Controller Link]: " + ControllerFound +
-                                         "\n[Line of Sight]: " + ShieldComp.EmittersLos +
-                                         "\n[Grid Access]: " + ShieldComp.DefenseShields.DsState.State.ControllerGridAccess +
-                                         "\n[Is Suspended]: " + Suspended +
-                                         "\n[Is a Backup]: " + Backup +
-                                         "\n[Is Docked]: " + GoToSleep);
+                                         "\n[Emitter Type]: " + mode +
+                                         "\n[Grid Compatible]: " + EmiState.State.Compatible +
+                                         "\n[Controller Link]: " + EmiState.State.Link +
+                                         "\n[Line of Sight]: " + EmiState.State.Los +
+                                         "\n[Is Suspended]: " + EmiState.State.Suspend +
+                                         "\n[Is a Backup]: " + EmiState.State.Backup);
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in AppendingCustomInfo: {ex}"); }
-        }
-
-        private void PowerPreInit()
-        {
-            try
-            {
-                if (Sink == null)
-                {
-                    Sink = new MyResourceSinkComponent();
-                }
-                ResourceInfo = new MyResourceSinkInfo()
-                {
-                    ResourceTypeId = GId,
-                    MaxRequiredInput = 0f,
-                    RequiredInputFunc = () => _power
-                };
-                Sink.Init(MyStringHash.GetOrCompute("Utility"), ResourceInfo);
-                Sink.AddType(ref ResourceInfo);
-                Entity.Components.Add(Sink);
-                Sink.Update();
-            }
-            catch (Exception ex) { Log.Line($"Exception in PowerPreInit: {ex}"); }
-        }
-
-        private void PowerInit()
-        {
-            try
-            {
-                var enableState = Emitter.Enabled;
-                if (enableState)
-                {
-                    Emitter.Enabled = false;
-                    Emitter.Enabled = true;
-                }
-                Sink.Update();
-                if (Session.Enforced.Debug == 1) Log.Line($"PowerInit complete - EmitterId [{Emitter.EntityId}]");
-            }
-            catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
-        }
-
-        private void SetEmitterType()
-        {
-            Definition = DefinitionManager.Get(Emitter.BlockDefinition.SubtypeId);
-            switch (Definition.Name)
-            {
-                case "EmitterST":
-                    EmitterMode = EmitterType.Station;
-                    Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                    break;
-                case "EmitterL":
-                case "EmitterLA":
-                    EmitterMode = EmitterType.Large;
-                    if (Definition.Name == "EmitterLA") Compact = true;
-                    else Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                    break;
-                case "EmitterS":
-                case "EmitterSA":
-                    EmitterMode = EmitterType.Small;
-                    if (Definition.Name == "EmitterSA") Compact = true;
-                    else Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                    break;
-            }
-            Emitter.AppendingCustomInfo += AppendingCustomInfo;
         }
 
         private bool BlockWorking()
@@ -437,9 +318,9 @@ namespace DefenseShields
             var logic = ShieldComp.DefenseShields;
             var losCheckReq = Online && logic.Starting && !logic.DsState.State.Suspended && logic.UnsuspendTick == uint.MinValue;
             if (losCheckReq && (ShieldComp.CheckEmitters || TookControl)) CheckShieldLineOfSight();
-            if (losCheckReq && !ShieldComp.EmittersLos && !Session.DedicatedServer) DrawHelper();
+            //if (losCheckReq && !EmiState.State.Los && !Session.DedicatedServer) DrawHelper();
 
-            BlockIsWorking = ShieldComp.EmittersLos && Emitter.IsWorking && Emitter.IsFunctional;
+            BlockIsWorking = EmiState.State.Los && Emitter.IsWorking && Emitter.IsFunctional;
 
             ShieldComp.EmittersWorking = BlockIsWorking && Online;
 
@@ -591,7 +472,7 @@ namespace DefenseShields
             else if (!myMode)
             {
                 var compMode = ShieldComp.EmitterMode;
-                if (!Suspended && (compMode == 0 && !IsStatic || compMode != 0 && IsStatic) || iStopped)
+                if (!Suspended && (compMode == 0 && !IsStatic || compMode != 0 && IsStatic) || !Suspended && iStopped)
                 {
                     ShieldComp.EmittersSuspended = true;
                     ShieldComp.EmittersWorking = false;
@@ -606,6 +487,8 @@ namespace DefenseShields
                 }
                 Suspended = true;
             }
+
+            if (iStopped) return Suspended;
 
             if (!myShield)
             {
@@ -624,12 +507,176 @@ namespace DefenseShields
                 ShieldComp.EmitterEvent = true;
                 Backup = false;
                 //if (!Compact && _subpartRotor == null) Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                if (Session.Enforced.Debug == 1) Log.Line($"Unsuspend - !otherMode: {Definition.Name} - isStatic:{IsStatic} - myShield:{myShield} - myMode {myMode} - Mode:{EmitterMode} - Station: {ShieldComp.Station} - CompMode: {ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - EmitterId [{Emitter.EntityId}]");
+                if (Session.Enforced.Debug == 1) Log.Line($"Unsuspend - !otherMode: {Definition.Name} - isStatic:{IsStatic} - myShield:{myShield} - myMode {myMode} - Mode:{EmitterMode} - CompMode: {ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - EmitterId [{Emitter.EntityId}]");
             }
             else if (Suspended) return Suspended;
 
             Suspended = false;
             return Suspended;
+        }
+
+        private void CheckShieldLineOfSight()
+        {
+            if (!Compact && _subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(false);
+            TookControl = false;
+            _blocksLos.Clear();
+            _noBlocksLos.Clear();
+            _vertsSighted.Clear();
+            var testDist = Definition.FieldDist;
+            var testDir = Emitter.PositionComp.WorldMatrix.Up;
+            if (!Compact) testDir = _subpartRotor.PositionComp.WorldVolume.Center - Emitter.PositionComp.WorldVolume.Center;
+            testDir.Normalize();
+            var testPos = Emitter.PositionComp.WorldVolume.Center + testDir * testDist;
+            _sightPos = testPos;
+            ShieldComp.DefenseShields.ResetShape(false, false);
+
+            MyAPIGateway.Parallel.For(0, ShieldComp.PhysicsOutside.Length, i =>
+            {
+                var hit = Emitter.CubeGrid.RayCastBlocks(testPos, ShieldComp.PhysicsOutside[i]);
+                if (hit.HasValue)
+                {
+                    _blocksLos.Add(i);
+                    return;
+                }
+                _noBlocksLos.Add(i);
+            });
+            if (!IsStatic)
+            {
+                MyAPIGateway.Parallel.For(0, _noBlocksLos.Count, i =>
+                {
+                    const int filter = CollisionLayers.VoxelCollisionLayer;
+                    IHitInfo hitInfo;
+                    var hit = MyAPIGateway.Physics.CastRay(testPos, ShieldComp.PhysicsOutside[_noBlocksLos[i]], out hitInfo, filter);
+                    if (hit) _blocksLos.Add(_noBlocksLos[i]);
+                });
+            }
+            for (int i = 0; i < ShieldComp.PhysicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
+            EmiState.State.Los = _blocksLos.Count < 530;
+            ShieldComp.CheckEmitters = false;
+            if (Session.Enforced.Debug == 1) Log.Line($"LOS: Mode: {EmitterMode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {EmiState.State.Los.ToString()} - EmitterId [{Emitter.EntityId}]");
+        }
+
+        private void DrawHelper()
+        {
+            const float lineWidth = 0.025f;
+            var lineDist = Definition.HelperDist;
+
+            foreach (var blocking in _blocksLos)
+            {
+                var blockedDir = ShieldComp.PhysicsOutside[blocking] - _sightPos;
+                blockedDir.Normalize();
+                var blockedPos = _sightPos + blockedDir * lineDist;
+                DsDebugDraw.DrawLineToVec(_sightPos, blockedPos, Color.Black, lineWidth);
+            }
+
+            foreach (var sighted in _vertsSighted)
+            {
+                var sightedDir = ShieldComp.PhysicsOutside[sighted] - _sightPos;
+                sightedDir.Normalize();
+                var sightedPos = _sightPos + sightedDir * lineDist;
+                DsDebugDraw.DrawLineToVec(_sightPos, sightedPos, Color.Blue, lineWidth);
+            }
+            if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("The shield emitter DOES NOT have a CLEAR ENOUGH LINE OF SIGHT to the shield, SHUTTING DOWN.", 960, "Red", Emitter.OwnerId);
+            if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("Blue means clear line of sight, black means blocked......................................................................", 960, "Red", Emitter.OwnerId);
+        }
+
+        public override void Init(MyObjectBuilder_EntityBase objectBuilder)
+        {
+            try
+            {
+                base.Init(objectBuilder);
+                PowerPreInit();
+                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+
+            }
+            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
+        }
+
+        public override void UpdateOnceBeforeFrame()
+        {
+            base.UpdateOnceBeforeFrame();
+            try
+            {
+                if (Emitter.CubeGrid.Physics == null) return;
+                Session.Instance.Emitters.Add(this);
+                _emitters.Add(Entity.EntityId, this);
+                StorageSetup();
+                PowerInit();
+                _myRenderId = Emitter.Render.GetRenderObjectID();
+                SetEmitterType();
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
+        }
+
+        private void StorageSetup()
+        {
+            Storage = Emitter.Storage;
+            if (EmiState == null) EmiState = new EmitterState(Emitter);
+            EmiState.LoadState();
+        }
+
+        private void PowerPreInit()
+        {
+            try
+            {
+                if (Sink == null)
+                {
+                    Sink = new MyResourceSinkComponent();
+                }
+                ResourceInfo = new MyResourceSinkInfo()
+                {
+                    ResourceTypeId = GId,
+                    MaxRequiredInput = 0f,
+                    RequiredInputFunc = () => _power
+                };
+                Sink.Init(MyStringHash.GetOrCompute("Utility"), ResourceInfo);
+                Sink.AddType(ref ResourceInfo);
+                Entity.Components.Add(Sink);
+                Sink.Update();
+            }
+            catch (Exception ex) { Log.Line($"Exception in PowerPreInit: {ex}"); }
+        }
+
+        private void PowerInit()
+        {
+            try
+            {
+                var enableState = Emitter.Enabled;
+                if (enableState)
+                {
+                    Emitter.Enabled = false;
+                    Emitter.Enabled = true;
+                }
+                Sink.Update();
+                if (Session.Enforced.Debug == 1) Log.Line($"PowerInit complete - EmitterId [{Emitter.EntityId}]");
+            }
+            catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
+        }
+
+        private void SetEmitterType()
+        {
+            Definition = DefinitionManager.Get(Emitter.BlockDefinition.SubtypeId);
+            switch (Definition.Name)
+            {
+                case "EmitterST":
+                    EmitterMode = EmitterType.Station;
+                    Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                    break;
+                case "EmitterL":
+                case "EmitterLA":
+                    EmitterMode = EmitterType.Large;
+                    if (Definition.Name == "EmitterLA") Compact = true;
+                    else Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                    break;
+                case "EmitterS":
+                case "EmitterSA":
+                    EmitterMode = EmitterType.Small;
+                    if (Definition.Name == "EmitterSA") Compact = true;
+                    else Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                    break;
+            }
+            Emitter.AppendingCustomInfo += AppendingCustomInfo;
         }
 
         public override void OnAddedToScene()

@@ -66,6 +66,8 @@ namespace DefenseShields
 
         public Enhancers Enhancer { get; set; }
 
+        public Modulators Modulator { get; set; }
+
         public int EmitterMode { get; set; } = -1;
         public Emitters StationEmitter { get; set; }
         public Emitters ShipEmitter { get; set; }
@@ -78,7 +80,7 @@ namespace DefenseShields
 
         public bool EmittersSuspended { get; set; }
 
-        public bool EmittersLos { get; set; }
+        //public bool EmittersLos { get; set; }
 
         public bool O2Updated { get; set; }
 
@@ -86,7 +88,7 @@ namespace DefenseShields
 
         public bool CheckEmitters { get; set; }
 
-        public bool Station { get; set; }
+        //public bool Station { get; set; }
 
         public bool GridIsMoving { get; set; }
 

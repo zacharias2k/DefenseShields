@@ -173,19 +173,12 @@ namespace DefenseShields
         private void StorageSetup()
         {
             Storage = Shield.Storage;
-            if (DsSet == null)
-            {
-                DsSet = new ControllerSettings(Shield);
-                DsSet.SaveSettings();
-            }
-            if (DsState == null)
-            {
-                DsState = new ControllerState(Shield);
-                DsState.SaveState();
-            }
+            if (DsSet == null) DsSet = new ControllerSettings(Shield);
+            if (DsState == null) DsState = new ControllerState(Shield);
 
             if (ShieldComp == null) ShieldComp = new ShieldGridComponent(this);
             DsSet.LoadSettings();
+            DsState.LoadState();
             UpdateSettings(DsSet.Settings);
             if (Session.Enforced.Debug == 1) Log.Line($"StorageSetup: ShieldId [{Shield.EntityId}]");
         }
@@ -299,7 +292,15 @@ namespace DefenseShields
             }
             if (ShieldMode == oldMode) noChange = true;
 
-            if ((quickCheck && noChange) || ShieldMode == ShieldType.Unknown) return;
+            if (quickCheck && noChange || ShieldMode == ShieldType.Unknown)
+            {
+                if (ShieldMode == ShieldType.Unknown)
+                {
+                    DsState.State.Mode = (int)ShieldMode;
+                    DsState.NetworkUpdate();
+                }
+                return;
+            }
 
             switch (ShieldMode)
             {
@@ -330,7 +331,8 @@ namespace DefenseShields
             }
 
             GridIsMobile = ShieldMode != ShieldType.Station;
-
+            DsState.State.Mode = (int)ShieldMode;
+            DsState.NetworkUpdate();
             DsUi.CreateUi(Shield);
             InitEntities(true);
         }
