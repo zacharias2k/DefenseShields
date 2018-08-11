@@ -75,18 +75,10 @@ namespace DefenseShields
         private void StorageSetup()
         {
             Storage = O2Generator.Storage;
-            /*
-            if (O2Set == null)
-            {
-                O2Set = new O2GeneratorSettings(O2Generator);
-                O2Set.SaveSettings();
-            }
-            */
             if (O2State == null) O2State = new O2GeneratorState(O2Generator);
-            O2State.LoadState();
+            O2State.StorageInit();
 
-            //O2Set.LoadSettings();
-            //UpdateSettings(O2Set.Settings);
+            O2State.LoadState();
         }
 
         public override void UpdateBeforeSimulation()

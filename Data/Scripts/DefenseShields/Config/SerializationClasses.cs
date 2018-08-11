@@ -98,16 +98,14 @@ namespace DefenseShields
         public double EllipsoidAdjust = Math.Sqrt(2);
         [ProtoMember(21)]
         public Vector3D GridHalfExtents;
-        [ProtoMember(22)]
-        public int Mode = 4;
+        [ProtoMember(22), DefaultValue(-1)]
+        public int Mode;
         [ProtoMember(23)]
         public bool EmitterWorking = false;
-        [ProtoMember(24), DefaultValue(-1)]
-        public long EmitterId;
 
         public override string ToString()
         {
-            return $"Buffer = {Math.Round(Buffer, 4)}";
+            return $"Buffer = {Math.Round(Buffer, 4)} - Online:{Online} - Mode:{Mode} - NoPower:{NoPower} - EW:{EmitterWorking} - Waking:{Waking} - Ellip:{Math.Round(EllipsoidAdjust, 4)} - GridHalf:{GridHalfExtents != Vector3D.Zero}";
         }
     }
 
@@ -316,6 +314,12 @@ namespace DefenseShields
 
         [ProtoMember(7), DefaultValue(-1)]
         public int Mode;
+
+        [ProtoMember(8), DefaultValue(-1)]
+        public double BoundingRange;
+
+        [ProtoMember(9)]
+        public bool Compact;
 
         public override string ToString()
         {

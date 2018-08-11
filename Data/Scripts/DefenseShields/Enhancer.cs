@@ -24,7 +24,7 @@ namespace DefenseShields
         private int _count = -1;
         private int _lCount;
         internal int RotationTime;
-
+        internal bool ContainerInited;
         private float _power = 0.01f;
 
         private readonly Dictionary<long, Enhancers> _enhancers = new Dictionary<long, Enhancers>();
@@ -84,7 +84,10 @@ namespace DefenseShields
                     return false;
                 }
                 if (ShieldComp.Enhancer == null) ShieldComp.Enhancer = this;
-                EnhState.State.Online = true;
+                if (!EnhState.State.Online)
+                {
+                    NeedUpdate();
+                }
             }
             else if (!EnhState.State.Online || !Enhancer.IsFunctional) return false;
 
@@ -111,17 +114,36 @@ namespace DefenseShields
         private void NeedUpdate(bool force = false)
         {
             if (!force) EnhState.State.Online = true;
+            EnhState.SaveState();
             EnhState.NetworkUpdate();
         }
+
+        public void UpdateState(ProtoEnhancerState newState)
+        {
+            EnhState.State = newState;
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdateState: EnhancerId [{Enhancer.EntityId}]");
+        }
+
+        public override void OnAddedToContainer()
+        {
+            if (!ContainerInited)
+            {
+                PowerPreInit();
+                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+                ContainerInited = true;
+                if (Session.Enforced.Debug == 1) Log.Line($"ContainerInited:  EmitterId [{Enhancer.EntityId}]");
+            }
+            if (Entity.InScene) OnAddedToScene();
+        }
+
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
             try
             {
                 base.Init(objectBuilder);
-                PowerPreInit();
-                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+                StorageSetup();
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -133,7 +155,6 @@ namespace DefenseShields
             {
                 _enhancers.Add(Entity.EntityId, this);
                 Session.Instance.Enhancers.Add(this);
-                StorageSetup();
                 PowerInit();
                 Enhancer.CubeGrid.Components.TryGet(out ShieldComp);
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
@@ -143,16 +164,27 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
 
+        public override bool IsSerialized()
+        {
+            if (Session.IsServer)
+            {
+                if (Storage != null)
+                {
+                    EnhState.SaveState();
+                    if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: saved before replication - ShieldId [{Enhancer.EntityId}]");
+                }
+                else if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: not saved - StoageNull:{Storage == null} - ShieldId [{Enhancer.EntityId}]");
+            }
+            return false;
+        }
+
         private void StorageSetup()
         {
             Storage = Enhancer.Storage;
-            //if (EnhSet == null) EnhSet = new EnhancerSettings(Enhancer);
             if (EnhState == null) EnhState = new EnhancerState(Enhancer);
+            EnhState.StorageInit();
+
             EnhState.LoadState();
-            
-            //EnhSet.LoadSettings();
-            //UpdateSettings(EnhSet.Settings);
-            //EnhState.LoadSettings();
         }
 
         private void PowerPreInit()
@@ -245,13 +277,6 @@ namespace DefenseShields
             }
         }
 
-        public void UpdateState(ProtoEnhancerState newState)
-        {
-            EnhState.State = newState;
-
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdateState: EnhancerId [{Enhancer.EntityId}]");
-        }
-
         public override void OnRemovedFromScene()
         {
             try
@@ -284,6 +309,5 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
             base.MarkForClose();
         }
-        public override void OnAddedToContainer() { if (Entity.InScene) OnAddedToScene(); }
     }
 }

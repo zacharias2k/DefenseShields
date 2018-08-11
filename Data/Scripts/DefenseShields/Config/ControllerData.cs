@@ -14,6 +14,14 @@ namespace DefenseShields
             Shield = shield;
         }
 
+        public void StorageInit()
+        {
+            if (Shield.Storage == null)
+            {
+                Shield.Storage = new MyModStorageComponent {[Session.Instance.EmitterStateGuid] = ""};
+            }
+        }
+
         public void SaveState()
         {
             if (Shield.Storage == null) Shield.Storage = new MyModStorageComponent();

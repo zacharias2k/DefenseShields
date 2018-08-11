@@ -116,15 +116,14 @@ namespace DefenseShields
             }
             else
             {
-                if (Session.IsServer) Emitter = ShieldComp.StationEmitter.Emitter;
-
-                _shieldGridMatrix = Emitter.WorldMatrix;
+                var emitter = ShieldComp.StationEmitter.Emitter;
+                _shieldGridMatrix = emitter.WorldMatrix;
                 DetectionMatrix = MatrixD.Rescale(_shieldGridMatrix, new Vector3D(DsSet.Settings.Width, DsSet.Settings.Height, DsSet.Settings.Depth));
-                _shieldShapeMatrix = MatrixD.Rescale(Emitter.LocalMatrix, new Vector3D(DsSet.Settings.Width, DsSet.Settings.Height, DsSet.Settings.Depth));
+                _shieldShapeMatrix = MatrixD.Rescale(emitter.LocalMatrix, new Vector3D(DsSet.Settings.Width, DsSet.Settings.Height, DsSet.Settings.Depth));
                 ShieldSize = DetectionMatrix.Scale;
-                DetectionCenter = Emitter.PositionComp.WorldVolume.Center;
-                _sQuaternion = Quaternion.CreateFromRotationMatrix(Emitter.CubeGrid.WorldMatrix);
-                ShieldSphere = new BoundingSphereD(Emitter.PositionComp.LocalAABB.Center, ShieldSize.AbsMax()) { Center = DetectionCenter };
+                DetectionCenter = emitter.PositionComp.WorldVolume.Center;
+                _sQuaternion = Quaternion.CreateFromRotationMatrix(emitter.CubeGrid.WorldMatrix);
+                ShieldSphere = new BoundingSphereD(emitter.PositionComp.LocalAABB.Center, ShieldSize.AbsMax()) { Center = DetectionCenter };
             }
 
             SOriBBoxD = new MyOrientedBoundingBoxD(DetectionCenter, ShieldSize, _sQuaternion);

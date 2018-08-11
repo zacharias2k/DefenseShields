@@ -26,8 +26,6 @@ namespace DefenseShields
         private uint _shapeTick;
         internal uint UnsuspendTick;
 
-        internal long OldEmitterId;
-
         internal float ImpactSize { get; set; } = 9f;
         internal float Absorb { get; set; }
         private float _power = 0.001f;
@@ -85,6 +83,7 @@ namespace DefenseShields
         internal bool PowerInited;
         internal bool HadPowerBefore;
         internal bool AllInited;
+        internal bool ContainerInited;
         internal bool HealthInited;
         internal bool CheckGridRegister;
         internal bool WarmedUp;
@@ -153,11 +152,13 @@ namespace DefenseShields
         public BoundingSphereD ShieldSphere;
         public MyOrientedBoundingBoxD SOriBBoxD;
         private Quaternion _sQuaternion;
-        private readonly Random _random = new Random();
+        //private readonly Random _random = new Random();
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
-        private readonly List<MyResourceSourceComponent> _batterySources = new List<MyResourceSourceComponent>();
+        //private readonly List<MyResourceSourceComponent> _batterySources = new List<MyResourceSourceComponent>();
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
         private readonly List<KeyValuePair<IMyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<IMyEntity, EntIntersectInfo>>();
+
+        private Color _oldPercentColor = Color.Transparent;
 
         internal readonly HashSet<IMyEntity> AuthenticatedCache = new HashSet<IMyEntity>();
         internal readonly HashSet<IMyEntity> FriendlyCache = new HashSet<IMyEntity>();
@@ -226,7 +227,6 @@ namespace DefenseShields
         //private readonly StructureBuilder _structureBuilder = new StructureBuilder();
 
         internal IMyUpgradeModule Shield => (IMyUpgradeModule)Entity;
-        internal IMyUpgradeModule Emitter;
         internal ShieldType ShieldMode;
         internal MyEntity ShieldEnt;
         private MyEntity _shellPassive;
@@ -257,6 +257,14 @@ namespace DefenseShields
         internal MyStringId CustomData = MyStringId.GetOrCompute("CustomData");
         internal MyStringId Password = MyStringId.GetOrCompute("Password");
         internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Set the shield modulation password");
+
+        public enum ShieldType
+        {
+            Station,
+            LargeGrid,
+            SmallGrid,
+            Unknown
+        };
         #endregion
 
         #region constructors

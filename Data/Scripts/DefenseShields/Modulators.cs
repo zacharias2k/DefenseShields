@@ -259,11 +259,11 @@ namespace DefenseShields
         {
             Storage = Modulator.Storage;
             if (ModSet == null) ModSet = new ModulatorSettings(Modulator);
-
             if (ModState == null) ModState = new ModulatorState(Modulator);
+            ModState.StorageInit();
+
             ModSet.LoadSettings();
             ModState.LoadState();
-            //ModState.LoadState();
             UpdateSettings(ModSet.Settings);
         }
 

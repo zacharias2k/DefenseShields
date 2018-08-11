@@ -14,13 +14,19 @@ namespace DefenseShields
             Modulator = modulator;
         }
 
-        public void SaveState()
+        public void StorageInit()
         {
             if (Modulator.Storage == null)
             {
-                Modulator.Storage = new MyModStorageComponent();
+                Modulator.Storage = new MyModStorageComponent {[Session.Instance.EmitterStateGuid] = ""};
             }
-            Modulator.Storage[Session.Instance.ModulatorStateGuid] = MyAPIGateway.Utilities.SerializeToXML(State);
+        }
+
+        public void SaveState()
+        {
+            if (Modulator.Storage == null) Modulator.Storage = new MyModStorageComponent();
+            var binary = MyAPIGateway.Utilities.SerializeToBinary(State);
+            Modulator.Storage[Session.Instance.ModulatorStateGuid] = Convert.ToBase64String(binary);
         }
 
         public bool LoadState()
@@ -33,22 +39,15 @@ namespace DefenseShields
             if (Modulator.Storage.TryGetValue(Session.Instance.ModulatorStateGuid, out rawData))
             {
                 ProtoModulatorState loadedState = null;
-
-                try
-                {
-                    loadedState = MyAPIGateway.Utilities.SerializeFromXML<ProtoModulatorState>(rawData);
-                }
-                catch (Exception e)
-                {
-                    loadedState = null;
-                    Log.Line($"ModulatorId:{Modulator.EntityId.ToString()} - Error loading settings!\n{e}");
-                }
+                var base64 = Convert.FromBase64String(rawData);
+                loadedState = MyAPIGateway.Utilities.SerializeFromBinary<ProtoModulatorState>(base64);
 
                 if (loadedState != null)
                 {
                     State = loadedState;
                     loadedSomething = true;
                 }
+                if (Session.Enforced.Debug == 1) Log.Line($"Loaded - EmitterId [{Modulator.EntityId}]:\n{State.ToString()}");
             }
             return loadedSomething;
         }

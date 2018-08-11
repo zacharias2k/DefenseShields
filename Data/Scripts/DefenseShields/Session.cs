@@ -132,6 +132,7 @@ namespace DefenseShields
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdModulatorState, ModulatorStateReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdModulatorSettings, EnhancerStateReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdO2GeneratorState, O2GeneratorStateReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEmitterState, EmitterStateReceived);
 
                 if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter += CustomControls;
                 if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomActionGetter += ShowHideActions;
@@ -544,18 +545,7 @@ namespace DefenseShields
                             if (Enforced.Debug == 1) Log.Line($"Packet State Packet received:- data:\n{data.State}");
                             logic.UpdateState(data.State);
 
-                            if (IsServer && logic.OldEmitterId != data.EntityId) ControllerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
-                            else
-                            {
-                                IMyEntity emitter;
-                                MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out emitter);
-                                if (emitter != null)
-                                {
-                                    logic.Emitter = (IMyUpgradeModule)emitter;
-                                    logic.OldEmitterId = data.EntityId;
-                                }
-                                else Log.Line($"Emitter not found! This is a multiplayer bug, please report");
-                            }
+                            if (IsServer) ControllerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                         }
                         break;
                 }

@@ -36,6 +36,15 @@ namespace DefenseShields
                         if (GridIsMobile && createHeTiming) CreateHalfExtents();
                         SyncThreadedEnts();
                         WebEntities();
+                        if (_count == 29 && Session.MpActive)
+                        {
+                            var newPercentColor = UtilsStatic.GetShieldColorFromFloat(ShieldComp.ShieldPercent);
+                            if (newPercentColor != _oldPercentColor)
+                            {
+                                ShieldChangeState();
+                                _oldPercentColor = newPercentColor;
+                            }
+                        }
                     }
                     else WebEntitiesClient();
                 }
@@ -59,7 +68,11 @@ namespace DefenseShields
 
         private void ShieldChangeState()
         {
-            if (Session.IsServer && Session.MpActive) DsState.NetworkUpdate();
+            if (Session.IsServer && Session.MpActive)
+            {
+                DsState.SaveState();
+                DsState.NetworkUpdate();
+            }
             else UpdateState(DsState.State);
         }
 
@@ -212,7 +225,6 @@ namespace DefenseShields
                 {
                     SettingsUpdated = false;
                     DsSet.SaveSettings();
-                    Log.Line($"save settings");
                 }
                 if (_blockEvent) BlockChanged(true);
             }
@@ -598,46 +610,77 @@ namespace DefenseShields
             }
             catch (Exception ex) { Log.Line($"Exception in Controller AppendingCustomInfo: {ex}"); }
         }
-        #endregion
 
-        #region Shield Support Blocks
-        public void GetModulationInfo()
+        private void UpdateSubGrids(bool force = false)
         {
-            Shield.CubeGrid.Components.TryGet(out ModComp);
-            if (ShieldComp.Modulator != null)
-            {
-                DsState.State.ModulateEnergy = ShieldComp.Modulator.ModState.State.ModulateEnergy * 0.01f;
-                DsState.State.ModulateKinetic = ShieldComp.Modulator.ModState.State.ModulateKinetic * 0.01f;
-            }
-            else
-            {
-                if (Session.Enforced.Debug == 1 && (!DsState.State.ModulateEnergy.Equals(1f) || !DsState.State.ModulateKinetic.Equals(1f))) Log.Line($"Remodulate: no modComp found, value not default (1f): Energy:{DsState.State.ModulateEnergy} - Kinetic:{DsState.State.ModulateKinetic} - ShieldId [{Shield.EntityId}]");
+            var checkGroups = Shield.IsWorking && Shield.IsFunctional && DsState.State.Online;
+            if (Session.Enforced.Debug >= 2) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Offline:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
+            if (!checkGroups && !force) return;
+            var gotGroups = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Physical);
+            if (gotGroups.Count == ShieldComp.GetLinkedGrids.Count) return;
+            if (Session.Enforced.Debug == 1) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.GetLinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.GetLinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
 
-                DsState.State.ModulateEnergy = 1f;
-                DsState.State.ModulateKinetic = 1f;
-            }
-        }
-
-        public void GetEnhancernInfo()
-        {
-            if (ShieldComp.Enhancer != null && ShieldComp.Enhancer.EnhState.State.Online)
+            lock (ShieldComp.GetSubGrids) ShieldComp.GetSubGrids.Clear();
+            lock (ShieldComp.GetLinkedGrids) ShieldComp.GetLinkedGrids.Clear();
+            var c = 0;
+            for (int i = 0; i < gotGroups.Count; i++)
             {
-                DsState.State.EnhancerPowerMulti = 2;
-                DsState.State.EnhancerProtMulti = 1000;
-                DsState.State.Enhancer = true;
+                var sub = gotGroups[i];
+                if (sub == null) continue;
+                if (MyAPIGateway.GridGroups.HasConnection(Shield.CubeGrid, sub, GridLinkTypeEnum.Mechanical)) lock (ShieldComp.GetSubGrids) ShieldComp.GetSubGrids.Add(sub);
+                if (MyAPIGateway.GridGroups.HasConnection(Shield.CubeGrid, sub, GridLinkTypeEnum.Physical)) lock (ShieldComp.GetLinkedGrids) ShieldComp.GetLinkedGrids.Add(sub);
             }
-            else
-            {
-                DsState.State.EnhancerPowerMulti = 1;
-                DsState.State.EnhancerProtMulti = 1;
-                DsState.State.Enhancer = false;
-            }
+            _blockChanged = true;
+            _functionalChanged = true;
         }
 
         private void ShieldDoDamage(float damage, long entityId)
         {
             ImpactSize = damage;
             ((IMySlimBlock)((MyCubeBlock)Shield).SlimBlock).DoDamage(damage, MPdamage, true, null, entityId);
+        }
+        #endregion
+
+        #region Shield Support Blocks
+        public void GetModulationInfo()
+        {
+            var update = false;
+            if (ShieldComp.Modulator != null)
+            {
+                if (!DsState.State.ModulateEnergy.Equals(ShieldComp.Modulator.ModState.State.ModulateEnergy * 0.01f) || !DsState.State.ModulateKinetic.Equals(ShieldComp.Modulator.ModState.State.ModulateKinetic * 0.01f)) update = true;
+                DsState.State.ModulateEnergy = ShieldComp.Modulator.ModState.State.ModulateEnergy * 0.01f;
+                DsState.State.ModulateKinetic = ShieldComp.Modulator.ModState.State.ModulateKinetic * 0.01f;
+                if (update) ShieldChangeState();
+            }
+            else
+            {
+                if (!DsState.State.ModulateEnergy.Equals(1f) || !DsState.State.ModulateKinetic.Equals(1f)) update = true;
+                DsState.State.ModulateEnergy = 1f;
+                DsState.State.ModulateKinetic = 1f;
+                if (update) ShieldChangeState();
+
+            }
+        }
+
+        public void GetEnhancernInfo()
+        {
+            var update = false;
+            if (ShieldComp.Enhancer != null && ShieldComp.Enhancer.EnhState.State.Online)
+            {
+                if (!DsState.State.EnhancerPowerMulti.Equals(2) || !DsState.State.EnhancerProtMulti.Equals(1000) || !DsState.State.Enhancer) update = true;
+                DsState.State.EnhancerPowerMulti = 2;
+                DsState.State.EnhancerProtMulti = 1000;
+                DsState.State.Enhancer = true;
+                if (update) ShieldChangeState();
+            }
+            else
+            {
+                if (!DsState.State.EnhancerPowerMulti.Equals(2) || !DsState.State.EnhancerProtMulti.Equals(1000) || !DsState.State.Enhancer) update = true;
+                DsState.State.EnhancerPowerMulti = 1;
+                DsState.State.EnhancerProtMulti = 1;
+                DsState.State.Enhancer = false;
+                if (update) ShieldChangeState();
+            }
         }
         #endregion
 
@@ -704,79 +747,6 @@ namespace DefenseShields
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in CleanUp: {ex}"); }
-        }
-
-        public override void OnAddedToScene()
-        {
-            try
-            {
-                if (Session.Enforced.Debug == 1) Log.Line($"OnAddedToScene: - {ShieldMode} - ShieldId [{Shield.EntityId}]");
-                if (!AllInited) return;
-                if (Shield.CubeGrid.IsStatic != IsStatic)
-                {
-                    Election();
-                    RegisterEvents();
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
-        }
-
-        public override void OnRemovedFromScene()
-        {
-            try
-            {
-                if (Session.Enforced.Debug == 1) Log.Line($"OnRemovedFromScene: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-                IsStatic = Shield.CubeGrid.IsStatic;
-                RegisterEvents(false);
-                InitEntities(false);
-                _shellPassive?.Render?.RemoveRenderObjects();
-                _shellActive?.Render?.RemoveRenderObjects();
-                ShieldEnt?.Render?.RemoveRenderObjects();
-            }
-            catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
-        }
-
-        public override void OnAddedToContainer()
-        {
-            if (Entity.InScene) OnAddedToScene();
-        }
-
-        public override void OnBeforeRemovedFromContainer()
-        {
-            if (Entity.InScene) OnRemovedFromScene();
-        }
-
-        public override void Close()
-        {
-            try
-            {
-                if (Session.Enforced.Debug == 1) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-                if (Session.Instance.Components.Contains(this)) Session.Instance.Components.Remove(this);
-                Icosphere = null;
-                RegisterEvents(false);
-                InitEntities(false);
-                MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
-
-                _power = 0.0001f;
-                if (AllInited) Sink.Update();
-                if (ShieldComp?.DefenseShields == this)
-                {
-                    ShieldComp.DefenseShields = null;
-                    ShieldComp = null;
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
-            base.Close();
-        }
-
-        public override void MarkForClose()
-        {
-            try
-            {
-                if (Session.Enforced.Debug == 1) Log.Line($"MarkForClose: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-            }
-            catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
-            base.MarkForClose();
         }
         #endregion
     }

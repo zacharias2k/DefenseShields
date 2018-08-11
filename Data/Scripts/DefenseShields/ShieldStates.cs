@@ -433,6 +433,11 @@ namespace DefenseShields
         {
             DsSet.Settings = newSettings;
             SettingsUpdated = true;
+            if (!MainInit)
+            {
+                Log.Line($"Settings: network but not initted - Enfroce:{Session.EnforceInit} - ");
+                return;
+            }
             if (!GridIsMobile) UpdateDimensions = true;
             if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings - ShieldId [{Shield.EntityId}]:\n{newSettings}");
         }
@@ -440,6 +445,11 @@ namespace DefenseShields
         public void UpdateState(ProtoControllerState state)
         {
             DsState.State = state;
+            if (!MainInit)
+            {
+                Log.Line($"State: network but not initted - ");
+                return;
+            }
             if (!DsState.State.Online)
             {
                 if (DsState.State.Overload) PlayerMessages(PlayerNotice.OverLoad);

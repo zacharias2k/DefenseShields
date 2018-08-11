@@ -14,13 +14,19 @@ namespace DefenseShields
             Enhancer = enhancer;
         }
 
-        public void SaveState()
+        public void StorageInit()
         {
             if (Enhancer.Storage == null)
             {
-                Enhancer.Storage = new MyModStorageComponent();
+                Enhancer.Storage = new MyModStorageComponent {[Session.Instance.EmitterStateGuid] = ""};
             }
-            Enhancer.Storage[Session.Instance.EnhancerStateGuid] = MyAPIGateway.Utilities.SerializeToXML(State);
+        }
+
+        public void SaveState()
+        {
+            if (Enhancer.Storage == null) Enhancer.Storage = new MyModStorageComponent();
+            var binary = MyAPIGateway.Utilities.SerializeToBinary(State);
+            Enhancer.Storage[Session.Instance.EnhancerStateGuid] = Convert.ToBase64String(binary);
         }
 
         public bool LoadState()
@@ -33,22 +39,15 @@ namespace DefenseShields
             if (Enhancer.Storage.TryGetValue(Session.Instance.EnhancerStateGuid, out rawData))
             {
                 ProtoEnhancerState loadedState = null;
-
-                try
-                {
-                    loadedState = MyAPIGateway.Utilities.SerializeFromXML<ProtoEnhancerState>(rawData);
-                }
-                catch (Exception e)
-                {
-                    loadedState = null;
-                    Log.Line($"ModulatorId:{Enhancer.EntityId.ToString()} - Error loading state!\n{e}");
-                }
+                var base64 = Convert.FromBase64String(rawData);
+                loadedState = MyAPIGateway.Utilities.SerializeFromBinary<ProtoEnhancerState>(base64);
 
                 if (loadedState != null)
                 {
                     State = loadedState;
                     loadedSomething = true;
                 }
+                if (Session.Enforced.Debug == 1) Log.Line($"Loaded - EnhancerId [{Enhancer.EntityId}]:\n{State.ToString()}");
             }
             return loadedSomething;
         }
