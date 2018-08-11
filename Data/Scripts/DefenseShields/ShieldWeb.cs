@@ -16,53 +16,6 @@ namespace DefenseShields
     public partial class DefenseShields
     {
         #region Web Entities
-        private void WebEntitiesClient()
-        {
-            if (Session.Enforced.Debug == 1) Dsutil2.Sw.Restart();
-            var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange + 5);
-            var pruneList = new List<MyEntity>();
-
-            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList, MyEntityQueryType.Dynamic);
-
-            for (int i = 0; i < pruneList.Count; i++)
-            {
-                var ent = pruneList[i];
-
-                if (ent == null || ent.MarkedForClose || (!(ent is MyCubeGrid) && !(ent is IMyCharacter))) continue;
-                if (FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent)) continue;
-
-                var relation = EntType(ent);
-                switch (relation)
-                {
-                    case Ent.Authenticated:
-                        continue;
-                    case Ent.Ignore:
-                    case Ent.Friend:
-                        if (relation == Ent.Friend)
-                        {
-                            var grid = ent as MyCubeGrid;
-                            if (grid != null)
-                            {
-                                if (ShieldEnt.PositionComp.WorldVolume.Intersects(grid.PositionComp.WorldVolume))
-                                {
-                                    var cornersInShield = CustomCollision.NotAllCornersInShield(grid, DetectMatrixOutsideInv);
-                                    if (cornersInShield > 0 && cornersInShield != 8) PartlyProtectedCache.Add(ent);
-                                    else if (cornersInShield == 8) FriendlyCache.Add(ent);
-                                }
-                            }
-                            else if (CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
-                            {
-                                FriendlyCache.Add(ent);
-                                continue;
-                            }
-                            IgnoreCache.Add(ent);
-                        }
-                        continue;
-                }
-            }
-            if (Session.Enforced.Debug == 1) Dsutil2.StopWatchReport($"WebClient: ShieldId [{Shield.EntityId}]", 3);
-        }
-
         private void WebEntities()
         {
             if (Session.Enforced.Debug == 1) Dsutil2.Sw.Restart();

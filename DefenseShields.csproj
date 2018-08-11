@@ -196,6 +196,8 @@
     <Compile Include="Data\Scripts\DefenseShields\Config\O2GeneratorData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\EnhancerData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldDraw.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ShieldWebClient.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ShieldIntersectClient.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldEvents.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldStates.cs" />
@@ -216,7 +218,7 @@
     <Compile Include="HoldingArea\HyperSession.cs" />
     <Compile Include="HoldingArea\Logger.cs" />
     <Compile Include="Data\Scripts\DefenseShields\O2Generator.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldEntweb.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ShieldWeb.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\GridComps\ModulatorGridComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\GridComps\ShieldGridComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldIntersect.cs" />

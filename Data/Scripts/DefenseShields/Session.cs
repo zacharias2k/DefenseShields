@@ -543,9 +543,9 @@ namespace DefenseShields
                             if (data.State == null) return;
 
                             if (Enforced.Debug == 1) Log.Line($"Packet State Packet received:- data:\n{data.State}");
-                            logic.UpdateState(data.State);
 
                             if (IsServer) ControllerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                            else logic.UpdateState(data.State);
                         }
                         break;
                 }
@@ -654,9 +654,9 @@ namespace DefenseShields
                         if (data.State == null) return;
 
                         if (Enforced.Debug == 1) Log.Line($"Modulator received:\n{data.State}");
-                        logic.UpdateState(data.State);
 
                         if (IsServer) ModulatorStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                        else logic.UpdateState(data.State);
                     }
                         break;
                 }
@@ -692,10 +692,10 @@ namespace DefenseShields
                         if (data.State == null) return;
 
                         if (Enforced.Debug == 1) Log.Line($"O2Generator received:\n{data.State}");
-                        logic.UpdateState(data.State);
 
                         if (IsServer) O2GeneratorStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
-                    }
+                        else logic.UpdateState(data.State);
+                        }
                         break;
                 }
             }
@@ -730,9 +730,9 @@ namespace DefenseShields
                         if (data.State == null) return;
 
                         if (Enforced.Debug == 1) Log.Line($"Enhancer received:\n{data.State}");
-                        logic.UpdateState(data.State);
 
                         if (IsServer) EnhancerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                        else logic.UpdateState(data.State);
                     }
                         break;
                 }
@@ -768,10 +768,10 @@ namespace DefenseShields
                         if (data.State == null) return;
 
                         if (Enforced.Debug == 1) Log.Line($"Emitter received:\n{data.State}");
-                        logic.UpdateState(data.State);
 
                         if (IsServer) EmitterStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
-                    }
+                        else logic.UpdateState(data.State);
+                        }
                         break;
                 }
             }

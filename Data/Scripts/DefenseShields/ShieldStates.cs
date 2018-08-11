@@ -136,9 +136,13 @@ namespace DefenseShields
             {
                 if (DsState.State.Online)
                 {
+
                     DsState.State.Online = false;
                     if (_overLoadLoop != -1) DsState.State.Overload = true;
                     if (_reModulationLoop != -1) DsState.State.Remodulate = true;
+                    OfflineShield();
+                    if (DsState.State.Overload) PlayerMessages(PlayerNotice.OverLoad);
+                    else if (DsState.State.Remodulate) PlayerMessages(PlayerNotice.Remodulate);
                     ShieldChangeState();
                 }
             }
@@ -218,6 +222,7 @@ namespace DefenseShields
                 if (Session.IsServer) DsSet.Settings.ShieldActive = false;
                 PrevShieldActive = false;
                 DsState.State.Lowered = false;
+                DsState.State.Online = false;
                 ShellVisibility(true);
             }
 
@@ -442,25 +447,22 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings - ShieldId [{Shield.EntityId}]:\n{newSettings}");
         }
 
-        public void UpdateState(ProtoControllerState state)
+        public void UpdateState(ProtoControllerState newState)
         {
-            DsState.State = state;
-            if (!MainInit)
-            {
-                Log.Line($"State: network but not initted - ");
-                return;
-            }
+            DsState.State = newState;
+            if (!MainInit) return;
+            var newShape = !newState.EllipsoidAdjust.Equals(DsState.State.EllipsoidAdjust) || newState.GridHalfExtents != DsState.State.GridHalfExtents;
+            if (newShape) ResetShape(false, false);
             if (!DsState.State.Online)
             {
                 if (DsState.State.Overload) PlayerMessages(PlayerNotice.OverLoad);
                 else if (DsState.State.Waking) PlayerMessages(PlayerNotice.EmitterInit);
                 else if (DsState.State.FieldBlocked) PlayerMessages(PlayerNotice.FieldBlocked);
                 else if (DsState.State.Remodulate) PlayerMessages(PlayerNotice.Remodulate);
-                OfflineShield();
+                ShellVisibility(true);
             }
-            else ResetShape(false, false);
 
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdateState - ShieldId [{Shield.EntityId}]:\n{state}");
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdateState - ShieldId [{Shield.EntityId}]:\n{newState}");
         }
     }
 }

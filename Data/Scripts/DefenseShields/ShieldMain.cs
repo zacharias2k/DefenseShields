@@ -675,7 +675,7 @@ namespace DefenseShields
             }
             else
             {
-                if (!DsState.State.EnhancerPowerMulti.Equals(2) || !DsState.State.EnhancerProtMulti.Equals(1000) || !DsState.State.Enhancer) update = true;
+                if (!DsState.State.EnhancerPowerMulti.Equals(2) || !DsState.State.EnhancerProtMulti.Equals(1000) || DsState.State.Enhancer) update = true;
                 DsState.State.EnhancerPowerMulti = 1;
                 DsState.State.EnhancerProtMulti = 1;
                 DsState.State.Enhancer = false;

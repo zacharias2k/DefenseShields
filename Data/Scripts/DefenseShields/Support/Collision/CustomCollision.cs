@@ -342,6 +342,12 @@ namespace DefenseShields.Support
             for (int i = 0; i < 642; i++) if (Vector3D.Transform(shield2Verts[i], shield1MatrixInv).LengthSquared() <= 1) insidePoints.Add(shield2Verts[i]);
         }
 
+        public static void ClientShieldX2PointsInside(Vector3D[] shield1Verts, MatrixD shield1MatrixInv, Vector3D[] shield2Verts, MatrixD shield2MatrixInv, List<Vector3D> insidePoints)
+        {
+            for (int i = 0; i < 162; i++) if (Vector3D.Transform(shield1Verts[i], shield2MatrixInv).LengthSquared() <= 1) insidePoints.Add(shield1Verts[i]);
+            for (int i = 0; i < 162; i++) if (Vector3D.Transform(shield2Verts[i], shield1MatrixInv).LengthSquared() <= 1) insidePoints.Add(shield2Verts[i]);
+        }
+
         public static void VoxelCollision(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, MyVoxelBase voxelBase, MyOrientedBoundingBoxD bOriBBoxD)
         {
             var sVel = shieldGrid.Physics.LinearVelocity;
@@ -404,6 +410,21 @@ namespace DefenseShields.Support
                 entInfo.Damage = damage;
             }
             catch (Exception ex) { Log.Line($"Exception in SmallIntersect: {ex}"); }
+        }
+
+        public static void ClientSmallIntersect(EntIntersectInfo entInfo, IMyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
+        {
+            try
+            {
+                if (grid == null) return;
+                var contactPoint = ContactPointOutside(grid, matrix);
+                if (!(Vector3D.Transform(contactPoint, matrixInv).LengthSquared() <= 1)) return;
+                entInfo.ContactPoint = contactPoint;
+
+                var approching = Vector3.Dot(grid.Physics.LinearVelocity, grid.PositionComp.WorldVolume.Center - contactPoint) < 0;
+                if (approching) grid.Physics.LinearVelocity = grid.Physics.LinearVelocity * -0.25f;
+            }
+            catch (Exception ex) { Log.Line($"Exception in ClientSmallIntersect: {ex}"); }
         }
 
         public static Vector3D EjectDirection(IMyCubeGrid grid, Vector3D[] physicsOutside, int[][] vertTris, MyOrientedBoundingBoxD obb, MatrixD matrixInv)
