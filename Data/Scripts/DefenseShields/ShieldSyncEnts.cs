@@ -3,9 +3,7 @@ using DefenseShields.Support;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
-using Sandbox.Game.Entities.Cube;
 using Sandbox.ModAPI;
-using VRage.Game;
 using VRage.Game.ModAPI;
 using VRage.Game.ModAPI.Interfaces;
 using VRage.ModAPI;
@@ -55,15 +53,16 @@ namespace DefenseShields
                                 if (block?.CubeGrid == null) continue;
                                 EntIntersectInfo entInfo;
                                 WebEnts.TryGetValue(block.CubeGrid, out entInfo);
+                                var myGrid = block.CubeGrid as MyCubeGrid;
                                 if (entInfo == null)
                                 {
                                     nullCount++;
-                                    ((MyCubeGrid)block.CubeGrid).EnqueueDestroyedBlock(block.Position);
+                                    myGrid?.EnqueueDestroyedBlock(block.Position);
                                     continue;
                                 }
                                 if (nullCount > 0) WebEnts.Remove(block.CubeGrid);
                                 entInfo.CacheBlockList.Remove(block);
-                                ((MyCubeGrid)block.CubeGrid).EnqueueDestroyedBlock(block.Position);
+                                myGrid?.EnqueueDestroyedBlock(block.Position);
                             }
                         }
                     }
@@ -91,20 +90,18 @@ namespace DefenseShields
                             var damage = computedDamage * DsState.State.ModulateEnergy;
                             if (computedDamage < 0) damage = computedDamage;
 
-                            if (Session.MpActive)
+                            if (Session.MpActive && Session.IsServer)
                             {
-                                if (Session.IsServer)
-                                {
-                                    ShieldDoDamage(damage, ent.EntityId);
-                                    destObj.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
-                                }
+
+                                ShieldDoDamage(damage, ent.EntityId);
+                                destObj.DoDamage(10000f, DelDamage, true, null, Shield.CubeGrid.EntityId);
                             }
                             else
                             {
                                 WorldImpactPosition = ent.PositionComp.WorldVolume.Center;
                                 Absorb += damage;
                                 ImpactSize = damage;
-                                destObj.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
+                                destObj.DoDamage(10000f, DelDamage, true, null, Shield.CubeGrid.EntityId);
                             }
                         }
                     }
@@ -120,20 +117,18 @@ namespace DefenseShields
                         {
                             if (meteor == null || meteor.MarkedForClose || meteor.Closed) continue;
                             var damage = 5000 * DsState.State.ModulateKinetic;
-                            if (Session.MpActive)
+                            if (Session.MpActive && Session.IsServer)
                             {
-                                if (Session.IsServer)
-                                {
-                                    ShieldDoDamage(damage, meteor.EntityId);
-                                    meteor.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
-                                }
+
+                                ShieldDoDamage(damage, meteor.EntityId);
+                                meteor.DoDamage(10000f, DelDamage, true, null, Shield.CubeGrid.EntityId);
                             }
                             else
                             {
                                 WorldImpactPosition = meteor.PositionComp.WorldVolume.Center;
                                 Absorb += damage;
                                 ImpactSize = damage;
-                                meteor.DoDamage(10000f, MyDamageType.Explosion, true, null, Shield.CubeGrid.EntityId);
+                                meteor.DoDamage(10000f, DelDamage, true, null, Shield.CubeGrid.EntityId);
                             }
                         }
                     }
@@ -171,7 +166,7 @@ namespace DefenseShields
                             var playerGasLevel = character.GetSuitGasFillLevel(hId);
                             character.Components.Get<MyCharacterOxygenComponent>().UpdateStoredGasLevel(ref hId, (playerGasLevel * -0.0001f) + .002f);
                             MyVisualScriptLogicProvider.CreateExplosion(character.GetPosition(), 0, 0);
-                            character.DoDamage(50f, MyDamageType.Fire, true, null, Shield.CubeGrid.EntityId);
+                            character.DoDamage(50f, DelDamage, true, null, Shield.CubeGrid.EntityId);
                             var vel = character.Physics.LinearVelocity;
                             if (vel == new Vector3D(0, 0, 0)) vel = MyUtils.GetRandomVector3Normalized();
                             var speedDir = Vector3D.Normalize(vel);
@@ -194,13 +189,14 @@ namespace DefenseShields
                         while (_dmgBlocks.TryDequeue(out block))
                         {
                             if (block == null) continue;
+                            var myGrid = block.CubeGrid as MyCubeGrid;
                             if (block.IsDestroyed)
                             {
-                                ((MyCubeGrid)block.CubeGrid).EnqueueDestroyedBlock(block.Position);
+                                myGrid.EnqueueDestroyedBlock(block.Position);
                                 continue;
                             }
-                            block.DoDamage(damageMulti, MyDamageType.Fire, true, null, Shield.CubeGrid.EntityId); // set  to true for multiplayer?
-                            if (((MyCubeGrid)block.CubeGrid).BlocksCount == 0) block.CubeGrid.SyncObject.SendCloseRequest();
+                            block.DoDamage(damageMulti, DelDamage, true, null, Shield.CubeGrid.EntityId); // set  to true for multiplayer?
+                            if (myGrid.BlocksCount == 0) block.CubeGrid.SyncObject.SendCloseRequest();
                         }
                     }
                 }
@@ -214,14 +210,16 @@ namespace DefenseShields
                         while (_fewDmgBlocks.TryDequeue(out block))
                         {
                             if (block == null) continue;
+                            var myGrid = block.CubeGrid as MyCubeGrid;
+
                             if (block.IsDestroyed)
                             {
-                                ((MyCubeGrid)block.CubeGrid).EnqueueDestroyedBlock(block.Position);
-                                ((MyCubeGrid)block.CubeGrid).Close();
+                                myGrid.EnqueueDestroyedBlock(block.Position);
+                                myGrid.Close();
                                 continue;
                             }
-                            block.DoDamage(10000f, MyDamageType.Bullet, true, null, Shield.CubeGrid.EntityId); // set sync to true for multiplayer?
-                            if (((MyCubeGrid)block.CubeGrid).BlocksCount == 0) block.CubeGrid.SyncObject.SendCloseRequest();
+                            block.DoDamage(10000f, DelDamage, true, null, Shield.CubeGrid.EntityId); // set sync to true for multiplayer?
+                            if (myGrid.BlocksCount == 0) block.CubeGrid.SyncObject.SendCloseRequest();
                         }
                     }
                 }

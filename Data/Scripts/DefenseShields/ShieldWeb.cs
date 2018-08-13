@@ -37,7 +37,7 @@ namespace DefenseShields
                 var ent = pruneList[i];
                 var voxel = ent as MyVoxelBase;
 
-                if (ent == null || ent.MarkedForClose || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel || !(ent is MyVoxelBase) && ent.Physics == null) continue;
+                if (ent == null || ent.MarkedForClose || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel || voxel == null && ent.Physics == null) continue;
 
                 var entCenter = ent.PositionComp.WorldVolume.Center;
                 var missileCheck = !pruneSphere2.Intersects(ent.PositionComp.WorldVolume) && !((ent.Flags & EntityFlags.IsNotGamePrunningStructureObject) != 0 && ent.GetType().Name.Equals(MyMissile));
@@ -142,7 +142,7 @@ namespace DefenseShields
                     var entInfo = WebEnts[webent];
                     if (entInfo.LastTick != _tick) continue;
                     if (entInfo.FirstTick == _tick && (WebEnts[webent].Relation == Ent.LargeNobodyGrid || WebEnts[webent].Relation == Ent.LargeEnemyGrid))
-                        ((IMyCubeGrid)webent).GetBlocks(WebEnts[webent].CacheBlockList, CollectCollidableBlocks);
+                        (webent as IMyCubeGrid)?.GetBlocks(WebEnts[webent].CacheBlockList, CollectCollidableBlocks);
                     switch (WebEnts[webent].Relation)
                     {
                         case Ent.EnemyPlayer:
@@ -197,7 +197,8 @@ namespace DefenseShields
                                 if (CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
                                 {
                                     if (webent.MarkedForClose || webent.Closed) continue;
-                                    if (webent is IMyMeteor) _meteorDmg.Enqueue(webent as IMyMeteor);
+                                    var meteor = webent as IMyMeteor;
+                                    if (meteor != null) _meteorDmg.Enqueue(meteor);
                                     else _missileDmg.Enqueue(webent);
                                 }
                                 continue;
@@ -243,22 +244,24 @@ namespace DefenseShields
         private Ent EntType(IMyEntity ent)
         {
             if (ent == null) return Ent.Ignore;
-            if (ent is MyVoxelBase && (Session.Enforced.DisableVoxelSupport == 1 || ShieldComp.Modulator == null || ShieldComp.Modulator.ModSet.Settings.ModulateVoxels || !GridIsMobile)) return Ent.Ignore;
+            var voxel = ent as MyVoxelBase;
+            if (voxel != null && (Session.Enforced.DisableVoxelSupport == 1 || ShieldComp.Modulator == null || ShieldComp.Modulator.ModSet.Settings.ModulateVoxels || !GridIsMobile)) return Ent.Ignore;
             //if (ent is IMyGunBaseUser) return Ent.Weapon;
 
-            if (ent is IMyCharacter)
+            var player = ent as IMyCharacter;
+            if (player != null)
             {
                 var dude = MyAPIGateway.Players.GetPlayerControllingEntity(ent)?.IdentityId;
                 if (dude == null) return Ent.Ignore;
                 var playerrelationship = Shield.GetUserRelationToOwner((long)dude);
                 if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner || playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return Ent.Friend;
-                return (ent as IMyCharacter).IsDead ? Ent.Ignore : Ent.EnemyPlayer;
+                return player.IsDead ? Ent.Ignore : Ent.EnemyPlayer;
             }
-            if (ent is IMyCubeGrid)
+            var grid = ent as IMyCubeGrid;
+            if (grid != null)
             {
                 if (ShieldComp.Modulator != null && ShieldComp.Modulator.ModSet.Settings.ModulateGrids || Session.Enforced.DisableGridDamageSupport == 1) return Ent.Ignore;
 
-                var grid = ent as IMyCubeGrid;
                 ModulatorGridComponent modComp;
                 grid.Components.TryGet(out modComp);
                 if (modComp?.ModulationPassword != null)
@@ -279,11 +282,12 @@ namespace DefenseShields
                     }
                 }
 
-                if (((MyCubeGrid)grid).BlocksCount < 3 && grid.BigOwners.Count == 0) return Ent.SmallNobodyGrid;
+                var myGrid = ent as MyCubeGrid;
+                if (myGrid?.BlocksCount < 3 && grid.BigOwners.Count == 0) return Ent.SmallNobodyGrid;
                 if (grid.BigOwners.Count == 0) return Ent.LargeNobodyGrid;
 
                 var enemy = GridEnemy(grid);
-                if (enemy && ((MyCubeGrid)grid).BlocksCount < 3) return Ent.SmallEnemyGrid;
+                if (enemy && myGrid?.BlocksCount < 3) return Ent.SmallEnemyGrid;
 
                 ShieldGridComponent shieldComponent;
                 grid.Components.TryGet(out shieldComponent);
@@ -305,7 +309,7 @@ namespace DefenseShields
             }
 
             if (ent is IMyMeteor || ent.GetType().Name.Equals(MyMissile)) return Ent.Other;
-            if (ent is MyVoxelBase && GridIsMobile) return Ent.VoxelBase;
+            if (voxel != null && GridIsMobile) return Ent.VoxelBase;
             return 0;
         }
 

@@ -137,32 +137,6 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in Controller PostInit: {ex}"); }
         }
 
-        private bool WarmUpSequence()
-        {
-            if (Warming) return true;
-            if (Starting)
-            {
-                Warming = true;
-                return true;
-            }
-
-            if (!PowerOnline()) return false;
-            HadPowerBefore = true;
-            _blockChanged = true;
-            _functionalChanged = true;
-
-            ResetShape(false, true);
-            ResetShape(false, false);
-            _oldGridHalfExtents = DsState.State.GridHalfExtents;
-            _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
-            GetModulationInfo();
-
-            Starting = true;
-            ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
-            if (Session.Enforced.Debug == 1) Log.Line($"Warming: buffer:{DsState.State.Buffer} - BlockWorking:{ControlBlockWorking} - Active:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
-            return false;
-        }
-
         private void StorageSetup()
         {
             Storage = Shield.Storage;

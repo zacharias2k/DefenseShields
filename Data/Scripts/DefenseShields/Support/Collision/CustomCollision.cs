@@ -181,7 +181,7 @@ namespace DefenseShields.Support
                 }
                 collisionAvg = collisionAdd / voxelHitVecs.Count;
 
-                shieldGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * ((MyCubeGrid)shieldGrid).GetCurrentMass() * speed, null, Vector3D.Zero, MathHelper.Clamp(speed, 1f, 20f));
+                shieldGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * (shieldGrid as MyCubeGrid)?.GetCurrentMass() * speed, null, Vector3D.Zero, MathHelper.Clamp(speed, 1f, 20f));
             }
             catch (Exception ex) { Log.Line($"Exception in VoxelCollisionSphere: {ex}"); }
 

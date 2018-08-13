@@ -51,9 +51,13 @@ namespace DefenseShields
         public bool LargeEmitterControlsLoaded { get; set; }
         public bool SmallEmitterControlsLoaded { get; set; }
         public bool DisplayControlsLoaded { get; set; }
-        public bool Enabled = true;
 
-        internal MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
+        internal static readonly MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
+        internal static readonly MyStringHash DelDamage = MyStringHash.GetOrCompute("DelDamage");
+        internal static readonly MyStringHash DSdamage = MyStringHash.GetOrCompute("DSdamage");
+        internal static readonly MyStringHash DSheal = MyStringHash.GetOrCompute("DSheal");
+        internal static readonly MyStringHash DSbypass= MyStringHash.GetOrCompute("DSbypass");
+
         internal MyStringHash Bypass = MyStringHash.GetOrCompute("bypass");
         internal MyStringId Password = MyStringId.GetOrCompute("Shield Access Frequency");
         internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Match a shield's modulation frequency/code");
@@ -104,8 +108,10 @@ namespace DefenseShields
         public IMyTerminalControlSeparator ModSep1;
         public IMyTerminalControlSeparator ModSep2;
 
-        public static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         public bool[] SphereOnCamera = new bool[0];
+
+        public static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
+        public readonly Dictionary<IMySlimBlock, DefenseShields> ControllerBlockCache = new Dictionary<IMySlimBlock, DefenseShields>();
 
         public readonly List<Emitters> Emitters = new List<Emitters>();
         public readonly List<Displays> Displays = new List<Displays>();
@@ -152,8 +158,16 @@ namespace DefenseShields
             try
             {
                 Tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-
-                for (int i = 0; i < Components.Count; i++) Components[i].DeformEnabled = false;
+                if (_count == 0) ControllerBlockCache.Clear();
+                for (int i = 0; i < Components.Count; i++)
+                {
+                    var shield = Components[i];
+                    shield.DeformEnabled = false;
+                    if (_count == 0)
+                    {
+                        if (shield.Starting) ControllerBlockCache.Add(shield.Shield.SlimBlock, shield);
+                    }
+                }
                 if (SphereOnCamera.Length != Components.Count) Array.Resize(ref SphereOnCamera, Components.Count);
                 if (_count++ == 59)
                 {
@@ -231,8 +245,8 @@ namespace DefenseShields
         {
             try
             {
-                if (Components.Count == 0 || info.Type == MyDamageType.Destruction || info.Type == MyDamageType.Drill || info.Type == MyDamageType.Grind || info.Type == MyDamageType.Environment || info.Type == MyDamageType.LowPressure) return;
-
+                if (Components.Count == 0 || info.Type == DelDamage ||info.Type == MyDamageType.Destruction || info.Type == MyDamageType.Drill || info.Type == MyDamageType.Grind || info.Type == MyDamageType.Environment || info.Type == MyDamageType.LowPressure) return;
+                
                 var player = target as IMyCharacter;
                 if (player != null)
                 {
@@ -248,25 +262,85 @@ namespace DefenseShields
                     return;
                 }
 
+                if (info.Type == MPdamage)
+                {
+                    var shield = target as IMySlimBlock;
+                    if (shield == null)
+                    {
+                        if (Enforced.Debug == 1) Log.Line($"shield is null");
+                        info.Amount = 0;
+                        return;
+                    }
+
+                    DefenseShields ds;
+                    ControllerBlockCache.TryGetValue(shield, out ds);
+                    if (ds == null)
+                    {
+                        if (Enforced.Debug == 1) Log.Line($"ds is null");
+                        info.Amount = 0;
+                        return;
+                    }
+                    if (!DedicatedServer)
+                    {
+                        var shieldActive = ds.DsState.State.Online && !ds.DsState.State.Lowered;
+                        if (!shieldActive || ds.DsState.State.Buffer <= 0)
+                        {
+                            if (Enforced.Debug == 1) Log.Line($"MP-shield inactive or no buff - Active:{shieldActive} - Buffer:{ds.DsState.State.Buffer} - Amount:{info.Amount} - AttackerId:{info.AttackerId}");
+                            info.Amount = 0;
+                            return;
+                        }
+
+                        MyEntity hostileEnt;
+                        MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
+                        if (hostileEnt == null)
+                        {
+                            if (Enforced.Debug == 1) Log.Line($"MP-shield nullAttacker - Amount:{info.Amount} - Buffer:{ds.DsState.State.Buffer}");
+                            info.Amount = 0;
+                            return;
+                        }
+                        //if (Enforced.Debug == 1) Log.CleanLine("");
+                        //if (Enforced.Debug == 1) Log.CleanLine($"part: SId:{ds.Shield.EntityId} - attacker: {hostileEnt.DebugName}");
+                        //if (Enforced.Debug == 1) Log.CleanLine($"part: T:{info.Type} - A:{info.Amount} - HF:{ds.FriendlyCache.Contains(hostileEnt)} - HI:{ds.IgnoreCache.Contains(hostileEnt)}");
+
+                        //block.ComputeWorldCenter(out blockPos);
+                        //if (!CustomCollision.PointInShield(blockPos, shield.DetectMatrixOutsideInv)) continue;
+                        var blockPos = shield.FatBlock.PositionComp.WorldAABB.Center;
+                        var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, blockPos);
+                        var obbCheck = ds.SOriBBoxD.Intersects(ref line);
+                        var testDir = line.From - line.To;
+                        testDir.Normalize();
+                        var ray = new RayD(line.From, -testDir);
+                        var worldSphere = ds.ShieldSphere;
+                        var sphereCheck = worldSphere.Intersects(ray);
+                        var obb = obbCheck ?? 0;
+                        var sphere = sphereCheck ?? 0;
+                        double furthestHit;
+                        if (obb <= 0 && sphere <= 0) furthestHit = 0;
+                        else if (obb > sphere) furthestHit = obb;
+                        else furthestHit = sphere;
+                        var hitPos = line.From + testDir * -furthestHit;
+                        ds.WorldImpactPosition = hitPos;
+                        ds.ImpactSize = info.Amount;
+                    }
+
+                    ds.Absorb += info.Amount;
+                    info.Amount = 0f;
+                    return;
+                }
+
                 var block = target as IMySlimBlock;
                 if (block == null) return;
-
                 foreach (var shield in Components)
                 {
-                    var shieldActive = shield.DsState.State.Online && shield.DsSet.Settings.RaiseShield;
-
-                    if (!IsServer && !shieldActive && info.Type == MPdamage)
-                    {
-                        info.Amount = 0;
-                        continue;
-                    }
+                    var shieldActive = shield.DsState.State.Online && !shield.DsState.State.Lowered;
 
                     var blockGrid = (MyCubeGrid)block.CubeGrid;
                     if (shieldActive && shield.FriendlyCache.Contains(blockGrid))
                     {
-                        if (shieldActive && !shield.DeformEnabled && info.IsDeformation && info.AttackerId == 0)
+                        if (!shield.DeformEnabled && info.IsDeformation && info.AttackerId == 0)
                         {
                             info.Amount = 0;
+                            //if (Enforced.Debug == 1) Log.Line($"deform not enabled and deform damage + attackerId0");
                             continue;
                         }
 
@@ -278,40 +352,6 @@ namespace DefenseShields
 
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
-                        if (info.Type == MPdamage)
-                        {
-                            if (!shieldActive || shield.DsState.State.Buffer <= 0 || hostileEnt == null)
-                            {
-                                info.Amount = 0;
-                                continue;
-                            }
-
-                            //Log.CleanLine("");
-                            //Log.CleanLine($"part: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
-                            //Log.CleanLine($"part: T:{info.Type} - A:{info.Amount} - HF:{shield.FriendlyCache.Contains(hostileEnt)} - HI:{shield.IgnoreCache.Contains(hostileEnt)} - PF:{shield.FriendlyCache.Contains(blockGrid)} - PI:{shield.IgnoreCache.Contains(blockGrid)}");
-                            Vector3D blockPos;
-                            block.ComputeWorldCenter(out blockPos);
-                            if (!CustomCollision.PointInShield(blockPos, shield.DetectMatrixOutsideInv)) continue;
-                            var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, blockPos);
-                            var obbCheck = shield.SOriBBoxD.Intersects(ref line);
-                            var testDir = line.From - line.To;
-                            testDir.Normalize();
-                            var ray = new RayD(line.From, -testDir);
-                            var worldSphere = shield.ShieldSphere;
-                            var sphereCheck = worldSphere.Intersects(ray);
-                            var obb = obbCheck ?? 0;
-                            var sphere = sphereCheck ?? 0;
-                            double furthestHit;
-                            if (obb <= 0 && sphere <= 0) furthestHit = 0;
-                            else if (obb > sphere) furthestHit = obb;
-                            else furthestHit = sphere;
-                            var hitPos = line.From + testDir * -furthestHit;
-                            shield.WorldImpactPosition = hitPos;
-                            shield.ImpactSize = info.Amount;
-                            shield.Absorb += info.Amount;
-                            info.Amount = 0f;
-                            continue;
-                        }
                         if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt))
                         {
                             shield.DeformEnabled = true;
@@ -325,7 +365,7 @@ namespace DefenseShields
                             continue;
                         }
 
-                        if (hostileEnt != null && block.FatBlock == shield.Shield && (info.Type.String.Equals("DSdamage") || info.Type.String.Equals("DSheal") || info.Type.String.Equals("DSbypass")))
+                        if (hostileEnt != null && block.FatBlock == shield.Shield && (info.Type == DSdamage || info.Type == DSheal || info.Type == DSbypass))
                         {
                             shield.Absorb += info.Amount;
                             info.Amount = 0f;
@@ -340,7 +380,7 @@ namespace DefenseShields
 
                         if (!DedicatedServer && hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
                         {
-                            //Log.CleanLine("");
+                            //Log.CleanLine("ent attack shielded grid");
                             //Log.CleanLine($"part: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
                             //Log.CleanLine($"part: T:{info.Type} - A:{info.Amount} - HF:{shield.FriendlyCache.Contains(hostileEnt)} - HI:{shield.IgnoreCache.Contains(hostileEnt)} - PF:{shield.FriendlyCache.Contains(blockGrid)} - PI:{shield.IgnoreCache.Contains(blockGrid)}");
                             Vector3D blockPos;
@@ -363,13 +403,19 @@ namespace DefenseShields
                             shield.WorldImpactPosition = hitPos;
                             shield.ImpactSize = info.Amount;
                         }
+                        else if (hostileEnt != null)
+                        {
+                            //Log.CleanLine("ent attack shielded grid");
+                            //Log.CleanLine($"part: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
+                            //Log.CleanLine($"part: T:{info.Type} - A:{info.Amount} - HF:{shield.FriendlyCache.Contains(hostileEnt)} - HI:{shield.IgnoreCache.Contains(hostileEnt)} - PF:{shield.FriendlyCache.Contains(blockGrid)} - PI:{shield.IgnoreCache.Contains(blockGrid)}");
+                        }
 
                         shield.Absorb += info.Amount;
                         info.Amount = 0f;
                     }
                     else if (shieldActive && shield.PartlyProtectedCache.Contains(blockGrid))
                     {
-                        if (shieldActive && !shield.DeformEnabled && info.IsDeformation && info.AttackerId == 0)
+                        if (!shield.DeformEnabled && info.IsDeformation && info.AttackerId == 0)
                         {
                             info.Amount = 0;
                             continue;
@@ -383,42 +429,6 @@ namespace DefenseShields
 
                         MyEntity hostileEnt;
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
-                        if (info.Type == MPdamage)
-                        {
-
-                            if (!shieldActive || shield.DsState.State.Buffer <= 0 || hostileEnt == null)
-                            {
-                                info.Amount = 0;
-                                continue;
-                            }
-
-                            //Log.CleanLine("");
-                            //Log.CleanLine($"part: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
-                            //Log.CleanLine($"part: T:{info.Type} - A:{info.Amount} - HF:{shield.FriendlyCache.Contains(hostileEnt)} - HI:{shield.IgnoreCache.Contains(hostileEnt)} - PF:{shield.FriendlyCache.Contains(blockGrid)} - PI:{shield.IgnoreCache.Contains(blockGrid)}");
-                            Vector3D blockPos;
-                            block.ComputeWorldCenter(out blockPos);
-                            if (!CustomCollision.PointInShield(blockPos, shield.DetectMatrixOutsideInv)) continue;
-                            var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, blockPos);
-                            var obbCheck = shield.SOriBBoxD.Intersects(ref line);
-                            var testDir = line.From - line.To;
-                            testDir.Normalize();
-                            var ray = new RayD(line.From, -testDir);
-                            var worldSphere = shield.ShieldSphere;
-                            var sphereCheck = worldSphere.Intersects(ray);
-                            var obb = obbCheck ?? 0;
-                            var sphere = sphereCheck ?? 0;
-                            double furthestHit;
-                            if (obb <= 0 && sphere <= 0) furthestHit = 0;
-                            else if (obb > sphere) furthestHit = obb;
-                            else furthestHit = sphere;
-                            var hitPos = line.From + testDir * -furthestHit;
-                            shield.WorldImpactPosition = hitPos;
-                            shield.ImpactSize = info.Amount;
-                            shield.Absorb += info.Amount;
-                            info.Amount = 0f;
-                            continue;
-                        }
-
                         if (hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(hostileEnt))
                         {
                             shield.DeformEnabled = true;
@@ -439,7 +449,7 @@ namespace DefenseShields
 
                         if (!DedicatedServer && hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
                         {
-                            //Log.CleanLine("");
+                            //Log.CleanLine("ent attack partly shielded grid");
                             //Log.CleanLine($"part: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
                             //Log.CleanLine($"part: T:{info.Type} - A:{info.Amount} - HF:{shield.FriendlyCache.Contains(hostileEnt)} - HI:{shield.IgnoreCache.Contains(hostileEnt)} - PF:{shield.FriendlyCache.Contains(blockGrid)} - PI:{shield.IgnoreCache.Contains(blockGrid)}");
                             Vector3D blockPos;
@@ -462,6 +472,12 @@ namespace DefenseShields
 
                             shield.WorldImpactPosition = hitPos;
                             shield.ImpactSize = info.Amount;
+                        }
+                        else if(hostileEnt != null)
+                        {
+                            //Log.CleanLine("ent attack partly shielded grid");
+                            //Log.CleanLine($"part: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
+                            //Log.CleanLine($"part: T:{info.Type} - A:{info.Amount} - HF:{shield.FriendlyCache.Contains(hostileEnt)} - HI:{shield.IgnoreCache.Contains(hostileEnt)} - PF:{shield.FriendlyCache.Contains(blockGrid)} - PI:{shield.IgnoreCache.Contains(blockGrid)}");
                         }
                         shield.Absorb += info.Amount;
                         info.Amount = 0f;
@@ -542,7 +558,7 @@ namespace DefenseShields
                         {
                             if (data.State == null) return;
 
-                            if (Enforced.Debug == 1) Log.Line($"Packet State Packet received:- data:\n{data.State}");
+                            if (Enforced.Debug <= 2) Log.Line($"Packet State Packet received:- data:\n{data.State}");
 
                             if (IsServer) ControllerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                             else logic.UpdateState(data.State);

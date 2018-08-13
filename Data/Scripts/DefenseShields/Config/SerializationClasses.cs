@@ -46,9 +46,9 @@ namespace DefenseShields
 
         public override string ToString()
         {
-            return $"Nerf = {Math.Round(Nerf, 4)}\nBaseScaler = {BaseScaler}\nEfficiency = {Math.Round(Efficiency, 4)}\nStationRatio = {StationRatio}\nLargeShipRatio = {LargeShipRatio}" +
-                   $"\nSmallShipRatio = {SmallShipRatio}\nDisableVoxelSupport = {DisableVoxelSupport}\nDisableGridDamageSupport = {DisableGridDamageSupport}" +
-                   $"\nDebug = {Debug}\nAltRecharge = {AltRecharge}\nVersion = {Version}\nSenderId = {SenderId}";
+            return $"Nerf:{Math.Round(Nerf, 4)} - BaseScaler:{BaseScaler} - Efficiency:{Math.Round(Efficiency, 4)} - StationRatio:{StationRatio} - LargeShipRatio:{LargeShipRatio}\n" +
+                   $"SmallShipRatio:{SmallShipRatio} - DisableVoxelSupport:{DisableVoxelSupport} - DisableGridDamageSupport:{DisableGridDamageSupport}\n" +
+                   $"Debug:{Debug} - AltRecharge:{AltRecharge} - Version:{Version} - SenderId:{SenderId}";
         }
 
     }
@@ -105,7 +105,9 @@ namespace DefenseShields
 
         public override string ToString()
         {
-            return $"Buffer = {Math.Round(Buffer, 4)} - Online:{Online} - Mode:{Mode} - NoPower:{NoPower} - EW:{EmitterWorking} - Waking:{Waking} - Ellip:{Math.Round(EllipsoidAdjust, 4)} - GridHalf:{GridHalfExtents != Vector3D.Zero}";
+            return $"Buff:{Math.Round(Buffer, 4)} - Ellip:{Math.Round(EllipsoidAdjust, 4)} - Mode:{Mode} - EW:{EmitterWorking} - GHalf:{GridHalfExtents != Vector3D.Zero} - Own:{IsOwner} - InF:{InFaction} - Access:{ControllerGridAccess}\n" +
+                   $"On:{Online} - Sus:{Suspended} - Sleep:{Sleeping} - NoPow:{NoPower} - Waking:{Waking} - Over:{Overload} - Lower:{Lowered} - Remod:{Remodulate} - Blocked:{FieldBlocked}\n" +
+                   $"Enhance:{Enhancer} - PowerMulti:{EnhancerPowerMulti} - ProtMulti:{EnhancerProtMulti} - ModE:{Math.Round(ModulateEnergy, 4)} - ModK:{Math.Round(ModulateKinetic, 4)}";
         }
     }
 
@@ -113,7 +115,7 @@ namespace DefenseShields
     public class ProtoControllerSettings
     {
         [ProtoMember(1)]
-        public bool Enabled = false;
+        public bool Unused = false;
 
         [ProtoMember(2), DefaultValue(-1)]
         public float Width = 30f;
@@ -159,11 +161,9 @@ namespace DefenseShields
 
         public override string ToString()
         {
-            return $"Enabled = {Enabled}\nIdleVisible = {PassiveInvisible}\nActiveVisible = {ActiveInvisible}\nWidth = {Math.Round(Width, 4)}" +
-                   $"\nHeight = {Math.Round(Height, 4)}\nDepth = {Math.Round(Depth, 4)}\nRate = {Math.Round(Rate, 4)}" +
-                   $"\nExtendFit = {ExtendFit}\nSphereFit = {SphereFit}" +
-                   $"\nFortifyShield = {FortifyShield}\nSendToHud = {SendToHud}\nUseBatteries = {UseBatteries}" +
-                   $"\nShieldActive = {ShieldActive}\nRaiseShield = {RaiseShield}\n ShieldShell = {ShieldShell}";
+            return $"Unused:{Unused} - IdleVisible:{PassiveInvisible} - ActiveVisible:{ActiveInvisible} - Width:{Math.Round(Width, 4)} Height:{Math.Round(Height, 4)} - Depth:{Math.Round(Depth, 4)}\n" +
+                   $"Rate:{Math.Round(Rate, 4)} ExtendFit:{ExtendFit} - SphereFit:{SphereFit} - FortifyShield:{FortifyShield} - SendToHud:{SendToHud} - UseBatteries:{UseBatteries}\n" +
+                   $"ShieldActive:{ShieldActive} - RaiseShield:{RaiseShield} - ShieldShell:{ShieldShell}";
         }
     }
 
@@ -184,7 +184,7 @@ namespace DefenseShields
 
         public override string ToString()
         {
-            return $"Enabled = {Online}\nModulateVoxels";
+            return $"";
         }
     }
 
@@ -238,7 +238,7 @@ namespace DefenseShields
     public class ProtoO2GeneratorSettings
     {
         [ProtoMember(1)]
-        public bool Enabled = true;
+        public bool Unused;
 
         [ProtoMember(2)]
         public bool ModulateVoxels = true;
@@ -251,7 +251,7 @@ namespace DefenseShields
 
         public override string ToString()
         {
-            return $"Enabled = {Enabled}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nModulateDamage = {ModulateDamage}";
+            return $"";
         }
     }
 
@@ -274,7 +274,7 @@ namespace DefenseShields
     public class ProtoEnhancerSettings
     {
         [ProtoMember(1)]
-        public bool Enabled = true;
+        public bool Unused;
 
         [ProtoMember(2)]
         public bool ModulateVoxels = true;
@@ -287,7 +287,7 @@ namespace DefenseShields
 
         public override string ToString()
         {
-            return $"Enabled = {Enabled}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nModulateDamage = {ModulateDamage}";
+            return $"";
         }
     }
 

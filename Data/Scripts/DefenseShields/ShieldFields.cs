@@ -113,6 +113,7 @@ namespace DefenseShields
         private bool _shapeEvent;
         private bool _enablePhysics = true;
         private bool _updateMobileShape;
+        private bool _clientOn;
 
         private const string SpaceWolf = "Space_Wolf";
         private const string MyMissile = "MyMissile";
@@ -216,7 +217,8 @@ namespace DefenseShields
         private static readonly MyStringId HudIconDps90 = MyStringId.GetOrCompute("DS_ShieldDps90");
         private static readonly MyStringId HudIconDps100 = MyStringId.GetOrCompute("DS_ShieldDps100");
 
-        private static readonly MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
+        private readonly MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
+        private readonly MyStringHash DelDamage = MyStringHash.GetOrCompute("DelDamage");
 
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;

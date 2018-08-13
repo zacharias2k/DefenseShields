@@ -54,7 +54,7 @@ namespace DefenseShields
 
         internal void NetworkUpdate()
         {
-            if (Session.Enforced.Debug == 1) Log.Line($"ServRelay - ShieldId [{Shield.EntityId}]: network state update for shield");
+            if (Session.Enforced.Debug == 2) Log.Line($"ServRelay - ShieldId [{Shield.EntityId}]: network state update for shield");
             Session.PacketizeControllerState(Shield, State); // update clients with server's state
         }
     }

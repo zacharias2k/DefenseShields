@@ -120,7 +120,7 @@ namespace DefenseShields
                     var entInfo = WebEnts[webent];
                     if (entInfo.LastTick != _tick) continue;
                     if (entInfo.FirstTick == _tick && (WebEnts[webent].Relation == Ent.LargeNobodyGrid || WebEnts[webent].Relation == Ent.LargeEnemyGrid))
-                        ((IMyCubeGrid)webent).GetBlocks(WebEnts[webent].CacheBlockList, CollectCollidableBlocks);
+                        (webent as IMyCubeGrid)?.GetBlocks(WebEnts[webent].CacheBlockList, CollectCollidableBlocks);
                     switch (WebEnts[webent].Relation)
                     {
                         case Ent.SmallNobodyGrid:

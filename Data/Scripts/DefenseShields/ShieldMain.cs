@@ -8,6 +8,7 @@ using VRage.Game.Components;
 using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
+using Sandbox.Game.Gui;
 
 namespace DefenseShields
 {
@@ -36,7 +37,8 @@ namespace DefenseShields
                         if (GridIsMobile && createHeTiming) CreateHalfExtents();
                         SyncThreadedEnts();
                         WebEntities();
-                        if (_count == 29 && Session.MpActive)
+                        var mpActive = Session.MpActive;
+                        if (mpActive && _count == 29)
                         {
                             var newPercentColor = UtilsStatic.GetShieldColorFromFloat(ShieldComp.ShieldPercent);
                             if (newPercentColor != _oldPercentColor)
@@ -45,6 +47,7 @@ namespace DefenseShields
                                 _oldPercentColor = newPercentColor;
                             }
                         }
+                        else if (mpActive && _count == 29 && _lCount == 7) ShieldChangeState();
                     }
                     else WebEntitiesClient();
                 }
@@ -83,11 +86,9 @@ namespace DefenseShields
             {
                 if (!ControllerFunctional() || ShieldWaking())
                 {
-                    if (PrevShieldActive)
-                    {
-                        ShieldChangeState();
-                        PrevShieldActive = false;
-                    }
+                    if (!PrevShieldActive) return false;
+                    ShieldChangeState();
+                    PrevShieldActive = false;
                     return false;
                 }
 
@@ -113,16 +114,14 @@ namespace DefenseShields
             }
             else
             {
+
                 if (!AllInited)
                 {
                     PostInit();
                     return false;
                 }
                 if (_blockChanged) BlockMonitor();
-                if (!WarmUpSequence()) return false;
-
-                if (!DsState.State.Online) return false;
-
+                if (ClientOfflineStates() || !WarmUpSequence() || ClientShieldLowered()) return false;
                 if (GridIsMobile) MobileUpdate();
                 if (UpdateDimensions) RefreshDimensions();
 
@@ -130,7 +129,8 @@ namespace DefenseShields
                 SetShieldClientStatus();
                 Timing(true);
             }
-            return true;
+            _clientOn = true;
+            return _clientOn;
         }
 
         private bool ControllerFunctional()
@@ -344,8 +344,9 @@ namespace DefenseShields
             foreach (var grid in ShieldComp.GetLinkedGrids)
             {
                 var mechanical = ShieldComp.GetSubGrids.Contains(grid);
-
-                foreach (var block in ((MyCubeGrid)grid).GetFatBlocks())
+                var myGrid = grid as MyCubeGrid;
+                if (myGrid == null) continue;
+                foreach (var block in myGrid.GetFatBlocks())
                 {
                     lock (_functionalBlocks) if (block.IsFunctional && mechanical) _functionalBlocks.Add(block);
                     var source = block.Components.Get<MyResourceSourceComponent>();
@@ -370,10 +371,13 @@ namespace DefenseShields
             _power = _shieldConsumptionRate + _shieldMaintaintPower;
             if (Session.IsServer && WarmedUp && HadPowerBefore && _shieldConsumptionRate.Equals(0f) && DsState.State.Buffer.Equals(0.01f) && _genericDownLoop == -1)
             {
+                DsState.State.NoPower = true;
                 _power = 0.0001f;
-                _genericDownLoop = 0;
+                if (Session.IsServer) _genericDownLoop = 0;
                 return false;
             }
+            DsState.State.NoPower = false;
+
             if (_power < 0.0001f) _power = 0.001f;
             if (WarmedUp && (_power < _shieldCurrentPower || _count == 28)) Sink.Update();
 
@@ -439,11 +443,11 @@ namespace DefenseShields
             const float ratio = 1.25f;
             var percent = DsSet.Settings.Rate * ratio;
             var shieldMaintainPercent = 1 / percent;
-            shieldMaintainPercent = (shieldMaintainPercent * DsState.State.EnhancerPowerMulti) * (ShieldComp.ShieldPercent * 0.01f);
+            shieldMaintainPercent = shieldMaintainPercent * DsState.State.EnhancerPowerMulti * (ShieldComp.ShieldPercent * 0.01f);
             if (DsState.State.Lowered) shieldMaintainPercent = shieldMaintainPercent * 0.5f;
             _shieldMaintaintPower = _gridMaxPower * shieldMaintainPercent;
-            var fPercent = (percent / ratio) / 100;
-            _sizeScaler = (shieldVol / _ellipsoidSurfaceArea) / 2.40063050674088;
+            var fPercent = percent / ratio / 100;
+            _sizeScaler = shieldVol / _ellipsoidSurfaceArea / 2.40063050674088;
 
             float bufferScaler;
             if (ShieldMode == ShieldType.Station && DsState.State.Enhancer) bufferScaler = 100 / percent * Session.Enforced.BaseScaler * nerfer;
@@ -507,7 +511,7 @@ namespace DefenseShields
                 if (!ShieldPowerLoss)
                 {
                     ShieldPowerLoss = true;
-                    if (!Session.DedicatedServer) PlayerMessages(PlayerNotice.NoPower);
+                    if (Session.IsServer && !Session.DedicatedServer) PlayerMessages(PlayerNotice.NoPower);
                 }
 
                 var shieldLoss = DsState.State.Buffer * (_powerLossLoop * 0.00008333333f);
@@ -637,7 +641,7 @@ namespace DefenseShields
         private void ShieldDoDamage(float damage, long entityId)
         {
             ImpactSize = damage;
-            ((IMySlimBlock)((MyCubeBlock)Shield).SlimBlock).DoDamage(damage, MPdamage, true, null, entityId);
+            Shield.SlimBlock.DoDamage(damage, MPdamage, true, null, entityId);
         }
         #endregion
 
@@ -675,7 +679,7 @@ namespace DefenseShields
             }
             else
             {
-                if (!DsState.State.EnhancerPowerMulti.Equals(2) || !DsState.State.EnhancerProtMulti.Equals(1000) || DsState.State.Enhancer) update = true;
+                if (!DsState.State.EnhancerPowerMulti.Equals(1) || !DsState.State.EnhancerProtMulti.Equals(1) || DsState.State.Enhancer) update = true;
                 DsState.State.EnhancerPowerMulti = 1;
                 DsState.State.EnhancerProtMulti = 1;
                 DsState.State.Enhancer = false;

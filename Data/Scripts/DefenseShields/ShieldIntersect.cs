@@ -113,7 +113,7 @@ namespace DefenseShields
             var rawDamage = 1f;
             var bDamage1 = (bMass * bVelocity).Length();
             var bDamage2 = (bMass * sVelocity).Length();
-            var bDamage = bDamage1 >  bDamage2 ? bDamage1: bDamage2;
+            var bDamage = bDamage1 > bDamage2 ? bDamage1 : bDamage2;
             var sDamage1 = (sMass * bVelocity).Length();
             var sDamage2 = (sMass * sVelocity).Length();
             var sDamage = sDamage1 > sDamage2 ? sDamage1 : sDamage2;
@@ -130,7 +130,7 @@ namespace DefenseShields
             if (insidePoints.Count > 0 && !sPhysics.IsStatic) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sMass, sPhysics.CenterOfMassWorld);
 
             collisionAvg /= insidePoints.Count;
-            if (insidePoints.Count > 0 && !sPhysics.IsStatic) sPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * sMass , null, Vector3D.Zero, MathHelper.Clamp(sPhysics.LinearVelocity.Length(), 10f, 50f));
+            if (insidePoints.Count > 0 && !sPhysics.IsStatic) sPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * sMass, null, Vector3D.Zero, MathHelper.Clamp(sPhysics.LinearVelocity.Length(), 10f, 50f));
             if (insidePoints.Count > 0 && !bPhysics.IsStatic) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - bPhysics.CenterOfMassWorld) * bMass, null, Vector3D.Zero, MathHelper.Clamp(bPhysics.LinearVelocity.Length(), 10f, 50f));
 
             if (insidePoints.Count <= 0) return;
@@ -158,7 +158,7 @@ namespace DefenseShields
         {
             EntIntersectInfo entInfo;
             WebEnts.TryGetValue(voxelBase, out entInfo);
-            var myGrid = (MyCubeGrid) Shield.CubeGrid;
+            var myGrid = (MyCubeGrid)Shield.CubeGrid;
             var collision = CustomCollision.VoxelCollisionSphere(myGrid, ShieldComp.PhysicsOutsideLow, voxelBase, SOriBBoxD, DetectMatrixOutside);
 
             if (collision != Vector3D.NegativeInfinity)
@@ -360,7 +360,7 @@ namespace DefenseShields
                 damage = -damage;
                 return damage;
             }
-            if (ammoInfo.BackKickForce < 0 && dmgMulti.Equals(0)) {damage = float.NegativeInfinity;}
+            if (ammoInfo.BackKickForce < 0 && dmgMulti.Equals(0)) { damage = float.NegativeInfinity; }
             else if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.6f)) * 7.5f;
             else damage = ammoInfo.Mass * ammoInfo.Speed;
 

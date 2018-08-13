@@ -162,6 +162,7 @@ namespace DefenseShields
                     return false;
                 }
                 if (EmiState.State.Mode == 0 && EmiState.State.Link && ShieldComp.StationEmitter == null) ShieldComp.StationEmitter = this;
+                else if (EmiState.State.Mode != 0 && EmiState.State.Link && ShieldComp.ShipEmitter == null) ShieldComp.ShipEmitter = this;
             }
             return true;
         }
@@ -173,7 +174,7 @@ namespace DefenseShields
             EmiState.State.Link = ControllerFound;
             EmiState.State.Suspend = Suspended;
             EmiState.State.Mode = (int)EmitterMode;
-            EmiState.State.BoundingRange = ShieldComp.DefenseShields.BoundingRange;
+            EmiState.State.BoundingRange = ShieldComp?.DefenseShields?.BoundingRange ?? 0f;
             EmiState.State.Compatible = IsStatic && EmitterMode == EmitterType.Station || !IsStatic && EmitterMode != EmitterType.Station;
             EmiState.SaveState();
             EmiState.NetworkUpdate();
