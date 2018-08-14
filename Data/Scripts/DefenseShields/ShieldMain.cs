@@ -549,6 +549,7 @@ namespace DefenseShields
             if (!DsState.State.Online && DsState.State.NoPower) return "[Insufficient Power]";
             if (!DsState.State.Online && DsState.State.Overload) return "[Overloaded]";
             if (!DsState.State.ControllerGridAccess) return "[Invalid Owner]";
+            if (DsState.State.Waking) return "[Coming Online]";
             if (DsState.State.Suspended || DsState.State.Mode == 4) return "[Controller Standby]";
             if (DsState.State.Sleeping) return "[Docked]";
             if (!DsState.State.EmitterWorking) return "[Emitter Failure]";

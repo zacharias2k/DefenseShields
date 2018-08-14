@@ -7,12 +7,12 @@ namespace DefenseShields
     public class ModulatorGridComponent : MyEntityComponentBase
     {
         private static List<ModulatorGridComponent> gridModulator = new List<ModulatorGridComponent>();
-        public Modulators Modulators;
+        public Modulators Modulator;
         public string Password;
 
-        public ModulatorGridComponent(Modulators modulators)
+        public ModulatorGridComponent(Modulators modulator)
         {
-            Modulators = modulators;
+            Modulator = modulator;
         }
 
         public override void OnAddedToContainer()
@@ -57,7 +57,7 @@ namespace DefenseShields
 
         public HashSet<IMyCubeGrid> GetSubGrids { get; set; } = new HashSet<IMyCubeGrid>();
 
-        public bool ModulatorOnline => Modulators.ModState.State.Online;
+        public bool ModulatorOnline => Modulator.ModState.State.Online;
 
         public string ModulationPassword
         {

@@ -133,7 +133,6 @@ namespace DefenseShields
         private void FailureConditions()
         {
             var dedicated = Session.DedicatedServer;
-            if (dedicated) Log.Line($"fail condition-1 - Buff/Absorb{DsState.State.Buffer}({Absorb}) - O:{_overLoadLoop == 0}({DsState.State.Overload}) - M:{_reModulationLoop == 0}({DsState.State.Remodulate}) - G:{_genericDownLoop == 0}({!DsState.State.Online})");
             if (_overLoadLoop == 0 || _reModulationLoop == 0 || _genericDownLoop == 0)
             {
                 if (DsState.State.Online)
@@ -145,7 +144,6 @@ namespace DefenseShields
                     if (dedicated && DsState.State.Overload) PlayerMessages(PlayerNotice.OverLoad);
                     else if (dedicated && DsState.State.Remodulate) PlayerMessages(PlayerNotice.Remodulate);
                     ShieldChangeState();
-                    if (dedicated) Log.Line($"fail condition-2 - O:{_overLoadLoop == 0}({DsState.State.Overload}) - M:{_reModulationLoop == 0}({DsState.State.Remodulate}) - G:{_genericDownLoop == 0}({!DsState.State.Online})");
                 }
             }
 
@@ -344,6 +342,7 @@ namespace DefenseShields
             DsState.State.Sleeping = false;
             return DsState.State.Sleeping;
         }
+
         private void Election()
         {
             if (ShieldComp == null || !Shield.CubeGrid.Components.Has<ShieldGridComponent>())
@@ -412,6 +411,7 @@ namespace DefenseShields
 
         private void InitSuspend(bool cleanEnts = false)
         {
+            Log.Line($"test");
             if (!DsState.State.Suspended)
             {
                 if (cleanEnts) InitEntities(false);
@@ -475,14 +475,14 @@ namespace DefenseShields
             }
 
             var offline = DsState.State.Suspended || !DsState.State.Online || DsState.State.Sleeping || DsState.State.NoPower || !DsState.State.ControllerGridAccess
-                          || !DsState.State.EmitterWorking || DsState.State.Remodulate;
+                          || !DsState.State.EmitterWorking || DsState.State.Remodulate || DsState.State.Waking;
             if (offline)
             {
                 if (_clientOn)
                 {
                     if (DsState.State.Overload) PlayerMessages(PlayerNotice.OverLoad);
-                    else if (DsState.State.Waking) PlayerMessages(PlayerNotice.EmitterInit);
                     else if (DsState.State.FieldBlocked) PlayerMessages(PlayerNotice.FieldBlocked);
+                    else if (DsState.State.Waking) PlayerMessages(PlayerNotice.EmitterInit);
                     else if (DsState.State.Remodulate) PlayerMessages(PlayerNotice.Remodulate);
                     ShellVisibility(true);
                     _clientOn = false;

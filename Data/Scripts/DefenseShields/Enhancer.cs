@@ -61,39 +61,6 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
 
-        private bool EnhancerReady(bool server)
-        {
-            if (server)
-            {
-                if (ShieldComp?.DefenseShields == null || ShieldComp.Enhancer != null && ShieldComp.Enhancer != this ||Sink.CurrentInputByType(GId) < 0.01f ||
-                    Enhancer?.CubeGrid == null || !Enhancer.Enabled || !Enhancer.IsFunctional)
-                {
-                    if (Enhancer != null && _tick % 300 == 0)
-                    {
-                        Enhancer.RefreshCustomInfo();
-                        Enhancer.ShowInToolbarConfig = false;
-                        Enhancer.ShowInToolbarConfig = true;
-                    }
-
-                    if (EnhState.State.Online)
-                    {
-                        EnhState.State.Online = false;
-                        NeedUpdate(true);
-                    }
-
-                    return false;
-                }
-                if (ShieldComp.Enhancer == null) ShieldComp.Enhancer = this;
-                if (!EnhState.State.Online)
-                {
-                    NeedUpdate();
-                }
-            }
-            else if (!EnhState.State.Online || !Enhancer.IsFunctional) return false;
-
-            return _subpartRotor != null || BlockMoveAnimationReset();
-        }
-
         private void Timing()
         {
             if (_count++ == 59)
@@ -111,11 +78,96 @@ namespace DefenseShields
             }
         }
 
-        private void NeedUpdate(bool force = false)
+        private bool EnhancerReady(bool server)
         {
-            if (!force) EnhState.State.Online = true;
-            EnhState.SaveState();
-            EnhState.NetworkUpdate();
+            if (_subpartRotor == null)
+            {
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                if (_subpartRotor == null) return false;
+            }
+
+            if (server)
+            {
+                if (!BlockWorking()) return false;
+            }
+            else
+            {
+                if (ShieldComp?.DefenseShields == null)
+                {
+                    Enhancer.CubeGrid.Components.TryGet(out ShieldComp);
+                    if (ShieldComp?.DefenseShields == null) return false;
+                }
+                if (!EnhState.State.Backup && ShieldComp.Enhancer != this) ShieldComp.Enhancer = this;
+
+                if (!EnhState.State.Online) return false;
+            }
+            return BlockMoveAnimationReset();
+        }
+
+        private bool BlockWorking()
+        {
+            if (Enhancer?.CubeGrid == null || Sink.CurrentInputByType(GId) < 0.01f || !Enhancer.Enabled || !Enhancer.IsFunctional)
+            {
+                NeedUpdate(EnhState.State.Online, false);
+                return false;
+            }
+
+            if (ShieldComp?.DefenseShields == null || ShieldComp.Enhancer != this)
+            {
+                if (ShieldComp?.DefenseShields == null)
+                {
+                    Enhancer?.CubeGrid?.Components.TryGet(out ShieldComp);
+                    if (ShieldComp?.DefenseShields == null)
+                    {
+                        NeedUpdate(EnhState.State.Online, false);
+                        return false;
+                    }
+                }
+
+                if (ShieldComp.Enhancer == null)
+                {
+                    ShieldComp.Enhancer = this;
+                    EnhState.State.Backup = false;
+                }
+                else if (ShieldComp.Enhancer != this)
+                {
+                    EnhState.State.Backup = true;
+                    EnhState.State.Online = false;
+                }
+
+                if (Enhancer != null && _tick % 300 == 0)
+                {
+                    Enhancer.RefreshCustomInfo();
+                    Enhancer.ShowInToolbarConfig = false;
+                    Enhancer.ShowInToolbarConfig = true;
+                }
+
+            }
+
+            if (!EnhState.State.Backup && ShieldComp?.Enhancer == this)
+            {
+                NeedUpdate(EnhState.State.Online, true);
+                return true;
+            }
+
+            NeedUpdate(EnhState.State.Online, false);
+            return false;
+        }
+
+        private void NeedUpdate(bool onState, bool turnOn)
+        {
+            if (!onState && turnOn)
+            {
+                EnhState.State.Online = true;
+                EnhState.SaveState();
+                EnhState.NetworkUpdate();
+            }
+            else if (onState & !turnOn)
+            {
+                EnhState.State.Online = false;
+                EnhState.SaveState();
+                EnhState.NetworkUpdate();
+            }
         }
 
         public void UpdateState(ProtoEnhancerState newState)
@@ -226,18 +278,19 @@ namespace DefenseShields
 
         private bool BlockMoveAnimationReset()
         {
+            if (!Enhancer.IsFunctional) return false;
             if (_subpartRotor == null)
             {
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
                 if (_subpartRotor == null) return false;
             }
-            _subpartRotor.Subparts.Clear();
+            if (_subpartRotor.Closed) _subpartRotor.Subparts.Clear();
             return true;
         }
 
         private void BlockMoveAnimation()
         {
-            if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset();
+            if (!BlockMoveAnimationReset()) return;
             RotationTime -= 1;
             var rotationMatrix = MatrixD.CreateRotationY(0.05f * RotationTime);
             _subpartRotor.PositionComp.LocalMatrix = rotationMatrix;

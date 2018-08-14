@@ -182,6 +182,12 @@ namespace DefenseShields
         [ProtoMember(4), DefaultValue(100)]
         public int ModulateDamage = 100;
 
+        [ProtoMember(5)]
+        public bool Backup;
+
+        [ProtoMember(6)]
+        public bool Link;
+
         public override string ToString()
         {
             return $"";
