@@ -8,7 +8,6 @@ using VRage.Game.Components;
 using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
-using Sandbox.Game.Gui;
 
 namespace DefenseShields
 {

@@ -343,14 +343,14 @@ namespace DefenseShields
             else Online = true;
 
             var logic = ShieldComp.DefenseShields;
-            var losCheckReq = Online && logic.Starting && !logic.DsState.State.Suspended && logic.UnsuspendTick == uint.MinValue;
-            if (losCheckReq && (ShieldComp.CheckEmitters) || TookControl) CheckShieldLineOfSight();
+            var controllerReady = logic.Starting && !logic.DsState.State.Suspended;
+            var losCheckReq = Online && controllerReady;
+            if (losCheckReq && ShieldComp.CheckEmitters || controllerReady && TookControl) CheckShieldLineOfSight();
             //if (losCheckReq && !EmiState.State.Los && !Session.DedicatedServer) DrawHelper();
-
             BlockIsWorking = EmiState.State.Los && Emitter.IsWorking && Emitter.IsFunctional;
             ShieldComp.EmittersWorking = BlockIsWorking && Online;
 
-            if (!BlockIsWorking || !ShieldComp.DefenseShields.DsState.State.Online)
+            if (!BlockIsWorking || !ShieldComp.DefenseShields.DsState.State.Online || !(_tick >= logic.UnsuspendTick))
             {
                 BlockReset();
                 return false;
@@ -531,7 +531,7 @@ namespace DefenseShields
                 ShieldComp.EmitterMode = (int)EmitterMode;
                 ShieldComp.EmitterEvent = true;
                 EmiState.State.Backup = false;
-                EmiState.State.Backup = false;
+                BlockReset(true);
                 if (Session.Enforced.Debug == 1) Log.Line($"Unsuspend - !otherMode: {Definition.Name} - isStatic:{IsStatic} - myShield:{myShield} - myMode {myMode} - Mode:{EmitterMode} - CompMode: {ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - EmitterId [{Emitter.EntityId}]");
             }
             else if (EmiState.State.Suspend) return EmiState.State.Suspend;

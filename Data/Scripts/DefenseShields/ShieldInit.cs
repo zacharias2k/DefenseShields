@@ -95,7 +95,7 @@ namespace DefenseShields
         {
             try
             {
-                if (AllInited || Shield.CubeGrid.Physics == null || !Session.IsServer && DsState.State.Mode == 4) return;
+                if (AllInited || Shield.CubeGrid.Physics == null) return;
                 if (!Session.EnforceInit)
                 {
                     if (Session.IsServer) ServerEnforcementSetup();
@@ -106,17 +106,17 @@ namespace DefenseShields
                     }
                     if (!Session.EnforceInit) return;
                 }
-                if (Session.IsServer && (AllInited || !Shield.IsFunctional || ShieldComp.EmitterMode < 0))
+                if (Session.IsServer && ShieldComp.EmitterMode < 0)
                 {
                     if (_tick % 600 == 0)
                     {
-                        if (Session.IsServer) GridOwnsController();
+                        GridOwnsController();
                         Shield.RefreshCustomInfo();
                     }
                     return;
                 }
 
-                if (!MainInit && Shield.IsFunctional)
+                if (!MainInit)
                 {
                     Session.Instance.CreateControllerElements(Shield);
                     SetShieldType(false);
@@ -126,7 +126,7 @@ namespace DefenseShields
                     if (Session.Enforced.Debug == 1) Log.Line($"MainInit: ShieldId [{Shield.EntityId}]");
                 }
 
-                if (Session.IsServer && (AllInited || !MainInit || !Shield.IsFunctional || !BlockReady())) return;
+                if (!Shield.IsFunctional || Session.IsServer && (!MainInit || !BlockReady()) || !Session.IsServer && !MainInit) return;
 
                 if (Session.EnforceInit)
                 {

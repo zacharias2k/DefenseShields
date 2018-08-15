@@ -68,6 +68,11 @@ namespace DefenseShields
         {
             if (_tick < UnsuspendTick)
             {
+                if (!DsState.State.Waking)
+                {
+                    PlayerMessages(PlayerNotice.EmitterInit);
+                    ShieldChangeState();
+                }
                 _genericDownLoop = 0;
                 DsState.State.Waking = true;
                 return DsState.State.Waking;
@@ -107,6 +112,8 @@ namespace DefenseShields
 
                 Shield.Enabled = false;
                 DsState.State.FieldBlocked = true;
+                if (DsState.State.FieldBlocked) PlayerMessages(PlayerNotice.FieldBlocked);
+                ShieldChangeState();
                 return true;
             }
             DsState.State.FieldBlocked = false;
@@ -126,13 +133,13 @@ namespace DefenseShields
                 DsState.State.EmitterWorking = false;
                 _genericDownLoop = 0;
                 if (Session.Enforced.Debug == 1) Log.Line($"EmitterEvent: detected an emitter event and no emitter is working, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                return;
             }
             DsState.State.EmitterWorking = true;
         }
 
         private void FailureConditions()
         {
-            var dedicated = Session.DedicatedServer;
             if (_overLoadLoop == 0 || _reModulationLoop == 0 || _genericDownLoop == 0)
             {
                 if (DsState.State.Online)
@@ -140,9 +147,9 @@ namespace DefenseShields
                     DsState.State.Online = false;
                     if (_overLoadLoop != -1) DsState.State.Overload = true;
                     if (_reModulationLoop != -1) DsState.State.Remodulate = true;
+                    if (DsState.State.Overload) PlayerMessages(PlayerNotice.OverLoad);
+                    else if (DsState.State.Remodulate) PlayerMessages(PlayerNotice.Remodulate);
                     OfflineShield();
-                    if (dedicated && DsState.State.Overload) PlayerMessages(PlayerNotice.OverLoad);
-                    else if (dedicated && DsState.State.Remodulate) PlayerMessages(PlayerNotice.Remodulate);
                     ShieldChangeState();
                 }
             }
@@ -154,6 +161,7 @@ namespace DefenseShields
                 {
                      DsState.State.Remodulate = false;
                     _reModulationLoop = -1;
+                    ShieldChangeState();
                 }
             }
 
@@ -172,6 +180,7 @@ namespace DefenseShields
                     {
                         DsState.State.EmitterWorking = true;
                         _genericDownLoop = -1;
+                        ShieldChangeState();
                     }
                 }
             }
@@ -190,11 +199,12 @@ namespace DefenseShields
                     {
                         DsState.State.Overload = false;
                         _overLoadLoop = -1;
+                        var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
+                        var nerfer = nerf ? Session.Enforced.Nerf : 1f;
+                        DsState.State.Buffer = (_shieldMaxBuffer / 25) * nerfer; // replace this with something that scales based on charge rate
+                        ShieldChangeState();
                     }
                 }
-                var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
-                var nerfer = nerf ? Session.Enforced.Nerf : 1f;
-                DsState.State.Buffer = (_shieldMaxBuffer / 25) * nerfer; // replace this with something that scales based on charge rate
             }
         }
 
@@ -311,9 +321,8 @@ namespace DefenseShields
                     ShieldEnt.PositionComp.SetWorldMatrix(MatrixD.Zero);
                     DsState.State.IncreaseO2ByFPercent = 0f;
                     if (!Session.DedicatedServer) ShellVisibility(true);
-                    DsSet.SaveSettings();
-                    DsSet.NetworkUpdate();
                     DsState.State.Sleeping = true;
+                    ShieldChangeState();
                     Shield.RefreshCustomInfo();
                     if (Session.Enforced.Debug == 1) Log.Line($"Sleep: controller detected sleeping emitter, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 }
@@ -333,9 +342,9 @@ namespace DefenseShields
                 if (GridIsMobile) _updateMobileShape = true;
                 else UpdateDimensions = true;
 
-                DsSet.SaveSettings();
-                DsSet.NetworkUpdate();
+                DsState.State.Sleeping = false;
                 Shield.RefreshCustomInfo();
+                ShieldChangeState();
                 if (Session.Enforced.Debug == 1) Log.Line($"Sleep: Controller was sleeping but is now waking, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
 
@@ -400,6 +409,8 @@ namespace DefenseShields
                     GetModulationInfo();
                     UnsuspendTick = _tick + 1800;
                     _updateRender = true;
+                    DsState.State.Suspended = false;
+                    ShieldChangeState();
                     if (Session.Enforced.Debug == 1) Log.Line($"Unsuspended: CM:{ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.Suspended = false;
@@ -411,7 +422,6 @@ namespace DefenseShields
 
         private void InitSuspend(bool cleanEnts = false)
         {
-            Log.Line($"test");
             if (!DsState.State.Suspended)
             {
                 if (cleanEnts) InitEntities(false);
@@ -504,7 +514,7 @@ namespace DefenseShields
                 return true;
             }
 
-            if (!PowerOnline()) return false;
+            if (!Session.IsServer && (!DsState.State.EmitterWorking || !DsState.State.Online || DsState.State.NoPower || !DsState.State.ControllerGridAccess) || !PowerOnline()) return false;
             HadPowerBefore = true;
             _blockChanged = true;
             _functionalChanged = true;

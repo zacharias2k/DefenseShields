@@ -209,7 +209,7 @@ namespace DefenseShields
                         s.BulletCoolDown++;
                         if (s.BulletCoolDown == 9) s.BulletCoolDown = -1;
                     }
-                    if (!s.WarmedUp || !s.DsSet.Settings.RaiseShield || s.ShieldComp.EmittersSuspended) continue;
+                    if (!s.WarmedUp || !s.DsSet.Settings.RaiseShield || s.DsState.State.Suspended || !s.DsState.State.EmitterWorking) continue;
                     var sp = new BoundingSphereD(s.DetectionCenter, s.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {
@@ -230,7 +230,7 @@ namespace DefenseShields
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
-                    if (!s.WarmedUp || !s.DsSet.Settings.RaiseShield || s.ShieldComp.EmittersSuspended) continue;
+                    if (!s.WarmedUp || !s.DsSet.Settings.RaiseShield || s.DsState.State.Suspended || !s.DsState.State.EmitterWorking) continue;
                     if (s.DsState.State.Online && SphereOnCamera[i]) s.Draw(OnCount, SphereOnCamera[i]);
                     else if (s.DsState.State.Online && !s.Icosphere.ImpactsFinished) s.Icosphere.StepEffects();
                     else if (!s.DsState.State.Online && SphereOnCamera[i]) s.DrawShieldDownIcon();
