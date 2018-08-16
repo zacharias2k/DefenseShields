@@ -75,7 +75,6 @@ namespace DefenseShields
                 DsState.SaveState();
                 DsState.NetworkUpdate();
             }
-            else UpdateState(DsState.State);
         }
 
         private bool ShieldReady(bool server)
@@ -327,6 +326,7 @@ namespace DefenseShields
         {
             FitChanged = false;
             _shapeEvent = false;
+            if (!Session.IsServer) return;
             if (GridIsMobile)
             {
                 CreateHalfExtents();

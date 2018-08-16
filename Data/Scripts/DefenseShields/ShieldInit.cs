@@ -106,6 +106,7 @@ namespace DefenseShields
                     }
                     if (!Session.EnforceInit) return;
                 }
+
                 if (Session.IsServer && ShieldComp.EmitterMode < 0)
                 {
                     if (_tick % 600 == 0)
@@ -115,6 +116,8 @@ namespace DefenseShields
                     }
                     return;
                 }
+
+                if (!Session.IsServer && !DsState.State.Online) return;
 
                 if (!MainInit)
                 {

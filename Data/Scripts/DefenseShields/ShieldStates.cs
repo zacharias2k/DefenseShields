@@ -533,14 +533,10 @@ namespace DefenseShields
 
         public void UpdateSettings(ProtoControllerSettings newSettings)
         {
+            var newShape = newSettings.ExtendFit != DsSet.Settings.ExtendFit || newSettings.FortifyShield != DsSet.Settings.FortifyShield || newSettings.SphereFit != DsSet.Settings.SphereFit;
             DsSet.Settings = newSettings;
             SettingsUpdated = true;
-            if (!MainInit)
-            {
-                if (Session.Enforced.Debug == 1) Log.Line($"Settings: network but not initted - Enfroce:{Session.EnforceInit} - ");
-                return;
-            }
-            if (!GridIsMobile) UpdateDimensions = true;
+            if (newShape) FitChanged = true;
             if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings - ShieldId [{Shield.EntityId}]:\n{newSettings}");
         }
 
@@ -548,8 +544,6 @@ namespace DefenseShields
         {
             DsState.State = newState;
             if (!MainInit) return;
-            var newShape = !newState.EllipsoidAdjust.Equals(DsState.State.EllipsoidAdjust) || newState.GridHalfExtents != DsState.State.GridHalfExtents;
-            if (newShape) ResetShape(false, false);
             if (Session.Enforced.Debug == 1) Log.Line($"UpdateState - ShieldId [{Shield.EntityId}]:\n{newState}");
         }
     }

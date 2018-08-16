@@ -44,7 +44,7 @@ namespace DefenseShields
         private float _shieldCurrentPower;
         private float _shieldMaintaintPower;
         private float _shieldConsumptionRate;
-        private float _shieldFudge;
+        private float _oldShieldFudge;
 
         internal double BoundingRange;
         private double _oldEllipsoidAdjust;

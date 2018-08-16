@@ -18,12 +18,13 @@ namespace DefenseShields
                 BlockMonitor();
                 if (_blockEvent) BlockChanged(background);
                 if (_shapeEvent) CheckExtents(background);
+                if (GridIsMobile) _updateMobileShape = true;
                 return;
             }
 
             if (GridIsMobile)
             {
-                _updateMobileShape = true;
+                //_updateMobileShape = true;
                 MobileUpdate();
             }
             else
@@ -62,12 +63,12 @@ namespace DefenseShields
                 var vectorSize = new Vector3D(size, size, size);
                 var fudge = shieldGrid.GridSize * scaler * extend;
                 var extentsDiff = DsState.State.GridHalfExtents.LengthSquared() - vectorSize.LengthSquared();
-                if (extentsDiff < -1 || extentsDiff > 1 || DsState.State.GridHalfExtents == Vector3D.Zero || !fudge.Equals(_shieldFudge)) DsState.State.GridHalfExtents = vectorSize;
-                _shieldFudge = fudge;
+                if (extentsDiff < -1 || extentsDiff > 1 || DsState.State.GridHalfExtents == Vector3D.Zero || !fudge.Equals(DsState.State.ShieldFudge)) DsState.State.GridHalfExtents = vectorSize;
+                DsState.State.ShieldFudge = fudge;
             }
             else
             {
-                _shieldFudge = 0f;
+                DsState.State.ShieldFudge = 0f;
                 var extentsDiff = DsState.State.GridHalfExtents.LengthSquared() - expandedAabb.HalfExtents.LengthSquared();
                 if (extentsDiff < -1 || extentsDiff > 1 || DsState.State.GridHalfExtents == Vector3D.Zero) DsState.State.GridHalfExtents = expandedAabb.HalfExtents;
             }
@@ -95,10 +96,11 @@ namespace DefenseShields
             }
             else ShieldComp.GridIsMoving = false;
 
-            _shapeChanged = !DsState.State.EllipsoidAdjust.Equals(_oldEllipsoidAdjust) || !DsState.State.GridHalfExtents.Equals(_oldGridHalfExtents) || _updateMobileShape;
+            _shapeChanged = !DsState.State.EllipsoidAdjust.Equals(_oldEllipsoidAdjust) || !DsState.State.GridHalfExtents.Equals(_oldGridHalfExtents) || !DsState.State.ShieldFudge.Equals(_oldShieldFudge) || _updateMobileShape;
             _entityChanged = Shield.CubeGrid.Physics.IsMoving || ComingOnline || _shapeChanged;
             _oldGridHalfExtents = DsState.State.GridHalfExtents;
             _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
+            _oldShieldFudge = DsState.State.ShieldFudge;
             if (_entityChanged || BoundingRange <= 0) CreateShieldShape();
         }
 
@@ -136,6 +138,8 @@ namespace DefenseShields
                 _ellipsoidSurfaceArea = EllipsoidSa.Surface;
                 if (Session.IsServer)
                 {
+                    Log.Line($"shape changed");
+                    ShieldChangeState();
                     ShieldComp.ShieldVolume = DetectMatrixOutside.Scale.Volume;
                     ShieldComp.CheckEmitters = true;
                 }
@@ -146,7 +150,7 @@ namespace DefenseShields
 
         private void CreateMobileShape()
         {
-            var shieldSize = DsState.State.GridHalfExtents * DsState.State.EllipsoidAdjust + _shieldFudge;
+            var shieldSize = DsState.State.GridHalfExtents * DsState.State.EllipsoidAdjust + DsState.State.ShieldFudge;
             ShieldSize = shieldSize;
             var mobileMatrix = MatrixD.CreateScale(shieldSize);
             mobileMatrix.Translation = Shield.CubeGrid.PositionComp.LocalVolume.Center;

@@ -102,12 +102,12 @@ namespace DefenseShields
         public int Mode;
         [ProtoMember(23)]
         public bool EmitterWorking = false;
+        [ProtoMember(24)]
+        public float ShieldFudge;
 
         public override string ToString()
         {
-            return $"Buff:{Math.Round(Buffer, 4)} - Ellip:{Math.Round(EllipsoidAdjust, 4)} - Mode:{Mode} - EW:{EmitterWorking} - GHalf:{GridHalfExtents != Vector3D.Zero} - Own:{IsOwner} - InF:{InFaction} - Access:{ControllerGridAccess}\n" +
-                   $"On:{Online} - Sus:{Suspended} - Sleep:{Sleeping} - NoPow:{NoPower} - Waking:{Waking} - Over:{Overload} - Lower:{Lowered} - Remod:{Remodulate} - Blocked:{FieldBlocked}\n" +
-                   $"Enhance:{Enhancer} - PowerMulti:{EnhancerPowerMulti} - ProtMulti:{EnhancerProtMulti} - ModE:{Math.Round(ModulateEnergy, 4)} - ModK:{Math.Round(ModulateKinetic, 4)}";
+            return $"";
         }
     }
 
