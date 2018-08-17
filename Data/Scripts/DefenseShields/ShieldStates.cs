@@ -26,7 +26,7 @@ namespace DefenseShields
             switch (notice)
             {
                 case PlayerNotice.EmitterInit:
-                    UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
+                    UtilsStatic.GetRealPlayers(DetectionCenter, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
                     foreach (var id in realPlayerIds)
                     {
                         MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- emitter is initializing and connecting to controller, startup in 30 seconds!", 4816, "Red", id);
@@ -37,7 +37,7 @@ namespace DefenseShields
                     MyVisualScriptLogicProvider.ShowNotification("The shield's field cannot form when in contact with a solid body", 6720, "Blue", Shield.OwnerId);
                     break;
                 case PlayerNotice.OverLoad:
-                    UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, 500f, realPlayerIds);
+                    UtilsStatic.GetRealPlayers(DetectionCenter, 500f, realPlayerIds);
                     foreach (var id in realPlayerIds)
                     {
                         MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 8000, "Red", id);
@@ -45,7 +45,7 @@ namespace DefenseShields
 
                     break;
                 case PlayerNotice.Remodulate:
-                    UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
+                    UtilsStatic.GetRealPlayers(DetectionCenter, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
                     foreach (var id in realPlayerIds)
                     {
                         MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield remodremodulating, restarting in 5 seconds.", 4800, "White", id);
@@ -55,7 +55,7 @@ namespace DefenseShields
                 case PlayerNotice.NoLos:
                     break;
                 case PlayerNotice.NoPower:
-                    UtilsStatic.GetRealPlayers(Shield.PositionComp.WorldVolume.Center, (float)BoundingRange, realPlayerIds);
+                    UtilsStatic.GetRealPlayers(DetectionCenter, (float)BoundingRange, realPlayerIds);
                     foreach (var id in realPlayerIds)
                     {
                         MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- Insufficient Power, shield is failing!", 5000, "Red", id);
@@ -484,6 +484,11 @@ namespace DefenseShields
                 return true;
             }
 
+            if (_clientOn && DsState.State.NoPower)
+            {
+                PlayerMessages(PlayerNotice.NoPower);
+                DsState.State.NoPower = false;
+            }
             var offline = DsState.State.Suspended || !DsState.State.Online || DsState.State.Sleeping || DsState.State.NoPower || !DsState.State.ControllerGridAccess
                           || !DsState.State.EmitterWorking || DsState.State.Remodulate || DsState.State.Waking;
             if (offline)
@@ -496,6 +501,7 @@ namespace DefenseShields
                     else if (DsState.State.Remodulate) PlayerMessages(PlayerNotice.Remodulate);
                     ShellVisibility(true);
                     _clientOn = false;
+                    Shield.RefreshCustomInfo();
                 }
                 return true;
             }

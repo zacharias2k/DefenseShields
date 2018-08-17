@@ -558,7 +558,7 @@ namespace DefenseShields
                         {
                             if (data.State == null) return;
 
-                            if (Enforced.Debug <= 2) Log.Line($"Packet State Packet received:- data:\n{data.State}");
+                            if (Enforced.Debug >= 1) Log.Line($"Packet State Packet received:- data:\n{data.State}");
 
                             if (IsServer) ControllerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                             else logic.UpdateState(data.State);

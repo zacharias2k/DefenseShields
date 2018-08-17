@@ -33,10 +33,7 @@ namespace DefenseShields
             var renderId = Shield.CubeGrid.Render.GetRenderObjectID();
             var config = MyAPIGateway.Session.Config;
             var drawIcon = !enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
-            if (drawIcon)
-            {
-                UpdateIcon();
-            }
+            if (drawIcon) UpdateIcon();
 
             var passiveVisible = !DsSet.Settings.PassiveInvisible || enemy;
             var activeVisible = !DsSet.Settings.ActiveInvisible || enemy;

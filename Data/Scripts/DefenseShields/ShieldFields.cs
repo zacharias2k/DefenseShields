@@ -92,7 +92,6 @@ namespace DefenseShields
         internal bool ComingOnline;
         internal bool Warming;
         internal bool Starting;
-        internal bool ShieldPowerLoss;
         internal bool UpdateDimensions;
         internal bool FitChanged;
         internal bool GridIsMobile;

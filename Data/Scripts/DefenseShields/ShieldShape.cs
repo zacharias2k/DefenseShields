@@ -138,7 +138,6 @@ namespace DefenseShields
                 _ellipsoidSurfaceArea = EllipsoidSa.Surface;
                 if (Session.IsServer)
                 {
-                    Log.Line($"shape changed");
                     ShieldChangeState();
                     ShieldComp.ShieldVolume = DetectMatrixOutside.Scale.Volume;
                     ShieldComp.CheckEmitters = true;

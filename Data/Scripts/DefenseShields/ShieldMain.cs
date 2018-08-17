@@ -370,16 +370,13 @@ namespace DefenseShields
             _power = _shieldConsumptionRate + _shieldMaintaintPower;
             if (Session.IsServer && WarmedUp && HadPowerBefore && _shieldConsumptionRate.Equals(0f) && DsState.State.Buffer.Equals(0.01f) && _genericDownLoop == -1)
             {
-                DsState.State.NoPower = true;
                 _power = 0.0001f;
-                if (Session.IsServer) _genericDownLoop = 0;
+                _genericDownLoop = 0;
                 return false;
             }
-            DsState.State.NoPower = false;
 
             if (_power < 0.0001f) _power = 0.001f;
             if (WarmedUp && (_power < _shieldCurrentPower || _count == 28)) Sink.Update();
-
             if (WarmedUp && Absorb > 0)
             {
                 _damageCounter += Absorb;
@@ -434,6 +431,9 @@ namespace DefenseShields
 
         private void CalculatePowerCharge()
         {
+            var isServer = Session.IsServer;
+            var isDedicated = Session.DedicatedServer;
+
             var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
             var rawNerf = nerf ? Session.Enforced.Nerf : 1f;
             var nerfer = rawNerf / _shieldRatio;
@@ -507,10 +507,11 @@ namespace DefenseShields
                     return;
                 }
                 _powerLossLoop++;
-                if (!ShieldPowerLoss)
+                if (isServer && !DsState.State.NoPower)
                 {
-                    ShieldPowerLoss = true;
-                    if (Session.IsServer && !Session.DedicatedServer) PlayerMessages(PlayerNotice.NoPower);
+                    DsState.State.NoPower = true;
+                    if (!isDedicated) PlayerMessages(PlayerNotice.NoPower);
+                    ShieldChangeState();
                 }
 
                 var shieldLoss = DsState.State.Buffer * (_powerLossLoop * 0.00008333333f);
@@ -522,13 +523,14 @@ namespace DefenseShields
                 return;
             }
             _powerLossLoop = 0;
-            if (ShieldPowerLoss)
+            if (isServer && DsState.State.NoPower)
             {
                 _powerNoticeLoop++;
                 if (_powerNoticeLoop >= PowerNoticeCount)
                 {
-                    ShieldPowerLoss = false;
+                    DsState.State.NoPower = false;
                     _powerNoticeLoop = 0;
+                    ShieldChangeState();
                 }
             }
 
