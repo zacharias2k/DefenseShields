@@ -223,7 +223,7 @@ namespace DefenseShields
                 else Emitter.SetEmissiveParts(PlasmaEmissive, Color.Transparent, 0);
             }
 
-            if (Session.Enforced.Debug == 1) Log.Line($"MoveReset: [EmitterType: {Definition.Name} - Compact({EmiState.State.Compact})] - not null - Tick:{_tick.ToString()} - EmitterId [{Emitter.EntityId}]");
+            if (Session.Enforced.Debug == 1) Log.Line($"EmitterAnimationReset: [EmitterType: {Definition.Name} - Compact({EmiState.State.Compact})] - Tick:{_tick.ToString()} - EmitterId [{Emitter.EntityId}]");
             return true;
         }
 

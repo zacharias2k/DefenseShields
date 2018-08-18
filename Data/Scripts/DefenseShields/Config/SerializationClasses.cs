@@ -104,6 +104,8 @@ namespace DefenseShields
         public bool EmitterWorking = false;
         [ProtoMember(24)]
         public float ShieldFudge;
+        [ProtoMember(25)]
+        public bool Message;
 
         public override string ToString()
         {

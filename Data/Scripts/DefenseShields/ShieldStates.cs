@@ -20,62 +20,17 @@ namespace DefenseShields
             NoLos
         };
 
-        private void PlayerMessages(PlayerNotice notice)
-        {
-            var realPlayerIds = new HashSet<long>();
-            switch (notice)
-            {
-                case PlayerNotice.EmitterInit:
-                    UtilsStatic.GetRealPlayers(DetectionCenter, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
-                    foreach (var id in realPlayerIds)
-                    {
-                        MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- emitter is initializing and connecting to controller, startup in 30 seconds!", 4816, "Red", id);
-                    }
-
-                    break;
-                case PlayerNotice.FieldBlocked:
-                    MyVisualScriptLogicProvider.ShowNotification("The shield's field cannot form when in contact with a solid body", 6720, "Blue", Shield.OwnerId);
-                    break;
-                case PlayerNotice.OverLoad:
-                    UtilsStatic.GetRealPlayers(DetectionCenter, 500f, realPlayerIds);
-                    foreach (var id in realPlayerIds)
-                    {
-                        MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 8000, "Red", id);
-                    }
-
-                    break;
-                case PlayerNotice.Remodulate:
-                    UtilsStatic.GetRealPlayers(DetectionCenter, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
-                    foreach (var id in realPlayerIds)
-                    {
-                        MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield remodremodulating, restarting in 5 seconds.", 4800, "White", id);
-                    }
-
-                    break;
-                case PlayerNotice.NoLos:
-                    break;
-                case PlayerNotice.NoPower:
-                    UtilsStatic.GetRealPlayers(DetectionCenter, (float)BoundingRange, realPlayerIds);
-                    foreach (var id in realPlayerIds)
-                    {
-                        MyVisualScriptLogicProvider.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- Insufficient Power, shield is failing!", 5000, "Red", id);
-                    }
-                    break;
-            }
-        }
-
         private bool ShieldWaking()
         {
             if (_tick < UnsuspendTick)
             {
                 if (!DsState.State.Waking)
                 {
-                    PlayerMessages(PlayerNotice.EmitterInit);
-                    ShieldChangeState();
+                    DsState.State.Waking = true;
+                    ShieldChangeState(true);
                 }
                 _genericDownLoop = 0;
-                DsState.State.Waking = true;
-                return DsState.State.Waking;
+                return true;
             }
             if (UnsuspendTick != uint.MinValue && _tick >= UnsuspendTick)
             {
@@ -89,7 +44,7 @@ namespace DefenseShields
                 _shapeTick = uint.MinValue;
             }
             DsState.State.Waking = false;
-            return DsState.State.Waking;
+            return false;
         }
 
         private bool FieldShapeBlocked()
@@ -112,8 +67,7 @@ namespace DefenseShields
 
                 Shield.Enabled = false;
                 DsState.State.FieldBlocked = true;
-                if (DsState.State.FieldBlocked) PlayerMessages(PlayerNotice.FieldBlocked);
-                ShieldChangeState();
+                ShieldChangeState(true);
                 return true;
             }
             DsState.State.FieldBlocked = false;
@@ -147,10 +101,8 @@ namespace DefenseShields
                     DsState.State.Online = false;
                     if (_overLoadLoop != -1) DsState.State.Overload = true;
                     if (_reModulationLoop != -1) DsState.State.Remodulate = true;
-                    if (DsState.State.Overload) PlayerMessages(PlayerNotice.OverLoad);
-                    else if (DsState.State.Remodulate) PlayerMessages(PlayerNotice.Remodulate);
                     OfflineShield();
-                    ShieldChangeState();
+                    ShieldChangeState(true);
                 }
             }
 
@@ -161,7 +113,7 @@ namespace DefenseShields
                 {
                      DsState.State.Remodulate = false;
                     _reModulationLoop = -1;
-                    ShieldChangeState();
+                    ShieldChangeState(false);
                 }
             }
 
@@ -180,7 +132,7 @@ namespace DefenseShields
                     {
                         DsState.State.EmitterWorking = true;
                         _genericDownLoop = -1;
-                        ShieldChangeState();
+                        ShieldChangeState(false);
                     }
                 }
             }
@@ -202,7 +154,7 @@ namespace DefenseShields
                         var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
                         var nerfer = nerf ? Session.Enforced.Nerf : 1f;
                         DsState.State.Buffer = (_shieldMaxBuffer / 25) * nerfer; // replace this with something that scales based on charge rate
-                        ShieldChangeState();
+                        ShieldChangeState(false);
                     }
                 }
             }
@@ -322,7 +274,7 @@ namespace DefenseShields
                     DsState.State.IncreaseO2ByFPercent = 0f;
                     if (!Session.DedicatedServer) ShellVisibility(true);
                     DsState.State.Sleeping = true;
-                    ShieldChangeState();
+                    ShieldChangeState(false);
                     Shield.RefreshCustomInfo();
                     if (Session.Enforced.Debug == 1) Log.Line($"Sleep: controller detected sleeping emitter, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 }
@@ -344,7 +296,7 @@ namespace DefenseShields
 
                 DsState.State.Sleeping = false;
                 Shield.RefreshCustomInfo();
-                ShieldChangeState();
+                ShieldChangeState(false);
                 if (Session.Enforced.Debug == 1) Log.Line($"Sleep: Controller was sleeping but is now waking, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
 
@@ -410,7 +362,7 @@ namespace DefenseShields
                     UnsuspendTick = _tick + 1800;
                     _updateRender = true;
                     DsState.State.Suspended = false;
-                    ShieldChangeState();
+                    ShieldChangeState(false);
                     if (Session.Enforced.Debug == 1) Log.Line($"Unsuspended: CM:{ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.Suspended = false;
@@ -467,11 +419,57 @@ namespace DefenseShields
             return DsState.State.ControllerGridAccess;
         }
 
+        private void PlayerMessages(PlayerNotice notice)
+        {
+            var realPlayerIds = new HashSet<long>();
+            switch (notice)
+            {
+                case PlayerNotice.EmitterInit:
+                    UtilsStatic.GetRealPlayers(Shield.CubeGrid.PositionComp.WorldAABB.Center, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
+                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- emitter is initializing and connecting to controller, startup in 30 seconds!", 4816, "Red");
+                    break;
+                case PlayerNotice.FieldBlocked:
+                    UtilsStatic.GetRealPlayers(Shield.CubeGrid.PositionComp.WorldAABB.Center, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
+                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("The shield's field cannot form when in contact with a solid body", 6720, "Blue");
+                    break;
+                case PlayerNotice.OverLoad:
+                    UtilsStatic.GetRealPlayers(Shield.CubeGrid.PositionComp.WorldAABB.Center, 500f, realPlayerIds);
+                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 8000, "Red");
+                    break;
+                case PlayerNotice.Remodulate:
+                    UtilsStatic.GetRealPlayers(Shield.CubeGrid.PositionComp.WorldAABB.Center, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
+                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield remodremodulating, restarting in 5 seconds.", 4800, "White");
+                    break;
+                case PlayerNotice.NoLos:
+                    break;
+                case PlayerNotice.NoPower:
+                    UtilsStatic.GetRealPlayers(Shield.CubeGrid.PositionComp.WorldAABB.Center, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
+                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- Insufficient Power, shield is failing!", 5000, "Red");
+                    break;
+            }
+        }
+
+        private void BroadcastMessage()
+        {
+            if (DsState.State.NoPower) PlayerMessages(PlayerNotice.NoPower);
+            else if (DsState.State.Overload) PlayerMessages(PlayerNotice.OverLoad);
+            else if (DsState.State.FieldBlocked) PlayerMessages(PlayerNotice.FieldBlocked);
+            else if (DsState.State.Waking) PlayerMessages(PlayerNotice.EmitterInit);
+            else if (DsState.State.Remodulate) PlayerMessages(PlayerNotice.Remodulate);
+        }
+
         private bool ClientOfflineStates()
         {
             var isStatic = Shield.CubeGrid.IsStatic;
             var primeMode = ShieldMode == ShieldType.Station && isStatic && ShieldComp.StationEmitter == null;
             var betaMode = ShieldMode != ShieldType.Station && !isStatic && ShieldComp.ShipEmitter == null;
+
+            if (DsState.State.Message)
+            {
+                Log.Line($"On:{DsState.State.Online} - Su:{DsState.State.Suspended} - Sl:{DsState.State.Sleeping} - Ac:{DsState.State.ControllerGridAccess} - Ew:{DsState.State.EmitterWorking} - Re:{DsState.State.Remodulate} - Wa:{DsState.State.Waking} - Po:{DsState.State.NoPower}");
+                BroadcastMessage();
+                DsState.State.Message = false;
+            }
 
             if (ShieldComp.DefenseShields != this || primeMode || betaMode)
             {
@@ -480,25 +478,17 @@ namespace DefenseShields
                 {
                     ShellVisibility(true);
                     _clientOn = false;
+                    Shield.RefreshCustomInfo();
                 }
                 return true;
             }
 
-            if (_clientOn && DsState.State.NoPower)
-            {
-                PlayerMessages(PlayerNotice.NoPower);
-                DsState.State.NoPower = false;
-            }
-            var offline = DsState.State.Suspended || !DsState.State.Online || DsState.State.Sleeping || DsState.State.NoPower || !DsState.State.ControllerGridAccess
+            var offline = DsState.State.Suspended || !DsState.State.Online || DsState.State.Sleeping || !DsState.State.ControllerGridAccess
                           || !DsState.State.EmitterWorking || DsState.State.Remodulate || DsState.State.Waking;
             if (offline)
             {
                 if (_clientOn)
                 {
-                    if (DsState.State.Overload) PlayerMessages(PlayerNotice.OverLoad);
-                    else if (DsState.State.FieldBlocked) PlayerMessages(PlayerNotice.FieldBlocked);
-                    else if (DsState.State.Waking) PlayerMessages(PlayerNotice.EmitterInit);
-                    else if (DsState.State.Remodulate) PlayerMessages(PlayerNotice.Remodulate);
                     ShellVisibility(true);
                     _clientOn = false;
                     Shield.RefreshCustomInfo();
