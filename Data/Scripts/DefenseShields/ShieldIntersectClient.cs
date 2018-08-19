@@ -96,7 +96,12 @@ namespace DefenseShields
             EntIntersectInfo entInfo;
             WebEnts.TryGetValue(voxelBase, out entInfo);
             var myGrid = (MyCubeGrid)Shield.CubeGrid;
-            CustomCollision.VoxelCollisionSphere(myGrid, ShieldComp.PhysicsOutsideLow, voxelBase, SOriBBoxD, DetectMatrixOutside);
+            var collision = CustomCollision.VoxelCollisionSphere(myGrid, ShieldComp.PhysicsOutsideLow, voxelBase, SOriBBoxD, DetectMatrixOutside);
+            if (collision != Vector3D.NegativeInfinity)
+            {
+                ImpactSize = 12000;
+                WorldImpactPosition = collision;
+            }
         }
 
         private void ClientBlockIntersect(IMyCubeGrid breaching, MyOrientedBoundingBoxD bOriBBoxD, EntIntersectInfo entInfo)

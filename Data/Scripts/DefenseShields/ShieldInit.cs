@@ -2,6 +2,7 @@
 using DefenseShields.Support;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
+using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.ModAPI;
@@ -107,7 +108,7 @@ namespace DefenseShields
                     if (!Session.EnforceInit) return;
                 }
 
-                if (Session.IsServer && ShieldComp.EmitterMode < 0)
+                if (Session.IsServer && (ShieldComp.EmitterMode < 0 || ShieldComp.EmittersSuspended))
                 {
                     if (_tick % 600 == 0)
                     {

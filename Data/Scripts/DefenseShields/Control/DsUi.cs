@@ -33,14 +33,6 @@ namespace DefenseShields
             return notStation;
         }
 
-        public static string GetShieldRaised(IMyTerminalBlock block)
-        {
-            var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            if (comp == null) return null;
-
-            return comp.DsSet.Settings.RaiseShield ? "On" : "Off";
-        }
-
         public static float GetRate(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();

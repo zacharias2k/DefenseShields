@@ -2,6 +2,7 @@
 using DefenseShields.Support;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
+using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRageMath;
@@ -177,6 +178,9 @@ namespace DefenseShields
                 CleanUp(3);
                 CleanUp(4);
 
+                _currentHeatStep = 0;
+                _accumulatedHeat = 0;
+                _heatCycle = -1;
                 Absorb = 0f;
                 DsState.State.Buffer = 0f;
                 ShieldComp.ShieldPercent = 0f;
@@ -185,6 +189,8 @@ namespace DefenseShields
                 PrevShieldActive = false;
                 DsState.State.Lowered = false;
                 DsState.State.Online = false;
+                DsState.State.Heat = 0;
+
                 if (!Session.DedicatedServer) ShellVisibility(true);
             }
 
@@ -207,9 +213,9 @@ namespace DefenseShields
                     ShieldEnt.PositionComp.SetWorldMatrix(MatrixD.Zero);
                     DsState.State.IncreaseO2ByFPercent = 0f;
                     if (!Session.DedicatedServer) ShellVisibility(true);
+                    DsState.State.Lowered = true;
                     DsSet.SaveSettings();
                     DsSet.NetworkUpdate();
-                    DsState.State.Lowered = true;
                 }
                 PowerOnline();
 
@@ -234,9 +240,9 @@ namespace DefenseShields
                 if (GridIsMobile) _updateMobileShape = true;
                 else UpdateDimensions = true;
 
+                DsState.State.Lowered = false;
                 DsSet.SaveSettings();
                 DsSet.NetworkUpdate();
-                DsState.State.Lowered = false;
             }
             return false;
         }
@@ -245,20 +251,18 @@ namespace DefenseShields
         {
             if (!DsSet.Settings.RaiseShield && WarmedUp && DsSet.Settings.ShieldActive)
             {
-                Log.Line($"Client offline state detected: {DsState.State.Suspended} - {!DsState.State.Online} - {DsState.State.Sleeping} - {DsState.State.NoPower} - {!DsState.State.ControllerGridAccess} - {!DsState.State.EmitterWorking} - {DsState.State.Remodulate}");
-
                 Timing(false);
-                if (_clientOn)
+                if (!_clientLowered)
                 {
                     ShellVisibility(true);
-                    _clientOn = false;
+                    _clientLowered = true;
                 }
                 PowerOnline();
 
                 if (_lCount == 0 && _count == 0) RefreshDimensions();
                 return true;
             }
-            if (!_clientOn) ShellVisibility();
+            if (_clientLowered) ShellVisibility();
             return false;
         }
 
@@ -447,6 +451,7 @@ namespace DefenseShields
                     foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- Insufficient Power, shield is failing!", 5000, "Red");
                     break;
             }
+
         }
 
         private void BroadcastMessage()
@@ -466,7 +471,6 @@ namespace DefenseShields
 
             if (DsState.State.Message)
             {
-                Log.Line($"On:{DsState.State.Online} - Su:{DsState.State.Suspended} - Sl:{DsState.State.Sleeping} - Ac:{DsState.State.ControllerGridAccess} - Ew:{DsState.State.EmitterWorking} - Re:{DsState.State.Remodulate} - Wa:{DsState.State.Waking} - Po:{DsState.State.NoPower}");
                 BroadcastMessage();
                 DsState.State.Message = false;
             }
@@ -500,6 +504,11 @@ namespace DefenseShields
             return false;
         }
 
+        private void ClientCleanUp()
+        {
+
+        }
+
         private bool WarmUpSequence()
         {
             if (Warming) return true;
@@ -509,8 +518,24 @@ namespace DefenseShields
                 Warming = true;
                 return true;
             }
+            if (!Session.IsServer && (!DsState.State.EmitterWorking || !DsState.State.Online || DsState.State.NoPower || !DsState.State.ControllerGridAccess) || !PowerOnline())
+            {
+                if (_delayedClientWarmTick == 0)
+                {
+                    if (GridIsMobile) MobileUpdate();
+                    _delayedClientWarmTick = _tick + 600;
+                }
+                if (_tick >= _delayedClientWarmTick)
+                {
+                    _blockChanged = true;
+                    _functionalChanged = true;
 
-            if (!Session.IsServer && (!DsState.State.EmitterWorking || !DsState.State.Online || DsState.State.NoPower || !DsState.State.ControllerGridAccess) || !PowerOnline()) return false;
+                    ResetShape(false, true);
+                    ResetShape(false, false);
+                    _delayedClientWarmTick = _tick + 600;
+                }
+                return false;
+            }
             HadPowerBefore = true;
             _blockChanged = true;
             _functionalChanged = true;

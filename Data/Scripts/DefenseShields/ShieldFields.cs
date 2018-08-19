@@ -24,6 +24,8 @@ namespace DefenseShields
         private uint _enforceTick;
         private uint _hierarchyTick = 1;
         private uint _shapeTick;
+        private uint _heatVentingTick = uint.MaxValue;
+        private uint _delayedClientWarmTick;
         internal uint UnsuspendTick;
 
         internal float ImpactSize { get; set; } = 9f;
@@ -41,6 +43,7 @@ namespace DefenseShields
         private float _shieldChargeRate;
         private float _damageCounter;
         private float _damageReadOut;
+        private float _accumulatedHeat;
         private float _shieldCurrentPower;
         private float _shieldMaintaintPower;
         private float _shieldConsumptionRate;
@@ -63,11 +66,17 @@ namespace DefenseShields
         private int _overLoadLoop = -1;
         private int _genericDownLoop = -1;
         private int _reModulationLoop = -1;
+        private int _heatCycle = -1;
+        private int _currentHeatStep;
 
         private const int ReModulationCount = 300;
         private const int ShieldDownCount = 1200;
         private const int GenericDownCount = 300;
         private const int PowerNoticeCount = 600;
+        private const int OverHeat = 1800;
+        private const int HeatingStep = 300;
+        private const int CoolingStep = 600;
+        private const int HeatSteps = 10;
 
         private int _prevLod;
         private int _onCount;
@@ -112,6 +121,7 @@ namespace DefenseShields
         private bool _shapeEvent;
         private bool _enablePhysics = true;
         private bool _updateMobileShape;
+        private bool _clientLowered;
         private bool _clientOn;
 
         private const string SpaceWolf = "Space_Wolf";

@@ -130,13 +130,14 @@ namespace DefenseShields
             {
                 Log.Init("debugdevelop.log");
                 Log.Line($"Logging Started");
+
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdControllerState, ControllerStateReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdControllerSettings, ControllerSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEnforce, EnforcementReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdModulatorSettings, ModulatorSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdModulatorState, ModulatorStateReceived);
-                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdModulatorSettings, EnhancerStateReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEnhancerState, EnhancerStateReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdO2GeneratorState, O2GeneratorStateReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEmitterState, EmitterStateReceived);
 
@@ -598,7 +599,7 @@ namespace DefenseShields
 
                             logic.UpdateSettings(data.Settings);
                             if (IsServer) ControllerSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
-                            if (Enforced.Debug == 1) Log.Line($"Packet Settings Packet received:- data:\n{data.Settings}");
+                            if (Enforced.Debug >= 2) Log.Line($"Packet Settings Packet received:- data:\n{data.Settings}");
                         }
                         break;
                 }
@@ -826,21 +827,21 @@ namespace DefenseShields
         {
             var data = new DataModulatorState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            ModulatorSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+            ModulatorStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
         }
 
         public static void PacketizeO2GeneratorState(IMyCubeBlock block, ProtoO2GeneratorState state)
         {
             var data = new DataO2GeneratorState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            ModulatorSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+            O2GeneratorStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
         }
 
         public static void PacketizeEnhancerState(IMyCubeBlock block, ProtoEnhancerState state)
         {
             var data = new DataEnhancerState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            ModulatorSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+            O2GeneratorStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
         }
 
         public static void PacketizeEmitterState(IMyCubeBlock block, ProtoEmitterState state)

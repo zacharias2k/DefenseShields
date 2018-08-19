@@ -106,6 +106,8 @@ namespace DefenseShields
         public float ShieldFudge;
         [ProtoMember(25)]
         public bool Message;
+        [ProtoMember(26)]
+        public float Heat;
 
         public override string ToString()
         {
@@ -146,16 +148,16 @@ namespace DefenseShields
         [ProtoMember(10)]
         public bool FortifyShield = false;
 
-        [ProtoMember(11)]
+        [ProtoMember(11), DefaultValue(true)]
         public bool SendToHud = true;
 
-        [ProtoMember(12)]
+        [ProtoMember(12), DefaultValue(true)]
         public bool UseBatteries = true;
 
         [ProtoMember(13)]
         public bool ShieldActive = false;
 
-        [ProtoMember(14)]
+        [ProtoMember(14), DefaultValue(true)]
         public bool RaiseShield = true;
 
         [ProtoMember(15)]
@@ -200,9 +202,9 @@ namespace DefenseShields
     public class ProtoModulatorSettings
     {
         [ProtoMember(1)]
-        public bool Unused = true;
+        public bool Unused;
 
-        [ProtoMember(2)]
+        [ProtoMember(2), DefaultValue(true)]
         public bool ModulateVoxels = true;
 
         [ProtoMember(3)]
@@ -248,7 +250,7 @@ namespace DefenseShields
         [ProtoMember(1)]
         public bool Unused;
 
-        [ProtoMember(2)]
+        [ProtoMember(2), DefaultValue(true)]
         public bool ModulateVoxels = true;
 
         [ProtoMember(3)]
@@ -284,7 +286,7 @@ namespace DefenseShields
         [ProtoMember(1)]
         public bool Unused;
 
-        [ProtoMember(2)]
+        [ProtoMember(2), DefaultValue(true)]
         public bool ModulateVoxels = true;
 
         [ProtoMember(3)]

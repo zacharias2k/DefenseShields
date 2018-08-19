@@ -90,7 +90,6 @@ namespace DefenseShields
                     }
                 }
                 else if (_count == 0) Modulator.RefreshCustomInfo();
-
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
@@ -110,66 +109,84 @@ namespace DefenseShields
             }
             else
             {
-                if (ModulatorComp?.Modulator == null)
+                if (ModState.State.Online && ModulatorComp?.Modulator != this)
                 {
-                    Modulator.CubeGrid.Components.TryGet(out ModulatorComp);
-                    if (ModulatorComp?.Modulator == null) return false;
+                    if (ModulatorComp == null)
+                    {
+                        ModulatorComp = Modulator.CubeGrid.Components.Has<ModulatorGridComponent>()
+                            ? Modulator.CubeGrid.Components.Get<ModulatorGridComponent>()
+                            : new ModulatorGridComponent(this);
+                    }
+                    else ModulatorComp.Modulator = this;
                 }
-                if (!ModState.State.Backup && ModulatorComp.Modulator != this) ModulatorComp.Modulator = this;
-
                 if (!ModState.State.Online) return false;
+                if (_count == 29) ClientCheckForCompLink();
             }
             return BlockMoveAnimationReset();
-        } 
+        }
 
+        private void ClientCheckForCompLink()
+        {
+            if (ModState.State.Link && (ShieldComp == null || ShieldComp?.Modulator != this))
+            {
+                if (ShieldComp?.DefenseShields == null)
+                {
+                    Modulator.CubeGrid.Components.TryGet(out ShieldComp);
+                    if (ShieldComp == null) return;
+                }
+                if (ShieldComp.Modulator != this) ShieldComp.Modulator = this;
+            }
+        }
 
         private bool BlockWorking()
         {
             if (Modulator?.CubeGrid == null || Sink.CurrentInputByType(GId) < 0.01f || !Modulator.Enabled || !Modulator.IsFunctional)
             {
                 NeedUpdate(ModState.State.Online, false);
-                return false;
-            }
-
-            if (ModState.State.Link && ModulatorComp?.Modulator == null || ModulatorComp.Modulator != this)
-            {
-                if (ModulatorComp?.Modulator == null)
-                {
-                    Modulator?.CubeGrid?.Components.TryGet(out ModulatorComp);
-                    if (ModulatorComp?.Modulator == null)
-                    {
-                        NeedUpdate(ModState.State.Online, false);
-                        return false;
-                    }
-                }
-
-                if (ModulatorComp.Modulator == null)
-                {
-                    ModulatorComp.Modulator = this;
-                    ModState.State.Backup = false;
-                }
-                else if (ModulatorComp.Modulator != this)
-                {
-                    ModState.State.Backup = true;
-                    ModState.State.Online = false;
-                }
-
                 if (Modulator != null && _tick % 300 == 0)
                 {
                     Modulator.RefreshCustomInfo();
                     Modulator.ShowInToolbarConfig = false;
                     Modulator.ShowInToolbarConfig = true;
                 }
-
+                return false;
             }
 
-            var shieldCompFound = false;
-            var shieldCompLost = false;
+            var change = false;
+            if (ModulatorComp == null)
+            {
+                ModulatorComp = Modulator.CubeGrid.Components.Has<ModulatorGridComponent>() ? Modulator.CubeGrid.Components.Get<ModulatorGridComponent>() : new ModulatorGridComponent(this);
+                change = true;
+            }
+
+            if (ModulatorComp.Modulator == null)
+            {
+                if (ModulatorComp?.Modulator != this)
+                {
+                    ModulatorComp.Modulator = this;
+                    change = true;
+                }
+            }
+
+            if (ModulatorComp.Modulator == this)
+            {
+                if (!ModState.State.Online) change = true;
+                ModState.State.Online = true;
+                ModState.State.Backup = false;
+            }
+            else
+            {
+                if (ModState.State.Online)
+                {
+                    ModState.State.Backup = true;
+                    NeedUpdate(ModState.State.Online,false);
+                }
+                return false;
+            }
 
             if (_count == 59 && _lCount == 9)
             {
-                var activeMod = ModState.State.Online && !ModState.State.Backup && ModulatorComp?.Modulator == this;
-                if (ShieldComp?.DefenseShields == null && activeMod)
+                if (ShieldComp?.DefenseShields == null)
                 {
                     if (ModState.State.Link)
                     {
@@ -177,8 +194,9 @@ namespace DefenseShields
                         if (ShieldComp == null)
                         {
                             ModState.State.Link = false;
-                            shieldCompLost = true;
                         }
+
+                        change = true;
                     }
                     else if (!ModState.State.Link)
                     {
@@ -186,29 +204,34 @@ namespace DefenseShields
                         if (ShieldComp != null)
                         {
                             ModState.State.Link = true;
-                            shieldCompFound = true;
+                            change = true;
                         }
                     }
                 }
-                else if (ShieldComp?.DefenseShields != null && !ModState.State.Link && activeMod)
+                else if (ShieldComp?.DefenseShields != null)
                 {
-                    ModState.State.Link = true;
-                    shieldCompFound = true;
+                    if (ShieldComp?.Modulator != this || !ModState.State.Link)
+                    {
+                        if (ShieldComp.Modulator != this)
+                        {
+                            ShieldComp.Modulator = this;
+                            ModState.State.Link = true;
+                            change = true;
+                        }
+                    }
                 }
             }
 
-            var shieldCompChange = shieldCompFound || shieldCompLost;
-
-            if (!ModState.State.Backup && ModulatorComp?.Modulator == this)
+            if (change)
             {
-                var supress = !(!ModState.State.Online || shieldCompChange);
-                NeedUpdate(supress, true);
-                return true;
+                if (ModState.State.Online) NeedUpdate(ModState.State.Online, true);
+                else
+                {
+                    NeedUpdate(ModState.State.Online, false);
+                    return false;
+                }
             }
-
-            var change = ModState.State.Online || shieldCompChange;
-            NeedUpdate(change, false);
-            return false;
+            return true;
         }
 
         private void Timing()

@@ -117,7 +117,6 @@ namespace DefenseShields
             }
             else
             {
-
                 if (!AllInited)
                 {
                     PostInit();
@@ -127,12 +126,12 @@ namespace DefenseShields
                 if (ClientOfflineStates() || !WarmUpSequence() || ClientShieldLowered()) return false;
                 if (GridIsMobile) MobileUpdate();
                 if (UpdateDimensions) RefreshDimensions();
-
                 PowerOnline();
                 SetShieldClientStatus();
                 Timing(true);
             }
             _clientOn = true;
+            _clientLowered = false;
             return _clientOn;
         }
 
@@ -210,6 +209,7 @@ namespace DefenseShields
 
         private void Timing(bool cleanUp)
         {
+            var isServer = Session.IsServer;
             if (_count++ == 59)
             {
                 _count = 0;
@@ -232,7 +232,7 @@ namespace DefenseShields
                 if (_blockEvent) BlockChanged(true);
             }
 
-            if (Session.IsServer && (_shapeEvent || FitChanged)) CheckExtents(true);
+            if (isServer && (_shapeEvent || FitChanged)) CheckExtents(true);
 
             // damage counter hack - tempoary
             if (_damageReadOut > 0 && _damageCounter > _damageReadOut) _damageCounter = _damageReadOut;
@@ -240,6 +240,9 @@ namespace DefenseShields
             else if (_damageCounter > 1) _damageCounter = _damageCounter * .9835f;
             else _damageCounter = 0f;
             //
+
+            if (isServer) HeatManager();
+
             if (_hierarchyDelayed && _tick > _hierarchyTick + 9)
             {
                 if (Session.Enforced.Debug == 1) Log.Line($"HierarchyWasDelayed: this:{_tick} - delayedTick: {_hierarchyTick} - ShieldId [{Shield.EntityId}]");
@@ -255,6 +258,7 @@ namespace DefenseShields
                     Shield.ShowInToolbarConfig = false;
                     Shield.ShowInToolbarConfig = true;
                 }
+
                 _damageReadOut = 0;
             }
             //if (_eCount % 2 == 0 && _lCount == 0 && _count == 0) _randomCount = _random.Next(0, 10);
@@ -271,6 +275,82 @@ namespace DefenseShields
                     CleanUp(3);
                     CleanUp(4);
                 }
+            }
+        }
+
+        private void HeatManager()
+        {
+            var hp = _shieldMaxBuffer * Session.Enforced.Efficiency;
+            if (_damageReadOut > 0 && _heatCycle == -1)
+            {
+                _accumulatedHeat += _damageReadOut;
+                _heatCycle = 0;
+            }
+            else if (_heatCycle > -1)
+            {
+                _accumulatedHeat += _damageReadOut;
+                _heatCycle++;
+            }
+
+            if (_heatCycle == OverHeat)
+            {
+                if (_accumulatedHeat > hp / 100)
+                {
+                    if (Session.Enforced.Debug == 1) Log.Line($"now overheating - stage (1): heat:{_accumulatedHeat} - threshold:{hp / 100}");
+                    _currentHeatStep = 1;
+                    DsState.State.Heat = _currentHeatStep * 10;
+                    _accumulatedHeat = 0;
+                }
+                else
+                {
+                    if (Session.Enforced.Debug == 1) Log.Line($"did not enter overheat - stage (1): heat:{_accumulatedHeat} - threshold:{hp / 100}");
+                    DsState.State.Heat = 0;
+                    _currentHeatStep = 0;
+                    _accumulatedHeat = 0;
+                    _heatCycle = -1;
+                }
+            }
+            else if (_currentHeatStep != HeatSteps && _heatCycle == (_currentHeatStep * HeatingStep) + OverHeat)
+            {
+                if (_accumulatedHeat > hp / 600)
+                {
+                    _currentHeatStep++;
+                    if (Session.Enforced.Debug == 1) Log.Line($"increased to - stage ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold:{hp / 600}");
+                    DsState.State.Heat = _currentHeatStep * 10;
+                    _accumulatedHeat = 0;
+                }
+                else
+                {
+                    if (_currentHeatStep > 0) _currentHeatStep--;
+                    if (_currentHeatStep == 0)
+                    {
+                        if (Session.Enforced.Debug == 1) Log.Line($"no longer overheating ({_currentHeatStep}): heat:{_accumulatedHeat} - thresholdz:{hp / 600}");
+                        DsState.State.Heat = 0;
+                        _currentHeatStep = 0;
+                        _accumulatedHeat = 0;
+                        _heatCycle = -1;
+                    }
+                    else
+                    {
+                        if (Session.Enforced.Debug == 1) Log.Line($"decreased to - stage ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold:{hp / 600}");
+                        DsState.State.Heat = _currentHeatStep * 10;
+                        _heatCycle = (_currentHeatStep -1) * HeatingStep + OverHeat + 1;
+                        _accumulatedHeat = 0;
+                    }
+                }
+            }
+            else if (_heatCycle >= ((HeatSteps * HeatingStep) + OverHeat) && _accumulatedHeat > hp / 300)
+            {
+                _heatVentingTick = _tick + CoolingStep;
+                _accumulatedHeat = 0;
+            }
+            else if (_tick >= _heatVentingTick)
+            {
+                if (_currentHeatStep >= 10) _currentHeatStep--;
+                if (Session.Enforced.Debug == 1) Log.Line($"left critical - stage ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold: {hp / 300}");
+                DsState.State.Heat = _currentHeatStep * 10;
+                        _heatCycle = (_currentHeatStep -1) * HeatingStep + OverHeat + 1;
+                _heatVentingTick = uint.MaxValue;
             }
         }
 
@@ -370,10 +450,12 @@ namespace DefenseShields
         #region Block Power Logic
         private bool PowerOnline()
         {
-            UpdateGridPower();
+            var isServer = Session.IsServer;
+            if (!UpdateGridPower() && !isServer) return false;
+
             CalculatePowerCharge();
             _power = _shieldConsumptionRate + _shieldMaintaintPower;
-            if (Session.IsServer && WarmedUp && HadPowerBefore && _shieldConsumptionRate.Equals(0f) && DsState.State.Buffer.Equals(0.01f) && _genericDownLoop == -1)
+            if (isServer && WarmedUp && HadPowerBefore && _shieldConsumptionRate.Equals(0f) && DsState.State.Buffer.Equals(0.01f) && _genericDownLoop == -1)
             {
                 _power = 0.0001f;
                 _genericDownLoop = 0;
@@ -391,7 +473,7 @@ namespace DefenseShields
             }
             else if (WarmedUp && Absorb < 0) DsState.State.Buffer += (Absorb / Session.Enforced.Efficiency);
 
-            if (Session.IsServer && WarmedUp && DsState.State.Buffer < 0)
+            if (isServer && WarmedUp && DsState.State.Buffer < 0)
             {
                 _overLoadLoop = 0;
             }
@@ -399,7 +481,7 @@ namespace DefenseShields
             return true;
         }
 
-        private void UpdateGridPower()
+        private bool UpdateGridPower()
         {
             _gridMaxPower = 0;
             _gridCurrentPower = 0;
@@ -432,11 +514,15 @@ namespace DefenseShields
             }
             _gridAvailablePower = _gridMaxPower - _gridCurrentPower;
             _shieldCurrentPower = Sink.CurrentInputByType(GId);
+            return _gridMaxPower > 0;
         }
 
         private void CalculatePowerCharge()
         {
             var isServer = Session.IsServer;
+
+            var heat = DsState.State.Heat * 0.1;
+            if (heat > 10) heat = 10;
 
             var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
             var rawNerf = nerf ? Session.Enforced.Nerf : 1f;
@@ -537,6 +623,23 @@ namespace DefenseShields
                 }
             }
 
+
+            if (heat <= 1)
+            {
+            }
+            else if (heat >= 10)
+            {
+                _shieldChargeRate = 0;
+                if (Session.Enforced.Debug == 1 && _count == 0) Log.Line($"Cycle:{_heatCycle} - cRate:{_shieldChargeRate} - Reduction:Infinity - Heat:{heat} - HeatDamage:{_accumulatedHeat}");
+            }
+            else
+            {
+                var expChargeReduction = (float)Math.Pow(2, heat);
+                _shieldChargeRate = _shieldChargeRate / expChargeReduction;
+                if (Session.Enforced.Debug == 1 && _count == 0) Log.Line($"Cycle:{_heatCycle} - cRate:{_shieldChargeRate} - Reduction:{_shieldChargeRate / expChargeReduction} - Exp:{expChargeReduction} - Heat:{heat} - HeatDamage:{_accumulatedHeat}");
+            }
+
+
             if (WarmedUp && (DsState.State.Buffer < _shieldMaxBuffer && _count == 29)) DsState.State.Buffer += _shieldChargeRate;
             else if (WarmedUp && (DsState.State.Buffer.Equals(_shieldMaxBuffer)))
             {
@@ -567,7 +670,10 @@ namespace DefenseShields
             {
                 var secToFull = 0;
                 var shieldPercent = !DsState.State.Online ? 0f : 100f;
+                var heatPercent = (int)DsState.State.Heat;
+
                 if (DsState.State.Buffer < _shieldMaxBuffer) shieldPercent = (DsState.State.Buffer / _shieldMaxBuffer) * 100;
+                if (DsState.State.Heat < _shieldMaxBuffer) shieldPercent = (DsState.State.Buffer / _shieldMaxBuffer) * 100;
                 if (_shieldChargeRate > 0)
                 {
                     var toMax = _shieldMaxBuffer - DsState.State.Buffer;
@@ -597,7 +703,7 @@ namespace DefenseShields
                                          "\n[Damage In__]: " + _damageReadOut.ToString("N0") +
                                          "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
                                          "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
-                                         "\n[Efficiency__]: " + Session.Enforced.Efficiency.ToString("0.0") +
+                                         "\n[Over Heated]: " + heatPercent.ToString("0") + "%" +
                                          "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
                                          "\n[Power Usage]: " + powerUsage.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw" +
                                          "\n[Shield Power]: " + Sink.CurrentInputByType(GId).ToString("0.0") + " Mw");
