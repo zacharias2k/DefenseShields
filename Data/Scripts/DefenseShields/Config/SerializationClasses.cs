@@ -107,7 +107,7 @@ namespace DefenseShields
         [ProtoMember(25)]
         public bool Message;
         [ProtoMember(26)]
-        public float Heat;
+        public int Heat;
 
         public override string ToString()
         {
@@ -236,6 +236,9 @@ namespace DefenseShields
 
         [ProtoMember(5), DefaultValue(-1)]
         public double O2Level = 0;
+
+        [ProtoMember(6)]
+        public bool Backup = false;
 
         public override string ToString()
         {

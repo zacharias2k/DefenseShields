@@ -254,6 +254,7 @@ namespace DefenseShields
                 Timing(false);
                 if (!_clientLowered)
                 {
+                    if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
                     ShellVisibility(true);
                     _clientLowered = true;
                 }
@@ -363,9 +364,13 @@ namespace DefenseShields
                     if (!Session.DedicatedServer) ShellVisibility(true);
                     Icosphere.ShellActive = null;
                     GetModulationInfo();
+                    _currentHeatStep = 0;
+                    _accumulatedHeat = 0;
+                    _heatCycle = -1;
                     UnsuspendTick = _tick + 1800;
                     _updateRender = true;
                     DsState.State.Suspended = false;
+                    DsState.State.Heat = 0;
                     ShieldChangeState(false);
                     if (Session.Enforced.Debug == 1) Log.Line($"Unsuspended: CM:{ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
                 }
@@ -480,6 +485,7 @@ namespace DefenseShields
                 if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
                 if (_clientOn)
                 {
+                    if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
                     ShellVisibility(true);
                     _clientOn = false;
                     Shield.RefreshCustomInfo();
@@ -493,6 +499,7 @@ namespace DefenseShields
             {
                 if (_clientOn)
                 {
+                    if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
                     ShellVisibility(true);
                     _clientOn = false;
                     Shield.RefreshCustomInfo();
@@ -502,11 +509,6 @@ namespace DefenseShields
 
             if (!_clientOn) ShellVisibility();
             return false;
-        }
-
-        private void ClientCleanUp()
-        {
-
         }
 
         private bool WarmUpSequence()
