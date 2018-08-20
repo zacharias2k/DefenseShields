@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
+using Sandbox.Game.Lights;
 using Sandbox.ModAPI;
 using VRage.Collections;
 using VRage.Game;

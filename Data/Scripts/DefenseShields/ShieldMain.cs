@@ -22,7 +22,6 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
                 var isServer = Session.IsServer;
                 var isDedicated = Session.DedicatedServer;
-
                 if (!ShieldReady(isServer)) return;
 
                 if (DsState.State.Online)
