@@ -29,7 +29,6 @@ namespace DefenseShields
 
         private readonly Dictionary<long, Enhancers> _enhancers = new Dictionary<long, Enhancers>();
         public IMyUpgradeModule Enhancer => (IMyUpgradeModule)Entity;
-        public MyModStorageComponentBase Storage { get; set; }
         internal ShieldGridComponent ShieldComp;
         //internal EnhancerSettings EnhSet;
         internal EnhancerState EnhState;
@@ -220,22 +219,20 @@ namespace DefenseShields
         {
             if (Session.IsServer)
             {
-                if (Storage != null)
+                if (Enhancer.Storage != null)
                 {
                     EnhState.SaveState();
                     if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: saved before replication - ShieldId [{Enhancer.EntityId}]");
                 }
-                else if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: not saved - StoageNull:{Storage == null} - ShieldId [{Enhancer.EntityId}]");
+                else if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: not saved - StoageNull:{Enhancer.Storage == null} - ShieldId [{Enhancer.EntityId}]");
             }
             return false;
         }
 
         private void StorageSetup()
         {
-            Storage = Enhancer.Storage;
             if (EnhState == null) EnhState = new EnhancerState(Enhancer);
             EnhState.StorageInit();
-
             EnhState.LoadState();
         }
 

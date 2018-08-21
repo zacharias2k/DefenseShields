@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
@@ -178,7 +179,7 @@ namespace DefenseShields
         internal readonly HashSet<MyEntity> EnemyShields = new HashSet<MyEntity>();
 
         private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<IMyEntity, Vector3D>();
-        public readonly MyConcurrentDictionary<IMyEntity, EntIntersectInfo> WebEnts = new MyConcurrentDictionary<IMyEntity, EntIntersectInfo>();
+        public readonly ConcurrentDictionary<IMyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<IMyEntity, EntIntersectInfo>();
 
         private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
 
@@ -255,7 +256,6 @@ namespace DefenseShields
         internal DSUtils Dsutil4 = new DSUtils();
         internal DSUtils Dsutil5 = new DSUtils();
 
-        public MyModStorageComponentBase Storage { get; set; }
         internal ControllerSettings DsSet;
         internal ControllerState DsState;
 

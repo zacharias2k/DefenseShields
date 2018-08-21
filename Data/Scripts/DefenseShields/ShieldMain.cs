@@ -452,7 +452,6 @@ namespace DefenseShields
         {
             var isServer = Session.IsServer;
             if (!UpdateGridPower() && !isServer) return false;
-
             CalculatePowerCharge();
             _power = _shieldConsumptionRate + _shieldMaintaintPower;
             if (isServer && WarmedUp && HadPowerBefore && _shieldConsumptionRate.Equals(0f) && DsState.State.Buffer.Equals(0.01f) && _genericDownLoop == -1)
@@ -727,7 +726,7 @@ namespace DefenseShields
         private void UpdateSubGrids(bool force = false)
         {
             var checkGroups = Shield.IsWorking && Shield.IsFunctional && DsState.State.Online;
-            if (Session.Enforced.Debug >= 2) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Offline:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug >= 1) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Offline:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
             if (!checkGroups && !force) return;
             var gotGroups = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Physical);
             if (gotGroups.Count == ShieldComp.GetLinkedGrids.Count) return;
@@ -806,14 +805,19 @@ namespace DefenseShields
                 {
                     case 0:
                         IMyCubeGrid grid;
-                        while (_staleGrids.TryDequeue(out grid)) lock (WebEnts) WebEnts.Remove(grid);
+                        while (_staleGrids.TryDequeue(out grid))
+                        {
+                            EntIntersectInfo gridRemoved;
+                            WebEnts.TryRemove(grid, out gridRemoved);
+                        }
                         break;
                     case 1:
-                        lock (WebEnts)
+                        EnemyShields.Clear();
+                        _webEntsTmp.AddRange(WebEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1));
+                        foreach (var webent in _webEntsTmp)
                         {
-                            EnemyShields.Clear();
-                            _webEntsTmp.AddRange(WebEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1));
-                            foreach (var webent in _webEntsTmp) WebEnts.Remove(webent.Key);
+                            EntIntersectInfo gridRemoved;
+                            WebEnts.TryRemove(webent.Key, out gridRemoved);
                         }
                         break;
                     case 2:

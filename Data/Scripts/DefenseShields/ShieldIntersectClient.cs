@@ -38,16 +38,13 @@ namespace DefenseShields
             var grid = (MyCubeGrid)ent;
             if (grid == null) return;
 
-            lock (WebEnts)
-            {
-                EntIntersectInfo entInfo;
-                WebEnts.TryGetValue(ent, out entInfo);
-                if (entInfo == null) return;
+            EntIntersectInfo entInfo;
+            WebEnts.TryGetValue(ent, out entInfo);
+            if (entInfo == null) return;
 
-                var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB);
-                if (entInfo.Relation != Ent.LargeEnemyGrid && GridInside(grid, bOriBBoxD)) return;
-                ClientBlockIntersect(grid, bOriBBoxD, entInfo);
-            }
+            var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB);
+            if (entInfo.Relation != Ent.LargeEnemyGrid && GridInside(grid, bOriBBoxD)) return;
+            ClientBlockIntersect(grid, bOriBBoxD, entInfo);
         }
 
         private void ClientShieldIntersect(IMyCubeGrid grid)

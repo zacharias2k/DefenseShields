@@ -44,26 +44,25 @@ namespace DefenseShields
                 {
                     if (destroyedLen != 0)
                     {
-                        lock (WebEnts)
+                        IMySlimBlock block;
+                        var nullCount = 0;
+                        while (_destroyedBlocks.TryDequeue(out block))
                         {
-                            IMySlimBlock block;
-                            var nullCount = 0;
-                            while (_destroyedBlocks.TryDequeue(out block))
+                            if (block?.CubeGrid == null) continue;
+                            EntIntersectInfo entInfo;
+                            WebEnts.TryGetValue(block.CubeGrid, out entInfo);
+                            var myGrid = block.CubeGrid as MyCubeGrid;
+                            if (entInfo == null)
                             {
-                                if (block?.CubeGrid == null) continue;
-                                EntIntersectInfo entInfo;
-                                WebEnts.TryGetValue(block.CubeGrid, out entInfo);
-                                var myGrid = block.CubeGrid as MyCubeGrid;
-                                if (entInfo == null)
-                                {
-                                    nullCount++;
-                                    myGrid?.EnqueueDestroyedBlock(block.Position);
-                                    continue;
-                                }
-                                if (nullCount > 0) WebEnts.Remove(block.CubeGrid);
-                                entInfo.CacheBlockList.Remove(block);
+                                nullCount++;
                                 myGrid?.EnqueueDestroyedBlock(block.Position);
+                                continue;
                             }
+
+                            EntIntersectInfo entRemoved;
+                            if (nullCount > 0) WebEnts.TryRemove(block.CubeGrid, out entRemoved);
+                            entInfo.CacheBlockList.Remove(block);
+                            myGrid?.EnqueueDestroyedBlock(block.Position);
                         }
                     }
                 }

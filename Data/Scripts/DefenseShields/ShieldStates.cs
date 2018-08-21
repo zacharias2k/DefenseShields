@@ -350,14 +350,12 @@ namespace DefenseShields
                 {
                     if (Session.Enforced.Debug == 1) Log.Line($"Suspend: controller unsuspending - ShieldId [{Shield.EntityId}]");
                     DsState.State.Suspended = false;
-                    _blockChanged = true;
-                    _functionalChanged = true;
                     ShieldComp.GetLinkedGrids.Clear();
                     ShieldComp.GetSubGrids.Clear();
-                    UpdateSubGrids();
-                    BlockMonitor();
-                    BlockChanged(false);
-                    CheckExtents(false);
+                    _blockChanged = true;
+                    _functionalChanged = true;
+                    ResetShape(false, true);
+                    ResetShape(false, false);
                     if (Session.Enforced.Debug == 1) Log.Line($"Suspend: controller mode was: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                     SetShieldType(false);
                     if (Session.Enforced.Debug == 1) Log.Line($"Suspend: controller mode is now: {ShieldMode} - ShieldId [{Shield.EntityId}]");
@@ -541,7 +539,6 @@ namespace DefenseShields
             HadPowerBefore = true;
             _blockChanged = true;
             _functionalChanged = true;
-
             ResetShape(false, true);
             ResetShape(false, false);
             _oldGridHalfExtents = DsState.State.GridHalfExtents;

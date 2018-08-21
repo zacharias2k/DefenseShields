@@ -38,7 +38,6 @@ namespace DefenseShields
         internal bool BlockIsWorking;
         internal bool BlockWasWorking;
 
-        public MyModStorageComponentBase Storage { get; set; }
         internal ShieldGridComponent ShieldComp;
         internal MyResourceSourceComponent Source;
         internal O2GeneratorState O2State;
@@ -257,6 +256,21 @@ namespace DefenseShields
         private void NeedUpdate(bool onState, bool turnOn)
         {
             var o2State = O2State.State;
+            if (ShieldComp?.DefenseShields == null)
+            {
+                if (O2State.State.Pressurized)
+                {
+                    o2State.Pressurized = false;
+                    o2State.VolFilled = 0;
+                    o2State.DefaultO2 = 0;
+                    o2State.O2Level = 0;
+                    o2State.ShieldVolume = 0;
+                    O2State.SaveState();
+                    O2State.NetworkUpdate();
+                }
+                return;
+            }
+
             var conState = ShieldComp.DefenseShields.DsState.State;
             var o2Level = conState.IncreaseO2ByFPercent + ShieldComp.DefaultO2;
             var o2Change = !o2State.VolFilled.Equals(_shieldVolFilled) || !o2State.DefaultO2.Equals(ShieldComp.DefaultO2) || !o2State.ShieldVolume.Equals(ShieldComp.ShieldVolume) || !o2State.O2Level.Equals(o2Level);
@@ -373,10 +387,8 @@ namespace DefenseShields
 
         private void StorageSetup()
         {
-            Storage = O2Generator.Storage;
             if (O2State == null) O2State = new O2GeneratorState(O2Generator);
             O2State.StorageInit();
-
             O2State.LoadState();
         }
 

@@ -38,7 +38,6 @@ namespace DefenseShields
 
         private readonly Dictionary<long, Modulators> _modulators = new Dictionary<long, Modulators>();
 
-        public MyModStorageComponentBase Storage { get; set; }
         internal ModulatorGridComponent ModulatorComp;
         internal ShieldGridComponent ShieldComp;
         private MyEntitySubpart _subpartRotor;
@@ -404,7 +403,6 @@ namespace DefenseShields
 
         private void StorageSetup()
         {
-            Storage = Modulator.Storage;
             if (ModSet == null) ModSet = new ModulatorSettings(Modulator);
             if (ModState == null) ModState = new ModulatorState(Modulator);
             ModState.StorageInit();

@@ -36,14 +36,12 @@ namespace DefenseShields
             {
                 var ent = pruneList[i];
                 var voxel = ent as MyVoxelBase;
-
                 if (ent == null || ent.MarkedForClose || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel || voxel == null && ent.Physics == null) continue;
 
                 var entCenter = ent.PositionComp.WorldVolume.Center;
                 var missileCheck = !pruneSphere2.Intersects(ent.PositionComp.WorldVolume) && !((ent.Flags & EntityFlags.IsNotGamePrunningStructureObject) != 0 && ent.GetType().Name.Equals(MyMissile));
                 if (voxel == null && missileCheck) continue;
                 if (FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent) || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
-
                 var relation = EntType(ent);
                 switch (relation)
                 {
@@ -72,40 +70,38 @@ namespace DefenseShields
                         }
                         continue;
                 }
-                lock (WebEnts)
+                EntIntersectInfo entInfo;
+                WebEnts.TryGetValue(ent, out entInfo);
+                if (entInfo != null)
                 {
-                    EntIntersectInfo entInfo;
-                    WebEnts.TryGetValue(ent, out entInfo);
-                    if (entInfo != null)
+                    var interestingEnts = relation == Ent.LargeEnemyGrid || relation == Ent.LargeNobodyGrid || relation == Ent.SmallEnemyGrid || relation == Ent.SmallNobodyGrid;
+                    if (ent.Physics != null && ent.Physics.IsMoving) entChanged = true;
+                    else if (entInfo.Touched || _count == 0 && interestingEnts && !ent.PositionComp.LocalAABB.Equals(entInfo.Box))
                     {
-                        var interestingEnts = relation == Ent.LargeEnemyGrid || relation == Ent.LargeNobodyGrid || relation == Ent.SmallEnemyGrid || relation == Ent.SmallNobodyGrid;
-                        if (ent.Physics != null && ent.Physics.IsMoving) entChanged = true;
-                        else if (entInfo.Touched || _count == 0 && interestingEnts && !ent.PositionComp.LocalAABB.Equals(entInfo.Box))
-                        {
-                            entInfo.Box = ent.PositionComp.LocalAABB;
-                            entChanged = true;
-                        }
-
-                        _enablePhysics = true;
-                        entInfo.LastTick = _tick;
-                    }
-                    else
-                    {
-                        if (relation == Ent.Other && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
-                        {
-                            IgnoreCache.Add(ent);
-                            continue;
-                        }
-                        if ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, DetectMatrixOutsideInv))
-                        {
-                            FriendlyCache.Add(ent);
-                            WebEnts.Remove(ent);
-                            continue;
-                        }
+                        entInfo.Box = ent.PositionComp.LocalAABB;
                         entChanged = true;
-                        _enablePhysics = true;
-                        WebEnts.Add(ent, new EntIntersectInfo(ent.EntityId, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, _tick, _tick, relation, new List<IMySlimBlock>()));
                     }
+
+                    _enablePhysics = true;
+                    entInfo.LastTick = _tick;
+                }
+                else
+                {
+                    if (relation == Ent.Other && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
+                    {
+                        IgnoreCache.Add(ent);
+                        continue;
+                    }
+                    if ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, DetectMatrixOutsideInv))
+                    {
+                        FriendlyCache.Add(ent);
+                        EntIntersectInfo gridRemoved;
+                        WebEnts.TryRemove(ent, out gridRemoved);
+                        continue;
+                    }
+                    entChanged = true;
+                    _enablePhysics = true;
+                    WebEnts.TryAdd(ent, new EntIntersectInfo(ent.EntityId, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, _tick, _tick, relation, new List<IMySlimBlock>()));
                 }
             }
 
@@ -134,92 +130,89 @@ namespace DefenseShields
             var oo = 0;
             var vv = 0;
             var xx = 0;
-            lock (WebEnts)
+            foreach (var webent in WebEnts.Keys)
             {
-                foreach (var webent in WebEnts.Keys)
+                var entCenter = webent.PositionComp.WorldVolume.Center;
+                var entInfo = WebEnts[webent];
+                if (entInfo.LastTick != _tick) continue;
+                if (entInfo.FirstTick == _tick && (WebEnts[webent].Relation == Ent.LargeNobodyGrid || WebEnts[webent].Relation == Ent.LargeEnemyGrid))
+                    (webent as IMyCubeGrid)?.GetBlocks(WebEnts[webent].CacheBlockList, CollectCollidableBlocks);
+                switch (WebEnts[webent].Relation)
                 {
-                    var entCenter = webent.PositionComp.WorldVolume.Center;
-                    var entInfo = WebEnts[webent];
-                    if (entInfo.LastTick != _tick) continue;
-                    if (entInfo.FirstTick == _tick && (WebEnts[webent].Relation == Ent.LargeNobodyGrid || WebEnts[webent].Relation == Ent.LargeEnemyGrid))
-                        (webent as IMyCubeGrid)?.GetBlocks(WebEnts[webent].CacheBlockList, CollectCollidableBlocks);
-                    switch (WebEnts[webent].Relation)
-                    {
-                        case Ent.EnemyPlayer:
+                    case Ent.EnemyPlayer:
+                        {
+                            ep++;
+                            if ((_count == 2 || _count == 17 || _count == 32 || _count == 47) && CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
                             {
-                                ep++;
-                                if ((_count == 2 || _count == 17 || _count == 32 || _count == 47) && CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
-                                {
-                                    if (Session.Enforced.Debug >= 2) Log.Line($"Ent EnemyPlayer: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
-                                    MyAPIGateway.Parallel.Start(() => PlayerIntersect(webent));
-                                }
-                                continue;
+                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent EnemyPlayer: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
+                                MyAPIGateway.Parallel.Start(() => PlayerIntersect(webent));
                             }
-                        case Ent.SmallNobodyGrid:
-                            {
-                                ns++;
-                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent SmallNobodyGrid: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
-                                MyAPIGateway.Parallel.Start(() => SmallGridIntersect(webent));
-                                continue;
-                            }
-                        case Ent.LargeNobodyGrid:
-                            {
-                                nl++;
-                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent LargeNobodyGrid: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
-                                MyAPIGateway.Parallel.Start(() => GridIntersect(webent));
-                                continue;
-                            }
-                        case Ent.SmallEnemyGrid:
-                            {
-                                es++;
-                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent SmallEnemyGrid: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
-                                MyAPIGateway.Parallel.Start(() => SmallGridIntersect(webent));
-                                continue;
-                            }
-                        case Ent.LargeEnemyGrid:
-                            {
-                                el++;
-                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent LargeEnemyGrid: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
-                                MyAPIGateway.Parallel.Start(() => GridIntersect(webent));
-                                continue;
-                            }
-                        case Ent.Shielded:
-                            {
-                                ss++;
-                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent Shielded: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
-                                MyAPIGateway.Parallel.Start(() => ShieldIntersect(webent as IMyCubeGrid));
-                                continue;
-                            }
-                        case Ent.Other:
-                            {
-                                oo++;
-                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent Other: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
-                                if (CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
-                                {
-                                    if (webent.MarkedForClose || webent.Closed) continue;
-                                    var meteor = webent as IMyMeteor;
-                                    if (meteor != null) _meteorDmg.Enqueue(meteor);
-                                    else _missileDmg.Enqueue(webent);
-                                }
-                                continue;
-                            }
-                        case Ent.VoxelBase:
-                            {
-                                vv++;
-                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent VoxelBase: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
-                                MyAPIGateway.Parallel.Start(() => VoxelIntersect(webent as MyVoxelBase));
-                                continue;
-                            }
-                        default:
-                            if (Session.Enforced.Debug >= 2) Log.Line($"Ent default: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
-                            xx++;
                             continue;
-                    }
+                        }
+                    case Ent.SmallNobodyGrid:
+                        {
+                            ns++;
+                            if (Session.Enforced.Debug >= 2) Log.Line($"Ent SmallNobodyGrid: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
+                            MyAPIGateway.Parallel.Start(() => SmallGridIntersect(webent));
+                            continue;
+                        }
+                    case Ent.LargeNobodyGrid:
+                        {
+                            nl++;
+                            if (Session.Enforced.Debug >= 2) Log.Line($"Ent LargeNobodyGrid: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
+                            MyAPIGateway.Parallel.Start(() => GridIntersect(webent));
+                            continue;
+                        }
+                    case Ent.SmallEnemyGrid:
+                        {
+                            es++;
+                            if (Session.Enforced.Debug >= 2) Log.Line($"Ent SmallEnemyGrid: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
+                            MyAPIGateway.Parallel.Start(() => SmallGridIntersect(webent));
+                            continue;
+                        }
+                    case Ent.LargeEnemyGrid:
+                        {
+                            el++;
+                            if (Session.Enforced.Debug >= 2) Log.Line($"Ent LargeEnemyGrid: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
+                            MyAPIGateway.Parallel.Start(() => GridIntersect(webent));
+                            continue;
+                        }
+                    case Ent.Shielded:
+                        {
+                            ss++;
+                            if (Session.Enforced.Debug >= 2) Log.Line($"Ent Shielded: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
+                            MyAPIGateway.Parallel.Start(() => ShieldIntersect(webent as IMyCubeGrid));
+                            continue;
+                        }
+                    case Ent.Other:
+                        {
+                            oo++;
+                            if (Session.Enforced.Debug >= 2) Log.Line($"Ent Other: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
+                            if (CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
+                            {
+                                if (webent.MarkedForClose || webent.Closed) continue;
+                                var meteor = webent as IMyMeteor;
+                                if (meteor != null) _meteorDmg.Enqueue(meteor);
+                                else _missileDmg.Enqueue(webent);
+                            }
+                            continue;
+                        }
+                    case Ent.VoxelBase:
+                        {
+                            vv++;
+                            if (Session.Enforced.Debug >= 2) Log.Line($"Ent VoxelBase: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
+                            MyAPIGateway.Parallel.Start(() => VoxelIntersect(webent as MyVoxelBase));
+                            continue;
+                        }
+                    default:
+                        if (Session.Enforced.Debug >= 2) Log.Line($"Ent default: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
+                        xx++;
+                        continue;
                 }
             }
 
             if (Session.Enforced.Debug == 1 && _lCount == 5 && _count == 5)
-                lock (WebEnts) if (WebEnts.Count > 7 || FriendlyCache.Count > 15 || IgnoreCache.Count > 15) Log.Line($"Web: friend:{FriendlyCache.Count} - ignore:{IgnoreCache.Count} - total:{WebEnts.Count} ep:{ep} ns:{ns} nl:{nl} es:{es} el:{el} ss:{ss} oo:{oo} vv:{vv} xx:{xx} - ShieldId [{Shield.EntityId}]");
+                if (WebEnts.Count > 7 || FriendlyCache.Count > 15 || IgnoreCache.Count > 15) Log.Line($"Web: friend:{FriendlyCache.Count} - ignore:{IgnoreCache.Count} - total:{WebEnts.Count} ep:{ep} ns:{ns} nl:{nl} es:{es} el:{el} ss:{ss} oo:{oo} vv:{vv} xx:{xx} - ShieldId [{Shield.EntityId}]");
             if (Session.Enforced.Debug == 1) Dsutil3.StopWatchReport($"webDispatch: ShieldId [{Shield.EntityId}]:", 3);
         }
         #endregion
@@ -298,13 +291,12 @@ namespace DefenseShields
                     if (!enemy) return Ent.Friend;
                     if (!dsComp.DsState.State.Online)
                     {
-                        lock (WebEnts) if (WebEnts.Remove(ent))
-                        return Ent.LargeEnemyGrid;
+                        EntIntersectInfo shieldRemoved;
+                        if (WebEnts.TryRemove(ent, out shieldRemoved)) return Ent.LargeEnemyGrid;
                     }
                     dsComp.EnemyShields.Add(shieldEntity);
                     return Ent.Shielded;
                 }
-
                 return enemy ? Ent.LargeEnemyGrid : Ent.Friend;
             }
 

@@ -52,13 +52,13 @@ namespace DefenseShields
         {
             if (Session.IsServer)
             {
-                if (Storage != null)
+                if (Shield.Storage != null)
                 {
                     DsState.SaveState();
                     DsSet.SaveSettings();
                     if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: saved before replication - ShieldId [{Shield.EntityId}]");
                 }
-                else if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: not saved - AllInited:{AllInited} - StoageNull:{Storage == null} - ShieldId [{Shield.EntityId}]");
+                else if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: not saved - AllInited:{AllInited} - StoageNull:{Shield.Storage == null} - ShieldId [{Shield.EntityId}]");
             }
             return false;
         }
@@ -142,7 +142,6 @@ namespace DefenseShields
 
         private void StorageSetup()
         {
-            Storage = Shield.Storage;
             if (DsSet == null) DsSet = new ControllerSettings(Shield);
             if (DsState == null) DsState = new ControllerState(Shield);
             DsState.StorageInit();

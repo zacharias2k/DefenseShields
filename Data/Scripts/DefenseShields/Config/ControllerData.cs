@@ -22,9 +22,11 @@ namespace DefenseShields
             }
         }
 
-        public void SaveState()
+        public void SaveState(bool createStorage = false)
         {
-            if (Shield.Storage == null) Shield.Storage = new MyModStorageComponent();
+            if (createStorage && Shield.Storage == null) Shield.Storage = new MyModStorageComponent();
+            else if (Shield.Storage == null) return;
+
             var binary = MyAPIGateway.Utilities.SerializeToBinary(State);
             Shield.Storage[Session.Instance.ControllerStateGuid] = Convert.ToBase64String(binary);
         }
@@ -68,9 +70,12 @@ namespace DefenseShields
             Shield = shield;
         }
 
-        public void SaveSettings()
+        public void SaveSettings(bool createStorage = false)
         {
-            if (Shield.Storage == null) Shield.Storage = new MyModStorageComponent();
+            
+            if (createStorage && Shield.Storage == null) Shield.Storage = new MyModStorageComponent();
+            else if (Shield.Storage == null) return;
+
             var binary = MyAPIGateway.Utilities.SerializeToBinary(Settings);
             Shield.Storage[Session.Instance.ControllerSettingsGuid] = Convert.ToBase64String(binary);
         }

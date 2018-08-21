@@ -62,25 +62,22 @@ namespace DefenseShields
             var grid = (MyCubeGrid)ent;
             if (grid == null) return;
 
-            lock (WebEnts)
-            {
-                EntIntersectInfo entInfo;
-                WebEnts.TryGetValue(ent, out entInfo);
-                if (entInfo == null) return;
+            EntIntersectInfo entInfo;
+            WebEnts.TryGetValue(ent, out entInfo);
+            if (entInfo == null) return;
 
-                var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB);
-                if (entInfo.Relation != Ent.LargeEnemyGrid && GridInside(grid, bOriBBoxD)) return;
-                BlockIntersect(grid, bOriBBoxD, entInfo);
-                var contactpoint = entInfo.ContactPoint;
-                entInfo.ContactPoint = Vector3D.NegativeInfinity;
-                if (contactpoint == Vector3D.NegativeInfinity) return;
+            var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB);
+            if (entInfo.Relation != Ent.LargeEnemyGrid && GridInside(grid, bOriBBoxD)) return;
+            BlockIntersect(grid, bOriBBoxD, entInfo);
+            var contactpoint = entInfo.ContactPoint;
+            entInfo.ContactPoint = Vector3D.NegativeInfinity;
+            if (contactpoint == Vector3D.NegativeInfinity) return;
 
-                entInfo.Touched = true;
-                ImpactSize = entInfo.Damage;
+            entInfo.Touched = true;
+            ImpactSize = entInfo.Damage;
 
-                entInfo.Damage = 0;
-                WorldImpactPosition = contactpoint;
-            }
+            entInfo.Damage = 0;
+            WorldImpactPosition = contactpoint;
         }
 
         private void ShieldIntersect(IMyCubeGrid grid)
@@ -188,7 +185,8 @@ namespace DefenseShields
 
             var insideTime = (int)playerInfo.LastTick - (int)playerInfo.FirstTick;
             if (insideTime < 3000) return;
-            WebEnts.Remove(ent);
+            EntIntersectInfo playerRemoved;
+            WebEnts.TryRemove(ent, out playerRemoved);
 
             var hydrogenId = MyCharacterOxygenComponent.HydrogenId;
             var playerGasLevel = character.GetSuitGasFillLevel(hydrogenId);

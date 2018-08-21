@@ -22,9 +22,11 @@ namespace DefenseShields
             }
         }
 
-        public void SaveState()
+        public void SaveState(bool createStorage = false)
         {
-            if (Modulator.Storage == null) Modulator.Storage = new MyModStorageComponent();
+            if (createStorage && Modulator.Storage == null) Modulator.Storage = new MyModStorageComponent();
+            else if (Modulator.Storage == null) return;
+
             var binary = MyAPIGateway.Utilities.SerializeToBinary(State);
             Modulator.Storage[Session.Instance.ModulatorStateGuid] = Convert.ToBase64String(binary);
         }
@@ -80,12 +82,11 @@ namespace DefenseShields
             Modulator = modulator;
         }
 
-        public void SaveSettings()
+        public void SaveSettings(bool createStorage = false)
         {
-            if (Modulator.Storage == null)
-            {
-                Modulator.Storage = new MyModStorageComponent();
-            }
+            if (createStorage && Modulator.Storage == null) Modulator.Storage = new MyModStorageComponent();
+            else if (Modulator.Storage == null) return;
+
             Modulator.Storage[Session.Instance.ModulatorSettingsGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
         }
 

@@ -22,9 +22,11 @@ namespace DefenseShields
             }
         }
 
-        public void SaveState()
+        public void SaveState(bool createStorage = false)
         {
-            if (Emitter.Storage == null) Emitter.Storage = new MyModStorageComponent();
+            if (createStorage && Emitter.Storage == null) Emitter.Storage = new MyModStorageComponent();
+            else if (Emitter.Storage == null) return;
+
             var binary = MyAPIGateway.Utilities.SerializeToBinary(State);
             Emitter.Storage[Session.Instance.EmitterStateGuid] = Convert.ToBase64String(binary);
         }
