@@ -255,7 +255,6 @@ namespace DefenseShields
                     Shield.ShowInToolbarConfig = false;
                     Shield.ShowInToolbarConfig = true;
                 }
-
                 _damageReadOut = 0;
             }
             //if (_eCount % 2 == 0 && _lCount == 0 && _count == 0) _randomCount = _random.Next(0, 10);

@@ -26,14 +26,13 @@ namespace DefenseShields
         private void SmallGridIntersect(IMyEntity ent)
         {
             var grid = (IMyCubeGrid)ent;
-            if (ent == null || grid == null) return;
-
+            if (ent == null || grid == null || grid.MarkedForClose || grid.Closed) return;
             if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.WorldAABB))) return;
             EntIntersectInfo entInfo;
             WebEnts.TryGetValue(ent, out entInfo);
             if (entInfo == null) return;
 
-            CustomCollision.SmallIntersect(entInfo, _fewDmgBlocks, grid, DetectMatrixOutside, DetectMatrixOutsideInv);
+            CustomCollision.SmallIntersect(entInfo, _fewDmgBlocks, _destroyedBlocks, grid, DetectMatrixOutside, DetectMatrixOutsideInv);
             var contactpoint = entInfo.ContactPoint;
             entInfo.ContactPoint = Vector3D.NegativeInfinity;
             if (contactpoint != Vector3D.NegativeInfinity)

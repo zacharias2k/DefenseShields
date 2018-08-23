@@ -314,51 +314,60 @@ namespace DefenseShields
 
         public void SelectPassiveShell()
         {
-            switch (DsSet.Settings.ShieldShell)
+            try
             {
-                case 0:
-                    _modelPassive = ModelMediumReflective;
-                    break;
-                case 1:
-                    _modelPassive = ModelHighReflective;
-                    break;
-                case 2:
-                    _modelPassive = ModelLowReflective;
-                    break;
-                case 3:
-                    _modelPassive = ModelRed;
-                    break;
-                case 4:
-                    _modelPassive = ModelBlue;
-                    break;
-                case 5:
-                    _modelPassive = ModelGreen;
-                    break;
-                case 6:
-                    _modelPassive = ModelPurple;
-                    break;
-                case 7:
-                    _modelPassive = ModelGold;
-                    break;
-                case 8:
-                    _modelPassive = ModelOrange;
-                    break;
-                case 9:
-                    _modelPassive = ModelCyan;
-                    break;
-                default:
-                    _modelPassive = ModelMediumReflective;
-                    break;
+                switch (DsSet.Settings.ShieldShell)
+                {
+                    case 0:
+                        _modelPassive = ModelMediumReflective;
+                        break;
+                    case 1:
+                        _modelPassive = ModelHighReflective;
+                        break;
+                    case 2:
+                        _modelPassive = ModelLowReflective;
+                        break;
+                    case 3:
+                        _modelPassive = ModelRed;
+                        break;
+                    case 4:
+                        _modelPassive = ModelBlue;
+                        break;
+                    case 5:
+                        _modelPassive = ModelGreen;
+                        break;
+                    case 6:
+                        _modelPassive = ModelPurple;
+                        break;
+                    case 7:
+                        _modelPassive = ModelGold;
+                        break;
+                    case 8:
+                        _modelPassive = ModelOrange;
+                        break;
+                    case 9:
+                        _modelPassive = ModelCyan;
+                        break;
+                    default:
+                        _modelPassive = ModelMediumReflective;
+                        break;
+                }
             }
+            catch (Exception ex) { Log.Line($"Exception in SelectPassiveShell: {ex}"); }
         }
 
         public void UpdatePassiveModel()
         {
-            _shellPassive.Render.Visible = true;
-            _shellPassive.RefreshModels($"{Session.Instance.ModPath()}{_modelPassive}", null);
-            _shellPassive.Render.RemoveRenderObjects();
-            _shellPassive.Render.UpdateRenderObject(true);
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdatePassiveModel: modelString:{_modelPassive} - ShellNumber:{DsSet.Settings.ShieldShell} - ShieldId [{Shield.EntityId}]");
+            try
+            {
+                if (_shellPassive == null) return;
+                _shellPassive.Render.Visible = true;
+                _shellPassive.RefreshModels($"{Session.Instance.ModPath()}{_modelPassive}", null);
+                _shellPassive.Render.RemoveRenderObjects();
+                _shellPassive.Render.UpdateRenderObject(true);
+                if (Session.Enforced.Debug == 1) Log.Line($"UpdatePassiveModel: modelString:{_modelPassive} - ShellNumber:{DsSet.Settings.ShieldShell} - ShieldId [{Shield.EntityId}]");
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdatePassiveModel: {ex}"); }
         }
 
         private void ClientEnforcementRequest()

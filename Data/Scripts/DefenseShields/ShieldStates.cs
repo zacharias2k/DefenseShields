@@ -369,7 +369,7 @@ namespace DefenseShields
                     _updateRender = true;
                     DsState.State.Suspended = false;
                     DsState.State.Heat = 0;
-                    ShieldChangeState(false);
+                    //ShieldChangeState(false);
                     if (Session.Enforced.Debug == 1) Log.Line($"Unsuspended: CM:{ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.Suspended = false;
@@ -474,6 +474,7 @@ namespace DefenseShields
 
             if (DsState.State.Message)
             {
+                Log.Line($"broadcast - {DsState.State.Waking}");
                 BroadcastMessage();
                 DsState.State.Message = false;
             }

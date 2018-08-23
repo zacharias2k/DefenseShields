@@ -23,41 +23,30 @@ namespace DefenseShields.Data.Scripts.DefenseShields.API
         /// <param name="effect">optional effects, "DSdamage" is default, "DSheal"and "DSbypass" are possible</param>
         private Vector3D? DsRayCast(IMyEntity shield, LineD line, long attackerId, float damage, MyStringId effect)
         {
-            var sphere = new BoundingSphereD(shield.PositionComp.WorldVolume.Center, shield.PositionComp.LocalAABB.HalfExtents.AbsMax());
-            var obb = MyOrientedBoundingBoxD.Create(shield.PositionComp.LocalAABB, shield.PositionComp.WorldMatrix.GetOrientation());
-            obb.Center = shield.PositionComp.WorldVolume.Center;
-            // DsDebugDraw.DrawSphere(sphere, Color.Red);
-           // DsDebugDraw.DrawOBB(obb, Color.Blue, MySimpleObjectRasterizer.Wireframe, 0.1f);
-            var obbCheck = obb.Intersects(ref line);
-            if (obbCheck == null) return null;
+            var worldSphere = new BoundingSphereD(shield.PositionComp.WorldVolume.Center, shield.PositionComp.LocalAABB.HalfExtents.AbsMax());
+            var myObb = MyOrientedBoundingBoxD.Create(shield.PositionComp.LocalAABB, shield.PositionComp.WorldMatrix.GetOrientation());
+            myObb.Center = shield.PositionComp.WorldVolume.Center;
+            var obbCheck = myObb.Intersects(ref line);
 
             var testDir = line.From - line.To;
             testDir.Normalize();
             var ray = new RayD(line.From, -testDir);
-            var sphereCheck = sphere.Intersects(ray);
-            if (sphereCheck == null) return null;
+            var sphereCheck = worldSphere.Intersects(ray);
 
-            var furthestHit = obbCheck < sphereCheck ? sphereCheck : obbCheck;
-            Vector3 hitPos = line.From + testDir * -(double)furthestHit;
+            var obb = obbCheck ?? 0;
+            var sphere = sphereCheck ?? 0;
+            double furthestHit;
+
+            if (obb <= 0 && sphere <= 0) furthestHit = 0;
+            else if (obb > sphere) furthestHit = obb;
+            else furthestHit = sphere;
+            var hitPos = line.From + testDir * -furthestHit;
 
             var parent = MyAPIGateway.Entities.GetEntityById(long.Parse(shield.Name));
             var cubeBlock = (MyCubeBlock)parent;
             var block = (IMySlimBlock)cubeBlock.SlimBlock;
 
             if (block == null) return null;
-            // ShieldEnted.Add(parent);
-
-            /*
-            if (Debug)
-            {
-                DsDebugDraw.DrawSingleVec(hitPos, 1f, Color.Gold);
-                var c = new Vector4(15, 0, 0, 10);
-                var rnd = new Random();
-                var lineWidth = 0.2f;
-                if (rnd.Next(0, 5) > 2) lineWidth = 1;
-                if (_count % 2 == 0) DsDebugDraw.DrawLineToVec(line.From, hitPos, c, lineWidth);
-            }
-            */
             block.DoDamage(damage, MyStringHash.GetOrCompute(effect.ToString()), true, null, attackerId);
             shield.Render.ColorMaskHsv = hitPos;
             if (effect.ToString() == "bypass") return null;

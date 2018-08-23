@@ -1,7 +1,6 @@
 ﻿using System;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
-using Sandbox.Game.Entities.Cube;
 using VRage.Game.ModAPI;
 
 namespace DefenseShields

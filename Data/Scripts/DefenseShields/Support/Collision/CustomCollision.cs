@@ -384,30 +384,53 @@ namespace DefenseShields.Support
             for (int i = 0; i < voxelHitVecs.Count; i++) shieldGrid.Physics.ApplyImpulse((bOriBBoxD.Center - voxelHitVecs[i]) * shieldGridMass / 100, voxelHitVecs[i]);
         }
 
-        public static void SmallIntersect(EntIntersectInfo entInfo, MyConcurrentQueue<IMySlimBlock> fewDmgBlocks, IMyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
+        public static void SmallIntersect(EntIntersectInfo entInfo, MyConcurrentQueue<IMySlimBlock> fewDmgBlocks, MyConcurrentQueue<IMySlimBlock> destroyedBlocks, IMyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
         {
             try
             {
-                if (grid == null) return;
                 var contactPoint = ContactPointOutside(grid, matrix);
                 if (!(Vector3D.Transform(contactPoint, matrixInv).LengthSquared() <= 1)) return;
-                entInfo.ContactPoint = contactPoint;
 
-                var approching = Vector3.Dot(grid.Physics.LinearVelocity, grid.PositionComp.WorldVolume.Center - contactPoint) < 0;
-                if (approching) grid.Physics.LinearVelocity = grid.Physics.LinearVelocity * -0.25f;
-
-                var dmgblockCnt = fewDmgBlocks.Count;
-                if (dmgblockCnt == 25) return;
                 var getBlocks = new List<IMySlimBlock>();
                 grid.GetBlocks(getBlocks);
+                Vector3D[] blockPoints = new Vector3D[9];
+                var collisionAvg = Vector3D.Zero;
+                var c3 = 0;
                 var damage = 0f;
-                for (int i = 0; i < getBlocks.Count && i < 25 - dmgblockCnt; i++)
+                for (int i = 0; i < getBlocks.Count; i++)
                 {
                     var block = getBlocks[i];
-                    damage += block.Mass;
-                    fewDmgBlocks.Enqueue(block);
+                    if (block.IsDestroyed)
+                    {
+                        destroyedBlocks.Enqueue(block);
+                        continue;
+                    }
+
+                    BoundingBoxD blockBox;
+                    block.GetWorldBoundingBox(out blockBox);
+                    blockBox.GetCorners(blockPoints);
+                    blockPoints[8] = blockBox.Center;
+                    //var point2 = Vector3D.Clamp(_detectMatrixOutsideInv.Translation, blockBox.Min, blockBox.Max);
+                    for (int j = 8; j > -1; j--)
+                    {
+                        var point = blockPoints[j];
+                        if (Vector3.Transform(point, matrixInv).LengthSquared() > 1) continue;
+                        c3++;
+                        damage += block.Integrity / 50;
+                        collisionAvg += point;
+                        fewDmgBlocks.Enqueue(block);
+                        break;
+                    }
                 }
-                entInfo.Damage = damage;
+
+                if (collisionAvg != Vector3D.Zero)
+                {
+                    collisionAvg /= c3;
+                    entInfo.ContactPoint = collisionAvg;
+                    var approching = Vector3.Dot(grid.Physics.LinearVelocity, grid.PositionComp.WorldVolume.Center - collisionAvg) < 0;
+                    if (approching) grid.Physics.LinearVelocity = grid.Physics.LinearVelocity * -0.25f;
+                    entInfo.Damage = damage;
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in SmallIntersect: {ex}"); }
         }

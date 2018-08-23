@@ -194,7 +194,7 @@ namespace DefenseShields
                                 myGrid.EnqueueDestroyedBlock(block.Position);
                                 continue;
                             }
-                            block.DoDamage(damageMulti, DelDamage, true, null, Shield.CubeGrid.EntityId); // set  to true for multiplayer?
+                            block.DoDamage(damageMulti, DelDamage, true, null, Shield.CubeGrid.EntityId); 
                             if (myGrid.BlocksCount == 0) block.CubeGrid.SyncObject.SendCloseRequest();
                         }
                     }
@@ -217,7 +217,7 @@ namespace DefenseShields
                                 myGrid.Close();
                                 continue;
                             }
-                            block.DoDamage(10000f, DelDamage, true, null, Shield.CubeGrid.EntityId); // set sync to true for multiplayer?
+                            block.DoDamage(1000f, DelDamage, true, null, Shield.CubeGrid.EntityId); 
                             if (myGrid.BlocksCount == 0) block.CubeGrid.SyncObject.SendCloseRequest();
                         }
                     }

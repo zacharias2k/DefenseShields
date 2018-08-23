@@ -841,7 +841,7 @@ namespace DefenseShields
         {
             var data = new DataEnhancerState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            O2GeneratorStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+            EnhancerStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
         }
 
         public static void PacketizeEmitterState(IMyCubeBlock block, ProtoEmitterState state)
