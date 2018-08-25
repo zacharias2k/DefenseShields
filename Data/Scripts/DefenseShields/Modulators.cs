@@ -36,6 +36,13 @@ namespace DefenseShields
 
         private float _power = 0.01f;
 
+        private bool _wasOnline;
+        private bool _wasLink;
+        private bool _wasBackup;
+        private int _wasModulateDamage;
+        private float _wasModulateEnergy;
+        private float _wasModulateKinetic;
+
         private readonly Dictionary<long, Modulators> _modulators = new Dictionary<long, Modulators>();
 
         internal ModulatorGridComponent ModulatorComp;
@@ -62,8 +69,12 @@ namespace DefenseShields
                 var isServer = Session.IsServer;
                 IsStatic = Modulator.CubeGrid.IsStatic;
 
-                if (!ModulatorReady(isServer)) return;
-
+                if (!ModulatorReady(isServer))
+                {
+                    ModulatorOff(isServer);
+                    return;
+                }
+                if (isServer) ModulatorOn();
                 Timing();
 
                 if (!Session.DedicatedServer && UtilsStatic.DistanceCheck(Modulator, 1000, 1))
@@ -93,6 +104,51 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
 
+        private void ModulatorOff(bool isServer)
+        {
+            var stateChange = StateChange();
+
+            if (isServer && stateChange)
+            {
+                NeedUpdate();
+                StateChange(true);
+                Modulator.RefreshCustomInfo();
+            }
+            if (!isServer && stateChange) StateChange(true);
+        }
+
+        private void ModulatorOn()
+        {
+            ModState.State.Online = true;
+            if (StateChange())
+            {
+                NeedUpdate();
+                StateChange(true);
+                Modulator.RefreshCustomInfo();
+            }
+        }
+
+        private void Election()
+        {
+            if (ModulatorComp == null || !Modulator.CubeGrid.Components.Has<ModulatorGridComponent>())
+            {
+                var girdHasModComp = Modulator.CubeGrid.Components.Has<ModulatorGridComponent>();
+
+                if (girdHasModComp)
+                {
+                    Modulator.CubeGrid.Components.TryGet(out ModulatorComp);
+                    if (Session.Enforced.Debug == 1) Log.Line($"Election: grid had Comp- ModulatorId [{Modulator.EntityId}]");
+                }
+                else
+                {
+                    ModulatorComp = new ModulatorGridComponent(this);
+                    Modulator.CubeGrid.Components.Add(ModulatorComp);
+                    if (Session.Enforced.Debug == 1) Log.Line($"Election: grid didn't have Comp - ModulatorId [{Modulator.EntityId}]");
+                }
+                Modulator.RefreshCustomInfo();
+            }
+        }
+
         private bool ModulatorReady(bool server)
         {
             if (_subpartRotor == null)
@@ -100,28 +156,59 @@ namespace DefenseShields
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
                 if (_subpartRotor == null) return false;
             }
+            if (ModulatorComp == null) Election();
 
             if (server)
             {
-                if (ModulatorComp == null) Election();
                 if (!BlockWorking()) return false;
             }
             else
             {
-                if (ModState.State.Online && ModulatorComp?.Modulator != this)
-                {
-                    if (ModulatorComp == null)
-                    {
-                        ModulatorComp = Modulator.CubeGrid.Components.Has<ModulatorGridComponent>()
-                            ? Modulator.CubeGrid.Components.Get<ModulatorGridComponent>()
-                            : new ModulatorGridComponent(this);
-                    }
-                    else ModulatorComp.Modulator = this;
-                }
                 if (!ModState.State.Online) return false;
                 if (_count == 29) ClientCheckForCompLink();
             }
-            return BlockMoveAnimationReset();
+            return true;
+        }
+
+        private bool BlockWorking()
+        {
+            ModState.State.Online = false;
+            if (Modulator?.CubeGrid == null || Sink.CurrentInputByType(GId) < 0.01f || !Modulator.Enabled || !Modulator.IsFunctional)
+            {
+                if (Modulator != null && _tick % 300 == 0)
+                {
+                    Modulator.RefreshCustomInfo();
+                    Modulator.ShowInToolbarConfig = false;
+                    Modulator.ShowInToolbarConfig = true;
+                }
+                return false;
+            }
+            if (ModulatorComp.Modulator == null) ModulatorComp.Modulator = this;
+            else if (ModulatorComp.Modulator != this)
+            {
+                ModState.State.Backup = true;
+                return false;
+            }
+
+            ModState.State.Backup = false;
+
+            if (_count == 59 && _lCount == 9) ServerCheckForCompLink();
+            ModState.State.Online = true;
+            return true;
+        }
+
+        private void ServerCheckForCompLink()
+        {
+            if (ShieldComp == null || ShieldComp?.Modulator != this)
+            {
+                if (ShieldComp?.DefenseShields == null)
+                {
+                    Modulator.CubeGrid.Components.TryGet(out ShieldComp);
+                    if (ShieldComp?.DefenseShields == null) return;
+                }
+                if (ShieldComp.Modulator != this) ShieldComp.Modulator = this;
+                ModState.State.Link = true;
+            }
         }
 
         private void ClientCheckForCompLink()
@@ -131,106 +218,10 @@ namespace DefenseShields
                 if (ShieldComp?.DefenseShields == null)
                 {
                     Modulator.CubeGrid.Components.TryGet(out ShieldComp);
-                    if (ShieldComp == null) return;
+                    if (ShieldComp?.DefenseShields == null) return;
                 }
                 if (ShieldComp.Modulator != this) ShieldComp.Modulator = this;
             }
-        }
-
-        private bool BlockWorking()
-        {
-            if (Modulator?.CubeGrid == null || Sink.CurrentInputByType(GId) < 0.01f || !Modulator.Enabled || !Modulator.IsFunctional)
-            {
-                NeedUpdate(ModState.State.Online, false);
-                if (Modulator != null && _tick % 300 == 0)
-                {
-                    Modulator.RefreshCustomInfo();
-                    Modulator.ShowInToolbarConfig = false;
-                    Modulator.ShowInToolbarConfig = true;
-                }
-                return false;
-            }
-
-            var change = false;
-            if (ModulatorComp == null)
-            {
-                ModulatorComp = Modulator.CubeGrid.Components.Has<ModulatorGridComponent>() ? Modulator.CubeGrid.Components.Get<ModulatorGridComponent>() : new ModulatorGridComponent(this);
-                change = true;
-            }
-
-            if (ModulatorComp.Modulator == null)
-            {
-                if (ModulatorComp?.Modulator != this)
-                {
-                    ModulatorComp.Modulator = this;
-                    change = true;
-                }
-            }
-
-            if (ModulatorComp.Modulator == this)
-            {
-                if (!ModState.State.Online) change = true;
-                ModState.State.Online = true;
-                ModState.State.Backup = false;
-            }
-            else
-            {
-                if (ModState.State.Online)
-                {
-                    ModState.State.Backup = true;
-                    NeedUpdate(ModState.State.Online,false);
-                }
-                return false;
-            }
-
-            if (_count == 59 && _lCount == 9)
-            {
-                if (ShieldComp?.DefenseShields == null)
-                {
-                    if (ModState.State.Link)
-                    {
-                        Modulator.CubeGrid.Components.TryGet(out ShieldComp);
-                        if (ShieldComp == null)
-                        {
-                            ModState.State.Link = false;
-                        }
-
-                        change = true;
-                    }
-                    else if (!ModState.State.Link)
-                    {
-                        Modulator.CubeGrid.Components.TryGet(out ShieldComp);
-                        if (ShieldComp != null)
-                        {
-                            ModState.State.Link = true;
-                            change = true;
-                        }
-                    }
-                }
-                else if (ShieldComp?.DefenseShields != null)
-                {
-                    if (ShieldComp?.Modulator != this || !ModState.State.Link)
-                    {
-                        if (ShieldComp.Modulator != this)
-                        {
-                            ShieldComp.Modulator = this;
-                            ModState.State.Link = true;
-                            change = true;
-                        }
-                    }
-                }
-            }
-
-            if (change)
-            {
-                if (ModState.State.Online) NeedUpdate(ModState.State.Online, true);
-                else
-                {
-                    NeedUpdate(ModState.State.Online, false);
-                    return false;
-                }
-            }
-            return true;
         }
 
         private void Timing()
@@ -266,20 +257,28 @@ namespace DefenseShields
             }
         }
 
-        private void NeedUpdate(bool onState, bool turnOn)
+        private bool StateChange(bool update = false)
         {
-            if (!onState && turnOn)
+            if (update)
             {
-                ModState.State.Online = true;
-                ModState.SaveState();
-                ModState.NetworkUpdate();
+                _wasOnline = ModState.State.Online;
+                _wasLink = ModState.State.Link;
+                _wasBackup = ModState.State.Backup;
+                _wasModulateDamage = ModState.State.ModulateDamage;
+                _wasModulateEnergy = ModState.State.ModulateEnergy;
+                _wasModulateKinetic = ModState.State.ModulateKinetic;
+                return true;
             }
-            else if (onState & !turnOn)
-            {
-                ModState.State.Online = false;
-                ModState.SaveState();
-                ModState.NetworkUpdate();
-            }
+
+            return _wasOnline != ModState.State.Online || _wasLink != ModState.State.Link || _wasBackup != ModState.State.Backup 
+                   || _wasModulateDamage != ModState.State.ModulateDamage || !_wasModulateEnergy.Equals(ModState.State.ModulateEnergy) 
+                   || !_wasModulateKinetic.Equals(ModState.State.ModulateKinetic);
+        }
+
+        private void NeedUpdate()
+        {
+            ModState.SaveState();
+            if (Session.MpActive) ModState.NetworkUpdate();
         }
 
         public override void OnAddedToContainer()
@@ -313,9 +312,10 @@ namespace DefenseShields
             try
             {
                 if (Modulator.CubeGrid.Physics == null) return;
-                if (ModulatorComp == null) ModulatorComp = new ModulatorGridComponent(this);
+
                 if (!Modulator.CubeGrid.Components.Has<ModulatorGridComponent>())
                 {
+                    ModulatorComp = new ModulatorGridComponent(this);
                     Modulator.CubeGrid.Components.Add(ModulatorComp);
                 }
                 else
@@ -323,9 +323,6 @@ namespace DefenseShields
                     Modulator.CubeGrid.Components.TryGet(out ModulatorComp);
                     if (ModulatorComp != null && ModulatorComp.Modulator == null) ModulatorComp.Modulator = this;
                 }
-
-                Modulator.CubeGrid.Components.TryGet(out ShieldComp);
-
                 Session.Instance.Modulators.Add(this);
                 _modulators.Add(Entity.EntityId, this);
 
@@ -337,31 +334,10 @@ namespace DefenseShields
                 ((MyCubeGrid)Modulator.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
                 Modulator.AppendingCustomInfo += AppendingCustomInfo;
                 Modulator.RefreshCustomInfo();
+                StateChange(true);
                 MainInit = true;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
-        }
-
-        private void Election()
-        {
-            if (ModulatorComp == null || !Modulator.CubeGrid.Components.Has<ModulatorGridComponent>())
-            {
-                if (Session.Enforced.Debug == 1) Log.Line($"Election: ModulatorComp is null - ModulatorId [{Modulator.EntityId}]");
-                var girdHasModComp = Modulator.CubeGrid.Components.Has<ModulatorGridComponent>();
-
-                if (girdHasModComp)
-                {
-                    Modulator.CubeGrid.Components.TryGet(out ModulatorComp);
-                    if (Session.Enforced.Debug == 1) Log.Line($"Election: grid had Comp- ModulatorId [{Modulator.EntityId}]");
-                }
-                else
-                {
-                    Modulator.CubeGrid.Components.Add(ModulatorComp);
-                    if (Session.Enforced.Debug == 1) Log.Line($"Election: grid didn't have Comp - ModulatorId [{Modulator.EntityId}]");
-                }
-                Modulator.RefreshCustomInfo();
-            }
-            if (Session.Enforced.Debug == 1) Log.Line($"Election: controller election was held - ModulatorId [{Modulator.EntityId}]");
         }
 
         private void PowerPreInit()
@@ -409,7 +385,6 @@ namespace DefenseShields
 
             ModSet.LoadSettings();
             ModState.LoadState();
-            UpdateSettings(ModSet.Settings);
         }
 
         private void HierarchyChanged(MyCubeGrid myCubeGrid = null)
@@ -445,8 +420,9 @@ namespace DefenseShields
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
             stringBuilder.Append("[Online]: " + ModState.State.Online +
-                                 "\n[Remodulating Shield]: " + (ModState.State.Online) +
+                                 "\n[Remodulating Shield]: " + ModState.State.Link +
                                  "\n" +
+                                 "\n[Backup Modulator]: " + ModState.State.Backup +
                                  "\n[Energy Protection]: " + ModState.State.ModulateEnergy.ToString("0") + "%" +
                                  "\n[Kinetic Protection]: " + ModState.State.ModulateKinetic.ToString("0") + "%");
         }
@@ -488,7 +464,6 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
@@ -499,13 +474,18 @@ namespace DefenseShields
             try
             {
                 if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
-                if (Modulator.CubeGrid.Components.Has<ModulatorGridComponent>()) Modulator.CubeGrid.Components.Remove<ModulatorGridComponent>();
-                if ((MyCubeGrid)Modulator?.CubeGrid != null) ((MyCubeGrid)Modulator.CubeGrid).OnHierarchyUpdated -= HierarchyChanged;
+                if (ShieldComp?.Modulator == this)
+                {
+                    ShieldComp.Modulator = null;
+                }
+
                 if (ModulatorComp?.Modulator == this)
                 {
                     ModulatorComp.Modulator = null;
                     ModulatorComp = null;
                 }
+                if ((MyCubeGrid)Modulator?.CubeGrid != null) ((MyCubeGrid)Modulator.CubeGrid).OnHierarchyUpdated -= HierarchyChanged;
+
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
             base.Close();

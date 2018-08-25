@@ -85,6 +85,7 @@ namespace DefenseShields
         private int _oldBlockCount;
         private int _shieldRatio;
 
+        internal bool WasOnline;
         internal bool SettingsUpdated;
         internal bool DeformEnabled;
         internal bool ExplosionEnabled;

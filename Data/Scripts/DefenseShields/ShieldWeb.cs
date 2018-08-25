@@ -35,9 +35,9 @@ namespace DefenseShields
             for (int i = 0; i < pruneList.Count; i++)
             {
                 var ent = pruneList[i];
+
                 var voxel = ent as MyVoxelBase;
                 if (ent == null || ent.MarkedForClose || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel || voxel == null && ent.Physics == null) continue;
-                var interestingblocks = ((MyCubeGrid) Shield.CubeGrid).GetFatBlocks();
                 var entCenter = ent.PositionComp.WorldVolume.Center;
                 var missileCheck = !pruneSphere2.Intersects(ent.PositionComp.WorldVolume) && !((ent.Flags & EntityFlags.IsNotGamePrunningStructureObject) != 0 && ent.GetType().Name.Equals(MyMissile));
                 if (voxel == null && missileCheck) continue;

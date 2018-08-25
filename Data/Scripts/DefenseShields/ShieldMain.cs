@@ -8,6 +8,7 @@ using VRage.Game.Components;
 using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
+using VRageMath;
 
 namespace DefenseShields
 {
@@ -22,7 +23,11 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
                 var isServer = Session.IsServer;
                 var isDedicated = Session.DedicatedServer;
-                if (!ShieldReady(isServer)) return;
+                if (!ShieldOn(isServer))
+                {
+                    if (WasOnline) ShieldOff(isServer);
+                    return;
+                }
 
                 if (DsState.State.Online)
                 {
@@ -54,154 +59,30 @@ namespace DefenseShields
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
 
+        private void ShieldOff(bool isServer)
+        {
+            _power = 0.001f;
+            Sink.Update();
+            WasOnline = false;
+            ShieldEnt.Render.Visible = false;
+            ShieldEnt.PositionComp.SetPosition(Vector3D.Zero);
+            if (isServer) ShieldChangeState(false);
+        }
+
         private void ComingOnlineSetup(bool server, bool dedicated)
         {
             if (!dedicated) ShellVisibility();
+            ShieldEnt.Render.Visible = true;
             ComingOnline = false;
+            WasOnline = true;
             WarmedUp = true;
 
             if (server)
             {
                 SyncThreadedEnts(true);
                 _offlineCnt = -1;
+                ShieldChangeState(false);
             }
-        }
-
-        private void ShieldChangeState(bool broadcast)
-        {
-            DsState.SaveState();
-            if (broadcast) DsState.State.Message = true;
-            DsState.NetworkUpdate();
-            if (!Session.DedicatedServer)
-            {
-                BroadcastMessage();
-                Shield.RefreshCustomInfo();
-            }
-            DsState.State.Message = false;
-        }
-
-        private bool ShieldReady(bool server)
-        {
-            _tick = Session.Instance.Tick;
-            if (server)
-            {
-                if (!ControllerFunctional() || ShieldWaking())
-                {
-                    if (ShieldDown()) return false;
-                    if (!PrevShieldActive) return false;
-                    ShieldChangeState(false);
-                    PrevShieldActive = false;
-                    return false;
-                }
-
-                var powerState = PowerOnline();
-
-                if (_tick % 120 == 0)
-                {
-                    GetModulationInfo();
-                    GetEnhancernInfo();
-                }
-                if (ShieldDown()) return false;
-                SetShieldServerStatus(powerState);
-                Timing(true);
-
-                if (ComingOnline && (!GridOwnsController() || GridIsMobile && FieldShapeBlocked()))
-                {
-                    _genericDownLoop = 0;
-                    ShieldDown();
-                    return false;
-                }
-
-                if (ComingOnline) ShieldChangeState(false);
-            }
-            else
-            {
-                if (!AllInited)
-                {
-                    PostInit();
-                    return false;
-                }
-                if (_blockChanged) BlockMonitor();
-                if (ClientOfflineStates() || !WarmUpSequence() || ClientShieldLowered()) return false;
-                if (GridIsMobile) MobileUpdate();
-                if (UpdateDimensions) RefreshDimensions();
-                PowerOnline();
-                SetShieldClientStatus();
-                Timing(true);
-            }
-            _clientOn = true;
-            _clientLowered = false;
-            return _clientOn;
-        }
-
-        private bool ControllerFunctional()
-        {
-            if (!AllInited)
-            {
-                PostInit();
-                return false;
-            }
-            if (_blockChanged) BlockMonitor();
-
-            if (Suspend() || !WarmUpSequence() || ShieldSleeping() || ShieldLowered()) return false;
-
-            if (ShieldComp.EmitterEvent) EmitterEventDetected();
-
-            if (!Shield.IsWorking || !Shield.IsFunctional || !ShieldComp.EmittersWorking)
-            {
-                _genericDownLoop = 0;
-                return false;
-            }
-
-            ControlBlockWorking = Shield.IsWorking && Shield.IsFunctional;
-
-            if (ControlBlockWorking)
-            {
-                if (GridIsMobile) MobileUpdate();
-                if (UpdateDimensions) RefreshDimensions();
-            }
-
-            return ControlBlockWorking; 
-        }
-
-        private void SetShieldServerStatus(bool powerState)
-        {
-            DsSet.Settings.ShieldActive = ControlBlockWorking && powerState;
-
-            if (!PrevShieldActive && DsSet.Settings.ShieldActive) ComingOnline = true;
-            else if (ComingOnline && PrevShieldActive && DsSet.Settings.ShieldActive) ComingOnline = false;
-
-            PrevShieldActive = DsSet.Settings.ShieldActive;
-            DsState.State.Online = DsSet.Settings.ShieldActive;
-
-            if (!GridIsMobile && (ComingOnline || ShieldComp.O2Updated))
-            {
-                EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
-                ShieldComp.O2Updated = false;
-            }
-        }
-
-        private void SetShieldClientStatus()
-        {
-            if (!PrevShieldActive && DsState.State.Online) ComingOnline = true;
-            else if (ComingOnline && PrevShieldActive && DsState.State.Online) ComingOnline = false;
-
-            PrevShieldActive = DsState.State.Online;
-
-            if (!GridIsMobile && (ComingOnline || !DsState.State.IncreaseO2ByFPercent.Equals(EllipsoidOxyProvider.O2Level)))
-            {
-                EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
-            }
-        }
-
-        private bool ShieldDown()
-        {
-            if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
-            {
-                FailureConditions();
-                return true;
-            }
-            return false;
         }
 
         private void Timing(bool cleanUp)
@@ -311,21 +192,6 @@ namespace DefenseShields
                 _blockEvent = false;
             }
         }
-
-        /*
-        public void UpdateBlockCount()
-        {
-            var blockCnt = 0;
-            foreach (var subGrid in ShieldComp.GetSubGrids)
-            {
-                if (subGrid == null) continue;
-                blockCnt += ((MyCubeGrid)subGrid).BlocksCount;
-            }
-
-            if (!_blockEvent) _blockEvent = blockCnt != _oldBlockCount;
-            _oldBlockCount = blockCnt;
-        }
-        */
 
         private void CheckExtents(bool backGround)
         {
@@ -451,6 +317,7 @@ namespace DefenseShields
         {
             var isServer = Session.IsServer;
             if (!UpdateGridPower() && !isServer) return false;
+
             CalculatePowerCharge();
             _power = _shieldConsumptionRate + _shieldMaintaintPower;
             if (isServer && WarmedUp && HadPowerBefore && _shieldConsumptionRate.Equals(0f) && DsState.State.Buffer.Equals(0.01f) && _genericDownLoop == -1)
@@ -576,16 +443,15 @@ namespace DefenseShields
                 else _shieldConsumptionRate = 0f;
             }
             _powerNeeded = _shieldMaintaintPower + _shieldConsumptionRate + _otherPower;
-            if (WarmedUp)
-            {
-                if (DsState.State.Buffer < _shieldMaxBuffer) ShieldComp.ShieldPercent = (DsState.State.Buffer / _shieldMaxBuffer) * 100;
-                else if (DsState.State.Buffer <= 1) ShieldComp.ShieldPercent = 0f;
-                else ShieldComp.ShieldPercent = 100f;
-            }
+            if (!WarmedUp) return;
 
-            if (WarmedUp && DsState.State.Buffer > _shieldMaxBuffer) DsState.State.Buffer = _shieldMaxBuffer;
+            if (DsState.State.Buffer < _shieldMaxBuffer) ShieldComp.ShieldPercent = (DsState.State.Buffer / _shieldMaxBuffer) * 100;
+            else if (DsState.State.Buffer <= 1) ShieldComp.ShieldPercent = 0f;
+            else ShieldComp.ShieldPercent = 100f;
+
+            if ( DsState.State.Buffer > _shieldMaxBuffer) DsState.State.Buffer = _shieldMaxBuffer;
             var roundedGridMax = Math.Round(_gridMaxPower, 1);
-            if (WarmedUp && (_powerNeeded > roundedGridMax || powerForShield <= 0))
+            if (_powerNeeded > roundedGridMax || powerForShield <= 0)
             {
                 if (!DsState.State.Online)
                 {
@@ -636,8 +502,8 @@ namespace DefenseShields
             }
 
 
-            if (WarmedUp && (DsState.State.Buffer < _shieldMaxBuffer && _count == 29)) DsState.State.Buffer += _shieldChargeRate;
-            else if (WarmedUp && (DsState.State.Buffer.Equals(_shieldMaxBuffer)))
+            if (DsState.State.Buffer < _shieldMaxBuffer && _count == 29) DsState.State.Buffer += _shieldChargeRate;
+            else if (DsState.State.Buffer.Equals(_shieldMaxBuffer))
             {
                 _shieldChargeRate = 0f;
                 _shieldConsumptionRate = 0f;

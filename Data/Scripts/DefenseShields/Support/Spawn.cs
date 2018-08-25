@@ -23,8 +23,6 @@ namespace DefenseShields.Support
                 var ent = new MyEntity { NeedsWorldMatrix = true };
 
                 ent.Init(new StringBuilder(displayName), model, myParent, null, null);
-                //ent.Init(new StringBuilder(displayName), model, null, null, null);
-                //parent.Hierarchy.AddChild(ent, insertIntoSceneIfNeeded: true, preserveWorldPos: false);
                 ent.Name = $"{parent.EntityId}";
                 MyAPIGateway.Entities.AddEntity(ent);
                 return ent;

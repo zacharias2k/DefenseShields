@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
 using DefenseShields.Support;
-using Sandbox.Game;
 using Sandbox.Game.Entities;
-using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRageMath;
@@ -20,6 +18,142 @@ namespace DefenseShields
             NoPower,
             NoLos
         };
+
+        private void ShieldChangeState(bool broadcast)
+        {
+            DsState.SaveState();
+            if (broadcast) DsState.State.Message = true;
+            if (Session.MpActive) DsState.NetworkUpdate();
+            if (!Session.DedicatedServer)
+            {
+                BroadcastMessage();
+                Shield.RefreshCustomInfo();
+            }
+            DsState.State.Message = false;
+        }
+
+        private bool ShieldOn(bool server)
+        {
+            _tick = Session.Instance.Tick;
+            if (server)
+            {
+                if (!ControllerFunctional() || ShieldWaking())
+                {
+                    if (ShieldDown()) return false;
+                    if (!PrevShieldActive) return false;
+                    PrevShieldActive = false;
+                    return false;
+                }
+
+                var powerState = PowerOnline();
+
+                if (_tick % 120 == 0)
+                {
+                    GetModulationInfo();
+                    GetEnhancernInfo();
+                }
+                if (ShieldDown()) return false;
+                SetShieldServerStatus(powerState);
+                Timing(true);
+
+                if (ComingOnline && (!GridOwnsController() || GridIsMobile && FieldShapeBlocked()))
+                {
+                    _genericDownLoop = 0;
+                    ShieldDown();
+                    return false;
+                }
+
+                if (ComingOnline) ShieldChangeState(false);
+            }
+            else
+            {
+                if (!AllInited)
+                {
+                    PostInit();
+                    return false;
+                }
+                if (_blockChanged) BlockMonitor();
+                if (ClientOfflineStates() || !WarmUpSequence() || ClientShieldLowered()) return false;
+                if (GridIsMobile) MobileUpdate();
+                if (UpdateDimensions) RefreshDimensions();
+                PowerOnline();
+                SetShieldClientStatus();
+                Timing(true);
+            }
+            _clientOn = true;
+            _clientLowered = false;
+            return _clientOn;
+        }
+
+        private bool ControllerFunctional()
+        {
+            if (!AllInited)
+            {
+                PostInit();
+                return false;
+            }
+            if (_blockChanged) BlockMonitor();
+
+            if (Suspend() || !WarmUpSequence() || ShieldSleeping() || ShieldLowered()) return false;
+
+            if (ShieldComp.EmitterEvent) EmitterEventDetected();
+
+            if (!Shield.IsWorking || !Shield.IsFunctional || !ShieldComp.EmittersWorking)
+            {
+                _genericDownLoop = 0;
+                return false;
+            }
+
+            ControlBlockWorking = Shield.IsWorking && Shield.IsFunctional;
+
+            if (ControlBlockWorking)
+            {
+                if (GridIsMobile) MobileUpdate();
+                if (UpdateDimensions) RefreshDimensions();
+            }
+
+            return ControlBlockWorking;
+        }
+
+        private void SetShieldServerStatus(bool powerState)
+        {
+            DsSet.Settings.ShieldActive = ControlBlockWorking && powerState;
+
+            if (!PrevShieldActive && DsSet.Settings.ShieldActive) ComingOnline = true;
+            else if (ComingOnline && PrevShieldActive && DsSet.Settings.ShieldActive) ComingOnline = false;
+
+            PrevShieldActive = DsSet.Settings.ShieldActive;
+            DsState.State.Online = DsSet.Settings.ShieldActive;
+
+            if (!GridIsMobile && (ComingOnline || ShieldComp.O2Updated))
+            {
+                EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
+                ShieldComp.O2Updated = false;
+            }
+        }
+
+        private void SetShieldClientStatus()
+        {
+            if (!PrevShieldActive && DsState.State.Online) ComingOnline = true;
+            else if (ComingOnline && PrevShieldActive && DsState.State.Online) ComingOnline = false;
+
+            PrevShieldActive = DsState.State.Online;
+
+            if (!GridIsMobile && (ComingOnline || !DsState.State.IncreaseO2ByFPercent.Equals(EllipsoidOxyProvider.O2Level)))
+            {
+                EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
+            }
+        }
+
+        private bool ShieldDown()
+        {
+            if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
+            {
+                FailureConditions();
+                return true;
+            }
+            return false;
+        }
 
         private bool ShieldWaking()
         {
@@ -102,8 +236,7 @@ namespace DefenseShields
                     DsState.State.Online = false;
                     if (_overLoadLoop != -1) DsState.State.Overload = true;
                     if (_reModulationLoop != -1) DsState.State.Remodulate = true;
-                    OfflineShield();
-                    ShieldChangeState(true);
+                    ShieldFailed();
                 }
             }
 
@@ -114,7 +247,6 @@ namespace DefenseShields
                 {
                      DsState.State.Remodulate = false;
                     _reModulationLoop = -1;
-                    ShieldChangeState(false);
                 }
             }
 
@@ -133,7 +265,6 @@ namespace DefenseShields
                     {
                         DsState.State.EmitterWorking = true;
                         _genericDownLoop = -1;
-                        ShieldChangeState(false);
                     }
                 }
             }
@@ -155,13 +286,12 @@ namespace DefenseShields
                         var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
                         var nerfer = nerf ? Session.Enforced.Nerf : 1f;
                         DsState.State.Buffer = (_shieldMaxBuffer / 25) * nerfer; // replace this with something that scales based on charge rate
-                        ShieldChangeState(false);
                     }
                 }
             }
         }
 
-        private void OfflineShield()
+        private void ShieldFailed()
         {
             _offlineCnt++;
             if (_offlineCnt == 0)
@@ -172,7 +302,6 @@ namespace DefenseShields
                 Sink.Update();
                 _shieldCurrentPower = Sink.CurrentInputByType(GId);
                 ResetShape(true, true);
-                ShieldEnt.PositionComp.SetWorldMatrix(MatrixD.Zero);
                 CleanUp(0);
                 CleanUp(1);
                 CleanUp(3);
@@ -210,7 +339,6 @@ namespace DefenseShields
                 {
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
 
-                    ShieldEnt.PositionComp.SetWorldMatrix(MatrixD.Zero);
                     DsState.State.IncreaseO2ByFPercent = 0f;
                     if (!Session.DedicatedServer) ShellVisibility(true);
                     DsState.State.Lowered = true;
@@ -275,7 +403,6 @@ namespace DefenseShields
                 {
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
 
-                    ShieldEnt.PositionComp.SetWorldMatrix(MatrixD.Zero);
                     DsState.State.IncreaseO2ByFPercent = 0f;
                     if (!Session.DedicatedServer) ShellVisibility(true);
                     DsState.State.Sleeping = true;
@@ -474,7 +601,6 @@ namespace DefenseShields
 
             if (DsState.State.Message)
             {
-                Log.Line($"broadcast - {DsState.State.Waking}");
                 BroadcastMessage();
                 DsState.State.Message = false;
             }
@@ -537,6 +663,7 @@ namespace DefenseShields
                 }
                 return false;
             }
+
             HadPowerBefore = true;
             _blockChanged = true;
             _functionalChanged = true;
