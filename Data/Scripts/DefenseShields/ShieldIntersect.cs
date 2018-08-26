@@ -14,20 +14,27 @@ namespace DefenseShields
     public partial class DefenseShields
     {
         #region Intersect
-        private bool GridInside(IMyCubeGrid grid, MyOrientedBoundingBoxD bOriBBoxD)
+        private bool GridInside(MyCubeGrid grid, MyOrientedBoundingBoxD bOriBBoxD, MyEntity ent)
         {
-            if (grid != null && CustomCollision.PointInShield(grid.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
+            if (grid != null && CustomCollision.PointInShield(grid.PositionComp.WorldVolume.Center, DetectMatrixInInv))
             {
-                if (CustomCollision.AllCornersInShield(bOriBBoxD, DetectMatrixOutsideInv)) return true;
+                if (CustomCollision.AllCornersInShield(bOriBBoxD, DetectMatrixInInv))
+                {
+                    EntIntersectInfo entRemoved;
+                    WebEnts.TryRemove(ent, out entRemoved);
+                    IgnoreCache.Add(ent);
+                    if (entRemoved != null) Log.Line($"entity:{ent.DebugName} - {grid.DisplayName} - is now inside");
+                    return true;
+                }
             }
             return false;
         }
 
-        private void SmallGridIntersect(IMyEntity ent)
+        private void SmallGridIntersect(MyEntity ent)
         {
-            var grid = (IMyCubeGrid)ent;
+            var grid = (MyCubeGrid)ent;
             if (ent == null || grid == null || grid.MarkedForClose || grid.Closed) return;
-            if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.WorldAABB))) return;
+            if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB), ent)) return;
             EntIntersectInfo entInfo;
             WebEnts.TryGetValue(ent, out entInfo);
             if (entInfo == null) return;
@@ -56,7 +63,7 @@ namespace DefenseShields
             }
         }
 
-        private void GridIntersect(IMyEntity ent)
+        private void GridIntersect(MyEntity ent)
         {
             var grid = (MyCubeGrid)ent;
             if (grid == null) return;
@@ -66,7 +73,7 @@ namespace DefenseShields
             if (entInfo == null) return;
 
             var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB);
-            if (entInfo.Relation != Ent.LargeEnemyGrid && GridInside(grid, bOriBBoxD)) return;
+            if (entInfo.Relation != Ent.LargeEnemyGrid && GridInside(grid, bOriBBoxD, ent)) return;
             BlockIntersect(grid, bOriBBoxD, entInfo);
             var contactpoint = entInfo.ContactPoint;
             entInfo.ContactPoint = Vector3D.NegativeInfinity;
@@ -79,11 +86,12 @@ namespace DefenseShields
             WorldImpactPosition = contactpoint;
         }
 
-        private void ShieldIntersect(IMyCubeGrid grid)
+        private void ShieldIntersect(MyEntity ent)
         {
+            var grid = ent as MyCubeGrid;
             if (grid == null) return;
 
-            if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.WorldAABB))) return;
+            if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB), ent)) return;
             ShieldGridComponent shieldComponent;
             grid.Components.TryGet(out shieldComponent);
 
@@ -94,9 +102,9 @@ namespace DefenseShields
             var insidePoints = new List<Vector3D>();
             CustomCollision.ShieldX2PointsInside(dsVerts, dsMatrixInv, ShieldComp.PhysicsOutside, DetectMatrixOutsideInv, insidePoints);
 
-            var bPhysics = grid.Physics;
+            var bPhysics = ((IMyCubeGrid)grid).Physics;
             var sPhysics = myGrid.Physics;
-            var bMass = ((MyCubeGrid)grid).GetCurrentMass();
+            var bMass = grid.GetCurrentMass();
             var sMass = ((MyCubeGrid)myGrid).GetCurrentMass();
             var bVelocity = bPhysics.LinearVelocity;
             var sVelocity = sPhysics.LinearVelocity;
@@ -168,7 +176,7 @@ namespace DefenseShields
             }
         }
 
-        private void PlayerIntersect(IMyEntity ent)
+        private void PlayerIntersect(MyEntity ent)
         {
             var playerInfo = WebEnts[ent];
             var character = ent as IMyCharacter;
@@ -193,7 +201,7 @@ namespace DefenseShields
             _characterDmg.Enqueue(character);
         }
 
-        private void BlockIntersect(IMyCubeGrid breaching, MyOrientedBoundingBoxD bOriBBoxD, EntIntersectInfo entInfo)
+        private void BlockIntersect(MyCubeGrid breaching, MyOrientedBoundingBoxD bOriBBoxD, EntIntersectInfo entInfo)
         {
             var collisionAvg = Vector3D.Zero;
             var transformInv = DetectMatrixOutsideInv;
@@ -211,9 +219,9 @@ namespace DefenseShields
                 if (intersection)
                 {
                     var cacheBlockList = entInfo.CacheBlockList;
-                    var bPhysics = breaching.Physics;
+                    var bPhysics = ((IMyCubeGrid)breaching).Physics;
                     var sPhysics = Shield.CubeGrid.Physics;
-                    var bMass = ((MyCubeGrid)breaching).GetCurrentMass();
+                    var bMass = breaching.GetCurrentMass();
                     var sMass = ((MyCubeGrid)Shield.CubeGrid).GetCurrentMass();
                     var momentum = bMass * bPhysics.LinearVelocity + sMass * sPhysics.LinearVelocity;
                     var resultVelocity = momentum / (bMass + sMass);
@@ -347,7 +355,7 @@ namespace DefenseShields
             var dmgMulti = UtilsStatic.GetDmgMulti(ammoInfo.BackKickForce);
             if (dmgMulti > 0)
             {
-                if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.6f)) * 7.5f * dmgMulti;
+                if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.5f)) * 7.5f * dmgMulti;
                 else damage = ammoInfo.Mass * ammoInfo.Speed * dmgMulti;
                 return damage;
             }
@@ -357,7 +365,7 @@ namespace DefenseShields
                 return damage;
             }
             if (ammoInfo.BackKickForce < 0 && dmgMulti.Equals(0)) { damage = float.NegativeInfinity; }
-            else if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.6f)) * 7.5f;
+            else if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.5f)) * 7.5f;
             else damage = ammoInfo.Mass * ammoInfo.Speed;
 
             if (ammoInfo.Mass < 0 && ammoInfo.Radius <= 0) damage = -damage;

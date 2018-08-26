@@ -150,7 +150,7 @@ namespace DefenseShields
                         case Ent.Shielded:
                             {
                                 if (Session.Enforced.Debug >= 2) Log.Line($"Ent Shielded: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
-                                MyAPIGateway.Parallel.Start(() => ClientShieldIntersect(webent as IMyCubeGrid));
+                                MyAPIGateway.Parallel.Start(() => ClientShieldIntersect(webent as MyCubeGrid));
                                 continue;
                             }
 

@@ -601,7 +601,7 @@ namespace DefenseShields
                 });
             }
             for (int i = 0; i < ShieldComp.PhysicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
-            EmiState.State.Los = _blocksLos.Count < 530;
+            EmiState.State.Los = _blocksLos.Count < 552;
             ShieldComp.CheckEmitters = false;
             if (Session.Enforced.Debug == 1) Log.Line($"LOS: Mode: {EmitterMode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {EmiState.State.Los.ToString()} - EmitterId [{Emitter.EntityId}]");
         }
@@ -676,9 +676,9 @@ namespace DefenseShields
                 if (Emitter.Storage != null)
                 {
                     EmiState.SaveState();
-                    if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: saved before replication - ShieldId [{Emitter.EntityId}]");
+                    if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: saved before replication - EmitterId [{Emitter.EntityId}]");
                 }
-                else if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: not saved - StoageNull:{Emitter.Storage == null} - ShieldId [{Emitter.EntityId}]");
+                else if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: not saved - StoageNull:{Emitter.Storage == null} - EmitterId [{Emitter.EntityId}]");
             }
             return false;
         }

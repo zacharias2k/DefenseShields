@@ -2,7 +2,6 @@
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.Utils;
-using VRage.Voxels;
 using VRageMath;
 
 namespace DefenseShields.Support

@@ -383,11 +383,10 @@ namespace DefenseShields.Support
                 ShellActive = shellActive;
             }
 
-            private void UpdateColor(MyEntitySubpart _shellSide)
+            private void UpdateColor(MyEntitySubpart shellSide)
             {
                 var emissive = 100f;
-                //if (_activeColor == Color.White || _activeColor == Color.Aquamarine) emissive = 2.5f;
-                _shellSide.SetEmissiveParts(ShieldEmissiveAlpha, _activeColor, emissive);
+                shellSide.SetEmissiveParts(ShieldEmissiveAlpha, _activeColor, emissive);
             }
 
             public void StepEffects()

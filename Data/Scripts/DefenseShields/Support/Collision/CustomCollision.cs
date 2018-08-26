@@ -8,7 +8,6 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Voxels;
 using VRageMath;
-using VRageRender.Utils;
 using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 namespace DefenseShields.Support
@@ -410,7 +409,6 @@ namespace DefenseShields.Support
                     block.GetWorldBoundingBox(out blockBox);
                     blockBox.GetCorners(blockPoints);
                     blockPoints[8] = blockBox.Center;
-                    //var point2 = Vector3D.Clamp(_detectMatrixOutsideInv.Translation, blockBox.Min, blockBox.Max);
                     for (int j = 8; j > -1; j--)
                     {
                         var point = blockPoints[j];
@@ -427,8 +425,17 @@ namespace DefenseShields.Support
                 {
                     collisionAvg /= c3;
                     entInfo.ContactPoint = collisionAvg;
-                    var approching = Vector3.Dot(grid.Physics.LinearVelocity, grid.PositionComp.WorldVolume.Center - collisionAvg) < 0;
-                    if (approching) grid.Physics.LinearVelocity = grid.Physics.LinearVelocity * -0.25f;
+                    var mass = ((MyCubeGrid)grid).GetCurrentMass();
+
+                    var transformInv = matrixInv;
+                    var normalMat = MatrixD.Transpose(transformInv);
+                    var localNormal = Vector3D.Transform(collisionAvg, transformInv);
+                    var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
+                    var gridLinearVel = grid.Physics.LinearVelocity;
+                    var gridLinearLen = gridLinearVel.Length();
+                    grid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (grid.WorldAABB.Center - matrix.Translation) * (mass * gridLinearLen), null, null, MathHelper.Clamp(gridLinearLen, 0.1f, 15f));
+                    grid.Physics.ApplyImpulse(mass * 0.015 * -Vector3D.Dot(gridLinearVel, surfaceNormal) * surfaceNormal, collisionAvg);
+
                     entInfo.Damage = damage;
                 }
             }

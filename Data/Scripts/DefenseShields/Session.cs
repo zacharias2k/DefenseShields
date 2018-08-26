@@ -257,7 +257,7 @@ namespace DefenseShields
                         MyEntities.TryGetEntityById(info.AttackerId, out hostileEnt);
 
                         if (shield.DsState.State.Online
-                            && shield.FriendlyCache.Contains(player)
+                            && shield.FriendlyCache.Contains(player as MyEntity)
                             && (hostileEnt == null || !shield.FriendlyCache.Contains(hostileEnt))) info.Amount = 0f;
                     }
                     return;

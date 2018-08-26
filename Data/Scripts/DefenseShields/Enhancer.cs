@@ -222,9 +222,9 @@ namespace DefenseShields
                 if (Enhancer.Storage != null)
                 {
                     EnhState.SaveState();
-                    if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: saved before replication - ShieldId [{Enhancer.EntityId}]");
+                    if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: saved before replication - EmitterId [{Enhancer.EntityId}]");
                 }
-                else if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: not saved - StoageNull:{Enhancer.Storage == null} - ShieldId [{Enhancer.EntityId}]");
+                else if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: not saved - StoageNull:{Enhancer.Storage == null} - EmitterId [{Enhancer.EntityId}]");
             }
             return false;
         }

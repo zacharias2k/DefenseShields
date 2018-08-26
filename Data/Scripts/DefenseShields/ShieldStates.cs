@@ -514,6 +514,7 @@ namespace DefenseShields
 
                 DsState.State.Suspended = true;
                 Shield.RefreshCustomInfo();
+                if (Session.Enforced.Debug == 1) Log.Line($"Suspended: controller mode is: {ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
             }
             if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
             DsState.State.Suspended = true;
@@ -539,6 +540,7 @@ namespace DefenseShields
                 {
                     DsState.State.ControllerGridAccess = false;
                     Shield.RefreshCustomInfo();
+                    if (Session.Enforced.Debug == 1) Log.Line($"GridOwner: controller is not owned: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.ControllerGridAccess = false;
                 return DsState.State.ControllerGridAccess;
@@ -548,6 +550,7 @@ namespace DefenseShields
             {
                 DsState.State.ControllerGridAccess = true;
                 Shield.RefreshCustomInfo();
+                if (Session.Enforced.Debug == 1) Log.Line($"GridOwner: controller is owned: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
             DsState.State.ControllerGridAccess = true;
             return DsState.State.ControllerGridAccess;
@@ -654,29 +657,32 @@ namespace DefenseShields
                 }
                 if (_tick >= _delayedClientWarmTick)
                 {
-                    _blockChanged = true;
-                    _functionalChanged = true;
-
-                    ResetShape(false, true);
-                    ResetShape(false, false);
+                    WarmingInit();
                     _delayedClientWarmTick = _tick + 600;
                 }
                 return false;
             }
 
             HadPowerBefore = true;
+            ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
+            WarmingInit();
+            return false;
+        }
+
+        private void WarmingInit()
+        {
             _blockChanged = true;
             _functionalChanged = true;
+
             ResetShape(false, true);
             ResetShape(false, false);
             _oldGridHalfExtents = DsState.State.GridHalfExtents;
             _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
             GetModulationInfo();
-
+            GetEnhancernInfo();
             Starting = true;
-            ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
-            if (Session.Enforced.Debug == 1) Log.Line($"Warming: buffer:{DsState.State.Buffer} - BlockWorking:{ControlBlockWorking} - Active:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
-            return false;
+            if (Session.Enforced.Debug == 1) Log.Line($"Warming: Server:{Session.IsServer} - buffer:{DsState.State.Buffer} - BlockWorking:{Session.IsServer && ControlBlockWorking || !Session.IsServer && Shield.IsWorking && Shield.IsFunctional} - Active:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
+
         }
 
         public void UpdateSettings(ProtoControllerSettings newSettings)
@@ -685,14 +691,14 @@ namespace DefenseShields
             DsSet.Settings = newSettings;
             SettingsUpdated = true;
             if (newShape) FitChanged = true;
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings - ShieldId [{Shield.EntityId}]:\n{newSettings}");
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings - server:{Session.IsServer} - ShieldId [{Shield.EntityId}]:\n{newSettings}");
         }
 
         public void UpdateState(ProtoControllerState newState)
         {
             DsState.State = newState;
             if (!MainInit) return;
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdateState - ShieldId [{Shield.EntityId}]:\n{newState}");
+            if (Session.Enforced.Debug == 2) Log.Line($"UpdateState - server:{Session.IsServer} - ShieldId [{Shield.EntityId}]:\n{newState}");
         }
     }
 }

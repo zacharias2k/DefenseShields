@@ -4,9 +4,9 @@ using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
 using Sandbox.ModAPI;
+using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.Game.ModAPI.Interfaces;
-using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
 
@@ -48,10 +48,10 @@ namespace DefenseShields
                         var nullCount = 0;
                         while (_destroyedBlocks.TryDequeue(out block))
                         {
-                            if (block?.CubeGrid == null) continue;
-                            EntIntersectInfo entInfo;
-                            WebEnts.TryGetValue(block.CubeGrid, out entInfo);
                             var myGrid = block.CubeGrid as MyCubeGrid;
+                            if (myGrid == null) continue;
+                            EntIntersectInfo entInfo;
+                            WebEnts.TryGetValue(myGrid, out entInfo);
                             if (entInfo == null)
                             {
                                 nullCount++;
@@ -60,9 +60,9 @@ namespace DefenseShields
                             }
 
                             EntIntersectInfo entRemoved;
-                            if (nullCount > 0) WebEnts.TryRemove(block.CubeGrid, out entRemoved);
+                            if (nullCount > 0) WebEnts.TryRemove(myGrid, out entRemoved);
                             entInfo.CacheBlockList.Remove(block);
-                            myGrid?.EnqueueDestroyedBlock(block.Position);
+                            myGrid.EnqueueDestroyedBlock(block.Position);
                         }
                     }
                 }
@@ -72,7 +72,7 @@ namespace DefenseShields
                 {
                     if (_missileDmg.Count != 0)
                     {
-                        IMyEntity ent;
+                        MyEntity ent;
                         while (_missileDmg.TryDequeue(out ent))
                         {
                             if (ent == null || ent.MarkedForClose || ent.Closed) continue;
@@ -195,7 +195,7 @@ namespace DefenseShields
                                 continue;
                             }
                             block.DoDamage(damageMulti, DelDamage, true, null, Shield.CubeGrid.EntityId); 
-                            if (myGrid.BlocksCount == 0) block.CubeGrid.SyncObject.SendCloseRequest();
+                            if (myGrid.BlocksCount == 0) myGrid.SyncObject.SendCloseRequest();
                         }
                     }
                 }
@@ -217,8 +217,8 @@ namespace DefenseShields
                                 myGrid.Close();
                                 continue;
                             }
-                            block.DoDamage(1000f, DelDamage, true, null, Shield.CubeGrid.EntityId); 
-                            if (myGrid.BlocksCount == 0) block.CubeGrid.SyncObject.SendCloseRequest();
+                            block.DoDamage(10000f, DelDamage, true, null, Shield.CubeGrid.EntityId); 
+                            if (myGrid.BlocksCount == 0) myGrid.SyncObject.SendCloseRequest();
                         }
                     }
                 }

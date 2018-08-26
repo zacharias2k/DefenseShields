@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage.Game.Components;
+using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using VRage.ModAPI;
 using VRageMath;
 
 namespace DefenseShields
@@ -12,12 +12,12 @@ namespace DefenseShields
     public partial class DefenseShields
     {
         #region Intersect
-        private void ClientSmallGridIntersect(IMyEntity ent)
+        private void ClientSmallGridIntersect(MyEntity ent)
         {
-            var grid = (IMyCubeGrid)ent;
+            var grid = (MyCubeGrid)ent;
             if (ent == null || grid == null) return;
 
-            if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.WorldAABB))) return;
+            if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB), ent)) return;
             EntIntersectInfo entInfo;
             WebEnts.TryGetValue(ent, out entInfo);
             if (entInfo == null) return;
@@ -33,7 +33,7 @@ namespace DefenseShields
 
         }
 
-        private void ClientGridIntersect(IMyEntity ent)
+        private void ClientGridIntersect(MyEntity ent)
         {
             var grid = (MyCubeGrid)ent;
             if (grid == null) return;
@@ -43,15 +43,17 @@ namespace DefenseShields
             if (entInfo == null) return;
 
             var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB);
-            if (entInfo.Relation != Ent.LargeEnemyGrid && GridInside(grid, bOriBBoxD)) return;
+            if (entInfo.Relation != Ent.LargeEnemyGrid && GridInside(grid, bOriBBoxD, ent)) return;
             ClientBlockIntersect(grid, bOriBBoxD, entInfo);
         }
 
-        private void ClientShieldIntersect(IMyCubeGrid grid)
+        private void ClientShieldIntersect(MyEntity ent)
         {
+            var grid = (MyCubeGrid)ent;
+
             if (grid == null) return;
 
-            if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.WorldAABB))) return;
+            if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB), ent)) return;
             ShieldGridComponent shieldComponent;
             grid.Components.TryGet(out shieldComponent);
 
@@ -62,9 +64,9 @@ namespace DefenseShields
             var insidePoints = new List<Vector3D>();
             CustomCollision.ClientShieldX2PointsInside(dsVerts, dsMatrixInv, ShieldComp.PhysicsOutsideLow, DetectMatrixOutsideInv, insidePoints);
 
-            var bPhysics = grid.Physics;
+            var bPhysics = ((IMyCubeGrid)grid).Physics;
             var sPhysics = myGrid.Physics;
-            var bMass = ((MyCubeGrid)grid).GetCurrentMass();
+            var bMass = grid.GetCurrentMass();
             var sMass = ((MyCubeGrid)myGrid).GetCurrentMass();
 
             if (bMass <= 0) bMass = int.MaxValue;
@@ -101,7 +103,7 @@ namespace DefenseShields
             }
         }
 
-        private void ClientBlockIntersect(IMyCubeGrid breaching, MyOrientedBoundingBoxD bOriBBoxD, EntIntersectInfo entInfo)
+        private void ClientBlockIntersect(MyCubeGrid breaching, MyOrientedBoundingBoxD bOriBBoxD, EntIntersectInfo entInfo)
         {
             var collisionAvg = Vector3D.Zero;
             var transformInv = DetectMatrixOutsideInv;
@@ -113,9 +115,9 @@ namespace DefenseShields
                 if (intersection)
                 {
                     var cacheBlockList = entInfo.CacheBlockList;
-                    var bPhysics = breaching.Physics;
+                    var bPhysics = ((IMyCubeGrid)breaching).Physics;
                     var sPhysics = Shield.CubeGrid.Physics;
-                    var bMass = ((MyCubeGrid)breaching).GetCurrentMass();
+                    var bMass = breaching.GetCurrentMass();
                     var sMass = ((MyCubeGrid)Shield.CubeGrid).GetCurrentMass();
                     var momentum = bMass * bPhysics.LinearVelocity + sMass * sPhysics.LinearVelocity;
                     var resultVelocity = momentum / (bMass + sMass);

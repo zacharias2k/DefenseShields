@@ -2,6 +2,7 @@
 using DefenseShields.Support;
 using Sandbox.ModAPI;
 using VRage.Game;
+using VRage.Game.Entity;
 using VRage.Utils;
 using VRageMath;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
@@ -149,7 +150,7 @@ namespace DefenseShields
 
         private void HudCheck()
         {
-            var playerEnt = MyAPIGateway.Session.ControlledObject?.Entity;
+            var playerEnt = MyAPIGateway.Session.ControlledObject?.Entity as MyEntity;
             if (playerEnt?.Parent != null) playerEnt = playerEnt.Parent;
             if (playerEnt == null || DsState.State.Online && !FriendlyCache.Contains(playerEnt) || !DsState.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
             {
@@ -160,7 +161,7 @@ namespace DefenseShields
                 return;
             }
 
-            var distFromShield = Vector3D.DistanceSquared(playerEnt.WorldVolume.Center, DetectionCenter);
+            var distFromShield = Vector3D.DistanceSquared(playerEnt.PositionComp.WorldVolume.Center, DetectionCenter);
             if (Session.HudComp != this && distFromShield <= Session.HudShieldDist)
             {
                 Session.HudShieldDist = distFromShield;
@@ -203,9 +204,9 @@ namespace DefenseShields
         private float GetIconMeterfloat()
         {
             var dps = 1f;
-            if (_damageCounter > 1) dps = _damageCounter / Session.Enforced.Efficiency;
+            if (_damageCounter > 1) dps = _damageCounter;
 
-            var healing = _shieldChargeRate / Session.Enforced.Efficiency - dps;
+            var healing = _shieldChargeRate - dps;
             var damage = dps - _shieldChargeRate;
 
             if (healing > 0 && _damageCounter > 1) return healing;

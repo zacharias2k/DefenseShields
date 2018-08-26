@@ -99,9 +99,9 @@ namespace DefenseShields
                 if (!Session.EnforceInit)
                 {
                     if (Session.IsServer) ServerEnforcementSetup();
-                    else if (_enforceTick == 0 || _tick - _enforceTick > 60)
+                    else if (_enforceTick == 0 || _tick == _enforceTick)
                     {
-                        _enforceTick = _tick;
+                        _enforceTick = _tick + 120;
                         ClientEnforcementRequest();
                     }
                     if (!Session.EnforceInit) return;
@@ -126,7 +126,6 @@ namespace DefenseShields
 
                     CleanUp(3);
                     MainInit = true;
-                    if (Session.Enforced.Debug == 1) Log.Line($"MainInit: ShieldId [{Shield.EntityId}]");
                 }
 
                 if (!Shield.IsFunctional || Session.IsServer && (!MainInit || !BlockReady()) || !Session.IsServer && !MainInit) return;

@@ -93,16 +93,8 @@ namespace DefenseShields
 
                 try
                 {
-                    if (rawData.IndexOf('<', 0, 10) != -1)
-                    {
-                        loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<ProtoControllerSettings>(rawData);
-                    }
-                    else
-                    {
-                        var base64 = Convert.FromBase64String(rawData);
-                        loadedSettings = MyAPIGateway.Utilities.SerializeFromBinary<ProtoControllerSettings>(base64);
-                    }
-
+                    var base64 = Convert.FromBase64String(rawData);
+                    loadedSettings = MyAPIGateway.Utilities.SerializeFromBinary<ProtoControllerSettings>(base64);
                 }
                 catch (Exception e)
                 {

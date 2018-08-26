@@ -88,6 +88,7 @@ namespace DefenseShields
         private void Timing(bool cleanUp)
         {
             var isServer = Session.IsServer;
+
             if (_count++ == 59)
             {
                 _count = 0;
@@ -100,12 +101,18 @@ namespace DefenseShields
                 }
             }
 
-            if ((_lCount == 1 || _lCount == 6) && _count == 1)
+            if (_count == 33)
             {
                 if (SettingsUpdated)
                 {
                     SettingsUpdated = false;
                     DsSet.SaveSettings();
+                    if (!isServer)
+                    {
+                        DsSet.NetworkUpdate();
+                    }
+                    else ResetShape(false, false);
+                    if (Session.Enforced.Debug == 1) Log.Line($"SettingsUpdated - server:{Session.IsServer} - ShieldId [{Shield.EntityId}]");
                 }
                 if (_blockEvent) BlockChanged(true);
             }
@@ -214,9 +221,8 @@ namespace DefenseShields
             foreach (var grid in ShieldComp.GetLinkedGrids)
             {
                 var mechanical = ShieldComp.GetSubGrids.Contains(grid);
-                var myGrid = grid as MyCubeGrid;
-                if (myGrid == null) continue;
-                foreach (var block in myGrid.GetFatBlocks())
+                if (grid == null) continue;
+                foreach (var block in grid.GetFatBlocks())
                 {
                     lock (_functionalBlocks) if (block.IsFunctional && mechanical) _functionalBlocks.Add(block);
                     var source = block.Components.Get<MyResourceSourceComponent>();
@@ -316,7 +322,9 @@ namespace DefenseShields
         private bool PowerOnline()
         {
             var isServer = Session.IsServer;
+            Dsutil5.Sw.Restart();
             if (!UpdateGridPower() && !isServer) return false;
+                Dsutil5.StopWatchReport($"test - {Shield.CubeGrid.DisplayName}", -1);
 
             CalculatePowerCharge();
             _power = _shieldConsumptionRate + _shieldMaintaintPower;
@@ -335,6 +343,7 @@ namespace DefenseShields
                 _damageReadOut += Absorb;
                 _effectsCleanup = true;
                 DsState.State.Buffer -= (Absorb / Session.Enforced.Efficiency);
+                Log.Line($"Absorb:{Absorb} - minBuffer:{Absorb / Session.Enforced.Efficiency}");
             }
             else if (WarmedUp && Absorb < 0) DsState.State.Buffer += (Absorb / Session.Enforced.Efficiency);
 
@@ -604,8 +613,9 @@ namespace DefenseShields
             {
                 var sub = gotGroups[i];
                 if (sub == null) continue;
-                if (MyAPIGateway.GridGroups.HasConnection(Shield.CubeGrid, sub, GridLinkTypeEnum.Mechanical)) lock (ShieldComp.GetSubGrids) ShieldComp.GetSubGrids.Add(sub);
-                if (MyAPIGateway.GridGroups.HasConnection(Shield.CubeGrid, sub, GridLinkTypeEnum.Physical)) lock (ShieldComp.GetLinkedGrids) ShieldComp.GetLinkedGrids.Add(sub);
+
+                if (MyAPIGateway.GridGroups.HasConnection(Shield.CubeGrid, sub, GridLinkTypeEnum.Mechanical)) lock (ShieldComp.GetSubGrids) ShieldComp.GetSubGrids.Add(sub as MyCubeGrid);
+                if (MyAPIGateway.GridGroups.HasConnection(Shield.CubeGrid, sub, GridLinkTypeEnum.Physical)) lock (ShieldComp.GetLinkedGrids) ShieldComp.GetLinkedGrids.Add(sub as MyCubeGrid);
             }
             _blockChanged = true;
             _functionalChanged = true;
@@ -669,7 +679,7 @@ namespace DefenseShields
                 switch (task)
                 {
                     case 0:
-                        IMyCubeGrid grid;
+                        MyCubeGrid grid;
                         while (_staleGrids.TryDequeue(out grid))
                         {
                             EntIntersectInfo gridRemoved;

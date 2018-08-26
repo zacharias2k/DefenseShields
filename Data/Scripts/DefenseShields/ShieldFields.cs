@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using DefenseShields.Support;
+using ParallelTasks;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.Game.Lights;
@@ -152,9 +153,11 @@ namespace DefenseShields
         private Vector3D _oldGridHalfExtents;
 
         internal MatrixD DetectMatrixOutsideInv;
+        internal MatrixD DetectMatrixInInv;
         private MatrixD _shieldGridMatrix;
         private MatrixD _shieldShapeMatrix;
         internal MatrixD DetectMatrixOutside;
+        internal MatrixD DetectMatrixIn;
         internal MatrixD ShieldMatrix;
         internal MatrixD OldShieldMatrix;
 
@@ -169,27 +172,27 @@ namespace DefenseShields
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
         //private readonly List<MyResourceSourceComponent> _batterySources = new List<MyResourceSourceComponent>();
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
-        private readonly List<KeyValuePair<IMyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<IMyEntity, EntIntersectInfo>>();
+        private readonly List<KeyValuePair<MyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<MyEntity, EntIntersectInfo>>();
 
         private Color _oldPercentColor = Color.Transparent;
 
         internal readonly HashSet<IMyEntity> AuthenticatedCache = new HashSet<IMyEntity>();
-        internal readonly HashSet<IMyEntity> FriendlyCache = new HashSet<IMyEntity>();
-        internal readonly HashSet<IMyEntity> PartlyProtectedCache = new HashSet<IMyEntity>();
-        internal readonly HashSet<IMyEntity> IgnoreCache = new HashSet<IMyEntity>();
+        internal readonly HashSet<MyEntity> FriendlyCache = new HashSet<MyEntity>();
+        internal readonly HashSet<MyEntity> PartlyProtectedCache = new HashSet<MyEntity>();
+        internal readonly HashSet<MyEntity> IgnoreCache = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> EnemyShields = new HashSet<MyEntity>();
 
-        private MyConcurrentDictionary<IMyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<IMyEntity, Vector3D>();
-        public readonly ConcurrentDictionary<IMyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<IMyEntity, EntIntersectInfo>();
+        private MyConcurrentDictionary<MyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<MyEntity, Vector3D>();
+        public readonly ConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<MyEntity, EntIntersectInfo>();
 
         private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
 
         private readonly MyConcurrentQueue<IMySlimBlock> _dmgBlocks = new MyConcurrentQueue<IMySlimBlock>();
         private readonly MyConcurrentQueue<IMySlimBlock> _fewDmgBlocks = new MyConcurrentQueue<IMySlimBlock>();
-        private readonly MyConcurrentQueue<IMyEntity> _missileDmg = new MyConcurrentQueue<IMyEntity>();
+        private readonly MyConcurrentQueue<MyEntity> _missileDmg = new MyConcurrentQueue<MyEntity>();
         private readonly MyConcurrentQueue<IMyMeteor> _meteorDmg = new MyConcurrentQueue<IMyMeteor>();
         private readonly MyConcurrentQueue<IMySlimBlock> _destroyedBlocks = new MyConcurrentQueue<IMySlimBlock>();
-        private readonly MyConcurrentQueue<IMyCubeGrid> _staleGrids = new MyConcurrentQueue<IMyCubeGrid>();
+        private readonly MyConcurrentQueue<MyCubeGrid> _staleGrids = new MyConcurrentQueue<MyCubeGrid>();
         private readonly MyConcurrentQueue<IMyCharacter> _characterDmg = new MyConcurrentQueue<IMyCharacter>();
         private readonly MyConcurrentQueue<MyVoxelBase> _voxelDmg = new MyConcurrentQueue<MyVoxelBase>();
 
@@ -263,7 +266,7 @@ namespace DefenseShields
         internal ShieldGridComponent ShieldComp;
         internal ModulatorGridComponent ModComp;
         internal RunningAverage DpsAvg = new RunningAverage(8);
-
+        internal Task powerComplete;
         internal HashSet<ulong> playersToReceive = null;
 
         internal MyStringId CustomDataTooltip = MyStringId.GetOrCompute("Shows an Editor for custom data to be used by scripts and mods");
@@ -288,8 +291,8 @@ namespace DefenseShields
             {
                 DetectMatrixOutside = value;
                 DetectMatrixOutsideInv = MatrixD.Invert(value);
-                //_detectMatrixInside = MatrixD.Rescale(value, 1d + (-6.0d / 100d));
-                //_detectInsideInv = MatrixD.Invert(_detectMatrixInside);
+                DetectMatrixIn = MatrixD.Rescale(value, 1d + -6.0d / 100d);
+                DetectMatrixInInv = MatrixD.Invert(DetectMatrixIn);
             }
         }
         #endregion

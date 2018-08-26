@@ -60,12 +60,12 @@ namespace DefenseShields
 
             if (Session.IsServer)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"ServRelay - EmitterId [{Enhancer.EntityId}]: network state update for modulator");
+                if (Session.Enforced.Debug == 1) Log.Line($"ServRelay - EnhancerId [{Enhancer.EntityId}]: network state update for Enhancer");
                 Session.PacketizeEnhancerState(Enhancer, State); // update clients with server's settings
             }
             else // client, send settings to server
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"ClientRelay - EmitterId [{Enhancer.EntityId}]: sent network state update for modulator");
+                if (Session.Enforced.Debug == 1) Log.Line($"ClientRelay - EnhancerId [{Enhancer.EntityId}]: sent network state update for Enhancer");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataEnhancerState(MyAPIGateway.Multiplayer.MyId, Enhancer.EntityId, State));
                 MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdEnhancerState, bytes);
             }

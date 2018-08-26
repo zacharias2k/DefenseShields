@@ -404,7 +404,7 @@ namespace DefenseShields
                 {
                     var sub = gotGroups[i];
                     if (sub == null) continue;
-                    ModulatorComp?.GetSubGrids?.Add(sub);
+                    ModulatorComp?.GetSubGrids?.Add(sub as MyCubeGrid);
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in HierarchyChanged: {ex}"); }

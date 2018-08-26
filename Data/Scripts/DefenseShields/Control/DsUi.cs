@@ -44,7 +44,6 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
             comp.DsSet.Settings.Rate = newValue;
-            comp.DsSet.NetworkUpdate();
             comp.SettingsUpdated = true;
         }
 
@@ -60,7 +59,6 @@ namespace DefenseShields
             if (comp == null) return;
             comp.DsSet.Settings.ExtendFit = newValue;
             comp.FitChanged = true;
-            comp.DsSet.NetworkUpdate();
             comp.SettingsUpdated = true;
         }
 
@@ -76,7 +74,6 @@ namespace DefenseShields
             if (comp == null) return;
             comp.DsSet.Settings.SphereFit = newValue;
             comp.FitChanged = true;
-            comp.DsSet.NetworkUpdate();
             comp.SettingsUpdated = true;
         }
 
@@ -92,7 +89,6 @@ namespace DefenseShields
             if (comp == null) return;
             comp.DsSet.Settings.FortifyShield = newValue;
             comp.FitChanged = true;
-            comp.DsSet.NetworkUpdate();
             comp.SettingsUpdated = true;
         }
 
@@ -109,7 +105,6 @@ namespace DefenseShields
             comp.DsSet.Settings.Width = newValue;
             comp.FitChanged = true;
             comp.UpdateDimensions = true;
-            comp.DsSet.NetworkUpdate();
             comp.SettingsUpdated = true;
         }
 
@@ -126,7 +121,6 @@ namespace DefenseShields
             comp.DsSet.Settings.Height = newValue;
             comp.FitChanged = true;
             comp.UpdateDimensions = true;
-            comp.DsSet.NetworkUpdate();
             comp.SettingsUpdated = true;
         }
 
@@ -143,7 +137,6 @@ namespace DefenseShields
             comp.DsSet.Settings.Depth = newValue;
             comp.FitChanged = true;
             comp.UpdateDimensions = true;
-            comp.DsSet.NetworkUpdate();
             comp.SettingsUpdated = true;
         }
 
@@ -158,7 +151,6 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
             comp.DsSet.Settings.UseBatteries = newValue;
-            comp.DsSet.NetworkUpdate();
             comp.SettingsUpdated = true;
         }
 
@@ -173,7 +165,6 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
             comp.DsSet.Settings.PassiveInvisible = newValue;
-            comp.DsSet.NetworkUpdate();
             comp.SettingsUpdated = true;
         }
 
@@ -188,7 +179,6 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
             comp.DsSet.Settings.ActiveInvisible = newValue;
-            comp.DsSet.NetworkUpdate();
             comp.SettingsUpdated = true;
         }
 
@@ -203,7 +193,6 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
             comp.DsSet.Settings.SendToHud = newValue;
-            comp.DsSet.NetworkUpdate();
             comp.SettingsUpdated = true;
         }
 
@@ -218,7 +207,6 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
             comp.DsSet.Settings.RaiseShield = newValue;
-            comp.DsSet.NetworkUpdate();
             comp.SettingsUpdated = true;
         }
 
@@ -235,7 +223,6 @@ namespace DefenseShields
             comp.DsSet.Settings.ShieldShell = newValue;
             comp.SelectPassiveShell();
             comp.UpdatePassiveModel();
-            comp.DsSet.NetworkUpdate();
             comp.SettingsUpdated = true;
         }
 
