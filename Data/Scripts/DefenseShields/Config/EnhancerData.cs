@@ -18,7 +18,7 @@ namespace DefenseShields
         {
             if (Enhancer.Storage == null)
             {
-                Enhancer.Storage = new MyModStorageComponent {[Session.Instance.EmitterStateGuid] = ""};
+                Enhancer.Storage = new MyModStorageComponent {[Session.Instance.EnhancerStateGuid] = ""};
             }
         }
 

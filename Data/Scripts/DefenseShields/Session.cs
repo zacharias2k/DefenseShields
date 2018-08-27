@@ -210,7 +210,7 @@ namespace DefenseShields
                         s.BulletCoolDown++;
                         if (s.BulletCoolDown == 9) s.BulletCoolDown = -1;
                     }
-                    if (!s.WarmedUp || !s.DsSet.Settings.RaiseShield || s.DsState.State.Suspended || !s.DsState.State.EmitterWorking) continue;
+                    if (!s.WarmedUp || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterWorking) continue;
                     var sp = new BoundingSphereD(s.DetectionCenter, s.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {
@@ -231,10 +231,16 @@ namespace DefenseShields
                 for (int i = 0; i < Components.Count; i++)
                 {
                     var s = Components[i];
-                    if (!s.WarmedUp || !s.DsSet.Settings.RaiseShield || s.DsState.State.Suspended || !s.DsState.State.EmitterWorking) continue;
+                    if (!s.WarmedUp || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterWorking) continue;
                     if (s.DsState.State.Online && SphereOnCamera[i]) s.Draw(OnCount, SphereOnCamera[i]);
-                    else if (s.DsState.State.Online && !s.Icosphere.ImpactsFinished) s.Icosphere.StepEffects();
-                    else if (!s.DsState.State.Online && SphereOnCamera[i]) s.DrawShieldDownIcon();
+                    else
+                    {
+                        if (s.DsState.State.Online)
+                        {
+                            if (!s.Icosphere.ImpactsFinished) s.Icosphere.StepEffects();
+                        }
+                        else if (s.Shield.IsWorking && SphereOnCamera[i]) s.DrawShieldDownIcon();
+                    }
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }

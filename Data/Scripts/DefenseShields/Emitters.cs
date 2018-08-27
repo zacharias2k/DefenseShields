@@ -181,7 +181,16 @@ namespace DefenseShields
                     StateChange(true);
                 }
             }
-            else if (!EmiState.State.Link) return false;
+            else if (!EmiState.State.Link)
+            {
+                var stateChange = StateChange();
+                if (stateChange)
+                {
+                    BlockReset(true);
+                    StateChange(true);
+                }
+                return false;
+            }
 
             return true;
         }
@@ -212,6 +221,7 @@ namespace DefenseShields
 
                 if (EmiState.State.Mode == 0 && EmiState.State.Link && ShieldComp.StationEmitter == null) ShieldComp.StationEmitter = this;
                 else if (EmiState.State.Mode != 0 && EmiState.State.Link && ShieldComp.ShipEmitter == null) ShieldComp.ShipEmitter = this;
+                if (!EmiState.State.Link || !EmiState.State.Online) return false;
             }
             return true;
         }
@@ -406,9 +416,12 @@ namespace DefenseShields
         private bool Suspend()
         {
             EmiState.State.Online = false;
-            if (!Emitter.IsFunctional || Emitter.CubeGrid == null || !Emitter.Enabled || Sink.CurrentInputByType(GId) < 0.01f)
+            var functional = Emitter.IsFunctional;
+            if (!functional || Emitter.CubeGrid == null  || Sink.CurrentInputByType(GId) < 0.01f)
             {
                 EmiState.State.Suspend = true;
+                if (ShieldComp?.StationEmitter == this) ShieldComp.StationEmitter = null;
+                else if (ShieldComp?.ShipEmitter == this) ShieldComp.ShipEmitter = null;
                 return true;
             }
             if (!EmiState.State.Compact && _subpartRotor == null)
@@ -436,7 +449,7 @@ namespace DefenseShields
                 return true;
             }
 
-            var working = Emitter.IsWorking && Emitter.IsFunctional;
+            var working = Emitter.IsWorking;
             var stationMode = EmitterMode == EmitterType.Station;
             var shipMode = EmitterMode != EmitterType.Station;
             var modes = IsStatic && stationMode || !IsStatic && shipMode;
@@ -539,8 +552,10 @@ namespace DefenseShields
                 }
                 EmiState.State.Suspend = true;
             }
-
-            if (iStopped) return EmiState.State.Suspend;
+            if (iStopped)
+            {
+                return EmiState.State.Suspend;
+            }
 
             if (!myShield)
             {

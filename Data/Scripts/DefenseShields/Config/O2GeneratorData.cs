@@ -18,7 +18,7 @@ namespace DefenseShields
         {
             if (O2Generator.Storage == null)
             {
-                O2Generator.Storage = new MyModStorageComponent {[Session.Instance.EmitterStateGuid] = ""};
+                O2Generator.Storage = new MyModStorageComponent {[Session.Instance.O2GeneratorStateGuid] = ""};
             }
         }
 

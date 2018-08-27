@@ -66,7 +66,13 @@ namespace DefenseShields
             WasOnline = false;
             ShieldEnt.Render.Visible = false;
             ShieldEnt.PositionComp.SetPosition(Vector3D.Zero);
+            if (!DsState.State.Lowered && !DsState.State.Sleeping)
+            {
+                ShieldComp.ShieldPercent = 0f;
+                DsState.State.Buffer = 0f;
+            }
             if (isServer) ShieldChangeState(false);
+            else Shield.RefreshCustomInfo();
         }
 
         private void ComingOnlineSetup(bool server, bool dedicated)
@@ -83,6 +89,7 @@ namespace DefenseShields
                 _offlineCnt = -1;
                 ShieldChangeState(false);
             }
+            else Shield.RefreshCustomInfo();
         }
 
         private void Timing(bool cleanUp)
@@ -322,9 +329,7 @@ namespace DefenseShields
         private bool PowerOnline()
         {
             var isServer = Session.IsServer;
-            Dsutil5.Sw.Restart();
             if (!UpdateGridPower() && !isServer) return false;
-                Dsutil5.StopWatchReport($"test - {Shield.CubeGrid.DisplayName}", -1);
 
             CalculatePowerCharge();
             _power = _shieldConsumptionRate + _shieldMaintaintPower;
@@ -343,7 +348,6 @@ namespace DefenseShields
                 _damageReadOut += Absorb;
                 _effectsCleanup = true;
                 DsState.State.Buffer -= (Absorb / Session.Enforced.Efficiency);
-                Log.Line($"Absorb:{Absorb} - minBuffer:{Absorb / Session.Enforced.Efficiency}");
             }
             else if (WarmedUp && Absorb < 0) DsState.State.Buffer += (Absorb / Session.Enforced.Efficiency);
 
@@ -407,7 +411,7 @@ namespace DefenseShields
             var percent = DsSet.Settings.Rate * ratio;
             var shieldMaintainPercent = 1 / percent;
             shieldMaintainPercent = shieldMaintainPercent * DsState.State.EnhancerPowerMulti * (ShieldComp.ShieldPercent * 0.01f);
-            if (DsState.State.Lowered) shieldMaintainPercent = shieldMaintainPercent * 0.5f;
+            if (DsState.State.Lowered) shieldMaintainPercent = shieldMaintainPercent * 0.25f;
             _shieldMaintaintPower = _gridMaxPower * shieldMaintainPercent;
             var fPercent = percent / ratio / 100;
             _sizeScaler = shieldVol / _ellipsoidSurfaceArea / 2.40063050674088;
@@ -523,7 +527,7 @@ namespace DefenseShields
         #region Checks / Terminal
         private string GetShieldStatus()
         {
-            if (!Shield.IsWorking || !Shield.IsFunctional) return "[Controller Failure]";
+            if (!DsState.State.Online && (!Shield.IsWorking || !Shield.IsFunctional)) return "[Controller Failure]";
             if (!DsState.State.Online && DsState.State.NoPower) return "[Insufficient Power]";
             if (!DsState.State.Online && DsState.State.Overload) return "[Overloaded]";
             if (!DsState.State.ControllerGridAccess) return "[Invalid Owner]";

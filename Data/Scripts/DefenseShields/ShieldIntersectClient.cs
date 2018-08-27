@@ -15,7 +15,7 @@ namespace DefenseShields
         private void ClientSmallGridIntersect(MyEntity ent)
         {
             var grid = (MyCubeGrid)ent;
-            if (ent == null || grid == null) return;
+            if (ent == null || grid == null || grid.MarkedForClose || grid.Closed) return;
 
             if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB), ent)) return;
             EntIntersectInfo entInfo;
@@ -23,7 +23,6 @@ namespace DefenseShields
             if (entInfo == null) return;
 
             CustomCollision.ClientSmallIntersect(entInfo, grid, DetectMatrixOutside, DetectMatrixOutsideInv);
-
             var contactpoint = entInfo.ContactPoint;
             entInfo.ContactPoint = Vector3D.NegativeInfinity;
             if (contactpoint != Vector3D.NegativeInfinity)
@@ -75,7 +74,6 @@ namespace DefenseShields
             var momentum = bMass * bPhysics.LinearVelocity + sMass * sPhysics.LinearVelocity;
             var resultVelocity = momentum / (bMass + sMass);
 
-
             var collisionAvg = Vector3D.Zero;
             for (int i = 0; i < insidePoints.Count; i++)
             {
@@ -83,10 +81,10 @@ namespace DefenseShields
             }
 
             if (insidePoints.Count > 0 && !bPhysics.IsStatic) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass, bPhysics.CenterOfMassWorld);
-            if (insidePoints.Count > 0 && !sPhysics.IsStatic) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sMass, sPhysics.CenterOfMassWorld);
+            //if (insidePoints.Count > 0 && !sPhysics.IsStatic) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sMass, sPhysics.CenterOfMassWorld);
 
             collisionAvg /= insidePoints.Count;
-            if (insidePoints.Count > 0 && !sPhysics.IsStatic) sPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * sMass, null, Vector3D.Zero, MathHelper.Clamp(sPhysics.LinearVelocity.Length(), 10f, 50f));
+            //if (insidePoints.Count > 0 && !sPhysics.IsStatic) sPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * sMass, null, Vector3D.Zero, MathHelper.Clamp(sPhysics.LinearVelocity.Length(), 10f, 50f));
             if (insidePoints.Count > 0 && !bPhysics.IsStatic) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - bPhysics.CenterOfMassWorld) * bMass, null, Vector3D.Zero, MathHelper.Clamp(bPhysics.LinearVelocity.Length(), 10f, 50f));
         }
 

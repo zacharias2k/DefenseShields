@@ -629,6 +629,7 @@ namespace DefenseShields
                 {
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
                     ShellVisibility(true);
+                    ShieldComp.ShieldPercent = 0f;
                     _clientOn = false;
                     Shield.RefreshCustomInfo();
                 }

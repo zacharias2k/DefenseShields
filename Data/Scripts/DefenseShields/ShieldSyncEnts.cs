@@ -217,7 +217,7 @@ namespace DefenseShields
                                 myGrid.Close();
                                 continue;
                             }
-                            block.DoDamage(10000f, DelDamage, true, null, Shield.CubeGrid.EntityId); 
+                            block.DoDamage(block.MaxIntegrity * 0.9f, DelDamage, true, null, Shield.CubeGrid.EntityId); 
                             if (myGrid.BlocksCount == 0) myGrid.SyncObject.SendCloseRequest();
                         }
                     }

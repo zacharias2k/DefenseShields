@@ -18,7 +18,7 @@ namespace DefenseShields
         {
             if (Modulator.Storage == null)
             {
-                Modulator.Storage = new MyModStorageComponent {[Session.Instance.EmitterStateGuid] = ""};
+                Modulator.Storage = new MyModStorageComponent {[Session.Instance.ModulatorSettingsGuid] = ""};
             }
         }
 
