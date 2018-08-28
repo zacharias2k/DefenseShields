@@ -77,8 +77,8 @@ namespace DefenseShields
         private const int GenericDownCount = 300;
         private const int PowerNoticeCount = 600;
         private const int OverHeat = 1800;
-        private const int HeatingStep = 300;
-        private const int CoolingStep = 600;
+        private const int HeatingStep = 600;
+        private const int CoolingStep = 1200;
         private const int HeatSteps = 10;
 
         private int _prevLod;
@@ -88,6 +88,7 @@ namespace DefenseShields
 
         internal bool WasOnline;
         internal bool SettingsUpdated;
+        internal bool ClientUiUpdate;
         internal bool DeformEnabled;
         internal bool ExplosionEnabled;
         internal bool ControlBlockWorking;
@@ -172,6 +173,7 @@ namespace DefenseShields
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
         //private readonly List<MyResourceSourceComponent> _batterySources = new List<MyResourceSourceComponent>();
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
+        private readonly List<IMyBatteryBlock> _batteryBlocks = new List<IMyBatteryBlock>();
         private readonly List<KeyValuePair<MyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<MyEntity, EntIntersectInfo>>();
 
         private Color _oldPercentColor = Color.Transparent;
@@ -245,6 +247,8 @@ namespace DefenseShields
 
         internal IMyUpgradeModule Shield => (IMyUpgradeModule)Entity;
         internal ShieldType ShieldMode;
+        internal MyResourceDistributorComponent MyGridDistributor;
+        private Object _lockOnMe = new Object();
         internal MyEntity ShieldEnt;
         private MyEntity _shellPassive;
         private MyEntity _shellActive;

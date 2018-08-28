@@ -46,7 +46,7 @@ namespace DefenseShields
             if (contactpoint != Vector3D.NegativeInfinity)
             {
                 entInfo.Touched = true;
-                var damage = entInfo.Damage * DsState.State.ModulateKinetic;
+                var damage = entInfo.Damage / DsState.State.ModulateKinetic;
                 if (Session.MpActive)
                 {
                     if (Session.IsServer)
@@ -131,7 +131,7 @@ namespace DefenseShields
             if (insidePoints.Count <= 0) return;
 
             var gridMaxCharge = ds._shieldMaxChargeRate;
-            var damage = gridMaxCharge * Session.Enforced.Efficiency * DsState.State.ModulateEnergy;
+            var damage = gridMaxCharge * Session.Enforced.Efficiency * DsState.State.ModulateEnergy * 0.05f;
             if (Session.MpActive)
             {
                 if (Session.IsServer)

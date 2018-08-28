@@ -414,7 +414,6 @@ namespace DefenseShields.Support
                         var point = blockPoints[j];
                         if (Vector3.Transform(point, matrixInv).LengthSquared() > 1) continue;
                         c3++;
-                        damage += block.Integrity / 50;
                         collisionAvg += point;
                         fewDmgBlocks.Enqueue(block);
                         break;
@@ -436,7 +435,7 @@ namespace DefenseShields.Support
                     grid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (grid.WorldAABB.Center - matrix.Translation) * (mass * gridLinearLen), null, null, MathHelper.Clamp(gridLinearLen, 0.1f, 15f));
                     grid.Physics.ApplyImpulse(mass * 0.015 * -Vector3D.Dot(gridLinearVel, surfaceNormal) * surfaceNormal, collisionAvg);
 
-                    entInfo.Damage = damage;
+                    entInfo.Damage = mass * 0.1f;
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in SmallIntersect: {ex}"); }
