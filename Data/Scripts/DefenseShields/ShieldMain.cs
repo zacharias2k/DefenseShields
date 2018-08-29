@@ -43,7 +43,7 @@ namespace DefenseShields
                         var mpActive = Session.MpActive;
                         if (mpActive && _count == 29)
                         {
-                            var newPercentColor = UtilsStatic.GetShieldColorFromFloat(ShieldComp.ShieldPercent);
+                            var newPercentColor = UtilsStatic.GetShieldColorFromFloat(DsState.State.ShieldPercent);
                             if (newPercentColor != _oldPercentColor)
                             {
                                 ShieldChangeState(false);
@@ -68,7 +68,7 @@ namespace DefenseShields
             ShieldEnt.PositionComp.SetPosition(Vector3D.Zero);
             if (!DsState.State.Lowered && !DsState.State.Sleeping)
             {
-                ShieldComp.ShieldPercent = 0f;
+                DsState.State.ShieldPercent = 0f;
                 DsState.State.Buffer = 0f;
             }
             if (isServer) ShieldChangeState(false);
@@ -473,7 +473,7 @@ namespace DefenseShields
             const float ratio = 1.25f;
             var percent = DsSet.Settings.Rate * ratio;
             var shieldMaintainPercent = 1 / percent;
-            shieldMaintainPercent = shieldMaintainPercent * DsState.State.EnhancerPowerMulti * (ShieldComp.ShieldPercent * 0.01f);
+            shieldMaintainPercent = shieldMaintainPercent * DsState.State.EnhancerPowerMulti * (DsState.State.ShieldPercent * 0.01f);
             if (DsState.State.Lowered) shieldMaintainPercent = shieldMaintainPercent * 0.25f;
             _shieldMaintaintPower = _gridMaxPower * shieldMaintainPercent;
             var fPercent = percent / ratio / 100;
@@ -521,9 +521,9 @@ namespace DefenseShields
             _powerNeeded = _shieldMaintaintPower + _shieldConsumptionRate + _otherPower;
             if (!WarmedUp) return;
 
-            if (DsState.State.Buffer < _shieldMaxBuffer) ShieldComp.ShieldPercent = (DsState.State.Buffer / _shieldMaxBuffer) * 100;
-            else if (DsState.State.Buffer <= 1) ShieldComp.ShieldPercent = 0f;
-            else ShieldComp.ShieldPercent = 100f;
+            if (DsState.State.Buffer < _shieldMaxBuffer) DsState.State.ShieldPercent = (DsState.State.Buffer / _shieldMaxBuffer) * 100;
+            else if (DsState.State.Buffer <= 1) DsState.State.ShieldPercent = 0f;
+            else DsState.State.ShieldPercent = 100f;
 
             if ( DsState.State.Buffer > _shieldMaxBuffer) DsState.State.Buffer = _shieldMaxBuffer;
             var roundedGridMax = Math.Round(_gridMaxPower, 1);
@@ -564,17 +564,11 @@ namespace DefenseShields
             }
 
 
-            if (heat <= 0) {}
-            else if (heat >= 10)
-            {
-                _shieldChargeRate = 0;
-                if (Session.Enforced.Debug == 1 && _count == 0) Log.Line($"Cycle:{_heatCycle} - cRate:{_shieldChargeRate} - Reduction:Infinity - Heat:{heat} - HeatDamage:{_accumulatedHeat}");
-            }
+            if (heat >= 10) _shieldChargeRate = 0;
             else
             {
                 var expChargeReduction = (float)Math.Pow(2, heat);
                 _shieldChargeRate = _shieldChargeRate / expChargeReduction;
-                if (Session.Enforced.Debug == 1 && _count == 0) Log.Line($"Cycle:{_heatCycle} - cRate:{_shieldChargeRate} - Reduction:{_shieldChargeRate / expChargeReduction} - Exp:{expChargeReduction} - Heat:{heat} - HeatDamage:{_accumulatedHeat}");
             }
 
             if (DsState.State.Buffer < _shieldMaxBuffer && _count == 29) DsState.State.Buffer += _shieldChargeRate;

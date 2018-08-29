@@ -59,7 +59,7 @@ namespace DefenseShields
                 var prevlod = _prevLod;
                 var lod = CalculateLod(_onCount);
                 if (_shapeChanged || _updateRender || lod != prevlod) Icosphere.CalculateTransform(_shieldShapeMatrix, lod);
-                Icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, ShieldComp.ShieldPercent, passiveVisible, activeVisible);
+                Icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, DsState.State.ShieldPercent, passiveVisible, activeVisible);
             }
             if (sphereOnCamera && Shield.IsWorking) Icosphere.Draw(renderId);
 
@@ -155,7 +155,7 @@ namespace DefenseShields
             if (playerEnt == null || DsState.State.Online && !FriendlyCache.Contains(playerEnt) || !DsState.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
             {
                 if (Session.HudComp != this) return;
-
+                if (Session.Enforced.Debug == 1) Log.Line($"RemHudComp: {playerEnt == null} - {DsState.State.Online && !FriendlyCache.Contains(playerEnt)} - {!CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv)} - ShieldId [{Shield.EntityId}]");
                 Session.HudComp = null;
                 Session.HudShieldDist = double.MaxValue;
                 return;
@@ -189,12 +189,12 @@ namespace DefenseShields
             scale = scaler * scale;
 
             var icon2FSelect = GetIconMeterfloat();
+            var p = DsState.State.ShieldPercent;
 
-            var icon1 = GetHudIcon1FromFloat(ShieldComp.ShieldPercent);
+            var icon1 = GetHudIcon1FromFloat(p);
             var icon2 = GetHudIcon2FromFloat(icon2FSelect);
             var showIcon2 = DsState.State.Online;
             Color color;
-            var p = ShieldComp.ShieldPercent;
             if (p > 0 && p < 10 && _lCount % 2 == 0) color = Color.Red;
             else color = Color.White;
             MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.LDR); // LDR for mptest, SDR for public

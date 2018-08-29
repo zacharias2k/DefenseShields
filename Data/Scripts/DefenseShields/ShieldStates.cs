@@ -67,12 +67,10 @@ namespace DefenseShields
             }
             else
             {
-                if (!AllInited)
-                {
-                    PostInit();
-                    return false;
-                }
+                if (!PostInit()) return false;
+
                 if (_blockChanged) BlockMonitor();
+
                 if (ClientOfflineStates() || !WarmUpSequence() || ClientShieldLowered()) return false;
                 if (GridIsMobile) MobileUpdate();
                 if (UpdateDimensions) RefreshDimensions();
@@ -82,16 +80,13 @@ namespace DefenseShields
             }
             _clientOn = true;
             _clientLowered = false;
-            return _clientOn;
+            return true;
         }
 
         private bool ControllerFunctional()
         {
-            if (!AllInited)
-            {
-                PostInit();
-                return false;
-            }
+            if (!PostInit()) return false;
+
             if (_blockChanged) BlockMonitor();
 
             if (Suspend() || !WarmUpSequence() || ShieldSleeping() || ShieldLowered()) return false;
@@ -296,7 +291,7 @@ namespace DefenseShields
             _offlineCnt++;
             if (_offlineCnt == 0)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"Offline count: {_offlineCnt} - resetting all - was: Buffer:{DsState.State.Buffer} - Absorb:{Absorb} - Percent:{ShieldComp.ShieldPercent} - O2:{DsState.State.IncreaseO2ByFPercent} - Lowered:{DsState.State.Lowered}");
+                if (Session.Enforced.Debug == 1) Log.Line($"Offline count: {_offlineCnt} - resetting all - was: Buffer:{DsState.State.Buffer} - Absorb:{Absorb} - Percent:{DsState.State.ShieldPercent} - O2:{DsState.State.IncreaseO2ByFPercent} - Lowered:{DsState.State.Lowered}");
 
                 if (!_power.Equals(0.0001f)) _power = 0.001f;
                 Sink.Update();
@@ -312,7 +307,7 @@ namespace DefenseShields
                 _heatCycle = -1;
                 Absorb = 0f;
                 DsState.State.Buffer = 0f;
-                ShieldComp.ShieldPercent = 0f;
+                DsState.State.ShieldPercent = 0f;
                 DsState.State.IncreaseO2ByFPercent = 0f;
                 DsSet.Settings.ShieldActive = false;
                 PrevShieldActive = false;
@@ -629,14 +624,17 @@ namespace DefenseShields
                 {
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
                     ShellVisibility(true);
-                    ShieldComp.ShieldPercent = 0f;
                     _clientOn = false;
                     Shield.RefreshCustomInfo();
                 }
                 return true;
             }
 
-            if (!_clientOn) ShellVisibility();
+            if (!_clientOn)
+            {
+                ShellVisibility();
+                Shield.RefreshCustomInfo();
+            }
             return false;
         }
 

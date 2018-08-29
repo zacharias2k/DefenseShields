@@ -81,21 +81,15 @@ namespace DefenseShields
 
         public bool EmittersSuspended { get; set; }
 
-        //public bool EmittersLos { get; set; }
-
         public bool O2Updated { get; set; }
 
         public float DefaultO2 { get; set; }
 
         public bool CheckEmitters { get; set; }
 
-        //public bool Station { get; set; }
-
         public bool GridIsMoving { get; set; }
 
         public bool EmitterEvent { get; set; }
-
-        public float ShieldPercent { get; set; }
 
         public double ShieldVolume { get; set; }
 

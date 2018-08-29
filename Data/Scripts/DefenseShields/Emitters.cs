@@ -286,12 +286,13 @@ namespace DefenseShields
 
         private void BlockMoveAnimation()
         {
+            var percent = ShieldComp.DefenseShields.DsState.State.ShieldPercent;
             if (EmiState.State.Compact)
             {
                 if (_count == 0) EmissiveIntensity = 2;
                 if (_count < 30) EmissiveIntensity += 1;
                 else EmissiveIntensity -= 1;
-                Emitter.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetShieldColorFromFloat(ShieldComp.ShieldPercent), 0.1f * EmissiveIntensity);
+                Emitter.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetShieldColorFromFloat(percent), 0.1f * EmissiveIntensity);
                 return;
             }
 
@@ -308,7 +309,7 @@ namespace DefenseShields
             var matrix = rotationMatrix * MatrixD.CreateTranslation(0, Definition.BlockMoveTranslation * TranslationTime, 0);
 
             _subpartRotor.PositionComp.LocalMatrix = matrix;
-            _subpartRotor.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetShieldColorFromFloat(ShieldComp.ShieldPercent), 0.1f * EmissiveIntensity);
+            _subpartRotor.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetShieldColorFromFloat(percent), 0.1f * EmissiveIntensity);
 
             if (AnimationLoop++ == 599) AnimationLoop = 0;
         }

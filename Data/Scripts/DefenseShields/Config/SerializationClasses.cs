@@ -108,6 +108,8 @@ namespace DefenseShields
         public bool Message;
         [ProtoMember(26)]
         public int Heat;
+        [ProtoMember(27), DefaultValue(-1)]
+        public float ShieldPercent;
 
         public override string ToString()
         {

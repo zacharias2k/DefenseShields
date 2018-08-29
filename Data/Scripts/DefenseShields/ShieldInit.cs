@@ -91,11 +91,12 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in Controller UpdateOnceBeforeFrame: {ex}"); }
         }
 
-        public void PostInit()
+        public bool PostInit()
         {
             try
             {
-                if (AllInited || Shield.CubeGrid.Physics == null) return;
+                if (AllInited) return true;
+                if (Shield.CubeGrid.Physics == null) return false;
                 if (!Session.EnforceInit)
                 {
                     if (Session.IsServer) ServerEnforcementSetup();
@@ -104,7 +105,7 @@ namespace DefenseShields
                         _enforceTick = _tick + 120;
                         ClientEnforcementRequest();
                     }
-                    if (!Session.EnforceInit) return;
+                    if (!Session.EnforceInit) return false;
                 }
 
                 if (Session.IsServer && (ShieldComp.EmitterMode < 0 || ShieldComp.EmittersSuspended))
@@ -114,10 +115,10 @@ namespace DefenseShields
                         GridOwnsController();
                         Shield.RefreshCustomInfo();
                     }
-                    return;
+                    return false;
                 }
 
-                if (!Session.IsServer && !DsState.State.Online) return;
+                if (!Session.IsServer && !DsState.State.Online) return false;
 
                 if (!MainInit)
                 {
@@ -128,7 +129,7 @@ namespace DefenseShields
                     MainInit = true;
                 }
 
-                if (!Shield.IsFunctional || Session.IsServer && (!MainInit || !BlockReady()) || !Session.IsServer && !MainInit) return;
+                if (!Shield.IsFunctional || Session.IsServer && (!MainInit || !BlockReady()) || !Session.IsServer && !MainInit) return false;
 
                 if (Session.EnforceInit)
                 {
@@ -137,6 +138,8 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 1) Log.Line($"AllInited: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in Controller PostInit: {ex}"); }
+
+            return false;
         }
 
         private void StorageSetup()
