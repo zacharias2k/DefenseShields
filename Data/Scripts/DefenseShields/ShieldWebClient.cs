@@ -123,40 +123,48 @@ namespace DefenseShields
                         (webent as IMyCubeGrid)?.GetBlocks(WebEnts[webent].CacheBlockList, CollectCollidableBlocks);
                     switch (WebEnts[webent].Relation)
                     {
+                        case Ent.EnemyPlayer:
+                        {
+                            if ((_count == 2 || _count == 17 || _count == 32 || _count == 47) && CustomCollision.PointInShield(webent.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
+                            {
+                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent EnemyPlayer: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
+                                MyAPIGateway.Parallel.Start(() => PlayerIntersectClient(webent));
+                            }
+                            continue;
+                        }
                         case Ent.SmallNobodyGrid:
                             {
-                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent SmallNobodyGrid: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
+                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent SmallNobodyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
                                 MyAPIGateway.Parallel.Start(() => ClientSmallGridIntersect(webent));
                                 continue;
                             }
                         case Ent.LargeNobodyGrid:
                             {
-                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent LargeNobodyGrid: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
+                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent LargeNobodyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
                                 MyAPIGateway.Parallel.Start(() => ClientGridIntersect(webent));
                                 continue;
                             }
                         case Ent.SmallEnemyGrid:
                             {
-                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent SmallEnemyGrid: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
+                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent SmallEnemyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
                                 MyAPIGateway.Parallel.Start(() => ClientSmallGridIntersect(webent));
                                 continue;
                             }
                         case Ent.LargeEnemyGrid:
                             {
-                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent LargeEnemyGrid: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
+                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent LargeEnemyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
                                 MyAPIGateway.Parallel.Start(() => ClientGridIntersect(webent));
                                 continue;
                             }
                         case Ent.Shielded:
                             {
-                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent Shielded: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
+                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent Shielded: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
                                 MyAPIGateway.Parallel.Start(() => ClientShieldIntersect(webent as MyCubeGrid));
                                 continue;
                             }
-
                         case Ent.VoxelBase:
                             {
-                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent VoxelBase: {((MyEntity)webent).DebugName} - ShieldId [{Shield.EntityId}]");
+                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent VoxelBase: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
                                 MyAPIGateway.Parallel.Start(() => ClientVoxelIntersect(webent as MyVoxelBase));
                                 continue;
                             }

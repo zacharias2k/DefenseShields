@@ -101,6 +101,13 @@ namespace DefenseShields
             }
         }
 
+        private void PlayerIntersectClient(MyEntity ent)
+        {
+            var character = ent as IMyCharacter;
+            if (character == null) return;
+            if (character.EnabledDamping) character.SwitchDamping();
+        }
+
         private void ClientBlockIntersect(MyCubeGrid breaching, MyOrientedBoundingBoxD bOriBBoxD, EntIntersectInfo entInfo)
         {
             var collisionAvg = Vector3D.Zero;

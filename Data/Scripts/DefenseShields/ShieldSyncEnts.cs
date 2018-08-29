@@ -55,7 +55,7 @@ namespace DefenseShields
                             if (entInfo == null)
                             {
                                 nullCount++;
-                                myGrid?.EnqueueDestroyedBlock(block.Position);
+                                myGrid.EnqueueDestroyedBlock(block.Position);
                                 continue;
                             }
 
@@ -77,7 +77,6 @@ namespace DefenseShields
                         {
                             if (ent == null || ent.MarkedForClose || ent.Closed) continue;
                             var destObj = ent as IMyDestroyableObject;
-                            if (destObj == null) Log.Line($"missile is null");
                             if (destObj == null) continue;
                             var computedDamage = ComputeAmmoDamage(ent);
                             if (computedDamage <= float.NegativeInfinity)
@@ -89,7 +88,7 @@ namespace DefenseShields
                             var damage = computedDamage * DsState.State.ModulateEnergy;
                             if (computedDamage < 0) damage = computedDamage;
 
-                            if (Session.MpActive && Session.IsServer)
+                            if (Session.MpActive)
                             {
 
                                 ShieldDoDamage(damage, ent.EntityId);
@@ -116,7 +115,7 @@ namespace DefenseShields
                         {
                             if (meteor == null || meteor.MarkedForClose || meteor.Closed) continue;
                             var damage = 5000 * DsState.State.ModulateKinetic;
-                            if (Session.MpActive && Session.IsServer)
+                            if (Session.MpActive)
                             {
 
                                 ShieldDoDamage(damage, meteor.EntityId);
