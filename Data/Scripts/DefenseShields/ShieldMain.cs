@@ -66,7 +66,7 @@ namespace DefenseShields
             WasOnline = false;
             ShieldEnt.Render.Visible = false;
             ShieldEnt.PositionComp.SetPosition(Vector3D.Zero);
-            if (!DsState.State.Lowered && !DsState.State.Sleeping)
+            if (isServer && !DsState.State.Lowered && !DsState.State.Sleeping)
             {
                 DsState.State.ShieldPercent = 0f;
                 DsState.State.Buffer = 0f;
@@ -156,14 +156,12 @@ namespace DefenseShields
                 }
                 _damageReadOut = 0;
             }
-            //if (_eCount % 2 == 0 && _lCount == 0 && _count == 0) _randomCount = _random.Next(0, 10);
 
             if (cleanUp)
             {
                 if (_staleGrids.Count != 0) CleanUp(0);
                 if (_lCount == 9 && _count == 58) CleanUp(1);
                 if (_effectsCleanup && (_count == 1 || _count == 21 || _count == 41)) CleanUp(2);
-                //if (_eCount % 2 == 0 && _lCount == _randomCount && _count == 15 && (Session.DedicatedServer || Session.IsServer)) DsSet.SaveSettings();
 
                 if ((_lCount * 60 + _count + 1) % 150 == 0)
                 {
@@ -364,32 +362,30 @@ namespace DefenseShields
                 if (!UpdateGridPower() && !isServer) return false;
             }
             else if (!UpdateGridPower(true) && !isServer) return false;
-            //if (!UpdateGridPower() && !isServer) return false;
 
             CalculatePowerCharge();
             _power = _shieldConsumptionRate + _shieldMaintaintPower;
-            if (isServer && WarmedUp && HadPowerBefore && _shieldConsumptionRate.Equals(0f) && DsState.State.Buffer.Equals(0.01f) && _genericDownLoop == -1)
+
+            if (!WarmedUp) return true;
+            if (isServer && HadPowerBefore && _shieldConsumptionRate.Equals(0f) && DsState.State.Buffer.Equals(0.01f) && _genericDownLoop == -1)
             {
                 _power = 0.0001f;
                 _genericDownLoop = 0;
                 return false;
             }
-
             if (_power < 0.0001f) _power = 0.001f;
-            if (WarmedUp && (_power < _shieldCurrentPower || _count == 28)) Sink.Update();
-            if (WarmedUp && Absorb > 0)
+
+            if (_power < _shieldCurrentPower || _count == 28) Sink.Update();
+            if (Absorb > 0)
             {
                 _damageCounter += Absorb;
                 _damageReadOut += Absorb;
                 _effectsCleanup = true;
-                DsState.State.Buffer -= (Absorb / Session.Enforced.Efficiency);
+                DsState.State.Buffer -= Absorb / Session.Enforced.Efficiency;
             }
-            else if (WarmedUp && Absorb < 0) DsState.State.Buffer += (Absorb / Session.Enforced.Efficiency);
+            else if (Absorb < 0) DsState.State.Buffer += Absorb / Session.Enforced.Efficiency;
 
-            if (isServer && WarmedUp && DsState.State.Buffer < 0)
-            {
-                _overLoadLoop = 0;
-            }
+            if (isServer && DsState.State.Buffer < 0) _overLoadLoop = 0;
             Absorb = 0f;
             return true;
         }
@@ -401,38 +397,11 @@ namespace DefenseShields
             _gridAvailablePower = 0;
             _batteryMaxPower = 0;
             _batteryCurrentPower = 0;
-            var eId = MyResourceDistributorComponent.ElectricityId;
-            if (fallBack)
-            {
-                lock (_powerSources)
-                {
-                    for (int i = 0; i < _powerSources.Count; i++)
-                    {
-                        var source = _powerSources[i];
-                        if (!source.HasCapacityRemaining || !source.Enabled || !source.ProductionEnabled) continue;
-                        if (source.Entity is IMyBatteryBlock)
-                        {
-                            _batteryMaxPower += source.MaxOutputByType(eId);
-                            _batteryCurrentPower += source.CurrentOutputByType(eId);
-                        }
-                        else
-                        {
-                            _gridMaxPower += source.MaxOutputByType(eId);
-                            _gridCurrentPower += source.CurrentOutputByType(eId);
-                        }
-                    }
-                }
-
-                if (DsSet.Settings.UseBatteries)
-                {
-                    _gridMaxPower += _batteryMaxPower;
-                    _gridCurrentPower += _batteryCurrentPower;
-                }
-            }
+            if (fallBack) FallBackPowerCalc();
             else
             {
-                _gridMaxPower += MyGridDistributor.MaxAvailableResourceByType(eId);
-                _gridCurrentPower += MyGridDistributor.TotalRequiredInputByType(eId);
+                _gridMaxPower += MyGridDistributor.MaxAvailableResourceByType(GId);
+                _gridCurrentPower += MyGridDistributor.TotalRequiredInputByType(GId);
                 if (!DsSet.Settings.UseBatteries)
                 {
                     lock (_batteryBlocks)
@@ -458,6 +427,34 @@ namespace DefenseShields
             return _gridMaxPower > 0;
         }
 
+        private void FallBackPowerCalc()
+        {
+            lock (_powerSources)
+            {
+                for (int i = 0; i < _powerSources.Count; i++)
+                {
+                    var source = _powerSources[i];
+                    if (!source.HasCapacityRemaining || !source.Enabled || !source.ProductionEnabled) continue;
+                    if (source.Entity is IMyBatteryBlock)
+                    {
+                        _batteryMaxPower += source.MaxOutputByType(GId);
+                        _batteryCurrentPower += source.CurrentOutputByType(GId);
+                    }
+                    else
+                    {
+                        _gridMaxPower += source.MaxOutputByType(GId);
+                        _gridCurrentPower += source.CurrentOutputByType(GId);
+                    }
+                }
+            }
+
+            if (DsSet.Settings.UseBatteries)
+            {
+                _gridMaxPower += _batteryMaxPower;
+                _gridCurrentPower += _batteryCurrentPower;
+            }
+        }
+
         private void CalculatePowerCharge()
         {
             var isServer = Session.IsServer;
@@ -477,7 +474,8 @@ namespace DefenseShields
             if (DsState.State.Lowered) shieldMaintainPercent = shieldMaintainPercent * 0.25f;
             _shieldMaintaintPower = _gridMaxPower * shieldMaintainPercent;
             var fPercent = percent / ratio / 100;
-            _sizeScaler = shieldVol / _ellipsoidSurfaceArea / 2.40063050674088;
+            var sizeScaler = shieldVol / _ellipsoidSurfaceArea / 2.40063050674088;
+            _sizeScaler = sizeScaler >= 1d ? sizeScaler : 1d;
 
             float bufferScaler;
             if (ShieldMode == ShieldType.Station && DsState.State.Enhancer) bufferScaler = 100 / percent * Session.Enforced.BaseScaler * nerfer;
@@ -489,6 +487,7 @@ namespace DefenseShields
             var rawMaxChargeRate = powerForShield > 0 ? powerForShield : 0f;
             _shieldMaxChargeRate = rawMaxChargeRate;
             _shieldMaxBuffer = _gridMaxPower * bufferScaler;
+            /*
             if (_sizeScaler < 1)
             {
                 if (DsState.State.Buffer + _shieldMaxChargeRate * nerfer < _shieldMaxBuffer)
@@ -503,8 +502,8 @@ namespace DefenseShields
                 }
                 else _shieldConsumptionRate = 0f;
             }
-           
-            else if (DsState.State.Buffer + _shieldMaxChargeRate / (_sizeScaler / nerfer) < _shieldMaxBuffer)
+            */
+            if (DsState.State.Buffer + _shieldMaxChargeRate / (_sizeScaler / nerfer) < _shieldMaxBuffer)
             {
                 _shieldChargeRate = _shieldMaxChargeRate / ((float)_sizeScaler / nerfer);
                 _shieldConsumptionRate = _shieldMaxChargeRate;
@@ -525,11 +524,11 @@ namespace DefenseShields
             else if (DsState.State.Buffer <= 1) DsState.State.ShieldPercent = 0f;
             else DsState.State.ShieldPercent = 100f;
 
-            if ( DsState.State.Buffer > _shieldMaxBuffer) DsState.State.Buffer = _shieldMaxBuffer;
+            if (DsState.State.Buffer > _shieldMaxBuffer) DsState.State.Buffer = _shieldMaxBuffer;
             var roundedGridMax = Math.Round(_gridMaxPower, 1);
             if (_powerNeeded > roundedGridMax || powerForShield <= 0)
             {
-                if (!DsState.State.Online)
+                if (isServer && !DsState.State.Online)
                 {
                     DsState.State.Buffer = 0.01f;
                     _shieldChargeRate = 0f;
@@ -562,7 +561,6 @@ namespace DefenseShields
                     ShieldChangeState(false);
                 }
             }
-
 
             if (heat >= 10) _shieldChargeRate = 0;
             else
@@ -601,16 +599,14 @@ namespace DefenseShields
             {
                 var secToFull = 0;
                 var shieldPercent = !DsState.State.Online ? 0f : 100f;
-                var heatPercent = (int)DsState.State.Heat;
 
-                if (DsState.State.Buffer < _shieldMaxBuffer) shieldPercent = (DsState.State.Buffer / _shieldMaxBuffer) * 100;
-                if (DsState.State.Heat < _shieldMaxBuffer) shieldPercent = (DsState.State.Buffer / _shieldMaxBuffer) * 100;
+                if (DsState.State.Buffer < _shieldMaxBuffer) shieldPercent = DsState.State.Buffer / _shieldMaxBuffer * 100;
                 if (_shieldChargeRate > 0)
                 {
                     var toMax = _shieldMaxBuffer - DsState.State.Buffer;
                     var secs = toMax / _shieldChargeRate;
                     if (secs.Equals(1)) secToFull = 0;
-                    else secToFull = (int)(secs);
+                    else secToFull = (int)secs;
                 }
 
                 var shieldPowerNeeds = _powerNeeded;
@@ -634,7 +630,7 @@ namespace DefenseShields
                                          "\n[Damage In__]: " + _damageReadOut.ToString("N0") +
                                          "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
                                          "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
-                                         "\n[Over Heated]: " + heatPercent.ToString("0") + "%" +
+                                         "\n[Over Heated]: " + DsState.State.Heat.ToString("0") + "%" +
                                          "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
                                          "\n[Power Usage]: " + powerUsage.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw" +
                                          "\n[Shield Power]: " + Sink.CurrentInputByType(GId).ToString("0.0") + " Mw");

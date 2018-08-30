@@ -151,6 +151,7 @@
           <Z>0</Z>
           <W>0</W>
       </ShadowMultiplier>
+      <!--AmbientMultiplier-->
       <LightMultiplier>
           <X>0</X>
           <Y>0</Y>
