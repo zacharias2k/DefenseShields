@@ -126,7 +126,7 @@ namespace DefenseShields.Support
 
         public static long ThereCanBeOnlyOne(IMyCubeBlock shield)
         {
-            if (Session.Enforced.Debug == 1) Log.Line($"ThereCanBeOnlyOne start");
+            if (Session.Enforced.Debug >= 1) Log.Line($"ThereCanBeOnlyOne start");
             var shieldBlocks = new List<MyCubeBlock>();
             foreach (var block in ((MyCubeGrid)shield.CubeGrid).GetFatBlocks())
             {
@@ -151,7 +151,7 @@ namespace DefenseShields.Support
                     shieldId = s.EntityId;
                 }
             }
-            if (Session.Enforced.Debug == 1) Log.Line($"ThereCanBeOnlyOne complete, found shield: {shieldId}");
+            if (Session.Enforced.Debug >= 1) Log.Line($"ThereCanBeOnlyOne complete, found shield: {shieldId}");
             return shieldId;
         }
 
@@ -180,7 +180,7 @@ namespace DefenseShields.Support
                     if (Session.AmmoCollection.ContainsKey(shot.MissileModelName)) continue;
                     Session.AmmoCollection.Add(shot.MissileModelName, new AmmoInfo(shot.IsExplosive, shot.MissileExplosionDamage, shot.MissileExplosionRadius, shot.DesiredSpeed, shot.MissileMass, shot.BackkickForce));
                 }
-                if (Session.Enforced.Debug == 1) Log.Line($"Definitions - Session");
+                if (Session.Enforced.Debug >= 1) Log.Line($"Definitions - Session");
             }
             catch (Exception ex) { Log.Line($"Exception in GetAmmoDefinitions: {ex}"); }
         }
@@ -327,7 +327,7 @@ namespace DefenseShields.Support
                 var unPackCfg = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShields.cfg");
                 var unPackedData = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsEnforcement>(unPackCfg.ReadToEnd());
 
-                if (Session.Enforced.Debug == 1) Log.Line($"unPackedData is: {unPackedData}\nServEnforced are: {Session.Enforced}");
+                if (Session.Enforced.Debug >= 1) Log.Line($"unPackedData is: {unPackedData}\nServEnforced are: {Session.Enforced}");
 
                 if (unPackedData.Version == version) return;
                 Log.Line($"outdated config file regenerating, file version: {unPackedData.Version} - current version: {version}");
@@ -359,7 +359,7 @@ namespace DefenseShields.Support
                 newCfg.Flush();
                 newCfg.Close();
 
-                if (Session.Enforced.Debug == 1) Log.Line($"wrote modified config file - file exists: {MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg")}");
+                if (Session.Enforced.Debug >= 1) Log.Line($"wrote modified config file - file exists: {MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg")}");
             }
             else
             {
@@ -381,7 +381,7 @@ namespace DefenseShields.Support
                 cfg.Flush();
                 cfg.Close();
 
-                if (Session.Enforced.Debug == 1) Log.Line($"wrote new config file - file exists: {MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg")}");
+                if (Session.Enforced.Debug >= 1) Log.Line($"wrote new config file - file exists: {MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg")}");
             }
         }
 
@@ -389,7 +389,7 @@ namespace DefenseShields.Support
         {
             var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg");
 
-            if (Session.Enforced.Debug == 1) Log.Line($"Reading config, file exists? {dsCfgExists}");
+            if (Session.Enforced.Debug >= 1) Log.Line($"Reading config, file exists? {dsCfgExists}");
 
             if (!dsCfgExists) return;
 
@@ -397,7 +397,7 @@ namespace DefenseShields.Support
             var data = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsEnforcement>(cfg.ReadToEnd());
             Session.Enforced = data;
 
-            if (Session.Enforced.Debug == 1) Log.Line($"Writing settings to mod:\n{data}");
+            if (Session.Enforced.Debug >= 1) Log.Line($"Writing settings to mod:\n{data}");
         }
 
         private static double PowerCalculation(IMyEntity breaching, IMyCubeGrid grid)

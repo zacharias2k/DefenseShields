@@ -20,19 +20,20 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug == 1) Dsutil1.Sw.Restart();
+                if (Session.Enforced.Debug >= 1) Dsutil1.Sw.Restart();
                 var isServer = Session.IsServer;
                 var isDedicated = Session.DedicatedServer;
                 if (!ShieldOn(isServer))
                 {
+                    if (Session.Enforced.Debug >= 1 && WasOnline) Log.Line($"Off: WasOn:{WasOnline} - On:{DsState.State.Online} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
                     if (WasOnline) ShieldOff(isServer);
                     return;
                 }
+                if (Session.Enforced.Debug >= 1 && !WasOnline) Log.Line($"On: WasOn:{WasOnline} - On:{DsState.State.Online} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
 
                 if (DsState.State.Online)
                 {
                     if (ComingOnline) ComingOnlineSetup(isServer, isDedicated);
-                    if (!isDedicated && _tick % 60 == 0) HudCheck();
 
                     if (isServer)
                     {
@@ -46,15 +47,22 @@ namespace DefenseShields
                             var newPercentColor = UtilsStatic.GetShieldColorFromFloat(DsState.State.ShieldPercent);
                             if (newPercentColor != _oldPercentColor)
                             {
-                                ShieldChangeState(false);
+                                if (Session.Enforced.Debug >= 2) Log.Line($"StateUpdate: Percent Threshold Reached");
+                                ShieldChangeState();
                                 _oldPercentColor = newPercentColor;
                             }
+                            else if (_lCount == 7 && _eCount == 7)
+                            {
+                                if (Session.Enforced.Debug >= 2) Log.Line($"StateUpdate: Timer Reached");
+                                ShieldChangeState();
+                            }
                         }
-                        else if (mpActive && _count == 29 && _lCount == 7) ShieldChangeState(false);
                     }
                     else WebEntitiesClient();
+
+                    if (!isDedicated && _tick % 60 == 0) HudCheck();
                 }
-                if (Session.Enforced.Debug == 1) Dsutil1.StopWatchReport($"PerfCon: Online: {DsState.State.Online} - Tick: {_tick} loop: {_lCount}-{_count}", 4);
+                if (Session.Enforced.Debug >= 1) Dsutil1.StopWatchReport($"PerfCon: Online: {DsState.State.Online} - Tick: {_tick} loop: {_lCount}-{_count}", 4);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
@@ -71,7 +79,12 @@ namespace DefenseShields
                 DsState.State.ShieldPercent = 0f;
                 DsState.State.Buffer = 0f;
             }
-            if (isServer) ShieldChangeState(false);
+
+            if (isServer)
+            {
+                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ShieldOff");
+                ShieldChangeState();
+            }
             else Shield.RefreshCustomInfo();
         }
 
@@ -87,7 +100,9 @@ namespace DefenseShields
             {
                 SyncThreadedEnts(true);
                 _offlineCnt = -1;
-                ShieldChangeState(false);
+                ShieldChangeState();
+                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ComingOnlineSetup");
+
             }
             else Shield.RefreshCustomInfo();
         }
@@ -115,7 +130,7 @@ namespace DefenseShields
                     SettingsUpdated = false;
                     DsSet.SaveSettings();
                     ResetShape(false, false);
-                    if (Session.Enforced.Debug == 1) Log.Line($"SettingsUpdated - server:{Session.IsServer} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug >= 1) Log.Line($"SettingsUpdated - server:{Session.IsServer} - ShieldId [{Shield.EntityId}]");
                 }
                 if (_blockEvent) BlockChanged(true);
             }
@@ -141,7 +156,7 @@ namespace DefenseShields
 
             if (_hierarchyDelayed && _tick > _hierarchyTick + 9)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"HierarchyWasDelayed: this:{_tick} - delayedTick: {_hierarchyTick} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 1) Log.Line($"HierarchyWasDelayed: this:{_tick} - delayedTick: {_hierarchyTick} - ShieldId [{Shield.EntityId}]");
                 _hierarchyDelayed = false;
                 HierarchyChanged();
             }
@@ -196,7 +211,7 @@ namespace DefenseShields
             if (_blockEvent)
             {
                 var check = !DsState.State.Sleeping && !DsState.State.Suspended;
-                if (Session.Enforced.Debug == 1) Log.Line($"BlockChanged: check:{check} + functional:{_functionalEvent} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 1) Log.Line($"BlockChanged: check:{check} + functional:{_functionalEvent} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ShieldId [{Shield.EntityId}]");
                 if (!check) return;
 
                 if (_functionalEvent)
@@ -259,7 +274,7 @@ namespace DefenseShields
                     }
                 }
             }
-            if (Session.Enforced.Debug == 1) Log.Line($"PowerCount: {_powerSources.Count.ToString()} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug >= 1) Log.Line($"PowerCount: {_powerSources.Count.ToString()} - ShieldId [{Shield.EntityId}]");
         }
         #endregion
 
@@ -289,7 +304,7 @@ namespace DefenseShields
                 {
                     _currentHeatStep = 1;
                     DsState.State.Heat = _currentHeatStep * 10;
-                    if (Session.Enforced.Debug == 1) Log.Line($"now overheating - stage:{_currentHeatStep} - heat:{_accumulatedHeat} - threshold:{threshold}");
+                    if (Session.Enforced.Debug >= 1) Log.Line($"now overheating - stage:{_currentHeatStep} - heat:{_accumulatedHeat} - threshold:{threshold}");
                     _accumulatedHeat = 0;
                 }
                 else
@@ -297,7 +312,7 @@ namespace DefenseShields
                     DsState.State.Heat = 0;
                     _currentHeatStep = 0;
                     _heatCycle = -1;
-                    if (Session.Enforced.Debug == 1) Log.Line($"under-threshold - stage:{_currentHeatStep} - heat:{_accumulatedHeat} - threshold:{threshold}");
+                    if (Session.Enforced.Debug >= 1) Log.Line($"under-threshold - stage:{_currentHeatStep} - heat:{_accumulatedHeat} - threshold:{threshold}");
                     _accumulatedHeat = 0;
                 }
             }
@@ -307,13 +322,13 @@ namespace DefenseShields
                 {
                     _currentHeatStep++;
                     DsState.State.Heat = _currentHeatStep * 10;
-                    if (Session.Enforced.Debug == 1) Log.Line($"increased to - stage ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold:{nextThreshold}");
+                    if (Session.Enforced.Debug >= 1) Log.Line($"increased to - stage ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold:{nextThreshold}");
                     _accumulatedHeat = 0;
                 }
                 else if (_accumulatedHeat > currentThreshold)
                 {
                     DsState.State.Heat = _currentHeatStep * 10;
-                    if (Session.Enforced.Debug == 1) Log.Line($"heat unchanged - stage:{_currentHeatStep} - heat:{_accumulatedHeat} - threshold:{currentThreshold}");
+                    if (Session.Enforced.Debug >= 1) Log.Line($"heat unchanged - stage:{_currentHeatStep} - heat:{_accumulatedHeat} - threshold:{currentThreshold}");
                     _heatCycle = (_currentHeatStep - 1) * HeatingStep + OverHeat + 1;
                     _accumulatedHeat = 0;
                 }
@@ -325,14 +340,14 @@ namespace DefenseShields
                         DsState.State.Heat = 0;
                         _currentHeatStep = 0;
                         _heatCycle = -1;
-                        if (Session.Enforced.Debug == 1) Log.Line($"no longer overheating ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold:{nextThreshold}");
+                        if (Session.Enforced.Debug >= 1) Log.Line($"no longer overheating ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold:{nextThreshold}");
                         _accumulatedHeat = 0;
                     }
                     else
                     {
                         DsState.State.Heat = _currentHeatStep * 10;
                         _heatCycle = (_currentHeatStep - 1) * HeatingStep + OverHeat + 1;
-                        if (Session.Enforced.Debug == 1) Log.Line($"decreased to - stage ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold:{nextThreshold}");
+                        if (Session.Enforced.Debug >= 1) Log.Line($"decreased to - stage ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold:{nextThreshold}");
                         _accumulatedHeat = 0;
                     }
                 }
@@ -345,13 +360,17 @@ namespace DefenseShields
             else if (_tick >= _heatVentingTick)
             {
                 if (_currentHeatStep >= 10) _currentHeatStep--;
-                if (Session.Enforced.Debug == 1) Log.Line($"left critical - stage ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold: {nextThreshold}");
+                if (Session.Enforced.Debug >= 1) Log.Line($"left critical - stage ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold: {nextThreshold}");
                 DsState.State.Heat = _currentHeatStep * 10;
                 _heatCycle = (_currentHeatStep - 1) * HeatingStep + OverHeat + 1;
                 _heatVentingTick = uint.MaxValue;
             }
 
-            if (!heat.Equals(DsState.State.Heat)) ShieldChangeState(false);
+            if (!heat.Equals(DsState.State.Heat))
+            {
+                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: HeatChange");
+                ShieldChangeState();
+            }
         }
 
         private bool PowerOnline()
@@ -539,7 +558,9 @@ namespace DefenseShields
                 if (isServer && !DsState.State.NoPower)
                 {
                     DsState.State.NoPower = true;
-                    ShieldChangeState(true);
+                    DsState.State.Message = true;
+                    ShieldChangeState();
+                    if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: NoPower");
                 }
 
                 var shieldLoss = DsState.State.Buffer * (_powerLossLoop * 0.00008333333f);
@@ -558,7 +579,8 @@ namespace DefenseShields
                 {
                     DsState.State.NoPower = false;
                     _powerNoticeLoop = 0;
-                    ShieldChangeState(false);
+                    ShieldChangeState();
+                    if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: PowerRestored");
                 }
             }
 
@@ -656,11 +678,11 @@ namespace DefenseShields
         private void UpdateSubGrids(bool force = false)
         {
             var checkGroups = Shield.IsWorking && Shield.IsFunctional && DsState.State.Online;
-            if (Session.Enforced.Debug == 1) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Offline:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug >= 1) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Offline:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
             if (!checkGroups && !force) return;
             var gotGroups = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Physical);
             if (gotGroups.Count == ShieldComp.GetLinkedGrids.Count) return;
-            if (Session.Enforced.Debug == 1) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.GetLinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.GetLinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug >= 1) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.GetLinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.GetLinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
 
             lock (ShieldComp.GetSubGrids) ShieldComp.GetSubGrids.Clear();
             lock (ShieldComp.GetLinkedGrids) ShieldComp.GetLinkedGrids.Clear();
@@ -693,14 +715,14 @@ namespace DefenseShields
                 if (!DsState.State.ModulateEnergy.Equals(ShieldComp.Modulator.ModState.State.ModulateEnergy * 0.01f) || !DsState.State.ModulateKinetic.Equals(ShieldComp.Modulator.ModState.State.ModulateKinetic * 0.01f)) update = true;
                 DsState.State.ModulateEnergy = ShieldComp.Modulator.ModState.State.ModulateEnergy * 0.01f;
                 DsState.State.ModulateKinetic = ShieldComp.Modulator.ModState.State.ModulateKinetic * 0.01f;
-                if (update) ShieldChangeState(false);
+                if (update) ShieldChangeState();
             }
             else
             {
                 if (!DsState.State.ModulateEnergy.Equals(1f) || !DsState.State.ModulateKinetic.Equals(1f)) update = true;
                 DsState.State.ModulateEnergy = 1f;
                 DsState.State.ModulateKinetic = 1f;
-                if (update) ShieldChangeState(false);
+                if (update) ShieldChangeState();
 
             }
         }
@@ -714,7 +736,7 @@ namespace DefenseShields
                 DsState.State.EnhancerPowerMulti = 2;
                 DsState.State.EnhancerProtMulti = 1000;
                 DsState.State.Enhancer = true;
-                if (update) ShieldChangeState(false);
+                if (update) ShieldChangeState();
             }
             else
             {
@@ -722,7 +744,7 @@ namespace DefenseShields
                 DsState.State.EnhancerPowerMulti = 1;
                 DsState.State.EnhancerProtMulti = 1;
                 DsState.State.Enhancer = false;
-                if (update) ShieldChangeState(false);
+                if (update) ShieldChangeState();
             }
         }
         #endregion

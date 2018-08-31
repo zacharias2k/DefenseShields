@@ -20,7 +20,7 @@ namespace DefenseShields
             Session.Enforced.Version = newEnforce.Version;
             Session.Enforced.SenderId = newEnforce.SenderId;
 
-            if (Session.Enforced.Debug == 1) Log.Line($"Updated Enforcements:\n{Session.Enforced}");
+            if (Session.Enforced.Debug >= 1) Log.Line($"Updated Enforcements:\n{Session.Enforced}");
         }
 
         public static void EnforcementRequest(long shieldId)

@@ -95,7 +95,7 @@ namespace DefenseShields
                         {
                             ModulatorComp.ModulationPassword = Modulator.CustomData;
                             ModSet.SaveSettings();
-                            if (Session.Enforced.Debug == 1) Log.Line($"Updating modulator password");
+                            if (Session.Enforced.Debug >= 1) Log.Line($"Updating modulator password");
                         }
                     }
                 }
@@ -137,13 +137,13 @@ namespace DefenseShields
                 if (girdHasModComp)
                 {
                     Modulator.CubeGrid.Components.TryGet(out ModulatorComp);
-                    if (Session.Enforced.Debug == 1) Log.Line($"Election: grid had Comp- ModulatorId [{Modulator.EntityId}]");
+                    if (Session.Enforced.Debug >= 1) Log.Line($"Election: grid had Comp- ModulatorId [{Modulator.EntityId}]");
                 }
                 else
                 {
                     ModulatorComp = new ModulatorGridComponent(this);
                     Modulator.CubeGrid.Components.Add(ModulatorComp);
-                    if (Session.Enforced.Debug == 1) Log.Line($"Election: grid didn't have Comp - ModulatorId [{Modulator.EntityId}]");
+                    if (Session.Enforced.Debug >= 1) Log.Line($"Election: grid didn't have Comp - ModulatorId [{Modulator.EntityId}]");
                 }
                 Modulator.RefreshCustomInfo();
             }
@@ -251,7 +251,7 @@ namespace DefenseShields
 
             if (_hierarchyDelayed && _tick > _hierarchyTick + 9)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"Delayed tick: {_tick} - hierarchytick: {_hierarchyTick}");
+                if (Session.Enforced.Debug >= 1) Log.Line($"Delayed tick: {_tick} - hierarchytick: {_hierarchyTick}");
                 _hierarchyDelayed = false;
                 HierarchyChanged();
             }
@@ -372,7 +372,7 @@ namespace DefenseShields
                     Modulator.Enabled = true;
                 }
                 Sink.Update();
-                if (Session.Enforced.Debug == 1) Log.Line($"PowerInit complete");
+                if (Session.Enforced.Debug >= 1) Log.Line($"PowerInit complete");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }
@@ -451,13 +451,13 @@ namespace DefenseShields
         {
             SettingsUpdated = true;
             ModSet.Settings = newSettings;
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings for modulator");
+            if (Session.Enforced.Debug >= 1) Log.Line($"UpdateSettings for modulator");
         }
 
         public void UpdateState(ProtoModulatorState newState)
         {
             ModState.State = newState;
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdateState - ModId [{Modulator.EntityId}]:\n{ModState.State}");
+            if (Session.Enforced.Debug >= 1) Log.Line($"UpdateState - ModulatorId [{Modulator.EntityId}]:\n{ModState.State}");
         }
 
         public override void OnRemovedFromScene()

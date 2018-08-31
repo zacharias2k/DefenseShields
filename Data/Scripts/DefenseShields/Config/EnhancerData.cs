@@ -49,7 +49,7 @@ namespace DefenseShields
                     State = loadedState;
                     loadedSomething = true;
                 }
-                if (Session.Enforced.Debug == 1) Log.Line($"Loaded - EnhancerId [{Enhancer.EntityId}]:\n{State.ToString()}");
+                if (Session.Enforced.Debug >= 1) Log.Line($"Loaded - EnhancerId [{Enhancer.EntityId}]:\n{State.ToString()}");
             }
             return loadedSomething;
         }
@@ -60,12 +60,12 @@ namespace DefenseShields
 
             if (Session.IsServer)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"ServRelay - EnhancerId [{Enhancer.EntityId}]: network state update for Enhancer");
+                if (Session.Enforced.Debug >= 1) Log.Line($"ServRelay - EnhancerId [{Enhancer.EntityId}]: network state update for Enhancer");
                 Session.PacketizeEnhancerState(Enhancer, State); // update clients with server's settings
             }
             else // client, send settings to server
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"ClientRelay - EnhancerId [{Enhancer.EntityId}]: sent network state update for Enhancer");
+                if (Session.Enforced.Debug >= 1) Log.Line($"ClientRelay - EnhancerId [{Enhancer.EntityId}]: sent network state update for Enhancer");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataEnhancerState(MyAPIGateway.Multiplayer.MyId, Enhancer.EntityId, State));
                 MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdEnhancerState, bytes);
             }
@@ -127,12 +127,12 @@ namespace DefenseShields
 
             if (Session.IsServer)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"ServRelay - EmitterId [{Enhancer.EntityId}]: network settings update for modulator");
+                if (Session.Enforced.Debug >= 1) Log.Line($"ServRelay - EmitterId [{Enhancer.EntityId}]: network settings update for modulator");
                 Session.PacketizeEnhancerSettings(Enhancer, Settings); // update clients with server's settings
             }
             else // client, send settings to server
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"ClientRelay - EmitterId [{Enhancer.EntityId}]: sent network settings update for modulator");
+                if (Session.Enforced.Debug >= 1) Log.Line($"ClientRelay - EmitterId [{Enhancer.EntityId}]: sent network settings update for modulator");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataEnhancerSettings(MyAPIGateway.Multiplayer.MyId, Enhancer.EntityId, Settings));
                 MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdEnhancerSettings, bytes);
             }

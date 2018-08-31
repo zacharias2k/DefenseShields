@@ -245,7 +245,7 @@ namespace DefenseShields
 
             sc.DefenseShields.DsState.State.IncreaseO2ByFPercent = fPercentToAddToDefaultO2Level;
             sc.O2Updated = true;
-            if (Session.Enforced.Debug == 1) Log.Line($"default:{ShieldComp.DefaultO2} - Filled/(Max):{O2State.State.VolFilled}/({shieldFullVol}) - ShieldO2Level:{sc.DefenseShields.DsState.State.IncreaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center)}");
+            if (Session.Enforced.Debug >= 1) Log.Line($"default:{ShieldComp.DefaultO2} - Filled/(Max):{O2State.State.VolFilled}/({shieldFullVol}) - ShieldO2Level:{sc.DefenseShields.DsState.State.IncreaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center)}");
         }
 
         private void UpdateVisuals()
@@ -352,7 +352,7 @@ namespace DefenseShields
         {
             O2State.State = newState;
             UpdateVisuals();
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdateState - O2GenId [{O2Generator.EntityId}]:\n{newState}");
+            if (Session.Enforced.Debug >= 1) Log.Line($"UpdateState - O2GenId [{O2Generator.EntityId}]:\n{newState}");
         }
 
         public override void OnAddedToContainer()

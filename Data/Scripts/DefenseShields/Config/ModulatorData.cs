@@ -49,7 +49,7 @@ namespace DefenseShields
                     State = loadedState;
                     loadedSomething = true;
                 }
-                if (Session.Enforced.Debug == 1) Log.Line($"Loaded - EmitterId [{Modulator.EntityId}]:\n{State.ToString()}");
+                if (Session.Enforced.Debug >= 1) Log.Line($"Loaded - EmitterId [{Modulator.EntityId}]:\n{State.ToString()}");
             }
             return loadedSomething;
         }
@@ -60,12 +60,12 @@ namespace DefenseShields
 
             if (Session.IsServer)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"ServRelay - EmitterId [{Modulator.EntityId}]: network state update for modulator");
+                if (Session.Enforced.Debug >= 1) Log.Line($"ServRelay - EmitterId [{Modulator.EntityId}]: network state update for modulator");
                 Session.PacketizeModulatorState(Modulator, State); // update clients with server's settings
             }
             else // client, send settings to server
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"ClientRelay - EmitterId [{Modulator.EntityId}]: sent network state update for modulator");
+                if (Session.Enforced.Debug >= 1) Log.Line($"ClientRelay - EmitterId [{Modulator.EntityId}]: sent network state update for modulator");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataModulatorState(MyAPIGateway.Multiplayer.MyId, Modulator.EntityId, State));
                 MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdModulatorState, bytes);
             }
@@ -126,12 +126,12 @@ namespace DefenseShields
 
             if (Session.IsServer)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"ServRelay - EmitterId [{Modulator.EntityId}]: network settings update for modulator");
+                if (Session.Enforced.Debug >= 1) Log.Line($"ServRelay - EmitterId [{Modulator.EntityId}]: network settings update for modulator");
                 Session.PacketizeModulatorSettings(Modulator, Settings); // update clients with server's settings
             }
             else // client, send settings to server
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"ClientRelay - EmitterId [{Modulator.EntityId}]: sent network settings update for modulator");
+                if (Session.Enforced.Debug >= 1) Log.Line($"ClientRelay - EmitterId [{Modulator.EntityId}]: sent network settings update for modulator");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataModulatorSettings(MyAPIGateway.Multiplayer.MyId, Modulator.EntityId, Settings));
                 MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdModulatorSettings, bytes);
             }

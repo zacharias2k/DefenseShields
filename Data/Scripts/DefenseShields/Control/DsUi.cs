@@ -162,21 +162,6 @@ namespace DefenseShields
             comp.ClientUiUpdate = true;
         }
 
-        public static bool GetHidePassive(IMyTerminalBlock block)
-        {
-            var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            return comp?.DsSet.Settings.PassiveInvisible ?? false;
-        }
-
-        public static void SetHidePassive(IMyTerminalBlock block, bool newValue)
-        {
-            var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            if (comp == null) return;
-            comp.DsSet.Settings.PassiveInvisible = newValue;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
-        }
-
         public static bool GetHideActive(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
@@ -188,6 +173,36 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
             comp.DsSet.Settings.ActiveInvisible = newValue;
+            comp.SettingsUpdated = true;
+            comp.ClientUiUpdate = true;
+        }
+
+        public static bool GetRefreshAnimation(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            return comp?.DsSet.Settings.RefreshAnimation ?? false;
+        }
+
+        public static void SetRefreshAnimation(IMyTerminalBlock block, bool newValue)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            if (comp == null) return;
+            comp.DsSet.Settings.RefreshAnimation = newValue;
+            comp.SettingsUpdated = true;
+            comp.ClientUiUpdate = true;
+        }
+
+        public static bool GetHitWaveAnimation(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            return comp?.DsSet.Settings.HitWaveAnimation ?? false;
+        }
+
+        public static void SetHitWaveAnimation(IMyTerminalBlock block, bool newValue)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            if (comp == null) return;
+            comp.DsSet.Settings.HitWaveAnimation = newValue;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
         }
@@ -239,9 +254,28 @@ namespace DefenseShields
             comp.ClientUiUpdate = true;
         }
 
+        public static long GetVisible(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            return comp?.DsSet.Settings.Visible ?? 0;
+        }
+
+        public static void SetVisible(IMyTerminalBlock block, long newValue)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            if (comp == null) return;
+            comp.DsSet.Settings.Visible = newValue;
+            comp.SettingsUpdated = true;
+            comp.ClientUiUpdate = true;
+        }
         public static void ListShell(List<MyTerminalControlComboBoxItem> shellList)
         {
             foreach (var shell in ShellList) shellList.Add(shell);
+        }
+
+        public static void ListVisible(List<MyTerminalControlComboBoxItem> visibleList)
+        {
+            foreach (var visible in VisibleList) visibleList.Add(visible);
         }
 
         private static readonly List<MyTerminalControlComboBoxItem> ShellList = new List<MyTerminalControlComboBoxItem>()
@@ -256,6 +290,13 @@ namespace DefenseShields
             new MyTerminalControlComboBoxItem() { Key = 7, Value = MyStringId.GetOrCompute("Medium Reflective Gold Tint") },
             new MyTerminalControlComboBoxItem() { Key = 8, Value = MyStringId.GetOrCompute("Medium Reflective Orange Tint") },
             new MyTerminalControlComboBoxItem() { Key = 9, Value = MyStringId.GetOrCompute("Medium Reflective Cyan Tint") }
+        };
+
+        private static readonly List<MyTerminalControlComboBoxItem> VisibleList = new List<MyTerminalControlComboBoxItem>()
+        {
+            new MyTerminalControlComboBoxItem() { Key = 0, Value = MyStringId.GetOrCompute("Always Visible") },
+            new MyTerminalControlComboBoxItem() { Key = 1, Value = MyStringId.GetOrCompute("Never Visible") },
+            new MyTerminalControlComboBoxItem() { Key = 2, Value = MyStringId.GetOrCompute("Visible On Hit") }
         };
         #endregion
     }

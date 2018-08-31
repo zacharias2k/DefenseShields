@@ -36,7 +36,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"OnAddedToScene: - {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 1) Log.Line($"OnAddedToScene: - {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 if (!AllInited) return;
 
                 if (Shield.CubeGrid.IsStatic != IsStatic)
@@ -56,9 +56,7 @@ namespace DefenseShields
                 {
                     DsState.SaveState();
                     DsSet.SaveSettings();
-                    if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: saved before replication - ShieldId [{Shield.EntityId}]");
                 }
-                else if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: not saved - AllInited:{AllInited} - StoageNull:{Shield.Storage == null} - ShieldId [{Shield.EntityId}]");
             }
             return false;
         }
@@ -135,7 +133,7 @@ namespace DefenseShields
                 {
                     AllInited = true;
                 }
-                if (Session.Enforced.Debug == 1) Log.Line($"AllInited: ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 1) Log.Line($"AllInited: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in Controller PostInit: {ex}"); }
 
@@ -151,7 +149,7 @@ namespace DefenseShields
             DsSet.LoadSettings();
             DsState.LoadState();
             UpdateSettings(DsSet.Settings);
-            if (Session.Enforced.Debug == 1) Log.Line($"StorageSetup: ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug >= 1) Log.Line($"StorageSetup: ShieldId [{Shield.EntityId}]");
         }
 
         private void PowerPreInit()
@@ -191,7 +189,7 @@ namespace DefenseShields
                     Shield.Enabled = false;
                     Shield.Enabled = true;
                 }
-                if (Session.Enforced.Debug == 1) Log.Line($"PowerInit: ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 1) Log.Line($"PowerInit: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }
@@ -272,7 +270,7 @@ namespace DefenseShields
 
             if (!fullInit)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"InitEntities: mode: {ShieldMode}, remove complete - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 1) Log.Line($"InitEntities: mode: {ShieldMode}, remove complete - ShieldId [{Shield.EntityId}]");
                 return;
             }
 
@@ -311,7 +309,7 @@ namespace DefenseShields
             _shieldEntRendId = ShieldEnt.Render.GetRenderObjectID();
 
             if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
-            if (Session.Enforced.Debug == 1) Log.Line($"InitEntities: mode: {ShieldMode}, spawn complete - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug >= 1) Log.Line($"InitEntities: mode: {ShieldMode}, spawn complete - ShieldId [{Shield.EntityId}]");
         }
 
         public void SelectPassiveShell()
@@ -367,7 +365,7 @@ namespace DefenseShields
                 _shellPassive.RefreshModels($"{Session.Instance.ModPath()}{_modelPassive}", null);
                 _shellPassive.Render.RemoveRenderObjects();
                 _shellPassive.Render.UpdateRenderObject(true);
-                if (Session.Enforced.Debug == 1) Log.Line($"UpdatePassiveModel: modelString:{_modelPassive} - ShellNumber:{DsSet.Settings.ShieldShell} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 1) Log.Line($"UpdatePassiveModel: modelString:{_modelPassive} - ShellNumber:{DsSet.Settings.ShieldShell} - ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in UpdatePassiveModel: {ex}"); }
         }
@@ -376,11 +374,11 @@ namespace DefenseShields
         {
             if (Session.Enforced.Version > 0)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"Localenforcements: bypassing request - IsServer? {Session.IsServer} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 1) Log.Line($"Localenforcements: bypassing request - IsServer? {Session.IsServer} - ShieldId [{Shield.EntityId}]");
             }
             else
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"ClientEnforcementRequest: Check finished - Enforcement Request?: {Session.Enforced.Version <= 0} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 1) Log.Line($"ClientEnforcementRequest: Check finished - Enforcement Request?: {Session.Enforced.Version <= 0} - ShieldId [{Shield.EntityId}]");
                 Enforcements.EnforcementRequest(Shield.EntityId);
             }
         }
@@ -390,13 +388,13 @@ namespace DefenseShields
             if (Session.Enforced.Version > 0) Session.EnforceInit = true;
             else Log.Line($"Server has failed to set its own enforcements!! Report this as a bug");
 
-            if (Session.Enforced.Debug == 1) Log.Line($"ServerEnforcementSetup\n{Session.Enforced}");
+            if (Session.Enforced.Debug >= 1) Log.Line($"ServerEnforcementSetup\n{Session.Enforced}");
         }
 
         private bool BlockReady()
         {
             if (Shield.IsWorking) return true;
-            if (Session.Enforced.Debug == 1) Log.Line($"BlockNotReady: was not ready {_tick} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug >= 1) Log.Line($"BlockNotReady: was not ready {_tick} - ShieldId [{Shield.EntityId}]");
             Shield.Enabled = false;
             Shield.Enabled = true;
             return Shield.IsWorking;
@@ -411,7 +409,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"OnRemovedFromScene: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"OnRemovedFromScene: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 IsStatic = Shield.CubeGrid.IsStatic;
                 RegisterEvents(false);
                 InitEntities(false);
@@ -426,7 +424,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"MarkForClose: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"MarkForClose: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
             base.MarkForClose();
@@ -436,7 +434,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 if (Session.Instance.Components.Contains(this)) Session.Instance.Components.Remove(this);
                 Icosphere = null;
                 RegisterEvents(false);

@@ -46,9 +46,7 @@ namespace DefenseShields
 
         public override string ToString()
         {
-            return $"Nerf:{Math.Round(Nerf, 4)} - BaseScaler:{BaseScaler} - Efficiency:{Math.Round(Efficiency, 4)} - StationRatio:{StationRatio} - LargeShipRatio:{LargeShipRatio}\n" +
-                   $"SmallShipRatio:{SmallShipRatio} - DisableVoxelSupport:{DisableVoxelSupport} - DisableGridDamageSupport:{DisableGridDamageSupport}\n" +
-                   $"Debug:{Debug} - AltRecharge:{AltRecharge} - Version:{Version} - SenderId:{SenderId}";
+            return "";
         }
 
     }
@@ -120,8 +118,8 @@ namespace DefenseShields
     [ProtoContract]
     public class ProtoControllerSettings
     {
-        [ProtoMember(1)]
-        public bool Unused = false;
+        [ProtoMember(1), DefaultValue(true)]
+        public bool RefreshAnimation = true;
 
         [ProtoMember(2), DefaultValue(-1)]
         public float Width = 30f;
@@ -133,7 +131,7 @@ namespace DefenseShields
         public float Depth = 30f;
 
         [ProtoMember(5)]
-        public bool PassiveInvisible = false;
+        public bool Unused = false;
 
         [ProtoMember(6)]
         public bool ActiveInvisible = false;
@@ -165,11 +163,15 @@ namespace DefenseShields
         [ProtoMember(15)]
         public long ShieldShell = 0;
 
+        [ProtoMember(16), DefaultValue(true)]
+        public bool HitWaveAnimation = true;
+
+        [ProtoMember(17)]
+        public long Visible = 0;
+
         public override string ToString()
         {
-            return $"Unused:{Unused} - IdleVisible:{PassiveInvisible} - ActiveVisible:{ActiveInvisible} - Width:{Math.Round(Width, 4)} Height:{Math.Round(Height, 4)} - Depth:{Math.Round(Depth, 4)}\n" +
-                   $"Rate:{Math.Round(Rate, 4)} ExtendFit:{ExtendFit} - SphereFit:{SphereFit} - FortifyShield:{FortifyShield} - SendToHud:{SendToHud} - UseBatteries:{UseBatteries}\n" +
-                   $"ShieldActive:{ShieldActive} - RaiseShield:{RaiseShield} - ShieldShell:{ShieldShell}";
+            return "";
         }
     }
 
@@ -217,7 +219,7 @@ namespace DefenseShields
 
         public override string ToString()
         {
-            return $"Enabled = {Unused}\nModulateVoxels = {ModulateVoxels}\nModulateGrids = {ModulateGrids}\nModulateDamage = {ModulateDamage}";
+            return "";
         }
     }
 

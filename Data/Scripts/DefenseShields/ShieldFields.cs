@@ -127,6 +127,7 @@ namespace DefenseShields
         private bool _updateMobileShape;
         private bool _clientLowered;
         private bool _clientOn;
+        private bool _updateStateNow;
 
         private const string SpaceWolf = "Space_Wolf";
         private const string MyMissile = "MyMissile";

@@ -18,7 +18,7 @@ namespace DefenseShields
         #region Web Entities
         private void WebEntities()
         {
-            if (Session.Enforced.Debug == 1) Dsutil2.Sw.Restart();
+            if (Session.Enforced.Debug >= 1) Dsutil2.Sw.Restart();
             var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange + 3000);
             var pruneSphere2 = new BoundingSphereD(DetectionCenter, BoundingRange + 5);
             var pruneList = new List<MyEntity>();
@@ -115,12 +115,12 @@ namespace DefenseShields
 
             if (_enablePhysics && (ShieldComp.GridIsMoving || entChanged)) MyAPIGateway.Parallel.Start(WebDispatch);
 
-            if (Session.Enforced.Debug == 1) Dsutil2.StopWatchReport($"Web: ShieldId [{Shield.EntityId}]", 3);
+            if (Session.Enforced.Debug >= 1) Dsutil2.StopWatchReport($"Web: ShieldId [{Shield.EntityId}]", 3);
         }
 
         private void WebDispatch()
         {
-            if (Session.Enforced.Debug == 1) Dsutil3.Sw.Restart();
+            if (Session.Enforced.Debug >= 1) Dsutil3.Sw.Restart();
             var ep = 0;
             var ns = 0;
             var nl = 0;
@@ -211,9 +211,9 @@ namespace DefenseShields
                 }
             }
 
-            if (Session.Enforced.Debug == 1 && _lCount == 5 && _count == 5)
+            if (Session.Enforced.Debug >= 1 && _lCount == 5 && _count == 5)
                 if (WebEnts.Count > 7 || FriendlyCache.Count > 15 || IgnoreCache.Count > 15) Log.Line($"Web: friend:{FriendlyCache.Count} - ignore:{IgnoreCache.Count} - total:{WebEnts.Count} ep:{ep} ns:{ns} nl:{nl} es:{es} el:{el} ss:{ss} oo:{oo} vv:{vv} xx:{xx} - ShieldId [{Shield.EntityId}]");
-            if (Session.Enforced.Debug == 1) Dsutil3.StopWatchReport($"webDispatch: ShieldId [{Shield.EntityId}]:", 3);
+            if (Session.Enforced.Debug >= 1) Dsutil3.StopWatchReport($"webDispatch: ShieldId [{Shield.EntityId}]:", 3);
         }
         #endregion
 

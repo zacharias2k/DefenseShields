@@ -18,7 +18,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug == 1) Dsutil4.Sw.Restart();
+                if (Session.Enforced.Debug >= 1) Dsutil4.Sw.Restart();
 
                 if (clear)
                 {
@@ -222,7 +222,7 @@ namespace DefenseShields
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in fewBlocks: {ex}"); }
-                if (Session.Enforced.Debug == 1) Dsutil4.StopWatchReport($"SyncEnt: ShieldId [{Shield.EntityId}]", 3);
+                if (Session.Enforced.Debug >= 1) Dsutil4.StopWatchReport($"SyncEnt: ShieldId [{Shield.EntityId}]", 3);
             }
             catch (Exception ex) { Log.Line($"Exception in DamageGrids: {ex}"); }
         }

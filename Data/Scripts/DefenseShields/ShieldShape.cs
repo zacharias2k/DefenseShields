@@ -138,7 +138,9 @@ namespace DefenseShields
                 _ellipsoidSurfaceArea = EllipsoidSa.Surface;
                 if (Session.IsServer)
                 {
-                    ShieldChangeState(false);
+                    if (Session.Enforced.Debug >= 2) Log.Line($"StateUpdate: CreateShieldShape");
+
+                    ShieldChangeState();
                     ShieldComp.ShieldVolume = DetectMatrixOutside.Scale.Volume;
                     //ShieldComp.CheckEmitters = true;
                 }

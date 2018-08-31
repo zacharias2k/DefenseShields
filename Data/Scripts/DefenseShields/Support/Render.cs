@@ -122,7 +122,7 @@ namespace DefenseShields.Support
             private int[] _triColorBuffer;
 
             private Vector3D _impactPosState;
-            private Vector3D _chargePoint;
+            private Vector3D _refreshPoint;
             private MatrixD _matrix;
             private Vector2 _v20 = new Vector2(.5f);
             private Vector2 _v21 = new Vector2(0.25f);
@@ -139,19 +139,19 @@ namespace DefenseShields.Support
             private int _mainLoop = -1;
             private int _lCount;
             private int _longerLoop;
-            private int _chargeDrawStep;
+            private int _refreshDrawStep;
             private int _lod;
 
             private const int SideSteps = 60;
             private const int ImpactSteps = 60;
-            private const int ChargeSteps = 30;
+            private const int RefreshSteps = 30;
 
             private Color _activeColor = Color.Transparent;
             private readonly Vector4 _waveColor = Color.FromNonPremultiplied(0, 0, 0, 84);
-            private readonly Vector4 _chargeColor = Color.FromNonPremultiplied(255, 255, 255, 255);
+            private readonly Vector4 _refreshColor = Color.FromNonPremultiplied(255, 255, 255, 255);
             public bool ImpactsFinished = true;
             private bool _impact;
-            private bool _charge;
+            private bool _refresh;
             private bool _active;
 
             public MyEntity ShellActive;
@@ -227,7 +227,7 @@ namespace DefenseShields.Support
                 }
             }
 
-            public void ComputeEffects(MatrixD matrix, Vector3D impactPos, MyEntity shellPassive, MyEntity shellActive, int prevLod, float shieldPercent, bool passiveVisible, bool activeVisible)
+            public void ComputeEffects(MatrixD matrix, Vector3D impactPos, MyEntity shellPassive, MyEntity shellActive, int prevLod, float shieldPercent, bool activeVisible, bool refreshAnim)
             {
                 if (ShellActive == null) ComputeSides(shellActive);
 
@@ -247,7 +247,7 @@ namespace DefenseShields.Support
 
                 StepEffects();
 
-                if (_charge && ImpactsFinished && prevLod == _lod) ChargeColorAssignments(prevLod);
+                if (refreshAnim && _refresh && ImpactsFinished && prevLod == _lod) RefreshColorAssignments(prevLod);
                 if (ImpactsFinished && prevLod == _lod) return;
 
                 ImpactColorAssignments(prevLod);
@@ -320,7 +320,7 @@ namespace DefenseShields.Support
                 catch (Exception ex) { Log.Line($"Exception in ImpactColorAssignments {ex}"); }
             }
 
-            private void ChargeColorAssignments(int prevLod)
+            private void RefreshColorAssignments(int prevLod)
             {
                 try
                 {
@@ -344,10 +344,10 @@ namespace DefenseShields.Support
                                 _triColorBuffer[c] = 0;
                         }
 
-                        var dotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _chargePoint);
+                        var dotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _refreshPoint);
                         var impactFactor = (-0.69813170079773212 * dotOfNormLclImpact * dotOfNormLclImpact - 0.87266462599716477) * dotOfNormLclImpact + 1.5707963267948966;
-                        var waveMultiplier = Pi / ChargeSteps;
-                        var wavePosition = waveMultiplier * _chargeDrawStep;
+                        var waveMultiplier = Pi / RefreshSteps;
+                        var wavePosition = waveMultiplier * _refreshDrawStep;
                         var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
                         if (relativeToWavefront < .05) _triColorBuffer[j] = 2;
                         else _triColorBuffer[j] = 0;
@@ -401,10 +401,10 @@ namespace DefenseShields.Support
                         _lCount = 0;
                         if (_longerLoop == 0 && Random.Next(0, 2) == 1 || _longerLoop == 3)
                         {
-                            _charge = true;
+                            _refresh = true;
                             var localImpacts = Vector3D.Zero - _matrix.Translation;
                             localImpacts.Normalize();
-                            _chargePoint = localImpacts;
+                            _refreshPoint = localImpacts;
                         }
                         _longerLoop++;
                         if (_longerLoop == 6) _longerLoop = 0;
@@ -430,17 +430,17 @@ namespace DefenseShields.Support
                     }
 
                     ImpactsFinished = false;
-                    _charge = false;
-                    _chargeDrawStep = 0;
+                    _refresh = false;
+                    _refreshDrawStep = 0;
                 }
 
-                if (_charge)
+                if (_refresh)
                 {
-                    _chargeDrawStep++;
-                    if (_chargeDrawStep == ChargeSteps + 1)
+                    _refreshDrawStep++;
+                    if (_refreshDrawStep == RefreshSteps + 1)
                     {
-                        _charge = false;
-                        _chargeDrawStep = 0;
+                        _refresh = false;
+                        _refreshDrawStep = 0;
                         for (int i = 0; i < _triColorBuffer.Length; i++) _triColorBuffer[i] = 0;
                     }
                 }
@@ -518,7 +518,7 @@ namespace DefenseShields.Support
             {
                 try
                 {
-                    if (ImpactsFinished && !_charge) return;
+                    if (ImpactsFinished && !_refresh) return;
                     var ib = _backing.IndexBuffer[_lod];
                     Vector4 color;
                     if (!ImpactsFinished)
@@ -528,7 +528,7 @@ namespace DefenseShields.Support
                     }
                     else
                     {
-                        color = _chargeColor;
+                        color = _refreshColor;
                         _faceMaterial = _faceCharge;
                     }
                     for (int i = 0, j = 0; i < ib.Length; i += 3, j++)

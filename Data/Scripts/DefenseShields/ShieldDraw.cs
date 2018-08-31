@@ -20,7 +20,7 @@ namespace DefenseShields
                 return;
             }
 
-            if (!DsSet.Settings.PassiveInvisible) _shellPassive.Render.UpdateRenderObject(true);
+            if (DsSet.Settings.Visible == 0) _shellPassive.Render.UpdateRenderObject(true);
             _shellActive.Render.UpdateRenderObject(true);
             _shellActive.Render.UpdateRenderObject(false);
         }
@@ -32,13 +32,15 @@ namespace DefenseShields
             var relation = MyAPIGateway.Session.Player.GetRelationTo(Shield.OwnerId);
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
             var renderId = Shield.CubeGrid.Render.GetRenderObjectID();
+            var percent = DsState.State.ShieldPercent;
+            var hitAnim = DsSet.Settings.HitWaveAnimation;
+            var refreshAnim = DsSet.Settings.RefreshAnimation;
             var config = MyAPIGateway.Session.Config;
             var drawIcon = !enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
             if (drawIcon) UpdateIcon();
 
-            var passiveVisible = !DsSet.Settings.PassiveInvisible || enemy;
             var activeVisible = !DsSet.Settings.ActiveInvisible || enemy;
-            CalcualteVisibility(passiveVisible, activeVisible);
+            CalcualteVisibility(DsSet.Settings.Visible, activeVisible);
 
             var impactPos = WorldImpactPosition;
             _localImpactPosition = Vector3D.NegativeInfinity;
@@ -59,9 +61,9 @@ namespace DefenseShields
                 var prevlod = _prevLod;
                 var lod = CalculateLod(_onCount);
                 if (_shapeChanged || _updateRender || lod != prevlod) Icosphere.CalculateTransform(_shieldShapeMatrix, lod);
-                Icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, DsState.State.ShieldPercent, passiveVisible, activeVisible);
+                Icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, percent, activeVisible, refreshAnim);
             }
-            if (sphereOnCamera && Shield.IsWorking) Icosphere.Draw(renderId);
+            if (hitAnim && sphereOnCamera && Shield.IsWorking) Icosphere.Draw(renderId);
 
             _updateRender = false;
             _shapeChanged = false;
@@ -110,15 +112,16 @@ namespace DefenseShields
             _effect = null;
         }
 
-        private void CalcualteVisibility(bool passiveVisible, bool activeVisible)
+        private void CalcualteVisibility(long visible, bool activeVisible)
         {
-            if (WorldImpactPosition != Vector3D.NegativeInfinity) HitCoolDown = -10;
-            else if (HitCoolDown > -11) HitCoolDown++;
+            var isVisible = visible != 1;
+            if (isVisible && WorldImpactPosition != Vector3D.NegativeInfinity) HitCoolDown = -10;
+            else if (isVisible && HitCoolDown > -11) HitCoolDown++;
             if (HitCoolDown > 59) HitCoolDown = -11;
-            var passiveSet = !passiveVisible && !_hideShield && HitCoolDown == -11;
-            var passiveReset = passiveVisible && _hideShield || _hideShield && !passiveVisible && !activeVisible && _hideShield && HitCoolDown == -10;
-            var passiveFade = HitCoolDown > -1 && !passiveVisible && !activeVisible;
-            var fadeReset = !passiveFade && !activeVisible && HitCoolDown != -11;
+            var passiveSet = visible != 0 && !_hideShield && HitCoolDown == -11;
+            var passiveReset = visible == 0 && _hideShield || _hideShield && visible == 2 && !activeVisible && _hideShield && HitCoolDown == -10;
+            var passiveFade = HitCoolDown > -1 && visible == 2 && !activeVisible;
+            var fadeReset = visible == 2 && !passiveFade && !activeVisible && HitCoolDown != -11;
 
             if (fadeReset)
             {
@@ -155,7 +158,6 @@ namespace DefenseShields
             if (playerEnt == null || DsState.State.Online && !FriendlyCache.Contains(playerEnt) || !DsState.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
             {
                 if (Session.HudComp != this) return;
-                if (Session.Enforced.Debug == 1) Log.Line($"RemHudComp: {playerEnt == null} - {DsState.State.Online && !FriendlyCache.Contains(playerEnt)} - {!CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv)} - ShieldId [{Shield.EntityId}]");
                 Session.HudComp = null;
                 Session.HudShieldDist = double.MaxValue;
                 return;

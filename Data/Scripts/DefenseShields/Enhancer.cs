@@ -172,7 +172,7 @@ namespace DefenseShields
         public void UpdateState(ProtoEnhancerState newState)
         {
             EnhState.State = newState;
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdateState: EnhancerId [{Enhancer.EntityId}]");
+            if (Session.Enforced.Debug >= 1) Log.Line($"UpdateState: EnhancerId [{Enhancer.EntityId}]");
         }
 
         public override void OnAddedToContainer()
@@ -183,7 +183,7 @@ namespace DefenseShields
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
                 ContainerInited = true;
-                if (Session.Enforced.Debug == 1) Log.Line($"ContainerInited:  EmitterId [{Enhancer.EntityId}]");
+                if (Session.Enforced.Debug >= 1) Log.Line($"ContainerInited:  EmitterId [{Enhancer.EntityId}]");
             }
             if (Entity.InScene) OnAddedToScene();
         }
@@ -219,12 +219,7 @@ namespace DefenseShields
         {
             if (Session.IsServer)
             {
-                if (Enhancer.Storage != null)
-                {
-                    EnhState.SaveState();
-                    if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: saved before replication - EmitterId [{Enhancer.EntityId}]");
-                }
-                else if (Session.Enforced.Debug == 1) Log.Line($"IsSerializedCalled: not saved - StoageNull:{Enhancer.Storage == null} - EmitterId [{Enhancer.EntityId}]");
+                if (Enhancer.Storage != null) EnhState.SaveState();
             }
             return false;
         }
@@ -268,7 +263,7 @@ namespace DefenseShields
                     Enhancer.Enabled = true;
                 }
                 Sink.Update();
-                if (Session.Enforced.Debug == 1) Log.Line($"PowerInit: EnhancerId [{Enhancer.EntityId}]");
+                if (Session.Enforced.Debug >= 1) Log.Line($"PowerInit: EnhancerId [{Enhancer.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }

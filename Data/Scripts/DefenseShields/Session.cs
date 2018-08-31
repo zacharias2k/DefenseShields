@@ -95,12 +95,14 @@ namespace DefenseShields
         public IMyTerminalControlCheckbox SphereFit;
         public IMyTerminalControlCheckbox FortifyShield;
         public IMyTerminalControlCheckbox BatteryBoostCheckBox;
-        public IMyTerminalControlCheckbox HidePassiveCheckBox;
         public IMyTerminalControlCheckbox HideActiveCheckBox;
+        public IMyTerminalControlCheckbox RefreshAnimationCheckBox;
+        public IMyTerminalControlCheckbox HitWaveAnimationCheckBox;
+
         public IMyTerminalControlCheckbox SendToHudCheckBox;
         public IMyTerminalControlOnOffSwitch ToggleShield;
         public IMyTerminalControlCombobox ShellSelect;
-
+        public IMyTerminalControlCombobox ShellVisibility;
 
         public IMyTerminalControlSlider ModDamage;
         public IMyTerminalControlCheckbox ModVoxels;
@@ -144,7 +146,7 @@ namespace DefenseShields
                 if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter += CustomControls;
                 if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomActionGetter += ShowHideActions;
 
-                if (DedicatedServer || IsServer)
+                if (IsServer)
                 {
                     Log.Line($"LoadConf - Session: This is a server");
                     UtilsStatic.PrepConfigFile();
@@ -196,7 +198,6 @@ namespace DefenseShields
         public override void Draw()
         {
             if (DedicatedServer) return;
-            if (Enforced.Debug == 1 && _eCount == 0 & _lCount == 0 && _count == 0) Log.Line($"Draw - Session: Comps in the world: {Components.Count.ToString()}");
             try
             {
                 if (Components.Count == 0) return;
@@ -1019,7 +1020,7 @@ namespace DefenseShields
                 TerminalHelpers.Separator(comp?.Shield, "DS-C_sep0");
                 ToggleShield = TerminalHelpers.AddOnOff(comp?.Shield, "DS-C_ToggleShield", "Shield Status", "Raise or Lower Shields", "Up", "Down", DsUi.GetRaiseShield, DsUi.SetRaiseShield);
                 TerminalHelpers.Separator(comp?.Shield, "DS-C_sep1");
-                ChargeSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_ChargeRate", "Shield Charge Rate", "Shield Charge Rate", DsUi.GetRate, DsUi.SetRate);
+                ChargeSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_ChargeRate", "Shield Charge Rate", "Percentage Of Power The Shield May Consume", DsUi.GetRate, DsUi.SetRate);
                 ChargeSlider.SetLimits(20, 95);
 
                 if (comp != null && comp.GridIsMobile)
@@ -1042,12 +1043,18 @@ namespace DefenseShields
                 DepthSlider.SetLimits(30, 600);
                 TerminalHelpers.Separator(comp?.Shield, "DS-C_sep4");
 
-                HidePassiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_HidePassive", "Make Shield Invisible To Allies", "Make Shield Invisible To Allies", DsUi.GetHidePassive, DsUi.SetHidePassive);
-                HideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_HideActive", "Hide Shield Health On Hit", "Hide Shield Health On Hit", DsUi.GetHideActive, DsUi.SetHideActive);
-                SendToHudCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_HideIcon", "Broadcast Shield Status To Huds", "Broadcast Shield Status To Huds", DsUi.GetSendToHud, DsUi.SetSendToHud);
-                BatteryBoostCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_UseBatteries", "Batteries Contribute To Shields", "Batteries Contribute To Shields", DsUi.GetBatteries, DsUi.SetBatteries);
-
+                BatteryBoostCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_UseBatteries", "Batteries Contribute To Shields", "Batteries May Contribute To Shield Strength", DsUi.GetBatteries, DsUi.SetBatteries);
+                SendToHudCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_HideIcon", "Broadcast Shield Status To Hud", "Broadcast Shield Status To Nearby Friendly Huds", DsUi.GetSendToHud, DsUi.SetSendToHud);
+                TerminalHelpers.Separator(comp?.Shield, "DS-C_sep5");
                 ShellSelect = TerminalHelpers.AddCombobox(comp?.Shield, "DS-C_ShellSelect", "Select Shield Look", "Select shield's shell texture", DsUi.GetShell, DsUi.SetShell, DsUi.ListShell);
+
+                ShellVisibility = TerminalHelpers.AddCombobox(comp?.Shield, "DS-C_ShellSelect", "Select Shield Visibility", "Determines when the shield is visible", DsUi.GetVisible, DsUi.SetVisible, DsUi.ListVisible);
+
+                HideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_HideActive", "Hide Shield Health On Hit  ", "Hide Shield Health Grid On Hit", DsUi.GetHideActive, DsUi.SetHideActive);
+
+                RefreshAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_RefreshAnimation", "Show Refresh Animation  ", "Show Random Refresh Animation", DsUi.GetRefreshAnimation, DsUi.SetRefreshAnimation);
+                HitWaveAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_HitWaveAnimation", "Show Hit Wave Animation", "Show Wave Effect On Shield Damage", DsUi.GetHitWaveAnimation, DsUi.SetHitWaveAnimation);
+
                 CreateAction<IMyUpgradeModule>(ToggleShield);
 
                 CreateActionChargeRate<IMyUpgradeModule>(ChargeSlider);
@@ -1056,8 +1063,9 @@ namespace DefenseShields
                 CreateAction<IMyUpgradeModule>(SphereFit);
                 CreateAction<IMyUpgradeModule>(FortifyShield);
 
-                CreateAction<IMyUpgradeModule>(HidePassiveCheckBox);
                 CreateAction<IMyUpgradeModule>(HideActiveCheckBox);
+                CreateAction<IMyUpgradeModule>(RefreshAnimationCheckBox);
+                CreateAction<IMyUpgradeModule>(HitWaveAnimationCheckBox);
                 CreateAction<IMyUpgradeModule>(SendToHudCheckBox);
                 CreateAction<IMyUpgradeModule>(BatteryBoostCheckBox);
                 DsControl = true;
