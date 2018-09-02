@@ -508,22 +508,7 @@ namespace DefenseShields
             var rawMaxChargeRate = powerForShield > 0 ? powerForShield : 0f;
             _shieldMaxChargeRate = rawMaxChargeRate;
             _shieldMaxBuffer = _gridMaxPower * bufferScaler;
-            /*
-            if (_sizeScaler < 1)
-            {
-                if (DsState.State.Buffer + _shieldMaxChargeRate * nerfer < _shieldMaxBuffer)
-                {
-                    _shieldChargeRate = _shieldMaxChargeRate * nerfer;
-                    _shieldConsumptionRate = _shieldMaxChargeRate;
-                }
-                else if (_shieldMaxBuffer - DsState.State.Buffer > 0)
-                {
-                    _shieldChargeRate = _shieldMaxBuffer - DsState.State.Buffer;
-                    _shieldConsumptionRate = _shieldChargeRate;
-                }
-                else _shieldConsumptionRate = 0f;
-            }
-            */
+
             if (DsState.State.Buffer + _shieldMaxChargeRate / (_sizeScaler / nerfer) < _shieldMaxBuffer)
             {
                 _shieldChargeRate = _shieldMaxChargeRate / ((float)_sizeScaler / nerfer);
@@ -670,7 +655,6 @@ namespace DefenseShields
                                          "\n" +
                                          "\n[Grid Owns Controller]: " + DsState.State.IsOwner +
                                          "\n[In Grid's Faction]: " + DsState.State.InFaction);
-
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in Controller AppendingCustomInfo: {ex}"); }

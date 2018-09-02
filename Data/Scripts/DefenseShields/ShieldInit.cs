@@ -356,6 +356,9 @@ namespace DefenseShields
                     case 9:
                         _modelPassive = ModelCyan;
                         break;
+                    case 10:
+                        _modelPassive = ModelTest;
+                        break;
                     default:
                         _modelPassive = ModelMediumReflective;
                         break;

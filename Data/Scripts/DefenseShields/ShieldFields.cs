@@ -49,7 +49,6 @@ namespace DefenseShields
         private float _shieldMaintaintPower;
         private float _shieldConsumptionRate;
         private float _oldShieldFudge;
-        private double _scaleFactor;
 
         internal double BoundingRange;
         private double _oldEllipsoidAdjust;
@@ -82,7 +81,6 @@ namespace DefenseShields
 
         private int _prevLod;
         private int _onCount;
-        private int _oldBlockCount;
         private int _shieldRatio;
 
         internal bool WasOnline;
@@ -126,7 +124,6 @@ namespace DefenseShields
         private bool _updateMobileShape;
         private bool _clientLowered;
         private bool _clientOn;
-        private bool _updateStateNow;
 
         private const string SpaceWolf = "Space_Wolf";
         private const string MyMissile = "MyMissile";
@@ -143,6 +140,7 @@ namespace DefenseShields
         private const string ModelGold = "\\Models\\Cubes\\ShieldPassive05.mwm";
         private const string ModelOrange = "\\Models\\Cubes\\ShieldPassive04.mwm";
         private const string ModelCyan = "\\Models\\Cubes\\ShieldPassive03.mwm";
+        private const string ModelTest = "\\Models\\Cubes\\ShieldPassive02.mwm";
 
         private Vector2D _shieldIconPos = new Vector2D(-0.89, -0.86);
 
@@ -232,6 +230,18 @@ namespace DefenseShields
         private static readonly MyStringId HudIconDps80 = MyStringId.GetOrCompute("DS_ShieldDps80");
         private static readonly MyStringId HudIconDps90 = MyStringId.GetOrCompute("DS_ShieldDps90");
         private static readonly MyStringId HudIconDps100 = MyStringId.GetOrCompute("DS_ShieldDps100");
+
+        //private static readonly MyStringId HudIconHeat = MyStringId.GetOrCompute("DS_HudIconHeat");
+        private static readonly MyStringId HudIconHeat10 = MyStringId.GetOrCompute("DS_ShieldHeat10");
+        private static readonly MyStringId HudIconHeat20 = MyStringId.GetOrCompute("DS_ShieldHeat20");
+        private static readonly MyStringId HudIconHeat30 = MyStringId.GetOrCompute("DS_ShieldHeat30");
+        private static readonly MyStringId HudIconHeat40 = MyStringId.GetOrCompute("DS_ShieldHeat40");
+        private static readonly MyStringId HudIconHeat50 = MyStringId.GetOrCompute("DS_ShieldHeat50");
+        private static readonly MyStringId HudIconHeat60 = MyStringId.GetOrCompute("DS_ShieldHeat60");
+        private static readonly MyStringId HudIconHeat70 = MyStringId.GetOrCompute("DS_ShieldHeat70");
+        private static readonly MyStringId HudIconHeat80 = MyStringId.GetOrCompute("DS_ShieldHeat80");
+        private static readonly MyStringId HudIconHeat90 = MyStringId.GetOrCompute("DS_ShieldHeat90");
+        private static readonly MyStringId HudIconHeat100 = MyStringId.GetOrCompute("DS_ShieldHeat100");
 
         private readonly MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
         private readonly MyStringHash DelDamage = MyStringHash.GetOrCompute("DelDamage");

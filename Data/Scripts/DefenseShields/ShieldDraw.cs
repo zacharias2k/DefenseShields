@@ -191,16 +191,19 @@ namespace DefenseShields
             scale = scaler * scale;
 
             var icon2FSelect = GetIconMeterfloat();
-            var p = DsState.State.ShieldPercent;
+            var percent = DsState.State.ShieldPercent;
+            var heat = DsState.State.Heat;
 
-            var icon1 = GetHudIcon1FromFloat(p);
+            var icon1 = GetHudIcon1FromFloat(percent);
             var icon2 = GetHudIcon2FromFloat(icon2FSelect);
+            var icon3 = GetHudIcon3FromInt(heat, _lCount % 2 == 0);
             var showIcon2 = DsState.State.Online;
             Color color;
-            if (p > 0 && p < 10 && _lCount % 2 == 0) color = Color.Red;
+            if (percent > 0 && percent < 10 && _lCount % 2 == 0) color = Color.Red;
             else color = Color.White;
             MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.LDR); // LDR for mptest, SDR for public
             if (showIcon2 && icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.LDR);
+            if (icon3 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon3, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.LDR);
         }
 
         private float GetIconMeterfloat()
@@ -257,6 +260,21 @@ namespace DefenseShields
             if (fState <= -30) return HudIconDps30;
             if (fState <= -20) return HudIconDps20;
             if (fState < -10) return HudIconDps10;
+            return MyStringId.NullOrEmpty;
+        }
+
+        public static MyStringId GetHudIcon3FromInt(int heat, bool flash)
+        {
+            if (heat == 100 && flash) return HudIconHeat100;
+            if (heat == 90) return HudIconHeat90;
+            if (heat == 80) return HudIconHeat80;
+            if (heat == 70) return HudIconHeat70;
+            if (heat == 60) return HudIconHeat60;
+            if (heat == 50) return HudIconHeat50;
+            if (heat == 40) return HudIconHeat40;
+            if (heat == 30) return HudIconHeat30;
+            if (heat == 20) return HudIconHeat20;
+            if (heat == 10) return HudIconHeat10;
             return MyStringId.NullOrEmpty;
         }
 
