@@ -203,7 +203,7 @@ namespace DefenseShields
             else color = Color.White;
             MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.LDR); // LDR for mptest, SDR for public
             if (showIcon2 && icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.LDR);
-            if (icon3 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon3, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.LDR);
+            if (icon3 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon3, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.AdditiveBottom);
         }
 
         private float GetIconMeterfloat()
@@ -215,7 +215,7 @@ namespace DefenseShields
             var damage = dps - _shieldChargeRate;
 
             if (healing > 0 && _damageCounter > 1) return healing;
-            else return -damage;
+            return -damage;
         }
 
         public static MyStringId GetHudIcon1FromFloat(float percent)
