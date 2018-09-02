@@ -23,11 +23,10 @@ namespace DefenseShields
         #region Setup
         private uint _tick;
         private uint _shieldEntRendId;
-        private uint _enforceTick;
+        private uint _losCheckTick;
         private uint _hierarchyTick = 1;
         private uint _shapeTick;
         private uint _heatVentingTick = uint.MaxValue;
-        private uint _delayedClientWarmTick;
         internal uint UnsuspendTick;
 
         internal float ImpactSize { get; set; } = 9f;
@@ -50,6 +49,7 @@ namespace DefenseShields
         private float _shieldMaintaintPower;
         private float _shieldConsumptionRate;
         private float _oldShieldFudge;
+        private double _scaleFactor;
 
         internal double BoundingRange;
         private double _oldEllipsoidAdjust;
@@ -91,7 +91,6 @@ namespace DefenseShields
         internal bool DeformEnabled;
         internal bool ExplosionEnabled;
         internal bool ControlBlockWorking;
-        internal bool MainInit;
         internal bool PrePowerInit;
         internal bool PowerInited;
         internal bool HadPowerBefore;

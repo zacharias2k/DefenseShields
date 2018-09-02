@@ -1,42 +1,38 @@
-﻿using DefenseShields.Support;
+﻿using System;
+using DefenseShields.Support;
+using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 
 namespace DefenseShields
 {
     internal class Enforcements
     {
-        public static void UpdateEnforcement(DefenseShieldsEnforcement newEnforce)
+        public static void SaveEnforcement(IMyFunctionalBlock shield, DefenseShieldsEnforcement enforce, bool createStorage = false)
         {
-            Session.Enforced.Nerf = newEnforce.Nerf;
-            Session.Enforced.BaseScaler = newEnforce.BaseScaler;
-            Session.Enforced.Efficiency = newEnforce.Efficiency;
-            Session.Enforced.StationRatio = newEnforce.StationRatio;
-            Session.Enforced.LargeShipRatio = newEnforce.LargeShipRatio;
-            Session.Enforced.SmallShipRatio = newEnforce.SmallShipRatio;
-            Session.Enforced.DisableVoxelSupport = newEnforce.DisableVoxelSupport;
-            Session.Enforced.DisableGridDamageSupport = newEnforce.DisableGridDamageSupport;
-            Session.Enforced.Debug = newEnforce.Debug;
-            Session.Enforced.AltRecharge = newEnforce.AltRecharge;
-            Session.Enforced.Version = newEnforce.Version;
-            Session.Enforced.SenderId = newEnforce.SenderId;
+            if (createStorage && shield.Storage == null) shield.Storage = new MyModStorageComponent();
+            else if (shield.Storage == null) return;
 
-            if (Session.Enforced.Debug >= 1) Log.Line($"Updated Enforcements:\n{Session.Enforced}");
+            var binary = MyAPIGateway.Utilities.SerializeToBinary(enforce);
+            shield.Storage[Session.Instance.ControllerEnforceGuid] = Convert.ToBase64String(binary);
+            Log.Line($"Enforcement Saved - Version:{enforce.Version} - ShieldId [{shield.EntityId}]");
         }
 
-        public static void EnforcementRequest(long shieldId)
+        public static DefenseShieldsEnforcement LoadEnforcement(IMyFunctionalBlock shield)
         {
-            if (Session.IsServer)
-            {
-                Log.Line($"I am the host, no one has power over me:\n{Session.Enforced}");
-            }
-            else
-            {
-                Log.Line($"Client [{MyAPIGateway.Multiplayer.MyId}] requesting enforcement - current:\n{Session.Enforced}");
-                Session.Enforced.SenderId = MyAPIGateway.Multiplayer.MyId;
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataEnforce(MyAPIGateway.Multiplayer.MyId, shieldId, Session.Enforced));
-                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdEnforce, bytes);
-            }
-        }
+            if (shield.Storage == null) return null;
 
+            string rawData;
+
+            if (shield.Storage.TryGetValue(Session.Instance.ControllerEnforceGuid, out rawData))
+            {
+                DefenseShieldsEnforcement loadedEnforce = null;
+                var base64 = Convert.FromBase64String(rawData);
+                loadedEnforce = MyAPIGateway.Utilities.SerializeFromBinary<DefenseShieldsEnforcement>(base64);
+                Log.Line($"Enforcement Loaded {loadedEnforce != null} - Version:{loadedEnforce?.Version} - ShieldId [{shield.EntityId}]");
+                if (loadedEnforce != null) return loadedEnforce;
+            }
+            Log.Line($"Enforcement Not Loaded - ShieldId [{shield.EntityId}]");
+            return null;
+        }
     }
 }

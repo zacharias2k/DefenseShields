@@ -27,6 +27,7 @@ namespace DefenseShields
                 {
                     if (Session.Enforced.Debug >= 1 && WasOnline) Log.Line($"Off: WasOn:{WasOnline} - On:{DsState.State.Online} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
                     if (WasOnline) ShieldOff(isServer);
+                    else if (DsState.State.Message) ShieldChangeState();
                     return;
                 }
                 if (Session.Enforced.Debug >= 1 && !WasOnline) Log.Line($"On: WasOn:{WasOnline} - On:{DsState.State.Online} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
@@ -101,7 +102,7 @@ namespace DefenseShields
                 SyncThreadedEnts(true);
                 _offlineCnt = -1;
                 ShieldChangeState();
-                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ComingOnlineSetup");
+                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
 
             }
             else Shield.RefreshCustomInfo();
@@ -130,8 +131,9 @@ namespace DefenseShields
                     SettingsUpdated = false;
                     DsSet.SaveSettings();
                     ResetShape(false, false);
-                    if (Session.Enforced.Debug >= 1) Log.Line($"SettingsUpdated - server:{Session.IsServer} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug >= 1) Log.Line($"SettingsUpdated: server:{Session.IsServer} - ShieldId [{Shield.EntityId}]");
                 }
+
                 if (_blockEvent) BlockChanged(true);
             }
             else if (_count == 34)
@@ -192,6 +194,7 @@ namespace DefenseShields
             {
                 _blockEvent = true;
                 _shapeEvent = true;
+                _losCheckTick = _tick + 1800;
                 if (_blockAdded) _shapeTick = _tick + 300;
                 else _shapeTick = _tick + 1800;
             }
@@ -378,13 +381,12 @@ namespace DefenseShields
             var isServer = Session.IsServer;
             if (MyGridDistributor != null)
             {   
-                if (!UpdateGridPower() && !isServer) return false;
+                if (!UpdateGridPower()) return false;
             }
-            else if (!UpdateGridPower(true) && !isServer) return false;
+            else if (!UpdateGridPower(true)) return false;
 
             CalculatePowerCharge();
             _power = _shieldConsumptionRate + _shieldMaintaintPower;
-
             if (!WarmedUp) return true;
             if (isServer && HadPowerBefore && _shieldConsumptionRate.Equals(0f) && DsState.State.Buffer.Equals(0.01f) && _genericDownLoop == -1)
             {
@@ -641,7 +643,6 @@ namespace DefenseShields
                     otherPower = _otherPower + _batteryCurrentPower;
                     gridMaxPower = gridMaxPower + _batteryMaxPower;
                 }
-
                 var status = GetShieldStatus();
                 if (status == "[Shield Up]" || status == "[Shield Down]")
                 {
@@ -654,7 +655,7 @@ namespace DefenseShields
                                          "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
                                          "\n[Over Heated]: " + DsState.State.Heat.ToString("0") + "%" +
                                          "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
-                                         "\n[Power Usage]: " + powerUsage.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw" +
+                                         "\n[Power Usage]: " + powerUsage.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ")Mw" +
                                          "\n[Shield Power]: " + Sink.CurrentInputByType(GId).ToString("0.0") + " Mw");
                 }
                 else

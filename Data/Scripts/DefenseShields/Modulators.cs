@@ -372,7 +372,7 @@ namespace DefenseShields
                     Modulator.Enabled = true;
                 }
                 Sink.Update();
-                if (Session.Enforced.Debug >= 1) Log.Line($"PowerInit complete");
+                if (Session.Enforced.Debug >= 1) Log.Line($"PowerInit: ModulatorId [{Modulator.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }

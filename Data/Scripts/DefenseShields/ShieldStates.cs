@@ -21,12 +21,9 @@ namespace DefenseShields
 
         private void ShieldChangeState()
         {
-            if (!WarmedUp)
-            {
-                if (Session.Enforced.Debug >= 1) Log.Line($"ShieldChangeState: Not Ready");
-                return;
-            }
+            if (!WarmedUp) return;
             if (Session.Enforced.Debug >= 2) Log.Line($"ShieldChangeState: Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
+            else if (Session.Enforced.Debug >= 1 && DsState.State.Message) Log.Line($"ShieldChangeState: Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
 
             DsState.SaveState();
             if (Session.MpActive) DsState.NetworkUpdate();
@@ -93,6 +90,8 @@ namespace DefenseShields
 
             if (_blockChanged) BlockMonitor();
 
+            if (_tick >= _losCheckTick) LosCheck();
+
             if (Suspend() || !WarmUpSequence() || ShieldSleeping() || ShieldLowered()) return false;
 
             if (ShieldComp.EmitterEvent) EmitterEventDetected();
@@ -137,7 +136,6 @@ namespace DefenseShields
             else if (ComingOnline && PrevShieldActive && DsState.State.Online) ComingOnline = false;
 
             PrevShieldActive = DsState.State.Online;
-
             if (!GridIsMobile && (ComingOnline || !DsState.State.IncreaseO2ByFPercent.Equals(EllipsoidOxyProvider.O2Level)))
             {
                 EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
@@ -152,6 +150,12 @@ namespace DefenseShields
                 return true;
             }
             return false;
+        }
+
+        private void LosCheck()
+        {
+            _losCheckTick = uint.MaxValue;
+            ShieldComp.CheckEmitters = true;
         }
 
         private bool ShieldWaking()
@@ -219,8 +223,10 @@ namespace DefenseShields
             if (!ShieldComp.EmittersWorking)
             {
                 DsState.State.EmitterWorking = false;
+                if (GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los) DsState.State.Message = true;
+                else if (!GridIsMobile && ShieldComp.StationEmitter != null && !ShieldComp.StationEmitter.EmiState.State.Los) DsState.State.Message = true;
                 _genericDownLoop = 0;
-                if (Session.Enforced.Debug >= 1) Log.Line($"EmitterEvent: detected an emitter event and no emitter is working, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 1) Log.Line($"EmitterEvent: detected an emitter event and no emitter is working, shield mode: {ShieldMode} - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
                 return;
             }
             DsState.State.EmitterWorking = true;
@@ -233,8 +239,17 @@ namespace DefenseShields
                 if (DsState.State.Online)
                 {
                     DsState.State.Online = false;
-                    if (_overLoadLoop != -1) DsState.State.Overload = true;
-                    if (_reModulationLoop != -1) DsState.State.Remodulate = true;
+                    if (_overLoadLoop != -1)
+                    {
+                        DsState.State.Overload = true;
+                        DsState.State.Message = true;
+                    }
+
+                    if (_reModulationLoop != -1)
+                    {
+                        DsState.State.Remodulate = true;
+                        DsState.State.Message = true;
+                    }
                     ShieldFailed();
                 }
             }
@@ -550,28 +565,32 @@ namespace DefenseShields
         private void PlayerMessages(PlayerNotice notice)
         {
             var realPlayerIds = new HashSet<long>();
+            Vector3D center;
+            center = GridIsMobile ? Shield.CubeGrid.WorldVolume.Center : ShieldComp.StationEmitter.Emitter.WorldVolume.Center;
             switch (notice)
             {
                 case PlayerNotice.EmitterInit:
-                    UtilsStatic.GetRealPlayers(Shield.CubeGrid.PositionComp.WorldAABB.Center, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
+                    UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
                     foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- emitter is initializing and connecting to controller, startup in 30 seconds!", 4816, "Red");
                     break;
                 case PlayerNotice.FieldBlocked:
-                    UtilsStatic.GetRealPlayers(Shield.CubeGrid.PositionComp.WorldAABB.Center, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
+                    UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
                     foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("The shield's field cannot form when in contact with a solid body", 6720, "Blue");
                     break;
                 case PlayerNotice.OverLoad:
-                    UtilsStatic.GetRealPlayers(Shield.CubeGrid.PositionComp.WorldAABB.Center, 500f, realPlayerIds);
+                    UtilsStatic.GetRealPlayers(center, 500f, realPlayerIds);
                     foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 8000, "Red");
                     break;
                 case PlayerNotice.Remodulate:
-                    UtilsStatic.GetRealPlayers(Shield.CubeGrid.PositionComp.WorldAABB.Center, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
+                    UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
                     foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield remodremodulating, restarting in 5 seconds.", 4800, "White");
                     break;
                 case PlayerNotice.NoLos:
+                    UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
+                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- Emitter does not have line of sight, shield offline", 8000, "Red");
                     break;
                 case PlayerNotice.NoPower:
-                    UtilsStatic.GetRealPlayers(Shield.CubeGrid.PositionComp.WorldAABB.Center, (float)Shield.CubeGrid.PositionComp.WorldVolume.Radius, realPlayerIds);
+                    UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
                     foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- Insufficient Power, shield is failing!", 5000, "Red");
                     break;
             }
@@ -580,7 +599,12 @@ namespace DefenseShields
 
         private void BroadcastMessage()
         {
-            if (DsState.State.NoPower) PlayerMessages(PlayerNotice.NoPower);
+            if (!DsState.State.EmitterWorking)
+            {
+                if (GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los) PlayerMessages(PlayerNotice.NoLos);
+                else if (!GridIsMobile && ShieldComp.StationEmitter != null && !ShieldComp.StationEmitter.EmiState.State.Los) PlayerMessages(PlayerNotice.NoLos);
+            }
+            else if (DsState.State.NoPower) PlayerMessages(PlayerNotice.NoPower);
             else if (DsState.State.Overload) PlayerMessages(PlayerNotice.OverLoad);
             else if (DsState.State.FieldBlocked) PlayerMessages(PlayerNotice.FieldBlocked);
             else if (DsState.State.Waking) PlayerMessages(PlayerNotice.EmitterInit);
@@ -610,11 +634,12 @@ namespace DefenseShields
                     _clientOn = false;
                     Shield.RefreshCustomInfo();
                 }
+                PrevShieldActive = false;
                 return true;
             }
 
             var offline = DsState.State.Suspended || !DsState.State.Online || DsState.State.Sleeping || !DsState.State.ControllerGridAccess
-                          || !DsState.State.EmitterWorking || DsState.State.Remodulate || DsState.State.Waking;
+                          || !DsState.State.EmitterWorking || DsState.State.Remodulate || DsState.State.Waking || DsState.State.Overload;
             if (offline)
             {
                 if (_clientOn)
@@ -624,6 +649,7 @@ namespace DefenseShields
                     _clientOn = false;
                     Shield.RefreshCustomInfo();
                 }
+                PrevShieldActive = false;
                 return true;
             }
 
@@ -645,27 +671,11 @@ namespace DefenseShields
                 return true;
             }
 
-            if (!Session.IsServer)
+            if (Session.IsServer)
             {
-                if ((!DsState.State.EmitterWorking || !DsState.State.Online || DsState.State.NoPower || !DsState.State.ControllerGridAccess) || !PowerOnline())
-                {
-                    if (_delayedClientWarmTick == 0)
-                    {
-                        if (GridIsMobile) MobileUpdate();
-                        _delayedClientWarmTick = _tick + 120;
-                    }
-                    if (_tick >= _delayedClientWarmTick)
-                    {
-                        WarmingInit();
-                        _delayedClientWarmTick = _tick + 120;
-                    }
-                    return false;
-                }
-
+                HadPowerBefore = true;
+                ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
             }
-
-            HadPowerBefore = true;
-            ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
             WarmingInit();
             return false;
         }
@@ -698,7 +708,6 @@ namespace DefenseShields
         public void UpdateState(ProtoControllerState newState)
         {
             DsState.State = newState;
-            if (!MainInit) return;
             if (Session.Enforced.Debug == 2) Log.Line($"UpdateState - server:{Session.IsServer} - ShieldId [{Shield.EntityId}]:\n{newState}");
         }
     }

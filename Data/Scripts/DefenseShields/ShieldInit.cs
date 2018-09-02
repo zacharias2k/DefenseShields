@@ -84,6 +84,7 @@ namespace DefenseShields
                 Session.Instance.Components.Add(this);
                 RegisterEvents();
                 PowerInit();
+                if (Session.IsServer) Enforcements.SaveEnforcement(Shield, Session.Enforced, true);
                 if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
             }
             catch (Exception ex) { Log.Line($"Exception in Controller UpdateOnceBeforeFrame: {ex}"); }
@@ -94,19 +95,10 @@ namespace DefenseShields
             try
             {
                 if (AllInited) return true;
+                var isServer = Session.IsServer;
                 if (Shield.CubeGrid.Physics == null) return false;
-                if (!Session.EnforceInit)
-                {
-                    if (Session.IsServer) ServerEnforcementSetup();
-                    else if (_enforceTick == 0 || _tick == _enforceTick)
-                    {
-                        _enforceTick = _tick + 120;
-                        ClientEnforcementRequest();
-                    }
-                    if (!Session.EnforceInit) return false;
-                }
 
-                if (Session.IsServer && (ShieldComp.EmitterMode < 0 || ShieldComp.EmittersSuspended))
+                if (isServer && (ShieldComp.EmitterMode < 0 || ShieldComp.EmittersSuspended))
                 {
                     if (_tick % 600 == 0)
                     {
@@ -116,50 +108,48 @@ namespace DefenseShields
                     return false;
                 }
 
-                if (!Session.IsServer && !DsState.State.Online) return false;
+                if (!isServer && !DsState.State.Online || EnforcementInvalid()) return false;
 
-                if (!MainInit)
-                {
-                    Session.Instance.CreateControllerElements(Shield);
-                    SetShieldType(false);
+                Session.Instance.CreateControllerElements(Shield);
+                SetShieldType(false);
+                CleanUp(3);
 
-                    CleanUp(3);
-                    MainInit = true;
-                }
+                if (!Shield.IsFunctional || isServer && !BlockReady()) return false;
 
-                if (!Shield.IsFunctional || Session.IsServer && (!MainInit || !BlockReady()) || !Session.IsServer && !MainInit) return false;
-
-                if (Session.EnforceInit)
-                {
-                    AllInited = true;
-                }
+                AllInited = true;
                 if (Session.Enforced.Debug >= 1) Log.Line($"AllInited: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in Controller PostInit: {ex}"); }
-
-            return false;
+            return !Session.IsServer;
         }
 
         private void StorageSetup()
         {
-            if (DsSet == null) DsSet = new ControllerSettings(Shield);
-            if (DsState == null) DsState = new ControllerState(Shield);
-            DsState.StorageInit();
+            try
+            {
+                if (DsSet == null) DsSet = new ControllerSettings(Shield);
+                if (DsState == null) DsState = new ControllerState(Shield);
+                DsState.StorageInit();
+                if (!Session.IsServer)
+                {
+                    var enforcement = Enforcements.LoadEnforcement(Shield);
+                    if (enforcement != null) Session.Enforced = enforcement;
 
-            DsSet.LoadSettings();
-            DsState.LoadState();
-            UpdateSettings(DsSet.Settings);
-            if (Session.Enforced.Debug >= 1) Log.Line($"StorageSetup: ShieldId [{Shield.EntityId}]");
+                }
+                Log.Line($"StorageSetup: Valid Enforcement:{Session.Enforced.Version > 0} - Version: {Session.Enforced.Version} - ShieldId [{Shield.EntityId}]");
+
+                DsSet.LoadSettings();
+                DsState.LoadState();
+                UpdateSettings(DsSet.Settings);
+            }
+            catch (Exception ex) { Log.Line($"Exception in StorageSetup: {ex}"); }
         }
 
         private void PowerPreInit()
         {
             try
             {
-                if (Sink == null)
-                {
-                    Sink = new MyResourceSinkComponent();
-                }
+                if (Sink == null) Sink = new MyResourceSinkComponent();
                 ResourceInfo = new MyResourceSinkInfo()
                 {
                     ResourceTypeId = GId,
@@ -192,6 +182,24 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 1) Log.Line($"PowerInit: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
+        }
+
+        private bool EnforcementInvalid()
+        {
+            if (Session.Enforced.Version <= 0)
+            {
+                if (!Session.IsServer)
+                {
+                    var enforcement = Enforcements.LoadEnforcement(Shield);
+                    if (enforcement != null) Session.Enforced = enforcement;
+                }
+                if (Session.Enforced.Version <= 0)
+                {
+                    Log.Line($"Enforcement Broken - Version:{Session.Enforced.Version} - retrying");
+                    return true;
+                }
+            }
+            return false;
         }
 
         private void SetShieldType(bool quickCheck)
@@ -368,27 +376,6 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 1) Log.Line($"UpdatePassiveModel: modelString:{_modelPassive} - ShellNumber:{DsSet.Settings.ShieldShell} - ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in UpdatePassiveModel: {ex}"); }
-        }
-
-        private void ClientEnforcementRequest()
-        {
-            if (Session.Enforced.Version > 0)
-            {
-                if (Session.Enforced.Debug >= 1) Log.Line($"Localenforcements: bypassing request - IsServer? {Session.IsServer} - ShieldId [{Shield.EntityId}]");
-            }
-            else
-            {
-                if (Session.Enforced.Debug >= 1) Log.Line($"ClientEnforcementRequest: Check finished - Enforcement Request?: {Session.Enforced.Version <= 0} - ShieldId [{Shield.EntityId}]");
-                Enforcements.EnforcementRequest(Shield.EntityId);
-            }
-        }
-
-        private static void ServerEnforcementSetup()
-        {
-            if (Session.Enforced.Version > 0) Session.EnforceInit = true;
-            else Log.Line($"Server has failed to set its own enforcements!! Report this as a bug");
-
-            if (Session.Enforced.Debug >= 1) Log.Line($"ServerEnforcementSetup\n{Session.Enforced}");
         }
 
         private bool BlockReady()

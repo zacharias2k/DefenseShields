@@ -28,7 +28,6 @@ namespace DefenseShields
         public const ushort PacketIdEnhancerState = 62518;
         public const ushort PacketIdControllerState = 62519; 
         public const ushort PacketIdControllerSettings = 62520; 
-        public const ushort PacketIdEnforce = 62521; 
         public const ushort PacketIdModulatorSettings = 62522; 
         public const ushort PacketIdModulatorState = 62523; // 
 
@@ -78,6 +77,7 @@ namespace DefenseShields
         public readonly Guid ControllerSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
         public readonly Guid ModulatorSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811509");
         public readonly Guid ModulatorStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811510");
+        public readonly Guid ControllerEnforceGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811511");
 
         //public string disabledBy = null;
 
@@ -136,7 +136,6 @@ namespace DefenseShields
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdControllerState, ControllerStateReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdControllerSettings, ControllerSettingsReceived);
-                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEnforce, EnforcementReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdModulatorSettings, ModulatorSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdModulatorState, ModulatorStateReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEnhancerState, EnhancerStateReceived);
@@ -341,6 +340,7 @@ namespace DefenseShields
                 foreach (var shield in Components)
                 {
                     var shieldActive = shield.DsState.State.Online && !shield.DsState.State.Lowered;
+                    if (!IsServer && shieldActive && !shield.WarmedUp) info.Amount = 0;
 
                     var blockGrid = (MyCubeGrid)block.CubeGrid;
                     if (shieldActive && shield.FriendlyCache.Contains(blockGrid))
@@ -497,49 +497,6 @@ namespace DefenseShields
         #endregion
 
         #region Network sync
-        private static void EnforcementReceived(byte[] bytes)
-        {
-            try
-            {
-                if (bytes.Length <= 2) return;
-
-                var data = MyAPIGateway.Utilities.SerializeFromBinary<DataEnforce>(bytes); // this will throw errors on invalid data
-
-                if (data == null) return;
-
-                IMyEntity ent;
-                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
-                {
-                    Log.Line($"EnforceData Received; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
-                    return;
-                }
-
-                var logic = ent.GameLogic.GetAs<DefenseShields>();
-                if (logic == null) return;
-
-                switch (data.Type)
-                {
-                    case PacketType.Enforce:
-                        {
-                            if (data.Enforce == null) return;
-
-                            if (Enforced.Debug == 1) Log.Line($"EnforceData Received; Enforce - Server:\n{data.Enforce}");
-                            if (!IsServer)
-                            {
-                                Enforcements.UpdateEnforcement(data.Enforce);
-                                logic.DsSet.SaveSettings();
-                                EnforceInit = true;
-                                if (Enforced.Debug == 1) Log.Line($"client accepted enforcement");
-                                if (Enforced.Debug == 1) Log.Line($"Client EnforceInit Complete with enforcements:\n{data.Enforce}");
-                            }
-                            else PacketizeEnforcements(logic.Shield, data.Enforce.SenderId);
-                        }
-                        break;
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in PacketEnforcementReceived: {ex}"); }
-        }
-
         private static void ControllerStateReceived(byte[] bytes)
         {
             try
@@ -791,8 +748,6 @@ namespace DefenseShields
                     {
                         if (data.State == null) return;
 
-                        if (Enforced.Debug == 1) Log.Line($"Emitter received:\n{data.State}");
-
                         if (IsServer) EmitterStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                         else logic.UpdateState(data.State);
                         }
@@ -800,13 +755,6 @@ namespace DefenseShields
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in EmitterStateReceived: {ex}"); }
-        }
-
-        public static void PacketizeEnforcements(IMyCubeBlock block, ulong senderId)
-        {
-            var data = new DataEnforce(MyAPIGateway.Multiplayer.MyId, block.EntityId, Enforced);
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            MyAPIGateway.Multiplayer.SendMessageTo(PacketIdEnforce, bytes, senderId);
         }
 
         public static void PacketizeControllerState(IMyCubeBlock block, ProtoControllerState state)

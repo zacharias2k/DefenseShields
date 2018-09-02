@@ -180,7 +180,7 @@ namespace DefenseShields
                     StateChange(true);
                 }
             }
-            else if (!EmiState.State.Link)
+            else if (!EmiState.State.Link || !ShieldComp.DefenseShields.WarmedUp)
             {
                 var stateChange = StateChange();
                 if (stateChange)
@@ -190,8 +190,6 @@ namespace DefenseShields
                 }
                 return false;
             }
-
-            if (!isServer && !ShieldComp.DefenseShields.WarmedUp) return false;
 
             return true;
         }
@@ -210,6 +208,9 @@ namespace DefenseShields
                     if (ShieldComp?.DefenseShields == null) return false;
                 }
 
+                if (EmiState.State.Mode == 0 && EmiState.State.Link && ShieldComp.StationEmitter == null) ShieldComp.StationEmitter = this;
+                else if (EmiState.State.Mode != 0 && EmiState.State.Link && ShieldComp.ShipEmitter == null) ShieldComp.ShipEmitter = this;
+
                 if (!Emitter.IsFunctional) return false;
 
                 if (!EmiState.State.Compact && _subpartRotor == null)
@@ -218,11 +219,7 @@ namespace DefenseShields
                     if (_subpartRotor == null) return false;
                 }
 
-                if (!ShieldComp.DefenseShields.Shield.IsFunctional || !ShieldComp.DefenseShields.Shield.IsWorking) return false;
-
-                if (EmiState.State.Mode == 0 && EmiState.State.Link && ShieldComp.StationEmitter == null) ShieldComp.StationEmitter = this;
-                else if (EmiState.State.Mode != 0 && EmiState.State.Link && ShieldComp.ShipEmitter == null) ShieldComp.ShipEmitter = this;
-                if (!EmiState.State.Link || !EmiState.State.Online) return false;
+                if (!EmiState.State.Link || !EmiState.State.Online || !ShieldComp.DefenseShields.Shield.IsFunctional || !ShieldComp.DefenseShields.Shield.IsWorking) return false;
             }
             return true;
         }
@@ -406,7 +403,6 @@ namespace DefenseShields
             if (losCheckReq && ShieldComp.CheckEmitters || controllerReady && TookControl) CheckShieldLineOfSight();
             //if (losCheckReq && !EmiState.State.Los && !Session.DedicatedServer) DrawHelper();
             ShieldComp.EmittersWorking = EmiState.State.Los && online;
-
             if (!ShieldComp.EmittersWorking || !ShieldComp.DefenseShields.DsState.State.Online || !(_tick >= logic.UnsuspendTick))
             {
                 BlockReset();
@@ -619,6 +615,10 @@ namespace DefenseShields
             }
             for (int i = 0; i < ShieldComp.PhysicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
             EmiState.State.Los = _blocksLos.Count < 552;
+            if (!EmiState.State.Los)
+            {
+                ShieldComp.EmitterEvent = true;
+            }
             ShieldComp.CheckEmitters = false;
             if (Session.Enforced.Debug >= 1) Log.Line($"LOS: Mode: {EmitterMode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {EmiState.State.Los.ToString()} - EmitterId [{Emitter.EntityId}]");
         }
@@ -645,6 +645,11 @@ namespace DefenseShields
             }
             if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("The shield emitter DOES NOT have a CLEAR ENOUGH LINE OF SIGHT to the shield, SHUTTING DOWN.", 960, "Red", Emitter.OwnerId);
             if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("Blue means clear line of sight, black means blocked......................................................................", 960, "Red", Emitter.OwnerId);
+        }
+
+        private void CheckEmitter(IMyTerminalBlock myTerminalBlock)
+        {
+            if (myTerminalBlock.IsWorking) ShieldComp.CheckEmitters = true;
         }
 
         public override void OnAddedToContainer()
@@ -682,6 +687,7 @@ namespace DefenseShields
                 _myRenderId = Emitter.Render.GetRenderObjectID();
                 SetEmitterType();
                 StateChange(true);
+                Emitter.EnabledChanged += CheckEmitter;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
@@ -744,7 +750,7 @@ namespace DefenseShields
                     Emitter.Enabled = true;
                 }
                 Sink.Update();
-                if (Session.Enforced.Debug >= 1) Log.Line($"PowerInit complete - EmitterId [{Emitter.EntityId}]");
+                if (Session.Enforced.Debug >= 1) Log.Line($"PowerInit: EmitterId [{Emitter.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }
