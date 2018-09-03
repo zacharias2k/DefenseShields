@@ -27,6 +27,7 @@ namespace DefenseShields
         internal bool MainInit;
         internal bool SettingsUpdated;
         internal bool IsStatic;
+        internal bool ClientUiUpdate;
 
         private uint _tick;
         private uint _hierarchyTick = 1;
@@ -240,12 +241,22 @@ namespace DefenseShields
                 Modulator.ShowInToolbarConfig = true;
             }
 
-            if ((_lCount == 1 || _lCount == 6) && _count == 1)
+            if (_count == 33)
             {
                 if (SettingsUpdated)
                 {
                     SettingsUpdated = false;
                     ModSet.SaveSettings();
+                    ModState.SaveState();
+                    if (Session.Enforced.Debug >= 1) Log.Line($"SettingsUpdated: server:{Session.IsServer} - ModulatorId [{Modulator.EntityId}]");
+                }
+            }
+            else if (_count == 34)
+            {
+                if (ClientUiUpdate && !Session.IsServer)
+                {
+                    ClientUiUpdate = false;
+                    ModSet.NetworkUpdate();
                 }
             }
 
@@ -458,6 +469,19 @@ namespace DefenseShields
         {
             ModState.State = newState;
             if (Session.Enforced.Debug >= 1) Log.Line($"UpdateState - ModulatorId [{Modulator.EntityId}]:\n{ModState.State}");
+        }
+
+        public override bool IsSerialized()
+        {
+            if (Session.IsServer)
+            {
+                if (Modulator.Storage != null)
+                {
+                    ModState.SaveState();
+                    ModSet.SaveSettings();
+                }
+            }
+            return false;
         }
 
         public override void OnRemovedFromScene()

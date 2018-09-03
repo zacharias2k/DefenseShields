@@ -46,7 +46,7 @@ namespace DefenseShields
             if (contactpoint != Vector3D.NegativeInfinity)
             {
                 entInfo.Touched = true;
-                var damage = entInfo.Damage / DsState.State.ModulateKinetic;
+                var damage = entInfo.Damage * DsState.State.ModulateKinetic;
                 if (Session.MpActive)
                 {
                     if (Session.IsServer)

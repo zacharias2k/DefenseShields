@@ -382,7 +382,6 @@ namespace DefenseShields
                         }
 
                         if (info.IsDeformation && shield.DeformEnabled) continue;
-
                         if (info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Deformation) info.Amount = info.Amount * shield.DsState.State.ModulateKinetic;
                         else info.Amount = info.Amount * shield.DsState.State.ModulateEnergy;
 
@@ -417,7 +416,6 @@ namespace DefenseShields
                             //Log.CleanLine($"part: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
                             //Log.CleanLine($"part: T:{info.Type} - A:{info.Amount} - HF:{shield.FriendlyCache.Contains(hostileEnt)} - HI:{shield.IgnoreCache.Contains(hostileEnt)} - PF:{shield.FriendlyCache.Contains(blockGrid)} - PI:{shield.IgnoreCache.Contains(blockGrid)}");
                         }
-
                         shield.Absorb += info.Amount;
                         info.Amount = 0f;
                     }

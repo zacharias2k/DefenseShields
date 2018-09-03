@@ -107,6 +107,8 @@ namespace DefenseShields
         internal bool GridIsMobile;
         private bool _effectsCleanup;
         private bool _hideShield;
+        private bool _hideColor;
+        private bool _supressedColor;
         private bool _shapeChanged;
         private bool _hierarchyDelayed;
         private bool _entityChanged;
@@ -140,7 +142,6 @@ namespace DefenseShields
         private const string ModelGold = "\\Models\\Cubes\\ShieldPassive05.mwm";
         private const string ModelOrange = "\\Models\\Cubes\\ShieldPassive04.mwm";
         private const string ModelCyan = "\\Models\\Cubes\\ShieldPassive03.mwm";
-        private const string ModelTest = "\\Models\\Cubes\\ShieldPassive02.mwm";
 
         private Vector2D _shieldIconPos = new Vector2D(-0.89, -0.86);
 

@@ -39,10 +39,8 @@ namespace DefenseShields
 
             ComputeDamage(comp, newValue);
             comp.ModSet.Settings.ModulateDamage = (int)newValue;
-            comp.ModSet.NetworkUpdate();
-            comp.ModSet.SaveSettings();
-            comp.ModState.NetworkUpdate();
-            comp.ModState.SaveState();
+            comp.SettingsUpdated = true;
+            comp.ClientUiUpdate = true;
         }
 
         public static void ComputeDamage(Modulators comp, float newValue)

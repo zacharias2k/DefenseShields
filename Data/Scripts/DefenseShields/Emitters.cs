@@ -395,6 +395,8 @@ namespace DefenseShields
 
         private bool BlockWorking()
         {
+            if (ShieldComp.EmittersSuspended) SuspendCollisionDetected();
+
             EmiState.State.Online = true;
             var online = EmiState.State.Online;
             var logic = ShieldComp.DefenseShields;
@@ -409,6 +411,14 @@ namespace DefenseShields
                 return false;
             }
             return true;
+        }
+
+        private void SuspendCollisionDetected()
+        {
+            ShieldComp.EmitterMode = (int)EmitterMode;
+            ShieldComp.EmittersSuspended = false;
+            ShieldComp.EmitterEvent = true;
+            TookControl = true;
         }
 
         private bool Suspend()

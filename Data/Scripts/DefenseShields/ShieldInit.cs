@@ -202,7 +202,7 @@ namespace DefenseShields
             return false;
         }
 
-        private void SetShieldType(bool quickCheck)
+        public void SetShieldType(bool quickCheck)
         {
             var noChange = false;
             var oldMode = ShieldMode;
@@ -328,39 +328,58 @@ namespace DefenseShields
                 {
                     case 0:
                         _modelPassive = ModelMediumReflective;
+                        _hideColor = false;
+                        _supressedColor = false;
                         break;
                     case 1:
                         _modelPassive = ModelHighReflective;
+                        _hideColor = false;
+                        _supressedColor = false;
                         break;
                     case 2:
                         _modelPassive = ModelLowReflective;
+                        _hideColor = false;
+                        _supressedColor = false;
                         break;
                     case 3:
                         _modelPassive = ModelRed;
+                        _hideColor = true;
+                        _supressedColor = false;
                         break;
                     case 4:
                         _modelPassive = ModelBlue;
+                        _hideColor = true;
+                        _supressedColor = false;
                         break;
                     case 5:
                         _modelPassive = ModelGreen;
+                        _hideColor = true;
+                        _supressedColor = false;
                         break;
                     case 6:
                         _modelPassive = ModelPurple;
+                        _hideColor = true;
+                        _supressedColor = false;
                         break;
                     case 7:
                         _modelPassive = ModelGold;
+                        _hideColor = true;
+                        _supressedColor = false;
                         break;
                     case 8:
                         _modelPassive = ModelOrange;
+                        _hideColor = true;
+                        _supressedColor = false;
                         break;
                     case 9:
                         _modelPassive = ModelCyan;
-                        break;
-                    case 10:
-                        _modelPassive = ModelTest;
+                        _hideColor = true;
+                        _supressedColor = false;
                         break;
                     default:
                         _modelPassive = ModelMediumReflective;
+                        _hideColor = false;
+                        _supressedColor = false;
                         break;
                 }
             }

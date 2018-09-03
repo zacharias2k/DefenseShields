@@ -37,6 +37,18 @@ namespace DefenseShields
             var refreshAnim = DsSet.Settings.RefreshAnimation;
             var config = MyAPIGateway.Session.Config;
             var drawIcon = !enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
+            if ((_count == 0 || _count == 19 || _count ==39) && _hideColor && !_supressedColor && CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation, DetectMatrixOutsideInv))
+            {
+                _modelPassive = ModelMediumReflective;
+                UpdatePassiveModel();
+                _supressedColor = true;
+            }
+            else if ((_count == 0 || _count == 19 || _count == 39) && _supressedColor && _hideColor && (!CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation, DetectMatrixOutsideInv)))
+            {
+                SelectPassiveShell();
+                UpdatePassiveModel();
+                _supressedColor = false;
+            }
             if (drawIcon) UpdateIcon();
 
             var activeVisible = !DsSet.Settings.ActiveInvisible || enemy;
@@ -101,6 +113,7 @@ namespace DefenseShields
             //Log.Line($"D:{playerDist} - R:{radius} - S:{scale} - I:{ImpactSize} - {MyAPIGateway.Session.IsCameraUserControlledSpectator} = {MyAPIGateway.Session.CameraTargetDistance} - {Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos)}");
             _effect.UserRadiusMultiplier = (float)radius;
             _effect.UserEmitterScale = (float)scale;
+            _effect.Velocity = Shield.CubeGrid.Physics.LinearVelocity;
             _effect.Play();
         }
 
@@ -114,14 +127,15 @@ namespace DefenseShields
 
         private void CalcualteVisibility(long visible, bool activeVisible)
         {
-            var isVisible = visible != 1;
-            if (isVisible && WorldImpactPosition != Vector3D.NegativeInfinity) HitCoolDown = -10;
-            else if (isVisible && HitCoolDown > -11) HitCoolDown++;
+            if (visible != 2) HitCoolDown = -11;
+            else if (visible == 2 && WorldImpactPosition != Vector3D.NegativeInfinity) HitCoolDown = -10;
+            else if (visible == 2 && HitCoolDown > -11) HitCoolDown++;
             if (HitCoolDown > 59) HitCoolDown = -11;
+
             var passiveSet = visible != 0 && !_hideShield && HitCoolDown == -11;
-            var passiveReset = visible == 0 && _hideShield || _hideShield && visible == 2 && !activeVisible && _hideShield && HitCoolDown == -10;
-            var passiveFade = HitCoolDown > -1 && visible == 2 && !activeVisible;
-            var fadeReset = visible == 2 && !passiveFade && !activeVisible && HitCoolDown != -11;
+            var passiveReset = visible == 0 && _hideShield || _hideShield && visible != 0 && !activeVisible && _hideShield && HitCoolDown == -10;
+            var passiveFade = HitCoolDown > -1 && visible != 0;
+            var fadeReset = visible == 2 && !passiveFade && HitCoolDown != -11;
 
             if (fadeReset)
             {

@@ -219,6 +219,7 @@ namespace DefenseShields
 
                 if (_functionalEvent)
                 {
+                    MyGridDistributor = null;
                     if (backGround) MyAPIGateway.Parallel.StartBackground(BackGroundChecks);
                     else BackGroundChecks();
                     _functionalEvent = false;
@@ -662,7 +663,7 @@ namespace DefenseShields
 
         private void UpdateSubGrids(bool force = false)
         {
-            var checkGroups = Shield.IsWorking && Shield.IsFunctional && DsState.State.Online;
+            var checkGroups = Shield.IsWorking && Shield.IsFunctional && (DsState.State.Online || DsState.State.Sleeping);
             if (Session.Enforced.Debug >= 1) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Offline:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
             if (!checkGroups && !force) return;
             var gotGroups = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Physical);
@@ -698,8 +699,8 @@ namespace DefenseShields
             if (ShieldComp.Modulator != null)
             {
                 if (!DsState.State.ModulateEnergy.Equals(ShieldComp.Modulator.ModState.State.ModulateEnergy * 0.01f) || !DsState.State.ModulateKinetic.Equals(ShieldComp.Modulator.ModState.State.ModulateKinetic * 0.01f)) update = true;
-                DsState.State.ModulateEnergy = ShieldComp.Modulator.ModState.State.ModulateEnergy * 0.01f;
-                DsState.State.ModulateKinetic = ShieldComp.Modulator.ModState.State.ModulateKinetic * 0.01f;
+                DsState.State.ModulateEnergy = ShieldComp.Modulator.ModState.State.ModulateKinetic * 0.01f;
+                DsState.State.ModulateKinetic = ShieldComp.Modulator.ModState.State.ModulateEnergy * 0.01f;
                 if (update) ShieldChangeState();
             }
             else

@@ -3,6 +3,7 @@ using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game;
+using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace DefenseShields
@@ -103,7 +104,6 @@ namespace DefenseShields
             }
 
             ControlBlockWorking = Shield.IsWorking && Shield.IsFunctional;
-
             if (ControlBlockWorking)
             {
                 if (GridIsMobile) MobileUpdate();
@@ -116,7 +116,6 @@ namespace DefenseShields
         private void SetShieldServerStatus(bool powerState)
         {
             DsSet.Settings.ShieldActive = ControlBlockWorking && powerState;
-
             if (!PrevShieldActive && DsSet.Settings.ShieldActive) ComingOnline = true;
             else if (ComingOnline && PrevShieldActive && DsSet.Settings.ShieldActive) ComingOnline = false;
 
@@ -474,7 +473,11 @@ namespace DefenseShields
             var betaMode = ShieldMode != ShieldType.Station && !isStatic && ShieldComp.ShipEmitter == null;
 
             if (ShieldMode != ShieldType.Station && isStatic) InitSuspend();
-            else if (ShieldMode == ShieldType.Station && !isStatic) InitSuspend();
+            else if (ShieldMode == ShieldType.Station && !isStatic)
+            {
+                Log.Line($"Static and not static");
+                InitSuspend();
+            }
             else if (ShieldMode == ShieldType.Unknown) InitSuspend();
             else if (ShieldComp.DefenseShields != this || primeMode || betaMode) InitSuspend(true);
             else if (!GridOwnsController()) InitSuspend(true);
@@ -514,6 +517,8 @@ namespace DefenseShields
 
         private void InitSuspend(bool cleanEnts = false)
         {
+            SetShieldType(true);
+            Log.Line($"{ShieldMode} - {ShieldComp.EmitterMode}");
             if (!DsState.State.Suspended)
             {
                 if (cleanEnts) InitEntities(false);
@@ -539,7 +544,7 @@ namespace DefenseShields
             var owner = MyRelationsBetweenPlayerAndBlock.Owner;
             DsState.State.InFaction = controlToGridRelataion == faction;
             DsState.State.IsOwner = controlToGridRelataion == owner;
-
+            
             if (controlToGridRelataion != owner && controlToGridRelataion != faction)
             {
                 if (DsState.State.ControllerGridAccess)
