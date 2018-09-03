@@ -518,7 +518,6 @@ namespace DefenseShields
         private void InitSuspend(bool cleanEnts = false)
         {
             SetShieldType(true);
-            Log.Line($"{ShieldMode} - {ShieldComp.EmitterMode}");
             if (!DsState.State.Suspended)
             {
                 if (cleanEnts) InitEntities(false);
@@ -626,7 +625,6 @@ namespace DefenseShields
             {
                 BroadcastMessage();
                 DsState.State.Message = false;
-                if (Session.Enforced.Debug >= 1) Log.Line($"Message: Po:{DsState.State.NoPower} - OL:{DsState.State.Overload} - FB:{DsState.State.FieldBlocked} - Wa:{DsState.State.Waking} - Re:{DsState.State.Remodulate}");
             }
 
             if (ShieldComp.DefenseShields != this || primeMode || betaMode)

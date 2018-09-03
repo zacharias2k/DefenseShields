@@ -258,7 +258,6 @@ namespace DefenseShields
         internal IMyUpgradeModule Shield => (IMyUpgradeModule)Entity;
         internal ShieldType ShieldMode;
         internal MyResourceDistributorComponent MyGridDistributor;
-        private Object _lockOnMe = new Object();
         internal MyEntity ShieldEnt;
         private MyEntity _shellPassive;
         private MyEntity _shellActive;

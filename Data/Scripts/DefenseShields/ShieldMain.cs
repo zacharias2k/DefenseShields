@@ -30,7 +30,12 @@ namespace DefenseShields
                     else if (DsState.State.Message) ShieldChangeState();
                     return;
                 }
-                if (Session.Enforced.Debug >= 1 && !WasOnline) Log.Line($"On: WasOn:{WasOnline} - On:{DsState.State.Online} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
+
+                if (Session.Enforced.Debug >= 1 && !WasOnline)
+                {
+                    Log.Line($"On: WasOn:{WasOnline} - On:{DsState.State.Online} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
+                    if (MyGridDistributor != null) Log.Line($"SourcesEnabled:{MyGridDistributor.SourcesEnabled} - ResourceState:{MyGridDistributor.ResourceState} - Update:{MyGridDistributor.NeedsPerFrameUpdate} - Name:{MyGridDistributor?.Entity?.Parent?.DisplayName} - parentNull:{MyGridDistributor?.Entity?.Parent == null} - Required:{MyGridDistributor.TotalRequiredInputByType(GId)} - Max:{MyGridDistributor.MaxAvailableResourceByType(GId)}");
+                }
 
                 if (DsState.State.Online)
                 {
@@ -257,7 +262,8 @@ namespace DefenseShields
                         var controller = block as MyShipController;
                         if (controller != null)
                         {
-                            lock (_lockOnMe) MyGridDistributor = controller.GridResourceDistributor;
+                            var distributor = controller.GridResourceDistributor;
+                            if (distributor.ResourceState != MyResourceStateEnum.NoPower) MyGridDistributor = controller.GridResourceDistributor;
                         }
                     }
                     lock (_batteryBlocks)
