@@ -33,7 +33,9 @@ namespace DefenseShields
                 if (ent == null || ent.MarkedForClose || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel || !(ent is MyVoxelBase) && ent.Physics == null) continue;
 
                 if (FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent) || !(ent is MyCubeGrid) && !(ent is MyVoxelBase) && !(ent is IMyCharacter)) continue;
-                var relation = EntType(ent);
+                EntIntersectInfo entInfo;
+                WebEnts.TryGetValue(ent, out entInfo);
+                var relation = entInfo?.Relation ?? EntType(ent);
                 switch (relation)
                 {
                     case Ent.Authenticated:
@@ -61,11 +63,9 @@ namespace DefenseShields
                         }
                         continue;
                 }
-                EntIntersectInfo entInfo;
-                WebEnts.TryGetValue(ent, out entInfo);
                 if (entInfo != null)
                 {
-                    var interestingEnts = relation == Ent.LargeEnemyGrid || relation == Ent.LargeNobodyGrid || relation == Ent.SmallEnemyGrid || relation == Ent.SmallNobodyGrid;
+                    var interestingEnts = relation == Ent.LargeEnemyGrid || relation == Ent.LargeNobodyGrid || relation == Ent.SmallEnemyGrid || relation == Ent.SmallNobodyGrid || relation == Ent.Shielded;
                     if (ent.Physics != null && ent.Physics.IsMoving) entChanged = true;
                     else if (entInfo.Touched || _count == 0 && interestingEnts && !ent.PositionComp.LocalAABB.Equals(entInfo.Box))
                     {

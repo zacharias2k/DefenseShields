@@ -18,6 +18,10 @@ namespace DefenseShields
         {
             try
             {
+                if (_destroyedBlocks.Count == 0 && _missileDmg.Count == 0 || _meteorDmg.Count == 0 &&
+                    _voxelDmg.Count == 0 && _characterDmg.Count == 0 && _fewDmgBlocks.Count == 0 &&
+                    _dmgBlocks.Count == 0) return;
+
                 if (Session.Enforced.Debug >= 1) Dsutil4.Sw.Restart();
 
                 if (clear)
@@ -92,14 +96,14 @@ namespace DefenseShields
                             {
 
                                 ShieldDoDamage(damage, ent.EntityId);
-                                destObj.DoDamage(10000f, DelDamage, true, null, Shield.CubeGrid.EntityId);
+                                destObj.DoDamage(10000f, DelDamage, true, null, MyGrid.EntityId);
                             }
                             else
                             {
                                 WorldImpactPosition = ent.PositionComp.WorldVolume.Center;
                                 Absorb += damage;
                                 ImpactSize = damage;
-                                destObj.DoDamage(10000f, DelDamage, true, null, Shield.CubeGrid.EntityId);
+                                destObj.DoDamage(10000f, DelDamage, true, null, MyGrid.EntityId);
                             }
                         }
                     }
@@ -119,14 +123,14 @@ namespace DefenseShields
                             {
 
                                 ShieldDoDamage(damage, meteor.EntityId);
-                                meteor.DoDamage(10000f, DelDamage, true, null, Shield.CubeGrid.EntityId);
+                                meteor.DoDamage(10000f, DelDamage, true, null, MyGrid.EntityId);
                             }
                             else
                             {
                                 WorldImpactPosition = meteor.PositionComp.WorldVolume.Center;
                                 Absorb += damage;
                                 ImpactSize = damage;
-                                meteor.DoDamage(10000f, DelDamage, true, null, Shield.CubeGrid.EntityId);
+                                meteor.DoDamage(10000f, DelDamage, true, null, MyGrid.EntityId);
                             }
                         }
                     }
@@ -164,7 +168,7 @@ namespace DefenseShields
                             var playerGasLevel = character.GetSuitGasFillLevel(hId);
                             character.Components.Get<MyCharacterOxygenComponent>().UpdateStoredGasLevel(ref hId, (playerGasLevel * -0.0001f) + .002f);
                             MyVisualScriptLogicProvider.CreateExplosion(character.GetPosition(), 0, 0);
-                            character.DoDamage(50f, DelDamage, true, null, Shield.CubeGrid.EntityId);
+                            character.DoDamage(50f, DelDamage, true, null, MyGrid.EntityId);
                             var vel = character.Physics.LinearVelocity;
                             if (vel == new Vector3D(0, 0, 0)) vel = MyUtils.GetRandomVector3Normalized();
                             var speedDir = Vector3D.Normalize(vel);
@@ -193,7 +197,7 @@ namespace DefenseShields
                                 myGrid.EnqueueDestroyedBlock(block.Position);
                                 continue;
                             }
-                            block.DoDamage(damageMulti, DelDamage, true, null, Shield.CubeGrid.EntityId); 
+                            block.DoDamage(damageMulti, DelDamage, true, null, MyGrid.EntityId); 
                             if (myGrid.BlocksCount == 0) myGrid.SyncObject.SendCloseRequest();
                         }
                     }
@@ -216,7 +220,7 @@ namespace DefenseShields
                                 myGrid.Close();
                                 continue;
                             }
-                            block.DoDamage(block.MaxIntegrity * 0.9f, DelDamage, true, null, Shield.CubeGrid.EntityId); 
+                            block.DoDamage(block.MaxIntegrity * 0.9f, DelDamage, true, null, MyGrid.EntityId); 
                             if (myGrid.BlocksCount == 0) myGrid.SyncObject.SendCloseRequest();
                         }
                     }

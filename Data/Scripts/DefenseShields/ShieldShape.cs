@@ -136,6 +136,7 @@ namespace DefenseShields
                 EllipsoidSa.Update(DetectMatrixOutside.Scale.X, DetectMatrixOutside.Scale.Y, DetectMatrixOutside.Scale.Z);
                 BoundingRange = ShieldSize.AbsMax();
                 _ellipsoidSurfaceArea = EllipsoidSa.Surface;
+                _shieldVol = DetectMatrixOutside.Scale.Volume;
                 if (Session.IsServer)
                 {
                     if (Session.Enforced.Debug >= 2) Log.Line($"StateUpdate: CreateShieldShape");

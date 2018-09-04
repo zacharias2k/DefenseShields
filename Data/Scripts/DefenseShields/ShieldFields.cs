@@ -54,7 +54,9 @@ namespace DefenseShields
         private double _oldEllipsoidAdjust;
         private double _sAvelSqr;
         private double _ellipsoidSurfaceArea;
+        private double _shieldVol;
         private double _sizeScaler;
+        private double _roundedGridMax;
 
         public int BulletCoolDown { get; internal set; } = -1;
         public int HitCoolDown { get; private set; } = -11;
@@ -128,7 +130,6 @@ namespace DefenseShields
         private bool _clientOn;
 
         private const string SpaceWolf = "Space_Wolf";
-        private const string MyMissile = "MyMissile";
         private string _modelActive = "\\Models\\Cubes\\ShieldActiveBase.mwm";
         private string _modelPassive = "";
 
@@ -171,6 +172,7 @@ namespace DefenseShields
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
         //private readonly List<MyResourceSourceComponent> _batterySources = new List<MyResourceSourceComponent>();
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
+        private readonly List<MyEntity> _pruneList = new List<MyEntity>();
         private readonly List<IMyBatteryBlock> _batteryBlocks = new List<IMyBatteryBlock>();
         private readonly List<KeyValuePair<MyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<MyEntity, EntIntersectInfo>>();
 
@@ -257,6 +259,7 @@ namespace DefenseShields
 
         internal IMyUpgradeModule Shield => (IMyUpgradeModule)Entity;
         internal ShieldType ShieldMode;
+        internal MyCubeGrid MyGrid;
         internal MyResourceDistributorComponent MyGridDistributor;
         internal MyEntity ShieldEnt;
         private MyEntity _shellPassive;

@@ -23,7 +23,6 @@ namespace DefenseShields
                     EntIntersectInfo entRemoved;
                     WebEnts.TryRemove(ent, out entRemoved);
                     IgnoreCache.Add(ent);
-                    if (entRemoved != null) Log.Line($"entity:{ent.DebugName} - {grid.DisplayName} - is now inside");
                     return true;
                 }
             }

@@ -48,9 +48,7 @@ namespace DefenseShields
                     PrevShieldActive = false;
                     return false;
                 }
-
                 var powerState = PowerOnline();
-
                 if (_tick % 120 == 0)
                 {
                     GetModulationInfo();
@@ -92,18 +90,17 @@ namespace DefenseShields
             if (_blockChanged) BlockMonitor();
 
             if (_tick >= _losCheckTick) LosCheck();
-
-            if (Suspend() || !WarmUpSequence() || ShieldSleeping() || ShieldLowered()) return false;
+            if (Suspend() || !Warming && !WarmUpSequence() || ShieldSleeping() || ShieldLowered()) return false;
 
             if (ShieldComp.EmitterEvent) EmitterEventDetected();
 
-            if (!Shield.IsWorking || !Shield.IsFunctional || !ShieldComp.EmittersWorking)
+            ControlBlockWorking = Shield.IsWorking && Shield.IsFunctional;
+            if (!ControlBlockWorking || !ShieldComp.EmittersWorking)
             {
                 _genericDownLoop = 0;
                 return false;
             }
 
-            ControlBlockWorking = Shield.IsWorking && Shield.IsFunctional;
             if (ControlBlockWorking)
             {
                 if (GridIsMobile) MobileUpdate();
@@ -187,7 +184,7 @@ namespace DefenseShields
         private bool FieldShapeBlocked()
         {
             ModulatorGridComponent modComp;
-            Shield.CubeGrid.Components.TryGet(out modComp);
+            MyGrid.Components.TryGet(out modComp);
             if (ShieldComp.Modulator == null || ShieldComp.Modulator.ModSet.Settings.ModulateVoxels || Session.Enforced.DisableVoxelSupport == 1) return false;
 
             var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange);
@@ -468,19 +465,15 @@ namespace DefenseShields
 
         private bool Suspend()
         {
-            var isStatic = Shield.CubeGrid.IsStatic;
+            var isStatic = MyGrid.IsStatic;
             var primeMode = ShieldMode == ShieldType.Station && isStatic && ShieldComp.StationEmitter == null;
             var betaMode = ShieldMode != ShieldType.Station && !isStatic && ShieldComp.ShipEmitter == null;
 
             if (ShieldMode != ShieldType.Station && isStatic) InitSuspend();
-            else if (ShieldMode == ShieldType.Station && !isStatic)
-            {
-                Log.Line($"Static and not static");
-                InitSuspend();
-            }
+            else if (ShieldMode == ShieldType.Station && !isStatic) InitSuspend();
             else if (ShieldMode == ShieldType.Unknown) InitSuspend();
             else if (ShieldComp.DefenseShields != this || primeMode || betaMode) InitSuspend(true);
-            else if (!GridOwnsController()) InitSuspend(true);
+            else if (_count <= 0 && _lCount == 0 && !GridOwnsController()) InitSuspend(true);
             else
             {
                 if (DsState.State.Suspended)
@@ -532,13 +525,13 @@ namespace DefenseShields
 
         private bool GridOwnsController()
         {
-            if (Shield.CubeGrid.BigOwners.Count == 0)
+            if (MyGrid.BigOwners.Count == 0)
             {
                 DsState.State.ControllerGridAccess = false;
                 return DsState.State.ControllerGridAccess;
             }
 
-            var controlToGridRelataion = ((MyCubeBlock)Shield).GetUserRelationToOwner(Shield.CubeGrid.BigOwners[0]);
+            var controlToGridRelataion = ((MyCubeBlock)Shield).GetUserRelationToOwner(MyGrid.BigOwners[0]);
             var faction = MyRelationsBetweenPlayerAndBlock.FactionShare;
             var owner = MyRelationsBetweenPlayerAndBlock.Owner;
             DsState.State.InFaction = controlToGridRelataion == faction;
@@ -563,19 +556,19 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 1) Log.Line($"GridOwner: controller is owned: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
             DsState.State.ControllerGridAccess = true;
-            return DsState.State.ControllerGridAccess;
+            return true;
         }
 
         private void PlayerMessages(PlayerNotice notice)
         {
             var realPlayerIds = new HashSet<long>();
             Vector3D center;
-            center = GridIsMobile ? Shield.CubeGrid.WorldVolume.Center : ShieldComp.StationEmitter.Emitter.WorldVolume.Center;
+            center = GridIsMobile ? MyGrid.PositionComp.WorldVolume.Center : ShieldComp.StationEmitter.Emitter.WorldVolume.Center;
             switch (notice)
             {
                 case PlayerNotice.EmitterInit:
                     UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
-                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- emitter is initializing and connecting to controller, startup in 30 seconds!", 4816, "Red");
+                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- emitter is initializing and connecting to controller, startup in 30 seconds!", 4816, "Red");
                     break;
                 case PlayerNotice.FieldBlocked:
                     UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
@@ -583,19 +576,19 @@ namespace DefenseShields
                     break;
                 case PlayerNotice.OverLoad:
                     UtilsStatic.GetRealPlayers(center, 500f, realPlayerIds);
-                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 8000, "Red");
+                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 8000, "Red");
                     break;
                 case PlayerNotice.Remodulate:
                     UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
-                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- shield remodremodulating, restarting in 5 seconds.", 4800, "White");
+                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- shield remodremodulating, restarting in 5 seconds.", 4800, "White");
                     break;
                 case PlayerNotice.NoLos:
                     UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
-                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- Emitter does not have line of sight, shield offline", 8000, "Red");
+                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- Emitter does not have line of sight, shield offline", 8000, "Red");
                     break;
                 case PlayerNotice.NoPower:
                     UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
-                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + Shield.CubeGrid.DisplayName + " ]" + " -- Insufficient Power, shield is failing!", 5000, "Red");
+                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- Insufficient Power, shield is failing!", 5000, "Red");
                     break;
             }
 
@@ -617,7 +610,7 @@ namespace DefenseShields
 
         private bool ClientOfflineStates()
         {
-            var isStatic = Shield.CubeGrid.IsStatic;
+            var isStatic = MyGrid.IsStatic;
             var primeMode = ShieldMode == ShieldType.Station && isStatic && ShieldComp.StationEmitter == null;
             var betaMode = ShieldMode != ShieldType.Station && !isStatic && ShieldComp.ShipEmitter == null;
 
@@ -678,6 +671,9 @@ namespace DefenseShields
             {
                 HadPowerBefore = true;
                 ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
+                DsState.State.Overload = false;
+                DsState.State.NoPower = false;
+                DsState.State.Remodulate = false;
             }
             WarmingInit();
             return false;

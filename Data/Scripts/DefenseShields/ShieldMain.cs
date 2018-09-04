@@ -21,6 +21,7 @@ namespace DefenseShields
             try
             {
                 if (Session.Enforced.Debug >= 1) Dsutil1.Sw.Restart();
+                MyGrid = Shield.CubeGrid as MyCubeGrid;
                 var isServer = Session.IsServer;
                 var isDedicated = Session.DedicatedServer;
                 if (!ShieldOn(isServer))
@@ -30,7 +31,6 @@ namespace DefenseShields
                     else if (DsState.State.Message) ShieldChangeState();
                     return;
                 }
-
                 if (Session.Enforced.Debug >= 1 && !WasOnline)
                 {
                     Log.Line($"On: WasOn:{WasOnline} - On:{DsState.State.Online} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
@@ -391,7 +391,6 @@ namespace DefenseShields
                 if (!UpdateGridPower()) return false;
             }
             else if (!UpdateGridPower(true)) return false;
-
             CalculatePowerCharge();
             _power = _shieldConsumptionRate + _shieldMaintaintPower;
             if (!WarmedUp) return true;
@@ -420,6 +419,7 @@ namespace DefenseShields
 
         private bool UpdateGridPower(bool fallBack = false)
         {
+            var tempGridMaxPower = _gridMaxPower;
             _gridMaxPower = 0;
             _gridCurrentPower = 0;
             _gridAvailablePower = 0;
@@ -452,6 +452,7 @@ namespace DefenseShields
             }
             _gridAvailablePower = _gridMaxPower - _gridCurrentPower;
             _shieldCurrentPower = Sink.CurrentInputByType(GId);
+            if (!_gridMaxPower.Equals(tempGridMaxPower) || _roundedGridMax <= 0) _roundedGridMax = Math.Round(_gridMaxPower, 1);
             return _gridMaxPower > 0;
         }
 
@@ -489,20 +490,19 @@ namespace DefenseShields
 
             var heat = DsState.State.Heat * 0.1;
             if (heat > 10) heat = 10;
-
             var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
             var rawNerf = nerf ? Session.Enforced.Nerf : 1f;
             var nerfer = rawNerf / _shieldRatio;
-            var shieldVol = DetectMatrixOutside.Scale.Volume;
             var powerForShield = 0f;
             const float ratio = 1.25f;
             var percent = DsSet.Settings.Rate * ratio;
+
             var shieldMaintainPercent = 1 / percent;
             shieldMaintainPercent = shieldMaintainPercent * DsState.State.EnhancerPowerMulti * (DsState.State.ShieldPercent * 0.01f);
             if (DsState.State.Lowered) shieldMaintainPercent = shieldMaintainPercent * 0.25f;
             _shieldMaintaintPower = _gridMaxPower * shieldMaintainPercent;
-            var fPercent = percent / ratio / 100;
-            var sizeScaler = shieldVol / _ellipsoidSurfaceArea / 2.40063050674088;
+            var fPercent = percent / ratio * 0.01f;
+            var sizeScaler = _shieldVol / (_ellipsoidSurfaceArea * 2.40063050674088);
             _sizeScaler = sizeScaler >= 1d ? sizeScaler : 1d;
 
             float bufferScaler;
@@ -515,7 +515,6 @@ namespace DefenseShields
             var rawMaxChargeRate = powerForShield > 0 ? powerForShield : 0f;
             _shieldMaxChargeRate = rawMaxChargeRate;
             _shieldMaxBuffer = _gridMaxPower * bufferScaler;
-
             if (DsState.State.Buffer + _shieldMaxChargeRate / (_sizeScaler / nerfer) < _shieldMaxBuffer)
             {
                 _shieldChargeRate = _shieldMaxChargeRate / ((float)_sizeScaler / nerfer);
@@ -538,8 +537,7 @@ namespace DefenseShields
             else DsState.State.ShieldPercent = 100f;
 
             if (DsState.State.Buffer > _shieldMaxBuffer) DsState.State.Buffer = _shieldMaxBuffer;
-            var roundedGridMax = Math.Round(_gridMaxPower, 1);
-            if (_powerNeeded > roundedGridMax || powerForShield <= 0)
+            if (_powerNeeded > _roundedGridMax || powerForShield <= 0)
             {
                 if (isServer && !DsState.State.Online)
                 {
@@ -585,7 +583,7 @@ namespace DefenseShields
                 _shieldChargeRate = _shieldChargeRate / expChargeReduction;
             }
 
-            if (DsState.State.Buffer < _shieldMaxBuffer && _count == 29) DsState.State.Buffer += _shieldChargeRate;
+            if (_count == 29 && DsState.State.Buffer < _shieldMaxBuffer) DsState.State.Buffer += _shieldChargeRate;
             else if (DsState.State.Buffer.Equals(_shieldMaxBuffer))
             {
                 _shieldChargeRate = 0f;
@@ -672,7 +670,7 @@ namespace DefenseShields
             var checkGroups = Shield.IsWorking && Shield.IsFunctional && (DsState.State.Online || DsState.State.Sleeping);
             if (Session.Enforced.Debug >= 1) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Offline:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
             if (!checkGroups && !force) return;
-            var gotGroups = MyAPIGateway.GridGroups.GetGroup(Shield.CubeGrid, GridLinkTypeEnum.Physical);
+            var gotGroups = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
             if (gotGroups.Count == ShieldComp.GetLinkedGrids.Count) return;
             if (Session.Enforced.Debug >= 1) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.GetLinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.GetLinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
 
@@ -684,8 +682,8 @@ namespace DefenseShields
                 var sub = gotGroups[i];
                 if (sub == null) continue;
 
-                if (MyAPIGateway.GridGroups.HasConnection(Shield.CubeGrid, sub, GridLinkTypeEnum.Mechanical)) lock (ShieldComp.GetSubGrids) ShieldComp.GetSubGrids.Add(sub as MyCubeGrid);
-                if (MyAPIGateway.GridGroups.HasConnection(Shield.CubeGrid, sub, GridLinkTypeEnum.Physical)) lock (ShieldComp.GetLinkedGrids) ShieldComp.GetLinkedGrids.Add(sub as MyCubeGrid);
+                if (MyAPIGateway.GridGroups.HasConnection(MyGrid, sub, GridLinkTypeEnum.Mechanical)) lock (ShieldComp.GetSubGrids) ShieldComp.GetSubGrids.Add(sub as MyCubeGrid);
+                if (MyAPIGateway.GridGroups.HasConnection(MyGrid, sub, GridLinkTypeEnum.Physical)) lock (ShieldComp.GetLinkedGrids) ShieldComp.GetLinkedGrids.Add(sub as MyCubeGrid);
             }
             _blockChanged = true;
             _functionalChanged = true;
