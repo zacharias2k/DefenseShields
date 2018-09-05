@@ -31,8 +31,15 @@ namespace DefenseShields
                 Log.Line($"Enforcement Loaded {loadedEnforce != null} - Version:{loadedEnforce?.Version} - ShieldId [{shield.EntityId}]");
                 if (loadedEnforce != null) return loadedEnforce;
             }
-            Log.Line($"Enforcement Not Loaded - ShieldId [{shield.EntityId}]");
             return null;
+        }
+
+        public static void EnforcementRequest(long shieldId)
+        {
+            Log.Line($"Client [{MyAPIGateway.Multiplayer.MyId}] requesting enforcement - current:\n{Session.Enforced}");
+            Session.Enforced.SenderId = MyAPIGateway.Multiplayer.MyId;
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataEnforce(MyAPIGateway.Multiplayer.MyId, shieldId, Session.Enforced));
+            MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdEnforce, bytes);
         }
     }
 }

@@ -116,7 +116,7 @@ namespace DefenseShields
         private void Timing(bool cleanUp)
         {
             var isServer = Session.IsServer;
-
+            var isDedicated = Session.DedicatedServer;
             if (_count++ == 59)
             {
                 _count = 0;
@@ -171,10 +171,13 @@ namespace DefenseShields
             if (_count == 29)
             {
                 Shield.RefreshCustomInfo();
-                if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
+                if (!isDedicated)
                 {
-                    Shield.ShowInToolbarConfig = false;
-                    Shield.ShowInToolbarConfig = true;
+                    if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
+                    {
+                        Shield.ShowInToolbarConfig = false;
+                        Shield.ShowInToolbarConfig = true;
+                    }
                 }
                 _damageReadOut = 0;
             }

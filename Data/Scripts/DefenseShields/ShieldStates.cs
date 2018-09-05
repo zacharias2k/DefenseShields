@@ -3,7 +3,6 @@ using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game;
-using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace DefenseShields

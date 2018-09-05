@@ -53,7 +53,7 @@ namespace DefenseShields
             _tick = Session.Instance.Tick;
             Timing();
             if (ShieldComp == null) Display.CubeGrid.Components.TryGet(out ShieldComp);
-            if (ShieldComp?.DefenseShields?.Shield == null) return;
+            if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.DefenseShields.Starting) return;
             if (_count == 29)
             {
                 Display.WritePublicText(ShieldComp.DefenseShields.Shield.CustomInfo);

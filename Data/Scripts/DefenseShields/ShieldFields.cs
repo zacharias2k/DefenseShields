@@ -85,6 +85,7 @@ namespace DefenseShields
         private int _onCount;
         private int _shieldRatio;
 
+        internal bool RequestedEnforcement;
         internal bool WasOnline;
         internal bool SettingsUpdated;
         internal bool ClientUiUpdate;

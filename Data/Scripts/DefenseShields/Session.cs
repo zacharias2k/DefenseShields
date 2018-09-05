@@ -27,7 +27,8 @@ namespace DefenseShields
         public const ushort PacketIdO2GeneratorState = 62517; 
         public const ushort PacketIdEnhancerState = 62518;
         public const ushort PacketIdControllerState = 62519; 
-        public const ushort PacketIdControllerSettings = 62520; 
+        public const ushort PacketIdControllerSettings = 62520;
+        public const ushort PacketIdEnforce = 62521;
         public const ushort PacketIdModulatorSettings = 62522; 
         public const ushort PacketIdModulatorState = 62523; // 
 
@@ -134,6 +135,7 @@ namespace DefenseShields
                 Log.Line($"Logging Started");
 
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEnforce, EnforcementReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdControllerState, ControllerStateReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdControllerSettings, ControllerSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdModulatorSettings, ModulatorSettingsReceived);
@@ -495,6 +497,48 @@ namespace DefenseShields
         #endregion
 
         #region Network sync
+        private static void EnforcementReceived(byte[] bytes)
+        {
+            try
+            {
+                if (bytes.Length <= 2) return;
+
+                var data = MyAPIGateway.Utilities.SerializeFromBinary<DataEnforce>(bytes); // this will throw errors on invalid data
+
+                if (data == null) return;
+
+                IMyEntity ent;
+                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
+                {
+                    Log.Line($"EnforceData Received; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    return;
+                }
+
+                var logic = ent.GameLogic.GetAs<DefenseShields>();
+                if (logic == null) return;
+
+                switch (data.Type)
+                {
+                    case PacketType.Enforce:
+                    {
+                        if (data.Enforce == null) return;
+
+                        if (Enforced.Debug == 1) Log.Line($"EnforceData Received; Enforce - Server:\n{data.Enforce}");
+                        if (!IsServer)
+                        {
+                            Enforcements.SaveEnforcement(logic.Shield, data.Enforce);
+                            EnforceInit = true;
+                            if (Enforced.Debug == 1) Log.Line($"client accepted enforcement");
+                            if (Enforced.Debug == 1) Log.Line($"Client EnforceInit Complete with enforcements:\n{data.Enforce}");
+                        }
+                        else PacketizeEnforcements(logic.Shield, data.Enforce.SenderId);
+                    }
+                        break;
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in PacketEnforcementReceived: {ex}"); }
+        }
+
         private static void ControllerStateReceived(byte[] bytes)
         {
             try
@@ -753,6 +797,13 @@ namespace DefenseShields
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in EmitterStateReceived: {ex}"); }
+        }
+
+        public static void PacketizeEnforcements(IMyCubeBlock block, ulong senderId)
+        {
+            var data = new DataEnforce(MyAPIGateway.Multiplayer.MyId, block.EntityId, Enforced);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            MyAPIGateway.Multiplayer.SendMessageTo(PacketIdEnforce, bytes, senderId);
         }
 
         public static void PacketizeControllerState(IMyCubeBlock block, ProtoControllerState state)

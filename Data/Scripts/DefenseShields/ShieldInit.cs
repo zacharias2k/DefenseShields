@@ -1,5 +1,6 @@
 ﻿using System;
 using DefenseShields.Support;
+using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game.Components;
@@ -44,6 +45,7 @@ namespace DefenseShields
                     Election();
                     RegisterEvents();
                 }
+
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
@@ -134,13 +136,11 @@ namespace DefenseShields
                 {
                     var enforcement = Enforcements.LoadEnforcement(Shield);
                     if (enforcement != null) Session.Enforced = enforcement;
-
                 }
-                Log.Line($"StorageSetup: Valid Enforcement:{Session.Enforced.Version > 0} - Version: {Session.Enforced.Version} - ShieldId [{Shield.EntityId}]");
-
                 DsSet.LoadSettings();
                 DsState.LoadState();
                 UpdateSettings(DsSet.Settings);
+                Log.Line($"StorageSetup: Valid Enforcement:{Session.Enforced.Version > 0} - Version: {Session.Enforced.Version} - ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in StorageSetup: {ex}"); }
         }
@@ -192,14 +192,14 @@ namespace DefenseShields
                 {
                     var enforcement = Enforcements.LoadEnforcement(Shield);
                     if (enforcement != null) Session.Enforced = enforcement;
-                }
-                if (Session.Enforced.Version <= 0)
-                {
-                    Log.Line($"Enforcement Broken - Version:{Session.Enforced.Version} - retrying");
-                    return true;
+                    else if (!RequestedEnforcement)
+                    {
+                        Enforcements.EnforcementRequest(Shield.EntityId);
+                        RequestedEnforcement = true;
+                    }
                 }
             }
-            return false;
+            return Session.Enforced.Version <= 0;
         }
 
         public void SetShieldType(bool quickCheck)
