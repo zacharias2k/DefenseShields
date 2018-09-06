@@ -18,7 +18,8 @@ namespace DefenseShields
         {
             try
             {
-                if (_destroyedBlocks.Count == 0 && _missileDmg.Count == 0 || _meteorDmg.Count == 0 &&
+
+                if (_destroyedBlocks.Count == 0 && _missileDmg.Count == 0 && _meteorDmg.Count == 0 &&
                     _voxelDmg.Count == 0 && _characterDmg.Count == 0 && _fewDmgBlocks.Count == 0 &&
                     _dmgBlocks.Count == 0) return;
 

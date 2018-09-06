@@ -425,7 +425,7 @@ namespace DefenseShields
         {
             EmiState.State.Online = false;
             var functional = Emitter.IsFunctional;
-            if (!functional || Emitter.CubeGrid == null  || Sink.CurrentInputByType(GId) < 0.01f)
+            if (!functional || Emitter.CubeGrid == null)
             {
                 EmiState.State.Suspend = true;
                 if (ShieldComp?.StationEmitter == this) ShieldComp.StationEmitter = null;

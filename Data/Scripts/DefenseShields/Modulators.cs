@@ -174,7 +174,7 @@ namespace DefenseShields
         private bool BlockWorking()
         {
             ModState.State.Online = false;
-            if (Modulator?.CubeGrid == null || Sink.CurrentInputByType(GId) < 0.01f || !Modulator.Enabled || !Modulator.IsFunctional)
+            if (Modulator?.CubeGrid == null || !Modulator.Enabled || !Modulator.IsFunctional)
             {
                 if (Modulator != null && _tick % 300 == 0)
                 {

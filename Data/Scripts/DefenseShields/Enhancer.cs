@@ -32,6 +32,7 @@ namespace DefenseShields
         internal ShieldGridComponent ShieldComp;
         //internal EnhancerSettings EnhSet;
         internal EnhancerState EnhState;
+        internal DSUtils Dsutil1 = new DSUtils();
 
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;
@@ -50,7 +51,6 @@ namespace DefenseShields
                 if (!EnhancerReady(isServer)) return;
 
                 Timing();
-
                 if (!Session.DedicatedServer && UtilsStatic.DistanceCheck(Enhancer, 1000, 1))
                 {
                     var blockCam = Enhancer.PositionComp.WorldVolume;
@@ -105,7 +105,7 @@ namespace DefenseShields
 
         private bool BlockWorking()
         {
-            if (Enhancer?.CubeGrid == null || Sink.CurrentInputByType(GId) < 0.01f || !Enhancer.Enabled || !Enhancer.IsFunctional)
+            if (Enhancer?.CubeGrid == null || !Enhancer.Enabled || !Enhancer.IsFunctional)
             {
                 NeedUpdate(EnhState.State.Online, false);
                 return false;
