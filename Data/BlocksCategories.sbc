@@ -402,6 +402,7 @@
       <BlockTopology>TriangleMesh</BlockTopology>
 	<Size x="22" y="19" z="22" />
 	<ModelOffset x="0" y="0" z="0" />
+	<Center x="11" y="0" z="0" />
 	<Model>Models\Cubes\PlanetaryEmitter.mwm</Model>
 	<MountPoints>
 		<MountPoint Side="Bottom" StartX="0" StartY="0" EndX="22" EndY="22" />
