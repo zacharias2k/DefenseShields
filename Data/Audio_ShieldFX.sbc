@@ -15,7 +15,7 @@
       <Category>Particle</Category>
       <MaxDistance>300</MaxDistance>
       <UpdateDistance>120</UpdateDistance>
-      <Volume>1.5</Volume>
+      <Volume>3.0</Volume>
       <PreventSynchronization>0</PreventSynchronization>
       <SoundLimit>4</SoundLimit>
       <Waves>
@@ -44,7 +44,7 @@
       <Category>R_Particle</Category>
       <MaxDistance>300</MaxDistance>
 	  <UpdateDistance>120</UpdateDistance>
-      <Volume>1.5</Volume>
+      <Volume>3.0</Volume>
       <VolumeVariation>0.1</VolumeVariation>
       <PitchVariation>25</PitchVariation>
 	<ModifiableByHelmetFilters>true</ModifiableByHelmetFilters>
