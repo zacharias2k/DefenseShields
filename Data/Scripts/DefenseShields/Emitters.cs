@@ -120,7 +120,7 @@ namespace DefenseShields
                 _lCount++;
                 if (_lCount == 10) _lCount = 0;
             }
-            if (_count == 29 && Session.DedicatedServer && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
+            if (_count == 29 && !Session.DedicatedServer && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
             {
                 Emitter.RefreshCustomInfo();
                 Emitter.ShowInToolbarConfig = false;

@@ -37,6 +37,7 @@ namespace DefenseShields
         internal bool IsStatic;
         internal bool BlockIsWorking;
         internal bool BlockWasWorking;
+        internal bool ContainerInited;
 
         internal ShieldGridComponent ShieldComp;
         internal MyResourceSourceComponent Source;
@@ -342,7 +343,7 @@ namespace DefenseShields
                                      "\n[Ice-to-Air volumetric ratio]: 261.3" +
                                      "\n[Shield Volume]: " + O2State.State.ShieldVolume.ToString("N0") +
                                      "\n[Volume Filled]: " + O2State.State.VolFilled.ToString("N0") +
-                                     "\n[Back Generator]: " + O2State.State.Backup +
+                                     "\n[Backup Generator]: " + O2State.State.Backup +
                                      "\n[Internal O2 Lvl]: " + ((O2State.State.O2Level + O2State.State.DefaultO2) * 100).ToString("0") + "%" +
                                      "\n[External O2 Lvl]: " + (O2State.State.DefaultO2 * 100).ToString("0") + "%");
             }
@@ -357,8 +358,12 @@ namespace DefenseShields
 
         public override void OnAddedToContainer()
         {
-            NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-            NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+            if (!ContainerInited)
+            {
+                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+                ContainerInited = true;
+            }
             if (Entity.InScene) OnAddedToScene();
         }
 

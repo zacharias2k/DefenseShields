@@ -26,8 +26,8 @@ namespace DefenseShields
         internal int RotationTime;
         internal bool MainInit;
         internal bool SettingsUpdated;
-        internal bool IsStatic;
         internal bool ClientUiUpdate;
+        internal bool ContainerInited;
 
         private uint _tick;
         private uint _hierarchyTick = 1;
@@ -56,7 +56,6 @@ namespace DefenseShields
 
         private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
-
         public IMyUpgradeModule Modulator => (IMyUpgradeModule)Entity;
 
         internal DSUtils Dsutil1 = new DSUtils();
@@ -68,7 +67,6 @@ namespace DefenseShields
                 if (Modulator.CubeGrid.Physics == null) return;
                 _tick = Session.Instance.Tick;
                 var isServer = Session.IsServer;
-                IsStatic = Modulator.CubeGrid.IsStatic;
 
                 if (!ModulatorReady(isServer))
                 {
@@ -115,12 +113,16 @@ namespace DefenseShields
                 StateChange(true);
                 Modulator.RefreshCustomInfo();
             }
-            if (!isServer && stateChange) StateChange(true);
+
+            if (!isServer && stateChange)
+            {
+                StateChange(true);
+                Modulator.RefreshCustomInfo();
+            }
         }
 
         private void ModulatorOn()
         {
-            ModState.State.Online = true;
             if (StateChange())
             {
                 NeedUpdate();
@@ -150,18 +152,26 @@ namespace DefenseShields
             }
         }
 
-        private bool ModulatorReady(bool server)
+        private bool ModulatorReady(bool isServer)
         {
             if (_subpartRotor == null)
             {
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                if (_subpartRotor == null) return false;
+                if (_subpartRotor == null)
+                {
+                    if (isServer) ModState.State.Online = false;
+                    return false;
+                }
             }
             if (ModulatorComp == null) Election();
 
-            if (server)
+            if (isServer)
             {
-                if (!BlockWorking()) return false;
+                if (!BlockWorking())
+                {
+                    ModState.State.Online = false;
+                    return false;
+                }
             }
             else
             {
@@ -173,7 +183,6 @@ namespace DefenseShields
 
         private bool BlockWorking()
         {
-            ModState.State.Online = false;
             if (Modulator?.CubeGrid == null || !Modulator.Enabled || !Modulator.IsFunctional)
             {
                 if (Modulator != null && _tick % 300 == 0)
@@ -182,12 +191,14 @@ namespace DefenseShields
                     Modulator.ShowInToolbarConfig = false;
                     Modulator.ShowInToolbarConfig = true;
                 }
+                ModState.State.Online = false;
                 return false;
             }
             if (ModulatorComp.Modulator == null) ModulatorComp.Modulator = this;
             else if (ModulatorComp.Modulator != this)
             {
                 ModState.State.Backup = true;
+                ModState.State.Online = false;
                 return false;
             }
 
@@ -281,28 +292,31 @@ namespace DefenseShields
                 return true;
             }
 
-            return _wasOnline != ModState.State.Online || _wasLink != ModState.State.Link || _wasBackup != ModState.State.Backup 
+            var change = _wasOnline != ModState.State.Online || _wasLink != ModState.State.Link || _wasBackup != ModState.State.Backup 
                    || _wasModulateDamage != ModState.State.ModulateDamage || !_wasModulateEnergy.Equals(ModState.State.ModulateEnergy) 
                    || !_wasModulateKinetic.Equals(ModState.State.ModulateKinetic);
+            if (change) Log.Line($"Modulator StateChanged - O:{ModState.State.Online} - L:{ModState.State.Link} - B:{ModState.State.Backup}");
+            return change;
         }
 
         private void NeedUpdate()
         {
             ModState.SaveState();
-            if (Session.MpActive) ModState.NetworkUpdate();
+            if (Session.MpActive)
+            {
+                Log.Line($"Modulator NeedUpdate - O:{ModState.State.Online} - L:{ModState.State.Link} - B:{ModState.State.Backup}");
+                ModState.NetworkUpdate();
+            }
         }
 
         public override void OnAddedToContainer()
         {
-            PowerPreInit();
-            NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-            NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-            if (!MainInit) return;
-
-            if (Modulator.CubeGrid.IsStatic != IsStatic)
+            if (!ContainerInited)
             {
-                Election();
-                ((MyCubeGrid)Modulator.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
+                PowerPreInit();
+                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+                ContainerInited = true;
             }
             if (Entity.InScene) OnAddedToScene();
         }

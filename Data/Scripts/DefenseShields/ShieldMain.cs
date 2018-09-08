@@ -604,9 +604,10 @@ namespace DefenseShields
             if (!DsState.State.ControllerGridAccess) return "[Invalid Owner]";
             if (DsState.State.Waking) return "[Coming Online]";
             if (DsState.State.Suspended || DsState.State.Mode == 4) return "[Controller Standby]";
+            if (DsState.State.Lowered) return "[Shield Down]";
             if (DsState.State.Sleeping) return "[Docked]";
             if (!DsState.State.EmitterWorking) return "[Emitter Failure]";
-            if (!DsState.State.Online) return "[Shield Down]";
+            if (!DsState.State.Online) return "[Shield Offline]";
             return "[Shield Up]";
         }
 
@@ -637,7 +638,7 @@ namespace DefenseShields
                     gridMaxPower = gridMaxPower + _batteryMaxPower;
                 }
                 var status = GetShieldStatus();
-                if (status == "[Shield Up]" || status == "[Shield Down]")
+                if (status == "[Shield Up]" || status == "[Shield Down]" || status == "[Shield Offline]")
                 {
                     stringBuilder.Append(status + " MaxHP: " + (_shieldMaxBuffer * Session.Enforced.Efficiency).ToString("N0") +
                                          "\n" +

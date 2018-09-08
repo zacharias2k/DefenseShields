@@ -129,7 +129,7 @@ namespace DefenseShields
 
             if (insidePoints.Count <= 0) return;
 
-            var gridMaxCharge = ds._shieldMaxChargeRate;
+            var gridMaxCharge = ds._shieldChargeRate;
             var damage = gridMaxCharge * Session.Enforced.Efficiency * DsState.State.ModulateEnergy * 0.05f;
             if (Session.MpActive)
             {

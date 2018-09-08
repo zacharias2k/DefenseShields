@@ -5,8 +5,8 @@ using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
-using VRage.Game;
 using VRage.Game.Components;
+using VRage.Game.GUI.TextPanel;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 
@@ -52,10 +52,15 @@ namespace DefenseShields
         {
             _tick = Session.Instance.Tick;
             Timing();
-            if (ShieldComp == null) Display.CubeGrid.Components.TryGet(out ShieldComp);
-            if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.DefenseShields.Starting) return;
             if (_count == 29)
             {
+                if (ShieldComp == null) Display.CubeGrid.Components.TryGet(out ShieldComp);
+                if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.DefenseShields.Starting)
+                {
+                    if (Display.ShowText) Display.SetShowOnScreen(0);
+                    return;
+                }
+                if (!Display.ShowText) Display.ShowPublicTextOnScreen();
                 Display.WritePublicText(ShieldComp.DefenseShields.Shield.CustomInfo);
             }
         }

@@ -653,11 +653,19 @@ namespace DefenseShields
         {
             try
             {
-                if (bytes.Length <= 2) return;
+                if (bytes.Length <= 2)
+                {
+                    Log.Line($"ModulateState byte leng <= 2");
+                    return;
+                }
 
                 var data = MyAPIGateway.Utilities.SerializeFromBinary<DataModulatorState>(bytes); // this will throw errors on invalid data
 
-                if (data == null) return;
+                if (data == null)
+                {
+                    Log.Line($"ModulatorState data is null");
+                    return;
+                }
 
                 IMyEntity ent;
                 if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
