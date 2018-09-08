@@ -15,9 +15,9 @@
       <Category>Particle</Category>
       <MaxDistance>300</MaxDistance>
       <UpdateDistance>120</UpdateDistance>
-      <Volume>3.0</Volume>
+      <Volume>1.5</Volume>
       <PreventSynchronization>0</PreventSynchronization>
-      <SoundLimit>12</SoundLimit>
+      <SoundLimit>4</SoundLimit>
       <Waves>
         <Wave Type="D3">
           <Start>Audio\Particle\ShieldHit_v601.wav</Start>
@@ -44,12 +44,12 @@
       <Category>R_Particle</Category>
       <MaxDistance>300</MaxDistance>
 	  <UpdateDistance>120</UpdateDistance>
-      <Volume>3.0</Volume>
+      <Volume>1.5</Volume>
       <VolumeVariation>0.1</VolumeVariation>
       <PitchVariation>25</PitchVariation>
 	<ModifiableByHelmetFilters>true</ModifiableByHelmetFilters>
       <PreventSynchronization>0</PreventSynchronization>
-      <SoundLimit>12</SoundLimit>
+      <SoundLimit>4</SoundLimit>
 	  <RealisticFilter>realShipFilter</RealisticFilter>
 	  <RealisticVolumeChange>0.8</RealisticVolumeChange>
       <Waves>
