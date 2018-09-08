@@ -2020,7 +2020,40 @@
           </Properties>
         </ParticleLight>
       </ParticleLights>
-      <ParticleSounds />
+      <ParticleSounds>
+        <ParticleSound Name="ShieldImpactFX" Version="0">
+          <Properties>
+            <Property Name="Volume" Type="Float" AnimationType="Animated">
+              <Keys>
+                <Key>
+                  <Time>0</Time>
+                  <ValueFloat>1</ValueFloat>
+                </Key>
+              </Keys>
+            </Property>
+            <Property Name="Volume var" Type="Float" AnimationType="Animated">
+              <Keys />
+            </Property>
+            <Property Name="Range" Type="Float" AnimationType="Animated">
+              <Keys>
+                <Key>
+                  <Time>0</Time>
+                  <ValueFloat>300</ValueFloat>
+                </Key>
+              </Keys>
+            </Property>
+            <Property Name="Range var" Type="Float" AnimationType="Animated">
+              <Keys />
+            </Property>
+            <Property Name="Sound name" Type="String" AnimationType="Const">
+              <ValueString>ShieldHitFX</ValueString>
+            </Property>
+            <Property Name="Enabled" Type="Bool" AnimationType="Const">
+              <ValueBool>true</ValueBool>
+            </Property>
+          </Properties>
+        </ParticleSound>
+      </ParticleSounds>
     </ParticleEffect>
   </ParticleEffects>
 </Definitions>
