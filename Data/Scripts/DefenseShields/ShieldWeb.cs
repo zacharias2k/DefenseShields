@@ -279,16 +279,11 @@ namespace DefenseShields
 
                 ShieldGridComponent shieldComponent;
                 grid.Components.TryGet(out shieldComponent);
-                if (shieldComponent?.DefenseShields?.ShieldComp != null)
+                if (shieldComponent?.DefenseShields?.ShieldComp != null && shieldComponent.DefenseShields.WasOnline)
                 {
                     var dsComp = shieldComponent.DefenseShields;
                     var shieldEntity = (MyEntity)Shield.Parent;
                     if (!enemy) return Ent.Friend;
-                    if (!dsComp.DsState.State.Online)
-                    {
-                        EntIntersectInfo shieldRemoved;
-                        if (WebEnts.TryRemove(ent, out shieldRemoved)) return Ent.LargeEnemyGrid;
-                    }
                     dsComp.EnemyShields.Add(shieldEntity);
                     return Ent.Shielded;    
                 }
