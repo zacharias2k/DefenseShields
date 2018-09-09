@@ -167,19 +167,12 @@ namespace DefenseShields
                     if (collisionAvg != Vector3D.Zero)
                     {
                         collisionAvg /= c2;
+
                         var sLSpeed = sPhysics.LinearVelocity;
                         var sASpeed = sPhysics.AngularVelocity * 50;
-                        var sLSpeedLen = sLSpeed.LengthSquared();
-                        var sASpeedLen = sASpeed.LengthSquared();
-                        var sSpeed = sLSpeedLen > sASpeedLen ? sLSpeed : sASpeed;
-                        var sSpeedLen = sLSpeedLen > sASpeedLen ? sLSpeed.LengthSquared() : sASpeed.LengthSquared();
-
-                        var bLSpeed = bPhysics.LinearVelocity;
-                        var bASpeed = bPhysics.AngularVelocity * 50;
-                        var bLSpeedLen = bLSpeed.LengthSquared();
-                        var bASpeedLen = bASpeed.LengthSquared();
-                        var bSpeed = bLSpeedLen > bASpeedLen ? bLSpeed : bASpeed;
-                        var bSpeedLen = bLSpeedLen > bASpeedLen ? bLSpeed.LengthSquared() : bASpeed.LengthSquared();
+                        var sLSpeedLen = sLSpeed.Length();
+                        var sASpeedLen = sASpeed.Length();
+                        var sSpeedLen = sLSpeedLen > sASpeedLen ? sLSpeedLen : sASpeedLen;
 
                         if (!bPhysics.IsStatic) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass, bPhysics.CenterOfMassWorld);
                         if (!sPhysics.IsStatic) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sMass, sPhysics.CenterOfMassWorld);
@@ -189,8 +182,7 @@ namespace DefenseShields
                         var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
                         if (!bPhysics.IsStatic) bPhysics.ApplyImpulse(surfaceMulti * (surfaceMass / 40) * -Vector3D.Dot(bPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
                         if (!sPhysics.IsStatic) sPhysics.ApplyImpulse(surfaceMulti * (surfaceMass / 40) * -Vector3D.Dot(sPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
-                        if (!sPhysics.IsStatic) sPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * sMass, null, Vector3D.Zero, MathHelper.Clamp(sSpeedLen, 10f, 20f));
-                        if (!bPhysics.IsStatic) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - bPhysics.CenterOfMassWorld) * bMass, null, Vector3D.Zero, MathHelper.Clamp(bSpeedLen, 10f, 20f));
+                        if (!bPhysics.IsStatic) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * -sMass, null, Vector3D.Zero, sSpeedLen + 3);
                     }
                 }
             }

@@ -625,10 +625,7 @@ namespace DefenseShields
             }
             for (int i = 0; i < ShieldComp.PhysicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
             EmiState.State.Los = _blocksLos.Count < 552;
-            if (!EmiState.State.Los)
-            {
-                ShieldComp.EmitterEvent = true;
-            }
+            if (!EmiState.State.Los) ShieldComp.EmitterEvent = true;
             ShieldComp.CheckEmitters = false;
             if (Session.Enforced.Debug >= 1) Log.Line($"LOS: Mode: {EmitterMode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {EmiState.State.Los.ToString()} - EmitterId [{Emitter.EntityId}]");
         }

@@ -57,7 +57,7 @@ namespace DefenseShields
                 SetShieldServerStatus(powerState);
                 Timing(true);
 
-                if (ComingOnline && (!GridOwnsController() || GridIsMobile && FieldShapeBlocked()))
+                if (!DsState.State.Online || ComingOnline && (!GridOwnsController() || GridIsMobile && FieldShapeBlocked()))
                 {
                     _genericDownLoop = 0;
                     ShieldDown();
@@ -262,7 +262,6 @@ namespace DefenseShields
             if (_genericDownLoop > -1)
             {
                 _genericDownLoop++;
-                if (_genericDownLoop == GenericDownCount - 1) ShieldComp.CheckEmitters = true;
                 if (_genericDownLoop == GenericDownCount)
                 {
                     if (!ShieldComp.EmittersWorking)

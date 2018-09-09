@@ -56,11 +56,11 @@ namespace DefenseShields
             try
             {
                 if (O2Generator.CubeGrid.Physics == null) return;
-                _tick = Session.Instance.Tick;
-                IsStatic = O2Generator.CubeGrid.Physics.IsStatic;
                 var isServer = Session.IsServer;
-                if (!O2GeneratorReady(isServer)) return;
+                _tick = Session.Instance.Tick;
                 Timing();
+
+                if (!O2GeneratorReady(isServer)) return;
 
                 if (_count > 0) return;
 
@@ -138,11 +138,7 @@ namespace DefenseShields
                 if (ShieldComp?.DefenseShields == null)
                 {
                     O2Generator.CubeGrid.Components.TryGet(out ShieldComp);
-                    if (ShieldComp?.DefenseShields == null)
-                    {
-                        Timing();
-                        return false;
-                    }
+                    if (ShieldComp?.DefenseShields == null) return false;
                 }
                 if (!O2State.State.Backup && ShieldComp.ActiveO2Generator != this) ShieldComp.ActiveO2Generator = this;
 
@@ -153,9 +149,10 @@ namespace DefenseShields
 
         private bool BlockWorking()
         {
-            if (O2Generator?.CubeGrid == null || !O2Generator.Enabled || !O2Generator.IsFunctional || !IsStatic)
+            if (_count <= 0) IsStatic = O2Generator.CubeGrid.Physics.IsStatic;
+
+            if (O2Generator?.CubeGrid == null || !O2Generator.Enabled || !O2Generator.IsFunctional || !IsStatic || !O2Generator.IsWorking)
             {
-                Timing();
                 if (O2State.State.Pressurized) UpdateAirEmissives(0f);
                 NeedUpdate(O2State.State.Pressurized, false);
                 return false;

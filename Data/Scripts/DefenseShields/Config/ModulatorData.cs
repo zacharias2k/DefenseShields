@@ -60,7 +60,7 @@ namespace DefenseShields
 
             if (Session.IsServer)
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"ServRelay - ModulatorId [{Modulator.EntityId}]: network state update for modulator");
+                if (Session.Enforced.Debug >= 1) Log.Line($"ServRelay - Online:{State.Online} Link:{State.Link} - Backup:{State.Backup} - ModulatorId [{Modulator.EntityId}]: network state update for modulator");
                 Session.PacketizeModulatorState(Modulator, State); // update clients with server's settings
             }
             else // client, send settings to server

@@ -28,6 +28,7 @@ namespace DefenseShields
         internal bool SettingsUpdated;
         internal bool ClientUiUpdate;
         internal bool ContainerInited;
+        private bool _powered;
 
         private uint _tick;
         private uint _hierarchyTick = 1;
@@ -65,16 +66,16 @@ namespace DefenseShields
             try
             {
                 if (Modulator.CubeGrid.Physics == null) return;
-                _tick = Session.Instance.Tick;
                 var isServer = Session.IsServer;
+                _tick = Session.Instance.Tick;
+                Timing();
 
                 if (!ModulatorReady(isServer))
                 {
                     ModulatorOff(isServer);
                     return;
                 }
-                if (isServer) ModulatorOn();
-                Timing();
+                ModulatorOn(isServer);
 
                 if (!Session.DedicatedServer && UtilsStatic.DistanceCheck(Modulator, 1000, 1))
                 {
@@ -107,23 +108,25 @@ namespace DefenseShields
         {
             var stateChange = StateChange();
 
-            if (isServer && stateChange)
+            if (stateChange)
             {
-                NeedUpdate();
-                StateChange(true);
-                Modulator.RefreshCustomInfo();
-            }
-
-            if (!isServer && stateChange)
-            {
-                StateChange(true);
-                Modulator.RefreshCustomInfo();
+                if (isServer)
+                {
+                    NeedUpdate();
+                    StateChange(true);
+                    Modulator.RefreshCustomInfo();
+                }
+                else
+                {
+                    StateChange(true);
+                    Modulator.RefreshCustomInfo();
+                }
             }
         }
 
-        private void ModulatorOn()
+        private void ModulatorOn(bool isServer)
         {
-            if (StateChange())
+            if (isServer && StateChange())
             {
                 NeedUpdate();
                 StateChange(true);
@@ -183,9 +186,10 @@ namespace DefenseShields
 
         private bool BlockWorking()
         {
-            if (Modulator?.CubeGrid == null || !Modulator.Enabled || !Modulator.IsFunctional)
+            if (_count <= 0) _powered = Sink.IsPowerAvailable(GId, 0.01f);
+            if (Modulator?.CubeGrid == null || !Modulator.Enabled || !Modulator.IsFunctional || !_powered)
             {
-                if (Modulator != null && _tick % 300 == 0)
+                if (Modulator != null && _count == 29)
                 {
                     Modulator.RefreshCustomInfo();
                     Modulator.ShowInToolbarConfig = false;
@@ -295,18 +299,13 @@ namespace DefenseShields
             var change = _wasOnline != ModState.State.Online || _wasLink != ModState.State.Link || _wasBackup != ModState.State.Backup 
                    || _wasModulateDamage != ModState.State.ModulateDamage || !_wasModulateEnergy.Equals(ModState.State.ModulateEnergy) 
                    || !_wasModulateKinetic.Equals(ModState.State.ModulateKinetic);
-            if (change) Log.Line($"Modulator StateChanged - O:{ModState.State.Online} - L:{ModState.State.Link} - B:{ModState.State.Backup}");
             return change;
         }
 
         private void NeedUpdate()
         {
             ModState.SaveState();
-            if (Session.MpActive)
-            {
-                Log.Line($"Modulator NeedUpdate - O:{ModState.State.Online} - L:{ModState.State.Link} - B:{ModState.State.Backup}");
-                ModState.NetworkUpdate();
-            }
+            if (Session.MpActive) ModState.NetworkUpdate();
         }
 
         public override void OnAddedToContainer()

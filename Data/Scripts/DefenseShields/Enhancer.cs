@@ -25,7 +25,8 @@ namespace DefenseShields
         private int _lCount;
         internal int RotationTime;
         internal bool ContainerInited;
-        private float _power = 0.01f;
+        private bool _powered;
+        private const float Power = 0.01f;
 
         private readonly Dictionary<long, Enhancers> _enhancers = new Dictionary<long, Enhancers>();
         public IMyUpgradeModule Enhancer => (IMyUpgradeModule)Entity;
@@ -45,12 +46,11 @@ namespace DefenseShields
             try
             {
                 if (Enhancer.CubeGrid.Physics == null) return;
-                _tick = Session.Instance.Tick;
                 var isServer = Session.IsServer;
-
+                _tick = Session.Instance.Tick;
+                Timing();
                 if (!EnhancerReady(isServer)) return;
 
-                Timing();
                 if (!Session.DedicatedServer && UtilsStatic.DistanceCheck(Enhancer, 1000, 1))
                 {
                     var blockCam = Enhancer.PositionComp.WorldVolume;
@@ -105,7 +105,8 @@ namespace DefenseShields
 
         private bool BlockWorking()
         {
-            if (Enhancer?.CubeGrid == null || !Enhancer.Enabled || !Enhancer.IsFunctional)
+            if (_count <= 0) _powered = Sink.IsPowerAvailable(GId, 0.01f);
+            if (Enhancer?.CubeGrid == null || !Enhancer.Enabled || !Enhancer.IsFunctional || !_powered)
             {
                 NeedUpdate(EnhState.State.Online, false);
                 return false;
@@ -134,7 +135,7 @@ namespace DefenseShields
                     EnhState.State.Online = false;
                 }
 
-                if (Enhancer != null && _tick % 300 == 0)
+                if (Enhancer != null && _count == 29)
                 {
                     Enhancer.RefreshCustomInfo();
                     Enhancer.ShowInToolbarConfig = false;
@@ -143,7 +144,7 @@ namespace DefenseShields
 
             }
 
-            if (!EnhState.State.Backup && ShieldComp?.Enhancer == this)
+            if (!EnhState.State.Backup && ShieldComp.Enhancer == this && ShieldComp.DefenseShields.WasOnline)
             {
                 NeedUpdate(EnhState.State.Online, true);
                 return true;
@@ -242,8 +243,8 @@ namespace DefenseShields
                 ResourceInfo = new MyResourceSinkInfo()
                 {
                     ResourceTypeId = GId,
-                    MaxRequiredInput = 0f,
-                    RequiredInputFunc = () => _power
+                    MaxRequiredInput = 0.02f,
+                    RequiredInputFunc = () => Power
                 };
                 Sink.Init(MyStringHash.GetOrCompute("Utility"), ResourceInfo);
                 Sink.AddType(ref ResourceInfo);
@@ -314,7 +315,7 @@ namespace DefenseShields
                 stringBuilder.Append("[Online]: " + EnhState.State.Online +
                                      "\n" +
                                      "\n[Amplifying Shield]: " + EnhState.State.Online +
-                                     "\n[Enhancer Mode]: " + _power.ToString("0") + "%");
+                                     "\n[Enhancer Mode]: " + Power.ToString("0") + "%");
             }
             else
             {

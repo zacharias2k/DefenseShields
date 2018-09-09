@@ -465,7 +465,7 @@ namespace DefenseShields
 
         public DataModulatorState(ulong sender, long entityId, ProtoModulatorState state)
         {
-            Type = PacketType.Modulatorsettings;
+            Type = PacketType.Modulatorstate;
             Sender = sender;
             EntityId = entityId;
             State = state;
