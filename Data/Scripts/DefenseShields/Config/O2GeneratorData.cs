@@ -63,12 +63,6 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 1) Log.Line($"ServRelay - O2GeneratorId [{O2Generator.EntityId}]: network state update for O2Generator");
                 Session.PacketizeO2GeneratorState(O2Generator, State); // update clients with server's settings
             }
-            else // client, send settings to server
-            {
-                if (Session.Enforced.Debug >= 1) Log.Line($"ClientRelay - O2GeneratorId [{O2Generator.EntityId}]: sent network state update for O2Generator");
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataO2GeneratorState(MyAPIGateway.Multiplayer.MyId, O2Generator.EntityId, State));
-                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdO2GeneratorState, bytes);
-            }
         }
         #endregion
     }

@@ -64,12 +64,6 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 1) Log.Line($"ServRelay - EmitterId [{Emitter.EntityId}]: network state update for emitter");
                 Session.PacketizeEmitterState(Emitter, State); // update clients with server's settings
             }
-            else // client, send settings to server
-            {
-                if (Session.Enforced.Debug >= 1) Log.Line($"ClientRelay - EmitterId [{Emitter.EntityId}]: sent network state update for emitter");
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataEmitterState(MyAPIGateway.Multiplayer.MyId, Emitter.EntityId, State));
-                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdEmitterState, bytes);
-            }
         }
         #endregion
     }

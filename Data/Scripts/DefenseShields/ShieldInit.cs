@@ -100,7 +100,8 @@ namespace DefenseShields
                 var isServer = Session.IsServer;
                 if (Shield.CubeGrid.Physics == null) return false;
 
-                if (isServer && (ShieldComp.EmitterMode < 0 || ShieldComp.EmittersSuspended))
+                var isFunctional = Shield.IsFunctional;
+                if (isServer && (ShieldComp.EmitterMode < 0 || ShieldComp.EmittersSuspended || !isFunctional))
                 {
                     if (_tick % 600 == 0)
                     {
@@ -116,7 +117,7 @@ namespace DefenseShields
                 SetShieldType(false);
                 CleanUp(3);
 
-                if (!Shield.IsFunctional || isServer && !BlockReady()) return false;
+                if (!isFunctional || isServer && !BlockReady()) return false;
 
                 AllInited = true;
                 if (Session.Enforced.Debug >= 1) Log.Line($"AllInited: ShieldId [{Shield.EntityId}]");

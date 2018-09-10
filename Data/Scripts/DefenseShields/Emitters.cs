@@ -155,19 +155,21 @@ namespace DefenseShields
         {
             if (!EmitterReady(isServer))
             {
-                EmiState.State.Link = false;
-                var stateChange = StateChange();
+                if (isServer) EmiState.State.Link = false;
 
-                if (isServer && stateChange)
+                if (StateChange())
                 {
-                    BlockReset(true);
-                    NeedUpdate();
-                    StateChange(true);
-                }
-                if (!isServer && stateChange)
-                {
-                    BlockReset(true);
-                    StateChange(true);
+                    if (isServer)
+                    {
+                        BlockReset(true);
+                        NeedUpdate();
+                        StateChange(true);
+                    }
+                    else
+                    {
+                        BlockReset(true);
+                        StateChange(true);
+                    }
                 }
                 return false;
             }
@@ -182,8 +184,7 @@ namespace DefenseShields
             }
             else if (!EmiState.State.Link || !ShieldComp.DefenseShields.WarmedUp)
             {
-                var stateChange = StateChange();
-                if (stateChange)
+                if (StateChange())
                 {
                     BlockReset(true);
                     StateChange(true);
@@ -656,7 +657,11 @@ namespace DefenseShields
 
         private void CheckEmitter(IMyTerminalBlock myTerminalBlock)
         {
-            if (myTerminalBlock.IsWorking) ShieldComp.CheckEmitters = true;
+            try
+            {
+                if (myTerminalBlock.IsWorking) ShieldComp.CheckEmitters = true;
+            }
+            catch (Exception ex) { Log.Line($"Exception in CheckEmitter: {ex}"); }
         }
 
         public override void OnAddedToContainer()

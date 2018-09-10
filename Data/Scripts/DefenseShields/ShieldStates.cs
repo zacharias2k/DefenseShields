@@ -59,7 +59,7 @@ namespace DefenseShields
 
                 if (!DsState.State.Online || ComingOnline && (!GridOwnsController() || GridIsMobile && FieldShapeBlocked()))
                 {
-                    _genericDownLoop = 0;
+                    if (_genericDownLoop == -1) _genericDownLoop = 0;
                     ShieldDown();
                     return false;
                 }
@@ -96,7 +96,7 @@ namespace DefenseShields
             ControlBlockWorking = Shield.IsWorking && Shield.IsFunctional;
             if (!ControlBlockWorking || !ShieldComp.EmittersWorking)
             {
-                _genericDownLoop = 0;
+                if (_genericDownLoop == -1) _genericDownLoop = 0;
                 return false;
             }
 
@@ -162,7 +162,7 @@ namespace DefenseShields
                     DsState.State.Waking = true;
                     DsState.State.Message = true;
                 }
-                _genericDownLoop = 0;
+                if (_genericDownLoop == -1) _genericDownLoop = 0;
                 return true;
             }
             if (UnsuspendTick != uint.MinValue && _tick >= UnsuspendTick)
@@ -220,7 +220,7 @@ namespace DefenseShields
                 DsState.State.EmitterWorking = false;
                 if (GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los) DsState.State.Message = true;
                 else if (!GridIsMobile && ShieldComp.StationEmitter != null && !ShieldComp.StationEmitter.EmiState.State.Los) DsState.State.Message = true;
-                _genericDownLoop = 0;
+                if (_genericDownLoop == -1) _genericDownLoop = 0;
                 if (Session.Enforced.Debug >= 1) Log.Line($"EmitterEvent: detected an emitter event and no emitter is working, shield mode: {ShieldMode} - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
                 return;
             }
@@ -355,7 +355,7 @@ namespace DefenseShields
                 if (ShieldComp.EmitterEvent) EmitterEventDetected();
                 if (!Shield.IsWorking || !ShieldComp.EmittersWorking)
                 {
-                    _genericDownLoop = 0;
+                    if (_genericDownLoop == -1) _genericDownLoop = 0;
                     return false;
                 }
 
@@ -560,8 +560,7 @@ namespace DefenseShields
         private void PlayerMessages(PlayerNotice notice)
         {
             var realPlayerIds = new HashSet<long>();
-            Vector3D center;
-            center = GridIsMobile ? MyGrid.PositionComp.WorldVolume.Center : ShieldComp.StationEmitter.Emitter.WorldVolume.Center;
+            var center = GridIsMobile ? MyGrid.PositionComp.WorldVolume.Center : ShieldComp.StationEmitter.Emitter.WorldVolume.Center;
             switch (notice)
             {
                 case PlayerNotice.EmitterInit:
@@ -594,7 +593,7 @@ namespace DefenseShields
 
         private void BroadcastMessage()
         {
-            if (!DsState.State.EmitterWorking)
+            if (!DsState.State.EmitterWorking && !DsState.State.Waking)
             {
                 if (GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los) PlayerMessages(PlayerNotice.NoLos);
                 else if (!GridIsMobile && ShieldComp.StationEmitter != null && !ShieldComp.StationEmitter.EmiState.State.Los) PlayerMessages(PlayerNotice.NoLos);

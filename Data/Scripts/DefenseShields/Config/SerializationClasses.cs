@@ -184,7 +184,7 @@ namespace DefenseShields
         [ProtoMember(2), DefaultValue(1f)]
         public float ModulateEnergy = 1f;
 
-        [ProtoMember(3), DefaultValue(1)]
+        [ProtoMember(3), DefaultValue(1f)]
         public float ModulateKinetic = 1f;
 
         [ProtoMember(4), DefaultValue(100)]
@@ -314,8 +314,8 @@ namespace DefenseShields
         [ProtoMember(1)]
         public bool Online;
 
-        [ProtoMember(2)]
-        public bool Los;
+        [ProtoMember(2), DefaultValue(true)]
+        public bool Los = true;
 
         [ProtoMember(3)]
         public bool Link;

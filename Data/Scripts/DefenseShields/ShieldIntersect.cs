@@ -202,6 +202,7 @@ namespace DefenseShields
             var collisionAvg = Vector3D.Zero;
             var transformInv = DetectMatrixOutsideInv;
             var normalMat = MatrixD.Transpose(transformInv);
+
             var massMulti = 1000f;
             var blockDmgNum = 5;
             if (ShieldMode == ShieldType.Station && DsState.State.Enhancer)
@@ -286,21 +287,31 @@ namespace DefenseShields
                     {
                         collisionAvg /= c3;
 
-                        var sLSpeed = sPhysics.LinearVelocity;
-                        var sASpeed = sPhysics.AngularVelocity * 50;
-                        var sLSpeedLen = sLSpeed.Length();
-                        var sASpeedLen = sASpeed.Length();
-                        var sSpeedLen = sLSpeedLen > sASpeedLen ? sLSpeedLen : sASpeedLen;
+                        if (sPhysics.IsStatic && !bPhysics.IsStatic)
+                        {
+                            var bLSpeed = bPhysics.LinearVelocity;
+                            var bASpeed = bPhysics.AngularVelocity * 50;
+                            var bLSpeedLen = bLSpeed.LengthSquared();
+                            var bASpeedLen = bASpeed.LengthSquared();
+                            var bSpeedLen = bLSpeedLen > bASpeedLen ? bLSpeedLen : bASpeedLen;
 
-                        if (!bPhysics.IsStatic) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass, bPhysics.CenterOfMassWorld);
-                        if (!sPhysics.IsStatic) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sMass, sPhysics.CenterOfMassWorld);
-                        var surfaceMass = (bMass > sMass) ? sMass : bMass;
-                        var surfaceMulti = (c3 > 5) ? 5 : c3;
-                        var localNormal = Vector3D.Transform(collisionAvg, transformInv);
-                        var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
-                        if (!bPhysics.IsStatic) bPhysics.ApplyImpulse(surfaceMulti * (surfaceMass / 40) * -Vector3D.Dot(bPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
-                        if (!sPhysics.IsStatic) sPhysics.ApplyImpulse(surfaceMulti * (surfaceMass / 40) * -Vector3D.Dot(sPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
-                        if (!bPhysics.IsStatic) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * -sMass, null, Vector3D.Zero, sSpeedLen + 3);
+                            var surfaceMass = (bMass > sMass) ? sMass : bMass;
+
+                            var surfaceMulti = (c3 > 5) ? 5 : c3;
+                            var localNormal = Vector3D.Transform(collisionAvg, transformInv);
+                            var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
+                            bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass, bPhysics.CenterOfMassWorld);
+                            bPhysics.ApplyImpulse(surfaceMulti * (surfaceMass * 0.025) * -Vector3D.Dot(bPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
+                            bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (bPhysics.CenterOfMassWorld - collisionAvg) * (bMass * bSpeedLen), null, Vector3D.Zero, MathHelper.Clamp(bSpeedLen, 1f, 8f));
+                        }
+                        else
+                        {
+                            var surfaceMass = bMass > sMass ? bMass : sMass;
+                            if (!bPhysics.IsStatic) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass, bPhysics.CenterOfMassWorld);
+                            if (!sPhysics.IsStatic) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sMass, sPhysics.CenterOfMassWorld);
+                            if (!sPhysics.IsStatic) sPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (sPhysics.CenterOfMassWorld - collisionAvg) * surfaceMass, null, Vector3D.Zero, null, false);
+                            if (!bPhysics.IsStatic) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (bPhysics.CenterOfMassWorld - collisionAvg) * surfaceMass, null, Vector3D.Zero, null, false);
+                        }
 
                         bBlockCenter = collisionAvg;
                     }

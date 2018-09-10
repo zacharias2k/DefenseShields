@@ -63,12 +63,6 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 1) Log.Line($"ServRelay - Online:{State.Online} Link:{State.Link} - Backup:{State.Backup} - ModulatorId [{Modulator.EntityId}]: network state update for modulator");
                 Session.PacketizeModulatorState(Modulator, State); // update clients with server's settings
             }
-            else // client, send settings to server
-            {
-                if (Session.Enforced.Debug >= 1) Log.Line($"ClientRelay - ModulatorId [{Modulator.EntityId}]: sent network state update for modulator");
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataModulatorState(MyAPIGateway.Multiplayer.MyId, Modulator.EntityId, State));
-                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdModulatorState, bytes);
-            }
         }
         #endregion
     }
