@@ -23,6 +23,9 @@ namespace DefenseShields
                     _voxelDmg.Count == 0 && _characterDmg.Count == 0 && _fewDmgBlocks.Count == 0 &&
                     _dmgBlocks.Count == 0) return;
 
+                var isServer = Session.IsServer;
+                var mpActive = Session.MpActive;
+
                 if (Session.Enforced.Debug >= 1) Dsutil4.Sw.Restart();
 
                 if (clear)
@@ -81,8 +84,8 @@ namespace DefenseShields
                         while (_missileDmg.TryDequeue(out ent))
                         {
                             if (ent == null || ent.MarkedForClose || ent.Closed) continue;
-                            var destObj = ent as IMyDestroyableObject;
-                            if (destObj == null) continue;
+                            //var destObj = ent as IMyDestroyableObject;
+                            //if (destObj == null) continue;
                             var computedDamage = ComputeAmmoDamage(ent);
                             if (computedDamage <= float.NegativeInfinity)
                             {
@@ -93,18 +96,20 @@ namespace DefenseShields
                             var damage = computedDamage * DsState.State.ModulateEnergy;
                             if (computedDamage < 0) damage = computedDamage;
 
-                            if (Session.MpActive)
+                            if (mpActive)
                             {
-
                                 ShieldDoDamage(damage, ent.EntityId);
-                                destObj.DoDamage(10000f, DelDamage, true, null, MyGrid.EntityId);
+                                //destObj.DoDamage(10000f, DelDamage, true, null, MyGrid.EntityId);
+                                ent.Close();
                             }
                             else
                             {
                                 WorldImpactPosition = ent.PositionComp.WorldVolume.Center;
                                 Absorb += damage;
                                 ImpactSize = damage;
-                                destObj.DoDamage(10000f, DelDamage, true, null, MyGrid.EntityId);
+                                //destObj.DoDamage(10000f, DelDamage, true, null, MyGrid.EntityId);
+                                UtilsStatic.CreateFakeSmallExplosion(ent.PositionComp.WorldAABB.Center);
+                                ent.Close();
                             }
                         }
                     }
@@ -120,7 +125,7 @@ namespace DefenseShields
                         {
                             if (meteor == null || meteor.MarkedForClose || meteor.Closed) continue;
                             var damage = 5000 * DsState.State.ModulateKinetic;
-                            if (Session.MpActive)
+                            if (mpActive)
                             {
 
                                 ShieldDoDamage(damage, meteor.EntityId);

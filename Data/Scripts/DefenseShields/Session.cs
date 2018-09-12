@@ -9,6 +9,7 @@ using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using DefenseShields.Support;
+using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Localization;
 using Sandbox.ModAPI.Interfaces.Terminal;
@@ -330,6 +331,11 @@ namespace DefenseShields
                         var hitPos = line.From + testDir * -furthestHit;
                         ds.WorldImpactPosition = hitPos;
                         ds.ImpactSize = info.Amount;
+                        if (hostileEnt.DefinitionId.HasValue && hostileEnt.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))
+                        {
+                            UtilsStatic.CreateFakeSmallExplosion(hitPos);
+                            hostileEnt.Close();
+                        }
                     }
 
                     ds.Absorb += info.Amount;
@@ -368,11 +374,21 @@ namespace DefenseShields
                             continue;
                         }
 
-                        if (hostileEnt is IMyGunBaseUser && CustomCollision.PointInShield(hostileEnt.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
+                        if (hostileEnt is IMyGunBaseUser)
                         {
-                            shield.DeformEnabled = true;
-                            shield.FriendlyCache.Add(hostileEnt);
-                            continue;
+                            var hostileParent = hostileEnt.Parent != null;
+                            if (hostileParent && CustomCollision.PointInShield(hostileEnt.Parent.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
+                            {
+                                shield.DeformEnabled = true;
+                                shield.FriendlyCache.Add(hostileEnt);
+                                continue;
+                            }
+                            if (!hostileParent && CustomCollision.PointInShield(hostileEnt.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
+                            {
+                                shield.DeformEnabled = true;
+                                shield.FriendlyCache.Add(hostileEnt);
+                                continue;
+                            }
                         }
 
                         if (hostileEnt != null && block.FatBlock == shield.Shield && (info.Type == DSdamage || info.Type == DSheal || info.Type == DSbypass))
@@ -443,11 +459,21 @@ namespace DefenseShields
                             continue;
                         }
 
-                        if (hostileEnt is IMyGunBaseUser && CustomCollision.PointInShield(hostileEnt.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
+                        if (hostileEnt is IMyGunBaseUser)
                         {
-                            shield.DeformEnabled = true;
-                            shield.FriendlyCache.Add(hostileEnt);
-                            continue;
+                            var hostileParent = hostileEnt.Parent != null;
+                            if (hostileParent && CustomCollision.PointInShield(hostileEnt.Parent.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
+                            {
+                                shield.DeformEnabled = true;
+                                shield.FriendlyCache.Add(hostileEnt);
+                                continue;
+                            }
+                            if (!hostileParent && CustomCollision.PointInShield(hostileEnt.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
+                            {
+                                shield.DeformEnabled = true;
+                                shield.FriendlyCache.Add(hostileEnt);
+                                continue;
+                            }
                         }
 
                         if (info.IsDeformation && shield.DeformEnabled) continue;

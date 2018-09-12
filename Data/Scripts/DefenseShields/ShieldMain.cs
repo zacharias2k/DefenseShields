@@ -8,6 +8,7 @@ using VRage.Game.Components;
 using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
+using VRage;
 using VRageMath;
 
 namespace DefenseShields
@@ -36,7 +37,6 @@ namespace DefenseShields
                     Log.Line($"On: WasOn:{WasOnline} - On:{DsState.State.Online} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
                     if (MyGridDistributor != null) Log.Line($"SourcesEnabled:{MyGridDistributor.SourcesEnabled} - ResourceState:{MyGridDistributor.ResourceState} - Update:{MyGridDistributor.NeedsPerFrameUpdate} - Name:{MyGridDistributor?.Entity?.Parent?.DisplayName} - parentNull:{MyGridDistributor?.Entity?.Parent == null} - Required:{MyGridDistributor.TotalRequiredInputByType(GId)} - Max:{MyGridDistributor.MaxAvailableResourceByType(GId)}");
                 }
-
                 if (DsState.State.Online)
                 {
                     if (ComingOnline) ComingOnlineSetup(isServer, isDedicated);
@@ -91,7 +91,11 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ShieldOff");
                 ShieldChangeState();
             }
-            else Shield.RefreshCustomInfo();
+            else
+            {
+                UpdateSubGrids(true);
+                Shield.RefreshCustomInfo();
+            }
         }
 
         private void ComingOnlineSetup(bool server, bool dedicated)
@@ -101,7 +105,6 @@ namespace DefenseShields
             ComingOnline = false;
             WasOnline = true;
             WarmedUp = true;
-
             if (server)
             {
                 SyncThreadedEnts(true);
@@ -110,7 +113,11 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
 
             }
-            else Shield.RefreshCustomInfo();
+            else
+            {
+                UpdateSubGrids(true);
+                Shield.RefreshCustomInfo();
+            }
         }
 
         private void Timing(bool cleanUp)
@@ -224,7 +231,6 @@ namespace DefenseShields
                 var check = !DsState.State.Sleeping && !DsState.State.Suspended;
                 if (Session.Enforced.Debug >= 1) Log.Line($"BlockChanged: check:{check} + functional:{_functionalEvent} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ShieldId [{Shield.EntityId}]");
                 if (!check) return;
-
                 if (_functionalEvent)
                 {
                     MyGridDistributor = null;
@@ -260,7 +266,7 @@ namespace DefenseShields
                 if (grid == null) continue;
                 foreach (var block in grid.GetFatBlocks())
                 {
-                    if (MyGridDistributor == null)
+                    if (mechanical && MyGridDistributor == null)
                     {
                         var controller = block as MyShipController;
                         if (controller != null)
@@ -287,7 +293,6 @@ namespace DefenseShields
                     }
                 }
             }
-            if (Session.Enforced.Debug >= 1) Log.Line($"PowerCount: {_powerSources.Count.ToString()} - ShieldId [{Shield.EntityId}]");
         }
         #endregion
 
@@ -390,8 +395,12 @@ namespace DefenseShields
         {
             var isServer = Session.IsServer;
             if (MyGridDistributor != null)
-            {   
-                if (!UpdateGridPower()) return false;
+            {
+                if (!UpdateGridPower())
+                {
+                    if (MyGridDistributor.SourcesEnabled == MyMultipleEnabledEnum.NoObjects) MyGridDistributor = null;
+                    return false;
+                }
             }
             else if (!UpdateGridPower(true)) return false;
             CalculatePowerCharge();
@@ -555,7 +564,7 @@ namespace DefenseShields
                     DsState.State.NoPower = true;
                     DsState.State.Message = true;
                     ShieldChangeState();
-                    if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: NoPower");
+                    if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: NoPower - forShield:{powerForShield} - rounded:{_roundedGridMax} - max:{_gridMaxPower} - count:{_powerSources.Count} - Distributor:{MyGridDistributor != null} - State:{MyGridDistributor?.ResourceState}");
                 }
 
                 var shieldLoss = DsState.State.Buffer * (_powerLossLoop * 0.00008333333f);
@@ -671,8 +680,8 @@ namespace DefenseShields
 
         private void UpdateSubGrids(bool force = false)
         {
-            var checkGroups = Shield.IsWorking && Shield.IsFunctional && (DsState.State.Online || DsState.State.Sleeping);
-            if (Session.Enforced.Debug >= 1) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Offline:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
+            var checkGroups = Shield.IsWorking && Shield.IsFunctional && (DsState.State.Online || DsState.State.NoPower || DsState.State.Sleeping || DsState.State.Waking);
+            if (!force && Session.Enforced.Debug >= 1) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Offline:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
             if (!checkGroups && !force) return;
             var gotGroups = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
             if (gotGroups.Count == ShieldComp.GetLinkedGrids.Count) return;
@@ -685,12 +694,12 @@ namespace DefenseShields
             {
                 var sub = gotGroups[i];
                 if (sub == null) continue;
-
                 if (MyAPIGateway.GridGroups.HasConnection(MyGrid, sub, GridLinkTypeEnum.Mechanical)) lock (ShieldComp.GetSubGrids) ShieldComp.GetSubGrids.Add(sub as MyCubeGrid);
-                if (MyAPIGateway.GridGroups.HasConnection(MyGrid, sub, GridLinkTypeEnum.Physical)) lock (ShieldComp.GetLinkedGrids) ShieldComp.GetLinkedGrids.Add(sub as MyCubeGrid);
+                lock (ShieldComp.GetLinkedGrids) ShieldComp.GetLinkedGrids.Add(sub as MyCubeGrid);
             }
             _blockChanged = true;
             _functionalChanged = true;
+            MyGridDistributor = null;
         }
 
         private void ShieldDoDamage(float damage, long entityId)

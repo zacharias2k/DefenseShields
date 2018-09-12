@@ -471,7 +471,7 @@ namespace DefenseShields
             else if (ShieldMode == ShieldType.Station && !isStatic) InitSuspend();
             else if (ShieldMode == ShieldType.Unknown) InitSuspend();
             else if (ShieldComp.DefenseShields != this || primeMode || betaMode) InitSuspend(true);
-            else if (_count <= 0 && _lCount == 0 && !GridOwnsController()) InitSuspend(true);
+            else if (!GridOwnsController() || SlaveControllerLink(isStatic)) InitSuspend(true);
             else
             {
                 if (DsState.State.Suspended)
@@ -523,10 +523,15 @@ namespace DefenseShields
 
         private bool GridOwnsController()
         {
+            var notTime = _tick != 0 && _tick % 600 != 0;
+
+            if (notTime && !DsState.State.ControllerGridAccess) return false;
+            if (notTime) return true;
+            UpdateSubGrids(true);
             if (MyGrid.BigOwners.Count == 0)
             {
                 DsState.State.ControllerGridAccess = false;
-                return DsState.State.ControllerGridAccess;
+                return false;
             }
 
             var controlToGridRelataion = ((MyCubeBlock)Shield).GetUserRelationToOwner(MyGrid.BigOwners[0]);
@@ -544,7 +549,7 @@ namespace DefenseShields
                     if (Session.Enforced.Debug >= 1) Log.Line($"GridOwner: controller is not owned: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.ControllerGridAccess = false;
-                return DsState.State.ControllerGridAccess;
+                return false;
             }
 
             if (!DsState.State.ControllerGridAccess)
@@ -555,6 +560,36 @@ namespace DefenseShields
             }
             DsState.State.ControllerGridAccess = true;
             return true;
+        }
+
+        private bool SlaveControllerLink(bool isStatic)
+        {
+            var notTime = _tick != 0 && _tick % 120 != 0;
+
+            if (notTime && _slaveLink) return true;
+            if (notTime || isStatic) return false;
+            var mySize = MyGrid.PositionComp.WorldVolume.Radius;
+            var myEntityId = MyGrid.EntityId;
+            //if (MyGrid.GridSizeEnum == MyCubeSize.Small) Log.Line($"SlaveControllerLink: size:{mySize} - tick:{_tick} - maxPower:{_gridMaxPower} - avail:{_gridAvailablePower} - LinkCnt:{ShieldComp.GetLinkedGrids.Count} - SubCnt:{ShieldComp.GetSubGrids.Count}");
+            foreach (var grid in ShieldComp.GetLinkedGrids)
+            {
+                if (grid == MyGrid) continue;
+                ShieldGridComponent shieldComponent;
+                grid.Components.TryGet(out shieldComponent);
+                if (shieldComponent?.DefenseShields?.ShieldComp != null && shieldComponent.DefenseShields.WasOnline)
+                {
+                    var dsComp = shieldComponent.DefenseShields;
+                    var otherMaxPower = dsComp.MyGrid.PositionComp.WorldVolume.Radius;
+                    var otherEntityId = dsComp.MyGrid.EntityId;
+                    if (mySize < otherMaxPower || mySize.Equals(otherEntityId) && myEntityId < otherEntityId)
+                    {
+                        _slaveLink = true;
+                        return true;
+                    }
+                }
+            }
+            _slaveLink = false;
+            return false;
         }
 
         private void PlayerMessages(PlayerNotice notice)
@@ -671,6 +706,7 @@ namespace DefenseShields
                 DsState.State.Overload = false;
                 DsState.State.NoPower = false;
                 DsState.State.Remodulate = false;
+                DsState.State.Heat = 0;
             }
             WarmingInit();
             return false;

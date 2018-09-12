@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Definitions;
+using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
@@ -459,6 +460,56 @@ namespace DefenseShields.Support
             blk.FatBlock?.Close();
 
             return distributor;
+        }
+
+        public static void CreateExplosion(Vector3D position, float radius, int damage = 5000)
+        {
+            MyExplosionTypeEnum explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_50;
+            if ((double)radius < 2.0)
+                explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_02;
+            else if ((double)radius < 15.0)
+                explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_15;
+            else if ((double)radius < 30.0)
+                explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_30;
+            MyExplosionInfo explosionInfo = new MyExplosionInfo()
+            {
+                PlayerDamage = 0.0f,
+                Damage = (float)damage,
+                ExplosionType = explosionTypeEnum,
+                ExplosionSphere = new BoundingSphereD(position, (double)radius),
+                LifespanMiliseconds = 700,
+                ParticleScale = 1f,
+                Direction = new Vector3?(Vector3.Down),
+                VoxelExplosionCenter = position,
+                ExplosionFlags = MyExplosionFlags.CREATE_DEBRIS | MyExplosionFlags.AFFECT_VOXELS | MyExplosionFlags.APPLY_FORCE_AND_DAMAGE | MyExplosionFlags.CREATE_DECALS | MyExplosionFlags.CREATE_PARTICLE_EFFECT | MyExplosionFlags.CREATE_SHRAPNELS | MyExplosionFlags.APPLY_DEFORMATION,
+                VoxelCutoutScale = 1f,
+                PlaySound = true,
+                ApplyForceAndDamage = true,
+                ObjectsRemoveDelayInMiliseconds = 40
+            };
+            MyExplosions.AddExplosion(ref explosionInfo, true);
+        }
+
+        public static void CreateFakeSmallExplosion(Vector3D position)
+        {
+            const MyExplosionTypeEnum explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_02;
+            MyExplosionInfo explosionInfo = new MyExplosionInfo()
+            {
+                PlayerDamage = 0.0f,
+                Damage = 0f,
+                ExplosionType = explosionTypeEnum,
+                ExplosionSphere = new BoundingSphereD(position, 0d),
+                LifespanMiliseconds = 0,
+                ParticleScale = 1f,
+                Direction = Vector3.Down,
+                VoxelExplosionCenter = position,
+                ExplosionFlags = MyExplosionFlags.CREATE_PARTICLE_EFFECT,
+                VoxelCutoutScale = 0f,
+                PlaySound = true,
+                ApplyForceAndDamage = false,
+                ObjectsRemoveDelayInMiliseconds = 0
+            };
+            MyExplosions.AddExplosion(ref explosionInfo, true);
         }
     }
 }

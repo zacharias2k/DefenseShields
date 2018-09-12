@@ -20,7 +20,7 @@ namespace DefenseShields
         {
             if (Session.Enforced.Debug >= 2) Dsutil2.Sw.Restart();
             var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange + 3000);
-            var pruneSphere2 = new BoundingSphereD(DetectionCenter, BoundingRange + 5);
+            var pruneSphere2 = new BoundingSphereD(DetectionCenter, BoundingRange + 50);
             _pruneList.Clear();
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, _pruneList, MyEntityQueryType.Dynamic);
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere2, _pruneList, MyEntityQueryType.Static);
@@ -38,7 +38,7 @@ namespace DefenseShields
                 var voxel = ent as MyVoxelBase;
                 if (ent == null || ent.MarkedForClose || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel || voxel == null && ent.Physics == null) continue;
                 var entCenter = ent.PositionComp.WorldVolume.Center;
-                var missileCheck = !pruneSphere2.Intersects(ent.PositionComp.WorldVolume) && !((ent.Flags & EntityFlags.IsNotGamePrunningStructureObject) != 0 && ent.GetType().Name == "MyMissile");
+                var missileCheck = !pruneSphere2.Intersects(ent.PositionComp.WorldVolume) && ent.DefinitionId.HasValue && ent.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile);
                 if (voxel == null && missileCheck) continue;
                 if (FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent) || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
                 EntIntersectInfo entInfo;
@@ -186,12 +186,16 @@ namespace DefenseShields
                         {
                             oo++;
                             if (Session.Enforced.Debug >= 2) Log.Line($"Ent Other: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
-                            if (CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
+                            if (webent.MarkedForClose || webent.Closed) continue;
+                            var meteor = webent as IMyMeteor;
+                            if (meteor != null && CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
                             {
-                                if (webent.MarkedForClose || webent.Closed) continue;
-                                var meteor = webent as IMyMeteor;
-                                if (meteor != null) _meteorDmg.Enqueue(meteor);
-                                else _missileDmg.Enqueue(webent);
+                                _meteorDmg.Enqueue(meteor);
+                            }
+                            else
+                            {
+                                var predictedHit = CustomCollision.MissileIntersect(this, webent, DetectionMatrix, DetectMatrixOutsideInv);
+                                if (predictedHit != null) _missileDmg.Enqueue(webent);
                             }
                             continue;
                         }
@@ -290,7 +294,7 @@ namespace DefenseShields
                 return enemy ? Ent.LargeEnemyGrid : Ent.Friend;
             }
 
-            if (ent is IMyMeteor || ent.GetType().Name == "MyMissile") return Ent.Other;
+            if (ent is IMyMeteor || ent.DefinitionId.HasValue && ent.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile)) return Ent.Other;
             if (voxel != null && GridIsMobile) return Ent.VoxelBase;
             return 0;
         }

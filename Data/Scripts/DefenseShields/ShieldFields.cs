@@ -108,6 +108,7 @@ namespace DefenseShields
         internal bool UpdateDimensions;
         internal bool FitChanged;
         internal bool GridIsMobile;
+        private bool _slaveLink;
         private bool _effectsCleanup;
         private bool _hideShield;
         private bool _hideColor;

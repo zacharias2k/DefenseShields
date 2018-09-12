@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Collections;
+using VRage.Game;
 using VRage.Game.Components;
+using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Voxels;
@@ -14,6 +16,27 @@ namespace DefenseShields.Support
 {
     internal static class CustomCollision
     {
+        public static Vector3D? MissileIntersect(DefenseShields ds, MyEntity missile, MatrixD detectMatrix, MatrixD detectMatrixInv)
+        {
+            var missileVel = missile.Physics.LinearVelocity;
+            var velStepSize = missileVel * 0.0166667f;
+            var missileCenter = missile.PositionComp.WorldVolume.Center;
+            var inflatedSphere = new BoundingSphereD(missileCenter, velStepSize.Length());
+            var wDir = detectMatrix.Translation - inflatedSphere.Center;
+            var wLen = wDir.Length();
+            var wTest = inflatedSphere.Center + wDir / wLen * Math.Min(wLen, inflatedSphere.Radius);
+            var intersect = Vector3D.Transform(wTest, detectMatrixInv).LengthSquared() <= 1;
+            Vector3D? hitPos = null;
+
+            if (intersect)
+            {
+                const float gameSecond = MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 60;
+                var line = new LineD(missileCenter + missileVel * gameSecond, missileCenter + -missileVel * gameSecond);
+                if (ds.SOriBBoxD.Intersects(ref line).HasValue) hitPos = missileCenter;
+            }
+            return hitPos;
+        }
+
         public static double? IntersectEllipsoid(MatrixD rawEllipsoidMatrix, MatrixD ellipsoidMatrixInv, Vector3D rayPos, Vector3D rayDir)
         {
             /*
@@ -383,7 +406,7 @@ namespace DefenseShields.Support
             for (int i = 0; i < voxelHitVecs.Count; i++) shieldGrid.Physics.ApplyImpulse((bOriBBoxD.Center - voxelHitVecs[i]) * shieldGridMass / 100, voxelHitVecs[i]);
         }
 
-        public static void SmallIntersect(EntIntersectInfo entInfo, MyConcurrentQueue<IMySlimBlock> fewDmgBlocks, MyConcurrentQueue<IMySlimBlock> destroyedBlocks, IMyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
+        public static void SmallIntersect(EntIntersectInfo entInfo, MyConcurrentQueue<IMySlimBlock> fewDmgBlocks, MyConcurrentQueue<IMySlimBlock> destroyedBlocks, MyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
         {
             try
             {
@@ -391,7 +414,7 @@ namespace DefenseShields.Support
                 if (!(Vector3D.Transform(contactPoint, matrixInv).LengthSquared() <= 1)) return;
 
                 var getBlocks = new List<IMySlimBlock>();
-                grid.GetBlocks(getBlocks);
+                (grid as IMyCubeGrid).GetBlocks(getBlocks);
                 Vector3D[] blockPoints = new Vector3D[9];
                 var collisionAvg = Vector3D.Zero;
                 var c3 = 0;
@@ -432,7 +455,7 @@ namespace DefenseShields.Support
                     var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
                     var gridLinearVel = grid.Physics.LinearVelocity;
                     var gridLinearLen = gridLinearVel.Length();
-                    grid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (grid.WorldAABB.Center - matrix.Translation) * (mass * gridLinearLen), null, null, MathHelper.Clamp(gridLinearLen, 0.1f, 15f));
+                    grid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (grid.PositionComp.WorldAABB.Center - matrix.Translation) * (mass * gridLinearLen), null, null, MathHelper.Clamp(gridLinearLen, 0.1f, 15f));
                     grid.Physics.ApplyImpulse(mass * 0.015 * -Vector3D.Dot(gridLinearVel, surfaceNormal) * surfaceNormal, collisionAvg);
 
                     entInfo.Damage = mass * 0.1f;
@@ -441,7 +464,7 @@ namespace DefenseShields.Support
             catch (Exception ex) { Log.Line($"Exception in SmallIntersect: {ex}"); }
         }
 
-        public static void ClientSmallIntersect(EntIntersectInfo entInfo, IMyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
+        public static void ClientSmallIntersect(EntIntersectInfo entInfo, MyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
         {
             try
             {
@@ -488,7 +511,7 @@ namespace DefenseShields.Support
             return gApproching || sApproching;
         }
 
-        public static Vector3D ContactPointOutside(IMyEntity breaching, MatrixD matrix)
+        public static Vector3D ContactPointOutside(MyEntity breaching, MatrixD matrix)
         {
             var wVol = breaching.PositionComp.WorldVolume;
             var wDir = matrix.Translation - wVol.Center;
