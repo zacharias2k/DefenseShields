@@ -402,38 +402,40 @@
       <BlockTopology>TriangleMesh</BlockTopology>
 	<Size x="44" y="38" z="44" />
 	<ModelOffset x="0" y="0" z="0" />
-	<Center x="22" y="0" z="0" />
+	<Center x="0" y="0" z="22" />
 	<Model>Models\Cubes\PlanetaryEmitter.mwm</Model>
 	<MountPoints>
 		<MountPoint Side="Bottom" StartX="0" StartY="0" EndX="22" EndY="22" />
 	</MountPoints>
       <Components>
-        <Component Subtype="SteelPlate" Count="300" />
-        <Component Subtype="SmallTube" Count="40" />
-        <Component Subtype="Construction" Count="20" />
-        <Component Subtype="ShieldComponent" Count="400" />
-        <Component Subtype="Construction" Count="20" />
-        <Component Subtype="MetalGrid" Count="60" />
-        <Component Subtype="Superconductor" Count="200" />
-        <Component Subtype="Construction" Count="20" />
-        <Component Subtype="GravityGenerator" Count="40" />
-        <Component Subtype="Detector" Count="40" />
-        <Component Subtype="MetalGrid" Count="50" />
-        <Component Subtype="RadioCommunication" Count="20" />
-        <Component Subtype="Computer" Count="500" />
-        <Component Subtype="Construction" Count="20" />
-        <Component Subtype="SteelPlate" Count="300" />
+        <Component Subtype="SteelPlate" Count="2900" />
+        <Component Subtype="SmallTube" Count="4000" />
+        <Component Subtype="Construction" Count="2000" />
+        <Component Subtype="Construction" Count="200" />
+        <Component Subtype="MetalGrid" Count="600" />
+        <Component Subtype="Superconductor" Count="4000" />
+        <Component Subtype="Construction" Count="2000" />
+        <Component Subtype="Detector" Count="4000" />
+        <Component Subtype="MetalGrid" Count="5000" />
+        <Component Subtype="RadioCommunication" Count="2000" />
+        <Component Subtype="GravityGenerator" Count="1500" />
+        <Component Subtype="ShieldComponent" Count="9000" />
+        <Component Subtype="Computer" Count="5000" />
+        <Component Subtype="Construction" Count="200" />
+        <Component Subtype="SteelPlate" Count="3200" />
       </Components>
       <CriticalComponent Subtype="Computer" Index="0" />
       <BuildProgressModels>
-        <Model BuildPercentUpperBound="1.00" File="Models\Cubes\large\DefenseShieldBase_Large_Constr1.mwm" />
+        <Model BuildPercentUpperBound="0.33" File="Models\Cubes\PlanetaryEmitter_Constr1.mwm" />
+        <Model BuildPercentUpperBound="0.66" File="Models\Cubes\PlanetaryEmitter_Constr2.mwm" />
+        <Model BuildPercentUpperBound="1.00" File="Models\Cubes\PlanetaryEmitter_Constr3.mwm" />
       </BuildProgressModels>
       <BlockPairName>PlanetEmitter</BlockPairName>
       <EdgeType>Light</EdgeType>
       <MirroringY>Z</MirroringY>
       <MirroringZ>Y</MirroringZ>
       <Sound>BlockGravityGen</Sound>
-      <BuildTimeSeconds>90</BuildTimeSeconds>
+      <BuildTimeSeconds>300</BuildTimeSeconds>
       <RequiredPowerInput>500</RequiredPowerInput>
       <DamageEffectId>214</DamageEffectId>
       <DamagedSound>ParticleElectrical</DamagedSound>
