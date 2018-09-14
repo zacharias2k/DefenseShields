@@ -188,9 +188,9 @@ namespace DefenseShields
                             if (Session.Enforced.Debug >= 2) Log.Line($"Ent Other: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
                             if (webent.MarkedForClose || webent.Closed) continue;
                             var meteor = webent as IMyMeteor;
-                            if (meteor != null && CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
+                            if (meteor != null)
                             {
-                                _meteorDmg.Enqueue(meteor);
+                                if (CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv)) _meteorDmg.Enqueue(meteor);
                             }
                             else
                             {

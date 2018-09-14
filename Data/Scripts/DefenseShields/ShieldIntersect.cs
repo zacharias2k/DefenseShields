@@ -348,7 +348,7 @@ namespace DefenseShields
             var damage = 10f;
             if (ammoInfo == null)
             {
-                Log.Line($"ShieldId:{Shield.EntityId.ToString()} - No Missile Ammo Match Found for {((MyEntity)ammoEnt).DebugName}! Let wepaon mod author know their ammo definition has improper model path");
+                if (Session.Enforced.Debug >= 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - No Missile Ammo Match Found for {((MyEntity)ammoEnt).DebugName}! Let wepaon mod author know their ammo definition has improper model path");
                 return damage;
             }
             var dmgMulti = UtilsStatic.GetDmgMulti(ammoInfo.BackKickForce);

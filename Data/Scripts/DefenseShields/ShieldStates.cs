@@ -27,7 +27,7 @@ namespace DefenseShields
 
             DsState.SaveState();
             if (Session.MpActive) DsState.NetworkUpdate();
-            if (!Session.DedicatedServer)
+            if (!IsDedicated)
             {
                 BroadcastMessage();
                 Shield.RefreshCustomInfo();
@@ -35,10 +35,11 @@ namespace DefenseShields
             DsState.State.Message = false;
         }
 
-        private bool ShieldOn(bool server)
+        private bool ShieldOn()
         {
-            _tick = Session.Instance.Tick;
-            if (server)
+            if (_subUpdate && _tick > _subTick + 10) HierarchyUpdate();
+
+            if (IsServer)
             {
                 if (!ControllerFunctional() || ShieldWaking())
                 {
@@ -327,7 +328,7 @@ namespace DefenseShields
                 DsState.State.Online = false;
                 DsState.State.Heat = 0;
 
-                if (!Session.DedicatedServer) ShellVisibility(true);
+                if (!IsDedicated) ShellVisibility(true);
             }
 
             Shield.RefreshCustomInfo();
@@ -347,7 +348,7 @@ namespace DefenseShields
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
 
                     DsState.State.IncreaseO2ByFPercent = 0f;
-                    if (!Session.DedicatedServer) ShellVisibility(true);
+                    if (!IsDedicated) ShellVisibility(true);
                     DsState.State.Lowered = true;
                 }
                 PowerOnline();
@@ -369,7 +370,7 @@ namespace DefenseShields
             }
             if (DsState.State.Lowered && DsSet.Settings.ShieldActive && Shield.IsWorking)
             {
-                if (!Session.DedicatedServer) ShellVisibility();
+                if (!IsDedicated) ShellVisibility();
                 if (GridIsMobile) _updateMobileShape = true;
                 else UpdateDimensions = true;
 
@@ -400,14 +401,14 @@ namespace DefenseShields
 
         private bool ShieldSleeping()
         {
-            if (ShieldComp.EmittersSuspended)
+            if (ShieldComp.EmittersSuspended || SlaveControllerLink(IsStatic))
             {
                 if (!DsState.State.Sleeping)
                 {
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
 
                     DsState.State.IncreaseO2ByFPercent = 0f;
-                    if (!Session.DedicatedServer) ShellVisibility(true);
+                    if (!IsDedicated) ShellVisibility(true);
                     DsState.State.Sleeping = true;
                     Shield.RefreshCustomInfo();
                     if (Session.Enforced.Debug >= 1) Log.Line($"Sleep: controller detected sleeping emitter, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
@@ -419,7 +420,7 @@ namespace DefenseShields
             if (DsState.State.Sleeping)
             {
                 DsState.State.Sleeping = false;
-                if (!Session.DedicatedServer) ShellVisibility();
+                if (!IsDedicated) ShellVisibility();
                 _blockChanged = true;
                 _functionalChanged = true;
                 UpdateSubGrids();
@@ -434,6 +435,35 @@ namespace DefenseShields
             }
 
             DsState.State.Sleeping = false;
+            return false;
+        }
+
+        private bool SlaveControllerLink(bool isStatic)
+        {
+            var notTime = _tick != 0 && _tick % 120 != 0;
+
+            if (notTime && _slaveLink) return true;
+            if (notTime || isStatic) return false;
+            var mySize = MyGrid.PositionComp.WorldAABB.Size.Volume;
+            var myEntityId = MyGrid.EntityId;
+            foreach (var grid in ShieldComp.GetLinkedGrids)
+            {
+                if (grid == MyGrid) continue;
+                ShieldGridComponent shieldComponent;
+                grid.Components.TryGet(out shieldComponent);
+                if (shieldComponent?.DefenseShields?.ShieldComp != null && shieldComponent.DefenseShields.WasOnline)
+                {
+                    var dsComp = shieldComponent.DefenseShields;
+                    var otherMaxPower = dsComp.MyGrid.PositionComp.WorldAABB.Size.Volume;
+                    var otherEntityId = dsComp.MyGrid.EntityId;
+                    if (mySize < otherMaxPower || mySize.Equals(otherEntityId) && myEntityId < otherEntityId)
+                    {
+                        _slaveLink = true;
+                        return true;
+                    }
+                }
+            }
+            _slaveLink = false;
             return false;
         }
 
@@ -463,15 +493,14 @@ namespace DefenseShields
 
         private bool Suspend()
         {
-            var isStatic = MyGrid.IsStatic;
-            var primeMode = ShieldMode == ShieldType.Station && isStatic && ShieldComp.StationEmitter == null;
-            var betaMode = ShieldMode != ShieldType.Station && !isStatic && ShieldComp.ShipEmitter == null;
+            var primeMode = ShieldMode == ShieldType.Station && IsStatic && ShieldComp.StationEmitter == null;
+            var betaMode = ShieldMode != ShieldType.Station && !IsStatic && ShieldComp.ShipEmitter == null;
 
-            if (ShieldMode != ShieldType.Station && isStatic) InitSuspend();
-            else if (ShieldMode == ShieldType.Station && !isStatic) InitSuspend();
+            if (ShieldMode != ShieldType.Station && IsStatic) InitSuspend();
+            else if (ShieldMode == ShieldType.Station && !IsStatic) InitSuspend();
             else if (ShieldMode == ShieldType.Unknown) InitSuspend();
             else if (ShieldComp.DefenseShields != this || primeMode || betaMode) InitSuspend(true);
-            else if (!GridOwnsController() || SlaveControllerLink(isStatic)) InitSuspend(true);
+            else if (!GridOwnsController()) InitSuspend(true);
             else
             {
                 if (DsState.State.Suspended)
@@ -487,7 +516,7 @@ namespace DefenseShields
                     if (Session.Enforced.Debug >= 1) Log.Line($"Suspend: controller mode was: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                     SetShieldType(false);
                     if (Session.Enforced.Debug >= 1) Log.Line($"Suspend: controller mode is now: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-                    if (!Session.DedicatedServer) ShellVisibility(true);
+                    if (!IsDedicated) ShellVisibility(true);
                     Icosphere.ShellActive = null;
                     GetModulationInfo();
                     _currentHeatStep = 0;
@@ -527,7 +556,6 @@ namespace DefenseShields
 
             if (notTime && !DsState.State.ControllerGridAccess) return false;
             if (notTime) return true;
-            UpdateSubGrids(true);
             if (MyGrid.BigOwners.Count == 0)
             {
                 DsState.State.ControllerGridAccess = false;
@@ -562,36 +590,6 @@ namespace DefenseShields
             return true;
         }
 
-        private bool SlaveControllerLink(bool isStatic)
-        {
-            var notTime = _tick != 0 && _tick % 120 != 0;
-
-            if (notTime && _slaveLink) return true;
-            if (notTime || isStatic) return false;
-            var mySize = MyGrid.PositionComp.WorldVolume.Radius;
-            var myEntityId = MyGrid.EntityId;
-            //if (MyGrid.GridSizeEnum == MyCubeSize.Small) Log.Line($"SlaveControllerLink: size:{mySize} - tick:{_tick} - maxPower:{_gridMaxPower} - avail:{_gridAvailablePower} - LinkCnt:{ShieldComp.GetLinkedGrids.Count} - SubCnt:{ShieldComp.GetSubGrids.Count}");
-            foreach (var grid in ShieldComp.GetLinkedGrids)
-            {
-                if (grid == MyGrid) continue;
-                ShieldGridComponent shieldComponent;
-                grid.Components.TryGet(out shieldComponent);
-                if (shieldComponent?.DefenseShields?.ShieldComp != null && shieldComponent.DefenseShields.WasOnline)
-                {
-                    var dsComp = shieldComponent.DefenseShields;
-                    var otherMaxPower = dsComp.MyGrid.PositionComp.WorldVolume.Radius;
-                    var otherEntityId = dsComp.MyGrid.EntityId;
-                    if (mySize < otherMaxPower || mySize.Equals(otherEntityId) && myEntityId < otherEntityId)
-                    {
-                        _slaveLink = true;
-                        return true;
-                    }
-                }
-            }
-            _slaveLink = false;
-            return false;
-        }
-
         private void PlayerMessages(PlayerNotice notice)
         {
             var realPlayerIds = new HashSet<long>();
@@ -600,7 +598,7 @@ namespace DefenseShields
             {
                 case PlayerNotice.EmitterInit:
                     UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
-                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- emitter is initializing and connecting to controller, startup in 30 seconds!", 4816, "Red");
+                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- shield is reinitializing, startup in 30 seconds!", 4816, "White");
                     break;
                 case PlayerNotice.FieldBlocked:
                     UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
@@ -642,9 +640,8 @@ namespace DefenseShields
 
         private bool ClientOfflineStates()
         {
-            var isStatic = MyGrid.IsStatic;
-            var primeMode = ShieldMode == ShieldType.Station && isStatic && ShieldComp.StationEmitter == null;
-            var betaMode = ShieldMode != ShieldType.Station && !isStatic && ShieldComp.ShipEmitter == null;
+            var primeMode = ShieldMode == ShieldType.Station && IsStatic && ShieldComp.StationEmitter == null;
+            var betaMode = ShieldMode != ShieldType.Station && !IsStatic && ShieldComp.ShipEmitter == null;
 
             if (DsState.State.Message)
             {
@@ -699,7 +696,7 @@ namespace DefenseShields
                 return true;
             }
 
-            if (Session.IsServer)
+            if (IsServer)
             {
                 HadPowerBefore = true;
                 ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
@@ -725,7 +722,6 @@ namespace DefenseShields
             GetEnhancernInfo();
             Starting = true;
             if (Session.Enforced.Debug >= 1) Log.Line($"Warming: Server:{Session.IsServer} - buffer:{DsState.State.Buffer} - BlockWorking:{Session.IsServer && ControlBlockWorking || !Session.IsServer && Shield.IsWorking && Shield.IsFunctional} - Active:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
-
         }
 
         public void UpdateSettings(ProtoControllerSettings newSettings)

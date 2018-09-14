@@ -24,7 +24,7 @@ namespace DefenseShields
         private uint _tick;
         private uint _shieldEntRendId;
         private uint _losCheckTick;
-        private uint _hierarchyTick = 1;
+        private uint _subTick;
         private uint _shapeTick;
         private uint _heatVentingTick = uint.MaxValue;
         internal uint UnsuspendTick;
@@ -102,6 +102,8 @@ namespace DefenseShields
         internal bool WarmedUp;
         internal bool PrevShieldActive;
         internal bool IsStatic;
+        internal bool IsServer;
+        internal bool IsDedicated;
         internal bool ComingOnline;
         internal bool Warming;
         internal bool Starting;
@@ -109,12 +111,12 @@ namespace DefenseShields
         internal bool FitChanged;
         internal bool GridIsMobile;
         private bool _slaveLink;
+        private bool _subUpdate;
         private bool _effectsCleanup;
         private bool _hideShield;
         private bool _hideColor;
         private bool _supressedColor;
         private bool _shapeChanged;
-        private bool _hierarchyDelayed;
         private bool _entityChanged;
         private bool _updateRender;
         private bool _functionalAdded;

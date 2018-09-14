@@ -9,6 +9,7 @@ using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage;
+using VRage.Game;
 using VRageMath;
 
 namespace DefenseShields
@@ -22,13 +23,12 @@ namespace DefenseShields
             try
             {
                 if (Session.Enforced.Debug >= 1) Dsutil1.Sw.Restart();
-                MyGrid = Shield.CubeGrid as MyCubeGrid;
-                var isServer = Session.IsServer;
-                var isDedicated = Session.DedicatedServer;
-                if (!ShieldOn(isServer))
+                UpdateFields();
+
+                if (!ShieldOn())
                 {
                     if (Session.Enforced.Debug >= 1 && WasOnline) Log.Line($"Off: WasOn:{WasOnline} - On:{DsState.State.Online} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
-                    if (WasOnline) ShieldOff(isServer);
+                    if (WasOnline) ShieldOff();
                     else if (DsState.State.Message) ShieldChangeState();
                     return;
                 }
@@ -39,9 +39,9 @@ namespace DefenseShields
                 }
                 if (DsState.State.Online)
                 {
-                    if (ComingOnline) ComingOnlineSetup(isServer, isDedicated);
+                    if (ComingOnline) ComingOnlineSetup();
 
-                    if (isServer)
+                    if (IsServer)
                     {
                         var createHeTiming = _count == 6 && (_lCount == 1 || _lCount == 6);
                         if (GridIsMobile && createHeTiming) CreateHalfExtents();
@@ -66,46 +66,55 @@ namespace DefenseShields
                     }
                     else WebEntitiesClient();
 
-                    if (!isDedicated && _tick % 60 == 0) HudCheck();
+                    if (!IsDedicated && _tick % 60 == 0) HudCheck();
                 }
                 if (Session.Enforced.Debug >= 1) Dsutil1.StopWatchReport($"PerfCon: Online: {DsState.State.Online} - Tick: {_tick} loop: {_lCount}-{_count}", 4);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
 
-        private void ShieldOff(bool isServer)
+        private void UpdateFields()
+        {
+            _tick = Session.Instance.Tick;
+            MyGrid = Shield.CubeGrid as MyCubeGrid;
+            if (MyGrid != null) IsStatic = MyGrid.IsStatic;
+            IsServer = Session.IsServer;
+            IsDedicated = Session.DedicatedServer;
+        }
+
+        private void ShieldOff()
         {
             _power = 0.001f;
             Sink.Update();
             WasOnline = false;
             ShieldEnt.Render.Visible = false;
             ShieldEnt.PositionComp.SetPosition(Vector3D.Zero);
-            if (isServer && !DsState.State.Lowered && !DsState.State.Sleeping)
+            if (IsServer && !DsState.State.Lowered && !DsState.State.Sleeping)
             {
                 DsState.State.ShieldPercent = 0f;
                 DsState.State.Buffer = 0f;
             }
 
-            if (isServer)
+            if (IsServer)
             {
                 if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ShieldOff");
                 ShieldChangeState();
             }
             else
             {
-                UpdateSubGrids(true);
+                UpdateSubGrids();
                 Shield.RefreshCustomInfo();
             }
         }
 
-        private void ComingOnlineSetup(bool server, bool dedicated)
+        private void ComingOnlineSetup()
         {
-            if (!dedicated) ShellVisibility();
+            if (!IsDedicated) ShellVisibility();
             ShieldEnt.Render.Visible = true;
             ComingOnline = false;
             WasOnline = true;
             WarmedUp = true;
-            if (server)
+            if (IsServer)
             {
                 SyncThreadedEnts(true);
                 _offlineCnt = -1;
@@ -115,15 +124,13 @@ namespace DefenseShields
             }
             else
             {
-                UpdateSubGrids(true);
+                UpdateSubGrids();
                 Shield.RefreshCustomInfo();
             }
         }
 
         private void Timing(bool cleanUp)
         {
-            var isServer = Session.IsServer;
-            var isDedicated = Session.DedicatedServer;
             if (_count++ == 59)
             {
                 _count = 0;
@@ -150,14 +157,14 @@ namespace DefenseShields
             }
             else if (_count == 34)
             {
-                if (ClientUiUpdate && !isServer)
+                if (ClientUiUpdate && !IsServer)
                 {
                     ClientUiUpdate = false;
                     DsSet.NetworkUpdate();
                 }
             }
 
-            if (isServer && (_shapeEvent || FitChanged)) CheckExtents(true);
+            if (IsServer && (_shapeEvent || FitChanged)) CheckExtents(true);
 
             // damage counter hack - tempoary
             if (_damageReadOut > 0 && _damageCounter > _damageReadOut) _damageCounter = _damageReadOut;
@@ -166,19 +173,12 @@ namespace DefenseShields
             else _damageCounter = 0f;
             //
 
-            if (isServer) HeatManager();
-
-            if (_hierarchyDelayed && _tick > _hierarchyTick + 9)
-            {
-                if (Session.Enforced.Debug >= 1) Log.Line($"HierarchyWasDelayed: this:{_tick} - delayedTick: {_hierarchyTick} - ShieldId [{Shield.EntityId}]");
-                _hierarchyDelayed = false;
-                HierarchyChanged();
-            }
+            if (IsServer) HeatManager();
 
             if (_count == 29)
             {
                 Shield.RefreshCustomInfo();
-                if (!isDedicated)
+                if (!IsDedicated)
                 {
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
                     {
@@ -246,7 +246,7 @@ namespace DefenseShields
         {
             FitChanged = false;
             _shapeEvent = false;
-            if (!Session.IsServer) return;
+            if (!IsServer) return;
             if (GridIsMobile)
             {
                 CreateHalfExtents();
@@ -393,7 +393,6 @@ namespace DefenseShields
 
         private bool PowerOnline()
         {
-            var isServer = Session.IsServer;
             if (MyGridDistributor != null)
             {
                 if (!UpdateGridPower())
@@ -406,7 +405,7 @@ namespace DefenseShields
             CalculatePowerCharge();
             _power = _shieldConsumptionRate + _shieldMaintaintPower;
             if (!WarmedUp) return true;
-            if (isServer && HadPowerBefore && _shieldConsumptionRate.Equals(0f) && DsState.State.Buffer.Equals(0.01f) && _genericDownLoop == -1)
+            if (IsServer && HadPowerBefore && _shieldConsumptionRate.Equals(0f) && DsState.State.Buffer.Equals(0.01f) && _genericDownLoop == -1)
             {
                 _power = 0.0001f;
                 _genericDownLoop = 0;
@@ -424,7 +423,7 @@ namespace DefenseShields
             }
             else if (Absorb < 0) DsState.State.Buffer += Absorb / Session.Enforced.Efficiency;
 
-            if (isServer && DsState.State.Buffer < 0) _overLoadLoop = 0;
+            if (IsServer && DsState.State.Buffer < 0) _overLoadLoop = 0;
             Absorb = 0f;
             return true;
         }
@@ -498,8 +497,6 @@ namespace DefenseShields
 
         private void CalculatePowerCharge()
         {
-            var isServer = Session.IsServer;
-
             var heat = DsState.State.Heat * 0.1;
             if (heat > 10) heat = 10;
             var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
@@ -551,7 +548,7 @@ namespace DefenseShields
             if (DsState.State.Buffer > _shieldMaxBuffer) DsState.State.Buffer = _shieldMaxBuffer;
             if (_powerNeeded > _roundedGridMax || powerForShield <= 0)
             {
-                if (isServer && !DsState.State.Online)
+                if (IsServer && !DsState.State.Online)
                 {
                     DsState.State.Buffer = 0.01f;
                     _shieldChargeRate = 0f;
@@ -559,7 +556,7 @@ namespace DefenseShields
                     return;
                 }
                 _powerLossLoop++;
-                if (isServer && !DsState.State.NoPower)
+                if (IsServer && !DsState.State.NoPower)
                 {
                     DsState.State.NoPower = true;
                     DsState.State.Message = true;
@@ -576,7 +573,7 @@ namespace DefenseShields
                 return;
             }
             _powerLossLoop = 0;
-            if (isServer && DsState.State.NoPower)
+            if (IsServer && DsState.State.NoPower)
             {
                 _powerNoticeLoop++;
                 if (_powerNoticeLoop >= PowerNoticeCount)
@@ -678,11 +675,10 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in Controller AppendingCustomInfo: {ex}"); }
         }
 
-        private void UpdateSubGrids(bool force = false)
+        private void UpdateSubGrids()
         {
-            var checkGroups = Shield.IsWorking && Shield.IsFunctional && (DsState.State.Online || DsState.State.NoPower || DsState.State.Sleeping || DsState.State.Waking);
-            if (!force && Session.Enforced.Debug >= 1) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Offline:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
-            if (!checkGroups && !force) return;
+
+
             var gotGroups = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
             if (gotGroups.Count == ShieldComp.GetLinkedGrids.Count) return;
             if (Session.Enforced.Debug >= 1) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.GetLinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.GetLinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
@@ -700,6 +696,20 @@ namespace DefenseShields
             _blockChanged = true;
             _functionalChanged = true;
             MyGridDistributor = null;
+            _subUpdate = false;
+        }
+
+        private void HierarchyUpdate()
+        {
+            var checkGroups = Shield.IsWorking && Shield.IsFunctional && (DsState.State.Online || DsState.State.NoPower || DsState.State.Sleeping || DsState.State.Waking);
+            if (Session.Enforced.Debug >= 2) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Online:{DsState.State.Online} - Power:{!DsState.State.NoPower} - Sleep:{DsState.State.Sleeping} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
+            if (checkGroups)
+            {
+                _subUpdate = false;
+                _subTick = _tick;
+                UpdateSubGrids();
+                if (Session.Enforced.Debug >= 2) Log.Line($"HierarchyWasDelayed: this:{_tick} - delayedTick: {_subTick} - ShieldId [{Shield.EntityId}]");
+            }
         }
 
         private void ShieldDoDamage(float damage, long entityId)

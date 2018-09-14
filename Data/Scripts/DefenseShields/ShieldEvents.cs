@@ -1,7 +1,11 @@
 ﻿using System;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
+using Sandbox.ModAPI;
+using VRage.Game.Components;
+using VRage.Game.Entity;
 using VRage.Game.ModAPI;
+using VRage.Sync;
 
 namespace DefenseShields
 {
@@ -31,14 +35,8 @@ namespace DefenseShields
         {
             try
             {
-                if (ShieldComp == null || _tick == _hierarchyTick) return;
-                if (_hierarchyTick > _tick - 9)
-                {
-                    _hierarchyDelayed = true;
-                    return;
-                }
-                _hierarchyTick = _tick;
-                UpdateSubGrids();
+                if (ShieldComp == null) return;
+                _subUpdate = true;
             }
             catch (Exception ex) { Log.Line($"Exception in Controller HierarchyChanged: {ex}"); }
         }

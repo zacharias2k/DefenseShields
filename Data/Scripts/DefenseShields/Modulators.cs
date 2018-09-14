@@ -22,7 +22,7 @@ namespace DefenseShields
     public class Modulators : MyGameLogicComponent
     {
 
-        private bool _hierarchyDelayed;
+        private bool _subDelayed;
         internal int RotationTime;
         internal bool MainInit;
         internal bool SettingsUpdated;
@@ -31,7 +31,7 @@ namespace DefenseShields
         private bool _powered;
 
         private uint _tick;
-        private uint _hierarchyTick = 1;
+        private uint _subTick = 1;
 
         private int _count = -1;
         private int _lCount;
@@ -275,10 +275,10 @@ namespace DefenseShields
                 }
             }
 
-            if (_hierarchyDelayed && _tick > _hierarchyTick + 9)
+            if (_subDelayed && _tick > _subTick + 9)
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"Delayed tick: {_tick} - hierarchytick: {_hierarchyTick}");
-                _hierarchyDelayed = false;
+                if (Session.Enforced.Debug >= 1) Log.Line($"Delayed tick: {_tick} - hierarchytick: {_subTick}");
+                _subDelayed = false;
                 HierarchyChanged();
             }
         }
@@ -415,13 +415,13 @@ namespace DefenseShields
         {
             try
             {
-                if (_tick == _hierarchyTick || ShieldComp?.DefenseShields != null) return;
-                if (_hierarchyTick > _tick - 9)
+                if (_tick == _subTick || ShieldComp?.DefenseShields != null) return;
+                if (_subTick > _tick - 9)
                 {
-                    _hierarchyDelayed = true;
+                    _subDelayed = true;
                     return;
                 }
-                _hierarchyTick = _tick;
+                _subTick = _tick;
                 var gotGroups = MyAPIGateway.GridGroups.GetGroup(Modulator?.CubeGrid, GridLinkTypeEnum.Mechanical);
                 ModulatorComp?.GetSubGrids?.Clear();
                 for (int i = 0; i < gotGroups.Count; i++)
