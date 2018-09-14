@@ -9,7 +9,6 @@ using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage;
-using VRage.Game;
 using VRageMath;
 
 namespace DefenseShields
@@ -35,7 +34,6 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 1 && !WasOnline)
                 {
                     Log.Line($"On: WasOn:{WasOnline} - On:{DsState.State.Online} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
-                    if (MyGridDistributor != null) Log.Line($"SourcesEnabled:{MyGridDistributor.SourcesEnabled} - ResourceState:{MyGridDistributor.ResourceState} - Update:{MyGridDistributor.NeedsPerFrameUpdate} - Name:{MyGridDistributor?.Entity?.Parent?.DisplayName} - parentNull:{MyGridDistributor?.Entity?.Parent == null} - Required:{MyGridDistributor.TotalRequiredInputByType(GId)} - Max:{MyGridDistributor.MaxAvailableResourceByType(GId)}");
                 }
                 if (DsState.State.Online)
                 {
@@ -66,7 +64,7 @@ namespace DefenseShields
                     }
                     else WebEntitiesClient();
 
-                    if (!IsDedicated && _tick % 60 == 0) HudCheck();
+                    if (!IsDedicated && _tick60) HudCheck();
                 }
                 if (Session.Enforced.Debug >= 1) Dsutil1.StopWatchReport($"PerfCon: Online: {DsState.State.Online} - Tick: {_tick} loop: {_lCount}-{_count}", 4);
             }
@@ -76,10 +74,10 @@ namespace DefenseShields
         private void UpdateFields()
         {
             _tick = Session.Instance.Tick;
+            _tick60 = _tick % 60 == 0;
+            _tick600 = _tick % 600 == 0;
             MyGrid = Shield.CubeGrid as MyCubeGrid;
             if (MyGrid != null) IsStatic = MyGrid.IsStatic;
-            IsServer = Session.IsServer;
-            IsDedicated = Session.DedicatedServer;
         }
 
         private void ShieldOff()
@@ -97,7 +95,7 @@ namespace DefenseShields
 
             if (IsServer)
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ShieldOff");
+                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ShieldOff - ShieldId [{Shield.EntityId}]");
                 ShieldChangeState();
             }
             else
@@ -152,8 +150,6 @@ namespace DefenseShields
                     ResetShape(false, false);
                     if (Session.Enforced.Debug >= 1) Log.Line($"SettingsUpdated: server:{Session.IsServer} - ShieldId [{Shield.EntityId}]");
                 }
-
-                if (_blockEvent) BlockChanged(true);
             }
             else if (_count == 34)
             {
@@ -229,17 +225,19 @@ namespace DefenseShields
             if (_blockEvent)
             {
                 var check = !DsState.State.Sleeping && !DsState.State.Suspended;
-                if (Session.Enforced.Debug >= 1) Log.Line($"BlockChanged: check:{check} + functional:{_functionalEvent} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ShieldId [{Shield.EntityId}]");
                 if (!check) return;
-                if (_functionalEvent)
-                {
-                    MyGridDistributor = null;
-                    if (backGround) MyAPIGateway.Parallel.StartBackground(BackGroundChecks);
-                    else BackGroundChecks();
-                    _functionalEvent = false;
-                }
+                if (Session.Enforced.Debug >= 1) Log.Line($"BlockChanged: functional:{_functionalEvent} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ShieldId [{Shield.EntityId}]");
+                if (_functionalEvent) FunctionalChanged(backGround);
                 _blockEvent = false;
             }
+        }
+
+        private void FunctionalChanged(bool backGround)
+        {
+            MyGridDistributor = null;
+            if (backGround) MyAPIGateway.Parallel.StartBackground(BackGroundChecks);
+            else BackGroundChecks();
+            _functionalEvent = false;
         }
 
         private void CheckExtents(bool backGround)
@@ -272,7 +270,11 @@ namespace DefenseShields
                         if (controller != null)
                         {
                             var distributor = controller.GridResourceDistributor;
-                            if (distributor.ResourceState != MyResourceStateEnum.NoPower) MyGridDistributor = controller.GridResourceDistributor;
+                            if (distributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects)
+                            {
+                                if (Session.Enforced.Debug >= 1) Log.Line($"Found MyGridDistributor: ShieldId [{Shield.EntityId}]");
+                                MyGridDistributor = controller.GridResourceDistributor;
+                            }
                         }
                     }
                     lock (_batteryBlocks)
@@ -297,111 +299,9 @@ namespace DefenseShields
         #endregion
 
         #region Block Power Logic
-        private void HeatManager()
-        {
-            var hp = _shieldMaxBuffer * Session.Enforced.Efficiency;
-            var heat = DsState.State.Heat;
-            if (_damageReadOut > 0 && _heatCycle == -1)
-            {
-                if (_count == 29) _accumulatedHeat += _damageReadOut;
-                _heatCycle = 0;
-            }
-            else if (_heatCycle > -1)
-            {
-                if (_count == 29) _accumulatedHeat += _damageReadOut;
-                _heatCycle++;
-            }
-
-            var nextThreshold = hp * 0.01 * _currentHeatStep;
-            var currentThreshold = hp * 0.01 * (_currentHeatStep - 1);
-
-            if (_heatCycle == OverHeat)
-            {
-                var threshold = hp * 0.01;
-                if (_accumulatedHeat > threshold)
-                {
-                    _currentHeatStep = 1;
-                    DsState.State.Heat = _currentHeatStep * 10;
-                    if (Session.Enforced.Debug >= 1) Log.Line($"now overheating - stage:{_currentHeatStep} - heat:{_accumulatedHeat} - threshold:{threshold}");
-                    _accumulatedHeat = 0;
-                }
-                else
-                {
-                    DsState.State.Heat = 0;
-                    _currentHeatStep = 0;
-                    _heatCycle = -1;
-                    if (Session.Enforced.Debug >= 1) Log.Line($"under-threshold - stage:{_currentHeatStep} - heat:{_accumulatedHeat} - threshold:{threshold}");
-                    _accumulatedHeat = 0;
-                }
-            }
-            else if (_currentHeatStep < HeatSteps && _heatCycle == _currentHeatStep * HeatingStep + OverHeat)
-            {
-                if (_accumulatedHeat > nextThreshold)
-                {
-                    _currentHeatStep++;
-                    DsState.State.Heat = _currentHeatStep * 10;
-                    if (Session.Enforced.Debug >= 1) Log.Line($"increased to - stage ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold:{nextThreshold}");
-                    _accumulatedHeat = 0;
-                }
-                else if (_accumulatedHeat > currentThreshold)
-                {
-                    DsState.State.Heat = _currentHeatStep * 10;
-                    if (Session.Enforced.Debug >= 1) Log.Line($"heat unchanged - stage:{_currentHeatStep} - heat:{_accumulatedHeat} - threshold:{currentThreshold}");
-                    _heatCycle = (_currentHeatStep - 1) * HeatingStep + OverHeat + 1;
-                    _accumulatedHeat = 0;
-                }
-                else
-                {
-                    if (_currentHeatStep > 0) _currentHeatStep--;
-                    if (_currentHeatStep == 0)
-                    {
-                        DsState.State.Heat = 0;
-                        _currentHeatStep = 0;
-                        _heatCycle = -1;
-                        if (Session.Enforced.Debug >= 1) Log.Line($"no longer overheating ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold:{nextThreshold}");
-                        _accumulatedHeat = 0;
-                    }
-                    else
-                    {
-                        DsState.State.Heat = _currentHeatStep * 10;
-                        _heatCycle = (_currentHeatStep - 1) * HeatingStep + OverHeat + 1;
-                        if (Session.Enforced.Debug >= 1) Log.Line($"decreased to - stage ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold:{nextThreshold}");
-                        _accumulatedHeat = 0;
-                    }
-                }
-            }
-            else if (_heatCycle >= HeatSteps * HeatingStep + OverHeat && _accumulatedHeat > nextThreshold)
-            {
-                _heatVentingTick = _tick + CoolingStep;
-                _accumulatedHeat = 0;
-            }
-            else if (_tick >= _heatVentingTick)
-            {
-                if (_currentHeatStep >= 10) _currentHeatStep--;
-                if (Session.Enforced.Debug >= 1) Log.Line($"left critical - stage ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold: {nextThreshold}");
-                DsState.State.Heat = _currentHeatStep * 10;
-                _heatCycle = (_currentHeatStep - 1) * HeatingStep + OverHeat + 1;
-                _heatVentingTick = uint.MaxValue;
-            }
-
-            if (!heat.Equals(DsState.State.Heat))
-            {
-                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: HeatChange");
-                ShieldChangeState();
-            }
-        }
-
         private bool PowerOnline()
         {
-            if (MyGridDistributor != null)
-            {
-                if (!UpdateGridPower())
-                {
-                    if (MyGridDistributor.SourcesEnabled == MyMultipleEnabledEnum.NoObjects) MyGridDistributor = null;
-                    return false;
-                }
-            }
-            else if (!UpdateGridPower(true)) return false;
+            if (!UpdateGridPower()) return false;
             CalculatePowerCharge();
             _power = _shieldConsumptionRate + _shieldMaintaintPower;
             if (!WarmedUp) return true;
@@ -428,7 +328,7 @@ namespace DefenseShields
             return true;
         }
 
-        private bool UpdateGridPower(bool fallBack = false)
+        private bool UpdateGridPower()
         {
             var tempGridMaxPower = _gridMaxPower;
             _gridMaxPower = 0;
@@ -436,31 +336,47 @@ namespace DefenseShields
             _gridAvailablePower = 0;
             _batteryMaxPower = 0;
             _batteryCurrentPower = 0;
-            if (fallBack) FallBackPowerCalc();
-            else
+            if (MyGridDistributor != null)
             {
                 _gridMaxPower += MyGridDistributor.MaxAvailableResourceByType(GId);
-                _gridCurrentPower += MyGridDistributor.TotalRequiredInputByType(GId);
-                if (!DsSet.Settings.UseBatteries)
+                if (_gridMaxPower <= 0)
                 {
-                    lock (_batteryBlocks)
-                    {
-                        for (int i = 0; i < _batteryBlocks.Count; i++)
-                        {
-                            var battery = _batteryBlocks[i];
-                            if (!battery.IsWorking) continue;
-                            var maxOutput = battery.MaxOutput;
-                            if (maxOutput <= 0) continue;
-                            var currentOutput = battery.CurrentOutput;
+                    var distOnState = MyGridDistributor.SourcesEnabled;
+                    var resetDistributor = distOnState == MyMultipleEnabledEnum.NoObjects;
+                    if (Session.Enforced.Debug >= 1 && resetDistributor) Log.Line($"Lost MyGridDistributor: ResourceState:{MyGridDistributor.ResourceState} - OnStaate:{distOnState} - ShieldId [{Shield.EntityId}]");
 
-                            _gridMaxPower -= maxOutput;
-                            _gridCurrentPower -= currentOutput;
-                            _batteryMaxPower += maxOutput;
-                            _batteryCurrentPower += currentOutput;
+                    if (resetDistributor)
+                    {
+                        FunctionalChanged(true);
+                        if (_powerSources.Count > 0) FallBackPowerCalc();
+                    }
+                }
+                else
+                {
+                    _gridCurrentPower += MyGridDistributor.TotalRequiredInputByType(GId);
+                    if (!DsSet.Settings.UseBatteries)
+                    {
+                        lock (_batteryBlocks)
+                        {
+                            for (int i = 0; i < _batteryBlocks.Count; i++)
+                            {
+                                var battery = _batteryBlocks[i];
+                                if (!battery.IsWorking) continue;
+                                var maxOutput = battery.MaxOutput;
+                                if (maxOutput <= 0) continue;
+                                var currentOutput = battery.CurrentOutput;
+
+                                _gridMaxPower -= maxOutput;
+                                _gridCurrentPower -= currentOutput;
+                                _batteryMaxPower += maxOutput;
+                                _batteryCurrentPower += currentOutput;
+                            }
                         }
                     }
                 }
             }
+            else if (_powerSources.Count > 0) FallBackPowerCalc();
+
             _gridAvailablePower = _gridMaxPower - _gridCurrentPower;
             _shieldCurrentPower = Sink.CurrentInputByType(GId);
             if (!_gridMaxPower.Equals(tempGridMaxPower) || _roundedGridMax <= 0) _roundedGridMax = Math.Round(_gridMaxPower, 1);
@@ -469,6 +385,7 @@ namespace DefenseShields
 
         private void FallBackPowerCalc()
         {
+            if (_tick600 && Session.Enforced.Debug >= 1) Log.Line($"FallBack Power - ShieldId [{Shield.EntityId}]");
             lock (_powerSources)
             {
                 for (int i = 0; i < _powerSources.Count; i++)
@@ -561,7 +478,7 @@ namespace DefenseShields
                     DsState.State.NoPower = true;
                     DsState.State.Message = true;
                     ShieldChangeState();
-                    if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: NoPower - forShield:{powerForShield} - rounded:{_roundedGridMax} - max:{_gridMaxPower} - count:{_powerSources.Count} - Distributor:{MyGridDistributor != null} - State:{MyGridDistributor?.ResourceState}");
+                    if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: NoPower - forShield:{powerForShield} - rounded:{_roundedGridMax} - max:{_gridMaxPower} - count:{_powerSources.Count} - Distributor:{MyGridDistributor != null} - State:{MyGridDistributor?.ResourceState} - ShieldId [{Shield.EntityId}]");
                 }
 
                 var shieldLoss = DsState.State.Buffer * (_powerLossLoop * 0.00008333333f);
@@ -581,7 +498,7 @@ namespace DefenseShields
                     DsState.State.NoPower = false;
                     _powerNoticeLoop = 0;
                     ShieldChangeState();
-                    if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: PowerRestored");
+                    if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: PowerRestored - ShieldId [{Shield.EntityId}]");
                 }
             }
 
@@ -597,6 +514,100 @@ namespace DefenseShields
             {
                 _shieldChargeRate = 0f;
                 _shieldConsumptionRate = 0f;
+            }
+        }
+
+        private void HeatManager()
+        {
+            var hp = _shieldMaxBuffer * Session.Enforced.Efficiency;
+            var heat = DsState.State.Heat;
+            if (_damageReadOut > 0 && _heatCycle == -1)
+            {
+                if (_count == 29) _accumulatedHeat += _damageReadOut;
+                _heatCycle = 0;
+            }
+            else if (_heatCycle > -1)
+            {
+                if (_count == 29) _accumulatedHeat += _damageReadOut;
+                _heatCycle++;
+            }
+
+            var nextThreshold = hp * 0.01 * _currentHeatStep;
+            var currentThreshold = hp * 0.01 * (_currentHeatStep - 1);
+
+            if (_heatCycle == OverHeat)
+            {
+                var threshold = hp * 0.01;
+                if (_accumulatedHeat > threshold)
+                {
+                    _currentHeatStep = 1;
+                    DsState.State.Heat = _currentHeatStep * 10;
+                    if (Session.Enforced.Debug >= 1) Log.Line($"now overheating - stage:{_currentHeatStep} - heat:{_accumulatedHeat} - threshold:{threshold} - ShieldId [{Shield.EntityId}]");
+                    _accumulatedHeat = 0;
+                }
+                else
+                {
+                    DsState.State.Heat = 0;
+                    _currentHeatStep = 0;
+                    _heatCycle = -1;
+                    if (Session.Enforced.Debug >= 1) Log.Line($"under-threshold - stage:{_currentHeatStep} - heat:{_accumulatedHeat} - threshold:{threshold} - ShieldId [{Shield.EntityId}]");
+                    _accumulatedHeat = 0;
+                }
+            }
+            else if (_currentHeatStep < HeatSteps && _heatCycle == _currentHeatStep * HeatingStep + OverHeat)
+            {
+                if (_accumulatedHeat > nextThreshold)
+                {
+                    _currentHeatStep++;
+                    DsState.State.Heat = _currentHeatStep * 10;
+                    if (Session.Enforced.Debug >= 1) Log.Line($"increased to - stage ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold:{nextThreshold} - ShieldId [{Shield.EntityId}]");
+                    _accumulatedHeat = 0;
+                }
+                else if (_accumulatedHeat > currentThreshold)
+                {
+                    DsState.State.Heat = _currentHeatStep * 10;
+                    if (Session.Enforced.Debug >= 1) Log.Line($"heat unchanged - stage:{_currentHeatStep} - heat:{_accumulatedHeat} - threshold:{currentThreshold} - ShieldId [{Shield.EntityId}]");
+                    _heatCycle = (_currentHeatStep - 1) * HeatingStep + OverHeat + 1;
+                    _accumulatedHeat = 0;
+                }
+                else
+                {
+                    if (_currentHeatStep > 0) _currentHeatStep--;
+                    if (_currentHeatStep == 0)
+                    {
+                        DsState.State.Heat = 0;
+                        _currentHeatStep = 0;
+                        _heatCycle = -1;
+                        if (Session.Enforced.Debug >= 1) Log.Line($"no longer overheating ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold:{nextThreshold} - ShieldId [{Shield.EntityId}]");
+                        _accumulatedHeat = 0;
+                    }
+                    else
+                    {
+                        DsState.State.Heat = _currentHeatStep * 10;
+                        _heatCycle = (_currentHeatStep - 1) * HeatingStep + OverHeat + 1;
+                        if (Session.Enforced.Debug >= 1) Log.Line($"decreased to - stage ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold:{nextThreshold} - ShieldId [{Shield.EntityId}]");
+                        _accumulatedHeat = 0;
+                    }
+                }
+            }
+            else if (_heatCycle >= HeatSteps * HeatingStep + OverHeat && _accumulatedHeat > nextThreshold)
+            {
+                _heatVentingTick = _tick + CoolingStep;
+                _accumulatedHeat = 0;
+            }
+            else if (_tick >= _heatVentingTick)
+            {
+                if (_currentHeatStep >= 10) _currentHeatStep--;
+                if (Session.Enforced.Debug >= 1) Log.Line($"left critical - stage ({_currentHeatStep}): heat:{_accumulatedHeat} - threshold: {nextThreshold} - ShieldId [{Shield.EntityId}]");
+                DsState.State.Heat = _currentHeatStep * 10;
+                _heatCycle = (_currentHeatStep - 1) * HeatingStep + OverHeat + 1;
+                _heatVentingTick = uint.MaxValue;
+            }
+
+            if (!heat.Equals(DsState.State.Heat))
+            {
+                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: HeatChange - ShieldId [{Shield.EntityId}]");
+                ShieldChangeState();
             }
         }
         #endregion
@@ -695,7 +706,6 @@ namespace DefenseShields
             }
             _blockChanged = true;
             _functionalChanged = true;
-            MyGridDistributor = null;
             _subUpdate = false;
         }
 

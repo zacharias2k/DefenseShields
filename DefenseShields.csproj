@@ -197,7 +197,6 @@
     <Compile Include="Data\Scripts\DefenseShields\Config\EnhancerData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldDraw.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldWebClient.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldIntersectClient.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldEvents.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldStates.cs" />

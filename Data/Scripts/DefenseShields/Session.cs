@@ -64,9 +64,9 @@ namespace DefenseShields
         internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Match a shield's modulation frequency/code");
         internal MyStringId ShieldFreq = MyStringId.GetOrCompute("Shield Frequency");
         internal MyStringId ShieldFreqTooltip = MyStringId.GetOrCompute("Set this to the secret frequency/code used for shield access");
-        public static bool MpActive => MyAPIGateway.Multiplayer.MultiplayerActive;
-        public static bool IsServer => MyAPIGateway.Multiplayer.IsServer;
-        public static bool DedicatedServer => MyAPIGateway.Utilities.IsDedicated;
+        public static bool MpActive;
+        public static bool IsServer;
+        public static bool DedicatedServer;
 
         internal static DefenseShields HudComp;
         internal static double HudShieldDist = double.MaxValue;
@@ -132,8 +132,11 @@ namespace DefenseShields
         {
             try
             {
+                MpActive = MyAPIGateway.Multiplayer.MultiplayerActive;
+                IsServer = MyAPIGateway.Multiplayer.IsServer;
+                DedicatedServer = MyAPIGateway.Utilities.IsDedicated;
                 Log.Init("debugdevelop.log");
-                Log.Line($"Logging Started");
+                Log.Line($"Logging Started: Server:{IsServer} - Dedicated:{DedicatedServer} - MpActive:{MpActive}");
 
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEnforce, EnforcementReceived);

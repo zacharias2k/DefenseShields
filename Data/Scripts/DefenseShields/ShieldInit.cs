@@ -45,14 +45,13 @@ namespace DefenseShields
                     Election();
                     RegisterEvents();
                 }
-
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
 
         public override bool IsSerialized()
         {
-            if (Session.IsServer)
+            if (IsServer)
             {
                 if (Shield.Storage != null)
                 {
@@ -69,6 +68,9 @@ namespace DefenseShields
             try
             {
                 if (Shield.CubeGrid.Physics == null) return;
+                IsServer = Session.IsServer;
+                IsDedicated = Session.DedicatedServer;
+
                 if (ShieldComp == null) ShieldComp = new ShieldGridComponent(this);
                 if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>())
                 {
@@ -97,13 +99,12 @@ namespace DefenseShields
             try
             {
                 if (AllInited) return true;
-                var isServer = Session.IsServer;
                 if (Shield.CubeGrid.Physics == null) return false;
 
                 var isFunctional = Shield.IsFunctional;
-                if (isServer && (ShieldComp.EmitterMode < 0 || ShieldComp.EmittersSuspended || !isFunctional))
+                if (IsServer && (ShieldComp.EmitterMode < 0 || ShieldComp.EmittersSuspended || !isFunctional))
                 {
-                    if (_tick % 600 == 0)
+                    if (_tick600)
                     {
                         GridOwnsController();
                         Shield.RefreshCustomInfo();
@@ -111,19 +112,19 @@ namespace DefenseShields
                     return false;
                 }
 
-                if (!isServer && !DsState.State.Online || EnforcementInvalid()) return false;
+                if (!IsServer && !DsState.State.Online || EnforcementInvalid()) return false;
 
                 Session.Instance.CreateControllerElements(Shield);
                 SetShieldType(false);
                 CleanUp(3);
 
-                if (!isFunctional || isServer && !BlockReady()) return false;
+                if (!isFunctional || IsServer && !BlockReady()) return false;
 
                 AllInited = true;
                 if (Session.Enforced.Debug >= 1) Log.Line($"AllInited: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in Controller PostInit: {ex}"); }
-            return !Session.IsServer;
+            return !IsServer;
         }
 
         private void StorageSetup()

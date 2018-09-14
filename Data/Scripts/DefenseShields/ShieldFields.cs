@@ -132,6 +132,8 @@ namespace DefenseShields
         private bool _updateMobileShape;
         private bool _clientLowered;
         private bool _clientOn;
+        private bool _tick60;
+        private bool _tick600;
 
         private const string SpaceWolf = "Space_Wolf";
         private string _modelActive = "\\Models\\Cubes\\ShieldActiveBase.mwm";

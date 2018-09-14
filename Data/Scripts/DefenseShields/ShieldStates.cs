@@ -38,6 +38,7 @@ namespace DefenseShields
         private bool ShieldOn()
         {
             if (_subUpdate && _tick > _subTick + 10) HierarchyUpdate();
+            if (_blockEvent && _tick60) BlockChanged(true);
 
             if (IsServer)
             {
@@ -49,6 +50,8 @@ namespace DefenseShields
                     return false;
                 }
                 var powerState = PowerOnline();
+                if (!powerState && _genericDownLoop == -1) _genericDownLoop = 0;
+
                 if (_tick % 120 == 0)
                 {
                     GetModulationInfo();
@@ -57,7 +60,6 @@ namespace DefenseShields
                 if (ShieldDown()) return false;
                 SetShieldServerStatus(powerState);
                 Timing(true);
-
                 if (!DsState.State.Online || ComingOnline && (!GridOwnsController() || GridIsMobile && FieldShapeBlocked()))
                 {
                     if (_genericDownLoop == -1) _genericDownLoop = 0;
