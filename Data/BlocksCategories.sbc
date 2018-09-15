@@ -402,10 +402,14 @@
       <BlockTopology>TriangleMesh</BlockTopology>
 	<Size x="44" y="38" z="44" />
 	<ModelOffset x="0" y="0" z="0" />
-	<Center x="0" y="0" z="22" />
+	<Center x="22" y="0" z="22" />
 	<Model>Models\Cubes\PlanetaryEmitter.mwm</Model>
 	<MountPoints>
-		<MountPoint Side="Bottom" StartX="0" StartY="0" EndX="22" EndY="22" />
+		<MountPoint Side="Bottom" StartX="0.00" StartY="0.00" EndX="44.00" EndY="44.00" />
+		<MountPoint Side="Back" StartX="0.00" StartY="0.0" EndX="44.00" EndY="1" />
+		<MountPoint Side="Front" StartX="0.00" StartY="0.0" EndX="44.00" EndY="1" />
+		<MountPoint Side="Right" StartX="0.00" StartY="0.0" EndX="44.00" EndY="1" />
+		<MountPoint Side="Left" StartX="0.00" StartY="0.0" EndX="44.00" EndY="1" />
 	</MountPoints>
       <Components>
         <Component Subtype="SteelPlate" Count="2900" />
