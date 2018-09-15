@@ -50,10 +50,12 @@ namespace DefenseShields
         private float _shieldConsumptionRate;
         private float _oldShieldFudge;
 
+        internal double EmpSize { get; set; }
         internal double BoundingRange;
         private double _oldEllipsoidAdjust;
         private double _sAvelSqr;
         private double _ellipsoidSurfaceArea;
+        private double _ellipsoidVolume;
         private double _shieldVol;
         private double _sizeScaler;
         private double _roundedGridMax;
@@ -67,6 +69,7 @@ namespace DefenseShields
         private int _powerNoticeLoop;
         private int _offlineCnt = -1;
         private int _overLoadLoop = -1;
+        private int _empOverLoadLoop = -1;
         private int _genericDownLoop = -1;
         private int _reModulationLoop = -1;
         private int _heatCycle = -1;
@@ -74,6 +77,7 @@ namespace DefenseShields
 
         private const int ReModulationCount = 300;
         private const int ShieldDownCount = 1200;
+        private const int EmpDownCount = 3600;
         private const int GenericDownCount = 300;
         private const int PowerNoticeCount = 600;
         private const int OverHeat = 1800;
@@ -104,12 +108,14 @@ namespace DefenseShields
         internal bool IsStatic;
         internal bool IsServer;
         internal bool IsDedicated;
+        internal bool MpActive;
         internal bool ComingOnline;
         internal bool Warming;
         internal bool Starting;
         internal bool UpdateDimensions;
         internal bool FitChanged;
         internal bool GridIsMobile;
+        internal bool EmpOverLoad;
         private bool _slaveLink;
         private bool _subUpdate;
         private bool _effectsCleanup;
@@ -154,6 +160,7 @@ namespace DefenseShields
 
         internal Vector3D DetectionCenter;
         internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
+        internal Vector3D EmpDetonation { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         internal Vector3D ShieldSize { get; set; }
         private Vector3D _localImpactPosition;
         private Vector3D _oldGridHalfExtents;
@@ -196,6 +203,7 @@ namespace DefenseShields
         private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
 
         private readonly MyConcurrentQueue<IMySlimBlock> _dmgBlocks = new MyConcurrentQueue<IMySlimBlock>();
+        private readonly MyConcurrentQueue<IMyWarhead> _empDmg = new MyConcurrentQueue<IMyWarhead>();
         private readonly MyConcurrentQueue<IMySlimBlock> _fewDmgBlocks = new MyConcurrentQueue<IMySlimBlock>();
         private readonly MyConcurrentQueue<MyEntity> _missileDmg = new MyConcurrentQueue<MyEntity>();
         private readonly MyConcurrentQueue<IMyMeteor> _meteorDmg = new MyConcurrentQueue<IMyMeteor>();

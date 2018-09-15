@@ -93,7 +93,7 @@ namespace DefenseShields
                     }
                     entChanged = true;
                     _enablePhysics = true;
-                    WebEnts.TryAdd(ent, new EntIntersectInfo(ent.EntityId, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, _tick, _tick, relation, new List<IMySlimBlock>()));
+                    WebEnts.TryAdd(ent, new EntIntersectInfo(ent.EntityId, 0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, _tick, _tick, relation, new List<IMySlimBlock>()));
                 }
             }
 

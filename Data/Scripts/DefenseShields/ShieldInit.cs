@@ -70,7 +70,7 @@ namespace DefenseShields
                 if (Shield.CubeGrid.Physics == null) return;
                 IsServer = Session.IsServer;
                 IsDedicated = Session.DedicatedServer;
-
+                MpActive = Session.MpActive;
                 if (ShieldComp == null) ShieldComp = new ShieldGridComponent(this);
                 if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>())
                 {

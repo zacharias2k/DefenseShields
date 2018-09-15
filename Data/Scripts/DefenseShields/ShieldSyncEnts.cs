@@ -6,7 +6,6 @@ using Sandbox.Game.Entities.Character.Components;
 using Sandbox.ModAPI;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using VRage.Game.ModAPI.Interfaces;
 using VRage.Utils;
 using VRageMath;
 
@@ -18,16 +17,6 @@ namespace DefenseShields
         {
             try
             {
-
-                if (_destroyedBlocks.Count == 0 && _missileDmg.Count == 0 && _meteorDmg.Count == 0 &&
-                    _voxelDmg.Count == 0 && _characterDmg.Count == 0 && _fewDmgBlocks.Count == 0 &&
-                    _dmgBlocks.Count == 0) return;
-
-                var isServer = Session.IsServer;
-                var mpActive = Session.MpActive;
-
-                if (Session.Enforced.Debug >= 1) Dsutil4.Sw.Restart();
-
                 if (clear)
                 {
                     Eject.Clear();
@@ -38,8 +27,14 @@ namespace DefenseShields
                     _characterDmg.Clear();
                     _fewDmgBlocks.Clear();
                     _dmgBlocks.Clear();
+                    _empDmg.Clear();
                     return;
                 }
+
+                if (_destroyedBlocks.Count == 0 && _missileDmg.Count == 0 && _meteorDmg.Count == 0 &&
+                    _voxelDmg.Count == 0 && _characterDmg.Count == 0 && _fewDmgBlocks.Count == 0 &&
+                    _dmgBlocks.Count == 0 && _empDmg.Count == 0) return;
+                if (Session.Enforced.Debug >= 1) Dsutil4.Sw.Restart();
                 /*
                 if (Eject.Count != 0)
                 {
@@ -84,8 +79,6 @@ namespace DefenseShields
                         while (_missileDmg.TryDequeue(out ent))
                         {
                             if (ent == null || ent.MarkedForClose || ent.Closed) continue;
-                            //var destObj = ent as IMyDestroyableObject;
-                            //if (destObj == null) continue;
                             var computedDamage = ComputeAmmoDamage(ent);
                             if (computedDamage <= float.NegativeInfinity)
                             {
@@ -96,10 +89,9 @@ namespace DefenseShields
                             var damage = computedDamage * DsState.State.ModulateEnergy;
                             if (computedDamage < 0) damage = computedDamage;
 
-                            if (mpActive)
+                            if (MpActive)
                             {
                                 ShieldDoDamage(damage, ent.EntityId);
-                                //destObj.DoDamage(10000f, DelDamage, true, null, MyGrid.EntityId);
                                 ent.Close();
                             }
                             else
@@ -107,7 +99,6 @@ namespace DefenseShields
                                 WorldImpactPosition = ent.PositionComp.WorldVolume.Center;
                                 Absorb += damage;
                                 ImpactSize = damage;
-                                //destObj.DoDamage(10000f, DelDamage, true, null, MyGrid.EntityId);
                                 UtilsStatic.CreateFakeSmallExplosion(ent.PositionComp.WorldAABB.Center);
                                 ent.Close();
                             }
@@ -125,7 +116,7 @@ namespace DefenseShields
                         {
                             if (meteor == null || meteor.MarkedForClose || meteor.Closed) continue;
                             var damage = 5000 * DsState.State.ModulateKinetic;
-                            if (mpActive)
+                            if (MpActive)
                             {
 
                                 ShieldDoDamage(damage, meteor.EntityId);
@@ -227,6 +218,28 @@ namespace DefenseShields
                                 continue;
                             }
                             block.DoDamage(block.MaxIntegrity * 0.9f, DelDamage, true, null, MyGrid.EntityId); 
+                            if (myGrid.BlocksCount == 0) myGrid.SyncObject.SendCloseRequest();
+                        }
+                    }
+                }
+                catch (Exception ex) { Log.Line($"Exception in fewBlocks: {ex}"); }
+
+                try
+                {
+                    if (_empDmg.Count != 0)
+                    {
+                        IMyWarhead block;
+                        while (_empDmg.TryDequeue(out block))
+                        {
+                            if (block == null || block.MarkedForClose || block.Closed) continue;
+                            var myGrid = block.CubeGrid as MyCubeGrid;
+
+                            if (block.SlimBlock.IsDestroyed)
+                            {
+                                myGrid.EnqueueDestroyedBlock(block.Position);
+                                continue;
+                            }
+                            block.Close();
                             if (myGrid.BlocksCount == 0) myGrid.SyncObject.SendCloseRequest();
                         }
                     }

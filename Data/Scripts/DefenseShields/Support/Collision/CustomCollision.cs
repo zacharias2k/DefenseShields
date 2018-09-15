@@ -447,7 +447,7 @@ namespace DefenseShields.Support
                 {
                     collisionAvg /= c3;
                     entInfo.ContactPoint = collisionAvg;
-                    var mass = ((MyCubeGrid)grid).GetCurrentMass();
+                    var mass = grid.GetCurrentMass();
 
                     var transformInv = matrixInv;
                     var normalMat = MatrixD.Transpose(transformInv);

@@ -28,7 +28,11 @@ namespace DefenseShields
                 {
                     if (Session.Enforced.Debug >= 1 && WasOnline) Log.Line($"Off: WasOn:{WasOnline} - On:{DsState.State.Online} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
                     if (WasOnline) ShieldOff();
-                    else if (DsState.State.Message) ShieldChangeState();
+                    else if (DsState.State.Message)
+                    {
+                        Log.Line($"StateUpdate: WasOnline");
+                        ShieldChangeState();
+                    }
                     return;
                 }
                 if (Session.Enforced.Debug >= 1 && !WasOnline)
@@ -51,13 +55,13 @@ namespace DefenseShields
                             var newPercentColor = UtilsStatic.GetShieldColorFromFloat(DsState.State.ShieldPercent);
                             if (newPercentColor != _oldPercentColor)
                             {
-                                if (Session.Enforced.Debug >= 2) Log.Line($"StateUpdate: Percent Threshold Reached");
+                                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: Percent Threshold Reached");
                                 ShieldChangeState();
                                 _oldPercentColor = newPercentColor;
                             }
                             else if (_lCount == 7 && _eCount == 7)
                             {
-                                if (Session.Enforced.Debug >= 2) Log.Line($"StateUpdate: Timer Reached");
+                                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: Timer Reached");
                                 ShieldChangeState();
                             }
                         }
@@ -116,8 +120,8 @@ namespace DefenseShields
             {
                 SyncThreadedEnts(true);
                 _offlineCnt = -1;
-                ShieldChangeState();
                 if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
+                ShieldChangeState();
 
             }
             else
@@ -323,7 +327,11 @@ namespace DefenseShields
             }
             else if (Absorb < 0) DsState.State.Buffer += Absorb / Session.Enforced.Efficiency;
 
-            if (IsServer && DsState.State.Buffer < 0) _overLoadLoop = 0;
+            if (IsServer && DsState.State.Buffer < 0)
+            {
+                if (!EmpOverLoad) _overLoadLoop = 0;
+                else _empOverLoadLoop = 0;
+            }
             Absorb = 0f;
             return true;
         }
@@ -347,8 +355,8 @@ namespace DefenseShields
 
                     if (resetDistributor)
                     {
-                        FunctionalChanged(true);
                         if (_powerSources.Count > 0) FallBackPowerCalc();
+                        FunctionalChanged(true);
                     }
                 }
                 else
@@ -477,8 +485,8 @@ namespace DefenseShields
                 {
                     DsState.State.NoPower = true;
                     DsState.State.Message = true;
-                    ShieldChangeState();
                     if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: NoPower - forShield:{powerForShield} - rounded:{_roundedGridMax} - max:{_gridMaxPower} - count:{_powerSources.Count} - Distributor:{MyGridDistributor != null} - State:{MyGridDistributor?.ResourceState} - ShieldId [{Shield.EntityId}]");
+                    ShieldChangeState();
                 }
 
                 var shieldLoss = DsState.State.Buffer * (_powerLossLoop * 0.00008333333f);
@@ -497,8 +505,8 @@ namespace DefenseShields
                 {
                     DsState.State.NoPower = false;
                     _powerNoticeLoop = 0;
-                    ShieldChangeState();
                     if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: PowerRestored - ShieldId [{Shield.EntityId}]");
+                    ShieldChangeState();
                 }
             }
 
@@ -607,6 +615,7 @@ namespace DefenseShields
             if (!heat.Equals(DsState.State.Heat))
             {
                 if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: HeatChange - ShieldId [{Shield.EntityId}]");
+                Log.Line($"StateUpdate: Heat");
                 ShieldChangeState();
             }
         }
@@ -688,15 +697,12 @@ namespace DefenseShields
 
         private void UpdateSubGrids()
         {
-
-
             var gotGroups = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
             if (gotGroups.Count == ShieldComp.GetLinkedGrids.Count) return;
             if (Session.Enforced.Debug >= 1) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.GetLinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.GetLinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
 
             lock (ShieldComp.GetSubGrids) ShieldComp.GetSubGrids.Clear();
             lock (ShieldComp.GetLinkedGrids) ShieldComp.GetLinkedGrids.Clear();
-            var c = 0;
             for (int i = 0; i < gotGroups.Count; i++)
             {
                 var sub = gotGroups[i];
@@ -722,9 +728,13 @@ namespace DefenseShields
             }
         }
 
-        private void ShieldDoDamage(float damage, long entityId)
+        private void ShieldDoDamage(float damage, long entityId, double empSize = 0d)
         {
+            EmpSize = empSize;
             ImpactSize = damage;
+
+            if (empSize > 0) damage = damage + (float)(_ellipsoidVolume / empSize);
+
             Shield.SlimBlock.DoDamage(damage, MPdamage, true, null, entityId);
         }
         #endregion
@@ -738,14 +748,22 @@ namespace DefenseShields
                 if (!DsState.State.ModulateEnergy.Equals(ShieldComp.Modulator.ModState.State.ModulateEnergy * 0.01f) || !DsState.State.ModulateKinetic.Equals(ShieldComp.Modulator.ModState.State.ModulateKinetic * 0.01f)) update = true;
                 DsState.State.ModulateEnergy = ShieldComp.Modulator.ModState.State.ModulateKinetic * 0.01f;
                 DsState.State.ModulateKinetic = ShieldComp.Modulator.ModState.State.ModulateEnergy * 0.01f;
-                if (update) ShieldChangeState();
+                if (update)
+                {
+                    Log.Line($"StateUpdate: GetModulationInfo");
+                    ShieldChangeState();
+                }
             }
             else
             {
                 if (!DsState.State.ModulateEnergy.Equals(1f) || !DsState.State.ModulateKinetic.Equals(1f)) update = true;
                 DsState.State.ModulateEnergy = 1f;
                 DsState.State.ModulateKinetic = 1f;
-                if (update) ShieldChangeState();
+                if (update)
+                {
+                    Log.Line($"StateUpdate: GetModulationInfo");
+                    ShieldChangeState();
+                }
 
             }
         }
@@ -759,7 +777,11 @@ namespace DefenseShields
                 DsState.State.EnhancerPowerMulti = 2;
                 DsState.State.EnhancerProtMulti = 1000;
                 DsState.State.Enhancer = true;
-                if (update) ShieldChangeState();
+                if (update)
+                {
+                    Log.Line($"StateUpdate: GetEnhancernInfo");
+                    ShieldChangeState();
+                }
             }
             else
             {
@@ -767,7 +789,11 @@ namespace DefenseShields
                 DsState.State.EnhancerPowerMulti = 1;
                 DsState.State.EnhancerProtMulti = 1;
                 DsState.State.Enhancer = false;
-                if (update) ShieldChangeState();
+                if (update)
+                {
+                    Log.Line($"StateUpdate: GetEnhancernInfo");
+                    ShieldChangeState();
+                }
             }
         }
         #endregion

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
+using Sandbox.ModAPI;
 using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
@@ -83,14 +84,19 @@ namespace DefenseShields
             if (entInfo.Relation != Ent.LargeEnemyGrid && GridInside(grid, bOriBBoxD, ent)) return;
             BlockIntersect(grid, bOriBBoxD, entInfo);
             var contactpoint = entInfo.ContactPoint;
+            var empDetonation = entInfo.EmpDetonation;
             entInfo.ContactPoint = Vector3D.NegativeInfinity;
+            entInfo.EmpDetonation = Vector3D.NegativeInfinity;
             if (contactpoint == Vector3D.NegativeInfinity) return;
 
             entInfo.Touched = true;
             ImpactSize = entInfo.Damage;
+            EmpSize = entInfo.EmpSize;
 
             entInfo.Damage = 0;
+            entInfo.EmpSize = 0;
             WorldImpactPosition = contactpoint;
+            EmpDetonation = empDetonation;
         }
 
         private void ShieldIntersect(MyEntity ent)
@@ -203,12 +209,10 @@ namespace DefenseShields
             var transformInv = DetectMatrixOutsideInv;
             var normalMat = MatrixD.Transpose(transformInv);
 
-            var massMulti = 1000f;
             var blockDmgNum = 5;
             if (ShieldMode == ShieldType.Station && DsState.State.Enhancer)
             {
                 blockDmgNum = 50;
-                massMulti = massMulti / DsState.State.EnhancerProtMulti;
             }
             var intersection = bOriBBoxD.Intersects(ref SOriBBoxD);
             try
@@ -223,11 +227,15 @@ namespace DefenseShields
                     var momentum = bMass * bPhysics.LinearVelocity + sMass * sPhysics.LinearVelocity;
                     var resultVelocity = momentum / (bMass + sMass);
                     var bBlockCenter = Vector3D.NegativeInfinity;
-
                     var stale = false;
                     var rawDamage = 0f;
+                    var rawEmpSize = 0d;
+                    var blockSize = breaching.GridSize;
+                    var empRadius = 20;
+                    if (blockSize < 1) empRadius = 5;
+                    IMyWarhead firstWarhead = null;
                     Vector3I gc = breaching.WorldToGridInteger(DetectionCenter);
-                    double rc = ShieldSize.AbsMax() / breaching.GridSize;
+                    double rc = ShieldSize.AbsMax() / blockSize;
                     rc *= rc;
                     rc = rc + 1;
                     rc = Math.Ceiling(rc);
@@ -272,17 +280,32 @@ namespace DefenseShields
                         {
                             var point = blockPoints[j];
                             if (Vector3.Transform(point, DetectMatrixOutsideInv).LengthSquared() > 1) continue;
-
                             collisionAvg += point;
                             c3++;
-
+                            var warheadCheck = block.FatBlock as IMyWarhead;
+                            if (warheadCheck != null && warheadCheck.IsWorking && warheadCheck.IsArmed)
+                            {
+                                firstWarhead = warheadCheck;
+                                var possibleWarHeads = breaching.GetFatBlocks();
+                                for (int w = 0; w < possibleWarHeads.Count; w++)
+                                {
+                                    var warhead = possibleWarHeads[w] as IMyWarhead;
+                                    if (warhead != null && !warhead.MarkedForClose && !warhead.Closed && warhead.IsWorking && warhead.IsArmed)
+                                    {
+                                        rawEmpSize += empRadius;
+                                        if (Vector3I.DistanceManhattan(warhead.Position, blockPos) <= 5) _empDmg.Enqueue(warhead);
+                                    }
+                                }
+                                break;
+                            }
                             if (_dmgBlocks.Count > blockDmgNum) break;
                             c4++;
-                            rawDamage += block.Mass * massMulti;
+                            rawDamage += MathHelper.Clamp(block.Integrity, 0, 350);
                             _dmgBlocks.Enqueue(block);
                             break;
                         }
                     }
+
                     if (collisionAvg != Vector3D.Zero)
                     {
                         collisionAvg /= c3;
@@ -300,8 +323,8 @@ namespace DefenseShields
                             var surfaceMulti = (c3 > 5) ? 5 : c3;
                             var localNormal = Vector3D.Transform(collisionAvg, transformInv);
                             var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
-                            bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass, bPhysics.CenterOfMassWorld);
-                            bPhysics.ApplyImpulse(surfaceMulti * (surfaceMass * 0.025) * -Vector3D.Dot(bPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
+                            bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass,bPhysics.CenterOfMassWorld);
+                            bPhysics.ApplyImpulse(surfaceMulti * (surfaceMass * 0.025) *-Vector3D.Dot(bPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
                             bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (bPhysics.CenterOfMassWorld - collisionAvg) * (bMass * bSpeedLen), null, Vector3D.Zero, MathHelper.Clamp(bSpeedLen, 1f, 8f));
                         }
                         else
@@ -315,11 +338,27 @@ namespace DefenseShields
 
                         bBlockCenter = collisionAvg;
                     }
-                    var damage = rawDamage / 100 * DsState.State.ModulateKinetic;
-                    entInfo.Damage = damage;
-                    if (Session.MpActive)
+                    else return;
+
+                    var damage = rawDamage * DsState.State.ModulateKinetic;
+                    double empSize = 0;
+
+                    if (firstWarhead != null && rawEmpSize > 0)
                     {
-                        if (Session.IsServer && bBlockCenter != Vector3D.NegativeInfinity) ShieldDoDamage(damage, breaching.EntityId);
+                        empSize = 1.33333333333 * Math.PI * (rawEmpSize * rawEmpSize * rawEmpSize) * 0.5 * DsState.State.ModulateEnergy;
+                        var shieldFractionLoss = (float) (_ellipsoidVolume / empSize);
+                        damage = damage + (_shieldMaxBuffer * Session.Enforced.Efficiency / shieldFractionLoss);
+                        entInfo.EmpSize = empSize;
+                        entInfo.EmpDetonation = firstWarhead.PositionComp.WorldAABB.Center;
+                        if (shieldFractionLoss <= 1) EmpOverLoad = true;
+                    }
+
+                    //Log.Line($"ShieldHP:{DsState.State.Buffer * Session.Enforced.Efficiency} - blockDmg:{rawDamage * DsState.State.ModulateKinetic} - TotalShieldDamage:{damage} - empSize:{empSize} - preMod:{rawEmpSize} - dmg(1/fraction):{_ellipsoidVolume / empSize} - ellVol:{_ellipsoidVolume} - ModKin:{DsState.State.ModulateKinetic} - {_ellipsoidSurfaceArea} - {DetectMatrixOutside.Scale.X} - {DetectMatrixOutside.Scale.Y} - {DetectMatrixOutside.Scale.Z}");
+                    entInfo.Damage = damage;
+                    if (MpActive)
+                    {
+                        var hitEntity = firstWarhead?.EntityId ?? breaching.EntityId;
+                        if (IsServer && bBlockCenter != Vector3D.NegativeInfinity) ShieldDoDamage(damage, hitEntity, empSize);
                     }
                     else
                     {

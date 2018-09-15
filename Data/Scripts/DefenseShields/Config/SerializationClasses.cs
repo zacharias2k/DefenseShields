@@ -108,6 +108,8 @@ namespace DefenseShields
         public int Heat;
         [ProtoMember(27), DefaultValue(-1)]
         public float ShieldPercent;
+        [ProtoMember(28)]
+        public bool EmpOverLoad = false;
 
         public override string ToString()
         {

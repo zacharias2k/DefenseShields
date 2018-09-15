@@ -14,6 +14,7 @@ namespace DefenseShields
             EmitterInit,
             FieldBlocked,
             OverLoad,
+            EmpOverLoad,
             Remodulate,
             NoPower,
             NoLos
@@ -24,15 +25,14 @@ namespace DefenseShields
             if (!WarmedUp) return;
             if (Session.Enforced.Debug >= 2) Log.Line($"ShieldChangeState: Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
             else if (Session.Enforced.Debug >= 1 && DsState.State.Message) Log.Line($"ShieldChangeState: Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
-
-            DsState.SaveState();
             if (Session.MpActive) DsState.NetworkUpdate();
-            if (!IsDedicated)
+            if (!IsDedicated && DsState.State.Message)
             {
                 BroadcastMessage();
                 Shield.RefreshCustomInfo();
             }
             DsState.State.Message = false;
+            DsState.SaveState();
         }
 
         private bool ShieldOn()
@@ -142,7 +142,7 @@ namespace DefenseShields
 
         private bool ShieldDown()
         {
-            if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1)
+            if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1 || _empOverLoadLoop > -1)
             {
                 FailureConditions();
                 return true;
@@ -164,6 +164,7 @@ namespace DefenseShields
                 {
                     DsState.State.Waking = true;
                     DsState.State.Message = true;
+                    if (Session.Enforced.Debug >= 1) Log.Line($"Waking: - ShieldId [{Shield.EntityId}]");
                 }
                 if (_genericDownLoop == -1) _genericDownLoop = 0;
                 return true;
@@ -204,6 +205,7 @@ namespace DefenseShields
                 Shield.Enabled = false;
                 DsState.State.FieldBlocked = true;
                 DsState.State.Message = true;
+                if (Session.Enforced.Debug >= 1)Log.Line($"Field blocked: - ShieldId [{Shield.EntityId}]");
                 return true;
             }
             DsState.State.FieldBlocked = false;
@@ -232,7 +234,7 @@ namespace DefenseShields
 
         private void FailureConditions()
         {
-            if (_overLoadLoop == 0 || _reModulationLoop == 0 || _genericDownLoop == 0)
+            if (_overLoadLoop == 0 || _empOverLoadLoop == 0 || _reModulationLoop == 0 || _genericDownLoop == 0)
             {
                 if (DsState.State.Online)
                 {
@@ -240,6 +242,12 @@ namespace DefenseShields
                     if (_overLoadLoop != -1)
                     {
                         DsState.State.Overload = true;
+                        DsState.State.Message = true;
+                    }
+
+                    if (_empOverLoadLoop != -1)
+                    {
+                        DsState.State.EmpOverLoad = true;
                         DsState.State.Message = true;
                     }
 
@@ -296,7 +304,30 @@ namespace DefenseShields
                         _overLoadLoop = -1;
                         var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
                         var nerfer = nerf ? Session.Enforced.Nerf : 1f;
-                        DsState.State.Buffer = (_shieldMaxBuffer / 25) * nerfer; // replace this with something that scales based on charge rate
+                        var recharged = _shieldChargeRate * ShieldDownCount / 60;
+                        DsState.State.Buffer = MathHelper.Clamp(recharged, _shieldMaxBuffer * 0.10f, _shieldMaxBuffer * 0.25f) * nerfer; 
+                    }
+                }
+            }
+
+            if (_empOverLoadLoop > -1)
+            {
+                _empOverLoadLoop++;
+                if (_empOverLoadLoop == EmpDownCount - 1) ShieldComp.CheckEmitters = true;
+                if (_empOverLoadLoop == EmpDownCount)
+                {
+                    if (!ShieldComp.EmittersWorking)
+                    {
+                        _genericDownLoop = 0;
+                    }
+                    else
+                    {
+                        DsState.State.EmpOverLoad = false;
+                        _empOverLoadLoop = -1;
+                        var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
+                        var nerfer = nerf ? Session.Enforced.Nerf : 1f;
+                        var recharged = _shieldChargeRate * EmpDownCount / 60;
+                        DsState.State.Buffer = MathHelper.Clamp(recharged, _shieldMaxBuffer * 0.25f, _shieldMaxBuffer * 0.62f) * nerfer; 
                     }
                 }
             }
@@ -331,6 +362,7 @@ namespace DefenseShields
                 DsState.State.Heat = 0;
 
                 if (!IsDedicated) ShellVisibility(true);
+                SyncThreadedEnts();
             }
 
             Shield.RefreshCustomInfo();
@@ -604,11 +636,15 @@ namespace DefenseShields
                     break;
                 case PlayerNotice.FieldBlocked:
                     UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
-                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("The shield's field cannot form when in contact with a solid body", 6720, "Blue");
+                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + "-- the shield's field cannot form when in contact with a solid body", 6720, "Blue");
                     break;
                 case PlayerNotice.OverLoad:
                     UtilsStatic.GetRealPlayers(center, 500f, realPlayerIds);
                     foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 8000, "Red");
+                    break;
+                case PlayerNotice.EmpOverLoad:
+                    UtilsStatic.GetRealPlayers(center, 500f, realPlayerIds);
+                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- shield was EMPed, restarting in 60 seconds!!", 8000, "Red");
                     break;
                 case PlayerNotice.Remodulate:
                     UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
@@ -628,6 +664,7 @@ namespace DefenseShields
 
         private void BroadcastMessage()
         {
+            if (Session.Enforced.Debug >= 1) Log.Line($"Broadcasting message to local playerId - Server:{IsServer} - Dedicated:{IsDedicated} - Id:{MyAPIGateway.Multiplayer.MyId}");
             if (!DsState.State.EmitterWorking && !DsState.State.Waking)
             {
                 if (GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los) PlayerMessages(PlayerNotice.NoLos);
@@ -635,6 +672,7 @@ namespace DefenseShields
             }
             else if (DsState.State.NoPower) PlayerMessages(PlayerNotice.NoPower);
             else if (DsState.State.Overload) PlayerMessages(PlayerNotice.OverLoad);
+            else if (DsState.State.EmpOverLoad) PlayerMessages(PlayerNotice.EmpOverLoad);
             else if (DsState.State.FieldBlocked) PlayerMessages(PlayerNotice.FieldBlocked);
             else if (DsState.State.Waking) PlayerMessages(PlayerNotice.EmitterInit);
             else if (DsState.State.Remodulate) PlayerMessages(PlayerNotice.Remodulate);

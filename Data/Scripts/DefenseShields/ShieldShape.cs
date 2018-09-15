@@ -145,11 +145,11 @@ namespace DefenseShields
                 EllipsoidSa.Update(DetectMatrixOutside.Scale.X, DetectMatrixOutside.Scale.Y, DetectMatrixOutside.Scale.Z);
                 BoundingRange = ShieldSize.AbsMax();
                 _ellipsoidSurfaceArea = EllipsoidSa.Surface;
+                _ellipsoidVolume = 1.333333 * Math.PI * DetectMatrixOutside.Scale.X * DetectMatrixOutside.Scale.Y * DetectMatrixOutside.Scale.Z;
                 _shieldVol = DetectMatrixOutside.Scale.Volume;
                 if (Session.IsServer)
                 {
-                    if (Session.Enforced.Debug >= 2) Log.Line($"StateUpdate: CreateShieldShape");
-
+                    if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: CreateShieldShape - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
                     ShieldChangeState();
                     ShieldComp.ShieldVolume = DetectMatrixOutside.Scale.Volume;
                     //ShieldComp.CheckEmitters = true;

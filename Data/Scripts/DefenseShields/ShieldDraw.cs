@@ -66,7 +66,10 @@ namespace DefenseShields
                 var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(cubeBlockLocalMatrix));
                 _localImpactPosition = localPosition;
             }
+            if (EmpDetonation != Vector3D.NegativeInfinity) EmpParticleStart();
+
             WorldImpactPosition = Vector3D.NegativeInfinity;
+            EmpDetonation = Vector3D.NegativeInfinity;
 
             if (Shield.IsWorking)
             {
@@ -114,6 +117,26 @@ namespace DefenseShields
             _effect.UserRadiusMultiplier = (float)radius;
             _effect.UserEmitterScale = (float)scale;
             _effect.Velocity = Shield.CubeGrid.Physics.LinearVelocity;
+            _effect.Play();
+        }
+
+        private void EmpParticleStart()
+        {
+            _effect.Stop(true);
+            var pos = EmpDetonation;
+            var matrix = MatrixD.CreateTranslation(pos);
+
+            MyParticlesManager.TryCreateParticleEffect(6667, out _effect, ref matrix, ref pos, _shieldEntRendId, true); // 15, 16, 24, 25, 28, (31, 32) 211 215 53
+            if (_effect == null) return;
+            var playerDist = Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos);
+            var radius = playerDist * 0.15d;
+            var scale = (playerDist + playerDist * 0.001) / playerDist * 0.03 * (48000f / 3600);
+            if (scale > 0.4) scale = 0.4;
+            //Log.Line($"D:{playerDist} - R:{radius} - S:{scale} - I:{ImpactSize} - {MyAPIGateway.Session.IsCameraUserControlledSpectator} = {MyAPIGateway.Session.CameraTargetDistance} - {Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos)}");
+            _effect.UserRadiusMultiplier = (float)radius;
+            _effect.UserEmitterScale = (float)scale;
+            _effect.Velocity = Shield.CubeGrid.Physics.LinearVelocity;
+            _effect.UserColorMultiplier = new Vector4(255, 255, 255, 10);
             _effect.Play();
         }
 
