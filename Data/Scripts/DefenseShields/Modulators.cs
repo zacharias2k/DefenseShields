@@ -448,7 +448,8 @@ namespace DefenseShields
                                  "\n" +
                                  "\n[Backup Modulator]: " + ModState.State.Backup +
                                  "\n[Energy Protection]: " + ModState.State.ModulateEnergy.ToString("0") + "%" +
-                                 "\n[Kinetic Protection]: " + ModState.State.ModulateKinetic.ToString("0") + "%");
+                                 "\n[Kinetic Protection]: " + ModState.State.ModulateKinetic.ToString("0") + "%" +
+                                 "\n[Emp Protection]: " + ModSet.Settings.EmpEnabled);
         }
 
         private bool BlockMoveAnimationReset()

@@ -14,7 +14,8 @@ namespace DefenseShields
             Session.Instance.ModVoxels.Visible = ShowControl;
             Session.Instance.ModGrids.Enabled = block => true;
             Session.Instance.ModGrids.Visible = ShowControl;
-
+            Session.Instance.ModEmp.Enabled = block => true;
+            Session.Instance.ModEmp.Visible = ShowEmp;
             Session.Instance.ModSep1.Visible = ShowControl;
             Session.Instance.ModSep2.Visible = ShowControl;
         }
@@ -89,6 +90,30 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<Modulators>();
             if (comp == null) return;
             comp.ModSet.Settings.ModulateGrids = newValue;
+            comp.ModSet.NetworkUpdate();
+            comp.ModSet.SaveSettings();
+        }
+
+        internal static bool ShowEmp(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<Modulators>();
+            var empControl = comp?.ShieldComp?.Enhancer != null && comp.ShieldComp?.DefenseShields != null && !comp.ShieldComp.DefenseShields.IsStatic;
+            if (!empControl && comp?.ShieldComp?.DefenseShields != null && comp.ShieldComp.DefenseShields.IsStatic) comp.ModSet.Settings.EmpEnabled = true;
+            return empControl;
+        }
+
+        public static bool GetEmpProt(IMyTerminalBlock block)
+        {
+            ShowEmp(block);
+            var comp = block?.GameLogic?.GetAs<Modulators>();
+            return comp?.ModSet.Settings.EmpEnabled ?? false;
+        }
+
+        public static void SetEmpProt(IMyTerminalBlock block, bool newValue)
+        {
+            var comp = block?.GameLogic?.GetAs<Modulators>();
+            if (comp == null) return;
+            comp.ModSet.Settings.EmpEnabled = newValue;
             comp.ModSet.NetworkUpdate();
             comp.ModSet.SaveSettings();
         }

@@ -70,11 +70,12 @@ namespace DefenseShields.Support
         public Vector3D ContactPoint;
         public Vector3D EmpDetonation;
         public uint LastTick;
+        public uint RefreshTick;
         public readonly uint FirstTick;
-        public readonly DefenseShields.Ent Relation;
+        public DefenseShields.Ent Relation;
         public List<IMySlimBlock> CacheBlockList;
 
-        public EntIntersectInfo(long entId, float damage, double empSize, bool touched, BoundingBox box, Vector3D contactPoint, Vector3D empDetonation, uint firstTick, uint lastTick, DefenseShields.Ent relation, List<IMySlimBlock> cacheBlockList)
+        public EntIntersectInfo(long entId, float damage, double empSize, bool touched, BoundingBox box, Vector3D contactPoint, Vector3D empDetonation, uint firstTick, uint lastTick, uint refreshTick, DefenseShields.Ent relation, List<IMySlimBlock> cacheBlockList)
         {
             CacheBlockList = cacheBlockList;
             EntId = entId;
@@ -86,6 +87,7 @@ namespace DefenseShields.Support
             EmpDetonation = empDetonation;
             FirstTick = firstTick;
             LastTick = lastTick;
+            RefreshTick = refreshTick;
             Relation = relation;
         }
     }

@@ -25,7 +25,11 @@ namespace DefenseShields
             if (!WarmedUp) return;
             if (Session.Enforced.Debug >= 2) Log.Line($"ShieldChangeState: Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
             else if (Session.Enforced.Debug >= 1 && DsState.State.Message) Log.Line($"ShieldChangeState: Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
-            if (Session.MpActive) DsState.NetworkUpdate();
+            if (Session.MpActive)
+            {
+                if (Session.Enforced.Debug >= 2) Log.Line($"ServerUpdate: Broadcast:{DsState.State.Message}");
+                DsState.NetworkUpdate();
+            }
             if (!IsDedicated && DsState.State.Message)
             {
                 BroadcastMessage();
@@ -685,6 +689,7 @@ namespace DefenseShields
 
             if (DsState.State.Message)
             {
+                if (Session.Enforced.Debug >= 1) Log.Line($"ClientOffline: Broadcasting message");
                 BroadcastMessage();
                 DsState.State.Message = false;
             }

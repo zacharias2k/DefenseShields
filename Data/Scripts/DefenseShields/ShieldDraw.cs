@@ -66,6 +66,7 @@ namespace DefenseShields
                 var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(cubeBlockLocalMatrix));
                 _localImpactPosition = localPosition;
             }
+
             if (EmpDetonation != Vector3D.NegativeInfinity) EmpParticleStart();
 
             WorldImpactPosition = Vector3D.NegativeInfinity;

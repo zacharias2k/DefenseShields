@@ -7,7 +7,6 @@ using Sandbox.ModAPI.Weapons;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
 
@@ -43,7 +42,15 @@ namespace DefenseShields
                 if (FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent) || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
                 EntIntersectInfo entInfo;
                 WebEnts.TryGetValue(ent, out entInfo);
-                var relation = entInfo?.Relation ?? EntType(ent);
+
+                Ent relation;
+                if (entInfo != null)
+                {
+                    if (_tick600) entInfo.Relation = EntType(ent);
+                    relation = entInfo.Relation;
+                }
+                else relation = EntType(ent);
+
                 switch (relation)
                 {
                     case Ent.Authenticated:
@@ -83,6 +90,14 @@ namespace DefenseShields
 
                     _enablePhysics = true;
                     entInfo.LastTick = _tick;
+                    if (_tick600)
+                    {
+                        if ((relation == Ent.LargeEnemyGrid || relation == Ent.LargeNobodyGrid) && entInfo.CacheBlockList.Count != (ent as MyCubeGrid).BlocksCount)
+                        {
+                            entInfo.RefreshTick = _tick;
+                            entInfo.CacheBlockList.Clear();
+                        }
+                    }
                 }
                 else
                 {
@@ -100,7 +115,7 @@ namespace DefenseShields
                     }
                     entChanged = true;
                     _enablePhysics = true;
-                    WebEnts.TryAdd(ent, new EntIntersectInfo(ent.EntityId, 0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, _tick, _tick, relation, new List<IMySlimBlock>()));
+                    WebEnts.TryAdd(ent, new EntIntersectInfo(ent.EntityId, 0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, _tick, _tick, _tick, relation, new List<IMySlimBlock>()));
                 }
             }
             ShieldMatrix = ShieldEnt.PositionComp.WorldMatrix;
@@ -133,7 +148,7 @@ namespace DefenseShields
                 var entCenter = webent.PositionComp.WorldVolume.Center;
                 var entInfo = WebEnts[webent];
                 if (entInfo.LastTick != _tick) continue;
-                if (entInfo.FirstTick == _tick && (WebEnts[webent].Relation == Ent.LargeNobodyGrid || WebEnts[webent].Relation == Ent.LargeEnemyGrid))
+                if (entInfo.RefreshTick == _tick && (WebEnts[webent].Relation == Ent.LargeNobodyGrid || WebEnts[webent].Relation == Ent.LargeEnemyGrid))
                     (webent as IMyCubeGrid)?.GetBlocks(WebEnts[webent].CacheBlockList, CollectCollidableBlocks);
                 switch (WebEnts[webent].Relation)
                 {
@@ -222,6 +237,7 @@ namespace DefenseShields
         #region Gather Entity Information
         public enum Ent
         {
+            Unknown,
             Ignore,
             Friend,
             EnemyPlayer,
@@ -275,11 +291,12 @@ namespace DefenseShields
                         return Ent.Authenticated;
                     }
                 }
-
-                if (grid.BlocksCount < 10 && grid.BigOwners.Count == 0) return Ent.SmallNobodyGrid;
-                if (grid.BigOwners.Count == 0) return Ent.LargeNobodyGrid;
+                var bigOwners = grid.BigOwners.Count;
+                var blockCnt = grid.BlocksCount;
+                if (blockCnt < 10 && bigOwners == 0) return Ent.SmallNobodyGrid;
+                if (bigOwners == 0) return Ent.LargeNobodyGrid;
                 var enemy = GridEnemy(grid);
-                if (enemy && grid.BlocksCount < 3) return Ent.SmallEnemyGrid;
+                //if (enemy && blockCnt < 3) return Ent.SmallEnemyGrid;
 
                 ShieldGridComponent shieldComponent;
                 grid.Components.TryGet(out shieldComponent);

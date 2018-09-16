@@ -110,6 +110,8 @@ namespace DefenseShields
         public float ShieldPercent;
         [ProtoMember(28)]
         public bool EmpOverLoad = false;
+        [ProtoMember(29)]
+        public bool EmpProtection = false;
 
         public override string ToString()
         {
@@ -208,7 +210,7 @@ namespace DefenseShields
     public class ProtoModulatorSettings
     {
         [ProtoMember(1)]
-        public bool Unused;
+        public bool EmpEnabled = false;
 
         [ProtoMember(2), DefaultValue(true)]
         public bool ModulateVoxels = true;

@@ -345,7 +345,9 @@ namespace DefenseShields
 
                     if (firstWarhead != null && rawEmpSize > 0)
                     {
-                        empSize = 1.33333333333 * Math.PI * (rawEmpSize * rawEmpSize * rawEmpSize) * 0.5 * DsState.State.ModulateEnergy;
+                        var scaler = 1f;
+                        if (DsState.State.EmpProtection) scaler = 0.1f;
+                        empSize = 1.33333333333 * Math.PI * (rawEmpSize * rawEmpSize * rawEmpSize) * 0.5 * DsState.State.ModulateEnergy * scaler;
                         var shieldFractionLoss = (float) (_ellipsoidVolume / empSize);
                         damage = damage + (_shieldMaxBuffer * Session.Enforced.Efficiency / shieldFractionLoss);
                         entInfo.EmpSize = empSize;

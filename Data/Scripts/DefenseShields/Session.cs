@@ -109,6 +109,7 @@ namespace DefenseShields
         public IMyTerminalControlSlider ModDamage;
         public IMyTerminalControlCheckbox ModVoxels;
         public IMyTerminalControlCheckbox ModGrids;
+        public IMyTerminalControlCheckbox ModEmp;
         public IMyTerminalControlSeparator ModSep1;
         public IMyTerminalControlSeparator ModSep2;
 
@@ -333,6 +334,12 @@ namespace DefenseShields
                         else furthestHit = sphere;
                         var hitPos = line.From + testDir * -furthestHit;
                         ds.WorldImpactPosition = hitPos;
+                        var warHead = hostileEnt as IMyWarhead;
+                        if (warHead != null)
+                        {
+                            ds.EmpDetonation = blockPos;
+                            warHead.Close();
+                        }
                         ds.ImpactSize = info.Amount;
                         if (hostileEnt.DefinitionId.HasValue && hostileEnt.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))
                         {
@@ -1115,11 +1122,13 @@ namespace DefenseShields
                 ModSep2 = TerminalHelpers.Separator(comp?.Modulator, "DS-M_sep2");
                 ModVoxels = TerminalHelpers.AddCheckbox(comp?.Modulator, "DS-M_ModulateVoxels", "Let voxels bypass shield", "Let voxels bypass shield", ModUi.GetVoxels, ModUi.SetVoxels);
                 ModGrids = TerminalHelpers.AddCheckbox(comp?.Modulator, "DS-M_ModulateGrids", "Let grids bypass shield", "Let grid bypass shield", ModUi.GetGrids, ModUi.SetGrids);
+                ModEmp = TerminalHelpers.AddCheckbox(comp?.Modulator, "DS-M_ModulateEmpProt", "Protects against EMPs", "But generates heat 10x faster", ModUi.GetEmpProt, ModUi.SetEmpProt);
 
                 CreateActionDamageModRate<IMyUpgradeModule>(ModDamage);
 
                 CreateAction<IMyUpgradeModule>(ModVoxels);
                 CreateAction<IMyUpgradeModule>(ModGrids);
+                CreateAction<IMyUpgradeModule>(ModEmp);
                 ModControl = true;
             }
             catch (Exception ex) { Log.Line($"Exception in CreateModulatorUi: {ex}"); }
