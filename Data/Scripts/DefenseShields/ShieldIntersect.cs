@@ -352,15 +352,15 @@ namespace DefenseShields
                         damage = damage + (_shieldMaxBuffer * Session.Enforced.Efficiency / shieldFractionLoss);
                         entInfo.EmpSize = empSize;
                         entInfo.EmpDetonation = firstWarhead.PositionComp.WorldAABB.Center;
-                        if (shieldFractionLoss <= 1) EmpOverLoad = true;
+                        if (shieldFractionLoss <= 1) _empOverLoad = true;
                     }
 
                     //Log.Line($"ShieldHP:{DsState.State.Buffer * Session.Enforced.Efficiency} - blockDmg:{rawDamage * DsState.State.ModulateKinetic} - TotalShieldDamage:{damage} - empSize:{empSize} - preMod:{rawEmpSize} - dmg(1/fraction):{_ellipsoidVolume / empSize} - ellVol:{_ellipsoidVolume} - ModKin:{DsState.State.ModulateKinetic} - {_ellipsoidSurfaceArea} - {DetectMatrixOutside.Scale.X} - {DetectMatrixOutside.Scale.Y} - {DetectMatrixOutside.Scale.Z}");
                     entInfo.Damage = damage;
-                    if (MpActive)
+                    if (_mpActive)
                     {
                         var hitEntity = firstWarhead?.EntityId ?? breaching.EntityId;
-                        if (IsServer && bBlockCenter != Vector3D.NegativeInfinity) ShieldDoDamage(damage, hitEntity, empSize);
+                        if (_isServer && bBlockCenter != Vector3D.NegativeInfinity) ShieldDoDamage(damage, hitEntity, empSize);
                     }
                     else
                     {

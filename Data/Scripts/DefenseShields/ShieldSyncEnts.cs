@@ -89,7 +89,7 @@ namespace DefenseShields
                             var damage = computedDamage * DsState.State.ModulateEnergy;
                             if (computedDamage < 0) damage = computedDamage;
 
-                            if (MpActive)
+                            if (_mpActive)
                             {
                                 ShieldDoDamage(damage, ent.EntityId);
                                 ent.Close();
@@ -116,7 +116,7 @@ namespace DefenseShields
                         {
                             if (meteor == null || meteor.MarkedForClose || meteor.Closed) continue;
                             var damage = 5000 * DsState.State.ModulateKinetic;
-                            if (MpActive)
+                            if (_mpActive)
                             {
 
                                 ShieldDoDamage(damage, meteor.EntityId);

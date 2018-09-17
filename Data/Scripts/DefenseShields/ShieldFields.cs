@@ -49,6 +49,7 @@ namespace DefenseShields
         private float _shieldMaintaintPower;
         private float _shieldConsumptionRate;
         private float _oldShieldFudge;
+        private float _empScaleHp = 1f;
 
         internal double EmpSize { get; set; }
         internal double BoundingRange;
@@ -73,7 +74,10 @@ namespace DefenseShields
         private int _genericDownLoop = -1;
         private int _reModulationLoop = -1;
         private int _heatCycle = -1;
+        private int _fallbackCycle;
         private int _currentHeatStep;
+        private int _empScaleTime = 1;
+        private int _empDivideTime = 10;
 
         private const int ReModulationCount = 300;
         private const int ShieldDownCount = 1200;
@@ -82,6 +86,7 @@ namespace DefenseShields
         private const int PowerNoticeCount = 600;
         private const int OverHeat = 1800;
         private const int HeatingStep = 600;
+        private const int FallBackStep = 10;
         private const int CoolingStep = 1200;
         private const int HeatSteps = 10;
 
@@ -89,33 +94,33 @@ namespace DefenseShields
         private int _onCount;
         private int _shieldRatio;
 
-        internal bool RequestedEnforcement;
         internal bool WasOnline;
-        internal bool SettingsUpdated;
-        internal bool ClientUiUpdate;
         internal bool DeformEnabled;
         internal bool ExplosionEnabled;
-        internal bool ControlBlockWorking;
         internal bool PrePowerInit;
         internal bool PowerInited;
-        internal bool HadPowerBefore;
         internal bool AllInited;
         internal bool ContainerInited;
         internal bool HealthInited;
-        internal bool CheckGridRegister;
         internal bool WarmedUp;
-        internal bool PrevShieldActive;
-        internal bool IsStatic;
-        internal bool IsServer;
-        internal bool IsDedicated;
-        internal bool MpActive;
         internal bool ComingOnline;
         internal bool Warming;
         internal bool Starting;
         internal bool UpdateDimensions;
         internal bool FitChanged;
         internal bool GridIsMobile;
-        internal bool EmpOverLoad;
+        internal bool SettingsUpdated;
+        internal bool ClientUiUpdate;
+        internal bool IsStatic;
+
+        private bool _empOverLoad;
+        private bool _isDedicated;
+        private bool _mpActive;
+        private bool _isServer;
+        private bool _hadPowerBefore;
+        private bool _prevShieldActive;
+        private bool _controlBlockWorking;
+        private bool _requestedEnforcement;
         private bool _slaveLink;
         private bool _subUpdate;
         private bool _effectsCleanup;
@@ -174,16 +179,11 @@ namespace DefenseShields
         internal MatrixD ShieldMatrix;
         internal MatrixD OldShieldMatrix;
 
-        //private MatrixD _detectMatrixInside;
-        //private MatrixD _detectInsideInv;
-
         private BoundingBox _shieldAabb;
         public BoundingSphereD ShieldSphere;
         public MyOrientedBoundingBoxD SOriBBoxD;
         private Quaternion _sQuaternion;
-        //private readonly Random _random = new Random();
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
-        //private readonly List<MyResourceSourceComponent> _batterySources = new List<MyResourceSourceComponent>();
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
         private readonly List<MyEntity> _pruneList = new List<MyEntity>();
         private readonly List<IMyBatteryBlock> _batteryBlocks = new List<IMyBatteryBlock>();
@@ -265,7 +265,6 @@ namespace DefenseShields
 
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;
-        //internal MyResourceDistributorComponent MyGridSystem;
 
         private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
         private readonly DataStructures _dataStructures = new DataStructures();
@@ -280,10 +279,12 @@ namespace DefenseShields
         private MyEntity _shellActive;
 
         private MyParticleEffect _effect = new MyParticleEffect();
-        internal Icosphere.Instance Icosphere;
+
         internal readonly Spawn Spawn = new Spawn();
         internal readonly EllipsoidOxygenProvider EllipsoidOxyProvider = new EllipsoidOxygenProvider(Matrix.Zero);
         internal readonly EllipsoidSA EllipsoidSa = new EllipsoidSA(double.MinValue, double.MinValue, double.MinValue);
+
+        internal Icosphere.Instance Icosphere;
         internal DSUtils Dsutil1 = new DSUtils();
         internal DSUtils Dsutil2 = new DSUtils();
         internal DSUtils Dsutil3 = new DSUtils();
@@ -296,8 +297,6 @@ namespace DefenseShields
         internal ShieldGridComponent ShieldComp;
         internal ModulatorGridComponent ModComp;
         internal RunningAverage DpsAvg = new RunningAverage(8);
-        internal Task powerComplete;
-        internal HashSet<ulong> playersToReceive = null;
 
         internal MyStringId CustomDataTooltip = MyStringId.GetOrCompute("Shows an Editor for custom data to be used by scripts and mods");
         internal MyStringId CustomData = MyStringId.GetOrCompute("CustomData");

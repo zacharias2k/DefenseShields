@@ -51,7 +51,7 @@ namespace DefenseShields
 
         public override bool IsSerialized()
         {
-            if (IsServer)
+            if (_isServer)
             {
                 if (Shield.Storage != null)
                 {
@@ -68,9 +68,9 @@ namespace DefenseShields
             try
             {
                 if (Shield.CubeGrid.Physics == null) return;
-                IsServer = Session.IsServer;
-                IsDedicated = Session.DedicatedServer;
-                MpActive = Session.MpActive;
+                _isServer = Session.IsServer;
+                _isDedicated = Session.DedicatedServer;
+                _mpActive = Session.MpActive;
                 if (ShieldComp == null) ShieldComp = new ShieldGridComponent(this);
                 if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>())
                 {
@@ -102,7 +102,7 @@ namespace DefenseShields
                 if (Shield.CubeGrid.Physics == null) return false;
 
                 var isFunctional = Shield.IsFunctional;
-                if (IsServer && (ShieldComp.EmitterMode < 0 || ShieldComp.EmittersSuspended || !isFunctional))
+                if (_isServer && (ShieldComp.EmitterMode < 0 || ShieldComp.EmittersSuspended || !isFunctional))
                 {
                     if (_tick600)
                     {
@@ -112,19 +112,19 @@ namespace DefenseShields
                     return false;
                 }
 
-                if (!IsServer && !DsState.State.Online || EnforcementInvalid()) return false;
+                if (!_isServer && !DsState.State.Online || EnforcementInvalid()) return false;
 
                 Session.Instance.CreateControllerElements(Shield);
                 SetShieldType(false);
                 CleanUp(3);
 
-                if (!isFunctional || IsServer && !BlockReady()) return false;
+                if (!isFunctional || _isServer && !BlockReady()) return false;
 
                 AllInited = true;
                 if (Session.Enforced.Debug >= 1) Log.Line($"AllInited: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in Controller PostInit: {ex}"); }
-            return !IsServer;
+            return !_isServer;
         }
 
         private void StorageSetup()
@@ -194,10 +194,10 @@ namespace DefenseShields
                 {
                     var enforcement = Enforcements.LoadEnforcement(Shield);
                     if (enforcement != null) Session.Enforced = enforcement;
-                    else if (!RequestedEnforcement)
+                    else if (!_requestedEnforcement)
                     {
                         Enforcements.EnforcementRequest(Shield.EntityId);
-                        RequestedEnforcement = true;
+                        _requestedEnforcement = true;
                     }
                 }
             }

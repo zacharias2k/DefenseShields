@@ -30,7 +30,7 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 2) Log.Line($"ServerUpdate: Broadcast:{DsState.State.Message}");
                 DsState.NetworkUpdate();
             }
-            if (!IsDedicated && DsState.State.Message)
+            if (!_isDedicated && DsState.State.Message)
             {
                 BroadcastMessage();
                 Shield.RefreshCustomInfo();
@@ -44,13 +44,13 @@ namespace DefenseShields
             if (_subUpdate && _tick > _subTick + 10) HierarchyUpdate();
             if (_blockEvent && _tick60) BlockChanged(true);
 
-            if (IsServer)
+            if (_isServer)
             {
                 if (!ControllerFunctional() || ShieldWaking())
                 {
                     if (ShieldDown()) return false;
-                    if (!PrevShieldActive) return false;
-                    PrevShieldActive = false;
+                    if (!_prevShieldActive) return false;
+                    _prevShieldActive = false;
                     return false;
                 }
                 var powerState = PowerOnline();
@@ -100,29 +100,29 @@ namespace DefenseShields
 
             if (ShieldComp.EmitterEvent) EmitterEventDetected();
 
-            ControlBlockWorking = Shield.IsWorking && Shield.IsFunctional;
-            if (!ControlBlockWorking || !ShieldComp.EmittersWorking)
+            _controlBlockWorking = Shield.IsWorking && Shield.IsFunctional;
+            if (!_controlBlockWorking || !ShieldComp.EmittersWorking)
             {
                 if (_genericDownLoop == -1) _genericDownLoop = 0;
                 return false;
             }
 
-            if (ControlBlockWorking)
+            if (_controlBlockWorking)
             {
                 if (GridIsMobile) MobileUpdate();
                 if (UpdateDimensions) RefreshDimensions();
             }
 
-            return ControlBlockWorking;
+            return _controlBlockWorking;
         }
 
         private void SetShieldServerStatus(bool powerState)
         {
-            DsSet.Settings.ShieldActive = ControlBlockWorking && powerState;
-            if (!PrevShieldActive && DsSet.Settings.ShieldActive) ComingOnline = true;
-            else if (ComingOnline && PrevShieldActive && DsSet.Settings.ShieldActive) ComingOnline = false;
+            DsSet.Settings.ShieldActive = _controlBlockWorking && powerState;
+            if (!_prevShieldActive && DsSet.Settings.ShieldActive) ComingOnline = true;
+            else if (ComingOnline && _prevShieldActive && DsSet.Settings.ShieldActive) ComingOnline = false;
 
-            PrevShieldActive = DsSet.Settings.ShieldActive;
+            _prevShieldActive = DsSet.Settings.ShieldActive;
             DsState.State.Online = DsSet.Settings.ShieldActive;
 
             if (!GridIsMobile && (ComingOnline || ShieldComp.O2Updated))
@@ -134,10 +134,10 @@ namespace DefenseShields
 
         private void SetShieldClientStatus()
         {
-            if (!PrevShieldActive && DsState.State.Online) ComingOnline = true;
-            else if (ComingOnline && PrevShieldActive && DsState.State.Online) ComingOnline = false;
+            if (!_prevShieldActive && DsState.State.Online) ComingOnline = true;
+            else if (ComingOnline && _prevShieldActive && DsState.State.Online) ComingOnline = false;
 
-            PrevShieldActive = DsState.State.Online;
+            _prevShieldActive = DsState.State.Online;
             if (!GridIsMobile && (ComingOnline || !DsState.State.IncreaseO2ByFPercent.Equals(EllipsoidOxyProvider.O2Level)))
             {
                 EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
@@ -361,11 +361,11 @@ namespace DefenseShields
                 DsState.State.ShieldPercent = 0f;
                 DsState.State.IncreaseO2ByFPercent = 0f;
                 DsSet.Settings.ShieldActive = false;
-                PrevShieldActive = false;
+                _prevShieldActive = false;
                 DsState.State.Online = false;
                 DsState.State.Heat = 0;
 
-                if (!IsDedicated) ShellVisibility(true);
+                if (!_isDedicated) ShellVisibility(true);
                 SyncThreadedEnts();
             }
 
@@ -386,7 +386,7 @@ namespace DefenseShields
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
 
                     DsState.State.IncreaseO2ByFPercent = 0f;
-                    if (!IsDedicated) ShellVisibility(true);
+                    if (!_isDedicated) ShellVisibility(true);
                     DsState.State.Lowered = true;
                 }
                 PowerOnline();
@@ -408,7 +408,7 @@ namespace DefenseShields
             }
             if (DsState.State.Lowered && DsSet.Settings.ShieldActive && Shield.IsWorking)
             {
-                if (!IsDedicated) ShellVisibility();
+                if (!_isDedicated) ShellVisibility();
                 if (GridIsMobile) _updateMobileShape = true;
                 else UpdateDimensions = true;
 
@@ -446,7 +446,7 @@ namespace DefenseShields
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
 
                     DsState.State.IncreaseO2ByFPercent = 0f;
-                    if (!IsDedicated) ShellVisibility(true);
+                    if (!_isDedicated) ShellVisibility(true);
                     DsState.State.Sleeping = true;
                     Shield.RefreshCustomInfo();
                     if (Session.Enforced.Debug >= 1) Log.Line($"Sleep: controller detected sleeping emitter, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
@@ -458,7 +458,7 @@ namespace DefenseShields
             if (DsState.State.Sleeping)
             {
                 DsState.State.Sleeping = false;
-                if (!IsDedicated) ShellVisibility();
+                if (!_isDedicated) ShellVisibility();
                 _blockChanged = true;
                 _functionalChanged = true;
                 UpdateSubGrids();
@@ -554,7 +554,7 @@ namespace DefenseShields
                     if (Session.Enforced.Debug >= 1) Log.Line($"Suspend: controller mode was: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                     SetShieldType(false);
                     if (Session.Enforced.Debug >= 1) Log.Line($"Suspend: controller mode is now: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-                    if (!IsDedicated) ShellVisibility(true);
+                    if (!_isDedicated) ShellVisibility(true);
                     Icosphere.ShellActive = null;
                     GetModulationInfo();
                     _currentHeatStep = 0;
@@ -668,7 +668,7 @@ namespace DefenseShields
 
         private void BroadcastMessage()
         {
-            if (Session.Enforced.Debug >= 1) Log.Line($"Broadcasting message to local playerId - Server:{IsServer} - Dedicated:{IsDedicated} - Id:{MyAPIGateway.Multiplayer.MyId}");
+            if (Session.Enforced.Debug >= 1) Log.Line($"Broadcasting message to local playerId - Server:{_isServer} - Dedicated:{_isDedicated} - Id:{MyAPIGateway.Multiplayer.MyId}");
             if (!DsState.State.EmitterWorking && !DsState.State.Waking)
             {
                 if (GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los) PlayerMessages(PlayerNotice.NoLos);
@@ -704,7 +704,7 @@ namespace DefenseShields
                     _clientOn = false;
                     Shield.RefreshCustomInfo();
                 }
-                PrevShieldActive = false;
+                _prevShieldActive = false;
                 return true;
             }
 
@@ -719,7 +719,7 @@ namespace DefenseShields
                     _clientOn = false;
                     Shield.RefreshCustomInfo();
                 }
-                PrevShieldActive = false;
+                _prevShieldActive = false;
                 return true;
             }
 
@@ -741,10 +741,10 @@ namespace DefenseShields
                 return true;
             }
 
-            if (IsServer)
+            if (_isServer)
             {
-                HadPowerBefore = true;
-                ControlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
+                _hadPowerBefore = true;
+                _controlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
                 DsState.State.Overload = false;
                 DsState.State.NoPower = false;
                 DsState.State.Remodulate = false;
@@ -766,7 +766,7 @@ namespace DefenseShields
             GetModulationInfo();
             GetEnhancernInfo();
             Starting = true;
-            if (Session.Enforced.Debug >= 1) Log.Line($"Warming: Server:{Session.IsServer} - buffer:{DsState.State.Buffer} - BlockWorking:{Session.IsServer && ControlBlockWorking || !Session.IsServer && Shield.IsWorking && Shield.IsFunctional} - Active:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug >= 1) Log.Line($"Warming: Server:{Session.IsServer} - buffer:{DsState.State.Buffer} - BlockWorking:{Session.IsServer && _controlBlockWorking || !Session.IsServer && Shield.IsWorking && Shield.IsFunctional} - Active:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
         }
 
         public void UpdateSettings(ProtoControllerSettings newSettings)
