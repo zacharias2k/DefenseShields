@@ -77,7 +77,6 @@ namespace DefenseShields
         private int _fallbackCycle;
         private int _currentHeatStep;
         private int _empScaleTime = 1;
-        private int _empDivideTime = 10;
 
         private const int ReModulationCount = 300;
         private const int ShieldDownCount = 1200;
@@ -86,9 +85,9 @@ namespace DefenseShields
         private const int PowerNoticeCount = 600;
         private const int OverHeat = 1800;
         private const int HeatingStep = 600;
-        private const int FallBackStep = 10;
         private const int CoolingStep = 1200;
         private const int HeatSteps = 10;
+        private const int FallBackStep = 10;
 
         private int _prevLod;
         private int _onCount;

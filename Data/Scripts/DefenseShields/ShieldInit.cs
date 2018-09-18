@@ -397,6 +397,7 @@ namespace DefenseShields
                 _shellPassive.RefreshModels($"{Session.Instance.ModPath()}{_modelPassive}", null);
                 _shellPassive.Render.RemoveRenderObjects();
                 _shellPassive.Render.UpdateRenderObject(true);
+                _hideShield = false;
                 if (Session.Enforced.Debug >= 1) Log.Line($"UpdatePassiveModel: modelString:{_modelPassive} - ShellNumber:{DsSet.Settings.ShieldShell} - ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in UpdatePassiveModel: {ex}"); }

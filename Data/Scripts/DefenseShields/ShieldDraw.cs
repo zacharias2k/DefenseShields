@@ -42,12 +42,14 @@ namespace DefenseShields
                 _modelPassive = ModelMediumReflective;
                 UpdatePassiveModel();
                 _supressedColor = true;
+                _hideShield = false;
             }
             else if ((_count == 0 || _count == 19 || _count == 39) && _supressedColor && _hideColor && (!CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation, DetectMatrixOutsideInv)))
             {
                 SelectPassiveShell();
                 UpdatePassiveModel();
                 _supressedColor = false;
+                _hideShield = false;
             }
             if (drawIcon) UpdateIcon();
 

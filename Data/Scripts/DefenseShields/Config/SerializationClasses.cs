@@ -58,9 +58,9 @@ namespace DefenseShields
         public float Buffer;
         [ProtoMember(2), DefaultValue(-1)]
         public double IncreaseO2ByFPercent = 0f;
-        [ProtoMember(3), DefaultValue(-1)]
+        [ProtoMember(3), DefaultValue(1f)]
         public float ModulateEnergy = 1f;
-        [ProtoMember(4), DefaultValue(-1)]
+        [ProtoMember(4), DefaultValue(1f)]
         public float ModulateKinetic = 1f;
         [ProtoMember(5), DefaultValue(-1)]
         public int EnhancerPowerMulti = 1;

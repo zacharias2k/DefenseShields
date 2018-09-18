@@ -56,16 +56,22 @@ namespace DefenseShields
                 var powerState = PowerOnline();
                 if (!powerState && _genericDownLoop == -1) _genericDownLoop = 0;
 
-                if (_tick % 120 == 0)
+                if (_tick60)
                 {
                     GetModulationInfo();
                     GetEnhancernInfo();
                 }
-                if (ShieldDown()) return false;
+
+                if (ShieldDown())
+                {
+                    _prevShieldActive = false;
+                    return false;
+                }
                 SetShieldServerStatus(powerState);
                 Timing(true);
                 if (!DsState.State.Online || ComingOnline && (!GridOwnsController() || GridIsMobile && FieldShapeBlocked()))
                 {
+                    _prevShieldActive = false;
                     if (_genericDownLoop == -1) _genericDownLoop = 0;
                     ShieldDown();
                     return false;
@@ -119,11 +125,10 @@ namespace DefenseShields
         private void SetShieldServerStatus(bool powerState)
         {
             DsSet.Settings.ShieldActive = _controlBlockWorking && powerState;
-            if (!_prevShieldActive && DsSet.Settings.ShieldActive) ComingOnline = true;
-            else if (ComingOnline && _prevShieldActive && DsSet.Settings.ShieldActive) ComingOnline = false;
+            ComingOnline = !_prevShieldActive && DsSet.Settings.ShieldActive;
 
-            _prevShieldActive = DsSet.Settings.ShieldActive;
             DsState.State.Online = DsSet.Settings.ShieldActive;
+            _prevShieldActive = DsState.State.Online;
 
             if (!GridIsMobile && (ComingOnline || ShieldComp.O2Updated))
             {
@@ -134,8 +139,7 @@ namespace DefenseShields
 
         private void SetShieldClientStatus()
         {
-            if (!_prevShieldActive && DsState.State.Online) ComingOnline = true;
-            else if (ComingOnline && _prevShieldActive && DsState.State.Online) ComingOnline = false;
+            ComingOnline = !_prevShieldActive && DsState.State.Online;
 
             _prevShieldActive = DsState.State.Online;
             if (!GridIsMobile && (ComingOnline || !DsState.State.IncreaseO2ByFPercent.Equals(EllipsoidOxyProvider.O2Level)))
@@ -240,6 +244,7 @@ namespace DefenseShields
         {
             if (_overLoadLoop == 0 || _empOverLoadLoop == 0 || _reModulationLoop == 0 || _genericDownLoop == 0)
             {
+                _prevShieldActive = false;
                 if (DsState.State.Online)
                 {
                     DsState.State.Online = false;
@@ -360,14 +365,16 @@ namespace DefenseShields
                 DsState.State.Buffer = 0f;
                 DsState.State.ShieldPercent = 0f;
                 DsState.State.IncreaseO2ByFPercent = 0f;
-                DsSet.Settings.ShieldActive = false;
-                _prevShieldActive = false;
-                DsState.State.Online = false;
+
                 DsState.State.Heat = 0;
 
                 if (!_isDedicated) ShellVisibility(true);
                 SyncThreadedEnts();
             }
+
+            DsSet.Settings.ShieldActive = false;
+            _prevShieldActive = false;
+            DsState.State.Online = false;
 
             Shield.RefreshCustomInfo();
             Shield.ShowInToolbarConfig = false;
@@ -556,6 +563,7 @@ namespace DefenseShields
                     if (Session.Enforced.Debug >= 1) Log.Line($"Suspend: controller mode is now: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                     if (!_isDedicated) ShellVisibility(true);
                     Icosphere.ShellActive = null;
+                    GetEnhancernInfo();
                     GetModulationInfo();
                     _currentHeatStep = 0;
                     _accumulatedHeat = 0;
@@ -763,8 +771,6 @@ namespace DefenseShields
             ResetShape(false, false);
             _oldGridHalfExtents = DsState.State.GridHalfExtents;
             _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
-            GetModulationInfo();
-            GetEnhancernInfo();
             Starting = true;
             if (Session.Enforced.Debug >= 1) Log.Line($"Warming: Server:{Session.IsServer} - buffer:{DsState.State.Buffer} - BlockWorking:{Session.IsServer && _controlBlockWorking || !Session.IsServer && Shield.IsWorking && Shield.IsFunctional} - Active:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
         }

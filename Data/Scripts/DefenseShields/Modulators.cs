@@ -41,6 +41,7 @@ namespace DefenseShields
         private bool _wasOnline;
         private bool _wasLink;
         private bool _wasBackup;
+        private bool _firstRun = true;
         private int _wasModulateDamage;
         private float _wasModulateEnergy;
         private float _wasModulateKinetic;
@@ -88,7 +89,7 @@ namespace DefenseShields
                     if (ShieldComp?.GetSubGrids != null && !ShieldComp.GetSubGrids.Equals(ModulatorComp.GetSubGrids))
                         ModulatorComp.GetSubGrids = ShieldComp.GetSubGrids;
 
-                    if (_count == 0)
+                    if (_count == 0 || _firstRun)
                     {
                         Modulator.RefreshCustomInfo();
                         if (Modulator.CustomData != ModulatorComp.ModulationPassword)
@@ -100,6 +101,7 @@ namespace DefenseShields
                     }
                 }
                 else if (_count == 0) Modulator.RefreshCustomInfo();
+                _firstRun = false;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
@@ -179,7 +181,7 @@ namespace DefenseShields
             else
             {
                 if (!ModState.State.Online) return false;
-                if (_count == 29) ClientCheckForCompLink();
+                if (_count == 29 || _firstRun) ClientCheckForCompLink();
             }
             return true;
         }
@@ -208,7 +210,7 @@ namespace DefenseShields
 
             ModState.State.Backup = false;
 
-            if (_count == 59 && _lCount == 9) ServerCheckForCompLink();
+            if (_count == 59 && _lCount == 9 || _firstRun) ServerCheckForCompLink();
             ModState.State.Online = true;
             return true;
         }
