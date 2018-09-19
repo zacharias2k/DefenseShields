@@ -9,7 +9,6 @@ using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage;
-using VRage.Game;
 using VRageMath;
 
 namespace DefenseShields
@@ -231,13 +230,13 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 1) Log.Line($"BlockChanged: functional:{_functionalEvent} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ShieldId [{Shield.EntityId}]");
                 if (_functionalEvent) FunctionalChanged(backGround);
                 _blockEvent = false;
+                _funcTick = _tick + 60;
             }
         }
 
         private void FunctionalChanged(bool backGround)
         {
-            MyGridDistributor = null;
-            if (backGround) MyAPIGateway.Parallel.StartBackground(BackGroundChecks);
+            if (backGround) FuncTask = MyAPIGateway.Parallel.StartBackground(BackGroundChecks);
             else BackGroundChecks();
             _functionalEvent = false;
         }
@@ -257,6 +256,8 @@ namespace DefenseShields
 
         private void BackGroundChecks()
         {
+            var gridDistNeedUpdate = true;
+
             lock (_powerSources) _powerSources.Clear();
             lock (_functionalBlocks) _functionalBlocks.Clear();
             lock (_batteryBlocks) _batteryBlocks.Clear();
@@ -266,7 +267,7 @@ namespace DefenseShields
                 if (grid == null) continue;
                 foreach (var block in grid.GetFatBlocks())
                 {
-                    if (mechanical && MyGridDistributor == null)
+                    if (mechanical && gridDistNeedUpdate)
                     {
                         var controller = block as MyShipController;
                         if (controller != null)
@@ -275,7 +276,12 @@ namespace DefenseShields
                             if (distributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects)
                             {
                                 if (Session.Enforced.Debug >= 1) Log.Line($"Found MyGridDistributor: ShieldId [{Shield.EntityId}]");
-                                MyGridDistributor = controller.GridResourceDistributor;
+                                if (MyGridDistributor != null) lock(MyGridDistributor) MyGridDistributor = controller.GridResourceDistributor;
+                                else
+                                {
+                                    MyGridDistributor = controller.GridResourceDistributor;
+                                }
+                                gridDistNeedUpdate = false;
                             }
                         }
                     }
@@ -336,56 +342,60 @@ namespace DefenseShields
 
         private bool UpdateGridPower()
         {
+            var powerSourcesUpdated = FuncTask.IsComplete;
             var tempGridMaxPower = _gridMaxPower;
-            _gridMaxPower = 0;
-            _gridCurrentPower = 0;
-            _gridAvailablePower = 0;
-            _batteryMaxPower = 0;
-            _batteryCurrentPower = 0;
-            if (MyGridDistributor != null)
+            if (powerSourcesUpdated)
             {
-                _gridMaxPower += MyGridDistributor.MaxAvailableResourceByType(GId);
-                if (_gridMaxPower <= 0)
+                _gridMaxPower = 0;
+                _gridCurrentPower = 0;
+                _gridAvailablePower = 0;
+                _batteryMaxPower = 0;
+                _batteryCurrentPower = 0;
+                if (MyGridDistributor != null && !_functionalEvent)
                 {
-                    var distOnState = MyGridDistributor.SourcesEnabled;
-                    var resetDistributor = distOnState == MyMultipleEnabledEnum.NoObjects;
-                    if (Session.Enforced.Debug >= 1 && resetDistributor) Log.Line($"Lost MyGridDistributor: ResourceState:{MyGridDistributor.ResourceState} - OnStaate:{distOnState} - ShieldId [{Shield.EntityId}]");
-
-                    if (resetDistributor)
+                    lock (MyGridDistributor)
                     {
-                        if (_powerSources.Count > 0) FallBackPowerCalc();
-                        FunctionalChanged(true);
-                    }
-                }
-                else
-                {
-                    _gridCurrentPower += MyGridDistributor.TotalRequiredInputByType(GId);
-                    if (!DsSet.Settings.UseBatteries)
-                    {
-                        lock (_batteryBlocks)
+                        _gridMaxPower += MyGridDistributor.MaxAvailableResourceByType(GId);
+                        if (_gridMaxPower <= 0)
                         {
-                            for (int i = 0; i < _batteryBlocks.Count; i++)
-                            {
-                                var battery = _batteryBlocks[i];
-                                if (!battery.IsWorking) continue;
-                                var maxOutput = battery.MaxOutput;
-                                if (maxOutput <= 0) continue;
-                                var currentOutput = battery.CurrentOutput;
+                            FallBackPowerCalc();
+                            var distOnState = MyGridDistributor.SourcesEnabled;
+                            var resetDistributor = distOnState == MyMultipleEnabledEnum.NoObjects;
+                            if (Session.Enforced.Debug >= 1 && resetDistributor) Log.Line($"Lost MyGridDistributor: ResourceState:{MyGridDistributor.ResourceState} - OnStaate:{distOnState} - ShieldId [{Shield.EntityId}]");
 
-                                _gridMaxPower -= maxOutput;
-                                _gridCurrentPower -= currentOutput;
-                                _batteryMaxPower += maxOutput;
-                                _batteryCurrentPower += currentOutput;
+                            if (resetDistributor) FunctionalChanged(true);
+                        }
+                        else
+                        {
+                            _gridCurrentPower += MyGridDistributor.TotalRequiredInputByType(GId);
+                            if (!DsSet.Settings.UseBatteries)
+                            {
+                                lock (_batteryBlocks)
+                                {
+                                    for (int i = 0; i < _batteryBlocks.Count; i++)
+                                    {
+                                        var battery = _batteryBlocks[i];
+                                        if (!battery.IsWorking) continue;
+                                        var maxOutput = battery.MaxOutput;
+                                        if (maxOutput <= 0) continue;
+                                        var currentOutput = battery.CurrentOutput;
+
+                                        _gridMaxPower -= maxOutput;
+                                        _gridCurrentPower -= currentOutput;
+                                        _batteryMaxPower += maxOutput;
+                                        _batteryCurrentPower += currentOutput;
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            }
-            else if (_powerSources.Count > 0) FallBackPowerCalc();
+                else FallBackPowerCalc();
 
-            _gridAvailablePower = _gridMaxPower - _gridCurrentPower;
+                _gridAvailablePower = _gridMaxPower - _gridCurrentPower;
+                if (!_gridMaxPower.Equals(tempGridMaxPower) || _roundedGridMax <= 0) _roundedGridMax = Math.Round(_gridMaxPower, 1);
+            }
             _shieldCurrentPower = Sink.CurrentInputByType(GId);
-            if (!_gridMaxPower.Equals(tempGridMaxPower) || _roundedGridMax <= 0) _roundedGridMax = Math.Round(_gridMaxPower, 1);
             return _gridMaxPower > 0;
         }
 

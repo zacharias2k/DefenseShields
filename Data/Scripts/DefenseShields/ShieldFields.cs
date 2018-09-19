@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
 using DefenseShields.Support;
 using ParallelTasks;
@@ -25,6 +24,7 @@ namespace DefenseShields
         private uint _shieldEntRendId;
         private uint _losCheckTick;
         private uint _subTick;
+        private uint _funcTick;
         private uint _shapeTick;
         private uint _heatVentingTick = uint.MaxValue;
         internal uint UnsuspendTick;
@@ -189,6 +189,7 @@ namespace DefenseShields
         private readonly List<KeyValuePair<MyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<MyEntity, EntIntersectInfo>>();
 
         private Color _oldPercentColor = Color.Transparent;
+        internal Task FuncTask;
 
         internal readonly HashSet<IMyEntity> AuthenticatedCache = new HashSet<IMyEntity>();
         internal readonly HashSet<MyEntity> FriendlyCache = new HashSet<MyEntity>();
