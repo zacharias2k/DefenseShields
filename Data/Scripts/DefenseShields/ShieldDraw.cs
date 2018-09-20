@@ -230,6 +230,7 @@ namespace DefenseShields
             const double scaler = 0.08;
             scale = scaler * scale;
 
+            //((_gridMaxPower * (DsSet.Settings.Rate * 0.01) - _shieldMaintaintPower) * 60)
             var icon2FSelect = GetIconMeterfloat();
             var percent = DsState.State.ShieldPercent;
             var heat = DsState.State.Heat;

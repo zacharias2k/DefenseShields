@@ -41,7 +41,7 @@ namespace DefenseShields
 
         private bool ShieldOn()
         {
-            if (_subUpdate && _tick > _subTick + 10) HierarchyUpdate();
+            if (_subUpdate && _tick >= _subTick) HierarchyUpdate();
             if (_blockEvent && _tick >= _funcTick) BlockChanged(true);
 
             if (_isServer)

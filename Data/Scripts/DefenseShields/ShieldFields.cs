@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using DefenseShields.Support;
 using ParallelTasks;
@@ -122,6 +123,7 @@ namespace DefenseShields
         private bool _requestedEnforcement;
         private bool _slaveLink;
         private bool _subUpdate;
+        private bool _updateGridDistributor;
         private bool _effectsCleanup;
         private bool _hideShield;
         private bool _hideColor;
@@ -190,6 +192,7 @@ namespace DefenseShields
 
         private Color _oldPercentColor = Color.Transparent;
         internal Task FuncTask;
+        internal readonly object SubLock = new Object();
 
         internal readonly HashSet<IMyEntity> AuthenticatedCache = new HashSet<IMyEntity>();
         internal readonly HashSet<MyEntity> FriendlyCache = new HashSet<MyEntity>();
