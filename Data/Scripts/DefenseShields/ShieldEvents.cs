@@ -1,11 +1,8 @@
 ﻿using System;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
-using Sandbox.ModAPI;
-using VRage.Game.Components;
-using VRage.Game.Entity;
+using VRage;
 using VRage.Game.ModAPI;
-using VRage.Sync;
 
 namespace DefenseShields
 {
@@ -47,6 +44,7 @@ namespace DefenseShields
             {
                 _blockAdded = true;
                 _blockChanged = true;
+                if (_isServer) DsState.State.GridIntegrity += mySlimBlock.MaxIntegrity;
             }
             catch (Exception ex) { Log.Line($"Exception in Controller BlockAdded: {ex}"); }
         }
@@ -57,16 +55,23 @@ namespace DefenseShields
             {
                 _blockRemoved = true;
                 _blockChanged = true;
+                if (_isServer) DsState.State.GridIntegrity -= mySlimBlock.MaxIntegrity;
             }
             catch (Exception ex) { Log.Line($"Exception in Controller BlockRemoved: {ex}"); }
         }
 
-        private void FatBlockAdded(MyCubeBlock mySlimBlock)
+        private void FatBlockAdded(MyCubeBlock myCubeBlock)
         {
             try
             {
                 _functionalAdded = true;
                 _functionalChanged = true;
+                if (MyGridDistributor == null)
+                {
+                    var controller = myCubeBlock as MyShipController;
+                    if (controller != null)
+                        if (controller.GridResourceDistributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects) _updateGridDistributor = true;
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in Controller FatBlockAdded: {ex}"); }
         }

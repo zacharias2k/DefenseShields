@@ -320,7 +320,8 @@ namespace DefenseShields.Support
             const int disableGridDmg = 0;
             const int debug = 0;
             const bool altRecharge = false;
-            const int version = 57;
+            const int version = 58;
+            const float capScaler = 1f;
 
             var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg");
             if (dsCfgExists)
@@ -347,7 +348,9 @@ namespace DefenseShields.Support
                 Session.Enforced.DisableVoxelSupport = !unPackedData.DisableVoxelSupport.Equals(-1) ? unPackedData.DisableVoxelSupport : disableVoxel;
                 Session.Enforced.DisableGridDamageSupport = !unPackedData.DisableGridDamageSupport.Equals(-1) ? unPackedData.DisableGridDamageSupport : disableGridDmg;
                 Session.Enforced.Debug = !unPackedData.Debug.Equals(-1) ? unPackedData.Debug : debug;
-                Session.Enforced.AltRecharge = unPackedData.AltRecharge;
+                Session.Enforced.AltRecharge = false;
+                Session.Enforced.CapScaler = !unPackedData.CapScaler.Equals(-1f) ? unPackedData.CapScaler : capScaler;
+
                 Session.Enforced.Version = version;
 
                 unPackedData = null;
@@ -374,6 +377,7 @@ namespace DefenseShields.Support
                 Session.Enforced.DisableGridDamageSupport = disableGridDmg;
                 Session.Enforced.Debug = debug;
                 Session.Enforced.AltRecharge = altRecharge;
+                Session.Enforced.CapScaler = capScaler;
                 Session.Enforced.Version = version;
 
                 var cfg = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShields.cfg");

@@ -229,10 +229,10 @@ namespace DefenseShields
                     var bBlockCenter = Vector3D.NegativeInfinity;
                     var stale = false;
                     var rawDamage = 0f;
-                    var rawEmpSize = 0d;
                     var blockSize = breaching.GridSize;
                     var empRadius = 20;
                     if (blockSize < 1) empRadius = 5;
+                    var empCount = 0;
                     IMyWarhead firstWarhead = null;
                     Vector3I gc = breaching.WorldToGridInteger(DetectionCenter);
                     double rc = ShieldSize.AbsMax() / blockSize;
@@ -283,22 +283,30 @@ namespace DefenseShields
                             collisionAvg += point;
                             c3++;
                             var warheadCheck = block.FatBlock as IMyWarhead;
-                            if (warheadCheck != null && warheadCheck.IsWorking && warheadCheck.IsArmed)
+                            if (warheadCheck != null)
                             {
-                                firstWarhead = warheadCheck;
-                                var possibleWarHeads = breaching.GetFatBlocks();
-                                for (int w = 0; w < possibleWarHeads.Count; w++)
+                                if (warheadCheck.IsWorking && warheadCheck.IsArmed)
                                 {
-                                    var warhead = possibleWarHeads[w] as IMyWarhead;
-                                    if (warhead != null && !warhead.MarkedForClose && !warhead.Closed && warhead.IsWorking && warhead.IsArmed)
+                                    firstWarhead = warheadCheck;
+                                    var possibleWarHeads = breaching.GetFatBlocks();
+                                    for (int w = 0; w < possibleWarHeads.Count; w++)
                                     {
-                                        rawEmpSize += empRadius;
-                                        if (Vector3I.DistanceManhattan(warhead.Position, blockPos) <= 5) _empDmg.Enqueue(warhead);
+                                        var warhead = possibleWarHeads[w] as IMyWarhead;
+                                        if (warhead != null && !warhead.MarkedForClose && !warhead.Closed && warhead.IsWorking && warhead.IsArmed)
+                                        {
+                                            if (Vector3I.DistanceManhattan(warhead.Position, blockPos) <= 5)
+                                            {
+                                                warhead.IsArmed = false;
+                                                _empDmg.Enqueue(warhead);
+                                                empCount++;
+                                            }
+                                        }
                                     }
                                 }
-                                break;
+                                else if (_empDmg.Count > 0) break;
                             }
                             if (_dmgBlocks.Count > blockDmgNum) break;
+
                             c4++;
                             rawDamage += MathHelper.Clamp(block.Integrity, 0, 350);
                             _dmgBlocks.Enqueue(block);
@@ -343,16 +351,18 @@ namespace DefenseShields
                     var damage = rawDamage * DsState.State.ModulateKinetic;
                     double empSize = 0;
 
-                    if (firstWarhead != null && rawEmpSize > 0)
+                    if (firstWarhead != null && empCount > 0)
                     {
                         var scaler = 1f;
                         if (DsState.State.EmpProtection) scaler = 0.1f;
-                        empSize = 1.33333333333 * Math.PI * (rawEmpSize * rawEmpSize * rawEmpSize) * 0.5 * DsState.State.ModulateEnergy * scaler;
-                        var shieldFractionLoss = (float) (_ellipsoidVolume / empSize);
-                        damage = damage + (_shieldMaxBuffer * Session.Enforced.Efficiency / shieldFractionLoss);
-                        entInfo.EmpSize = empSize;
+                        empSize = 1.33333333333 * Math.PI * (empRadius * empRadius * empRadius) * 0.5 * DsState.State.ModulateEnergy * scaler;
+                        var scaledEmpSize = empSize * empCount + (empCount * (empCount * 0.1)); 
+                        var shieldFractionLoss = (float) (_ellipsoidVolume / scaledEmpSize);
+                        var efficiency = Session.Enforced.Efficiency;
+                        damage = damage + _shieldMaxBuffer * efficiency / shieldFractionLoss;
+                        entInfo.EmpSize = scaledEmpSize;
                         entInfo.EmpDetonation = firstWarhead.PositionComp.WorldAABB.Center;
-                        if (shieldFractionLoss <= 1) _empOverLoad = true;
+                        if (damage > (DsState.State.Buffer * efficiency)) _empOverLoad = true;
                     }
 
                     //Log.Line($"ShieldHP:{DsState.State.Buffer * Session.Enforced.Efficiency} - blockDmg:{rawDamage * DsState.State.ModulateKinetic} - TotalShieldDamage:{damage} - empSize:{empSize} - preMod:{rawEmpSize} - dmg(1/fraction):{_ellipsoidVolume / empSize} - ellVol:{_ellipsoidVolume} - ModKin:{DsState.State.ModulateKinetic} - {_ellipsoidSurfaceArea} - {DetectMatrixOutside.Scale.X} - {DetectMatrixOutside.Scale.Y} - {DetectMatrixOutside.Scale.Z}");

@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using DefenseShields.Support;
-using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game.Components;
 using VRage.Game.Entity;
+using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRage.Utils;
@@ -86,12 +87,21 @@ namespace DefenseShields
                 _shields.Add(Entity.EntityId, this);
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
                 Session.Instance.Components.Add(this);
+                if (_isServer && DsState.State.GridIntegrity <= 0) GridIntegrity();
                 RegisterEvents();
                 PowerInit();
                 if (Session.IsServer) Enforcements.SaveEnforcement(Shield, Session.Enforced, true);
                 if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
             }
             catch (Exception ex) { Log.Line($"Exception in Controller UpdateOnceBeforeFrame: {ex}"); }
+        }
+
+        private void GridIntegrity()
+        {
+            var blockList = new List<IMySlimBlock>();
+            Shield.CubeGrid.GetBlocks(blockList);
+            for (int i = 0; i < blockList.Count; i++) DsState.State.GridIntegrity += blockList[i].MaxIntegrity;
+            Log.Line($"!!!!!!!!!!!!!!!gridIntegrity: {DsState.State.GridIntegrity.ToString("N0")}");
         }
 
         public bool PostInit()

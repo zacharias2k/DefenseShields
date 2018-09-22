@@ -43,7 +43,6 @@ namespace DefenseShields
         private float _shieldMaxBuffer;
         private float _shieldMaxChargeRate;
         private float _shieldChargeRate;
-        private float _damageCounter;
         private float _damageReadOut;
         private float _accumulatedHeat;
         private float _shieldCurrentPower;
@@ -51,6 +50,7 @@ namespace DefenseShields
         private float _shieldConsumptionRate;
         private float _oldShieldFudge;
         private float _empScaleHp = 1f;
+        private float _runningDamage;
 
         internal double EmpSize { get; set; }
         internal double BoundingRange;
@@ -299,7 +299,7 @@ namespace DefenseShields
 
         internal ShieldGridComponent ShieldComp;
         internal ModulatorGridComponent ModComp;
-        internal RunningAverage DpsAvg = new RunningAverage(8);
+        internal RunningAverage DpsAvg = new RunningAverage(2);
 
         internal MyStringId CustomDataTooltip = MyStringId.GetOrCompute("Shows an Editor for custom data to be used by scripts and mods");
         internal MyStringId CustomData = MyStringId.GetOrCompute("CustomData");

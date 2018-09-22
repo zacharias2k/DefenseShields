@@ -239,7 +239,7 @@ namespace DefenseShields
                                 myGrid.EnqueueDestroyedBlock(block.Position);
                                 continue;
                             }
-                            block.Close();
+                            UtilsStatic.CreateExplosion(block.PositionComp.WorldAABB.Center, 2.1f, 9999);
                             if (myGrid.BlocksCount == 0) myGrid.SyncObject.SendCloseRequest();
                         }
                     }

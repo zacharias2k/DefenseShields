@@ -338,7 +338,7 @@ namespace DefenseShields
                         if (warHead != null)
                         {
                             ds.EmpDetonation = blockPos;
-                            warHead.Close();
+                            UtilsStatic.CreateExplosion(warHead.PositionComp.WorldAABB.Center, 2.1f, 9999); 
                         }
                         ds.ImpactSize = info.Amount;
                         if (hostileEnt.DefinitionId.HasValue && hostileEnt.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))

@@ -85,7 +85,7 @@ namespace DefenseShields
         {
             ShieldComp.ShieldVelocitySqr = Shield.CubeGrid.Physics.LinearVelocity.LengthSquared();
             _sAvelSqr = Shield.CubeGrid.Physics.AngularVelocity.LengthSquared();
-            if (ShieldComp.ShieldVelocitySqr > 0.00001 || _sAvelSqr > 0.00001 || ComingOnline)
+            if (ShieldComp.ShieldVelocitySqr > 0.00001 || _sAvelSqr > 0.00001 || ComingOnline || _tick600 && Shield.CubeGrid.Physics.IsMoving)
             {
                 ShieldComp.GridIsMoving = true;
                 if (DsSet.Settings.FortifyShield && Math.Sqrt(ShieldComp.ShieldVelocitySqr) > 15)
@@ -97,7 +97,7 @@ namespace DefenseShields
             else ShieldComp.GridIsMoving = false;
 
             _shapeChanged = !DsState.State.EllipsoidAdjust.Equals(_oldEllipsoidAdjust) || !DsState.State.GridHalfExtents.Equals(_oldGridHalfExtents) || !DsState.State.ShieldFudge.Equals(_oldShieldFudge) || _updateMobileShape;
-            _entityChanged = Shield.CubeGrid.Physics.IsMoving || ComingOnline || _shapeChanged;
+            _entityChanged = ShieldComp.GridIsMoving || ComingOnline || _shapeChanged;
             _oldGridHalfExtents = DsState.State.GridHalfExtents;
             _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
             _oldShieldFudge = DsState.State.ShieldFudge;

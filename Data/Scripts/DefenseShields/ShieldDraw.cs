@@ -133,9 +133,12 @@ namespace DefenseShields
             if (_effect == null) return;
             var playerDist = Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos);
             var radius = playerDist * 0.15d;
-            var scale = (playerDist + playerDist * 0.001) / playerDist * 0.03 * (48000f / 3600);
-            if (scale > 0.4) scale = 0.4;
-            //Log.Line($"D:{playerDist} - R:{radius} - S:{scale} - I:{ImpactSize} - {MyAPIGateway.Session.IsCameraUserControlledSpectator} = {MyAPIGateway.Session.CameraTargetDistance} - {Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos)}");
+            var scale = (playerDist + playerDist * 0.001) / playerDist * 0.03 * (EmpSize * 0.0008);
+            if (scale > 0.3)
+            {
+                var scaler = EmpSize / 16755 * 0.05;
+                scale = 0.3 + scaler;
+            }
             _effect.UserRadiusMultiplier = (float)radius;
             _effect.UserEmitterScale = (float)scale;
             _effect.Velocity = Shield.CubeGrid.Physics.LinearVelocity;
@@ -230,7 +233,6 @@ namespace DefenseShields
             const double scaler = 0.08;
             scale = scaler * scale;
 
-            //((_gridMaxPower * (DsSet.Settings.Rate * 0.01) - _shieldMaintaintPower) * 60)
             var icon2FSelect = GetIconMeterfloat();
             var percent = DsState.State.ShieldPercent;
             var heat = DsState.State.Heat;
@@ -249,14 +251,30 @@ namespace DefenseShields
 
         private float GetIconMeterfloat()
         {
-            var dps = 1f;
-            if (_damageCounter > 1) dps = _damageCounter;
+            var consumptionRate = _shieldConsumptionRate;
+            var hps = _shieldChargeRate;
+            var dps = _runningDamage / 60;
+            if (hps < 1) hps = 1;
+            if (dps < 1) dps = 1;
 
-            var healing = _shieldChargeRate - dps;
-            var damage = dps - _shieldChargeRate;
+            var maxHps = _gridMaxPower - consumptionRate * 0.05f;
+            var dpsScaledRate = dps * (consumptionRate / hps);
+            var charging = hps > dps;
+            var hpsOfMax = consumptionRate / maxHps * 100;
+            var dpsOfMax = dpsScaledRate / maxHps * 100;
 
-            if (healing > 0 && _damageCounter > 1) return healing;
-            return -damage;
+            float percentOfMax = 0;
+            if (charging)
+            {
+                if (hps > 0.01) percentOfMax = hpsOfMax - dpsOfMax;
+            }
+            else
+            {
+                if (dps > 0.01) percentOfMax = dpsOfMax - hpsOfMax;
+            }
+
+            if (charging) return percentOfMax;
+            return -percentOfMax;
         }
 
         public static MyStringId GetHudIcon1FromFloat(float percent)
@@ -276,32 +294,32 @@ namespace DefenseShields
 
         public static MyStringId GetHudIcon2FromFloat(float fState)
         {
-            if (fState > 0)
+            if (fState >= 0)
             {
-                if (fState <= 1) return HudIconHeal100;
-                if (fState <= 10) return HudIconHeal90;
-                if (fState <= 20) return HudIconHeal80;
-                if (fState <= 30) return HudIconHeal70;
-                if (fState <= 40) return HudIconHeal60;
-                if (fState <= 50) return HudIconHeal50;
-                if (fState <= 60) return HudIconHeal40;
-                if (fState <= 70) return HudIconHeal30;
-                if (fState <= 80) return HudIconHeal20;
-                if (fState <= 90) return HudIconHeal10;
-                if (fState > 90) return MyStringId.NullOrEmpty;
+                if (fState < 9) return MyStringId.NullOrEmpty;
+                if (fState < 19) return HudIconHeal10;
+                if (fState < 29) return HudIconHeal20;
+                if (fState < 39) return HudIconHeal30;
+                if (fState < 49) return HudIconHeal40;
+                if (fState < 59) return HudIconHeal50;
+                if (fState < 69) return HudIconHeal60;
+                if (fState < 79) return HudIconHeal70;
+                if (fState < 89) return HudIconHeal80;
+                if (fState < 99) return HudIconHeal90;
+                return HudIconHeal100;
             }
 
-            if (fState <= -99) return HudIconDps100;
-            if (fState <= -90) return HudIconDps90;
-            if (fState <= -80) return HudIconDps80;
-            if (fState <= -70) return HudIconDps70;
-            if (fState <= -60) return HudIconDps60;
-            if (fState <= -50) return HudIconDps50;
-            if (fState <= -40) return HudIconDps40;
-            if (fState <= -30) return HudIconDps30;
-            if (fState <= -20) return HudIconDps20;
-            if (fState < -10) return HudIconDps10;
-            return MyStringId.NullOrEmpty;
+            if (fState > -9) return MyStringId.NullOrEmpty;
+            if (fState > -19) return HudIconDps10;
+            if (fState > -29) return HudIconDps20;
+            if (fState > -39) return HudIconDps30;
+            if (fState > -49) return HudIconDps40;
+            if (fState > -59) return HudIconDps50;
+            if (fState > -69) return HudIconDps60;
+            if (fState > -79) return HudIconDps70;
+            if (fState > -89) return HudIconDps80;
+            if (fState > -99) return HudIconDps90;
+            return HudIconDps100;
         }
 
         public static MyStringId GetHudIcon3FromInt(int heat, bool flash)

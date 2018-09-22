@@ -112,13 +112,11 @@ namespace DefenseShields
                 if (_genericDownLoop == -1) _genericDownLoop = 0;
                 return false;
             }
-
             if (_controlBlockWorking)
             {
                 if (GridIsMobile) MobileUpdate();
                 if (UpdateDimensions) RefreshDimensions();
             }
-
             return _controlBlockWorking;
         }
 
@@ -305,7 +303,8 @@ namespace DefenseShields
                 {
                     if (!ShieldComp.EmittersWorking)
                     {
-                        _genericDownLoop = 0;
+                        DsState.State.Overload = false;
+                        _overLoadLoop = -1;
                     }
                     else
                     {
@@ -327,7 +326,8 @@ namespace DefenseShields
                 {
                     if (!ShieldComp.EmittersWorking)
                     {
-                        _genericDownLoop = 0;
+                        DsState.State.EmpOverLoad = false;
+                        _empOverLoadLoop = -1;
                     }
                     else
                     {

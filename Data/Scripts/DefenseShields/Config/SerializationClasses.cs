@@ -44,6 +44,9 @@ namespace DefenseShields
         [ProtoMember(12)]
         public ulong SenderId = 0;
 
+        [ProtoMember(13), DefaultValue(-1)]
+        public float CapScaler = -1f;
+
         public override string ToString()
         {
             return "";
@@ -112,6 +115,8 @@ namespace DefenseShields
         public bool EmpOverLoad = false;
         [ProtoMember(29)]
         public bool EmpProtection = false;
+        [ProtoMember(30)]
+        public float GridIntegrity;
 
         public override string ToString()
         {
