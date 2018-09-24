@@ -24,6 +24,8 @@ namespace DefenseShields
     {
         public uint Tick;
 
+        public const ushort PacketIdPlanetShieldSettings = 62514;
+        public const ushort PacketIdPlanetShieldState = 62515; // 
         public const ushort PacketIdEmitterState = 62516;
         public const ushort PacketIdO2GeneratorState = 62517; 
         public const ushort PacketIdEnhancerState = 62518;
@@ -47,11 +49,9 @@ namespace DefenseShields
         internal bool ShowOnHudReset = true;
         public static bool EnforceInit;
         public bool DsControl { get; set; }
+        public bool PsControl { get; set; }
         public bool ModControl { get; set; }
-        public bool StationEmitterControlsLoaded { get; set; }
-        public bool LargeEmitterControlsLoaded { get; set; }
-        public bool SmallEmitterControlsLoaded { get; set; }
-        public bool DisplayControlsLoaded { get; set; }
+
 
         internal static readonly MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
         internal static readonly MyStringHash DelDamage = MyStringHash.GetOrCompute("DelDamage");
@@ -80,7 +80,8 @@ namespace DefenseShields
         public readonly Guid ModulatorSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811509");
         public readonly Guid ModulatorStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811510");
         public readonly Guid ControllerEnforceGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811511");
-
+        public readonly Guid PlanetShieldSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811512");
+        public readonly Guid PlanetShieldStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811513");
         //public string disabledBy = null;
 
         public static Session Instance { get; private set; }
@@ -113,11 +114,20 @@ namespace DefenseShields
         public IMyTerminalControlSeparator ModSep1;
         public IMyTerminalControlSeparator ModSep2;
 
+        public IMyTerminalControlCheckbox PsBatteryBoostCheckBox;
+        public IMyTerminalControlCheckbox PsHideActiveCheckBox;
+        public IMyTerminalControlCheckbox PsRefreshAnimationCheckBox;
+        public IMyTerminalControlCheckbox PsHitWaveAnimationCheckBox;
+
+        public IMyTerminalControlCheckbox PsSendToHudCheckBox;
+        public IMyTerminalControlOnOffSwitch PsToggleShield;
+
         public bool[] SphereOnCamera = new bool[0];
 
         public static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         public readonly Dictionary<IMySlimBlock, DefenseShields> ControllerBlockCache = new Dictionary<IMySlimBlock, DefenseShields>();
 
+        public readonly List<PlanetShields> PlanetShields = new List<PlanetShields>();
         public readonly List<Emitters> Emitters = new List<Emitters>();
         public readonly List<Displays> Displays = new List<Displays>();
         public readonly List<Enhancers> Enhancers = new List<Enhancers>();
@@ -438,12 +448,7 @@ namespace DefenseShields
                             shield.WorldImpactPosition = hitPos;
                             shield.ImpactSize = info.Amount;
                         }
-                        else if (hostileEnt != null)
-                        {
-                            //Log.CleanLine("ent attack shielded grid");
-                            //Log.CleanLine($"part: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
-                            //Log.CleanLine($"part: T:{info.Type} - A:{info.Amount} - HF:{shield.FriendlyCache.Contains(hostileEnt)} - HI:{shield.IgnoreCache.Contains(hostileEnt)} - PF:{shield.FriendlyCache.Contains(blockGrid)} - PI:{shield.IgnoreCache.Contains(blockGrid)}");
-                        }
+
                         shield.Absorb += info.Amount;
                         info.Amount = 0f;
                     }
@@ -517,12 +522,7 @@ namespace DefenseShields
                             shield.WorldImpactPosition = hitPos;
                             shield.ImpactSize = info.Amount;
                         }
-                        else if(hostileEnt != null)
-                        {
-                            //Log.CleanLine("ent attack partly shielded grid");
-                            //Log.CleanLine($"part: SId:{shield.Shield.EntityId} - attacker: {hostileEnt.DebugName} - attacked:{blockGrid.DebugName}");
-                            //Log.CleanLine($"part: T:{info.Type} - A:{info.Amount} - HF:{shield.FriendlyCache.Contains(hostileEnt)} - HI:{shield.IgnoreCache.Contains(hostileEnt)} - PF:{shield.FriendlyCache.Contains(blockGrid)} - PI:{shield.IgnoreCache.Contains(blockGrid)}");
-                        }
+
                         shield.Absorb += info.Amount;
                         info.Amount = 0f;
                     }
@@ -870,6 +870,20 @@ namespace DefenseShields
             ModulatorStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
         }
 
+        public static void PacketizePlanetShieldSettings(IMyCubeBlock block, ProtoPlanetShieldSettings settings)
+        {
+            var data = new DataPlanetShieldSettings(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            PlanetShieldSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        public static void PacketizePlanetShieldState(IMyCubeBlock block, ProtoPlanetShieldState state)
+        {
+            var data = new DataPlanetShieldState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            PlanetShieldStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
         public static void PacketizeO2GeneratorState(IMyCubeBlock block, ProtoO2GeneratorState state)
         {
             var data = new DataO2GeneratorState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
@@ -975,6 +989,52 @@ namespace DefenseShields
                 {
                     Log.Line($"sending modulator state packet to client: {p.SteamUserId}");
                     MyAPIGateway.Multiplayer.SendMessageTo(PacketIdModulatorState, bytes, p.SteamUserId);
+                }
+            }
+            players.Clear();
+        }
+
+        public static void PlanetShieldSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        {
+            var localSteamId = MyAPIGateway.Multiplayer.MyId;
+            var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
+            distSq += 3000; // some safety padding, avoid desync
+            distSq *= distSq;
+
+            var players = Instance.Players;
+            players.Clear();
+            MyAPIGateway.Players.GetPlayers(players);
+
+            foreach (var p in players)
+            {
+                var id = p.SteamUserId;
+
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
+                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdPlanetShieldSettings, bytes, p.SteamUserId);
+            }
+            players.Clear();
+        }
+
+        public static void PlanetShieldStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        {
+            var localSteamId = MyAPIGateway.Multiplayer.MyId;
+            var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
+            distSq += 3000; // some safety padding, avoid desync
+            distSq *= distSq;
+
+            var players = Instance.Players;
+            players.Clear();
+            MyAPIGateway.Players.GetPlayers(players);
+
+            foreach (var p in players)
+            {
+                var id = p.SteamUserId;
+
+                if (id != localSteamId && id != sender &&
+                    Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= distSq)
+                {
+                    Log.Line($"sending modulator state packet to client: {p.SteamUserId}");
+                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdPlanetShieldState, bytes, p.SteamUserId);
                 }
             }
             players.Clear();
@@ -1110,6 +1170,37 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in CreateControlerUi: {ex}"); }
         }
 
+        public void CreatePlanetShieldElements(IMyTerminalBlock block)
+        {
+            try
+            {
+                if (PsControl) return;
+                var comp = block?.GameLogic?.GetAs<PlanetShields>();
+                TerminalHelpers.Separator(comp?.PlanetShield, "PS-C_sep0");
+                PsToggleShield = TerminalHelpers.AddOnOff(comp?.PlanetShield, "PS-C_ToggleShield", "Shield Status", "Raise or Lower Shields", "Up", "Down", DsUi.GetRaiseShield, DsUi.SetRaiseShield);
+                TerminalHelpers.Separator(comp?.PlanetShield, "PS-C_sep1");
+
+                PsBatteryBoostCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "PS-C_UseBatteries", "Batteries Contribute To Shields", "Batteries May Contribute To Shield Strength", DsUi.GetBatteries, DsUi.SetBatteries);
+                PsSendToHudCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "PS-C_HideIcon", "Broadcast Shield Status To Hud", "Broadcast Shield Status To Nearby Friendly Huds", DsUi.GetSendToHud, DsUi.SetSendToHud);
+                TerminalHelpers.Separator(comp?.PlanetShield, "PS-C_sep2");
+
+                PsHideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "PS-C_HideActive", "Hide Shield Health On Hit  ", "Hide Shield Health Grid On Hit", DsUi.GetHideActive, DsUi.SetHideActive);
+
+                PsRefreshAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "PS-C_RefreshAnimation", "Show Refresh Animation  ", "Show Random Refresh Animation", DsUi.GetRefreshAnimation, DsUi.SetRefreshAnimation);
+                PsHitWaveAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "PS-C_HitWaveAnimation", "Show Hit Wave Animation", "Show Wave Effect On Shield Damage", DsUi.GetHitWaveAnimation, DsUi.SetHitWaveAnimation);
+
+                CreateAction<IMyUpgradeModule>(PsToggleShield);
+
+                CreateAction<IMyUpgradeModule>(PsHideActiveCheckBox);
+                CreateAction<IMyUpgradeModule>(PsRefreshAnimationCheckBox);
+                CreateAction<IMyUpgradeModule>(PsHitWaveAnimationCheckBox);
+                CreateAction<IMyUpgradeModule>(PsSendToHudCheckBox);
+                CreateAction<IMyUpgradeModule>(PsBatteryBoostCheckBox);
+                PsControl = true;
+            }
+            catch (Exception ex) { Log.Line($"Exception in CreateControlerUi: {ex}"); }
+        }
+
         public void CreateModulatorUi(IMyTerminalBlock block)
         {
             try
@@ -1181,6 +1272,9 @@ namespace DefenseShields
                     case "SmallDamageEnhancer":
                         HideAllActions(actions);
                         break;
+                    case "PlanetaryEmitterLarge":
+                        PlanetShieldShowHideActions(actions);
+                        break;
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in CustomDataToPassword: {ex}"); }
@@ -1200,6 +1294,15 @@ namespace DefenseShields
             {
                 if (!a.Id.StartsWith("DS-M_") && a.Id.StartsWith("DS-")) a.Enabled = terminalBlock => false;
                 else if (a.Id.StartsWith("DS-M_")) a.Enabled = terminalBlock => true;
+            }
+        }
+
+        private static void PlanetShieldShowHideActions(List<IMyTerminalAction> actions)
+        {
+            foreach (var a in actions)
+            {
+                if (!a.Id.StartsWith("PS-M_") && a.Id.StartsWith("PS-")) a.Enabled = terminalBlock => false;
+                else if (a.Id.StartsWith("PS-M_")) a.Enabled = terminalBlock => true;
             }
         }
 

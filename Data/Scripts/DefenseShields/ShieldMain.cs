@@ -31,7 +31,6 @@ namespace DefenseShields
                     else if (DsState.State.Message) ShieldChangeState();
                     return;
                 }
-
                 if (Session.Enforced.Debug >= 1 && !WasOnline)
                 {
                     Log.Line($"On: WasOn:{WasOnline} - On:{DsState.State.Online} - Active:{DsSet.Settings.ShieldActive}({_prevShieldActive}) - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
@@ -219,9 +218,9 @@ namespace DefenseShields
         {
             if (_blockEvent)
             {
-                var check = !DsState.State.Sleeping && !DsState.State.Suspended;
-                if (!check) return;
-                if (Session.Enforced.Debug >= 1) Log.Line($"BlockChanged: functional:{_functionalEvent} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ShieldId [{Shield.EntityId}]");
+                var notReady = !FuncTask.IsComplete || DsState.State.Sleeping || DsState.State.Suspended;
+                if (notReady) return;
+                if (Session.Enforced.Debug >= 1) Log.Line($"BlockChanged: functional:{_functionalEvent} - funcComplete:{FuncTask.IsComplete} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ShieldId [{Shield.EntityId}]");
                 if (_functionalEvent) FunctionalChanged(backGround);
                 _blockEvent = false;
                 _funcTick = _tick + 60;
@@ -388,19 +387,20 @@ namespace DefenseShields
 
         private void FallBackPowerCalc()
         {
+            var rId = GId;
             for (int i = 0; i < _powerSources.Count; i++)
             {
                 var source = _powerSources[i];
-                if (!source.HasCapacityRemaining || !source.Enabled || !source.ProductionEnabled) continue;
+                if (!source.Enabled || !source.ProductionEnabledByType(rId) || source.Entity is IMyReactor && !source.HasCapacityRemainingByType(rId)) continue;
                 if (source.Entity is IMyBatteryBlock)
                 {
-                    _batteryMaxPower += source.MaxOutputByType(GId);
-                    _batteryCurrentPower += source.CurrentOutputByType(GId);
+                    _batteryMaxPower += source.MaxOutputByType(rId);
+                    _batteryCurrentPower += source.CurrentOutputByType(rId);
                 }
                 else
                 {
-                    _gridMaxPower += source.MaxOutputByType(GId);
-                    _gridCurrentPower += source.CurrentOutputByType(GId);
+                    _gridMaxPower += source.MaxOutputByType(rId);
+                    _gridCurrentPower += source.CurrentOutputByType(rId);
                 }
             }
 

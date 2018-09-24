@@ -35,7 +35,6 @@ namespace DefenseShields
         internal float EmissiveIntensity;
 
         public bool ServerUpdate;
-        internal bool GoToSleep;
         internal bool IsStatic;
         internal bool TookControl;
         internal bool ContainerInited;
@@ -469,44 +468,6 @@ namespace DefenseShields
             var mySlotOpen = working && mySlotNull;
             var myShield = myMode && myComp;
             var iStopped = !working && myComp && modes;
-
-            var terminalConnected = ShieldComp.GetLinkedGrids.Count - ShieldComp.GetSubGrids.Count > 0;
-
-            if (!IsStatic && ShieldComp.DefenseShields.Starting && terminalConnected && !GoToSleep || GoToSleep && _count == 0 && _lCount % 2 == 0)
-            {
-                var foundStatic = false;
-                foreach (var sub in ShieldComp.GetLinkedGrids)
-                {
-                    if (sub == Emitter.CubeGrid) continue;
-
-                    if (sub.IsStatic)
-                    {
-                        foundStatic = true;
-                        break;
-                    }
-                }
-
-                if (foundStatic)
-                {
-                    if (!GoToSleep)
-                    {
-                        if (Session.Enforced.Debug >= 1) Log.Line($"Sleep: Going to sleep - EmitterId [{Emitter.EntityId}]");
-                        ShieldComp.EmitterEvent = true;
-                        ShieldComp.EmittersSuspended = true;
-                    }
-                }
-                else if (GoToSleep && ShieldComp.EmittersSuspended)
-                {
-                    if (Session.Enforced.Debug >= 1) Log.Line($"Sleep: Waking Up - EmitterId [{Emitter.EntityId}]");
-                    ShieldComp.EmitterEvent = true;
-                    ShieldComp.EmittersSuspended = false;
-                    GoToSleep = false;
-                }
-                GoToSleep = foundStatic;
-                EmiState.State.Suspend = GoToSleep;
-                if (EmiState.State.Suspend) return EmiState.State.Suspend;
-            }
-            else if (GoToSleep) return GoToSleep;
 
             if (mySlotOpen)
             {

@@ -37,6 +37,14 @@ namespace DefenseShields.Support
             return hitPos;
         }
 
+        public static bool MissileNoIntersect(MyEntity missile, MatrixD detectMatrix, MatrixD detectMatrixInv)
+        {
+            var missileVel = missile.Physics.LinearVelocity;
+            var missileCenter = missile.PositionComp.WorldVolume.Center;
+            var leaving = Vector3D.Transform(missileCenter + -missileVel * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 2, detectMatrixInv).LengthSquared() <= 1;
+            return leaving;
+        }
+
         public static double? IntersectEllipsoid(MatrixD rawEllipsoidMatrix, MatrixD ellipsoidMatrixInv, Vector3D rayPos, Vector3D rayDir)
         {
             /*
@@ -520,6 +528,17 @@ namespace DefenseShields.Support
             return contactPoint;
         }
 
+        public static bool SphereTouchOutside(MyEntity breaching, MatrixD matrix, MatrixD detectMatrixInv)
+        {
+            var wVol = breaching.PositionComp.WorldVolume;
+            var wDir = matrix.Translation - wVol.Center;
+            var wLen = wDir.Length();
+            var closestPointOnSphere = wVol.Center + (wDir / wLen * Math.Min(wLen, wVol.Radius + 1));
+
+            var intersect = Vector3D.Transform(closestPointOnSphere, detectMatrixInv).LengthSquared() <= 1;
+            return intersect;
+        }
+
         public static bool PointInShield(Vector3D entCenter, MatrixD matrixInv)
         {
             return Vector3D.Transform(entCenter, matrixInv).LengthSquared() <= 1;
@@ -614,6 +633,21 @@ namespace DefenseShields.Support
                 if (Vector3D.Transform(gridCorners[i], matrixInv).LengthSquared() <= 1) c++;
             return c > 0;
         }
+
+        public static bool AnyObbCornerInShield(MyCubeGrid ent, MatrixD matrixInv)
+        {
+            var quaternion = Quaternion.CreateFromRotationMatrix(ent.WorldMatrix);
+            var halfExtents = ent.PositionComp.LocalAABB.HalfExtents;
+            var gridCenter = ent.PositionComp.WorldAABB.Center;
+            var obb = new MyOrientedBoundingBoxD(gridCenter, halfExtents, quaternion);
+            var gridCorners = new Vector3D[8];
+            obb.GetCorners(gridCorners, 0);
+            var c = 0;
+            for (int i = 0; i < 8; i++)
+                if (Vector3D.Transform(gridCorners[i], matrixInv).LengthSquared() <= 1) c++;
+            return c > 0;
+        }
+
         public static bool AllAabbInShield(BoundingBoxD gridAabb, MatrixD matrixInv)
         {
             var gridCorners = new Vector3D[8];

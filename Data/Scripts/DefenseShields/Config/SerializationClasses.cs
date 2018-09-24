@@ -233,6 +233,33 @@ namespace DefenseShields
     }
 
     [ProtoContract]
+    public class ProtoPlanetShieldState
+    {
+        [ProtoMember(1)]
+        public bool Online;
+
+        [ProtoMember(2)]
+        public bool Backup;
+
+        public override string ToString()
+        {
+            return $"";
+        }
+    }
+
+    [ProtoContract]
+    public class ProtoPlanetShieldSettings
+    {
+        [ProtoMember(1)]
+        public bool ShieldActive = false;
+
+        public override string ToString()
+        {
+            return "";
+        }
+    }
+
+    [ProtoContract]
     public class ProtoO2GeneratorState
     {
         [ProtoMember(1)]
@@ -524,6 +551,74 @@ namespace DefenseShields
     }
 
     [ProtoContract]
+    public class DataPlanetShieldState
+    {
+        [ProtoMember(1)]
+        public PacketType Type = PacketType.PlanetShieldstate;
+
+        [ProtoMember(2)]
+        public long EntityId = 0;
+
+        [ProtoMember(3)]
+        public ulong Sender = 0;
+
+        [ProtoMember(4)]
+        public ProtoPlanetShieldState State = null;
+
+        public DataPlanetShieldState() { } // empty ctor is required for deserialization
+
+        public DataPlanetShieldState(ulong sender, long entityId, ProtoPlanetShieldState state)
+        {
+            Type = PacketType.PlanetShieldstate;
+            Sender = sender;
+            EntityId = entityId;
+            State = state;
+        }
+
+        public DataPlanetShieldState(ulong sender, long entityId, PacketType action)
+        {
+            Type = action;
+            Sender = sender;
+            EntityId = entityId;
+            State = null;
+        }
+    }
+
+    [ProtoContract]
+    public class DataPlanetShieldSettings
+    {
+        [ProtoMember(1)]
+        public PacketType Type = PacketType.PlanetShieldsettings;
+
+        [ProtoMember(2)]
+        public long EntityId = 0;
+
+        [ProtoMember(3)]
+        public ulong Sender = 0;
+
+        [ProtoMember(4)]
+        public ProtoPlanetShieldSettings Settings = null;
+
+        public DataPlanetShieldSettings() { } // empty ctor is required for deserialization
+
+        public DataPlanetShieldSettings(ulong sender, long entityId, ProtoPlanetShieldSettings settings)
+        {
+            Type = PacketType.PlanetShieldsettings;
+            Sender = sender;
+            EntityId = entityId;
+            Settings = settings;
+        }
+
+        public DataPlanetShieldSettings(ulong sender, long entityId, PacketType action)
+        {
+            Type = action;
+            Sender = sender;
+            EntityId = entityId;
+            Settings = null;
+        }
+    }
+
+    [ProtoContract]
     public class DataO2GeneratorState
     {
         [ProtoMember(1)]
@@ -700,6 +795,8 @@ namespace DefenseShields
         Controllersettings,
         Modulatorsettings,
         Modulatorstate,
+        PlanetShieldsettings,
+        PlanetShieldstate,
         O2Generatorsettings,
         O2Generatorstate,
         Enhancersettings,

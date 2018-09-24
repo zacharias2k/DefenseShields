@@ -22,7 +22,7 @@ namespace DefenseShields
 
         private void ShieldChangeState()
         {
-            if (!WarmedUp) return;
+            if (!WarmedUp && !DsState.State.Message) return;
             if (Session.Enforced.Debug >= 2) Log.Line($"ShieldChangeState: Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
             else if (Session.Enforced.Debug >= 1 && DsState.State.Message) Log.Line($"ShieldChangeState: Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
             if (Session.MpActive)
@@ -201,8 +201,8 @@ namespace DefenseShields
             MyGamePruningStructure.GetAllVoxelMapsInSphere(ref pruneSphere, pruneList);
 
             if (pruneList.Count == 0) return false;
-            //MobileUpdate();
-            //Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
+            MobileUpdate();
+            Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
             foreach (var voxel in pruneList)
             {
                 if (voxel.RootVoxel == null || voxel != voxel.RootVoxel) continue;
@@ -493,15 +493,15 @@ namespace DefenseShields
             var myEntityId = MyGrid.EntityId;
             foreach (var grid in ShieldComp.GetLinkedGrids)
             {
-                if (grid == MyGrid) continue;
+                if (grid == MyGrid) continue;   
                 ShieldGridComponent shieldComponent;
                 grid.Components.TryGet(out shieldComponent);
-                if (shieldComponent?.DefenseShields?.ShieldComp != null && shieldComponent.DefenseShields.WasOnline)
+                var ds = shieldComponent?.DefenseShields;
+                if (ds?.ShieldComp != null && ds.WasOnline && ds.Shield.IsWorking)
                 {
-                    var dsComp = shieldComponent.DefenseShields;
-                    var otherMaxPower = dsComp.MyGrid.PositionComp.WorldAABB.Size.Volume;
-                    var otherEntityId = dsComp.MyGrid.EntityId;
-                    if (mySize < otherMaxPower || mySize.Equals(otherEntityId) && myEntityId < otherEntityId)
+                    var otherSize = ds.MyGrid.PositionComp.WorldAABB.Size.Volume;
+                    var otherEntityId = ds.MyGrid.EntityId;
+                    if (!IsStatic && ds.IsStatic || mySize < otherSize || mySize.Equals(otherEntityId) && myEntityId < otherEntityId)
                     {
                         _slaveLink = true;
                         return true;

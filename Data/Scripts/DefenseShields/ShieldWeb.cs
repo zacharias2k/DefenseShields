@@ -101,10 +101,16 @@ namespace DefenseShields
                 }
                 else
                 {
-                    if (relation == Ent.Other && CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
+                    if (relation == Ent.Other)
                     {
-                        IgnoreCache.Add(ent);
-                        continue;
+                        var missileVel = ent.Physics.LinearVelocity;
+                        var missileCenter = ent.PositionComp.WorldVolume.Center;
+                        var leaving = Vector3D.Transform(missileCenter + -missileVel * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 2, DetectMatrixOutsideInv).LengthSquared() <= 1;
+                        if (leaving)
+                        {
+                            IgnoreCache.Add(ent);
+                            continue;
+                        }
                     }
                     if ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, DetectMatrixOutsideInv))
                     {
