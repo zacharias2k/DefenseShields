@@ -320,7 +320,7 @@ namespace DefenseShields.Support
             const int disableGridDmg = 0;
             const int debug = 0;
             const bool altRecharge = false;
-            const int version = 60;
+            const int version = 61;
             const float capScaler = 1f;
             const float hpsEfficiency = 0.5f;
             const float maintenanceCost = 0.5f;
@@ -336,14 +336,14 @@ namespace DefenseShields.Support
                 if (unPackedData.Version == version) return;
                 Log.Line($"outdated config file regenerating, file version: {unPackedData.Version} - current version: {version}");
                 Session.Enforced.BaseScaler = !unPackedData.BaseScaler.Equals(-1) ? unPackedData.BaseScaler : baseScaler;
-                Session.Enforced.Nerf = !unPackedData.Nerf.Equals(-1f) ? unPackedData.Nerf : nerf;
+                Session.Enforced.Unused = !unPackedData.Unused.Equals(-1f) ? unPackedData.Unused : nerf;
                 Session.Enforced.Efficiency = !unPackedData.Efficiency.Equals(-1f) ? unPackedData.Efficiency : efficiency;
                 Session.Enforced.StationRatio = !unPackedData.StationRatio.Equals(-1) ? unPackedData.StationRatio : stationRatio;
                 Session.Enforced.LargeShipRatio = !unPackedData.LargeShipRatio.Equals(-1) ? unPackedData.LargeShipRatio : largeShipRate;
                 Session.Enforced.SmallShipRatio = !unPackedData.SmallShipRatio.Equals(-1) ? unPackedData.SmallShipRatio : smallShipRatio;
                 if (unPackedData.Version <= 58)
                 {
-                    Session.Enforced.Nerf = 1;
+                    Session.Enforced.Unused = 1;
                     Session.Enforced.BaseScaler = 10;
                     Session.Enforced.SmallShipRatio = 1;
                     Session.Enforced.LargeShipRatio = 1;
@@ -374,7 +374,7 @@ namespace DefenseShields.Support
             else
             {
                 Session.Enforced.BaseScaler = baseScaler;
-                Session.Enforced.Nerf = nerf;
+                Session.Enforced.Unused = nerf;
                 Session.Enforced.Efficiency = efficiency;
                 Session.Enforced.StationRatio = stationRatio;
                 Session.Enforced.LargeShipRatio = largeShipRate;

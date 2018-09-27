@@ -41,11 +41,8 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 1) Log.Line($"OnAddedToScene: - {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 if (!AllInited) return;
 
-                if (Shield.CubeGrid.IsStatic != IsStatic)
-                {
-                    Election();
-                    RegisterEvents();
-                }
+                Election();
+                RegisterEvents();
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
@@ -251,13 +248,13 @@ namespace DefenseShields
             switch (ShieldMode)
             {
                 case ShieldType.Station:
-                    _shieldRatio = Session.Enforced.StationRatio;
+                    if (Session.Enforced.StationRatio > 0) _shieldRatio = Session.Enforced.StationRatio;
                     break;
                 case ShieldType.LargeGrid:
-                    _shieldRatio = Session.Enforced.LargeShipRatio;
+                    if (Session.Enforced.LargeShipRatio > 0) _shieldRatio = Session.Enforced.LargeShipRatio;
                     break;
                 case ShieldType.SmallGrid:
-                    _shieldRatio = Session.Enforced.SmallShipRatio;
+                    if (Session.Enforced.SmallShipRatio > 0) _shieldRatio = Session.Enforced.SmallShipRatio;
                     break;
             }
 
@@ -432,7 +429,6 @@ namespace DefenseShields
             try
             {
                 if (Session.Enforced.Debug >= 2) Log.Line($"OnRemovedFromScene: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-                IsStatic = Shield.CubeGrid.IsStatic;
                 RegisterEvents(false);
                 InitEntities(false);
                 _shellPassive?.Render?.RemoveRenderObjects();

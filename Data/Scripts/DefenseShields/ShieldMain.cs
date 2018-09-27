@@ -414,21 +414,26 @@ namespace DefenseShields
 
         private void CalculatePowerCharge()
         {
-            var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
-            var rawNerf = nerf ? Session.Enforced.Nerf : 1f;
             var capScaler = Session.Enforced.CapScaler;
-            var nerfer = rawNerf / _shieldRatio;
+            var hpsEfficiency = Session.Enforced.HpsEfficiency;
+            var baseScaler = Session.Enforced.BaseScaler;
+            var maintenanceCost = Session.Enforced.MaintenanceCost;
+
+            if (hpsEfficiency <= 0) hpsEfficiency = 1f;
+            if (baseScaler <= 0) baseScaler = 1;
+            if (maintenanceCost <= 0) maintenanceCost = 1f;
+
             const float ratio = 1.25f;
             var percent = DsSet.Settings.Rate * ratio;
-            var shieldMaintainPercent = Session.Enforced.MaintenanceCost / percent;
+            var shieldMaintainPercent = maintenanceCost / percent;
             var sizeScaler = _shieldVol / (_ellipsoidSurfaceArea * 2.40063050674088);
             var gridIntegrity = DsState.State.GridIntegrity * 0.01f;
             var hpScaler = 1f;
             _sizeScaler = sizeScaler >= 1d ? sizeScaler : 1d;
 
             float bufferScaler;
-            if (ShieldMode == ShieldType.Station && DsState.State.Enhancer) bufferScaler = 100 / percent * Session.Enforced.BaseScaler * nerfer;
-            else bufferScaler = 100 / percent * Session.Enforced.BaseScaler / (float)_sizeScaler * nerfer;
+            if (ShieldMode == ShieldType.Station && DsState.State.Enhancer) bufferScaler = 100 / percent * baseScaler * _shieldRatio;
+            else bufferScaler = 100 / percent * baseScaler / (float)_sizeScaler * _shieldRatio;
 
             var hpBase = _gridMaxPower * bufferScaler;
             if (capScaler > 0 && hpBase > gridIntegrity) hpScaler = gridIntegrity * capScaler / hpBase;
@@ -441,7 +446,7 @@ namespace DefenseShields
 
             //if (_tick600) Log.Line($"gridName:{MyGrid.DebugName} - {hpBase} > {gridIntegrity} ({hpBase > gridIntegrity}) - hpScaler:{hpScaler}");
 
-            var powerForShield = PowerNeeded(percent, ratio, nerfer);
+            var powerForShield = PowerNeeded(percent, ratio, hpsEfficiency);
 
             if (!WarmedUp) return;
 
@@ -455,7 +460,7 @@ namespace DefenseShields
             else DsState.State.ShieldPercent = 100f;
         }
 
-        private float PowerNeeded(float percent, float ratio, float nerfer)
+        private float PowerNeeded(float percent, float ratio,  float hpsEfficiency)
         {
             var powerForShield = 0f;
             var fPercent = percent / ratio * 0.01f;
@@ -465,7 +470,7 @@ namespace DefenseShields
             powerForShield = (cleanPower * fPercent) - _shieldMaintaintPower;
             var rawMaxChargeRate = powerForShield > 0 ? powerForShield : 0f;
             _shieldMaxChargeRate = rawMaxChargeRate;
-            var chargeSize = _shieldMaxChargeRate * Session.Enforced.HpsEfficiency / _sizeScaler * nerfer;
+            var chargeSize = _shieldMaxChargeRate * hpsEfficiency / _sizeScaler;
             if (DsState.State.Buffer + chargeSize < ShieldMaxBuffer)
             {
                 _shieldChargeRate = (float) chargeSize;

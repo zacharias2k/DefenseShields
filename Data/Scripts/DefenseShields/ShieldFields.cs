@@ -92,7 +92,7 @@ namespace DefenseShields
 
         private int _prevLod;
         private int _onCount;
-        private int _shieldRatio;
+        private int _shieldRatio = 1;
 
         internal bool WasOnline;
         internal bool DeformEnabled;

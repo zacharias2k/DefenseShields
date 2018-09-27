@@ -9,7 +9,7 @@ namespace DefenseShields
     public class DefenseShieldsEnforcement
     {
         [ProtoMember(1), DefaultValue(-1)]
-        public float Nerf = -1f;
+        public float Unused = -1f;
 
         [ProtoMember(2), DefaultValue(-1)]
         public int BaseScaler = -1;

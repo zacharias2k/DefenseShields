@@ -309,10 +309,8 @@ namespace DefenseShields
                     {
                         DsState.State.Overload = false;
                         _overLoadLoop = -1;
-                        var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
-                        var nerfer = nerf ? Session.Enforced.Nerf : 1f;
                         var recharged = _shieldChargeRate * ShieldDownCount / 60;
-                        DsState.State.Buffer = MathHelper.Clamp(recharged, ShieldMaxBuffer * 0.10f, ShieldMaxBuffer * 0.25f) * nerfer; 
+                        DsState.State.Buffer = MathHelper.Clamp(recharged, ShieldMaxBuffer * 0.10f, ShieldMaxBuffer * 0.25f); 
                     }
                 }
             }
@@ -332,10 +330,8 @@ namespace DefenseShields
                     {
                         DsState.State.EmpOverLoad = false;
                         _empOverLoadLoop = -1;
-                        var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
-                        var nerfer = nerf ? Session.Enforced.Nerf : 1f;
                         var recharged = _shieldChargeRate * EmpDownCount / 60;
-                        DsState.State.Buffer = MathHelper.Clamp(recharged, ShieldMaxBuffer * 0.25f, ShieldMaxBuffer * 0.62f) * nerfer; 
+                        DsState.State.Buffer = MathHelper.Clamp(recharged, ShieldMaxBuffer * 0.25f, ShieldMaxBuffer * 0.62f); 
                     }
                 }
             }
