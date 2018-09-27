@@ -114,11 +114,10 @@ namespace DefenseShields
             WarmedUp = true;
             if (_isServer)
             {
-                SyncThreadedEnts(true);
+                CleanAll();
                 _offlineCnt = -1;
                 if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
                 ShieldChangeState();
-
             }
             else
             {
@@ -873,6 +872,17 @@ namespace DefenseShields
         #endregion
 
         #region Cleanup
+        private void CleanAll()
+        {
+            CleanUp(0);
+            CleanUp(1);
+            CleanUp(2);
+            CleanUp(3);
+            CleanUp(4);
+            CleanUp(5);
+            SyncThreadedEnts(true);
+        }
+
         private void CleanUp(int task)
         {
             try
@@ -936,6 +946,11 @@ namespace DefenseShields
                         {
                             IgnoreCache.Clear();
                         }
+                        break;
+                    case 5:
+                    {
+                        WebEnts.Clear();
+                    }
                         break;
                 }
             }

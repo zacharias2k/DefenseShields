@@ -176,8 +176,8 @@ namespace DefenseShields
             }
             if (UnsuspendTick != uint.MinValue && _tick >= UnsuspendTick)
             {
-                _blockEvent = true;
-                _shapeEvent = true;
+                ResetShape(false, false);
+                _updateRender = true;
                 UnsuspendTick = uint.MinValue;
             }
             else if (_shapeTick != uint.MinValue && _tick >= _shapeTick)

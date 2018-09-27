@@ -395,6 +395,7 @@ namespace DefenseShields
 
         private bool BlockWorking()
         {
+            if (ShieldComp.EmitterMode != (int)EmitterMode) ShieldComp.EmitterMode = (int)EmitterMode;
             if (ShieldComp.EmittersSuspended) SuspendCollisionDetected();
 
             EmiState.State.Online = true;
@@ -589,6 +590,7 @@ namespace DefenseShields
             EmiState.State.Los = _blocksLos.Count < 552;
             if (!EmiState.State.Los) ShieldComp.EmitterEvent = true;
             ShieldComp.CheckEmitters = false;
+
             if (Session.Enforced.Debug >= 1) Log.Line($"LOS: Mode: {EmitterMode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {EmiState.State.Los.ToString()} - EmitterId [{Emitter.EntityId}]");
         }
 

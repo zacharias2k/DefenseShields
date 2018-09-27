@@ -40,6 +40,7 @@ namespace DefenseShields
             {
                 if (Session.Enforced.Debug >= 1) Log.Line($"OnAddedToScene: - {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 if (!AllInited) return;
+                IsStatic = Shield.CubeGrid.IsStatic;
 
                 Election();
                 RegisterEvents();
@@ -98,7 +99,6 @@ namespace DefenseShields
             var blockList = new List<IMySlimBlock>();
             Shield.CubeGrid.GetBlocks(blockList);
             for (int i = 0; i < blockList.Count; i++) DsState.State.GridIntegrity += blockList[i].MaxIntegrity;
-            Log.Line($"!!!!!!!!!!!!!!!gridIntegrity: {DsState.State.GridIntegrity.ToString("N0")}");
         }
 
         public bool PostInit()
@@ -429,6 +429,7 @@ namespace DefenseShields
             try
             {
                 if (Session.Enforced.Debug >= 2) Log.Line($"OnRemovedFromScene: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                IsStatic = Shield.CubeGrid.IsStatic;
                 RegisterEvents(false);
                 InitEntities(false);
                 _shellPassive?.Render?.RemoveRenderObjects();
