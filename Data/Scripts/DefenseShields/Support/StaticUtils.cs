@@ -310,7 +310,7 @@ namespace DefenseShields.Support
         }	
         public static void PrepConfigFile()
         {
-            const int baseScaler = 30;
+            const int baseScaler = 10;
             const float nerf = 1f;
             const float efficiency = 100f;
             const int stationRatio = 1;
@@ -320,8 +320,10 @@ namespace DefenseShields.Support
             const int disableGridDmg = 0;
             const int debug = 0;
             const bool altRecharge = false;
-            const int version = 58;
+            const int version = 60;
             const float capScaler = 1f;
+            const float hpsEfficiency = 0.5f;
+            const float maintenanceCost = 0.5f;
 
             var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg");
             if (dsCfgExists)
@@ -339,17 +341,21 @@ namespace DefenseShields.Support
                 Session.Enforced.StationRatio = !unPackedData.StationRatio.Equals(-1) ? unPackedData.StationRatio : stationRatio;
                 Session.Enforced.LargeShipRatio = !unPackedData.LargeShipRatio.Equals(-1) ? unPackedData.LargeShipRatio : largeShipRate;
                 Session.Enforced.SmallShipRatio = !unPackedData.SmallShipRatio.Equals(-1) ? unPackedData.SmallShipRatio : smallShipRatio;
-                if (unPackedData.Version <= 56)
+                if (unPackedData.Version <= 58)
                 {
-                    Session.Enforced.StationRatio = 1;
-                    Session.Enforced.LargeShipRatio = 1;
+                    Session.Enforced.Nerf = 1;
+                    Session.Enforced.BaseScaler = 10;
                     Session.Enforced.SmallShipRatio = 1;
+                    Session.Enforced.LargeShipRatio = 1;
+                    Session.Enforced.StationRatio = 1;
                 }
                 Session.Enforced.DisableVoxelSupport = !unPackedData.DisableVoxelSupport.Equals(-1) ? unPackedData.DisableVoxelSupport : disableVoxel;
                 Session.Enforced.DisableGridDamageSupport = !unPackedData.DisableGridDamageSupport.Equals(-1) ? unPackedData.DisableGridDamageSupport : disableGridDmg;
                 Session.Enforced.Debug = !unPackedData.Debug.Equals(-1) ? unPackedData.Debug : debug;
                 Session.Enforced.AltRecharge = false;
                 Session.Enforced.CapScaler = !unPackedData.CapScaler.Equals(-1f) ? unPackedData.CapScaler : capScaler;
+                Session.Enforced.HpsEfficiency = !unPackedData.HpsEfficiency.Equals(-1f) ? unPackedData.HpsEfficiency : hpsEfficiency;
+                Session.Enforced.MaintenanceCost = !unPackedData.MaintenanceCost.Equals(-1f) ? unPackedData.MaintenanceCost : maintenanceCost;
 
                 Session.Enforced.Version = version;
 
@@ -378,6 +384,8 @@ namespace DefenseShields.Support
                 Session.Enforced.Debug = debug;
                 Session.Enforced.AltRecharge = altRecharge;
                 Session.Enforced.CapScaler = capScaler;
+                Session.Enforced.HpsEfficiency = hpsEfficiency;
+                Session.Enforced.MaintenanceCost = maintenanceCost;
                 Session.Enforced.Version = version;
 
                 var cfg = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShields.cfg");

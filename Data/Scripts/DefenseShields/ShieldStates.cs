@@ -49,7 +49,6 @@ namespace DefenseShields
                 if (!ControllerFunctional() || ShieldWaking())
                 {
                     if (ShieldDown()) return false;
-                    if (!_prevShieldActive) return false;
                     _prevShieldActive = false;
                     return false;
                 }
@@ -313,7 +312,7 @@ namespace DefenseShields
                         var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
                         var nerfer = nerf ? Session.Enforced.Nerf : 1f;
                         var recharged = _shieldChargeRate * ShieldDownCount / 60;
-                        DsState.State.Buffer = MathHelper.Clamp(recharged, _shieldMaxBuffer * 0.10f, _shieldMaxBuffer * 0.25f) * nerfer; 
+                        DsState.State.Buffer = MathHelper.Clamp(recharged, ShieldMaxBuffer * 0.10f, ShieldMaxBuffer * 0.25f) * nerfer; 
                     }
                 }
             }
@@ -336,7 +335,7 @@ namespace DefenseShields
                         var nerf = Session.Enforced.Nerf > 0 && Session.Enforced.Nerf < 1;
                         var nerfer = nerf ? Session.Enforced.Nerf : 1f;
                         var recharged = _shieldChargeRate * EmpDownCount / 60;
-                        DsState.State.Buffer = MathHelper.Clamp(recharged, _shieldMaxBuffer * 0.25f, _shieldMaxBuffer * 0.62f) * nerfer; 
+                        DsState.State.Buffer = MathHelper.Clamp(recharged, ShieldMaxBuffer * 0.25f, ShieldMaxBuffer * 0.62f) * nerfer; 
                     }
                 }
             }

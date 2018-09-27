@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
-using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
@@ -17,20 +16,22 @@ namespace DefenseShields
         private void WebEntitiesClient()
         {
             if (Session.Enforced.Debug >= 1) Dsutil2.Sw.Restart();
-            var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange + 5);
-            var pruneList = new List<MyEntity>();
+            //var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange + 5);
+            _clientPruneSphere.Center = DetectionCenter;
+            _clientPruneSphere.Radius = BoundingRange + 5;
+            _clientPruneList.Clear();
 
-            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
+            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref _clientPruneSphere, _clientPruneList);
 
-            foreach (var eShield in EnemyShields) pruneList.Add(eShield);
+            foreach (var eShield in EnemyShields) _clientPruneList.Add(eShield);
 
             var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || ShieldComp.Modulator == null || ShieldComp.Modulator.ModSet.Settings.ModulateVoxels;
             var entChanged = false;
 
             _enablePhysics = false;
-            for (int i = 0; i < pruneList.Count; i++)
+            for (int i = 0; i < _clientPruneList.Count; i++)
             {
-                var ent = pruneList[i];
+                var ent = _clientPruneList[i];
                 var voxel = ent as MyVoxelBase;
 
                 if (ent == null || ent.MarkedForClose || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel || !(ent is MyVoxelBase) && ent.Physics == null) continue;
@@ -97,17 +98,6 @@ namespace DefenseShields
                 }
                 else
                 {
-                    if (relation == Ent.Other && CustomCollision.MissileNoIntersect(ent, DetectionMatrix, DetectMatrixOutsideInv))
-                    {
-                        var missileVel = ent.Physics.LinearVelocity;
-                        var missileCenter = ent.PositionComp.WorldVolume.Center;
-                        var leaving = Vector3D.Transform(missileCenter + -missileVel * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 2, DetectMatrixOutsideInv).LengthSquared() <= 1;
-                        if (leaving)
-                        {
-                            IgnoreCache.Add(ent);
-                            continue;
-                        }
-                    }
                     if ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, DetectMatrixOutsideInv))
                     {
                         FriendlyCache.Add(ent);
@@ -293,6 +283,8 @@ namespace DefenseShields
         {
             var character = ent as IMyCharacter;
             if (character == null) return;
+            var player = MyAPIGateway.Multiplayer.Players.GetPlayerControllingEntity(ent);
+            if (player == null || player.PromoteLevel == MyPromoteLevel.Owner || player.PromoteLevel == MyPromoteLevel.Admin) return;
             if (character.EnabledDamping) character.SwitchDamping();
         }
 

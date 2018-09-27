@@ -18,11 +18,15 @@ namespace DefenseShields
         private void WebEntities()
         {
             if (Session.Enforced.Debug >= 2) Dsutil2.Sw.Restart();
-            var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange + 3000);
-            var pruneSphere2 = new BoundingSphereD(DetectionCenter, BoundingRange + 50);
+            _pruneSphere1.Center = DetectionCenter;
+            _pruneSphere1.Radius = BoundingRange + 3000;
+
+            _pruneSphere2.Center = DetectionCenter;
+            _pruneSphere2.Radius = BoundingRange + 50;
+
             _pruneList.Clear();
-            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, _pruneList, MyEntityQueryType.Dynamic);
-            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere2, _pruneList, MyEntityQueryType.Static);
+            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref _pruneSphere1, _pruneList, MyEntityQueryType.Dynamic);
+            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref _pruneSphere2, _pruneList, MyEntityQueryType.Static);
 
             foreach (var eShield in EnemyShields) _pruneList.Add(eShield);
 
@@ -37,7 +41,7 @@ namespace DefenseShields
                 var voxel = ent as MyVoxelBase;
                 if (ent == null || ent.MarkedForClose || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel || voxel == null && ent.Physics == null) continue;
                 var entCenter = ent.PositionComp.WorldVolume.Center;
-                var missileCheck = !pruneSphere2.Intersects(ent.PositionComp.WorldVolume) && ent.DefinitionId.HasValue && ent.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile);
+                var missileCheck = !_pruneSphere2.Intersects(ent.PositionComp.WorldVolume) && ent.DefinitionId.HasValue && ent.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile);
                 if (voxel == null && missileCheck) continue;
                 if (FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent) || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
                 EntIntersectInfo entInfo;
@@ -105,7 +109,7 @@ namespace DefenseShields
                     {
                         var missileVel = ent.Physics.LinearVelocity;
                         var missileCenter = ent.PositionComp.WorldVolume.Center;
-                        var leaving = Vector3D.Transform(missileCenter + -missileVel * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 2, DetectMatrixOutsideInv).LengthSquared() <= 1;
+                        var leaving = Vector3D.Transform(missileCenter + -missileVel * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS, DetectMatrixOutsideInv).LengthSquared() <= 1;
                         if (leaving)
                         {
                             IgnoreCache.Add(ent);

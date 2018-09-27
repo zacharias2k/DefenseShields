@@ -9,6 +9,7 @@ using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage;
+using VRage.Game;
 using VRageMath;
 
 namespace DefenseShields
@@ -26,7 +27,6 @@ namespace DefenseShields
                 if (!ShieldOn())
                 {
                     if (Session.Enforced.Debug >= 1 && WasOnline) Log.Line($"Off: WasOn:{WasOnline} - On:{DsState.State.Online} - Active:{DsSet.Settings.ShieldActive}({_prevShieldActive}) - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
-
                     if (WasOnline) ShieldOff();
                     else if (DsState.State.Message) ShieldChangeState();
                     return;
@@ -312,7 +312,7 @@ namespace DefenseShields
             }
             if (_power < 0.0001f) _power = 0.001f;
 
-            if (_power < _shieldCurrentPower || _count == 28) Sink.Update();
+            if (_power < _shieldCurrentPower || _count == 28 && !_power.Equals(_shieldCurrentPower)) Sink.Update();
             if (Absorb > 0)
             {
                 _damageReadOut += Absorb;
@@ -323,6 +323,7 @@ namespace DefenseShields
 
             if (_isServer && DsState.State.Buffer < 0)
             {
+                DsState.State.Buffer = 0;
                 if (!_empOverLoad) _overLoadLoop = 0;
                 else _empOverLoadLoop = 0;
             }
@@ -419,7 +420,7 @@ namespace DefenseShields
             var nerfer = rawNerf / _shieldRatio;
             const float ratio = 1.25f;
             var percent = DsSet.Settings.Rate * ratio;
-            var shieldMaintainPercent = 1 / percent;
+            var shieldMaintainPercent = Session.Enforced.MaintenanceCost / percent;
             var sizeScaler = _shieldVol / (_ellipsoidSurfaceArea * 2.40063050674088);
             var gridIntegrity = DsState.State.GridIntegrity * 0.01f;
             var hpScaler = 1f;
@@ -436,7 +437,7 @@ namespace DefenseShields
             if (DsState.State.Lowered) shieldMaintainPercent = shieldMaintainPercent * 0.25f;
             _shieldMaintaintPower = _gridMaxPower * hpScaler * shieldMaintainPercent;
 
-            _shieldMaxBuffer = hpBase * hpScaler;
+            ShieldMaxBuffer = hpBase * hpScaler;
 
             //if (_tick600) Log.Line($"gridName:{MyGrid.DebugName} - {hpBase} > {gridIntegrity} ({hpBase > gridIntegrity}) - hpScaler:{hpScaler}");
 
@@ -444,15 +445,14 @@ namespace DefenseShields
 
             if (!WarmedUp) return;
 
-            if (DsState.State.Buffer < _shieldMaxBuffer) DsState.State.ShieldPercent = (DsState.State.Buffer / _shieldMaxBuffer) * 100;
-            else if (DsState.State.Buffer <= 1) DsState.State.ShieldPercent = 0f;
-            else DsState.State.ShieldPercent = 100f;
-
-            if (DsState.State.Buffer > _shieldMaxBuffer) DsState.State.Buffer = _shieldMaxBuffer;
+            if (DsState.State.Buffer > ShieldMaxBuffer) DsState.State.Buffer = ShieldMaxBuffer;
 
             if (PowerLoss(powerForShield)) return;
 
-            WastedHeat();
+            ChargeBuffer();
+            if (DsState.State.Buffer < ShieldMaxBuffer) DsState.State.ShieldPercent = DsState.State.Buffer / ShieldMaxBuffer * 100;
+            else if (DsState.State.Buffer < ShieldMaxBuffer * 0.1) DsState.State.ShieldPercent = 0f;
+            else DsState.State.ShieldPercent = 100f;
         }
 
         private float PowerNeeded(float percent, float ratio, float nerfer)
@@ -465,21 +465,20 @@ namespace DefenseShields
             powerForShield = (cleanPower * fPercent) - _shieldMaintaintPower;
             var rawMaxChargeRate = powerForShield > 0 ? powerForShield : 0f;
             _shieldMaxChargeRate = rawMaxChargeRate;
-
-            if (DsState.State.Buffer + _shieldMaxChargeRate / (_sizeScaler / nerfer) < _shieldMaxBuffer)
+            var chargeSize = _shieldMaxChargeRate * Session.Enforced.HpsEfficiency / _sizeScaler * nerfer;
+            if (DsState.State.Buffer + chargeSize < ShieldMaxBuffer)
             {
-                _shieldChargeRate = _shieldMaxChargeRate / ((float)_sizeScaler / nerfer);
+                _shieldChargeRate = (float) chargeSize;
                 _shieldConsumptionRate = _shieldMaxChargeRate;
             }
             else
             {
-                if (_shieldMaxBuffer - DsState.State.Buffer > 0)
-                {
-                    _shieldChargeRate = _shieldMaxBuffer - DsState.State.Buffer;
-                    _shieldConsumptionRate = _shieldChargeRate;
-                }
-                else _shieldConsumptionRate = 0f;
+                var remaining = ShieldMaxBuffer - DsState.State.Buffer;
+                var remainingScaled = remaining / chargeSize;
+                _shieldConsumptionRate = (float) (remainingScaled * _shieldMaxChargeRate);
+                _shieldChargeRate = (float) (chargeSize * remainingScaled);
             }
+
             _powerNeeded = _shieldMaintaintPower + _shieldConsumptionRate + _otherPower;
             return powerForShield;
         }
@@ -504,9 +503,13 @@ namespace DefenseShields
                     ShieldChangeState();
                 }
 
-                var shieldLoss = _shieldMaxBuffer * 0.0016667f;
+                var shieldLoss = ShieldMaxBuffer * 0.0016667f;
                 DsState.State.Buffer = DsState.State.Buffer - shieldLoss;
                 if (DsState.State.Buffer< 0.01f) DsState.State.Buffer = 0.01f;
+
+                if (DsState.State.Buffer < ShieldMaxBuffer) DsState.State.ShieldPercent = DsState.State.Buffer / ShieldMaxBuffer * 100;
+                else if (DsState.State.Buffer < ShieldMaxBuffer * 0.1) DsState.State.ShieldPercent = 0f;
+                else DsState.State.ShieldPercent = 100f;
 
                 _shieldChargeRate = 0f;
                 _shieldConsumptionRate = 0f;
@@ -529,7 +532,7 @@ namespace DefenseShields
             return false;
         }
 
-        private void WastedHeat()
+        private void ChargeBuffer()
         {
             var heat = DsState.State.Heat * 0.1;
             if (heat > 10) heat = 10;
@@ -540,9 +543,8 @@ namespace DefenseShields
                 var expChargeReduction = (float)Math.Pow(2, heat);
                 _shieldChargeRate = _shieldChargeRate / expChargeReduction;
             }
-
-            if (_count == 29 && DsState.State.Buffer < _shieldMaxBuffer) DsState.State.Buffer += _shieldChargeRate;
-            else if (DsState.State.Buffer.Equals(_shieldMaxBuffer))
+            if (_count == 29 && DsState.State.Buffer < ShieldMaxBuffer) DsState.State.Buffer += _shieldChargeRate;
+            else if (DsState.State.Buffer.Equals(ShieldMaxBuffer))
             {
                 _shieldChargeRate = 0f;
                 _shieldConsumptionRate = 0f;
@@ -551,7 +553,7 @@ namespace DefenseShields
 
         private void HeatManager()
         {
-            var hp = _shieldMaxBuffer * Session.Enforced.Efficiency;
+            var hp = ShieldMaxBuffer * Session.Enforced.Efficiency;
             var oldHeat = DsState.State.Heat;
             if (_damageReadOut > 0 && _heatCycle == -1)
             {
@@ -716,10 +718,10 @@ namespace DefenseShields
                 var secToFull = 0;
                 var shieldPercent = !DsState.State.Online ? 0f : 100f;
 
-                if (DsState.State.Buffer < _shieldMaxBuffer) shieldPercent = DsState.State.Buffer / _shieldMaxBuffer * 100;
+                if (DsState.State.Buffer < ShieldMaxBuffer) shieldPercent = DsState.State.Buffer / ShieldMaxBuffer * 100;
                 if (_shieldChargeRate > 0)
                 {
-                    var toMax = _shieldMaxBuffer - DsState.State.Buffer;
+                    var toMax = ShieldMaxBuffer - DsState.State.Buffer;
                     var secs = toMax / _shieldChargeRate;
                     if (secs.Equals(1)) secToFull = 0;
                     else secToFull = (int)secs;
@@ -738,7 +740,7 @@ namespace DefenseShields
                 var status = GetShieldStatus();
                 if (status == "[Shield Up]" || status == "[Shield Down]" || status == "[Shield Offline]")
                 {
-                    stringBuilder.Append(status + " MaxHP: " + (_shieldMaxBuffer * Session.Enforced.Efficiency).ToString("N0") +
+                    stringBuilder.Append(status + " MaxHP: " + (ShieldMaxBuffer * Session.Enforced.Efficiency).ToString("N0") +
                                          "\n" +
                                          "\n[Shield HP__]: " + (DsState.State.Buffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
                                          "\n[HP Per Sec_]: " + (_shieldChargeRate * Session.Enforced.Efficiency).ToString("N0") +
@@ -804,14 +806,14 @@ namespace DefenseShields
             _subUpdate = false;
         }
 
-        private void ShieldDoDamage(float damage, long entityId, double empSize = 0d)
+        private void ShieldDoDamage(float damage, long entityId, float shieldFractionLoss = 0f)
         {
-            EmpSize = empSize;
+            EmpSize = shieldFractionLoss;
             ImpactSize = damage;
 
-            if (empSize > 0)
+            if (shieldFractionLoss > 0)
             {
-                damage = damage + (float)(_ellipsoidVolume / empSize);
+                damage = shieldFractionLoss;
             }
 
             Shield.SlimBlock.DoDamage(damage, MPdamage, true, null, entityId);

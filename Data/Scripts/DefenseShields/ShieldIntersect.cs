@@ -189,6 +189,10 @@ namespace DefenseShields
                 _characterDmg.Enqueue(character);
                 return;
             }
+
+            var player = MyAPIGateway.Multiplayer.Players.GetPlayerControllingEntity(ent);
+            if (player == null || player.PromoteLevel == MyPromoteLevel.Owner || player.PromoteLevel == MyPromoteLevel.Admin) return;
+
             if (character.EnabledDamping) character.SwitchDamping();
             if (!character.EnabledThrusts) return;
 
@@ -349,20 +353,20 @@ namespace DefenseShields
                     else return;
 
                     var damage = rawDamage * DsState.State.ModulateKinetic;
-                    double empSize = 0;
+                    var shieldFractionLoss = 0f;
 
                     if (firstWarhead != null && empCount > 0)
                     {
                         var scaler = 1f;
                         if (DsState.State.EmpProtection) scaler = 0.1f;
-                        empSize = 1.33333333333 * Math.PI * (empRadius * empRadius * empRadius) * 0.5 * DsState.State.ModulateEnergy * scaler;
-                        var scaledEmpSize = empSize * empCount + (empCount * (empCount * 0.1)); 
-                        var shieldFractionLoss = (float) (_ellipsoidVolume / scaledEmpSize);
+                        var empSize = 1.33333333333 * Math.PI * (empRadius * empRadius * empRadius) * 0.5 * DsState.State.ModulateEnergy * scaler;
+                        var scaledEmpSize = empSize * empCount + empCount * (empCount * 0.1); 
+                        shieldFractionLoss = (float) (EllipsoidVolume / scaledEmpSize);
                         var efficiency = Session.Enforced.Efficiency;
-                        damage = damage + _shieldMaxBuffer * efficiency / shieldFractionLoss;
+                        damage = damage + ShieldMaxBuffer * efficiency / shieldFractionLoss;
                         entInfo.EmpSize = scaledEmpSize;
                         entInfo.EmpDetonation = firstWarhead.PositionComp.WorldAABB.Center;
-                        if (damage > (DsState.State.Buffer * efficiency)) _empOverLoad = true;
+                        if (damage > DsState.State.Buffer * efficiency) _empOverLoad = true;
                     }
 
                     //Log.Line($"ShieldHP:{DsState.State.Buffer * Session.Enforced.Efficiency} - blockDmg:{rawDamage * DsState.State.ModulateKinetic} - TotalShieldDamage:{damage} - empSize:{empSize} - preMod:{rawEmpSize} - dmg(1/fraction):{_ellipsoidVolume / empSize} - ellVol:{_ellipsoidVolume} - ModKin:{DsState.State.ModulateKinetic} - {_ellipsoidSurfaceArea} - {DetectMatrixOutside.Scale.X} - {DetectMatrixOutside.Scale.Y} - {DetectMatrixOutside.Scale.Z}");
@@ -370,13 +374,13 @@ namespace DefenseShields
                     if (_mpActive)
                     {
                         var hitEntity = firstWarhead?.EntityId ?? breaching.EntityId;
-                        if (_isServer && bBlockCenter != Vector3D.NegativeInfinity) ShieldDoDamage(damage, hitEntity, empSize);
+                        if (_isServer && bBlockCenter != Vector3D.NegativeInfinity) ShieldDoDamage(damage, hitEntity, shieldFractionLoss);
                     }
                     else
                     {
-                        Absorb += damage;
                         if (bBlockCenter != Vector3D.NegativeInfinity) entInfo.ContactPoint = bBlockCenter;
                     }
+                    Absorb += damage;
                     //Log.Line($"[status] obb: true - blocks:{cacheBlockList.Count.ToString()} - sphered:{c1.ToString()} [{c5.ToString()}] - IsDestroyed:{c6.ToString()} not:[{c2.ToString()}] - bCenter Inside Ellipsoid:{c3.ToString()} - Damaged:{c4.ToString()}");
                 }
             }

@@ -47,6 +47,12 @@ namespace DefenseShields
         [ProtoMember(13), DefaultValue(-1)]
         public float CapScaler = -1f;
 
+        [ProtoMember(14), DefaultValue(-1)]
+        public float HpsEfficiency = -1f;
+
+        [ProtoMember(15), DefaultValue(-1)]
+        public float MaintenanceCost = -1f;
+
         public override string ToString()
         {
             return "";

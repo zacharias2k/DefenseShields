@@ -145,7 +145,7 @@ namespace DefenseShields
                 EllipsoidSa.Update(DetectMatrixOutside.Scale.X, DetectMatrixOutside.Scale.Y, DetectMatrixOutside.Scale.Z);
                 BoundingRange = ShieldSize.AbsMax();
                 _ellipsoidSurfaceArea = EllipsoidSa.Surface;
-                _ellipsoidVolume = 1.333333 * Math.PI * DetectMatrixOutside.Scale.X * DetectMatrixOutside.Scale.Y * DetectMatrixOutside.Scale.Z;
+                EllipsoidVolume = 1.333333 * Math.PI * DetectMatrixOutside.Scale.X * DetectMatrixOutside.Scale.Y * DetectMatrixOutside.Scale.Z;
                 _shieldVol = DetectMatrixOutside.Scale.Volume;
                 if (Session.IsServer)
                 {

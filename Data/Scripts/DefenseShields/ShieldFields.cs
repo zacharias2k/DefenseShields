@@ -32,6 +32,7 @@ namespace DefenseShields
 
         internal float ImpactSize { get; set; } = 9f;
         internal float Absorb { get; set; }
+        internal float ShieldMaxBuffer;
         private float _power = 0.001f;
         private float _gridMaxPower;
         private float _gridCurrentPower;
@@ -40,7 +41,6 @@ namespace DefenseShields
         private float _gridAvailablePower;
         private float _batteryMaxPower;
         private float _batteryCurrentPower;
-        private float _shieldMaxBuffer;
         private float _shieldMaxChargeRate;
         private float _shieldChargeRate;
         private float _damageReadOut;
@@ -54,10 +54,10 @@ namespace DefenseShields
 
         internal double EmpSize { get; set; }
         internal double BoundingRange;
+        internal double EllipsoidVolume;
         private double _oldEllipsoidAdjust;
         private double _sAvelSqr;
         private double _ellipsoidSurfaceArea;
-        private double _ellipsoidVolume;
         private double _shieldVol;
         private double _sizeScaler;
         private double _roundedGridMax;
@@ -182,11 +182,16 @@ namespace DefenseShields
 
         private BoundingBox _shieldAabb;
         public BoundingSphereD ShieldSphere;
+        private BoundingSphereD _clientPruneSphere = new BoundingSphereD(Vector3D.Zero, 1f);
+        private BoundingSphereD _pruneSphere1 = new BoundingSphereD(Vector3D.Zero, 1f);
+        private BoundingSphereD _pruneSphere2 = new BoundingSphereD(Vector3D.Zero, 1f);
+
         public MyOrientedBoundingBoxD SOriBBoxD;
         private Quaternion _sQuaternion;
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
         private readonly List<MyEntity> _pruneList = new List<MyEntity>();
+        private readonly List<MyEntity> _clientPruneList = new List<MyEntity>();
         private readonly List<IMyBatteryBlock> _batteryBlocks = new List<IMyBatteryBlock>();
         private readonly List<KeyValuePair<MyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<MyEntity, EntIntersectInfo>>();
 

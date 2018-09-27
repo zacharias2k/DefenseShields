@@ -347,10 +347,15 @@ namespace DefenseShields
                         var warHead = hostileEnt as IMyWarhead;
                         if (warHead != null)
                         {
-                            ds.EmpDetonation = blockPos;
-                            UtilsStatic.CreateExplosion(warHead.PositionComp.WorldAABB.Center, 2.1f, 9999); 
+                            var magicValue = info.Amount;
+                            var empPos = warHead.PositionComp.WorldAABB.Center;
+                            ds.EmpDetonation = empPos;
+                            ds.EmpSize = ds.EllipsoidVolume / magicValue;
+                            info.Amount = ds.ShieldMaxBuffer * Enforced.Efficiency / magicValue;
+                            UtilsStatic.CreateExplosion(empPos, 2.1f, 9999);
                         }
-                        ds.ImpactSize = info.Amount;
+                        else ds.ImpactSize = info.Amount;
+
                         if (hostileEnt.DefinitionId.HasValue && hostileEnt.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))
                         {
                             UtilsStatic.CreateFakeSmallExplosion(hitPos);
