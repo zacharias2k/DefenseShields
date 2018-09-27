@@ -17,6 +17,7 @@ namespace DefenseShields
                 ((MyCubeGrid)Shield.CubeGrid).OnBlockRemoved += BlockRemoved;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockAdded += FatBlockAdded;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockRemoved += FatBlockRemoved;
+                ((MyCubeGrid)Shield.CubeGrid).OnGridSplit += GridSplit;
             }
             else
             {
@@ -25,7 +26,13 @@ namespace DefenseShields
                 ((MyCubeGrid)Shield.CubeGrid).OnBlockRemoved -= BlockRemoved;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockAdded -= FatBlockAdded;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockRemoved -= FatBlockRemoved;
+                ((MyCubeGrid)Shield.CubeGrid).OnGridSplit -= GridSplit;
             }
+        }
+
+        private void GridSplit(MyCubeGrid myCubeGrid, MyCubeGrid cubeGrid)
+        {
+            IgnoreCache.Add(cubeGrid);
         }
 
         private void HierarchyChanged(MyCubeGrid myCubeGrid = null)
