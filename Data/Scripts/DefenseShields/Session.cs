@@ -1691,6 +1691,19 @@ namespace DefenseShields
         protected override void UnloadData()
         {
             Instance = null;
+            HudComp = null;
+            Enforced = null;
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEnforce, EnforcementReceived);
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdControllerState, ControllerStateReceived);
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdControllerSettings, ControllerSettingsReceived);
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdModulatorSettings, ModulatorSettingsReceived);
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdModulatorState, ModulatorStateReceived);
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEnhancerState, EnhancerStateReceived);
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdO2GeneratorState, O2GeneratorStateReceived);
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEmitterState, EmitterStateReceived);
+
+            if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter -= CustomControls;
+            if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomActionGetter -= ShowHideActions;
             Log.Line("Logging stopped.");
             Log.Close();
         }
