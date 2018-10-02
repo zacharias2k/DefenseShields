@@ -219,6 +219,8 @@ namespace DefenseShields
         private readonly MyConcurrentQueue<MyCubeGrid> _staleGrids = new MyConcurrentQueue<MyCubeGrid>();
         private readonly MyConcurrentQueue<IMyCharacter> _characterDmg = new MyConcurrentQueue<IMyCharacter>();
         private readonly MyConcurrentQueue<MyVoxelBase> _voxelDmg = new MyConcurrentQueue<MyVoxelBase>();
+        private readonly MyConcurrentQueue<MyImpulseData> _impulseData = new MyConcurrentQueue<MyImpulseData>();
+        private readonly MyConcurrentQueue<MyAddForceData> _forceData = new MyConcurrentQueue<MyAddForceData>();
 
         private static readonly MyStringId HudIconOffline = MyStringId.GetOrCompute("DS_ShieldOffline");
         private static readonly MyStringId HudIconHealth10 = MyStringId.GetOrCompute("DS_ShieldHealth10");

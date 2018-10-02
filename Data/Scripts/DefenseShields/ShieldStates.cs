@@ -531,20 +531,6 @@ namespace DefenseShields
             if (Session.Enforced.Debug >= 1) Log.Line($"Election: controller election was held, new mode is: {ShieldMode} - ShieldId [{Shield.EntityId}]");
         }
 
-        private void ResetComp()
-        {
-            ShieldGridComponent checkComp;
-            Shield.CubeGrid.Components.TryGet(out checkComp);
-            if (checkComp?.DefenseShields != null && checkComp.DefenseShields.MyGrid == Shield.CubeGrid) ShieldComp = checkComp;
-            else
-            {
-                Shield.CubeGrid.Components.Remove<ShieldGridComponent>();
-                ShieldComp = new ShieldGridComponent(this);
-                Shield.CubeGrid.Components.Add(ShieldComp);
-            }
-            CleanAll();
-        }
-
         private bool Suspend()
         {
             var primeMode = ShieldMode == ShieldType.Station && IsStatic && ShieldComp.StationEmitter == null;
@@ -602,8 +588,6 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 1) Log.Line($"Suspended: controller mode is: {ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
             }
             if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
-            else if (ShieldComp.DefenseShields.MyGrid != MyGrid) ResetComp();
-
             DsState.State.Suspended = true;
         }
 

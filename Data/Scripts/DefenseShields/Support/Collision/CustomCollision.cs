@@ -414,7 +414,7 @@ namespace DefenseShields.Support
             for (int i = 0; i < voxelHitVecs.Count; i++) shieldGrid.Physics.ApplyImpulse((bOriBBoxD.Center - voxelHitVecs[i]) * shieldGridMass / 100, voxelHitVecs[i]);
         }
 
-        public static void SmallIntersect(EntIntersectInfo entInfo, MyConcurrentQueue<IMySlimBlock> fewDmgBlocks, MyConcurrentQueue<IMySlimBlock> destroyedBlocks, MyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
+        public static void SmallIntersect(EntIntersectInfo entInfo, MyConcurrentQueue<IMySlimBlock> fewDmgBlocks, MyConcurrentQueue<IMySlimBlock> destroyedBlocks, MyConcurrentQueue<MyAddForceData> force, MyConcurrentQueue<MyImpulseData> impulse, MyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
         {
             try
             {
@@ -463,9 +463,12 @@ namespace DefenseShields.Support
                     var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
                     var gridLinearVel = grid.Physics.LinearVelocity;
                     var gridLinearLen = gridLinearVel.Length();
-                    grid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (grid.PositionComp.WorldAABB.Center - matrix.Translation) * (mass * gridLinearLen), null, null, MathHelper.Clamp(gridLinearLen, 0.1f, 15f));
-                    grid.Physics.ApplyImpulse(mass * 0.015 * -Vector3D.Dot(gridLinearVel, surfaceNormal) * surfaceNormal, collisionAvg);
-
+                    //grid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (grid.PositionComp.WorldAABB.Center - matrix.Translation) * (mass * gridLinearLen), null, null, MathHelper.Clamp(gridLinearLen, 0.1f, 15f));
+                    //grid.Physics.ApplyImpulse(mass * 0.015 * -Vector3D.Dot(gridLinearVel, surfaceNormal) * surfaceNormal, collisionAvg);
+                    var forceData = new MyAddForceData { MyGrid = grid, Force = (grid.PositionComp.WorldAABB.Center - matrix.Translation) * (mass * gridLinearLen)};
+                    var impulseData = new MyImpulseData { MyGrid = grid, Direction = mass * 0.015 * -Vector3D.Dot(gridLinearVel, surfaceNormal) * surfaceNormal, Position = collisionAvg };
+                    force.Enqueue(forceData);
+                    impulse.Enqueue(impulseData);
                     entInfo.Damage = mass * 0.1f;
                 }
             }

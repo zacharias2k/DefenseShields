@@ -195,7 +195,7 @@ namespace DefenseShields
             var grid = (MyCubeGrid)ent;
             if (ent == null || grid == null || grid.MarkedForClose || grid.Closed) return;
 
-            if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB), ent)) return;
+            if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB))) return;
             EntIntersectInfo entInfo;
             WebEnts.TryGetValue(ent, out entInfo);
             if (entInfo == null) return;
@@ -220,7 +220,7 @@ namespace DefenseShields
             if (entInfo == null) return;
 
             var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB);
-            if (entInfo.Relation != Ent.LargeEnemyGrid && GridInside(grid, bOriBBoxD, ent)) return;
+            if (entInfo.Relation != Ent.LargeEnemyGrid && GridInside(grid, bOriBBoxD)) return;
             ClientBlockIntersect(grid, bOriBBoxD, entInfo);
         }
 
@@ -230,7 +230,7 @@ namespace DefenseShields
 
             if (grid == null) return;
 
-            if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB), ent)) return;
+            if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB))) return;
             ShieldGridComponent shieldComponent;
             grid.Components.TryGet(out shieldComponent);
 
@@ -257,13 +257,21 @@ namespace DefenseShields
             {
                 collisionAvg += insidePoints[i];
             }
+            collisionAvg /= insidePoints.Count;
 
-            if (insidePoints.Count > 0 && !bPhysics.IsStatic) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass, bPhysics.CenterOfMassWorld);
+            if (insidePoints.Count > 0 && !bPhysics.IsStatic)
+            {
+                var impulseData = new MyImpulseData { MyGrid = grid, Direction = (resultVelocity - bPhysics.LinearVelocity) * bMass, Position = bPhysics.CenterOfMassWorld };
+                var forceData = new MyAddForceData { MyGrid = grid, Force = (bPhysics.CenterOfMassWorld - collisionAvg) * bMass * 10, MaxSpeed = MathHelper.Clamp(bPhysics.LinearVelocity.Length(), 1f, 50f) };
+                _impulseData.Enqueue(impulseData);
+                _forceData.Enqueue(forceData);
+            }
+
+            //if (insidePoints.Count > 0 && !bPhysics.IsStatic) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass, bPhysics.CenterOfMassWorld);
             //if (insidePoints.Count > 0 && !sPhysics.IsStatic) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sMass, sPhysics.CenterOfMassWorld);
 
-            collisionAvg /= insidePoints.Count;
             //if (insidePoints.Count > 0 && !sPhysics.IsStatic) sPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * sMass, null, Vector3D.Zero, MathHelper.Clamp(sPhysics.LinearVelocity.Length(), 10f, 50f));
-            if (insidePoints.Count > 0 && !bPhysics.IsStatic) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - bPhysics.CenterOfMassWorld) * bMass, null, Vector3D.Zero, MathHelper.Clamp(bPhysics.LinearVelocity.Length(), 10f, 50f));
+            //if (insidePoints.Count > 0 && !bPhysics.IsStatic) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - bPhysics.CenterOfMassWorld) * bMass, null, Vector3D.Zero, MathHelper.Clamp(bPhysics.LinearVelocity.Length(), 10f, 50f));
         }
 
         private void ClientVoxelIntersect(MyVoxelBase voxelBase)
@@ -303,8 +311,9 @@ namespace DefenseShields
                     var cacheBlockList = entInfo.CacheBlockList;
                     var bPhysics = ((IMyCubeGrid)breaching).Physics;
                     var sPhysics = Shield.CubeGrid.Physics;
+                    var sGrid = (MyCubeGrid)Shield.CubeGrid;
                     var bMass = breaching.GetCurrentMass();
-                    var sMass = ((MyCubeGrid)Shield.CubeGrid).GetCurrentMass();
+                    var sMass = sGrid.GetCurrentMass();
                     var momentum = bMass * bPhysics.LinearVelocity + sMass * sPhysics.LinearVelocity;
                     var resultVelocity = momentum / (bMass + sMass);
 
@@ -361,17 +370,50 @@ namespace DefenseShields
                             var surfaceMulti = (c2 > 5) ? 5 : c2;
                             var localNormal = Vector3D.Transform(collisionAvg, transformInv);
                             var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
-                            bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass, bPhysics.CenterOfMassWorld);
-                            bPhysics.ApplyImpulse(surfaceMulti * (surfaceMass * 0.025) * -Vector3D.Dot(bPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
-                            bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (bPhysics.CenterOfMassWorld - collisionAvg) * (bMass * bSpeedLen), null, Vector3D.Zero, MathHelper.Clamp(bSpeedLen, 1f, 8f));
+
+                            var impulseData1 = new MyImpulseData { MyGrid = breaching, Direction = (resultVelocity - bPhysics.LinearVelocity) * bMass, Position = bPhysics.CenterOfMassWorld };
+                            var impulseData2 = new MyImpulseData { MyGrid = breaching, Direction = surfaceMulti * (surfaceMass * 0.025) * -Vector3D.Dot(bPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, Position = collisionAvg };
+                            var forceData = new MyAddForceData { MyGrid = breaching, Force = (bPhysics.CenterOfMassWorld - collisionAvg) * (bMass * bSpeedLen), MaxSpeed = MathHelper.Clamp(bSpeedLen, 1f, 8f) };
+                            _impulseData.Enqueue(impulseData1);
+                            _impulseData.Enqueue(impulseData2);
+                            _forceData.Enqueue(forceData);
+
+                            //bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass, bPhysics.CenterOfMassWorld);
+                            //bPhysics.ApplyImpulse(surfaceMulti * (surfaceMass * 0.025) * -Vector3D.Dot(bPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
+                            //bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (bPhysics.CenterOfMassWorld - collisionAvg) * (bMass * bSpeedLen), null, Vector3D.Zero, MathHelper.Clamp(bSpeedLen, 1f, 8f));
                         }
                         else
                         {
                             var surfaceMass = bMass > sMass ? bMass : sMass;
-                            if (!bPhysics.IsStatic) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass, bPhysics.CenterOfMassWorld);
-                            if (!sPhysics.IsStatic) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sMass, sPhysics.CenterOfMassWorld);
-                            if (!sPhysics.IsStatic) sPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (sPhysics.CenterOfMassWorld - collisionAvg) * surfaceMass, null, Vector3D.Zero, null, false);
-                            if (!bPhysics.IsStatic) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (bPhysics.CenterOfMassWorld - collisionAvg) * surfaceMass, null, Vector3D.Zero, null, false);
+
+                            if (!bPhysics.IsStatic)
+                            {
+                                var bImpulseData = new MyImpulseData { MyGrid = breaching, Direction = (resultVelocity - bPhysics.LinearVelocity) * bMass, Position = bPhysics.CenterOfMassWorld };
+                                _impulseData.Enqueue(bImpulseData);
+                            }
+
+                            if (!sPhysics.IsStatic)
+                            {
+                                var sImpulseData = new MyImpulseData { MyGrid = sGrid, Direction = (resultVelocity - sPhysics.LinearVelocity) * sMass, Position = sPhysics.CenterOfMassWorld };
+                                _impulseData.Enqueue(sImpulseData);
+                            }
+
+                            if (!sPhysics.IsStatic)
+                            {
+                                var sForceData = new MyAddForceData { MyGrid = sGrid, Force = (sPhysics.CenterOfMassWorld - collisionAvg) * surfaceMass, MaxSpeed = null };
+                                _forceData.Enqueue(sForceData);
+                            }
+
+                            if (!bPhysics.IsStatic)
+                            {
+                                var bForceData = new MyAddForceData { MyGrid = breaching, Force = (bPhysics.CenterOfMassWorld - collisionAvg) * surfaceMass, MaxSpeed = null };
+                                _forceData.Enqueue(bForceData);
+                            }
+
+                            //if (!bPhysics.IsStatic) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass, bPhysics.CenterOfMassWorld);
+                            //if (!sPhysics.IsStatic) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sMass, sPhysics.CenterOfMassWorld);
+                            //if (!sPhysics.IsStatic) sPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (sPhysics.CenterOfMassWorld - collisionAvg) * surfaceMass, null, Vector3D.Zero, null);
+                            //if (!bPhysics.IsStatic) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (bPhysics.CenterOfMassWorld - collisionAvg) * surfaceMass, null, Vector3D.Zero, null);
                         }
                     }
                 }

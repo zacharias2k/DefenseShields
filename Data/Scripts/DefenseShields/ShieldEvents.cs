@@ -32,7 +32,7 @@ namespace DefenseShields
 
         private void GridSplit(MyCubeGrid myCubeGrid, MyCubeGrid cubeGrid)
         {
-            IgnoreCache.Add(cubeGrid);
+            if (cubeGrid != Shield.CubeGrid) cubeGrid.RecalculateOwners();
         }
 
         private void HierarchyChanged(MyCubeGrid myCubeGrid = null)

@@ -457,17 +457,6 @@ namespace DefenseShields
                 EmiState.State.Suspend = true;
                 return true;
             }
-            else if (ShieldComp.DefenseShields.MyGrid != Emitter.CubeGrid)
-            {
-                ShieldGridComponent checkComp;
-                Emitter.CubeGrid.Components.TryGet(out checkComp);
-                if (checkComp?.DefenseShields != null && checkComp.DefenseShields.MyGrid == Emitter.CubeGrid) ShieldComp = checkComp;
-                else
-                {
-                    EmiState.State.Suspend = true;
-                    return true;
-                }
-            }
 
             var working = Emitter.IsWorking;
             var stationMode = EmitterMode == EmitterType.Station;

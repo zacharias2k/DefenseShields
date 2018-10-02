@@ -1,10 +1,98 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Sandbox.Game.Entities;
+using VRage.Game.Components;
 using VRageMath;
 
 namespace DefenseShields.Support
 {
+    public struct MyImpulseData
+    {
+        public MyCubeGrid MyGrid;
+        public Vector3D Direction;
+        public Vector3D Position;
+
+        public MyImpulseData(MyCubeGrid myGrid, Vector3D direction, Vector3D position)
+        {
+            MyGrid = myGrid;
+            Direction = direction;
+            Position = position;
+        }
+    }
+
+    /*
+    public class MyApplyImpulse
+    {
+
+        public static MyApplyImpulse GetOne(ref MyImpulseData data)
+        {
+            var instance = Session.ImpulsePool.Get();
+            instance.Data = data;
+            return instance;
+        }
+
+        public readonly Action Delegate;
+
+        public MyApplyImpulse()
+        {
+            Delegate = DoWorkOnMainThread;
+        }
+
+        public MyImpulseData Data;
+
+        private void DoWorkOnMainThread()
+        {
+            if (Data.MyGrid == null) return;
+            Log.Line($"Doimpluse");
+            Data.MyGrid.Physics.ApplyImpulse(Data.Direction, Data.Position);
+            Session.ImpulsePool.Return(this);
+        }
+    }
+    */
+    public struct MyAddForceData
+    {
+        public MyCubeGrid MyGrid;
+        public Vector3D Force;
+        public float? MaxSpeed;
+        public bool Immediate;
+
+        public MyAddForceData(MyCubeGrid myGrid, Vector3D force, float? maxSpeed, bool immediate)
+        {
+            MyGrid = myGrid;
+            Force = force;
+            MaxSpeed = maxSpeed;
+            Immediate = immediate;
+        }
+    }
+    /*
+    public class MyAddForce
+    {
+        public static MyAddForce GetOne(ref MyAddForceData data)
+        {
+            var instance = Session.ForcePool.Get();
+            instance.Data = data;
+            return instance;
+        }
+
+        public readonly Action Delegate;
+
+        public MyAddForce()
+        {
+            Delegate = DoWorkOnMainThread;
+        }
+
+        public MyAddForceData Data;
+
+        private void DoWorkOnMainThread()
+        {
+            if (Data.MyGrid == null) return;
+            Log.Line($"DoForce");
+            Data.MyGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, Data.Force, null, Vector3D.Zero, Data.MaxSpeed, Data.Immediate);
+            Session.ForcePool.Return(this);
+        }
+    }
+    */
     public class DSUtils
     {
         public static float Mod(int x, int m)

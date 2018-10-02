@@ -4,6 +4,7 @@ using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
 using Sandbox.ModAPI;
+using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.Utils;
@@ -13,7 +14,7 @@ namespace DefenseShields
 {
     public partial class DefenseShields
     {
-        private void SyncThreadedEnts(bool clear = false)
+        private void SyncThreadedEnts(bool clear = false, bool client = false)
         {
             try
             {
@@ -28,20 +29,45 @@ namespace DefenseShields
                     _fewDmgBlocks.Clear();
                     _dmgBlocks.Clear();
                     _empDmg.Clear();
+                    _forceData.Clear();
+                    _impulseData.Clear();
                     return;
                 }
 
                 if (_destroyedBlocks.Count == 0 && _missileDmg.Count == 0 && _meteorDmg.Count == 0 &&
                     _voxelDmg.Count == 0 && _characterDmg.Count == 0 && _fewDmgBlocks.Count == 0 &&
-                    _dmgBlocks.Count == 0 && _empDmg.Count == 0) return;
-                if (Session.Enforced.Debug >= 1) Dsutil4.Sw.Restart();
-                /*
-                if (Eject.Count != 0)
+                    _dmgBlocks.Count == 0 && _empDmg.Count == 0 && _forceData.Count == 0 && _impulseData.Count == 0) return;
+
+                if (!client && Session.Enforced.Debug >= 1) Dsutil4.Sw.Restart();
+
+                try
                 {
-                    foreach (var e in Eject) e.Key.SetPosition(Vector3D.Lerp(e.Key.GetPosition(), e.Value, 0.1d));
-                    Eject.Clear();
+                    if (_forceData.Count != 0)
+                    {
+                        MyAddForceData data;
+                        while (_forceData.TryDequeue(out data))
+                        {
+                            data.MyGrid?.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, data.Force, null, Vector3D.Zero, data.MaxSpeed, data.Immediate);
+                        }
+                    }
                 }
-                */
+                catch (Exception ex) { Log.Line($"Exception in forceData: {ex}"); }
+
+                try
+                {
+                    if (_impulseData.Count != 0)
+                    {
+                        MyImpulseData data;
+                        while (_impulseData.TryDequeue(out data))
+                        {
+                            data.MyGrid?.Physics.ApplyImpulse(data.Direction, data.Position);
+                        }
+                    }
+                }
+                catch (Exception ex) { Log.Line($"Exception in impulseData: {ex}"); }
+
+                if (client) return;
+
                 var destroyedLen = _destroyedBlocks.Count;
                 try
                 {
@@ -245,6 +271,7 @@ namespace DefenseShields
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in fewBlocks: {ex}"); }
+
                 if (Session.Enforced.Debug >= 1) Dsutil4.StopWatchReport($"SyncEnt: ShieldId [{Shield.EntityId}]", 3);
             }
             catch (Exception ex) { Log.Line($"Exception in DamageGrids: {ex}"); }
