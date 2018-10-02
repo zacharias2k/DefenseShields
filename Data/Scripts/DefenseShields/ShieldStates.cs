@@ -102,7 +102,6 @@ namespace DefenseShields
 
             if (_tick >= _losCheckTick) LosCheck();
             if (Suspend() || !Warming && !WarmUpSequence() || ShieldSleeping() || ShieldLowered()) return false;
-
             if (ShieldComp.EmitterEvent) EmitterEventDetected();
 
             _controlBlockWorking = Shield.IsWorking && Shield.IsFunctional;
@@ -507,35 +506,30 @@ namespace DefenseShields
             return false;
         }
 
-        private void Election()
+        private void ResetComp()
         {
-            if (ShieldComp == null || !Shield.CubeGrid.Components.Has<ShieldGridComponent>())
+            ShieldGridComponent comp;
+            Shield.CubeGrid.Components.TryGet(out comp);
+            if (comp != null)
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"Election: ShieldComp is null, mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-                var girdHasShieldComp = Shield.CubeGrid.Components.Has<ShieldGridComponent>();
-
-                if (girdHasShieldComp)
+                if (comp.DefenseShields == this) ShieldComp = comp;
+                else if (comp.DefenseShields.Shield.CubeGrid != Shield.CubeGrid)
                 {
-                    Shield.CubeGrid.Components.TryGet(out ShieldComp);
-                    if (Session.Enforced.Debug >= 1) Log.Line($"Election: grid had Comp, mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-                }
-                else
-                {
+                    ShieldComp = new ShieldGridComponent(this);
                     Shield.CubeGrid.Components.Add(ShieldComp);
-                    if (Session.Enforced.Debug >= 1) Log.Line($"Election: grid didn't have Comp, mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 }
-                ShieldMode = ShieldType.Unknown;
-                Shield.RefreshCustomInfo();
-                if (ShieldComp != null) ShieldComp.DefaultO2 = MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(Shield.PositionComp.WorldVolume.Center);
             }
-            if (Session.Enforced.Debug >= 1) Log.Line($"Election: controller election was held, new mode is: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+            else
+            {
+                ShieldComp = new ShieldGridComponent(this);
+                Shield.CubeGrid.Components.Add(ShieldComp);
+            }
         }
 
         private bool Suspend()
         {
             var primeMode = ShieldMode == ShieldType.Station && IsStatic && ShieldComp.StationEmitter == null;
             var betaMode = ShieldMode != ShieldType.Station && !IsStatic && ShieldComp.ShipEmitter == null;
-
             if (ShieldMode != ShieldType.Station && IsStatic) InitSuspend();
             else if (ShieldMode == ShieldType.Station && !IsStatic) InitSuspend();
             else if (ShieldMode == ShieldType.Unknown) InitSuspend();

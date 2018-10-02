@@ -41,8 +41,7 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 1) Log.Line($"OnAddedToScene: - {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 if (!AllInited) return;
                 IsStatic = Shield.CubeGrid.IsStatic;
-
-                Election();
+                ResetComp();
                 RegisterEvents();
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }

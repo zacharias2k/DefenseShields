@@ -93,7 +93,6 @@ namespace DefenseShields
 
                 Timing();
                 if (!ControllerLink(isServer)) return;
-
                 if (!isDedicated && UtilsStatic.DistanceCheck(Emitter, 1000, EmiState.State.BoundingRange))
                 {
                     //if (ShieldComp.GridIsMoving && !Compact) BlockParticleUpdate();
@@ -680,6 +679,7 @@ namespace DefenseShields
         {
             try
             {
+                ShieldComp = null;
                 if (Session.Enforced.Debug >= 1) Log.Line($"OnAddedToScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
