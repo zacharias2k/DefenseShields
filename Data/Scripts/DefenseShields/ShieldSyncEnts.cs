@@ -47,7 +47,9 @@ namespace DefenseShields
                         MyAddForceData data;
                         while (_forceData.TryDequeue(out data))
                         {
-                            data.MyGrid?.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, data.Force, null, Vector3D.Zero, data.MaxSpeed, data.Immediate);
+                            var myGrid = data.MyGrid;
+                            if (myGrid == null || myGrid.MarkedForClose) continue;
+                            myGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, data.Force, null, Vector3D.Zero, data.MaxSpeed, data.Immediate);
                         }
                     }
                 }
@@ -60,7 +62,9 @@ namespace DefenseShields
                         MyImpulseData data;
                         while (_impulseData.TryDequeue(out data))
                         {
-                            data.MyGrid?.Physics.ApplyImpulse(data.Direction, data.Position);
+                            var myGrid = data.MyGrid;
+                            if (myGrid == null || myGrid.MarkedForClose) continue;
+                            myGrid.Physics.ApplyImpulse(data.Direction, data.Position);
                         }
                     }
                 }

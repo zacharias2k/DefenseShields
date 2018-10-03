@@ -38,9 +38,8 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"OnAddedToScene: - {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 1) Log.Line($"OnAddedToScene: - {ShieldMode} - GridId:{Shield.CubeGrid.EntityId} - ShieldId [{Shield.EntityId}]");
                 if (!AllInited) return;
-                IsStatic = Shield.CubeGrid.IsStatic;
                 ResetComp();
                 RegisterEvents();
             }
@@ -69,24 +68,18 @@ namespace DefenseShields
                 _isServer = Session.IsServer;
                 _isDedicated = Session.DedicatedServer;
                 _mpActive = Session.MpActive;
-                if (ShieldComp == null) ShieldComp = new ShieldGridComponent(this);
-                if (!Shield.CubeGrid.Components.Has<ShieldGridComponent>())
-                {
-                    Shield.CubeGrid.Components.Add(ShieldComp);
-                    ShieldComp.DefaultO2 = MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(Shield.PositionComp.WorldVolume.Center);
-                }
-                else
-                {
-                    Shield.CubeGrid.Components.TryGet(out ShieldComp);
-                    if (ShieldComp != null && ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
-                }
 
-                _shields.Add(Entity.EntityId, this);
-                MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
-                Session.Instance.Components.Add(this);
-                if (_isServer && DsState.State.GridIntegrity <= 0) GridIntegrity();
+                ResetComp();
                 RegisterEvents();
                 PowerInit();
+
+                if (_isServer && DsState.State.GridIntegrity <= 0) GridIntegrity();
+
+                _shields.Add(Entity.EntityId, this);
+                Session.Instance.Components.Add(this);
+
+                MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
+
                 if (Session.IsServer) Enforcements.SaveEnforcement(Shield, Session.Enforced, true);
                 if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
             }
@@ -177,8 +170,6 @@ namespace DefenseShields
             {
                 _shieldCurrentPower = _power;
                 Sink.Update();
-
-                Shield.AppendingCustomInfo += AppendingCustomInfo;
                 Shield.RefreshCustomInfo();
 
                 var enableState = Shield.Enabled;
@@ -427,8 +418,14 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug >= 2) Log.Line($"OnRemovedFromScene: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-                IsStatic = Shield.CubeGrid.IsStatic;
+                if (Session.Enforced.Debug >= 1) Log.Line($"OnRemovedFromScene: {ShieldMode} - GridId:{Shield.CubeGrid.EntityId} - ShieldId [{Shield.EntityId}]");
+                if (ShieldComp?.DefenseShields == this)
+                {
+                    DsState.State.Online = false;
+                    DsState.State.Suspended = true;
+                    Shield.RefreshCustomInfo();
+                    ShieldComp.DefenseShields = null;
+                }
                 RegisterEvents(false);
                 InitEntities(false);
                 _shellPassive?.Render?.RemoveRenderObjects();
@@ -442,17 +439,18 @@ namespace DefenseShields
         {
             try
             {
+                base.MarkForClose();
                 if (Session.Enforced.Debug >= 2) Log.Line($"MarkForClose: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
-            base.MarkForClose();
         }
 
         public override void Close()
         {
             try
             {
-                if (Session.Enforced.Debug >= 2) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                base.Close();
+                if (Session.Enforced.Debug >= 1) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 if (Session.Instance.Components.Contains(this)) Session.Instance.Components.Remove(this);
                 Icosphere = null;
                 RegisterEvents(false);
@@ -461,14 +459,9 @@ namespace DefenseShields
 
                 _power = 0.0001f;
                 if (AllInited) Sink.Update();
-                if (ShieldComp?.DefenseShields == this)
-                {
-                    ShieldComp.DefenseShields = null;
-                    ShieldComp = null;
-                }
+                if (ShieldComp?.DefenseShields == this) ShieldComp.DefenseShields = null;
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
-            base.Close();
         }
         #endregion
     }

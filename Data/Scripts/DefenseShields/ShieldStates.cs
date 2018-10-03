@@ -510,26 +510,19 @@ namespace DefenseShields
         {
             ShieldGridComponent comp;
             Shield.CubeGrid.Components.TryGet(out comp);
-            if (comp != null)
-            {
-                if (comp.DefenseShields == this) ShieldComp = comp;
-                else if (comp.DefenseShields.Shield.CubeGrid != Shield.CubeGrid)
-                {
-                    ShieldComp = new ShieldGridComponent(this);
-                    Shield.CubeGrid.Components.Add(ShieldComp);
-                }
-            }
-            else
+            if (comp == null)
             {
                 ShieldComp = new ShieldGridComponent(this);
                 Shield.CubeGrid.Components.Add(ShieldComp);
             }
+            else Shield.CubeGrid.Components.TryGet(out ShieldComp);
         }
 
         private bool Suspend()
         {
             var primeMode = ShieldMode == ShieldType.Station && IsStatic && ShieldComp.StationEmitter == null;
             var betaMode = ShieldMode != ShieldType.Station && !IsStatic && ShieldComp.ShipEmitter == null;
+
             if (ShieldMode != ShieldType.Station && IsStatic) InitSuspend();
             else if (ShieldMode == ShieldType.Station && !IsStatic) InitSuspend();
             else if (ShieldMode == ShieldType.Unknown) InitSuspend();
@@ -632,11 +625,11 @@ namespace DefenseShields
             switch (notice)
             {
                 case PlayerNotice.EmitterInit:
-                    UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
+                    UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius * 2, realPlayerIds);
                     foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- shield is reinitializing, startup in 30 seconds!", 4816, "White");
                     break;
                 case PlayerNotice.FieldBlocked:
-                    UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
+                    UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius  * 2, realPlayerIds);
                     foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + "-- the shield's field cannot form when in contact with a solid body", 6720, "Blue");
                     break;
                 case PlayerNotice.OverLoad:
@@ -648,15 +641,15 @@ namespace DefenseShields
                     foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- shield was EMPed, restarting in 60 seconds!!", 8000, "Red");
                     break;
                 case PlayerNotice.Remodulate:
-                    UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
+                    UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius * 2, realPlayerIds);
                     foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- shield remodremodulating, restarting in 5 seconds.", 4800, "White");
                     break;
                 case PlayerNotice.NoLos:
-                    UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
+                    UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius * 2, realPlayerIds);
                     foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- Emitter does not have line of sight, shield offline", 8000, "Red");
                     break;
                 case PlayerNotice.NoPower:
-                    UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius, realPlayerIds);
+                    UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius * 2, realPlayerIds);
                     foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- Insufficient Power, shield is failing!", 5000, "Red");
                     break;
             }

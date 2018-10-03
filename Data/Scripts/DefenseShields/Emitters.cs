@@ -195,17 +195,14 @@ namespace DefenseShields
 
         private bool EmitterReady(bool server)
         {
+            Emitter.CubeGrid.Components.TryGet(out ShieldComp);
             if (server)
             {
                 if (Suspend() || !BlockWorking()) return false;
             }
             else
             {
-                if (ShieldComp?.DefenseShields == null)
-                {
-                    Emitter.CubeGrid.Components.TryGet(out ShieldComp);
-                    if (ShieldComp?.DefenseShields == null) return false;
-                }
+                if (ShieldComp?.DefenseShields == null) return false;
 
                 if (EmiState.State.Mode == 0 && EmiState.State.Link && ShieldComp.StationEmitter == null) ShieldComp.StationEmitter = this;
                 else if (EmiState.State.Mode != 0 && EmiState.State.Link && ShieldComp.ShipEmitter == null) ShieldComp.ShipEmitter = this;
@@ -442,16 +439,7 @@ namespace DefenseShields
                 }
             }
 
-            if (ShieldComp?.DefenseShields == null)
-            {
-                Emitter.CubeGrid.Components.TryGet(out ShieldComp);
-                if (ShieldComp?.DefenseShields == null || !ShieldComp.DefenseShields.DsState.State.ControllerGridAccess)
-                {
-                    EmiState.State.Suspend = true;
-                    return true;
-                }
-            }
-            else if (!ShieldComp.DefenseShields.DsState.State.ControllerGridAccess)
+            if (ShieldComp?.DefenseShields == null || !ShieldComp.DefenseShields.DsState.State.ControllerGridAccess)
             {
                 EmiState.State.Suspend = true;
                 return true;
@@ -679,7 +667,6 @@ namespace DefenseShields
         {
             try
             {
-                ShieldComp = null;
                 if (Session.Enforced.Debug >= 1) Log.Line($"OnAddedToScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
@@ -770,7 +757,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"Close: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"Close: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
                 if (_emitters.ContainsKey(Entity.EntityId)) _emitters.Remove(Entity.EntityId);
                 if (Session.Instance.Emitters.Contains(this)) Session.Instance.Emitters.Remove(this);
                 if (ShieldComp?.StationEmitter == this)
@@ -801,7 +788,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"MarkForClose: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"MarkForClose: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
             base.MarkForClose();

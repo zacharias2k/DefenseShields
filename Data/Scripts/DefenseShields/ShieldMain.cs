@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
@@ -9,7 +8,6 @@ using System.Linq;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage;
-using VRage.Game;
 using VRageMath;
 
 namespace DefenseShields
@@ -26,6 +24,7 @@ namespace DefenseShields
                 UpdateFields();
                 if (!ShieldOn())
                 {
+                    if (_tick600 && DsState.State.Suspended) Log.Line($"compNull:{ShieldComp?.DefenseShields == null} - thisDs:{ShieldComp?.DefenseShields == this} - thisGrid:{ShieldComp?.DefenseShields?.Shield?.CubeGrid == Shield.CubeGrid} - thisEGrid:{ShieldComp?.ShipEmitter?.Emitter?.CubeGrid == Shield.CubeGrid} - eNull:{ShieldComp?.ShipEmitter == null} - eGridThis:{ShieldComp?.ShipEmitter?.ShieldComp?.DefenseShields?.Shield?.CubeGrid == this} ");
                     if (Session.Enforced.Debug >= 1 && WasOnline) Log.Line($"Off: WasOn:{WasOnline} - On:{DsState.State.Online} - Active:{DsSet.Settings.ShieldActive}({_prevShieldActive}) - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
                     if (WasOnline) ShieldOff();
                     else if (DsState.State.Message) ShieldChangeState();
@@ -77,7 +76,11 @@ namespace DefenseShields
             _tick60 = _tick % 60 == 0;
             _tick600 = _tick % 600 == 0;
             MyGrid = Shield.CubeGrid as MyCubeGrid;
-            if (MyGrid != null) IsStatic = MyGrid.IsStatic;
+            if (MyGrid != null)
+            {
+                //MyGrid.Components.TryGet(out ShieldComp);
+                IsStatic = MyGrid.IsStatic;
+            }
         }
 
         private void ShieldOff()
@@ -699,80 +702,7 @@ namespace DefenseShields
         }
         #endregion
 
-        #region Checks / Terminal
-        private string GetShieldStatus()
-        {
-            if (!DsState.State.Online && (!Shield.IsWorking || !Shield.IsFunctional)) return "[Controller Failure]";
-            if (!DsState.State.Online && DsState.State.NoPower) return "[Insufficient Power]";
-            if (!DsState.State.Online && DsState.State.Overload) return "[Overloaded]";
-            if (!DsState.State.ControllerGridAccess) return "[Invalid Owner]";
-            if (DsState.State.Waking) return "[Coming Online]";
-            if (DsState.State.Suspended || DsState.State.Mode == 4) return "[Controller Standby]";
-            if (DsState.State.Lowered) return "[Shield Down]";
-            if (!DsState.State.EmitterWorking) return "[Emitter Failure]";
-            if (DsState.State.Sleeping) return "[Suspended]";
-            if (!DsState.State.Online) return "[Shield Offline]";
-            return "[Shield Up]";
-        }
-
-        private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
-        {
-            try
-            {
-                var secToFull = 0;
-                var shieldPercent = !DsState.State.Online ? 0f : 100f;
-
-                if (DsState.State.Buffer < ShieldMaxBuffer) shieldPercent = DsState.State.Buffer / ShieldMaxBuffer * 100;
-                if (_shieldChargeRate > 0)
-                {
-                    var toMax = ShieldMaxBuffer - DsState.State.Buffer;
-                    var secs = toMax / _shieldChargeRate;
-                    if (secs.Equals(1)) secToFull = 0;
-                    else secToFull = (int)secs;
-                }
-
-                var shieldPowerNeeds = _powerNeeded;
-                var powerUsage = shieldPowerNeeds;
-                var otherPower = _otherPower;
-                var gridMaxPower = _gridMaxPower;
-                if (!DsSet.Settings.UseBatteries)
-                {
-                    powerUsage = powerUsage + _batteryCurrentPower;
-                    otherPower = _otherPower + _batteryCurrentPower;
-                    gridMaxPower = gridMaxPower + _batteryMaxPower;
-                }
-                var status = GetShieldStatus();
-                if (status == "[Shield Up]" || status == "[Shield Down]" || status == "[Shield Offline]")
-                {
-                    stringBuilder.Append(status + " MaxHP: " + (ShieldMaxBuffer * Session.Enforced.Efficiency).ToString("N0") +
-                                         "\n" +
-                                         "\n[Shield HP__]: " + (DsState.State.Buffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
-                                         "\n[HP Per Sec_]: " + (_shieldChargeRate * Session.Enforced.Efficiency).ToString("N0") +
-                                         "\n[Damage In__]: " + _damageReadOut.ToString("N0") +
-                                         "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
-                                         "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
-                                         "\n[Over Heated]: " + DsState.State.Heat.ToString("0") + "%" +
-                                         "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
-                                         "\n[Power Usage]: " + powerUsage.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ")Mw" +
-                                         "\n[Shield Power]: " + Sink.CurrentInputByType(GId).ToString("0.0") + " Mw");
-                }
-                else
-                {
-                    stringBuilder.Append("Shield Status " + status +
-                                         "\n" +
-                                         "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
-                                         "\n[Other Power]: " + otherPower.ToString("0.0") + " Mw" +
-                                         "\n[HP Stored]: " + (DsState.State.Buffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
-                                         "\n[Needed Power]: " + shieldPowerNeeds.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw" +
-                                         "\n[Emitter Detected]: " + DsState.State.EmitterWorking +
-                                         "\n" +
-                                         "\n[Grid Owns Controller]: " + DsState.State.IsOwner +
-                                         "\n[In Grid's Faction]: " + DsState.State.InFaction);
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in Controller AppendingCustomInfo: {ex}"); }
-        }
-
+        #region Checks
         private void HierarchyUpdate()
         {
             var checkGroups = Shield.IsWorking && Shield.IsFunctional && (DsState.State.Online || DsState.State.NoPower || DsState.State.Sleeping || DsState.State.Waking);
