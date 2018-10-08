@@ -16,10 +16,7 @@ namespace DefenseShields
 
         public void StorageInit()
         {
-            if (Shield.Storage == null)
-            {
-                Shield.Storage = new MyModStorageComponent {[Session.Instance.ControllerSettingsGuid] = ""};
-            }
+            Shield.Storage = new MyModStorageComponent {[Session.Instance.ControllerSettingsGuid] = ""};
         }
 
         public void SaveState(bool createStorage = false)

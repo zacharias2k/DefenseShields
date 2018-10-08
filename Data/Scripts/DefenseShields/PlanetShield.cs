@@ -216,7 +216,7 @@ namespace DefenseShields
                     AllInited = true;
                     return true;
                 }
-                if (Session.Enforced.Debug >= 1) Log.Line($"AllInited: PlanetShieldId [{PlanetShield.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"AllInited: PlanetShieldId [{PlanetShield.EntityId}]");
                 return false;
             }
             catch (Exception ex) { Log.Line($"Exception in PlanetShield PostInit: {ex}"); }
@@ -356,7 +356,7 @@ namespace DefenseShields
                     PlanetShield.Enabled = true;
                 }
                 Sink.Update();
-                if (Session.Enforced.Debug >= 1) Log.Line($"PowerInit: PlanetShieldId [{PlanetShield.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"PowerInit: PlanetShieldId [{PlanetShield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }

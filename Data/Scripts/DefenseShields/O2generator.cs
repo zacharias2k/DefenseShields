@@ -32,6 +32,9 @@ namespace DefenseShields
         private double _oldShieldVol;
         internal float EmissiveIntensity;
 
+        private bool _isServer;
+        private bool _isDedicated;
+
         internal bool AllInited;
         internal bool Suspended;
         internal bool IsStatic;
@@ -56,15 +59,14 @@ namespace DefenseShields
             try
             {
                 if (O2Generator.CubeGrid.Physics == null) return;
-                var isServer = Session.IsServer;
                 _tick = Session.Instance.Tick;
                 Timing();
 
-                if (!O2GeneratorReady(isServer)) return;
+                if (!O2GeneratorReady()) return;
 
                 if (_count > 0) return;
 
-                if (isServer)
+                if (_isServer)
                 {
                     Pressurize();
                     NeedUpdate(O2State.State.Pressurized, true);
@@ -82,7 +84,7 @@ namespace DefenseShields
                 if (_lCount == 10) _lCount = 0;
             }
 
-            if (_count == 29 && !Session.DedicatedServer && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
+            if (_count == 29 && !_isDedicated && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
             {
                 O2Generator.RefreshCustomInfo();
                 O2Generator.ShowInToolbarConfig = false;
@@ -95,11 +97,11 @@ namespace DefenseShields
         {
             if (!AllInited)
             {
-                if (Session.IsServer)
+                if (_isServer)
                 {
                     if (ShieldComp == null) O2Generator.CubeGrid.Components.TryGet(out ShieldComp);
 
-                    if (ShieldComp?.DefenseShields == null || ShieldComp?.ActiveO2Generator != null || !ShieldComp.DefenseShields.Starting || ShieldComp.ShieldVolume <= 0) return false;
+                    if (ShieldComp?.DefenseShields == null || ShieldComp?.ActiveO2Generator != null || !ShieldComp.DefenseShields.Warming || ShieldComp.ShieldVolume <= 0) return false;
                     ShieldComp.ActiveO2Generator = this;
                     _oldShieldVol = ShieldComp.ShieldVolume;
                     _inventory = O2Generator.GetInventory();
@@ -125,9 +127,10 @@ namespace DefenseShields
             return true;
         }
 
-        private bool O2GeneratorReady(bool server)
+        private bool O2GeneratorReady()
         {
-            if (server)
+            O2Generator.CubeGrid.Components.TryGet(out ShieldComp);
+            if (_isServer)
             {
                 if (!AllInited && !InitO2Generator() || !BlockWorking()) return false;
             }
@@ -135,11 +138,8 @@ namespace DefenseShields
             {
                 if (!AllInited && !InitO2Generator()) return false;
 
-                if (ShieldComp?.DefenseShields == null)
-                {
-                    O2Generator.CubeGrid.Components.TryGet(out ShieldComp);
-                    if (ShieldComp?.DefenseShields == null) return false;
-                }
+                if (ShieldComp?.DefenseShields == null) return false;
+
                 if (!O2State.State.Backup && ShieldComp.ActiveO2Generator != this) ShieldComp.ActiveO2Generator = this;
 
                 if (!O2State.State.Pressurized) return false;
@@ -158,18 +158,14 @@ namespace DefenseShields
                 return false;
             }
 
-            if (ShieldComp?.DefenseShields == null || ShieldComp.ActiveO2Generator != this)
+            if (ShieldComp?.DefenseShields == null)
             {
-                if (ShieldComp?.DefenseShields == null)
-                {
-                    O2Generator?.CubeGrid?.Components.TryGet(out ShieldComp);
-                    if (ShieldComp?.DefenseShields == null)
-                    {
-                        NeedUpdate(O2State.State.Pressurized, false);
-                        return false;
-                    }
-                }
+                NeedUpdate(O2State.State.Pressurized, false);
+                return false;
+            }
 
+            if (ShieldComp.ActiveO2Generator != this)
+            {
                 if (ShieldComp.ActiveO2Generator == null)
                 {
                     ShieldComp.ActiveO2Generator = this;
@@ -190,7 +186,7 @@ namespace DefenseShields
 
             }
 
-            if (!O2State.State.Backup && ShieldComp?.ActiveO2Generator == this)
+            if (!O2State.State.Backup && ShieldComp.ActiveO2Generator == this)
             {
                 NeedUpdate(O2State.State.Pressurized, true);
                 return true;
@@ -383,6 +379,8 @@ namespace DefenseShields
                 Session.Instance.O2Generators.Add(this);
                 _o2Generator.Add(Entity.EntityId, this);
                 Source = O2Generator.Components.Get<MyResourceSourceComponent>();
+                _isServer = Session.IsServer;
+                _isDedicated = Session.DedicatedServer;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
@@ -392,6 +390,15 @@ namespace DefenseShields
             if (O2State == null) O2State = new O2GeneratorState(O2Generator);
             O2State.StorageInit();
             O2State.LoadState();
+        }
+
+        public override bool IsSerialized()
+        {
+            if (MyAPIGateway.Multiplayer.IsServer)
+            {
+                if (O2Generator.Storage != null) O2State.SaveState();
+            }
+            return false;
         }
 
         public override void OnRemovedFromScene()

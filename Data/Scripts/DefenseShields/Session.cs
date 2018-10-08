@@ -184,7 +184,7 @@ namespace DefenseShields
                     shield.DeformEnabled = false;
                     if (_count == 0)
                     {
-                        if (shield.Starting) ControllerBlockCache.Add(shield.Shield.SlimBlock, shield);
+                        if (shield.Warming) ControllerBlockCache.Add(shield.Shield.SlimBlock, shield);
                     }
                 }
                 if (SphereOnCamera.Length != Components.Count) Array.Resize(ref SphereOnCamera, Components.Count);
@@ -588,7 +588,11 @@ namespace DefenseShields
 
                 var data = MyAPIGateway.Utilities.SerializeFromBinary<DataControllerState>(bytes); // this will throw errors on invalid data
 
-                if (data == null) return;
+                if (data == null)
+                {
+                    if (Enforced.Debug >= 1) Log.Line($"Data State null");
+                    return;
+                }
 
                 IMyEntity ent;
                 if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
@@ -598,15 +602,23 @@ namespace DefenseShields
                 }
 
                 var logic = ent.GameLogic.GetAs<DefenseShields>();
-                if (logic == null) return;
+                if (logic == null)
+                {
+                    if (Enforced.Debug >= 1) Log.Line($"Logic State null");
+                    return;
+                }
 
                 switch (data.Type)
                 {
                     case PacketType.Controllerstate:
                         {
-                            if (data.State == null) return;
+                            if (data.State == null)
+                            {
+                                if (Enforced.Debug >= 1) Log.Line($"Packet State null");
+                                return;
+                            }
 
-                            if (Enforced.Debug >= 2) Log.Line($"Packet State Packet received:- data:\n{data.State}");
+                            if (Enforced.Debug >= 2) Log.Line($"Packet State Packet received data:\n{data.State}");
 
                             if (IsServer) ControllerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                             else logic.UpdateState(data.State);

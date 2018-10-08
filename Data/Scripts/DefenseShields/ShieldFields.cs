@@ -105,7 +105,6 @@ namespace DefenseShields
         internal bool WarmedUp;
         internal bool ComingOnline;
         internal bool Warming;
-        internal bool Starting;
         internal bool UpdateDimensions;
         internal bool FitChanged;
         internal bool GridIsMobile;
@@ -113,6 +112,7 @@ namespace DefenseShields
         internal bool ClientUiUpdate;
         internal bool IsStatic;
 
+        private bool _resetEntity;
         private bool _empOverLoad;
         private bool _isDedicated;
         private bool _mpActive;
@@ -142,6 +142,7 @@ namespace DefenseShields
         private bool _shapeEvent;
         private bool _enablePhysics = true;
         private bool _updateMobileShape;
+        private bool _clientNotReady;
         private bool _clientLowered;
         private bool _clientOn;
         private bool _tick60;
@@ -207,8 +208,6 @@ namespace DefenseShields
 
         private MyConcurrentDictionary<MyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<MyEntity, Vector3D>();
         public readonly ConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<MyEntity, EntIntersectInfo>();
-
-        private readonly Dictionary<long, DefenseShields> _shields = new Dictionary<long, DefenseShields>();
 
         private readonly MyConcurrentQueue<IMySlimBlock> _dmgBlocks = new MyConcurrentQueue<IMySlimBlock>();
         private readonly MyConcurrentQueue<IMyWarhead> _empDmg = new MyConcurrentQueue<IMyWarhead>();

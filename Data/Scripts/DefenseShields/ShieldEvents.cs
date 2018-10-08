@@ -37,18 +37,6 @@ namespace DefenseShields
         private void GridSplit(MyCubeGrid oldGrid, MyCubeGrid newGrid)
         {
             newGrid.RecalculateOwners();
-            ShieldGridComponent oldComp;
-            ShieldGridComponent newComp;
-            oldGrid.Components.TryGet(out oldComp);
-            newGrid.Components.TryGet(out newComp);
-            if (oldComp == null) ResetComp();
-            Log.Line($"oNull:{oldComp?.DefenseShields == null} - nNull:{newComp?.DefenseShields == null} - neweqGrid:{newComp?.DefenseShields?.Shield?.CubeGrid == newGrid}/{newComp?.DefenseShields?.Shield?.CubeGrid == oldGrid} - oldeqGrid:{oldComp?.DefenseShields?.Shield?.CubeGrid == oldGrid}/{oldComp?.DefenseShields?.Shield?.CubeGrid == newGrid}");
-            if (oldComp?.DefenseShields != null)
-            {
-                //ShieldComp.DefenseShields = null;
-                //ShieldComp.StationEmitter = null;
-                //ShieldComp.DefenseShields = null;
-            }
         }
 
         private void HierarchyChanged(MyCubeGrid myCubeGrid = null)

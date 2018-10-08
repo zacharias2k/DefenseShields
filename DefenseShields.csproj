@@ -199,6 +199,9 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\PsUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\PlanetShield.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldDraw.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ShieldCharge.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ShieldSupport.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ShieldRun.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldWebClient.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldEvents.cs" />
@@ -250,7 +253,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\Slider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Utils.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Render.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldMain.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ShieldTimings.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Structure\StructureBuilder.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Support\Collision\CSupport\Triangle3.cs" />
     <Compile Include="HoldingArea\HyperComp.cs" />

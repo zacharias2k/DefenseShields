@@ -54,8 +54,8 @@ namespace DefenseShields
             Timing();
             if (_count == 29)
             {
-                if (ShieldComp == null) Display.CubeGrid.Components.TryGet(out ShieldComp);
-                if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.DefenseShields.Starting || !ShieldComp.DefenseShields.Shield.IsWorking)
+                Display.CubeGrid.Components.TryGet(out ShieldComp);
+                if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.DefenseShields.Warming || !ShieldComp.DefenseShields.Shield.IsWorking)
                 {
                     if (Display.ShowText) Display.SetShowOnScreen(0);
                     return;

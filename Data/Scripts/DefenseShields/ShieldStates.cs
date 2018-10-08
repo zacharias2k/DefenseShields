@@ -22,7 +22,11 @@ namespace DefenseShields
 
         private void ShieldChangeState()
         {
-            if (!WarmedUp && !DsState.State.Message) return;
+            if (!WarmedUp && !DsState.State.Message)
+            {
+                if (Session.Enforced.Debug >= 1) Log.Line($"ChangeStateSupression: WarmedUp:{WarmedUp} - Message:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
+                return;
+            }
             if (Session.Enforced.Debug >= 2) Log.Line($"ShieldChangeState: Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
             else if (Session.Enforced.Debug >= 1 && DsState.State.Message) Log.Line($"ShieldChangeState: Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
             if (Session.MpActive)
@@ -39,16 +43,47 @@ namespace DefenseShields
             DsState.SaveState();
         }
 
-        private bool ShieldOn()
+        public void UpdateSettings(ProtoControllerSettings newSettings)
         {
+            var newShape = newSettings.ExtendFit != DsSet.Settings.ExtendFit || newSettings.FortifyShield != DsSet.Settings.FortifyShield || newSettings.SphereFit != DsSet.Settings.SphereFit;
+            DsSet.Settings = newSettings;
+            SettingsUpdated = true;
+            if (newShape) FitChanged = true;
+            if (Session.Enforced.Debug >= 1) Log.Line($"UpdateSettings - server:{Session.IsServer} - ShieldId [{Shield.EntityId}]:\n{newSettings}");
+        }
+
+        public void UpdateState(ProtoControllerState newState)
+        {
+            DsState.State = newState;
+            if (!_isServer && Session.Enforced.Debug >= 1 && (_clientNotReady || DsState.State.Mode < 0)) Log.Line($"UpdateState - ClientAndReady:{!_clientNotReady} - Mode:{DsState.State.Mode} - server:{Session.IsServer} - ShieldId [{Shield.EntityId}]:\n{newState}");
+            _clientNotReady = false;
+        }
+
+        private bool EntityAlive()
+        {
+            _tick = Session.Instance.Tick;
+            _tick60 = _tick % 60 == 0;
+            _tick600 = _tick % 600 == 0;
+            MyGrid = Shield.CubeGrid as MyCubeGrid;
+            if (_resetEntity) ResetEntity();
+            if (MyGrid?.Physics == null || !AllInited && !PostInit() || _clientNotReady) return false;
+            IsStatic = MyGrid.IsStatic;
+
+            if (!Warming) WarmUpSequence();
+
             if (_subUpdate && _tick >= _subTick) HierarchyUpdate();
             if (_blockEvent && _tick >= _funcTick) BlockChanged(true);
 
+            return true;
+        }
+
+        private bool ShieldOn()
+        {
             if (_isServer)
             {
                 if (!ControllerFunctional() || ShieldWaking())
                 {
-                    if (ShieldDown()) return false;
+                    if (ShieldFailing()) return false;
                     _prevShieldActive = false;
                     return false;
                 }
@@ -61,7 +96,7 @@ namespace DefenseShields
                     GetEnhancernInfo();
                 }
 
-                if (ShieldDown())
+                if (ShieldFailing())
                 {
                     _prevShieldActive = false;
                     return false;
@@ -72,17 +107,14 @@ namespace DefenseShields
                 {
                     _prevShieldActive = false;
                     if (_genericDownLoop == -1) _genericDownLoop = 0;
-                    ShieldDown();
+                    ShieldFailing();
                     return false;
                 }
             }
             else
             {
-                if (!PostInit()) return false;
-
                 if (_blockChanged) BlockMonitor();
-
-                if (ClientOfflineStates() || !WarmUpSequence() || ClientShieldLowered()) return false;
+                if (ClientOfflineStates() || ClientShieldLowered()) return false;
                 if (GridIsMobile) MobileUpdate();
                 if (UpdateDimensions) RefreshDimensions();
                 PowerOnline();
@@ -94,14 +126,68 @@ namespace DefenseShields
             return true;
         }
 
+        private void ComingOnlineSetup()
+        {
+            if (!_isDedicated) ShellVisibility();
+            ShieldEnt.Render.Visible = true;
+            ComingOnline = false;
+            WasOnline = true;
+            WarmedUp = true;
+            if (_isServer)
+            {
+                CleanAll();
+                _offlineCnt = -1;
+                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
+                ShieldChangeState();
+            }
+            else
+            {
+                UpdateSubGrids();
+                Shield.RefreshCustomInfo();
+            }
+        }
+
+        private bool ShieldFailing()
+        {
+            if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1 || _empOverLoadLoop > -1)
+            {
+                FailureConditions();
+                return true;
+            }
+            return false;
+        }
+
+        private void OfflineShield()
+        {
+            _power = 0.001f;
+            Sink.Update();
+            WasOnline = false;
+            ShieldEnt.Render.Visible = false;
+            ShieldEnt.PositionComp.SetPosition(Vector3D.Zero);
+            if (_isServer && !DsState.State.Lowered && !DsState.State.Sleeping)
+            {
+                DsState.State.ShieldPercent = 0f;
+                DsState.State.Buffer = 0f;
+            }
+
+            if (_isServer)
+            {
+                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ShieldOff - ShieldId [{Shield.EntityId}]");
+                ShieldChangeState();
+            }
+            else
+            {
+                UpdateSubGrids();
+                Shield.RefreshCustomInfo();
+            }
+        }
+
         private bool ControllerFunctional()
         {
-            if (!PostInit()) return false;
-
             if (_blockChanged) BlockMonitor();
 
             if (_tick >= _losCheckTick) LosCheck();
-            if (Suspend() || !Warming && !WarmUpSequence() || ShieldSleeping() || ShieldLowered()) return false;
+            if (Suspend() || ShieldSleeping() || ShieldLowered()) return false;
             if (ShieldComp.EmitterEvent) EmitterEventDetected();
 
             _controlBlockWorking = Shield.IsWorking && Shield.IsFunctional;
@@ -116,104 +202,6 @@ namespace DefenseShields
                 if (UpdateDimensions) RefreshDimensions();
             }
             return _controlBlockWorking;
-        }
-
-        private void SetShieldServerStatus(bool powerState)
-        {
-            DsSet.Settings.ShieldActive = _controlBlockWorking && powerState;
-            ComingOnline = !_prevShieldActive && DsSet.Settings.ShieldActive;
-
-            DsState.State.Online = DsSet.Settings.ShieldActive;
-            _prevShieldActive = DsState.State.Online;
-
-            if (!GridIsMobile && (ComingOnline || ShieldComp.O2Updated))
-            {
-                EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
-                ShieldComp.O2Updated = false;
-            }
-        }
-
-        private void SetShieldClientStatus()
-        {
-            ComingOnline = !_prevShieldActive && DsState.State.Online;
-
-            _prevShieldActive = DsState.State.Online;
-            if (!GridIsMobile && (ComingOnline || !DsState.State.IncreaseO2ByFPercent.Equals(EllipsoidOxyProvider.O2Level)))
-            {
-                EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
-            }
-        }
-
-        private bool ShieldDown()
-        {
-            if (_overLoadLoop > -1 || _reModulationLoop > -1 || _genericDownLoop > -1 || _empOverLoadLoop > -1)
-            {
-                FailureConditions();
-                return true;
-            }
-            return false;
-        }
-
-        private void LosCheck()
-        {
-            _losCheckTick = uint.MaxValue;
-            ShieldComp.CheckEmitters = true;
-        }
-
-        private bool ShieldWaking()
-        {
-            if (_tick < UnsuspendTick)
-            {
-                if (!DsState.State.Waking)
-                {
-                    DsState.State.Waking = true;
-                    DsState.State.Message = true;
-                    if (Session.Enforced.Debug >= 1) Log.Line($"Waking: - ShieldId [{Shield.EntityId}]");
-                }
-                if (_genericDownLoop == -1) _genericDownLoop = 0;
-                return true;
-            }
-            if (UnsuspendTick != uint.MinValue && _tick >= UnsuspendTick)
-            {
-                ResetShape(false, false);
-                _updateRender = true;
-                UnsuspendTick = uint.MinValue;
-            }
-            else if (_shapeTick != uint.MinValue && _tick >= _shapeTick)
-            {
-                _shapeEvent = true;
-                _shapeTick = uint.MinValue;
-            }
-            DsState.State.Waking = false;
-            return false;
-        }
-
-        private bool FieldShapeBlocked()
-        {
-            ModulatorGridComponent modComp;
-            MyGrid.Components.TryGet(out modComp);
-            if (ShieldComp.Modulator == null || ShieldComp.Modulator.ModSet.Settings.ModulateVoxels || Session.Enforced.DisableVoxelSupport == 1) return false;
-
-            var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange);
-            var pruneList = new List<MyVoxelBase>();
-            MyGamePruningStructure.GetAllVoxelMapsInSphere(ref pruneSphere, pruneList);
-
-            if (pruneList.Count == 0) return false;
-            MobileUpdate();
-            Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
-            foreach (var voxel in pruneList)
-            {
-                if (voxel.RootVoxel == null || voxel != voxel.RootVoxel) continue;
-                if (!CustomCollision.VoxelContact(ShieldComp.PhysicsOutsideLow, voxel)) continue;
-
-                Shield.Enabled = false;
-                DsState.State.FieldBlocked = true;
-                DsState.State.Message = true;
-                if (Session.Enforced.Debug >= 1)Log.Line($"Field blocked: - ShieldId [{Shield.EntityId}]");
-                return true;
-            }
-            DsState.State.FieldBlocked = false;
-            return false;
         }
 
         private void EmitterEventDetected()
@@ -270,7 +258,7 @@ namespace DefenseShields
                 _reModulationLoop++;
                 if (_reModulationLoop == ReModulationCount)
                 {
-                     DsState.State.Remodulate = false;
+                    DsState.State.Remodulate = false;
                     _reModulationLoop = -1;
                 }
             }
@@ -309,7 +297,7 @@ namespace DefenseShields
                         DsState.State.Overload = false;
                         _overLoadLoop = -1;
                         var recharged = _shieldChargeRate * ShieldDownCount / 60;
-                        DsState.State.Buffer = MathHelper.Clamp(recharged, ShieldMaxBuffer * 0.10f, ShieldMaxBuffer * 0.25f); 
+                        DsState.State.Buffer = MathHelper.Clamp(recharged, ShieldMaxBuffer * 0.10f, ShieldMaxBuffer * 0.25f);
                     }
                 }
             }
@@ -330,7 +318,7 @@ namespace DefenseShields
                         DsState.State.EmpOverLoad = false;
                         _empOverLoadLoop = -1;
                         var recharged = _shieldChargeRate * EmpDownCount / 60;
-                        DsState.State.Buffer = MathHelper.Clamp(recharged, ShieldMaxBuffer * 0.25f, ShieldMaxBuffer * 0.62f); 
+                        DsState.State.Buffer = MathHelper.Clamp(recharged, ShieldMaxBuffer * 0.25f, ShieldMaxBuffer * 0.62f);
                     }
                 }
             }
@@ -375,6 +363,94 @@ namespace DefenseShields
             Shield.ShowInToolbarConfig = true;
 
             if (Session.Enforced.Debug >= 1) Log.Line($"ShieldDown: Count: {_offlineCnt} - ShieldPower: {_shieldCurrentPower} - gridMax: {_gridMaxPower} - currentPower: {_gridCurrentPower} - maint: {_shieldMaintaintPower} - ShieldId [{Shield.EntityId}]");
+        }
+
+        private void LosCheck()
+        {
+            _losCheckTick = uint.MaxValue;
+            ShieldComp.CheckEmitters = true;
+        }
+
+        private void SetShieldServerStatus(bool powerState)
+        {
+            DsSet.Settings.ShieldActive = _controlBlockWorking && powerState;
+            ComingOnline = !_prevShieldActive && DsSet.Settings.ShieldActive;
+
+            DsState.State.Online = DsSet.Settings.ShieldActive;
+            _prevShieldActive = DsState.State.Online;
+
+            if (!GridIsMobile && (ComingOnline || ShieldComp.O2Updated))
+            {
+                EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
+                ShieldComp.O2Updated = false;
+            }
+        }
+
+        private void SetShieldClientStatus()
+        {
+            ComingOnline = !_prevShieldActive && DsState.State.Online;
+
+            _prevShieldActive = DsState.State.Online;
+            if (!GridIsMobile && (ComingOnline || !DsState.State.IncreaseO2ByFPercent.Equals(EllipsoidOxyProvider.O2Level)))
+            {
+                EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
+            }
+        }
+
+        private bool ShieldWaking()
+        {
+            if (_tick < UnsuspendTick)
+            {
+                if (!DsState.State.Waking)
+                {
+                    DsState.State.Waking = true;
+                    DsState.State.Message = true;
+                    if (Session.Enforced.Debug >= 1) Log.Line($"Waking: ShieldId [{Shield.EntityId}]");
+                }
+                if (_genericDownLoop == -1) _genericDownLoop = 0;
+                return true;
+            }
+            if (UnsuspendTick != uint.MinValue && _tick >= UnsuspendTick)
+            {
+                ResetShape(false, false);
+                _updateRender = true;
+                UnsuspendTick = uint.MinValue;
+            }
+            else if (_shapeTick != uint.MinValue && _tick >= _shapeTick)
+            {
+                _shapeEvent = true;
+                _shapeTick = uint.MinValue;
+            }
+            DsState.State.Waking = false;
+            return false;
+        }
+
+        private bool FieldShapeBlocked()
+        {
+            ModulatorGridComponent modComp;
+            MyGrid.Components.TryGet(out modComp);
+            if (ShieldComp.Modulator == null || ShieldComp.Modulator.ModSet.Settings.ModulateVoxels || Session.Enforced.DisableVoxelSupport == 1) return false;
+
+            var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange);
+            var pruneList = new List<MyVoxelBase>();
+            MyGamePruningStructure.GetAllVoxelMapsInSphere(ref pruneSphere, pruneList);
+
+            if (pruneList.Count == 0) return false;
+            MobileUpdate();
+            Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
+            foreach (var voxel in pruneList)
+            {
+                if (voxel.RootVoxel == null || voxel != voxel.RootVoxel) continue;
+                if (!CustomCollision.VoxelContact(ShieldComp.PhysicsOutsideLow, voxel)) continue;
+
+                Shield.Enabled = false;
+                DsState.State.FieldBlocked = true;
+                DsState.State.Message = true;
+                if (Session.Enforced.Debug >= 1)Log.Line($"Field blocked: - ShieldId [{Shield.EntityId}]");
+                return true;
+            }
+            DsState.State.FieldBlocked = false;
+            return false;
         }
 
         private bool ShieldLowered()
@@ -534,26 +610,16 @@ namespace DefenseShields
                 {
                     if (Session.Enforced.Debug >= 1) Log.Line($"Suspend: controller unsuspending - ShieldId [{Shield.EntityId}]");
                     DsState.State.Suspended = false;
-                    ShieldComp.GetLinkedGrids.Clear();
-                    ShieldComp.GetSubGrids.Clear();
-                    _blockChanged = true;
-                    _functionalChanged = true;
-                    ResetShape(false, true);
-                    ResetShape(false, false);
-                    if (Session.Enforced.Debug >= 1) Log.Line($"Suspend: controller mode was: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-                    SetShieldType(false);
-                    if (Session.Enforced.Debug >= 1) Log.Line($"Suspend: controller mode is now: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-                    if (!_isDedicated) ShellVisibility(true);
-                    Icosphere.ShellActive = null;
-                    GetEnhancernInfo();
-                    GetModulationInfo();
+                    DsState.State.Heat = 0;
+                    UnsuspendTick = _tick + 1800;
+
                     _currentHeatStep = 0;
                     _accumulatedHeat = 0;
                     _heatCycle = -1;
-                    UnsuspendTick = _tick + 1800;
-                    _updateRender = true;
-                    DsState.State.Suspended = false;
-                    DsState.State.Heat = 0;
+
+                    UpdateEntity();
+                    GetEnhancernInfo();
+                    GetModulationInfo();
                     if (Session.Enforced.Debug >= 1) Log.Line($"Unsuspended: CM:{ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.Suspended = false;
@@ -561,6 +627,21 @@ namespace DefenseShields
 
             if (DsState.State.Suspended) SetShieldType(true);
             return DsState.State.Suspended;
+        }
+
+        private void UpdateEntity()
+        {
+            ShieldComp.GetLinkedGrids.Clear();
+            ShieldComp.GetSubGrids.Clear();
+            _blockChanged = true;
+            _functionalChanged = true;
+            ResetShape(false, true);
+            ResetShape(false, false);
+            SetShieldType(false);
+            if (!_isDedicated) ShellVisibility(true);
+            if (Session.Enforced.Debug >= 1) Log.Line($"UpdateEntity: sEnt:{ShieldEnt == null} - sPassive:{_shellPassive == null} - controller mode is: {ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
+            Icosphere.ShellActive = null;
+            _updateRender = true;
         }
 
         private void InitSuspend(bool cleanEnts = false)
@@ -621,6 +702,7 @@ namespace DefenseShields
         private void PlayerMessages(PlayerNotice notice)
         {
             var realPlayerIds = new HashSet<long>();
+
             var center = GridIsMobile ? MyGrid.PositionComp.WorldVolume.Center : ShieldComp.StationEmitter.Emitter.WorldVolume.Center;
             switch (notice)
             {
@@ -719,57 +801,6 @@ namespace DefenseShields
                 Shield.RefreshCustomInfo();
             }
             return false;
-        }
-
-        private bool WarmUpSequence()
-        {
-            if (Warming) return true;
-            if (Starting)
-            {
-                Session.Instance.ControllerBlockCache[Shield.SlimBlock] = this;
-                Warming = true;
-                return true;
-            }
-
-            if (_isServer)
-            {
-                _hadPowerBefore = true;
-                _controlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
-                DsState.State.Overload = false;
-                DsState.State.NoPower = false;
-                DsState.State.Remodulate = false;
-                DsState.State.Heat = 0;
-            }
-            WarmingInit();
-            return false;
-        }
-
-        private void WarmingInit()
-        {
-            _blockChanged = true;
-            _functionalChanged = true;
-
-            ResetShape(false, true);
-            ResetShape(false, false);
-            _oldGridHalfExtents = DsState.State.GridHalfExtents;
-            _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
-            Starting = true;
-            if (Session.Enforced.Debug >= 1) Log.Line($"Warming: Server:{Session.IsServer} - buffer:{DsState.State.Buffer} - BlockWorking:{Session.IsServer && _controlBlockWorking || !Session.IsServer && Shield.IsWorking && Shield.IsFunctional} - Active:{DsState.State.Online} - ShieldId [{Shield.EntityId}]");
-        }
-
-        public void UpdateSettings(ProtoControllerSettings newSettings)
-        {
-            var newShape = newSettings.ExtendFit != DsSet.Settings.ExtendFit || newSettings.FortifyShield != DsSet.Settings.FortifyShield || newSettings.SphereFit != DsSet.Settings.SphereFit;
-            DsSet.Settings = newSettings;
-            SettingsUpdated = true;
-            if (newShape) FitChanged = true;
-            if (Session.Enforced.Debug >= 1) Log.Line($"UpdateSettings - server:{Session.IsServer} - ShieldId [{Shield.EntityId}]:\n{newSettings}");
-        }
-
-        public void UpdateState(ProtoControllerState newState)
-        {
-            DsState.State = newState;
-            if (Session.Enforced.Debug == 2) Log.Line($"UpdateState - server:{Session.IsServer} - ShieldId [{Shield.EntityId}]:\n{newState}");
         }
     }
 }

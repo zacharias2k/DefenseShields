@@ -106,7 +106,7 @@ namespace DefenseShields
         [ProtoMember(21)]
         public Vector3D GridHalfExtents;
         [ProtoMember(22), DefaultValue(-1)]
-        public int Mode;
+        public int Mode = -1;
         [ProtoMember(23)]
         public bool EmitterWorking = false;
         [ProtoMember(24)]

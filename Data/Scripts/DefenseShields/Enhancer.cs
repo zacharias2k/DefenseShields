@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
+using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game;
@@ -26,10 +27,14 @@ namespace DefenseShields
         internal int RotationTime;
         internal bool ContainerInited;
         private bool _powered;
+        private bool _isServer;
+        private bool _isDedicated;
         private const float Power = 0.01f;
 
         private readonly Dictionary<long, Enhancers> _enhancers = new Dictionary<long, Enhancers>();
         public IMyUpgradeModule Enhancer => (IMyUpgradeModule)Entity;
+        internal MyCubeGrid MyGrid;
+
         internal ShieldGridComponent ShieldComp;
         //internal EnhancerSettings EnhSet;
         internal EnhancerState EnhState;
@@ -45,13 +50,14 @@ namespace DefenseShields
         {
             try
             {
-                if (Enhancer.CubeGrid.Physics == null) return;
-                var isServer = Session.IsServer;
+                MyGrid = Enhancer.CubeGrid as MyCubeGrid;
+                if (MyGrid?.Physics == null) return;
                 _tick = Session.Instance.Tick;
-                Timing();
-                if (!EnhancerReady(isServer)) return;
 
-                if (!Session.DedicatedServer && UtilsStatic.DistanceCheck(Enhancer, 1000, 1))
+                Timing();
+                if (!EnhancerReady()) return;
+
+                if (!_isDedicated && UtilsStatic.DistanceCheck(Enhancer, 1000, 1))
                 {
                     var blockCam = Enhancer.PositionComp.WorldVolume;
                     if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && Enhancer.IsWorking) BlockMoveAnimation();
@@ -69,7 +75,7 @@ namespace DefenseShields
                 if (_lCount == 10) _lCount = 0;
             }
 
-            if (_count == 29 && !Session.DedicatedServer && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
+            if (_count == 29 && !_isDedicated && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
             {
                 Enhancer.RefreshCustomInfo();
                 Enhancer.ShowInToolbarConfig = false;
@@ -77,7 +83,7 @@ namespace DefenseShields
             }
         }
 
-        private bool EnhancerReady(bool server)
+        private bool EnhancerReady()
         {
             if (_subpartRotor == null)
             {
@@ -85,17 +91,15 @@ namespace DefenseShields
                 if (_subpartRotor == null) return false;
             }
 
-            if (server)
+            MyGrid.Components.TryGet(out ShieldComp);
+            if (_isServer)
             {
                 if (!BlockWorking()) return false;
             }
             else
             {
-                if (ShieldComp?.DefenseShields == null)
-                {
-                    Enhancer.CubeGrid.Components.TryGet(out ShieldComp);
-                    if (ShieldComp?.DefenseShields == null) return false;
-                }
+                if (ShieldComp?.DefenseShields == null) return false;
+
                 if (!EnhState.State.Backup && ShieldComp.Enhancer != this) ShieldComp.Enhancer = this;
 
                 if (!EnhState.State.Online) return false;
@@ -106,24 +110,20 @@ namespace DefenseShields
         private bool BlockWorking()
         {
             if (_count <= 0) _powered = Sink.IsPowerAvailable(GId, 0.01f);
-            if (Enhancer?.CubeGrid == null || !Enhancer.Enabled || !Enhancer.IsFunctional || !_powered)
+            if (!Enhancer.Enabled || !Enhancer.IsFunctional || !_powered)
             {
                 NeedUpdate(EnhState.State.Online, false);
                 return false;
             }
 
-            if (ShieldComp?.DefenseShields == null || ShieldComp.Enhancer != this)
+            if (ShieldComp?.DefenseShields == null)
             {
-                if (ShieldComp?.DefenseShields == null)
-                {
-                    Enhancer?.CubeGrid?.Components.TryGet(out ShieldComp);
-                    if (ShieldComp?.DefenseShields == null)
-                    {
-                        NeedUpdate(EnhState.State.Online, false);
-                        return false;
-                    }
-                }
+                NeedUpdate(EnhState.State.Online, false);
+                return false;
+            }
 
+            if (ShieldComp.Enhancer != this)
+            {
                 if (ShieldComp.Enhancer == null)
                 {
                     ShieldComp.Enhancer = this;
@@ -208,8 +208,9 @@ namespace DefenseShields
                 _enhancers.Add(Entity.EntityId, this);
                 Session.Instance.Enhancers.Add(this);
                 PowerInit();
-                Enhancer.CubeGrid.Components.TryGet(out ShieldComp);
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                _isServer = Session.IsServer;
+                _isDedicated = Session.DedicatedServer;
                 Enhancer.AppendingCustomInfo += AppendingCustomInfo;
                 Enhancer.RefreshCustomInfo();
             }
@@ -218,11 +219,20 @@ namespace DefenseShields
 
         public override bool IsSerialized()
         {
-            if (Session.IsServer)
+            if (MyAPIGateway.Multiplayer.IsServer)
             {
                 if (Enhancer.Storage != null) EnhState.SaveState();
             }
             return false;
+        }
+
+        public override void OnAddedToScene()
+        {
+            try
+            {
+                if (Session.Enforced.Debug >= 1) Log.Line($"OnAddedToScene: - EnhancerId [{Enhancer.EntityId}]");
+            }
+            catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
 
         private void StorageSetup()
@@ -264,7 +274,7 @@ namespace DefenseShields
                     Enhancer.Enabled = true;
                 }
                 Sink.Update();
-                if (Session.Enforced.Debug >= 1) Log.Line($"PowerInit: EnhancerId [{Enhancer.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"PowerInit: EnhancerId [{Enhancer.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }
@@ -328,6 +338,10 @@ namespace DefenseShields
             try
             {
                 if (Session.Instance.Enhancers.Contains(this)) Session.Instance.Enhancers.Remove(this);
+                if (ShieldComp?.Enhancer == this)
+                {
+                    ShieldComp.Enhancer = null;
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
@@ -337,6 +351,7 @@ namespace DefenseShields
         {
             try
             {
+                base.Close();
                 if (Session.Instance.Enhancers.Contains(this)) Session.Instance.Enhancers.Remove(this);
                 if (ShieldComp?.Enhancer == this)
                 {
@@ -344,16 +359,15 @@ namespace DefenseShields
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
-            base.Close();
         }
 
         public override void MarkForClose()
         {
             try
             {
+                base.MarkForClose();
             }
             catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
-            base.MarkForClose();
         }
     }
 }
