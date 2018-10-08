@@ -38,6 +38,7 @@ namespace DefenseShields
 
         private float _power = 0.01f;
 
+        private bool _tick60;
         private bool _isServer;
         private bool _isDedicated;
         private bool _wasOnline;
@@ -61,6 +62,7 @@ namespace DefenseShields
         private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
         public IMyUpgradeModule Modulator => (IMyUpgradeModule)Entity;
+        internal MyCubeGrid MyGrid;
 
         internal DSUtils Dsutil1 = new DSUtils();
 
@@ -68,10 +70,13 @@ namespace DefenseShields
         {
             try
             {
-                if (Modulator.CubeGrid.Physics == null) return;
-                _isServer = Session.IsServer;
-                _isDedicated = Session.DedicatedServer;
                 _tick = Session.Instance.Tick;
+                _tick60 = _tick % 60 == 0;
+                var wait = _isServer && !_tick60 && ModState.State.Backup;
+
+                MyGrid = Modulator.CubeGrid as MyCubeGrid;
+                if (wait || MyGrid?.Physics == null) return;
+
                 Timing();
 
                 if (!ModulatorReady())
@@ -171,9 +176,9 @@ namespace DefenseShields
         private bool BlockWorking()
         {
             if (_count <= 0) _powered = Sink.IsPowerAvailable(GId, 0.01f);
-            if (Modulator?.CubeGrid == null || !Modulator.Enabled || !Modulator.IsFunctional || !_powered)
+            if (!Modulator.IsWorking || !_powered)
             {
-                if (Modulator != null && _count == 29)
+                if (_count == 29)
                 {
                     Modulator.RefreshCustomInfo();
                     Modulator.ShowInToolbarConfig = false;
@@ -199,7 +204,7 @@ namespace DefenseShields
 
         private void ServerCheckForCompLink()
         {
-            Modulator.CubeGrid.Components.TryGet(out ShieldComp);
+            MyGrid.Components.TryGet(out ShieldComp);
             if (ShieldComp?.DefenseShields == null) return;
 
             if (ShieldComp?.Modulator != this)
@@ -211,7 +216,7 @@ namespace DefenseShields
 
         private void ClientCheckForCompLink()
         {
-            Modulator.CubeGrid.Components.TryGet(out ShieldComp);
+            MyGrid.Components.TryGet(out ShieldComp);
             if (ShieldComp?.DefenseShields == null) return;
 
             if (ModState.State.Link && ShieldComp?.Modulator != this)
@@ -228,7 +233,6 @@ namespace DefenseShields
                 _lCount++;
                 if (_lCount == 10) _lCount = 0;
             }
-
             if (_count == 29 && !_isDedicated && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
             {
                 Modulator.RefreshCustomInfo();
@@ -316,6 +320,9 @@ namespace DefenseShields
             try
             {
                 if (Modulator.CubeGrid.Physics == null) return;
+
+                _isServer = Session.IsServer;
+                _isDedicated = Session.DedicatedServer;
 
                 ResetComp();
 

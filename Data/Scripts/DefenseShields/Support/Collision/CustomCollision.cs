@@ -172,8 +172,6 @@ namespace DefenseShields.Support
                     var planet = voxelBase as MyPlanet;
                     var map = voxelBase as MyVoxelMap;
                     var isPlanet = voxelBase is MyPlanet;
-                    //var dsutil = new DSUtils();
-                    //dsutil.Sw.Restart();
                     if (isPlanet)
                     {
                         for (int i = 0; i < 162; i++)
@@ -193,8 +191,6 @@ namespace DefenseShields.Support
                             if (hit) voxelHitVecs.Add(from);
                         }
                     }
-                    //dsutil.StopWatchReport($"boxhit - hits:{voxelHitVecs.Count}", -1);
-                    //if (voxelHitVecs.Count > 0) Log.Line($"hitCount:{voxelHitVecs.Count}");
                 }
 
                 if (voxelHitVecs.Count == 0) return Vector3D.NegativeInfinity;

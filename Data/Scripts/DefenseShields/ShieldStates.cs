@@ -64,9 +64,13 @@ namespace DefenseShields
             _tick = Session.Instance.Tick;
             _tick60 = _tick % 60 == 0;
             _tick600 = _tick % 600 == 0;
+            var wait = _isServer && !_tick60 && DsState.State.Suspended;
+
             MyGrid = Shield.CubeGrid as MyCubeGrid;
             if (_resetEntity) ResetEntity();
-            if (MyGrid?.Physics == null || !AllInited && !PostInit() || _clientNotReady) return false;
+            if (wait || MyGrid?.Physics == null || !AllInited && !PostInit() || _clientNotReady) return false;
+            if (Session.Enforced.Debug >= 1) Dsutil1.Sw.Restart();
+
             IsStatic = MyGrid.IsStatic;
 
             if (!Warming) WarmUpSequence();

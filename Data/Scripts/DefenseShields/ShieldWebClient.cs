@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
-using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRageMath;
@@ -15,8 +14,6 @@ namespace DefenseShields
         #region Web Entities
         private void WebEntitiesClient()
         {
-            if (Session.Enforced.Debug >= 1) Dsutil2.Sw.Restart();
-            //var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange + 5);
             _clientPruneSphere.Center = DetectionCenter;
             _clientPruneSphere.Radius = BoundingRange + 5;
             _clientPruneList.Clear();
@@ -119,13 +116,10 @@ namespace DefenseShields
             }
 
             if (_enablePhysics && (ShieldComp.GridIsMoving || entChanged)) MyAPIGateway.Parallel.Start(WebDispatchClient);
-
-            if (Session.Enforced.Debug >= 1) Dsutil2.StopWatchReport($"WebClient: ShieldId [{Shield.EntityId}]", 3);
         }
 
         private void WebDispatchClient()
         {
-            if (Session.Enforced.Debug >= 1) Dsutil3.Sw.Restart();
             foreach (var webent in WebEnts.Keys)
             {
                 var entInfo = WebEnts[webent];
@@ -183,9 +177,6 @@ namespace DefenseShields
                         continue;
                 }
             }
-
-            if (Session.Enforced.Debug >= 1 && _lCount == 5 && _count == 5)
-            if (Session.Enforced.Debug >= 1) Dsutil3.StopWatchReport($"webDispatch: ShieldId [{Shield.EntityId}]:", 3);
         }
         #endregion
 

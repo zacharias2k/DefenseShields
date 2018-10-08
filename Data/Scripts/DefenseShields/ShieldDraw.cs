@@ -31,7 +31,7 @@ namespace DefenseShields
             var enemy = false;
             var relation = MyAPIGateway.Session.Player.GetRelationTo(Shield.OwnerId);
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
-            var renderId = Shield.CubeGrid.Render.GetRenderObjectID();
+            var renderId = MyGrid.Render.GetRenderObjectID();
             var percent = DsState.State.ShieldPercent;
             var hitAnim = DsSet.Settings.HitWaveAnimation;
             var refreshAnim = DsSet.Settings.RefreshAnimation;
@@ -62,7 +62,7 @@ namespace DefenseShields
             {
                 BulletCoolDown = 0;
                 HitParticleStart();
-                var cubeBlockLocalMatrix = Shield.CubeGrid.LocalMatrix;
+                var cubeBlockLocalMatrix = MyGrid.PositionComp.LocalMatrix;
                 var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
                 var worldDirection = impactPos - referenceWorldPosition;
                 var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(cubeBlockLocalMatrix));
@@ -119,7 +119,7 @@ namespace DefenseShields
             //Log.Line($"D:{playerDist} - R:{radius} - S:{scale} - I:{ImpactSize} - {MyAPIGateway.Session.IsCameraUserControlledSpectator} = {MyAPIGateway.Session.CameraTargetDistance} - {Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos)}");
             _effect.UserRadiusMultiplier = (float)radius;
             _effect.UserEmitterScale = (float)scale;
-            _effect.Velocity = Shield.CubeGrid.Physics.LinearVelocity;
+            _effect.Velocity = MyGrid.Physics.LinearVelocity;
             _effect.Play();
         }
 
@@ -141,7 +141,7 @@ namespace DefenseShields
             }
             _effect.UserRadiusMultiplier = (float)radius;
             _effect.UserEmitterScale = (float)scale;
-            _effect.Velocity = Shield.CubeGrid.Physics.LinearVelocity;
+            _effect.Velocity = MyGrid.Physics.LinearVelocity;
             _effect.UserColorMultiplier = new Vector4(255, 255, 255, 10);
             _effect.Play();
         }

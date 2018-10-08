@@ -40,6 +40,7 @@ namespace DefenseShields
         internal bool TookControl;
         internal bool ContainerInited;
 
+        private bool _tick60;
         private bool _isServer;
         private bool _isDedicated;
         private bool _wasOnline;
@@ -89,11 +90,13 @@ namespace DefenseShields
         {
             try
             {
-                MyGrid = Emitter.CubeGrid as MyCubeGrid;
-                if (MyGrid?.Physics == null) return;
-                if (Session.Enforced.Debug >= 1) Dsutil1.Sw.Restart();
-                IsStatic = MyGrid.IsStatic;
                 _tick = Session.Instance.Tick;
+                _tick60 = _tick % 60 == 0;
+                var wait = _isServer && !_tick60 && EmiState.State.Backup;
+
+                MyGrid = Emitter.CubeGrid as MyCubeGrid;
+                if (wait || MyGrid?.Physics == null) return;
+                IsStatic = MyGrid.IsStatic;
 
                 Timing();
                 if (!ControllerLink()) return;
@@ -109,7 +112,6 @@ namespace DefenseShields
                         BlockMoveAnimation();
                     }
                 }
-                if (Session.Enforced.Debug >= 1) Dsutil1.StopWatchReport($"PerfMod: EmitterId [{Emitter.EntityId}]", 4);
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }

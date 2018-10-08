@@ -79,9 +79,9 @@ namespace DefenseShields
 
         private void MobileUpdate()
         {
-            ShieldComp.ShieldVelocitySqr = Shield.CubeGrid.Physics.LinearVelocity.LengthSquared();
-            _sAvelSqr = Shield.CubeGrid.Physics.AngularVelocity.LengthSquared();
-            if (ShieldComp.ShieldVelocitySqr > 0.00001 || _sAvelSqr > 0.00001 || ComingOnline || _tick600 && Shield.CubeGrid.Physics.IsMoving)
+            ShieldComp.ShieldVelocitySqr = MyGrid.Physics.LinearVelocity.LengthSquared();
+            _sAvelSqr = MyGrid.Physics.AngularVelocity.LengthSquared();
+            if (ShieldComp.ShieldVelocitySqr > 0.00001 || _sAvelSqr > 0.00001 || ComingOnline || _tick600 && MyGrid.Physics.IsMoving)
             {
                 ShieldComp.GridIsMoving = true;
                 if (DsSet.Settings.FortifyShield && Math.Sqrt(ShieldComp.ShieldVelocitySqr) > 15)
@@ -114,11 +114,11 @@ namespace DefenseShields
             if (GridIsMobile)
             {
                 _updateMobileShape = false;
-                _shieldGridMatrix = Shield.CubeGrid.WorldMatrix;
+                _shieldGridMatrix = MyGrid.WorldMatrix;
                 if (_shapeChanged) CreateMobileShape();
                 DetectionMatrix = _shieldShapeMatrix * _shieldGridMatrix;
-                DetectionCenter = Shield.CubeGrid.PositionComp.WorldVolume.Center;
-                _sQuaternion = Quaternion.CreateFromRotationMatrix(Shield.CubeGrid.WorldMatrix);
+                DetectionCenter = MyGrid.PositionComp.WorldVolume.Center;
+                _sQuaternion = Quaternion.CreateFromRotationMatrix(MyGrid.WorldMatrix);
                 ShieldSphere = new BoundingSphereD(Shield.PositionComp.LocalAABB.Center, ShieldSize.AbsMax()) { Center = DetectionCenter };
             }
             else
@@ -160,7 +160,7 @@ namespace DefenseShields
             var shieldSize = DsState.State.GridHalfExtents * DsState.State.EllipsoidAdjust + DsState.State.ShieldFudge;
             ShieldSize = shieldSize;
             var mobileMatrix = MatrixD.CreateScale(shieldSize);
-            mobileMatrix.Translation = Shield.CubeGrid.PositionComp.LocalVolume.Center;
+            mobileMatrix.Translation = MyGrid.PositionComp.LocalVolume.Center;
             _shieldShapeMatrix = mobileMatrix;
         }
 

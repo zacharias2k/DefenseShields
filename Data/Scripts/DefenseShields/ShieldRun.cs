@@ -56,11 +56,6 @@ namespace DefenseShields
                 Session.Instance.Components.Add(this);
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
                 if (_isServer) Enforcements.SaveEnforcement(Shield, Session.Enforced, true);
-
-                //ResetComp();
-                //RegisterEvents();
-                //if (_isServer && DsState.State.GridIntegrity <= 0) GridIntegrity();
-                //if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
                 if (Session.Enforced.Debug >= 1) Log.Line($"UpdateOnceBeforeFrame: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in Controller UpdateOnceBeforeFrame: {ex}"); }
@@ -70,7 +65,6 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug >= 1) Dsutil1.Sw.Restart();
                 if (!EntityAlive()) return;
 
                 if (!ShieldOn())
@@ -91,8 +85,7 @@ namespace DefenseShields
                         if (GridIsMobile && createHeTiming) CreateHalfExtents();
                         SyncThreadedEnts();
                         WebEntities();
-                        var mpActive = Session.MpActive;
-                        if (mpActive && _count == 29)
+                        if (_mpActive && _count == 29)
                         {
                             var newPercentColor = UtilsStatic.GetShieldColorFromFloat(DsState.State.ShieldPercent);
                             if (newPercentColor != _oldPercentColor)

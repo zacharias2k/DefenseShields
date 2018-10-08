@@ -26,6 +26,7 @@ namespace DefenseShields
         private int _lCount;
         internal int RotationTime;
         internal bool ContainerInited;
+        private bool _tick60;
         private bool _powered;
         private bool _isServer;
         private bool _isDedicated;
@@ -50,9 +51,12 @@ namespace DefenseShields
         {
             try
             {
-                MyGrid = Enhancer.CubeGrid as MyCubeGrid;
-                if (MyGrid?.Physics == null) return;
                 _tick = Session.Instance.Tick;
+                _tick60 = _tick % 60 == 0;
+                var wait = _isServer && !_tick60 && EnhState.State.Backup;
+
+                MyGrid = Enhancer.CubeGrid as MyCubeGrid;
+                if (wait || MyGrid?.Physics == null) return;
 
                 Timing();
                 if (!EnhancerReady()) return;
@@ -110,7 +114,7 @@ namespace DefenseShields
         private bool BlockWorking()
         {
             if (_count <= 0) _powered = Sink.IsPowerAvailable(GId, 0.01f);
-            if (!Enhancer.Enabled || !Enhancer.IsFunctional || !_powered)
+            if (!Enhancer.IsWorking || !_powered)
             {
                 NeedUpdate(EnhState.State.Online, false);
                 return false;

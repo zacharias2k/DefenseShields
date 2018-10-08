@@ -38,8 +38,6 @@ namespace DefenseShields
                     _voxelDmg.Count == 0 && _characterDmg.Count == 0 && _fewDmgBlocks.Count == 0 &&
                     _dmgBlocks.Count == 0 && _empDmg.Count == 0 && _forceData.Count == 0 && _impulseData.Count == 0) return;
 
-                if (!client && Session.Enforced.Debug >= 1) Dsutil4.Sw.Restart();
-
                 try
                 {
                     if (_forceData.Count != 0)
@@ -275,8 +273,6 @@ namespace DefenseShields
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in fewBlocks: {ex}"); }
-
-                if (Session.Enforced.Debug >= 1) Dsutil4.StopWatchReport($"SyncEnt: ShieldId [{Shield.EntityId}]", 3);
             }
             catch (Exception ex) { Log.Line($"Exception in DamageGrids: {ex}"); }
         }

@@ -6,7 +6,6 @@ using Sandbox.Common.ObjectBuilders;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Game.Components;
-using VRage.Game.GUI.TextPanel;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 
@@ -15,9 +14,8 @@ namespace DefenseShields
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_TextPanel), false, "DSControlLCD")]
     public class Displays : MyGameLogicComponent
     {
-        private uint _tick;
         private int _count = -1;
-        private int _lCount;
+
         public bool ServerUpdate;
         private readonly Dictionary<long, Displays> _displays = new Dictionary<long, Displays>();
         internal ShieldGridComponent ShieldComp;
@@ -30,7 +28,7 @@ namespace DefenseShields
             {
                 base.Init(objectBuilder);
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+                NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -48,31 +46,19 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
 
-        public override void UpdateBeforeSimulation()
+        public override void UpdateBeforeSimulation10()
         {
-            _tick = Session.Instance.Tick;
-            Timing();
-            if (_count == 29)
-            {
-                Display.CubeGrid.Components.TryGet(out ShieldComp);
-                if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.DefenseShields.Warming || !ShieldComp.DefenseShields.Shield.IsWorking)
-                {
-                    if (Display.ShowText) Display.SetShowOnScreen(0);
-                    return;
-                }
-                Display.WritePublicText(ShieldComp.DefenseShields.Shield.CustomInfo);
-                if (!Display.ShowText) Display.ShowPublicTextOnScreen();
-            }
-        }
+            if (_count++ == 9) _count = 0;
+            if (_count != 9) return;
 
-        private void Timing()
-        {
-            if (_count++ == 59)
+            Display.CubeGrid.Components.TryGet(out ShieldComp);
+            if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.DefenseShields.Warming || !ShieldComp.DefenseShields.Shield.IsWorking)
             {
-                _count = 0;
-                _lCount++;
-                if (_lCount == 10) _lCount = 0;
+                if (Display.ShowText) Display.SetShowOnScreen(0);
+                return;
             }
+            Display.WritePublicText(ShieldComp.DefenseShields.Shield.CustomInfo);
+            if (!Display.ShowText) Display.ShowPublicTextOnScreen();
         }
 
         public override void OnRemovedFromScene()
