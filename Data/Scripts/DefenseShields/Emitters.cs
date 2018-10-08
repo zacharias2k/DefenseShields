@@ -93,7 +93,6 @@ namespace DefenseShields
                 if (MyGrid?.Physics == null) return;
                 if (Session.Enforced.Debug >= 1) Dsutil1.Sw.Restart();
                 IsStatic = MyGrid.IsStatic;
-                if (IsStatic) Log.Line($"Emitter is Static WTF!");
                 _tick = Session.Instance.Tick;
 
                 Timing();
