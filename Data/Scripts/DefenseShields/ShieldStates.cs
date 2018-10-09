@@ -68,8 +68,7 @@ namespace DefenseShields
 
             MyGrid = Shield.CubeGrid as MyCubeGrid;
             if (_resetEntity) ResetEntity();
-            Log.Line($"{ShieldComp.EmitterMode} - {DsState.State.Mode}");
-            if (wait || MyGrid?.Physics == null || !AllInited && !PostInit() || _clientNotReady) return false;
+            if (wait || MyGrid?.Physics == null || !AllInited && !PostInit()) return false;
             if (Session.Enforced.Debug >= 1) Dsutil1.Sw.Restart();
 
             IsStatic = MyGrid.IsStatic;

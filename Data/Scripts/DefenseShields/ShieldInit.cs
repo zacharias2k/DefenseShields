@@ -29,7 +29,7 @@ namespace DefenseShields
                     return false;
                 }
 
-                if (!_isServer && DsState.State.Mode < 0 || RequestEnforcement()) return false;
+                if (RequestEnforcement() || _clientNotReady || !_isServer && (DsState.State.Mode < 0 || DsState.State.Mode == 0 && ShieldComp.StationEmitter == null)) return false;
 
                 Session.Instance.CreateControllerElements(Shield);
                 SetShieldType(false);
@@ -229,7 +229,6 @@ namespace DefenseShields
                     _updateMobileShape = true;
                     break;
             }
-            Log.Line($"!!!!! WTF:{ShieldMode}");
             GridIsMobile = ShieldMode != ShieldType.Station;
             DsUi.CreateUi(Shield);
             InitEntities(true);
