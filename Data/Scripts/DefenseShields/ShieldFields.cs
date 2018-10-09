@@ -181,13 +181,14 @@ namespace DefenseShields
         internal MatrixD ShieldMatrix;
         internal MatrixD OldShieldMatrix;
 
-        private BoundingBox _shieldAabb;
-        public BoundingSphereD ShieldSphere;
+        private BoundingBox _shieldAabb = new BoundingBox(-Vector3D.One, Vector3D.One);
+        public BoundingSphereD ShieldSphere = new BoundingSphereD(Vector3D.Zero, 1);
         private BoundingSphereD _clientPruneSphere = new BoundingSphereD(Vector3D.Zero, 1f);
         private BoundingSphereD _pruneSphere1 = new BoundingSphereD(Vector3D.Zero, 1f);
         private BoundingSphereD _pruneSphere2 = new BoundingSphereD(Vector3D.Zero, 1f);
 
-        public MyOrientedBoundingBoxD SOriBBoxD;
+        public MyOrientedBoundingBoxD SOriBBoxD = new MyOrientedBoundingBoxD();
+
         private Quaternion _sQuaternion;
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();

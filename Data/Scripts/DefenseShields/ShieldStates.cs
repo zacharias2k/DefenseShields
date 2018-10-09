@@ -68,6 +68,7 @@ namespace DefenseShields
 
             MyGrid = Shield.CubeGrid as MyCubeGrid;
             if (_resetEntity) ResetEntity();
+            Log.Line($"{ShieldComp.EmitterMode} - {DsState.State.Mode}");
             if (wait || MyGrid?.Physics == null || !AllInited && !PostInit() || _clientNotReady) return false;
             if (Session.Enforced.Debug >= 1) Dsutil1.Sw.Restart();
 
@@ -134,6 +135,7 @@ namespace DefenseShields
         {
             if (!_isDedicated) ShellVisibility();
             ShieldEnt.Render.Visible = true;
+            _updateRender = true;
             ComingOnline = false;
             WasOnline = true;
             WarmedUp = true;
@@ -760,9 +762,6 @@ namespace DefenseShields
 
         private bool ClientOfflineStates()
         {
-            var primeMode = ShieldMode == ShieldType.Station && IsStatic && ShieldComp.StationEmitter == null;
-            var betaMode = ShieldMode != ShieldType.Station && !IsStatic && ShieldComp.ShipEmitter == null;
-
             if (DsState.State.Message)
             {
                 if (Session.Enforced.Debug >= 1) Log.Line($"ClientOffline: Broadcasting message");
@@ -770,18 +769,10 @@ namespace DefenseShields
                 DsState.State.Message = false;
             }
 
-            if (ShieldComp.DefenseShields != this || primeMode || betaMode)
+            if (ShieldComp.DefenseShields != this && DsState.State.Online && !DsState.State.Suspended)
             {
-                if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
-                if (_clientOn)
-                {
-                    if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
-                    ShellVisibility(true);
-                    _clientOn = false;
-                    Shield.RefreshCustomInfo();
-                }
+                ShieldComp.DefenseShields = this;
                 _prevShieldActive = false;
-                return true;
             }
 
             var offline = DsState.State.Suspended || !DsState.State.Online || DsState.State.Sleeping || !DsState.State.ControllerGridAccess

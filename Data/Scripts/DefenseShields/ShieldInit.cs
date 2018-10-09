@@ -89,6 +89,7 @@ namespace DefenseShields
             _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
 
             Session.Instance.ControllerBlockCache[Shield.SlimBlock] = this;
+            _updateRender = true;
             Warming = true;
         }
 
@@ -228,7 +229,7 @@ namespace DefenseShields
                     _updateMobileShape = true;
                     break;
             }
-
+            Log.Line($"!!!!! WTF:{ShieldMode}");
             GridIsMobile = ShieldMode != ShieldType.Station;
             DsUi.CreateUi(Shield);
             InitEntities(true);
@@ -279,6 +280,7 @@ namespace DefenseShields
             ShieldEnt.Render.Visible = true;
             ShieldEnt.Save = false;
             _shieldEntRendId = ShieldEnt.Render.GetRenderObjectID();
+            _updateRender = true;
 
             if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
             if (Session.Enforced.Debug >= 1) Log.Line($"InitEntities: mode: {ShieldMode}, spawn complete - ShieldId [{Shield.EntityId}]");

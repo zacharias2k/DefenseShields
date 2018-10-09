@@ -25,7 +25,6 @@ namespace DefenseShields
     public class Emitters : MyGameLogicComponent
     {
         private uint _tick;
-        private uint _myRenderId;
         private int _count = -1;
         private int _lCount;
         internal int RotationTime;
@@ -80,7 +79,6 @@ namespace DefenseShields
 
         public enum EmitterType
         {
-            Unknown,
             Station,
             Large,
             Small,
@@ -96,6 +94,7 @@ namespace DefenseShields
 
                 MyGrid = Emitter.CubeGrid as MyCubeGrid;
                 if (wait || MyGrid?.Physics == null) return;
+
                 IsStatic = MyGrid.IsStatic;
 
                 Timing();
@@ -653,7 +652,6 @@ namespace DefenseShields
                 Session.Instance.Emitters.Add(this);
                 _emitters.Add(Entity.EntityId, this);
                 PowerInit();
-                _myRenderId = Emitter.Render.GetRenderObjectID();
                 _isServer = Session.IsServer;
                 _isDedicated = Session.DedicatedServer;
                 StateChange(true);

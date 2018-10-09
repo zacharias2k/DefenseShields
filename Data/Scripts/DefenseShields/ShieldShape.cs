@@ -119,7 +119,8 @@ namespace DefenseShields
                 DetectionMatrix = _shieldShapeMatrix * _shieldGridMatrix;
                 DetectionCenter = MyGrid.PositionComp.WorldVolume.Center;
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(MyGrid.WorldMatrix);
-                ShieldSphere = new BoundingSphereD(Shield.PositionComp.LocalAABB.Center, ShieldSize.AbsMax()) { Center = DetectionCenter };
+                ShieldSphere.Center = DetectionCenter;
+                ShieldSphere.Radius = ShieldSize.AbsMax();
             }
             else
             {
@@ -130,16 +131,36 @@ namespace DefenseShields
                 ShieldSize = DetectionMatrix.Scale;
                 DetectionCenter = emitter.PositionComp.WorldVolume.Center;
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(emitter.CubeGrid.WorldMatrix);
-                ShieldSphere = new BoundingSphereD(emitter.PositionComp.LocalAABB.Center, ShieldSize.AbsMax()) { Center = DetectionCenter };
+                ShieldSphere.Center = DetectionCenter;
+                ShieldSphere.Radius = ShieldSize.AbsMax();
             }
 
-            SOriBBoxD = new MyOrientedBoundingBoxD(DetectionCenter, ShieldSize, _sQuaternion);
-            _shieldAabb = new BoundingBox(ShieldSize, -ShieldSize);
+            SOriBBoxD.Center = DetectionCenter;
+            SOriBBoxD.HalfExtent = ShieldSize;
+            SOriBBoxD.Orientation = _sQuaternion;
+
+            _shieldAabb.Min = ShieldSize;
+            _shieldAabb.Max = -ShieldSize;
+
+            if (_isServer)
+            {
+                _pruneSphere1.Center = DetectionCenter;
+                _pruneSphere2.Center = DetectionCenter;
+            }
+            else _clientPruneSphere.Center = DetectionCenter;
 
             if (_shapeChanged)
             {
                 EllipsoidSa.Update(DetectMatrixOutside.Scale.X, DetectMatrixOutside.Scale.Y, DetectMatrixOutside.Scale.Z);
                 BoundingRange = ShieldSize.AbsMax();
+
+                if (_isServer)
+                {
+                    _pruneSphere1.Radius = BoundingRange + 3000;
+                    _pruneSphere2.Radius = BoundingRange + 50;
+                }
+                else _clientPruneSphere.Radius = BoundingRange + 5;
+
                 _ellipsoidSurfaceArea = EllipsoidSa.Surface;
                 EllipsoidVolume = 1.333333 * Math.PI * DetectMatrixOutside.Scale.X * DetectMatrixOutside.Scale.Y * DetectMatrixOutside.Scale.Z;
                 _shieldVol = DetectMatrixOutside.Scale.Volume;

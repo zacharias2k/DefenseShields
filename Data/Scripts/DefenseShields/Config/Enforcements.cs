@@ -14,7 +14,7 @@ namespace DefenseShields
 
             var binary = MyAPIGateway.Utilities.SerializeToBinary(enforce);
             shield.Storage[Session.Instance.ControllerEnforceGuid] = Convert.ToBase64String(binary);
-            Log.Line($"Enforcement Saved - Version:{enforce.Version} - ShieldId [{shield.EntityId}]");
+            if (Session.Enforced.Debug >= 1) Log.Line($"Enforcement Saved - Version:{enforce.Version} - ShieldId [{shield.EntityId}]");
         }
 
         public static DefenseShieldsEnforcement LoadEnforcement(IMyFunctionalBlock shield)
@@ -28,7 +28,7 @@ namespace DefenseShields
                 DefenseShieldsEnforcement loadedEnforce = null;
                 var base64 = Convert.FromBase64String(rawData);
                 loadedEnforce = MyAPIGateway.Utilities.SerializeFromBinary<DefenseShieldsEnforcement>(base64);
-                Log.Line($"Enforcement Loaded {loadedEnforce != null} - Version:{loadedEnforce?.Version} - ShieldId [{shield.EntityId}]");
+                if (Session.Enforced.Debug >= 1) Log.Line($"Enforcement Loaded {loadedEnforce != null} - Version:{loadedEnforce?.Version} - ShieldId [{shield.EntityId}]");
                 if (loadedEnforce != null) return loadedEnforce;
             }
             return null;
@@ -36,7 +36,7 @@ namespace DefenseShields
 
         public static void EnforcementRequest(long shieldId)
         {
-            Log.Line($"Client [{MyAPIGateway.Multiplayer.MyId}] requesting enforcement - current:\n{Session.Enforced}");
+            if (Session.Enforced.Debug >= 1) Log.Line($"Client [{MyAPIGateway.Multiplayer.MyId}] requesting enforcement - current:\n{Session.Enforced}");
             Session.Enforced.SenderId = MyAPIGateway.Multiplayer.MyId;
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataEnforce(MyAPIGateway.Multiplayer.MyId, shieldId, Session.Enforced));
             MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdEnforce, bytes);

@@ -14,8 +14,6 @@ namespace DefenseShields
         #region Web Entities
         private void WebEntitiesClient()
         {
-            _clientPruneSphere.Center = DetectionCenter;
-            _clientPruneSphere.Radius = BoundingRange + 5;
             _clientPruneList.Clear();
 
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref _clientPruneSphere, _clientPruneList);

@@ -43,7 +43,7 @@ namespace DefenseShields
         {
             try
             {
-                if (ShieldComp == null) return;
+                //if (ShieldComp == null) return;
                 _subUpdate = true;
             }
             catch (Exception ex) { Log.Line($"Exception in Controller HierarchyChanged: {ex}"); }

@@ -17,12 +17,6 @@ namespace DefenseShields
         #region Web Entities
         private void WebEntities()
         {
-            _pruneSphere1.Center = DetectionCenter;
-            _pruneSphere1.Radius = BoundingRange + 3000;
-
-            _pruneSphere2.Center = DetectionCenter;
-            _pruneSphere2.Radius = BoundingRange + 50;
-
             _pruneList.Clear();
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref _pruneSphere1, _pruneList, MyEntityQueryType.Dynamic);
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref _pruneSphere2, _pruneList, MyEntityQueryType.Static);
@@ -38,10 +32,9 @@ namespace DefenseShields
                 var ent = _pruneList[i];
 
                 var voxel = ent as MyVoxelBase;
-                if (ent == null || ent.MarkedForClose || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel || voxel == null && ent.Physics == null) continue;
+                if (ent == null || ent.MarkedForClose || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel || voxel == null && ent.Physics == null || !_pruneSphere2.Intersects(ent.PositionComp.WorldVolume)) continue;
+
                 var entCenter = ent.PositionComp.WorldVolume.Center;
-                var missileCheck = !_pruneSphere2.Intersects(ent.PositionComp.WorldVolume) && ent.DefinitionId.HasValue && ent.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile);
-                if (voxel == null && missileCheck) continue;
                 if (FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent) || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
                 EntIntersectInfo entInfo;
                 WebEnts.TryGetValue(ent, out entInfo);
