@@ -348,7 +348,7 @@
         <TypeId>UpgradeModule</TypeId>
         <SubtypeId>EmitterL</SubtypeId>
       </Id>
-      <DisplayName>Shield Emitter</DisplayName>
+      <DisplayName>Ship Shield Emitter</DisplayName>
       <Icon>Textures\GUI\Icons\Cubes\ShipShield_Icon.dds</Icon>
       <CubeSize>Large</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -451,7 +451,7 @@
         <TypeId>UpgradeModule</TypeId>
         <SubtypeId>EmitterS</SubtypeId>
       </Id>
-      <DisplayName>Shield Emitter</DisplayName>
+      <DisplayName>Ship Shield Emitter</DisplayName>
       <Icon>Textures\GUI\Icons\Cubes\ShipShield_Icon.dds</Icon>
       <CubeSize>Small</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -770,7 +770,7 @@
           <TypeId>UpgradeModule</TypeId>
           <SubtypeId>EmitterLA</SubtypeId>
         </Id>
-        <DisplayName>Shield Compact Emitter</DisplayName>
+        <DisplayName>Ship Shield Emitter</DisplayName>
         <Icon>Textures\GUI\Icons\Cubes\ArmoredEmitterIcon.dds</Icon>
         <CubeSize>Large</CubeSize>
         <BlockTopology>TriangleMesh</BlockTopology>

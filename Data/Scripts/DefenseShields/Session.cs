@@ -93,6 +93,9 @@ namespace DefenseShields
         public IMyTerminalControlSlider WidthSlider;
         public IMyTerminalControlSlider HeightSlider;
         public IMyTerminalControlSlider DepthSlider;
+        public IMyTerminalControlSlider OffsetWidthSlider;
+        public IMyTerminalControlSlider OffsetHeightSlider;
+        public IMyTerminalControlSlider OffsetDepthSlider;
         public IMyTerminalControlSlider ChargeSlider;
         public IMyTerminalControlCheckbox ExtendFit;
         public IMyTerminalControlCheckbox SphereFit;
@@ -1155,6 +1158,16 @@ namespace DefenseShields
 
                 DepthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_DepthSlider", "Shield Size Depth", "Shield Size Depth", DsUi.GetDepth, DsUi.SetDepth);
                 DepthSlider.SetLimits(30, 600);
+
+                OffsetWidthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_OffsetWidthSlider", "Width Offset", "Width Offset", DsUi.GetOffsetWidth, DsUi.SetOffsetWidth);
+                OffsetWidthSlider.SetLimits(-69, 69);
+
+                OffsetHeightSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_OffsetHeightSlider", "Height Offset", "Height Offset", DsUi.GetOffsetHeight, DsUi.SetOffsetHeight);
+                OffsetHeightSlider.SetLimits(-69, 69);
+
+                OffsetDepthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_OffsetDepthSlider", "Depth Offset", "Depth Offset", DsUi.GetOffsetDepth, DsUi.SetOffsetDepth);
+                OffsetDepthSlider.SetLimits(-69, 69);
+
                 TerminalHelpers.Separator(comp?.Shield, "DS-C_sep4");
 
                 BatteryBoostCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_UseBatteries", "Batteries Contribute To Shields", "Batteries May Contribute To Shield Strength", DsUi.GetBatteries, DsUi.SetBatteries);

@@ -459,9 +459,8 @@ namespace DefenseShields.Support
                     var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
                     var gridLinearVel = grid.Physics.LinearVelocity;
                     var gridLinearLen = gridLinearVel.Length();
-                    //grid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (grid.PositionComp.WorldAABB.Center - matrix.Translation) * (mass * gridLinearLen), null, null, MathHelper.Clamp(gridLinearLen, 0.1f, 15f));
-                    //grid.Physics.ApplyImpulse(mass * 0.015 * -Vector3D.Dot(gridLinearVel, surfaceNormal) * surfaceNormal, collisionAvg);
-                    var forceData = new MyAddForceData { MyGrid = grid, Force = (grid.PositionComp.WorldAABB.Center - matrix.Translation) * (mass * gridLinearLen)};
+
+                    var forceData = new MyAddForceData { MyGrid = grid, Force = (grid.PositionComp.WorldAABB.Center - matrix.Translation) * (mass * gridLinearLen), MaxSpeed = MathHelper.Clamp(gridLinearLen, 10, gridLinearLen * 0.5f)};
                     var impulseData = new MyImpulseData { MyGrid = grid, Direction = mass * 0.015 * -Vector3D.Dot(gridLinearVel, surfaceNormal) * surfaceNormal, Position = collisionAvg };
                     force.Enqueue(forceData);
                     impulse.Enqueue(impulseData);

@@ -185,7 +185,6 @@ namespace DefenseShields
                     StateChange(true);
                 }
             }
-            //else if (!EmiState.State.Link || !ShieldComp.DefenseShields.WarmedUp)
             else if (!EmiState.State.Link)
             {
                 if (StateChange())
@@ -207,20 +206,18 @@ namespace DefenseShields
             }
             else
             {
-                if (ShieldComp?.DefenseShields == null) return false;
+                if (ShieldComp == null) return false;
 
                 if (EmiState.State.Mode == 0 && EmiState.State.Link && ShieldComp.StationEmitter == null) ShieldComp.StationEmitter = this;
                 else if (EmiState.State.Mode != 0 && EmiState.State.Link && ShieldComp.ShipEmitter == null) ShieldComp.ShipEmitter = this;
 
-                if (!Emitter.IsFunctional) return false;
+                if (ShieldComp.DefenseShields == null || !Emitter.IsFunctional) return false;
 
                 if (!EmiState.State.Compact && _subpartRotor == null)
                 {
                     Entity.TryGetSubpart("Rotor", out _subpartRotor);
                     if (_subpartRotor == null) return false;
                 }
-
-                //if (!EmiState.State.Link || !EmiState.State.Online || !ShieldComp.DefenseShields.Shield.IsFunctional || !ShieldComp.DefenseShields.Shield.IsWorking) return false;
                 if (!EmiState.State.Link || !EmiState.State.Online) return false;
             }
             return true;
@@ -365,6 +362,7 @@ namespace DefenseShields
                                          "\n[Emitter Type]: " + mode +
                                          "\n[Grid Compatible]: " + EmiState.State.Compatible +
                                          "\n[Controller Link]: " + EmiState.State.Link +
+                                         "\n[Controller Bus]: " + (ShieldComp?.DefenseShields != null) +
                                          "\n[Line of Sight]: " + EmiState.State.Los +
                                          "\n[Is Suspended]: " + EmiState.State.Suspend +
                                          "\n[Is a Backup]: " + EmiState.State.Backup);
@@ -403,12 +401,12 @@ namespace DefenseShields
             EmiState.State.Online = true;
             var online = EmiState.State.Online;
             var logic = ShieldComp.DefenseShields;
-            var controllerReady = logic.Warming && logic.Shield.IsWorking && logic.Shield.IsFunctional && !logic.DsState.State.Suspended;
+            var controllerReady = logic != null && logic.Warming && logic.Shield.IsWorking && logic.Shield.IsFunctional && !logic.DsState.State.Suspended && logic.DsState.State.ControllerGridAccess;
             var losCheckReq = online && controllerReady;
             if (losCheckReq && ShieldComp.CheckEmitters || controllerReady && TookControl) CheckShieldLineOfSight();
             //if (losCheckReq && !EmiState.State.Los && !Session.DedicatedServer) DrawHelper();
             ShieldComp.EmittersWorking = EmiState.State.Los && online;
-            if (!ShieldComp.EmittersWorking || !ShieldComp.DefenseShields.DsState.State.Online || !(_tick >= logic.UnsuspendTick))
+            if (!ShieldComp.EmittersWorking || logic == null || !ShieldComp.DefenseShields.DsState.State.Online || !(_tick >= logic.UnsuspendTick))
             {
                 BlockReset();
                 return false;
@@ -445,7 +443,7 @@ namespace DefenseShields
                 }
             }
 
-            if (ShieldComp?.DefenseShields == null || !ShieldComp.DefenseShields.DsState.State.ControllerGridAccess)
+            if (ShieldComp == null)
             {
                 EmiState.State.Suspend = true;
                 return true;
@@ -768,9 +766,9 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 2) Log.Line($"Close: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
                 if (_emitters.ContainsKey(Entity.EntityId)) _emitters.Remove(Entity.EntityId);
                 if (Session.Instance.Emitters.Contains(this)) Session.Instance.Emitters.Remove(this);
-                if (_isServer && ShieldComp?.StationEmitter == this)
+                if (ShieldComp?.StationEmitter == this)
                 {
-                    if (ShieldComp != null && (int)EmitterMode == ShieldComp.EmitterMode)
+                    if ((int)EmitterMode == ShieldComp.EmitterMode)
                     {
                         ShieldComp.EmittersWorking = false;
                         ShieldComp.EmitterEvent = true;
@@ -778,9 +776,9 @@ namespace DefenseShields
                     }
                     ShieldComp.StationEmitter = null;
                 }
-                else if (_isServer && ShieldComp?.ShipEmitter == this)
+                else if (ShieldComp?.ShipEmitter == this)
                 {
-                    if (ShieldComp != null && (int)EmitterMode == ShieldComp.EmitterMode)
+                    if ((int)EmitterMode == ShieldComp.EmitterMode)
                     {
                         ShieldComp.EmittersWorking = false;
                         ShieldComp.EmitterEvent = true;

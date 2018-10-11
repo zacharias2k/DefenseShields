@@ -191,7 +191,7 @@ namespace DefenseShields
         {
             if (_blockChanged) BlockMonitor();
 
-            if (_tick >= _losCheckTick) LosCheck();
+            if (_tick >= LosCheckTick) LosCheck();
             if (Suspend() || ShieldSleeping() || ShieldLowered()) return false;
             if (ShieldComp.EmitterEvent) EmitterEventDetected();
 
@@ -372,7 +372,7 @@ namespace DefenseShields
 
         private void LosCheck()
         {
-            _losCheckTick = uint.MaxValue;
+            LosCheckTick = uint.MaxValue;
             ShieldComp.CheckEmitters = true;
         }
 
@@ -708,7 +708,7 @@ namespace DefenseShields
         {
             var realPlayerIds = new HashSet<long>();
 
-            var center = GridIsMobile ? MyGrid.PositionComp.WorldVolume.Center : ShieldComp.StationEmitter.Emitter.WorldVolume.Center;
+            var center = GridIsMobile ? MyGrid.PositionComp.WorldVolume.Center : OffsetEmitterWorldMatrix.Translation;
             switch (notice)
             {
                 case PlayerNotice.EmitterInit:

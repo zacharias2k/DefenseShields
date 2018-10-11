@@ -5,6 +5,7 @@ using VRage.Game.Components;
 using DefenseShields.Support;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
+using VRageMath;
 
 namespace DefenseShields
 {
@@ -78,7 +79,6 @@ namespace DefenseShields
                 if (DsState.State.Online)
                 {
                     if (ComingOnline) ComingOnlineSetup();
-
                     if (_isServer)
                     {
                         var createHeTiming = _count == 6 && (_lCount == 1 || _lCount == 6);

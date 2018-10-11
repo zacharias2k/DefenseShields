@@ -84,7 +84,7 @@ namespace DefenseShields
             {
                 _blockEvent = true;
                 _shapeEvent = true;
-                _losCheckTick = _tick + 1800;
+                LosCheckTick = _tick + 1800;
                 if (_blockAdded) _shapeTick = _tick + 300;
                 else _shapeTick = _tick + 1800;
             }

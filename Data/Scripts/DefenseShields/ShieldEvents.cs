@@ -161,8 +161,9 @@ namespace DefenseShields
                                          "\n[Other Power]: " + otherPower.ToString("0.0") + " Mw" +
                                          "\n[HP Stored]: " + (DsState.State.Buffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
                                          "\n[Needed Power]: " + shieldPowerNeeds.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw" +
-                                         "\n[Emitter Detected]: " + DsState.State.EmitterWorking +
-                                         "\n" +
+                                         "\n[Emitter Working]: " + DsState.State.EmitterWorking +
+                                         "\n[Ship Emitter]: " + (ShieldComp?.ShipEmitter != null) +
+                                         "\n[Station Emitter]: " + (ShieldComp?.StationEmitter != null) +
                                          "\n[Grid Owns Controller]: " + DsState.State.IsOwner +
                                          "\n[In Grid's Faction]: " + DsState.State.InFaction);
                 }

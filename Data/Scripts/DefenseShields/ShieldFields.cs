@@ -23,12 +23,12 @@ namespace DefenseShields
         #region Setup
         private uint _tick;
         private uint _shieldEntRendId;
-        private uint _losCheckTick;
         private uint _subTick;
         private uint _funcTick;
         private uint _shapeTick;
         private uint _heatVentingTick = uint.MaxValue;
         internal uint UnsuspendTick;
+        internal uint LosCheckTick;
 
         internal float ImpactSize { get; set; } = 9f;
         internal float Absorb { get; set; }
@@ -174,12 +174,12 @@ namespace DefenseShields
 
         internal MatrixD DetectMatrixOutsideInv;
         internal MatrixD DetectMatrixInInv;
-        private MatrixD _shieldGridMatrix;
         private MatrixD _shieldShapeMatrix;
         internal MatrixD DetectMatrixOutside;
         internal MatrixD DetectMatrixIn;
         internal MatrixD ShieldMatrix;
         internal MatrixD OldShieldMatrix;
+        internal MatrixD OffsetEmitterWorldMatrix;
 
         private BoundingBox _shieldAabb = new BoundingBox(-Vector3D.One, Vector3D.One);
         public BoundingSphereD ShieldSphere = new BoundingSphereD(Vector3D.Zero, 1);

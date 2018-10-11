@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Sandbox.ModAPI;
+using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
 
@@ -13,6 +14,10 @@ namespace DefenseShields
             Session.Instance.WidthSlider.Visible = ShowSizeSlider;
             Session.Instance.HeightSlider.Visible = ShowSizeSlider;
             Session.Instance.DepthSlider.Visible = ShowSizeSlider;
+
+            Session.Instance.OffsetWidthSlider.Visible = ShowSizeSlider;
+            Session.Instance.OffsetHeightSlider.Visible = ShowSizeSlider;
+            Session.Instance.OffsetDepthSlider.Visible = ShowSizeSlider;
 
             Session.Instance.ExtendFit.Visible = ShowReSizeCheckBoxs;
             Session.Instance.SphereFit.Visible = ShowReSizeCheckBoxs;
@@ -107,10 +112,10 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
             comp.DsSet.Settings.Width = newValue;
-            comp.FitChanged = true;
             comp.UpdateDimensions = true;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
+            comp.LosCheckTick = Session.Instance.Tick + 1800;
         }
 
         public static float GetHeight(IMyTerminalBlock block)
@@ -124,10 +129,10 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
             comp.DsSet.Settings.Height = newValue;
-            comp.FitChanged = true;
             comp.UpdateDimensions = true;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
+            comp.LosCheckTick = Session.Instance.Tick + 1800;
         }
 
         public static float GetDepth(IMyTerminalBlock block)
@@ -141,10 +146,70 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
             comp.DsSet.Settings.Depth = newValue;
-            comp.FitChanged = true;
             comp.UpdateDimensions = true;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
+            comp.LosCheckTick = Session.Instance.Tick + 1800;
+        }
+
+        public static float GetOffsetWidth(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            return comp?.DsSet.Settings.ShieldOffset.X ?? 0;
+        }
+
+        public static void SetOffsetWidth(IMyTerminalBlock block, float newValue)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            if (comp == null) return;
+
+            comp.DsSet.Settings.ShieldOffset.X = (int) newValue;
+            comp.UpdateDimensions = true;
+            comp.SettingsUpdated = true;
+            comp.ClientUiUpdate = true;
+            comp.LosCheckTick = Session.Instance.Tick + 1800;
+            block.ShowInToolbarConfig = false;
+            block.ShowInToolbarConfig = true;
+        }
+
+        public static float GetOffsetHeight(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            return comp?.DsSet.Settings.ShieldOffset.Y ?? 0;
+        }
+
+        public static void SetOffsetHeight(IMyTerminalBlock block, float newValue)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            if (comp == null) return;
+
+            comp.DsSet.Settings.ShieldOffset.Y = (int) newValue;
+            comp.UpdateDimensions = true;
+            comp.SettingsUpdated = true;
+            comp.ClientUiUpdate = true;
+            comp.LosCheckTick = Session.Instance.Tick + 1800;
+            block.ShowInToolbarConfig = false;
+            block.ShowInToolbarConfig = true;
+        }
+
+        public static float GetOffsetDepth(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            return comp?.DsSet.Settings.ShieldOffset.Z ?? 0;
+        }
+
+        public static void SetOffsetDepth(IMyTerminalBlock block, float newValue)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            if (comp == null) return;
+
+            comp.DsSet.Settings.ShieldOffset.Z = (int) newValue;
+            comp.UpdateDimensions = true;
+            comp.SettingsUpdated = true;
+            comp.ClientUiUpdate = true;
+            comp.LosCheckTick = Session.Instance.Tick + 1800;
+            block.ShowInToolbarConfig = false;
+            block.ShowInToolbarConfig = true;
         }
 
         public static bool GetBatteries(IMyTerminalBlock block)

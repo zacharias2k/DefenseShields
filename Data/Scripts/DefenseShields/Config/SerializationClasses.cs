@@ -184,6 +184,9 @@ namespace DefenseShields
         [ProtoMember(17)]
         public long Visible = 0;
 
+        [ProtoMember(18)]
+        public Vector3 ShieldOffset = Vector3.Zero;
+
         public override string ToString()
         {
             return "";

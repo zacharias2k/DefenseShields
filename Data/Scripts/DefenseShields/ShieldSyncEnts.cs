@@ -223,7 +223,7 @@ namespace DefenseShields
                                 continue;
                             }
                             block.DoDamage(damageMulti, DelDamage, true, null, MyGrid.EntityId); 
-                            if (myGrid.BlocksCount == 0) myGrid.SyncObject.SendCloseRequest();
+                            if (myGrid.BlocksCount == 0) myGrid.Close();
                         }
                     }
                 }
@@ -246,7 +246,7 @@ namespace DefenseShields
                                 continue;
                             }
                             block.DoDamage(block.MaxIntegrity * 0.9f, DelDamage, true, null, MyGrid.EntityId); 
-                            if (myGrid.BlocksCount == 0) myGrid.SyncObject.SendCloseRequest();
+                            if (myGrid.BlocksCount == 0) myGrid.Close();
                         }
                     }
                 }
@@ -268,7 +268,7 @@ namespace DefenseShields
                                 continue;
                             }
                             UtilsStatic.CreateExplosion(block.PositionComp.WorldAABB.Center, 2.1f, 9999);
-                            if (myGrid.BlocksCount == 0) myGrid.SyncObject.SendCloseRequest();
+                            if (myGrid.BlocksCount == 0) myGrid.Close();
                         }
                     }
                 }

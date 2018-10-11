@@ -56,10 +56,7 @@ namespace DefenseShields
                 var damage = entInfo.Damage * DsState.State.ModulateKinetic;
                 if (Session.MpActive)
                 {
-                    if (Session.IsServer)
-                    {
-                        ShieldDoDamage(damage, grid.EntityId);
-                    }
+                    if (Session.IsServer) ShieldDoDamage(damage, grid.EntityId);
                 }
                 else
                 {
@@ -352,10 +349,6 @@ namespace DefenseShields
                             _impulseData.Enqueue(impulseData1);
                             _impulseData.Enqueue(impulseData2);
                             _forceData.Enqueue(forceData);
-                            //bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass,bPhysics.CenterOfMassWorld);
-                            //bPhysics.ApplyImpulse(surfaceMulti * (surfaceMass * 0.025) *-Vector3D.Dot(bPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, collisionAvg);
-                            //bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (bPhysics.CenterOfMassWorld - collisionAvg) * (bMass * bSpeedLen), null, Vector3D.Zero, MathHelper.Clamp(bSpeedLen, 1f, 8f));
-
                         }
                         else
                         {
@@ -384,11 +377,6 @@ namespace DefenseShields
                                 var bForceData = new MyAddForceData { MyGrid = breaching, Force = (bPhysics.CenterOfMassWorld - collisionAvg) * surfaceMass, MaxSpeed = null };
                                 _forceData.Enqueue(bForceData);
                             }
-
-                            //if (!bPhysics.IsStatic) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass, bPhysics.CenterOfMassWorld);
-                            //if (!sPhysics.IsStatic) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sMass, sPhysics.CenterOfMassWorld);
-                            //if (!sPhysics.IsStatic) sPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (sPhysics.CenterOfMassWorld - collisionAvg) * surfaceMass, null, Vector3D.Zero, null);
-                            //if (!bPhysics.IsStatic) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (bPhysics.CenterOfMassWorld - collisionAvg) * surfaceMass, null, Vector3D.Zero, null);
                         }
 
                         bBlockCenter = collisionAvg;

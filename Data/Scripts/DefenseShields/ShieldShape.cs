@@ -114,9 +114,9 @@ namespace DefenseShields
             if (GridIsMobile)
             {
                 _updateMobileShape = false;
-                _shieldGridMatrix = MyGrid.WorldMatrix;
+                var shieldGridMatrix = MyGrid.WorldMatrix;
                 if (_shapeChanged) CreateMobileShape();
-                DetectionMatrix = _shieldShapeMatrix * _shieldGridMatrix;
+                DetectionMatrix = _shieldShapeMatrix * shieldGridMatrix;
                 DetectionCenter = MyGrid.PositionComp.WorldVolume.Center;
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(MyGrid.WorldMatrix);
                 ShieldSphere.Center = DetectionCenter;
@@ -124,13 +124,45 @@ namespace DefenseShields
             }
             else
             {
+                /*
+                if (ShieldComp?.StationEmitter?.Emitter == null)
+                {
+                    if (Session.Enforced.Debug >= 1) Log.CleanLine($"!!!! REPORT THIS ERROR !!!! - CreateShieldShape: CompNull:{ShieldComp == null} - StationEmitterNull:{ShieldComp?.StationEmitter == null} - EmitterNull:{ShieldComp?.StationEmitter?.Emitter == null} - [{Shield.EntityId}]");
+                    return;
+                }
+                */
                 var emitter = ShieldComp.StationEmitter.Emitter;
-                _shieldGridMatrix = emitter.WorldMatrix;
-                DetectionMatrix = MatrixD.Rescale(_shieldGridMatrix, new Vector3D(DsSet.Settings.Width, DsSet.Settings.Height, DsSet.Settings.Depth));
-                _shieldShapeMatrix = MatrixD.Rescale(emitter.LocalMatrix, new Vector3D(DsSet.Settings.Width, DsSet.Settings.Height, DsSet.Settings.Depth));
+                var width = DsSet.Settings.Width;
+                var height = DsSet.Settings.Height;
+                var depth = DsSet.Settings.Depth;
+
+                var wOffset = (int)DsSet.Settings.ShieldOffset.X;
+                var hOffset = (int)DsSet.Settings.ShieldOffset.Y;
+                var dOffset = (int)DsSet.Settings.ShieldOffset.Z;
+
+                var offset = new Vector3I(wOffset, hOffset, dOffset);
+                var fudgeVec = new Vector3(0, -2.5, 0);
+                var offsetLMatrix = emitter.LocalMatrix;
+                var offsetLCenter = emitter.PositionComp.LocalAABB.Center + offset * 2.5f;
+
+                DsSet.Settings.ShieldOffset = offset;
+                OffsetEmitterWorldMatrix = emitter.WorldMatrix;
+
+                offsetLMatrix.Translation += fudgeVec;
+                offsetLMatrix.Translation += offset * 2.5f;
+
+                OffsetEmitterWorldMatrix.Translation = Vector3D.Transform(offsetLCenter, OffsetEmitterWorldMatrix);
+                DetectionCenter = OffsetEmitterWorldMatrix.Translation;
+
+                var halfDistToCenter = 600 - Vector3D.Distance(DetectionCenter, emitter.PositionComp.WorldAABB.Center);
+                var vectorScale = new Vector3D(MathHelper.Clamp(width, 30, halfDistToCenter), MathHelper.Clamp(height, 30, halfDistToCenter), MathHelper.Clamp(depth, 30, halfDistToCenter));
+
+                DetectionMatrix = MatrixD.Rescale(OffsetEmitterWorldMatrix, vectorScale);
+                _shieldShapeMatrix = MatrixD.Rescale(offsetLMatrix, vectorScale);
+
                 ShieldSize = DetectionMatrix.Scale;
-                DetectionCenter = emitter.PositionComp.WorldVolume.Center;
-                _sQuaternion = Quaternion.CreateFromRotationMatrix(emitter.CubeGrid.WorldMatrix);
+
+                _sQuaternion = Quaternion.CreateFromRotationMatrix(OffsetEmitterWorldMatrix);
                 ShieldSphere.Center = DetectionCenter;
                 ShieldSphere.Radius = ShieldSize.AbsMax();
             }
@@ -169,7 +201,6 @@ namespace DefenseShields
                     if (Session.Enforced.Debug >= 2) Log.Line($"StateUpdate: CreateShieldShape - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
                     ShieldChangeState();
                     ShieldComp.ShieldVolume = DetectMatrixOutside.Scale.Volume;
-                    //ShieldComp.CheckEmitters = true;
                 }
                 if (Session.Enforced.Debug >= 2) Log.Line($"CreateShape: shapeChanged - GridMobile:{GridIsMobile} - ShieldId [{Shield.EntityId}]");
             }
@@ -202,7 +233,7 @@ namespace DefenseShields
             MatrixD matrix;
             if (!GridIsMobile)
             {
-                matrix = _shieldShapeMatrix * ShieldComp.StationEmitter.Emitter.WorldMatrix;
+                matrix = _shieldShapeMatrix * OffsetEmitterWorldMatrix;
                 ShieldEnt.PositionComp.SetWorldMatrix(matrix);
                 ShieldEnt.PositionComp.SetPosition(DetectionCenter);
             }
