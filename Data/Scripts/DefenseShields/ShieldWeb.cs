@@ -99,10 +99,10 @@ namespace DefenseShields
                 {
                     if (relation == Ent.Other)
                     {
-                        var missileVel = ent.Physics.LinearVelocity;
                         var missileCenter = ent.PositionComp.WorldVolume.Center;
-                        var leaving = Vector3D.Transform(missileCenter + -missileVel * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS, DetectMatrixOutsideInv).LengthSquared() <= 1;
-                        if (leaving)
+                        var missilePast = -Vector3D.Normalize(ent.Physics.LinearVelocity) * 5;
+                        var missileTestLoc = missileCenter + missilePast;
+                        if (CustomCollision.PointInShield(missileTestLoc, DetectMatrixOutsideInv))
                         {
                             IgnoreCache.Add(ent);
                             continue;
