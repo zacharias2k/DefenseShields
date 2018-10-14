@@ -578,7 +578,7 @@ namespace DefenseShields
                 });
             }
             for (int i = 0; i < ShieldComp.PhysicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
-            EmiState.State.Los = _blocksLos.Count < 552;
+            EmiState.State.Los = EmitterMode == EmitterType.Station ||  _blocksLos.Count < 552;
             if (!EmiState.State.Los) ShieldComp.EmitterEvent = true;
             ShieldComp.CheckEmitters = false;
 

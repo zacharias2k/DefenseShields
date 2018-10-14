@@ -230,6 +230,13 @@ namespace DefenseShields
                         s.BulletCoolDown++;
                         if (s.BulletCoolDown == 9) s.BulletCoolDown = -1;
                     }
+
+                    if (s.WebCoolDown > -1)
+                    {
+                        s.WebCoolDown++;
+                        if (s.WebCoolDown == 6) s.WebCoolDown = -1;
+                    }
+
                     if (!s.WarmedUp || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterWorking) continue;
                     var sp = new BoundingSphereD(s.DetectionCenter, s.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
@@ -325,19 +332,14 @@ namespace DefenseShields
                             info.Amount = 0;
                             return;
                         }
-                        //if (Enforced.Debug == 1) Log.CleanLine("");
-                        //if (Enforced.Debug == 1) Log.CleanLine($"part: SId:{ds.Shield.EntityId} - attacker: {hostileEnt.DebugName}");
-                        //if (Enforced.Debug == 1) Log.CleanLine($"part: T:{info.Type} - A:{info.Amount} - HF:{ds.FriendlyCache.Contains(hostileEnt)} - HI:{ds.IgnoreCache.Contains(hostileEnt)}");
-
-                        //block.ComputeWorldCenter(out blockPos);
-                        //if (!CustomCollision.PointInShield(blockPos, shield.DetectMatrixOutsideInv)) continue;
-                        var blockPos = shield.FatBlock.PositionComp.WorldAABB.Center;
-                        var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, blockPos);
+                        var worldSphere = ds.ShieldSphere;
+                        var hostileCenter = hostileEnt.PositionComp.WorldVolume.Center;
+                        var hostileTestLoc = hostileCenter;
+                        var line = new LineD(hostileTestLoc, ds.SOriBBoxD.Center);
                         var obbCheck = ds.SOriBBoxD.Intersects(ref line);
                         var testDir = line.From - line.To;
                         testDir.Normalize();
                         var ray = new RayD(line.From, -testDir);
-                        var worldSphere = ds.ShieldSphere;
                         var sphereCheck = worldSphere.Intersects(ray);
                         var obb = obbCheck ?? 0;
                         var sphere = sphereCheck ?? 0;
@@ -384,7 +386,6 @@ namespace DefenseShields
                         if (!shield.DeformEnabled && info.IsDeformation && info.AttackerId == 0)
                         {
                             info.Amount = 0;
-                            //if (Enforced.Debug == 1) Log.Line($"deform not enabled and deform damage + attackerId0");
                             continue;
                         }
 
@@ -401,8 +402,8 @@ namespace DefenseShields
                             shield.DeformEnabled = true;
                             continue;
                         }
-
-                        if (hostileEnt is IMyGunBaseUser)
+                        var gunBase = hostileEnt as IMyGunBaseUser;
+                        if (gunBase != null)
                         {
                             var hostileParent = hostileEnt.Parent != null;
                             if (hostileParent && CustomCollision.PointInShield(hostileEnt.Parent.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
@@ -411,7 +412,10 @@ namespace DefenseShields
                                 shield.FriendlyCache.Add(hostileEnt);
                                 continue;
                             }
-                            if (!hostileParent && CustomCollision.PointInShield(hostileEnt.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
+                            var hostilePos = hostileEnt.PositionComp.WorldMatrix.Translation;
+
+                            if (hostilePos == Vector3D.Zero && gunBase.Owner != null) hostilePos = gunBase.Owner.PositionComp.WorldMatrix.Translation;
+                            if (!hostileParent && CustomCollision.PointInShield(hostilePos, shield.DetectMatrixOutsideInv))
                             {
                                 shield.DeformEnabled = true;
                                 shield.FriendlyCache.Add(hostileEnt);
@@ -481,8 +485,8 @@ namespace DefenseShields
                             shield.DeformEnabled = true;
                             continue;
                         }
-
-                        if (hostileEnt is IMyGunBaseUser)
+                        var gunBase = hostileEnt as IMyGunBaseUser;
+                        if (gunBase != null)
                         {
                             var hostileParent = hostileEnt.Parent != null;
                             if (hostileParent && CustomCollision.PointInShield(hostileEnt.Parent.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
@@ -491,7 +495,10 @@ namespace DefenseShields
                                 shield.FriendlyCache.Add(hostileEnt);
                                 continue;
                             }
-                            if (!hostileParent && CustomCollision.PointInShield(hostileEnt.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
+                            var hostilePos = hostileEnt.PositionComp.WorldMatrix.Translation;
+
+                            if (hostilePos == Vector3D.Zero && gunBase.Owner != null) hostilePos = gunBase.Owner.PositionComp.WorldMatrix.Translation;
+                            if (!hostileParent && CustomCollision.PointInShield(hostilePos, shield.DetectMatrixOutsideInv))
                             {
                                 shield.DeformEnabled = true;
                                 shield.FriendlyCache.Add(hostileEnt);

@@ -37,7 +37,7 @@ namespace DefenseShields
             var refreshAnim = DsSet.Settings.RefreshAnimation;
             var config = MyAPIGateway.Session.Config;
             var drawIcon = !enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
-            if ((_count == 0 || _count == 19 || _count ==39) && _hideColor && !_supressedColor && CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation, DetectMatrixOutsideInv))
+            if ((_count == 0 || _count == 19 || _count == 39) && _hideColor && !_supressedColor && CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation, DetectMatrixOutsideInv))
             {
                 _modelPassive = ModelMediumReflective;
                 UpdatePassiveModel();
@@ -57,22 +57,34 @@ namespace DefenseShields
             CalcualteVisibility(DsSet.Settings.Visible, activeVisible);
 
             var impactPos = WorldImpactPosition;
+            var webEffect = WebDamage && BulletCoolDown > -1 && WebCoolDown < 0;
+
             _localImpactPosition = Vector3D.NegativeInfinity;
-            if (impactPos != Vector3D.NegativeInfinity && BulletCoolDown < 0)
+            if (impactPos != Vector3D.NegativeInfinity && (BulletCoolDown < 0 || webEffect))
             {
-                BulletCoolDown = 0;
-                HitParticleStart();
-                var cubeBlockLocalMatrix = MyGrid.PositionComp.LocalMatrix;
-                var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
-                var worldDirection = impactPos - referenceWorldPosition;
-                var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(cubeBlockLocalMatrix));
-                _localImpactPosition = localPosition;
+                if (webEffect)
+                {
+                    WebCoolDown = 0;
+                    HitParticleStart();
+                }
+                else
+                {
+                    if (WebDamage) WebCoolDown = 0;
+                    BulletCoolDown = 0;
+                    HitParticleStart();
+                    var cubeBlockLocalMatrix = MyGrid.PositionComp.LocalMatrix;
+                    var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
+                    var worldDirection = impactPos - referenceWorldPosition;
+                    var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(cubeBlockLocalMatrix));
+                    _localImpactPosition = localPosition;
+                }
             }
 
             if (EmpDetonation != Vector3D.NegativeInfinity) EmpParticleStart();
 
             WorldImpactPosition = Vector3D.NegativeInfinity;
             EmpDetonation = Vector3D.NegativeInfinity;
+            WebDamage = false;
 
             if (Shield.IsWorking)
             {

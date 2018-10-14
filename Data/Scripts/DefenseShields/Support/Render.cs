@@ -296,7 +296,9 @@ namespace DefenseShields.Support
                                 // if you already have the mesh generated, it's easy to get the vector from point - origin
                                 // when you have the vector, save the magnitude as the length (radius at that point), then normalize the vector 
                                 // so it's length is 1, then multiply by length + wave offset you would need the original vertex points for each iteration
-                                if (_localImpacts[s] == Vector3D.NegativeInfinity) continue;
+                                var smallImpact = ImpactSteps / 3;
+
+                                if (_localImpacts[s] == Vector3D.NegativeInfinity || _impactCnt[s] > smallImpact + 1) continue;
                                 var dotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _localImpacts[s]);
                                 var impactFactor = (-0.69813170079773212 * dotOfNormLclImpact * dotOfNormLclImpact - 0.87266462599716477) * dotOfNormLclImpact + 1.5707963267948966;
                                 var waveMultiplier = Pi / ImpactSteps;
@@ -304,7 +306,8 @@ namespace DefenseShields.Support
                                 var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
                                 if (impactFactor < wavePosition && relativeToWavefront >= 0 && relativeToWavefront < 0.25)
                                 {
-                                    _triColorBuffer[j] = 1;
+                                    if (_impactCnt[s] != smallImpact + 1) _triColorBuffer[j] = 1;
+                                    else _triColorBuffer[j] = 0;
                                     break;
                                 }
 

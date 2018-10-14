@@ -708,7 +708,7 @@ namespace DefenseShields
         {
             var realPlayerIds = new HashSet<long>();
 
-            var center = GridIsMobile ? MyGrid.PositionComp.WorldVolume.Center : OffsetEmitterWorldMatrix.Translation;
+            var center = GridIsMobile ? MyGrid.PositionComp.WorldVolume.Center : OffsetEmitterWMatrix.Translation;
             switch (notice)
             {
                 case PlayerNotice.EmitterInit:

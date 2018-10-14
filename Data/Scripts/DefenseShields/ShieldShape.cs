@@ -124,45 +124,37 @@ namespace DefenseShields
             }
             else
             {
-                /*
-                if (ShieldComp?.StationEmitter?.Emitter == null)
-                {
-                    if (Session.Enforced.Debug >= 1) Log.CleanLine($"!!!! REPORT THIS ERROR !!!! - CreateShieldShape: CompNull:{ShieldComp == null} - StationEmitterNull:{ShieldComp?.StationEmitter == null} - EmitterNull:{ShieldComp?.StationEmitter?.Emitter == null} - [{Shield.EntityId}]");
-                    return;
-                }
-                */
                 var emitter = ShieldComp.StationEmitter.Emitter;
                 var width = DsSet.Settings.Width;
                 var height = DsSet.Settings.Height;
                 var depth = DsSet.Settings.Depth;
 
-                var wOffset = (int)DsSet.Settings.ShieldOffset.X;
-                var hOffset = (int)DsSet.Settings.ShieldOffset.Y;
-                var dOffset = (int)DsSet.Settings.ShieldOffset.Z;
+                var wOffset = DsSet.Settings.ShieldOffset.X;
+                var hOffset = DsSet.Settings.ShieldOffset.Y;
+                var dOffset = DsSet.Settings.ShieldOffset.Z;
 
-                var offset = new Vector3I(wOffset, hOffset, dOffset);
-                var fudgeVec = new Vector3(0, -2.5, 0);
-                var offsetLMatrix = emitter.LocalMatrix;
-                var offsetLCenter = emitter.PositionComp.LocalAABB.Center + offset * 2.5f;
+                var blockGridPosMeters = new Vector3D(emitter.Position) * MyGrid.GridSize;
+                var localOffsetMeters = new Vector3D(wOffset, hOffset, dOffset) * MyGrid.GridSize; 
+                var localOffsetPosMeters = localOffsetMeters + blockGridPosMeters; 
+                var emitterCenter = emitter.PositionComp.GetPosition();
+                var offsetLMatrix = Matrix.CreateWorld(localOffsetPosMeters, Vector3D.Forward, Vector3D.Up);
 
-                DsSet.Settings.ShieldOffset = offset;
-                OffsetEmitterWorldMatrix = emitter.WorldMatrix;
+                var worldOffset = Vector3D.TransformNormal(localOffsetMeters, MyGrid.WorldMatrix); 
+                var translationInWorldSpace = emitterCenter + worldOffset;
 
-                offsetLMatrix.Translation += fudgeVec;
-                offsetLMatrix.Translation += offset * 2.5f;
+                OffsetEmitterWMatrix = MatrixD.CreateWorld(translationInWorldSpace, MyGrid.WorldMatrix.Forward, MyGrid.WorldMatrix.Up);
 
-                OffsetEmitterWorldMatrix.Translation = Vector3D.Transform(offsetLCenter, OffsetEmitterWorldMatrix);
-                DetectionCenter = OffsetEmitterWorldMatrix.Translation;
+                DetectionCenter = OffsetEmitterWMatrix.Translation;
 
-                var halfDistToCenter = 600 - Vector3D.Distance(DetectionCenter, emitter.PositionComp.WorldAABB.Center);
+                var halfDistToCenter = 600 - Vector3D.Distance(DetectionCenter, emitterCenter);
                 var vectorScale = new Vector3D(MathHelper.Clamp(width, 30, halfDistToCenter), MathHelper.Clamp(height, 30, halfDistToCenter), MathHelper.Clamp(depth, 30, halfDistToCenter));
 
-                DetectionMatrix = MatrixD.Rescale(OffsetEmitterWorldMatrix, vectorScale);
+                DetectionMatrix = MatrixD.Rescale(OffsetEmitterWMatrix, vectorScale);
                 _shieldShapeMatrix = MatrixD.Rescale(offsetLMatrix, vectorScale);
 
                 ShieldSize = DetectionMatrix.Scale;
 
-                _sQuaternion = Quaternion.CreateFromRotationMatrix(OffsetEmitterWorldMatrix);
+                _sQuaternion = Quaternion.CreateFromRotationMatrix(OffsetEmitterWMatrix);
                 ShieldSphere.Center = DetectionCenter;
                 ShieldSphere.Radius = ShieldSize.AbsMax();
             }
@@ -233,7 +225,7 @@ namespace DefenseShields
             MatrixD matrix;
             if (!GridIsMobile)
             {
-                matrix = _shieldShapeMatrix * OffsetEmitterWorldMatrix;
+                matrix = _shieldShapeMatrix * OffsetEmitterWMatrix;
                 ShieldEnt.PositionComp.SetWorldMatrix(matrix);
                 ShieldEnt.PositionComp.SetPosition(DetectionCenter);
             }

@@ -63,11 +63,12 @@ namespace DefenseShields
         private double _roundedGridMax;
 
         public int BulletCoolDown { get; internal set; } = -1;
+        public int WebCoolDown { get; internal set; } = -1;
         public int HitCoolDown { get; private set; } = -11;
+
         private int _count = -1;
         private int _lCount;
         private int _eCount;
-        private int _powerLossLoop;
         private int _powerNoticeLoop;
         private int _offlineCnt = -1;
         private int _overLoadLoop = -1;
@@ -111,6 +112,7 @@ namespace DefenseShields
         internal bool SettingsUpdated;
         internal bool ClientUiUpdate;
         internal bool IsStatic;
+        internal bool WebDamage;
 
         private bool _resetEntity;
         private bool _empOverLoad;
@@ -179,7 +181,7 @@ namespace DefenseShields
         internal MatrixD DetectMatrixIn;
         internal MatrixD ShieldMatrix;
         internal MatrixD OldShieldMatrix;
-        internal MatrixD OffsetEmitterWorldMatrix;
+        internal MatrixD OffsetEmitterWMatrix;
 
         private BoundingBox _shieldAabb = new BoundingBox(-Vector3D.One, Vector3D.One);
         public BoundingSphereD ShieldSphere = new BoundingSphereD(Vector3D.Zero, 1);

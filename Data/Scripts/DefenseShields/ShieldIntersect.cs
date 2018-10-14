@@ -29,7 +29,6 @@ namespace DefenseShields
                     var sLSpeedLen = sLSpeed.LengthSquared();
                     var sASpeedLen = sASpeed.LengthSquared();
                     var sSpeedLen = sLSpeedLen > sASpeedLen ? sLSpeedLen : sASpeedLen;
-                    //if (!bPhysics.IsStatic) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(grid.PositionComp.WorldAABB.Center - sPhysics.CenterOfMassWorld) * -sMass, null, Vector3D.Zero, sSpeedLen + 3);
                     var forceData = new MyAddForceData { MyGrid = grid, Force = -(grid.PositionComp.WorldAABB.Center - sPhysics.CenterOfMassWorld) * -sMass, MaxSpeed = sSpeedLen + 3 };
                     if (!bPhysics.IsStatic) _forceData.Enqueue(forceData);
                     return true;
@@ -63,6 +62,7 @@ namespace DefenseShields
                     Absorb += damage;
                     ImpactSize = entInfo.Damage;
                     WorldImpactPosition = contactpoint;
+                    WebDamage = true;
                 }
                 entInfo.Damage = 0;
             }
@@ -81,19 +81,13 @@ namespace DefenseShields
             if (entInfo.Relation != Ent.LargeEnemyGrid && GridInside(grid, bOriBBoxD)) return;
             BlockIntersect(grid, bOriBBoxD, entInfo);
             var contactpoint = entInfo.ContactPoint;
-            var empDetonation = entInfo.EmpDetonation;
+
             entInfo.ContactPoint = Vector3D.NegativeInfinity;
             entInfo.EmpDetonation = Vector3D.NegativeInfinity;
-            if (contactpoint == Vector3D.NegativeInfinity) return;
-
-            entInfo.Touched = true;
-            ImpactSize = entInfo.Damage;
-            EmpSize = entInfo.EmpSize;
-
             entInfo.Damage = 0;
             entInfo.EmpSize = 0;
-            WorldImpactPosition = contactpoint;
-            EmpDetonation = empDetonation;
+            if (contactpoint == Vector3D.NegativeInfinity) return;
+            entInfo.Touched = true;
         }
 
         private void ShieldIntersect(MyEntity ent)
@@ -125,18 +119,9 @@ namespace DefenseShields
 
 
             var collisionAvg = Vector3D.Zero;
-            for (int i = 0; i < insidePoints.Count; i++)
-            {
-                collisionAvg += insidePoints[i];
-            }
+            for (int i = 0; i < insidePoints.Count; i++) collisionAvg += insidePoints[i];
 
             collisionAvg /= insidePoints.Count;
-
-            //if (insidePoints.Count > 0 && !bPhysics.IsStatic) bPhysics.ApplyImpulse((resultVelocity - bPhysics.LinearVelocity) * bMass, bPhysics.CenterOfMassWorld);
-            //if (insidePoints.Count > 0 && !sPhysics.IsStatic) sPhysics.ApplyImpulse((resultVelocity - sPhysics.LinearVelocity) * sMass, sPhysics.CenterOfMassWorld);
-
-            //if (insidePoints.Count > 0 && !sPhysics.IsStatic) sPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * sMass, null, Vector3D.Zero, MathHelper.Clamp(sPhysics.LinearVelocity.Length(), 10f, 50f));
-            //if (insidePoints.Count > 0 && !bPhysics.IsStatic) bPhysics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, (bPhysics.CenterOfMassWorld - collisionAvg) * bMass * 10, null, Vector3D.Zero, MathHelper.Clamp(bPhysics.LinearVelocity.Length(), 1f, 50f));
 
             if (insidePoints.Count > 0 && !bPhysics.IsStatic)
             {
@@ -150,12 +135,9 @@ namespace DefenseShields
 
             var gridMaxCharge = ds._shieldChargeRate;
             var damage = gridMaxCharge * Session.Enforced.Efficiency * DsState.State.ModulateEnergy * 0.05f;
-            if (Session.MpActive)
+            if (_mpActive)
             {
-                if (Session.IsServer)
-                {
-                    ShieldDoDamage(damage, grid.EntityId);
-                }
+                if (_isServer) ShieldDoDamage(damage, grid.EntityId);
             }
             else
             {
@@ -163,6 +145,7 @@ namespace DefenseShields
                 ds.WorldImpactPosition = collisionAvg;
                 Absorb += damage;
                 ImpactSize = damage;
+                WebDamage = true;
             }
         }
 
@@ -180,6 +163,7 @@ namespace DefenseShields
                 Absorb += (momentum.Length() / 500) * DsState.State.ModulateKinetic;
                 ImpactSize = 12000;
                 WorldImpactPosition = collision;
+                WebDamage = true;
                 //if (!Session.MpActive && !(voxelBase is MyPlanet)) _voxelDmg.Enqueue(voxelBase);
             }
         }
@@ -286,7 +270,6 @@ namespace DefenseShields
 
                         blockBox.GetCorners(blockPoints);
                         blockPoints[8] = blockBox.Center;
-                        //var point2 = Vector3D.Clamp(_detectMatrixOutsideInv.Translation, blockBox.Min, blockBox.Max);
                         for (int j = 8; j > -1; j--)
                         {
                             var point = blockPoints[j];
@@ -395,12 +378,13 @@ namespace DefenseShields
                         shieldFractionLoss = (float) (EllipsoidVolume / scaledEmpSize);
                         var efficiency = Session.Enforced.Efficiency;
                         damage = damage + ShieldMaxBuffer * efficiency / shieldFractionLoss;
+                        var warCenter = firstWarhead.PositionComp.WorldAABB.Center;
                         entInfo.EmpSize = scaledEmpSize;
-                        entInfo.EmpDetonation = firstWarhead.PositionComp.WorldAABB.Center;
+                        entInfo.EmpDetonation = warCenter;
+                        EmpDetonation = warCenter;
                         if (damage > DsState.State.Buffer * efficiency) _empOverLoad = true;
                     }
 
-                    //Log.Line($"ShieldHP:{DsState.State.Buffer * Session.Enforced.Efficiency} - blockDmg:{rawDamage * DsState.State.ModulateKinetic} - TotalShieldDamage:{damage} - empSize:{empSize} - preMod:{rawEmpSize} - dmg(1/fraction):{_ellipsoidVolume / empSize} - ellVol:{_ellipsoidVolume} - ModKin:{DsState.State.ModulateKinetic} - {_ellipsoidSurfaceArea} - {DetectMatrixOutside.Scale.X} - {DetectMatrixOutside.Scale.Y} - {DetectMatrixOutside.Scale.Z}");
                     entInfo.Damage = damage;
                     if (_mpActive)
                     {
@@ -409,7 +393,17 @@ namespace DefenseShields
                     }
                     else
                     {
-                        if (bBlockCenter != Vector3D.NegativeInfinity) entInfo.ContactPoint = bBlockCenter;
+                        if (bBlockCenter != Vector3D.NegativeInfinity)
+                        {
+                            entInfo.ContactPoint = bBlockCenter;
+                            ImpactSize = entInfo.Damage;
+                            EmpSize = entInfo.EmpSize;
+
+                            entInfo.Damage = 0;
+                            entInfo.EmpSize = 0;
+                            WorldImpactPosition = bBlockCenter;
+                            WebDamage = true;
+                        }
                     }
                     Absorb += damage;
                     //Log.Line($"[status] obb: true - blocks:{cacheBlockList.Count.ToString()} - sphered:{c1.ToString()} [{c5.ToString()}] - IsDestroyed:{c6.ToString()} not:[{c2.ToString()}] - bCenter Inside Ellipsoid:{c3.ToString()} - Damaged:{c4.ToString()}");

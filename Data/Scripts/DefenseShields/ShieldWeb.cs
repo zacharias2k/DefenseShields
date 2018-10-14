@@ -30,7 +30,6 @@ namespace DefenseShields
             for (int i = 0; i < _pruneList.Count; i++)
             {
                 var ent = _pruneList[i];
-
                 var voxel = ent as MyVoxelBase;
                 if (ent == null || ent.MarkedForClose || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel || voxel == null && ent.Physics == null || !_pruneSphere2.Intersects(ent.PositionComp.WorldVolume)) continue;
 

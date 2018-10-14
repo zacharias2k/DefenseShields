@@ -209,7 +209,6 @@ namespace DefenseShields
                     _shieldConsumptionRate = 0f;
                     return true;
                 }
-                _powerLossLoop++;
                 if (_isServer && !DsState.State.NoPower)
                 {
                     DsState.State.NoPower = true;
@@ -230,8 +229,6 @@ namespace DefenseShields
                 _shieldConsumptionRate = 0f;
                 return true;
             }
-
-            _powerLossLoop = 0;
 
             if (_isServer && DsState.State.NoPower)
             {
