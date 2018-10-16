@@ -67,15 +67,14 @@ namespace DefenseShields
             try
             {
                 if (!EntityAlive()) return;
-
                 if (!ShieldOn())
                 {
-                    if (Session.Enforced.Debug >= 1 && WasOnline) Log.Line($"Off: WasOn:{WasOnline} - On:{DsState.State.Online} - Active:{DsSet.Settings.ShieldActive}({_prevShieldActive}) - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug >= 1 && WasOnline) Log.Line($"On: WasOn:{WasOnline} - Online:{DsState.State.Online}({_prevShieldActive}) - Lowered:{DsState.State.Lowered} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
                     if (WasOnline) OfflineShield();
                     else if (DsState.State.Message) ShieldChangeState();
                     return;
                 }
-                if (Session.Enforced.Debug >= 1 && !WasOnline) Log.Line($"On: WasOn:{WasOnline} - On:{DsState.State.Online} - Active:{DsSet.Settings.ShieldActive}({_prevShieldActive}) - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 1 && _tick60 && !WasOnline) Log.Line($"On: WasOn:{WasOnline} - Online:{DsState.State.Online}({_prevShieldActive}) - Lowered:{DsState.State.Lowered} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
                 if (DsState.State.Online)
                 {
                     if (ComingOnline) ComingOnlineSetup();

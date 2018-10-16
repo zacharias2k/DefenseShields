@@ -772,7 +772,6 @@ namespace DefenseShields
                     {
                         ShieldComp.EmittersWorking = false;
                         ShieldComp.EmitterEvent = true;
-                        if (ShieldComp.DefenseShields != null) ShieldComp.DefenseShields.DsState.State.Suspended = true;
                     }
                     ShieldComp.StationEmitter = null;
                 }
@@ -782,7 +781,6 @@ namespace DefenseShields
                     {
                         ShieldComp.EmittersWorking = false;
                         ShieldComp.EmitterEvent = true;
-                        if (ShieldComp.DefenseShields != null) ShieldComp.DefenseShields.DsState.State.Suspended = true;
                     }
                     ShieldComp.ShipEmitter = null;
                 }

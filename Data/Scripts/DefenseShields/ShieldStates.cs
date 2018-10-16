@@ -67,8 +67,11 @@ namespace DefenseShields
             var wait = _isServer && !_tick60 && DsState.State.Suspended;
 
             MyGrid = Shield.CubeGrid as MyCubeGrid;
+            if (MyGrid?.Physics == null) return false;
+
             if (_resetEntity) ResetEntity();
-            if (wait || MyGrid?.Physics == null || !AllInited && !PostInit()) return false;
+
+            if (wait ||!AllInited && !PostInit()) return false;
             if (Session.Enforced.Debug >= 1) Dsutil1.Sw.Restart();
 
             IsStatic = MyGrid.IsStatic;
@@ -118,15 +121,16 @@ namespace DefenseShields
             else
             {
                 if (_blockChanged) BlockMonitor();
+                SetShieldClientStatus();
                 if (ClientOfflineStates() || ClientShieldLowered()) return false;
                 if (GridIsMobile) MobileUpdate();
                 if (UpdateDimensions) RefreshDimensions();
                 PowerOnline();
-                SetShieldClientStatus();
                 Timing(true);
+                _clientOn = true;
+                _clientLowered = false;
             }
-            _clientOn = true;
-            _clientLowered = false;
+
             return true;
         }
 
@@ -142,13 +146,14 @@ namespace DefenseShields
             {
                 CleanAll();
                 _offlineCnt = -1;
-                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
                 ShieldChangeState();
+                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
             }
             else
             {
                 UpdateSubGrids();
                 Shield.RefreshCustomInfo();
+                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
             }
         }
 
@@ -359,7 +364,6 @@ namespace DefenseShields
                 SyncThreadedEnts();
             }
 
-            DsSet.Settings.ShieldActive = false;
             _prevShieldActive = false;
             DsState.State.Online = false;
 
@@ -378,10 +382,9 @@ namespace DefenseShields
 
         private void SetShieldServerStatus(bool powerState)
         {
-            DsSet.Settings.ShieldActive = _controlBlockWorking && powerState;
-            ComingOnline = !_prevShieldActive && DsSet.Settings.ShieldActive;
+            DsState.State.Online = _controlBlockWorking && powerState;
+            ComingOnline = !_prevShieldActive && DsState.State.Online;
 
-            DsState.State.Online = DsSet.Settings.ShieldActive;
             _prevShieldActive = DsState.State.Online;
 
             if (!GridIsMobile && (ComingOnline || ShieldComp.O2Updated))
@@ -460,7 +463,7 @@ namespace DefenseShields
 
         private bool ShieldLowered()
         {
-            if (!DsSet.Settings.RaiseShield && WarmedUp && DsSet.Settings.ShieldActive)
+            if (!DsSet.Settings.RaiseShield && WarmedUp && DsState.State.Online)
             {
                 Timing(false);
                 if (!DsState.State.Lowered)
@@ -488,7 +491,7 @@ namespace DefenseShields
                 else if (_lCount == 0 && _count == 0) RefreshDimensions();
                 return true;
             }
-            if (DsState.State.Lowered && DsSet.Settings.ShieldActive && Shield.IsWorking)
+            if (DsState.State.Lowered && DsState.State.Online && Shield.IsWorking)
             {
                 if (!_isDedicated) ShellVisibility();
                 if (GridIsMobile) _updateMobileShape = true;
@@ -501,7 +504,7 @@ namespace DefenseShields
 
         private bool ClientShieldLowered()
         {
-            if (!DsSet.Settings.RaiseShield && WarmedUp && DsSet.Settings.ShieldActive)
+            if (WarmedUp && DsState.State.Lowered)
             {
                 Timing(false);
                 if (!_clientLowered)
@@ -509,13 +512,19 @@ namespace DefenseShields
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
                     ShellVisibility(true);
                     _clientLowered = true;
+                    if (Session.Enforced.Debug >= 1) Log.Line($"Lowered: shield lowered - ShieldId [{Shield.EntityId}]");
                 }
                 PowerOnline();
 
                 if (_lCount == 0 && _count == 0) RefreshDimensions();
                 return true;
             }
-            if (_clientLowered) ShellVisibility();
+
+            if (_clientLowered)
+            {
+                ShellVisibility();
+                _prevShieldActive = false;
+            }
             return false;
         }
 
@@ -603,7 +612,6 @@ namespace DefenseShields
         {
             var primeMode = ShieldMode == ShieldType.Station && IsStatic && ShieldComp.StationEmitter == null;
             var betaMode = ShieldMode != ShieldType.Station && !IsStatic && ShieldComp.ShipEmitter == null;
-
             if (ShieldMode != ShieldType.Station && IsStatic) InitSuspend();
             else if (ShieldMode == ShieldType.Station && !IsStatic) InitSuspend();
             else if (ShieldMode == ShieldType.Unknown) InitSuspend();
@@ -629,7 +637,6 @@ namespace DefenseShields
                 }
                 DsState.State.Suspended = false;
             }
-
             if (DsState.State.Suspended) SetShieldType(true);
             return DsState.State.Suspended;
         }
@@ -655,9 +662,8 @@ namespace DefenseShields
             if (!DsState.State.Suspended)
             {
                 if (cleanEnts) InitEntities(false);
-
                 DsState.State.Suspended = true;
-                Shield.RefreshCustomInfo();
+                ShieldFailed();
                 if (Session.Enforced.Debug >= 1) Log.Line($"Suspended: controller mode is: {ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
             }
             if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
@@ -677,7 +683,7 @@ namespace DefenseShields
             }
 
             var controlToGridRelataion = ((MyCubeBlock)Shield).GetUserRelationToOwner(MyGrid.BigOwners[0]);
-            var faction = MyRelationsBetweenPlayerAndBlock.FactionShare;
+            const MyRelationsBetweenPlayerAndBlock faction = MyRelationsBetweenPlayerAndBlock.FactionShare;
             var owner = MyRelationsBetweenPlayerAndBlock.Owner;
             DsState.State.InFaction = controlToGridRelataion == faction;
             DsState.State.IsOwner = controlToGridRelataion == owner;

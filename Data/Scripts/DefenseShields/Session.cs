@@ -1213,18 +1213,18 @@ namespace DefenseShields
             {
                 if (PsControl) return;
                 var comp = block?.GameLogic?.GetAs<PlanetShields>();
-                TerminalHelpers.Separator(comp?.PlanetShield, "PS-C_sep0");
-                PsToggleShield = TerminalHelpers.AddOnOff(comp?.PlanetShield, "PS-C_ToggleShield", "Shield Status", "Raise or Lower Shields", "Up", "Down", DsUi.GetRaiseShield, DsUi.SetRaiseShield);
-                TerminalHelpers.Separator(comp?.PlanetShield, "PS-C_sep1");
+                TerminalHelpers.Separator(comp?.PlanetShield, "DS-P_sep0");
+                PsToggleShield = TerminalHelpers.AddOnOff(comp?.PlanetShield, "DS-P_ToggleShield", "Shield Status", "Raise or Lower Shields", "Up", "Down", DsUi.GetRaiseShield, DsUi.SetRaiseShield);
+                TerminalHelpers.Separator(comp?.PlanetShield, "DS-P_sep1");
 
-                PsBatteryBoostCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "PS-C_UseBatteries", "Batteries Contribute To Shields", "Batteries May Contribute To Shield Strength", DsUi.GetBatteries, DsUi.SetBatteries);
-                PsSendToHudCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "PS-C_HideIcon", "Broadcast Shield Status To Hud", "Broadcast Shield Status To Nearby Friendly Huds", DsUi.GetSendToHud, DsUi.SetSendToHud);
-                TerminalHelpers.Separator(comp?.PlanetShield, "PS-C_sep2");
+                PsBatteryBoostCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_UseBatteries", "Batteries Contribute To Shields", "Batteries May Contribute To Shield Strength", DsUi.GetBatteries, DsUi.SetBatteries);
+                PsSendToHudCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_HideIcon", "Broadcast Shield Status To Hud", "Broadcast Shield Status To Nearby Friendly Huds", DsUi.GetSendToHud, DsUi.SetSendToHud);
+                TerminalHelpers.Separator(comp?.PlanetShield, "DS-P_sep2");
 
-                PsHideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "PS-C_HideActive", "Hide Shield Health On Hit  ", "Hide Shield Health Grid On Hit", DsUi.GetHideActive, DsUi.SetHideActive);
+                PsHideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_HideActive", "Hide Shield Health On Hit  ", "Hide Shield Health Grid On Hit", DsUi.GetHideActive, DsUi.SetHideActive);
 
-                PsRefreshAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "PS-C_RefreshAnimation", "Show Refresh Animation  ", "Show Random Refresh Animation", DsUi.GetRefreshAnimation, DsUi.SetRefreshAnimation);
-                PsHitWaveAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "PS-C_HitWaveAnimation", "Show Hit Wave Animation", "Show Wave Effect On Shield Damage", DsUi.GetHitWaveAnimation, DsUi.SetHitWaveAnimation);
+                PsRefreshAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_RefreshAnimation", "Show Refresh Animation  ", "Show Random Refresh Animation", DsUi.GetRefreshAnimation, DsUi.SetRefreshAnimation);
+                PsHitWaveAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_HitWaveAnimation", "Show Hit Wave Animation", "Show Wave Effect On Shield Damage", DsUi.GetHitWaveAnimation, DsUi.SetHitWaveAnimation);
 
                 CreateAction<IMyUpgradeModule>(PsToggleShield);
 
@@ -1289,6 +1289,7 @@ namespace DefenseShields
         {
             try
             {
+                if (block.BlockDefinition.TypeId != typeof(MyObjectBuilder_UpgradeModule) || MyAPIGateway.Gui.GetCurrentScreen != MyTerminalPageEnum.None) return;
                 switch (block.BlockDefinition.SubtypeId)
                 {
                     case "LargeShieldModulator":
@@ -1300,17 +1301,11 @@ namespace DefenseShields
                     case "DSControlTable":
                         ControllerShowHideActions(actions);
                         break;
-                    case "EmitterL":
-                    case "EmitterS":
-                    case "EmitterST":
-                    case "EmitterLA":
-                    case "EmitterSA":
-                    case "LargeDamageEnhancer":
-                    case "SmallDamageEnhancer":
-                        HideAllActions(actions);
-                        break;
                     case "PlanetaryEmitterLarge":
                         PlanetShieldShowHideActions(actions);
+                        break;
+                    default:
+                        HideAllActions(actions);
                         break;
                 }
             }
@@ -1338,8 +1333,8 @@ namespace DefenseShields
         {
             foreach (var a in actions)
             {
-                if (!a.Id.StartsWith("PS-M_") && a.Id.StartsWith("PS-")) a.Enabled = terminalBlock => false;
-                else if (a.Id.StartsWith("PS-M_")) a.Enabled = terminalBlock => true;
+                if (!a.Id.StartsWith("DS-P_") && a.Id.StartsWith("DS-")) a.Enabled = terminalBlock => false;
+                else if (a.Id.StartsWith("DS-P_")) a.Enabled = terminalBlock => true;
             }
         }
 

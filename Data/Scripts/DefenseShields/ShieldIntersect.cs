@@ -372,7 +372,7 @@ namespace DefenseShields
                     if (firstWarhead != null && empCount > 0)
                     {
                         var scaler = 1f;
-                        if (DsState.State.EmpProtection) scaler = 0.1f;
+                        if (DsState.State.EmpProtection) scaler = 0.05f;
                         var empSize = 1.33333333333 * Math.PI * (empRadius * empRadius * empRadius) * 0.5 * DsState.State.ModulateEnergy * scaler;
                         var scaledEmpSize = empSize * empCount + empCount * (empCount * 0.1); 
                         shieldFractionLoss = (float) (EllipsoidVolume / scaledEmpSize);
