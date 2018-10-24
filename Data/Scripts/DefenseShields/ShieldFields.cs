@@ -88,7 +88,6 @@ namespace DefenseShields
         private const int OverHeat = 1800;
         private const int HeatingStep = 600;
         private const int CoolingStep = 1200;
-        private const int HeatSteps = 10;
         private const int FallBackStep = 10;
 
         private int _prevLod;
@@ -183,7 +182,7 @@ namespace DefenseShields
         internal MatrixD OldShieldMatrix;
         internal MatrixD OffsetEmitterWMatrix;
 
-        private BoundingBox _shieldAabb = new BoundingBox(-Vector3D.One, Vector3D.One);
+        internal BoundingBox ShieldAabb = new BoundingBox(-Vector3D.One, Vector3D.One);
         public BoundingSphereD ShieldSphere = new BoundingSphereD(Vector3D.Zero, 1);
         private BoundingSphereD _clientPruneSphere = new BoundingSphereD(Vector3D.Zero, 1f);
         private BoundingSphereD _pruneSphere1 = new BoundingSphereD(Vector3D.Zero, 1f);
@@ -209,9 +208,9 @@ namespace DefenseShields
         internal readonly HashSet<MyEntity> IgnoreCache = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> EnemyShields = new HashSet<MyEntity>();
 
-        private MyConcurrentDictionary<MyEntity, Vector3D> Eject { get; } = new MyConcurrentDictionary<MyEntity, Vector3D>();
         public readonly ConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<MyEntity, EntIntersectInfo>();
 
+        private readonly MyConcurrentQueue<MyCubeGrid> _eject = new MyConcurrentQueue<MyCubeGrid>();
         private readonly MyConcurrentQueue<IMySlimBlock> _dmgBlocks = new MyConcurrentQueue<IMySlimBlock>();
         private readonly MyConcurrentQueue<IMyWarhead> _empDmg = new MyConcurrentQueue<IMyWarhead>();
         private readonly MyConcurrentQueue<IMySlimBlock> _fewDmgBlocks = new MyConcurrentQueue<IMySlimBlock>();
@@ -282,7 +281,8 @@ namespace DefenseShields
         private readonly DataStructures _dataStructures = new DataStructures();
         //private readonly StructureBuilder _structureBuilder = new StructureBuilder();
 
-        internal IMyUpgradeModule Shield => (IMyUpgradeModule)Entity;
+        internal IMyFunctionalBlock Shield => (IMyFunctionalBlock)Entity;
+
         internal ShieldType ShieldMode;
         internal MyCubeGrid MyGrid;
         internal MyResourceDistributorComponent MyGridDistributor;

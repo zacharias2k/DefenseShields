@@ -136,10 +136,9 @@ namespace DefenseShields
             const float ratio = 1.25f;
             var percent = DsSet.Settings.Rate * ratio;
             var shieldMaintainPercent = maintenanceCost / percent;
-            var sizeScaler = _shieldVol / (_ellipsoidSurfaceArea * 2.40063050674088);
+            _sizeScaler = _shieldVol / (_ellipsoidSurfaceArea * 2.40063050674088);
             var gridIntegrity = DsState.State.GridIntegrity * 0.01f;
             var hpScaler = 1f;
-            _sizeScaler = sizeScaler >= 1d ? sizeScaler : 1d;
 
             float bufferScaler;
             if (ShieldMode == ShieldType.Station && DsState.State.Enhancer) bufferScaler = 100 / percent * baseScaler * _shieldRatio;

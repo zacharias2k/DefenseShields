@@ -163,8 +163,8 @@ namespace DefenseShields
             SOriBBoxD.HalfExtent = ShieldSize;
             SOriBBoxD.Orientation = _sQuaternion;
 
-            _shieldAabb.Min = ShieldSize;
-            _shieldAabb.Max = -ShieldSize;
+            ShieldAabb.Min = ShieldSize;
+            ShieldAabb.Max = -ShieldSize;
 
             if (_isServer)
             {
@@ -220,7 +220,7 @@ namespace DefenseShields
 
             ShieldEnt.PositionComp.LocalMatrix = Matrix.Zero;
             ShieldEnt.PositionComp.LocalMatrix = _shieldShapeMatrix;
-            ShieldEnt.PositionComp.LocalAABB = _shieldAabb;
+            ShieldEnt.PositionComp.LocalAABB = ShieldAabb;
 
             MatrixD matrix;
             if (!GridIsMobile)

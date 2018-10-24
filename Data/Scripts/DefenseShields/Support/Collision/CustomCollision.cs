@@ -470,7 +470,7 @@ namespace DefenseShields.Support
             catch (Exception ex) { Log.Line($"Exception in SmallIntersect: {ex}"); }
         }
 
-        public static void ClientSmallIntersect(EntIntersectInfo entInfo, MyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
+        public static void ClientSmallIntersect(EntIntersectInfo entInfo, MyCubeGrid grid, MatrixD matrix, MatrixD matrixInv, MyConcurrentQueue<MyCubeGrid> eject)
         {
             try
             {
@@ -480,29 +480,9 @@ namespace DefenseShields.Support
                 entInfo.ContactPoint = contactPoint;
 
                 var approching = Vector3.Dot(grid.Physics.LinearVelocity, grid.PositionComp.WorldVolume.Center - contactPoint) < 0;
-                if (approching) grid.Physics.LinearVelocity = grid.Physics.LinearVelocity * -0.25f;
+                if (approching) eject.Enqueue(grid);
             }
             catch (Exception ex) { Log.Line($"Exception in ClientSmallIntersect: {ex}"); }
-        }
-
-        public static Vector3D EjectDirection(IMyCubeGrid grid, Vector3D[] physicsOutside, int[][] vertTris, MyOrientedBoundingBoxD obb, MatrixD matrixInv)
-        {
-            var targetPos = ClosestPointInShield(obb, matrixInv);
-            var gridVel = grid.Physics.LinearVelocity;
-            var gridCenter = grid.PositionComp.WorldVolume.Center;
-            var approching = Vector3.Dot(gridVel, gridCenter - targetPos) < 0;
-            if (approching) grid.Physics.LinearVelocity = gridVel * -0.1f;
-            else return Vector3D.NegativeInfinity;
-            var rangedVerts = new int[3];
-
-            VertRangeFullCheck(physicsOutside, gridCenter, rangedVerts);
-
-            var closestFace0 = vertTris[rangedVerts[0]];
-            var closestFace1 = vertTris[rangedVerts[1]];
-            var closestFace2 = vertTris[rangedVerts[2]];
-
-            var center = GetClosestTriCenter(physicsOutside, closestFace0, closestFace1, closestFace2, gridCenter);
-            return center;
         }
 
         public static bool Intersecting(IMyCubeGrid breaching, IMyCubeGrid shield, Vector3D[] physicsVerts, Vector3D breachingPos)

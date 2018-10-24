@@ -20,7 +20,7 @@ namespace DefenseShields
             {
                 if (clear)
                 {
-                    Eject.Clear();
+                    _eject.Clear();
                     _destroyedBlocks.Clear();
                     _missileDmg.Clear();
                     _meteorDmg.Clear();
@@ -36,7 +36,21 @@ namespace DefenseShields
 
                 if (_destroyedBlocks.Count == 0 && _missileDmg.Count == 0 && _meteorDmg.Count == 0 &&
                     _voxelDmg.Count == 0 && _characterDmg.Count == 0 && _fewDmgBlocks.Count == 0 &&
-                    _dmgBlocks.Count == 0 && _empDmg.Count == 0 && _forceData.Count == 0 && _impulseData.Count == 0) return;
+                    _dmgBlocks.Count == 0 && _empDmg.Count == 0 && _forceData.Count == 0 && _impulseData.Count == 0 && _eject.Count == 0) return;
+
+                try
+                {
+                    if (_eject.Count != 0)
+                    {
+                        MyCubeGrid myGrid;
+                        while (_eject.TryDequeue(out myGrid))
+                        {
+                            if (myGrid == null || myGrid.MarkedForClose) continue;
+                            myGrid.Physics.LinearVelocity *= -0.25f;
+                        }
+                    }
+                }
+                catch (Exception ex) { Log.Line($"Exception in Eject: {ex}"); }
 
                 try
                 {

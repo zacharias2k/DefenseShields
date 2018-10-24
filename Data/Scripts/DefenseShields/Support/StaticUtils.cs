@@ -66,6 +66,40 @@ namespace DefenseShields.Support
             return tmp;
         }
 
+        public static float ImpactFactor(MatrixD obbMatrix, Vector3 obbExtents, Vector3D impactPos, Vector3 direction)
+        {
+            var impactPosLcl = (Vector3)(impactPos - obbMatrix.Translation);
+            var xProj = (Vector3)obbMatrix.Right;
+            var yProj = (Vector3)obbMatrix.Up;
+            var zProj = (Vector3)obbMatrix.Backward;
+
+            // quick inverse transform normal: dot(xProj, pos), dot(yProj, pos), dot(zProj, pos)
+            impactPosLcl = new Vector3(impactPosLcl.Dot(xProj), impactPosLcl.Dot(yProj), impactPosLcl.Dot(zProj));
+            direction = new Vector3(direction.Dot(xProj), direction.Dot(yProj), direction.Dot(zProj));
+
+            // find point outside of box along ray, then scale by inverse box size
+            const float expandFactor = 25;
+            var faceDirection = (impactPosLcl - direction * obbExtents.AbsMax() * expandFactor) / obbExtents;
+
+            // dominant axis project, then sign
+            // faceNormal = Vector3.Sign(Vector3.DominantAxisProjection(faceDirection));
+            Vector3 faceNormal;
+            if (Math.Abs(faceDirection.X) > Math.Abs(faceDirection.Y))
+            {
+                // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
+                if (Math.Abs(faceDirection.X) > Math.Abs(faceDirection.Z))
+                    faceNormal = new Vector3(Math.Sign(faceDirection.X), 0, 0);
+                else
+                    faceNormal = new Vector3(0, 0, Math.Sign(faceDirection.Z));
+            }
+            else if (Math.Abs(faceDirection.Y) > Math.Abs(faceDirection.Z))
+                faceNormal = new Vector3(0, Math.Sign(faceDirection.Y), 0);
+            else
+                faceNormal = new Vector3(0, 0, Math.Sign(faceDirection.Z));
+
+            return Math.Abs(faceNormal.Dot(direction));
+        }
+
         // This method only exists for consistency, so you can *always* call
         // MoreMath.Max instead of alternating between MoreMath.Max and Math.Max
         // depending on your argument count.

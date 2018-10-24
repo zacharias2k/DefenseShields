@@ -432,7 +432,32 @@ namespace DefenseShields
                         }
 
                         if (info.IsDeformation && shield.DeformEnabled) continue;
-                        if (info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Deformation) info.Amount = info.Amount * shield.DsState.State.ModulateKinetic;
+                        var bullet = info.Type == MyDamageType.Bullet;
+                        var deform = info.Type == MyDamageType.Deformation;
+                        if (bullet || deform)
+                        {
+                            /*
+                            if (bullet)
+                            {
+                                Vector3D bCenter;
+                                block.ComputeWorldCenter(out bCenter);
+
+                                var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, bCenter);
+                                var obbCheck = shield.SOriBBoxD.Intersects(ref line);
+                                if (obbCheck != null)
+                                {
+                                    var hitDist = (double) obbCheck + 2;
+                                    var testDir = line.From - line.To;
+                                    testDir.Normalize();
+                                    var hitPos = line.From + testDir * -hitDist;
+
+                                    var test = UtilsStatic.ImpactFactor(shield.ShieldEnt.WorldMatrix, shield.ShieldEnt.PositionComp.LocalAABB.Extents, hitPos, testDir);
+                                    Log.Line($"ImpactFactor:{test}");
+                                }
+                            }
+                            */
+                            info.Amount = info.Amount * shield.DsState.State.ModulateKinetic;
+                        }
                         else info.Amount = info.Amount * shield.DsState.State.ModulateEnergy;
 
                         if (!DedicatedServer && hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)

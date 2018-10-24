@@ -189,7 +189,7 @@ namespace DefenseShields
             WebEnts.TryGetValue(ent, out entInfo);
             if (entInfo == null) return;
 
-            CustomCollision.ClientSmallIntersect(entInfo, grid, DetectMatrixOutside, DetectMatrixOutsideInv);
+            CustomCollision.ClientSmallIntersect(entInfo, grid, DetectMatrixOutside, DetectMatrixOutsideInv, _eject);
             var contactpoint = entInfo.ContactPoint;
             entInfo.ContactPoint = Vector3D.NegativeInfinity;
             if (contactpoint != Vector3D.NegativeInfinity)

@@ -165,6 +165,8 @@ namespace DefenseShields
                 WorldImpactPosition = collision;
                 WebDamage = true;
                 //if (!Session.MpActive && !(voxelBase is MyPlanet)) _voxelDmg.Enqueue(voxelBase);
+                //There is ContainmentType Intersect(ref BoundingBox box, bool lazy) which is super fast
+                //void ExecuteOperationFast<TVoxelOperator>(ref TVoxelOperator voxelOperator, MyStorageDataTypeFlags dataToWrite, ref Vector3I voxelRangeMin, ref Vector3I voxelRangeMax, bool notifyRangeChanged)
             }
         }
 

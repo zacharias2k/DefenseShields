@@ -3,6 +3,7 @@ using Sandbox.Common.ObjectBuilders;
 using Sandbox.ModAPI;
 using VRage.Game.Components;
 using DefenseShields.Support;
+using Sandbox.Game.Entities;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRageMath;
