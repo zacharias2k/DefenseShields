@@ -613,7 +613,7 @@ namespace DefenseShields
         {
             try
             {
-                if (myTerminalBlock.IsWorking) ShieldComp.CheckEmitters = true;
+                if (myTerminalBlock.IsWorking && ShieldComp != null) ShieldComp.CheckEmitters = true;
             }
             catch (Exception ex) { Log.Line($"Exception in CheckEmitter: {ex}"); }
         }

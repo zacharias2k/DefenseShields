@@ -281,7 +281,7 @@ namespace DefenseShields
         private readonly DataStructures _dataStructures = new DataStructures();
         //private readonly StructureBuilder _structureBuilder = new StructureBuilder();
 
-        internal IMyFunctionalBlock Shield => (IMyFunctionalBlock)Entity;
+        internal IMyUpgradeModule Shield => (IMyUpgradeModule)Entity;
 
         internal ShieldType ShieldMode;
         internal MyCubeGrid MyGrid;
