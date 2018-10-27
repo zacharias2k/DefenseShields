@@ -556,32 +556,28 @@ namespace DefenseShields
             var testPos = Emitter.PositionComp.WorldVolume.Center + testDir * testDist;
             _sightPos = testPos;
             ShieldComp.DefenseShields.ResetShape(false, false);
-
-            MyAPIGateway.Parallel.For(0, ShieldComp.PhysicsOutside.Length, i =>
+            if (EmitterMode == EmitterType.Station)
             {
-                var hit = MyGrid.RayCastBlocks(testPos, ShieldComp.PhysicsOutside[i]);
-                if (hit.HasValue)
-                {
-                    _blocksLos.Add(i);
-                    return;
-                }
-                _noBlocksLos.Add(i);
-            });
-            if (!IsStatic)
-            {
-                MyAPIGateway.Parallel.For(0, _noBlocksLos.Count, i =>
-                {
-                    const int filter = CollisionLayers.VoxelCollisionLayer;
-                    IHitInfo hitInfo;
-                    var hit = MyAPIGateway.Physics.CastRay(testPos, ShieldComp.PhysicsOutside[_noBlocksLos[i]], out hitInfo, filter);
-                    if (hit) _blocksLos.Add(_noBlocksLos[i]);
-                });
+                EmiState.State.Los = true;
+                ShieldComp.CheckEmitters = false;
             }
-            for (int i = 0; i < ShieldComp.PhysicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
-            EmiState.State.Los = EmitterMode == EmitterType.Station ||  _blocksLos.Count < 552;
-            if (!EmiState.State.Los) ShieldComp.EmitterEvent = true;
-            ShieldComp.CheckEmitters = false;
-
+            else
+            {
+                MyAPIGateway.Parallel.For(0, ShieldComp.PhysicsOutside.Length, i =>
+                {
+                    var hit = MyGrid.RayCastBlocks(testPos, ShieldComp.PhysicsOutside[i]);
+                    if (hit.HasValue)
+                    {
+                        _blocksLos.Add(i);
+                        return;
+                    }
+                    _noBlocksLos.Add(i);
+                });
+                for (int i = 0; i < ShieldComp.PhysicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
+                EmiState.State.Los = _blocksLos.Count < 552;
+                if (!EmiState.State.Los) ShieldComp.EmitterEvent = true;
+                ShieldComp.CheckEmitters = false;
+            }
             if (Session.Enforced.Debug >= 1) Log.Line($"LOS: Mode: {EmitterMode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {EmiState.State.Los.ToString()} - EmitterId [{Emitter.EntityId}]");
         }
 

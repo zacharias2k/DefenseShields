@@ -719,7 +719,7 @@ namespace DefenseShields
             {
                 case PlayerNotice.EmitterInit:
                     UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius * 2, realPlayerIds);
-                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- shield is reinitializing, startup in 30 seconds!", 4816, "White");
+                    foreach (var id in realPlayerIds) if (id == MyAPIGateway.Session.Player.IdentityId) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- shield is reinitializing and checking LOS, attempting startup in 30 seconds!", 4816, "White");
                     break;
                 case PlayerNotice.FieldBlocked:
                     UtilsStatic.GetRealPlayers(center, (float)ShieldEnt.PositionComp.WorldVolume.Radius  * 2, realPlayerIds);
@@ -752,9 +752,10 @@ namespace DefenseShields
         private void BroadcastMessage()
         {
             if (Session.Enforced.Debug >= 1) Log.Line($"Broadcasting message to local playerId - Server:{_isServer} - Dedicated:{_isDedicated} - Id:{MyAPIGateway.Multiplayer.MyId}");
-            if (!DsState.State.EmitterWorking && !DsState.State.Waking)
+            var checkMobLos = GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los;
+            if (!DsState.State.EmitterWorking && (!DsState.State.Waking || checkMobLos && _genericDownLoop > -1 || checkMobLos && !_isServer))
             {
-                if (GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los) PlayerMessages(PlayerNotice.NoLos);
+                if (checkMobLos) PlayerMessages(PlayerNotice.NoLos);
                 else if (!GridIsMobile && ShieldComp.StationEmitter != null && !ShieldComp.StationEmitter.EmiState.State.Los) PlayerMessages(PlayerNotice.NoLos);
             }
             else if (DsState.State.NoPower) PlayerMessages(PlayerNotice.NoPower);
