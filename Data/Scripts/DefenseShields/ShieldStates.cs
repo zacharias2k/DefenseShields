@@ -142,6 +142,7 @@ namespace DefenseShields
             ComingOnline = false;
             WasOnline = true;
             WarmedUp = true;
+
             if (_isServer)
             {
                 CleanAll();

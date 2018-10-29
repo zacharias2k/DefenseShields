@@ -124,38 +124,52 @@ namespace DefenseShields
 
         private void CalculatePowerCharge()
         {
+            const float convToDec = 0.01f;
+            const double magicRatio = 2.40063050674088;
+            const float chargeRatio = 1.25f;
+
             var capScaler = Session.Enforced.CapScaler;
             var hpsEfficiency = Session.Enforced.HpsEfficiency;
             var baseScaler = Session.Enforced.BaseScaler;
             var maintenanceCost = Session.Enforced.MaintenanceCost;
+            var efficiency = Session.Enforced.Efficiency;
 
             if (hpsEfficiency <= 0) hpsEfficiency = 1f;
-            if (baseScaler <= 0) baseScaler = 1;
+            if (baseScaler < 1) baseScaler = 1;
             if (maintenanceCost <= 0) maintenanceCost = 1f;
 
-            const float ratio = 1.25f;
-            var percent = DsSet.Settings.Rate * ratio;
+            var percent = DsSet.Settings.Rate * chargeRatio;
+            var chargePercent = percent / chargeRatio * convToDec;
+
             var shieldMaintainPercent = maintenanceCost / percent;
-            _sizeScaler = _shieldVol / (_ellipsoidSurfaceArea * 2.40063050674088);
-            var gridIntegrity = DsState.State.GridIntegrity * 0.01f;
-            var hpScaler = 1f;
+            _sizeScaler = _shieldVol / (_ellipsoidSurfaceArea * magicRatio);
 
             float bufferScaler;
             if (ShieldMode == ShieldType.Station && DsState.State.Enhancer) bufferScaler = 100 / percent * baseScaler * _shieldRatio;
             else bufferScaler = 100 / percent * baseScaler / (float)_sizeScaler * _shieldRatio;
 
             var hpBase = _gridMaxPower * bufferScaler;
-            if (capScaler > 0 && hpBase > gridIntegrity) hpScaler = gridIntegrity * capScaler / hpBase;
 
-            shieldMaintainPercent = shieldMaintainPercent * DsState.State.EnhancerPowerMulti * (DsState.State.ShieldPercent * 0.01f);
+            var gridIntegrity = DsState.State.GridIntegrity * (efficiency * convToDec) * convToDec;
+            if (capScaler > 0) gridIntegrity *= capScaler;
+
+            var hpScaler = 1f;
+            if (hpBase > gridIntegrity) hpScaler = gridIntegrity / hpBase;
+
+            shieldMaintainPercent = shieldMaintainPercent * DsState.State.EnhancerPowerMulti * (DsState.State.ShieldPercent * convToDec);
             if (DsState.State.Lowered) shieldMaintainPercent = shieldMaintainPercent * 0.25f;
             _shieldMaintaintPower = _gridMaxPower * hpScaler * shieldMaintainPercent;
 
             ShieldMaxBuffer = hpBase * hpScaler;
 
-            //if (_tick600) Log.Line($"gridName:{MyGrid.DebugName} - {hpBase} > {gridIntegrity} ({hpBase > gridIntegrity}) - hpScaler:{hpScaler}");
-
-            var powerForShield = PowerNeeded(percent, ratio, hpsEfficiency);
+            /*
+            if (_tick600)
+            {
+                Log.Line($"gridName:{MyGrid.DebugName} - hpBase:{hpBase} - gridInt[new:{gridIntegrity} old:{DsState.State.GridIntegrity}] - hpScaler:{hpScaler} - capScaler:{capScaler} - baseScaler:{baseScaler} - bufferScaler:{bufferScaler} - sizeScaler:{_sizeScaler}");
+                Log.Line($"{percent} - {100 / percent} - {100 / percent * baseScaler} - {(float)_sizeScaler * _shieldRatio}");
+            }
+            */
+            var powerForShield = PowerNeeded(chargePercent, hpsEfficiency);
 
             if (!WarmedUp) return;
 
@@ -169,14 +183,13 @@ namespace DefenseShields
             else DsState.State.ShieldPercent = 100f;
         }
 
-        private float PowerNeeded(float percent, float ratio, float hpsEfficiency)
+        private float PowerNeeded(float chargePercent, float hpsEfficiency)
         {
             var powerForShield = 0f;
-            var fPercent = percent / ratio * 0.01f;
 
             var cleanPower = _gridAvailablePower + _shieldCurrentPower;
             _otherPower = _gridMaxPower - cleanPower;
-            powerForShield = (cleanPower * fPercent) - _shieldMaintaintPower;
+            powerForShield = (cleanPower * chargePercent) - _shieldMaintaintPower;
             var rawMaxChargeRate = powerForShield > 0 ? powerForShield : 0f;
             _shieldMaxChargeRate = rawMaxChargeRate;
             var chargeSize = _shieldMaxChargeRate * hpsEfficiency / _sizeScaler;

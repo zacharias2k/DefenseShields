@@ -13,6 +13,7 @@ using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Localization;
 using Sandbox.ModAPI.Interfaces.Terminal;
+using SpaceEngineers.Game.ModAPI;
 using VRage.Game.Entity;
 using VRage.Utils;
 using VRageMath;
@@ -425,6 +426,13 @@ namespace DefenseShields
 
                         if (hostileEnt != null && block.FatBlock == shield.Shield && (info.Type == DSdamage || info.Type == DSheal || info.Type == DSbypass))
                         {
+                            if (gunBase != null && info.Type == DSdamage) //temp fix for GSF laser bug
+                            {
+                                shield.Absorb += 1000;
+                                shield.WorldImpactPosition = shield.ShieldEnt.Render.ColorMaskHsv;
+                                info.Amount = 0f;
+                                continue;
+                            }
                             shield.Absorb += info.Amount;
                             info.Amount = 0f;
                             shield.WorldImpactPosition = shield.ShieldEnt.Render.ColorMaskHsv;
