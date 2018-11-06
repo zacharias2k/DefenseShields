@@ -56,8 +56,7 @@ namespace DefenseShields
                 {
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
                     {
-                        Shield.ShowInToolbarConfig = false;
-                        Shield.ShowInToolbarConfig = true;
+                        ((MyCubeBlock)Shield).UpdateTerminal();
                     }
                 }
                 _runningDamage = DpsAvg.Add((int) _damageReadOut);

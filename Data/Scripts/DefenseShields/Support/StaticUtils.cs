@@ -9,6 +9,7 @@ using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Entity;
+using VRage.Game.Entity.EntityComponents;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
@@ -51,6 +52,23 @@ namespace DefenseShields.Support
             [0.0000000090f] = 9,
             [0.0000000100f] = 10,
         };
+
+        public static void UpdateTerminal(this MyCubeBlock block)
+        {
+            MyOwnershipShareModeEnum shareMode;
+            long ownerId;
+            if (block.IDModule != null)
+            {
+                ownerId = block.IDModule.Owner;
+                shareMode = block.IDModule.ShareMode;
+            }
+            else
+            {
+                return;
+            }
+            block.ChangeOwner(ownerId, shareMode == MyOwnershipShareModeEnum.None ? MyOwnershipShareModeEnum.Faction : MyOwnershipShareModeEnum.None);
+            block.ChangeOwner(ownerId, shareMode);
+        }
 
         public static long IntPower(int x, short power)
         {

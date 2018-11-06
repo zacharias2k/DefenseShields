@@ -79,11 +79,9 @@ namespace DefenseShields
                 if (_lCount == 10) _lCount = 0;
             }
 
-            if (_count == 29 && !_isDedicated && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
+            if (!_isDedicated && _count == 29 && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
             {
                 Enhancer.RefreshCustomInfo();
-                Enhancer.ShowInToolbarConfig = false;
-                Enhancer.ShowInToolbarConfig = true;
             }
         }
 
@@ -139,13 +137,10 @@ namespace DefenseShields
                     EnhState.State.Online = false;
                 }
 
-                if (Enhancer != null && _count == 29)
+                if (!_isDedicated && Enhancer != null && _count == 29)
                 {
                     Enhancer.RefreshCustomInfo();
-                    Enhancer.ShowInToolbarConfig = false;
-                    Enhancer.ShowInToolbarConfig = true;
                 }
-
             }
 
             if (!EnhState.State.Backup && ShieldComp.Enhancer == this && ShieldComp.DefenseShields.WasOnline)

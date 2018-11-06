@@ -178,11 +178,9 @@ namespace DefenseShields
             if (_count <= 0) _powered = Sink.IsPowerAvailable(GId, 0.01f);
             if (!Modulator.IsWorking || !_powered)
             {
-                if (_count == 29)
+                if (!_isDedicated && _count == 29)
                 {
                     Modulator.RefreshCustomInfo();
-                    Modulator.ShowInToolbarConfig = false;
-                    Modulator.ShowInToolbarConfig = true;
                 }
                 ModState.State.Online = false;
                 return false;
@@ -236,8 +234,6 @@ namespace DefenseShields
             if (_count == 29 && !_isDedicated && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
             {
                 Modulator.RefreshCustomInfo();
-                Modulator.ShowInToolbarConfig = false;
-                Modulator.ShowInToolbarConfig = true;
             }
 
             if (_count == 33)

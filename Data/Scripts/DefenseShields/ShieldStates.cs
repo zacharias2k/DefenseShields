@@ -368,10 +368,11 @@ namespace DefenseShields
             _prevShieldActive = false;
             DsState.State.Online = false;
 
-            Shield.RefreshCustomInfo();
-            Shield.ShowInToolbarConfig = false;
-            Shield.ShowInToolbarConfig = true;
-
+            if (!_isDedicated)
+            {
+                Shield.RefreshCustomInfo();
+                ((MyCubeBlock)Shield).UpdateTerminal();
+            }
             if (Session.Enforced.Debug >= 1) Log.Line($"ShieldDown: Count: {_offlineCnt} - ShieldPower: {_shieldCurrentPower} - gridMax: {_gridMaxPower} - currentPower: {_gridCurrentPower} - maint: {_shieldMaintaintPower} - ShieldId [{Shield.EntityId}]");
         }
 

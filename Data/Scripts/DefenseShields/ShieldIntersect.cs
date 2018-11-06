@@ -98,6 +98,8 @@ namespace DefenseShields
             if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB))) return;
             ShieldGridComponent shieldComponent;
             grid.Components.TryGet(out shieldComponent);
+            if (shieldComponent?.DefenseShields == null) return;
+
             var ds = shieldComponent.DefenseShields;
             var dsVerts = ds.ShieldComp.PhysicsOutside;
             var dsMatrixInv = ds.DetectMatrixOutsideInv;
@@ -108,6 +110,7 @@ namespace DefenseShields
 
             var bPhysics = ((IMyCubeGrid)grid).Physics;
             var sPhysics = myGrid.Physics;
+
             var bMass = grid.GetCurrentMass();
             var sMass = ((MyCubeGrid)myGrid).GetCurrentMass();
 
@@ -116,7 +119,6 @@ namespace DefenseShields
 
             var momentum = bMass * bPhysics.LinearVelocity + sMass * sPhysics.LinearVelocity;
             var resultVelocity = momentum / (bMass + sMass);
-
 
             var collisionAvg = Vector3D.Zero;
             for (int i = 0; i < insidePoints.Count; i++) collisionAvg += insidePoints[i];

@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using DefenseShields.Support;
+using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
@@ -168,8 +170,7 @@ namespace DefenseShields
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
             comp.LosCheckTick = Session.Instance.Tick + 1800;
-            block.ShowInToolbarConfig = false;
-            block.ShowInToolbarConfig = true;
+            ((MyCubeBlock)block).UpdateTerminal();
         }
 
         public static float GetOffsetHeight(IMyTerminalBlock block)
@@ -188,8 +189,7 @@ namespace DefenseShields
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
             comp.LosCheckTick = Session.Instance.Tick + 1800;
-            block.ShowInToolbarConfig = false;
-            block.ShowInToolbarConfig = true;
+            ((MyCubeBlock)block).UpdateTerminal();
         }
 
         public static float GetOffsetDepth(IMyTerminalBlock block)
@@ -208,8 +208,7 @@ namespace DefenseShields
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
             comp.LosCheckTick = Session.Instance.Tick + 1800;
-            block.ShowInToolbarConfig = false;
-            block.ShowInToolbarConfig = true;
+            ((MyCubeBlock)block).UpdateTerminal();
         }
 
         public static bool GetBatteries(IMyTerminalBlock block)

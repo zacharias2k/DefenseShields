@@ -1,4 +1,6 @@
-﻿using Sandbox.ModAPI;
+﻿using DefenseShields.Support;
+using Sandbox.Game.Entities;
+using Sandbox.ModAPI;
 
 namespace DefenseShields
 {
@@ -42,6 +44,7 @@ namespace DefenseShields
             comp.ModSet.Settings.ModulateDamage = (int)newValue;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
+            ((MyCubeBlock)block).UpdateTerminal();
         }
 
         public static void ComputeDamage(Modulators comp, float newValue)

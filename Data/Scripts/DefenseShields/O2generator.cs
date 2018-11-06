@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
+using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
@@ -87,8 +88,7 @@ namespace DefenseShields
             if (_count == 29 && !_isDedicated && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
             {
                 O2Generator.RefreshCustomInfo();
-                O2Generator.ShowInToolbarConfig = false;
-                O2Generator.ShowInToolbarConfig = true;
+                ((MyCubeBlock)O2Generator).UpdateTerminal();
             }
             else if (_lCount % 2 == 0 && _count == 0) O2Generator.RefreshCustomInfo();
         }
@@ -177,11 +177,10 @@ namespace DefenseShields
                     O2State.State.Pressurized = false;
                 }
 
-                if (O2Generator != null && _tick % 300 == 0)
+                if (!_isDedicated && O2Generator != null && _tick % 300 == 0)
                 {
                     O2Generator.RefreshCustomInfo();
-                    O2Generator.ShowInToolbarConfig = false;
-                    O2Generator.ShowInToolbarConfig = true;
+                    ((MyCubeBlock) O2Generator).UpdateTerminal();
                 }
 
             }

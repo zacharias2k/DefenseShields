@@ -97,8 +97,7 @@ namespace DefenseShields
             if (_count == 29 && !Session.DedicatedServer && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
             {
                 PlanetShield.RefreshCustomInfo();
-                PlanetShield.ShowInToolbarConfig = false;
-                PlanetShield.ShowInToolbarConfig = true;
+               // ((MyCubeBlock)PlanetShield).UpdateTerminal();
             }
         }
 
@@ -139,11 +138,10 @@ namespace DefenseShields
                 return false;
             }
 
-            if (PlanetShield != null && _count == 29)
+            if (!_isDedicated && PlanetShield != null && _count == 29)
             {
                 PlanetShield.RefreshCustomInfo();
-                PlanetShield.ShowInToolbarConfig = false;
-                PlanetShield.ShowInToolbarConfig = true;
+                //((MyCubeBlock)PlanetShield).UpdateTerminal();
             }
 
             if (!PlaState.State.Backup)

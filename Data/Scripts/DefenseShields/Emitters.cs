@@ -126,8 +126,6 @@ namespace DefenseShields
             if (_count == 29 && !_isDedicated && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
             {
                 Emitter.RefreshCustomInfo();
-                Emitter.ShowInToolbarConfig = false;
-                Emitter.ShowInToolbarConfig = true;
             }
         }
 
