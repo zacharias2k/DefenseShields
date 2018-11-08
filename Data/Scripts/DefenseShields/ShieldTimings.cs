@@ -54,10 +54,8 @@ namespace DefenseShields
                 Shield.RefreshCustomInfo();
                 if (!_isDedicated)
                 {
-                    if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
-                    {
+                    if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == Shield.EntityId)
                         ((MyCubeBlock)Shield).UpdateTerminal();
-                    }
                 }
                 _runningDamage = DpsAvg.Add((int) _damageReadOut);
                 _damageReadOut = 0;
@@ -73,6 +71,13 @@ namespace DefenseShields
                 {
                     CleanUp(3);
                     CleanUp(4);
+                }
+
+                var missileTempCnt = _missilesTmp.Count;
+                if (missileTempCnt > 0)
+                {
+                    for (int i = 0; i < missileTempCnt; i++) Missiles.Remove(_missilesTmp[i]);
+                    _missilesTmp.Clear();
                 }
             }
         }
@@ -268,7 +273,6 @@ namespace DefenseShields
                             }
                         }
                         _effectsCleanup = false;
-
                         break;
                     case 3:
                         {
@@ -297,9 +301,9 @@ namespace DefenseShields
                         }
                         break;
                     case 5:
-                    {
-                        WebEnts.Clear();
-                    }
+                        {
+                            WebEnts.Clear();
+                        }
                         break;
                 }
             }

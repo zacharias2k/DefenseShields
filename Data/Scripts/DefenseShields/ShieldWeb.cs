@@ -18,10 +18,18 @@ namespace DefenseShields
         private void WebEntities()
         {
             _pruneList.Clear();
-            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref _pruneSphere1, _pruneList, MyEntityQueryType.Dynamic);
-            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref _pruneSphere2, _pruneList, MyEntityQueryType.Static);
+            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref _pruneSphere2, _pruneList);
 
             foreach (var eShield in EnemyShields) _pruneList.Add(eShield);
+            foreach (var missile in Missiles)
+            {
+                if (missile.MarkedForClose || !missile.InScene)
+                {
+                    _missilesTmp.Add(missile);
+                    FriendlyMissileCache.Remove(missile);
+                }
+                else if (_pruneSphere2.Intersects(missile.PositionComp.WorldVolume)) _pruneList.Add(missile);
+            }
 
             var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || ShieldComp.Modulator == null || ShieldComp.Modulator.ModSet.Settings.ModulateVoxels;
             var entChanged = false;
@@ -31,10 +39,11 @@ namespace DefenseShields
             {
                 var ent = _pruneList[i];
                 var voxel = ent as MyVoxelBase;
-                if (ent == null || ent.MarkedForClose || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel || voxel == null && ent.Physics == null || !_pruneSphere2.Intersects(ent.PositionComp.WorldVolume)) continue;
-
+                if (ent == null || ent.MarkedForClose || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel || voxel == null && ent.Physics == null) continue;
                 var entCenter = ent.PositionComp.WorldVolume.Center;
                 if (FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent) || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
+                if (ent.DefinitionId.HasValue && ent.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile) && FriendlyMissileCache.Contains(ent)) continue;
+
                 EntIntersectInfo entInfo;
                 WebEnts.TryGetValue(ent, out entInfo);
 
@@ -103,7 +112,7 @@ namespace DefenseShields
                         var missileTestLoc = missileCenter + missilePast;
                         if (CustomCollision.PointInShield(missileTestLoc, DetectMatrixOutsideInv))
                         {
-                            IgnoreCache.Add(ent);
+                            FriendlyMissileCache.Add(ent);
                             continue;
                         }
                     }

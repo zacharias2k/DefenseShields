@@ -120,7 +120,7 @@ namespace DefenseShields
                         MyEntity ent;
                         while (_missileDmg.TryDequeue(out ent))
                         {
-                            if (ent == null || ent.MarkedForClose || ent.Closed) continue;
+                            if (ent == null || !ent.InScene || ent.MarkedForClose) continue;
                             var computedDamage = ComputeAmmoDamage(ent);
                             if (computedDamage <= float.NegativeInfinity)
                             {

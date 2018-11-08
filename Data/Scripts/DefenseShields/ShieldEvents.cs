@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Text;
 using DefenseShields.Support;
+using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage;
+using VRage.Game.Entity;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
 
 namespace DefenseShields
 {
@@ -20,6 +23,7 @@ namespace DefenseShields
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockAdded += FatBlockAdded;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockRemoved += FatBlockRemoved;
                 ((MyCubeGrid)Shield.CubeGrid).OnGridSplit += GridSplit;
+                MyEntities.OnEntityAdd += OnEntityAdd;
                 Shield.AppendingCustomInfo += AppendingCustomInfo;
             }
             else
@@ -30,8 +34,15 @@ namespace DefenseShields
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockAdded -= FatBlockAdded;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockRemoved -= FatBlockRemoved;
                 ((MyCubeGrid)Shield.CubeGrid).OnGridSplit -= GridSplit;
+                MyEntities.OnEntityAdd -= OnEntityAdd;
                 Shield.AppendingCustomInfo -= AppendingCustomInfo;
             }
+        }
+
+        private void OnEntityAdd(MyEntity myEntity)
+        {
+            if (myEntity == null || !(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))) return;
+            if (_pruneSphere1.Intersects(myEntity.PositionComp.WorldVolume)) Missiles.Add(myEntity);
         }
 
         private void GridSplit(MyCubeGrid oldGrid, MyCubeGrid newGrid)
@@ -43,7 +54,6 @@ namespace DefenseShields
         {
             try
             {
-                //if (ShieldComp == null) return;
                 _subUpdate = true;
             }
             catch (Exception ex) { Log.Line($"Exception in Controller HierarchyChanged: {ex}"); }

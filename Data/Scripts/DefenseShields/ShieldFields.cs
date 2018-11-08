@@ -197,6 +197,7 @@ namespace DefenseShields
         private readonly List<MyEntity> _clientPruneList = new List<MyEntity>();
         private readonly List<IMyBatteryBlock> _batteryBlocks = new List<IMyBatteryBlock>();
         private readonly List<KeyValuePair<MyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<MyEntity, EntIntersectInfo>>();
+        private readonly List<MyEntity> _missilesTmp = new List<MyEntity>();
 
         private Color _oldPercentColor = Color.Transparent;
         internal Task FuncTask;
@@ -207,6 +208,8 @@ namespace DefenseShields
         internal readonly HashSet<MyEntity> PartlyProtectedCache = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> IgnoreCache = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> EnemyShields = new HashSet<MyEntity>();
+        internal readonly HashSet<MyEntity> Missiles = new HashSet<MyEntity>();
+        internal readonly HashSet<MyEntity> FriendlyMissileCache = new HashSet<MyEntity>();
 
         public readonly ConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<MyEntity, EntIntersectInfo>();
 

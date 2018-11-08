@@ -13,7 +13,6 @@ using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Localization;
 using Sandbox.ModAPI.Interfaces.Terminal;
-using SpaceEngineers.Game.ModAPI;
 using VRage.Game.Entity;
 using VRage.Utils;
 using VRageMath;
@@ -127,6 +126,7 @@ namespace DefenseShields
         public IMyTerminalControlOnOffSwitch PsToggleShield;
 
         public bool[] SphereOnCamera = new bool[0];
+        public long LastTerminalId;
 
         public static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         public readonly Dictionary<IMySlimBlock, DefenseShields> ControllerBlockCache = new Dictionary<IMySlimBlock, DefenseShields>();
@@ -1299,6 +1299,7 @@ namespace DefenseShields
         {
             try
             {
+                LastTerminalId = block.EntityId;
                 switch (block.BlockDefinition.SubtypeId)
                 {
                     case "LargeShieldModulator":
