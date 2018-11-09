@@ -24,6 +24,7 @@ namespace DefenseShields
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockRemoved += FatBlockRemoved;
                 ((MyCubeGrid)Shield.CubeGrid).OnGridSplit += GridSplit;
                 MyEntities.OnEntityAdd += OnEntityAdd;
+                MyEntities.OnEntityRemove += OnEntityRemove;
                 Shield.AppendingCustomInfo += AppendingCustomInfo;
             }
             else
@@ -35,14 +36,30 @@ namespace DefenseShields
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockRemoved -= FatBlockRemoved;
                 ((MyCubeGrid)Shield.CubeGrid).OnGridSplit -= GridSplit;
                 MyEntities.OnEntityAdd -= OnEntityAdd;
+                MyEntities.OnEntityRemove -= OnEntityRemove;
                 Shield.AppendingCustomInfo -= AppendingCustomInfo;
             }
         }
 
         private void OnEntityAdd(MyEntity myEntity)
         {
-            if (myEntity == null || !(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))) return;
-            if (_pruneSphere1.Intersects(myEntity.PositionComp.WorldVolume)) Missiles.Add(myEntity);
+            try
+            {
+                if (myEntity == null || !(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))) return;
+                if (_pruneSphere1.Intersects(myEntity.PositionComp.WorldVolume)) Missiles.Add(myEntity);
+            }
+            catch (Exception ex) { Log.Line($"Exception in Controller OnEntityAdd: {ex}"); }
+        }
+
+        private void OnEntityRemove(MyEntity myEntity)
+        {
+            try
+            {
+                if (myEntity == null || !(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))) return;
+                Missiles.Remove(myEntity);
+                FriendlyMissileCache.Remove(myEntity);
+            }
+            catch (Exception ex) { Log.Line($"Exception in Controller OnEntityRemove: {ex}"); }
         }
 
         private void GridSplit(MyCubeGrid oldGrid, MyCubeGrid newGrid)

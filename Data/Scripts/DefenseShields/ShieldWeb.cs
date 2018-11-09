@@ -22,14 +22,7 @@ namespace DefenseShields
 
             foreach (var eShield in EnemyShields) _pruneList.Add(eShield);
             foreach (var missile in Missiles)
-            {
-                if (missile.MarkedForClose || !missile.InScene)
-                {
-                    _missilesTmp.Add(missile);
-                    FriendlyMissileCache.Remove(missile);
-                }
-                else if (_pruneSphere2.Intersects(missile.PositionComp.WorldVolume)) _pruneList.Add(missile);
-            }
+                if (_pruneSphere2.Intersects(missile.PositionComp.WorldVolume)) _pruneList.Add(missile);
 
             var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || ShieldComp.Modulator == null || ShieldComp.Modulator.ModSet.Settings.ModulateVoxels;
             var entChanged = false;

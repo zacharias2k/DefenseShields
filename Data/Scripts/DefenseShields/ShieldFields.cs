@@ -197,7 +197,6 @@ namespace DefenseShields
         private readonly List<MyEntity> _clientPruneList = new List<MyEntity>();
         private readonly List<IMyBatteryBlock> _batteryBlocks = new List<IMyBatteryBlock>();
         private readonly List<KeyValuePair<MyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<MyEntity, EntIntersectInfo>>();
-        private readonly List<MyEntity> _missilesTmp = new List<MyEntity>();
 
         private Color _oldPercentColor = Color.Transparent;
         internal Task FuncTask;

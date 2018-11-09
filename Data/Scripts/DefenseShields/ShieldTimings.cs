@@ -72,13 +72,6 @@ namespace DefenseShields
                     CleanUp(3);
                     CleanUp(4);
                 }
-
-                var missileTempCnt = _missilesTmp.Count;
-                if (missileTempCnt > 0)
-                {
-                    for (int i = 0; i < missileTempCnt; i++) Missiles.Remove(_missilesTmp[i]);
-                    _missilesTmp.Clear();
-                }
             }
         }
 
