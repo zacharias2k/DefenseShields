@@ -58,6 +58,7 @@ namespace DefenseShields
         internal static readonly MyStringHash DSdamage = MyStringHash.GetOrCompute("DSdamage");
         internal static readonly MyStringHash DSheal = MyStringHash.GetOrCompute("DSheal");
         internal static readonly MyStringHash DSbypass= MyStringHash.GetOrCompute("DSbypass");
+        private static readonly Type MissileObj = typeof(MyObjectBuilder_Missile);
 
         internal MyStringHash Bypass = MyStringHash.GetOrCompute("bypass");
         internal MyStringId Password = MyStringId.GetOrCompute("Shield Access Frequency");
@@ -362,7 +363,7 @@ namespace DefenseShields
                         }
                         else ds.ImpactSize = info.Amount;
 
-                        if (hostileEnt.DefinitionId.HasValue && hostileEnt.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))
+                        if (hostileEnt.DefinitionId.HasValue && hostileEnt.DefinitionId.Value.TypeId == MissileObj)
                         {
                             UtilsStatic.CreateFakeSmallExplosion(hitPos);
                             hostileEnt.Close();

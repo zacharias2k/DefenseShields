@@ -22,7 +22,7 @@ namespace DefenseShields
 
             foreach (var eShield in EnemyShields) _pruneList.Add(eShield);
             foreach (var missile in Missiles)
-                if (_pruneSphere2.Intersects(missile.PositionComp.WorldVolume)) _pruneList.Add(missile);
+                if (missile.InScene && !missile.MarkedForClose && _pruneSphere2.Intersects(missile.PositionComp.WorldVolume)) _pruneList.Add(missile);
 
             var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || ShieldComp.Modulator == null || ShieldComp.Modulator.ModSet.Settings.ModulateVoxels;
             var entChanged = false;
@@ -35,7 +35,7 @@ namespace DefenseShields
                 if (ent == null || ent.MarkedForClose || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel || voxel == null && ent.Physics == null) continue;
                 var entCenter = ent.PositionComp.WorldVolume.Center;
                 if (FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent) || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
-                if (ent.DefinitionId.HasValue && ent.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile) && FriendlyMissileCache.Contains(ent)) continue;
+                if (ent.DefinitionId.HasValue && ent.DefinitionId.Value.TypeId == MissileObj && FriendlyMissileCache.Contains(ent)) continue;
 
                 EntIntersectInfo entInfo;
                 WebEnts.TryGetValue(ent, out entInfo);
@@ -288,7 +288,7 @@ namespace DefenseShields
                 return enemy ? Ent.LargeEnemyGrid : Ent.Friend;
             }
 
-            if (ent is IMyMeteor || ent.DefinitionId.HasValue && ent.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile)) return Ent.Other;
+            if (ent is IMyMeteor || ent.DefinitionId.HasValue && ent.DefinitionId.Value.TypeId == MissileObj) return Ent.Other;
             if (voxel != null && GridIsMobile) return Ent.VoxelBase;
             return 0;
         }

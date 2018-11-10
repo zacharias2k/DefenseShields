@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using DefenseShields.Support;
 using ParallelTasks;
+using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
@@ -272,9 +273,10 @@ namespace DefenseShields
         private static readonly MyStringId HudIconHeat80 = MyStringId.GetOrCompute("DS_ShieldHeat80");
         private static readonly MyStringId HudIconHeat90 = MyStringId.GetOrCompute("DS_ShieldHeat90");
         private static readonly MyStringId HudIconHeat100 = MyStringId.GetOrCompute("DS_ShieldHeat100");
+        private static readonly Type MissileObj = typeof(MyObjectBuilder_Missile);
 
-        private readonly MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
-        private readonly MyStringHash DelDamage = MyStringHash.GetOrCompute("DelDamage");
+        private static readonly MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
+        private static readonly MyStringHash DelDamage = MyStringHash.GetOrCompute("DelDamage");
 
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;

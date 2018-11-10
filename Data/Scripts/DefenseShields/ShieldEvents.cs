@@ -23,8 +23,11 @@ namespace DefenseShields
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockAdded += FatBlockAdded;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockRemoved += FatBlockRemoved;
                 ((MyCubeGrid)Shield.CubeGrid).OnGridSplit += GridSplit;
-                MyEntities.OnEntityAdd += OnEntityAdd;
-                MyEntities.OnEntityRemove += OnEntityRemove;
+                if (_isServer)
+                {
+                    MyEntities.OnEntityAdd += OnEntityAdd;
+                    MyEntities.OnEntityRemove += OnEntityRemove;
+                }
                 Shield.AppendingCustomInfo += AppendingCustomInfo;
             }
             else
@@ -35,8 +38,11 @@ namespace DefenseShields
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockAdded -= FatBlockAdded;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockRemoved -= FatBlockRemoved;
                 ((MyCubeGrid)Shield.CubeGrid).OnGridSplit -= GridSplit;
-                MyEntities.OnEntityAdd -= OnEntityAdd;
-                MyEntities.OnEntityRemove -= OnEntityRemove;
+                if (_isServer)
+                {
+                    MyEntities.OnEntityAdd -= OnEntityAdd;
+                    MyEntities.OnEntityRemove -= OnEntityRemove;
+                }
                 Shield.AppendingCustomInfo -= AppendingCustomInfo;
             }
         }
@@ -45,7 +51,7 @@ namespace DefenseShields
         {
             try
             {
-                if (myEntity == null || !(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))) return;
+                if (myEntity == null || !(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == MissileObj)) return;
                 if (_pruneSphere1.Intersects(myEntity.PositionComp.WorldVolume)) Missiles.Add(myEntity);
             }
             catch (Exception ex) { Log.Line($"Exception in Controller OnEntityAdd: {ex}"); }
@@ -55,7 +61,7 @@ namespace DefenseShields
         {
             try
             {
-                if (myEntity == null || !(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))) return;
+                if (myEntity == null || !(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == MissileObj)) return;
                 Missiles.Remove(myEntity);
                 FriendlyMissileCache.Remove(myEntity);
             }
