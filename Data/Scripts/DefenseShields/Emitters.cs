@@ -399,7 +399,7 @@ namespace DefenseShields
             EmiState.State.Online = true;
             var online = EmiState.State.Online;
             var logic = ShieldComp.DefenseShields;
-            var controllerReady = logic != null && logic.Warming && logic.Shield.IsWorking && logic.Shield.IsFunctional && !logic.DsState.State.Suspended && logic.DsState.State.ControllerGridAccess;
+            var controllerReady = logic != null && logic.Warming && logic.MyCube.IsWorking && logic.MyCube.IsFunctional && !logic.DsState.State.Suspended && logic.DsState.State.ControllerGridAccess;
             var losCheckReq = online && controllerReady;
             if (losCheckReq && ShieldComp.CheckEmitters || controllerReady && TookControl) CheckShieldLineOfSight();
             //if (losCheckReq && !EmiState.State.Los && !Session.DedicatedServer) DrawHelper();

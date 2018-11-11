@@ -203,7 +203,7 @@ namespace DefenseShields
             if (Suspend() || ShieldSleeping() || ShieldLowered()) return false;
             if (ShieldComp.EmitterEvent) EmitterEventDetected();
 
-            _controlBlockWorking = Shield.IsWorking && Shield.IsFunctional;
+            _controlBlockWorking = MyCube.IsWorking && MyCube.IsFunctional;
             if (!_controlBlockWorking || !ShieldComp.EmittersWorking)
             {
                 if (_genericDownLoop == -1) _genericDownLoop = 0;
@@ -481,7 +481,7 @@ namespace DefenseShields
                 PowerOnline();
 
                 if (ShieldComp.EmitterEvent) EmitterEventDetected();
-                if (!Shield.IsWorking || !ShieldComp.EmittersWorking)
+                if (!MyCube.IsWorking || !ShieldComp.EmittersWorking)
                 {
                     if (_genericDownLoop == -1) _genericDownLoop = 0;
                     return false;
@@ -495,7 +495,7 @@ namespace DefenseShields
                 else if (_lCount == 0 && _count == 0) RefreshDimensions();
                 return true;
             }
-            if (DsState.State.Lowered && DsState.State.Online && Shield.IsWorking)
+            if (DsState.State.Lowered && DsState.State.Online && MyCube.IsWorking)
             {
                 if (!_isDedicated) ShellVisibility();
                 if (GridIsMobile) _updateMobileShape = true;
@@ -585,7 +585,7 @@ namespace DefenseShields
                 ShieldGridComponent shieldComponent;
                 grid.Components.TryGet(out shieldComponent);
                 var ds = shieldComponent?.DefenseShields;
-                if (ds?.ShieldComp != null && ds.WasOnline && ds.Shield.IsWorking)
+                if (ds?.ShieldComp != null && ds.WasOnline && ds.MyCube.IsWorking)
                 {
                     var otherSize = ds.MyGrid.PositionComp.WorldAABB.Size.Volume;
                     var otherEntityId = ds.MyGrid.EntityId;

@@ -29,7 +29,7 @@ namespace DefenseShields
         {
             _onCount = onCount;
             var enemy = false;
-            var relation = MyAPIGateway.Session.Player.GetRelationTo(Shield.OwnerId);
+            var relation = MyAPIGateway.Session.Player.GetRelationTo(MyCube.OwnerId);
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
             var renderId = MyGrid.Render.GetRenderObjectID();
             var percent = DsState.State.ShieldPercent;
@@ -86,14 +86,14 @@ namespace DefenseShields
             EmpDetonation = Vector3D.NegativeInfinity;
             WebDamage = false;
 
-            if (Shield.IsWorking)
+            if (MyCube.IsWorking)
             {
                 var prevlod = _prevLod;
                 var lod = CalculateLod(_onCount);
                 if (_shapeChanged || _updateRender || lod != prevlod) Icosphere.CalculateTransform(_shieldShapeMatrix, lod);
                 Icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, percent, activeVisible, refreshAnim);
             }
-            if (hitAnim && sphereOnCamera && Shield.IsWorking) Icosphere.Draw(renderId);
+            if (hitAnim && sphereOnCamera && MyCube.IsWorking) Icosphere.Draw(renderId);
 
             _updateRender = false;
             _shapeChanged = false;
@@ -353,7 +353,7 @@ namespace DefenseShields
         {
             if (_tick % 60 != 0 && !Session.DedicatedServer) HudCheck();
             var enemy = false;
-            var relation = MyAPIGateway.Session.Player.GetRelationTo(Shield.OwnerId);
+            var relation = MyAPIGateway.Session.Player.GetRelationTo(MyCube.OwnerId);
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
 
             var config = MyAPIGateway.Session.Config;

@@ -225,12 +225,12 @@ namespace DefenseShields
                     var sMass = sGrid.GetCurrentMass();
                     var momentum = bMass * bPhysics.LinearVelocity + sMass * sPhysics.LinearVelocity;
                     var resultVelocity = momentum / (bMass + sMass);
-                    var bBlockCenter = Vector3D.NegativeInfinity;
+                    Vector3D bBlockCenter;
                     var stale = false;
                     var rawDamage = 0f;
                     var blockSize = breaching.GridSize;
-                    var empRadius = 20;
-                    if (blockSize < 1) empRadius = 5;
+                    var empRadius = 35;
+                    if (blockSize < 1) empRadius = 7;
                     var empCount = 0;
                     IMyWarhead firstWarhead = null;
                     Vector3I gc = breaching.WorldToGridInteger(DetectionCenter);

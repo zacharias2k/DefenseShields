@@ -18,7 +18,7 @@ namespace DefenseShields
         {
             try
             {
-                var isFunctional = Shield.IsFunctional;
+                var isFunctional = MyCube.IsFunctional;
                 if (_isServer && (ShieldComp.EmitterMode < 0 || ShieldComp.EmitterMode == 0 && ShieldComp.StationEmitter == null || ShieldComp.EmittersSuspended || !isFunctional))
                 {
                     if (_tick600)
@@ -74,7 +74,7 @@ namespace DefenseShields
             if (_isServer)
             {
                 _hadPowerBefore = true;
-                _controlBlockWorking = AllInited && Shield.IsWorking && Shield.IsFunctional;
+                _controlBlockWorking = AllInited && MyCube.IsWorking && MyCube.IsFunctional;
                 DsState.State.Overload = false;
                 DsState.State.NoPower = false;
                 DsState.State.Remodulate = false;
@@ -90,7 +90,7 @@ namespace DefenseShields
             _oldGridHalfExtents = DsState.State.GridHalfExtents;
             _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
 
-            Session.Instance.ControllerBlockCache[Shield.SlimBlock] = this;
+            Session.Instance.ControllerBlockCache[MyCube.SlimBlock] = this;
             _updateRender = true;
             Warming = true;
         }

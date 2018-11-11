@@ -52,7 +52,7 @@ namespace DefenseShields
             if (_count != 9) return;
 
             Display.CubeGrid.Components.TryGet(out ShieldComp);
-            if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.DefenseShields.Warming || !ShieldComp.DefenseShields.Shield.IsWorking)
+            if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.DefenseShields.Warming || !ShieldComp.DefenseShields.MyCube.IsWorking)
             {
                 if (Display.ShowText) Display.SetShowOnScreen(0);
                 return;

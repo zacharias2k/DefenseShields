@@ -85,9 +85,7 @@ namespace DefenseShields
                         var createHeTiming = _count == 6 && (_lCount == 1 || _lCount == 6);
                         if (GridIsMobile && createHeTiming) CreateHalfExtents();
                         if (_syncEnts) SyncThreadedEnts();
-                        Dsutil5.Sw.Restart();
                         WebEntities();
-                        Dsutil5.StopWatchReport("test", -1);
                         if (_mpActive && _count == 29)
                         {
                             var newPercentColor = UtilsStatic.GetShieldColorFromFloat(DsState.State.ShieldPercent);

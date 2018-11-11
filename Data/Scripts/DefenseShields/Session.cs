@@ -189,7 +189,7 @@ namespace DefenseShields
                     shield.DeformEnabled = false;
                     if (_count == 0)
                     {
-                        if (shield.Warming) ControllerBlockCache.Add(shield.Shield.SlimBlock, shield);
+                        if (shield.Warming) ControllerBlockCache.Add(shield.MyCube.SlimBlock, shield);
                     }
                 }
                 if (SphereOnCamera.Length != Components.Count) Array.Resize(ref SphereOnCamera, Components.Count);
@@ -268,7 +268,7 @@ namespace DefenseShields
                         {
                             if (!s.Icosphere.ImpactsFinished) s.Icosphere.StepEffects();
                         }
-                        else if (s.Shield.IsWorking && SphereOnCamera[i]) s.DrawShieldDownIcon();
+                        else if (s.MyCube.IsWorking && SphereOnCamera[i]) s.DrawShieldDownIcon();
                     }
                 }
             }

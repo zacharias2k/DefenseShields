@@ -162,13 +162,6 @@ namespace DefenseShields
 
             ShieldMaxBuffer = hpBase * hpScaler;
 
-            /*
-            if (_tick600)
-            {
-                Log.Line($"gridName:{MyGrid.DebugName} - hpBase:{hpBase} - gridInt[new:{gridIntegrity} old:{DsState.State.GridIntegrity}] - hpScaler:{hpScaler} - capScaler:{capScaler} - baseScaler:{baseScaler} - bufferScaler:{bufferScaler} - sizeScaler:{_sizeScaler}");
-                Log.Line($"{percent} - {100 / percent} - {100 / percent * baseScaler} - {(float)_sizeScaler * _shieldRatio}");
-            }
-            */
             var powerForShield = PowerNeeded(chargePercent, hpsEfficiency);
 
             if (!WarmedUp) return;

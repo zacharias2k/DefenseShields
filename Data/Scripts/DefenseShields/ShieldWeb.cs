@@ -26,13 +26,11 @@ namespace DefenseShields
 
             var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || ShieldComp.Modulator == null || ShieldComp.Modulator.ModSet.Settings.ModulateVoxels;
             var entChanged = false;
-
             _enablePhysics = false;
             for (int i = 0; i < _pruneList.Count; i++)
             {
                 var ent = _pruneList[i];
                 var voxel = ent as MyVoxelBase;
-
                 if (ent == null || ent.MarkedForClose || voxel == null && ent.Physics == null || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel) continue;
                 var entCenter = ent.PositionComp.WorldVolume.Center;
                 if (FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent) || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
@@ -242,7 +240,7 @@ namespace DefenseShields
             {
                 var dude = MyAPIGateway.Players.GetPlayerControllingEntity(ent)?.IdentityId;
                 if (dude == null) return Ent.Ignore;
-                var playerrelationship = Shield.GetUserRelationToOwner((long)dude);
+                var playerrelationship = MyCube.GetUserRelationToOwner((long)dude);
                 if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner || playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return Ent.Friend;
                 return player.IsDead ? Ent.Ignore : Ent.EnemyPlayer;
             }
@@ -253,22 +251,20 @@ namespace DefenseShields
 
                 ModulatorGridComponent modComp;
                 grid.Components.TryGet(out modComp);
-                if (modComp?.ModulationPassword != null)
+                if (!string.IsNullOrEmpty(modComp?.ModulationPassword) && modComp.ModulationPassword == Shield.CustomData)
                 {
-                    if (modComp.ModulationPassword.Equals(Shield.CustomData))
+                    foreach (var subGrid in modComp.GetSubGrids)
                     {
-                        foreach (var subGrid in modComp.GetSubGrids)
+                        if (ShieldEnt.PositionComp.WorldVolume.Intersects(grid.PositionComp.WorldVolume))
                         {
-                            if (ShieldEnt.PositionComp.WorldVolume.Intersects(grid.PositionComp.WorldVolume))
-                            {
-                                var cornersInShield = CustomCollision.NotAllCornersInShield(grid, DetectMatrixOutsideInv);
-                                if (cornersInShield > 0 && cornersInShield != 8) PartlyProtectedCache.Add(ent);
-                                else if (cornersInShield == 8) FriendlyCache.Add(ent);
-                            }
+                            var cornersInShield = CustomCollision.NotAllCornersInShield(grid, DetectMatrixOutsideInv);
+                            if (cornersInShield > 0 && cornersInShield != 8) PartlyProtectedCache.Add(subGrid);
+                            else if (cornersInShield == 8) FriendlyCache.Add(subGrid);
                             else AuthenticatedCache.Add(subGrid);
                         }
-                        return Ent.Authenticated;
+                        else AuthenticatedCache.Add(subGrid);
                     }
+                    return Ent.Authenticated;
                 }
                 var bigOwners = grid.BigOwners.Count;
                 var blockCnt = grid.BlocksCount;
@@ -281,7 +277,7 @@ namespace DefenseShields
                 if (shieldComponent?.DefenseShields?.ShieldComp != null && shieldComponent.DefenseShields.WasOnline)
                 {
                     var dsComp = shieldComponent.DefenseShields;
-                    var shieldEntity = (MyEntity)Shield.Parent;
+                    var shieldEntity = MyCube.Parent;
                     if (!enemy) return Ent.Friend;
                     dsComp.EnemyShields.Add(shieldEntity);
                     return Ent.Shielded;    
@@ -298,7 +294,7 @@ namespace DefenseShields
         {
             var owners = grid.BigOwners;
             if (owners.Count == 0) return true;
-            var relationship = Shield.GetUserRelationToOwner(owners[0]);
+            var relationship = MyCube.GetUserRelationToOwner(owners[0]);
             var enemy = relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare;
             return enemy;
         }

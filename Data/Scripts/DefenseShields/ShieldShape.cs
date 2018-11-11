@@ -33,15 +33,15 @@ namespace DefenseShields
 
         public void CreateHalfExtents()
         {
-            var myAabb = Shield.CubeGrid.PositionComp.LocalAABB;
-            var shieldGrid = Shield.CubeGrid;
+            var myAabb = MyGrid.PositionComp.LocalAABB;
+            var shieldGrid = MyGrid;
             var expandedAabb = myAabb;
             if (ShieldComp.GetSubGrids.Count > 1)
             {
                 foreach (var grid in ShieldComp.GetSubGrids)
                 {
                     if (grid == null || grid == shieldGrid) continue;
-                    var shieldMatrix = shieldGrid.WorldMatrixNormalizedInv;
+                    var shieldMatrix = shieldGrid.PositionComp.WorldMatrixNormalizedInv;
                     var gQuaternion = Quaternion.CreateFromRotationMatrix(grid.WorldMatrix);
                     var gOriBBoxD = new MyOrientedBoundingBox(grid.PositionComp.WorldAABB.Center, grid.PositionComp.LocalAABB.HalfExtents, gQuaternion);
                     gOriBBoxD.Transform(shieldMatrix);
@@ -232,7 +232,7 @@ namespace DefenseShields
             }
             else
             {
-                var matrix = _shieldShapeMatrix * Shield.WorldMatrix;
+                var matrix = _shieldShapeMatrix * MyCube.WorldMatrix;
                 matrix.Translation = DetectionCenter;
                 ShieldEnt.PositionComp.SetWorldMatrix(matrix);
             }

@@ -136,7 +136,7 @@ namespace DefenseShields
 
         private string GetShieldStatus()
         {
-            if (!DsState.State.Online && (!Shield.IsWorking || !Shield.IsFunctional)) return "[Controller Failure]";
+            if (!DsState.State.Online && (!MyCube.IsWorking || !MyCube.IsFunctional)) return "[Controller Failure]";
             if (!DsState.State.Online && DsState.State.NoPower) return "[Insufficient Power]";
             if (!DsState.State.Online && DsState.State.Overload) return "[Overloaded]";
             if (!DsState.State.ControllerGridAccess) return "[Invalid Owner]";
