@@ -69,6 +69,7 @@ namespace DefenseShields
         public IMyUpgradeModule Emitter => (IMyUpgradeModule)Entity;
         public EmitterType EmitterMode;
         internal MyCubeGrid MyGrid;
+        internal MyCubeBlock MyCube;
 
         private readonly Dictionary<long, Emitters> _emitters = new Dictionary<long, Emitters>();
         private readonly MyConcurrentList<int> _vertsSighted = new MyConcurrentList<int>();
@@ -91,18 +92,15 @@ namespace DefenseShields
                 _tick = Session.Instance.Tick;
                 _tick60 = _tick % 60 == 0;
                 var wait = _isServer && !_tick60 && EmiState.State.Backup;
-
-                MyGrid = Emitter.CubeGrid as MyCubeGrid;
+                MyGrid = MyCube.CubeGrid;
                 if (wait || MyGrid?.Physics == null) return;
-
-                IsStatic = MyGrid.IsStatic;
 
                 Timing();
                 if (!ControllerLink()) return;
                 if (!_isDedicated && UtilsStatic.DistanceCheck(Emitter, 1000, EmiState.State.BoundingRange))
                 {
                     //if (ShieldComp.GridIsMoving && !Compact) BlockParticleUpdate();
-                    var blockCam = Emitter.PositionComp.WorldVolume;
+                    var blockCam = MyCube.PositionComp.WorldVolume;
                     var onCam = MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam);
                     if (onCam)
                     {
@@ -209,7 +207,7 @@ namespace DefenseShields
                 if (EmiState.State.Mode == 0 && EmiState.State.Link && ShieldComp.StationEmitter == null) ShieldComp.StationEmitter = this;
                 else if (EmiState.State.Mode != 0 && EmiState.State.Link && ShieldComp.ShipEmitter == null) ShieldComp.ShipEmitter = this;
 
-                if (ShieldComp.DefenseShields == null || !Emitter.IsFunctional) return false;
+                if (ShieldComp.DefenseShields == null || !MyCube.IsFunctional) return false;
 
                 if (!EmiState.State.Compact && _subpartRotor == null)
                 {
@@ -245,7 +243,7 @@ namespace DefenseShields
 
         private bool BlockMoveAnimationReset(bool clearAnimation)
         {
-            if (!Emitter.IsFunctional) return false;
+            if (!MyCube.IsFunctional) return false;
 
             if (!EmiState.State.Compact && _subpartRotor == null)
             {
@@ -272,7 +270,7 @@ namespace DefenseShields
                     _subpartRotor.PositionComp.LocalMatrix = matrix;
                     _subpartRotor.SetEmissiveParts(PlasmaEmissive, Color.Transparent, 0);
                 }
-                else Emitter.SetEmissiveParts(PlasmaEmissive, Color.Transparent, 0);
+                else MyCube.SetEmissiveParts(PlasmaEmissive, Color.Transparent, 0);
             }
 
             if (Session.Enforced.Debug >= 1) Log.Line($"EmitterAnimationReset: [EmitterType: {Definition.Name} - Compact({EmiState.State.Compact})] - Tick:{_tick.ToString()} - EmitterId [{Emitter.EntityId}]");
@@ -287,7 +285,7 @@ namespace DefenseShields
                 if (_count == 0) EmissiveIntensity = 2;
                 if (_count < 30) EmissiveIntensity += 1;
                 else EmissiveIntensity -= 1;
-                Emitter.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetShieldColorFromFloat(percent), 0.1f * EmissiveIntensity);
+                MyCube.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetShieldColorFromFloat(percent), 0.1f * EmissiveIntensity);
                 return;
             }
 
@@ -348,49 +346,6 @@ namespace DefenseShields
         */
         #endregion
 
-        private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
-        {
-            try
-            {
-                var mode = Enum.GetName(typeof(EmitterType), EmiState.State.Mode);
-                if (!EmiState.State.Link)
-                {
-                    stringBuilder.Append("[ No Valid Controller ]" +
-                                         "\n" +
-                                         "\n[Emitter Type]: " + mode +
-                                         "\n[Grid Compatible]: " + EmiState.State.Compatible +
-                                         "\n[Controller Link]: " + EmiState.State.Link +
-                                         "\n[Controller Bus]: " + (ShieldComp?.DefenseShields != null) +
-                                         "\n[Line of Sight]: " + EmiState.State.Los +
-                                         "\n[Is Suspended]: " + EmiState.State.Suspend +
-                                         "\n[Is a Backup]: " + EmiState.State.Backup);
-                }
-                else if (!EmiState.State.Online)
-                {
-                    stringBuilder.Append("[ Emitter Offline ]" +
-                                         "\n" +
-                                         "\n[Emitter Type]: " + mode +
-                                         "\n[Grid Compatible]: " + EmiState.State.Compatible +
-                                         "\n[Controller Link]: " + EmiState.State.Link +
-                                         "\n[Line of Sight]: " + EmiState.State.Los +
-                                         "\n[Is Suspended]: " + EmiState.State.Suspend +
-                                         "\n[Is a Backup]: " + EmiState.State.Backup);
-                }
-                else
-                {
-                    stringBuilder.Append("[ Emitter Online ]" +
-                                         "\n" +
-                                         "\n[Emitter Type]: " + mode +
-                                         "\n[Grid Compatible]: " + EmiState.State.Compatible +
-                                         "\n[Controller Link]: " + EmiState.State.Link +
-                                         "\n[Line of Sight]: " + EmiState.State.Los +
-                                         "\n[Is Suspended]: " + EmiState.State.Suspend +
-                                         "\n[Is a Backup]: " + EmiState.State.Backup);
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in AppendingCustomInfo: {ex}"); }
-        }
-
         private bool BlockWorking()
         {
             if (ShieldComp.EmitterMode != (int)EmitterMode) ShieldComp.EmitterMode = (int)EmitterMode;
@@ -423,7 +378,7 @@ namespace DefenseShields
         private bool Suspend()
         {
             EmiState.State.Online = false;
-            var functional = Emitter.IsFunctional;
+            var functional = MyCube.IsFunctional;
             if (!functional)
             {
                 EmiState.State.Suspend = true;
@@ -447,7 +402,7 @@ namespace DefenseShields
                 return true;
             }
 
-            var working = Emitter.IsWorking;
+            var working = MyCube.IsWorking;
             var stationMode = EmitterMode == EmitterType.Station;
             var shipMode = EmitterMode != EmitterType.Station;
             var modes = IsStatic && stationMode || !IsStatic && shipMode;
@@ -548,10 +503,10 @@ namespace DefenseShields
             _noBlocksLos.Clear();
             _vertsSighted.Clear();
             var testDist = Definition.FieldDist;
-            var testDir = Emitter.PositionComp.WorldMatrix.Up;
-            if (!EmiState.State.Compact) testDir = _subpartRotor.PositionComp.WorldVolume.Center - Emitter.PositionComp.WorldVolume.Center;
+            var testDir = MyCube.PositionComp.WorldMatrix.Up;
+            if (!EmiState.State.Compact) testDir = _subpartRotor.PositionComp.WorldVolume.Center - MyCube.PositionComp.WorldVolume.Center;
             testDir.Normalize();
-            var testPos = Emitter.PositionComp.WorldVolume.Center + testDir * testDist;
+            var testPos = MyCube.PositionComp.WorldVolume.Center + testDir * testDist;
             _sightPos = testPos;
             ShieldComp.DefenseShields.ResetShape(false, false);
             if (EmitterMode == EmitterType.Station)
@@ -603,15 +558,6 @@ namespace DefenseShields
             if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("Blue means clear line of sight, black means blocked......................................................................", 960, "Red", Emitter.OwnerId);
         }
 
-        private void CheckEmitter(IMyTerminalBlock myTerminalBlock)
-        {
-            try
-            {
-                if (myTerminalBlock.IsWorking && ShieldComp != null) ShieldComp.CheckEmitters = true;
-            }
-            catch (Exception ex) { Log.Line($"Exception in CheckEmitter: {ex}"); }
-        }
-
         public override void OnAddedToContainer()
         {
             if (!ContainerInited)
@@ -646,8 +592,8 @@ namespace DefenseShields
                 PowerInit();
                 _isServer = Session.IsServer;
                 _isDedicated = Session.DedicatedServer;
+                IsStatic = Emitter.CubeGrid.IsStatic;
                 StateChange(true);
-                Emitter.EnabledChanged += CheckEmitter;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
@@ -666,9 +612,32 @@ namespace DefenseShields
             try
             {
                 SetEmitterType();
+                MyCube = Emitter as MyCubeBlock;
+                IsStatic = MyGrid.IsStatic;
+                Emitter.EnabledChanged += CheckEmitter;
+                ((MyCubeGrid)Emitter.CubeGrid).OnStaticChanged += OnStaticChanged;
+
                 if (Session.Enforced.Debug >= 1) Log.Line($"OnAddedToScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
+        }
+
+        private void CheckEmitter(IMyTerminalBlock myTerminalBlock)
+        {
+            try
+            {
+                if (myTerminalBlock.IsWorking && ShieldComp != null) ShieldComp.CheckEmitters = true;
+            }
+            catch (Exception ex) { Log.Line($"Exception in CheckEmitter: {ex}"); }
+        }
+
+        private void OnStaticChanged(MyCubeGrid myCubeGrid, bool isStatic)
+        {
+            try
+            {
+                IsStatic = isStatic;
+            }
+            catch (Exception ex) { Log.Line($"Exception in Emitter OnStaticChanged: {ex}"); }
         }
 
         private void StorageSetup()
@@ -741,12 +710,59 @@ namespace DefenseShields
             Emitter.AppendingCustomInfo += AppendingCustomInfo;
         }
 
+        private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
+        {
+            try
+            {
+                var mode = Enum.GetName(typeof(EmitterType), EmiState.State.Mode);
+                if (!EmiState.State.Link)
+                {
+                    stringBuilder.Append("[ No Valid Controller ]" +
+                                         "\n" +
+                                         "\n[Emitter Type]: " + mode +
+                                         "\n[Grid Compatible]: " + EmiState.State.Compatible +
+                                         "\n[Controller Link]: " + EmiState.State.Link +
+                                         "\n[Controller Bus]: " + (ShieldComp?.DefenseShields != null) +
+                                         "\n[Line of Sight]: " + EmiState.State.Los +
+                                         "\n[Is Suspended]: " + EmiState.State.Suspend +
+                                         "\n[Is a Backup]: " + EmiState.State.Backup);
+                }
+                else if (!EmiState.State.Online)
+                {
+                    stringBuilder.Append("[ Emitter Offline ]" +
+                                         "\n" +
+                                         "\n[Emitter Type]: " + mode +
+                                         "\n[Grid Compatible]: " + EmiState.State.Compatible +
+                                         "\n[Controller Link]: " + EmiState.State.Link +
+                                         "\n[Line of Sight]: " + EmiState.State.Los +
+                                         "\n[Is Suspended]: " + EmiState.State.Suspend +
+                                         "\n[Is a Backup]: " + EmiState.State.Backup);
+                }
+                else
+                {
+                    stringBuilder.Append("[ Emitter Online ]" +
+                                         "\n" +
+                                         "\n[Emitter Type]: " + mode +
+                                         "\n[Grid Compatible]: " + EmiState.State.Compatible +
+                                         "\n[Controller Link]: " + EmiState.State.Link +
+                                         "\n[Line of Sight]: " + EmiState.State.Los +
+                                         "\n[Is Suspended]: " + EmiState.State.Suspend +
+                                         "\n[Is a Backup]: " + EmiState.State.Backup);
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in AppendingCustomInfo: {ex}"); }
+        }
+
         public override void OnRemovedFromScene()
         {
             try
             {
                 if (Session.Enforced.Debug >= 1) Log.Line($"OnRemovedFromScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
                 //BlockParticleStop();
+                MyCube = null;
+                Emitter.EnabledChanged -= CheckEmitter;
+                Emitter.AppendingCustomInfo -= AppendingCustomInfo;
+                ((MyCubeGrid)Emitter.CubeGrid).OnStaticChanged -= OnStaticChanged;
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }

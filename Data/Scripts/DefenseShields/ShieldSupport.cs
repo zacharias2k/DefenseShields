@@ -45,6 +45,7 @@ namespace DefenseShields
                 DsState.State.EnhancerPowerMulti = 1;
                 DsState.State.EnhancerProtMulti = 1;
                 DsState.State.Enhancer = false;
+                DsState.State.EmpProtection = false;
                 if (update) ShieldChangeState();
             }
         }

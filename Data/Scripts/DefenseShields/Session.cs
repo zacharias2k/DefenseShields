@@ -183,7 +183,8 @@ namespace DefenseShields
             {
                 Tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
                 if (_count == 0) ControllerBlockCache.Clear();
-                for (int i = 0; i < Components.Count; i++)
+                var compCount = Components.Count;
+                for (int i = 0; i < compCount; i++)
                 {
                     var shield = Components[i];
                     shield.DeformEnabled = false;
@@ -192,7 +193,7 @@ namespace DefenseShields
                         if (shield.Warming) ControllerBlockCache.Add(shield.MyCube.SlimBlock, shield);
                     }
                 }
-                if (SphereOnCamera.Length != Components.Count) Array.Resize(ref SphereOnCamera, Components.Count);
+                if (SphereOnCamera.Length != compCount) Array.Resize(ref SphereOnCamera, compCount);
                 if (_count++ == 59)
                 {
                     _count = 0;
@@ -404,7 +405,28 @@ namespace DefenseShields
                             shield.DeformEnabled = true;
                             continue;
                         }
+
                         var gunBase = hostileEnt as IMyGunBaseUser;
+
+                        if (info.Type == DSdamage || info.Type == DSheal || info.Type == DSbypass)
+                        {
+                            if (info.Type == DSheal)
+                            {
+                                info.Amount = 0f;
+                                continue;
+                            }
+
+                            if (gunBase != null && block.FatBlock == shield.Shield) //temp fix for GSF laser bug
+                            {
+                                shield.Absorb += 1000;
+                                shield.WorldImpactPosition = shield.ShieldEnt.Render.ColorMaskHsv;
+                                info.Amount = 0f;
+                                continue;
+                            }
+                            info.Amount = 0f;
+                            continue;
+                        }
+
                         if (gunBase != null)
                         {
                             var hostileParent = hostileEnt.Parent != null;
@@ -423,21 +445,6 @@ namespace DefenseShields
                                 shield.FriendlyCache.Add(hostileEnt);
                                 continue;
                             }
-                        }
-
-                        if (hostileEnt != null && block.FatBlock == shield.Shield && (info.Type == DSdamage || info.Type == DSheal || info.Type == DSbypass))
-                        {
-                            if (gunBase != null && info.Type == DSdamage) //temp fix for GSF laser bug
-                            {
-                                shield.Absorb += 1000;
-                                shield.WorldImpactPosition = shield.ShieldEnt.Render.ColorMaskHsv;
-                                info.Amount = 0f;
-                                continue;
-                            }
-                            shield.Absorb += info.Amount;
-                            info.Amount = 0f;
-                            shield.WorldImpactPosition = shield.ShieldEnt.Render.ColorMaskHsv;
-                            continue;
                         }
 
                         if (info.IsDeformation && shield.DeformEnabled) continue;
@@ -520,6 +527,26 @@ namespace DefenseShields
                             continue;
                         }
                         var gunBase = hostileEnt as IMyGunBaseUser;
+
+                        if (info.Type == DSdamage || info.Type == DSheal || info.Type == DSbypass)
+                        {
+                            if (info.Type == DSheal)
+                            {
+                                info.Amount = 0f;
+                                continue;
+                            }
+
+                            if (gunBase != null && block.FatBlock == shield.Shield) //temp fix for GSF laser bug
+                            {
+                                shield.Absorb += 1000;
+                                shield.WorldImpactPosition = shield.ShieldEnt.Render.ColorMaskHsv;
+                                info.Amount = 0f;
+                                continue;
+                            }
+                            info.Amount = 0f;
+                            continue;
+                        }
+
                         if (gunBase != null)
                         {
                             var hostileParent = hostileEnt.Parent != null;
