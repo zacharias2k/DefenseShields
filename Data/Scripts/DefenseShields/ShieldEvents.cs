@@ -7,7 +7,6 @@ using Sandbox.ModAPI;
 using VRage;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using VRage.ModAPI;
 
 namespace DefenseShields
 {
@@ -23,11 +22,9 @@ namespace DefenseShields
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockAdded += FatBlockAdded;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockRemoved += FatBlockRemoved;
                 ((MyCubeGrid)Shield.CubeGrid).OnGridSplit += GridSplit;
-                if (_isServer)
-                {
-                    MyEntities.OnEntityAdd += OnEntityAdd;
-                    MyEntities.OnEntityRemove += OnEntityRemove;
-                }
+                ((MyCubeGrid)Shield.CubeGrid).OnStaticChanged += OnStaticChanged;
+                MyEntities.OnEntityAdd += OnEntityAdd;
+                MyEntities.OnEntityRemove += OnEntityRemove;
                 Shield.AppendingCustomInfo += AppendingCustomInfo;
             }
             else
@@ -38,20 +35,27 @@ namespace DefenseShields
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockAdded -= FatBlockAdded;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockRemoved -= FatBlockRemoved;
                 ((MyCubeGrid)Shield.CubeGrid).OnGridSplit -= GridSplit;
-                if (_isServer)
-                {
-                    MyEntities.OnEntityAdd -= OnEntityAdd;
-                    MyEntities.OnEntityRemove -= OnEntityRemove;
-                }
+                ((MyCubeGrid)Shield.CubeGrid).OnStaticChanged -= OnStaticChanged;
+                MyEntities.OnEntityAdd -= OnEntityAdd;
+                MyEntities.OnEntityRemove -= OnEntityRemove;
                 Shield.AppendingCustomInfo -= AppendingCustomInfo;
             }
+        }
+
+        private void OnStaticChanged(MyCubeGrid myCubeGrid, bool isStatic)
+        {
+            try
+            {
+                IsStatic = isStatic;
+            }
+            catch (Exception ex) { Log.Line($"Exception in Controller OnStaticChanged: {ex}"); }
         }
 
         private void OnEntityAdd(MyEntity myEntity)
         {
             try
             {
-                if (myEntity == null || !(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == MissileObj)) return;
+                if (myEntity == null || !(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))) return;
                 if (_pruneSphere1.Intersects(myEntity.PositionComp.WorldVolume)) Missiles.Add(myEntity);
             }
             catch (Exception ex) { Log.Line($"Exception in Controller OnEntityAdd: {ex}"); }
@@ -61,7 +65,7 @@ namespace DefenseShields
         {
             try
             {
-                if (myEntity == null || !(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == MissileObj)) return;
+                if (myEntity == null || !(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))) return;
                 Missiles.Remove(myEntity);
                 FriendlyMissileCache.Remove(myEntity);
             }

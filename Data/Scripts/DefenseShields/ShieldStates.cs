@@ -66,15 +66,13 @@ namespace DefenseShields
             _tick600 = _tick % 600 == 0;
             var wait = _isServer && !_tick60 && DsState.State.Suspended;
 
-            MyGrid = Shield.CubeGrid as MyCubeGrid;
+            MyGrid = MyCube.CubeGrid;
             if (MyGrid?.Physics == null) return false;
 
             if (_resetEntity) ResetEntity();
 
             if (wait ||!AllInited && !PostInit()) return false;
             if (Session.Enforced.Debug >= 1) Dsutil1.Sw.Restart();
-
-            IsStatic = MyGrid.IsStatic;
 
             if (!Warming) WarmUpSequence();
 
@@ -117,6 +115,10 @@ namespace DefenseShields
                     ShieldFailing();
                     return false;
                 }
+                _syncEnts = _forceData.Count != 0 || _impulseData.Count != 0 || _missileDmg.Count != 0 ||
+                            _fewDmgBlocks.Count != 0 || _dmgBlocks.Count != 0 || _meteorDmg.Count != 0 ||
+                            _empDmg.Count != 0 || _eject.Count != 0 || _destroyedBlocks.Count != 0 ||
+                            _voxelDmg.Count != 0 || _characterDmg.Count != 0;
             }
             else
             {

@@ -55,7 +55,7 @@ namespace DefenseShields
                 if (!_isDedicated)
                 {
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == Shield.EntityId)
-                        ((MyCubeBlock)Shield).UpdateTerminal();
+                        MyCube.UpdateTerminal();
                 }
                 _runningDamage = DpsAvg.Add((int) _damageReadOut);
                 _damageReadOut = 0;

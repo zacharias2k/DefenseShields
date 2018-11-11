@@ -149,6 +149,7 @@ namespace DefenseShields
         private bool _clientOn;
         private bool _tick60;
         private bool _tick600;
+        private bool _syncEnts;
 
         private const string SpaceWolf = "Space_Wolf";
         private string _modelActive = "\\Models\\Cubes\\ShieldActiveBase.mwm";
@@ -273,10 +274,10 @@ namespace DefenseShields
         private static readonly MyStringId HudIconHeat80 = MyStringId.GetOrCompute("DS_ShieldHeat80");
         private static readonly MyStringId HudIconHeat90 = MyStringId.GetOrCompute("DS_ShieldHeat90");
         private static readonly MyStringId HudIconHeat100 = MyStringId.GetOrCompute("DS_ShieldHeat100");
-        private static readonly Type MissileObj = typeof(MyObjectBuilder_Missile);
 
         private static readonly MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
         private static readonly MyStringHash DelDamage = MyStringHash.GetOrCompute("DelDamage");
+        private static readonly Type MissileObj = typeof(MyObjectBuilder_Missile);
 
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;
@@ -289,6 +290,7 @@ namespace DefenseShields
 
         internal ShieldType ShieldMode;
         internal MyCubeGrid MyGrid;
+        internal MyCubeBlock MyCube;
         internal MyResourceDistributorComponent MyGridDistributor;
         internal MyEntity ShieldEnt;
         private MyEntity _shellPassive;

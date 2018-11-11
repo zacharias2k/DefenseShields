@@ -159,13 +159,6 @@ namespace DefenseShields
                 ShieldSphere.Radius = ShieldSize.AbsMax();
             }
 
-            SOriBBoxD.Center = DetectionCenter;
-            SOriBBoxD.HalfExtent = ShieldSize;
-            SOriBBoxD.Orientation = _sQuaternion;
-
-            ShieldAabb.Min = ShieldSize;
-            ShieldAabb.Max = -ShieldSize;
-
             if (_isServer)
             {
                 _pruneSphere1.Center = DetectionCenter;
@@ -173,8 +166,15 @@ namespace DefenseShields
             }
             else _clientPruneSphere.Center = DetectionCenter;
 
+            SOriBBoxD.Center = DetectionCenter;
+            SOriBBoxD.Orientation = _sQuaternion;
+
             if (_shapeChanged)
             {
+                SOriBBoxD.HalfExtent = ShieldSize;
+                ShieldAabb.Min = ShieldSize;
+                ShieldAabb.Max = -ShieldSize;
+
                 EllipsoidSa.Update(DetectMatrixOutside.Scale.X, DetectMatrixOutside.Scale.Y, DetectMatrixOutside.Scale.Z);
                 BoundingRange = ShieldSize.AbsMax();
 
@@ -210,30 +210,31 @@ namespace DefenseShields
 
         private void SetShieldShape()
         {
-            if (!Session.DedicatedServer)
+            if (_shapeChanged)
             {
-                _shellPassive.PositionComp.LocalMatrix = Matrix.Zero;  // Bug - Cannot just change X coord, so I reset first.
-                _shellActive.PositionComp.LocalMatrix = Matrix.Zero;
-                _shellPassive.PositionComp.LocalMatrix = _shieldShapeMatrix;
-                _shellActive.PositionComp.LocalMatrix = _shieldShapeMatrix;
+                if (!_isDedicated) 
+                {
+                    _shellPassive.PositionComp.LocalMatrix = Matrix.Zero;  // Bug - Cannot just change X coord, so I reset first.
+                    _shellActive.PositionComp.LocalMatrix = Matrix.Zero;
+                    _shellPassive.PositionComp.LocalMatrix = _shieldShapeMatrix;
+                    _shellActive.PositionComp.LocalMatrix = _shieldShapeMatrix;
+                } 
+                ShieldEnt.PositionComp.LocalMatrix = Matrix.Zero;
+                ShieldEnt.PositionComp.LocalMatrix = _shieldShapeMatrix;
+                ShieldEnt.PositionComp.LocalAABB = ShieldAabb;
             }
 
-            ShieldEnt.PositionComp.LocalMatrix = Matrix.Zero;
-            ShieldEnt.PositionComp.LocalMatrix = _shieldShapeMatrix;
-            ShieldEnt.PositionComp.LocalAABB = ShieldAabb;
-
-            MatrixD matrix;
             if (!GridIsMobile)
             {
-                matrix = _shieldShapeMatrix * OffsetEmitterWMatrix;
+                var matrix = _shieldShapeMatrix * OffsetEmitterWMatrix;
+                matrix.Translation = DetectionCenter;
                 ShieldEnt.PositionComp.SetWorldMatrix(matrix);
-                ShieldEnt.PositionComp.SetPosition(DetectionCenter);
             }
             else
             {
-                matrix = _shieldShapeMatrix * Shield.WorldMatrix;
+                var matrix = _shieldShapeMatrix * Shield.WorldMatrix;
+                matrix.Translation = DetectionCenter;
                 ShieldEnt.PositionComp.SetWorldMatrix(matrix);
-                ShieldEnt.PositionComp.SetPosition(DetectionCenter);
             }
         }
 

@@ -29,9 +29,9 @@ namespace DefenseShields
                 var ent = _clientPruneList[i];
                 var voxel = ent as MyVoxelBase;
 
-                if (ent == null || ent.MarkedForClose || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel || !(ent is MyVoxelBase) && ent.Physics == null) continue;
+                if (ent == null || ent.MarkedForClose || voxel == null && ent.Physics == null || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel) continue;
 
-                if (FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent) || !(ent is MyCubeGrid) && !(ent is MyVoxelBase) && !(ent is IMyCharacter)) continue;
+                if (FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent) || !(ent is MyCubeGrid) && voxel == null && !(ent is IMyCharacter)) continue;
                 EntIntersectInfo entInfo;
                 WebEnts.TryGetValue(ent, out entInfo);
 
@@ -106,20 +106,22 @@ namespace DefenseShields
                 }
             }
 
+            if (!_enablePhysics) return;
             ShieldMatrix = ShieldEnt.PositionComp.WorldMatrix;
-            if (_enablePhysics && !ShieldMatrix.EqualsFast(ref OldShieldMatrix))
+            if (!ShieldMatrix.EqualsFast(ref OldShieldMatrix))
             {
                 OldShieldMatrix = ShieldMatrix;
+                Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutside);
                 if (!disableVoxels) Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
             }
-
-            if (_enablePhysics && (ShieldComp.GridIsMoving || entChanged)) MyAPIGateway.Parallel.Start(WebDispatchClient);
+            if (ShieldComp.GridIsMoving || entChanged) MyAPIGateway.Parallel.Start(WebDispatchClient);
         }
 
         private void WebDispatchClient()
         {
             foreach (var webent in WebEnts.Keys)
             {
+                var entCenter = webent.PositionComp.WorldVolume.Center;
                 var entInfo = WebEnts[webent];
                 if (entInfo.LastTick != _tick) continue;
                 if (entInfo.RefreshTick == _tick && (WebEnts[webent].Relation == Ent.LargeNobodyGrid || WebEnts[webent].Relation == Ent.LargeEnemyGrid))
@@ -127,14 +129,14 @@ namespace DefenseShields
                 switch (WebEnts[webent].Relation)
                 {
                     case Ent.EnemyPlayer:
-                    {
-                        if ((_count == 2 || _count == 17 || _count == 32 || _count == 47) && CustomCollision.PointInShield(webent.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
                         {
-                            if (Session.Enforced.Debug >= 2) Log.Line($"Ent EnemyPlayer: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
-                            MyAPIGateway.Parallel.Start(() => PlayerIntersectClient(webent));
+                            if ((_count == 2 || _count == 17 || _count == 32 || _count == 47) && CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
+                            {
+                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent EnemyPlayer: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
+                                MyAPIGateway.Parallel.Start(() => PlayerIntersectClient(webent));
+                            }
+                            continue;
                         }
-                        continue;
-                    }
                     case Ent.SmallNobodyGrid:
                         {
                             if (Session.Enforced.Debug >= 2) Log.Line($"Ent SmallNobodyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");

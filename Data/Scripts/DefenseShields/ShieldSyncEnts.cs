@@ -34,10 +34,6 @@ namespace DefenseShields
                     return;
                 }
 
-                if (_destroyedBlocks.Count == 0 && _missileDmg.Count == 0 && _meteorDmg.Count == 0 &&
-                    _voxelDmg.Count == 0 && _characterDmg.Count == 0 && _fewDmgBlocks.Count == 0 &&
-                    _dmgBlocks.Count == 0 && _empDmg.Count == 0 && _forceData.Count == 0 && _impulseData.Count == 0 && _eject.Count == 0) return;
-
                 try
                 {
                     if (_eject.Count != 0)
@@ -45,7 +41,7 @@ namespace DefenseShields
                         MyCubeGrid myGrid;
                         while (_eject.TryDequeue(out myGrid))
                         {
-                            if (myGrid == null || !myGrid.InScene || myGrid.MarkedForClose) continue;
+                            if (myGrid == null || myGrid.MarkedForClose) continue;
                             myGrid.Physics.LinearVelocity *= -0.25f;
                         }
                     }
@@ -60,7 +56,7 @@ namespace DefenseShields
                         while (_forceData.TryDequeue(out data))
                         {
                             var myGrid = data.MyGrid;
-                            if (myGrid == null || !myGrid.InScene || myGrid.MarkedForClose) continue;
+                            if (myGrid == null || myGrid.MarkedForClose) continue;
                             myGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, data.Force, null, Vector3D.Zero, data.MaxSpeed, data.Immediate);
                         }
                     }
@@ -75,7 +71,7 @@ namespace DefenseShields
                         while (_impulseData.TryDequeue(out data))
                         {
                             var myGrid = data.MyGrid;
-                            if (myGrid == null || !myGrid.InScene || myGrid.MarkedForClose) continue;
+                            if (myGrid == null || myGrid.MarkedForClose) continue;
                             myGrid.Physics.ApplyImpulse(data.Direction, data.Position);
                         }
                     }
@@ -156,7 +152,7 @@ namespace DefenseShields
                         IMyMeteor meteor;
                         while (_meteorDmg.TryDequeue(out meteor))
                         {
-                            if (meteor == null || !meteor.InScene || meteor.MarkedForClose) continue;
+                            if (meteor == null || meteor.MarkedForClose || meteor.Closed) continue;
                             var damage = 5000 * DsState.State.ModulateKinetic;
                             if (_mpActive)
                             {
@@ -183,7 +179,7 @@ namespace DefenseShields
                         MyVoxelBase voxel;
                         while (_voxelDmg.TryDequeue(out voxel))
                         {
-                            if (voxel == null || !voxel.InScene || voxel.RootVoxel.MarkedForClose) continue;
+                            if (voxel == null || voxel.RootVoxel.MarkedForClose || voxel.RootVoxel.Closed) continue;
                             voxel.RootVoxel.RequestVoxelOperationElipsoid(Vector3.One * 1.0f, DetectMatrixOutside, 0, MyVoxelBase.OperationType.Cut);
                         }
                     }
@@ -197,7 +193,6 @@ namespace DefenseShields
                         IMyCharacter character;
                         while (_characterDmg.TryDequeue(out character))
                         {
-                            if (character == null || !character.InScene || character.MarkedForClose) continue;
                             var npcname = character.ToString();
                             if (npcname.Equals("Space_Wolf"))
                             {
@@ -271,18 +266,18 @@ namespace DefenseShields
                 {
                     if (_empDmg.Count != 0)
                     {
-                        IMyWarhead warhead;
-                        while (_empDmg.TryDequeue(out warhead))
+                        IMyWarhead block;
+                        while (_empDmg.TryDequeue(out block))
                         {
-                            if (warhead == null || !warhead.InScene || warhead.MarkedForClose) continue;
-                            var myGrid = warhead.CubeGrid as MyCubeGrid;
+                            if (block == null || block.MarkedForClose || block.Closed) continue;
+                            var myGrid = block.CubeGrid as MyCubeGrid;
 
-                            if (warhead.SlimBlock.IsDestroyed)
+                            if (block.SlimBlock.IsDestroyed)
                             {
-                                myGrid.EnqueueDestroyedBlock(warhead.Position);
+                                myGrid.EnqueueDestroyedBlock(block.Position);
                                 continue;
                             }
-                            UtilsStatic.CreateExplosion(warhead.PositionComp.WorldAABB.Center, 2.1f, 9999);
+                            UtilsStatic.CreateExplosion(block.PositionComp.WorldAABB.Center, 2.1f, 9999);
                             if (myGrid.BlocksCount == 0) myGrid.Close();
                         }
                     }

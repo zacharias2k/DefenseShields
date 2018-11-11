@@ -32,11 +32,11 @@ namespace DefenseShields
             {
                 var ent = _pruneList[i];
                 var voxel = ent as MyVoxelBase;
-                if (ent == null || ent.MarkedForClose || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel || voxel == null && ent.Physics == null) continue;
+
+                if (ent == null || ent.MarkedForClose || voxel == null && ent.Physics == null || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel) continue;
                 var entCenter = ent.PositionComp.WorldVolume.Center;
                 if (FriendlyCache.Contains(ent) || IgnoreCache.Contains(ent) || PartlyProtectedCache.Contains(ent) || AuthenticatedCache.Contains(ent) || ent is IMyFloatingObject || ent is IMyEngineerToolBase || double.IsNaN(entCenter.X) || ent.GetType().Name == "MyDebrisBase") continue;
                 if (ent.DefinitionId.HasValue && ent.DefinitionId.Value.TypeId == MissileObj && FriendlyMissileCache.Contains(ent)) continue;
-
                 EntIntersectInfo entInfo;
                 WebEnts.TryGetValue(ent, out entInfo);
 
@@ -121,15 +121,16 @@ namespace DefenseShields
                     WebEnts.TryAdd(ent, new EntIntersectInfo(ent.EntityId, 0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, _tick, _tick, _tick, relation, new List<IMySlimBlock>()));
                 }
             }
+
+            if (!_enablePhysics) return;
             ShieldMatrix = ShieldEnt.PositionComp.WorldMatrix;
-            if (_enablePhysics && !ShieldMatrix.EqualsFast(ref OldShieldMatrix))
+            if (!ShieldMatrix.EqualsFast(ref OldShieldMatrix))
             {
                 OldShieldMatrix = ShieldMatrix;
                 Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutside);
                 if (!disableVoxels) Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
             }
-
-            if (_enablePhysics && (ShieldComp.GridIsMoving || entChanged)) MyAPIGateway.Parallel.Start(WebDispatch);
+            if (ShieldComp.GridIsMoving || entChanged) MyAPIGateway.Parallel.Start(WebDispatch);
         }
 
         private void WebDispatch()
