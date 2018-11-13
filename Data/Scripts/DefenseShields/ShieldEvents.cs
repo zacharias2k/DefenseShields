@@ -56,7 +56,7 @@ namespace DefenseShields
             try
             {
                 if (myEntity == null || !(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))) return;
-                if (_pruneSphere1.Intersects(myEntity.PositionComp.WorldVolume)) Missiles.Add(myEntity);
+                if (myEntity.InScene && !myEntity.MarkedForClose && _pruneSphere1.Intersects(myEntity.PositionComp.WorldVolume)) Missiles.Add(myEntity);
             }
             catch (Exception ex) { Log.Line($"Exception in Controller OnEntityAdd: {ex}"); }
         }

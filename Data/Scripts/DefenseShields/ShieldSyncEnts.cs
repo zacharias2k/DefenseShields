@@ -131,6 +131,7 @@ namespace DefenseShields
                             {
                                 ShieldDoDamage(damage, ent.EntityId);
                                 ent.Close();
+                                ent.InScene = false;
                             }
                             else
                             {
@@ -139,6 +140,7 @@ namespace DefenseShields
                                 ImpactSize = damage;
                                 UtilsStatic.CreateFakeSmallExplosion(ent.PositionComp.WorldAABB.Center);
                                 ent.Close();
+                                ent.InScene = false;
                             }
                         }
                     }

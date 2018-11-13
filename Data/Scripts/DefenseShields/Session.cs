@@ -367,7 +367,11 @@ namespace DefenseShields
                         if (hostileEnt.DefinitionId.HasValue && hostileEnt.DefinitionId.Value.TypeId == MissileObj)
                         {
                             UtilsStatic.CreateFakeSmallExplosion(hitPos);
-                            if (hostileEnt.InScene && !hostileEnt.MarkedForClose) hostileEnt.Close();
+                            if (hostileEnt.InScene && !hostileEnt.MarkedForClose)
+                            {
+                                hostileEnt.Close();
+                                hostileEnt.InScene = false;
+                            }
                         }
                     }
 
