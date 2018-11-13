@@ -303,12 +303,12 @@
       <BuildTimeSeconds>70</BuildTimeSeconds>
 	    <ResourceSourceGroup>Reactors</ResourceSourceGroup>
 	    <ResourceSinkGroup>Factory</ResourceSinkGroup>
-      <IceConsumptionPerSecond>830</IceConsumptionPerSecond>
-      <InventoryMaxVolume>10000</InventoryMaxVolume>
+      <IceConsumptionPerSecond>1000</IceConsumptionPerSecond>
+      <InventoryMaxVolume>1</InventoryMaxVolume>
       <InventorySize>
-        <X>2.5</X>
-        <Y>2.5</Y>
-        <Z>2.5</Z>
+        <X>1</X>
+        <Y>1</Y>
+        <Z>1</Z>
       </InventorySize>
       <StandbyPowerConsumption>0.001</StandbyPowerConsumption>
       <OperationalPowerConsumption>0.56</OperationalPowerConsumption>
