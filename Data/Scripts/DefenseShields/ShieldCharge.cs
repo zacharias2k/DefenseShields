@@ -319,14 +319,14 @@ namespace DefenseShields
                 {
                     _currentHeatStep = 1;
                     DsState.State.Heat = _currentHeatStep * 10;
-                    if (Session.Enforced.Debug >= 1) Log.Line($"overh - stage:{_currentHeatStep} - cycle:{_heatCycle} - resetCycle:xxxx - heat:{_accumulatedHeat} - threshold:{hpLoss} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug >= 1) Log.Line($"overh - stage:{_currentHeatStep} - cycle:{_heatCycle} - resetCycle:xxxx - heat:{_accumulatedHeat} - threshold:{hpLoss}[{hp / hpLoss}] - ShieldId [{Shield.EntityId}]");
                     _accumulatedHeat = 0;
                 }
                 else
                 {
                     DsState.State.Heat = 0;
                     _currentHeatStep = 0;
-                    if (Session.Enforced.Debug >= 1) Log.Line($"under - stage:{_currentHeatStep} - cycle:{_heatCycle} - resetCycle:[-1] - heat:{_accumulatedHeat} - threshold:{hpLoss} - nThreshold:{nextThreshold} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug >= 1) Log.Line($"under - stage:{_currentHeatStep} - cycle:{_heatCycle} - resetCycle:[-1] - heat:{_accumulatedHeat} - threshold:{hpLoss}[{hp / hpLoss}] - nThreshold:{nextThreshold} - ShieldId [{Shield.EntityId}]");
                     _heatCycle = -1;
                     _accumulatedHeat = 0;
                 }

@@ -65,7 +65,6 @@ namespace DefenseShields
                 GridIntegrity();
                 ShieldChangeState();
             }
-            IsStatic = MyGrid.IsStatic;
             if (Session.Enforced.Debug >= 1) Log.Line($"ResetEntity: ShieldId [{Shield.EntityId}]");
         }
 

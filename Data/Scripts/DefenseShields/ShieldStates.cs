@@ -74,6 +74,8 @@ namespace DefenseShields
             if (wait ||!AllInited && !PostInit()) return false;
             if (Session.Enforced.Debug >= 1) Dsutil1.Sw.Restart();
 
+            IsStatic = MyGrid.IsStatic;
+
             if (!Warming) WarmUpSequence();
 
             if (_subUpdate && _tick >= _subTick) HierarchyUpdate();

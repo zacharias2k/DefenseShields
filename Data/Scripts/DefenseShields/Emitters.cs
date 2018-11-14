@@ -95,6 +95,8 @@ namespace DefenseShields
                 MyGrid = MyCube.CubeGrid;
                 if (wait || MyGrid?.Physics == null) return;
 
+                IsStatic = MyGrid.IsStatic;
+
                 Timing();
                 if (!ControllerLink()) return;
                 if (!_isDedicated && UtilsStatic.DistanceCheck(Emitter, 1000, EmiState.State.BoundingRange))
@@ -613,10 +615,7 @@ namespace DefenseShields
             {
                 SetEmitterType();
                 MyCube = Emitter as MyCubeBlock;
-                IsStatic = MyGrid.IsStatic;
                 Emitter.EnabledChanged += CheckEmitter;
-                ((MyCubeGrid)Emitter.CubeGrid).OnStaticChanged += OnStaticChanged;
-
                 if (Session.Enforced.Debug >= 1) Log.Line($"OnAddedToScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
@@ -629,15 +628,6 @@ namespace DefenseShields
                 if (myTerminalBlock.IsWorking && ShieldComp != null) ShieldComp.CheckEmitters = true;
             }
             catch (Exception ex) { Log.Line($"Exception in CheckEmitter: {ex}"); }
-        }
-
-        private void OnStaticChanged(MyCubeGrid myCubeGrid, bool isStatic)
-        {
-            try
-            {
-                IsStatic = isStatic;
-            }
-            catch (Exception ex) { Log.Line($"Exception in Emitter OnStaticChanged: {ex}"); }
         }
 
         private void StorageSetup()
@@ -762,7 +752,6 @@ namespace DefenseShields
                 MyCube = null;
                 Emitter.EnabledChanged -= CheckEmitter;
                 Emitter.AppendingCustomInfo -= AppendingCustomInfo;
-                ((MyCubeGrid)Emitter.CubeGrid).OnStaticChanged -= OnStaticChanged;
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }

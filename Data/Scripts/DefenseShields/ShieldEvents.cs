@@ -22,7 +22,6 @@ namespace DefenseShields
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockAdded += FatBlockAdded;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockRemoved += FatBlockRemoved;
                 ((MyCubeGrid)Shield.CubeGrid).OnGridSplit += GridSplit;
-                ((MyCubeGrid)Shield.CubeGrid).OnStaticChanged += OnStaticChanged;
                 MyEntities.OnEntityAdd += OnEntityAdd;
                 MyEntities.OnEntityRemove += OnEntityRemove;
                 Shield.AppendingCustomInfo += AppendingCustomInfo;
@@ -35,20 +34,10 @@ namespace DefenseShields
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockAdded -= FatBlockAdded;
                 ((MyCubeGrid)Shield.CubeGrid).OnFatBlockRemoved -= FatBlockRemoved;
                 ((MyCubeGrid)Shield.CubeGrid).OnGridSplit -= GridSplit;
-                ((MyCubeGrid)Shield.CubeGrid).OnStaticChanged -= OnStaticChanged;
                 MyEntities.OnEntityAdd -= OnEntityAdd;
                 MyEntities.OnEntityRemove -= OnEntityRemove;
                 Shield.AppendingCustomInfo -= AppendingCustomInfo;
             }
-        }
-
-        private void OnStaticChanged(MyCubeGrid myCubeGrid, bool isStatic)
-        {
-            try
-            {
-                IsStatic = isStatic;
-            }
-            catch (Exception ex) { Log.Line($"Exception in Controller OnStaticChanged: {ex}"); }
         }
 
         private void OnEntityAdd(MyEntity myEntity)
