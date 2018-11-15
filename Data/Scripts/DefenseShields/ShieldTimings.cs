@@ -194,6 +194,8 @@ namespace DefenseShields
 
         private void UpdateSubGrids()
         {
+            _subUpdate = false;
+
             var gotGroups = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
             if (gotGroups.Count == ShieldComp.GetLinkedGrids.Count) return;
             if (Session.Enforced.Debug >= 1) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.GetLinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.GetLinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
@@ -210,11 +212,9 @@ namespace DefenseShields
                     ShieldComp.GetLinkedGrids.Add(sub as MyCubeGrid);
                 }
             }
-
             _blockChanged = true;
             _functionalChanged = true;
             _updateGridDistributor = true;
-            _subUpdate = false;
         }
         #endregion
 
