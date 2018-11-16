@@ -6,6 +6,7 @@ using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
+using VRageMath;
 
 namespace DefenseShields
 {
@@ -84,6 +85,7 @@ namespace DefenseShields
                         var createHeTiming = _count == 6 && (_lCount == 1 || _lCount == 6);
                         if (GridIsMobile && createHeTiming) CreateHalfExtents();
                         if (_syncEnts) SyncThreadedEnts();
+
                         WebEntities();
                         if (_mpActive && _count == 29)
                         {

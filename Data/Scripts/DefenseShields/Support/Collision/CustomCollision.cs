@@ -19,7 +19,7 @@ namespace DefenseShields.Support
         public static Vector3D? MissileIntersect(DefenseShields ds, MyEntity missile, MatrixD detectMatrix, MatrixD detectMatrixInv)
         {
             var missileVel = missile.Physics.LinearVelocity;
-            var velStepSize = missileVel * 0.0166667f;
+            var velStepSize = missileVel * (MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 2);
             var missileCenter = missile.PositionComp.WorldVolume.Center;
             var inflatedSphere = new BoundingSphereD(missileCenter, velStepSize.Length());
             var wDir = detectMatrix.Translation - inflatedSphere.Center;
@@ -31,8 +31,14 @@ namespace DefenseShields.Support
             if (intersect)
             {
                 const float gameSecond = MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 60;
-                var line = new LineD(missileCenter + missileVel * gameSecond, missileCenter + -missileVel * gameSecond);
-                if (ds.SOriBBoxD.Intersects(ref line).HasValue) hitPos = missileCenter;
+                var line = new LineD(missileCenter + -missileVel * gameSecond, missileCenter + missileVel * gameSecond);
+                var obbIntersect = ds.SOriBBoxD.Intersects(ref line);
+                if (obbIntersect.HasValue)
+                {
+                    var testDir = line.From - line.To;
+                    testDir.Normalize();
+                    hitPos = line.From + testDir * -obbIntersect.Value;
+                }
             }
             return hitPos;
         }

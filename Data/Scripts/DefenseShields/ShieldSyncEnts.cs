@@ -4,6 +4,7 @@ using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character.Components;
 using Sandbox.ModAPI;
+using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
@@ -135,10 +136,23 @@ namespace DefenseShields
                             }
                             else
                             {
-                                WorldImpactPosition = ent.PositionComp.WorldVolume.Center;
+                                var missileVel = ent.Physics.LinearVelocity;
+                                var missileCenter = ent.PositionComp.WorldVolume.Center;
+                                const float gameSecond = MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 60;
+                                var line = new LineD(missileCenter + -missileVel * gameSecond, missileCenter + missileVel * gameSecond);
+                                var obbIntersect = SOriBBoxD.Intersects(ref line);
+                                var hitPos = missileCenter;
+                                if (obbIntersect.HasValue)
+                                {
+                                    var testDir = line.From - line.To;
+                                    testDir.Normalize();
+                                    hitPos = line.From + testDir * -obbIntersect.Value;
+                                }
+
+                                WorldImpactPosition = hitPos;
                                 Absorb += damage;
                                 ImpactSize = damage;
-                                UtilsStatic.CreateFakeSmallExplosion(ent.PositionComp.WorldAABB.Center);
+                                UtilsStatic.CreateFakeSmallExplosion(hitPos);
                                 ent.Close();
                                 ent.InScene = false;
                             }

@@ -172,6 +172,7 @@ namespace DefenseShields
         internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         internal Vector3D EmpDetonation { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         internal Vector3D ShieldSize { get; set; }
+        internal Vector3D DebugVector3D;
         private Vector3D _localImpactPosition;
         private Vector3D _oldGridHalfExtents;
 

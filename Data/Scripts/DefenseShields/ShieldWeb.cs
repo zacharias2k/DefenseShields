@@ -184,7 +184,7 @@ namespace DefenseShields
                     case Ent.Other:
                         {
                             if (Session.Enforced.Debug >= 2) Log.Line($"Ent Other: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
-                            if (webent.MarkedForClose || webent.Closed) continue;
+                            if (webent.MarkedForClose || !webent.InScene || webent.Closed) continue;
                             var meteor = webent as IMyMeteor;
                             if (meteor != null)
                             {
