@@ -38,10 +38,10 @@ namespace DefenseShields
             }
             else if (_count == 34)
             {
-                if (ClientUiUpdate && !_isServer)
+                if (ClientUiUpdate)
                 {
                     ClientUiUpdate = false;
-                    DsSet.NetworkUpdate();
+                    if (!_isServer) DsSet.NetworkUpdate();
                 }
             }
 

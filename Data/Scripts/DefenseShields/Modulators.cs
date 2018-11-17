@@ -63,6 +63,7 @@ namespace DefenseShields
 
         public IMyUpgradeModule Modulator => (IMyUpgradeModule)Entity;
         internal MyCubeGrid MyGrid;
+        internal MyCubeBlock MyCube;
 
         internal DSUtils Dsutil1 = new DSUtils();
 
@@ -74,7 +75,7 @@ namespace DefenseShields
                 _tick60 = _tick % 60 == 0;
                 var wait = _isServer && !_tick60 && ModState.State.Backup;
 
-                MyGrid = Modulator.CubeGrid as MyCubeGrid;
+                MyGrid = MyCube.CubeGrid;
                 if (wait || MyGrid?.Physics == null) return;
 
                 Timing();
@@ -88,8 +89,8 @@ namespace DefenseShields
 
                 if (!_isDedicated && UtilsStatic.DistanceCheck(Modulator, 1000, 1))
                 {
-                    var blockCam = Modulator.PositionComp.WorldVolume;
-                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && Modulator.IsWorking) BlockMoveAnimation();
+                    var blockCam = MyCube.PositionComp.WorldVolume;
+                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && MyCube.IsWorking) BlockMoveAnimation();
                 }
 
                 if (_isServer)
@@ -99,7 +100,6 @@ namespace DefenseShields
 
                     if (_count == 0 || _firstRun)
                     {
-                        Modulator.RefreshCustomInfo();
                         if (Modulator.CustomData != ModulatorComp.ModulationPassword)
                         {
                             ModulatorComp.ModulationPassword = Modulator.CustomData;
@@ -108,7 +108,6 @@ namespace DefenseShields
                         }
                     }
                 }
-                else if (_count == 0) Modulator.RefreshCustomInfo();
                 _firstRun = false;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
@@ -176,7 +175,7 @@ namespace DefenseShields
         private bool BlockWorking()
         {
             if (_count <= 0) _powered = Sink.IsPowerAvailable(GId, 0.01f);
-            if (!Modulator.IsWorking || !_powered)
+            if (!MyCube.IsWorking || !_powered)
             {
                 if (!_isDedicated && _count == 29)
                 {
@@ -248,10 +247,12 @@ namespace DefenseShields
             }
             else if (_count == 34)
             {
-                if (ClientUiUpdate && !_isServer)
+                if (ClientUiUpdate)
                 {
                     ClientUiUpdate = false;
-                    ModSet.NetworkUpdate();
+                    MyCube.UpdateTerminal();
+                    Modulator.RefreshCustomInfo();
+                    if (!_isServer) ModSet.NetworkUpdate();
                 }
             }
 
@@ -454,7 +455,7 @@ namespace DefenseShields
 
         private bool BlockMoveAnimationReset()
         {
-            if (!Modulator.IsFunctional) return false;
+            if (!MyCube.IsFunctional) return false;
             if (_subpartRotor == null)
             {
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
@@ -503,9 +504,11 @@ namespace DefenseShields
             try
             {
                 if (Session.Enforced.Debug >= 1) Log.Line($"OnAddedToScene: - ModulatorId [{Modulator.EntityId}]");
+                MyCube = Modulator as MyCubeBlock;
                 if (!MainInit) return;
                 ResetComp();
                 RegisterEvents();
+
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
@@ -526,6 +529,7 @@ namespace DefenseShields
                     ModulatorComp = null;
                 }
                 RegisterEvents(false);
+                MyCube = null;
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }

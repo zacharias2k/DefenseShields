@@ -35,9 +35,9 @@ namespace DefenseShields
         private readonly Dictionary<long, Enhancers> _enhancers = new Dictionary<long, Enhancers>();
         public IMyUpgradeModule Enhancer => (IMyUpgradeModule)Entity;
         internal MyCubeGrid MyGrid;
+        internal MyCubeBlock MyCube;
 
         internal ShieldGridComponent ShieldComp;
-        //internal EnhancerSettings EnhSet;
         internal EnhancerState EnhState;
         internal DSUtils Dsutil1 = new DSUtils();
 
@@ -55,7 +55,7 @@ namespace DefenseShields
                 _tick60 = _tick % 60 == 0;
                 var wait = _isServer && !_tick60 && EnhState.State.Backup;
 
-                MyGrid = Enhancer.CubeGrid as MyCubeGrid;
+                MyGrid = MyCube.CubeGrid;
                 if (wait || MyGrid?.Physics == null) return;
 
                 Timing();
@@ -63,8 +63,8 @@ namespace DefenseShields
 
                 if (!_isDedicated && UtilsStatic.DistanceCheck(Enhancer, 1000, 1))
                 {
-                    var blockCam = Enhancer.PositionComp.WorldVolume;
-                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && Enhancer.IsWorking) BlockMoveAnimation();
+                    var blockCam = MyCube.PositionComp.WorldVolume;
+                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && MyCube.IsWorking) BlockMoveAnimation();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
@@ -112,7 +112,7 @@ namespace DefenseShields
         private bool BlockWorking()
         {
             if (_count <= 0) _powered = Sink.IsPowerAvailable(GId, 0.01f);
-            if (!Enhancer.IsWorking || !_powered)
+            if (!MyCube.IsWorking || !_powered)
             {
                 NeedUpdate(EnhState.State.Online, false);
                 return false;
@@ -230,6 +230,8 @@ namespace DefenseShields
             try
             {
                 if (Session.Enforced.Debug >= 1) Log.Line($"OnAddedToScene: - EnhancerId [{Enhancer.EntityId}]");
+                MyCube = Enhancer as MyCubeBlock;
+
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
@@ -280,7 +282,7 @@ namespace DefenseShields
 
         private bool BlockMoveAnimationReset()
         {
-            if (!Enhancer.IsFunctional) return false;
+            if (!MyCube.IsFunctional) return false;
             if (_subpartRotor == null)
             {
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
@@ -323,8 +325,8 @@ namespace DefenseShields
             {
                 stringBuilder.Append("[Online]: " + EnhState.State.Online +
                                      "\n" +
-                                     "\n[Amplifying Shield]: " + EnhState.State.Online +
-                                     "\n[Enhancer Mode]: " + Power.ToString("0") + "%");
+                                     "\n[Shield Detected]: " + EnhState.State.Online +
+                                     "\n[Enhancer Mode]: EMP Option");
             }
             else
             {
@@ -341,6 +343,7 @@ namespace DefenseShields
                 {
                     ShieldComp.Enhancer = null;
                 }
+                MyCube = null;
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }

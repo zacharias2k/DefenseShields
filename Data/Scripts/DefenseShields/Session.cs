@@ -89,7 +89,7 @@ namespace DefenseShields
 
         public readonly MyModContext MyModContext = new MyModContext();
         public readonly Icosphere Icosphere = new Icosphere(5);
-        private DSUtils _dsutil1 = new DSUtils();
+        public DSUtils Dsutil1 = new DSUtils();
 
         public IMyTerminalControlSlider WidthSlider;
         public IMyTerminalControlSlider HeightSlider;
@@ -132,6 +132,7 @@ namespace DefenseShields
         public static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         public readonly Dictionary<IMySlimBlock, DefenseShields> ControllerBlockCache = new Dictionary<IMySlimBlock, DefenseShields>();
 
+        public readonly HashSet<IMyTerminalBlock> ActionBlockCache = new HashSet<IMyTerminalBlock>();
         public readonly List<PlanetShields> PlanetShields = new List<PlanetShields>();
         public readonly List<Emitters> Emitters = new List<Emitters>();
         public readonly List<Displays> Displays = new List<Displays>();
@@ -1355,7 +1356,7 @@ namespace DefenseShields
         {
             try
             {
-                if (block.BlockDefinition.TypeId != typeof(MyObjectBuilder_UpgradeModule) || MyAPIGateway.Gui.GetCurrentScreen != MyTerminalPageEnum.None) return;
+                if (!(block is IMyUpgradeModule) || ActionBlockCache.Contains(block)) return;
                 switch (block.BlockDefinition.SubtypeId)
                 {
                     case "LargeShieldModulator":
@@ -1374,6 +1375,7 @@ namespace DefenseShields
                         HideAllActions(actions);
                         break;
                 }
+                ActionBlockCache.Add(block);
             }
             catch (Exception ex) { Log.Line($"Exception in CustomDataToPassword: {ex}"); }
         }
