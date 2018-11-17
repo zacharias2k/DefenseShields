@@ -476,9 +476,9 @@ namespace DefenseShields
                                 }
                             }
                             */
-                            info.Amount = info.Amount * shield.DsState.State.ModulateKinetic;
+                            info.Amount = info.Amount * shield.DsState.State.ModulateEnergy;
                         }
-                        else info.Amount = info.Amount * shield.DsState.State.ModulateEnergy;
+                        else info.Amount = info.Amount * shield.DsState.State.ModulateKinetic;
 
                         if (!DedicatedServer && hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
                         {
@@ -573,8 +573,8 @@ namespace DefenseShields
 
                         if (info.IsDeformation && shield.DeformEnabled) continue;
 
-                        if (info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Deformation) info.Amount = info.Amount * shield.DsState.State.ModulateKinetic;
-                        else info.Amount = info.Amount * shield.DsState.State.ModulateEnergy;
+                        if (info.Type == MyDamageType.Bullet || info.Type == MyDamageType.Deformation) info.Amount = info.Amount * shield.DsState.State.ModulateEnergy;
+                        else info.Amount = info.Amount * shield.DsState.State.ModulateKinetic;
 
                         if (!DedicatedServer && hostileEnt != null && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
                         {

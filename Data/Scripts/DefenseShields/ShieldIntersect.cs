@@ -52,7 +52,7 @@ namespace DefenseShields
             if (contactpoint != Vector3D.NegativeInfinity)
             {
                 entInfo.Touched = true;
-                var damage = entInfo.Damage * DsState.State.ModulateKinetic;
+                var damage = entInfo.Damage * DsState.State.ModulateEnergy;
                 if (Session.MpActive)
                 {
                     if (Session.IsServer) ShieldDoDamage(damage, grid.EntityId);
@@ -101,6 +101,11 @@ namespace DefenseShields
             if (shieldComponent?.DefenseShields == null) return;
 
             var ds = shieldComponent.DefenseShields;
+            if (!ds.WasOnline)
+            {
+                EntIntersectInfo entInfo;
+                WebEnts.TryRemove(ent, out entInfo);
+            }
             var dsVerts = ds.ShieldComp.PhysicsOutside;
             var dsMatrixInv = ds.DetectMatrixOutsideInv;
             var myGrid = Shield.CubeGrid;
@@ -117,26 +122,30 @@ namespace DefenseShields
             if (bMass <= 0) bMass = int.MaxValue;
             if (sMass <= 0) sMass = int.MaxValue;
 
-            var momentum = bMass * bPhysics.LinearVelocity + sMass * sPhysics.LinearVelocity;
+            var bVel = bPhysics.LinearVelocity;
+            var bVelLen = bVel.Length();
+            var momentum = bMass * bVel + sMass * sPhysics.LinearVelocity;
             var resultVelocity = momentum / (bMass + sMass);
 
             var collisionAvg = Vector3D.Zero;
-            for (int i = 0; i < insidePoints.Count; i++) collisionAvg += insidePoints[i];
+            var numOfPointsInside = insidePoints.Count;
+            for (int i = 0; i < numOfPointsInside; i++) collisionAvg += insidePoints[i];
 
-            collisionAvg /= insidePoints.Count;
+            collisionAvg /= numOfPointsInside;
 
-            if (insidePoints.Count > 0 && !bPhysics.IsStatic)
+            if (numOfPointsInside > 0 && !bPhysics.IsStatic)
             {
-                var impulseData = new MyImpulseData { MyGrid = grid, Direction = (resultVelocity - bPhysics.LinearVelocity) * bMass, Position = bPhysics.CenterOfMassWorld };
-                var forceData = new MyAddForceData { MyGrid = grid, Force = (bPhysics.CenterOfMassWorld - collisionAvg) * bMass * 10, MaxSpeed = MathHelper.Clamp(bPhysics.LinearVelocity.Length(), 1f, 50f) };
+                var ejectorAccel = numOfPointsInside > 10 ? numOfPointsInside : 10;
+                var impulseData = new MyImpulseData { MyGrid = grid, Direction = (resultVelocity - bVel) * bMass, Position = bPhysics.CenterOfMassWorld };
+                var forceData = new MyAddForceData { MyGrid = grid, Force = (bPhysics.CenterOfMassWorld - collisionAvg) * bMass * ejectorAccel, MaxSpeed = MathHelper.Clamp(bVelLen, 1f, 50f) };
                 _impulseData.Enqueue(impulseData);
                 _forceData.Enqueue(forceData);
             }
 
-            if (insidePoints.Count <= 0) return;
+            if (numOfPointsInside <= 0) return;
 
-            var gridMaxCharge = ds._shieldChargeRate;
-            var damage = gridMaxCharge * Session.Enforced.Efficiency * DsState.State.ModulateEnergy * 0.05f;
+            var gridMaxCharge = ds._shieldMaxChargeRate;
+            var damage = gridMaxCharge * Session.Enforced.Efficiency * DsState.State.ModulateKinetic * 0.01666666666f;
             if (_mpActive)
             {
                 if (_isServer) ShieldDoDamage(damage, grid.EntityId);
@@ -162,7 +171,7 @@ namespace DefenseShields
                 var mass = myGrid.GetCurrentMass();
                 var sPhysics = Shield.CubeGrid.Physics;
                 var momentum = mass * sPhysics.LinearVelocity;
-                Absorb += (momentum.Length() / 500) * DsState.State.ModulateKinetic;
+                Absorb += (momentum.Length() / 500) * DsState.State.ModulateEnergy;
                 ImpactSize = 12000;
                 WorldImpactPosition = collision;
                 WebDamage = true;
@@ -370,14 +379,14 @@ namespace DefenseShields
                     }
                     else return;
 
-                    var damage = rawDamage * DsState.State.ModulateKinetic;
+                    var damage = rawDamage * DsState.State.ModulateEnergy;
                     var shieldFractionLoss = 0f;
 
                     if (firstWarhead != null && empCount > 0)
                     {
                         var scaler = 1f;
                         if (DsState.State.EmpProtection) scaler = 0.05f;
-                        var empSize = 1.33333333333 * Math.PI * (empRadius * empRadius * empRadius) * 0.5 * DsState.State.ModulateEnergy * scaler;
+                        var empSize = 1.33333333333 * Math.PI * (empRadius * empRadius * empRadius) * 0.5 * DsState.State.ModulateKinetic * scaler;
                         var scaledEmpSize = empSize * empCount + empCount * (empCount * 0.1); 
                         shieldFractionLoss = (float) (EllipsoidVolume / scaledEmpSize);
                         var efficiency = Session.Enforced.Efficiency;
