@@ -98,10 +98,11 @@ namespace DefenseShields
                 {
                     if (relation == Ent.Other)
                     {
-                        var missileCenter = ent.PositionComp.WorldVolume.Center;
-                        var missilePast = -Vector3D.Normalize(ent.Physics.LinearVelocity) * 5;
-                        var missileTestLoc = missileCenter + missilePast;
-                        if (CustomCollision.PointInShield(missileTestLoc, DetectMatrixOutsideInv))
+                        var missilePast = -Vector3D.Normalize(ent.Physics.LinearVelocity) * 6;
+                        var missileTestLoc = ent.PositionComp.WorldVolume.Center + missilePast;
+                        var centerStep = -Vector3D.Normalize(missileTestLoc - DetectionCenter) * 2f;
+                        var counterDrift = centerStep + missileTestLoc;
+                        if (CustomCollision.PointInShield(counterDrift, DetectMatrixOutsideInv))
                         {
                             FriendlyMissileCache.Add(ent);
                             continue;

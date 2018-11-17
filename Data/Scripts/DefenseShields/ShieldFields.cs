@@ -86,7 +86,7 @@ namespace DefenseShields
         private const int EmpDownCount = 3600;
         private const int GenericDownCount = 300;
         private const int PowerNoticeCount = 600;
-        private const int OverHeat = 1800;
+        private const int OverHeat = 1200;
         private const int HeatingStep = 600;
         private const int CoolingStep = 1200;
         private const int FallBackStep = 10;
