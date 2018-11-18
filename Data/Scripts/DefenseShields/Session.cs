@@ -166,7 +166,7 @@ namespace DefenseShields
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEmitterState, EmitterStateReceived);
 
                 if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter += CustomControls;
-                if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomActionGetter += ShowHideActions;
+                //if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomActionGetter += ShowHideActions;
 
                 if (IsServer)
                 {
@@ -1352,7 +1352,7 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in CustomDataToPassword: {ex}"); }
         }
 
-        private void ShowHideActions(IMyTerminalBlock block, List<IMyTerminalAction> actions)
+        public void ShowHideActions(IMyTerminalBlock block, List<IMyTerminalAction> actions)
         {
             try
             {
@@ -1375,7 +1375,6 @@ namespace DefenseShields
                         HideAllActions(actions);
                         break;
                 }
-                ActionBlockCache.Add(block);
             }
             catch (Exception ex) { Log.Line($"Exception in CustomDataToPassword: {ex}"); }
         }
@@ -1624,7 +1623,7 @@ namespace DefenseShields
                     c.Setter(b, 95f);
                     return;
                 }
-                c.Setter(b, c.Getter(b) + 1f);
+                c.Setter(b, c.Getter(b) + 5f);
             }
             catch (Exception ex) { Log.Line($"Exception in ActionSubtractChargeRate: {ex}"); }
         }
@@ -1642,7 +1641,7 @@ namespace DefenseShields
                     c.Setter(b, 20f);
                     return;
                 }
-                c.Setter(b, c.Getter(b) - 1f);
+                c.Setter(b, c.Getter(b) - 5f);
             }
             catch (Exception ex) { Log.Line($"Exception in ActionSubtractChargeRate: {ex}"); }
         }

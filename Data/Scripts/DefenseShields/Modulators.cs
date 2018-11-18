@@ -6,6 +6,7 @@ using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
+using Sandbox.ModAPI.Interfaces;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
@@ -86,12 +87,6 @@ namespace DefenseShields
                     return;
                 }
                 ModulatorOn();
-
-                if (!_isDedicated && UtilsStatic.DistanceCheck(Modulator, 1000, 1))
-                {
-                    var blockCam = MyCube.PositionComp.WorldVolume;
-                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && MyCube.IsWorking) BlockMoveAnimation();
-                }
 
                 if (_isServer)
                 {

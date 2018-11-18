@@ -2,7 +2,6 @@
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
-using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
 

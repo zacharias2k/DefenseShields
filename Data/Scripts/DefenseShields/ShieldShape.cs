@@ -223,19 +223,7 @@ namespace DefenseShields
                 ShieldEnt.PositionComp.LocalMatrix = _shieldShapeMatrix;
                 ShieldEnt.PositionComp.LocalAABB = ShieldAabb;
             }
-
-            if (!GridIsMobile)
-            {
-                var matrix = _shieldShapeMatrix * OffsetEmitterWMatrix;
-                matrix.Translation = DetectionCenter;
-                ShieldEnt.PositionComp.SetWorldMatrix(matrix);
-            }
-            else
-            {
-                var matrix = _shieldShapeMatrix * MyCube.WorldMatrix;
-                matrix.Translation = DetectionCenter;
-                ShieldEnt.PositionComp.SetWorldMatrix(matrix);
-            }
+            ShieldEnt.PositionComp.SetPosition(DetectionCenter);
         }
 
         private void RefreshDimensions()
