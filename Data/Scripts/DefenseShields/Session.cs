@@ -47,6 +47,9 @@ namespace DefenseShields
         internal bool DefinitionsLoaded;
         internal bool CustomDataReset = true;
         internal bool ShowOnHudReset = true;
+
+        internal bool HideActions;
+
         public static bool EnforceInit;
         public bool DsControl { get; set; }
         public bool PsControl { get; set; }
@@ -131,6 +134,35 @@ namespace DefenseShields
 
         public static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         public readonly Dictionary<IMySlimBlock, DefenseShields> ControllerBlockCache = new Dictionary<IMySlimBlock, DefenseShields>();
+        private readonly Dictionary<string, Func<IMyTerminalBlock, bool>> actionEnabled = new Dictionary<string, Func<IMyTerminalBlock, bool>>();
+
+        public readonly HashSet<string> DsActions = new HashSet<string>()
+        {
+            "DS-C_ToggleShield_Toggle",
+            "DS-C_ToggleShield_On",
+            "DS-C_ToggleShield_Off",
+            "DS-C_ChargeRate_Reset",
+            "DS-C_ChargeRate_Increase",
+            "DS-C_ChargeRate_Decrease",
+            "DS-C_ExtendFit_Toggle",
+            "DS-C_SphereFit_Toggle",
+            "DS-C_ShieldFortify_Toggle",
+            "DS-C_HideActive_Toggle",
+            "DS-C_RefreshAnimation_Toggle",
+            "DS-C_HitWaveAnimation_Toggle",
+            "DS-C_HideIcon_Toggle",
+            "DS-C_UseBatteries_Toggle"
+        };
+
+        public readonly HashSet<string> ModActions = new HashSet<string>()
+        {
+            "DS-M_DamageModulation_Reset",
+            "DS-M_DamageModulation_Increase",
+            "DS-M_DamageModulation_Decrease",
+            "DS-M_ModulateVoxels_Toggle",
+            "DS-M_ModulateGrids_Toggle",
+            "DS-M_ModulateEmpProt_Toggle"
+        };
 
         public readonly List<PlanetShields> PlanetShields = new List<PlanetShields>();
         public readonly List<Emitters> Emitters = new List<Emitters>();
@@ -165,7 +197,7 @@ namespace DefenseShields
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEmitterState, EmitterStateReceived);
 
                 if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter += CustomControls;
-                if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomActionGetter += ShowHideActions;
+                //if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomActionGetter += ShowHideActions;
 
                 if (IsServer)
                 {
@@ -1326,6 +1358,53 @@ namespace DefenseShields
             }
             catch (Exception ex) { Log.Line($"Exception in CreateModulatorUi: {ex}"); }
         }
+
+        public static void HideControls<T>(IMyUpgradeModule block)
+        {
+            if (Instance.HideActions)
+                return;
+
+            Instance.HideActions = true;
+
+            var actions = new List<IMyTerminalAction>();
+            MyAPIGateway.TerminalControls.GetActions<IMyUpgradeModule>(out actions);
+
+            foreach (var a in actions)
+            {
+                string id = a.Id;
+
+                var subTypeId = block.BlockDefinition.SubtypeId;
+                if (subTypeId == "LargeShieldModulator" || subTypeId == "SmallShieldModulator")
+                {
+                    if (Instance.DsActions.Contains(id))
+                    {
+                        if (a.Enabled != null)
+                            Instance.actionEnabled[id] = a.Enabled;
+
+                        a.Enabled = (b) =>
+                        {
+                            var func = Instance.actionEnabled.GetValueOrDefault(id, null);
+                            return (func == null ? true : func.Invoke(b)));
+                        };
+                    }
+                }
+                else if (subTypeId == "DSControlLarge" || subTypeId == "DSControlSmall" || subTypeId == "DSControlTable")
+                {
+                    if (Instance.ModActions.Contains(id))
+                    {
+                        if (a.Enabled != null)
+                            Instance.actionEnabled[id] = a.Enabled;
+
+                        a.Enabled = (b) =>
+                        {
+                            var func = Instance.actionEnabled.GetValueOrDefault(id, null);
+                            return (func == null ? true : func.Invoke(b));
+                        };
+                    }
+                }
+            }
+        }
+
 
         private void CustomControls(IMyTerminalBlock block, List<IMyTerminalControl> myTerminalControls)
         {

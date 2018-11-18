@@ -334,6 +334,7 @@ namespace DefenseShields
                 RegisterEvents();
                 Modulator.RefreshCustomInfo();
                 StateChange(true);
+                Session.HideControls<IMyUpgradeModule>(Modulator);
                 MainInit = true;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }

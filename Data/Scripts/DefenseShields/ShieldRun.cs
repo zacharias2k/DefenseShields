@@ -58,6 +58,7 @@ namespace DefenseShields
                 Session.Instance.Components.Add(this);
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
                 if (_isServer) Enforcements.SaveEnforcement(Shield, Session.Enforced, true);
+                Session.HideControls<IMyUpgradeModule>(Shield);
                 if (Session.Enforced.Debug >= 1) Log.Line($"UpdateOnceBeforeFrame: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in Controller UpdateOnceBeforeFrame: {ex}"); }
