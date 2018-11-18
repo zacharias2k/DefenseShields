@@ -132,7 +132,6 @@ namespace DefenseShields
         public static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         public readonly Dictionary<IMySlimBlock, DefenseShields> ControllerBlockCache = new Dictionary<IMySlimBlock, DefenseShields>();
 
-        public readonly HashSet<IMyTerminalBlock> ActionBlockCache = new HashSet<IMyTerminalBlock>();
         public readonly List<PlanetShields> PlanetShields = new List<PlanetShields>();
         public readonly List<Emitters> Emitters = new List<Emitters>();
         public readonly List<Displays> Displays = new List<Displays>();
@@ -166,7 +165,7 @@ namespace DefenseShields
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEmitterState, EmitterStateReceived);
 
                 if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter += CustomControls;
-                //if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomActionGetter += ShowHideActions;
+                if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomActionGetter += ShowHideActions;
 
                 if (IsServer)
                 {
@@ -1352,11 +1351,11 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in CustomDataToPassword: {ex}"); }
         }
 
-        public void ShowHideActions(IMyTerminalBlock block, List<IMyTerminalAction> actions)
+        private void ShowHideActions(IMyTerminalBlock block, List<IMyTerminalAction> actions)
         {
             try
             {
-                if (!(block is IMyUpgradeModule) || ActionBlockCache.Contains(block)) return;
+                if (!(block is IMyUpgradeModule)) return;
                 switch (block.BlockDefinition.SubtypeId)
                 {
                     case "LargeShieldModulator":
