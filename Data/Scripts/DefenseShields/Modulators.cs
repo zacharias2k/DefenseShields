@@ -334,7 +334,11 @@ namespace DefenseShields
                 RegisterEvents();
                 Modulator.RefreshCustomInfo();
                 StateChange(true);
-                Session.HideControls<IMyUpgradeModule>(Modulator);
+                if (!Session.ModAction)
+                {
+                    Session.ModAction = true;
+                    Session.AppendConditionToAction<IMyUpgradeModule>((a) => Session.Instance.ModActions.Contains(a.Id), (a, b) => b.GameLogic.GetAs<Modulators>() != null && Session.Instance.ModActions.Contains(a.Id));
+                }
                 MainInit = true;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }

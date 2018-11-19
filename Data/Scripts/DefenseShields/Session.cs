@@ -55,6 +55,9 @@ namespace DefenseShields
         public bool PsControl { get; set; }
         public bool ModControl { get; set; }
 
+        public static bool DsAction { get; set; }
+        public static bool PsAction { get; set; }
+        public static bool ModAction { get; set; }
 
         internal static readonly MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
         internal static readonly MyStringHash DelDamage = MyStringHash.GetOrCompute("DelDamage");
@@ -196,8 +199,10 @@ namespace DefenseShields
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdO2GeneratorState, O2GeneratorStateReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEmitterState, EmitterStateReceived);
 
-                if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter += CustomControls;
-                //if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomActionGetter += ShowHideActions;
+                if (!DedicatedServer)
+                {
+                    MyAPIGateway.TerminalControls.CustomControlGetter += CustomControls;
+                }
 
                 if (IsServer)
                 {
@@ -1311,17 +1316,17 @@ namespace DefenseShields
                 if (PsControl) return;
                 var comp = block?.GameLogic?.GetAs<PlanetShields>();
                 TerminalHelpers.Separator(comp?.PlanetShield, "DS-P_sep0");
-                PsToggleShield = TerminalHelpers.AddOnOff(comp?.PlanetShield, "DS-P_ToggleShield", "Shield Status", "Raise or Lower Shields", "Up", "Down", DsUi.GetRaiseShield, DsUi.SetRaiseShield);
+                PsToggleShield = TerminalHelpers.AddOnOff(comp?.PlanetShield, "DS-P_ToggleShield", "Shield Status", "Raise or Lower Shields", "Up", "Down", PsUi.GetRaiseShield, PsUi.SetRaiseShield);
                 TerminalHelpers.Separator(comp?.PlanetShield, "DS-P_sep1");
 
-                PsBatteryBoostCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_UseBatteries", "Batteries Contribute To Shields", "Batteries May Contribute To Shield Strength", DsUi.GetBatteries, DsUi.SetBatteries);
-                PsSendToHudCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_HideIcon", "Broadcast Shield Status To Hud", "Broadcast Shield Status To Nearby Friendly Huds", DsUi.GetSendToHud, DsUi.SetSendToHud);
+                PsBatteryBoostCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_UseBatteries", "Batteries Contribute To Shields", "Batteries May Contribute To Shield Strength", PsUi.GetBatteries, PsUi.SetBatteries);
+                PsSendToHudCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_HideIcon", "Broadcast Shield Status To Hud", "Broadcast Shield Status To Nearby Friendly Huds", PsUi.GetSendToHud, PsUi.SetSendToHud);
                 TerminalHelpers.Separator(comp?.PlanetShield, "DS-P_sep2");
 
-                PsHideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_HideActive", "Hide Shield Health On Hit  ", "Hide Shield Health Grid On Hit", DsUi.GetHideActive, DsUi.SetHideActive);
+                PsHideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_HideActive", "Hide Shield Health On Hit  ", "Hide Shield Health Grid On Hit", PsUi.GetHideActive, PsUi.SetHideActive);
 
-                PsRefreshAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_RefreshAnimation", "Show Refresh Animation  ", "Show Random Refresh Animation", DsUi.GetRefreshAnimation, DsUi.SetRefreshAnimation);
-                PsHitWaveAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_HitWaveAnimation", "Show Hit Wave Animation", "Show Wave Effect On Shield Damage", DsUi.GetHitWaveAnimation, DsUi.SetHitWaveAnimation);
+                PsRefreshAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_RefreshAnimation", "Show Refresh Animation  ", "Show Random Refresh Animation", PsUi.GetRefreshAnimation, PsUi.SetRefreshAnimation);
+                PsHitWaveAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_HitWaveAnimation", "Show Hit Wave Animation", "Show Wave Effect On Shield Damage", PsUi.GetHitWaveAnimation, PsUi.SetHitWaveAnimation);
 
                 CreateAction<IMyUpgradeModule>(PsToggleShield);
 
@@ -1359,52 +1364,21 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in CreateModulatorUi: {ex}"); }
         }
 
-        public static void HideControls<T>(IMyUpgradeModule block)
+        public static void AppendConditionToAction<T>(Func<IMyTerminalAction, bool> actionFindCondition, Func<IMyTerminalAction, IMyTerminalBlock, bool> actionEnabledAppend)
         {
-            if (Instance.HideActions)
-                return;
-
-            Instance.HideActions = true;
-
-            var actions = new List<IMyTerminalAction>();
-            MyAPIGateway.TerminalControls.GetActions<IMyUpgradeModule>(out actions);
+            List<IMyTerminalAction> actions;
+            MyAPIGateway.TerminalControls.GetActions<T>(out actions);
 
             foreach (var a in actions)
             {
-                string id = a.Id;
-
-                var subTypeId = block.BlockDefinition.SubtypeId;
-                if (subTypeId == "LargeShieldModulator" || subTypeId == "SmallShieldModulator")
+                if (actionFindCondition(a))
                 {
-                    if (Instance.DsActions.Contains(id))
-                    {
-                        if (a.Enabled != null)
-                            Instance.actionEnabled[id] = a.Enabled;
+                    var existingAction = a.Enabled;
 
-                        a.Enabled = (b) =>
-                        {
-                            var func = Instance.actionEnabled.GetValueOrDefault(id, null);
-                            return (func == null ? true : func.Invoke(b)));
-                        };
-                    }
-                }
-                else if (subTypeId == "DSControlLarge" || subTypeId == "DSControlSmall" || subTypeId == "DSControlTable")
-                {
-                    if (Instance.ModActions.Contains(id))
-                    {
-                        if (a.Enabled != null)
-                            Instance.actionEnabled[id] = a.Enabled;
-
-                        a.Enabled = (b) =>
-                        {
-                            var func = Instance.actionEnabled.GetValueOrDefault(id, null);
-                            return (func == null ? true : func.Invoke(b));
-                        };
-                    }
+                    a.Enabled = (b) => (existingAction == null ? true : existingAction.Invoke(b)) && actionEnabledAppend(a, b);
                 }
             }
         }
-
 
         private void CustomControls(IMyTerminalBlock block, List<IMyTerminalControl> myTerminalControls)
         {
@@ -1428,68 +1402,6 @@ namespace DefenseShields
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in CustomDataToPassword: {ex}"); }
-        }
-
-        private void ShowHideActions(IMyTerminalBlock block, List<IMyTerminalAction> actions)
-        {
-            try
-            {
-                if (!(block is IMyUpgradeModule)) return;
-                switch (block.BlockDefinition.SubtypeId)
-                {
-                    case "LargeShieldModulator":
-                    case "SmallShieldModulator":
-                        ModulatorShowHideActions(actions);
-                        break;
-                    case "DSControlLarge":
-                    case "DSControlSmall":
-                    case "DSControlTable":
-                        ControllerShowHideActions(actions);
-                        break;
-                    case "PlanetaryEmitterLarge":
-                        PlanetShieldShowHideActions(actions);
-                        break;
-                    default:
-                        HideAllActions(actions);
-                        break;
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in CustomDataToPassword: {ex}"); }
-        }
-
-        private static void HideAllActions(List<IMyTerminalAction> actions)
-        {
-            foreach (var a in actions)
-            {
-                if (a.Id.StartsWith("DS-")) a.Enabled = terminalBlock => false;
-            }
-        }
-
-        private static void ModulatorShowHideActions(List<IMyTerminalAction> actions)
-        {
-            foreach (var a in actions)
-            {
-                if (!a.Id.StartsWith("DS-M_") && a.Id.StartsWith("DS-")) a.Enabled = terminalBlock => false;
-                else if (a.Id.StartsWith("DS-M_")) a.Enabled = terminalBlock => true;
-            }
-        }
-
-        private static void PlanetShieldShowHideActions(List<IMyTerminalAction> actions)
-        {
-            foreach (var a in actions)
-            {
-                if (!a.Id.StartsWith("DS-P_") && a.Id.StartsWith("DS-")) a.Enabled = terminalBlock => false;
-                else if (a.Id.StartsWith("DS-P_")) a.Enabled = terminalBlock => true;
-            }
-        }
-
-        private static void ControllerShowHideActions(List<IMyTerminalAction> actions)
-        {
-            foreach (var a in actions)
-            {
-                if (!a.Id.StartsWith("DS-C_") && a.Id.StartsWith("DS-")) a.Enabled = terminalBlock => false;
-                else if (a.Id.StartsWith("DS-C_")) a.Enabled = terminalBlock => true;
-            }
         }
 
         private void SetCustomDataToPassword(IEnumerable<IMyTerminalControl> controls)
@@ -1875,7 +1787,6 @@ namespace DefenseShields
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEmitterState, EmitterStateReceived);
 
             if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter -= CustomControls;
-            if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomActionGetter -= ShowHideActions;
             Log.Line("Logging stopped.");
             Log.Close();
         }

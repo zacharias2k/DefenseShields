@@ -34,6 +34,12 @@ namespace DefenseShields
 
                 Session.Instance.CreateControllerElements(Shield);
                 SetShieldType(false);
+                if (!Session.DsAction)
+                {
+                    Session.AppendConditionToAction<IMyUpgradeModule>((a) => Session.Instance.DsActions.Contains(a.Id), (a, b) => b.GameLogic.GetAs<DefenseShields>() != null && Session.Instance.DsActions.Contains(a.Id));
+                    Session.DsAction = true;
+                }
+
                 CleanUp(3);
 
                 if (!isFunctional) return false;
