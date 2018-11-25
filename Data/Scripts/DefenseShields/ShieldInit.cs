@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DefenseShields.Support;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
+using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
@@ -18,12 +19,11 @@ namespace DefenseShields
         {
             try
             {
-                var isFunctional = MyCube.IsFunctional;
-                if (_isServer && (ShieldComp.EmitterMode < 0 || ShieldComp.EmitterMode == 0 && ShieldComp.StationEmitter == null || ShieldComp.EmittersSuspended || !isFunctional))
+                if (_isServer && (ShieldComp.EmitterMode < 0 || ShieldComp.EmitterMode == 0 && ShieldComp.StationEmitter == null || ShieldComp.EmittersSuspended || !IsFunctional))
                 {
-                    if (_tick600)
+                    if (Tick600)
                     {
-                        if (Session.Enforced.Debug >= 2) Log.Line($"PostInit: Server Not Ready - GridComp:{MyGrid.Components.Has<ShieldGridComponent>()} - InvalidMode:{ShieldComp.EmitterMode < 0} - Functional:{isFunctional} - EmitterSus:{ShieldComp.EmittersSuspended} - StationEmitterNull:{ShieldComp.StationEmitter == null } - EmitterNull:{ShieldComp.StationEmitter?.Emitter == null} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug >= 2) Log.Line($"PostInit: Server Not Ready - GridComp:{MyGrid.Components.Has<ShieldGridComponent>()} - InvalidMode:{ShieldComp.EmitterMode < 0} - Functional:{IsFunctional} - EmitterSus:{ShieldComp.EmittersSuspended} - StationEmitterNull:{ShieldComp.StationEmitter == null } - EmitterNull:{ShieldComp.StationEmitter?.Emitter == null} - ShieldId [{Shield.EntityId}]");
                         GridOwnsController();
                         Shield.RefreshCustomInfo();
                     }
@@ -40,11 +40,15 @@ namespace DefenseShields
                     Session.DsAction = true;
                 }
 
-                CleanUp(3);
+                //CleanUp(3);
 
-                if (!isFunctional) return false;
+                if (!IsFunctional) return false;
 
                 if (_mpActive && _isServer) DsState.NetworkUpdate();
+
+                LogicSlot = Session.GetSlot();
+                LogicSlotScaler = Session.EntSlotScaler;
+
                 AllInited = true;
 
                 if (Session.Enforced.Debug >= 2) Log.Line($"AllInited: ShieldId [{Shield.EntityId}]");
@@ -62,7 +66,7 @@ namespace DefenseShields
             _resetEntity = false;
             _prevShieldActive = false;
             _hadPowerBefore = false;
-            _controlBlockWorking = false;
+            ControlBlockWorking = false;
 
             ResetComp();
 
@@ -71,7 +75,7 @@ namespace DefenseShields
                 GridIntegrity();
                 ShieldChangeState();
             }
-            if (Session.Enforced.Debug >= 1) Log.Line($"ResetEntity: ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug >= 2) Log.Line($"ResetEntity: ShieldId [{Shield.EntityId}]");
         }
 
         private void WarmUpSequence()
@@ -79,11 +83,7 @@ namespace DefenseShields
             if (_isServer)
             {
                 _hadPowerBefore = true;
-                _controlBlockWorking = AllInited && MyCube.IsWorking && MyCube.IsFunctional;
-                DsState.State.Overload = false;
-                DsState.State.NoPower = false;
-                DsState.State.Remodulate = false;
-                DsState.State.Heat = 0;
+                ControlBlockWorking = AllInited && IsWorking && IsFunctional;
             }
 
             _blockChanged = true;
@@ -117,6 +117,11 @@ namespace DefenseShields
                 DsSet.LoadSettings();
                 if (!DsState.LoadState() && !isServer) _clientNotReady = true;
                 UpdateSettings(DsSet.Settings);
+                DsState.State.Overload = false;
+                DsState.State.NoPower = false;
+                DsState.State.Remodulate = false;
+                DsState.State.Suspended = false;
+                DsState.State.Heat = 0;
             }
             catch (Exception ex) { Log.Line($"Exception in StorageSetup: {ex}"); }
         }
@@ -139,11 +144,16 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in PowerPreInit: {ex}"); }
         }
 
+        private void CurrentInputChanged(MyDefinitionId resourceTypeId, float oldInput, MyResourceSinkComponent sink)
+        {
+            ShieldCurrentPower = sink.CurrentInputByType(GId);
+        }
+
         private void PowerInit()
         {
             try
             {
-                _shieldCurrentPower = _power;
+                ShieldCurrentPower = _power;
                 Sink.Update();
                 Shield.RefreshCustomInfo();
 
@@ -249,7 +259,7 @@ namespace DefenseShields
 
             if (!fullInit)
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"InitEntities: mode: {ShieldMode}, remove complete - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"InitEntities: mode: {ShieldMode}, remove complete - ShieldId [{Shield.EntityId}]");
                 return;
             }
 
@@ -289,7 +299,7 @@ namespace DefenseShields
             _updateRender = true;
 
             if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
-            if (Session.Enforced.Debug >= 1) Log.Line($"InitEntities: mode: {ShieldMode}, spawn complete - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug >= 2) Log.Line($"InitEntities: mode: {ShieldMode}, spawn complete - ShieldId [{Shield.EntityId}]");
         }
 
         public void SelectPassiveShell()
@@ -368,7 +378,7 @@ namespace DefenseShields
                 _shellPassive.Render.RemoveRenderObjects();
                 _shellPassive.Render.UpdateRenderObject(true);
                 _hideShield = false;
-                if (Session.Enforced.Debug >= 1) Log.Line($"UpdatePassiveModel: modelString:{_modelPassive} - ShellNumber:{DsSet.Settings.ShieldShell} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"UpdatePassiveModel: modelString:{_modelPassive} - ShellNumber:{DsSet.Settings.ShieldShell} - ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in UpdatePassiveModel: {ex}"); }
         }
@@ -379,7 +389,7 @@ namespace DefenseShields
             var blockList = new List<IMySlimBlock>();
             Shield.CubeGrid.GetBlocks(blockList);
             for (int i = 0; i < blockList.Count; i++) DsState.State.GridIntegrity += blockList[i].MaxIntegrity;
-            if (Session.Enforced.Debug >= 1) Log.Line($"IntegrityCheck: GridName:{Shield.CubeGrid.DisplayName} - GridHP:{DsState.State.GridIntegrity} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug >= 2) Log.Line($"IntegrityCheck: GridName:{Shield.CubeGrid.DisplayName} - GridHP:{DsState.State.GridIntegrity} - ShieldId [{Shield.EntityId}]");
         }
         #endregion
     }

@@ -38,6 +38,8 @@ namespace DefenseShields
         internal bool IsStatic;
         internal bool TookControl;
         internal bool ContainerInited;
+        internal bool IsFunctional;
+        internal bool IsWorking;
 
         private bool _tick60;
         private bool _isServer;
@@ -66,7 +68,7 @@ namespace DefenseShields
         internal DSUtils Dsutil1 = new DSUtils();
         internal EmitterState EmiState;
 
-        public IMyUpgradeModule Emitter => (IMyUpgradeModule)Entity;
+        public IMyUpgradeModule Emitter;
         public EmitterType EmitterMode;
         internal MyCubeGrid MyGrid;
         internal MyCubeBlock MyCube;
@@ -92,6 +94,9 @@ namespace DefenseShields
                 _tick = Session.Instance.Tick;
                 _tick60 = _tick % 60 == 0;
                 var wait = _isServer && !_tick60 && EmiState.State.Backup;
+
+                IsFunctional = MyCube.IsFunctional;
+                IsWorking = IsFunctional;
                 MyGrid = MyCube.CubeGrid;
                 if (wait || MyGrid?.Physics == null) return;
 
@@ -197,7 +202,7 @@ namespace DefenseShields
 
         private bool EmitterReady()
         {
-            MyGrid.Components.TryGet(out ShieldComp);
+            if (ShieldComp?.DefenseShields?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
             if (_isServer)
             {
                 if (Suspend() || !BlockWorking()) return false;
@@ -209,7 +214,7 @@ namespace DefenseShields
                 if (EmiState.State.Mode == 0 && EmiState.State.Link && ShieldComp.StationEmitter == null) ShieldComp.StationEmitter = this;
                 else if (EmiState.State.Mode != 0 && EmiState.State.Link && ShieldComp.ShipEmitter == null) ShieldComp.ShipEmitter = this;
 
-                if (ShieldComp.DefenseShields == null || !MyCube.IsFunctional) return false;
+                if (ShieldComp.DefenseShields == null || !IsFunctional) return false;
 
                 if (!EmiState.State.Compact && _subpartRotor == null)
                 {
@@ -245,7 +250,7 @@ namespace DefenseShields
 
         private bool BlockMoveAnimationReset(bool clearAnimation)
         {
-            if (!MyCube.IsFunctional) return false;
+            if (!IsFunctional) return false;
 
             if (!EmiState.State.Compact && _subpartRotor == null)
             {
@@ -275,7 +280,7 @@ namespace DefenseShields
                 else MyCube.SetEmissiveParts(PlasmaEmissive, Color.Transparent, 0);
             }
 
-            if (Session.Enforced.Debug >= 1) Log.Line($"EmitterAnimationReset: [EmitterType: {Definition.Name} - Compact({EmiState.State.Compact})] - Tick:{_tick.ToString()} - EmitterId [{Emitter.EntityId}]");
+            if (Session.Enforced.Debug >= 2) Log.Line($"EmitterAnimationReset: [EmitterType: {Definition.Name} - Compact({EmiState.State.Compact})] - Tick:{_tick.ToString()} - EmitterId [{Emitter.EntityId}]");
             return true;
         }
 
@@ -356,7 +361,7 @@ namespace DefenseShields
             EmiState.State.Online = true;
             var online = EmiState.State.Online;
             var logic = ShieldComp.DefenseShields;
-            var controllerReady = logic != null && logic.Warming && logic.MyCube.IsWorking && logic.MyCube.IsFunctional && !logic.DsState.State.Suspended && logic.DsState.State.ControllerGridAccess;
+            var controllerReady = logic != null && logic.Warming && logic.IsWorking && logic.IsFunctional && !logic.DsState.State.Suspended && logic.DsState.State.ControllerGridAccess;
             var losCheckReq = online && controllerReady;
             if (losCheckReq && ShieldComp.CheckEmitters || controllerReady && TookControl) CheckShieldLineOfSight();
             //if (losCheckReq && !EmiState.State.Los && !Session.DedicatedServer) DrawHelper();
@@ -380,7 +385,7 @@ namespace DefenseShields
         private bool Suspend()
         {
             EmiState.State.Online = false;
-            var functional = MyCube.IsFunctional;
+            var functional = IsFunctional;
             if (!functional)
             {
                 EmiState.State.Suspend = true;
@@ -404,7 +409,7 @@ namespace DefenseShields
                 return true;
             }
 
-            var working = MyCube.IsWorking;
+            var working = IsWorking;
             var stationMode = EmitterMode == EmitterType.Station;
             var shipMode = EmitterMode != EmitterType.Station;
             var modes = IsStatic && stationMode || !IsStatic && shipMode;
@@ -451,7 +456,7 @@ namespace DefenseShields
                     }
                     else EmiState.State.Suspend = true;
                 }
-                if (Session.Enforced.Debug >= 1) Log.Line($"mySlotOpen: {Definition.Name} - myMode:{myMode} - MyShield:{myShield} - Mode:{EmitterMode} - Static:{IsStatic} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ModeM:{(int)EmitterMode == ShieldComp.EmitterMode} - S:{EmiState.State.Suspend} - EmitterId [{Emitter.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"mySlotOpen: {Definition.Name} - myMode:{myMode} - MyShield:{myShield} - Mode:{EmitterMode} - Static:{IsStatic} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ModeM:{(int)EmitterMode == ShieldComp.EmitterMode} - S:{EmiState.State.Suspend} - EmitterId [{Emitter.EntityId}]");
             }
             else if (!myMode)
             {
@@ -461,11 +466,11 @@ namespace DefenseShields
                     ShieldComp.EmittersSuspended = true;
                     ShieldComp.EmittersWorking = false;
                     ShieldComp.EmitterEvent = true;
-                    if (Session.Enforced.Debug >= 1) Log.Line($"!myMode: {Definition.Name} suspending - myMode: {myMode} - myShield: {myShield} - Match:{(int)EmitterMode == ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{EmiState.State.Suspend} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
+                    if (Session.Enforced.Debug >= 2) Log.Line($"!myMode: {Definition.Name} suspending - myMode: {myMode} - myShield: {myShield} - Match:{(int)EmitterMode == ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{EmiState.State.Suspend} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
                 }
                 else if (!EmiState.State.Suspend)
                 {
-                    if (Session.Enforced.Debug >= 1) Log.Line($"!myMode: {Definition.Name} suspending - myMode: {myMode} - myShield: {myShield} - Match:{(int)EmitterMode == ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{EmiState.State.Suspend} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
+                    if (Session.Enforced.Debug >= 2) Log.Line($"!myMode: {Definition.Name} suspending - myMode: {myMode} - myShield: {myShield} - Match:{(int)EmitterMode == ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{EmiState.State.Suspend} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
                 }
                 EmiState.State.Suspend = true;
             }
@@ -489,7 +494,7 @@ namespace DefenseShields
                 ShieldComp.EmitterEvent = true;
                 EmiState.State.Backup = false;
                 EmiState.State.Suspend = false;
-                if (Session.Enforced.Debug >= 1) Log.Line($"Unsuspend - !otherMode: {Definition.Name} - isStatic:{IsStatic} - myShield:{myShield} - myMode {myMode} - Mode:{EmitterMode} - CompMode: {ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - EmitterId [{Emitter.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"Unsuspend - !otherMode: {Definition.Name} - isStatic:{IsStatic} - myShield:{myShield} - myMode {myMode} - Mode:{EmitterMode} - CompMode: {ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - EmitterId [{Emitter.EntityId}]");
             }
             else if (EmiState.State.Suspend) return true;
 
@@ -533,7 +538,7 @@ namespace DefenseShields
                 if (!EmiState.State.Los) ShieldComp.EmitterEvent = true;
                 ShieldComp.CheckEmitters = false;
             }
-            if (Session.Enforced.Debug >= 1) Log.Line($"LOS: Mode: {EmitterMode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {EmiState.State.Los.ToString()} - EmitterId [{Emitter.EntityId}]");
+            if (Session.Enforced.Debug >= 1 && !EmiState.State.Los) Log.Line($"LOS: Mode: {EmitterMode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {EmiState.State.Los.ToString()} - EmitterId [{Emitter.EntityId}]");
         }
 
         private void DrawHelper()
@@ -567,8 +572,9 @@ namespace DefenseShields
                 PowerPreInit();
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+                Emitter = (IMyUpgradeModule)Entity;
                 ContainerInited = true;
-                if (Session.Enforced.Debug >= 1) Log.Line($"ContainerInited: EmitterId [{Emitter.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"ContainerInited: EmitterId [{Emitter.EntityId}]");
             }
             if (Entity.InScene) OnAddedToScene();
         }
@@ -613,10 +619,10 @@ namespace DefenseShields
         {
             try
             {
-                SetEmitterType();
                 MyCube = Emitter as MyCubeBlock;
+                SetEmitterType();
                 Emitter.EnabledChanged += CheckEmitter;
-                if (Session.Enforced.Debug >= 1) Log.Line($"OnAddedToScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"OnAddedToScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
@@ -747,11 +753,13 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"OnRemovedFromScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"OnRemovedFromScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
                 //BlockParticleStop();
-                MyCube = null;
                 Emitter.EnabledChanged -= CheckEmitter;
                 Emitter.AppendingCustomInfo -= AppendingCustomInfo;
+                IsWorking = false;
+                IsFunctional = false;
+                MyCube = null;
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
@@ -762,7 +770,7 @@ namespace DefenseShields
             try
             {
                 base.Close();
-                if (Session.Enforced.Debug >= 2) Log.Line($"Close: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"Close: {EmitterMode} - EmitterId [{Entity.EntityId}]");
                 if (_emitters.ContainsKey(Entity.EntityId)) _emitters.Remove(Entity.EntityId);
                 if (Session.Instance.Emitters.Contains(this)) Session.Instance.Emitters.Remove(this);
                 if (ShieldComp?.StationEmitter == this)
@@ -784,6 +792,7 @@ namespace DefenseShields
                     ShieldComp.ShipEmitter = null;
                 }
                 //BlockParticleStop();
+                Emitter = null;
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
         }
@@ -793,7 +802,7 @@ namespace DefenseShields
             try
             {
                 base.MarkForClose();
-                if (Session.Enforced.Debug >= 2) Log.Line($"MarkForClose: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"MarkForClose: {EmitterMode} - EmitterId [{Entity.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
         }

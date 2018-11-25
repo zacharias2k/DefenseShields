@@ -10,7 +10,7 @@ namespace DefenseShields
         #region Shield Shape
         public void ResetShape(bool background, bool newShape = false)
         {
-            if (Session.Enforced.Debug >= 1) Log.Line($"ResetShape: Mobile:{GridIsMobile} - Mode:{ShieldMode}/{DsState.State.Mode} - newShape:{newShape} - Offline:{!DsState.State.Online} - offCnt:{_offlineCnt} - blockChanged:{_blockEvent} - functional:{_functionalEvent} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - EWorking:{ShieldComp.EmittersWorking} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug >= 2) Log.Line($"ResetShape: Mobile:{GridIsMobile} - Mode:{ShieldMode}/{DsState.State.Mode} - newShape:{newShape} - Offline:{!DsState.State.Online} - offCnt:{_offlineCnt} - blockChanged:{_blockEvent} - functional:{_functionalEvent} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - EWorking:{ShieldComp.EmittersWorking} - ShieldId [{Shield.EntityId}]");
 
             if (newShape)
             {
@@ -79,12 +79,11 @@ namespace DefenseShields
 
         private void MobileUpdate()
         {
-            ShieldComp.ShieldVelocitySqr = MyGrid.Physics.LinearVelocity.LengthSquared();
-            _sAvelSqr = MyGrid.Physics.AngularVelocity.LengthSquared();
-            if (ShieldComp.ShieldVelocitySqr > 0.00001 || _sAvelSqr > 0.00001 || ComingOnline || _tick600 && MyGrid.Physics.IsMoving)
+            var gridLVel = MyGrid.Physics.LinearVelocity;
+            if (gridLVel != Vector3.Zero || MyGrid.Physics.AngularVelocity != Vector3.Zero || ComingOnline)
             {
                 ShieldComp.GridIsMoving = true;
-                if (DsSet.Settings.FortifyShield && Math.Sqrt(ShieldComp.ShieldVelocitySqr) > 15)
+                if (DsSet.Settings.FortifyShield && gridLVel.Length() > 15)
                 {
                     FitChanged = true;
                     DsSet.Settings.FortifyShield = false;
@@ -111,6 +110,8 @@ namespace DefenseShields
                So signed distance from surface is distance(point, origin) - distance(support(norm(point-origin)), origin)
                support gives you the point on the surface in the given direction.
             */
+            Asleep = false;
+
             if (GridIsMobile)
             {
                 _updateMobileShape = false;
@@ -161,8 +162,8 @@ namespace DefenseShields
 
             if (_isServer)
             {
-                _pruneSphere1.Center = DetectionCenter;
-                _pruneSphere2.Center = DetectionCenter;
+                PruneSphere1.Center = DetectionCenter;
+                PruneSphere2.Center = DetectionCenter;
             }
             else _clientPruneSphere.Center = DetectionCenter;
 
@@ -180,10 +181,10 @@ namespace DefenseShields
 
                 if (_isServer)
                 {
-                    _pruneSphere1.Radius = BoundingRange + 3000;
-                    _pruneSphere2.Radius = BoundingRange + 50;
+                    PruneSphere1.Radius = BoundingRange + 3000;
+                    PruneSphere2.Radius = BoundingRange + 2.5;
                 }
-                else _clientPruneSphere.Radius = BoundingRange + 5;
+                else _clientPruneSphere.Radius = BoundingRange + 2.5;
 
                 _ellipsoidSurfaceArea = EllipsoidSa.Surface;
                 EllipsoidVolume = 1.333333 * Math.PI * DetectMatrixOutside.Scale.X * DetectMatrixOutside.Scale.Y * DetectMatrixOutside.Scale.Z;

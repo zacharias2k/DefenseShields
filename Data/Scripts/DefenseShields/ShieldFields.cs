@@ -12,7 +12,6 @@ using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using VRage.Game.ObjectBuilders.Definitions;
 using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
@@ -22,7 +21,8 @@ namespace DefenseShields
     public partial class DefenseShields 
     {
         #region Setup
-        private uint _tick;
+
+        internal uint Tick;
         private uint _shieldEntRendId;
         private uint _subTick;
         private uint _funcTick;
@@ -34,19 +34,20 @@ namespace DefenseShields
         internal float ImpactSize { get; set; } = 9f;
         internal float Absorb { get; set; }
         internal float ShieldMaxBuffer;
+        internal float GridMaxPower;
+        internal float GridCurrentPower;
+        internal float GridAvailablePower;
+        internal float ShieldCurrentPower;
+
         private float _power = 0.001f;
-        private float _gridMaxPower;
-        private float _gridCurrentPower;
         private float _powerNeeded;
         private float _otherPower;
-        private float _gridAvailablePower;
         private float _batteryMaxPower;
         private float _batteryCurrentPower;
         private float _shieldMaxChargeRate;
         private float _shieldChargeRate;
         private float _damageReadOut;
         private float _accumulatedHeat;
-        private float _shieldCurrentPower;
         private float _shieldMaintaintPower;
         private float _shieldConsumptionRate;
         private float _oldShieldFudge;
@@ -57,7 +58,6 @@ namespace DefenseShields
         internal double BoundingRange;
         internal double EllipsoidVolume;
         private double _oldEllipsoidAdjust;
-        private double _sAvelSqr;
         private double _ellipsoidSurfaceArea;
         private double _shieldVol;
         private double _sizeScaler;
@@ -95,6 +95,8 @@ namespace DefenseShields
         private int _onCount;
         private int _shieldRatio = 1;
 
+        internal volatile bool Asleep;
+
         internal bool WasOnline;
         internal bool DeformEnabled;
         internal bool ExplosionEnabled;
@@ -113,6 +115,14 @@ namespace DefenseShields
         internal bool ClientUiUpdate;
         internal bool IsStatic;
         internal bool WebDamage;
+        internal bool WebSuspend;
+        internal bool IsFunctional;
+        internal bool IsWorking;
+        internal bool Tick60;
+        internal bool Tick180;
+        internal bool Tick600;
+        internal bool ControlBlockWorking;
+        internal bool EnablePhysics = true;
 
         private bool _resetEntity;
         private bool _empOverLoad;
@@ -121,7 +131,6 @@ namespace DefenseShields
         private bool _isServer;
         private bool _hadPowerBefore;
         private bool _prevShieldActive;
-        private bool _controlBlockWorking;
         private bool _requestedEnforcement;
         private bool _slaveLink;
         private bool _subUpdate;
@@ -142,14 +151,12 @@ namespace DefenseShields
         private bool _blockChanged;
         private bool _blockEvent;
         private bool _shapeEvent;
-        private bool _enablePhysics = true;
         private bool _updateMobileShape;
         private bool _clientNotReady;
         private bool _clientLowered;
         private bool _clientOn;
-        private bool _tick60;
-        private bool _tick600;
         private bool _syncEnts;
+        private bool _viewInShield;
 
         private const string SpaceWolf = "Space_Wolf";
         private string _modelActive = "\\Models\\Cubes\\ShieldActiveBase.mwm";
@@ -186,29 +193,31 @@ namespace DefenseShields
         internal MatrixD OffsetEmitterWMatrix;
 
         internal BoundingBox ShieldAabb = new BoundingBox(-Vector3D.One, Vector3D.One);
+        internal BoundingSphereD PruneSphere1 = new BoundingSphereD(Vector3D.Zero, 1f);
+        internal BoundingSphereD PruneSphere2 = new BoundingSphereD(Vector3D.Zero, 1f);
         public BoundingSphereD ShieldSphere = new BoundingSphereD(Vector3D.Zero, 1);
         private BoundingSphereD _clientPruneSphere = new BoundingSphereD(Vector3D.Zero, 1f);
-        private BoundingSphereD _pruneSphere1 = new BoundingSphereD(Vector3D.Zero, 1f);
-        private BoundingSphereD _pruneSphere2 = new BoundingSphereD(Vector3D.Zero, 1f);
 
         public MyOrientedBoundingBoxD SOriBBoxD = new MyOrientedBoundingBoxD();
 
         private Quaternion _sQuaternion;
-        private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
-        private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
-        private readonly List<MyEntity> _pruneList = new List<MyEntity>();
-        private readonly List<MyEntity> _clientPruneList = new List<MyEntity>();
-        private readonly List<IMyBatteryBlock> _batteryBlocks = new List<IMyBatteryBlock>();
-        private readonly List<KeyValuePair<MyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<MyEntity, EntIntersectInfo>>();
 
         private Color _oldPercentColor = Color.Transparent;
         internal Task FuncTask;
         internal readonly object SubLock = new Object();
 
+        internal readonly int[] ExpChargeReductions = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
+
+        internal readonly List<MyEntity> PruneList = new List<MyEntity>();
+        internal readonly List<MyEntity> FriendRefreshList = new List<MyEntity>();
+        private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
+        private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
+        private readonly List<MyEntity> _clientPruneList = new List<MyEntity>();
+        private readonly List<IMyBatteryBlock> _batteryBlocks = new List<IMyBatteryBlock>();
+        private readonly List<KeyValuePair<MyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<MyEntity, EntIntersectInfo>>();
+
         internal readonly HashSet<IMyEntity> AuthenticatedCache = new HashSet<IMyEntity>();
         internal readonly HashSet<MyEntity> FriendlyCache = new HashSet<MyEntity>();
-        internal readonly HashSet<MyEntity> PartlyProtectedCache = new HashSet<MyEntity>();
-        internal readonly HashSet<MyEntity> IgnoreCache = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> EnemyShields = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> Missiles = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> FriendlyMissileCache = new HashSet<MyEntity>();
@@ -283,19 +292,20 @@ namespace DefenseShields
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;
 
-        private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
         private readonly DataStructures _dataStructures = new DataStructures();
         //private readonly StructureBuilder _structureBuilder = new StructureBuilder();
 
-        internal IMyUpgradeModule Shield => (IMyUpgradeModule)Entity;
+        internal IMyUpgradeModule Shield;
 
         internal ShieldType ShieldMode;
         internal MyCubeGrid MyGrid;
         internal MyCubeBlock MyCube;
-        internal MyResourceDistributorComponent MyGridDistributor;
         internal MyEntity ShieldEnt;
         private MyEntity _shellPassive;
         private MyEntity _shellActive;
+
+        private static readonly MyDefinitionId GId = MyResourceDistributorComponent.ElectricityId;
+        internal MyResourceDistributorComponent MyGridDistributor;
 
         private MyParticleEffect _effect = new MyParticleEffect();
 
@@ -321,6 +331,9 @@ namespace DefenseShields
         internal MyStringId CustomData = MyStringId.GetOrCompute("CustomData");
         internal MyStringId Password = MyStringId.GetOrCompute("Password");
         internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Set the shield modulation password");
+
+        public int LogicSlot;
+        public int LogicSlotScaler;
 
         public enum ShieldType
         {

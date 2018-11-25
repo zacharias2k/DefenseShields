@@ -26,14 +26,18 @@ namespace DefenseShields
         private int _lCount;
         internal int RotationTime;
         internal bool ContainerInited;
+        internal bool IsFunctional;
+        internal bool IsWorking;
+
         private bool _tick60;
         private bool _powered;
         private bool _isServer;
         private bool _isDedicated;
+
         private const float Power = 0.01f;
 
         private readonly Dictionary<long, Enhancers> _enhancers = new Dictionary<long, Enhancers>();
-        public IMyUpgradeModule Enhancer => (IMyUpgradeModule)Entity;
+        public IMyUpgradeModule Enhancer;
         internal MyCubeGrid MyGrid;
         internal MyCubeBlock MyCube;
 
@@ -55,6 +59,8 @@ namespace DefenseShields
                 _tick60 = _tick % 60 == 0;
                 var wait = _isServer && !_tick60 && EnhState.State.Backup;
 
+                IsFunctional = MyCube.IsFunctional;
+                IsWorking = IsFunctional;
                 MyGrid = MyCube.CubeGrid;
                 if (wait || MyGrid?.Physics == null) return;
 
@@ -64,7 +70,7 @@ namespace DefenseShields
                 if (!_isDedicated && UtilsStatic.DistanceCheck(Enhancer, 1000, 1))
                 {
                     var blockCam = MyCube.PositionComp.WorldVolume;
-                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && MyCube.IsWorking) BlockMoveAnimation();
+                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && IsWorking) BlockMoveAnimation();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
@@ -93,7 +99,7 @@ namespace DefenseShields
                 if (_subpartRotor == null) return false;
             }
 
-            MyGrid.Components.TryGet(out ShieldComp);
+            if (ShieldComp?.DefenseShields?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
             if (_isServer)
             {
                 if (!BlockWorking()) return false;
@@ -112,7 +118,7 @@ namespace DefenseShields
         private bool BlockWorking()
         {
             if (_count <= 0) _powered = Sink.IsPowerAvailable(GId, 0.01f);
-            if (!MyCube.IsWorking || !_powered)
+            if (!IsWorking || !_powered)
             {
                 NeedUpdate(EnhState.State.Online, false);
                 return false;
@@ -182,6 +188,7 @@ namespace DefenseShields
                 PowerPreInit();
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+                Enhancer = (IMyUpgradeModule)Entity;
                 ContainerInited = true;
                 if (Session.Enforced.Debug >= 1) Log.Line($"ContainerInited:  EmitterId [{Enhancer.EntityId}]");
             }
@@ -204,6 +211,7 @@ namespace DefenseShields
             base.UpdateOnceBeforeFrame();
             try
             {
+                if (Enhancer.CubeGrid.Physics == null) return;
                 _enhancers.Add(Entity.EntityId, this);
                 Session.Instance.Enhancers.Add(this);
                 PowerInit();
@@ -229,9 +237,8 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"OnAddedToScene: - EnhancerId [{Enhancer.EntityId}]");
                 MyCube = Enhancer as MyCubeBlock;
-
+                if (Session.Enforced.Debug >= 2) Log.Line($"OnAddedToScene: - EnhancerId [{Enhancer.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
@@ -282,7 +289,7 @@ namespace DefenseShields
 
         private bool BlockMoveAnimationReset()
         {
-            if (!MyCube.IsFunctional) return false;
+            if (!IsFunctional) return false;
             if (_subpartRotor == null)
             {
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
@@ -343,12 +350,17 @@ namespace DefenseShields
                 {
                     ShieldComp.Enhancer = null;
                 }
+                IsWorking = false;
+                IsFunctional = false;
                 MyCube = null;
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
 
-        public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
+        public override void OnBeforeRemovedFromContainer()
+        {
+            if (Entity.InScene) OnRemovedFromScene();
+        }
         public override void Close()
         {
             try
@@ -359,6 +371,7 @@ namespace DefenseShields
                 {
                     ShieldComp.Enhancer = null;
                 }
+                Enhancer = null;
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
         }

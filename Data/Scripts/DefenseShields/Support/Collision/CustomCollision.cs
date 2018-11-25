@@ -547,13 +547,28 @@ namespace DefenseShields.Support
             }
         }
 
-        public static int CornersInShield(IMyCubeGrid grid, MatrixD matrixInv)
+        public static int CornersInShield(MyEntity ent, MatrixD matrixInv)
         {
-            var gridCorners = grid.PositionComp.WorldAABB.GetCorners();
+            var entCorners = ent.PositionComp.WorldAABB.GetCorners();
             var c = 0;
             for (int i = 0; i < 8; i++)
             {
-                var pointInside = Vector3D.Transform(gridCorners[i], matrixInv).LengthSquared() <= 1;
+                var pointInside = Vector3D.Transform(entCorners[i], matrixInv).LengthSquared() <= 1;
+                if (pointInside) c++;
+            }
+            return c;
+        }
+
+        public static int CornerOrCenterInShield(MyEntity ent, MatrixD matrixInv)
+        {
+            var blockPoints = new Vector3D[9];
+            ent.PositionComp.WorldAABB.GetCorners(blockPoints);
+            blockPoints[8] = ent.PositionComp.WorldAABB.Center;
+
+            var c = 0;
+            for (int i = 0; i < 9; i++)
+            {
+                var pointInside = Vector3D.Transform(blockPoints[i], matrixInv).LengthSquared() <= 1;
                 if (pointInside) c++;
             }
             return c;

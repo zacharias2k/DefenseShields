@@ -49,7 +49,7 @@ namespace DefenseShields
                     State = loadedState;
                     loadedSomething = true;
                 }
-                if (Session.Enforced.Debug >= 1) Log.Line($"Loaded - O2GeneratorId [{O2Generator.EntityId}]:\n{State.ToString()}");
+                if (Session.Enforced.Debug >= 2) Log.Line($"Loaded - O2GeneratorId [{O2Generator.EntityId}]:\n{State.ToString()}");
             }
             return loadedSomething;
         }
@@ -60,7 +60,7 @@ namespace DefenseShields
 
             if (Session.IsServer)
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"ServRelay - O2GeneratorId [{O2Generator.EntityId}]: network state update for O2Generator");
+                if (Session.Enforced.Debug >= 2) Log.Line($"ServRelay - O2GeneratorId [{O2Generator.EntityId}]: network state update for O2Generator");
                 Session.PacketizeO2GeneratorState(O2Generator, State); // update clients with server's settings
             }
         }

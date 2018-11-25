@@ -3,8 +3,11 @@ using System.Text;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Debris;
 using Sandbox.ModAPI;
+using Sandbox.ModAPI.Weapons;
 using VRage;
+using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 
@@ -25,6 +28,8 @@ namespace DefenseShields
                 MyEntities.OnEntityAdd += OnEntityAdd;
                 MyEntities.OnEntityRemove += OnEntityRemove;
                 Shield.AppendingCustomInfo += AppendingCustomInfo;
+                Sink.CurrentInputChanged += CurrentInputChanged;
+
             }
             else
             {
@@ -44,8 +49,16 @@ namespace DefenseShields
         {
             try
             {
-                if (myEntity == null || !(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))) return;
-                if (myEntity.InScene && !myEntity.MarkedForClose && _pruneSphere1.Intersects(myEntity.PositionComp.WorldVolume)) Missiles.Add(myEntity);
+                if (myEntity?.Physics == null || !myEntity.InScene || myEntity.MarkedForClose || myEntity is IMyFloatingObject || myEntity is IMyEngineerToolBase) return;
+                if (Asleep && myEntity.GetType().Name == "MyDebrisBase") return;
+
+                var aabb = myEntity.PositionComp.WorldAABB;
+                bool intersect;
+                PruneSphere1.Intersects(ref aabb, out intersect);
+                if (!intersect) return;
+
+                Asleep = false;
+                if (myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile)) Missiles.Add(myEntity);
             }
             catch (Exception ex) { Log.Line($"Exception in Controller OnEntityAdd: {ex}"); }
         }
@@ -157,7 +170,7 @@ namespace DefenseShields
                 var shieldPowerNeeds = _powerNeeded;
                 var powerUsage = shieldPowerNeeds;
                 var otherPower = _otherPower;
-                var gridMaxPower = _gridMaxPower;
+                var gridMaxPower = GridMaxPower;
                 if (!DsSet.Settings.UseBatteries)
                 {
                     powerUsage = powerUsage + _batteryCurrentPower;

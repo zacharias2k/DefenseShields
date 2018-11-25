@@ -24,7 +24,7 @@ namespace DefenseShields
         {
             if (!WarmedUp && !DsState.State.Message)
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"ChangeStateSupression: WarmedUp:{WarmedUp} - Message:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"ChangeStateSupression: WarmedUp:{WarmedUp} - Message:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
                 return;
             }
             if (Session.Enforced.Debug >= 2) Log.Line($"ShieldChangeState: Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
@@ -61,25 +61,28 @@ namespace DefenseShields
 
         private bool EntityAlive()
         {
-            _tick = Session.Instance.Tick;
-            _tick60 = _tick % 60 == 0;
-            _tick600 = _tick % 600 == 0;
-            var wait = _isServer && !_tick60 && DsState.State.Suspended;
+            Tick = Session.Instance.Tick;
+            Tick60 = Tick % 60 == 0;
+            Tick180 = Tick % 180 == 0;
+            Tick600 = Tick % 600 == 0;
+            var wait = _isServer && !Tick60 && DsState.State.Suspended;
 
+            IsFunctional = MyCube.IsFunctional;
+            IsWorking = IsFunctional;
             MyGrid = MyCube.CubeGrid;
             if (MyGrid?.Physics == null) return false;
 
             if (_resetEntity) ResetEntity();
 
             if (wait ||!AllInited && !PostInit()) return false;
-            if (Session.Enforced.Debug >= 1) Dsutil1.Sw.Restart();
+            if (Session.Enforced.Debug >= 2) Dsutil1.Sw.Restart();
 
             IsStatic = MyGrid.IsStatic;
 
             if (!Warming) WarmUpSequence();
 
-            if (_subUpdate && _tick >= _subTick) HierarchyUpdate();
-            if (_blockEvent && _tick >= _funcTick) BlockChanged(true);
+            if (_subUpdate && Tick >= _subTick) HierarchyUpdate();
+            if (_blockEvent && Tick >= _funcTick) BlockChanged(true);
 
             return true;
         }
@@ -97,7 +100,7 @@ namespace DefenseShields
                 var powerState = PowerOnline();
                 if (!powerState && _genericDownLoop == -1) _genericDownLoop = 0;
 
-                if (_tick60)
+                if (Tick60)
                 {
                     GetModulationInfo();
                     GetEnhancernInfo();
@@ -152,14 +155,15 @@ namespace DefenseShields
                 CleanAll();
                 _offlineCnt = -1;
                 ShieldChangeState();
-                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
             }
             else
             {
                 UpdateSubGrids();
                 Shield.RefreshCustomInfo();
-                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
             }
+            Session.Instance.Controllers.Add(this);
         }
 
         private bool ShieldFailing()
@@ -195,28 +199,33 @@ namespace DefenseShields
                 UpdateSubGrids();
                 Shield.RefreshCustomInfo();
             }
+            Session.Instance.Controllers.Remove(this);
         }
 
         private bool ControllerFunctional()
         {
             if (_blockChanged) BlockMonitor();
 
-            if (_tick >= LosCheckTick) LosCheck();
-            if (Suspend() || ShieldSleeping() || ShieldLowered()) return false;
+            if (Tick >= LosCheckTick) LosCheck();
+            if (Suspend() || ShieldSleeping() || ShieldLowered())
+            {
+                ControlBlockWorking = false;
+                return false;
+            }
             if (ShieldComp.EmitterEvent) EmitterEventDetected();
 
-            _controlBlockWorking = MyCube.IsWorking && MyCube.IsFunctional;
-            if (!_controlBlockWorking || !ShieldComp.EmittersWorking)
+            ControlBlockWorking = IsWorking && IsFunctional;
+            if (!ControlBlockWorking || !ShieldComp.EmittersWorking)
             {
                 if (_genericDownLoop == -1) _genericDownLoop = 0;
                 return false;
             }
-            if (_controlBlockWorking)
+            if (ControlBlockWorking)
             {
                 if (GridIsMobile) MobileUpdate();
                 if (UpdateDimensions) RefreshDimensions();
             }
-            return _controlBlockWorking;
+            return ControlBlockWorking;
         }
 
         private void EmitterEventDetected()
@@ -344,16 +353,14 @@ namespace DefenseShields
             _offlineCnt++;
             if (_offlineCnt == 0)
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"Offline count: {_offlineCnt} - resetting all - was: Buffer:{DsState.State.Buffer} - Absorb:{Absorb} - Percent:{DsState.State.ShieldPercent} - O2:{DsState.State.IncreaseO2ByFPercent} - Lowered:{DsState.State.Lowered}");
-
                 _power = 0.001f;
                 Sink.Update();
-                _shieldCurrentPower = Sink.CurrentInputByType(GId);
+                ShieldCurrentPower = Sink.CurrentInputByType(GId);
                 ResetShape(true, true);
                 CleanUp(0);
                 CleanUp(1);
-                CleanUp(3);
-                CleanUp(4);
+                //CleanUp(3);
+                //CleanUp(4);
 
                 _currentHeatStep = 0;
                 _accumulatedHeat = 0;
@@ -377,7 +384,7 @@ namespace DefenseShields
                 Shield.RefreshCustomInfo();
                 ((MyCubeBlock)Shield).UpdateTerminal();
             }
-            if (Session.Enforced.Debug >= 1) Log.Line($"ShieldDown: Count: {_offlineCnt} - ShieldPower: {_shieldCurrentPower} - gridMax: {_gridMaxPower} - currentPower: {_gridCurrentPower} - maint: {_shieldMaintaintPower} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug >= 2) Log.Line($"ShieldDown: Count: {_offlineCnt} - ShieldPower: {ShieldCurrentPower} - gridMax: {GridMaxPower} - currentPower: {GridCurrentPower} - maint: {_shieldMaintaintPower} - ShieldId [{Shield.EntityId}]");
         }
 
         private void LosCheck()
@@ -388,7 +395,7 @@ namespace DefenseShields
 
         private void SetShieldServerStatus(bool powerState)
         {
-            DsState.State.Online = _controlBlockWorking && powerState;
+            DsState.State.Online = ControlBlockWorking && powerState;
             ComingOnline = !_prevShieldActive && DsState.State.Online;
 
             _prevShieldActive = DsState.State.Online;
@@ -413,7 +420,7 @@ namespace DefenseShields
 
         private bool ShieldWaking()
         {
-            if (_tick < UnsuspendTick)
+            if (Tick < UnsuspendTick)
             {
                 if (!DsState.State.Waking)
                 {
@@ -424,13 +431,13 @@ namespace DefenseShields
                 if (_genericDownLoop == -1) _genericDownLoop = 0;
                 return true;
             }
-            if (UnsuspendTick != uint.MinValue && _tick >= UnsuspendTick)
+            if (UnsuspendTick != uint.MinValue && Tick >= UnsuspendTick)
             {
                 ResetShape(false, false);
                 _updateRender = true;
                 UnsuspendTick = uint.MinValue;
             }
-            else if (_shapeTick != uint.MinValue && _tick >= _shapeTick)
+            else if (_shapeTick != uint.MinValue && Tick >= _shapeTick)
             {
                 _shapeEvent = true;
                 _shapeTick = uint.MinValue;
@@ -483,7 +490,7 @@ namespace DefenseShields
                 PowerOnline();
 
                 if (ShieldComp.EmitterEvent) EmitterEventDetected();
-                if (!MyCube.IsWorking || !ShieldComp.EmittersWorking)
+                if (!IsWorking || !ShieldComp.EmittersWorking)
                 {
                     if (_genericDownLoop == -1) _genericDownLoop = 0;
                     return false;
@@ -497,7 +504,7 @@ namespace DefenseShields
                 else if (_lCount == 0 && _count == 0) RefreshDimensions();
                 return true;
             }
-            if (DsState.State.Lowered && DsState.State.Online && MyCube.IsWorking)
+            if (DsState.State.Lowered && DsState.State.Online && IsWorking)
             {
                 if (!_isDedicated) ShellVisibility();
                 if (GridIsMobile) _updateMobileShape = true;
@@ -575,7 +582,7 @@ namespace DefenseShields
 
         private bool SlaveControllerLink(bool isStatic)
         {
-            var notTime = _tick != 0 && _tick % 120 != 0;
+            var notTime = Tick != 0 && Tick % 120 != 0;
 
             if (notTime && _slaveLink) return true;
             if (notTime || isStatic) return false;
@@ -587,7 +594,7 @@ namespace DefenseShields
                 ShieldGridComponent shieldComponent;
                 grid.Components.TryGet(out shieldComponent);
                 var ds = shieldComponent?.DefenseShields;
-                if (ds?.ShieldComp != null && ds.WasOnline && ds.MyCube.IsWorking)
+                if (ds?.ShieldComp != null && ds.WasOnline && ds.IsWorking)
                 {
                     var otherSize = ds.MyGrid.PositionComp.WorldAABB.Size.Volume;
                     var otherEntityId = ds.MyGrid.EntityId;
@@ -630,7 +637,7 @@ namespace DefenseShields
                     if (Session.Enforced.Debug >= 1) Log.Line($"Suspend: controller unsuspending - ShieldId [{Shield.EntityId}]");
                     DsState.State.Suspended = false;
                     DsState.State.Heat = 0;
-                    UnsuspendTick = _tick + 1800;
+                    UnsuspendTick = Tick + 1800;
 
                     _currentHeatStep = 0;
                     _accumulatedHeat = 0;
@@ -670,7 +677,7 @@ namespace DefenseShields
                 if (cleanEnts) InitEntities(false);
                 DsState.State.Suspended = true;
                 ShieldFailed();
-                if (Session.Enforced.Debug >= 1) Log.Line($"Suspended: controller mode is: {ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"Suspended: controller mode is: {ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
             }
             if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
             DsState.State.Suspended = true;
@@ -678,29 +685,30 @@ namespace DefenseShields
 
         private bool GridOwnsController()
         {
-            var notTime = _tick != 0 && _tick % 600 != 0;
+            var notTime = Tick != 0 && Tick % 600 != 0;
 
             if (notTime && !DsState.State.ControllerGridAccess) return false;
             if (notTime) return true;
+
             if (MyGrid.BigOwners.Count == 0)
             {
                 DsState.State.ControllerGridAccess = false;
                 return false;
             }
 
-            var controlToGridRelataion = ((MyCubeBlock)Shield).GetUserRelationToOwner(MyGrid.BigOwners[0]);
+            var controlToGridRelataion = MyCube.GetUserRelationToOwner(MyGrid.BigOwners[0]);
             const MyRelationsBetweenPlayerAndBlock faction = MyRelationsBetweenPlayerAndBlock.FactionShare;
             var owner = MyRelationsBetweenPlayerAndBlock.Owner;
             DsState.State.InFaction = controlToGridRelataion == faction;
             DsState.State.IsOwner = controlToGridRelataion == owner;
-            
-            if (controlToGridRelataion != owner && controlToGridRelataion != faction)
+
+            if (controlToGridRelataion != owner && controlToGridRelataion != faction && MyCube.OwnerId != 0)
             {
                 if (DsState.State.ControllerGridAccess)
                 {
                     DsState.State.ControllerGridAccess = false;
                     Shield.RefreshCustomInfo();
-                    if (Session.Enforced.Debug >= 1) Log.Line($"GridOwner: controller is not owned: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug >= 1) Log.Line($"GridOwner: controller not owned: - {MyCube.OwnerId} - {MyAPIGateway.Session.Player.IdentityId} - Owner:{controlToGridRelataion == owner} - Faction:{controlToGridRelataion == faction} - ShieldMode:{ShieldMode} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.ControllerGridAccess = false;
                 return false;
@@ -757,7 +765,7 @@ namespace DefenseShields
 
         private void BroadcastMessage()
         {
-            if (Session.Enforced.Debug >= 1) Log.Line($"Broadcasting message to local playerId - Server:{_isServer} - Dedicated:{_isDedicated} - Id:{MyAPIGateway.Multiplayer.MyId}");
+            if (Session.Enforced.Debug >= 2) Log.Line($"Broadcasting message to local playerId - Server:{_isServer} - Dedicated:{_isDedicated} - Id:{MyAPIGateway.Multiplayer.MyId}");
             var checkMobLos = GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los;
             if (!DsState.State.EmitterWorking && (!DsState.State.Waking || checkMobLos && _genericDownLoop > -1 || checkMobLos && !_isServer))
             {
@@ -776,7 +784,7 @@ namespace DefenseShields
         {
             if (DsState.State.Message)
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"ClientOffline: Broadcasting message");
+                if (Session.Enforced.Debug >= 2) Log.Line($"ClientOffline: Broadcasting message");
                 BroadcastMessage();
                 DsState.State.Message = false;
             }

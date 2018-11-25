@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using Sandbox.Game.Entities;
 using VRage.Game.Components;
-using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace DefenseShields
@@ -92,8 +91,6 @@ namespace DefenseShields
         public bool EmitterEvent { get; set; }
 
         public double ShieldVolume { get; set; }
-
-        public double ShieldVelocitySqr { get; set; }
 
         public override string ComponentTypeDebugString
         {

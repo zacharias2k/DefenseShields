@@ -50,7 +50,7 @@ namespace DefenseShields
                     State = loadedState;
                     loadedSomething = true;
                 }
-                if (Session.Enforced.Debug >= 1) Log.Line($"Loaded - EmitterId [{Emitter.EntityId}]:");
+                if (Session.Enforced.Debug >= 2) Log.Line($"Loaded - EmitterId [{Emitter.EntityId}]:");
             }
             return loadedSomething;
         }
@@ -61,7 +61,7 @@ namespace DefenseShields
 
             if (Session.IsServer)
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"ServRelay - EmitterId [{Emitter.EntityId}]: network state update for emitter");
+                if (Session.Enforced.Debug >= 2) Log.Line($"ServRelay - EmitterId [{Emitter.EntityId}]: network state update for emitter");
                 Session.PacketizeEmitterState(Emitter, State); // update clients with server's settings
             }
         }

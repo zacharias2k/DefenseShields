@@ -91,4 +91,28 @@ namespace DefenseShields.Support
             Relation = relation;
         }
     }
+
+    public struct MyProtectors
+    {
+        public readonly Dictionary<DefenseShields, ProtectorInfo> Shields;
+        public readonly int RefreshSlot;
+        public readonly uint CreationTick;
+        public MyProtectors(Dictionary<DefenseShields, ProtectorInfo> shields, int refreshSlot, uint creationTick)
+        {
+            Shields = shields;
+            RefreshSlot = refreshSlot;
+            CreationTick = creationTick;
+        }
+    }
+
+    public struct ProtectorInfo
+    {
+        public readonly bool GridIsParent;
+        public readonly bool FullCoverage;
+        public ProtectorInfo(bool gridIsParent, bool fullCoverage)
+        {
+            GridIsParent = gridIsParent;
+            FullCoverage = fullCoverage;
+        }
+    }
 }

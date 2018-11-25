@@ -37,14 +37,17 @@ namespace DefenseShields
             var refreshAnim = DsSet.Settings.RefreshAnimation;
             var config = MyAPIGateway.Session.Config;
             var drawIcon = !enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
-            if ((_count == 0 || _count == 19 || _count == 39) && _hideColor && !_supressedColor && CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation, DetectMatrixOutsideInv))
+            var viewCheck = _count == 0 || _count == 19 || _count == 39;
+            if (viewCheck) _viewInShield = CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation, DetectMatrixOutsideInv);
+            var clearView = !GridIsMobile || !_viewInShield;
+            if (viewCheck && _hideColor && !_supressedColor && _viewInShield)
             {
                 _modelPassive = ModelMediumReflective;
                 UpdatePassiveModel();
                 _supressedColor = true;
                 _hideShield = false;
             }
-            else if ((_count == 0 || _count == 19 || _count == 39) && _supressedColor && _hideColor && (!CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation, DetectMatrixOutsideInv)))
+            else if (viewCheck && _supressedColor && _hideColor && !_viewInShield)
             {
                 SelectPassiveShell();
                 UpdatePassiveModel();
@@ -53,7 +56,7 @@ namespace DefenseShields
             }
             if (drawIcon) UpdateIcon();
 
-            var activeVisible = !DsSet.Settings.ActiveInvisible || enemy;
+            var activeVisible = !DsSet.Settings.ActiveInvisible && clearView || enemy;
             CalcualteVisibility(DsSet.Settings.Visible, activeVisible);
 
             var impactPos = WorldImpactPosition;
@@ -86,14 +89,14 @@ namespace DefenseShields
             EmpDetonation = Vector3D.NegativeInfinity;
             WebDamage = false;
 
-            if (MyCube.IsWorking)
+            if (IsWorking)
             {
                 var prevlod = _prevLod;
                 var lod = CalculateLod(_onCount);
                 if (_shapeChanged || _updateRender || lod != prevlod) Icosphere.CalculateTransform(_shieldShapeMatrix, lod);
                 Icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, percent, activeVisible, refreshAnim);
             }
-            if (hitAnim && sphereOnCamera && MyCube.IsWorking) Icosphere.Draw(renderId);
+            if (hitAnim && sphereOnCamera && IsWorking) Icosphere.Draw(renderId);
 
             _updateRender = false;
             _shapeChanged = false;
@@ -118,6 +121,7 @@ namespace DefenseShields
             MyParticlesManager.TryCreateParticleEffect(6667, out _effect, ref matrix, ref pos, _shieldEntRendId, true); // 15, 16, 24, 25, 28, (31, 32) 211 215 53
             if (_effect == null) return;
             var playerDist = Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos);
+            if (playerDist < 15) playerDist = 20;
             var radius = playerDist * 0.15d;
             var scale = (playerDist + playerDist * 0.001) / playerDist * 0.03;
             if (ImpactSize < 150)
@@ -128,6 +132,7 @@ namespace DefenseShields
             else if (ImpactSize > 12000) scale = 0.1;
             else if (ImpactSize > 3600) scale = scale * (ImpactSize / 3600);
             if (scale > 0.1) scale = 0.1;
+
             //Log.Line($"D:{playerDist} - R:{radius} - S:{scale} - I:{ImpactSize} - {MyAPIGateway.Session.IsCameraUserControlledSpectator} = {MyAPIGateway.Session.CameraTargetDistance} - {Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos)}");
             _effect.UserRadiusMultiplier = (float)radius;
             _effect.UserEmitterScale = (float)scale;
@@ -269,7 +274,7 @@ namespace DefenseShields
             if (hps < 1) hps = 1;
             if (dps < 1) dps = 1;
 
-            var maxHps = _gridMaxPower - consumptionRate * 0.05f;
+            var maxHps = GridMaxPower - consumptionRate * 0.05f;
             var dpsScaledRate = dps * (consumptionRate / hps);
             var charging = hps > dps;
             var hpsOfMax = consumptionRate / maxHps * 100;
@@ -351,7 +356,7 @@ namespace DefenseShields
 
         public void DrawShieldDownIcon()
         {
-            if (_tick % 60 != 0 && !Session.DedicatedServer) HudCheck();
+            if (Tick % 60 != 0 && !Session.DedicatedServer) HudCheck();
             var enemy = false;
             var relation = MyAPIGateway.Session.Player.GetRelationTo(MyCube.OwnerId);
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;

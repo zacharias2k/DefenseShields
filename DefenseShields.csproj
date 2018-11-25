@@ -220,6 +220,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\Controls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Seperator.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Enhancer.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Support\DsAutoResetEvent.cs" />
     <Compile Include="HoldingArea\HyperSession.cs" />
     <Compile Include="HoldingArea\Logger.cs" />
     <Compile Include="Data\Scripts\DefenseShields\O2Generator.cs" />

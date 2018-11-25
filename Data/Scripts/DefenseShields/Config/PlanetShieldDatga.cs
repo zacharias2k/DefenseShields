@@ -49,7 +49,7 @@ namespace DefenseShields
                     State = loadedState;
                     loadedSomething = true;
                 }
-                if (Session.Enforced.Debug >= 1) Log.Line($"Loaded - PlanetShieldId [{PlanetShield.EntityId}]:\n{State.ToString()}");
+                if (Session.Enforced.Debug >= 2) Log.Line($"Loaded - PlanetShieldId [{PlanetShield.EntityId}]:\n{State.ToString()}");
             }
             return loadedSomething;
         }
@@ -60,7 +60,7 @@ namespace DefenseShields
 
             if (Session.IsServer)
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"ServRelay - Online:{State.Online} - Backup:{State.Backup} - PlanetShieldId [{PlanetShield.EntityId}]: network state update for PlanetShield");
+                if (Session.Enforced.Debug >= 2) Log.Line($"ServRelay - Online:{State.Online} - Backup:{State.Backup} - PlanetShieldId [{PlanetShield.EntityId}]: network state update for PlanetShield");
                 Session.PacketizePlanetShieldState(PlanetShield, State); // update clients with server's settings
             }
         }

@@ -9,7 +9,6 @@ using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Entity;
-using VRage.Game.Entity.EntityComponents;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
@@ -52,6 +51,7 @@ namespace DefenseShields.Support
             [0.0000000090f] = 9,
             [0.0000000100f] = 10,
         };
+
 
         public static void UpdateTerminal(this MyCubeBlock block)
         {

@@ -28,6 +28,9 @@ namespace DefenseShields
         internal bool SettingsUpdated;
         internal bool ClientUiUpdate;
         internal bool ContainerInited;
+        internal bool IsFunctional;
+        internal bool IsWorking;
+
         private bool _powered;
 
         private uint _tick;
@@ -61,7 +64,7 @@ namespace DefenseShields
 
         private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
-        public IMyUpgradeModule Modulator => (IMyUpgradeModule)Entity;
+        public IMyUpgradeModule Modulator;
         internal MyCubeGrid MyGrid;
         internal MyCubeBlock MyCube;
 
@@ -75,6 +78,8 @@ namespace DefenseShields
                 _tick60 = _tick % 60 == 0;
                 var wait = _isServer && !_tick60 && ModState.State.Backup;
 
+                IsFunctional = MyCube.IsFunctional;
+                IsWorking = IsFunctional;
                 MyGrid = MyCube.CubeGrid;
                 if (wait || MyGrid?.Physics == null) return;
 
@@ -90,7 +95,7 @@ namespace DefenseShields
                 if (!_isDedicated && UtilsStatic.DistanceCheck(Modulator, 1000, 1))
                 {
                     var blockCam = MyCube.PositionComp.WorldVolume;
-                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && MyCube.IsWorking) BlockMoveAnimation();
+                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && IsWorking) BlockMoveAnimation();
                 }
 
                 if (_isServer)
@@ -104,7 +109,7 @@ namespace DefenseShields
                         {
                             ModulatorComp.ModulationPassword = Modulator.CustomData;
                             ModSet.SaveSettings();
-                            if (Session.Enforced.Debug >= 1) Log.Line($"Updating modulator password");
+                            if (Session.Enforced.Debug >= 2) Log.Line($"Updating modulator password");
                         }
                     }
                 }
@@ -154,7 +159,7 @@ namespace DefenseShields
                     return false;
                 }
             }
-            if (ModulatorComp == null) ResetComp();
+            if (ModulatorComp?.Modulator?.MyGrid != MyGrid) ResetComp();
 
             if (_isServer)
             {
@@ -175,7 +180,7 @@ namespace DefenseShields
         private bool BlockWorking()
         {
             if (_count <= 0) _powered = Sink.IsPowerAvailable(GId, 0.01f);
-            if (!MyCube.IsWorking || !_powered)
+            if (!IsWorking || !_powered)
             {
                 if (!_isDedicated && _count == 29)
                 {
@@ -201,7 +206,8 @@ namespace DefenseShields
 
         private void ServerCheckForCompLink()
         {
-            MyGrid.Components.TryGet(out ShieldComp);
+            if (ShieldComp?.DefenseShields?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
+
             if (ShieldComp?.DefenseShields == null) return;
 
             if (ShieldComp?.Modulator != this)
@@ -213,7 +219,8 @@ namespace DefenseShields
 
         private void ClientCheckForCompLink()
         {
-            MyGrid.Components.TryGet(out ShieldComp);
+            if (ShieldComp?.DefenseShields?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
+
             if (ShieldComp?.DefenseShields == null) return;
 
             if (ModState.State.Link && ShieldComp?.Modulator != this)
@@ -296,6 +303,7 @@ namespace DefenseShields
                 PowerPreInit();
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+                Modulator = (IMyUpgradeModule)Entity;
                 ContainerInited = true;
             }
             if (Entity.InScene) OnAddedToScene();
@@ -460,7 +468,7 @@ namespace DefenseShields
 
         private bool BlockMoveAnimationReset()
         {
-            if (!MyCube.IsFunctional) return false;
+            if (!IsFunctional) return false;
             if (_subpartRotor == null)
             {
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
@@ -472,7 +480,7 @@ namespace DefenseShields
 
         private void BlockMoveAnimation()
         {
-            BlockMoveAnimationReset();
+            if (!BlockMoveAnimationReset()) return;
             RotationTime -= 1;
             var rotationMatrix = MatrixD.CreateRotationY(0.00625f * RotationTime);
             _subpartRotor.PositionComp.LocalMatrix = rotationMatrix;
@@ -508,8 +516,8 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"OnAddedToScene: - ModulatorId [{Modulator.EntityId}]");
                 MyCube = Modulator as MyCubeBlock;
+                if (Session.Enforced.Debug >= 2) Log.Line($"OnAddedToScene: - ModulatorId [{Modulator.EntityId}]");
                 if (!MainInit) return;
                 ResetComp();
                 RegisterEvents();
@@ -534,6 +542,8 @@ namespace DefenseShields
                     ModulatorComp = null;
                 }
                 RegisterEvents(false);
+                IsWorking = false;
+                IsFunctional = false;
                 MyCube = null;
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
@@ -555,7 +565,7 @@ namespace DefenseShields
                     ModulatorComp.Modulator = null;
                     ModulatorComp = null;
                 }
-                RegisterEvents(false);
+                Modulator = null;
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
             base.Close();

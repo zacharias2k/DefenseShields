@@ -33,7 +33,7 @@ namespace DefenseShields
                     SettingsUpdated = false;
                     DsSet.SaveSettings();
                     ResetShape(false, false);
-                    if (Session.Enforced.Debug >= 1) Log.Line($"SettingsUpdated: server:{Session.IsServer} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug >= 2) Log.Line($"SettingsUpdated: server:{Session.IsServer} - ShieldId [{Shield.EntityId}]");
                 }
             }
             else if (_count == 34)
@@ -51,14 +51,24 @@ namespace DefenseShields
 
             if (_count == 29)
             {
-                Shield.RefreshCustomInfo();
                 if (!_isDedicated)
                 {
+                    Shield.RefreshCustomInfo();
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == Shield.EntityId)
                         MyCube.UpdateTerminal();
                 }
                 _runningDamage = DpsAvg.Add((int) _damageReadOut);
                 _damageReadOut = 0;
+            }
+
+            if (_count <= 0)
+            {
+                var entScaler = Session.EntSlotScaler;
+                if (LogicSlotScaler != entScaler)
+                {
+                    LogicSlotScaler = entScaler;
+                    LogicSlot = Session.GetSlot();
+                }
             }
 
             if (cleanUp)
@@ -67,11 +77,7 @@ namespace DefenseShields
                 if (_lCount == 9 && _count == 58) CleanUp(1);
                 if (_effectsCleanup && (_count == 1 || _count == 21 || _count == 41)) CleanUp(2);
 
-                if ((_lCount * 60 + _count + 1) % 150 == 0)
-                {
-                    CleanUp(3);
-                    CleanUp(4);
-                }
+                if ((_lCount * 60 + _count + 1) % 300 == 0) CleanUp(4);
             }
         }
 
@@ -81,9 +87,9 @@ namespace DefenseShields
             {
                 _blockEvent = true;
                 _shapeEvent = true;
-                LosCheckTick = _tick + 1800;
-                if (_blockAdded) _shapeTick = _tick + 300;
-                else _shapeTick = _tick + 1800;
+                LosCheckTick = Tick + 1800;
+                if (_blockAdded) _shapeTick = Tick + 300;
+                else _shapeTick = Tick + 1800;
             }
             if (_functionalChanged) _functionalEvent = true;
 
@@ -105,7 +111,7 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 2) Log.Line($"BlockChanged: functional:{_functionalEvent} - funcComplete:{FuncTask.IsComplete} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ShieldId [{Shield.EntityId}]");
                 if (_functionalEvent) FunctionalChanged(backGround);
                 _blockEvent = false;
-                _funcTick = _tick + 60;
+                _funcTick = Tick + 60;
             }
         }
 
@@ -154,7 +160,7 @@ namespace DefenseShields
                                 var distributor = controller.GridResourceDistributor;
                                 if (distributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects)
                                 {
-                                    if (Session.Enforced.Debug >= 1) Log.Line($"Found MyGridDistributor: ShieldId [{Shield.EntityId}]");
+                                    if (Session.Enforced.Debug >= 1) Log.Line($"Found MyGridDistributor from type:{block.BlockDefinition} - ShieldId [{Shield.EntityId}]");
                                     MyGridDistributor = controller.GridResourceDistributor;
                                     gridDistNeedUpdate = false;
                                 }
@@ -186,9 +192,9 @@ namespace DefenseShields
             if (Session.Enforced.Debug >= 2) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Online:{DsState.State.Online} - Power:{!DsState.State.NoPower} - Sleep:{DsState.State.Sleeping} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
             if (checkGroups)
             {
-                _subTick = _tick + 10;
+                _subTick = Tick + 10;
                 UpdateSubGrids();
-                if (Session.Enforced.Debug >= 2) Log.Line($"HierarchyWasDelayed: this:{_tick} - delayedTick: {_subTick} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 2) Log.Line($"HierarchyWasDelayed: this:{Tick} - delayedTick: {_subTick} - ShieldId [{Shield.EntityId}]");
             }
         }
 
@@ -198,7 +204,7 @@ namespace DefenseShields
 
             var gotGroups = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
             if (gotGroups.Count == ShieldComp.GetLinkedGrids.Count) return;
-            if (Session.Enforced.Debug >= 1) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.GetLinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.GetLinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug >= 1 && ShieldComp.GetLinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.GetLinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.GetLinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
 
             lock (SubLock)
             {
@@ -224,7 +230,6 @@ namespace DefenseShields
             CleanUp(0);
             CleanUp(1);
             CleanUp(2);
-            CleanUp(3);
             CleanUp(4);
             CleanUp(5);
             SyncThreadedEnts(true);
@@ -246,11 +251,12 @@ namespace DefenseShields
                         break;
                     case 1:
                         EnemyShields.Clear();
-                        _webEntsTmp.AddRange(WebEnts.Where(info => _tick - info.Value.FirstTick > 599 && _tick - info.Value.LastTick > 1));
+                        _webEntsTmp.Clear();
+                        _webEntsTmp.AddRange(WebEnts.Where(info => Tick - info.Value.FirstTick > 599 && Tick - info.Value.LastTick > 1));
                         foreach (var webent in _webEntsTmp)
                         {
-                            EntIntersectInfo gridRemoved;
-                            WebEnts.TryRemove(webent.Key, out gridRemoved);
+                            EntIntersectInfo entRemoved;
+                            WebEnts.TryRemove(webent.Key, out entRemoved);
                         }
                         break;
                     case 2:
@@ -267,34 +273,14 @@ namespace DefenseShields
                         }
                         _effectsCleanup = false;
                         break;
-                    case 3:
-                        {
-                            FriendlyCache.Clear();
-                            PartlyProtectedCache.Clear();
-                            AuthenticatedCache.Clear();
-                            foreach (var sub in ShieldComp.GetSubGrids)
-                            {
-                                if (sub == null) continue;
-
-                                if (!GridIsMobile && ShieldEnt.PositionComp.WorldVolume.Intersects(sub.PositionComp.WorldVolume))
-                                {
-                                    var cornersInShield = CustomCollision.NotAllCornersInShield(sub, DetectMatrixOutsideInv);
-                                    if (cornersInShield != 8) PartlyProtectedCache.Add(sub);
-                                    else if (cornersInShield == 8) FriendlyCache.Add(sub);
-                                    continue;
-                                }
-                                FriendlyCache.Add(sub);
-                            }
-                            FriendlyCache.Add(ShieldEnt);
-                        }
-                        break;
                     case 4:
                         {
-                            IgnoreCache.Clear();
+                            AuthenticatedCache.Clear();
                         }
                         break;
                     case 5:
                         {
+                            Asleep = false;
                             WebEnts.Clear();
                         }
                         break;
