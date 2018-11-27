@@ -4,6 +4,7 @@ using Sandbox.ModAPI;
 using VRage.Game.Components;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
+using SpaceEngineers.Game.Entities.Blocks;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 
@@ -37,6 +38,7 @@ namespace DefenseShields
             try
             {
                 if (Session.Enforced.Debug >= 2) Log.Line($"OnAddedToScene: GridId:{Shield.CubeGrid.EntityId} - ShieldId [{Shield.EntityId}]");
+                MyGrid = (MyCubeGrid)Shield.CubeGrid;
                 MyCube = Shield as MyCubeBlock;
                 RegisterEvents();
                 _resetEntity = true;
@@ -55,7 +57,6 @@ namespace DefenseShields
                 _mpActive = Session.MpActive;
 
                 PowerInit();
-
                 Session.Instance.Shields.Add(this);
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
                 if (_isServer) Enforcements.SaveEnforcement(Shield, Session.Enforced, true);
@@ -140,7 +141,6 @@ namespace DefenseShields
                 InitEntities(false);
                 IsWorking = false;
                 IsFunctional = false;
-                MyCube = null;
                 _shellPassive?.Render?.RemoveRenderObjects();
                 _shellActive?.Render?.RemoveRenderObjects();
                 ShieldEnt?.Render?.RemoveRenderObjects();
@@ -164,16 +164,15 @@ namespace DefenseShields
                 base.Close();
                 if (Session.Enforced.Debug >= 2) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 if (Session.Instance.Controllers.Contains(this)) Session.Instance.Controllers.Remove(this);
+                if (Session.Instance.ActiveShields.Contains(this)) Session.Instance.ActiveShields.Remove(this);
                 if (Session.Instance.Shields.Contains(this)) Session.Instance.Shields.Remove(this);
                 Icosphere = null;
-                RegisterEvents(false);
                 InitEntities(false);
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);
 
                 _power = 0.0001f;
                 if (AllInited) Sink.Update();
                 if (ShieldComp?.DefenseShields == this) ShieldComp.DefenseShields = null;
-                Shield = null;
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
         }

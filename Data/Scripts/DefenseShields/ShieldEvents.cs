@@ -29,6 +29,7 @@ namespace DefenseShields
                 MyEntities.OnEntityRemove += OnEntityRemove;
                 Shield.AppendingCustomInfo += AppendingCustomInfo;
                 Sink.CurrentInputChanged += CurrentInputChanged;
+                MyCube.IsWorkingChanged += IsWorkingChanged;
 
             }
             else
@@ -42,7 +43,15 @@ namespace DefenseShields
                 MyEntities.OnEntityAdd -= OnEntityAdd;
                 MyEntities.OnEntityRemove -= OnEntityRemove;
                 Shield.AppendingCustomInfo -= AppendingCustomInfo;
+                Sink.CurrentInputChanged -= CurrentInputChanged;
+                MyCube.IsWorkingChanged -= IsWorkingChanged;
             }
+        }
+
+        private void IsWorkingChanged(MyCubeBlock myCubeBlock)
+        {
+            IsWorking = myCubeBlock.IsWorking;
+            IsFunctional = myCubeBlock.IsFunctional;
         }
 
         private void OnEntityAdd(MyEntity myEntity)

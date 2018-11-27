@@ -91,12 +91,10 @@ namespace DefenseShields
         {
             try
             {
-                _tick = Session.Instance.Tick;
+                _tick = Session.Tick;
                 _tick60 = _tick % 60 == 0;
                 var wait = _isServer && !_tick60 && EmiState.State.Backup;
 
-                IsFunctional = MyCube.IsFunctional;
-                IsWorking = IsFunctional;
                 MyGrid = MyCube.CubeGrid;
                 if (wait || MyGrid?.Physics == null) return;
 
@@ -619,9 +617,11 @@ namespace DefenseShields
         {
             try
             {
+                MyGrid = (MyCubeGrid)Emitter.CubeGrid;
                 MyCube = Emitter as MyCubeBlock;
                 SetEmitterType();
-                Emitter.EnabledChanged += CheckEmitter;
+                RegisterEvents();
+
                 if (Session.Enforced.Debug >= 2) Log.Line($"OnAddedToScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
@@ -676,6 +676,7 @@ namespace DefenseShields
                     Emitter.Enabled = true;
                 }
                 Sink.Update();
+                IsWorking = MyCube.IsWorking;
                 if (Session.Enforced.Debug >= 2) Log.Line($"PowerInit: EmitterId [{Emitter.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
@@ -755,13 +756,32 @@ namespace DefenseShields
             {
                 if (Session.Enforced.Debug >= 2) Log.Line($"OnRemovedFromScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
                 //BlockParticleStop();
-                Emitter.EnabledChanged -= CheckEmitter;
-                Emitter.AppendingCustomInfo -= AppendingCustomInfo;
+                RegisterEvents(false);
                 IsWorking = false;
                 IsFunctional = false;
-                MyCube = null;
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
+        }
+
+        private void RegisterEvents(bool register = true)
+        {
+            if (register)
+            {
+                Emitter.EnabledChanged += CheckEmitter;
+                MyCube.IsWorkingChanged += IsWorkingChanged;
+            }
+            else
+            {
+                Emitter.AppendingCustomInfo -= AppendingCustomInfo;
+                Emitter.EnabledChanged -= CheckEmitter;
+                MyCube.IsWorkingChanged -= IsWorkingChanged;
+            }
+        }
+
+        private void IsWorkingChanged(MyCubeBlock myCubeBlock)
+        {
+            IsFunctional = myCubeBlock.IsWorking;
+            IsWorking = myCubeBlock.IsWorking;
         }
 
         public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
@@ -792,7 +812,6 @@ namespace DefenseShields
                     ShieldComp.ShipEmitter = null;
                 }
                 //BlockParticleStop();
-                Emitter = null;
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
         }

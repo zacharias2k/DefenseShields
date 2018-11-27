@@ -301,7 +301,7 @@ namespace DefenseShields
                 _empScaleTime = 1;
             }
 
-            var hpLoss = 0.01 * _empScaleHp;
+            var hpLoss = Session.Enforced.HeatScaler * _empScaleHp;
             var nextThreshold = hp * hpLoss * (_currentHeatStep + 1);
             var currentThreshold = hp * hpLoss * _currentHeatStep;
             var scaledOverHeat = OverHeat / _empScaleTime;

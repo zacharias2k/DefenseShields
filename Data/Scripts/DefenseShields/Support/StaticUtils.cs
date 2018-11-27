@@ -383,7 +383,7 @@ namespace DefenseShields.Support
         public static void PrepConfigFile()
         {
             const int baseScaler = 10;
-            const float nerf = 1f;
+            const float heatScaler = 1f;
             const float efficiency = 100f;
             const int stationRatio = 1;
             const int largeShipRate = 1;
@@ -392,7 +392,7 @@ namespace DefenseShields.Support
             const int disableGridDmg = 0;
             const int debug = 0;
             const bool altRecharge = false;
-            const int version = 61;
+            const int version = 62;
             const float capScaler = 1f;
             const float hpsEfficiency = 0.5f;
             const float maintenanceCost = 0.5f;
@@ -408,18 +408,14 @@ namespace DefenseShields.Support
                 if (unPackedData.Version == version) return;
                 Log.Line($"outdated config file regenerating, file version: {unPackedData.Version} - current version: {version}");
                 Session.Enforced.BaseScaler = !unPackedData.BaseScaler.Equals(-1) ? unPackedData.BaseScaler : baseScaler;
-                Session.Enforced.Unused = !unPackedData.Unused.Equals(-1f) ? unPackedData.Unused : nerf;
+                Session.Enforced.HeatScaler = !unPackedData.HeatScaler.Equals(-1f) ? unPackedData.HeatScaler : heatScaler;
                 Session.Enforced.Efficiency = !unPackedData.Efficiency.Equals(-1f) ? unPackedData.Efficiency : efficiency;
                 Session.Enforced.StationRatio = !unPackedData.StationRatio.Equals(-1) ? unPackedData.StationRatio : stationRatio;
                 Session.Enforced.LargeShipRatio = !unPackedData.LargeShipRatio.Equals(-1) ? unPackedData.LargeShipRatio : largeShipRate;
                 Session.Enforced.SmallShipRatio = !unPackedData.SmallShipRatio.Equals(-1) ? unPackedData.SmallShipRatio : smallShipRatio;
-                if (unPackedData.Version <= 58)
+                if (unPackedData.Version <= 61)
                 {
-                    Session.Enforced.Unused = 1;
-                    Session.Enforced.BaseScaler = 10;
-                    Session.Enforced.SmallShipRatio = 1;
-                    Session.Enforced.LargeShipRatio = 1;
-                    Session.Enforced.StationRatio = 1;
+                    Session.Enforced.HeatScaler = 0.0065f;
                 }
                 Session.Enforced.DisableVoxelSupport = !unPackedData.DisableVoxelSupport.Equals(-1) ? unPackedData.DisableVoxelSupport : disableVoxel;
                 Session.Enforced.DisableGridDamageSupport = !unPackedData.DisableGridDamageSupport.Equals(-1) ? unPackedData.DisableGridDamageSupport : disableGridDmg;
@@ -446,7 +442,7 @@ namespace DefenseShields.Support
             else
             {
                 Session.Enforced.BaseScaler = baseScaler;
-                Session.Enforced.Unused = nerf;
+                Session.Enforced.HeatScaler = heatScaler;
                 Session.Enforced.Efficiency = efficiency;
                 Session.Enforced.StationRatio = stationRatio;
                 Session.Enforced.LargeShipRatio = largeShipRate;

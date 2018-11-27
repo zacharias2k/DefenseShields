@@ -78,7 +78,7 @@ namespace DefenseShields
 
         private void UpdateFields()
         {
-            _tick = Session.Instance.Tick;
+            _tick = Session.Tick;
             _tick60 = _tick % 60 == 0;
             _tick600 = _tick % 600 == 0;
             MyGrid = PlanetShield.CubeGrid as MyCubeGrid;

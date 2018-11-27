@@ -61,16 +61,6 @@ namespace DefenseShields
                 _damageReadOut = 0;
             }
 
-            if (_count <= 0)
-            {
-                var entScaler = Session.EntSlotScaler;
-                if (LogicSlotScaler != entScaler)
-                {
-                    LogicSlotScaler = entScaler;
-                    LogicSlot = Session.GetSlot();
-                }
-            }
-
             if (cleanUp)
             {
                 if (_staleGrids.Count != 0) CleanUp(0);

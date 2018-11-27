@@ -249,7 +249,7 @@ namespace DefenseShields
                                 continue;
                             }
                             block.DoDamage(damageMulti, DelDamage, true, null, MyGrid.EntityId); 
-                            if (myGrid.BlocksCount == 0) myGrid.Close();
+                            if (myGrid.BlocksCount == 0) myGrid.SendGridCloseRequest();
                         }
                     }
                 }
@@ -272,7 +272,7 @@ namespace DefenseShields
                                 continue;
                             }
                             block.DoDamage(block.MaxIntegrity * 0.9f, DelDamage, true, null, MyGrid.EntityId); 
-                            if (myGrid.BlocksCount == 0) myGrid.Close();
+                            if (myGrid.BlocksCount == 0) myGrid.SendGridCloseRequest();
                         }
                     }
                 }

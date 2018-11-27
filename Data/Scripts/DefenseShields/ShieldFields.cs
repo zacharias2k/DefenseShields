@@ -96,6 +96,7 @@ namespace DefenseShields
         private int _shieldRatio = 1;
 
         internal volatile bool Asleep;
+        internal volatile uint LastWokenTick;
 
         internal bool WasOnline;
         internal bool DeformEnabled;

@@ -116,7 +116,7 @@ namespace DefenseShields
             comp.UpdateDimensions = true;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
-            comp.LosCheckTick = Session.Instance.Tick + 1800;
+            comp.LosCheckTick = Session.Tick + 1800;
         }
 
         public static float GetHeight(IMyTerminalBlock block)
@@ -133,7 +133,7 @@ namespace DefenseShields
             comp.UpdateDimensions = true;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
-            comp.LosCheckTick = Session.Instance.Tick + 1800;
+            comp.LosCheckTick = Session.Tick + 1800;
         }
 
         public static float GetDepth(IMyTerminalBlock block)
@@ -150,7 +150,7 @@ namespace DefenseShields
             comp.UpdateDimensions = true;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
-            comp.LosCheckTick = Session.Instance.Tick + 1800;
+            comp.LosCheckTick = Session.Tick + 1800;
         }
 
         public static float GetOffsetWidth(IMyTerminalBlock block)
@@ -168,7 +168,7 @@ namespace DefenseShields
             comp.UpdateDimensions = true;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
-            comp.LosCheckTick = Session.Instance.Tick + 1800;
+            comp.LosCheckTick = Session.Tick + 1800;
             ((MyCubeBlock)block).UpdateTerminal();
         }
 
@@ -187,7 +187,7 @@ namespace DefenseShields
             comp.UpdateDimensions = true;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
-            comp.LosCheckTick = Session.Instance.Tick + 1800;
+            comp.LosCheckTick = Session.Tick + 1800;
             ((MyCubeBlock)block).UpdateTerminal();
         }
 
@@ -206,7 +206,7 @@ namespace DefenseShields
             comp.UpdateDimensions = true;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
-            comp.LosCheckTick = Session.Instance.Tick + 1800;
+            comp.LosCheckTick = Session.Tick + 1800;
             ((MyCubeBlock)block).UpdateTerminal();
         }
 

@@ -64,16 +64,13 @@ namespace DefenseShields
         {
             try
             {
-                _tick = Session.Instance.Tick;
+                _tick = Session.Tick;
                 _tick60 = _tick % 60 == 0;
                 var wait = _isServer && !_tick60 && O2State.State.Backup;
 
-                IsFunctional = MyCube.IsFunctional;
-                IsWorking = IsFunctional;
                 MyGrid = MyCube.CubeGrid;
                 if (wait || MyGrid?.Physics == null) return;
 
-                _tick = Session.Instance.Tick;
                 Timing();
 
                 if (!O2GeneratorReady()) return;
@@ -388,7 +385,9 @@ namespace DefenseShields
         {
             try
             {
+                MyGrid = (MyCubeGrid)O2Generator.CubeGrid;
                 MyCube = O2Generator as MyCubeBlock;
+                RegisterEvents();
                 if (Session.Enforced.Debug >= 1) Log.Line($"OnAddedToScene: - O2GeneatorId [{O2Generator.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
@@ -433,11 +432,31 @@ namespace DefenseShields
                     return;
                 }
                 if (Session.Instance.O2Generators.Contains(this)) Session.Instance.O2Generators.Remove(this);
+                RegisterEvents(false);
                 IsWorking = false;
                 IsFunctional = false;
-                MyCube = null;
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
+        }
+
+
+        private void RegisterEvents(bool register = true)
+        {
+            if (register)
+            {
+                MyCube.IsWorkingChanged += IsWorkingChanged;
+            }
+            else
+            {
+                O2Generator.AppendingCustomInfo -= AppendingCustomInfo;
+                MyCube.IsWorkingChanged -= IsWorkingChanged;
+            }
+        }
+
+        private void IsWorkingChanged(MyCubeBlock myCubeBlock)
+        {
+            IsFunctional = myCubeBlock.IsFunctional;
+            IsWorking = myCubeBlock.IsWorking;
         }
 
         public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
@@ -448,7 +467,6 @@ namespace DefenseShields
             {
                 if (_o2Generator.ContainsKey(Entity.EntityId)) _o2Generator.Remove(Entity.EntityId);
                 if (Session.Instance.O2Generators.Contains(this)) Session.Instance.O2Generators.Remove(this);
-                O2Generator = null;
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
         }

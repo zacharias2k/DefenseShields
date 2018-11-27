@@ -23,7 +23,7 @@ namespace DefenseShields
                 if (sub == null) continue;
                 FriendlyCache.Add(sub);
 
-                var protectors = Session.Instance.GlobalProtectDict[sub] = new MyProtectors(Session.Instance.ProtDicts.Get(), LogicSlot, Tick);
+                var protectors = Session.Instance.GlobalProtectDict[sub] = new MyProtectors(Session.Instance.ProtDicts.Get(), LogicSlot, Session.Tick);
 
                 if (!GridIsMobile && ShieldEnt.PositionComp.WorldVolume.Intersects(sub.PositionComp.WorldVolume))
                 {
@@ -38,13 +38,13 @@ namespace DefenseShields
 
         public void WebEntities()
         {
-            var sleeping = true;
+            //var sleeping = true;
             PruneList.Clear();
             MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref PruneSphere2, PruneList);
             foreach (var eShield in EnemyShields) PruneList.Add(eShield);
             if (Missiles.Count > 0)
             {
-                sleeping = false;
+                //sleeping = false;
                 var missileSphere = PruneSphere2;
                 missileSphere.Radius = BoundingRange + 50;
                 foreach (var missile in Missiles)
@@ -53,6 +53,8 @@ namespace DefenseShields
 
             var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || ShieldComp.Modulator == null || ShieldComp.Modulator.ModSet.Settings.ModulateVoxels;
             var entChanged = false;
+            var tick = Session.Tick;
+            var tick600 = Session.Tick600;
 
             EnablePhysics = false;
             for (int i = 0; i < PruneList.Count; i++)
@@ -66,7 +68,7 @@ namespace DefenseShields
                 Ent relation;
                 if (entInfo != null)
                 {
-                    if (Tick600) entInfo.Relation = EntType(ent);
+                    if (tick600) entInfo.Relation = EntType(ent);
                     relation = entInfo.Relation;
                 }
                 else relation = EntType(ent);
@@ -81,7 +83,7 @@ namespace DefenseShields
                         {
                             MyProtectors protectors;
                             Session.Instance.GlobalProtectDict.TryGetValue(ent, out protectors);
-                            if (protectors.Shields == null) protectors = Session.Instance.GlobalProtectDict[ent] = new MyProtectors(Session.Instance.ProtDicts.Get(), LogicSlot, Tick);
+                            if (protectors.Shields == null) protectors = Session.Instance.GlobalProtectDict[ent] = new MyProtectors(Session.Instance.ProtDicts.Get(), LogicSlot, tick);
 
                             var grid = ent as MyCubeGrid;
                             var parent = ShieldComp.GetLinkedGrids.Contains(grid);
@@ -116,22 +118,22 @@ namespace DefenseShields
                     if (ent.Physics != null && ent.Physics.IsMoving)
                     {
                         entChanged = true;
-                        sleeping = false;
+                        //sleeping = false;
                     }
                     else if (entInfo.Touched || _count == 0 && interestingEnts && !ent.PositionComp.LocalAABB.Equals(entInfo.Box))
                     {
                         entInfo.Box = ent.PositionComp.LocalAABB;
                         entChanged = true;
-                        sleeping = false;
+                        //sleeping = false;
                     }
 
                     EnablePhysics = true;
-                    entInfo.LastTick = Tick;
-                    if (Tick600)
+                    entInfo.LastTick = tick;
+                    if (tick600)
                     {
                         if ((relation == Ent.LargeEnemyGrid || relation == Ent.LargeNobodyGrid) && entInfo.CacheBlockList.Count != (ent as MyCubeGrid).BlocksCount)
                         {
-                            entInfo.RefreshTick = Tick;
+                            entInfo.RefreshTick = tick;
                             entInfo.CacheBlockList.Clear();
                         }
                     }
@@ -159,17 +161,17 @@ namespace DefenseShields
                     }
                     entChanged = true;
                     EnablePhysics = true;
-                    sleeping = false;
-                    WebEnts.TryAdd(ent, new EntIntersectInfo(ent.EntityId, 0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Tick, Tick, Tick, relation, new List<IMySlimBlock>()));
+                    //sleeping = false;
+                    WebEnts.TryAdd(ent, new EntIntersectInfo(ent.EntityId, 0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, tick, tick, tick, relation, new List<IMySlimBlock>()));
                 }
             }
-
+            /*
             if (sleeping)
             {
                 if (!WebSuspend)
                 {
                     Session.Instance.SleepingShields.Add(this);
-                    //Log.Line($"Tick:{(uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS} - Sleep");
+                    //Log.Line($"Tick:{tick} - Sleep");
                     WebSuspend = true;
                 }
             }
@@ -179,10 +181,10 @@ namespace DefenseShields
                 {
                     Session.Instance.SleepingShields.Remove(this);
                     WebSuspend = false;
-                    Log.Line($"Tick:{(uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS} - Awoke");
+                    Log.Line($"Tick:{tick} - Awoke");
                 }
             }
-
+            */
             if (!EnablePhysics) return;
 
             ShieldMatrix = ShieldEnt.PositionComp.WorldMatrix;
@@ -197,12 +199,13 @@ namespace DefenseShields
 
         public void WebDispatch()
         {
+            var tick = Session.Tick;
             foreach (var webent in WebEnts.Keys)
             {
                 var entCenter = webent.PositionComp.WorldVolume.Center;
                 var entInfo = WebEnts[webent];
-                if (entInfo.LastTick != Tick) continue;
-                if (entInfo.RefreshTick == Tick && (WebEnts[webent].Relation == Ent.LargeNobodyGrid || WebEnts[webent].Relation == Ent.LargeEnemyGrid))
+                if (entInfo.LastTick != tick) continue;
+                if (entInfo.RefreshTick == tick && (WebEnts[webent].Relation == Ent.LargeNobodyGrid || WebEnts[webent].Relation == Ent.LargeEnemyGrid))
                     (webent as IMyCubeGrid)?.GetBlocks(WebEnts[webent].CacheBlockList, CollectCollidableBlocks);
                 switch (WebEnts[webent].Relation)
                 {

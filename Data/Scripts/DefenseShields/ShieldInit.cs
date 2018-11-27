@@ -95,7 +95,6 @@ namespace DefenseShields
             _oldGridHalfExtents = DsState.State.GridHalfExtents;
             _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
 
-            Session.Instance.ControllerBlockCache[MyCube.SlimBlock] = this;
             _updateRender = true;
             Warming = true;
         }
@@ -117,11 +116,14 @@ namespace DefenseShields
                 DsSet.LoadSettings();
                 if (!DsState.LoadState() && !isServer) _clientNotReady = true;
                 UpdateSettings(DsSet.Settings);
-                DsState.State.Overload = false;
-                DsState.State.NoPower = false;
-                DsState.State.Remodulate = false;
-                DsState.State.Suspended = false;
-                DsState.State.Heat = 0;
+                if (isServer)
+                {
+                    DsState.State.Overload = false;
+                    DsState.State.NoPower = false;
+                    DsState.State.Remodulate = false;
+                    DsState.State.Suspended = false;
+                    DsState.State.Heat = 0;
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in StorageSetup: {ex}"); }
         }
@@ -163,6 +165,7 @@ namespace DefenseShields
                     Shield.Enabled = false;
                     Shield.Enabled = true;
                 }
+                IsWorking = MyCube.IsWorking;
                 if (Session.Enforced.Debug >= 2) Log.Line($"PowerInit: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }

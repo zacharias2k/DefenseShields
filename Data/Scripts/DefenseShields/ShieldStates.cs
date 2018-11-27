@@ -61,14 +61,12 @@ namespace DefenseShields
 
         private bool EntityAlive()
         {
-            Tick = Session.Instance.Tick;
+            Tick = Session.Tick;
             Tick60 = Tick % 60 == 0;
             Tick180 = Tick % 180 == 0;
             Tick600 = Tick % 600 == 0;
             var wait = _isServer && !Tick60 && DsState.State.Suspended;
 
-            IsFunctional = MyCube.IsFunctional;
-            IsWorking = IsFunctional;
             MyGrid = MyCube.CubeGrid;
             if (MyGrid?.Physics == null) return false;
 
@@ -146,6 +144,7 @@ namespace DefenseShields
             if (!_isDedicated) ShellVisibility();
             ShieldEnt.Render.Visible = true;
             _updateRender = true;
+            LastWokenTick = Tick;
             ComingOnline = false;
             WasOnline = true;
             WarmedUp = true;
@@ -164,6 +163,7 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 2) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
             }
             Session.Instance.Controllers.Add(this);
+            Session.Instance.ActiveShields.Add(this);
         }
 
         private bool ShieldFailing()
@@ -199,6 +199,7 @@ namespace DefenseShields
                 UpdateSubGrids();
                 Shield.RefreshCustomInfo();
             }
+            Session.Instance.Controllers.Remove(this);
             Session.Instance.Controllers.Remove(this);
         }
 
@@ -689,26 +690,27 @@ namespace DefenseShields
 
             if (notTime && !DsState.State.ControllerGridAccess) return false;
             if (notTime) return true;
-
-            if (MyGrid.BigOwners.Count == 0)
+            var myGridBigOwners = MyGrid.BigOwners;
+            if (myGridBigOwners.Count == 0)
             {
                 DsState.State.ControllerGridAccess = false;
                 return false;
             }
+            if (MyCube.OwnerId == 0) MyCube.ChangeOwner(myGridBigOwners[0], MyOwnershipShareModeEnum.Faction);
 
-            var controlToGridRelataion = MyCube.GetUserRelationToOwner(MyGrid.BigOwners[0]);
+            var controlToGridRelataion = MyCube.GetUserRelationToOwner(myGridBigOwners[0]);
             const MyRelationsBetweenPlayerAndBlock faction = MyRelationsBetweenPlayerAndBlock.FactionShare;
             var owner = MyRelationsBetweenPlayerAndBlock.Owner;
             DsState.State.InFaction = controlToGridRelataion == faction;
             DsState.State.IsOwner = controlToGridRelataion == owner;
-
-            if (controlToGridRelataion != owner && controlToGridRelataion != faction && MyCube.OwnerId != 0)
+            
+            if (controlToGridRelataion != owner && controlToGridRelataion != faction)
             {
                 if (DsState.State.ControllerGridAccess)
                 {
                     DsState.State.ControllerGridAccess = false;
                     Shield.RefreshCustomInfo();
-                    if (Session.Enforced.Debug >= 1) Log.Line($"GridOwner: controller not owned: - {MyCube.OwnerId} - {MyAPIGateway.Session.Player.IdentityId} - Owner:{controlToGridRelataion == owner} - Faction:{controlToGridRelataion == faction} - ShieldMode:{ShieldMode} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug >= 1) Log.Line($"GridOwner: controller is not owned: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.ControllerGridAccess = false;
                 return false;

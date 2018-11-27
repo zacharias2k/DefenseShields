@@ -74,12 +74,10 @@ namespace DefenseShields
         {
             try
             {
-                _tick = Session.Instance.Tick;
+                _tick = Session.Tick;
                 _tick60 = _tick % 60 == 0;
                 var wait = _isServer && !_tick60 && ModState.State.Backup;
 
-                IsFunctional = MyCube.IsFunctional;
-                IsWorking = IsFunctional;
                 MyGrid = MyCube.CubeGrid;
                 if (wait || MyGrid?.Physics == null) return;
 
@@ -339,7 +337,6 @@ namespace DefenseShields
 
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
                 PowerInit();
-                RegisterEvents();
                 Modulator.RefreshCustomInfo();
                 StateChange(true);
                 if (!Session.ModAction)
@@ -362,20 +359,6 @@ namespace DefenseShields
                 Modulator.CubeGrid.Components.Add(ModulatorComp);
             }
             else Modulator.CubeGrid.Components.TryGet(out ModulatorComp);
-        }
-
-        private void RegisterEvents(bool register = true)
-        {
-            if (register)
-            {
-                ((MyCubeGrid)Modulator.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
-                Modulator.AppendingCustomInfo += AppendingCustomInfo;
-            }
-            else
-            {
-                ((MyCubeGrid)Modulator.CubeGrid).OnHierarchyUpdated -= HierarchyChanged;
-                Modulator.AppendingCustomInfo -= AppendingCustomInfo;
-            }
         }
 
         private void PowerPreInit()
@@ -410,6 +393,7 @@ namespace DefenseShields
                     Modulator.Enabled = true;
                 }
                 Sink.Update();
+                IsWorking = MyCube.IsWorking;
                 if (Session.Enforced.Debug >= 2) Log.Line($"PowerInit: ModulatorId [{Modulator.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
@@ -474,7 +458,11 @@ namespace DefenseShields
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
                 if (_subpartRotor == null) return false;
             }
-            if (_subpartRotor.Closed) _subpartRotor.Subparts.Clear();
+
+            if (!_subpartRotor.Closed) return true;
+
+            _subpartRotor.Subparts.Clear();
+            Entity.TryGetSubpart("Rotor", out _subpartRotor);
             return true;
         }
 
@@ -516,12 +504,12 @@ namespace DefenseShields
         {
             try
             {
+                MyGrid = (MyCubeGrid)Modulator.CubeGrid;
                 MyCube = Modulator as MyCubeBlock;
+                RegisterEvents();
                 if (Session.Enforced.Debug >= 2) Log.Line($"OnAddedToScene: - ModulatorId [{Modulator.EntityId}]");
                 if (!MainInit) return;
                 ResetComp();
-                RegisterEvents();
-
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
@@ -544,9 +532,31 @@ namespace DefenseShields
                 RegisterEvents(false);
                 IsWorking = false;
                 IsFunctional = false;
-                MyCube = null;
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
+        }
+
+
+        private void RegisterEvents(bool register = true)
+        {
+            if (register)
+            {
+                MyGrid.OnHierarchyUpdated += HierarchyChanged;
+                Modulator.AppendingCustomInfo += AppendingCustomInfo;
+                MyCube.IsWorkingChanged += IsWorkingChanged;
+            }
+            else
+            {
+                MyGrid.OnHierarchyUpdated -= HierarchyChanged;
+                Modulator.AppendingCustomInfo -= AppendingCustomInfo;
+                MyCube.IsWorkingChanged -= IsWorkingChanged;
+            }
+        }
+
+        private void IsWorkingChanged(MyCubeBlock myCubeBlock)
+        {
+            IsFunctional = myCubeBlock.IsFunctional;
+            IsWorking = myCubeBlock.IsWorking;
         }
 
         public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
@@ -565,7 +575,6 @@ namespace DefenseShields
                     ModulatorComp.Modulator = null;
                     ModulatorComp = null;
                 }
-                Modulator = null;
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
             base.Close();
