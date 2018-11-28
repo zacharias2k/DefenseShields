@@ -53,6 +53,7 @@ namespace DefenseShields.Support
         };
 
 
+
         public static void UpdateTerminal(this MyCubeBlock block)
         {
             MyOwnershipShareModeEnum shareMode;

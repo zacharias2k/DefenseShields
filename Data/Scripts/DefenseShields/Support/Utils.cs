@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Sandbox.Game.Entities;
 using VRage.Game.Components;
+using VRage.Game.Entity;
 using VRageMath;
+using VRageRender;
 
 namespace DefenseShields.Support
 {
@@ -18,6 +20,47 @@ namespace DefenseShields.Support
             MyGrid = myGrid;
             Direction = direction;
             Position = position;
+        }
+    }
+
+
+    class FiniteFifoQueueSet<T1, T2>
+    {
+        private readonly T1[] _nodes;
+        private int _emptySpot;
+        private readonly Dictionary<T1, T2> _backingDict;
+
+        public FiniteFifoQueueSet(int size)
+        {
+            _nodes = new T1[size];
+            _backingDict = new Dictionary<T1, T2>(size + 1);
+            _emptySpot = 0;
+        }
+
+        public void Enqueue(T1 key, T2 value)
+        {
+            try
+            {
+                _backingDict.Remove(_nodes[0]);
+                _nodes[_emptySpot] = key;
+                _backingDict.Add(key, value);
+                _emptySpot++;
+                if (_emptySpot >= _nodes.Length)
+                {
+                    _emptySpot = 0;
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in Enqueue: {ex}"); }
+        }
+
+        public bool Contains(T1 value)
+        {
+            return _backingDict.ContainsKey(value);
+        }
+
+        public bool TryGet(T1 value, out T2 hostileEnt)
+        {
+            return _backingDict.TryGetValue(value, out hostileEnt);
         }
     }
 

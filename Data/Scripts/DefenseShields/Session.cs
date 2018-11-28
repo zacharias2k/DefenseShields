@@ -13,12 +13,10 @@ using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.Game.Localization;
-using Sandbox.Game.World;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage;
 using VRage.Collections;
 using VRage.Game.Entity;
-using VRage.Game.VisualScripting;
 using VRage.Utils;
 using VRageMath;
 using MyVisualScriptLogicProvider = Sandbox.Game.MyVisualScriptLogicProvider;
@@ -195,9 +193,6 @@ namespace DefenseShields
 
         public static DefenseShieldsEnforcement Enforced = new DefenseShieldsEnforcement();
 
-        private MyEntity _hostileEnt = null;
-        private long _hostileEntId = 0;
-
         private readonly List<KeyValuePair<MyEntity, MyProtectors>> _globalEntTmp = new List<KeyValuePair<MyEntity, MyProtectors>>();
         private readonly List<Vector3D> _playerPositions = new List<Vector3D>();
         private readonly MyConcurrentDictionary<DefenseShields, bool> _playerNearShield = new MyConcurrentDictionary<DefenseShields, bool>();
@@ -226,7 +221,7 @@ namespace DefenseShields
 
                 RefreshPlayers();
                 MyVisualScriptLogicProvider.PlayerConnected += PlayerConnected;
-                MyVisualScriptLogicProvider.PlayerDisconnected += PlayerConnected;
+                MyVisualScriptLogicProvider.PlayerDisconnected += PlayerDisconnected;
 
 
                 if (!DedicatedServer)
@@ -240,18 +235,24 @@ namespace DefenseShields
                     UtilsStatic.PrepConfigFile();
                     UtilsStatic.ReadConfigFile();
                 }
-                var distSq = MyAPIGateway.Session.SessionSettings.SyncDistance;
-                distSq += 3000; // some safety padding, avoid desync
-                _syncDistSqr *= distSq;
+
+                if (MpActive)
+                {
+                    _syncDistSqr = MyAPIGateway.Session.SessionSettings.SyncDistance;
+                    _syncDistSqr += 1000; // some safety padding, avoid desync
+                    _syncDistSqr *= _syncDistSqr;
+                }
+                else
+                {
+                    _syncDistSqr = MyAPIGateway.Session.SessionSettings.ViewDistance;
+                    _syncDistSqr += 1000;
+                    _syncDistSqr *= _syncDistSqr;
+                }
                 if (Enforced.Debug >= 1) Log.Line($"SyncDistSqr:{_syncDistSqr} - DistNorm:{Math.Sqrt(_syncDistSqr)}");
             }
             catch (Exception ex) { Log.Line($"Exception in BeforeStart: {ex}"); }
         }
 
-        private void PlayerConnected(long l)
-        {
-            RefreshPlayers();
-        }
 
         #endregion
 
@@ -336,6 +337,26 @@ namespace DefenseShields
         }
         #endregion
 
+
+        private void Timings()
+        {
+            if (_count++ == 59)
+            {
+                _count = 0;
+                _lCount++;
+                if (_lCount == 10)
+                {
+                    _lCount = 0;
+                    _eCount++;
+                    if (_eCount == 10) _eCount = 0;
+                }
+            }
+            if (!DefinitionsLoaded && Tick > 100)
+            {
+                DefinitionsLoaded = true;
+                UtilsStatic.GetDefinitons();
+            }
+        }
 
         #region EntSlotAssigner
         public static int EntSlotAssigner;
@@ -450,27 +471,6 @@ namespace DefenseShields
             if (SphereOnCamera.Length != compCount) Array.Resize(ref SphereOnCamera, compCount);
         }
 
-        private void Timings()
-        {
-            if (_count++ == 59)
-            {
-                _count = 0;
-                _lCount++;
-                if (_lCount == 10)
-                {
-                    _lCount = 0;
-                    _eCount++;
-                    if (_eCount == 10) _eCount = 0;
-                }
-            }
-
-            if (!DefinitionsLoaded && Tick > 100)
-            {
-                DefinitionsLoaded = true;
-                UtilsStatic.GetDefinitons();
-            }
-        }
-
         private void RefreshPlayers()
         {
             Log.Line("Refreshing Players");
@@ -499,9 +499,7 @@ namespace DefenseShields
                 _newFrame = false;
                 var monitorList = new List<MyEntity>();
                 var rId = MyResourceDistributorComponent.ElectricityId;
-                var minPlayerDist = 100d * 100d;
                 var tick = Tick;
-                if (MpActive) minPlayerDist = _syncDistSqr;
                 lock (_playerPositions)
                 {
                     foreach (var s in Shields)
@@ -531,7 +529,7 @@ namespace DefenseShields
                         var pCnt = _playerPositions.Count;
                         for (int i = 0; i < pCnt; i++)
                         {
-                            if (Vector3D.DistanceSquared(_playerPositions[i], s.DetectionCenter) < minPlayerDist)
+                            if (Vector3D.DistanceSquared(_playerPositions[i], s.DetectionCenter) < _syncDistSqr)
                             {
                                 closePlayer = true;
                                 _playerNearShield.TryAdd(s, true);
@@ -557,7 +555,7 @@ namespace DefenseShields
                             if (!(ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor)) continue;
                             if (ent.Physics.IsMoving && CustomCollision.CornerOrCenterInShield(ent, s.DetectMatrixOutsideInv) == 0)
                             {
-                                Log.Line($"Awaking shield");
+                                //Log.Line($"Awaking shield");
                                 s.LastWokenTick = tick;
                                 wakeUp = true;
                                 break;
@@ -572,14 +570,280 @@ namespace DefenseShields
         #endregion
 
         #region DamageHandler
+        private readonly long[] Nodes = new long[1000];
+        private int _emptySpot;
+        private readonly Dictionary<long, MyEntity> _backingDict = new Dictionary<long, MyEntity>(1001);
+        private MyEntity _previousEnt;
+        private long _previousEntId = -1;
+        private DefenseShields _blockingShield = null;
+
+        public void UpdatedHostileEnt(long attackerId, out MyEntity ent)
+        {
+            if (attackerId == 0)
+            {
+                ent = null;
+                return;
+            }
+            if (_backingDict.TryGetValue(attackerId, out _previousEnt))
+            {
+                ent = _previousEnt;
+                _previousEntId = attackerId;
+                return;
+            }
+            if (MyEntities.TryGetEntityById(attackerId, out _previousEnt))
+            {
+                if (_emptySpot + 1 >= Nodes.Length) _backingDict.Remove(Nodes[0]);
+                Nodes[_emptySpot] = attackerId;
+                _backingDict.Add(attackerId, _previousEnt);
+
+                if (_emptySpot++ >= Nodes.Length) _emptySpot = 0;
+
+                ent = _previousEnt;
+                _previousEntId = attackerId;
+                return;
+            }
+            _previousEnt = null;
+            ent = null;
+            _previousEntId = -1;
+        }
+
         public void CheckDamage(object target, ref MyDamageInformation info)
         {
             try
             {
-                Dsutil1.Sw.Restart();
-                var ds = target as DefenseShields;
-                if (ds != null && info.Type == MPdamage)
+                var block = target as IMySlimBlock;
+                if (block != null)
                 {
+                    var myEntity = block.CubeGrid as MyEntity;
+                    if (myEntity == null) return;
+                    MyProtectors protectors;
+                    GlobalProtectDict.TryGetValue(myEntity, out protectors);
+                    if (protectors.Shields == null) return;
+                    if (info.Type == MyDamageType.Destruction || info.Type == MyDamageType.Environment || info.Type == MyDamageType.LowPressure)
+                    {
+                        Log.Line($"OddDamageType:{info.Type}");
+                        return;
+                    }
+                    if (info.Type == DelDamage || info.Type == MyDamageType.Drill || info.Type == MyDamageType.Grind) return;
+
+
+                    MyEntity hostileEnt;
+                    var attackerId = info.AttackerId;
+                    if (attackerId == _previousEntId) hostileEnt = _previousEnt;
+                    else UpdatedHostileEnt(attackerId, out hostileEnt);
+
+                    var shieldHitPos = Vector3D.NegativeInfinity;
+                    if (hostileEnt != null)
+                    {
+                        var shieldCnt = protectors.Shields.Count;
+                        var hitDist = -1d;
+                        foreach (var dict in protectors.Shields)
+                        {
+                            var shield = dict.Key;
+                            var shieldActive = shield.DsState.State.Online && !shield.DsState.State.Lowered;
+                            if (!IsServer && shieldActive && !shield.WarmedUp)
+                            {
+                                info.Amount = 0;
+                                return;
+                            }
+
+                            if (!shieldActive) continue;
+
+                            var enclosed = dict.Value.FullCoverage;
+
+                            Vector3D tmpBlockPos;
+                            block.ComputeWorldCenter(out tmpBlockPos);
+                            if (enclosed && shieldCnt == 1)
+                            {
+                                _blockingShield = shield;
+                            }
+
+                            if (!enclosed && Vector3D.Transform(tmpBlockPos, shield.DetectMatrixOutsideInv).LengthSquared() > 1)
+                            {
+                                //Log.Line($"no block hit: enclosed:{enclosed} - gridIsParent:{gridIsParent}");
+                                continue;
+                            }
+
+                            var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, tmpBlockPos);
+                            var testDir = Vector3D.Normalize(line.From - line.To);
+                            var ray = new RayD(line.From, -testDir);
+                            var worldSphere = shield.ShieldSphere;
+                            var sphereCheck = worldSphere.Intersects(ray);
+                            if (!sphereCheck.HasValue) continue;
+                            var obbCheck = shield.SOriBBoxD.Intersects(ref line);
+                            var obb = obbCheck ?? 0;
+                            var sphere = sphereCheck ?? 0;
+                            double furthestHit;
+                            if (obb <= 0 && sphere <= 0) furthestHit = 0;
+                            else if (obb > sphere) furthestHit = obb;
+                            else furthestHit = sphere;
+                            var tmphitPos = line.From + testDir * -furthestHit;
+
+                            if (furthestHit > hitDist)
+                            {
+                                //Log.Line($"shield closer to attacker - dist: {furthestHit} - prevDist: {hitDist} - ShieldId:{shield.MyCube.EntityId}");
+                                hitDist = furthestHit;
+                                _blockingShield = shield;
+                                shieldHitPos = tmphitPos;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var shieldActive = _blockingShield.DsState.State.Online && !_blockingShield.DsState.State.Lowered;
+                        if (!IsServer && shieldActive && !_blockingShield.WarmedUp)
+                        {
+                            info.Amount = 0;
+                            return;
+                        }
+                        if (!shieldActive || !protectors.Shields.ContainsKey(_blockingShield))
+                        {
+                            var foundBackupShield = false;
+                            foreach (var dict in protectors.Shields)
+                            {
+                                var shield = dict.Key;
+                                var shieldActive2 = shield.DsState.State.Online && !shield.DsState.State.Lowered;
+                                if (!IsServer && shieldActive2 && !shield.WarmedUp)
+                                {
+                                    info.Amount = 0;
+                                    return;
+                                }
+
+                                if (!shieldActive2) continue;
+                                _blockingShield = shield;
+                                foundBackupShield = true;
+                                Log.Line($"found backup shield");
+                                break;
+                            }
+
+                            if (!foundBackupShield)
+                            {
+                                Log.Line($"did not find backup shield");
+                                _blockingShield = null;
+                                return;
+                            }
+                        }
+                    }
+
+                    if (_blockingShield != null)
+                    {
+                        var shield = _blockingShield;
+                        if (!info.IsDeformation) shield.DeformEnabled = false;
+                        else if (!shield.DeformEnabled && hostileEnt == null)
+                        {
+                            info.Amount = 0;
+                            return;
+                        }
+
+                        if (info.Type == Bypass)
+                        {
+                            shield.DeformEnabled = true;
+                            return;
+                        }
+
+                        if (hostileEnt is MyVoxelBase || hostileEnt != null && shield.FriendlyCache.Contains(hostileEnt))
+                        {
+                            shield.DeformEnabled = true;
+                            return;
+                        }
+
+                        var gunBase = hostileEnt as IMyGunBaseUser;
+
+                        if (info.Type == DSdamage || info.Type == DSheal || info.Type == DSbypass)
+                        {
+                            if (info.Type == DSheal)
+                            {
+                                info.Amount = 0f;
+                                return;
+                            }
+
+                            if (gunBase != null && block.FatBlock == shield.Shield) //temp fix for GSF laser bug
+                            {
+                                shield.Absorb += 1000;
+                                shield.WorldImpactPosition = shield.ShieldEnt.Render.ColorMaskHsv;
+                                info.Amount = 0f;
+                                return;
+                            }
+                            info.Amount = 0f;
+                            return;
+                        }
+
+                        if (gunBase != null)
+                        {
+                            var hostileParent = hostileEnt.Parent != null;
+                            if (hostileParent && CustomCollision.PointInShield(hostileEnt.Parent.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
+                            {
+                                shield.DeformEnabled = true;
+                                shield.FriendlyCache.Add(hostileEnt);
+                                return;
+                            }
+                            var hostilePos = hostileEnt.PositionComp.WorldMatrix.Translation;
+
+                            if (hostilePos == Vector3D.Zero && gunBase.Owner != null) hostilePos = gunBase.Owner.PositionComp.WorldMatrix.Translation;
+                            if (!hostileParent && CustomCollision.PointInShield(hostilePos, shield.DetectMatrixOutsideInv))
+                            {
+                                shield.DeformEnabled = true;
+                                shield.FriendlyCache.Add(hostileEnt);
+                                return;
+                            }
+                        }
+
+                        if (info.IsDeformation && shield.DeformEnabled) return;
+                        var bullet = info.Type == MyDamageType.Bullet;
+                        var deform = info.Type == MyDamageType.Deformation;
+                        if (bullet || deform) info.Amount = info.Amount * shield.DsState.State.ModulateEnergy;
+                        else info.Amount = info.Amount * shield.DsState.State.ModulateKinetic;
+
+                        if (!DedicatedServer && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
+                        {
+                            shield.WorldImpactPosition = shieldHitPos;
+                            shield.ImpactSize = info.Amount;
+                        }
+
+                        shield.Absorb += info.Amount;
+                        info.Amount = 0f;
+                    }
+                }
+                else if (target is IMyCharacter)
+                {
+                    var myEntity = target as MyEntity;
+                    if (myEntity == null) return;
+
+                    if (info.Type == DelDamage || info.Type == MyDamageType.Destruction || info.Type == MyDamageType.Drill || info.Type == MyDamageType.Grind
+                        || info.Type == MyDamageType.Environment || info.Type == MyDamageType.LowPressure) return;
+
+                    MyProtectors protectors;
+                    GlobalProtectDict.TryGetValue(myEntity, out protectors);
+                    if (protectors.Shields == null) return;
+
+                    foreach (var dict in protectors.Shields)
+                    {
+                        if (!dict.Value.GridIsParent) continue;
+                        var shield = dict.Key;
+
+                        var shieldActive = shield.DsState.State.Online && !shield.DsState.State.Lowered;
+
+                        MyEntity hostileEnt;
+                        var attackerId = info.AttackerId;
+                        if (attackerId == _previousEntId) hostileEnt = _previousEnt;
+                        else UpdatedHostileEnt(attackerId, out hostileEnt);
+
+                        if (shieldActive && shield.FriendlyCache.Contains(myEntity) && hostileEnt == null || hostileEnt != null && !shield.FriendlyCache.Contains(hostileEnt))
+                        {
+                            info.Amount = 0f;
+                            myEntity.Physics.SetSpeeds(Vector3.Zero, Vector3.Zero);
+                        }
+                    }
+                }
+                else if (info.Type == MPdamage)
+                {
+                    var ds = target as DefenseShields;
+                    if (ds == null)
+                    {
+                        info.Amount = 0;
+                        return;
+                    }
+
                     if (!DedicatedServer)
                     {
                         var shieldActive = ds.DsState.State.Online && !ds.DsState.State.Lowered;
@@ -589,24 +853,19 @@ namespace DefenseShields
                             info.Amount = 0;
                             return;
                         }
-
+                        MyEntity hostileEnt;
                         var attackerId = info.AttackerId;
-                        var nullAttacker = attackerId == 0;
-                        var newAttacker = !nullAttacker && attackerId != _hostileEntId;
-                        if (newAttacker)
-                        {
-                            Log.Line($"new attackerid");
-                            MyEntities.TryGetEntityById(attackerId, out _hostileEnt);
-                            _hostileEntId = attackerId;
-                        }
-                        if (nullAttacker || _hostileEnt == null)
+                        if (attackerId == _previousEntId) hostileEnt = _previousEnt;
+                        else UpdatedHostileEnt(attackerId, out hostileEnt);
+
+                        if (hostileEnt == null)
                         {
                             if (Enforced.Debug == 1) Log.Line($"MP-shield nullAttacker - Amount:{info.Amount} - Buffer:{ds.DsState.State.Buffer}");
                             info.Amount = 0;
                             return;
                         }
                         var worldSphere = ds.ShieldSphere;
-                        var hostileCenter = _hostileEnt.PositionComp.WorldVolume.Center;
+                        var hostileCenter = hostileEnt.PositionComp.WorldVolume.Center;
                         var hostileTestLoc = hostileCenter;
                         var line = new LineD(hostileTestLoc, ds.SOriBBoxD.Center);
                         var obbCheck = ds.SOriBBoxD.Intersects(ref line);
@@ -622,7 +881,7 @@ namespace DefenseShields
                         else furthestHit = sphere;
                         var hitPos = line.From + testDir * -furthestHit;
                         ds.WorldImpactPosition = hitPos;
-                        var warHead = _hostileEnt as IMyWarhead;
+                        var warHead = hostileEnt as IMyWarhead;
                         if (warHead != null)
                         {
                             var magicValue = info.Amount;
@@ -634,228 +893,18 @@ namespace DefenseShields
                         }
                         else ds.ImpactSize = info.Amount;
 
-                        if (_hostileEnt.DefinitionId.HasValue && _hostileEnt.DefinitionId.Value.TypeId == MissileObj)
+                        if (hostileEnt.DefinitionId.HasValue && hostileEnt.DefinitionId.Value.TypeId == MissileObj)
                         {
                             UtilsStatic.CreateFakeSmallExplosion(hitPos);
-                            if (_hostileEnt.InScene && !_hostileEnt.MarkedForClose)
+                            if (hostileEnt.InScene && !hostileEnt.MarkedForClose)
                             {
-                                _hostileEnt.Close();
-                                _hostileEnt.InScene = false;
+                                hostileEnt.Close();
+                                hostileEnt.InScene = false;
                             }
                         }
                     }
                     ds.Absorb += info.Amount;
                     info.Amount = 0f;
-                }
-                else
-                {
-                    MyEntity myEntity;
-                    var block = target as IMySlimBlock;
-                    if (block != null)
-                    {
-                        myEntity = block.CubeGrid as MyEntity;
-                        if (myEntity == null) return;
-                        MyProtectors protectors;
-                        GlobalProtectDict.TryGetValue(myEntity, out protectors);
-                        if (protectors.Shields == null) return;
-                        if (info.Type == DelDamage || info.Type == MyDamageType.Destruction || info.Type == MyDamageType.Drill || info.Type == MyDamageType.Grind
-                            || info.Type == MyDamageType.Environment || info.Type == MyDamageType.LowPressure) return;
-
-                        DefenseShields blockingShield = null;
-
-                        var shieldHitPos = Vector3D.NegativeInfinity;
-                        var hitDist = -1d;
-                        var gridIsParent = false;
-                        var lineChecked = 0;
-
-                        var attackerId = info.AttackerId;
-                        var nullAttacker = attackerId == 0;
-                        var newAttacker = !nullAttacker && attackerId != _hostileEntId;
-                        if (attackerId != 0)
-                        {
-                            //Dsutil1.Sw.Restart();
-                            var shieldCnt = protectors.Shields.Count;
-                            foreach (var dict in protectors.Shields)
-                            {
-                                var shield = dict.Key;
-                                var shieldActive = shield.DsState.State.Online && !shield.DsState.State.Lowered;
-                                if (!IsServer && shieldActive && !shield.WarmedUp)
-                                {
-                                    info.Amount = 0;
-                                    return;
-                                }
-
-                                if (newAttacker)
-                                {
-                                    Log.Line($"new attackerid");
-                                    MyEntities.TryGetEntityById(attackerId, out _hostileEnt);
-                                    _hostileEntId = attackerId;
-                                }
-
-                                if (!shieldActive || nullAttacker || _hostileEnt == null) continue;
-
-                                var enclosed = dict.Value.FullCoverage;
-
-                                Vector3D tmpBlockPos;
-                                block.ComputeWorldCenter(out tmpBlockPos);
-                                if (enclosed && shieldCnt == 1)
-                                {
-                                    blockingShield = shield;
-                                }
-
-                                if (!enclosed && Vector3D.Transform(tmpBlockPos, shield.DetectMatrixOutsideInv).LengthSquared() > 1)
-                                {
-                                    //Log.Line($"no block hit: enclosed:{enclosed} - gridIsParent:{gridIsParent}");
-                                    continue;
-                                }
-                                lineChecked++;
-
-                                var line = new LineD(_hostileEnt.PositionComp.WorldAABB.Center, tmpBlockPos);
-                                var testDir = Vector3D.Normalize(line.From - line.To);
-                                var ray = new RayD(line.From, -testDir);
-                                var worldSphere = shield.ShieldSphere;
-                                var sphereCheck = worldSphere.Intersects(ray);
-                                if (!sphereCheck.HasValue) continue;
-                                var obbCheck = shield.SOriBBoxD.Intersects(ref line);
-                                var obb = obbCheck ?? 0;
-                                var sphere = sphereCheck ?? 0;
-                                double furthestHit;
-                                if (obb <= 0 && sphere <= 0) furthestHit = 0;
-                                else if (obb > sphere) furthestHit = obb;
-                                else furthestHit = sphere;
-                                var tmphitPos = line.From + testDir * -furthestHit;
-
-                                if (furthestHit > hitDist)
-                                {
-                                    //Log.Line($"shield closer to attacker - dist: {furthestHit} - prevDist: {hitDist} - ShieldId:{shield.MyCube.EntityId}");
-                                    hitDist = furthestHit;
-                                    blockingShield = shield;
-                                    shieldHitPos = tmphitPos;
-                                }
-                                //else Log.Line($"shield farther to attacker - dist: {furthestHit} - prevDist: {hitDist} - ShieldId:{shield.MyCube.EntityId}");
-                            }
-                            //Log.Line($"attacker: {hostileEnt.DebugName} - hitDist:{hitDist} - DmgType:{info.Type} - DmgAmount:{info.Amount}");
-                            //Dsutil1.StopWatchReport($"[dmgtest] dist:{hitDist} - enclosed:{enclosed} - shieldCnt:{shieldCnt} - gridIsParent:{gridIsParent} - lineChecked:{lineChecked}", -1);
-                        }
-                        //Dsutil1.StopWatchReport("test", -1);
-
-                        if (blockingShield != null)
-                        {
-                            var shield = blockingShield;
-                            if (!shield.DeformEnabled && info.IsDeformation && attackerId == 0)
-                            {
-                                info.Amount = 0;
-                                return;
-                            }
-
-                            if (info.Type == Bypass)
-                            {
-                                shield.DeformEnabled = true;
-                                return;
-                            }
-
-                            if (!nullAttacker && (_hostileEnt is MyVoxelBase || shield.FriendlyCache.Contains(_hostileEnt)))
-                            {
-                                shield.DeformEnabled = true;
-                                return;
-                            }
-
-                            var gunBase = _hostileEnt as IMyGunBaseUser;
-
-                            if (info.Type == DSdamage || info.Type == DSheal || info.Type == DSbypass)
-                            {
-                                if (info.Type == DSheal)
-                                {
-                                    info.Amount = 0f;
-                                    return;
-                                }
-
-                                if (gunBase != null && block.FatBlock == shield.Shield) //temp fix for GSF laser bug
-                                {
-                                    shield.Absorb += 1000;
-                                    shield.WorldImpactPosition = shield.ShieldEnt.Render.ColorMaskHsv;
-                                    info.Amount = 0f;
-                                    return;
-                                }
-                                info.Amount = 0f;
-                                return;
-                            }
-
-                            if (gunBase != null && !nullAttacker)
-                            {
-                                var hostileParent = _hostileEnt.Parent != null;
-                                if (hostileParent && CustomCollision.PointInShield(_hostileEnt.Parent.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
-                                {
-                                    shield.DeformEnabled = true;
-                                    shield.FriendlyCache.Add(_hostileEnt);
-                                    return;
-                                }
-                                var hostilePos = _hostileEnt.PositionComp.WorldMatrix.Translation;
-
-                                if (hostilePos == Vector3D.Zero && gunBase.Owner != null) hostilePos = gunBase.Owner.PositionComp.WorldMatrix.Translation;
-                                if (!hostileParent && CustomCollision.PointInShield(hostilePos, shield.DetectMatrixOutsideInv))
-                                {
-                                    shield.DeformEnabled = true;
-                                    shield.FriendlyCache.Add(_hostileEnt);
-                                    return;
-                                }
-                            }
-
-                            if (info.IsDeformation && shield.DeformEnabled) return;
-                            var bullet = info.Type == MyDamageType.Bullet;
-                            var deform = info.Type == MyDamageType.Deformation;
-                            if (bullet || deform) info.Amount = info.Amount * shield.DsState.State.ModulateEnergy;
-                            else info.Amount = info.Amount * shield.DsState.State.ModulateKinetic;
-
-                            if (!DedicatedServer && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
-                            {
-                                shield.WorldImpactPosition = shieldHitPos;
-                                shield.ImpactSize = info.Amount;
-                            }
-
-                            shield.Absorb += info.Amount;
-                            info.Amount = 0f;
-                        }
-                        Dsutil1.StopWatchReport("test", -1);
-                    }
-                    else
-                    {
-                        var player = target as IMyCharacter;
-                        if (player == null) return;
-                        myEntity = target as MyEntity;
-                        if (myEntity == null) return;
-
-                        if (info.Type == DelDamage || info.Type == MyDamageType.Destruction || info.Type == MyDamageType.Drill || info.Type == MyDamageType.Grind
-                            || info.Type == MyDamageType.Environment || info.Type == MyDamageType.LowPressure) return;
-                        
-                        MyProtectors protectors;
-                        GlobalProtectDict.TryGetValue(myEntity, out protectors);
-                        if (protectors.Shields == null) return;
-
-                        var attackerId = info.AttackerId;
-                        var nullAttacker = attackerId == 0;
-                        var newAttacker = !nullAttacker && attackerId != _hostileEntId;
-                        if (newAttacker)
-                        {
-                            Log.Line($"new attackerid");
-                            MyEntities.TryGetEntityById(attackerId, out _hostileEnt);
-                            _hostileEntId = attackerId;
-                        }
-
-                        foreach (var dict in protectors.Shields)
-                        {
-                            if (!dict.Value.GridIsParent) continue;
-                            var shield = dict.Key;
-
-                            var shieldActive = shield.DsState.State.Online && !shield.DsState.State.Lowered;
-
-                            if (shieldActive && shield.FriendlyCache.Contains(myEntity) && (_hostileEnt == null || nullAttacker) || !nullAttacker && !shield.FriendlyCache.Contains(_hostileEnt))
-                            {
-                                info.Amount = 0f;
-                                myEntity.Physics.SetSpeeds(Vector3.Zero, Vector3.Zero);
-                            }
-                        }
-                    }
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDamageHandler: {ex}"); }
@@ -1898,6 +1947,19 @@ namespace DefenseShields
         }
         #endregion
 
+        #region Events
+        private void PlayerConnected(long l)
+        {
+            RefreshPlayers();
+        }
+
+        private void PlayerDisconnected(long l)
+        {
+            RefreshPlayers();
+        }
+        #endregion
+
+
         #region Misc
         public string ModPath()
         {
@@ -1925,7 +1987,7 @@ namespace DefenseShields
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEmitterState, EmitterStateReceived);
 
             MyVisualScriptLogicProvider.PlayerConnected -= PlayerConnected;
-            MyVisualScriptLogicProvider.PlayerDisconnected -= PlayerConnected;
+            MyVisualScriptLogicProvider.PlayerDisconnected -= PlayerDisconnected;
 
             if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter -= CustomControls;
 
