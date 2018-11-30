@@ -445,6 +445,7 @@ namespace DefenseShields
             if (register)
             {
                 MyCube.IsWorkingChanged += IsWorkingChanged;
+                IsWorkingChanged(MyCube);
             }
             else
             {

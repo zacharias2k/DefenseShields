@@ -87,6 +87,23 @@ namespace DefenseShields
             Small,
         };
 
+        public override void UpdateOnceBeforeFrame()
+        {
+            base.UpdateOnceBeforeFrame();
+            try
+            {
+                if (Emitter.CubeGrid.Physics == null) return;
+                Session.Instance.Emitters.Add(this);
+                _emitters.Add(Entity.EntityId, this);
+                PowerInit();
+                _isServer = Session.IsServer;
+                _isDedicated = Session.DedicatedServer;
+                IsStatic = Emitter.CubeGrid.IsStatic;
+                StateChange(true);
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
+        }
+
         public override void UpdateBeforeSimulation()
         {
             try
@@ -97,7 +114,6 @@ namespace DefenseShields
 
                 MyGrid = MyCube.CubeGrid;
                 if (wait || MyGrid?.Physics == null) return;
-
                 IsStatic = MyGrid.IsStatic;
 
                 Timing();
@@ -418,7 +434,6 @@ namespace DefenseShields
             var mySlotOpen = working && mySlotNull;
             var myShield = myMode && myComp;
             var iStopped = !working && myComp && modes;
-
             if (mySlotOpen)
             {
                 if (stationMode)
@@ -587,23 +602,6 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
 
-        public override void UpdateOnceBeforeFrame()
-        {
-            base.UpdateOnceBeforeFrame();
-            try
-            {
-                if (Emitter.CubeGrid.Physics == null) return;
-                Session.Instance.Emitters.Add(this);
-                _emitters.Add(Entity.EntityId, this);
-                PowerInit();
-                _isServer = Session.IsServer;
-                _isDedicated = Session.DedicatedServer;
-                IsStatic = Emitter.CubeGrid.IsStatic;
-                StateChange(true);
-            }
-            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
-        }
-
         public override bool IsSerialized()
         {
             if (MyAPIGateway.Multiplayer.IsServer)
@@ -621,7 +619,6 @@ namespace DefenseShields
                 MyCube = Emitter as MyCubeBlock;
                 SetEmitterType();
                 RegisterEvents();
-
                 if (Session.Enforced.Debug >= 2) Log.Line($"OnAddedToScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
@@ -769,6 +766,7 @@ namespace DefenseShields
             {
                 Emitter.EnabledChanged += CheckEmitter;
                 MyCube.IsWorkingChanged += IsWorkingChanged;
+                IsWorkingChanged(MyCube);
             }
             else
             {

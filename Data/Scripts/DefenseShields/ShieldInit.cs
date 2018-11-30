@@ -45,7 +45,6 @@ namespace DefenseShields
                 if (!IsFunctional) return false;
 
                 if (_mpActive && _isServer) DsState.NetworkUpdate();
-
                 LogicSlot = Session.GetSlot();
                 LogicSlotScaler = Session.EntSlotScaler;
 

@@ -544,6 +544,7 @@ namespace DefenseShields
                 MyGrid.OnHierarchyUpdated += HierarchyChanged;
                 Modulator.AppendingCustomInfo += AppendingCustomInfo;
                 MyCube.IsWorkingChanged += IsWorkingChanged;
+                IsWorkingChanged(MyCube);
             }
             else
             {

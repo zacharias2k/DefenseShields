@@ -24,7 +24,6 @@ namespace DefenseShields
                 FriendlyCache.Add(sub);
 
                 var protectors = Session.Instance.GlobalProtectDict[sub] = new MyProtectors(Session.Instance.ProtDicts.Get(), LogicSlot, Session.Tick);
-
                 if (!GridIsMobile && ShieldEnt.PositionComp.WorldVolume.Intersects(sub.PositionComp.WorldVolume))
                 {
                     var cornersInShield = CustomCollision.NotAllCornersInShield(sub, DetectMatrixOutsideInv);
@@ -66,6 +65,7 @@ namespace DefenseShields
                 EntIntersectInfo entInfo;
                 WebEnts.TryGetValue(ent, out entInfo);
                 Ent relation;
+
                 if (entInfo != null)
                 {
                     if (tick600) entInfo.Relation = EntType(ent);
@@ -81,6 +81,9 @@ namespace DefenseShields
                     case Ent.Friend:
                         if (relation == Ent.Friend)
                         {
+                            if (entInfo != null) entInfo.LastTick = tick;
+                            else WebEnts.TryAdd(ent, new EntIntersectInfo(ent.EntityId, 0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, tick, tick, tick, relation, null));
+
                             MyProtectors protectors;
                             Session.Instance.GlobalProtectDict.TryGetValue(ent, out protectors);
                             if (protectors.Shields == null) protectors = Session.Instance.GlobalProtectDict[ent] = new MyProtectors(Session.Instance.ProtDicts.Get(), LogicSlot, tick);

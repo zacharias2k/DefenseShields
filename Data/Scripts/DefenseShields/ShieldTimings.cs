@@ -270,7 +270,6 @@ namespace DefenseShields
                         break;
                     case 5:
                         {
-                            Asleep = false;
                             WebEnts.Clear();
                         }
                         break;

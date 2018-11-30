@@ -90,9 +90,9 @@ namespace DefenseShields
                 }
                 else FallBackPowerCalc();
             }
-
             GridAvailablePower = GridMaxPower - GridCurrentPower;
             if (!GridMaxPower.Equals(tempGridMaxPower) || _roundedGridMax <= 0) _roundedGridMax = Math.Round(GridMaxPower, 1);
+            //if (Tick600) Log.Line($"[PowerTest] Func:{FuncTask.IsComplete} - MyDist!Null:{MyGridDistributor != null} - !Event:{!_functionalEvent} - Max:{GridMaxPower} - Avail:{GridAvailablePower} - Current:{GridCurrentPower}");
             return GridMaxPower > 0;
         }
 

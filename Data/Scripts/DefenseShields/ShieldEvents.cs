@@ -30,6 +30,7 @@ namespace DefenseShields
                 Shield.AppendingCustomInfo += AppendingCustomInfo;
                 Sink.CurrentInputChanged += CurrentInputChanged;
                 MyCube.IsWorkingChanged += IsWorkingChanged;
+                IsWorkingChanged(MyCube);
 
             }
             else

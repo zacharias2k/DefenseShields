@@ -72,6 +72,7 @@ namespace DefenseShields
 
             if (_resetEntity) ResetEntity();
 
+            //if (Tick60) Log.Line($"test: {Shield.EntityId} - {DsState.State.Suspended} - {ShieldMode} - {IsStatic} - { ShieldComp.StationEmitter == null} - {ShieldComp.ShipEmitter == null}");
             if (wait ||!AllInited && !PostInit()) return false;
             if (Session.Enforced.Debug >= 2) Dsutil1.Sw.Restart();
 
@@ -214,7 +215,6 @@ namespace DefenseShields
                 return false;
             }
             if (ShieldComp.EmitterEvent) EmitterEventDetected();
-
             ControlBlockWorking = IsWorking && IsFunctional;
             if (!ControlBlockWorking || !ShieldComp.EmittersWorking)
             {
@@ -655,21 +655,6 @@ namespace DefenseShields
             return DsState.State.Suspended;
         }
 
-        private void UpdateEntity()
-        {
-            ShieldComp.GetLinkedGrids.Clear();
-            ShieldComp.GetSubGrids.Clear();
-            _blockChanged = true;
-            _functionalChanged = true;
-            ResetShape(false, true);
-            ResetShape(false, false);
-            SetShieldType(false);
-            if (!_isDedicated) ShellVisibility(true);
-            if (Session.Enforced.Debug >= 1) Log.Line($"UpdateEntity: sEnt:{ShieldEnt == null} - sPassive:{_shellPassive == null} - controller mode is: {ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
-            Icosphere.ShellActive = null;
-            _updateRender = true;
-        }
-
         private void InitSuspend(bool cleanEnts = false)
         {
             SetShieldType(true);
@@ -724,6 +709,21 @@ namespace DefenseShields
             }
             DsState.State.ControllerGridAccess = true;
             return true;
+        }
+
+        private void UpdateEntity()
+        {
+            ShieldComp.GetLinkedGrids.Clear();
+            ShieldComp.GetSubGrids.Clear();
+            _blockChanged = true;
+            _functionalChanged = true;
+            ResetShape(false, true);
+            ResetShape(false, false);
+            SetShieldType(false);
+            if (!_isDedicated) ShellVisibility(true);
+            if (Session.Enforced.Debug >= 1) Log.Line($"UpdateEntity: sEnt:{ShieldEnt == null} - sPassive:{_shellPassive == null} - controller mode is: {ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
+            Icosphere.ShellActive = null;
+            _updateRender = true;
         }
 
         private void PlayerMessages(PlayerNotice notice)

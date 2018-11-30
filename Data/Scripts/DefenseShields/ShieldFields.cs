@@ -66,6 +66,7 @@ namespace DefenseShields
         public int BulletCoolDown { get; internal set; } = -1;
         public int WebCoolDown { get; internal set; } = -1;
         public int HitCoolDown { get; private set; } = -11;
+        internal int LiveEntCounter;
 
         private int _count = -1;
         private int _lCount;
@@ -124,6 +125,8 @@ namespace DefenseShields
         internal bool Tick600;
         internal bool ControlBlockWorking;
         internal bool EnablePhysics = true;
+        internal bool MoverByShield;
+        internal bool PlayerByShield;
 
         private bool _resetEntity;
         private bool _empOverLoad;
@@ -223,7 +226,8 @@ namespace DefenseShields
         internal readonly HashSet<MyEntity> Missiles = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> FriendlyMissileCache = new HashSet<MyEntity>();
 
-        public readonly ConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<MyEntity, EntIntersectInfo>();
+        internal readonly MyConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new MyConcurrentDictionary<MyEntity, EntIntersectInfo>();
+        internal readonly MyConcurrentDictionary<MyEntity, Vector3D> EntsByMe = new MyConcurrentDictionary<MyEntity, Vector3D>();
 
         private readonly MyConcurrentQueue<MyCubeGrid> _eject = new MyConcurrentQueue<MyCubeGrid>();
         private readonly MyConcurrentQueue<IMySlimBlock> _dmgBlocks = new MyConcurrentQueue<IMySlimBlock>();

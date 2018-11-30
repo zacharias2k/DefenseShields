@@ -367,6 +367,7 @@ namespace DefenseShields
             {
                 Enhancer.AppendingCustomInfo += AppendingCustomInfo;
                 MyCube.IsWorkingChanged += IsWorkingChanged;
+                IsWorkingChanged(MyCube);
             }
             else
             {
