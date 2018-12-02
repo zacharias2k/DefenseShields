@@ -115,4 +115,16 @@ namespace DefenseShields.Support
             FullCoverage = fullCoverage;
         }
     }
+
+
+    public struct MoverInfo
+    {
+        public readonly Vector3D Pos;
+        public readonly uint CreationTick;
+        public MoverInfo(Vector3D pos, uint creationTick)
+        {
+            Pos = pos;
+            CreationTick = creationTick;
+        }
+    }
 }

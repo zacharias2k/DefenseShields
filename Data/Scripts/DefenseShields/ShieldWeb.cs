@@ -37,14 +37,12 @@ namespace DefenseShields
 
         public void WebEntities()
         {
-            //var sleeping = true;
             PruneList.Clear();
-            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref PruneSphere2, PruneList);
+            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref WebSphere, PruneList);
             foreach (var eShield in EnemyShields) PruneList.Add(eShield);
             if (Missiles.Count > 0)
             {
-                //sleeping = false;
-                var missileSphere = PruneSphere2;
+                var missileSphere = WebSphere;
                 missileSphere.Radius = BoundingRange + 50;
                 foreach (var missile in Missiles)
                     if (missile.InScene && !missile.MarkedForClose && missileSphere.Intersects(missile.PositionComp.WorldVolume)) PruneList.Add(missile);
@@ -92,19 +90,16 @@ namespace DefenseShields
                             var parent = ShieldComp.GetLinkedGrids.Contains(grid);
                             if (grid != null)
                             {
-                                if (ShieldEnt.PositionComp.WorldVolume.Intersects(grid.PositionComp.WorldVolume))
+                                var cornersInShield = CustomCollision.NotAllCornersInShield(grid, DetectMatrixOutsideInv);
+                                if (cornersInShield > 0 && cornersInShield != 8)
                                 {
-                                    var cornersInShield = CustomCollision.NotAllCornersInShield(grid, DetectMatrixOutsideInv);
-                                    if (cornersInShield > 0 && cornersInShield != 8)
-                                    {
-                                        FriendlyCache.Add(ent);
-                                        protectors.Shields[this] = new ProtectorInfo(parent, false);
-                                    }
-                                    else if (cornersInShield == 8)
-                                    {
-                                        FriendlyCache.Add(ent);
-                                        protectors.Shields[this] = new ProtectorInfo(parent, true);
-                                    }
+                                    FriendlyCache.Add(ent);
+                                    protectors.Shields[this] = new ProtectorInfo(parent, false);
+                                }
+                                else if (cornersInShield == 8)
+                                {
+                                    FriendlyCache.Add(ent);
+                                    protectors.Shields[this] = new ProtectorInfo(parent, true);
                                 }
                             }
                             else if (CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
@@ -118,16 +113,11 @@ namespace DefenseShields
                 if (entInfo != null)
                 {
                     var interestingEnts = relation == Ent.LargeEnemyGrid || relation == Ent.LargeNobodyGrid || relation == Ent.SmallEnemyGrid || relation == Ent.SmallNobodyGrid || relation == Ent.Shielded;
-                    if (ent.Physics != null && ent.Physics.IsMoving)
-                    {
-                        entChanged = true;
-                        //sleeping = false;
-                    }
+                    if (ent.Physics != null && ent.Physics.IsMoving) entChanged = true;
                     else if (entInfo.Touched || _count == 0 && interestingEnts && !ent.PositionComp.LocalAABB.Equals(entInfo.Box))
                     {
                         entInfo.Box = ent.PositionComp.LocalAABB;
                         entChanged = true;
-                        //sleeping = false;
                     }
 
                     EnablePhysics = true;
@@ -164,31 +154,14 @@ namespace DefenseShields
                     }
                     entChanged = true;
                     EnablePhysics = true;
-                    //sleeping = false;
                     WebEnts.TryAdd(ent, new EntIntersectInfo(ent.EntityId, 0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, tick, tick, tick, relation, new List<IMySlimBlock>()));
                 }
             }
-            /*
-            if (sleeping)
+            if (!EnablePhysics)
             {
-                if (!WebSuspend)
-                {
-                    Session.Instance.SleepingShields.Add(this);
-                    //Log.Line($"Tick:{tick} - Sleep");
-                    WebSuspend = true;
-                }
+                Asleep = true;
+                return;
             }
-            else
-            {
-                if (WebSuspend)
-                {
-                    Session.Instance.SleepingShields.Remove(this);
-                    WebSuspend = false;
-                    Log.Line($"Tick:{tick} - Awoke");
-                }
-            }
-            */
-            if (!EnablePhysics) return;
 
             ShieldMatrix = ShieldEnt.PositionComp.WorldMatrix;
             if (!ShieldMatrix.EqualsFast(ref OldShieldMatrix))
@@ -198,6 +171,7 @@ namespace DefenseShields
                 if (!disableVoxels) Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
             }
             if (ShieldComp.GridIsMoving || entChanged) MyAPIGateway.Parallel.Start(WebDispatch);
+            Asleep = true;
         }
 
         public void WebDispatch()

@@ -30,6 +30,8 @@ namespace DefenseShields
         private uint _heatVentingTick = uint.MaxValue;
         internal uint UnsuspendTick;
         internal uint LosCheckTick;
+        internal uint LastRefreshTick;
+        internal uint TicksWithNoActivity;
 
         internal float ImpactSize { get; set; } = 9f;
         internal float Absorb { get; set; }
@@ -66,7 +68,8 @@ namespace DefenseShields
         public int BulletCoolDown { get; internal set; } = -1;
         public int WebCoolDown { get; internal set; } = -1;
         public int HitCoolDown { get; private set; } = -11;
-        internal int LiveEntCounter;
+        //internal int LiveEntCounter;
+        internal int CleanCycle;
 
         private int _count = -1;
         private int _lCount;
@@ -127,6 +130,7 @@ namespace DefenseShields
         internal bool EnablePhysics = true;
         internal bool MoverByShield;
         internal bool PlayerByShield;
+        internal bool EntCleanUpTime;
 
         private bool _resetEntity;
         private bool _empOverLoad;
@@ -197,8 +201,8 @@ namespace DefenseShields
         internal MatrixD OffsetEmitterWMatrix;
 
         internal BoundingBox ShieldAabb = new BoundingBox(-Vector3D.One, Vector3D.One);
-        internal BoundingSphereD PruneSphere1 = new BoundingSphereD(Vector3D.Zero, 1f);
-        internal BoundingSphereD PruneSphere2 = new BoundingSphereD(Vector3D.Zero, 1f);
+        internal BoundingSphereD ShieldSphere3k = new BoundingSphereD(Vector3D.Zero, 1f);
+        internal BoundingSphereD WebSphere = new BoundingSphereD(Vector3D.Zero, 1f);
         public BoundingSphereD ShieldSphere = new BoundingSphereD(Vector3D.Zero, 1);
         private BoundingSphereD _clientPruneSphere = new BoundingSphereD(Vector3D.Zero, 1f);
 
@@ -227,7 +231,7 @@ namespace DefenseShields
         internal readonly HashSet<MyEntity> FriendlyMissileCache = new HashSet<MyEntity>();
 
         internal readonly MyConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new MyConcurrentDictionary<MyEntity, EntIntersectInfo>();
-        internal readonly MyConcurrentDictionary<MyEntity, Vector3D> EntsByMe = new MyConcurrentDictionary<MyEntity, Vector3D>();
+        internal readonly MyConcurrentDictionary<MyEntity, MoverInfo> EntsByMe = new MyConcurrentDictionary<MyEntity, MoverInfo>();
 
         private readonly MyConcurrentQueue<MyCubeGrid> _eject = new MyConcurrentQueue<MyCubeGrid>();
         private readonly MyConcurrentQueue<IMySlimBlock> _dmgBlocks = new MyConcurrentQueue<IMySlimBlock>();

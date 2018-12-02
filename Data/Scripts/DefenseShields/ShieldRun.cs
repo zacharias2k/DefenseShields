@@ -4,9 +4,9 @@ using Sandbox.ModAPI;
 using VRage.Game.Components;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
-using SpaceEngineers.Game.Entities.Blocks;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
+using VRageMath;
 
 namespace DefenseShields
 {
@@ -80,6 +80,7 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 1 && Tick180 && !WasOnline) Log.Line($"On: WasOn:{WasOnline} - Online:{DsState.State.Online}({_prevShieldActive}) - Lowered:{DsState.State.Lowered} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
                 if (DsState.State.Online)
                 {
+                    if (!Asleep) DsDebugDraw.DrawBox(SOriBBoxD, Color.GhostWhite);
                     if (ComingOnline) ComingOnlineSetup();
                     if (_isServer)
                     {

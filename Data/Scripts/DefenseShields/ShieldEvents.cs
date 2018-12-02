@@ -64,7 +64,7 @@ namespace DefenseShields
 
                 var aabb = myEntity.PositionComp.WorldAABB;
                 bool intersect;
-                PruneSphere1.Intersects(ref aabb, out intersect);
+                ShieldSphere3k.Intersects(ref aabb, out intersect);
                 if (!intersect) return;
 
                 Asleep = false;

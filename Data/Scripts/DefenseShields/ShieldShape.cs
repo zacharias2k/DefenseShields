@@ -162,8 +162,8 @@ namespace DefenseShields
 
             if (_isServer)
             {
-                PruneSphere1.Center = DetectionCenter;
-                PruneSphere2.Center = DetectionCenter;
+                ShieldSphere3k.Center = DetectionCenter;
+                WebSphere.Center = DetectionCenter;
             }
             else _clientPruneSphere.Center = DetectionCenter;
 
@@ -181,8 +181,8 @@ namespace DefenseShields
 
                 if (_isServer)
                 {
-                    PruneSphere1.Radius = BoundingRange + 3000;
-                    PruneSphere2.Radius = BoundingRange + 2.5;
+                    ShieldSphere3k.Radius = BoundingRange + 3000;
+                    WebSphere.Radius = BoundingRange + 2.5;
                 }
                 else _clientPruneSphere.Radius = BoundingRange + 2.5;
 
