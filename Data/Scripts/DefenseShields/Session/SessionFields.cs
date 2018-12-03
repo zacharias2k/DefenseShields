@@ -54,6 +54,7 @@ namespace DefenseShields
         internal bool ShowOnHudReset = true;
         internal bool OnCountThrottle;
         internal bool DefinitionsLoaded;
+        internal static bool Tick60;
         internal static bool Tick180;
         internal static bool Tick600;
 

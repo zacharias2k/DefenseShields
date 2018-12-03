@@ -242,9 +242,10 @@ namespace DefenseShields
                     case 1:
                         EnemyShields.Clear();
                         _webEntsTmp.Clear();
-                        _webEntsTmp.AddRange(WebEnts.Where(info => Tick - info.Value.FirstTick > 599 && Tick - info.Value.LastTick > 1));
+                        _webEntsTmp.AddRange(WebEnts.Where(info => Tick - info.Value.LastTick > 180));
                         foreach (var webent in _webEntsTmp)
                         {
+                            Log.Line($"test remove Webent");
                             EntIntersectInfo entRemoved;
                             WebEnts.TryRemove(webent.Key, out entRemoved);
                         }

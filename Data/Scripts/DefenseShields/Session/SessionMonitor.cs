@@ -84,6 +84,7 @@ namespace DefenseShields
                         if (!(ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor)) continue;
                         if (ent.Physics.IsMoving && CustomCollision.CornerOrCenterInShield(ent, s.DetectMatrixOutsideInv) == 0)
                         {
+                            Log.Line($"Intersect:{ent.DebugName}");
                             intersect = true;
                             break;
                         }
@@ -158,7 +159,7 @@ namespace DefenseShields
             if (s.EntCleanUpTime)
             {
                 var entsByMeTmp = new List<KeyValuePair<MyEntity, MoverInfo>>();
-                entsByMeTmp.AddRange(s.EntsByMe.Where(info => tick - info.Value.CreationTick > EntMaxTickAge * ++s.CleanCycle && !info.Value.Pos.Equals(info.Key.PositionComp.WorldMatrix.Translation, double.Epsilon)));
+                entsByMeTmp.AddRange(s.EntsByMe.Where(info => tick - info.Value.CreationTick > EntMaxTickAge * ++s.CleanCycle && !info.Value.Pos.Equals(info.Key.PositionComp.WorldMatrix.Translation, 1e-3)));
                 for (int i = 0; i < entsByMeTmp.Count; i++) s.EntsByMe.Remove(entsByMeTmp[i].Key);
                 s.EntCleanUpTime = false;
             }
@@ -169,6 +170,7 @@ namespace DefenseShields
         {
             _newFrame = true;
             Tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
+            Tick60 = Tick % 60 == 0;
             Tick180 = Tick % 180 == 0;
             Tick600 = Tick % 600 == 0;
             if (MoreThan600Frames)
@@ -248,7 +250,6 @@ namespace DefenseShields
             for (int i = 0; i < compCount; i++)
             {
                 var ds = Controllers[i];
-
                 if (!ds.Asleep) ds.ProtectMyself();
                 if (IsServer && !ds.Asleep)
                 {
