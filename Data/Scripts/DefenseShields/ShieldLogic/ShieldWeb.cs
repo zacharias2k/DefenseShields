@@ -171,7 +171,8 @@ namespace DefenseShields
                 if (!disableVoxels) Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
             }
             if (ShieldComp.GridIsMoving || entChanged) MyAPIGateway.Parallel.Start(WebDispatch);
-            Asleep = true;
+            LastWokenTick = tick;
+            Asleep = false;
         }
 
         public void WebDispatch()

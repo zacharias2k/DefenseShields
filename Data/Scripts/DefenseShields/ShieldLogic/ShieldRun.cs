@@ -41,6 +41,7 @@ namespace DefenseShields
                 MyGrid = (MyCubeGrid)Shield.CubeGrid;
                 MyCube = Shield as MyCubeBlock;
                 RegisterEvents();
+                AssignSlots();
                 _resetEntity = true;
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }

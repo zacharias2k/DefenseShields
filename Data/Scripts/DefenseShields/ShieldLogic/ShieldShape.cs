@@ -79,11 +79,10 @@ namespace DefenseShields
 
         private void MobileUpdate()
         {
-            var gridLVel = MyGrid.Physics.LinearVelocity;
-            if (gridLVel != Vector3.Zero || MyGrid.Physics.AngularVelocity != Vector3.Zero || ComingOnline)
+            ShieldComp.GridIsMoving = MyGrid.Physics.IsMoving;
+            if (ShieldComp.GridIsMoving || ComingOnline)
             {
-                ShieldComp.GridIsMoving = true;
-                if (DsSet.Settings.FortifyShield && gridLVel.Length() > 15)
+                if (DsSet.Settings.FortifyShield && MyGrid.Physics.LinearVelocity.Length() > 15)
                 {
                     FitChanged = true;
                     DsSet.Settings.FortifyShield = false;

@@ -145,8 +145,8 @@ namespace DefenseShields
             if (!_isDedicated) ShellVisibility();
             ShieldEnt.Render.Visible = true;
             _updateRender = true;
-            LastWokenTick = Tick;
             ComingOnline = false;
+            LastWokenTick = Tick;
             WasOnline = true;
             WarmedUp = true;
 
@@ -166,6 +166,7 @@ namespace DefenseShields
             Session.Instance.Controllers.Add(this);
             Session.Instance.ActiveShields.Add(this);
         }
+
 
         private bool ShieldFailing()
         {

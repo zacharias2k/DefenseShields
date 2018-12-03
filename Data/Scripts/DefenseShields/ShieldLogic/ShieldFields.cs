@@ -30,7 +30,6 @@ namespace DefenseShields
         private uint _heatVentingTick = uint.MaxValue;
         internal uint UnsuspendTick;
         internal uint LosCheckTick;
-        internal uint LastRefreshTick;
         internal uint TicksWithNoActivity;
 
         internal float ImpactSize { get; set; } = 9f;
@@ -99,7 +98,11 @@ namespace DefenseShields
         private int _onCount;
         private int _shieldRatio = 1;
 
-        internal volatile bool Asleep;
+        internal volatile int LogicSlot;
+        internal volatile int MonitorSlot;
+        internal volatile bool MoverByShield;
+        internal volatile bool PlayerByShield;
+        internal volatile bool Asleep = true;
         internal volatile uint LastWokenTick;
 
         internal bool WasOnline;
@@ -128,8 +131,6 @@ namespace DefenseShields
         internal bool Tick600;
         internal bool ControlBlockWorking;
         internal bool EnablePhysics = true;
-        internal bool MoverByShield;
-        internal bool PlayerByShield;
         internal bool EntCleanUpTime;
 
         private bool _resetEntity;
@@ -340,9 +341,6 @@ namespace DefenseShields
         internal MyStringId CustomData = MyStringId.GetOrCompute("CustomData");
         internal MyStringId Password = MyStringId.GetOrCompute("Password");
         internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Set the shield modulation password");
-
-        public int LogicSlot;
-        public int LogicSlotScaler;
 
         public enum ShieldType
         {

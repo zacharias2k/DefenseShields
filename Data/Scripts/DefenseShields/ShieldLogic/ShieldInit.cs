@@ -40,13 +40,9 @@ namespace DefenseShields
                     Session.DsAction = true;
                 }
 
-                //CleanUp(3);
-
                 if (!IsFunctional) return false;
 
                 if (_mpActive && _isServer) DsState.NetworkUpdate();
-                LogicSlot = Session.GetSlot();
-                LogicSlotScaler = Session.EntSlotScaler;
 
                 AllInited = true;
 
@@ -368,6 +364,12 @@ namespace DefenseShields
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in SelectPassiveShell: {ex}"); }
+        }
+
+        private void AssignSlots()
+        {
+            LogicSlot = Session.GetSlot();
+            MonitorSlot = LogicSlot - 1 < 0 ? 8 : LogicSlot - 1;
         }
 
         public void UpdatePassiveModel()
