@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
@@ -30,6 +31,7 @@ namespace DefenseShields
         private int _count = -1;
         private int _lCount;
         private int _eCount;
+        private int _sleeper;
         internal int OnCount;
         internal int RefreshCycle;
         internal int RefreshCounter = 1;
@@ -104,9 +106,12 @@ namespace DefenseShields
         internal readonly Icosphere Icosphere = new Icosphere(5);
         internal DSUtils Dsutil1 = new DSUtils();
 
-
         internal static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
-        private readonly Dictionary<string, Func<IMyTerminalBlock, bool>> actionEnabled = new Dictionary<string, Func<IMyTerminalBlock, bool>>();
+        public static readonly Dictionary<MyEntity, MyProtectors> GlobalProtect = new Dictionary<MyEntity, MyProtectors>();
+
+        private static readonly List<KeyValuePair<MyEntity, MyProtectors>> GlobalEntTmp = new List<KeyValuePair<MyEntity, MyProtectors>>();
+
+        public static readonly MyConcurrentPool<CachingDictionary<DefenseShields, ProtectorInfo>> ProtDicts = new MyConcurrentPool<CachingDictionary<DefenseShields, ProtectorInfo>>(150, null, 1000);
 
         public readonly List<PlanetShields> PlanetShields = new List<PlanetShields>();
         public readonly List<Emitters> Emitters = new List<Emitters>();
@@ -116,16 +121,11 @@ namespace DefenseShields
         public readonly List<Modulators> Modulators = new List<Modulators>();
         public readonly List<DefenseShields> Controllers = new List<DefenseShields>();
 
-        public readonly Dictionary<MyEntity, MyProtectors> GlobalProtectDict = new Dictionary<MyEntity, MyProtectors>();
-
         public static readonly HashSet<IMyPlayer> Players = new HashSet<IMyPlayer>();
-
-        private readonly List<KeyValuePair<MyEntity, MyProtectors>> _globalEntTmp = new List<KeyValuePair<MyEntity, MyProtectors>>();
 
         public static readonly MyConcurrentHashSet<IMyCharacter> Characters = new MyConcurrentHashSet<IMyCharacter>();
         public readonly MyConcurrentHashSet<DefenseShields> ActiveShields = new MyConcurrentHashSet<DefenseShields>();
         public readonly MyConcurrentHashSet<DefenseShields> Shields = new MyConcurrentHashSet<DefenseShields>();
-        public readonly MyConcurrentPool<Dictionary<DefenseShields, ProtectorInfo>> ProtDicts = new MyConcurrentPool<Dictionary<DefenseShields, ProtectorInfo>>(150, null, 1000);
 
         public static DefenseShieldsEnforcement Enforced = new DefenseShieldsEnforcement();
 

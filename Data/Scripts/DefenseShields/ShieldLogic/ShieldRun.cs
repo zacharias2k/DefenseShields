@@ -78,10 +78,9 @@ namespace DefenseShields
                     else if (DsState.State.Message) ShieldChangeState();
                     return;
                 }
-                if (Session.Enforced.Debug >= 1 && Tick180 && !WasOnline) Log.Line($"On: WasOn:{WasOnline} - Online:{DsState.State.Online}({_prevShieldActive}) - Lowered:{DsState.State.Lowered} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
                 if (DsState.State.Online)
                 {
-                    if (!Asleep) DsDebugDraw.DrawBox(SOriBBoxD, Color.GhostWhite);
+                    //if (!Asleep) DsDebugDraw.DrawBox(SOriBBoxD, Color.GhostWhite);
                     if (ComingOnline) ComingOnlineSetup();
                     if (_isServer)
                     {
@@ -100,7 +99,6 @@ namespace DefenseShields
                             else if (_lCount == 7 && _eCount == 7) ShieldChangeState();
                         }
                     }
-                    else WebEntitiesClient();
                     if (!_isDedicated && Tick60) HudCheck();
 
                 }

@@ -9,7 +9,6 @@ using VRage;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using VRage.Utils;
 using VRageMath;
 
 namespace DefenseShields
@@ -72,21 +71,25 @@ namespace DefenseShields
                         return;
                     }
                     var monitorList = new List<MyEntity>();
-                    var inflatedSphere = s.ShieldSphere;
-                    var speedBuffer = MaxEntitySpeed / 19;
-                    inflatedSphere.Radius = inflatedSphere.Radius + speedBuffer;
+                    var inflatedBox = s.ShieldWorldAabb;
+                    var speedBuffer = MaxEntitySpeed / 30;
+                    var increasedSize = Vector3D.One * speedBuffer;
+                    inflatedBox.Inflate(increasedSize);
+
                     var intersect = false;
-                    MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref inflatedSphere, monitorList, MyEntityQueryType.Dynamic);
+                    MyGamePruningStructure.GetTopmostEntitiesInBox(ref inflatedBox, monitorList, MyEntityQueryType.Dynamic);
                     for (int i = 0; i < monitorList.Count; i++)
                     {
                         var ent = monitorList[i];
 
                         if (!(ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor)) continue;
-                        if (ent.Physics.IsMoving && CustomCollision.CornerOrCenterInShield(ent, s.DetectMatrixOutsideInv) == 0)
+                        if (ent.Physics.IsMoving)
                         {
-                            Log.Line($"Intersect:{ent.DebugName}");
-                            intersect = true;
-                            break;
+                            if (CustomCollision.CornerOrCenterInShield(ent, s.DetectMatrixOutsideInv, new Vector3D[8]) == 0)
+                            {
+                                intersect = true;
+                                break;
+                            }
                         }
                     }
 
@@ -124,7 +127,10 @@ namespace DefenseShields
                 s.MoverByShield = false;
                 var newMover = false;
                 var moverList = new List<MyEntity>();
-                MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref s.ShieldSphere3k, moverList, MyEntityQueryType.Dynamic);
+                var inflatedBox = s.ShieldWorldAabb;
+                var increasedSize = Vector3D.One * 3000;
+                inflatedBox.Inflate(increasedSize);
+                MyGamePruningStructure.GetTopMostEntitiesInBox(ref inflatedBox, moverList, MyEntityQueryType.Dynamic);
                 for (int i = 0; i < moverList.Count; i++)
                 {
                     var ent = moverList[i];
@@ -137,7 +143,6 @@ namespace DefenseShields
                     {
                         if (!s.EntsByMe[ent].Pos.Equals(entPos, 1e-3))
                         {
-                            //Log.Line($"ent:{ent.DebugName} - moved - old:{s.EntsByMe[ent].Pos} - new:{entPos}");
                             MoverInfo moverInfo;
                             s.EntsByMe.TryRemove(ent, out moverInfo);
                             s.EntsByMe.TryAdd(ent, new MoverInfo(entPos, tick));
@@ -175,7 +180,7 @@ namespace DefenseShields
             Tick600 = Tick % 600 == 0;
             if (MoreThan600Frames)
             {
-                var globalProtCnt = GlobalProtectDict.Count;
+                var globalProtCnt = GlobalProtect.Count;
                 if (globalProtCnt <= 25) EntSlotScaler = 1;
                 else if (globalProtCnt <= 50) EntSlotScaler = 2;
                 else if (globalProtCnt <= 75) EntSlotScaler = 3;
@@ -187,7 +192,10 @@ namespace DefenseShields
 
             EntSlotTick = Tick % (180 / EntSlotScaler) == 0;
 
-            var entsRefreshed = 0;
+            var shieldsWaking = 0;
+            var entsUpdated = 0;
+            var entsremoved = 0;
+            var entsLostShield = 0;
             if (EntSlotTick)
             {
                 if (++RefreshCycle >= EntSlotScaler) RefreshCycle = 0;
@@ -203,7 +211,7 @@ namespace DefenseShields
                 var ii = 0;
                 var wrongSlot = 0;
 
-                foreach (var k in GlobalProtectDict.Values)
+                foreach (var k in GlobalProtect.Values)
                 {
                     if (k.RefreshSlot == 0) aa++;
                     else if (k.RefreshSlot == 1) bb++;
@@ -215,29 +223,41 @@ namespace DefenseShields
                     else if (k.RefreshSlot == 7) hh++;
                     else if (k.RefreshSlot == 8) ii++;
                 }
-                _globalEntTmp.Clear();
-                _globalEntTmp.AddRange(GlobalProtectDict.Where(info => !MoreThan600Frames || info.Value.RefreshSlot == RefreshCycle && EntSlotTick || info.Value.RefreshSlot > EntSlotScaler - 1));
-                for (int i = 0; i < _globalEntTmp.Count; i++)
+                GlobalEntTmp.Clear();
+                GlobalEntTmp.AddRange(GlobalProtect.Where(info => !MoreThan600Frames || info.Value.RefreshSlot == RefreshCycle && EntSlotTick || info.Value.RefreshSlot > EntSlotScaler - 1));
+                for (int i = 0; i < GlobalEntTmp.Count; i++)
                 {
-                    var ent = _globalEntTmp[i];
-                    var refresh = false;
-                    foreach (var s in GlobalProtectDict[ent.Key].Shields.Keys)
+                    var ent = GlobalEntTmp[i].Key;
+                    var myProtector = GlobalEntTmp[i].Value;
+                    var entShields = myProtector.Shields.Keys;
+
+                    var refreshCount = 0;
+                    foreach (var s in entShields)
                     {
-                        if (!MoreThan600Frames || s.PlayerByShield || s.MoverByShield || Tick <= s.LastWokenTick + 580)
+                        if (!s.ResetEnts(ent, Tick))
                         {
-                            refresh = true;
-                            break;
+                            myProtector.Shields.Remove(s);
+                            entsLostShield++;
+                        }
+                        else refreshCount++;
+
+                        if (s.Asleep && s.ShieldComp.GetSubGrids.Contains(ent) && (!MoreThan600Frames || s.PlayerByShield || s.MoverByShield || Tick <= s.LastWokenTick + 580))
+                        {
+                            //Log.Line($"{shieldLost} - {!MoreThan600Frames} - {s.PlayerByShield} - {s.MoverByShield} - {Tick <= s.LastWokenTick + 580}");
+                            s.Asleep = false;
+                            shieldsWaking++;
                         }
                     }
+                    myProtector.Shields.ApplyChanges();
 
-                    if (refresh)
+                    if (refreshCount == 0)
                     {
-                        foreach (var s in GlobalProtectDict[ent.Key].Shields.Keys) s.Asleep = false;
-                        entsRefreshed++;
-                        GlobalProtectDict.Remove(ent.Key);
+                        GlobalProtect.Remove(ent);
+                        entsremoved++;
                     }
+                    else entsUpdated++;
                 }
-                if (Enforced.Debug >= 1) Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - RefreshingEnts:{entsRefreshed} - EntInRefreshSlots:({aa} - {bb} - {cc} - {dd} - {ee} - {ff} - {gg} - {hh} - {ii})");
+                if (Enforced.Debug >= 1) Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - EntsUpdated:{entsUpdated} - ShieldsWaking:{shieldsWaking} - EntsRemoved: {entsremoved} - EntsLostShield:{entsLostShield} - EntInRefreshSlots:({aa} - {bb} - {cc} - {dd} - {ee} - {ff} - {gg} - {hh} - {ii})");
             }
         }
 
@@ -247,18 +267,43 @@ namespace DefenseShields
             if (EntSlotTick && Enforced.Debug >= 2) Log.Line($"[NearShield] OnlineShields:{Controllers.Count} - ActiveShields:{ActiveShields.Count} - ShieldBlocks: {Shields.Count}");
             var compCount = Controllers.Count;
             if (Enforced.Debug >= 1) Dsutil1.Sw.Restart();
-            for (int i = 0; i < compCount; i++)
+            if (IsServer)
             {
-                var ds = Controllers[i];
-                if (!ds.Asleep) ds.ProtectMyself();
-                if (IsServer && !ds.Asleep)
+                for (int i = 0; i < compCount; i++)
                 {
-                    ds.WebEntities();
+                    var s = Controllers[i];
+                    if (s.Asleep)
+                    {
+                        Log.Line($"Sleeping for {_sleeper} ticks");
+                        _sleeper++;
+                    }
+                    else _sleeper = 0;
+                    if (s.WasOnline && !s.Asleep)
+                    {
+                        if (EntSlotTick && s.LogicSlot == RefreshCycle) s.ProtectMyself();
+                        s.WebEntities();
+                        y++;
+                    }
+                    s.CleanTimes();
+                    s.DeformEnabled = false;
+                }
+            }
+            else
+            {
+                for (int i = 0; i < compCount; i++)
+                {
+                    var s = Controllers[i];
+                    if (s.WasOnline)
+                    {
+                        if (EntSlotTick && s.LogicSlot == RefreshCycle) s.ProtectMyself();
+                        s.WebEntitiesClient();
+                    }
+                    s.CleanTimes();
+                    s.DeformEnabled = false;
                     y++;
                 }
-                ds.DeformEnabled = false;
             }
-            if (Enforced.Debug >= 1 && EntSlotTick) Dsutil1.StopWatchReport($"[Protecting] ProtectedEnts:{GlobalProtectDict.Count} - WakingShields:{y} - CPU:", -1);
+            if (Enforced.Debug >= 1 && EntSlotTick) Dsutil1.StopWatchReport($"[Protecting] ProtectedEnts:{GlobalProtect.Count} - WakingShields:{y} - CPU:", -1);
             else if (Enforced.Debug >= 1) Dsutil1.Sw.Reset();
 
             if (SphereOnCamera.Length != compCount) Array.Resize(ref SphereOnCamera, compCount);

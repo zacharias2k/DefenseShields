@@ -12,7 +12,7 @@ namespace DefenseShields
     public partial class DefenseShields
     {
         #region Main
-        private void Timing(bool cleanUp)
+        private void Timing()
         {
             if (_count++ == 59)
             {
@@ -61,14 +61,6 @@ namespace DefenseShields
                 _damageReadOut = 0;
             }
 
-            if (cleanUp)
-            {
-                if (_staleGrids.Count != 0) CleanUp(0);
-                if (_lCount == 9 && _count == 58) CleanUp(1);
-                if (_effectsCleanup && (_count == 1 || _count == 21 || _count == 41)) CleanUp(2);
-
-                if ((_lCount * 60 + _count + 1) % 300 == 0) CleanUp(4);
-            }
         }
 
         private void BlockMonitor()
@@ -225,6 +217,14 @@ namespace DefenseShields
             SyncThreadedEnts(true);
         }
 
+        public void CleanTimes()
+        {
+            if (_staleGrids.Count != 0) CleanUp(0);
+            if (_lCount == 9 && _count == 58) CleanUp(1);
+            if (_effectsCleanup && (_count == 1 || _count == 21 || _count == 41)) CleanUp(2);
+            if ((_lCount * 60 + _count + 1) % 300 == 0) CleanUp(4);
+        }
+
         private void CleanUp(int task)
         {
             try
@@ -241,13 +241,14 @@ namespace DefenseShields
                         break;
                     case 1:
                         EnemyShields.Clear();
+                        IgnoreCache.Clear();
+
                         _webEntsTmp.Clear();
                         _webEntsTmp.AddRange(WebEnts.Where(info => Tick - info.Value.LastTick > 180));
                         foreach (var webent in _webEntsTmp)
                         {
-                            Log.Line($"test remove Webent");
-                            EntIntersectInfo entRemoved;
-                            WebEnts.TryRemove(webent.Key, out entRemoved);
+                            EntIntersectInfo removedEnt;
+                            WebEnts.TryRemove(webent.Key, out removedEnt);
                         }
                         break;
                     case 2:

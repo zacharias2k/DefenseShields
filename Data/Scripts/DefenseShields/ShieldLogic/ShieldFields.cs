@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using DefenseShields.Support;
 using ParallelTasks;
@@ -202,6 +201,8 @@ namespace DefenseShields
         internal MatrixD OffsetEmitterWMatrix;
 
         internal BoundingBox ShieldAabb = new BoundingBox(-Vector3D.One, Vector3D.One);
+        internal BoundingBoxD ShieldWorldAabb;
+
         internal BoundingSphereD ShieldSphere3k = new BoundingSphereD(Vector3D.Zero, 1f);
         internal BoundingSphereD WebSphere = new BoundingSphereD(Vector3D.Zero, 1f);
         public BoundingSphereD ShieldSphere = new BoundingSphereD(Vector3D.Zero, 1);
@@ -226,7 +227,7 @@ namespace DefenseShields
         private readonly List<KeyValuePair<MyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<MyEntity, EntIntersectInfo>>();
 
         internal readonly HashSet<IMyEntity> AuthenticatedCache = new HashSet<IMyEntity>();
-        internal readonly HashSet<MyEntity> FriendlyCache = new HashSet<MyEntity>();
+        internal readonly HashSet<MyEntity> IgnoreCache = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> EnemyShields = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> Missiles = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> FriendlyMissileCache = new HashSet<MyEntity>();
@@ -302,7 +303,7 @@ namespace DefenseShields
         internal MyResourceSinkInfo ResourceInfo;
         internal MyResourceSinkComponent Sink;
 
-        private readonly DataStructures _dataStructures = new DataStructures();
+        //private readonly DataStructures _dataStructures = new DataStructures();
         //private readonly StructureBuilder _structureBuilder = new StructureBuilder();
 
         internal IMyUpgradeModule Shield;

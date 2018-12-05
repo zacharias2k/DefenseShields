@@ -17,28 +17,68 @@ namespace DefenseShields
         #region Web Entities
         public void ProtectMyself()
         {
-            FriendlyCache.Clear();
             foreach (var sub in ShieldComp.GetSubGrids)
             {
-                if (sub == null) continue;
-                FriendlyCache.Add(sub);
-
-                var protectors = Session.Instance.GlobalProtectDict[sub] = new MyProtectors(Session.Instance.ProtDicts.Get(), LogicSlot, Session.Tick);
-                if (!GridIsMobile && ShieldEnt.PositionComp.WorldVolume.Intersects(sub.PositionComp.WorldVolume))
+                MyProtectors myProtectors;
+                Session.GlobalProtect.TryGetValue(sub, out myProtectors);
+                if (myProtectors.Shields != null && myProtectors.Shields.ContainsKey(this)) continue;
+                var tick = Session.Tick;
+                WebEnts.TryAdd(sub, new EntIntersectInfo(sub.EntityId, 0f, 0f, false, sub.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, tick, tick, tick, tick, Ent.Protected, null));
+                var protectors = Session.GlobalProtect[sub] = new MyProtectors(Session.ProtDicts.Get(), LogicSlot, Session.Tick);
+                if (!GridIsMobile)
                 {
                     var cornersInShield = CustomCollision.NotAllCornersInShield(sub, DetectMatrixOutsideInv);
-                    if (cornersInShield != 8) protectors.Shields[this] = new ProtectorInfo(true, false);
-                    else if (cornersInShield == 8) protectors.Shields[this] = new ProtectorInfo(true, true);
-                    continue;
+                    switch (cornersInShield)
+                    {
+                        case 8:
+                            protectors.Shields.Add(this, new ProtectorInfo(true, true), true);
+                            break;
+                        default:
+                            protectors.Shields.Add(this, new ProtectorInfo(true, false), true);
+                            break;
+                    }
                 }
-                protectors.Shields[this] = new ProtectorInfo(true, true);
+                protectors.Shields.Add(this, new ProtectorInfo(true, true), true);
             }
+        }
+
+        private readonly Vector3D[] _resetEntCorners = new Vector3D[8];
+        public bool ResetEnts(MyEntity ent, uint tick)
+        {
+            if (!ent.InScene) return false;
+            MyProtectors protectors;
+            Session.GlobalProtect.TryGetValue(ent, out protectors);
+            if (protectors.Shields == null) protectors = Session.GlobalProtect[ent] = new MyProtectors(Session.ProtDicts.Get(), LogicSlot, tick);
+
+            var grid = ent as MyCubeGrid;
+            var parent = ShieldComp.GetLinkedGrids.Contains(grid);
+            if (grid != null)
+            {
+                var cornersInShield = CustomCollision.CornerOrCenterInShield(grid, DetectMatrixOutsideInv, _resetEntCorners);
+
+                switch (cornersInShield)
+                {
+                    case 0:
+                        return false;
+                    case 8:
+                        protectors.Shields.Add(this, new ProtectorInfo(parent, true));
+                        break;
+                    default:
+                        protectors.Shields.Add(this, new ProtectorInfo(parent, false));
+                        break;
+                }
+                return true;
+            }
+
+            if (!CustomCollision.PointInShield(ent.PositionComp.WorldAABB.Center, DetectMatrixOutsideInv)) return false;
+            protectors.Shields.Add(this, new ProtectorInfo(parent, true));
+            return true;
         }
 
         public void WebEntities()
         {
             PruneList.Clear();
-            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref WebSphere, PruneList);
+            MyGamePruningStructure.GetTopMostEntitiesInBox(ref ShieldWorldAabb, PruneList);
             foreach (var eShield in EnemyShields) PruneList.Add(eShield);
             if (Missiles.Count > 0)
             {
@@ -58,7 +98,7 @@ namespace DefenseShields
                 var ent = PruneList[i];
                 var voxel = ent as MyVoxelBase;
                 if (ent == null || ent.MarkedForClose || voxel == null && (ent.Physics == null || ent.DefinitionId == null) || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel) continue;
-                if (ent is IMyFloatingObject || ent is IMyEngineerToolBase || FriendlyCache.Contains(ent) || FriendlyMissileCache.Contains(ent) || AuthenticatedCache.Contains(ent)) continue;
+                if (ent is IMyFloatingObject || ent is IMyEngineerToolBase || IgnoreCache.Contains(ent) || FriendlyMissileCache.Contains(ent) || AuthenticatedCache.Contains(ent)) continue;
                 EntIntersectInfo entInfo;
                 WebEnts.TryGetValue(ent, out entInfo);
                 Ent relation;
@@ -66,14 +106,16 @@ namespace DefenseShields
                 bool refreshInfo = false;
                 if (entInfo != null)
                 {
-                    refreshInfo = tick - entInfo.LastTick > 180 || tick - entInfo.RefreshTick > 600;
-                    if (refreshInfo)Log.Line($"test refresh Type - {entInfo.LastTick} - {entInfo.RefreshTick} - {tick - entInfo.LastTick > 180} - {tick - entInfo.RefreshTick > 600}");
+                    var last = entInfo.LastTick;
+                    var refresh = entInfo.RefreshTick;
+                    refreshInfo = tick - last > 180 || tick - last == 180 && tick - refresh >= 3600 || tick - last == 1 && tick - refresh >= 60;
                     if (refreshInfo)
                     {
                         entInfo.RefreshTick = tick;
                         entInfo.Relation = EntType(ent);
                     }
                     relation = entInfo.Relation;
+                    entInfo.LastTick = tick;
                 }
                 else relation = EntType(ent);
 
@@ -82,38 +124,39 @@ namespace DefenseShields
                     case Ent.Authenticated:
                         continue;
                     case Ent.Ignore:
-                    case Ent.Friend:
-                        if (relation == Ent.Friend)
+                    case Ent.Protected:
+                        if (relation == Ent.Protected)
                         {
-                            if (entInfo != null) entInfo.LastTick = tick;
+                            if (entInfo != null)
+                            {
+                                if (Session.GlobalProtect.ContainsKey(ent)) continue;
+                            }
                             else WebEnts.TryAdd(ent, new EntIntersectInfo(ent.EntityId, 0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, tick, tick ,tick, tick, relation, null));
-
                             MyProtectors protectors;
-                            Session.Instance.GlobalProtectDict.TryGetValue(ent, out protectors);
-                            if (protectors.Shields == null) protectors = Session.Instance.GlobalProtectDict[ent] = new MyProtectors(Session.Instance.ProtDicts.Get(), LogicSlot, tick);
+                            Session.GlobalProtect.TryGetValue(ent, out protectors);
+                            if (protectors.Shields == null) protectors = Session.GlobalProtect[ent] = new MyProtectors(Session.ProtDicts.Get(), LogicSlot, tick);
 
                             var grid = ent as MyCubeGrid;
                             var parent = ShieldComp.GetLinkedGrids.Contains(grid);
                             if (grid != null)
                             {
-                                var cornersInShield = CustomCollision.NotAllCornersInShield(grid, DetectMatrixOutsideInv);
-                                if (cornersInShield > 0 && cornersInShield != 8)
+                                var cornersInShield = CustomCollision.CornerOrCenterInShield(grid, DetectMatrixOutsideInv, _resetEntCorners);
+                                switch (cornersInShield)
                                 {
-                                    FriendlyCache.Add(ent);
-                                    protectors.Shields[this] = new ProtectorInfo(parent, false);
-                                }
-                                else if (cornersInShield == 8)
-                                {
-                                    FriendlyCache.Add(ent);
-                                    protectors.Shields[this] = new ProtectorInfo(parent, true);
+                                    case 0:
+                                        continue;
+                                    case 8:
+                                        protectors.Shields.Add(this, new ProtectorInfo(parent, true), true);
+                                        break;
+                                    default:
+                                        protectors.Shields.Add(this, new ProtectorInfo(parent, false), true);
+                                        break;
                                 }
                             }
-                            else if (CustomCollision.PointInShield(ent.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
-                            {
-                                FriendlyCache.Add(ent);
-                                protectors.Shields[this] = new ProtectorInfo(parent, true);
-                            }
+                            else if (CustomCollision.PointInShield(ent.PositionComp.WorldAABB.Center, DetectMatrixOutsideInv)) protectors.Shields.Add(this, new ProtectorInfo(parent, true), true);
+                            continue;
                         }
+                        IgnoreCache.Add(ent);
                         continue;
                 }
                 if (entInfo != null)
@@ -128,7 +171,6 @@ namespace DefenseShields
                     }
 
                     EnablePhysics = true;
-                    entInfo.LastTick = tick;
                     if (refreshInfo)
                     {
                         if ((relation == Ent.LargeEnemyGrid || relation == Ent.LargeNobodyGrid) && entInfo.CacheBlockList.Count != (ent as MyCubeGrid).BlocksCount)
@@ -151,13 +193,6 @@ namespace DefenseShields
                             FriendlyMissileCache.Add(ent);
                             continue;
                         }
-                    }
-                    if ((relation == Ent.LargeNobodyGrid || relation == Ent.SmallNobodyGrid) && CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, DetectMatrixOutsideInv))
-                    {
-                        FriendlyCache.Add(ent);
-                        EntIntersectInfo gridRemoved;
-                        WebEnts.TryRemove(ent, out gridRemoved);
-                        continue;
                     }
                     entChanged = true;
                     EnablePhysics = true;
@@ -272,7 +307,7 @@ namespace DefenseShields
         {
             Unknown,
             Ignore,
-            Friend,
+            Protected,
             EnemyPlayer,
             SmallNobodyGrid,
             LargeNobodyGrid,
@@ -297,7 +332,7 @@ namespace DefenseShields
                 var dude = MyAPIGateway.Players.GetPlayerControllingEntity(ent)?.IdentityId;
                 if (dude == null) return Ent.Ignore;
                 var playerrelationship = MyCube.GetUserRelationToOwner((long)dude);
-                if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner || playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return Ent.Friend;
+                if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner || playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare) return Ent.Protected;
                 return player.IsDead ? Ent.Ignore : Ent.EnemyPlayer;
             }
             var grid = ent as MyCubeGrid;
@@ -313,18 +348,19 @@ namespace DefenseShields
                     {
                         if (ShieldEnt.PositionComp.WorldVolume.Intersects(grid.PositionComp.WorldVolume))
                         {
-                            if (CustomCollision.NotAllCornersInShield(grid, DetectMatrixOutsideInv) > 0) FriendlyCache.Add(subGrid);
-                            else AuthenticatedCache.Add(subGrid);
+                            if (CustomCollision.CornerOrCenterInShield(grid, DetectMatrixOutsideInv, _resetEntCorners) > 0) return Ent.Protected;
+                            AuthenticatedCache.Add(subGrid);
                         }
                         else AuthenticatedCache.Add(subGrid);
                     }
                     return Ent.Authenticated;
                 }
-                var bigOwners = grid.BigOwners.Count;
+                var bigOwners = grid.BigOwners;
+                var bigOwnersCnt = bigOwners.Count;
                 var blockCnt = grid.BlocksCount;
-                if (blockCnt < 10 && bigOwners == 0) return Ent.SmallNobodyGrid;
-                if (bigOwners == 0) return Ent.LargeNobodyGrid;
-                var enemy = GridEnemy(grid);
+                if (blockCnt < 10 && bigOwnersCnt == 0) return CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, DetectMatrixOutsideInv) ? Ent.Protected : Ent.SmallNobodyGrid;
+                if (bigOwnersCnt == 0) return CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, DetectMatrixOutsideInv) ? Ent.Protected : Ent.LargeNobodyGrid;
+                var enemy = GridEnemy(grid, bigOwners);
 
                 ShieldGridComponent shieldComponent;
                 grid.Components.TryGet(out shieldComponent);
@@ -332,11 +368,11 @@ namespace DefenseShields
                 {
                     var dsComp = shieldComponent.DefenseShields;
                     var shieldEntity = MyCube.Parent;
-                    if (!enemy) return Ent.Friend;
+                    if (!enemy) return Ent.Protected;
                     dsComp.EnemyShields.Add(shieldEntity);
                     return Ent.Shielded;    
                 }
-                return enemy ? Ent.LargeEnemyGrid : Ent.Friend;
+                return enemy ? Ent.LargeEnemyGrid : Ent.Protected;
             }
 
             if (ent is IMyMeteor || ent.DefinitionId.HasValue && ent.DefinitionId.Value.TypeId == MissileObj) return Ent.Other;
@@ -344,39 +380,13 @@ namespace DefenseShields
             return 0;
         }
 
-        public bool GridEnemy(MyCubeGrid grid)
+        public bool GridEnemy(MyCubeGrid grid, List<long> owners = null)
         {
-            var owners = grid.BigOwners;
+            if (owners == null) owners = grid.BigOwners;
             if (owners.Count == 0) return true;
             var relationship = MyCube.GetUserRelationToOwner(owners[0]);
             var enemy = relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare;
             return enemy;
-        }
-
-        public bool GridEnemy2(MyCubeGrid grid)
-        {
-            var smallOwners = grid.SmallOwners;
-            var ownerCount = smallOwners.Count;
-            if (ownerCount == 0) return true;
-            var friend = false;
-            if (ownerCount == 1)
-            {
-                var relation = MyCube.GetUserRelationToOwner(smallOwners[0]);
-                if (relation == MyRelationsBetweenPlayerAndBlock.Owner || relation == MyRelationsBetweenPlayerAndBlock.FactionShare) friend = true;
-            }
-            else
-            {
-                foreach (var s in smallOwners)
-                {
-                    var relation = MyCube.GetUserRelationToOwner(s);
-                    if (relation == MyRelationsBetweenPlayerAndBlock.Owner || relation == MyRelationsBetweenPlayerAndBlock.FactionShare)
-                    {
-                        friend = true;
-                        break;
-                    }
-                }
-            }
-            return !friend;
         }
 
         private static bool CollectCollidableBlocks(IMySlimBlock mySlimBlock)

@@ -215,9 +215,13 @@ namespace DefenseShields
         {
             var playerEnt = MyAPIGateway.Session.ControlledObject?.Entity as MyEntity;
             if (playerEnt?.Parent != null) playerEnt = playerEnt.Parent;
-            if (playerEnt == null || DsState.State.Online && !FriendlyCache.Contains(playerEnt) || !DsState.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
+            if (playerEnt == null || DsState.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv) || !DsState.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
             {
                 if (Session.HudComp != this) return;
+                EntIntersectInfo entInfo;
+                WebEnts.TryGetValue(playerEnt, out entInfo);
+                if (entInfo != null && entInfo.Relation != Ent.Protected) return;
+
                 Session.HudComp = null;
                 Session.HudShieldDist = double.MaxValue;
                 return;

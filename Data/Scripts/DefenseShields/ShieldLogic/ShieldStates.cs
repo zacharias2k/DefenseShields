@@ -111,7 +111,7 @@ namespace DefenseShields
                     return false;
                 }
                 SetShieldServerStatus(powerState);
-                Timing(true);
+                Timing();
                 if (!DsState.State.Online || ComingOnline && (!GridOwnsController() || GridIsMobile && FieldShapeBlocked()))
                 {
                     _prevShieldActive = false;
@@ -132,7 +132,7 @@ namespace DefenseShields
                 if (GridIsMobile) MobileUpdate();
                 if (UpdateDimensions) RefreshDimensions();
                 PowerOnline();
-                Timing(true);
+                Timing();
                 _clientOn = true;
                 _clientLowered = false;
             }
@@ -480,7 +480,7 @@ namespace DefenseShields
         {
             if (!DsSet.Settings.RaiseShield && WarmedUp && DsState.State.Online)
             {
-                Timing(false);
+                Timing();
                 if (!DsState.State.Lowered)
                 {
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
@@ -521,7 +521,7 @@ namespace DefenseShields
         {
             if (WarmedUp && DsState.State.Lowered)
             {
-                Timing(false);
+                Timing();
                 if (!_clientLowered)
                 {
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);

@@ -119,11 +119,6 @@ namespace DefenseShields
                         {
                             if (ent == null || !ent.InScene || ent.MarkedForClose) continue;
                             var computedDamage = ComputeAmmoDamage(ent);
-                            if (computedDamage <= float.NegativeInfinity)
-                            {
-                                FriendlyCache.Add(ent);
-                                continue;
-                            }
 
                             var damage = computedDamage * DsState.State.ModulateEnergy;
                             if (computedDamage < 0) damage = computedDamage;

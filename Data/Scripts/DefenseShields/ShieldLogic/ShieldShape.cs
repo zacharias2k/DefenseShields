@@ -168,13 +168,11 @@ namespace DefenseShields
 
             SOriBBoxD.Center = DetectionCenter;
             SOriBBoxD.Orientation = _sQuaternion;
-
             if (_shapeChanged)
             {
                 SOriBBoxD.HalfExtent = ShieldSize;
                 ShieldAabb.Min = ShieldSize;
                 ShieldAabb.Max = -ShieldSize;
-
                 EllipsoidSa.Update(DetectMatrixOutside.Scale.X, DetectMatrixOutside.Scale.Y, DetectMatrixOutside.Scale.Z);
                 BoundingRange = ShieldSize.AbsMax();
 
@@ -197,6 +195,9 @@ namespace DefenseShields
                 if (Session.Enforced.Debug >= 2) Log.Line($"CreateShape: shapeChanged - GridMobile:{GridIsMobile} - ShieldId [{Shield.EntityId}]");
             }
             if (!DsState.State.Lowered) SetShieldShape();
+            ShieldWorldAabb = ShieldEnt.PositionComp.WorldAABB;
+            ShieldWorldAabb.Inflate(Vector3D.One * 2.5);
+
         }
 
         private void CreateMobileShape()

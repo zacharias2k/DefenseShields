@@ -131,26 +131,29 @@ namespace DefenseShields
                     var myEntity = block.CubeGrid as MyEntity;
                     if (myEntity == null) return;
                     MyProtectors protectors;
-                    GlobalProtectDict.TryGetValue(myEntity, out protectors);
+                    GlobalProtect.TryGetValue(myEntity, out protectors);
                     if (protectors.Shields == null) return;
-                    if (info.Type == MyDamageType.Destruction || info.Type == MyDamageType.Environment || info.Type == MyDamageType.LowPressure)
+                    if (info.Type == MyDamageType.Destruction)
                     {
                         Log.Line($"OddDamageType:{info.Type}");
                         return;
                     }
                     if (info.Type == DelDamage || info.Type == MyDamageType.Drill || info.Type == MyDamageType.Grind) return;
 
-
                     MyEntity hostileEnt;
                     var attackerId = info.AttackerId;
                     if (attackerId == _previousEntId) hostileEnt = _previousEnt;
                     else UpdatedHostileEnt(attackerId, out hostileEnt);
-
                     var shieldHitPos = Vector3D.NegativeInfinity;
                     if (hostileEnt != null)
                     {
-                        var shieldCnt = protectors.Shields.Count;
-                        var hitDist = -1d;
+                        var hitDist = double.MaxValue;
+                        Vector3D tmpBlockPos;
+                        block.ComputeWorldCenter(out tmpBlockPos);
+                        var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, tmpBlockPos);
+                        var testDir = Vector3D.Normalize(line.From - line.To);
+                        var ray = new RayD(line.From, -testDir);
+
                         foreach (var dict in protectors.Shields)
                         {
                             var shield = dict.Key;
@@ -160,31 +163,13 @@ namespace DefenseShields
                                 info.Amount = 0;
                                 return;
                             }
-
                             if (!shieldActive) continue;
 
-                            var enclosed = dict.Value.FullCoverage;
-
-                            Vector3D tmpBlockPos;
-                            block.ComputeWorldCenter(out tmpBlockPos);
-                            if (enclosed && shieldCnt == 1)
-                            {
-                                _blockingShield = shield;
-                            }
-
-                            if (!enclosed && Vector3D.Transform(tmpBlockPos, shield.DetectMatrixOutsideInv).LengthSquared() > 1)
-                            {
-                                //Log.Line($"no block hit: enclosed:{enclosed} - gridIsParent:{gridIsParent}");
-                                continue;
-                            }
-
-                            var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, tmpBlockPos);
-                            var testDir = Vector3D.Normalize(line.From - line.To);
-                            var ray = new RayD(line.From, -testDir);
                             var worldSphere = shield.ShieldSphere;
                             var sphereCheck = worldSphere.Intersects(ray);
                             if (!sphereCheck.HasValue) continue;
                             var obbCheck = shield.SOriBBoxD.Intersects(ref line);
+                            if (!obbCheck.HasValue) continue;
                             var obb = obbCheck ?? 0;
                             var sphere = sphereCheck ?? 0;
                             double furthestHit;
@@ -192,10 +177,8 @@ namespace DefenseShields
                             else if (obb > sphere) furthestHit = obb;
                             else furthestHit = sphere;
                             var tmphitPos = line.From + testDir * -furthestHit;
-
-                            if (furthestHit > hitDist)
+                            if (furthestHit < hitDist)
                             {
-                                //Log.Line($"shield closer to attacker - dist: {furthestHit} - prevDist: {hitDist} - ShieldId:{shield.MyCube.EntityId}");
                                 hitDist = furthestHit;
                                 _blockingShield = shield;
                                 shieldHitPos = tmphitPos;
@@ -255,10 +238,15 @@ namespace DefenseShields
                             return;
                         }
 
-                        if (hostileEnt is MyVoxelBase || hostileEnt != null && shield.FriendlyCache.Contains(hostileEnt))
+                        if (hostileEnt is MyVoxelBase || hostileEnt != null)
                         {
-                            shield.DeformEnabled = true;
-                            return;
+                            EntIntersectInfo entInfo;
+                            shield.WebEnts.TryGetValue(hostileEnt, out entInfo);
+                            if (entInfo != null && entInfo.Relation == DefenseShields.Ent.Protected)
+                            {
+                                shield.DeformEnabled = true;
+                                return;
+                            }
                         }
 
                         var gunBase = hostileEnt as IMyGunBaseUser;
@@ -285,19 +273,17 @@ namespace DefenseShields
                         if (gunBase != null)
                         {
                             var hostileParent = hostileEnt.Parent != null;
-                            if (hostileParent && CustomCollision.PointInShield(hostileEnt.Parent.PositionComp.WorldVolume.Center, shield.DetectMatrixOutsideInv))
+                            if (hostileParent && CustomCollision.PointInShield(hostileEnt.Parent.PositionComp.WorldAABB.Center, shield.DetectMatrixOutsideInv))
                             {
                                 shield.DeformEnabled = true;
-                                shield.FriendlyCache.Add(hostileEnt);
                                 return;
                             }
-                            var hostilePos = hostileEnt.PositionComp.WorldMatrix.Translation;
+                            var hostilePos = hostileEnt.PositionComp.WorldAABB.Center;
 
-                            if (hostilePos == Vector3D.Zero && gunBase.Owner != null) hostilePos = gunBase.Owner.PositionComp.WorldMatrix.Translation;
+                            if (hostilePos == Vector3D.Zero && gunBase.Owner != null) hostilePos = gunBase.Owner.PositionComp.WorldAABB.Center;
                             if (!hostileParent && CustomCollision.PointInShield(hostilePos, shield.DetectMatrixOutsideInv))
                             {
                                 shield.DeformEnabled = true;
-                                shield.FriendlyCache.Add(hostileEnt);
                                 return;
                             }
                         }
@@ -327,7 +313,7 @@ namespace DefenseShields
                         || info.Type == MyDamageType.Environment || info.Type == MyDamageType.LowPressure) return;
 
                     MyProtectors protectors;
-                    GlobalProtectDict.TryGetValue(myEntity, out protectors);
+                    GlobalProtect.TryGetValue(myEntity, out protectors);
                     if (protectors.Shields == null) return;
 
                     foreach (var dict in protectors.Shields)
@@ -336,17 +322,31 @@ namespace DefenseShields
                         var shield = dict.Key;
 
                         var shieldActive = shield.DsState.State.Online && !shield.DsState.State.Lowered;
+                        if (!shieldActive) continue;
 
                         MyEntity hostileEnt;
                         var attackerId = info.AttackerId;
                         if (attackerId == _previousEntId) hostileEnt = _previousEnt;
                         else UpdatedHostileEnt(attackerId, out hostileEnt);
 
-                        if (shieldActive && shield.FriendlyCache.Contains(myEntity) && hostileEnt == null || hostileEnt != null && !shield.FriendlyCache.Contains(hostileEnt))
+                        var nullAttacker = hostileEnt == null;
+                        var playerProtected = false;
+
+                        EntIntersectInfo entInfo;
+                        if (nullAttacker)
                         {
-                            info.Amount = 0f;
-                            myEntity.Physics.SetSpeeds(Vector3.Zero, Vector3.Zero);
+                            shield.WebEnts.TryGetValue(myEntity, out entInfo);
+                            if (entInfo != null && entInfo.Relation == DefenseShields.Ent.Protected) playerProtected = true;
                         }
+                        else
+                        {
+                            shield.WebEnts.TryGetValue(hostileEnt, out entInfo);
+                            if (entInfo != null && entInfo.Relation != DefenseShields.Ent.Protected) playerProtected = true;
+                        }
+
+                        if (!playerProtected) continue;
+                        info.Amount = 0f;
+                        myEntity.Physics.SetSpeeds(Vector3.Zero, Vector3.Zero);
                     }
                 }
 
