@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using DefenseShields.Support;
 using ParallelTasks;
@@ -232,8 +233,8 @@ namespace DefenseShields
         internal readonly HashSet<MyEntity> Missiles = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> FriendlyMissileCache = new HashSet<MyEntity>();
 
-        internal readonly MyConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new MyConcurrentDictionary<MyEntity, EntIntersectInfo>();
-        internal readonly MyConcurrentDictionary<MyEntity, MoverInfo> EntsByMe = new MyConcurrentDictionary<MyEntity, MoverInfo>();
+        internal readonly ConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<MyEntity, EntIntersectInfo>();
+        internal readonly ConcurrentDictionary<MyEntity, MoverInfo> EntsByMe = new ConcurrentDictionary<MyEntity, MoverInfo>();
 
         private readonly MyConcurrentQueue<MyCubeGrid> _eject = new MyConcurrentQueue<MyCubeGrid>();
         private readonly MyConcurrentQueue<IMySlimBlock> _dmgBlocks = new MyConcurrentQueue<IMySlimBlock>();

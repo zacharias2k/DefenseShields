@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
-using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage.Collections;
 using VRage.Game;
@@ -31,7 +29,6 @@ namespace DefenseShields
         private int _count = -1;
         private int _lCount;
         private int _eCount;
-        private int _sleeper;
         internal int OnCount;
         internal int RefreshCycle;
         internal int RefreshCounter = 1;

@@ -59,11 +59,13 @@ namespace DefenseShields
 
                     if (EntSlotTick && RefreshCycle == s.MonitorSlot) MonitorRefreshTasks(s, tick);
 
-                    if (tick < s.LastWokenTick + 400 || s.Missiles.Count > 0)
+                    if (tick < s.LastWokenTick + 400 || s.ShieldComp.GridIsMoving  || s.Missiles.Count > 0)
                     {
+                        if (s.ShieldComp.GridIsMoving) s.LastWokenTick = tick;
                         s.Asleep = false;
                         return;
                     }
+
                     if (!s.PlayerByShield && !s.MoverByShield)
                     {
                         if (s.TicksWithNoActivity++ % EntCleanCycle == 0) s.EntCleanUpTime = true;
@@ -85,7 +87,9 @@ namespace DefenseShields
                         if (!(ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor)) continue;
                         if (ent.Physics.IsMoving)
                         {
-                            if (CustomCollision.CornerOrCenterInShield(ent, s.DetectMatrixOutsideInv, new Vector3D[8]) == 0)
+                            Log.Line($"test");
+                            var bObb = MyOrientedBoundingBoxD.CreateFromBoundingBox(ent.PositionComp.WorldAABB);
+                            if (s.SOriBBoxD.Intersects(ref bObb))
                             {
                                 intersect = true;
                                 break;
@@ -272,12 +276,6 @@ namespace DefenseShields
                 for (int i = 0; i < compCount; i++)
                 {
                     var s = Controllers[i];
-                    if (s.Asleep)
-                    {
-                        Log.Line($"Sleeping for {_sleeper} ticks");
-                        _sleeper++;
-                    }
-                    else _sleeper = 0;
                     if (s.WasOnline && !s.Asleep)
                     {
                         if (EntSlotTick && s.LogicSlot == RefreshCycle) s.ProtectMyself();

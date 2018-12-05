@@ -145,164 +145,172 @@ namespace DefenseShields
                     if (attackerId == _previousEntId) hostileEnt = _previousEnt;
                     else UpdatedHostileEnt(attackerId, out hostileEnt);
                     var shieldHitPos = Vector3D.NegativeInfinity;
-                    if (hostileEnt != null)
+                    try
                     {
-                        var hitDist = double.MaxValue;
-                        Vector3D tmpBlockPos;
-                        block.ComputeWorldCenter(out tmpBlockPos);
-                        var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, tmpBlockPos);
-                        var testDir = Vector3D.Normalize(line.From - line.To);
-                        var ray = new RayD(line.From, -testDir);
+                        if (hostileEnt != null)
+                        {
+                            var hitDist = double.MaxValue;
+                            Vector3D tmpBlockPos;
+                            block.ComputeWorldCenter(out tmpBlockPos);
+                            var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, tmpBlockPos);
+                            var testDir = Vector3D.Normalize(line.From - line.To);
+                            var ray = new RayD(line.From, -testDir);
 
-                        foreach (var dict in protectors.Shields)
-                        {
-                            var shield = dict.Key;
-                            var shieldActive = shield.DsState.State.Online && !shield.DsState.State.Lowered;
-                            if (!IsServer && shieldActive && !shield.WarmedUp)
-                            {
-                                info.Amount = 0;
-                                return;
-                            }
-                            if (!shieldActive) continue;
-
-                            var worldSphere = shield.ShieldSphere;
-                            var sphereCheck = worldSphere.Intersects(ray);
-                            if (!sphereCheck.HasValue) continue;
-                            var obbCheck = shield.SOriBBoxD.Intersects(ref line);
-                            if (!obbCheck.HasValue) continue;
-                            var obb = obbCheck ?? 0;
-                            var sphere = sphereCheck ?? 0;
-                            double furthestHit;
-                            if (obb <= 0 && sphere <= 0) furthestHit = 0;
-                            else if (obb > sphere) furthestHit = obb;
-                            else furthestHit = sphere;
-                            var tmphitPos = line.From + testDir * -furthestHit;
-                            if (furthestHit < hitDist)
-                            {
-                                hitDist = furthestHit;
-                                _blockingShield = shield;
-                                shieldHitPos = tmphitPos;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        var shieldActive = _blockingShield.DsState.State.Online && !_blockingShield.DsState.State.Lowered;
-                        if (!IsServer && shieldActive && !_blockingShield.WarmedUp)
-                        {
-                            info.Amount = 0;
-                            return;
-                        }
-                        if (!shieldActive || !protectors.Shields.ContainsKey(_blockingShield))
-                        {
-                            var foundBackupShield = false;
                             foreach (var dict in protectors.Shields)
                             {
                                 var shield = dict.Key;
-                                var shieldActive2 = shield.DsState.State.Online && !shield.DsState.State.Lowered;
-                                if (!IsServer && shieldActive2 && !shield.WarmedUp)
+                                var shieldActive = shield.DsState.State.Online && !shield.DsState.State.Lowered;
+                                if (!IsServer && shieldActive && !shield.WarmedUp)
                                 {
                                     info.Amount = 0;
                                     return;
                                 }
+                                if (!shieldActive) continue;
 
-                                if (!shieldActive2) continue;
-                                _blockingShield = shield;
-                                foundBackupShield = true;
-                                Log.Line($"found backup shield");
-                                break;
+                                var worldSphere = shield.ShieldSphere;
+                                var sphereCheck = worldSphere.Intersects(ray);
+                                if (!sphereCheck.HasValue) continue;
+                                var obbCheck = shield.SOriBBoxD.Intersects(ref line);
+                                if (!obbCheck.HasValue) continue;
+                                var obb = obbCheck ?? 0;
+                                var sphere = sphereCheck ?? 0;
+                                double furthestHit;
+                                if (obb <= 0 && sphere <= 0) furthestHit = 0;
+                                else if (obb > sphere) furthestHit = obb;
+                                else furthestHit = sphere;
+                                var tmphitPos = line.From + testDir * -furthestHit;
+                                if (furthestHit < hitDist)
+                                {
+                                    hitDist = furthestHit;
+                                    _blockingShield = shield;
+                                    shieldHitPos = tmphitPos;
+                                }
                             }
-
-                            if (!foundBackupShield)
+                        }
+                        else
+                        {
+                            var shieldActive = _blockingShield.DsState.State.Online && !_blockingShield.DsState.State.Lowered;
+                            if (!IsServer && shieldActive && !_blockingShield.WarmedUp)
                             {
-                                Log.Line($"did not find backup shield");
-                                _blockingShield = null;
+                                info.Amount = 0;
                                 return;
+                            }
+                            if (!shieldActive || !protectors.Shields.ContainsKey(_blockingShield))
+                            {
+                                var foundBackupShield = false;
+                                foreach (var dict in protectors.Shields)
+                                {
+                                    var shield = dict.Key;
+                                    var shieldActive2 = shield.DsState.State.Online && !shield.DsState.State.Lowered;
+                                    if (!IsServer && shieldActive2 && !shield.WarmedUp)
+                                    {
+                                        info.Amount = 0;
+                                        return;
+                                    }
+
+                                    if (!shieldActive2) continue;
+                                    _blockingShield = shield;
+                                    foundBackupShield = true;
+                                    Log.Line($"found backup shield");
+                                    break;
+                                }
+
+                                if (!foundBackupShield)
+                                {
+                                    Log.Line($"did not find backup shield");
+                                    _blockingShield = null;
+                                    return;
+                                }
                             }
                         }
                     }
+                    catch (Exception ex) { Log.Line($"Exception in SessionDamageGetShield: {ex}"); }
 
-                    if (_blockingShield != null)
+                    try
                     {
-                        var shield = _blockingShield;
-                        if (!info.IsDeformation) shield.DeformEnabled = false;
-                        else if (!shield.DeformEnabled && hostileEnt == null)
+                        if (_blockingShield != null)
                         {
-                            info.Amount = 0;
-                            return;
-                        }
+                            var shield = _blockingShield;
+                            if (!info.IsDeformation) shield.DeformEnabled = false;
+                            else if (!shield.DeformEnabled && hostileEnt == null)
+                            {
+                                info.Amount = 0;
+                                return;
+                            }
 
-                        if (info.Type == Bypass)
-                        {
-                            shield.DeformEnabled = true;
-                            return;
-                        }
-
-                        if (hostileEnt is MyVoxelBase || hostileEnt != null)
-                        {
-                            EntIntersectInfo entInfo;
-                            shield.WebEnts.TryGetValue(hostileEnt, out entInfo);
-                            if (entInfo != null && entInfo.Relation == DefenseShields.Ent.Protected)
+                            if (info.Type == Bypass)
                             {
                                 shield.DeformEnabled = true;
                                 return;
                             }
-                        }
 
-                        var gunBase = hostileEnt as IMyGunBaseUser;
-
-                        if (info.Type == DSdamage || info.Type == DSheal || info.Type == DSbypass)
-                        {
-                            if (info.Type == DSheal)
+                            if (hostileEnt is MyVoxelBase || hostileEnt != null)
                             {
+                                EntIntersectInfo entInfo;
+                                shield.WebEnts.TryGetValue(hostileEnt, out entInfo);
+                                if (entInfo != null && entInfo.Relation == DefenseShields.Ent.Protected)
+                                {
+                                    shield.DeformEnabled = true;
+                                    return;
+                                }
+                            }
+
+                            var gunBase = hostileEnt as IMyGunBaseUser;
+
+                            if (info.Type == DSdamage || info.Type == DSheal || info.Type == DSbypass)
+                            {
+                                if (info.Type == DSheal)
+                                {
+                                    info.Amount = 0f;
+                                    return;
+                                }
+
+                                if (gunBase != null && block.FatBlock == shield.Shield) //temp fix for GSF laser bug
+                                {
+                                    shield.Absorb += 1000;
+                                    shield.WorldImpactPosition = shield.ShieldEnt.Render.ColorMaskHsv;
+                                    info.Amount = 0f;
+                                    return;
+                                }
                                 info.Amount = 0f;
                                 return;
                             }
 
-                            if (gunBase != null && block.FatBlock == shield.Shield) //temp fix for GSF laser bug
+                            if (gunBase != null)
                             {
-                                shield.Absorb += 1000;
-                                shield.WorldImpactPosition = shield.ShieldEnt.Render.ColorMaskHsv;
-                                info.Amount = 0f;
-                                return;
+                                var hostileParent = hostileEnt.Parent != null;
+                                if (hostileParent && CustomCollision.PointInShield(hostileEnt.Parent.PositionComp.WorldAABB.Center, shield.DetectMatrixOutsideInv))
+                                {
+                                    shield.DeformEnabled = true;
+                                    return;
+                                }
+                                var hostilePos = hostileEnt.PositionComp.WorldAABB.Center;
+
+                                if (hostilePos == Vector3D.Zero && gunBase.Owner != null) hostilePos = gunBase.Owner.PositionComp.WorldAABB.Center;
+                                if (!hostileParent && CustomCollision.PointInShield(hostilePos, shield.DetectMatrixOutsideInv))
+                                {
+                                    shield.DeformEnabled = true;
+                                    return;
+                                }
                             }
+
+                            if (info.IsDeformation && shield.DeformEnabled) return;
+                            var bullet = info.Type == MyDamageType.Bullet;
+                            var deform = info.Type == MyDamageType.Deformation;
+                            if (bullet || deform) info.Amount = info.Amount * shield.DsState.State.ModulateEnergy;
+                            else info.Amount = info.Amount * shield.DsState.State.ModulateKinetic;
+
+                            if (!DedicatedServer && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
+                            {
+                                shield.WorldImpactPosition = shieldHitPos;
+                                shield.ImpactSize = info.Amount;
+                            }
+
+                            shield.Absorb += info.Amount;
                             info.Amount = 0f;
-                            return;
                         }
-
-                        if (gunBase != null)
-                        {
-                            var hostileParent = hostileEnt.Parent != null;
-                            if (hostileParent && CustomCollision.PointInShield(hostileEnt.Parent.PositionComp.WorldAABB.Center, shield.DetectMatrixOutsideInv))
-                            {
-                                shield.DeformEnabled = true;
-                                return;
-                            }
-                            var hostilePos = hostileEnt.PositionComp.WorldAABB.Center;
-
-                            if (hostilePos == Vector3D.Zero && gunBase.Owner != null) hostilePos = gunBase.Owner.PositionComp.WorldAABB.Center;
-                            if (!hostileParent && CustomCollision.PointInShield(hostilePos, shield.DetectMatrixOutsideInv))
-                            {
-                                shield.DeformEnabled = true;
-                                return;
-                            }
-                        }
-
-                        if (info.IsDeformation && shield.DeformEnabled) return;
-                        var bullet = info.Type == MyDamageType.Bullet;
-                        var deform = info.Type == MyDamageType.Deformation;
-                        if (bullet || deform) info.Amount = info.Amount * shield.DsState.State.ModulateEnergy;
-                        else info.Amount = info.Amount * shield.DsState.State.ModulateKinetic;
-
-                        if (!DedicatedServer && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
-                        {
-                            shield.WorldImpactPosition = shieldHitPos;
-                            shield.ImpactSize = info.Amount;
-                        }
-
-                        shield.Absorb += info.Amount;
-                        info.Amount = 0f;
                     }
+                    catch (Exception ex) { Log.Line($"Exception in SessionDamageDoDamage: {ex}"); }
                 }
                 else if (target is IMyCharacter)
                 {
@@ -349,7 +357,6 @@ namespace DefenseShields
                         myEntity.Physics.SetSpeeds(Vector3.Zero, Vector3.Zero);
                     }
                 }
-
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDamageHandler: {ex}"); }
         }

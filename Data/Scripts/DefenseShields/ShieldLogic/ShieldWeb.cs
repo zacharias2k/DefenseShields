@@ -228,8 +228,8 @@ namespace DefenseShields
             {
                 var entCenter = webent.PositionComp.WorldVolume.Center;
                 var entInfo = WebEnts[webent];
-                if (entInfo.LastTick != tick) continue;
-                if (entInfo.BlockUpdateTick == tick && (WebEnts[webent].Relation == Ent.LargeNobodyGrid || WebEnts[webent].Relation == Ent.LargeEnemyGrid))
+                if (entInfo?.LastTick != tick) continue;
+                if (entInfo.BlockUpdateTick == tick && (entInfo.Relation == Ent.LargeNobodyGrid || entInfo.Relation == Ent.LargeEnemyGrid))
                     (webent as IMyCubeGrid)?.GetBlocks(WebEnts[webent].CacheBlockList, CollectCollidableBlocks);
                 switch (WebEnts[webent].Relation)
                 {
