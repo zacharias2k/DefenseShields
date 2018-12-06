@@ -101,6 +101,7 @@ namespace DefenseShields
         internal volatile int LogicSlot;
         internal volatile int MonitorSlot;
         internal volatile bool MoverByShield;
+        internal volatile bool Dispatched;
         internal volatile bool PlayerByShield;
         internal volatile bool Asleep = true;
         internal volatile uint LastWokenTick;
@@ -132,6 +133,7 @@ namespace DefenseShields
         internal bool ControlBlockWorking;
         internal bool EnablePhysics = true;
         internal bool EntCleanUpTime;
+
 
         private bool _resetEntity;
         private bool _empOverLoad;
@@ -204,7 +206,7 @@ namespace DefenseShields
         internal BoundingBox ShieldAabb = new BoundingBox(-Vector3D.One, Vector3D.One);
         internal BoundingBoxD ShieldWorldAabb;
 
-        internal BoundingSphereD ShieldSphere3k = new BoundingSphereD(Vector3D.Zero, 1f);
+        internal BoundingSphereD ShieldSphere3K = new BoundingSphereD(Vector3D.Zero, 1f);
         internal BoundingSphereD WebSphere = new BoundingSphereD(Vector3D.Zero, 1f);
         public BoundingSphereD ShieldSphere = new BoundingSphereD(Vector3D.Zero, 1);
         private BoundingSphereD _clientPruneSphere = new BoundingSphereD(Vector3D.Zero, 1f);
@@ -223,7 +225,6 @@ namespace DefenseShields
         internal readonly List<MyEntity> FriendRefreshList = new List<MyEntity>();
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
-        private readonly List<MyEntity> _clientPruneList = new List<MyEntity>();
         private readonly List<IMyBatteryBlock> _batteryBlocks = new List<IMyBatteryBlock>();
         private readonly List<KeyValuePair<MyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<MyEntity, EntIntersectInfo>>();
 
@@ -235,6 +236,7 @@ namespace DefenseShields
 
         internal readonly ConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<MyEntity, EntIntersectInfo>();
         internal readonly ConcurrentDictionary<MyEntity, MoverInfo> EntsByMe = new ConcurrentDictionary<MyEntity, MoverInfo>();
+        internal readonly ConcurrentDictionary<MyVoxelBase, bool> VoxelsToIntersect = new ConcurrentDictionary<MyVoxelBase, bool>();
 
         private readonly MyConcurrentQueue<MyCubeGrid> _eject = new MyConcurrentQueue<MyCubeGrid>();
         private readonly MyConcurrentQueue<IMySlimBlock> _dmgBlocks = new MyConcurrentQueue<IMySlimBlock>();
@@ -354,7 +356,8 @@ namespace DefenseShields
         #endregion
 
         #region constructors
-        private MatrixD DetectionMatrix
+
+        internal MatrixD DetectionMatrix
         {
             get { return DetectMatrixOutside; }
             set

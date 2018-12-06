@@ -59,12 +59,13 @@ namespace DefenseShields
         {
             try
             {
+                if (!_isServer) return;
                 if (myEntity?.Physics == null || !myEntity.InScene || myEntity.MarkedForClose || myEntity is IMyFloatingObject || myEntity is IMyEngineerToolBase) return;
                 if (Asleep && myEntity.GetType().Name == "MyDebrisBase") return;
 
                 var aabb = myEntity.PositionComp.WorldAABB;
                 bool intersect;
-                ShieldSphere3k.Intersects(ref aabb, out intersect);
+                ShieldSphere3K.Intersects(ref aabb, out intersect);
                 if (!intersect) return;
 
                 Asleep = false;
@@ -77,6 +78,7 @@ namespace DefenseShields
         {
             try
             {
+                if (!_isServer) return;
                 if (myEntity == null || !(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))) return;
                 Missiles.Remove(myEntity);
                 FriendlyMissileCache.Remove(myEntity);

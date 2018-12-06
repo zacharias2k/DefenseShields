@@ -87,9 +87,9 @@ namespace DefenseShields
                         if (!(ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor)) continue;
                         if (ent.Physics.IsMoving)
                         {
-                            Log.Line($"test");
                             var bObb = MyOrientedBoundingBoxD.CreateFromBoundingBox(ent.PositionComp.WorldAABB);
-                            if (s.SOriBBoxD.Intersects(ref bObb))
+                            var sObb = MyOrientedBoundingBoxD.CreateFromBoundingBox(inflatedBox);
+                            if (sObb.Intersects(ref bObb))
                             {
                                 intersect = true;
                                 break;
@@ -271,35 +271,17 @@ namespace DefenseShields
             if (EntSlotTick && Enforced.Debug >= 2) Log.Line($"[NearShield] OnlineShields:{Controllers.Count} - ActiveShields:{ActiveShields.Count} - ShieldBlocks: {Shields.Count}");
             var compCount = Controllers.Count;
             if (Enforced.Debug >= 1) Dsutil1.Sw.Restart();
-            if (IsServer)
+            for (int i = 0; i < compCount; i++)
             {
-                for (int i = 0; i < compCount; i++)
+                var s = Controllers[i];
+                if (s.WasOnline && !s.Asleep)
                 {
-                    var s = Controllers[i];
-                    if (s.WasOnline && !s.Asleep)
-                    {
-                        if (EntSlotTick && s.LogicSlot == RefreshCycle) s.ProtectMyself();
-                        s.WebEntities();
-                        y++;
-                    }
-                    s.CleanTimes();
-                    s.DeformEnabled = false;
-                }
-            }
-            else
-            {
-                for (int i = 0; i < compCount; i++)
-                {
-                    var s = Controllers[i];
-                    if (s.WasOnline)
-                    {
-                        if (EntSlotTick && s.LogicSlot == RefreshCycle) s.ProtectMyself();
-                        s.WebEntitiesClient();
-                    }
-                    s.CleanTimes();
-                    s.DeformEnabled = false;
+                    if (EntSlotTick && s.LogicSlot == RefreshCycle) s.ProtectMyself();
+                    s.WebEntities();
                     y++;
                 }
+                s.CleanTimes();
+                s.DeformEnabled = false;
             }
             if (Enforced.Debug >= 1 && EntSlotTick) Dsutil1.StopWatchReport($"[Protecting] ProtectedEnts:{GlobalProtect.Count} - WakingShields:{y} - CPU:", -1);
             else if (Enforced.Debug >= 1) Dsutil1.Sw.Reset();

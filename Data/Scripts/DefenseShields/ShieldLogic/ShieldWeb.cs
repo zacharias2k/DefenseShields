@@ -1,13 +1,11 @@
 ﻿using System.Collections.Generic;
 using DefenseShields.Support;
-using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Weapons;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using VRage.Utils;
 using VRageMath;
 
 namespace DefenseShields
@@ -89,6 +87,8 @@ namespace DefenseShields
             }
 
             var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || ShieldComp.Modulator == null || ShieldComp.Modulator.ModSet.Settings.ModulateVoxels;
+            var voxelFound = false;
+            var shieldFound = false;
             var entChanged = false;
             var tick = Session.Tick;
 
@@ -98,7 +98,20 @@ namespace DefenseShields
                 var ent = PruneList[i];
                 var voxel = ent as MyVoxelBase;
                 if (ent == null || ent.MarkedForClose || voxel == null && (ent.Physics == null || ent.DefinitionId == null) || !GridIsMobile && voxel != null || disableVoxels && voxel != null || voxel != null && voxel != voxel.RootVoxel) continue;
-                if (ent is IMyFloatingObject || ent is IMyEngineerToolBase || IgnoreCache.Contains(ent) || FriendlyMissileCache.Contains(ent) || AuthenticatedCache.Contains(ent)) continue;
+                bool quickReject;
+                if (_isServer) quickReject = ent is IMyFloatingObject || ent is IMyEngineerToolBase || IgnoreCache.Contains(ent) || FriendlyMissileCache.Contains(ent) || AuthenticatedCache.Contains(ent);
+                else quickReject = !(ent is MyCubeGrid) && voxel == null && !(ent is IMyCharacter) || IgnoreCache.Contains(ent) || AuthenticatedCache.Contains(ent);
+                if (quickReject) continue;
+
+                if (voxel != null)
+                {
+                    VoxelsToIntersect[voxel] = true;
+                    voxelFound = true;
+                    entChanged = true;
+                    EnablePhysics = true;
+                    continue;
+                }
+
                 EntIntersectInfo entInfo;
                 WebEnts.TryGetValue(ent, out entInfo);
                 Ent relation;
@@ -118,6 +131,7 @@ namespace DefenseShields
                     entInfo.LastTick = tick;
                 }
                 else relation = EntType(ent);
+                if (relation == Ent.Shielded) shieldFound = true;
 
                 switch (relation)
                 {
@@ -184,6 +198,7 @@ namespace DefenseShields
                 {
                     if (relation == Ent.Other)
                     {
+                        if (!_isServer) Log.Line($"Clients should get Ent.Other");
                         var missilePast = -Vector3D.Normalize(ent.Physics.LinearVelocity) * 6;
                         var missileTestLoc = ent.PositionComp.WorldVolume.Center + missilePast;
                         var centerStep = -Vector3D.Normalize(missileTestLoc - DetectionCenter) * 2f;
@@ -209,96 +224,29 @@ namespace DefenseShields
             if (!ShieldMatrix.EqualsFast(ref OldShieldMatrix))
             {
                 OldShieldMatrix = ShieldMatrix;
-                Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutside);
-                if (!disableVoxels) Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
+                if (shieldFound) Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutside);
+                if (voxelFound) Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
             }
 
             if (ShieldComp.GridIsMoving || entChanged)
             {
                 Asleep = false;
                 LastWokenTick = tick;
-                MyAPIGateway.Parallel.Start(WebDispatch);
+                if (!Dispatched) MyAPIGateway.Parallel.StartBackground(WebDispatch, DispatchDone);
+                Dispatched = true;
             }
+        }
+
+        private void DispatchDone()
+        {
+            Dispatched = false;
         }
 
         public void WebDispatch()
         {
-            var tick = Session.Tick;
-            foreach (var webent in WebEnts.Keys)
-            {
-                var entCenter = webent.PositionComp.WorldVolume.Center;
-                var entInfo = WebEnts[webent];
-                if (entInfo?.LastTick != tick) continue;
-                if (entInfo.BlockUpdateTick == tick && (entInfo.Relation == Ent.LargeNobodyGrid || entInfo.Relation == Ent.LargeEnemyGrid))
-                    (webent as IMyCubeGrid)?.GetBlocks(WebEnts[webent].CacheBlockList, CollectCollidableBlocks);
-                switch (WebEnts[webent].Relation)
-                {
-                    case Ent.EnemyPlayer:
-                        {
-                            if ((_count == 2 || _count == 17 || _count == 32 || _count == 47) && CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
-                            {
-                                if (Session.Enforced.Debug >= 2) Log.Line($"Ent EnemyPlayer: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
-                                MyAPIGateway.Parallel.Start(() => PlayerIntersect(webent));
-                            }
-                            continue;
-                        }
-                    case Ent.SmallNobodyGrid:
-                        {
-                            if (Session.Enforced.Debug >= 2) Log.Line($"Ent SmallNobodyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
-                            MyAPIGateway.Parallel.Start(() => SmallGridIntersect(webent));
-                            continue;
-                        }
-                    case Ent.LargeNobodyGrid:
-                        {
-                            if (Session.Enforced.Debug >= 2) Log.Line($"Ent LargeNobodyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
-                            MyAPIGateway.Parallel.Start(() => GridIntersect(webent));
-                            continue;
-                        }
-                    case Ent.SmallEnemyGrid:
-                        {
-                            if (Session.Enforced.Debug >= 2) Log.Line($"Ent SmallEnemyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
-                            MyAPIGateway.Parallel.Start(() => SmallGridIntersect(webent));
-                            continue;
-                        }
-                    case Ent.LargeEnemyGrid:
-                        {
-                            if (Session.Enforced.Debug >= 2) Log.Line($"Ent LargeEnemyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
-                            MyAPIGateway.Parallel.Start(() => GridIntersect(webent));
-                            continue;
-                        }
-                    case Ent.Shielded:
-                        {
-                            if (Session.Enforced.Debug >= 2) Log.Line($"Ent Shielded: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
-                            MyAPIGateway.Parallel.Start(() => ShieldIntersect(webent));
-                            continue;
-                        }
-                    case Ent.Other:
-                        {
-                            if (Session.Enforced.Debug >= 2) Log.Line($"Ent Other: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
-                            if (webent.MarkedForClose || !webent.InScene || webent.Closed) continue;
-                            var meteor = webent as IMyMeteor;
-                            if (meteor != null)
-                            {
-                                if (CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv)) _meteorDmg.Enqueue(meteor);
-                            }
-                            else
-                            {
-                                var predictedHit = CustomCollision.MissileIntersect(this, webent, DetectionMatrix, DetectMatrixOutsideInv);
-                                if (predictedHit != null) _missileDmg.Enqueue(webent);
-                            }
-                            continue;
-                        }
-                    case Ent.VoxelBase:
-                        {
-                            if (Session.Enforced.Debug >= 2) Log.Line($"Ent VoxelBase: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
-                            MyAPIGateway.Parallel.Start(() => VoxelIntersect(webent as MyVoxelBase));
-                            continue;
-                        }
-                    default:
-                        if (Session.Enforced.Debug >= 2) Log.Line($"Ent default: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
-                        continue;
-                }
-            }
+            if (VoxelsToIntersect.Count > 0) MyAPIGateway.Parallel.Start(VoxelIntersect);
+            if (WebEnts.Count > 1) MyAPIGateway.Parallel.ForEach(WebEnts.Keys, EntIntersectSelector);
+            else foreach (var webent in WebEnts.Keys) EntIntersectSelector(webent);
         }
         #endregion
 
@@ -387,13 +335,6 @@ namespace DefenseShields
             var relationship = MyCube.GetUserRelationToOwner(owners[0]);
             var enemy = relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare;
             return enemy;
-        }
-
-        private static bool CollectCollidableBlocks(IMySlimBlock mySlimBlock)
-        {
-            return mySlimBlock.BlockDefinition.Id.TypeId != typeof(MyObjectBuilder_TextPanel)
-                   && mySlimBlock.BlockDefinition.Id.TypeId != typeof(MyObjectBuilder_ButtonPanel)
-                   && mySlimBlock.BlockDefinition.Id.SubtypeId != MyStringHash.TryGet("SmallLight");
         }
         #endregion
     }

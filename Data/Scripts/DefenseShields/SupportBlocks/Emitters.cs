@@ -536,6 +536,7 @@ namespace DefenseShields
             }
             else
             {
+                ShieldComp.DefenseShields.Icosphere.ReturnPhysicsVerts(ShieldComp.DefenseShields.DetectionMatrix, ShieldComp.PhysicsOutside);
                 MyAPIGateway.Parallel.For(0, ShieldComp.PhysicsOutside.Length, i =>
                 {
                     var hit = MyGrid.RayCastBlocks(testPos, ShieldComp.PhysicsOutside[i]);

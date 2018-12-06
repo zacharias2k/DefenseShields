@@ -207,7 +207,6 @@
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldCharge.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldSupport.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldRun.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldWebClient.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldEvents.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldStates.cs" />

@@ -28,7 +28,6 @@ namespace DefenseShields
                 UpdateDimensions = true;
                 if (UpdateDimensions) RefreshDimensions();
             }
-            Icosphere.ReturnPhysicsVerts(DetectionMatrix, ShieldComp.PhysicsOutside);
         }
 
         public void CreateHalfExtents()
@@ -161,7 +160,7 @@ namespace DefenseShields
 
             if (_isServer)
             {
-                ShieldSphere3k.Center = DetectionCenter;
+                ShieldSphere3K.Center = DetectionCenter;
                 WebSphere.Center = DetectionCenter;
             }
             else _clientPruneSphere.Center = DetectionCenter;
@@ -178,7 +177,7 @@ namespace DefenseShields
 
                 if (_isServer)
                 {
-                    ShieldSphere3k.Radius = BoundingRange + 3000;
+                    ShieldSphere3K.Radius = BoundingRange + 3000;
                     WebSphere.Radius = BoundingRange + 2.5;
                 }
                 else _clientPruneSphere.Radius = BoundingRange + 2.5;
