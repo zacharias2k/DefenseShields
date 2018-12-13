@@ -33,7 +33,7 @@ namespace DefenseShields
                     SettingsUpdated = false;
                     DsSet.SaveSettings();
                     ResetShape(false, false);
-                    if (Session.Enforced.Debug >= 2) Log.Line($"SettingsUpdated: server:{Session.IsServer} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 3) Log.Line($"SettingsUpdated: server:{Session.IsServer} - ShieldId [{Shield.EntityId}]");
                 }
             }
             else if (_count == 34)
@@ -90,7 +90,7 @@ namespace DefenseShields
             {
                 var notReady = !FuncTask.IsComplete || DsState.State.Sleeping || DsState.State.Suspended;
                 if (notReady) return;
-                if (Session.Enforced.Debug >= 2) Log.Line($"BlockChanged: functional:{_functionalEvent} - funcComplete:{FuncTask.IsComplete} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"BlockChanged: functional:{_functionalEvent} - funcComplete:{FuncTask.IsComplete} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ShieldId [{Shield.EntityId}]");
                 if (_functionalEvent) FunctionalChanged(backGround);
                 _blockEvent = false;
                 _funcTick = Tick + 60;
@@ -142,7 +142,7 @@ namespace DefenseShields
                                 var distributor = controller.GridResourceDistributor;
                                 if (distributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects)
                                 {
-                                    if (Session.Enforced.Debug >= 1) Log.Line($"Found MyGridDistributor from type:{block.BlockDefinition} - ShieldId [{Shield.EntityId}]");
+                                    if (Session.Enforced.Debug == 3) Log.Line($"Found MyGridDistributor from type:{block.BlockDefinition} - ShieldId [{Shield.EntityId}]");
                                     MyGridDistributor = controller.GridResourceDistributor;
                                     gridDistNeedUpdate = false;
                                 }
@@ -171,12 +171,12 @@ namespace DefenseShields
         private void HierarchyUpdate()
         {
             var checkGroups = MyCube.IsWorking && MyCube.IsFunctional && (DsState.State.Online || DsState.State.NoPower || DsState.State.Sleeping || DsState.State.Waking);
-            if (Session.Enforced.Debug >= 2) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Online:{DsState.State.Online} - Power:{!DsState.State.NoPower} - Sleep:{DsState.State.Sleeping} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Online:{DsState.State.Online} - Power:{!DsState.State.NoPower} - Sleep:{DsState.State.Sleeping} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
             if (checkGroups)
             {
                 _subTick = Tick + 10;
                 UpdateSubGrids();
-                if (Session.Enforced.Debug >= 2) Log.Line($"HierarchyWasDelayed: this:{Tick} - delayedTick: {_subTick} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"HierarchyWasDelayed: this:{Tick} - delayedTick: {_subTick} - ShieldId [{Shield.EntityId}]");
             }
         }
 
@@ -186,7 +186,7 @@ namespace DefenseShields
 
             var gotGroups = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
             if (gotGroups.Count == ShieldComp.GetLinkedGrids.Count) return;
-            if (Session.Enforced.Debug >= 1 && ShieldComp.GetLinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.GetLinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.GetLinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 3 && ShieldComp.GetLinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.GetLinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.GetLinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
 
             lock (SubLock)
             {
@@ -212,20 +212,10 @@ namespace DefenseShields
             CleanUp(0);
             CleanUp(1);
             CleanUp(2);
-            CleanUp(4);
-            CleanUp(5);
             SyncThreadedEnts(true);
         }
 
-        public void CleanTimes()
-        {
-            if (_staleGrids.Count != 0) CleanUp(0);
-            if (_lCount == 9 && _count == 58) CleanUp(1);
-            if (_effectsCleanup && (_count == 1 || _count == 21 || _count == 41)) CleanUp(2);
-            if ((_lCount * 60 + _count + 1) % 300 == 0) CleanUp(4);
-        }
-
-        private void CleanUp(int task)
+        public void CleanUp(int task)
         {
             try
             {
@@ -233,16 +223,16 @@ namespace DefenseShields
                 {
                     case 0:
                         MyCubeGrid grid;
-                        while (_staleGrids.TryDequeue(out grid))
+                        while (StaleGrids.TryDequeue(out grid))
                         {
                             EntIntersectInfo gridRemoved;
                             WebEnts.TryRemove(grid, out gridRemoved);
                         }
                         break;
                     case 1:
+                        AuthenticatedCache.Clear();
                         EnemyShields.Clear();
                         IgnoreCache.Clear();
-
                         _webEntsTmp.Clear();
                         _webEntsTmp.AddRange(WebEnts.Where(info => Tick - info.Value.LastTick > 180));
                         foreach (var webent in _webEntsTmp)
@@ -263,17 +253,7 @@ namespace DefenseShields
                                 }
                             }
                         }
-                        _effectsCleanup = false;
-                        break;
-                    case 4:
-                        {
-                            AuthenticatedCache.Clear();
-                        }
-                        break;
-                    case 5:
-                        {
-                            WebEnts.Clear();
-                        }
+                        EffectsCleanup = false;
                         break;
                 }
             }

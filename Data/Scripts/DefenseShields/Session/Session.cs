@@ -38,15 +38,9 @@ namespace DefenseShields
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdO2GeneratorState, O2GeneratorStateReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEmitterState, EmitterStateReceived);
 
-                if (!MpActive)
-                {
-                    Players.Add(MyAPIGateway.Session.Player);
-                    Characters.Add(MyAPIGateway.Session.Player.Character);
-                }
-                MyVisualScriptLogicProvider.PlayerConnected += PlayerConnected;
+                if (!MpActive) Players.Add(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
                 MyVisualScriptLogicProvider.PlayerDisconnected += PlayerDisconnected;
-
-
+                MyVisualScriptLogicProvider.PlayerRespawnRequest += PlayerConnected;
                 if (!DedicatedServer)
                 {
                     MyAPIGateway.TerminalControls.CustomControlGetter += CustomControls;
@@ -63,7 +57,7 @@ namespace DefenseShields
                 _syncDistSqr += 500;
                 _syncDistSqr *= _syncDistSqr;
 
-                if (Enforced.Debug >= 1) Log.Line($"SyncDistSqr:{_syncDistSqr} - DistNorm:{Math.Sqrt(_syncDistSqr)}");
+                if (Enforced.Debug >= 3) Log.Line($"SyncDistSqr:{_syncDistSqr} - DistNorm:{Math.Sqrt(_syncDistSqr)}");
             }
             catch (Exception ex) { Log.Line($"Exception in BeforeStart: {ex}"); }
         }
@@ -72,7 +66,6 @@ namespace DefenseShields
         #region Draw
         public override void Draw()
         {
-
             if (DedicatedServer) return;
             try
             {
@@ -145,27 +138,43 @@ namespace DefenseShields
 
         public override void UpdateAfterSimulation()
         {
-            if (Shields.Count > 0) MyAPIGateway.Parallel.StartBackground(WebMonitor);
+            if (FunctionalShields.Count > 0) MyAPIGateway.Parallel.StartBackground(WebMonitor);
         }
         #endregion
 
         #region Events
-        private void PlayerConnected(long l)
+        private static void PlayerConnected(long id)
         {
-            var ent = MyAPIGateway.Entities.GetEntityById(l);
-            var character = ent as IMyCharacter;
-            var player = MyAPIGateway.Players.GetPlayerControllingEntity(ent);
-            if (character != null) Characters.Add(character);
-            if (player != null) Players.Add(player);
+            try
+            {
+                if (Players.ContainsKey(id))
+                {
+                    Log.Line($"Player id({id}) already exists");
+                    return;
+                }
+                MyAPIGateway.Multiplayer.Players.GetPlayers(null, myPlayer => FindPlayer(myPlayer, id));
+            }
+            catch (Exception ex) { Log.Line($"Exception in PlayerConnected: {ex}"); }
         }
 
-        private void PlayerDisconnected(long l)
+        private static void PlayerDisconnected(long l)
         {
-            var ent = MyAPIGateway.Entities.GetEntityById(l);
-            var character = ent as IMyCharacter;
-            var player = MyAPIGateway.Players.GetPlayerControllingEntity(ent);
-            if (character != null) Characters.Add(character);
-            if (player != null) Players.Remove(player);
+            try
+            {
+                Players.Remove(l);
+                if (Enforced.Debug >= 3) Log.Line($"Removed player, new playerCount:{Players.Count}");
+            }
+            catch (Exception ex) { Log.Line($"Exception in PlayerDisconnected: {ex}"); }
+        }
+
+        private static bool FindPlayer(IMyPlayer player, long id)
+        {
+            if (player.IdentityId == id)
+            {
+                Players[id] = player;
+                if (Enforced.Debug >= 3) Log.Line($"Added player: {player.DisplayName}, new playerCount:{Players.Count}");
+            }
+            return false;
         }
         #endregion
 
@@ -219,8 +228,8 @@ namespace DefenseShields
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdO2GeneratorState, O2GeneratorStateReceived);
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEmitterState, EmitterStateReceived);
 
-            MyVisualScriptLogicProvider.PlayerConnected -= PlayerConnected;
             MyVisualScriptLogicProvider.PlayerDisconnected -= PlayerDisconnected;
+            MyVisualScriptLogicProvider.PlayerRespawnRequest -= PlayerConnected;
 
             if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter -= CustomControls;
 

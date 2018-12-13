@@ -14,61 +14,66 @@ namespace DefenseShields
     public partial class DefenseShields
     {
         #region Intersect
-        private void EntIntersectSelector(MyEntity webent)
+        private void EntIntersectSelector(KeyValuePair<MyEntity, EntIntersectInfo> pair)
         {
+            var entInfo = pair.Value;
+            var webent = pair.Key;
+
+            if (entInfo == null || webent == null || webent.MarkedForClose) return;
+            var relation = entInfo.Relation;
+
             var tick = Session.Tick;
             var tick25 = tick % 25 == 0;
             var entCenter = webent.PositionComp.WorldVolume.Center;
-            var entInfo = WebEnts[webent];
-            if (entInfo?.LastTick != tick) return;
-            if (entInfo.BlockUpdateTick == tick && (entInfo.Relation == Ent.LargeNobodyGrid || entInfo.Relation == Ent.LargeEnemyGrid))
+            
+            if (entInfo.LastTick != tick) return;
+            if (entInfo.BlockUpdateTick == tick && (relation == Ent.LargeNobodyGrid || relation == Ent.LargeEnemyGrid))
                 (webent as IMyCubeGrid)?.GetBlocks(entInfo.CacheBlockList);
-
-            switch (entInfo.Relation)
+            switch (relation)
             {
                 case Ent.EnemyPlayer:
                     {
                         if (tick25 && CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
                         {
-                            if (Session.Enforced.Debug >= 2) Log.Line($"Ent EnemyPlayer: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
+                            if (Session.Enforced.Debug == 3) Log.Line($"Ent EnemyPlayer: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
                             PlayerIntersect(webent);
                         }
                         return;
                     }
                 case Ent.SmallNobodyGrid:
                     {
-                        if (Session.Enforced.Debug >= 2) Log.Line($"Ent SmallNobodyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug == 3) Log.Line($"Ent SmallNobodyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
                         SmallGridIntersect(webent);
                         return;
                     }
                 case Ent.LargeNobodyGrid:
                     {
-                        if (Session.Enforced.Debug >= 2) Log.Line($"Ent LargeNobodyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug == 3) Log.Line($"Ent LargeNobodyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
                         GridIntersect(webent);
                         return;
                     }
                 case Ent.SmallEnemyGrid:
                     {
-                        if (Session.Enforced.Debug >= 2) Log.Line($"Ent SmallEnemyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug == 3) Log.Line($"Ent SmallEnemyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
                         SmallGridIntersect(webent);
                         return;
                     }
                 case Ent.LargeEnemyGrid:
                     {
-                        if (Session.Enforced.Debug >= 2) Log.Line($"Ent LargeEnemyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug == 3) Log.Line($"Ent LargeEnemyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
                         GridIntersect(webent);
                         return;
                     }
                 case Ent.Shielded:
                     {
-                        if (Session.Enforced.Debug >= 2) Log.Line($"Ent Shielded: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug == 3) Log.Line($"Ent Shielded: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
                         ShieldIntersect(webent);
                         return;
                     }
                 case Ent.Other:
                     {
                         if (!_isServer) return;
-                        if (Session.Enforced.Debug >= 2) Log.Line($"Ent Other: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug == 3) Log.Line($"Ent Other: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
                         if (webent.MarkedForClose || !webent.InScene || webent.Closed) return;
                         var meteor = webent as IMyMeteor;
                         if (meteor != null)
@@ -84,7 +89,7 @@ namespace DefenseShields
                     }
 
                 default:
-                    if (Session.Enforced.Debug >= 2) Log.Line($"Ent default: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 3) Log.Line($"Ent default: {webent.DebugName} - relation:{entInfo.Relation} - ShieldId [{Shield.EntityId}]");
                     return;
             }
         }
@@ -138,7 +143,6 @@ namespace DefenseShields
         {
             var grid = (MyCubeGrid)ent;
             if (ent == null || grid == null || grid.MarkedForClose || grid.Closed) return;
-
             if (GridInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB))) return;
             EntIntersectInfo entInfo;
             WebEnts.TryGetValue(ent, out entInfo);
@@ -146,11 +150,11 @@ namespace DefenseShields
 
             if (_isServer) CustomCollision.SmallIntersect(entInfo, _fewDmgBlocks, _destroyedBlocks, _forceData, _impulseData, grid, DetectMatrixOutside, DetectMatrixOutsideInv);
             else CustomCollision.ClientSmallIntersect(entInfo, grid, DetectMatrixOutside, DetectMatrixOutsideInv, _eject);
-
             var contactpoint = entInfo.ContactPoint;
             entInfo.ContactPoint = Vector3D.NegativeInfinity;
             if (contactpoint != Vector3D.NegativeInfinity)
             {
+                //Log.Line($"Small- Contact point not neginf - ejectors:{_eject.Count}");
                 entInfo.Touched = true;
                 WebDamage = true;
                 if (!_isServer) return;
@@ -366,7 +370,7 @@ namespace DefenseShields
                             }
                             if (block.CubeGrid != breaching)
                             {
-                                if (!stale) _staleGrids.Enqueue(breaching);
+                                if (!stale) StaleGrids.Enqueue(breaching);
                                 stale = true;
                                 continue;
                             }
@@ -540,7 +544,7 @@ namespace DefenseShields
             var damage = 10f;
             if (ammoInfo == null)
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - No Missile Ammo Match Found for {((MyEntity)ammoEnt).DebugName}! Let wepaon mod author know their ammo definition has improper model path");
+                if (Session.Enforced.Debug == 3) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - No Missile Ammo Match Found for {((MyEntity)ammoEnt).DebugName}! Let wepaon mod author know their ammo definition has improper model path");
                 return damage;
             }
             var dmgMulti = UtilsStatic.GetDmgMulti(ammoInfo.BackKickForce);

@@ -24,14 +24,14 @@ namespace DefenseShields
         {
             if (!WarmedUp && !DsState.State.Message)
             {
-                if (Session.Enforced.Debug >= 2) Log.Line($"ChangeStateSupression: WarmedUp:{WarmedUp} - Message:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"ChangeStateSupression: WarmedUp:{WarmedUp} - Message:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
                 return;
             }
-            if (Session.Enforced.Debug >= 2) Log.Line($"ShieldChangeState: Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
-            else if (Session.Enforced.Debug >= 1 && DsState.State.Message) Log.Line($"ShieldChangeState: Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"ShieldChangeState: Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
+            else if (Session.Enforced.Debug == 3 && DsState.State.Message) Log.Line($"ShieldChangeState: Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
             if (Session.MpActive)
             {
-                if (Session.Enforced.Debug >= 2) Log.Line($"ServerUpdate: Broadcast:{DsState.State.Message}");
+                if (Session.Enforced.Debug == 3) Log.Line($"ServerUpdate: Broadcast:{DsState.State.Message}");
                 DsState.NetworkUpdate();
             }
             if (!_isDedicated && DsState.State.Message)
@@ -49,13 +49,13 @@ namespace DefenseShields
             DsSet.Settings = newSettings;
             SettingsUpdated = true;
             if (newShape) FitChanged = true;
-            if (Session.Enforced.Debug >= 1) Log.Line($"UpdateSettings - server:{Session.IsServer} - ShieldId [{Shield.EntityId}]:\n{newSettings}");
+            if (Session.Enforced.Debug == 3) Log.Line($"UpdateSettings - server:{Session.IsServer} - ShieldId [{Shield.EntityId}]:\n{newSettings}");
         }
 
         public void UpdateState(ProtoControllerState newState)
         {
             DsState.State = newState;
-            if (!_isServer && Session.Enforced.Debug >= 1 && (_clientNotReady || DsState.State.Mode < 0)) Log.Line($"UpdateState - ClientAndReady:{!_clientNotReady} - Mode:{DsState.State.Mode} - server:{Session.IsServer} - ShieldId [{Shield.EntityId}]:\n{newState}");
+            if (!_isServer && Session.Enforced.Debug == 3 && (_clientNotReady || DsState.State.Mode < 0)) Log.Line($"UpdateState - ClientAndReady:{!_clientNotReady} - Mode:{DsState.State.Mode} - server:{Session.IsServer} - ShieldId [{Shield.EntityId}]:\n{newState}");
             _clientNotReady = false;
         }
 
@@ -65,6 +65,11 @@ namespace DefenseShields
             Tick60 = Tick % 60 == 0;
             Tick180 = Tick % 180 == 0;
             Tick600 = Tick % 600 == 0;
+            LogicPaused = false;
+            //if (Tick < 1000) LogicPaused = false;
+            //else if (Tick >= 1000 && Tick <= 2000) LogicPaused = true;
+            //else if (Tick > 2000) LogicPaused = false;
+
             var wait = _isServer && !Tick60 && DsState.State.Suspended;
 
             MyGrid = MyCube.CubeGrid;
@@ -74,7 +79,7 @@ namespace DefenseShields
 
             //if (Tick60) Log.Line($"test: {Shield.EntityId} - {DsState.State.Suspended} - {ShieldMode} - {IsStatic} - { ShieldComp.StationEmitter == null} - {ShieldComp.ShipEmitter == null}");
             if (wait ||!AllInited && !PostInit()) return false;
-            if (Session.Enforced.Debug >= 2) Dsutil1.Sw.Restart();
+            if (Session.Enforced.Debug == 3) Dsutil1.Sw.Restart();
 
             IsStatic = MyGrid.IsStatic;
 
@@ -135,6 +140,8 @@ namespace DefenseShields
                 Timing();
                 _clientOn = true;
                 _clientLowered = false;
+
+                _syncEnts = _forceData.Count != 0 || _impulseData.Count != 0 || _eject.Count != 0;
             }
 
             return true;
@@ -155,15 +162,14 @@ namespace DefenseShields
                 CleanAll();
                 _offlineCnt = -1;
                 ShieldChangeState();
-                if (Session.Enforced.Debug >= 2) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
             }
             else
             {
                 UpdateSubGrids();
                 Shield.RefreshCustomInfo();
-                if (Session.Enforced.Debug >= 2) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
             }
-            Session.Instance.Controllers.Add(this);
             Session.Instance.ActiveShields.Add(this);
         }
 
@@ -193,7 +199,7 @@ namespace DefenseShields
 
             if (_isServer)
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"StateUpdate: ShieldOff - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: ShieldOff - ShieldId [{Shield.EntityId}]");
                 ShieldChangeState();
             }
             else
@@ -201,8 +207,7 @@ namespace DefenseShields
                 UpdateSubGrids();
                 Shield.RefreshCustomInfo();
             }
-            Session.Instance.Controllers.Remove(this);
-            Session.Instance.Controllers.Remove(this);
+            Session.Instance.ActiveShields.Remove(this);
         }
 
         private bool ControllerFunctional()
@@ -217,6 +222,7 @@ namespace DefenseShields
             }
             if (ShieldComp.EmitterEvent) EmitterEventDetected();
             ControlBlockWorking = IsWorking && IsFunctional;
+
             if (!ControlBlockWorking || !ShieldComp.EmittersWorking)
             {
                 if (_genericDownLoop == -1) _genericDownLoop = 0;
@@ -244,7 +250,7 @@ namespace DefenseShields
                 if (GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los) DsState.State.Message = true;
                 else if (!GridIsMobile && ShieldComp.StationEmitter != null && !ShieldComp.StationEmitter.EmiState.State.Los) DsState.State.Message = true;
                 if (_genericDownLoop == -1) _genericDownLoop = 0;
-                if (Session.Enforced.Debug >= 1) Log.Line($"EmitterEvent: detected an emitter event and no emitter is working, shield mode: {ShieldMode} - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"EmitterEvent: detected an emitter event and no emitter is working, shield mode: {ShieldMode} - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
                 return;
             }
             DsState.State.EmitterWorking = true;
@@ -361,8 +367,6 @@ namespace DefenseShields
                 ResetShape(true, true);
                 CleanUp(0);
                 CleanUp(1);
-                //CleanUp(3);
-                //CleanUp(4);
 
                 _currentHeatStep = 0;
                 _accumulatedHeat = 0;
@@ -386,7 +390,7 @@ namespace DefenseShields
                 Shield.RefreshCustomInfo();
                 ((MyCubeBlock)Shield).UpdateTerminal();
             }
-            if (Session.Enforced.Debug >= 2) Log.Line($"ShieldDown: Count: {_offlineCnt} - ShieldPower: {ShieldCurrentPower} - gridMax: {GridMaxPower} - currentPower: {GridCurrentPower} - maint: {_shieldMaintaintPower} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"ShieldDown: Count: {_offlineCnt} - ShieldPower: {ShieldCurrentPower} - gridMax: {GridMaxPower} - currentPower: {GridCurrentPower} - maint: {_shieldMaintaintPower} - ShieldId [{Shield.EntityId}]");
         }
 
         private void LosCheck()
@@ -428,7 +432,7 @@ namespace DefenseShields
                 {
                     DsState.State.Waking = true;
                     DsState.State.Message = true;
-                    if (Session.Enforced.Debug >= 1) Log.Line($"Waking: ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 3) Log.Line($"Waking: ShieldId [{Shield.EntityId}]");
                 }
                 if (_genericDownLoop == -1) _genericDownLoop = 0;
                 return true;
@@ -469,7 +473,7 @@ namespace DefenseShields
                 Shield.Enabled = false;
                 DsState.State.FieldBlocked = true;
                 DsState.State.Message = true;
-                if (Session.Enforced.Debug >= 1)Log.Line($"Field blocked: - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3)Log.Line($"Field blocked: - ShieldId [{Shield.EntityId}]");
                 return true;
             }
             DsState.State.FieldBlocked = false;
@@ -527,7 +531,7 @@ namespace DefenseShields
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
                     ShellVisibility(true);
                     _clientLowered = true;
-                    if (Session.Enforced.Debug >= 1) Log.Line($"Lowered: shield lowered - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 3) Log.Line($"Lowered: shield lowered - ShieldId [{Shield.EntityId}]");
                 }
                 PowerOnline();
 
@@ -555,7 +559,7 @@ namespace DefenseShields
                     if (!_isDedicated) ShellVisibility(true);
                     DsState.State.Sleeping = true;
                     Shield.RefreshCustomInfo();
-                    if (Session.Enforced.Debug >= 1) Log.Line($"Sleep: controller detected sleeping emitter, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 3) Log.Line($"Sleep: controller detected sleeping emitter, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.Sleeping = true;
                 return true;
@@ -575,7 +579,7 @@ namespace DefenseShields
 
                 DsState.State.Sleeping = false;
                 Shield.RefreshCustomInfo();
-                if (Session.Enforced.Debug >= 1) Log.Line($"Sleep: Controller was sleeping but is now waking, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"Sleep: Controller was sleeping but is now waking, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
 
             DsState.State.Sleeping = false;
@@ -636,7 +640,7 @@ namespace DefenseShields
             {
                 if (DsState.State.Suspended)
                 {
-                    if (Session.Enforced.Debug >= 1) Log.Line($"Suspend: controller unsuspending - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 3) Log.Line($"Suspend: controller unsuspending - ShieldId [{Shield.EntityId}]");
                     DsState.State.Suspended = false;
                     DsState.State.Heat = 0;
                     UnsuspendTick = Tick + 1800;
@@ -648,11 +652,19 @@ namespace DefenseShields
                     UpdateEntity();
                     GetEnhancernInfo();
                     GetModulationInfo();
-                    if (Session.Enforced.Debug >= 1) Log.Line($"Unsuspended: CM:{ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 3) Log.Line($"Unsuspended: CM:{ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.Suspended = false;
             }
             if (DsState.State.Suspended) SetShieldType(true);
+
+            if (DsState.State.Suspended != WasSuspended)
+            {
+                if (DsState.State.Suspended) Session.Instance.FunctionalShields.Remove(this);
+                else Session.Instance.FunctionalShields.Add(this);
+            }
+            WasSuspended = DsState.State.Suspended;
+
             return DsState.State.Suspended;
         }
 
@@ -664,7 +676,7 @@ namespace DefenseShields
                 if (cleanEnts) InitEntities(false);
                 DsState.State.Suspended = true;
                 ShieldFailed();
-                if (Session.Enforced.Debug >= 2) Log.Line($"Suspended: controller mode is: {ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"Suspended: controller mode is: {ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
             }
             if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
             DsState.State.Suspended = true;
@@ -696,7 +708,7 @@ namespace DefenseShields
                 {
                     DsState.State.ControllerGridAccess = false;
                     Shield.RefreshCustomInfo();
-                    if (Session.Enforced.Debug >= 1) Log.Line($"GridOwner: controller is not owned: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 3) Log.Line($"GridOwner: controller is not owned: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.ControllerGridAccess = false;
                 return false;
@@ -706,7 +718,7 @@ namespace DefenseShields
             {
                 DsState.State.ControllerGridAccess = true;
                 Shield.RefreshCustomInfo();
-                if (Session.Enforced.Debug >= 1) Log.Line($"GridOwner: controller is owned: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"GridOwner: controller is owned: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
             DsState.State.ControllerGridAccess = true;
             return true;
@@ -722,7 +734,7 @@ namespace DefenseShields
             ResetShape(false, false);
             SetShieldType(false);
             if (!_isDedicated) ShellVisibility(true);
-            if (Session.Enforced.Debug >= 1) Log.Line($"UpdateEntity: sEnt:{ShieldEnt == null} - sPassive:{_shellPassive == null} - controller mode is: {ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"UpdateEntity: sEnt:{ShieldEnt == null} - sPassive:{_shellPassive == null} - controller mode is: {ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
             Icosphere.ShellActive = null;
             _updateRender = true;
         }
@@ -768,7 +780,7 @@ namespace DefenseShields
 
         private void BroadcastMessage()
         {
-            if (Session.Enforced.Debug >= 2) Log.Line($"Broadcasting message to local playerId - Server:{_isServer} - Dedicated:{_isDedicated} - Id:{MyAPIGateway.Multiplayer.MyId}");
+            if (Session.Enforced.Debug == 3) Log.Line($"Broadcasting message to local playerId - Server:{_isServer} - Dedicated:{_isDedicated} - Id:{MyAPIGateway.Multiplayer.MyId}");
             var checkMobLos = GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los;
             if (!DsState.State.EmitterWorking && (!DsState.State.Waking || checkMobLos && _genericDownLoop > -1 || checkMobLos && !_isServer))
             {
@@ -787,7 +799,7 @@ namespace DefenseShields
         {
             if (DsState.State.Message)
             {
-                if (Session.Enforced.Debug >= 2) Log.Line($"ClientOffline: Broadcasting message");
+                if (Session.Enforced.Debug == 3) Log.Line($"ClientOffline: Broadcasting message");
                 BroadcastMessage();
                 DsState.State.Message = false;
             }

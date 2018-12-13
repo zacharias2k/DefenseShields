@@ -49,7 +49,7 @@ namespace DefenseShields
                     State = loadedState;
                     loadedSomething = true;
                 }
-                if (Session.Enforced.Debug >= 2) Log.Line($"Loaded - ModulatorId [{Modulator.EntityId}]:\n{State.ToString()}");
+                if (Session.Enforced.Debug == 3) Log.Line($"Loaded - ModulatorId [{Modulator.EntityId}]:\n{State.ToString()}");
             }
             return loadedSomething;
         }
@@ -60,7 +60,7 @@ namespace DefenseShields
 
             if (Session.IsServer)
             {
-                if (Session.Enforced.Debug >= 2) Log.Line($"ServRelay - Online:{State.Online} Link:{State.Link} - Backup:{State.Backup} - ModulatorId [{Modulator.EntityId}]: network state update for modulator");
+                if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - Online:{State.Online} Link:{State.Link} - Backup:{State.Backup} - ModulatorId [{Modulator.EntityId}]: network state update for modulator");
                 Session.PacketizeModulatorState(Modulator, State); // update clients with server's settings
             }
         }
@@ -120,12 +120,12 @@ namespace DefenseShields
 
             if (Session.IsServer)
             {
-                if (Session.Enforced.Debug >= 2) Log.Line($"ServRelay - ModulatorId [{Modulator.EntityId}]: network settings update for modulator");
+                if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - ModulatorId [{Modulator.EntityId}]: network settings update for modulator");
                 Session.PacketizeModulatorSettings(Modulator, Settings); // update clients with server's settings
             }
             else // client, send settings to server
             {
-                if (Session.Enforced.Debug >= 2) Log.Line($"ClientRelay - ModulatorId [{Modulator.EntityId}]: sent network settings update for modulator");
+                if (Session.Enforced.Debug == 3) Log.Line($"ClientRelay - ModulatorId [{Modulator.EntityId}]: sent network settings update for modulator");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataModulatorSettings(MyAPIGateway.Multiplayer.MyId, Modulator.EntityId, Settings));
                 MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdModulatorSettings, bytes);
             }

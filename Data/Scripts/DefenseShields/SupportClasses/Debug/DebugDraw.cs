@@ -286,10 +286,17 @@ namespace DefenseShields.Support
             MySimpleObjectDraw.DrawTransparentBox(ref wm, ref box, ref color, MySimpleObjectRasterizer.Solid, 1);
         }
 
-        public static void DrawObb(MatrixD matrix, MyOrientedBoundingBoxD obb, Color color)
+        public static void DrawBox1(BoundingBoxD box, Color color, MySimpleObjectRasterizer raster = MySimpleObjectRasterizer.Wireframe, float thickness = 0.01f)
         {
-            var box = new BoundingBoxD(-obb.HalfExtent, obb.HalfExtent);
-            MySimpleObjectDraw.DrawTransparentBox(ref matrix, ref box, ref color, MySimpleObjectRasterizer.Solid, 1);
+            var wm = box.Matrix;
+            MySimpleObjectDraw.DrawTransparentBox(ref wm, ref box, ref color, raster, 1, thickness, MyStringId.GetOrCompute("Square"), MyStringId.GetOrCompute("Square"));
+        }
+
+        public static void DrawBox2(BoundingBoxD box, MatrixD wm, Color color, MySimpleObjectRasterizer raster = MySimpleObjectRasterizer.Wireframe, float thickness = 0.01f)
+        {
+            wm.Translation = box.Center;
+            var lbox = box.TransformSlow(Matrix.Identity);
+            MySimpleObjectDraw.DrawTransparentBox(ref wm, ref lbox, ref color, raster, 1, thickness, MyStringId.GetOrCompute("Square"), MyStringId.GetOrCompute("Square"));
         }
 
         public static void DrawBox3(MatrixD matrix, BoundingBoxD box, Color color, MySimpleObjectRasterizer raster = MySimpleObjectRasterizer.Wireframe, float thickness = 0.01f)
@@ -302,7 +309,7 @@ namespace DefenseShields.Support
             var box = new BoundingBoxD(-obb.HalfExtent, obb.HalfExtent);
             var wm = MatrixD.CreateFromQuaternion(obb.Orientation);
             wm.Translation = obb.Center;
-            MySimpleObjectDraw.DrawTransparentBox(ref wm, ref box, ref color, raster, 1, thickness, MyStringId.GetOrCompute("Square"), MyStringId.GetOrCompute("Square"));
+            MySimpleObjectDraw.DrawTransparentBox(ref wm, ref box, ref color, MySimpleObjectRasterizer.Solid, 1);
         }
 
         public static void DrawSingleVec(Vector3D vec, float size, Color color)

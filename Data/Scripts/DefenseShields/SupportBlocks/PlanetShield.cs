@@ -173,7 +173,7 @@ namespace DefenseShields
         public void UpdateState(ProtoPlanetShieldState newState)
         {
             PlaState.State = newState;
-            if (Session.Enforced.Debug >= 1) Log.Line($"UpdateState: PlanetShieldId [{PlanetShield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"UpdateState: PlanetShieldId [{PlanetShield.EntityId}]");
         }
 
         public bool PostInit()
@@ -196,7 +196,6 @@ namespace DefenseShields
                 if (!_isServer && !PlaState.State.Online) return false;
 
                 PsUi.CreateUi(PlanetShield);
-                //CleanUp(3);
 
                 if (!isFunctional) return false;
                 var psCenter = PlanetShield.PositionComp.WorldVolume.Center;
@@ -214,7 +213,7 @@ namespace DefenseShields
                     AllInited = true;
                     return true;
                 }
-                if (Session.Enforced.Debug >= 2) Log.Line($"AllInited: PlanetShieldId [{PlanetShield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"AllInited: PlanetShieldId [{PlanetShield.EntityId}]");
                 return false;
             }
             catch (Exception ex) { Log.Line($"Exception in PlanetShield PostInit: {ex}"); }
@@ -261,7 +260,7 @@ namespace DefenseShields
             _shieldEntRendId = ShieldEnt.Render.GetRenderObjectID();
 
             if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
-            if (Session.Enforced.Debug >= 1) Log.Line($"InitEntities: spawn complete - PlanetShieldId [{PlanetShield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"InitEntities: spawn complete - PlanetShieldId [{PlanetShield.EntityId}]");
         }
 
         public override void OnAddedToContainer()
@@ -272,7 +271,7 @@ namespace DefenseShields
                 NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
                 ContainerInited = true;
-                if (Session.Enforced.Debug >= 1) Log.Line($"ContainerInited:  PlanetShieldId [{PlanetShield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"ContainerInited:  PlanetShieldId [{PlanetShield.EntityId}]");
             }
             if (Entity.InScene) OnAddedToScene();
         }
@@ -354,7 +353,7 @@ namespace DefenseShields
                     PlanetShield.Enabled = true;
                 }
                 Sink.Update();
-                if (Session.Enforced.Debug >= 2) Log.Line($"PowerInit: PlanetShieldId [{PlanetShield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"PowerInit: PlanetShieldId [{PlanetShield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }

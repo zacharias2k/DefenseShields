@@ -57,9 +57,26 @@ namespace DefenseShields
                 var block = target as IMySlimBlock;
                 if (info.Type == MPdamage)
                 {
-                    var ds = target as DefenseShields;
+                    if (block == null)
+                    {
+                        Log.Line($"MP-shield block is null - Amount:{info.Amount}");
+                        info.Amount = 0;
+                        return;
+                    }
+
+                    var myCube = block.FatBlock as MyCubeBlock;
+                    if (myCube == null)
+                    {
+                        Log.Line($"MP-shield myCube is null - Amount:{info.Amount}");
+                        info.Amount = 0;
+                        return;
+                    }
+
+                    var ds = myCube.GameLogic as DefenseShields;
+
                     if (ds == null)
                     {
+                        if (Enforced.Debug >= 3) Log.Line($"MP-shield ds is null - Amount:{info.Amount}");
                         info.Amount = 0;
                         return;
                     }
@@ -69,7 +86,7 @@ namespace DefenseShields
                         var shieldActive = ds.DsState.State.Online && !ds.DsState.State.Lowered;
                         if (!shieldActive || ds.DsState.State.Buffer <= 0)
                         {
-                            if (Enforced.Debug == 1) Log.Line($"MP-shield inactive or no buff - Active:{shieldActive} - Buffer:{ds.DsState.State.Buffer} - Amount:{info.Amount}");
+                            if (Enforced.Debug >= 3) Log.Line($"MP-shield inactive or no buff - Active:{shieldActive} - Buffer:{ds.DsState.State.Buffer} - Amount:{info.Amount}");
                             info.Amount = 0;
                             return;
                         }
@@ -80,10 +97,12 @@ namespace DefenseShields
 
                         if (hostileEnt == null)
                         {
-                            if (Enforced.Debug == 1) Log.Line($"MP-shield nullAttacker - Amount:{info.Amount} - Buffer:{ds.DsState.State.Buffer}");
+                            if (Enforced.Debug >= 3) Log.Line($"MP-shield nullAttacker - Amount:{info.Amount} - Buffer:{ds.DsState.State.Buffer}");
                             info.Amount = 0;
                             return;
                         }
+                        var missile = hostileEnt.DefinitionId != null && hostileEnt.DefinitionId.Value.TypeId == MissileObj;
+
                         var worldSphere = ds.ShieldSphere;
                         var hostileCenter = hostileEnt.PositionComp.WorldVolume.Center;
                         var hostileTestLoc = hostileCenter;
@@ -101,27 +120,27 @@ namespace DefenseShields
                         else furthestHit = sphere;
                         var hitPos = line.From + testDir * -furthestHit;
                         ds.WorldImpactPosition = hitPos;
-                        var warHead = hostileEnt as IMyWarhead;
-                        if (warHead != null)
-                        {
-                            var magicValue = info.Amount;
-                            var empPos = warHead.PositionComp.WorldAABB.Center;
-                            ds.EmpDetonation = empPos;
-                            ds.EmpSize = ds.EllipsoidVolume / magicValue;
-                            info.Amount = ds.ShieldMaxBuffer * Enforced.Efficiency / magicValue;
-                            UtilsStatic.CreateExplosion(empPos, 2.1f, 9999);
-                        }
-                        else ds.ImpactSize = info.Amount;
 
-                        if (hostileEnt.DefinitionId.HasValue && hostileEnt.DefinitionId.Value.TypeId == MissileObj)
+                        if (missile)
                         {
                             UtilsStatic.CreateFakeSmallExplosion(hitPos);
                             if (hostileEnt.InScene && !hostileEnt.MarkedForClose)
                             {
                                 hostileEnt.Close();
                                 hostileEnt.InScene = false;
+                                ds.ImpactSize = info.Amount;
                             }
                         }
+                        else if (hostileEnt is IMyWarhead)
+                        {
+                            var magicValue = info.Amount;
+                            var empPos = hostileEnt.PositionComp.WorldAABB.Center;
+                            ds.EmpDetonation = empPos;
+                            ds.EmpSize = ds.EllipsoidVolume / magicValue;
+                            info.Amount = ds.ShieldMaxBuffer * Enforced.Efficiency / magicValue;
+                            UtilsStatic.CreateExplosion(empPos, 2.1f, 9999);
+                        }
+                        else ds.ImpactSize = info.Amount;
                     }
                     ds.Absorb += info.Amount;
                     info.Amount = 0f;
@@ -187,40 +206,45 @@ namespace DefenseShields
                                 }
                             }
                         }
-                        else
+                        else if (_blockingShield != null && protectors.Shields.ContainsKey(_blockingShield) && _blockingShield.DsState.State.Online && !_blockingShield.DsState.State.Lowered)
                         {
-                            var shieldActive = _blockingShield.DsState.State.Online && !_blockingShield.DsState.State.Lowered;
-                            if (!IsServer && shieldActive && !_blockingShield.WarmedUp)
+                            if (!IsServer && !_blockingShield.WarmedUp)
                             {
                                 info.Amount = 0;
                                 return;
                             }
-                            if (!shieldActive || !protectors.Shields.ContainsKey(_blockingShield))
+                        }
+                        else
+                        {
+                            var foundBackupShield = false;
+                            foreach (var dict in protectors.Shields)
                             {
-                                var foundBackupShield = false;
-                                foreach (var dict in protectors.Shields)
+                                var shield = dict.Key;
+                                var shieldActive2 = shield.DsState.State.Online && !shield.DsState.State.Lowered;
+                                if (!IsServer && shieldActive2 && !shield.WarmedUp)
                                 {
-                                    var shield = dict.Key;
-                                    var shieldActive2 = shield.DsState.State.Online && !shield.DsState.State.Lowered;
-                                    if (!IsServer && shieldActive2 && !shield.WarmedUp)
-                                    {
-                                        info.Amount = 0;
-                                        return;
-                                    }
-
-                                    if (!shieldActive2) continue;
-                                    _blockingShield = shield;
-                                    foundBackupShield = true;
-                                    Log.Line($"found backup shield");
-                                    break;
-                                }
-
-                                if (!foundBackupShield)
-                                {
-                                    Log.Line($"did not find backup shield");
-                                    _blockingShield = null;
+                                    info.Amount = 0;
                                     return;
                                 }
+
+                                if (!shieldActive2)
+                                {
+                                    if (Enforced.Debug >= 3) Log.Line($"cannot find active backup shield: Online:{shield.DsState.State.Online} - Lowered:{shield.DsState.State.Lowered} - ShieldCnt:{protectors.Shields.Keys.Count} - AttackerId:{info.AttackerId} - Asleep:{shield.Asleep} - active:{ActiveShields.Contains(shield)}");
+                                    continue;
+                                }
+
+                                _blockingShield = shield;
+                                foundBackupShield = true;
+                                if (Enforced.Debug >= 3) Log.Line($"found backup shield");
+                                break;
+                            }
+
+                            if (!foundBackupShield)
+                            {
+                                if (Enforced.Debug >= 3) Log.Line($"did not find backup shield: ShieldCnt:{protectors.Shields.Keys.Count} - DamageType:{info.Type} - AttackerId:{info.AttackerId}");
+                                _blockingShield = null;
+                                info.Amount = 0;
+                                return;
                             }
                         }
                     }
@@ -246,8 +270,8 @@ namespace DefenseShields
 
                             if (hostileEnt is MyVoxelBase || hostileEnt != null)
                             {
-                                EntIntersectInfo entInfo;
-                                shield.WebEnts.TryGetValue(hostileEnt, out entInfo);
+                                EntIntersectInfo entInfo = null;
+                                shield.WebEnts?.TryGetValue(hostileEnt, out entInfo);
                                 if (entInfo != null && entInfo.Relation == DefenseShields.Ent.Protected)
                                 {
                                     shield.DeformEnabled = true;
@@ -265,7 +289,7 @@ namespace DefenseShields
                                     return;
                                 }
 
-                                if (gunBase != null && block.FatBlock == shield.Shield) //temp fix for GSF laser bug
+                                if (gunBase != null && block.FatBlock != null && block.FatBlock == shield.Shield) //temp fix for GSF laser bug
                                 {
                                     shield.Absorb += 1000;
                                     shield.WorldImpactPosition = shield.ShieldEnt.Render.ColorMaskHsv;
@@ -309,8 +333,9 @@ namespace DefenseShields
                             shield.Absorb += info.Amount;
                             info.Amount = 0f;
                         }
+                        else if (hostileEnt != null && protectors.Shields != null && block != null) Log.Line($"No shield match, should never happen - attacker:{hostileEnt.DebugName} - protectors:{protectors.Shields.Keys.Count} - victim:{((MyCubeGrid)block.CubeGrid).DebugName} - Type:{info.Type}");
                     }
-                    catch (Exception ex) { Log.Line($"Exception in SessionDamageDoDamage: {ex}"); }
+                    catch (Exception ex) { Log.Line($"Exception in SessionDamageDoDamage {_blockingShield == null} - {hostileEnt == null} - {info.Type} - {block == null}: {ex}"); }
                 }
                 else if (target is IMyCharacter)
                 {

@@ -104,8 +104,10 @@ namespace DefenseShields
         internal volatile bool Dispatched;
         internal volatile bool PlayerByShield;
         internal volatile bool Asleep = true;
+        internal volatile bool LogicPaused;
         internal volatile uint LastWokenTick;
 
+        internal bool WasSuspended = true;
         internal bool WasOnline;
         internal bool DeformEnabled;
         internal bool ExplosionEnabled;
@@ -146,7 +148,7 @@ namespace DefenseShields
         private bool _slaveLink;
         private bool _subUpdate;
         private bool _updateGridDistributor;
-        private bool _effectsCleanup;
+        internal bool EffectsCleanup;
         private bool _hideShield;
         private bool _hideColor;
         private bool _supressedColor;
@@ -203,13 +205,14 @@ namespace DefenseShields
         internal MatrixD OldShieldMatrix;
         internal MatrixD OffsetEmitterWMatrix;
 
-        internal BoundingBox ShieldAabb = new BoundingBox(-Vector3D.One, Vector3D.One);
-        internal BoundingBoxD ShieldWorldAabb;
+        internal BoundingBox ShieldAabbScaled = new BoundingBox(Vector3D.One, -Vector3D.One);
+        internal BoundingBox ShieldAabbNoScale = new BoundingBox(Vector3D.One, -Vector3D.One);
+        internal BoundingBoxD WebBox = new BoundingBoxD();
+        internal BoundingBoxD ShieldBox3K = new BoundingBoxD();
 
         internal BoundingSphereD ShieldSphere3K = new BoundingSphereD(Vector3D.Zero, 1f);
         internal BoundingSphereD WebSphere = new BoundingSphereD(Vector3D.Zero, 1f);
         public BoundingSphereD ShieldSphere = new BoundingSphereD(Vector3D.Zero, 1);
-        private BoundingSphereD _clientPruneSphere = new BoundingSphereD(Vector3D.Zero, 1f);
 
         public MyOrientedBoundingBoxD SOriBBoxD = new MyOrientedBoundingBoxD();
 
@@ -238,6 +241,8 @@ namespace DefenseShields
         internal readonly ConcurrentDictionary<MyEntity, MoverInfo> EntsByMe = new ConcurrentDictionary<MyEntity, MoverInfo>();
         internal readonly ConcurrentDictionary<MyVoxelBase, bool> VoxelsToIntersect = new ConcurrentDictionary<MyVoxelBase, bool>();
 
+        internal readonly MyConcurrentQueue<MyCubeGrid> StaleGrids = new MyConcurrentQueue<MyCubeGrid>();
+
         private readonly MyConcurrentQueue<MyCubeGrid> _eject = new MyConcurrentQueue<MyCubeGrid>();
         private readonly MyConcurrentQueue<IMySlimBlock> _dmgBlocks = new MyConcurrentQueue<IMySlimBlock>();
         private readonly MyConcurrentQueue<IMyWarhead> _empDmg = new MyConcurrentQueue<IMyWarhead>();
@@ -245,7 +250,6 @@ namespace DefenseShields
         private readonly MyConcurrentQueue<MyEntity> _missileDmg = new MyConcurrentQueue<MyEntity>();
         private readonly MyConcurrentQueue<IMyMeteor> _meteorDmg = new MyConcurrentQueue<IMyMeteor>();
         private readonly MyConcurrentQueue<IMySlimBlock> _destroyedBlocks = new MyConcurrentQueue<IMySlimBlock>();
-        private readonly MyConcurrentQueue<MyCubeGrid> _staleGrids = new MyConcurrentQueue<MyCubeGrid>();
         private readonly MyConcurrentQueue<IMyCharacter> _characterDmg = new MyConcurrentQueue<IMyCharacter>();
         private readonly MyConcurrentQueue<MyVoxelBase> _voxelDmg = new MyConcurrentQueue<MyVoxelBase>();
         private readonly MyConcurrentQueue<MyImpulseData> _impulseData = new MyConcurrentQueue<MyImpulseData>();

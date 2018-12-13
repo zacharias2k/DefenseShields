@@ -23,7 +23,7 @@ namespace DefenseShields
                 {
                     if (Tick600)
                     {
-                        if (Session.Enforced.Debug >= 2) Log.Line($"PostInit: Server Not Ready - GridComp:{MyGrid.Components.Has<ShieldGridComponent>()} - InvalidMode:{ShieldComp.EmitterMode < 0} - Functional:{IsFunctional} - EmitterSus:{ShieldComp.EmittersSuspended} - StationEmitterNull:{ShieldComp.StationEmitter == null } - EmitterNull:{ShieldComp.StationEmitter?.Emitter == null} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug == 3) Log.Line($"PostInit: Server Not Ready - GridComp:{MyGrid.Components.Has<ShieldGridComponent>()} - InvalidMode:{ShieldComp.EmitterMode < 0} - Functional:{IsFunctional} - EmitterSus:{ShieldComp.EmittersSuspended} - StationEmitterNull:{ShieldComp.StationEmitter == null } - EmitterNull:{ShieldComp.StationEmitter?.Emitter == null} - ShieldId [{Shield.EntityId}]");
                         GridOwnsController();
                         Shield.RefreshCustomInfo();
                     }
@@ -46,7 +46,7 @@ namespace DefenseShields
 
                 AllInited = true;
 
-                if (Session.Enforced.Debug >= 2) Log.Line($"AllInited: ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"AllInited: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in Controller PostInit: {ex}"); }
             return true;
@@ -70,7 +70,7 @@ namespace DefenseShields
                 GridIntegrity();
                 ShieldChangeState();
             }
-            if (Session.Enforced.Debug >= 2) Log.Line($"ResetEntity: ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"ResetEntity: ShieldId [{Shield.EntityId}]");
         }
 
         private void WarmUpSequence()
@@ -163,7 +163,7 @@ namespace DefenseShields
                     Shield.Enabled = true;
                 }
                 IsWorking = MyCube.IsWorking;
-                if (Session.Enforced.Debug >= 2) Log.Line($"PowerInit: ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"PowerInit: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }
@@ -259,14 +259,14 @@ namespace DefenseShields
 
             if (!fullInit)
             {
-                if (Session.Enforced.Debug >= 2) Log.Line($"InitEntities: mode: {ShieldMode}, remove complete - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"InitEntities: mode: {ShieldMode}, remove complete - ShieldId [{Shield.EntityId}]");
                 return;
             }
 
             SelectPassiveShell();
+            var parent = (MyEntity)MyGrid;
             if (!Session.DedicatedServer)
             {
-                var parent = (MyEntity)Shield.CubeGrid;
                 _shellPassive = Spawn.EmptyEntity("dShellPassive", $"{Session.Instance.ModPath()}{_modelPassive}", parent, true);
                 _shellPassive.Render.CastShadows = false;
                 _shellPassive.IsPreview = true;
@@ -289,7 +289,7 @@ namespace DefenseShields
                 _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.Transparent, 0f);
             }
 
-            ShieldEnt = Spawn.EmptyEntity("dShield", null, (MyEntity)Shield, false);
+            ShieldEnt = Spawn.EmptyEntity("dShield", null, parent, false);
             ShieldEnt.Render.CastShadows = false;
             ShieldEnt.Render.RemoveRenderObjects();
             ShieldEnt.Render.UpdateRenderObject(true);
@@ -299,7 +299,7 @@ namespace DefenseShields
             _updateRender = true;
 
             if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
-            if (Session.Enforced.Debug >= 2) Log.Line($"InitEntities: mode: {ShieldMode}, spawn complete - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"InitEntities: mode: {ShieldMode}, spawn complete - ShieldId [{Shield.EntityId}]");
         }
 
         public void SelectPassiveShell()
@@ -368,10 +368,11 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in SelectPassiveShell: {ex}"); }
         }
 
-        private void AssignSlots()
+        public void AssignSlots()
         {
             LogicSlot = Session.GetSlot();
-            MonitorSlot = LogicSlot - 1 < 0 ? 8 : LogicSlot - 1;
+            MonitorSlot = LogicSlot - 1 < 0 ? Session.EntSlotScaler - 1 : LogicSlot - 1;
+            Log.Line($"AssignSlot:{LogicSlot} - {MonitorSlot} - {Session.EntSlotScaler}");
         }
 
         public void UpdatePassiveModel()
@@ -384,7 +385,7 @@ namespace DefenseShields
                 _shellPassive.Render.RemoveRenderObjects();
                 _shellPassive.Render.UpdateRenderObject(true);
                 _hideShield = false;
-                if (Session.Enforced.Debug >= 2) Log.Line($"UpdatePassiveModel: modelString:{_modelPassive} - ShellNumber:{DsSet.Settings.ShieldShell} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"UpdatePassiveModel: modelString:{_modelPassive} - ShellNumber:{DsSet.Settings.ShieldShell} - ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in UpdatePassiveModel: {ex}"); }
         }
@@ -395,7 +396,7 @@ namespace DefenseShields
             var blockList = new List<IMySlimBlock>();
             Shield.CubeGrid.GetBlocks(blockList);
             for (int i = 0; i < blockList.Count; i++) DsState.State.GridIntegrity += blockList[i].MaxIntegrity;
-            if (Session.Enforced.Debug >= 2) Log.Line($"IntegrityCheck: GridName:{Shield.CubeGrid.DisplayName} - GridHP:{DsState.State.GridIntegrity} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"IntegrityCheck: GridName:{Shield.CubeGrid.DisplayName} - GridHP:{DsState.State.GridIntegrity} - ShieldId [{Shield.EntityId}]");
         }
         #endregion
     }

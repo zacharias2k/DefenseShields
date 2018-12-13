@@ -107,7 +107,7 @@ namespace DefenseShields
                         {
                             ModulatorComp.ModulationPassword = Modulator.CustomData;
                             ModSet.SaveSettings();
-                            if (Session.Enforced.Debug >= 2) Log.Line($"Updating modulator password");
+                            if (Session.Enforced.Debug == 3) Log.Line($"Updating modulator password");
                         }
                     }
                 }
@@ -247,7 +247,7 @@ namespace DefenseShields
                     SettingsUpdated = false;
                     ModSet.SaveSettings();
                     ModState.SaveState();
-                    if (Session.Enforced.Debug >= 1) Log.Line($"SettingsUpdated: server:{Session.IsServer} - ModulatorId [{Modulator.EntityId}]");
+                    if (Session.Enforced.Debug == 3) Log.Line($"SettingsUpdated: server:{Session.IsServer} - ModulatorId [{Modulator.EntityId}]");
                 }
             }
             else if (_count == 34)
@@ -263,7 +263,7 @@ namespace DefenseShields
 
             if (_subDelayed && _tick > _subTick + 9)
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"Delayed tick: {_tick} - hierarchytick: {_subTick}");
+                if (Session.Enforced.Debug == 3) Log.Line($"Delayed tick: {_tick} - hierarchytick: {_subTick}");
                 _subDelayed = false;
                 HierarchyChanged();
             }
@@ -394,7 +394,7 @@ namespace DefenseShields
                 }
                 Sink.Update();
                 IsWorking = MyCube.IsWorking;
-                if (Session.Enforced.Debug >= 2) Log.Line($"PowerInit: ModulatorId [{Modulator.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"PowerInit: ModulatorId [{Modulator.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }
@@ -478,13 +478,13 @@ namespace DefenseShields
         {
             SettingsUpdated = true;
             ModSet.Settings = newSettings;
-            if (Session.Enforced.Debug >= 1) Log.Line($"UpdateSettings for modulator");
+            if (Session.Enforced.Debug == 3) Log.Line($"UpdateSettings for modulator");
         }
 
         public void UpdateState(ProtoModulatorState newState)
         {
             ModState.State = newState;
-            if (Session.Enforced.Debug >= 1) Log.Line($"UpdateState - ModulatorId [{Modulator.EntityId}]:\n{ModState.State}");
+            if (Session.Enforced.Debug == 3) Log.Line($"UpdateState - ModulatorId [{Modulator.EntityId}]:\n{ModState.State}");
         }
 
         public override bool IsSerialized()
@@ -507,7 +507,7 @@ namespace DefenseShields
                 MyGrid = (MyCubeGrid)Modulator.CubeGrid;
                 MyCube = Modulator as MyCubeBlock;
                 RegisterEvents();
-                if (Session.Enforced.Debug >= 2) Log.Line($"OnAddedToScene: - ModulatorId [{Modulator.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: - ModulatorId [{Modulator.EntityId}]");
                 if (!MainInit) return;
                 ResetComp();
             }

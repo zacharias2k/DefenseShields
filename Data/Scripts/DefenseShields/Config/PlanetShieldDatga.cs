@@ -49,7 +49,7 @@ namespace DefenseShields
                     State = loadedState;
                     loadedSomething = true;
                 }
-                if (Session.Enforced.Debug >= 2) Log.Line($"Loaded - PlanetShieldId [{PlanetShield.EntityId}]:\n{State.ToString()}");
+                if (Session.Enforced.Debug == 3) Log.Line($"Loaded - PlanetShieldId [{PlanetShield.EntityId}]:\n{State.ToString()}");
             }
             return loadedSomething;
         }
@@ -60,7 +60,7 @@ namespace DefenseShields
 
             if (Session.IsServer)
             {
-                if (Session.Enforced.Debug >= 2) Log.Line($"ServRelay - Online:{State.Online} - Backup:{State.Backup} - PlanetShieldId [{PlanetShield.EntityId}]: network state update for PlanetShield");
+                if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - Online:{State.Online} - Backup:{State.Backup} - PlanetShieldId [{PlanetShield.EntityId}]: network state update for PlanetShield");
                 Session.PacketizePlanetShieldState(PlanetShield, State); // update clients with server's settings
             }
         }
@@ -120,12 +120,12 @@ namespace DefenseShields
 
             if (Session.IsServer)
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"ServRelay - PlanetShieldId [{PlanetShield.EntityId}]: network settings update for PlanetShield");
+                if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - PlanetShieldId [{PlanetShield.EntityId}]: network settings update for PlanetShield");
                 Session.PacketizePlanetShieldSettings(PlanetShield, Settings); // update clients with server's settings
             }
             else // client, send settings to server
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"ClientRelay - PlanetShieldId [{PlanetShield.EntityId}]: sent network settings update for PlanetShield");
+                if (Session.Enforced.Debug == 3) Log.Line($"ClientRelay - PlanetShieldId [{PlanetShield.EntityId}]: sent network settings update for PlanetShield");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataPlanetShieldSettings(MyAPIGateway.Multiplayer.MyId, PlanetShield.EntityId, Settings));
                 MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdPlanetShieldSettings, bytes);
             }

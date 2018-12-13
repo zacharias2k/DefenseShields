@@ -36,13 +36,13 @@ namespace DefenseShields
                         {
                             if (data.Enforce == null) return;
 
-                            if (Enforced.Debug == 1) Log.Line($"EnforceData Received; Enforce - Server:\n{data.Enforce}");
+                            if (Enforced.Debug >= 3) Log.Line($"EnforceData Received; Enforce - Server:\n{data.Enforce}");
                             if (!IsServer)
                             {
                                 Enforcements.SaveEnforcement(logic.Shield, data.Enforce);
                                 EnforceInit = true;
-                                if (Enforced.Debug == 1) Log.Line($"client accepted enforcement");
-                                if (Enforced.Debug == 1) Log.Line($"Client EnforceInit Complete with enforcements:\n{data.Enforce}");
+                                if (Enforced.Debug >= 3) Log.Line($"client accepted enforcement");
+                                if (Enforced.Debug >= 3) Log.Line($"Client EnforceInit Complete with enforcements:\n{data.Enforce}");
                             }
                             else PacketizeEnforcements(logic.Shield, data.Enforce.SenderId);
                         }
@@ -62,21 +62,21 @@ namespace DefenseShields
 
                 if (data == null)
                 {
-                    if (Enforced.Debug >= 1) Log.Line($"Data State null");
+                    if (Enforced.Debug >= 3) Log.Line($"Data State null");
                     return;
                 }
 
                 IMyEntity ent;
                 if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
                 {
-                    if (Enforced.Debug >= 1) Log.Line($"State PacketReceived; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    if (Enforced.Debug >= 3) Log.Line($"State PacketReceived; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
                     return;
                 }
 
                 var logic = ent.GameLogic.GetAs<DefenseShields>();
                 if (logic == null)
                 {
-                    if (Enforced.Debug >= 1) Log.Line($"Logic State null");
+                    if (Enforced.Debug >= 3) Log.Line($"Logic State null");
                     return;
                 }
 
@@ -86,11 +86,11 @@ namespace DefenseShields
                         {
                             if (data.State == null)
                             {
-                                if (Enforced.Debug >= 1) Log.Line($"Packet State null");
+                                if (Enforced.Debug >= 3) Log.Line($"Packet State null");
                                 return;
                             }
 
-                            if (Enforced.Debug >= 2) Log.Line($"Packet State Packet received data:\n{data.State}");
+                            if (Enforced.Debug >= 3) Log.Line($"Packet State Packet received data:\n{data.State}");
 
                             if (IsServer) ControllerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                             else logic.UpdateState(data.State);
@@ -130,7 +130,7 @@ namespace DefenseShields
 
                             logic.UpdateSettings(data.Settings);
                             if (IsServer) ControllerSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
-                            if (Enforced.Debug >= 2) Log.Line($"Packet Settings Packet received:- data:\n{data.Settings}");
+                            if (Enforced.Debug >= 3) Log.Line($"Packet Settings Packet received:- data:\n{data.Settings}");
                         }
                         break;
                 }
@@ -166,7 +166,7 @@ namespace DefenseShields
 
                             logic.UpdateSettings(data.Settings);
                             if (IsServer) ModulatorSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
-                            if (Enforced.Debug == 1) Log.Line($"Modulator received:\n{data.Settings}");
+                            if (Enforced.Debug >= 3) Log.Line($"Modulator received:\n{data.Settings}");
                         }
                         break;
                 }
@@ -201,7 +201,7 @@ namespace DefenseShields
                         {
                             if (data.State == null) return;
 
-                            if (Enforced.Debug == 1) Log.Line($"Modulator received:\n{data.State}");
+                            if (Enforced.Debug >= 3) Log.Line($"Modulator received:\n{data.State}");
 
                             if (IsServer) ModulatorStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                             else logic.UpdateState(data.State);
@@ -239,7 +239,7 @@ namespace DefenseShields
                         {
                             if (data.State == null) return;
 
-                            if (Enforced.Debug == 1) Log.Line($"O2Generator received:\n{data.State}");
+                            if (Enforced.Debug >= 3) Log.Line($"O2Generator received:\n{data.State}");
 
                             if (IsServer) O2GeneratorStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                             else logic.UpdateState(data.State);
@@ -277,7 +277,7 @@ namespace DefenseShields
                         {
                             if (data.State == null) return;
 
-                            if (Enforced.Debug == 1) Log.Line($"Enhancer received:\n{data.State}");
+                            if (Enforced.Debug >= 3) Log.Line($"Enhancer received:\n{data.State}");
 
                             if (IsServer) EnhancerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                             else logic.UpdateState(data.State);
@@ -314,7 +314,7 @@ namespace DefenseShields
                     case PacketType.Emitterstate:
                         {
                             if (data.State == null) return;
-
+                            if (Enforced.Debug >= 3) Log.Line($"Emitter received:\n{data.State}");
                             if (IsServer) EmitterStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                             else logic.UpdateState(data.State);
                         }
@@ -398,7 +398,7 @@ namespace DefenseShields
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
 
-            foreach (var p in Players)
+            foreach (var p in Players.Values)
             {
                 var id = p.SteamUserId;
 
@@ -412,7 +412,7 @@ namespace DefenseShields
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
 
-            foreach (var p in Players)
+            foreach (var p in Players.Values)
             {
                 var id = p.SteamUserId;
 
@@ -425,7 +425,7 @@ namespace DefenseShields
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
 
-            foreach (var p in Players)
+            foreach (var p in Players.Values)
             {
                 var id = p.SteamUserId;
 
@@ -438,7 +438,7 @@ namespace DefenseShields
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
 
-            foreach (var p in Players)
+            foreach (var p in Players.Values)
             {
                 var id = p.SteamUserId;
 
@@ -453,7 +453,7 @@ namespace DefenseShields
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
 
-            foreach (var p in Players)
+            foreach (var p in Players.Values)
             {
                 var id = p.SteamUserId;
 
@@ -466,7 +466,7 @@ namespace DefenseShields
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
 
-            foreach (var p in Players)
+            foreach (var p in Players.Values)
             {
                 var id = p.SteamUserId;
 
@@ -482,7 +482,7 @@ namespace DefenseShields
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
 
-            foreach (var p in Players)
+            foreach (var p in Players.Values)
             {
                 var id = p.SteamUserId;
 
@@ -496,7 +496,7 @@ namespace DefenseShields
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
 
-            foreach (var p in Players)
+            foreach (var p in Players.Values)
             {
                 var id = p.SteamUserId;
 
@@ -509,8 +509,7 @@ namespace DefenseShields
         public static void EmitterStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
-
-            foreach (var p in Players)
+            foreach (var p in Players.Values)
             {
                 var id = p.SteamUserId;
 

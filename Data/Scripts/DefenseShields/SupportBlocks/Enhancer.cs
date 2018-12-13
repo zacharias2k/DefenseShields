@@ -175,7 +175,7 @@ namespace DefenseShields
         public void UpdateState(ProtoEnhancerState newState)
         {
             EnhState.State = newState;
-            if (Session.Enforced.Debug >= 2) Log.Line($"UpdateState: EnhancerId [{Enhancer.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"UpdateState: EnhancerId [{Enhancer.EntityId}]");
         }
 
         public override void OnAddedToContainer()
@@ -187,7 +187,7 @@ namespace DefenseShields
                 NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
                 Enhancer = (IMyUpgradeModule)Entity;
                 ContainerInited = true;
-                if (Session.Enforced.Debug >= 2) Log.Line($"ContainerInited:  EnhancerId [{Enhancer.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"ContainerInited:  EnhancerId [{Enhancer.EntityId}]");
             }
             if (Entity.InScene) OnAddedToScene();
         }
@@ -236,7 +236,7 @@ namespace DefenseShields
                 MyGrid = (MyCubeGrid)Enhancer.CubeGrid;
                 MyCube = Enhancer as MyCubeBlock;
                 RegisterEvents();
-                if (Session.Enforced.Debug >= 2) Log.Line($"OnAddedToScene: - EnhancerId [{Enhancer.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: - EnhancerId [{Enhancer.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
@@ -281,7 +281,7 @@ namespace DefenseShields
                 }
                 Sink.Update();
                 IsWorking = MyCube.IsWorking;
-                if (Session.Enforced.Debug >= 2) Log.Line($"PowerInit: EnhancerId [{Enhancer.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"PowerInit: EnhancerId [{Enhancer.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }

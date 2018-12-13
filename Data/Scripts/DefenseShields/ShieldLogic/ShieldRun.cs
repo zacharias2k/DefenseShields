@@ -37,7 +37,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug >= 2) Log.Line($"OnAddedToScene: GridId:{Shield.CubeGrid.EntityId} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: GridId:{Shield.CubeGrid.EntityId} - ShieldId [{Shield.EntityId}]");
                 MyGrid = (MyCubeGrid)Shield.CubeGrid;
                 MyCube = Shield as MyCubeBlock;
                 RegisterEvents();
@@ -58,10 +58,13 @@ namespace DefenseShields
                 _mpActive = Session.MpActive;
 
                 PowerInit();
-                Session.Instance.Shields.Add(this);
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
+
                 if (_isServer) Enforcements.SaveEnforcement(Shield, Session.Enforced, true);
-                if (Session.Enforced.Debug >= 2) Log.Line($"UpdateOnceBeforeFrame: ShieldId [{Shield.EntityId}]");
+                else Session.Instance.FunctionalShields.Add(this);
+
+                Session.Instance.Controllers.Add(this);
+                if (Session.Enforced.Debug == 3) Log.Line($"UpdateOnceBeforeFrame: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in Controller UpdateOnceBeforeFrame: {ex}"); }
         }
@@ -73,14 +76,13 @@ namespace DefenseShields
                 if (!EntityAlive()) return;
                 if (!ShieldOn())
                 {
-                    if (Session.Enforced.Debug >= 1 && WasOnline) Log.Line($"Off: WasOn:{WasOnline} - Online:{DsState.State.Online}({_prevShieldActive}) - Lowered:{DsState.State.Lowered} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 3 && WasOnline) Log.Line($"Off: WasOn:{WasOnline} - Online:{DsState.State.Online}({_prevShieldActive}) - Lowered:{DsState.State.Lowered} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
                     if (WasOnline) OfflineShield();
                     else if (DsState.State.Message) ShieldChangeState();
                     return;
                 }
                 if (DsState.State.Online)
                 {
-                    //if (!Asleep) DsDebugDraw.DrawBox(SOriBBoxD, Color.GhostWhite);
                     if (ComingOnline) ComingOnlineSetup();
                     if (_isServer)
                     {
@@ -99,10 +101,10 @@ namespace DefenseShields
                             else if (_lCount == 7 && _eCount == 7) ShieldChangeState();
                         }
                     }
+                    else if (_syncEnts) SyncThreadedEnts();
                     if (!_isDedicated && Tick60) HudCheck();
-
                 }
-                if (Session.Enforced.Debug >=2) Dsutil1.StopWatchReport($"PerfCon: Online: {DsState.State.Online} - Asleep:{Asleep} - Tick: {Tick} loop: {_lCount}-{_count}", 4);
+                if (Session.Enforced.Debug == 3) Dsutil1.StopWatchReport($"PerfCon: Online: {DsState.State.Online} - Asleep:{Asleep} - Tick: {Tick} loop: {_lCount}-{_count}", 4);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
@@ -129,7 +131,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enforced.Debug >= 2) Log.Line($"OnRemovedFromScene: {ShieldMode} - GridId:{Shield.CubeGrid.EntityId} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"OnRemovedFromScene: {ShieldMode} - GridId:{Shield.CubeGrid.EntityId} - ShieldId [{Shield.EntityId}]");
                 if (ShieldComp?.DefenseShields == this)
                 {
                     DsState.State.Online = false;
@@ -162,10 +164,10 @@ namespace DefenseShields
             try
             {
                 base.Close();
-                if (Session.Enforced.Debug >= 2) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 if (Session.Instance.Controllers.Contains(this)) Session.Instance.Controllers.Remove(this);
                 if (Session.Instance.ActiveShields.Contains(this)) Session.Instance.ActiveShields.Remove(this);
-                if (Session.Instance.Shields.Contains(this)) Session.Instance.Shields.Remove(this);
+                if (Session.Instance.FunctionalShields.Contains(this)) Session.Instance.FunctionalShields.Remove(this);
                 Icosphere = null;
                 InitEntities(false);
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);

@@ -29,6 +29,8 @@ namespace DefenseShields
         private int _count = -1;
         private int _lCount;
         private int _eCount;
+        private int _protectCount;
+
         internal int OnCount;
         internal int RefreshCycle;
         internal int RefreshCounter = 1;
@@ -53,12 +55,14 @@ namespace DefenseShields
         internal bool ShowOnHudReset = true;
         internal bool OnCountThrottle;
         internal bool DefinitionsLoaded;
+        internal static bool Tick20;
         internal static bool Tick60;
         internal static bool Tick180;
         internal static bool Tick600;
 
         internal bool MoreThan600Frames;
         internal volatile bool EntSlotTick;
+        internal bool ScalerChanged;
         internal bool HideActions;
         internal bool DsControl;
         internal bool PsControl;
@@ -102,6 +106,7 @@ namespace DefenseShields
         internal readonly MyModContext MyModContext = new MyModContext();
         internal readonly Icosphere Icosphere = new Icosphere(5);
         internal DSUtils Dsutil1 = new DSUtils();
+        internal DSUtils Dsutil2 = new DSUtils();
 
         internal static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         public static readonly Dictionary<MyEntity, MyProtectors> GlobalProtect = new Dictionary<MyEntity, MyProtectors>();
@@ -118,11 +123,10 @@ namespace DefenseShields
         public readonly List<Modulators> Modulators = new List<Modulators>();
         public readonly List<DefenseShields> Controllers = new List<DefenseShields>();
 
-        public static readonly HashSet<IMyPlayer> Players = new HashSet<IMyPlayer>();
+        public static readonly MyConcurrentDictionary<long, IMyPlayer> Players = new MyConcurrentDictionary<long, IMyPlayer>();
 
-        public static readonly MyConcurrentHashSet<IMyCharacter> Characters = new MyConcurrentHashSet<IMyCharacter>();
         public readonly MyConcurrentHashSet<DefenseShields> ActiveShields = new MyConcurrentHashSet<DefenseShields>();
-        public readonly MyConcurrentHashSet<DefenseShields> Shields = new MyConcurrentHashSet<DefenseShields>();
+        public readonly MyConcurrentHashSet<DefenseShields> FunctionalShields = new MyConcurrentHashSet<DefenseShields>();
 
         public static DefenseShieldsEnforcement Enforced = new DefenseShieldsEnforcement();
 

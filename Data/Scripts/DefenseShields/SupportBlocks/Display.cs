@@ -57,6 +57,7 @@ namespace DefenseShields
                 if (Display.ShowText) Display.SetShowOnScreen(0);
                 return;
             }
+            if (Session.Enforced.Debug == 5) Log.Line($"DisplayPower:{ShieldComp.DefenseShields.GridMaxPower}");
             Display.WritePublicText(ShieldComp.DefenseShields.Shield.CustomInfo);
             if (!Display.ShowText) Display.ShowPublicTextOnScreen();
         }

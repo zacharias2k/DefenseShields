@@ -10,7 +10,7 @@ namespace DefenseShields
         #region Shield Shape
         public void ResetShape(bool background, bool newShape = false)
         {
-            if (Session.Enforced.Debug >= 2) Log.Line($"ResetShape: Mobile:{GridIsMobile} - Mode:{ShieldMode}/{DsState.State.Mode} - newShape:{newShape} - Offline:{!DsState.State.Online} - offCnt:{_offlineCnt} - blockChanged:{_blockEvent} - functional:{_functionalEvent} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - EWorking:{ShieldComp.EmittersWorking} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"ResetShape: Mobile:{GridIsMobile} - Mode:{ShieldMode}/{DsState.State.Mode} - newShape:{newShape} - Offline:{!DsState.State.Online} - offCnt:{_offlineCnt} - blockChanged:{_blockEvent} - functional:{_functionalEvent} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - EWorking:{ShieldComp.EmittersWorking} - ShieldId [{Shield.EntityId}]");
 
             if (newShape)
             {
@@ -158,45 +158,37 @@ namespace DefenseShields
                 ShieldSphere.Radius = ShieldSize.AbsMax();
             }
 
-            if (_isServer)
-            {
-                ShieldSphere3K.Center = DetectionCenter;
-                WebSphere.Center = DetectionCenter;
-            }
-            else _clientPruneSphere.Center = DetectionCenter;
+            ShieldSphere3K.Center = DetectionCenter;
+            WebSphere.Center = DetectionCenter;
 
             SOriBBoxD.Center = DetectionCenter;
             SOriBBoxD.Orientation = _sQuaternion;
             if (_shapeChanged)
             {
                 SOriBBoxD.HalfExtent = ShieldSize;
-                ShieldAabb.Min = ShieldSize;
-                ShieldAabb.Max = -ShieldSize;
+                ShieldAabbScaled.Min = ShieldSize;
+                ShieldAabbScaled.Max = -ShieldSize;
                 EllipsoidSa.Update(DetectMatrixOutside.Scale.X, DetectMatrixOutside.Scale.Y, DetectMatrixOutside.Scale.Z);
                 BoundingRange = ShieldSize.AbsMax();
 
-                if (_isServer)
-                {
-                    ShieldSphere3K.Radius = BoundingRange + 3000;
-                    WebSphere.Radius = BoundingRange + 2.5;
-                }
-                else _clientPruneSphere.Radius = BoundingRange + 2.5;
+                ShieldSphere3K.Radius = BoundingRange + 3000;
+                WebSphere.Radius = BoundingRange + 7;
 
                 _ellipsoidSurfaceArea = EllipsoidSa.Surface;
                 EllipsoidVolume = 1.333333 * Math.PI * DetectMatrixOutside.Scale.X * DetectMatrixOutside.Scale.Y * DetectMatrixOutside.Scale.Z;
                 _shieldVol = DetectMatrixOutside.Scale.Volume;
                 if (Session.IsServer)
                 {
-                    if (Session.Enforced.Debug >= 2) Log.Line($"StateUpdate: CreateShieldShape - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: CreateShieldShape - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
                     ShieldChangeState();
                     ShieldComp.ShieldVolume = DetectMatrixOutside.Scale.Volume;
                 }
-                if (Session.Enforced.Debug >= 2) Log.Line($"CreateShape: shapeChanged - GridMobile:{GridIsMobile} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"CreateShape: shapeChanged - GridMobile:{GridIsMobile} - ShieldId [{Shield.EntityId}]");
             }
             if (!DsState.State.Lowered) SetShieldShape();
-            ShieldWorldAabb = ShieldEnt.PositionComp.WorldAABB;
-            ShieldWorldAabb.Inflate(Vector3D.One * 2.5);
 
+            BoundingBoxD.CreateFromSphere(ref WebSphere, out WebBox);
+            BoundingBoxD.CreateFromSphere(ref ShieldSphere3K, out ShieldBox3K);
         }
 
         private void CreateMobileShape()
@@ -221,7 +213,7 @@ namespace DefenseShields
                 } 
                 ShieldEnt.PositionComp.LocalMatrix = Matrix.Zero;
                 ShieldEnt.PositionComp.LocalMatrix = _shieldShapeMatrix;
-                ShieldEnt.PositionComp.LocalAABB = ShieldAabb;
+                ShieldEnt.PositionComp.LocalAABB = ShieldAabbScaled;
             }
             ShieldEnt.PositionComp.SetPosition(DetectionCenter);
         }

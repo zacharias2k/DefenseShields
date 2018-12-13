@@ -46,14 +46,14 @@ namespace DefenseShields
                     State = loadedState;
                     loadedSomething = true;
                 }
-                if (Session.Enforced.Debug >= 2) Log.Line($"Loaded - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"Loaded - ShieldId [{Shield.EntityId}]");
             }
             return loadedSomething;
         }
 
         internal void NetworkUpdate()
         {
-            if (Session.Enforced.Debug >= 2) Log.Line($"ServRelay - ShieldId [{Shield.EntityId}]: network state update for shield");
+            if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - ShieldId [{Shield.EntityId}]: network state update for shield");
             Session.PacketizeControllerState(Shield, State); // update clients with server's state
         }
     }
@@ -104,7 +104,7 @@ namespace DefenseShields
                     Settings = loadedSettings;
                     loadedSomething = true;
                 }
-                if (Session.Enforced.Debug >= 2) Log.Line($"Loaded - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"Loaded - ShieldId [{Shield.EntityId}]");
             }
             return loadedSomething;
         }
@@ -114,12 +114,12 @@ namespace DefenseShields
 
             if (Session.IsServer)
             {
-                if (Session.Enforced.Debug >= 2) Log.Line($"ServRelay - ShieldId [{Shield.EntityId}]: network settings update for shield");
+                if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - ShieldId [{Shield.EntityId}]: network settings update for shield");
                 Session.PacketizeControllerSettings(Shield, Settings); // update clients with server's settings
             }
             else // client, send settings to server
             {
-                if (Session.Enforced.Debug >= 1) Log.Line($"ClientRelay - ShieldId [{Shield.EntityId}]: network settings update for shield");
+                if (Session.Enforced.Debug == 3) Log.Line($"ClientRelay - ShieldId [{Shield.EntityId}]: network settings update for shield");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataControllerSettings(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, Settings));
                 MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdControllerSettings, bytes);
             }

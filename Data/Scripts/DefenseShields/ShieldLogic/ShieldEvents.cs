@@ -59,17 +59,15 @@ namespace DefenseShields
         {
             try
             {
-                if (!_isServer) return;
-                if (myEntity?.Physics == null || !myEntity.InScene || myEntity.MarkedForClose || myEntity is IMyFloatingObject || myEntity is IMyEngineerToolBase) return;
-                if (Asleep && myEntity.GetType().Name == "MyDebrisBase") return;
+                if (myEntity?.Physics == null || !myEntity.InScene || myEntity.MarkedForClose || myEntity is MyFloatingObject || myEntity is IMyEngineerToolBase) return;
+                var isMissile = myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile);
+                if (!isMissile && !(myEntity is MyCubeGrid)) return;
 
                 var aabb = myEntity.PositionComp.WorldAABB;
-                bool intersect;
-                ShieldSphere3K.Intersects(ref aabb, out intersect);
-                if (!intersect) return;
+                if (!ShieldBox3K.Intersects(ref aabb)) return;
 
                 Asleep = false;
-                if (myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile)) Missiles.Add(myEntity);
+                if (_isServer && isMissile) Missiles.Add(myEntity);
             }
             catch (Exception ex) { Log.Line($"Exception in Controller OnEntityAdd: {ex}"); }
         }

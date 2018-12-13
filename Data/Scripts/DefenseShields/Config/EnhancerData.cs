@@ -49,7 +49,7 @@ namespace DefenseShields
                     State = loadedState;
                     loadedSomething = true;
                 }
-                if (Session.Enforced.Debug >= 2) Log.Line($"Loaded - EnhancerId [{Enhancer.EntityId}]:\n{State.ToString()}");
+                if (Session.Enforced.Debug == 3) Log.Line($"Loaded - EnhancerId [{Enhancer.EntityId}]:\n{State.ToString()}");
             }
             return loadedSomething;
         }
@@ -60,7 +60,7 @@ namespace DefenseShields
 
             if (Session.IsServer)
             {
-                if (Session.Enforced.Debug >= 2) Log.Line($"ServRelay - EnhancerId [{Enhancer.EntityId}]: network state update for Enhancer");
+                if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - EnhancerId [{Enhancer.EntityId}]: network state update for Enhancer");
                 Session.PacketizeEnhancerState(Enhancer, State); // update clients with server's settings
             }
         }
