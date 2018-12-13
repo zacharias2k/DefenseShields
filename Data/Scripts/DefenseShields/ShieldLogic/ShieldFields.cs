@@ -100,6 +100,7 @@ namespace DefenseShields
 
         internal volatile int LogicSlot;
         internal volatile int MonitorSlot;
+        internal volatile bool WasActive;
         internal volatile bool MoverByShield;
         internal volatile bool Dispatched;
         internal volatile bool PlayerByShield;

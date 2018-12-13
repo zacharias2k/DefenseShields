@@ -372,7 +372,6 @@ namespace DefenseShields
         {
             LogicSlot = Session.GetSlot();
             MonitorSlot = LogicSlot - 1 < 0 ? Session.EntSlotScaler - 1 : LogicSlot - 1;
-            Log.Line($"AssignSlot:{LogicSlot} - {MonitorSlot} - {Session.EntSlotScaler}");
         }
 
         public void UpdatePassiveModel()

@@ -166,8 +166,9 @@ namespace DefenseShields
                 base.Close();
                 if (Session.Enforced.Debug == 3) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 if (Session.Instance.Controllers.Contains(this)) Session.Instance.Controllers.Remove(this);
-                if (Session.Instance.ActiveShields.Contains(this)) Session.Instance.ActiveShields.Remove(this);
                 if (Session.Instance.FunctionalShields.Contains(this)) Session.Instance.FunctionalShields.Remove(this);
+                if (Session.Instance.ActiveShields.Contains(this)) Session.Instance.ActiveShields.Remove(this);
+                WasActive = false;
                 Icosphere = null;
                 InitEntities(false);
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(EllipsoidOxyProvider);

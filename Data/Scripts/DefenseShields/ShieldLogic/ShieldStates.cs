@@ -61,14 +61,26 @@ namespace DefenseShields
 
         private bool EntityAlive()
         {
-            Tick = Session.Tick;
+            var tick = Session.Tick;
+            var logicPaused = tick != Tick + 1;
+
+            Tick = tick;
             Tick60 = Tick % 60 == 0;
             Tick180 = Tick % 180 == 0;
             Tick600 = Tick % 600 == 0;
+            /*
+            if (Tick < 1000) LogicPaused = false;
+            else if (Tick >= 1000 && Tick <= 2000) LogicPaused = LogicPaused;
+            else if (Tick > 2000)
+            {
+                if (Tick == 2001) Tick = 2003;
+                LogicPaused = false;
+            }
+
+            if (Tick >= 1000 && Tick <= 2000) return false;
+            */
+            if (logicPaused && WasActive) UnPauseLogic();
             LogicPaused = false;
-            //if (Tick < 1000) LogicPaused = false;
-            //else if (Tick >= 1000 && Tick <= 2000) LogicPaused = true;
-            //else if (Tick > 2000) LogicPaused = false;
 
             var wait = _isServer && !Tick60 && DsState.State.Suspended;
 
@@ -89,6 +101,16 @@ namespace DefenseShields
             if (_blockEvent && Tick >= _funcTick) BlockChanged(true);
 
             return true;
+        }
+
+        private void UnPauseLogic()
+        {
+            TicksWithNoActivity = 0;
+            LastWokenTick = Session.Tick;
+            Asleep = false;
+            PlayerByShield = true;
+            Session.Instance.ActiveShields.Add(this);
+            Log.Line($"Logic was paused and is now resumed");
         }
 
         private bool ShieldOn()
@@ -155,6 +177,7 @@ namespace DefenseShields
             ComingOnline = false;
             LastWokenTick = Tick;
             WasOnline = true;
+            WasActive = true;
             WarmedUp = true;
 
             if (_isServer)
@@ -189,6 +212,7 @@ namespace DefenseShields
             _power = 0.001f;
             Sink.Update();
             WasOnline = false;
+            WasActive = false;
             ShieldEnt.Render.Visible = false;
             ShieldEnt.PositionComp.SetPosition(Vector3D.Zero);
             if (_isServer && !DsState.State.Lowered && !DsState.State.Sleeping)

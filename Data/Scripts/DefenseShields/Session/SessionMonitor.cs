@@ -66,17 +66,7 @@ namespace DefenseShields
                         return;
                     }
 
-                    if (!shieldActive && s.WasOnline)
-                    {
-                        s.TicksWithNoActivity = 0;
-                        s.LastWokenTick = tick;
-                        s.Asleep = false;
-                        s.PlayerByShield = true;
-                        ActiveShields.Add(s);
-                        return;
-                    }
-
-                    if (!s.WasOnline || s.DsState.State.Lowered)
+                    if (!shieldActive)
                     {
                         s.Asleep = true;
                         return;
@@ -93,6 +83,7 @@ namespace DefenseShields
 
                     if (!s.PlayerByShield && !s.MoverByShield)
                     {
+                        Log.Line($"no player or mover");
                         if (s.TicksWithNoActivity++ % EntCleanCycle == 0) s.EntCleanUpTime = true;
                         s.Asleep = true;
                         return;
@@ -218,19 +209,13 @@ namespace DefenseShields
                     foreach (var s in FunctionalShields)
                     {
                         s.AssignSlots();
-                        s.TicksWithNoActivity = 0;
-                        s.LastWokenTick = Tick;
                         s.Asleep = false;
-                        s.PlayerByShield = true;
                     }
                     foreach (var c in Controllers)
                     {
                         if (FunctionalShields.Contains(c)) continue;
                         c.AssignSlots();
-                        c.TicksWithNoActivity = 0;
-                        c.LastWokenTick = Tick;
                         c.Asleep = false;
-                        c.PlayerByShield = true;
                     }
                     ScalerChanged = true;
                 }
