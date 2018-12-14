@@ -98,7 +98,8 @@ namespace DefenseShields.Support
 
             //D3DXVec3TransformCoord(rayOrigin, rayOrigin, toEllipsoid);
             //D3DXVec3TransformNormal(rayVec, rayVec, toEllipsoid);
-
+            rayOrigin = Vector3D.Transform(rayOrigin, toEllipsoid);
+            rayVec = Vector3D.TransformNormal(rayVec, toEllipsoid);
             //Since it is in ellipsoid space, the center = 1.0f and the radius is 0,0,0
 
             double Radius = 1.0d;

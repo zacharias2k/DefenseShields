@@ -17,6 +17,7 @@ namespace DefenseShields
         private int _count = -1;
 
         public bool ServerUpdate;
+        private bool _isServer = Session.IsServer;
         private readonly Dictionary<long, Displays> _displays = new Dictionary<long, Displays>();
         internal ShieldGridComponent ShieldComp;
         private IMyTextPanel Display => (IMyTextPanel)Entity;
@@ -48,16 +49,20 @@ namespace DefenseShields
 
         public override void UpdateBeforeSimulation10()
         {
+            if (!_isServer) return;
             if (_count++ == 9) _count = 0;
             if (_count != 9) return;
 
-            if (ShieldComp?.DefenseShields?.MyGrid != Display.CubeGrid) Display.CubeGrid.Components.TryGet(out ShieldComp);
+            if (ShieldComp?.DefenseShields?.MyGrid != Display.CubeGrid)
+            {
+                Display.CubeGrid.Components.TryGet(out ShieldComp);
+            }
             if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.DefenseShields.Warming || !ShieldComp.DefenseShields.IsWorking)
             {
                 if (Display.ShowText) Display.SetShowOnScreen(0);
                 return;
             }
-            if (Session.Enforced.Debug == 5) Log.Line($"DisplayPower:{ShieldComp.DefenseShields.GridMaxPower}");
+            ShieldComp.DefenseShields.Shield.RefreshCustomInfo();
             Display.WritePublicText(ShieldComp.DefenseShields.Shield.CustomInfo);
             if (!Display.ShowText) Display.ShowPublicTextOnScreen();
         }

@@ -22,7 +22,7 @@ namespace DefenseShields
                 Session.GlobalProtect.TryGetValue(sub, out myProtectors);
                 if (myProtectors.Shields != null && myProtectors.Shields.ContainsKey(this)) continue;
                 var tick = Session.Tick;
-                WebEnts.TryAdd(sub, new EntIntersectInfo(sub.EntityId, 0f, 0f, false, sub.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, tick, tick, tick, tick, Ent.Protected, null));
+                ProtectedEntCache[sub] = new ProtectCache(tick, tick, tick, Ent.Protected);
                 var protectors = Session.GlobalProtect[sub] = new MyProtectors(Session.ProtDicts.Get(), LogicSlot, Session.Tick);
                 if (!GridIsMobile)
                 {
@@ -100,7 +100,7 @@ namespace DefenseShields
                 bool quickReject;
                 if (_isServer) quickReject = ent is IMyFloatingObject || ent is IMyEngineerToolBase || IgnoreCache.Contains(ent) || FriendlyMissileCache.Contains(ent) || AuthenticatedCache.Contains(ent);
                 else quickReject = !(ent is MyCubeGrid) && voxel == null && !(ent is IMyCharacter) || IgnoreCache.Contains(ent) || AuthenticatedCache.Contains(ent);
-                if (quickReject) continue;
+                if (quickReject || !WebSphere.Intersects(ent.PositionComp.WorldVolume)) continue;
                 if (voxel != null)
                 {
                     VoxelsToIntersect[voxel] = true;
@@ -109,71 +109,86 @@ namespace DefenseShields
                     EnablePhysics = true;
                     continue;
                 }
-                EntIntersectInfo entInfo;
-                WebEnts.TryGetValue(ent, out entInfo);
                 Ent relation;
 
-                bool refreshInfo = false;
-                if (entInfo != null)
+                ProtectCache protectedEnt;
+                EntIntersectInfo entInfo = null;
+                ProtectedEntCache.TryGetValue(ent, out protectedEnt);
+
+                var refreshInfo = false;
+                if (protectedEnt == null)
                 {
-                    var last = entInfo.LastTick;
-                    var refresh = entInfo.RefreshTick;
+                    WebEnts.TryGetValue(ent, out entInfo);
+                    if (entInfo != null)
+                    {
+                        var last = entInfo.LastTick;
+                        var refresh = entInfo.RefreshTick;
+                        refreshInfo = tick - last > 180 || tick - last == 180 && tick - refresh >= 3600 || tick - last == 1 && tick - refresh >= 60;
+                        if (refreshInfo)
+                        {
+                            entInfo.RefreshTick = tick;
+                            entInfo.Relation = EntType(ent);
+                        }
+                        relation = entInfo.Relation;
+                        entInfo.LastTick = tick;
+                    }
+                    else relation = EntType(ent);
+                }
+                else
+                {
+                    var last = protectedEnt.LastTick;
+                    var refresh = protectedEnt.RefreshTick;
                     refreshInfo = tick - last > 180 || tick - last == 180 && tick - refresh >= 3600 || tick - last == 1 && tick - refresh >= 60;
                     if (refreshInfo)
                     {
-                        entInfo.RefreshTick = tick;
-                        entInfo.Relation = EntType(ent);
+                        protectedEnt.RefreshTick = tick;
+                        protectedEnt.Relation = EntType(ent);
                     }
-                    relation = entInfo.Relation;
-                    entInfo.LastTick = tick;
+                    relation = protectedEnt.Relation;
+                    protectedEnt.LastTick = tick;
                 }
-                else relation = EntType(ent);
-                if (relation == Ent.Shielded) shieldFound = true;
-                try
+                switch (relation)
                 {
-                    switch (relation)
-                    {
-                        case Ent.Authenticated:
-                            continue;
-                        case Ent.Ignore:
-                        case Ent.Protected:
-                            if (relation == Ent.Protected)
+                    case Ent.Authenticated:
+                        continue;
+                    case Ent.Ignore:
+                    case Ent.Protected:
+                        if (relation == Ent.Protected)
+                        {
+                            if (protectedEnt != null)
                             {
-                                if (entInfo != null)
-                                {
-                                    if (Session.GlobalProtect.ContainsKey(ent)) continue;
-                                }
-                                else WebEnts.TryAdd(ent, new EntIntersectInfo(ent.EntityId, 0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, tick, tick, tick, tick, relation, null));
-                                MyProtectors protectors;
-                                Session.GlobalProtect.TryGetValue(ent, out protectors);
-                                if (protectors.Shields == null) protectors = Session.GlobalProtect[ent] = new MyProtectors(Session.ProtDicts.Get(), LogicSlot, tick);
-
-                                var grid = ent as MyCubeGrid;
-                                var parent = ShieldComp.GetLinkedGrids.Contains(grid);
-                                if (grid != null)
-                                {
-                                    var cornersInShield = CustomCollision.CornerOrCenterInShield(grid, DetectMatrixOutsideInv, _resetEntCorners);
-                                    switch (cornersInShield)
-                                    {
-                                        case 0:
-                                            continue;
-                                        case 8:
-                                            protectors.Shields.Add(this, new ProtectorInfo(parent, true), true);
-                                            break;
-                                        default:
-                                            protectors.Shields.Add(this, new ProtectorInfo(parent, false), true);
-                                            break;
-                                    }
-                                }
-                                else if (CustomCollision.PointInShield(ent.PositionComp.WorldAABB.Center, DetectMatrixOutsideInv)) protectors.Shields.Add(this, new ProtectorInfo(parent, true), true);
-                                continue;
+                                if (Session.GlobalProtect.ContainsKey(ent)) continue;
                             }
-                            IgnoreCache.Add(ent);
-                            continue;
-                    }
-                }
-                catch (Exception ex) { Log.Line($"Exception in WebEntities switch-Relations: {ex}"); }
+                            else ProtectedEntCache[ent] = new ProtectCache(tick, tick, tick, Ent.Protected);
 
+                            MyProtectors protectors;
+                            Session.GlobalProtect.TryGetValue(ent, out protectors);
+                            if (protectors.Shields == null) protectors = Session.GlobalProtect[ent] = new MyProtectors(Session.ProtDicts.Get(), LogicSlot, tick);
+
+                            var grid = ent as MyCubeGrid;
+                            var parent = ShieldComp.GetLinkedGrids.Contains(grid);
+                            if (grid != null)
+                            {
+                                var cornersInShield = CustomCollision.CornerOrCenterInShield(grid, DetectMatrixOutsideInv, _resetEntCorners);
+                                switch (cornersInShield)
+                                {
+                                    case 0:
+                                        continue;
+                                    case 8:
+                                        protectors.Shields.Add(this, new ProtectorInfo(parent, true), true);
+                                        break;
+                                    default:
+                                        protectors.Shields.Add(this, new ProtectorInfo(parent, false), true);
+                                        break;
+                                }
+                            }
+                            else if (CustomCollision.PointInShield(ent.PositionComp.WorldAABB.Center, DetectMatrixOutsideInv)) protectors.Shields.Add(this, new ProtectorInfo(parent, true), true);
+                            continue;
+                        }
+                        IgnoreCache.Add(ent);
+                        continue;
+                }
+                if (relation == Ent.Shielded) shieldFound = true;
                 try
                 {
                     if (entInfo != null)
@@ -215,7 +230,7 @@ namespace DefenseShields
                         EnablePhysics = true;
                         WebEnts.TryAdd(ent, new EntIntersectInfo(ent.EntityId, 0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, tick, tick, tick, tick, relation, new List<IMySlimBlock>()));
                     }
-                    if (entInfo == null) WebEnts.TryGetValue(ent, out entInfo);
+                    //if (entInfo == null) WebEnts.TryGetValue(ent, out entInfo);
                 }
                 catch (Exception ex) { Log.Line($"Exception in WebEntities entInfo: {ex}"); }
             }

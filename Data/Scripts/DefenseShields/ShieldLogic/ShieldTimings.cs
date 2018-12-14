@@ -233,6 +233,11 @@ namespace DefenseShields
                         AuthenticatedCache.Clear();
                         EnemyShields.Clear();
                         IgnoreCache.Clear();
+
+                        _porotectEntsTmp.Clear();
+                        _porotectEntsTmp.AddRange(ProtectedEntCache.Where(info => Tick - info.Value.LastTick > 180));
+                        foreach (var protectedEnt in _porotectEntsTmp) ProtectedEntCache.Remove(protectedEnt.Key);
+
                         _webEntsTmp.Clear();
                         _webEntsTmp.AddRange(WebEnts.Where(info => Tick - info.Value.LastTick > 180));
                         foreach (var webent in _webEntsTmp)

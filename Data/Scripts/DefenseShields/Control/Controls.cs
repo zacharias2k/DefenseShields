@@ -6,6 +6,7 @@ using Sandbox.ModAPI;
 namespace DefenseShields.Control
 {
     #region Controls Class
+    /*
     public class RefreshCheckbox<T> : Control.Checkbox<T>
     {
         public RefreshCheckbox(IMyTerminalBlock block,
@@ -78,5 +79,6 @@ namespace DefenseShields.Control
             catch (Exception ex) { Log.Line($"Exception in Controls Setter: {ex}"); }
         }
     }
+    */
     #endregion  
 }

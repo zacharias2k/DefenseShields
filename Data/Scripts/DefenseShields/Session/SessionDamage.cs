@@ -270,9 +270,9 @@ namespace DefenseShields
 
                             if (hostileEnt is MyVoxelBase || hostileEnt != null)
                             {
-                                EntIntersectInfo entInfo = null;
-                                shield.WebEnts?.TryGetValue(hostileEnt, out entInfo);
-                                if (entInfo != null && entInfo.Relation == DefenseShields.Ent.Protected)
+                                ProtectCache protectedEnt = null;
+                                shield.ProtectedEntCache?.TryGetValue(hostileEnt, out protectedEnt);
+                                if (protectedEnt != null && protectedEnt.Relation == DefenseShields.Ent.Protected)
                                 {
                                     shield.DeformEnabled = true;
                                     return;
@@ -365,16 +365,16 @@ namespace DefenseShields
                         var nullAttacker = hostileEnt == null;
                         var playerProtected = false;
 
-                        EntIntersectInfo entInfo;
+                        ProtectCache protectedEnt;
                         if (nullAttacker)
                         {
-                            shield.WebEnts.TryGetValue(myEntity, out entInfo);
-                            if (entInfo != null && entInfo.Relation == DefenseShields.Ent.Protected) playerProtected = true;
+                            shield.ProtectedEntCache.TryGetValue(myEntity, out protectedEnt);
+                            if (protectedEnt != null && protectedEnt.Relation == DefenseShields.Ent.Protected) playerProtected = true;
                         }
                         else
                         {
-                            shield.WebEnts.TryGetValue(hostileEnt, out entInfo);
-                            if (entInfo != null && entInfo.Relation != DefenseShields.Ent.Protected) playerProtected = true;
+                            shield.ProtectedEntCache.TryGetValue(hostileEnt, out protectedEnt);
+                            if (protectedEnt != null && protectedEnt.Relation != DefenseShields.Ent.Protected) playerProtected = true;
                         }
 
                         if (!playerProtected) continue;

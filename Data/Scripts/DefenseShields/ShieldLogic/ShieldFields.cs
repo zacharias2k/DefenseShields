@@ -231,12 +231,15 @@ namespace DefenseShields
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
         private readonly List<IMyBatteryBlock> _batteryBlocks = new List<IMyBatteryBlock>();
         private readonly List<KeyValuePair<MyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<MyEntity, EntIntersectInfo>>();
+        private readonly List<KeyValuePair<MyEntity, ProtectCache>> _porotectEntsTmp = new List<KeyValuePair<MyEntity, ProtectCache>>();
 
         internal readonly HashSet<IMyEntity> AuthenticatedCache = new HashSet<IMyEntity>();
         internal readonly HashSet<MyEntity> IgnoreCache = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> EnemyShields = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> Missiles = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> FriendlyMissileCache = new HashSet<MyEntity>();
+
+        internal readonly Dictionary<MyEntity, ProtectCache> ProtectedEntCache = new Dictionary<MyEntity, ProtectCache>();
 
         internal readonly ConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<MyEntity, EntIntersectInfo>();
         internal readonly ConcurrentDictionary<MyEntity, MoverInfo> EntsByMe = new ConcurrentDictionary<MyEntity, MoverInfo>();

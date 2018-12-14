@@ -218,9 +218,9 @@ namespace DefenseShields
             if (playerEnt == null || DsState.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv) || !DsState.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
             {
                 if (Session.HudComp != this) return;
-                EntIntersectInfo entInfo;
-                WebEnts.TryGetValue(playerEnt, out entInfo);
-                if (entInfo != null && entInfo.Relation != Ent.Protected) return;
+                ProtectCache protectedEnt = null;
+                if (playerEnt != null) ProtectedEntCache.TryGetValue(playerEnt, out protectedEnt);
+                if (protectedEnt != null && protectedEnt.Relation != Ent.Protected) return;
 
                 Session.HudComp = null;
                 Session.HudShieldDist = double.MaxValue;

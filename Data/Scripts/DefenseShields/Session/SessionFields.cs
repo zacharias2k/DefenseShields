@@ -61,6 +61,8 @@ namespace DefenseShields
         internal static bool Tick600;
 
         internal bool MoreThan600Frames;
+        internal volatile bool Wake;
+        internal volatile bool Monitor;
         internal volatile bool EntSlotTick;
         internal bool ScalerChanged;
         internal bool HideActions;
@@ -100,6 +102,7 @@ namespace DefenseShields
         internal readonly Guid PlanetShieldSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811512");
         internal readonly Guid PlanetShieldStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811513");
 
+        internal static readonly TimeSpan SleepTime = TimeSpan.FromTicks(10);
         internal static readonly Type MissileObj = typeof(MyObjectBuilder_Missile);
         internal static Session Instance { get; private set; }
         internal static DefenseShields HudComp;

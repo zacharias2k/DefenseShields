@@ -9,7 +9,7 @@ using MyVisualScriptLogicProvider = Sandbox.Game.MyVisualScriptLogicProvider;
 
 namespace DefenseShields
 {
-    [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation | MyUpdateOrder.AfterSimulation)]
+    [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
     public partial class Session : MySessionComponentBase
     {
         #region Simulation / Init
@@ -56,7 +56,7 @@ namespace DefenseShields
                 _syncDistSqr = MyAPIGateway.Session.SessionSettings.SyncDistance;
                 _syncDistSqr += 500;
                 _syncDistSqr *= _syncDistSqr;
-
+                if (!Monitor) MyAPIGateway.Parallel.StartBackground(WebMonitor);
                 if (Enforced.Debug >= 3) Log.Line($"SyncDistSqr:{_syncDistSqr} - DistNorm:{Math.Sqrt(_syncDistSqr)}");
             }
             catch (Exception ex) { Log.Line($"Exception in BeforeStart: {ex}"); }
@@ -132,14 +132,17 @@ namespace DefenseShields
                 LoadBalancer();
                 LogicUpdates();
                 Timings();
+                Wake = true;
             }
             catch (Exception ex) { Log.Line($"Exception in SessionBeforeSim: {ex}"); }
         }
 
+        /*
         public override void UpdateAfterSimulation()
         {
-            if (FunctionalShields.Count > 0) MyAPIGateway.Parallel.StartBackground(WebMonitor);
+            //if (FunctionalShields.Count > 0) MyAPIGateway.Parallel.StartBackground(WebMonitor);
         }
+        */
         #endregion
 
         #region Events
@@ -149,7 +152,7 @@ namespace DefenseShields
             {
                 if (Players.ContainsKey(id))
                 {
-                    Log.Line($"Player id({id}) already exists");
+                    if (Enforced.Debug >= 3 ) Log.Line($"Player id({id}) already exists");
                     return;
                 }
                 MyAPIGateway.Multiplayer.Players.GetPlayers(null, myPlayer => FindPlayer(myPlayer, id));
@@ -219,6 +222,7 @@ namespace DefenseShields
             Instance = null;
             HudComp = null;
             Enforced = null;
+            Monitor = false;
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEnforce, EnforcementReceived);
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdControllerState, ControllerStateReceived);
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdControllerSettings, ControllerSettingsReceived);

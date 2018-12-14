@@ -37,6 +37,7 @@ namespace DefenseShields
             if (!_isDedicated && DsState.State.Message)
             {
                 BroadcastMessage();
+                if (Session.Enforced.Debug == 4) Log.Line($"ShieldChangeState");
                 Shield.RefreshCustomInfo();
             }
             DsState.State.Message = false;
@@ -110,7 +111,6 @@ namespace DefenseShields
             Asleep = false;
             PlayerByShield = true;
             Session.Instance.ActiveShields.Add(this);
-            Log.Line($"Logic was paused and is now resumed");
         }
 
         private bool ShieldOn()
@@ -191,7 +191,7 @@ namespace DefenseShields
             {
                 UpdateSubGrids();
                 Shield.RefreshCustomInfo();
-                if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 4) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
             }
             Session.Instance.ActiveShields.Add(this);
         }
@@ -230,6 +230,8 @@ namespace DefenseShields
             {
                 UpdateSubGrids();
                 Shield.RefreshCustomInfo();
+                if (Session.Enforced.Debug == 4) Log.Line($"StateUpdate: ShieldOff - ShieldId [{Shield.EntityId}]");
+
             }
             Session.Instance.ActiveShields.Remove(this);
         }
@@ -414,7 +416,7 @@ namespace DefenseShields
                 Shield.RefreshCustomInfo();
                 ((MyCubeBlock)Shield).UpdateTerminal();
             }
-            if (Session.Enforced.Debug == 3) Log.Line($"ShieldDown: Count: {_offlineCnt} - ShieldPower: {ShieldCurrentPower} - gridMax: {GridMaxPower} - currentPower: {GridCurrentPower} - maint: {_shieldMaintaintPower} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 4) Log.Line($"ShieldDown: Count: {_offlineCnt} - ShieldPower: {ShieldCurrentPower} - gridMax: {GridMaxPower} - currentPower: {GridCurrentPower} - maint: {_shieldMaintaintPower} - ShieldId [{Shield.EntityId}]");
         }
 
         private void LosCheck()
@@ -583,7 +585,7 @@ namespace DefenseShields
                     if (!_isDedicated) ShellVisibility(true);
                     DsState.State.Sleeping = true;
                     Shield.RefreshCustomInfo();
-                    if (Session.Enforced.Debug == 3) Log.Line($"Sleep: controller detected sleeping emitter, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 4) Log.Line($"Sleep: controller detected sleeping emitter, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.Sleeping = true;
                 return true;
@@ -603,7 +605,7 @@ namespace DefenseShields
 
                 DsState.State.Sleeping = false;
                 Shield.RefreshCustomInfo();
-                if (Session.Enforced.Debug == 3) Log.Line($"Sleep: Controller was sleeping but is now waking, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 4) Log.Line($"Sleep: Controller was sleeping but is now waking, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
 
             DsState.State.Sleeping = false;
@@ -732,7 +734,7 @@ namespace DefenseShields
                 {
                     DsState.State.ControllerGridAccess = false;
                     Shield.RefreshCustomInfo();
-                    if (Session.Enforced.Debug == 3) Log.Line($"GridOwner: controller is not owned: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 4) Log.Line($"GridOwner: controller is not owned: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.ControllerGridAccess = false;
                 return false;
@@ -742,7 +744,7 @@ namespace DefenseShields
             {
                 DsState.State.ControllerGridAccess = true;
                 Shield.RefreshCustomInfo();
-                if (Session.Enforced.Debug == 3) Log.Line($"GridOwner: controller is owned: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 4) Log.Line($"GridOwner: controller is owned: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
             DsState.State.ControllerGridAccess = true;
             return true;
@@ -843,6 +845,7 @@ namespace DefenseShields
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
                     ShellVisibility(true);
                     _clientOn = false;
+                    if (Session.Enforced.Debug == 4) Log.Line($"_clientOn");
                     Shield.RefreshCustomInfo();
                 }
                 _prevShieldActive = false;
@@ -852,6 +855,7 @@ namespace DefenseShields
             if (!_clientOn)
             {
                 ShellVisibility();
+                if (Session.Enforced.Debug == 4) Log.Line($"!_clientOn");
                 Shield.RefreshCustomInfo();
             }
             return false;

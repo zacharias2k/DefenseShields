@@ -61,6 +61,22 @@ namespace DefenseShields.Support
         }
     }
 
+    public class ProtectCache
+    {
+        public uint LastTick;
+        public uint RefreshTick;
+        public readonly uint FirstTick;
+        public DefenseShields.Ent Relation;
+
+        public ProtectCache(uint firstTick, uint lastTick, uint refreshTick, DefenseShields.Ent relation)
+        {
+            FirstTick = firstTick;
+            LastTick = lastTick;
+            RefreshTick = refreshTick;
+            Relation = relation;
+        }
+    }
+
     public class EntIntersectInfo
     {
         public readonly long EntId;
