@@ -28,7 +28,6 @@ namespace DefenseShields
             try
             {
                 Log.Line($"Starting Monitor");
-                Monitor = true;
                 while (Monitor)
                 {
                     if (!Wake && Monitor)

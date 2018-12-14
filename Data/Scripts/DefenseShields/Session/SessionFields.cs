@@ -63,7 +63,7 @@ namespace DefenseShields
 
         internal bool MoreThan600Frames;
         internal volatile bool Wake;
-        internal volatile bool Monitor;
+        internal volatile bool Monitor = true;
         internal volatile bool EntSlotTick;
         internal bool ScalerChanged;
         internal bool HideActions;
