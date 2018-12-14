@@ -59,6 +59,7 @@ namespace DefenseShields
         internal static bool Tick60;
         internal static bool Tick180;
         internal static bool Tick600;
+        internal static bool Tick1800;
 
         internal bool MoreThan600Frames;
         internal volatile bool Wake;

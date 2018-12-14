@@ -31,7 +31,7 @@ namespace DefenseShields
                 Monitor = true;
                 while (Monitor)
                 {
-                    if (!Wake)
+                    if (!Wake && Monitor)
                     {
                         MyAPIGateway.Parallel.Sleep(SleepTime);
                         continue;
@@ -204,6 +204,7 @@ namespace DefenseShields
             Tick60 = Tick % 60 == 0;
             Tick180 = Tick % 180 == 0;
             Tick600 = Tick % 600 == 0;
+            Tick1800 = Tick % 1800 == 0;
             if (MoreThan600Frames)
             {
                 var oldScaler = EntSlotScaler;
@@ -316,7 +317,7 @@ namespace DefenseShields
             var y = 0;
             if (Enforced.Debug >= 4 && EntSlotTick) Log.Line($"[ShieldStates] ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count}");
             if (Enforced.Debug >= 4 && EntSlotTick) Dsutil1.Sw.Restart();
-            if (Enforced.Debug == 1 && Tick600) Log.Line($"[ShieldStates] ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count}");
+            if (Enforced.Debug == 1 && Tick1800) Log.Line($"[ShieldStates] ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count}");
             foreach (var s in ActiveShields)
             {
                 //if (!s.MoverByShield && !s.PlayerByShield) Log.Line($"status: Asleep:{s.Asleep} -  Player:{s.PlayerByShield} - Mover:{s.MoverByShield}");

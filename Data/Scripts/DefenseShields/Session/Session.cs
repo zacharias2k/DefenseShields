@@ -219,10 +219,10 @@ namespace DefenseShields
 
         protected override void UnloadData()
         {
+            Monitor = false;
             Instance = null;
             HudComp = null;
             Enforced = null;
-            Monitor = false;
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEnforce, EnforcementReceived);
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdControllerState, ControllerStateReceived);
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdControllerSettings, ControllerSettingsReceived);

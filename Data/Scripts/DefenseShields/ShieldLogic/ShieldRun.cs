@@ -6,7 +6,6 @@ using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
-using VRageMath;
 
 namespace DefenseShields
 {

@@ -229,13 +229,13 @@ namespace DefenseShields
 
                                 if (!shieldActive2)
                                 {
-                                    if (Enforced.Debug >= 3) Log.Line($"cannot find active backup shield: Online:{shield.DsState.State.Online} - Lowered:{shield.DsState.State.Lowered} - ShieldCnt:{protectors.Shields.Keys.Count} - AttackerId:{info.AttackerId} - Asleep:{shield.Asleep} - active:{ActiveShields.Contains(shield)}");
+                                    if (Enforced.Debug >= 4) Log.Line($"cannot find active backup shield: Online:{shield.DsState.State.Online} - Lowered:{shield.DsState.State.Lowered} - ShieldCnt:{protectors.Shields.Keys.Count} - AttackerId:{info.AttackerId} - Asleep:{shield.Asleep} - active:{ActiveShields.Contains(shield)}");
                                     continue;
                                 }
 
                                 _blockingShield = shield;
                                 foundBackupShield = true;
-                                if (Enforced.Debug >= 3) Log.Line($"found backup shield");
+                                if (Enforced.Debug >= 4) Log.Line($"found backup shield");
                                 break;
                             }
 
@@ -261,7 +261,7 @@ namespace DefenseShields
                                 info.Amount = 0;
                                 return;
                             }
-
+                            if (Enforced.Debug >= 4 && info.IsDeformation) Log.Line($"deform: {shield.DeformEnabled}");
                             if (info.Type == Bypass)
                             {
                                 shield.DeformEnabled = true;
