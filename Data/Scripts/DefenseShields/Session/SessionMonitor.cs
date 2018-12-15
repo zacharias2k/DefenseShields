@@ -34,121 +34,108 @@ namespace DefenseShields
         }
 
         #region WebMonitor
+        private readonly DsAutoResetEvent _autoResetEvent = new DsAutoResetEvent();
+
         private readonly Work _workData = new Work();
         public void WebMonitor()
         {
             try
             {
-                if (Enforced.Debug >= 1) Log.Line($"Starting Monitor");
-                while (Monitor)
+                _autoResetEvent.WaitOne();
+                if (Enforced.Debug >= 5 && EntSlotTick) Dsutil1.Sw.Restart();
+                _newFrame = false;
+                _workData.DoIt(new List<DefenseShields>(FunctionalShields), Tick);
+                MyAPIGateway.Parallel.For(0, _workData.ShieldList.Count, x =>
                 {
-                    if (!Wake && Monitor)
+                    var s = _workData.ShieldList[x];
+                    var tick = _workData.Tick;
+                    if (_newFrame || !s.Warming) return;
+                    var shieldActive = false;
+
+                    if (IsServer)
                     {
-                        MyAPIGateway.Parallel.Sleep(SleepTime);
-                        continue;
+                        shieldActive = ActiveShields.Contains(s);
+                        if (s.LostPings > 59)
+                        {
+                            if (shieldActive)
+                            {
+                                if (Enforced.Debug == 4) Log.Line($"Logic Paused");
+                                ActiveShields.Remove(s);
+                                s.WasPaused = true;
+                            }
+                            s.Asleep = false;
+                            return;
+                        }
+                        if (Enforced.Debug == 4 && s.LostPings > 0) Log.Line($"Lost Logic Pings:{s.LostPings}");
+                        if (shieldActive) s.LostPings++;
                     }
-                    if (!Monitor) break;
 
-                    Wake = false;
-
-                    if (Enforced.Debug >= 5 && EntSlotTick) Dsutil1.Sw.Restart();
-                    _newFrame = false;
-                    _workData.DoIt(new List<DefenseShields>(FunctionalShields), Tick);
-                    MyAPIGateway.Parallel.For(0, _workData.ShieldList.Count, x =>
+                    lock (s.GetCubesLock)
                     {
-                        var s = _workData.ShieldList[x];
-                        var tick = _workData.Tick;
-                        if (_newFrame || !s.Warming) return;
-                        var shieldActive = false;
-
-                        if (IsServer)
+                        var cleanDistributor = s.MyGridDistributor != null && s.FuncTask.IsComplete && s.MyGridDistributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects;
+                        if (cleanDistributor)
                         {
-                            shieldActive = ActiveShields.Contains(s);
-                            if (s.LostPings > 59)
-                            {
-                                if (shieldActive)
-                                {
-                                    if (Enforced.Debug == 4) Log.Line($"Logic Paused");
-                                    ActiveShields.Remove(s);
-                                    s.WasPaused = true;
-                                }
-                                s.Asleep = false;
-                                return;
-                            }
-                            if (Enforced.Debug == 4 && s.LostPings > 0) Log.Line($"Lost Logic Pings:{s.LostPings}");
-                            if (shieldActive) s.LostPings++;
+                            s.GridCurrentPower = s.MyGridDistributor.TotalRequiredInputByType(MyResourceDistributorComponent.ElectricityId);
+                            s.GridMaxPower = s.MyGridDistributor.MaxAvailableResourceByType(MyResourceDistributorComponent.ElectricityId);
                         }
+                    }
 
-                        lock (s.GetCubesLock)
-                        {
-                            var cleanDistributor = s.MyGridDistributor != null && s.FuncTask.IsComplete && s.MyGridDistributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects;
-                            if (cleanDistributor)
-                            {
-                                s.GridCurrentPower = s.MyGridDistributor.TotalRequiredInputByType(MyResourceDistributorComponent.ElectricityId);
-                                s.GridMaxPower = s.MyGridDistributor.MaxAvailableResourceByType(MyResourceDistributorComponent.ElectricityId);
-                            }
-                        }
-
-                        if (!IsServer)
-                        {
-                            s.TicksWithNoActivity = 0;
-                            s.LastWokenTick = tick;
-                            s.Asleep = false;
-                            return;
-                        }
-
-                        if (!shieldActive)
-                        {
-                            s.Asleep = true;
-                            return;
-                        }
-
-                        if (EntSlotTick && RefreshCycle == s.MonitorSlot) MonitorRefreshTasks(s, tick);
-
-                        if (tick < s.LastWokenTick + 400 || s.ShieldComp.GridIsMoving || s.Missiles.Count > 0)
-                        {
-                            if (s.ShieldComp.GridIsMoving) s.LastWokenTick = tick;
-                            s.Asleep = false;
-                            return;
-                        }
-
-                        if (!s.PlayerByShield && !s.MoverByShield)
-                        {
-                            if (s.TicksWithNoActivity++ % EntCleanCycle == 0) s.EntCleanUpTime = true;
-                            s.Asleep = true;
-                            return;
-                        }
-                        var monitorList = new List<MyEntity>();
-                        var intersect = false;
-                        MyGamePruningStructure.GetTopmostEntitiesInBox(ref s.WebBox, monitorList, MyEntityQueryType.Dynamic);
-                        for (int i = 0; i < monitorList.Count; i++)
-                        {
-                            var ent = monitorList[i];
-
-                            if (!(ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor)) continue;
-                            if (ent.Physics.IsMoving)
-                            {
-                                if (s.WebBox.Intersects(ent.PositionComp.WorldAABB))
-                                {
-                                    intersect = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (!intersect)
-                        {
-                            s.Asleep = true;
-                            return;
-                        }
+                    if (!IsServer)
+                    {
                         s.TicksWithNoActivity = 0;
                         s.LastWokenTick = tick;
                         s.Asleep = false;
-                    });
-                    if (Enforced.Debug >= 5 && EntSlotTick) Dsutil1.StopWatchReport($"[Monitoring ] tick:{Tick}                     - CPU:", -1);
-                }
-                if (!Monitor) return;
-                if (Enforced.Debug >= 1) Log.Line($"Stopping Monitor");
+                        return;
+                    }
+
+                    if (!shieldActive)
+                    {
+                        s.Asleep = true;
+                        return;
+                    }
+
+                    if (EntSlotTick && RefreshCycle == s.MonitorSlot) MonitorRefreshTasks(s, tick);
+
+                    if (tick < s.LastWokenTick + 400 || s.ShieldComp.GridIsMoving || s.Missiles.Count > 0)
+                    {
+                        if (s.ShieldComp.GridIsMoving) s.LastWokenTick = tick;
+                        s.Asleep = false;
+                        return;
+                    }
+
+                    if (!s.PlayerByShield && !s.MoverByShield)
+                    {
+                        if (s.TicksWithNoActivity++ % EntCleanCycle == 0) s.EntCleanUpTime = true;
+                        s.Asleep = true;
+                        return;
+                    }
+                    var monitorList = new List<MyEntity>();
+                    var intersect = false;
+                    MyGamePruningStructure.GetTopmostEntitiesInBox(ref s.WebBox, monitorList, MyEntityQueryType.Dynamic);
+                    for (int i = 0; i < monitorList.Count; i++)
+                    {
+                        var ent = monitorList[i];
+
+                        if (!(ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor)) continue;
+                        if (ent.Physics.IsMoving)
+                        {
+                            if (s.WebBox.Intersects(ent.PositionComp.WorldAABB))
+                            {
+                                intersect = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!intersect)
+                    {
+                        s.Asleep = true;
+                        return;
+                    }
+                    s.TicksWithNoActivity = 0;
+                    s.LastWokenTick = tick;
+                    s.Asleep = false;
+                });
             }
             catch (Exception ex) { Log.Line($"Exception in WebMonitor: {ex}"); }
         }
@@ -266,7 +253,7 @@ namespace DefenseShields
                     else entsUpdated++;
                 }
                 SlotCnt[RefreshCycle] = entsRefreshed;
-                if (Enforced.Debug == 4 || Enforced.Debug == 1 && Tick20) Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - EntsUpdated:{entsUpdated} - ShieldsWaking:{shieldsWaking} - EntsRemoved: {entsremoved} - EntsLostShield:{entsLostShield} - EntInRefreshSlots:({SlotCnt[0]} - {SlotCnt[1]} - {SlotCnt[2]} - {SlotCnt[3]} - {SlotCnt[4]} - {SlotCnt[5]} - {SlotCnt[6]} - {SlotCnt[7]} - {SlotCnt[8]}) \n" +
+                if (Enforced.Debug == 4 || Enforced.Debug == 1 && Tick1800) Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - EntsUpdated:{entsUpdated} - ShieldsWaking:{shieldsWaking} - EntsRemoved: {entsremoved} - EntsLostShield:{entsLostShield} - EntInRefreshSlots:({SlotCnt[0]} - {SlotCnt[1]} - {SlotCnt[2]} - {SlotCnt[3]} - {SlotCnt[4]} - {SlotCnt[5]} - {SlotCnt[6]} - {SlotCnt[7]} - {SlotCnt[8]}) \n" +
                                                   $"                                     ProtectedEnts:{GlobalProtect.Count} - ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count} - TotalProtectedEnts:{GlobalProtect.Count}");
             }
         }

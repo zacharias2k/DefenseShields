@@ -137,7 +137,11 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in SessionBeforeSim: {ex}"); }
         }
 
-        public override void UpdateAfterSimulation() { Wake = true; }
+        public override void UpdateAfterSimulation()
+        {
+            //Wake = true;
+            _autoResetEvent.Set();
+        }
         #endregion
 
         #region Events
