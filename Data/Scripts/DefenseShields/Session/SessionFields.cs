@@ -29,7 +29,6 @@ namespace DefenseShields
         private int _count = -1;
         private int _lCount;
         private int _eCount;
-        private int _protectCount;
 
         internal int OnCount;
         internal int RefreshCycle;
@@ -42,6 +41,7 @@ namespace DefenseShields
         internal long LastTerminalId;
 
         internal float MaxEntitySpeed = 210;
+        internal const double TickTimeDiv = 0.0625;
 
         internal static double HudShieldDist = double.MaxValue;
 
@@ -61,7 +61,6 @@ namespace DefenseShields
         internal static bool Tick600;
         internal static bool Tick1800;
 
-        internal bool MoreThan600Frames;
         internal volatile bool Wake;
         internal volatile bool Monitor = true;
         internal volatile bool EntSlotTick;

@@ -6,13 +6,24 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage;
-using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace DefenseShields
 {
+    internal class Work
+    {
+        internal List<DefenseShields> ShieldList;
+        internal uint Tick;
+
+        internal void DoIt(List<DefenseShields> s, uint t)
+        {
+            ShieldList = s;
+            Tick = t;
+        } 
+    }
+
     public partial class Session
     {
         public static int EntSlotAssigner;
@@ -23,11 +34,12 @@ namespace DefenseShields
         }
 
         #region WebMonitor
+        private readonly Work _workData = new Work();
         public void WebMonitor()
         {
             try
             {
-                Log.Line($"Starting Monitor");
+                if (Enforced.Debug >= 1) Log.Line($"Starting Monitor");
                 while (Monitor)
                 {
                     if (!Wake && Monitor)
@@ -35,27 +47,36 @@ namespace DefenseShields
                         MyAPIGateway.Parallel.Sleep(SleepTime);
                         continue;
                     }
+                    if (!Monitor) break;
+
                     Wake = false;
 
-                    if (Enforced.Debug >= 3 && EntSlotTick) Dsutil1.Sw.Restart();
+                    if (Enforced.Debug >= 5 && EntSlotTick) Dsutil1.Sw.Restart();
                     _newFrame = false;
-                    var tick = Tick;
-                    var shieldList = new List<DefenseShields>(FunctionalShields);
-                    MyAPIGateway.Parallel.For(0, shieldList.Count, x =>
+                    _workData.DoIt(new List<DefenseShields>(FunctionalShields), Tick);
+                    MyAPIGateway.Parallel.For(0, _workData.ShieldList.Count, x =>
                     {
-                        var s = shieldList[x];
+                        var s = _workData.ShieldList[x];
+                        var tick = _workData.Tick;
                         if (_newFrame || !s.Warming) return;
                         var shieldActive = false;
+
                         if (IsServer)
                         {
                             shieldActive = ActiveShields.Contains(s);
-                            if (s.LogicPaused)
+                            if (s.LostPings > 59)
                             {
-                                if (shieldActive) ActiveShields.Remove(s);
+                                if (shieldActive)
+                                {
+                                    if (Enforced.Debug == 4) Log.Line($"Logic Paused");
+                                    ActiveShields.Remove(s);
+                                    s.WasPaused = true;
+                                }
                                 s.Asleep = false;
                                 return;
                             }
-                            s.LogicPaused = true;
+                            if (Enforced.Debug == 4 && s.LostPings > 0) Log.Line($"Lost Logic Pings:{s.LostPings}");
+                            if (shieldActive) s.LostPings++;
                         }
 
                         lock (s.GetCubesLock)
@@ -124,9 +145,10 @@ namespace DefenseShields
                         s.LastWokenTick = tick;
                         s.Asleep = false;
                     });
-                    if (Enforced.Debug >= 3 && EntSlotTick) Dsutil1.StopWatchReport($"[Monitoring] tick:{tick} - ", -1);
+                    if (Enforced.Debug >= 5 && EntSlotTick) Dsutil1.StopWatchReport($"[Monitoring ] tick:{Tick}                     - CPU:", -1);
                 }
-                Log.Line($"Stopping Monitor");
+                if (!Monitor) return;
+                if (Enforced.Debug >= 1) Log.Line($"Stopping Monitor");
             }
             catch (Exception ex) { Log.Line($"Exception in WebMonitor: {ex}"); }
         }
@@ -195,59 +217,20 @@ namespace DefenseShields
 
         private void LoadBalancer()
         {
-            _newFrame = true;
-            Tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-            Tick20 = Tick % 20 == 0;
-            Tick60 = Tick % 60 == 0;
-            Tick60 = Tick % 60 == 0;
-            Tick180 = Tick % 180 == 0;
-            Tick600 = Tick % 600 == 0;
-            Tick1800 = Tick % 1800 == 0;
-            if (MoreThan600Frames)
-            {
-                var oldScaler = EntSlotScaler;
-                var globalProtCnt = GlobalProtect.Count;
-                if (globalProtCnt <= 25) EntSlotScaler = 1;
-                else if (globalProtCnt <= 50) EntSlotScaler = 2;
-                else if (globalProtCnt <= 75) EntSlotScaler = 3;
-                else if (globalProtCnt <= 100) EntSlotScaler = 4;
-                else if (globalProtCnt <= 150) EntSlotScaler = 5;
-                else if (globalProtCnt <= 200) EntSlotScaler = 6;
-                else EntSlotScaler = 9;
-
-                if (oldScaler != EntSlotScaler)
-                {
-                    GlobalProtect.Clear();
-                    foreach (var s in FunctionalShields)
-                    {
-                        s.AssignSlots();
-                        s.Asleep = false;
-                    }
-                    foreach (var c in Controllers)
-                    {
-                        if (FunctionalShields.Contains(c)) continue;
-                        c.AssignSlots();
-                        c.Asleep = false;
-                    }
-                    ScalerChanged = true;
-                }
-                else ScalerChanged = false;
-            }
-
+            if (Tick20) Ticker();
             EntSlotTick = Tick % (180 / EntSlotScaler) == 0;
 
-            var shieldsWaking = 0;
-            var entsUpdated = 0;
-            var entsremoved = 0;
-            var entsLostShield = 0;
             if (EntSlotTick)
             {
+                var shieldsWaking = 0;
+                var entsUpdated = 0;
+                var entsremoved = 0;
+                var entsLostShield = 0;
+
                 if (++RefreshCycle >= EntSlotScaler) RefreshCycle = 0;
-
                 if (Enforced.Debug == 4) SlotCounting();
-
                 GlobalEntTmp.Clear();
-                GlobalEntTmp.AddRange(GlobalProtect.Where(info => !MoreThan600Frames || info.Value.RefreshSlot == RefreshCycle && EntSlotTick || info.Value.RefreshSlot > EntSlotScaler - 1));
+                GlobalEntTmp.AddRange(GlobalProtect.Where(info => info.Value.RefreshSlot == RefreshCycle && EntSlotTick || info.Value.RefreshSlot > EntSlotScaler - 1));
                 for (int i = 0; i < GlobalEntTmp.Count; i++)
                 {
                     var ent = GlobalEntTmp[i].Key;
@@ -257,7 +240,7 @@ namespace DefenseShields
                     var refreshCount = 0;
                     foreach (var s in entShields)
                     {
-                        if (s.LogicPaused) continue;
+                        if (s.WasPaused) continue;
 
                         if (!ent.InScene || !s.ResetEnts(ent, Tick))
                         {
@@ -266,7 +249,7 @@ namespace DefenseShields
                         }
                         else refreshCount++;
 
-                        var detectedStates = !MoreThan600Frames || s.PlayerByShield || s.MoverByShield || Tick <= s.LastWokenTick + 580;
+                        var detectedStates = s.PlayerByShield || s.MoverByShield || Tick <= s.LastWokenTick + 580;
                         if (ScalerChanged || s.ProtectedEntCache.ContainsKey(ent) && detectedStates)
                         {
                             s.Asleep = false;
@@ -282,16 +265,15 @@ namespace DefenseShields
                     }
                     else entsUpdated++;
                 }
-                if (Enforced.Debug == 4) Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - EntsUpdated:{entsUpdated} - ShieldsWaking:{shieldsWaking} - EntsRemoved: {entsremoved} - EntsLostShield:{entsLostShield} - EntInRefreshSlots:({SlotCnt[0]} - {SlotCnt[1]} - {SlotCnt[2]} - {SlotCnt[3]} - {SlotCnt[4]} - {SlotCnt[5]} - {SlotCnt[6]} - {SlotCnt[7]} - {SlotCnt[8]})");
+                if (Enforced.Debug == 4 || Enforced.Debug == 1 && Tick1800) Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - EntsUpdated:{entsUpdated} - ShieldsWaking:{shieldsWaking} - EntsRemoved: {entsremoved} - EntsLostShield:{entsLostShield} - EntInRefreshSlots:({SlotCnt[0]} - {SlotCnt[1]} - {SlotCnt[2]} - {SlotCnt[3]} - {SlotCnt[4]} - {SlotCnt[5]} - {SlotCnt[6]} - {SlotCnt[7]} - {SlotCnt[8]}) \n" +
+                                                  $"                                     ProtectedEnts:{GlobalProtect.Count} - ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count}");
             }
         }
 
         private void LogicUpdates()
         {
             var y = 0;
-            if (Enforced.Debug >= 4 && EntSlotTick) Log.Line($"[ShieldStates] ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count}");
             if (Enforced.Debug >= 4 && EntSlotTick) Dsutil1.Sw.Restart();
-            if (Enforced.Debug == 1 && Tick1800) Log.Line($"[ShieldStates] ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count}");
             foreach (var s in ActiveShields)
             {
                 if (!s.WasOnline || s.Asleep) continue;
@@ -306,11 +288,42 @@ namespace DefenseShields
                 s.DeformEnabled = false;
                 y++;
             }
-            if (Enforced.Debug >= 4 && EntSlotTick) Dsutil1.StopWatchReport($"[Protecting] ProtectedEnts:{GlobalProtect.Count} - WakingShields:{y} - CPU:", -1);
+            if (Enforced.Debug >= 4 && EntSlotTick) Dsutil1.StopWatchReport($"[LogicUpdate] tick:{Tick} - WebbingShields:{y} - CPU:", -1);
             else if (Enforced.Debug >= 4) Dsutil1.Sw.Reset();
 
             var compCount = Controllers.Count;
             if (SphereOnCamera.Length != compCount) Array.Resize(ref SphereOnCamera, compCount);
+        }
+
+        private void Ticker()
+        {
+            var oldScaler = EntSlotScaler;
+            var globalProtCnt = GlobalProtect.Count;
+            if (globalProtCnt <= 25) EntSlotScaler = 1;
+            else if (globalProtCnt <= 50) EntSlotScaler = 2;
+            else if (globalProtCnt <= 75) EntSlotScaler = 3;
+            else if (globalProtCnt <= 100) EntSlotScaler = 4;
+            else if (globalProtCnt <= 150) EntSlotScaler = 5;
+            else if (globalProtCnt <= 200) EntSlotScaler = 6;
+            else EntSlotScaler = 9;
+
+            if (oldScaler != EntSlotScaler)
+            {
+                GlobalProtect.Clear();
+                foreach (var s in FunctionalShields)
+                {
+                    s.AssignSlots();
+                    s.Asleep = false;
+                }
+                foreach (var c in Controllers)
+                {
+                    if (FunctionalShields.Contains(c)) continue;
+                    c.AssignSlots();
+                    c.Asleep = false;
+                }
+                ScalerChanged = true;
+            }
+            else ScalerChanged = false;
         }
 
         private void SlotCounting()

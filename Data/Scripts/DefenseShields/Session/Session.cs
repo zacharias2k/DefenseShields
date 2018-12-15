@@ -4,6 +4,7 @@ using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using DefenseShields.Support;
 using Sandbox.Definitions;
+using VRage.Game;
 using VRageMath;
 using MyVisualScriptLogicProvider = Sandbox.Game.MyVisualScriptLogicProvider;
 
@@ -129,18 +130,14 @@ namespace DefenseShields
         {
             try
             {
+                Timings();
                 LoadBalancer();
                 LogicUpdates();
-                Timings();
             }
             catch (Exception ex) { Log.Line($"Exception in SessionBeforeSim: {ex}"); }
         }
 
-        public override void UpdateAfterSimulation()
-        {
-            //MyAPIGateway.Parallel.Start(WebMonitor);
-            Wake = true;
-        }
+        public override void UpdateAfterSimulation() { Wake = true; }
         #endregion
 
         #region Events
@@ -182,13 +179,21 @@ namespace DefenseShields
         #region Misc
         private void Timings()
         {
+            _newFrame = true;
+            Tick = (uint)(Session.ElapsedPlayTime.TotalMilliseconds * TickTimeDiv);
+            Tick20 = Tick % 20 == 0;
+            Tick60 = Tick % 60 == 0;
+            Tick60 = Tick % 60 == 0;
+            Tick180 = Tick % 180 == 0;
+            Tick600 = Tick % 600 == 0;
+            Tick1800 = Tick % 1800 == 0;
+
             if (_count++ == 59)
             {
                 _count = 0;
                 _lCount++;
                 if (_lCount == 10)
                 {
-                    MoreThan600Frames = true;
                     _lCount = 0;
                     _eCount++;
                     if (_eCount == 10)

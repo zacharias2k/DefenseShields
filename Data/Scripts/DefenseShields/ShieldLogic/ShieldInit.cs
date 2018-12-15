@@ -23,7 +23,7 @@ namespace DefenseShields
                 {
                     if (Tick600)
                     {
-                        if (Session.Enforced.Debug == 4) Log.Line($"PostInit: Server Not Ready - GridComp:{MyGrid.Components.Has<ShieldGridComponent>()} - InvalidMode:{ShieldComp.EmitterMode < 0} - Functional:{IsFunctional} - EmitterSus:{ShieldComp.EmittersSuspended} - StationEmitterNull:{ShieldComp.StationEmitter == null } - EmitterNull:{ShieldComp.StationEmitter?.Emitter == null} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug == 3) Log.Line($"PostInit: Server Not Ready - GridComp:{MyGrid.Components.Has<ShieldGridComponent>()} - InvalidMode:{ShieldComp.EmitterMode < 0} - Functional:{IsFunctional} - EmitterSus:{ShieldComp.EmittersSuspended} - StationEmitterNull:{ShieldComp.StationEmitter == null } - EmitterNull:{ShieldComp.StationEmitter?.Emitter == null} - ShieldId [{Shield.EntityId}]");
                         GridOwnsController();
                         Shield.RefreshCustomInfo();
                     }
@@ -163,7 +163,7 @@ namespace DefenseShields
                     Shield.Enabled = true;
                 }
                 IsWorking = MyCube.IsWorking;
-                if (Session.Enforced.Debug == 4) Log.Line($"PowerInit: ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"PowerInit: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
         }
