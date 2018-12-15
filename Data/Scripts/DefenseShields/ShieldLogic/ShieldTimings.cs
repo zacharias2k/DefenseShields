@@ -122,7 +122,7 @@ namespace DefenseShields
             var gridDistNeedUpdate = _updateGridDistributor || MyGridDistributor?.SourcesEnabled == MyMultipleEnabledEnum.NoObjects;
             _updateGridDistributor = false;
              
-            lock (SubLock)
+            lock (GetCubesLock)
             {
                 _powerSources.Clear();
                 _functionalBlocks.Clear();
@@ -188,7 +188,7 @@ namespace DefenseShields
             if (gotGroups.Count == ShieldComp.GetLinkedGrids.Count) return;
             if (Session.Enforced.Debug == 3 && ShieldComp.GetLinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.GetLinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.GetLinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
 
-            lock (SubLock)
+            lock (GetCubesLock)
             {
                 ShieldComp.GetSubGrids.Clear();
                 ShieldComp.GetLinkedGrids.Clear();
@@ -249,7 +249,7 @@ namespace DefenseShields
                     case 2:
                         if (DsState.State.Online && !DsState.State.Lowered)
                         {
-                            lock (SubLock)
+                            lock (GetCubesLock)
                             {
                                 foreach (var funcBlock in _functionalBlocks)
                                 {

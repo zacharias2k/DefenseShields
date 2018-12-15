@@ -58,7 +58,7 @@ namespace DefenseShields
                             s.LogicPaused = true;
                         }
 
-                        lock (s.SubLock)
+                        lock (s.GetCubesLock)
                         {
                             var cleanDistributor = s.MyGridDistributor != null && s.FuncTask.IsComplete && s.MyGridDistributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects;
                             if (cleanDistributor)
@@ -93,7 +93,6 @@ namespace DefenseShields
 
                         if (!s.PlayerByShield && !s.MoverByShield)
                         {
-                            //Log.Line($"no player or mover");
                             if (s.TicksWithNoActivity++ % EntCleanCycle == 0) s.EntCleanUpTime = true;
                             s.Asleep = true;
                             return;
@@ -245,31 +244,8 @@ namespace DefenseShields
             {
                 if (++RefreshCycle >= EntSlotScaler) RefreshCycle = 0;
 
-                var aa = 0;
-                var bb = 0;
-                var cc = 0;
-                var dd = 0;
-                var ee = 0;
-                var ff = 0;
-                var gg = 0;
-                var hh = 0;
-                var ii = 0;
+                if (Enforced.Debug == 4) SlotCounting();
 
-                if (Enforced.Debug >= 3)
-                {
-                    foreach (var k in GlobalProtect.Values)
-                    {
-                        if (k.RefreshSlot == 0) aa++;
-                        else if (k.RefreshSlot == 1) bb++;
-                        else if (k.RefreshSlot == 2) cc++;
-                        else if (k.RefreshSlot == 3) dd++;
-                        else if (k.RefreshSlot == 4) ee++;
-                        else if (k.RefreshSlot == 5) ff++;
-                        else if (k.RefreshSlot == 6) gg++;
-                        else if (k.RefreshSlot == 7) hh++;
-                        else if (k.RefreshSlot == 8) ii++;
-                    }
-                }
                 GlobalEntTmp.Clear();
                 GlobalEntTmp.AddRange(GlobalProtect.Where(info => !MoreThan600Frames || info.Value.RefreshSlot == RefreshCycle && EntSlotTick || info.Value.RefreshSlot > EntSlotScaler - 1));
                 for (int i = 0; i < GlobalEntTmp.Count; i++)
@@ -291,9 +267,8 @@ namespace DefenseShields
                         else refreshCount++;
 
                         var detectedStates = !MoreThan600Frames || s.PlayerByShield || s.MoverByShield || Tick <= s.LastWokenTick + 580;
-                        if (ScalerChanged || s.Asleep && s.ShieldComp.GetLinkedGrids.Contains(ent) && detectedStates)
+                        if (ScalerChanged || s.ProtectedEntCache.ContainsKey(ent) && detectedStates)
                         {
-                            //Log.Line($"{shieldLost} - {!MoreThan600Frames} - {s.PlayerByShield} - {s.MoverByShield} - {Tick <= s.LastWokenTick + 580}");
                             s.Asleep = false;
                             shieldsWaking++;
                         }
@@ -307,7 +282,7 @@ namespace DefenseShields
                     }
                     else entsUpdated++;
                 }
-                if (Enforced.Debug >= 4) Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - EntsUpdated:{entsUpdated} - ShieldsWaking:{shieldsWaking} - EntsRemoved: {entsremoved} - EntsLostShield:{entsLostShield} - EntInRefreshSlots:({aa} - {bb} - {cc} - {dd} - {ee} - {ff} - {gg} - {hh} - {ii})");
+                if (Enforced.Debug == 4) Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - EntsUpdated:{entsUpdated} - ShieldsWaking:{shieldsWaking} - EntsRemoved: {entsremoved} - EntsLostShield:{entsLostShield} - EntInRefreshSlots:({SlotCnt[0]} - {SlotCnt[1]} - {SlotCnt[2]} - {SlotCnt[3]} - {SlotCnt[4]} - {SlotCnt[5]} - {SlotCnt[6]} - {SlotCnt[7]} - {SlotCnt[8]})");
             }
         }
 
@@ -319,26 +294,61 @@ namespace DefenseShields
             if (Enforced.Debug == 1 && Tick1800) Log.Line($"[ShieldStates] ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count}");
             foreach (var s in ActiveShields)
             {
-                //if (!s.MoverByShield && !s.PlayerByShield) Log.Line($"status: Asleep:{s.Asleep} -  Player:{s.PlayerByShield} - Mover:{s.MoverByShield}");
-                if (s.Asleep) continue;
-                if (s.WasOnline)
-                {
-                    if (s.StaleGrids.Count != 0) s.CleanUp(0);
-                    if (Tick20 && s.EffectsCleanup) s.CleanUp(3);
-                    if (Tick180) s.CleanUp(2);
-                    if (Tick600) s.CleanUp(1);
+                if (!s.WasOnline || s.Asleep) continue;
 
-                    if (EntSlotTick && s.LogicSlot == RefreshCycle || s.ComingOnline || ScalerChanged) s.ProtectMyself();
-                    s.WebEntities();
-                    y++;
-                }
+                if (s.StaleGrids.Count != 0) s.CleanUp(0);
+                if (Tick20 && s.EffectsCleanup) s.CleanUp(3);
+                if (Tick180) s.CleanUp(2);
+                if (Tick600) s.CleanUp(1);
+
+                if (EntSlotTick && s.LogicSlot == RefreshCycle || s.ComingOnline || ScalerChanged) s.ProtectMyself();
+                s.WebEntities();
                 s.DeformEnabled = false;
+                y++;
             }
             if (Enforced.Debug >= 4 && EntSlotTick) Dsutil1.StopWatchReport($"[Protecting] ProtectedEnts:{GlobalProtect.Count} - WakingShields:{y} - CPU:", -1);
             else if (Enforced.Debug >= 4) Dsutil1.Sw.Reset();
 
             var compCount = Controllers.Count;
             if (SphereOnCamera.Length != compCount) Array.Resize(ref SphereOnCamera, compCount);
+        }
+
+        private void SlotCounting()
+        {
+            for (int i = 0; i < 9; i++) SlotCnt[i] = 0;
+            foreach (var k in GlobalProtect.Values)
+            {
+                switch (k.RefreshSlot)
+                {
+                    case 0:
+                        SlotCnt[0]++;
+                        break;
+                    case 1:
+                        SlotCnt[1]++;
+                        break;
+                    case 2:
+                        SlotCnt[2]++;
+                        break;
+                    case 3:
+                        SlotCnt[3]++;
+                        break;
+                    case 4:
+                        SlotCnt[4]++;
+                        break;
+                    case 5:
+                        SlotCnt[5]++;
+                        break;
+                    case 6:
+                        SlotCnt[6]++;
+                        break;
+                    case 7:
+                        SlotCnt[7]++;
+                        break;
+                    case 8:
+                        SlotCnt[8]++;
+                        break;
+                }
+            }
         }
     }
 }

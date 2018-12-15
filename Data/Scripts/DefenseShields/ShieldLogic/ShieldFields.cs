@@ -221,7 +221,7 @@ namespace DefenseShields
 
         private Color _oldPercentColor = Color.Transparent;
         internal Task FuncTask;
-        internal readonly object SubLock = new Object();
+        internal readonly object GetCubesLock = new Object();
 
         internal readonly int[] ExpChargeReductions = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
 

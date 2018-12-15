@@ -138,6 +138,7 @@ namespace DefenseShields
 
         public override void UpdateAfterSimulation()
         {
+            //MyAPIGateway.Parallel.Start(WebMonitor);
             Wake = true;
         }
         #endregion

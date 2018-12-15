@@ -78,6 +78,7 @@ namespace DefenseShields
         internal static bool PsAction;
         internal static bool ModAction;
         internal bool[] SphereOnCamera = new bool[0];
+        internal readonly int[] SlotCnt = new int[9];
 
         internal static readonly MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
         internal static readonly MyStringHash DelDamage = MyStringHash.GetOrCompute("DelDamage");

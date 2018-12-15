@@ -48,7 +48,7 @@ namespace DefenseShields
             GridAvailablePower = 0;
             _batteryMaxPower = 0;
             _batteryCurrentPower = 0;
-            lock (SubLock)
+            lock (GetCubesLock)
             {
                 if (cleanDistributor)
                 {
