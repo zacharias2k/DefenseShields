@@ -224,11 +224,11 @@ namespace DefenseShields
             {
                 var shieldsWaking = 0;
                 var entsUpdated = 0;
+                var entsRefreshed = 0;
                 var entsremoved = 0;
                 var entsLostShield = 0;
 
                 if (++RefreshCycle >= EntSlotScaler) RefreshCycle = 0;
-                if (Enforced.Debug == 4) SlotCounting();
                 GlobalEntTmp.Clear();
                 GlobalEntTmp.AddRange(GlobalProtect.Where(info => info.Value.RefreshSlot == RefreshCycle && EntSlotTick || info.Value.RefreshSlot > EntSlotScaler - 1));
                 for (int i = 0; i < GlobalEntTmp.Count; i++)
@@ -236,7 +236,7 @@ namespace DefenseShields
                     var ent = GlobalEntTmp[i].Key;
                     var myProtector = GlobalEntTmp[i].Value;
                     var entShields = myProtector.Shields.Keys;
-
+                    entsRefreshed++;
                     var refreshCount = 0;
                     foreach (var s in entShields)
                     {
@@ -265,8 +265,9 @@ namespace DefenseShields
                     }
                     else entsUpdated++;
                 }
+                SlotCnt[RefreshCycle] = entsRefreshed;
                 if (Enforced.Debug == 4 || Enforced.Debug == 1 && Tick1800) Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - EntsUpdated:{entsUpdated} - ShieldsWaking:{shieldsWaking} - EntsRemoved: {entsremoved} - EntsLostShield:{entsLostShield} - EntInRefreshSlots:({SlotCnt[0]} - {SlotCnt[1]} - {SlotCnt[2]} - {SlotCnt[3]} - {SlotCnt[4]} - {SlotCnt[5]} - {SlotCnt[6]} - {SlotCnt[7]} - {SlotCnt[8]}) \n" +
-                                                  $"                                     ProtectedEnts:{GlobalProtect.Count} - ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count}");
+                                                  $"                                     ProtectedEnts:{GlobalProtect.Count} - ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count} - TotalProtectedEnts:{GlobalProtect.Count}");
             }
         }
 
@@ -324,44 +325,6 @@ namespace DefenseShields
                 ScalerChanged = true;
             }
             else ScalerChanged = false;
-        }
-
-        private void SlotCounting()
-        {
-            for (int i = 0; i < 9; i++) SlotCnt[i] = 0;
-            foreach (var k in GlobalProtect.Values)
-            {
-                switch (k.RefreshSlot)
-                {
-                    case 0:
-                        SlotCnt[0]++;
-                        break;
-                    case 1:
-                        SlotCnt[1]++;
-                        break;
-                    case 2:
-                        SlotCnt[2]++;
-                        break;
-                    case 3:
-                        SlotCnt[3]++;
-                        break;
-                    case 4:
-                        SlotCnt[4]++;
-                        break;
-                    case 5:
-                        SlotCnt[5]++;
-                        break;
-                    case 6:
-                        SlotCnt[6]++;
-                        break;
-                    case 7:
-                        SlotCnt[7]++;
-                        break;
-                    case 8:
-                        SlotCnt[8]++;
-                        break;
-                }
-            }
         }
     }
 }
