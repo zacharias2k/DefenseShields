@@ -230,7 +230,7 @@ namespace DefenseShields
 
                 if (++RefreshCycle >= EntSlotScaler) RefreshCycle = 0;
                 GlobalEntTmp.Clear();
-                GlobalEntTmp.AddRange(GlobalProtect.Where(info => info.Value.RefreshSlot == RefreshCycle && EntSlotTick || info.Value.RefreshSlot > EntSlotScaler - 1));
+                GlobalEntTmp.AddRange(GlobalProtect.Where(info => info.Value.RefreshSlot == RefreshCycle && EntSlotTick || ScalerChanged || info.Value.RefreshSlot > EntSlotScaler - 1));
                 for (int i = 0; i < GlobalEntTmp.Count; i++)
                 {
                     var ent = GlobalEntTmp[i].Key;
@@ -254,7 +254,6 @@ namespace DefenseShields
                         {
                             s.Asleep = false;
                             shieldsWaking++;
-                            if (shieldsWaking > 50)DsDebugDraw.DrawSingleVec(s.MyGrid.PositionComp.WorldAABB.Center, 50, Color.Red);
                         }
                     }
                     if (entsLostShield > 0) myProtector.Shields.ApplyChanges();
