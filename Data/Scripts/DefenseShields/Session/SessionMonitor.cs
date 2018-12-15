@@ -217,7 +217,7 @@ namespace DefenseShields
 
         private void LoadBalancer()
         {
-            if (Tick20) Ticker();
+            if (Tick20) Scale();
             EntSlotTick = Tick % (180 / EntSlotScaler) == 0;
 
             if (EntSlotTick)
@@ -254,6 +254,7 @@ namespace DefenseShields
                         {
                             s.Asleep = false;
                             shieldsWaking++;
+                            if (shieldsWaking > 50)DsDebugDraw.DrawSingleVec(s.MyGrid.PositionComp.WorldAABB.Center, 50, Color.Red);
                         }
                     }
                     if (entsLostShield > 0) myProtector.Shields.ApplyChanges();
@@ -266,7 +267,7 @@ namespace DefenseShields
                     else entsUpdated++;
                 }
                 SlotCnt[RefreshCycle] = entsRefreshed;
-                if (Enforced.Debug == 4 || Enforced.Debug == 1 && Tick1800) Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - EntsUpdated:{entsUpdated} - ShieldsWaking:{shieldsWaking} - EntsRemoved: {entsremoved} - EntsLostShield:{entsLostShield} - EntInRefreshSlots:({SlotCnt[0]} - {SlotCnt[1]} - {SlotCnt[2]} - {SlotCnt[3]} - {SlotCnt[4]} - {SlotCnt[5]} - {SlotCnt[6]} - {SlotCnt[7]} - {SlotCnt[8]}) \n" +
+                if (Enforced.Debug == 4 || Enforced.Debug == 1 && Tick20) Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - EntsUpdated:{entsUpdated} - ShieldsWaking:{shieldsWaking} - EntsRemoved: {entsremoved} - EntsLostShield:{entsLostShield} - EntInRefreshSlots:({SlotCnt[0]} - {SlotCnt[1]} - {SlotCnt[2]} - {SlotCnt[3]} - {SlotCnt[4]} - {SlotCnt[5]} - {SlotCnt[6]} - {SlotCnt[7]} - {SlotCnt[8]}) \n" +
                                                   $"                                     ProtectedEnts:{GlobalProtect.Count} - ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count} - TotalProtectedEnts:{GlobalProtect.Count}");
             }
         }
@@ -296,8 +297,10 @@ namespace DefenseShields
             if (SphereOnCamera.Length != compCount) Array.Resize(ref SphereOnCamera, compCount);
         }
 
-        private void Ticker()
+        private void Scale()
         {
+            if (Tick < 600) return;
+
             var oldScaler = EntSlotScaler;
             var globalProtCnt = GlobalProtect.Count;
             if (globalProtCnt <= 25) EntSlotScaler = 1;
