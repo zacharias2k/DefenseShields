@@ -309,6 +309,8 @@ namespace DefenseShields
         private static readonly MyStringId HudIconHeat100 = MyStringId.GetOrCompute("DS_ShieldHeat100");
 
         private static readonly MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
+        private static readonly MyStringHash MpDoDeform = MyStringHash.GetOrCompute("MpDoDeform");
+        private static readonly MyStringHash MpDoExplosion = MyStringHash.GetOrCompute("MpDoExplosion");
         private static readonly MyStringHash DelDamage = MyStringHash.GetOrCompute("DelDamage");
         private static readonly Type MissileObj = typeof(MyObjectBuilder_Missile);
 

@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using VRage.Collections;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
@@ -114,28 +113,16 @@ namespace DefenseShields.Support
 
     public struct MyProtectors
     {
-        public readonly CachingDictionary<DefenseShields, ProtectorInfo> Shields;
+        public readonly CachingHashSet<DefenseShields> Shields;
         public readonly int RefreshSlot;
         public readonly uint CreationTick;
-        public MyProtectors(CachingDictionary<DefenseShields, ProtectorInfo> shields, int refreshSlot, uint creationTick)
+        public MyProtectors(CachingHashSet<DefenseShields> shields, int refreshSlot, uint creationTick)
         {
             Shields = shields;
             RefreshSlot = refreshSlot;
             CreationTick = creationTick;
         }
     }
-
-    public struct ProtectorInfo
-    {
-        public readonly bool GridIsParent;
-        public readonly bool FullCoverage;
-        public ProtectorInfo(bool gridIsParent, bool fullCoverage)
-        {
-            GridIsParent = gridIsParent;
-            FullCoverage = fullCoverage;
-        }
-    }
-
 
     public struct MoverInfo
     {

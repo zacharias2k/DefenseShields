@@ -833,7 +833,6 @@ namespace DefenseShields
                     if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
                     ShellVisibility(true);
                     _clientOn = false;
-                    if (Session.Enforced.Debug == 4) Log.Line($"_clientOn");
                     Shield.RefreshCustomInfo();
                 }
                 _prevShieldActive = false;
@@ -843,7 +842,6 @@ namespace DefenseShields
             if (!_clientOn)
             {
                 ShellVisibility();
-                if (Session.Enforced.Debug == 4) Log.Line($"!_clientOn");
                 Shield.RefreshCustomInfo();
             }
             return false;

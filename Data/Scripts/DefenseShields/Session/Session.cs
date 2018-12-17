@@ -230,6 +230,8 @@ namespace DefenseShields
             Instance = null;
             HudComp = null;
             Enforced = null;
+            _autoResetEvent.Set();
+            _autoResetEvent = null;
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEnforce, EnforcementReceived);
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdControllerState, ControllerStateReceived);
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdControllerSettings, ControllerSettingsReceived);

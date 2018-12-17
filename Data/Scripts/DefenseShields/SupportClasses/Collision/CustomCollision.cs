@@ -51,6 +51,18 @@ namespace DefenseShields.Support
             return leaving;
         }
 
+        public static bool EntityWasInShield(MyEntity ent, MatrixD detectMatrixInv)
+        {
+            var physicsVel = ent.Physics?.LinearVelocity;
+            if (physicsVel == null) return false;
+
+            var entPast = -Vector3D.Normalize(ent.Physics.LinearVelocity) * 6;
+            var entTestLoc = ent.PositionComp.WorldVolume.Center + entPast;
+            var centerStep = -Vector3D.Normalize(entTestLoc - detectMatrixInv.Translation) * 2f;
+            var counterDrift = centerStep + entTestLoc;
+            return PointInShield(counterDrift, detectMatrixInv);
+        }
+
         public static double? IntersectEllipsoid(MatrixD rawEllipsoidMatrix, MatrixD ellipsoidMatrixInv, Vector3D rayPos, Vector3D rayDir)
         {
             /*
@@ -621,6 +633,21 @@ namespace DefenseShields.Support
             return c == 8;
         }
 
+        public static bool AllObbCornersInShield(MyCubeGrid grid, MatrixD matrixInv)
+        {
+            var gridCorners = new Vector3D[8];
+            var quaternion = Quaternion.CreateFromRotationMatrix(grid.WorldMatrix);
+            var halfExtents = grid.PositionComp.LocalAABB.HalfExtents;
+            var gridCenter = grid.PositionComp.WorldAABB.Center;
+            var obb = new MyOrientedBoundingBoxD(gridCenter, halfExtents, quaternion);
+
+            obb.GetCorners(gridCorners, 0);
+            var c = 0;
+            for (int i = 0; i < 8; i++)
+                if (Vector3D.Transform(gridCorners[i], matrixInv).LengthSquared() <= 1) c++;
+            return c == 8;
+        }
+
         public static bool AnyCornerInShield(MyOrientedBoundingBoxD bOriBBoxD, MatrixD matrixInv)
         {
             var gridCorners = new Vector3D[8];
@@ -645,13 +672,13 @@ namespace DefenseShields.Support
             return c > 0;
         }
 
+        private static readonly Vector3D[] GridCorners = new Vector3D[8];
         public static bool AllAabbInShield(BoundingBoxD gridAabb, MatrixD matrixInv)
         {
-            var gridCorners = new Vector3D[8];
-            gridAabb.GetCorners(gridCorners);
+            gridAabb.GetCorners(GridCorners);
             var c = 0;
             for (int i = 0; i < 8; i++)
-                if (Vector3D.Transform(gridCorners[i], matrixInv).LengthSquared() <= 1) c++;
+                if (Vector3D.Transform(GridCorners[i], matrixInv).LengthSquared() <= 1) c++;
             return c == 8;
         }
 

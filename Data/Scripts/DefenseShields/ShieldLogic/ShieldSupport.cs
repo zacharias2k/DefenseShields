@@ -1,4 +1,7 @@
 ﻿
+using VRage.Game.ModAPI;
+using VRage.Utils;
+
 namespace DefenseShields
 {
     public partial class DefenseShields
@@ -61,6 +64,11 @@ namespace DefenseShields
                 damage = shieldFractionLoss;
             }
             Shield.SlimBlock.DoDamage(damage, MPdamage, true, null, entityId);
+        }
+
+        public void DamageBlock(IMySlimBlock block, float damage, long entityId, MyStringHash damageType)
+        {
+            block.DoDamage(damage, damageType, true, null, entityId);
         }
     }
 }

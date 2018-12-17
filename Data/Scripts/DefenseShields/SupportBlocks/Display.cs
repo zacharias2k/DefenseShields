@@ -49,7 +49,7 @@ namespace DefenseShields
 
         public override void UpdateBeforeSimulation10()
         {
-            if (!_isServer) return;
+            //if (!_isServer) return;
             if (_count++ == 9) _count = 0;
             if (_count != 9) return;
 

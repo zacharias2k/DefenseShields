@@ -84,6 +84,8 @@ namespace DefenseShields
         internal static readonly MyStringHash DSdamage = MyStringHash.GetOrCompute("DSdamage");
         internal static readonly MyStringHash DSheal = MyStringHash.GetOrCompute("DSheal");
         internal static readonly MyStringHash DSbypass = MyStringHash.GetOrCompute("DSbypass");
+        internal static readonly MyStringHash MpDoDeform = MyStringHash.GetOrCompute("MpDoDeform");
+        internal static readonly MyStringHash MpDoExplosion = MyStringHash.GetOrCompute("MpDoExplosion");
 
         internal MyStringHash Bypass = MyStringHash.GetOrCompute("bypass");
         internal MyStringId Password = MyStringId.GetOrCompute("Shield Access Frequency");
@@ -117,7 +119,7 @@ namespace DefenseShields
 
         private static readonly List<KeyValuePair<MyEntity, MyProtectors>> GlobalEntTmp = new List<KeyValuePair<MyEntity, MyProtectors>>();
 
-        public static readonly MyConcurrentPool<CachingDictionary<DefenseShields, ProtectorInfo>> ProtDicts = new MyConcurrentPool<CachingDictionary<DefenseShields, ProtectorInfo>>(150, null, 1000);
+        public static readonly MyConcurrentPool<CachingHashSet<DefenseShields>> ProtSets = new MyConcurrentPool<CachingHashSet<DefenseShields>>(150, null, 1000);
 
         public readonly List<PlanetShields> PlanetShields = new List<PlanetShields>();
         public readonly List<Emitters> Emitters = new List<Emitters>();

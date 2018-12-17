@@ -20,24 +20,12 @@ namespace DefenseShields
             {
                 MyProtectors myProtectors;
                 Session.GlobalProtect.TryGetValue(sub, out myProtectors);
-                if (myProtectors.Shields != null && myProtectors.Shields.ContainsKey(this)) continue;
+                if (myProtectors.Shields != null && myProtectors.Shields.Contains(this)) continue;
                 var tick = Session.Tick;
                 ProtectedEntCache[sub] = new ProtectCache(tick, tick, tick, Ent.Protected);
-                var protectors = Session.GlobalProtect[sub] = new MyProtectors(Session.ProtDicts.Get(), LogicSlot, Session.Tick);
-                if (!GridIsMobile)
-                {
-                    var cornersInShield = CustomCollision.NotAllCornersInShield(sub, DetectMatrixOutsideInv);
-                    switch (cornersInShield)
-                    {
-                        case 8:
-                            protectors.Shields.Add(this, new ProtectorInfo(true, true), true);
-                            break;
-                        default:
-                            protectors.Shields.Add(this, new ProtectorInfo(true, false), true);
-                            break;
-                    }
-                }
-                protectors.Shields.Add(this, new ProtectorInfo(true, true), true);
+                var protectors = Session.GlobalProtect[sub] = new MyProtectors(Session.ProtSets.Get(), LogicSlot, Session.Tick);
+                protectors.Shields.Add(this);
+                protectors.Shields.ApplyAdditions();
             }
         }
 
@@ -46,30 +34,22 @@ namespace DefenseShields
         {
             MyProtectors protectors;
             Session.GlobalProtect.TryGetValue(ent, out protectors);
-            if (protectors.Shields == null) protectors = Session.GlobalProtect[ent] = new MyProtectors(Session.ProtDicts.Get(), LogicSlot, tick);
+            if (protectors.Shields == null) protectors = Session.GlobalProtect[ent] = new MyProtectors(Session.ProtSets.Get(), LogicSlot, tick);
 
             var grid = ent as MyCubeGrid;
-            var parent = ShieldComp.GetLinkedGrids.Contains(grid);
             if (grid != null)
             {
                 var cornersInShield = CustomCollision.CornerOrCenterInShield(grid, DetectMatrixOutsideInv, _resetEntCorners);
 
-                switch (cornersInShield)
-                {
-                    case 0:
-                        return false;
-                    case 8:
-                        protectors.Shields.Add(this, new ProtectorInfo(parent, true));
-                        break;
-                    default:
-                        protectors.Shields.Add(this, new ProtectorInfo(parent, false));
-                        break;
-                }
+                if (cornersInShield == 0) return false;
+                protectors.Shields.Add(this);
+                protectors.Shields.ApplyAdditions();
                 return true;
             }
 
             if (!CustomCollision.PointInShield(ent.PositionComp.WorldAABB.Center, DetectMatrixOutsideInv)) return false;
-            protectors.Shields.Add(this, new ProtectorInfo(parent, true));
+            protectors.Shields.Add(this);
+            protectors.Shields.ApplyAdditions();
             return true;
         }
 
@@ -155,34 +135,25 @@ namespace DefenseShields
                     case Ent.Protected:
                         if (relation == Ent.Protected)
                         {
-                            if (protectedEnt != null)
-                            {
-                                if (Session.GlobalProtect.ContainsKey(ent)) continue;
-                            }
-                            else ProtectedEntCache[ent] = new ProtectCache(tick, tick, tick, Ent.Protected);
-
+                            if (protectedEnt == null) ProtectedEntCache[ent] = new ProtectCache(tick, tick, tick, Ent.Protected);
                             MyProtectors protectors;
                             Session.GlobalProtect.TryGetValue(ent, out protectors);
-                            if (protectors.Shields == null) protectors = Session.GlobalProtect[ent] = new MyProtectors(Session.ProtDicts.Get(), LogicSlot, tick);
+                            if (protectors.Shields == null) protectors = Session.GlobalProtect[ent] = new MyProtectors(Session.ProtSets.Get(), LogicSlot, tick);
+                            if (protectors.Shields.Contains(this)) continue;
 
                             var grid = ent as MyCubeGrid;
-                            var parent = ShieldComp.GetLinkedGrids.Contains(grid);
                             if (grid != null)
                             {
                                 var cornersInShield = CustomCollision.CornerOrCenterInShield(grid, DetectMatrixOutsideInv, _resetEntCorners);
-                                switch (cornersInShield)
-                                {
-                                    case 0:
-                                        continue;
-                                    case 8:
-                                        protectors.Shields.Add(this, new ProtectorInfo(parent, true), true);
-                                        break;
-                                    default:
-                                        protectors.Shields.Add(this, new ProtectorInfo(parent, false), true);
-                                        break;
-                                }
+                                if (cornersInShield == 0) continue;
+                                protectors.Shields.Add(this);
+                                protectors.Shields.ApplyAdditions();
                             }
-                            else if (CustomCollision.PointInShield(ent.PositionComp.WorldAABB.Center, DetectMatrixOutsideInv)) protectors.Shields.Add(this, new ProtectorInfo(parent, true), true);
+                            else if (CustomCollision.PointInShield(ent.PositionComp.WorldAABB.Center, DetectMatrixOutsideInv))
+                            {
+                                protectors.Shields.Add(this);
+                                protectors.Shields.ApplyAdditions();
+                            }
                             continue;
                         }
                         IgnoreCache.Add(ent);
@@ -230,7 +201,6 @@ namespace DefenseShields
                         EnablePhysics = true;
                         WebEnts.TryAdd(ent, new EntIntersectInfo(ent.EntityId, 0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, tick, tick, tick, tick, relation, new List<IMySlimBlock>()));
                     }
-                    //if (entInfo == null) WebEnts.TryGetValue(ent, out entInfo);
                 }
                 catch (Exception ex) { Log.Line($"Exception in WebEntities entInfo: {ex}"); }
             }
