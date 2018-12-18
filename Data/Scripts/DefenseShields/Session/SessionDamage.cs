@@ -61,7 +61,7 @@ namespace DefenseShields
             {
                 //if (Enforced.Debug == 4) Log.Line($"CheckDamageRoot:{info.Type} - {info.Amount} - {info.AttackerId}");
                 var block = target as IMySlimBlock;
-                if (block != null && info.Type == MpDoExplosion) // I hate this damage handler!
+                if (!IsServer && block != null && info.Type == MpDoExplosion) // I hate this damage handler!
                 {
                     _clientExpShield = block.FatBlock?.GameLogic as DefenseShields;
 
@@ -194,46 +194,87 @@ namespace DefenseShields
                         if (hostileEnt != null)
                         {
                             _blockingShield = null;
-                            var hitDist = double.MaxValue;
+
+                            MyCubeGrid myGrid;
+                            MyEntity trueAttacker;
+                            if (info.Type != MyDamageType.Environment) myGrid = hostileEnt as MyCubeGrid;
+                            else myGrid = hostileEnt.Parent as MyCubeGrid;
+                            if (myGrid == null)
+                            {
+                                var hostileCube = hostileEnt.Parent as MyCubeBlock;
+                                trueAttacker = (hostileCube ?? (hostileEnt as IMyGunBaseUser)?.Owner) ?? hostileEnt;
+                            }
+                            else trueAttacker = myGrid;
+
                             _originBlock = block;
                             _originBlock.ComputeWorldCenter(out _originHit);
-                            var line = new LineD(hostileEnt.PositionComp.WorldAABB.Center, _originHit);
+                            var line = new LineD(trueAttacker.PositionComp.WorldAABB.Center, _originHit);
                             var testDir = Vector3D.Normalize(line.From - line.To);
                             var ray = new RayD(line.From, -testDir);
+
+                            var hitDist = double.MaxValue;
+                            var distFromTarget = double.MaxValue;
+                            DefenseShields zeroDistShield = null;
+                                
                             foreach (var shield in protectors.Shields)
                             {
                                 var shieldActive = shield.DsState.State.Online && !shield.DsState.State.Lowered;
-                                if (!IsServer && shieldActive && !shield.WarmedUp)
-                                {
-                                    if (Enforced.Debug == 4) Log.Line($"Client shield not Warm: Online:{shield.DsState.State.Online} - Lowered:{shield.DsState.State.Lowered} - ShieldCnt:{protectors.Shields.Count} - AttackerId:{info.AttackerId} - Asleep:{shield.Asleep} - active:{ActiveShields.Contains(shield)}");
-                                    info.Amount = 0;
-                                    return;
-                                }
                                 if (!shieldActive) continue;
-                                if (shield.ProtectedEntCache.ContainsKey(hostileEnt) && CustomCollision.PointInShield(hostileEnt.PositionComp.WorldAABB.Center, shield.DetectMatrixOutsideInv))
+                                ProtectCache protectInfo;
+                                shield.ProtectedEntCache.TryGetValue(trueAttacker, out protectInfo);
+                                if (protectInfo?.PreviousRelation == DefenseShields.Ent.Protected)
                                 {
-                                    _blockingShield = shield;
-                                    insideAttacker = true;
-                                    break;
+                                    if (shieldHitPos == Vector3D.NegativeInfinity)
+                                    {
+                                        insideAttacker = true;
+                                        _clientExpShield = shield;
+                                    }
+                                    continue;
                                 }
+                                var obbCheck = shield.SOriBBoxD.Intersects(ref line);
+                                var obb = obbCheck ?? 0;
+                                if (obb <= 0)
+                                {
+                                    var tmpDistFromTarget = Vector3D.DistanceSquared(_originHit, trueAttacker.WorldMatrix.Translation);
+                                    if (tmpDistFromTarget <= distFromTarget)
+                                    {
+                                        distFromTarget = tmpDistFromTarget;
+                                        zeroDistShield = shield;
+                                    }
+                                }
+                                else if (obb <= hitDist)
+                                {
+                                    hitDist = obb;
+                                    _blockingShield = shield;
+                                    shieldHitPos = line.From + testDir * -obb;
+                                    insideAttacker = false;
+                                }
+                            }
+
+                            if (insideAttacker && info.Type == MyDamageType.Explosion)
+                            {
+                                if (Enforced.Debug == 4) Log.Line($"Sending origin explosion MpDoDamage: {info.Type} - {info.Amount} - {_originBlock.Position}");
+                                _clientExpShield.DamageBlock(_clientExpShield.Shield.SlimBlock, info.Amount, attackerId, MpDoExplosion);
+                            }
+                            else if (_blockingShield == null && zeroDistShield != null)
+                            {
+                                Log.Line($"zero shield active");
+                                hitDist = 0;
+                                shieldHitPos = line.From + testDir * -0;
+                                _blockingShield = zeroDistShield;
+                            }
+                            else if (_blockingShield != null)
+                            {
+                                var shield = _blockingShield;
                                 var worldSphere = shield.ShieldSphere;
                                 var sphereCheck = worldSphere.Intersects(ray);
-                                if (!sphereCheck.HasValue) continue;
-                                var obbCheck = shield.SOriBBoxD.Intersects(ref line);
-                                if (!obbCheck.HasValue) continue;
-                                var obb = obbCheck ?? 0;
-                                var sphere = sphereCheck ?? 0;
-                                double furthestHit;
-                                if (obb <= 0 && sphere <= 0) furthestHit = 0;
-                                else if (obb > sphere) furthestHit = obb;
-                                else furthestHit = sphere;
-                                var tmphitPos = line.From + testDir * -furthestHit;
-                                if (furthestHit < hitDist)
+                                if (sphereCheck.HasValue && sphereCheck.Value > hitDist)
                                 {
-                                    hitDist = furthestHit;
-                                    _blockingShield = shield;
-                                    shieldHitPos = tmphitPos;
+                                    Log.Line($"sphere shield active - {sphereCheck.Value} - {hitDist}");
+                                    hitDist = sphereCheck.Value;
+                                    shieldHitPos = line.From + testDir * -hitDist;
                                 }
+                                else Log.Line($"obb shield active");
                             }
                         }
                     }
@@ -282,6 +323,7 @@ namespace DefenseShields
                             var isExplosionDmg = info.Type == MyDamageType.Explosion;
                             var isDeformationDmg = info.Type == MyDamageType.Deformation;
                             var isEnvironmentDmg = info.Type == MyDamageType.Environment;
+                            /*
                             if (insideAttacker)
                             {
                                 if (Enforced.Debug == 4) Log.Line($"[inside attacker] Type:{info.Type} - Amount:{info.Amount} - Name:{hostileEnt.DebugName}");
@@ -294,7 +336,7 @@ namespace DefenseShields
                                 }
                                 return;
                             }
-
+                            */
                             if (!isDeformationDmg && !isExplosionDmg)
                             {
                                 if (Enforced.Debug == 4 && (shield.ExplosionEnabled || shield.DeformEnabled)) Log.Line($"resetting deform/explosion permission in handler due to other damage: {info.Type} - {info.Amount}");
@@ -305,7 +347,7 @@ namespace DefenseShields
                             }
                             else if (!shield.DeformEnabled && hostileEnt == null)
                             {
-                                if (Enforced.Debug == 4) Log.Line($"[hostileNullDeform] Type:{info.Type} - Amount:{info.Amount}");
+                                if (Enforced.Debug == 4) Log.Line($"[hostileNullSupressDeform] Type:{info.Type} - Amount:{info.Amount}");
                                 info.Amount = 0;
                                 return;
                             }
@@ -351,12 +393,14 @@ namespace DefenseShields
                             {
                                 if (CustomCollision.PointInShield(hostileCube.PositionComp.WorldAABB.Center, shield.DetectMatrixOutsideInv))
                                 {
+                                    /*
                                     if (isExplosionDmg)
                                     {
                                         if (Enforced.Debug == 4) Log.Line($"Sending origin explosion MpDoDamage: {info.Type} - {info.Amount} - {_originBlock.Position}");
                                         shield.ExplosionEnabled = true;
                                         shield.DamageBlock(shield.Shield.SlimBlock, info.Amount, attackerId, MpDoExplosion);
                                     }
+                                    */
                                     if (Enforced.Debug == 4) Log.Line($"[CubeAllow] Type:{info.Type} - Amount:{info.Amount}");
                                     shield.DeformEnabled = true;
                                     return;

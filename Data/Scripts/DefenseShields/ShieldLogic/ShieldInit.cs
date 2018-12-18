@@ -90,8 +90,6 @@ namespace DefenseShields
             _oldGridHalfExtents = DsState.State.GridHalfExtents;
             _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
 
-            ProtectMyself();
-
             _updateRender = true;
             Warming = true;
         }

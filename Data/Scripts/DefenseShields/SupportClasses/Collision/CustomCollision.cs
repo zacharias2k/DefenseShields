@@ -16,6 +16,9 @@ namespace DefenseShields.Support
 {
     internal static class CustomCollision
     {
+        private static readonly Vector3D[] GridCorners = new Vector3D[8];
+        private static readonly Vector3D[] GridPoints = new Vector3D[9];
+
         public static Vector3D? MissileIntersect(DefenseShields ds, MyEntity missile, MatrixD detectMatrix, MatrixD detectMatrixInv)
         {
             var missileVel = missile.Physics.LinearVelocity;
@@ -560,15 +563,19 @@ namespace DefenseShields.Support
             }
         }
 
-        public static int CornerOrCenterInShield(MyEntity ent, MatrixD matrixInv, Vector3D[] corners)
+        public static int CornerOrCenterInShield(MyEntity ent, MatrixD matrixInv, Vector3D[] corners, bool firstMatch = false)
         {
-            ent.PositionComp.WorldAABB.GetCorners(corners);
 
             var c = 0;
             if (Vector3D.Transform(ent.PositionComp.WorldAABB.Center, matrixInv).LengthSquared() <= 1) c++;
+            if (firstMatch && c > 0) return c;
 
+            ent.PositionComp.WorldAABB.GetCorners(corners);
             for (int i = 0; i < 8; i++)
+            {
                 if (Vector3D.Transform(corners[i], matrixInv).LengthSquared() <= 1) c++;
+                if (firstMatch && c > 0) return c;
+            }
             return c;
         }
 
@@ -633,21 +640,6 @@ namespace DefenseShields.Support
             return c == 8;
         }
 
-        public static bool AllObbCornersInShield(MyCubeGrid grid, MatrixD matrixInv)
-        {
-            var gridCorners = new Vector3D[8];
-            var quaternion = Quaternion.CreateFromRotationMatrix(grid.WorldMatrix);
-            var halfExtents = grid.PositionComp.LocalAABB.HalfExtents;
-            var gridCenter = grid.PositionComp.WorldAABB.Center;
-            var obb = new MyOrientedBoundingBoxD(gridCenter, halfExtents, quaternion);
-
-            obb.GetCorners(gridCorners, 0);
-            var c = 0;
-            for (int i = 0; i < 8; i++)
-                if (Vector3D.Transform(gridCorners[i], matrixInv).LengthSquared() <= 1) c++;
-            return c == 8;
-        }
-
         public static bool AnyCornerInShield(MyOrientedBoundingBoxD bOriBBoxD, MatrixD matrixInv)
         {
             var gridCorners = new Vector3D[8];
@@ -658,21 +650,62 @@ namespace DefenseShields.Support
             return c > 0;
         }
 
-        public static bool AnyObbCornerInShield(MyCubeGrid ent, MatrixD matrixInv)
+        public static int ObbPointsInShield(MyEntity ent, MatrixD matrixInv)
         {
             var quaternion = Quaternion.CreateFromRotationMatrix(ent.WorldMatrix);
             var halfExtents = ent.PositionComp.LocalAABB.HalfExtents;
             var gridCenter = ent.PositionComp.WorldAABB.Center;
             var obb = new MyOrientedBoundingBoxD(gridCenter, halfExtents, quaternion);
-            var gridCorners = new Vector3D[8];
-            obb.GetCorners(gridCorners, 0);
+
+            obb.GetCorners(GridPoints, 0);
+            GridPoints[8] = obb.Center;
+            var c = 0;
+            for (int i = 0; i < 9; i++)
+                if (Vector3D.Transform(GridPoints[i], matrixInv).LengthSquared() <= 1) c++;
+            return c;
+        }
+
+        public static int ObbCornersInShield(MyEntity ent, MatrixD matrixInv)
+        {
+            var quaternion = Quaternion.CreateFromRotationMatrix(ent.WorldMatrix);
+            var halfExtents = ent.PositionComp.LocalAABB.HalfExtents;
+            var gridCenter = ent.PositionComp.WorldAABB.Center;
+            var obb = new MyOrientedBoundingBoxD(gridCenter, halfExtents, quaternion);
+
+            obb.GetCorners(GridCorners, 0);
             var c = 0;
             for (int i = 0; i < 8; i++)
-                if (Vector3D.Transform(gridCorners[i], matrixInv).LengthSquared() <= 1) c++;
+                if (Vector3D.Transform(GridCorners[i], matrixInv).LengthSquared() <= 1) c++;
+            return c;
+        }
+
+        public static bool AllObbCornersInShield(MyEntity ent, MatrixD matrixInv)
+        {
+            var quaternion = Quaternion.CreateFromRotationMatrix(ent.WorldMatrix);
+            var halfExtents = ent.PositionComp.LocalAABB.HalfExtents;
+            var gridCenter = ent.PositionComp.WorldAABB.Center;
+            var obb = new MyOrientedBoundingBoxD(gridCenter, halfExtents, quaternion);
+
+            obb.GetCorners(GridCorners, 0);
+            var c = 0;
+            for (int i = 0; i < 8; i++)
+                if (Vector3D.Transform(GridCorners[i], matrixInv).LengthSquared() <= 1) c++;
+            return c == 8;
+        }
+
+        public static bool AnyObbCornerInShield(MyEntity ent, MatrixD matrixInv)
+        {
+            var quaternion = Quaternion.CreateFromRotationMatrix(ent.WorldMatrix);
+            var halfExtents = ent.PositionComp.LocalAABB.HalfExtents;
+            var gridCenter = ent.PositionComp.WorldAABB.Center;
+            var obb = new MyOrientedBoundingBoxD(gridCenter, halfExtents, quaternion);
+            obb.GetCorners(GridCorners, 0);
+            var c = 0;
+            for (int i = 0; i < 8; i++)
+                if (Vector3D.Transform(GridCorners[i], matrixInv).LengthSquared() <= 1) c++;
             return c > 0;
         }
 
-        private static readonly Vector3D[] GridCorners = new Vector3D[8];
         public static bool AllAabbInShield(BoundingBoxD gridAabb, MatrixD matrixInv)
         {
             gridAabb.GetCorners(GridCorners);

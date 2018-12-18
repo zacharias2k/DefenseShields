@@ -66,13 +66,15 @@ namespace DefenseShields.Support
         public uint RefreshTick;
         public readonly uint FirstTick;
         public DefenseShields.Ent Relation;
+        public DefenseShields.Ent PreviousRelation;
 
-        public ProtectCache(uint firstTick, uint lastTick, uint refreshTick, DefenseShields.Ent relation)
+        public ProtectCache(uint firstTick, uint lastTick, uint refreshTick, DefenseShields.Ent relation, DefenseShields.Ent previousRelation)
         {
             FirstTick = firstTick;
             LastTick = lastTick;
             RefreshTick = refreshTick;
             Relation = relation;
+            PreviousRelation = previousRelation;
         }
     }
 

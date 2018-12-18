@@ -389,7 +389,6 @@ namespace DefenseShields
                 if (Tick180) s.CleanUp(2);
                 if (Tick600) s.CleanUp(1);
 
-                if (EntSlotTick && s.LogicSlot == RefreshCycle || s.ComingOnline || ScalerChanged) s.ProtectMyself();
                 s.WebEntities();
                 y++;
             }
