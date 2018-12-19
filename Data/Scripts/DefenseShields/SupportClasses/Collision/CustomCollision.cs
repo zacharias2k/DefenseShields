@@ -66,82 +66,21 @@ namespace DefenseShields.Support
             return PointInShield(counterDrift, detectMatrixInv);
         }
 
-        public static double? IntersectEllipsoid(MatrixD rawEllipsoidMatrix, MatrixD ellipsoidMatrixInv, Vector3D rayPos, Vector3D rayDir)
+        private static BoundingSphereD _normSphere = new BoundingSphereD(Vector3.Zero, 1f);
+        private static RayD _kRay = new RayD(Vector3D.Zero, Vector3D.Forward);
+        public static float? IntersectEllipsoid(MatrixD ellipsoidMatrixInv, MatrixD ellipsoidMatrix, RayD ray)
         {
-            /*
-            MatrixD T = MatrixD.CreateTranslation(rawEllipsoidMatrix.Translation);
-            MatrixD S = MatrixD.CreateScale(rawEllipsoidMatrix.Scale);
-            MatrixD R = rawEllipsoidMatrix.GetOrientation();
-            //MatrixD R = MatrixD.CreateFromQuaternion(Rotation);
+            var krayPos = Vector3D.Transform(ray.Position, ellipsoidMatrixInv);
+            var krayDir = Vector3D.Normalize(Vector3D.TransformNormal(ray.Direction, ellipsoidMatrixInv));
 
+            _kRay.Direction = krayDir;
+            _kRay.Position = krayPos;
+            var nullDist = _normSphere.Intersects(_kRay);
+            if (!nullDist.HasValue) return null;
 
-            MatrixD ellipsoidMatrix = MatrixD.Multiply(MatrixD.Multiply(T, R), S);
-            
-            MatrixD inverseEllipsoidMatrix = MatrixD.Invert(ellipsoidMatrix);
-            */
-            Vector3D krayPos = Vector3D.Transform(rayPos, ellipsoidMatrixInv);
-            Vector3D krayDir = Vector3D.Transform(rayDir, ellipsoidMatrixInv);
-
-            krayDir.Normalize();
-
-            BoundingSphereD sphere = new BoundingSphereD(Vector3.Zero, 1d);
-
-            RayD kRay = new RayD(krayPos, krayDir);
-
-            double? hitMult = sphere.Intersects(kRay);
-            if (hitMult.HasValue)Log.Line($"{hitMult}");
-
-            return hitMult;
-        }
-
-        private static double RayEllipsoid(Vector3D rayOrigin, Vector3D rayVec, Vector3D ellRadius, Vector3D[] ellAxis)
-        {
-            Vector3D xAxis = ellAxis[0] * ellRadius.X;
-            Vector3D yAxis = ellAxis[1] * ellRadius.Y;
-            Vector3D zAxis = ellAxis[2] * ellRadius.Z;
-            MatrixD toEllipsoid = new MatrixD(xAxis.X, xAxis.Y, xAxis.Z, yAxis.X, yAxis.Y, yAxis.Z, zAxis.X, zAxis.Y, zAxis.Z);
-
-            //ToEllipsoid(0, 0) = xAxis.X;
-            //ToEllipsoid(1, 0) = xAxis.Y;
-            //ToEllipsoid(2, 0) = xAxis.Z;
-            //ToEllipsoid(0, 1) = yAxis.X;
-            //ToEllipsoid(1, 1) = yAxis.Y;
-            //ToEllipsoid(2, 1) = yAxis.Z;
-            //ToEllipsoid(0, 2) = zAxis.X;
-            //ToEllipsoid(1, 2) = zAxis.Y;
-            //ToEllipsoid(2, 2) = zAxis.Z;
-
-            //D3DXVec3TransformCoord(rayOrigin, rayOrigin, toEllipsoid);
-            //D3DXVec3TransformNormal(rayVec, rayVec, toEllipsoid);
-            rayOrigin = Vector3D.Transform(rayOrigin, toEllipsoid);
-            rayVec = Vector3D.TransformNormal(rayVec, toEllipsoid);
-            //Since it is in ellipsoid space, the center = 1.0f and the radius is 0,0,0
-
-            double Radius = 1.0d;
-            Vector3D Center = Vector3D.Zero;
-            Vector3D m = rayOrigin - Center;
-            double b = Vector3D.Dot(m, rayVec);
-            double c = Vector3D.Dot(m, m) - Radius * Radius;
-
-            // Exit if r’s origin outside s (c > 0) and r pointing away from s (b > 0)
-
-            if (c > 0.0d && b > 0.0d) return -1.0d;
-
-            double discr = b * b - c;
-
-            // A negative discriminant corresponds to ray missing sphere
-
-            if (discr < 0.0d) return -1.0d;
-
-            // Ray now found to intersect sphere, compute smallest t value of intersection
-
-            double t = -b - Math.Sqrt(discr);
-
-            // If t is negative, ray started inside sphere so clamp t to zero
-
-            if (t < 0.0d) t = 0.0d;
-
-            return (rayOrigin + t * rayVec).Length();
+            var hitPos = krayPos + krayDir * -nullDist.Value;
+            var worldHitPos = Vector3D.Transform(hitPos, ellipsoidMatrix);
+            return Vector3.Distance(worldHitPos, ray.Position);
         }
 
         public static bool VoxelContact(Vector3D[] physicsVerts, MyVoxelBase voxelBase)

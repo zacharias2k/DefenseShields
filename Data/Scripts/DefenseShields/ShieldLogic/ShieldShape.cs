@@ -223,7 +223,6 @@ namespace DefenseShields
             UpdateDimensions = false;
             _shapeChanged = true;
             CreateShieldShape();
-            Icosphere.ReturnPhysicsVerts(DetectionMatrix, ShieldComp.PhysicsOutside);
         }
         #endregion
     }

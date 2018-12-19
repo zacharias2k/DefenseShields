@@ -93,7 +93,11 @@ namespace DefenseShields
             {
                 var prevlod = _prevLod;
                 var lod = CalculateLod(_onCount);
-                if (_shapeChanged || _updateRender || lod != prevlod) Icosphere.CalculateTransform(_shieldShapeMatrix, lod);
+                if (_shapeChanged || _updateRender || lod != prevlod)
+                {
+                    Icosphere.CalculateTransform(_shieldShapeMatrix, lod);
+                    if (!GridIsMobile) Icosphere.ReturnPhysicsVerts(DetectionMatrix, ShieldComp.PhysicsOutside);
+                }
                 Icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, percent, activeVisible, refreshAnim);
             }
             if (hitAnim && sphereOnCamera && IsWorking) Icosphere.Draw(renderId);
@@ -244,7 +248,6 @@ namespace DefenseShields
             var scale = 0.075 * Math.Tan(fov * 0.5);
             position.X *= scale * aspectratio;
             position.Y *= scale;
-
             var cameraWorldMatrix = MyAPIGateway.Session.Camera.WorldMatrix;
             position = Vector3D.Transform(new Vector3D(position.X, position.Y, -.1), cameraWorldMatrix);
 

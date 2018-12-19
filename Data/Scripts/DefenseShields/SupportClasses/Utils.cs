@@ -2,13 +2,23 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Sandbox.Game.Entities;
-using VRage.Game.Components;
-using VRage.Game.Entity;
 using VRageMath;
-using VRageRender;
 
 namespace DefenseShields.Support
 {
+    internal class Work
+    {
+        internal List<DefenseShields> ShieldList;
+        internal uint Tick;
+
+        internal void DoIt(List<DefenseShields> s, uint t)
+        {
+            ShieldList = s;
+            Tick = t;
+        }
+    }
+
+
     public struct MyImpulseData
     {
         public MyCubeGrid MyGrid;

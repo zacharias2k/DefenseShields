@@ -37,6 +37,7 @@ namespace DefenseShields
             return true;
         }
 
+        private bool _needPhysics;
         public void WebEntities()
         {
             PruneList.Clear();
@@ -118,9 +119,8 @@ namespace DefenseShields
                         continue;
                     case Ent.Ignore:
                     case Ent.Friendly:
-                    case Ent.PartlyProtected:
                     case Ent.Protected:
-                        if (relation == Ent.Protected || relation == Ent.PartlyProtected)
+                        if (relation == Ent.Protected)
                         {
                             if (protectedEnt == null) ProtectedEntCache[ent] = new ProtectCache(tick, tick, tick, relation, relation);
                             MyProtectors protectors;
@@ -187,10 +187,15 @@ namespace DefenseShields
             }
 
             ShieldMatrix = ShieldEnt.PositionComp.WorldMatrix;
-            if (!ShieldMatrix.EqualsFast(ref OldShieldMatrix))
+            if (_needPhysics && shieldFound || !ShieldMatrix.EqualsFast(ref OldShieldMatrix))
             {
                 OldShieldMatrix = ShieldMatrix;
-                if (shieldFound) Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutside);
+                if (shieldFound)
+                {
+                    _needPhysics = false;
+                    Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutside);
+                }
+                else _needPhysics = true;
                 if (voxelFound) Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
             }
 
@@ -211,12 +216,7 @@ namespace DefenseShields
         public void WebDispatch()
         {
             if (VoxelsToIntersect.Count > 0) MyAPIGateway.Parallel.Start(VoxelIntersect);
-            MyAPIGateway.Parallel.ForEach(WebEnts, pair =>
-            {
-                var relation = pair.Value.Relation;
-                if (relation == Ent.Protected || relation == Ent.Authenticated) return;
-                EntIntersectSelector(pair);
-            });
+            MyAPIGateway.Parallel.ForEach(WebEnts, EntIntersectSelector);
         }
         #endregion
 
@@ -226,7 +226,6 @@ namespace DefenseShields
             Unknown,
             Ignore,
             Protected,
-            PartlyProtected,
             Friendly,
             EnemyPlayer,
             SmallNobodyGrid,
@@ -293,9 +292,9 @@ namespace DefenseShields
                 var enemy = GridEnemy(grid, bigOwners);
                 if (!enemy)
                 {
+                    if (ShieldComp.GetSubGrids.Contains(grid)) return Ent.Protected;
                     var pointsInShield = CustomCollision.ObbPointsInShield(grid, DetectMatrixOutsideInv);
-                    if (pointsInShield == 9) return Ent.Protected;
-                    return pointsInShield > 0 ? Ent.PartlyProtected : Ent.Friendly;
+                    return pointsInShield > 0 ? Ent.Protected : Ent.Friendly;
                 }
 
                 ShieldGridComponent shieldComponent;

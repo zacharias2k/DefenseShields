@@ -114,6 +114,9 @@ namespace DefenseShields
         internal DSUtils Dsutil1 = new DSUtils();
         internal DSUtils Dsutil2 = new DSUtils();
 
+        private DsAutoResetEvent _autoResetEvent = new DsAutoResetEvent();
+        private readonly Work _workData = new Work();
+
         internal static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         public static readonly Dictionary<MyEntity, MyProtectors> GlobalProtect = new Dictionary<MyEntity, MyProtectors>();
 
