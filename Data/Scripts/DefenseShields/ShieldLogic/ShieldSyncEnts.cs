@@ -131,18 +131,11 @@ namespace DefenseShields
                             }
                             else
                             {
-                                var missileVel = ent.Physics.LinearVelocity;
-                                var missileCenter = ent.PositionComp.WorldVolume.Center;
-                                const float gameSecond = MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 60;
-                                var line = new LineD(missileCenter + -missileVel * gameSecond, missileCenter + missileVel * gameSecond);
-                                var obbIntersect = SOriBBoxD.Intersects(ref line);
-                                var hitPos = missileCenter;
-                                if (obbIntersect.HasValue)
-                                {
-                                    var testDir = line.From - line.To;
-                                    testDir.Normalize();
-                                    hitPos = line.From + testDir * -obbIntersect.Value;
-                                }
+                                var rayDir = Vector3D.Normalize(ent.Physics.LinearVelocity);
+                                var ray = new RayD(ent.PositionComp.WorldVolume.Center, rayDir);
+                                var intersect = CustomCollision.IntersectEllipsoid(DetectMatrixOutsideInv, DetectionMatrix, ray);
+                                var hitDist = intersect ?? 0;
+                                var hitPos = ray.Position + ray.Direction * -hitDist;
 
                                 WorldImpactPosition = hitPos;
                                 Absorb += damage;

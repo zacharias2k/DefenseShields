@@ -84,6 +84,14 @@ namespace DefenseShields
                 if (DsState.State.Online)
                 {
                     if (ComingOnline) ComingOnlineSetup();
+                    /*
+                    var test = new LineD(MyAPIGateway.Session.Player.Character.PositionComp.WorldAABB.Center, MyAPIGateway.Session.Player.Character.PositionComp.WorldAABB.Center + MyAPIGateway.Session.Player.Character.WorldMatrix.Forward * 5000);
+                    DsDebugDraw.DrawLine(test, Vector4.One);
+                    var ray = new RayD(test.From, MyAPIGateway.Session.Camera.WorldMatrix.Forward);
+                    var test2 = CustomCollision.IntersectEllipsoid(DetectMatrixOutsideInv, DetectionMatrix, ray);
+                    var report = test2 == null ? "Null" : test2.ToString();
+                    MyAPIGateway.Utilities.ShowMessage("", $"{report}");
+                    */
                     if (_isServer)
                     {
                         var createHeTiming = _count == 6 && (_lCount == 1 || _lCount == 6);

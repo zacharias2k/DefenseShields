@@ -72,7 +72,7 @@ namespace DefenseShields
                 }
 
                 if (info.Type == MPdamage)
-                {
+                {   
                     var ds = (block?.FatBlock as MyCubeBlock)?.GameLogic as DefenseShields;
                     if (ds == null)
                     {
@@ -107,8 +107,7 @@ namespace DefenseShields
                         var line = new LineD(hostileCenter, ds.SOriBBoxD.Center);
                         var testDir = Vector3D.Normalize(line.From - line.To);
                         var ray = new RayD(line.From, -testDir);
-                        var ellipsoidCheck = CustomCollision.IntersectEllipsoid(ds.DetectMatrixOutsideInv, ds.DetectionMatrix, ray);
-                        var ellipsoid = ellipsoidCheck ?? 0;
+                        var ellipsoid = CustomCollision.IntersectEllipsoid(ds.DetectMatrixOutsideInv, ds.DetectionMatrix, ray) ?? 0;
                         var hitPos = line.From + testDir * -ellipsoid;
                         ds.WorldImpactPosition = hitPos;
 
@@ -159,7 +158,6 @@ namespace DefenseShields
                     else UpdatedHostileEnt(attackerId, out hostileEnt);
 
                     var shieldHitPos = Vector3D.NegativeInfinity;
-                    var insideAttacker = false;
                     MyEntity trueAttacker = null;
                     try
                     {
@@ -189,19 +187,19 @@ namespace DefenseShields
                             {
                                 var shieldActive = shield.DsState.State.Online && !shield.DsState.State.Lowered;
                                 if (!shieldActive) continue;
-                                var ellipsoidCheck = CustomCollision.IntersectEllipsoid(shield.DetectMatrixOutsideInv, shield.DetectionMatrix, ray);
-                                var ellipsoid = ellipsoidCheck ?? 0;
-                                if (ellipsoid > 0 && line.Length > ellipsoid && ellipsoid <= hitDist)
+                                var ellipsoid = CustomCollision.IntersectEllipsoid(shield.DetectMatrixOutsideInv, shield.DetectionMatrix, ray) ?? 0;
+                                var intersect = ellipsoid > 0 && line.Length > ellipsoid;
+                                if (intersect && ellipsoid <= hitDist)
                                 {
                                     hitDist = ellipsoid;
                                     _blockingShield = shield;
                                     shieldHitPos = line.From + testDir * -ellipsoid;
-                                    insideAttacker = false;
+                                    _clientExpShield = null;
                                 }
-                                else if (_blockingShield == null && ellipsoid <= 0) insideAttacker = true;
+                                else if (_blockingShield == null && ellipsoid <= 0) _clientExpShield = shield;
                             }
 
-                            if (insideAttacker && info.Type == MyDamageType.Explosion)
+                            if (_clientExpShield != null && info.Type == MyDamageType.Explosion)
                             {
                                 if (Enforced.Debug == 4) Log.Line($"Sending origin explosion MpDoDamage: {info.Type} - {info.Amount} - {_originBlock.Position}");
                                 _clientExpShield.DamageBlock(_clientExpShield.Shield.SlimBlock, info.Amount, attackerId, MpDoExplosion);

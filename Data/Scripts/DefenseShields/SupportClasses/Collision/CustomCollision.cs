@@ -7,8 +7,6 @@ using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using VRage.ModAPI;
-using VRage.Voxels;
 using VRageMath;
 using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
@@ -19,6 +17,20 @@ namespace DefenseShields.Support
         private static readonly Vector3D[] GridCorners = new Vector3D[8];
         private static readonly Vector3D[] GridPoints = new Vector3D[9];
 
+        public static Vector3D? MissileIntersect(DefenseShields ds, MyEntity missile, MatrixD detectMatrix, MatrixD detectMatrixInv)
+        {
+            var missileVel = missile.Physics.LinearVelocity;
+            var missileCenter = missile.PositionComp.WorldVolume.Center;
+            const float gameSteps = MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 2;
+            var velStepSize = missileVel * gameSteps;
+            var futureCenter = missileCenter + velStepSize;
+            var testDir = Vector3D.Normalize(missileCenter - futureCenter);
+            var ellipsoid = IntersectEllipsoid(ds.DetectMatrixOutsideInv, ds.DetectionMatrix, new RayD(futureCenter, -testDir));
+            if (ellipsoid == null || ellipsoid > 0) return null;
+            return futureCenter; 
+        }
+
+        /*
         public static Vector3D? MissileIntersect(DefenseShields ds, MyEntity missile, MatrixD detectMatrix, MatrixD detectMatrixInv)
         {
             var missileVel = missile.Physics.LinearVelocity;
@@ -45,25 +57,13 @@ namespace DefenseShields.Support
             }
             return hitPos;
         }
-
+        */
         public static bool MissileNoIntersect(MyEntity missile, MatrixD detectMatrix, MatrixD detectMatrixInv)
         {
             var missileVel = missile.Physics.LinearVelocity;
             var missileCenter = missile.PositionComp.WorldVolume.Center;
             var leaving = Vector3D.Transform(missileCenter + -missileVel * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 2, detectMatrixInv).LengthSquared() <= 1;
             return leaving;
-        }
-
-        public static bool EntityWasInShield(MyEntity ent, MatrixD detectMatrixInv)
-        {
-            var physicsVel = ent.Physics?.LinearVelocity;
-            if (physicsVel == null) return false;
-
-            var entPast = -Vector3D.Normalize(ent.Physics.LinearVelocity) * 6;
-            var entTestLoc = ent.PositionComp.WorldVolume.Center + entPast;
-            var centerStep = -Vector3D.Normalize(entTestLoc - detectMatrixInv.Translation) * 2f;
-            var counterDrift = centerStep + entTestLoc;
-            return PointInShield(counterDrift, detectMatrixInv);
         }
 
         private static BoundingSphereD _normSphere = new BoundingSphereD(Vector3.Zero, 1f);
@@ -81,177 +81,6 @@ namespace DefenseShields.Support
             var hitPos = krayPos + krayDir * -nullDist.Value;
             var worldHitPos = Vector3D.Transform(hitPos, ellipsoidMatrix);
             return Vector3.Distance(worldHitPos, ray.Position);
-        }
-
-        public static bool VoxelContact(Vector3D[] physicsVerts, MyVoxelBase voxelBase)
-        {
-            try
-            {
-                if (voxelBase.Closed) return false;
-                var planet = voxelBase as MyPlanet;
-                var map = voxelBase as MyVoxelMap;
-                var isPlanet = voxelBase is MyPlanet;
-                if (isPlanet)
-                {
-                    for (int i = 0; i < 162; i++)
-                    {
-                        var from = physicsVerts[i];
-                        var hit = planet.DoOverlapSphereTest(0.1f, from);
-                        if (hit) return true;
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < 162; i++)
-                    {
-                        if (map == null) continue;
-                        var from = physicsVerts[i];
-                        var hit = map.DoOverlapSphereTest(0.1f, from);
-                        if (hit) return true;
-                    }
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in VoxelCollisionSphere: {ex}"); }
-            return false;
-        }
-
-        public static Vector3D VoxelCollisionSphere(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, MyVoxelBase voxelBase, MyOrientedBoundingBoxD sOriBBoxD, MatrixD detectMatrix)
-        {
-            var collisionAvg = Vector3D.Zero;
-
-            try
-            {
-                var sVel = shieldGrid.Physics.LinearVelocity;
-                var sVelSqr = sVel.LengthSquared();
-                var sAvelSqr = shieldGrid.Physics.AngularVelocity.LengthSquared();
-                var voxelSphere = voxelBase.RootVoxel.PositionComp.WorldVolume;
-                var voxelHitVecs = new List<Vector3D>();
-                if (sVelSqr > 0.00001 || sAvelSqr > 0.00001)
-                {
-                    var obbSphereTest = sOriBBoxD.Intersects(ref voxelSphere);
-                    if (!obbSphereTest || voxelBase.Closed) return Vector3D.NegativeInfinity;
-                    var planet = voxelBase as MyPlanet;
-                    var map = voxelBase as MyVoxelMap;
-                    var isPlanet = voxelBase is MyPlanet;
-                    if (isPlanet)
-                    {
-                        for (int i = 0; i < 162; i++)
-                        {
-                            var from = physicsVerts[i];
-                            var hit = planet.RootVoxel.DoOverlapSphereTest(0.1f, from);
-                            if (hit) voxelHitVecs.Add(from);
-                        }
-                    }
-                    else
-                    {
-                        for (int i = 0; i < 162; i++)
-                        {
-                            if (map == null) continue;
-                            var from = physicsVerts[i];
-                            var hit = map.RootVoxel.DoOverlapSphereTest(0.1f, from);
-                            if (hit) voxelHitVecs.Add(from);
-                        }
-                    }
-                }
-
-                if (voxelHitVecs.Count == 0) return Vector3D.NegativeInfinity;
-                var sPhysics = shieldGrid.Physics;
-                var lSpeed = sPhysics.LinearVelocity.Length();
-                var aSpeed = sPhysics.AngularVelocity.Length() * 20;
-                var speed = 0f;
-                speed = lSpeed > aSpeed ? lSpeed : aSpeed;
-                Vector3D collisionAdd = Vector3D.Zero;
-                for (int i = 0; i < voxelHitVecs.Count; i++)
-                {
-                    var point = voxelHitVecs[i];
-                    collisionAdd += point;
-                }
-                collisionAvg = collisionAdd / voxelHitVecs.Count;
-
-                shieldGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * (shieldGrid as MyCubeGrid)?.GetCurrentMass() * speed, null, Vector3D.Zero, MathHelper.Clamp(speed, 1f, 20f));
-            }
-            catch (Exception ex) { Log.Line($"Exception in VoxelCollisionSphere: {ex}"); }
-
-            return collisionAvg;
-        }
-
-        public static bool DoOverlapSphereTest(Vector3D center, float radius, MyStorageData tempStorage, IMyVoxelMap myVoxelMap, IMyStorage storage, Vector3D leftBottomCorner, Vector3I storageMin)
-        {
-            try
-            {
-                var body0Pos = center;
-                BoundingSphereD newSphere;
-                newSphere.Center = body0Pos;
-                newSphere.Radius = radius;
-
-                Vector3I minCorner, maxCorner;
-                {
-                    var sphereMin = newSphere.Center - newSphere.Radius - MyVoxelConstants.VOXEL_SIZE_IN_METRES;
-                    var sphereMax = newSphere.Center + newSphere.Radius + MyVoxelConstants.VOXEL_SIZE_IN_METRES;
-                    MyVoxelCoordSystems.WorldPositionToVoxelCoord(leftBottomCorner, ref sphereMin, out minCorner);
-                    MyVoxelCoordSystems.WorldPositionToVoxelCoord(leftBottomCorner, ref sphereMax, out maxCorner);
-                }
-
-                minCorner += storageMin;
-                maxCorner += storageMin;
-
-                if (myVoxelMap != null)
-                {
-                    myVoxelMap.ClampVoxelCoord(ref minCorner);
-                    myVoxelMap.ClampVoxelCoord(ref maxCorner);
-                }
-                else return false;
-
-                var flag = MyVoxelRequestFlags.AdviseCache;
-                tempStorage.Clear(MyStorageDataTypeEnum.Content, 0); // did this fix index out of bounds error?
-                tempStorage.Resize(minCorner, maxCorner);
-
-                if (storage.Closed || storage.MarkedForClose) return false;
-                storage.ReadRange(tempStorage, MyStorageDataTypeFlags.Content, 0, minCorner, maxCorner, ref flag);
-                try
-                {
-                    Vector3I tempVoxelCoord, cache;
-                    for (tempVoxelCoord.Z = minCorner.Z, cache.Z = 0; tempVoxelCoord.Z <= maxCorner.Z; tempVoxelCoord.Z++, cache.Z++)
-                    {
-                        for (tempVoxelCoord.Y = minCorner.Y, cache.Y = 0; tempVoxelCoord.Y <= maxCorner.Y; tempVoxelCoord.Y++, cache.Y++)
-                        {
-                            for (tempVoxelCoord.X = minCorner.X, cache.X = 0; tempVoxelCoord.X <= maxCorner.X; tempVoxelCoord.X++, cache.X++)
-                            {
-                                byte voxelContent = tempStorage.Content(ref cache);
-
-                                if (voxelContent < MyVoxelConstants.VOXEL_ISO_LEVEL) continue;
-
-                                Vector3D voxelPosition;
-                                MyVoxelCoordSystems.VoxelCoordToWorldPosition(leftBottomCorner - storageMin * MyVoxelConstants.VOXEL_SIZE_IN_METRES, ref tempVoxelCoord, out voxelPosition);
-
-                                var voxelSize = voxelContent / MyVoxelConstants.VOXEL_CONTENT_FULL_FLOAT * MyVoxelConstants.VOXEL_RADIUS;
-
-                                var newDistanceToVoxel = Vector3.DistanceSquared(voxelPosition, newSphere.Center) - voxelSize;
-                                if (newDistanceToVoxel < newSphere.Radius) return true;
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex) { Log.Line($"Exception in DoOverlapSphereTest for loops: {ex}"); }
-            }
-            catch (Exception ex) { Log.Line($"Exception in DoOverlapSphereTest: {ex}"); }
-
-            return false;
-        }
-
-        public static void GetIntersect(Vector3D center, double radius, IMyCubeGrid query, List<IMySlimBlock> result)
-        {
-            Vector3I gc = query.WorldToGridInteger(center);
-            double rc = radius / query.GridSize;
-            query.GetBlocks(result, s => DistanceSquared(gc, s.Position) < rc);
-        }
-
-        public static double DistanceSquared(Vector3I value1, Vector3I value2)
-        {
-            int num1 = value1.X - value2.X;
-            int num2 = value1.Y - value2.Y;
-            int num3 = value1.Z - value2.Z;
-            return num1 * num1 + num2 * num2 + num3 * num3;
         }
 
         public static bool RayIntersectsTriangle(Vector3D rayOrigin, Vector3D rayVector, Vector3D v0, Vector3D v1, Vector3D v2, Vector3D outIntersectionPoint)
@@ -281,46 +110,6 @@ namespace DefenseShields.Support
             }
             // This means that there is a line intersection but not a ray intersection.
             return false;
-        }
-
-        public static void MeshCollisionStaticSphere(IMyCubeBlock block, BoundingSphereD shieldSphere, Vector3D[] physicsVerts, MatrixD matrix, MyOrientedBoundingBoxD sOriBBoxD)
-        {
-            var meshHitVecs = new List<Vector3D>();
-
-            var obbSphereTest = sOriBBoxD.Intersects(ref shieldSphere);
-            if (!obbSphereTest) return;
-            for (int i = 0; i < 642; i++)
-            {
-                var from = physicsVerts[i];
-                var hit = PointInShield(from, matrix);
-                if (hit) meshHitVecs.Add(from);
-                //if (hit) Log.Line($"we have a hit");
-                //DsDebugDraw.DrawLineToVec(from, shieldSphere.Center, Color.Black);
-            }
-        }
-
-        public static void MeshCollisionSphere(IMyCubeGrid shieldGrid, BoundingSphereD shieldSphere, Vector3D[] physicsVerts, MatrixD matrix, MyOrientedBoundingBoxD sOriBBoxD)
-        {
-            var sVel = shieldGrid.Physics.LinearVelocity;
-            var sVelSqr = sVel.LengthSquared();
-            var sAvelSqr = shieldGrid.Physics.AngularVelocity.LengthSquared();
-            var shieldGridMass = shieldGrid.Physics.Mass;
-
-            var meshHitVecs = new List<Vector3D>();
-            if ((sVelSqr > 0.00001 || sAvelSqr > 0.00001))
-            {
-                var obbSphereTest = sOriBBoxD.Intersects(ref shieldSphere);
-                if (!obbSphereTest) return;
-                for (int i = 0; i < 642; i++)
-                {
-                    var from = physicsVerts[i];
-                    var hit = PointInShield(from, matrix);
-                    if (hit) meshHitVecs.Add(from);
-                    //if (hit) Log.Line($"we have a hit");
-                    //DsDebugDraw.DrawLineToVec(from, shieldSphere.Center, Color.Black);
-                }
-            }
-            for (int i = 0; i < meshHitVecs.Count; i++) shieldGrid.Physics.ApplyImpulse((sOriBBoxD.Center - meshHitVecs[i]) * shieldGridMass / 250, meshHitVecs[i]);
         }
 
         public static void ShieldX2PointsInside(Vector3D[] shield1Verts, MatrixD shield1MatrixInv, Vector3D[] shield2Verts, MatrixD shield2MatrixInv, List<Vector3D> insidePoints)
@@ -483,9 +272,97 @@ namespace DefenseShields.Support
             return Vector3D.Transform(entCenter, matrixInv).LengthSquared() <= 1;
         }
 
-        public static bool ExtendFitPoints(Vector3D entCenter, MatrixD matrixInv)
+
+        public static bool VoxelContact(Vector3D[] physicsVerts, MyVoxelBase voxelBase)
         {
-            return Vector3D.Transform(entCenter, matrixInv).LengthSquared() <= 0.90;
+            try
+            {
+                if (voxelBase.Closed) return false;
+                var planet = voxelBase as MyPlanet;
+                var map = voxelBase as MyVoxelMap;
+                var isPlanet = voxelBase is MyPlanet;
+                if (isPlanet)
+                {
+                    for (int i = 0; i < 162; i++)
+                    {
+                        var from = physicsVerts[i];
+                        var hit = planet.DoOverlapSphereTest(0.1f, from);
+                        if (hit) return true;
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < 162; i++)
+                    {
+                        if (map == null) continue;
+                        var from = physicsVerts[i];
+                        var hit = map.DoOverlapSphereTest(0.1f, from);
+                        if (hit) return true;
+                    }
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in VoxelCollisionSphere: {ex}"); }
+            return false;
+        }
+
+        public static Vector3D VoxelCollisionSphere(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, MyVoxelBase voxelBase, MyOrientedBoundingBoxD sOriBBoxD, MatrixD detectMatrix)
+        {
+            var collisionAvg = Vector3D.Zero;
+
+            try
+            {
+                var sVel = shieldGrid.Physics.LinearVelocity;
+                var sVelSqr = sVel.LengthSquared();
+                var sAvelSqr = shieldGrid.Physics.AngularVelocity.LengthSquared();
+                var voxelSphere = voxelBase.RootVoxel.PositionComp.WorldVolume;
+                var voxelHitVecs = new List<Vector3D>();
+                if (sVelSqr > 0.00001 || sAvelSqr > 0.00001)
+                {
+                    var obbSphereTest = sOriBBoxD.Intersects(ref voxelSphere);
+                    if (!obbSphereTest || voxelBase.Closed) return Vector3D.NegativeInfinity;
+                    var planet = voxelBase as MyPlanet;
+                    var map = voxelBase as MyVoxelMap;
+                    var isPlanet = voxelBase is MyPlanet;
+                    if (isPlanet)
+                    {
+                        for (int i = 0; i < 162; i++)
+                        {
+                            var from = physicsVerts[i];
+                            var hit = planet.RootVoxel.DoOverlapSphereTest(0.1f, from);
+                            if (hit) voxelHitVecs.Add(from);
+                        }
+                    }
+                    else
+                    {
+                        for (int i = 0; i < 162; i++)
+                        {
+                            if (map == null) continue;
+                            var from = physicsVerts[i];
+                            var hit = map.RootVoxel.DoOverlapSphereTest(0.1f, from);
+                            if (hit) voxelHitVecs.Add(from);
+                        }
+                    }
+                }
+
+                if (voxelHitVecs.Count == 0) return Vector3D.NegativeInfinity;
+                var sPhysics = shieldGrid.Physics;
+                var lSpeed = sPhysics.LinearVelocity.Length();
+                var aSpeed = sPhysics.AngularVelocity.Length() * 20;
+                var speed = 0f;
+                speed = lSpeed > aSpeed ? lSpeed : aSpeed;
+                Vector3D collisionAdd = Vector3D.Zero;
+                for (int i = 0; i < voxelHitVecs.Count; i++)
+                {
+                    var point = voxelHitVecs[i];
+                    collisionAdd += point;
+                }
+                collisionAvg = collisionAdd / voxelHitVecs.Count;
+
+                shieldGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * (shieldGrid as MyCubeGrid)?.GetCurrentMass() * speed, null, Vector3D.Zero, MathHelper.Clamp(speed, 1f, 20f));
+            }
+            catch (Exception ex) { Log.Line($"Exception in VoxelCollisionSphere: {ex}"); }
+
+            return collisionAvg;
         }
 
         public static void ClosestCornerInShield(Vector3D[] gridCorners, MatrixD matrixInv, ref Vector3D cloestPoint)
@@ -654,15 +531,6 @@ namespace DefenseShields.Support
             return c == 8;
         }
 
-        public static bool CheckFirstFace(int[] firstFace, int secondVertNum)
-        {
-            for (int i = 0; i < firstFace.Length; i++)
-            {
-                if (firstFace[i] == secondVertNum) return false;
-            }
-            return true;
-        }
-
         public static void IntersectSmallBox(int[] closestFace, Vector3D[] physicsVerts, BoundingBoxD bWorldAabb, List<Vector3D> intersections)
         {
             for (int i = 0, j = 0; i < closestFace.Length; i += 3, j++)
@@ -676,395 +544,6 @@ namespace DefenseShields.Support
                 intersections.Add(v1);
                 intersections.Add(v2);
             }
-        }
-
-        public static List<Vector3D> IntersectSmallBoxFaces(int[] closestFace0, int[] closestFace1, int[] closestFace2, Vector3D[] physicsVerts, BoundingBoxD bWorldAabb, bool secondFace, bool thirdFace)
-        {
-            var boxedTriangles = new List<Vector3D>();
-            for (int i = 0, j = 0; i < closestFace0.Length; i += 3, j++)
-            {
-                var v0 = physicsVerts[closestFace0[i]];
-                var v1 = physicsVerts[closestFace0[i + 1]];
-                var v2 = physicsVerts[closestFace0[i + 2]];
-                var test1 = bWorldAabb.IntersectsTriangle(v0, v1, v2);
-
-                if (!test1) continue;
-                boxedTriangles.Add(v0);
-                boxedTriangles.Add(v1);
-                boxedTriangles.Add(v2);
-            }
-            if (boxedTriangles.Count == 0 && secondFace)
-            {
-                for (int i = 0, j = 0; i < closestFace1.Length; i += 3, j++)
-                {
-                    var v0 = physicsVerts[closestFace1[i]];
-                    var v1 = physicsVerts[closestFace1[i + 1]];
-                    var v2 = physicsVerts[closestFace1[i + 2]];
-
-                    var test1 = bWorldAabb.IntersectsTriangle(v0, v1, v2);
-
-                    if (!test1) continue;
-                    boxedTriangles.Add(v0);
-                    boxedTriangles.Add(v1);
-                    boxedTriangles.Add(v2);
-                }
-            }
-            if (boxedTriangles.Count == 0 && thirdFace)
-            {
-                for (int i = 0, j = 0; i < closestFace1.Length; i += 3, j++)
-                {
-                    var v0 = physicsVerts[closestFace2[i]];
-                    var v1 = physicsVerts[closestFace2[i + 1]];
-                    var v2 = physicsVerts[closestFace2[i + 2]];
-
-                    var test1 = bWorldAabb.IntersectsTriangle(v0, v1, v2);
-
-                    if (!test1) continue;
-                    boxedTriangles.Add(v0);
-                    boxedTriangles.Add(v1);
-                    boxedTriangles.Add(v2);
-                }
-            }
-            return boxedTriangles;
-        }
-
-        public static bool GetClosestInOutTri(Vector3D[] physicsOutside, Vector3D[] physicsInside, int[] closestFace, Vector3D bWorldCenter)
-        {
-            var closestTri1 = -1;
-            var triDist1 = double.MaxValue;
-
-            for (int i = 0; i < closestFace.Length; i += 3)
-            {
-                var ov0 = physicsOutside[closestFace[i]];
-                var ov1 = physicsOutside[closestFace[i + 1]];
-                var ov2 = physicsOutside[closestFace[i + 2]];
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                }
-            }
-
-            var iv0 = physicsInside[closestFace[closestTri1]];
-            var iv1 = physicsInside[closestFace[closestTri1 + 1]];
-            var iv2 = physicsInside[closestFace[closestTri1 + 2]];
-
-            var itri = new Triangle3d(iv0, iv1, iv2);
-            var idistTri = new DistPoint3Triangle3(bWorldCenter, itri);
-            return triDist1 > idistTri.GetSquared();
-        }
-       
-        public static void GetClosestTriAndFace(Vector3D[] physicsOutside, Vector3D[] physicsInside, int[] closestFace0, int[] closestFace1, int[] closestFace2, Vector3D bWorldCenter, int[] faceTri)
-        {
-            var closestTri1 = -1;
-            var closestFace = -1;
-
-            var triDist1 = double.MaxValue;
-
-            for (int i = 0; i < closestFace0.Length; i += 3)
-            {
-                var ov0 = physicsOutside[closestFace0[i]];
-                var ov1 = physicsOutside[closestFace0[i + 1]];
-                var ov2 = physicsOutside[closestFace0[i + 2]];
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                    closestFace = 0;
-                }
-            }
-
-            for (int i = 0; i < closestFace1.Length; i += 3)
-            {
-                var ov0 = physicsOutside[closestFace1[i]];
-                var ov1 = physicsOutside[closestFace1[i + 1]];
-                var ov2 = physicsOutside[closestFace1[i + 2]];
-
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                    closestFace = 1;
-                }
-            }
-
-            for (int i = 0; i < closestFace2.Length; i += 3)
-            {
-                var ov0 = physicsOutside[closestFace2[i]];
-                var ov1 = physicsOutside[closestFace2[i + 1]];
-                var ov2 = physicsOutside[closestFace2[i + 2]];
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                    closestFace = 2;
-                }
-            }
-
-            int[] face;
-            switch (closestFace)
-            {
-                case 0:
-                    face = closestFace0;
-                    break;
-                case 1:
-                    face = closestFace1;
-                    break;
-                default:
-                    face = closestFace2;
-                    break;
-            }
-
-            faceTri[0] = closestFace;
-            faceTri[1] = face[closestTri1];
-            faceTri[2] = face[closestTri1 + 1];
-            faceTri[3] = face[closestTri1 + 2];
-
-        }
-
-        public static Vector3D GetClosestTriCenter(Vector3D[] physicsOutside, int[] closestFace0, int[] closestFace1, int[] closestFace2, Vector3D bWorldCenter)
-        {
-            var closestTri1 = -1;
-            var closestFace = -1;
-
-            var triDist1 = double.MaxValue;
-
-            for (int i = 0; i < closestFace0.Length; i += 3)
-            {
-                var ov0 = physicsOutside[closestFace0[i]];
-                var ov1 = physicsOutside[closestFace0[i + 1]];
-                var ov2 = physicsOutside[closestFace0[i + 2]];
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                    closestFace = 0;
-                }
-            }
-
-            for (int i = 0; i < closestFace1.Length; i += 3)
-            {
-                var ov0 = physicsOutside[closestFace1[i]];
-                var ov1 = physicsOutside[closestFace1[i + 1]];
-                var ov2 = physicsOutside[closestFace1[i + 2]];
-
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                    closestFace = 1;
-                }
-            }
-
-            for (int i = 0; i < closestFace2.Length; i += 3)
-            {
-                var ov0 = physicsOutside[closestFace2[i]];
-                var ov1 = physicsOutside[closestFace2[i + 1]];
-                var ov2 = physicsOutside[closestFace2[i + 2]];
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                    closestFace = 2;
-                }
-            }
-
-            int[] face;
-            switch (closestFace)
-            {
-                case 0:
-                    face = closestFace0;
-                    break;
-                case 1:
-                    face = closestFace1;
-                    break;
-                default:
-                    face = closestFace2;
-                    break;
-            }
-
-            var center = (physicsOutside[face[closestTri1]] + physicsOutside[face[closestTri1 +1]] + physicsOutside[face[closestTri1 + 2]]) / 3;
-
-            return center;
-        }
-
-        public static List<Vector3D> ContainPointObb(Vector3D[] physicsVerts, MyOrientedBoundingBoxD bOriBBoxD, BoundingSphereD tSphere)
-        {
-            var containedPoints = new List<Vector3D>();
-            foreach (var vert in physicsVerts)
-            {
-                var vec = vert;
-                if (tSphere.Contains(vec) == ContainmentType.Disjoint) continue;
-                if (bOriBBoxD.Contains(ref vec))
-                {
-                    containedPoints.Add(vec);
-                }
-            }
-            return containedPoints;
-        }
-
-        public static void GetAllClosestInOutTri(Vector3D[] physicsOutside, Vector3D[] physicsInside, int[] closestFace0, int[] closestFace1, int[] closestFace2, Vector3D bWorldCenter, int[] faceInsideTri)
-        {
-            var closestTri1 = -1;
-            var closestFace = -1;
-
-            var triDist1 = double.MaxValue;
-
-            for (int i = 0; i < closestFace0.Length; i += 3)
-            {
-                var ov0 = physicsOutside[closestFace0[i]];
-                var ov1 = physicsOutside[closestFace0[i + 1]];
-                var ov2 = physicsOutside[closestFace0[i + 2]];
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                    closestFace = 0;
-                }
-            }
-
-            for (int i = 0; i < closestFace1.Length; i += 3)
-            {
-                var ov0 = physicsOutside[closestFace1[i]];
-                var ov1 = physicsOutside[closestFace1[i + 1]];
-                var ov2 = physicsOutside[closestFace1[i + 2]];
-
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                    closestFace = 1;
-                }
-            }
-
-            for (int i = 0; i < closestFace2.Length; i += 3)
-            {
-                var ov0 = physicsOutside[closestFace2[i]];
-                var ov1 = physicsOutside[closestFace2[i + 1]];
-                var ov2 = physicsOutside[closestFace2[i + 2]];
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(bWorldCenter, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                    closestFace = 2;
-                }
-            }
-
-            int[] face;
-            switch (closestFace)
-            {
-                case 0:
-                    face = closestFace0;
-                    break;
-                case 1:
-                    face = closestFace1;
-                    break;
-                default:
-                    face = closestFace2;
-                    break;
-            }
-
-            faceInsideTri[2] = face[closestTri1];
-            faceInsideTri[3] = face[closestTri1 + 1];
-            faceInsideTri[4] = face[closestTri1 + 2];
-
-            var iv0 = physicsInside[face[closestTri1]];
-            var iv1 = physicsInside[face[closestTri1 + 1]];
-            var iv2 = physicsInside[face[closestTri1 + 2]];
-
-            var itri = new Triangle3d(iv0, iv1, iv2);
-            var idistTri = new DistPoint3Triangle3(bWorldCenter, itri);
-
-            faceInsideTri[0] = closestFace;
-            if (triDist1 > idistTri.GetSquared()) faceInsideTri[1] = 1;
-        }
-
-        public static void VertRangeFullCheck(Vector3D[] physicsVerts, Vector3D bWorldCenter, int[] rangedVerts)
-        {
-            var minValue1 = double.MaxValue;
-            var minValue2 = double.MaxValue;
-            var minValue3 = double.MaxValue;
-
-
-            var minNum1 = -2;
-            var minNum2 = -2;
-            var minNum3 = -2;
-
-
-            for (int p = 0; p < physicsVerts.Length; p++)
-            {
-                var vert = physicsVerts[p];
-                var range = vert - bWorldCenter;
-                var test = (range.X * range.X + range.Y * range.Y + range.Z * range.Z);
-                //var test = Vector3D.DistanceSquared(vert, bWorldCenter);
-                if (test < minValue3)
-                {
-                    if (test < minValue1)
-                    {
-                        minValue3 = minValue2;
-                        minNum3 = minNum2;
-                        minValue2 = minValue1;
-                        minNum2 = minNum1;
-                        minValue1 = test;
-                        minNum1 = p;
-                    }
-                    else if (test < minValue2)
-                    {
-                        minValue3 = minValue2;
-                        minNum3 = minNum2;
-                        minValue2 = test;
-                        minNum2 = p;
-                    }
-                    else
-                    {
-                        minValue3 = test;
-                        minNum3 = p;
-                    }
-                }
-            }
-            rangedVerts[0] = minNum1;
-            rangedVerts[1] = minNum2;
-            rangedVerts[2] = minNum3;
         }
 
         public static Vector3D ClosestVert(Vector3D[] physicsVerts, Vector3D pos)
@@ -1107,52 +586,6 @@ namespace DefenseShields.Support
             return closestVertNum;
         }
 
-        public static void Get3ClosestVerts(Vector3D[] physicsVerts, Vector3D bWorldCenter, Vector3D[] rangedVerts)
-        {
-            var minValue1 = double.MaxValue;
-            var minValue2 = double.MaxValue;
-            var minValue3 = double.MaxValue;
-
-            var minVert1 = Vector3D.NegativeInfinity;
-            var minVert2 = Vector3D.NegativeInfinity;
-            var minVert3 = Vector3D.NegativeInfinity;
-
-            for (int p = 0; p < physicsVerts.Length; p++)
-            {
-                var vert = physicsVerts[p];
-                var range = vert - bWorldCenter;
-                var test = (range.X * range.X + range.Y * range.Y + range.Z * range.Z);
-                //var test = Vector3D.DistanceSquared(vert, bWorldCenter);
-                if (test < minValue3)
-                {
-                    if (test < minValue1)
-                    {
-                        minValue3 = minValue2;
-                        minVert3 = minVert2;
-                        minValue2 = minValue1;
-                        minVert2 = minVert1;
-                        minValue1 = test;
-                        minVert1 = vert;
-                    }
-                    else if (test < minValue2)
-                    {
-                        minValue3 = minValue2;
-                        minVert3 = minVert2;
-                        minValue2 = test;
-                        minVert2 = vert;
-                    }
-                    else
-                    {
-                        minValue3 = test;
-                        minVert3 = vert;
-                    }
-                }
-            }
-            rangedVerts[0] = minVert1;
-            rangedVerts[1] = minVert2;
-            rangedVerts[2] = minVert3;
-        }
-
         public static int GetClosestTri(Vector3D[] physicsOutside, Vector3D pos)
         {
             var triDist1 = double.MaxValue;
@@ -1178,31 +611,6 @@ namespace DefenseShields.Support
             }
             //Log.Line($"tri: {triNum}");
             return triNum;
-        }
-
-        public static void GetClosestTriInFace(Vector3D[] physicsOutside, int[] closestFace, Vector3D pos, Vector3D[] closestTri)
-        {
-            var closestTri1 = -1;
-            var triDist1 = double.MaxValue;
-
-            for (int i = 0; i < closestFace.Length; i += 3)
-            {
-                var ov0 = physicsOutside[closestFace[i]];
-                var ov1 = physicsOutside[closestFace[i + 1]];
-                var ov2 = physicsOutside[closestFace[i + 2]];
-                var otri = new Triangle3d(ov0, ov1, ov2);
-                var odistTri = new DistPoint3Triangle3(pos, otri);
-
-                var test = odistTri.GetSquared();
-                if (test < triDist1)
-                {
-                    triDist1 = test;
-                    closestTri1 = i;
-                }
-            }
-            closestTri[0] = physicsOutside[closestTri1];
-            closestTri[1] = physicsOutside[closestTri1 + 1];
-            closestTri[2] = physicsOutside[closestTri1 + 2];
         }
     }
 }

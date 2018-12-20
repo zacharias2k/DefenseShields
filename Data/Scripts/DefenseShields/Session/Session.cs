@@ -139,7 +139,6 @@ namespace DefenseShields
 
         public override void UpdateAfterSimulation()
         {
-            //Wake = true;
             _autoResetEvent.Set();
         }
         #endregion

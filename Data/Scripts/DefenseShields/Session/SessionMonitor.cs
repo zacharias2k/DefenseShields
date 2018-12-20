@@ -31,8 +31,8 @@ namespace DefenseShields
                 while (Monitor)
                 {
                     _autoResetEvent.WaitOne();
-                    if (Enforced.Debug == 4 && EntSlotTick) Dsutil2.Sw.Restart();
                     if (!Monitor) break;
+                    if (Enforced.Debug == 4 && EntSlotTick) Dsutil2.Sw.Restart();
                     _newFrame = false;
                     _workData.DoIt(new List<DefenseShields>(FunctionalShields), Tick);
                     MyAPIGateway.Parallel.For(0, _workData.ShieldList.Count, x =>
@@ -126,7 +126,7 @@ namespace DefenseShields
                         s.LastWokenTick = tick;
                         s.Asleep = false;
                     });
-                    if (Enforced.Debug == 4 && EntSlotTick) Dsutil2.StopWatchReport("monitor", -1);
+                    if (Monitor && Enforced.Debug == 4 && EntSlotTick) Dsutil2.StopWatchReport("monitor", -1);
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in WebMonitor: {ex}"); }
