@@ -61,22 +61,32 @@ namespace DefenseShields
             {
                 //if (Enforced.Debug == 4) Log.Line($"CheckDamageRoot:{info.Type} - {info.Amount} - {info.AttackerId}");
                 var block = target as IMySlimBlock;
-                if (!IsServer && block != null && info.Type == MpDoExplosion) // I hate this damage handler!
+                if (block != null && info.Type == MpDoExplosion) // I hate this damage handler!
                 {
+                    if (IsServer)
+                    {
+                        info.Amount = 0;
+                        return;
+                    }
+
                     _clientExpShield = block.FatBlock?.GameLogic as DefenseShields;
 
-                    if (_clientExpShield != null) _clientExpShield.ExplosionEnabled = true;
+                    if (_clientExpShield == null)
+                    {
+                        if (Enforced.Debug == 4) Log.Line($"[MpDoDamage] clientExpShield was Null, not doing damage");
+                        info.Amount = 0;
+                        return;
+                    }
                     if (Enforced.Debug == 4) Log.Line($"[MpDoDamage] Type:{info.Type} - Amount:{info.Amount} - AttackerId:{info.AttackerId}");
-                    info.Amount = 0;
                     return;
                 }
 
-                if (info.Type == MPdamage)
+                if (info.Type == MPdamage && block != null)
                 {   
-                    var ds = (block?.FatBlock as MyCubeBlock)?.GameLogic as DefenseShields;
+                    var ds = block.FatBlock?.GameLogic as DefenseShields;
                     if (ds == null)
                     {
-                        Log.Line($"MP-shield block is null - Amount:{info.Amount}");
+                        if (Enforced.Debug == 4) Log.Line($"MP-shield block is null - Amount:{info.Amount}");
                         info.Amount = 0;
                         return;
                     }
@@ -163,6 +173,8 @@ namespace DefenseShields
                     {
                         if (hostileEnt != null)
                         {
+                            var blockingShield = false;
+                            var clientShield = false;
                             _blockingShield = null;
                             _clientExpShield = null;
 
@@ -175,6 +187,7 @@ namespace DefenseShields
                                 trueAttacker = (hostileCube ?? (hostileEnt as IMyGunBaseUser)?.Owner) ?? hostileEnt;
                             }
                             else trueAttacker = myGrid;
+                            if (Enforced.Debug == 4) Log.Line($"TrueAttacker: {trueAttacker.DebugName}");
 
                             _originBlock = block;
                             _originBlock.ComputeWorldCenter(out _originHit);
@@ -182,23 +195,43 @@ namespace DefenseShields
                             var testDir = Vector3D.Normalize(line.From - line.To);
                             var ray = new RayD(line.From, -testDir);
                             var hitDist = double.MaxValue;
-                                
+                            float? intersectDist = null;    
                             foreach (var shield in protectors.Shields)
                             {
                                 var shieldActive = shield.DsState.State.Online && !shield.DsState.State.Lowered;
                                 if (!shieldActive) continue;
-                                var ellipsoid = CustomCollision.IntersectEllipsoid(shield.DetectMatrixOutsideInv, shield.DetectionMatrix, ray) ?? 0;
+                                intersectDist = CustomCollision.IntersectEllipsoid(shield.DetectMatrixOutsideInv, shield.DetectionMatrix, ray);
+                                var ellipsoid = intersectDist ?? 0;
                                 var intersect = ellipsoid > 0 && line.Length > ellipsoid;
+                                var noIntersect = ellipsoid <= 0 || line.Length < ellipsoid;
                                 if (intersect && ellipsoid <= hitDist)
                                 {
                                     hitDist = ellipsoid;
-                                    _blockingShield = shield;
                                     shieldHitPos = line.From + testDir * -ellipsoid;
-                                    _clientExpShield = null;
+                                    _blockingShield = shield;
+                                    clientShield = false;
+                                    blockingShield = true;
                                 }
-                                else if (_blockingShield == null && ellipsoid <= 0) _clientExpShield = shield;
+                                else if (noIntersect && _blockingShield == null)
+                                {
+                                    _clientExpShield = shield;
+                                    clientShield = true;
+                                    blockingShield = false;
+                                }
                             }
+                            if (!blockingShield) _blockingShield = null;
+                            if (!clientShield) _clientExpShield = null;
 
+                            if (_blockingShield != null)
+                            {
+                                var distanceReprot = intersectDist?.ToString() ?? "null";
+                                if (Enforced.Debug == 4) Log.Line($"blockingshield found: trueAttacker:{trueAttacker.DebugName} - hostileEnt:{hostileEnt.DebugName} - eDist:{distanceReprot} - lDist:{line.Length} - clientShield:{_clientExpShield != null}");
+                            }
+                            if (Enforced.Debug == 4 && _blockingShield == null)
+                            {
+                                var distanceReprot = intersectDist?.ToString() ?? "null";
+                                if (Enforced.Debug == 4) Log.Line($"no blockingshield found: trueAttacker:{trueAttacker.DebugName} - hostileEnt:{hostileEnt.DebugName} - eDist:{distanceReprot} - lDist:{line.Length} - clientShield:{_clientExpShield != null}");
+                            }
                             if (_clientExpShield != null && info.Type == MyDamageType.Explosion)
                             {
                                 if (Enforced.Debug == 4) Log.Line($"Sending origin explosion MpDoDamage: {info.Type} - {info.Amount} - {_originBlock.Position}");
@@ -261,7 +294,7 @@ namespace DefenseShields
                                 shield.WorldImpactPosition = shieldHitPos;
                                 shield.ImpactSize = info.Amount;
                             }
-                            if (isDeformationDmg && hostileEnt != null) _ignoreAttackerId = attackerId;
+                            if (isDeformationDmg && trueAttacker != null) _ignoreAttackerId = attackerId;
                             shield.Absorb += info.Amount;
                             info.Amount = 0f;
                             if (Enforced.Debug == 4) Log.Line($"[Shield Absorb] Type:{info.Type} - Amount:{info.Amount} - shieldId:{shield.Shield.EntityId}");
@@ -269,8 +302,8 @@ namespace DefenseShields
                         }
                         if (!IsServer && (info.Type == MyDamageType.Deformation || info.Type == MyDamageType.Explosion)) // hack to handle interal explosions
                         {
-                            if (Enforced.Debug == 4) Log.Line($"[Server damage] Active:{_clientExpShield != null && _clientExpShield.ExplosionEnabled} - Type:{info.Type} - Amount:{info.Amount}");
-                            if (_clientExpShield != null && _clientExpShield.ExplosionEnabled) return;
+                            if (Enforced.Debug == 4) Log.Line($"[Server damage] Active:{_clientExpShield != null} - Type:{info.Type} - Amount:{info.Amount}");
+                            if (_clientExpShield != null) return;
                             info.Amount = 0;
                         }
                         if (info.AttackerId == _ignoreAttackerId && info.Type == MyDamageType.Deformation) //hack to supress double missile double events
@@ -280,7 +313,7 @@ namespace DefenseShields
                             return;
                         }
                         _ignoreAttackerId = -1;
-                        if (Enforced.Debug == 4) Log.Line($"[Uncaught Damage] Type:{info.Type} - Amount:{info.Amount} - nullHostileEnt:{hostileEnt == null} - nullShield:{_blockingShield == null} - attackerId:{info.AttackerId}");
+                        if (Enforced.Debug == 4) Log.Line($"[Uncaught Damage] Type:{info.Type} - Amount:{info.Amount} - nullHostileEnt:{trueAttacker == null} - nullShield:{_blockingShield == null} - attackerId:{info.AttackerId}");
                     }
                     catch (Exception ex) { Log.Line($"Exception in SessionDamageDoDamage: {ex}"); }
                 }

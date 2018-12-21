@@ -341,20 +341,26 @@ namespace DefenseShields
             {
                 if (_empScaleTime == 10)
                 {
-                    if (_accumulatedHeat > 0) _fallbackCycle = 1;
+                    if (_accumulatedHeat > 0)
+                    {
+                        _fallbackCycle = 1;
+                        _accumulatedHeat = 0;
+                    }
                     else _fallbackCycle++;
+                    //if (Session.Enforced.Debug == 4) Log.Line($"empProt fallbackCycle:{_fallbackCycle} - {FallBackStep}");
                 }
 
                 if (pastThreshold)
                 {
-                    if (Session.Enforced.Debug == 3) Log.Line($"incre - stage:{_currentHeatStep + 1} - cycle:{_heatCycle} - resetCycle:xxxx - heat:{_accumulatedHeat} - threshold:{nextThreshold}[{hp / hp * hpLoss * (_currentHeatStep + 1)}] - nThreshold:{hp * hpLoss * (_currentHeatStep + 2)} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 4) Log.Line($"incre - stage:{_currentHeatStep + 1} - cycle:{_heatCycle} - resetCycle:xxxx - heat:{_accumulatedHeat} - threshold:{nextThreshold}[{hp / hp * hpLoss * (_currentHeatStep + 1)}] - nThreshold:{hp * hpLoss * (_currentHeatStep + 2)} - ShieldId [{Shield.EntityId}]");
                     _currentHeatStep++;
                     DsState.State.Heat = _currentHeatStep * 10;
                     _accumulatedHeat = 0;
+                    if (_currentHeatStep == 10) _heatVentingTick = Tick + CoolingStep;
                 }
                 else if (metThreshold)
                 {
-                    if (Session.Enforced.Debug == 3) Log.Line($"uncha - stage:{_currentHeatStep} - cycle:{_heatCycle} - resetCycle:{backOneCycles} - heat:{_accumulatedHeat} - threshold:{nextThreshold} - nThreshold:{hp * hpLoss * (_currentHeatStep + 2)} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 4) Log.Line($"uncha - stage:{_currentHeatStep} - cycle:{_heatCycle} - resetCycle:{backOneCycles} - heat:{_accumulatedHeat} - threshold:{nextThreshold} - nThreshold:{hp * hpLoss * (_currentHeatStep + 2)} - ShieldId [{Shield.EntityId}]");
                     DsState.State.Heat = _currentHeatStep * 10;
                     _heatCycle = backOneCycles;
                     _accumulatedHeat = 0;
@@ -367,14 +373,14 @@ namespace DefenseShields
                     {
                         DsState.State.Heat = 0;
                         _currentHeatStep = 0;
-                        if (Session.Enforced.Debug == 3) Log.Line($"nohea - stage:{_currentHeatStep} - cycle:{_heatCycle} - resetCycle:[-1] - heat:{_accumulatedHeat} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug == 4) Log.Line($"nohea - stage:{_currentHeatStep} - cycle:{_heatCycle} - resetCycle:[-1] - heat:{_accumulatedHeat} - ShieldId [{Shield.EntityId}]");
                         _heatCycle = -1;
                         _accumulatedHeat = 0;
                         _fallbackCycle = 0;
                     }
                     else
                     {
-                        if (Session.Enforced.Debug == 3) Log.Line($"decto - stage:{_currentHeatStep - 1} - cycle:{_heatCycle} - resetCycle:{backTwoCycles} - heat:{_accumulatedHeat} - threshold:{currentThreshold} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug == 4) Log.Line($"decto - stage:{_currentHeatStep - 1} - cycle:{_heatCycle} - resetCycle:{backTwoCycles} - heat:{_accumulatedHeat} - threshold:{currentThreshold} - ShieldId [{Shield.EntityId}]");
                         _currentHeatStep--;
                         DsState.State.Heat = _currentHeatStep * 10;
                         _heatCycle = backTwoCycles;
@@ -385,14 +391,14 @@ namespace DefenseShields
             }
             else if (venting)
             {
-                if (Session.Enforced.Debug == 3) Log.Line($"mainc - stage:{_currentHeatStep} - cycle:{_heatCycle} - resetCycle:xxxx - heat:{_accumulatedHeat} - threshold:{nextThreshold} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 4) Log.Line($"mainc - stage:{_currentHeatStep} - cycle:{_heatCycle} - resetCycle:xxxx - heat:{_accumulatedHeat} - threshold:{nextThreshold} - ShieldId [{Shield.EntityId}]");
                 _heatVentingTick = Tick + CoolingStep;
                 _accumulatedHeat = 0;
             }
             else if (leftCritical)
             {
                 if (_currentHeatStep >= 10) _currentHeatStep--;
-                if (Session.Enforced.Debug == 3) Log.Line($"leftc - stage:{_currentHeatStep} - cycle:{_heatCycle} - resetCycle:{backTwoCycles} - heat:{_accumulatedHeat} - threshold:{nextThreshold}[{hp / hp * hpLoss * (_currentHeatStep + 1)}] - nThreshold:{hp * hpLoss * (_currentHeatStep + 2)} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 4) Log.Line($"leftc - stage:{_currentHeatStep} - cycle:{_heatCycle} - resetCycle:{backTwoCycles} - heat:{_accumulatedHeat} - threshold:{nextThreshold}[{hp / hp * hpLoss * (_currentHeatStep + 1)}] - nThreshold:{hp * hpLoss * (_currentHeatStep + 2)} - ShieldId [{Shield.EntityId}]");
                 DsState.State.Heat = _currentHeatStep * 10;
                 _heatCycle = backTwoCycles;
                 _heatVentingTick = uint.MaxValue;
@@ -401,14 +407,14 @@ namespace DefenseShields
 
             if (_heatCycle > HeatingStep * 10 + OverHeat && Tick >= _heatVentingTick)
             {
-                if (Session.Enforced.Debug == 3) Log.Line($"HeatCycle over limit, resetting: heatCycle:{_heatCycle} - fallCycle:{_fallbackCycle}");
+                if (Session.Enforced.Debug == 4) Log.Line($"HeatCycle over limit, resetting: heatCycle:{_heatCycle} - fallCycle:{_fallbackCycle}");
                 _heatCycle = -1;
                 _fallbackCycle = 0;
             }
 
             if (!oldHeat.Equals(DsState.State.Heat))
             {
-                if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: HeatChange - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 4) Log.Line($"StateUpdate: HeatChange - ShieldId [{Shield.EntityId}]");
                 ShieldChangeState();
             }
         }
