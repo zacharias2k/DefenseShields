@@ -224,6 +224,14 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\Controls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Seperator.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\Enhancer.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\Box.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\ConvexHull.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\ConvexTransform.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\ConvexTranslate.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\Gjk.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\IConvex.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\Segment.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\Sphere.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\DsAutoResetEvent.cs" />
     <Compile Include="HoldingArea\HyperSession.cs" />
     <Compile Include="HoldingArea\Logger.cs" />

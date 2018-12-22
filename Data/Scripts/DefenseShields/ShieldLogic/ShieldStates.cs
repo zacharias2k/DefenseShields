@@ -80,6 +80,12 @@ namespace DefenseShields
             if (wait ||!AllInited && !PostInit()) return false;
             if (Session.Enforced.Debug == 3) Dsutil1.Sw.Restart();
 
+            if (Session.Enforced.Debug > 0)
+            {
+                if (Tick600 && Shield.CustomName == "DEBUG") UserDebugEnabled = true;
+                else if (Tick600) UserDebugEnabled = false;
+            }
+
             IsStatic = MyGrid.IsStatic;
 
             if (!Warming) WarmUpSequence();

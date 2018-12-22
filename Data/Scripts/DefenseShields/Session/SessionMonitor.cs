@@ -32,7 +32,7 @@ namespace DefenseShields
                 {
                     _autoResetEvent.WaitOne();
                     if (!Monitor) break;
-                    if (Enforced.Debug == 5 && EntSlotTick) Dsutil2.Sw.Restart();
+                    if (Enforced.Debug == 4 && EntSlotTick) Dsutil2.Sw.Restart();
                     _newFrame = false;
                     _workData.DoIt(new List<DefenseShields>(FunctionalShields), Tick);
                     MyAPIGateway.Parallel.For(0, _workData.ShieldList.Count, x =>
@@ -126,7 +126,7 @@ namespace DefenseShields
                         s.LastWokenTick = tick;
                         s.Asleep = false;
                     });
-                    if (Monitor && Enforced.Debug == 5 && EntSlotTick) Dsutil2.StopWatchReport("monitor", -1);
+                    if (Monitor && Enforced.Debug == 4 && EntSlotTick) Dsutil2.StopWatchReport("monitor", -1);
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in WebMonitor: {ex}"); }
@@ -245,7 +245,7 @@ namespace DefenseShields
                     else entsUpdated++;
                 }
                 SlotCnt[RefreshCycle] = entsRefreshed;
-                if (Enforced.Debug == 5 || Enforced.Debug == 1 && Tick1800) Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - EntsUpdated:{entsUpdated} - ShieldsWaking:{shieldsWaking} - EntsRemoved: {entsremoved} - EntsLostShield:{entsLostShield} - EntInRefreshSlots:({SlotCnt[0]} - {SlotCnt[1]} - {SlotCnt[2]} - {SlotCnt[3]} - {SlotCnt[4]} - {SlotCnt[5]} - {SlotCnt[6]} - {SlotCnt[7]} - {SlotCnt[8]}) \n" +
+                if (Enforced.Debug == 4 || Enforced.Debug == 1 && Tick1800) Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - EntsUpdated:{entsUpdated} - ShieldsWaking:{shieldsWaking} - EntsRemoved: {entsremoved} - EntsLostShield:{entsLostShield} - EntInRefreshSlots:({SlotCnt[0]} - {SlotCnt[1]} - {SlotCnt[2]} - {SlotCnt[3]} - {SlotCnt[4]} - {SlotCnt[5]} - {SlotCnt[6]} - {SlotCnt[7]} - {SlotCnt[8]}) \n" +
                                                   $"                                     ProtectedEnts:{GlobalProtect.Count} - ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count} - TotalProtectedEnts:{GlobalProtect.Count}");
             }
         }
@@ -256,6 +256,8 @@ namespace DefenseShields
             if (Enforced.Debug >= 4 && EntSlotTick) Dsutil1.Sw.Restart();
             foreach (var s in ActiveShields)
             {
+                //s.DeformEnabled = false;
+                //s.ExplosionEnabled = false;
                 if (!s.WasOnline || s.Asleep) continue;
 
                 if (s.StaleGrids.Count != 0) s.CleanUp(0);
@@ -266,8 +268,8 @@ namespace DefenseShields
                 s.WebEntities();
                 y++;
             }
-            if (Enforced.Debug >= 5 && EntSlotTick) Dsutil1.StopWatchReport($"[LogicUpdate] tick:{Tick} - WebbingShields:{y} - CPU:", -1);
-            else if (Enforced.Debug >= 5) Dsutil1.Sw.Reset();
+            if (Enforced.Debug >= 4 && EntSlotTick) Dsutil1.StopWatchReport($"[LogicUpdate] tick:{Tick} - WebbingShields:{y} - CPU:", -1);
+            else if (Enforced.Debug >= 4) Dsutil1.Sw.Reset();
 
             var compCount = Controllers.Count;
             if (SphereOnCamera.Length != compCount) Array.Resize(ref SphereOnCamera, compCount);

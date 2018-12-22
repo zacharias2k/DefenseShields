@@ -137,6 +137,7 @@ namespace DefenseShields
         internal bool ControlBlockWorking;
         internal bool EnablePhysics = true;
         internal bool EntCleanUpTime;
+        internal bool UserDebugEnabled;
 
 
         private bool _resetEntity;

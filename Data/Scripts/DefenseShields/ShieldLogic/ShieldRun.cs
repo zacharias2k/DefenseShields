@@ -92,6 +92,7 @@ namespace DefenseShields
                     var report = test2 == null ? "Null" : test2.ToString();
                     MyAPIGateway.Utilities.ShowMessage("", $"{report}");
                     */
+
                     if (_isServer)
                     {
                         var createHeTiming = _count == 6 && (_lCount == 1 || _lCount == 6);
@@ -111,6 +112,21 @@ namespace DefenseShields
                     }
                     else if (_syncEnts) SyncThreadedEnts();
                     if (!_isDedicated && Tick60) HudCheck();
+                    if (UserDebugEnabled)
+                    {
+                        if (Tick600)
+                        {
+                            var message = $"User Debugging Enabled\n" +
+                                          $"On:{DsState.State.Online} - Suspend:{DsState.State.Suspended}\n" +
+                                          $"Lowered:{DsState.State.Lowered} - EWorking:{DsState.State.EmitterWorking}\n" +
+                                          $"DistStatus:{MyGridDistributor?.SourcesEnabled} - DistIsNull:{MyGridDistributor == null}\n" +
+                                          $"Access:{DsState.State.ControllerGridAccess} - GridPower:{GridMaxPower}\n" +
+                                          $"AvailPower:{GridAvailablePower}";
+
+                            if (!_isDedicated) MyAPIGateway.Utilities.ShowMessage("", message);
+                            else Log.Line(message);
+                        }
+                    }
                 }
                 if (Session.Enforced.Debug == 3) Dsutil1.StopWatchReport($"PerfCon: Online: {DsState.State.Online} - Asleep:{Asleep} - Tick: {Tick} loop: {_lCount}-{_count}", 4);
             }
