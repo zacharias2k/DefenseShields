@@ -66,6 +66,7 @@ namespace DefenseShields
                 if (_isServer) quickReject = ent is IMyFloatingObject || ent is IMyEngineerToolBase || IgnoreCache.Contains(ent) || FriendlyMissileCache.Contains(ent) || AuthenticatedCache.Contains(ent);
                 else quickReject = !(ent is MyCubeGrid) && voxel == null && !(ent is IMyCharacter) || IgnoreCache.Contains(ent) || AuthenticatedCache.Contains(ent);
                 if (quickReject || !WebSphere.Intersects(ent.PositionComp.WorldVolume)) continue;
+
                 if (voxel != null)
                 {
                     VoxelsToIntersect[voxel] = true;
@@ -265,7 +266,7 @@ namespace DefenseShields
             var grid = ent as MyCubeGrid;
             if (grid != null)
             {
-                if (ShieldComp.Modulator != null && ShieldComp.Modulator.ModSet.Settings.ModulateGrids || Session.Enforced.DisableGridDamageSupport == 1) return Ent.Ignore;
+                var ignoreGrids = ShieldComp.Modulator != null && ShieldComp.Modulator.ModSet.Settings.ModulateGrids || Session.Enforced.DisableGridDamageSupport == 1;
 
                 ModulatorGridComponent modComp;
                 grid.Components.TryGet(out modComp);
@@ -285,11 +286,10 @@ namespace DefenseShields
                 var bigOwners = grid.BigOwners;
                 var bigOwnersCnt = bigOwners.Count;
                 var blockCnt = grid.BlocksCount;
-                var allInShield = CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, DetectMatrixOutsideInv);
-                if (allInShield) return Ent.Protected;
-                if (blockCnt < 10 && bigOwnersCnt == 0) return  Ent.SmallNobodyGrid;
-                if (bigOwnersCnt == 0) return Ent.LargeNobodyGrid;
-                var enemy = GridEnemy(grid, bigOwners);
+                if (CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, DetectMatrixOutsideInv)) return Ent.Protected;
+                if (!ignoreGrids && blockCnt < 10 && bigOwnersCnt == 0) return  Ent.SmallNobodyGrid;
+                if (!ignoreGrids && bigOwnersCnt == 0) return Ent.LargeNobodyGrid;
+                var enemy = !ignoreGrids && GridEnemy(grid, bigOwners);
                 if (!enemy)
                 {
                     if (ShieldComp.GetSubGrids.Contains(grid)) return Ent.Protected;

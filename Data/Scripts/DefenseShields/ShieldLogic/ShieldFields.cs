@@ -103,8 +103,9 @@ namespace DefenseShields
         internal volatile int LostPings;
         internal volatile bool WasActive;
         internal volatile bool MoverByShield;
-        internal volatile bool Dispatched;
         internal volatile bool PlayerByShield;
+        internal volatile bool NewEntByShield;
+        internal volatile bool Dispatched;
         internal volatile bool Asleep = true;
         internal volatile bool WasPaused;
         internal volatile uint LastWokenTick;
@@ -201,7 +202,7 @@ namespace DefenseShields
 
         internal MatrixD DetectMatrixOutsideInv;
         internal MatrixD DetectMatrixInInv;
-        private MatrixD _shieldShapeMatrix;
+        internal MatrixD ShieldShapeMatrix;
         internal MatrixD DetectMatrixOutside;
         internal MatrixD DetectMatrixIn;
         internal MatrixD ShieldMatrix;
@@ -350,7 +351,6 @@ namespace DefenseShields
         internal ControllerState DsState;
 
         internal ShieldGridComponent ShieldComp;
-        internal ModulatorGridComponent ModComp;
         internal RunningAverage DpsAvg = new RunningAverage(2);
 
         internal MyStringId CustomDataTooltip = MyStringId.GetOrCompute("Shows an Editor for custom data to be used by scripts and mods");

@@ -116,12 +116,18 @@ namespace DefenseShields
                     {
                         if (Tick600)
                         {
-                            var message = $"User Debugging Enabled\n" +
-                                          $"On:{DsState.State.Online} - Suspend:{DsState.State.Suspended}\n" +
-                                          $"Lowered:{DsState.State.Lowered} - EWorking:{DsState.State.EmitterWorking}\n" +
-                                          $"DistStatus:{MyGridDistributor?.SourcesEnabled} - DistIsNull:{MyGridDistributor == null}\n" +
-                                          $"Access:{DsState.State.ControllerGridAccess} - GridPower:{GridMaxPower}\n" +
-                                          $"AvailPower:{GridAvailablePower}";
+                            var message = $"User({MyAPIGateway.Multiplayer.Players.TryGetSteamId(Shield.OwnerId)}) Debugging\n" +
+                                          $"On:{DsState.State.Online} - Active:{Session.Instance.ActiveShields.Contains(this)} - Suspend:{DsState.State.Suspended}\n" +
+                                          $"Web:{Asleep} - Tick/LWoke:{Tick}/{LastWokenTick}\n" +
+                                          $"Mo:{DsState.State.Mode} - Su:{DsState.State.Suspended} - Wa:{DsState.State.Waking}\n" +
+                                          $"Np:{DsState.State.NoPower} - Lo:{DsState.State.Lowered} - Sl:{DsState.State.Sleeping}\n" +
+                                          $"PowerState:{MyGridDistributor?.SourcesEnabled} - NullPower:{MyGridDistributor == null}\n" +
+                                          $"AvailPower:{GridAvailablePower} - GridPower:{GridMaxPower}\n" +
+                                          $"Access:{DsState.State.ControllerGridAccess} - EmitterWorking:{DsState.State.EmitterWorking}\n" +
+                                          $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.GlobalProtect.ContainsKey(MyGrid)}\n" +
+                                          $"ShieldMode:{ShieldMode} - isStatic:{IsStatic}\n" +
+                                          $"IsMobile:{GridIsMobile} - isMoving:{ShieldComp.GridIsMoving}\n" +
+                                          $"SettingShell:{DsSet.Settings.ShieldShell} - SettingRaised:{DsSet.Settings.RaiseShield}";
 
                             if (!_isDedicated) MyAPIGateway.Utilities.ShowMessage("", message);
                             else Log.Line(message);

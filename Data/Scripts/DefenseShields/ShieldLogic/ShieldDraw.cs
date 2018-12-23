@@ -95,10 +95,10 @@ namespace DefenseShields
                 var lod = CalculateLod(_onCount);
                 if (_shapeChanged || _updateRender || lod != prevlod)
                 {
-                    Icosphere.CalculateTransform(_shieldShapeMatrix, lod);
+                    Icosphere.CalculateTransform(ShieldShapeMatrix, lod);
                     if (!GridIsMobile) Icosphere.ReturnPhysicsVerts(DetectionMatrix, ShieldComp.PhysicsOutside);
                 }
-                Icosphere.ComputeEffects(_shieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, percent, activeVisible, refreshAnim);
+                Icosphere.ComputeEffects(ShieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, percent, activeVisible, refreshAnim);
             }
             if (hitAnim && sphereOnCamera && IsWorking) Icosphere.Draw(renderId);
 

@@ -150,7 +150,7 @@ namespace DefenseShields
                 {
                     if (info.Type == DelDamage)
                     {
-                        if (Enforced.Debug == 4) Log.Line($"DelDamage ignoring attacker: {info.AttackerId}");
+                        //if (Enforced.Debug == 4) Log.Line($"DelDamage ignoring attacker: {info.AttackerId}");
                         _ignoreAttackerId = info.AttackerId;
                         return;
                     }
@@ -187,7 +187,7 @@ namespace DefenseShields
                                 trueAttacker = (hostileCube ?? (hostileEnt as IMyGunBaseUser)?.Owner) ?? hostileEnt;
                             }
                             else trueAttacker = myGrid;
-                            if (Enforced.Debug == 4) Log.Line($"TrueAttacker: {trueAttacker.DebugName}");
+                            //if (Enforced.Debug == 4) Log.Line($"TrueAttacker: {trueAttacker.DebugName}");
 
                             _originBlock = block;
                             _originBlock.ComputeWorldCenter(out _originHit);
@@ -222,16 +222,20 @@ namespace DefenseShields
                             if (!blockingShield) _blockingShield = null;
                             if (!clientShield) _clientExpShield = null;
 
-                            if (_blockingShield != null)
+                            if (Enforced.Debug == 4)
                             {
-                                var distanceReprot = intersectDist?.ToString() ?? "null";
-                                if (Enforced.Debug == 4) Log.Line($"blockingshield found: trueAttacker:{trueAttacker.DebugName} - hostileEnt:{hostileEnt.DebugName} - eDist:{distanceReprot} - lDist:{line.Length} - clientShield:{_clientExpShield != null}");
+                                if (_blockingShield != null)
+                                {
+                                    var distanceReprot = intersectDist?.ToString() ?? "null";
+                                    Log.Line($"blockingshield found: trueAttacker:{trueAttacker.DebugName} - hostileEnt:{hostileEnt.DebugName} - eDist:{distanceReprot} - lDist:{line.Length} - clientShield:{_clientExpShield != null}");
+                                }
+                                else 
+                                {
+                                    var distanceReprot = intersectDist?.ToString() ?? "null";
+                                    if (Enforced.Debug == 4) Log.Line($"no blockingshield found: trueAttacker:{trueAttacker.DebugName} - hostileEnt:{hostileEnt.DebugName} - eDist:{distanceReprot} - lDist:{line.Length} - clientShield:{_clientExpShield != null}");
+                                }
                             }
-                            if (Enforced.Debug == 4 && _blockingShield == null)
-                            {
-                                var distanceReprot = intersectDist?.ToString() ?? "null";
-                                if (Enforced.Debug == 4) Log.Line($"no blockingshield found: trueAttacker:{trueAttacker.DebugName} - hostileEnt:{hostileEnt.DebugName} - eDist:{distanceReprot} - lDist:{line.Length} - clientShield:{_clientExpShield != null}");
-                            }
+
                             if (_clientExpShield != null && info.Type == MyDamageType.Explosion)
                             {
                                 if (Enforced.Debug == 4) Log.Line($"Sending origin explosion MpDoDamage: {info.Type} - {info.Amount} - {_originBlock.Position}");
@@ -252,7 +256,10 @@ namespace DefenseShields
                                 info.Amount = 0;
                                 return;
                             }
-                            if (trueAttacker is MyVoxelBase)
+                            var isExplosionDmg = info.Type == MyDamageType.Explosion;
+                            var isDeformationDmg = info.Type == MyDamageType.Deformation;
+
+                            if (trueAttacker is MyVoxelBase || isDeformationDmg && trueAttacker is MyCubeGrid && (Enforced.DisableGridDamageSupport == 1 || shield.ShieldComp?.Modulator != null && shield.ShieldComp.Modulator.ModSet.Settings.ModulateGrids))
                             {
                                 shield.DeformEnabled = true;
                                 return;
@@ -268,11 +275,8 @@ namespace DefenseShields
                                 return;
                             }
 
-                            var isExplosionDmg = info.Type == MyDamageType.Explosion;
-                            var isDeformationDmg = info.Type == MyDamageType.Deformation;
                             if (!isDeformationDmg && !isExplosionDmg)
                             {
-                                if (Enforced.Debug == 4 && (shield.ExplosionEnabled || shield.DeformEnabled)) Log.Line($"resetting deform/explosion permission in handler due to other damage: {info.Type} - {info.Amount}");
                                 if (!IsServer) _clientExpShield = null;
                                 shield.ExplosionEnabled = false;
                                 shield.DeformEnabled = false;
@@ -280,7 +284,6 @@ namespace DefenseShields
                             }
                             else if (!shield.DeformEnabled && trueAttacker == null)
                             {
-                                if (Enforced.Debug == 4) Log.Line($"[hostileNullSupressDeform] Type:{info.Type} - Amount:{info.Amount}");
                                 info.Amount = 0;
                                 return;
                             }

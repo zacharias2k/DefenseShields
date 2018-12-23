@@ -115,7 +115,7 @@ namespace DefenseShields
                 _updateMobileShape = false;
                 var shieldGridMatrix = MyGrid.WorldMatrix;
                 if (_shapeChanged) CreateMobileShape();
-                DetectionMatrix = _shieldShapeMatrix * shieldGridMatrix;
+                DetectionMatrix = ShieldShapeMatrix * shieldGridMatrix;
                 DetectionCenter = MyGrid.PositionComp.WorldVolume.Center;
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(MyGrid.WorldMatrix);
                 ShieldSphere.Center = DetectionCenter;
@@ -149,7 +149,7 @@ namespace DefenseShields
                 var vectorScale = new Vector3D(MathHelper.Clamp(width, 30, halfDistToCenter), MathHelper.Clamp(height, 30, halfDistToCenter), MathHelper.Clamp(depth, 30, halfDistToCenter));
 
                 DetectionMatrix = MatrixD.Rescale(OffsetEmitterWMatrix, vectorScale);
-                _shieldShapeMatrix = MatrixD.Rescale(offsetLMatrix, vectorScale);
+                ShieldShapeMatrix = MatrixD.Rescale(offsetLMatrix, vectorScale);
 
                 ShieldSize = DetectionMatrix.Scale;
 
@@ -197,7 +197,7 @@ namespace DefenseShields
             ShieldSize = shieldSize;
             var mobileMatrix = MatrixD.CreateScale(shieldSize);
             mobileMatrix.Translation = MyGrid.PositionComp.LocalVolume.Center;
-            _shieldShapeMatrix = mobileMatrix;
+            ShieldShapeMatrix = mobileMatrix;
         }
 
         private void SetShieldShape()
@@ -208,11 +208,11 @@ namespace DefenseShields
                 {
                     _shellPassive.PositionComp.LocalMatrix = Matrix.Zero;  // Bug - Cannot just change X coord, so I reset first.
                     _shellActive.PositionComp.LocalMatrix = Matrix.Zero;
-                    _shellPassive.PositionComp.LocalMatrix = _shieldShapeMatrix;
-                    _shellActive.PositionComp.LocalMatrix = _shieldShapeMatrix;
+                    _shellPassive.PositionComp.LocalMatrix = ShieldShapeMatrix;
+                    _shellActive.PositionComp.LocalMatrix = ShieldShapeMatrix;
                 } 
                 ShieldEnt.PositionComp.LocalMatrix = Matrix.Zero;
-                ShieldEnt.PositionComp.LocalMatrix = _shieldShapeMatrix;
+                ShieldEnt.PositionComp.LocalMatrix = ShieldShapeMatrix;
                 ShieldEnt.PositionComp.LocalAABB = ShieldAabbScaled;
             }
             ShieldEnt.PositionComp.SetPosition(DetectionCenter);

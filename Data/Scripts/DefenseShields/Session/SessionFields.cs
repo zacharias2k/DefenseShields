@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
@@ -117,10 +118,13 @@ namespace DefenseShields
         private DsAutoResetEvent _autoResetEvent = new DsAutoResetEvent();
         private readonly Work _workData = new Work();
 
+        private readonly List<KeyValuePair<MyEntity, uint>> _entRefreshTmpList = new List<KeyValuePair<MyEntity, uint>>();
+
         internal static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         public static readonly Dictionary<MyEntity, MyProtectors> GlobalProtect = new Dictionary<MyEntity, MyProtectors>();
 
-        private static readonly List<KeyValuePair<MyEntity, MyProtectors>> GlobalEntTmp = new List<KeyValuePair<MyEntity, MyProtectors>>();
+        private static readonly ConcurrentDictionary<MyEntity, uint> GlobalEntTmp = new ConcurrentDictionary<MyEntity, uint>();
+        private static readonly ConcurrentQueue<MyEntity> EntRefreshQueue = new ConcurrentQueue<MyEntity>();
 
         public static readonly MyConcurrentPool<CachingHashSet<DefenseShields>> ProtSets = new MyConcurrentPool<CachingHashSet<DefenseShields>>(150, null, 1000);
 
