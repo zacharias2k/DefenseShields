@@ -33,9 +33,8 @@ namespace DefenseShields
 
         internal int OnCount;
         internal int RefreshCycle;
-        internal int RefreshCounter = 1;
-        internal int EntCleanCycle = 3600;
-        internal int EntMaxTickAge = 36000;
+        private const int EntCleanCycle = 3600;
+        private const int EntMaxTickAge = 36000;
 
         internal static int EntSlotScaler = 9;
 
@@ -65,6 +64,7 @@ namespace DefenseShields
         internal volatile bool Wake;
         internal volatile bool Monitor = true;
         internal volatile bool EntSlotTick;
+
         internal bool ScalerChanged;
         internal bool HideActions;
         internal bool DsControl;
@@ -77,6 +77,7 @@ namespace DefenseShields
         internal static bool DsAction;
         internal static bool PsAction;
         internal static bool ModAction;
+
         internal bool[] SphereOnCamera = new bool[0];
         internal readonly int[] SlotCnt = new int[9];
 
@@ -106,7 +107,7 @@ namespace DefenseShields
         internal readonly Guid PlanetShieldSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811512");
         internal readonly Guid PlanetShieldStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811513");
 
-        internal static readonly TimeSpan SleepTime = TimeSpan.FromTicks(10);
+        //internal static readonly TimeSpan SleepTime = TimeSpan.FromTicks(10);
         internal static readonly Type MissileObj = typeof(MyObjectBuilder_Missile);
         internal static Session Instance { get; private set; }
         internal static DefenseShields HudComp;
@@ -118,12 +119,13 @@ namespace DefenseShields
         private DsAutoResetEvent _autoResetEvent = new DsAutoResetEvent();
         private readonly Work _workData = new Work();
 
-        internal static readonly List<KeyValuePair<MyEntity, uint>> EntRefreshTmpList = new List<KeyValuePair<MyEntity, uint>>();
+        private static readonly List<KeyValuePair<MyEntity, uint>> EntRefreshTmpList = new List<KeyValuePair<MyEntity, uint>>();
+        private static readonly ConcurrentQueue<MyEntity> EntRefreshQueue = new ConcurrentQueue<MyEntity>();
+        private static readonly ConcurrentDictionary<MyEntity, uint> GlobalEntTmp = new ConcurrentDictionary<MyEntity, uint>();
+
         internal static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         internal static readonly Dictionary<MyEntity, MyProtectors> GlobalProtect = new Dictionary<MyEntity, MyProtectors>();
-        internal static readonly ConcurrentDictionary<MyEntity, uint> GlobalEntTmp = new ConcurrentDictionary<MyEntity, uint>();
         internal static readonly ConcurrentDictionary<long, IMyPlayer> Players = new ConcurrentDictionary<long, IMyPlayer>();
-        internal static readonly ConcurrentQueue<MyEntity> EntRefreshQueue = new ConcurrentQueue<MyEntity>();
         internal static readonly MyConcurrentPool<CachingHashSet<DefenseShields>> ProtSets = new MyConcurrentPool<CachingHashSet<DefenseShields>>(150, null, 1000);
         internal static readonly MyConcurrentHashSet<DefenseShields> ActiveShields = new MyConcurrentHashSet<DefenseShields>();
         internal static readonly MyConcurrentHashSet<DefenseShields> FunctionalShields = new MyConcurrentHashSet<DefenseShields>();
@@ -136,7 +138,7 @@ namespace DefenseShields
         internal static readonly List<Modulators> Modulators = new List<Modulators>();
         internal static readonly List<DefenseShields> Controllers = new List<DefenseShields>();
 
-        public static DefenseShieldsEnforcement Enforced = new DefenseShieldsEnforcement();
+        internal static DefenseShieldsEnforcement Enforced = new DefenseShieldsEnforcement();
 
         internal readonly HashSet<string> DsActions = new HashSet<string>()
         {

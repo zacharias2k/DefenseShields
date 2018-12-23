@@ -62,36 +62,36 @@ namespace DefenseShields
 
         private bool EntityAlive()
         {
-            Tick = Session.Tick;
-            Tick60 = Tick % 60 == 0;
-            Tick180 = Tick % 180 == 0;
-            Tick600 = Tick % 600 == 0;
+            _tick = Session.Tick;
+            _tick60 = _tick % 60 == 0;
+            _tick180 = _tick % 180 == 0;
+            _tick600 = _tick % 600 == 0;
 
             if (WasPaused) UnPauseLogic();
             LostPings = 0;
 
-            var wait = _isServer && !Tick60 && DsState.State.Suspended;
+            var wait = _isServer && !_tick60 && DsState.State.Suspended;
 
             MyGrid = MyCube.CubeGrid;
             if (MyGrid?.Physics == null) return false;
 
             if (_resetEntity) ResetEntity();
 
-            if (wait ||!AllInited && !PostInit()) return false;
-            if (Session.Enforced.Debug == 3) Dsutil1.Sw.Restart();
+            if (wait ||!_allInited && !PostInit()) return false;
+            if (Session.Enforced.Debug == 3) _dsutil1.Sw.Restart();
 
             if (Session.Enforced.Debug > 0)
             {
-                if (Tick600 && Shield.CustomName == "DEBUG") UserDebugEnabled = true;
-                else if (Tick600) UserDebugEnabled = false;
+                if (_tick600 && Shield.CustomName == "DEBUG") _userDebugEnabled = true;
+                else if (_tick600) _userDebugEnabled = false;
             }
 
             IsStatic = MyGrid.IsStatic;
 
             if (!Warming) WarmUpSequence();
 
-            if (_subUpdate && Tick >= _subTick) HierarchyUpdate();
-            if (_blockEvent && Tick >= _funcTick) BlockChanged(true);
+            if (_subUpdate && _tick >= _subTick) HierarchyUpdate();
+            if (_blockEvent && _tick >= _funcTick) BlockChanged(true);
 
             return true;
         }
@@ -120,7 +120,7 @@ namespace DefenseShields
                 var powerState = PowerOnline();
                 if (!powerState && _genericDownLoop == -1) _genericDownLoop = 0;
 
-                if (Tick60)
+                if (_tick60)
                 {
                     GetModulationInfo();
                     GetEnhancernInfo();
@@ -133,7 +133,7 @@ namespace DefenseShields
                 }
                 SetShieldServerStatus(powerState);
                 Timing();
-                if (!DsState.State.Online || ComingOnline && (!GridOwnsController() || GridIsMobile && FieldShapeBlocked()))
+                if (!DsState.State.Online || _comingOnline && (!GridOwnsController() || GridIsMobile && FieldShapeBlocked()))
                 {
                     _prevShieldActive = false;
                     if (_genericDownLoop == -1) _genericDownLoop = 0;
@@ -168,8 +168,8 @@ namespace DefenseShields
             if (!_isDedicated) ShellVisibility();
             ShieldEnt.Render.Visible = true;
             _updateRender = true;
-            ComingOnline = false;
-            LastWokenTick = Tick;
+            _comingOnline = false;
+            LastWokenTick = _tick;
             WasOnline = true;
             WasActive = true;
             WarmedUp = true;
@@ -204,7 +204,7 @@ namespace DefenseShields
         private void OfflineShield()
         {
             _power = 0.001f;
-            Sink.Update();
+            _sink.Update();
             WasOnline = false;
             WasActive = false;
             ShieldEnt.Render.Visible = false;
@@ -234,7 +234,7 @@ namespace DefenseShields
         {
             if (_blockChanged) BlockMonitor();
 
-            if (Tick >= LosCheckTick) LosCheck();
+            if (_tick >= LosCheckTick) LosCheck();
             if (Suspend() || ShieldSleeping() || ShieldLowered())
             {
                 ControlBlockWorking = false;
@@ -382,8 +382,8 @@ namespace DefenseShields
             if (_offlineCnt == 0)
             {
                 _power = 0.001f;
-                Sink.Update();
-                ShieldCurrentPower = Sink.CurrentInputByType(GId);
+                _sink.Update();
+                ShieldCurrentPower = _sink.CurrentInputByType(GId);
                 ResetShape(true, true);
                 CleanUp(0);
                 CleanUp(1);
@@ -422,31 +422,31 @@ namespace DefenseShields
         private void SetShieldServerStatus(bool powerState)
         {
             DsState.State.Online = ControlBlockWorking && powerState;
-            ComingOnline = !_prevShieldActive && DsState.State.Online;
+            _comingOnline = !_prevShieldActive && DsState.State.Online;
 
             _prevShieldActive = DsState.State.Online;
 
-            if (!GridIsMobile && (ComingOnline || ShieldComp.O2Updated))
+            if (!GridIsMobile && (_comingOnline || ShieldComp.O2Updated))
             {
-                EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
+                _ellipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
                 ShieldComp.O2Updated = false;
             }
         }
 
         private void SetShieldClientStatus()
         {
-            ComingOnline = !_prevShieldActive && DsState.State.Online;
+            _comingOnline = !_prevShieldActive && DsState.State.Online;
 
             _prevShieldActive = DsState.State.Online;
-            if (!GridIsMobile && (ComingOnline || !DsState.State.IncreaseO2ByFPercent.Equals(EllipsoidOxyProvider.O2Level)))
+            if (!GridIsMobile && (_comingOnline || !DsState.State.IncreaseO2ByFPercent.Equals(_ellipsoidOxyProvider.O2Level)))
             {
-                EllipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
+                _ellipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
             }
         }
 
         private bool ShieldWaking()
         {
-            if (Tick < UnsuspendTick)
+            if (_tick < UnsuspendTick)
             {
                 if (!DsState.State.Waking)
                 {
@@ -457,13 +457,13 @@ namespace DefenseShields
                 if (_genericDownLoop == -1) _genericDownLoop = 0;
                 return true;
             }
-            if (UnsuspendTick != uint.MinValue && Tick >= UnsuspendTick)
+            if (UnsuspendTick != uint.MinValue && _tick >= UnsuspendTick)
             {
                 ResetShape(false, false);
                 _updateRender = true;
                 UnsuspendTick = uint.MinValue;
             }
-            else if (_shapeTick != uint.MinValue && Tick >= _shapeTick)
+            else if (_shapeTick != uint.MinValue && _tick >= _shapeTick)
             {
                 _shapeEvent = true;
                 _shapeTick = uint.MinValue;
@@ -507,7 +507,7 @@ namespace DefenseShields
                 Timing();
                 if (!DsState.State.Lowered)
                 {
-                    if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
+                    if (!GridIsMobile) _ellipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
 
                     DsState.State.IncreaseO2ByFPercent = 0f;
                     if (!_isDedicated) ShellVisibility(true);
@@ -548,7 +548,7 @@ namespace DefenseShields
                 Timing();
                 if (!_clientLowered)
                 {
-                    if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
+                    if (!GridIsMobile) _ellipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
                     ShellVisibility(true);
                     _clientLowered = true;
                     if (Session.Enforced.Debug == 3) Log.Line($"Lowered: shield lowered - ShieldId [{Shield.EntityId}]");
@@ -573,7 +573,7 @@ namespace DefenseShields
             {
                 if (!DsState.State.Sleeping)
                 {
-                    if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
+                    if (!GridIsMobile) _ellipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
 
                     DsState.State.IncreaseO2ByFPercent = 0f;
                     if (!_isDedicated) ShellVisibility(true);
@@ -608,7 +608,7 @@ namespace DefenseShields
 
         private bool SlaveControllerLink(bool isStatic)
         {
-            var notTime = Tick != 0 && Tick % 120 != 0;
+            var notTime = _tick != 0 && _tick % 120 != 0;
 
             if (notTime && _slaveLink) return true;
             if (notTime || isStatic) return false;
@@ -663,7 +663,7 @@ namespace DefenseShields
                     if (Session.Enforced.Debug == 3) Log.Line($"Suspend: controller unsuspending - ShieldId [{Shield.EntityId}]");
                     DsState.State.Suspended = false;
                     DsState.State.Heat = 0;
-                    UnsuspendTick = Tick + 1800;
+                    UnsuspendTick = _tick + 1800;
 
                     _currentHeatStep = 0;
                     _accumulatedHeat = 0;
@@ -678,12 +678,12 @@ namespace DefenseShields
             }
             if (DsState.State.Suspended) SetShieldType(true);
 
-            if (DsState.State.Suspended != WasSuspended)
+            if (DsState.State.Suspended != _wasSuspended)
             {
                 if (DsState.State.Suspended) Session.FunctionalShields.Remove(this);
                 else Session.FunctionalShields.Add(this);
             }
-            WasSuspended = DsState.State.Suspended;
+            _wasSuspended = DsState.State.Suspended;
 
             return DsState.State.Suspended;
         }
@@ -704,7 +704,7 @@ namespace DefenseShields
 
         private bool GridOwnsController()
         {
-            var notTime = Tick != 0 && Tick % 600 != 0;
+            var notTime = _tick != 0 && _tick % 600 != 0;
 
             if (notTime && !DsState.State.ControllerGridAccess) return false;
             if (notTime) return true;
@@ -836,7 +836,7 @@ namespace DefenseShields
             {
                 if (_clientOn)
                 {
-                    if (!GridIsMobile) EllipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
+                    if (!GridIsMobile) _ellipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
                     ShellVisibility(true);
                     _clientOn = false;
                     Shield.RefreshCustomInfo();

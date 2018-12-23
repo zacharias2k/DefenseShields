@@ -79,7 +79,7 @@ namespace DefenseShields
         private void MobileUpdate()
         {
             ShieldComp.GridIsMoving = MyGrid.Physics.IsMoving;
-            if (ShieldComp.GridIsMoving || ComingOnline)
+            if (ShieldComp.GridIsMoving || _comingOnline)
             {
                 if (DsSet.Settings.FortifyShield && MyGrid.Physics.LinearVelocity.Length() > 15)
                 {
@@ -90,7 +90,7 @@ namespace DefenseShields
             else ShieldComp.GridIsMoving = false;
 
             _shapeChanged = !DsState.State.EllipsoidAdjust.Equals(_oldEllipsoidAdjust) || !DsState.State.GridHalfExtents.Equals(_oldGridHalfExtents) || !DsState.State.ShieldFudge.Equals(_oldShieldFudge) || _updateMobileShape;
-            _entityChanged = ShieldComp.GridIsMoving || ComingOnline || _shapeChanged;
+            _entityChanged = ShieldComp.GridIsMoving || _comingOnline || _shapeChanged;
             _oldGridHalfExtents = DsState.State.GridHalfExtents;
             _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
             _oldShieldFudge = DsState.State.ShieldFudge;
@@ -168,13 +168,13 @@ namespace DefenseShields
                 SOriBBoxD.HalfExtent = ShieldSize;
                 ShieldAabbScaled.Min = ShieldSize;
                 ShieldAabbScaled.Max = -ShieldSize;
-                EllipsoidSa.Update(DetectMatrixOutside.Scale.X, DetectMatrixOutside.Scale.Y, DetectMatrixOutside.Scale.Z);
+                _ellipsoidSa.Update(DetectMatrixOutside.Scale.X, DetectMatrixOutside.Scale.Y, DetectMatrixOutside.Scale.Z);
                 BoundingRange = ShieldSize.AbsMax();
 
                 ShieldSphere3K.Radius = BoundingRange + 3000;
                 WebSphere.Radius = BoundingRange + 7;
 
-                _ellipsoidSurfaceArea = EllipsoidSa.Surface;
+                _ellipsoidSurfaceArea = _ellipsoidSa.Surface;
                 EllipsoidVolume = 1.333333 * Math.PI * DetectMatrixOutside.Scale.X * DetectMatrixOutside.Scale.Y * DetectMatrixOutside.Scale.Z;
                 _shieldVol = DetectMatrixOutside.Scale.Volume;
                 if (Session.IsServer)

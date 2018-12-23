@@ -57,7 +57,7 @@ namespace DefenseShields
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == Shield.EntityId)
                         MyCube.UpdateTerminal();
                 }
-                _runningDamage = DpsAvg.Add((int) _damageReadOut);
+                _runningDamage = _dpsAvg.Add((int) _damageReadOut);
                 _damageReadOut = 0;
             }
 
@@ -69,9 +69,9 @@ namespace DefenseShields
             {
                 _blockEvent = true;
                 _shapeEvent = true;
-                LosCheckTick = Tick + 1800;
-                if (_blockAdded) _shapeTick = Tick + 300;
-                else _shapeTick = Tick + 1800;
+                LosCheckTick = _tick + 1800;
+                if (_blockAdded) _shapeTick = _tick + 300;
+                else _shapeTick = _tick + 1800;
             }
             if (_functionalChanged) _functionalEvent = true;
 
@@ -93,7 +93,7 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 3) Log.Line($"BlockChanged: functional:{_functionalEvent} - funcComplete:{FuncTask.IsComplete} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ShieldId [{Shield.EntityId}]");
                 if (_functionalEvent) FunctionalChanged(backGround);
                 _blockEvent = false;
-                _funcTick = Tick + 60;
+                _funcTick = _tick + 60;
             }
         }
 
@@ -174,9 +174,9 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 3) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Online:{DsState.State.Online} - Power:{!DsState.State.NoPower} - Sleep:{DsState.State.Sleeping} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
             if (checkGroups)
             {
-                _subTick = Tick + 10;
+                _subTick = _tick + 10;
                 UpdateSubGrids();
-                if (Session.Enforced.Debug == 3) Log.Line($"HierarchyWasDelayed: this:{Tick} - delayedTick: {_subTick} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"HierarchyWasDelayed: this:{_tick} - delayedTick: {_subTick} - ShieldId [{Shield.EntityId}]");
             }
         }
 
@@ -235,11 +235,11 @@ namespace DefenseShields
                         IgnoreCache.Clear();
 
                         _porotectEntsTmp.Clear();
-                        _porotectEntsTmp.AddRange(ProtectedEntCache.Where(info => Tick - info.Value.LastTick > 180));
+                        _porotectEntsTmp.AddRange(ProtectedEntCache.Where(info => _tick - info.Value.LastTick > 180));
                         foreach (var protectedEnt in _porotectEntsTmp) ProtectedEntCache.Remove(protectedEnt.Key);
 
                         _webEntsTmp.Clear();
-                        _webEntsTmp.AddRange(WebEnts.Where(info => Tick - info.Value.LastTick > 180));
+                        _webEntsTmp.AddRange(WebEnts.Where(info => _tick - info.Value.LastTick > 180));
                         foreach (var webent in _webEntsTmp)
                         {
                             EntIntersectInfo removedEnt;

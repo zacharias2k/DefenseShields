@@ -56,7 +56,7 @@ namespace DefenseShields
             var entChanged = false;
             var tick = Session.Tick;
 
-            EnablePhysics = false;
+            _enablePhysics = false;
             for (int i = 0; i < PruneList.Count; i++)
             {
                 var ent = PruneList[i];
@@ -72,7 +72,7 @@ namespace DefenseShields
                     VoxelsToIntersect[voxel] = true;
                     voxelFound = true;
                     entChanged = true;
-                    EnablePhysics = true;
+                    _enablePhysics = true;
                     continue;
                 }
                 Ent relation;
@@ -150,7 +150,7 @@ namespace DefenseShields
                             entChanged = true;
                         }
 
-                        EnablePhysics = true;
+                        _enablePhysics = true;
                         if (refreshInfo)
                         {
                             if ((relation == Ent.LargeEnemyGrid || relation == Ent.LargeNobodyGrid) && entInfo.CacheBlockList != null && entInfo.CacheBlockList.Count != (ent as MyCubeGrid).BlocksCount)
@@ -175,13 +175,13 @@ namespace DefenseShields
                             }
                         }
                         entChanged = true;
-                        EnablePhysics = true;
+                        _enablePhysics = true;
                         WebEnts.TryAdd(ent, new EntIntersectInfo(ent.EntityId, 0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, tick, tick, tick, tick, relation, new List<IMySlimBlock>()));
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in WebEntities entInfo: {ex}"); }
             }
-            if (!EnablePhysics)
+            if (!_enablePhysics)
             {
                 if (_isServer) Asleep = true;
                 return;

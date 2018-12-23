@@ -28,7 +28,7 @@ namespace DefenseShields
                 MyEntities.OnEntityAdd += OnEntityAdd;
                 MyEntities.OnEntityRemove += OnEntityRemove;
                 Shield.AppendingCustomInfo += AppendingCustomInfo;
-                Sink.CurrentInputChanged += CurrentInputChanged;
+                _sink.CurrentInputChanged += CurrentInputChanged;
                 MyCube.IsWorkingChanged += IsWorkingChanged;
                 IsWorkingChanged(MyCube);
 
@@ -44,7 +44,7 @@ namespace DefenseShields
                 MyEntities.OnEntityAdd -= OnEntityAdd;
                 MyEntities.OnEntityRemove -= OnEntityRemove;
                 Shield.AppendingCustomInfo -= AppendingCustomInfo;
-                Sink.CurrentInputChanged -= CurrentInputChanged;
+                _sink.CurrentInputChanged -= CurrentInputChanged;
                 MyCube.IsWorkingChanged -= IsWorkingChanged;
             }
         }
@@ -200,7 +200,7 @@ namespace DefenseShields
                                          "\n[Over Heated]: " + DsState.State.Heat.ToString("0") + "%" +
                                          "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
                                          "\n[Power Usage]: " + powerUsage.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ")Mw" +
-                                         "\n[Shield Power]: " + Sink.CurrentInputByType(GId).ToString("0.0") + " Mw");
+                                         "\n[Shield Power]: " + _sink.CurrentInputByType(GId).ToString("0.0") + " Mw");
                 }
                 else
                 {

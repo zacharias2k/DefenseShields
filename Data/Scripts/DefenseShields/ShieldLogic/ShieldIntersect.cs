@@ -96,9 +96,9 @@ namespace DefenseShields
 
         private bool GridInside(MyCubeGrid grid, MyOrientedBoundingBoxD bOriBBoxD)
         {
-            if (grid != null && CustomCollision.PointInShield(grid.PositionComp.WorldVolume.Center, DetectMatrixInInv))
+            if (grid != null && CustomCollision.PointInShield(grid.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
             {
-                if (CustomCollision.AllCornersInShield(bOriBBoxD, DetectMatrixInInv))
+                if (CustomCollision.AllCornersInShield(bOriBBoxD, DetectMatrixOutsideInv))
                 {
                     var sMass = ((MyCubeGrid)Shield.CubeGrid).GetCurrentMass();
                     var bPhysics = ((IMyCubeGrid)grid).Physics;

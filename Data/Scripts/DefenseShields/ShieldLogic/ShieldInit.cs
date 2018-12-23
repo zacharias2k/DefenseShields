@@ -21,7 +21,7 @@ namespace DefenseShields
             {
                 if (_isServer && (ShieldComp.EmitterMode < 0 || ShieldComp.EmitterMode == 0 && ShieldComp.StationEmitter == null || ShieldComp.EmittersSuspended || !IsFunctional))
                 {
-                    if (Tick600)
+                    if (_tick600)
                     {
                         if (Session.Enforced.Debug == 3) Log.Line($"PostInit: Server Not Ready - GridComp:{MyGrid.Components.Has<ShieldGridComponent>()} - InvalidMode:{ShieldComp.EmitterMode < 0} - Functional:{IsFunctional} - EmitterSus:{ShieldComp.EmittersSuspended} - StationEmitterNull:{ShieldComp.StationEmitter == null } - EmitterNull:{ShieldComp.StationEmitter?.Emitter == null} - ShieldId [{Shield.EntityId}]");
                         GridOwnsController();
@@ -44,7 +44,7 @@ namespace DefenseShields
 
                 if (_mpActive && _isServer) DsState.NetworkUpdate();
 
-                AllInited = true;
+                _allInited = true;
 
                 if (Session.Enforced.Debug == 3) Log.Line($"AllInited: ShieldId [{Shield.EntityId}]");
             }
@@ -54,7 +54,7 @@ namespace DefenseShields
 
         private void ResetEntity()
         {
-            AllInited = false;
+            _allInited = false;
             Warming = false;
             WarmedUp = false;
 
@@ -78,7 +78,7 @@ namespace DefenseShields
             if (_isServer)
             {
                 _hadPowerBefore = true;
-                ControlBlockWorking = AllInited && IsWorking && IsFunctional;
+                ControlBlockWorking = _allInited && IsWorking && IsFunctional;
             }
 
             _blockChanged = true;
@@ -127,16 +127,16 @@ namespace DefenseShields
         {
             try
             {
-                if (Sink == null) Sink = new MyResourceSinkComponent();
-                ResourceInfo = new MyResourceSinkInfo()
+                if (_sink == null) _sink = new MyResourceSinkComponent();
+                _resourceInfo = new MyResourceSinkInfo()
                 {
                     ResourceTypeId = GId,
                     MaxRequiredInput = 0f,
                     RequiredInputFunc = () => _power
                 };
-                Sink.Init(MyStringHash.GetOrCompute("Defense"), ResourceInfo);
-                Sink.AddType(ref ResourceInfo);
-                Entity.Components.Add(Sink);
+                _sink.Init(MyStringHash.GetOrCompute("Defense"), _resourceInfo);
+                _sink.AddType(ref _resourceInfo);
+                Entity.Components.Add(_sink);
             }
             catch (Exception ex) { Log.Line($"Exception in PowerPreInit: {ex}"); }
         }
@@ -151,7 +151,7 @@ namespace DefenseShields
             try
             {
                 ShieldCurrentPower = _power;
-                Sink.Update();
+                _sink.Update();
                 Shield.RefreshCustomInfo();
 
                 var enableState = Shield.Enabled;

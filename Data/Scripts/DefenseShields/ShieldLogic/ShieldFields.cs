@@ -22,7 +22,7 @@ namespace DefenseShields
     {
         #region Setup
 
-        internal uint Tick;
+        private uint _tick;
         private uint _shieldEntRendId;
         private uint _subTick;
         private uint _funcTick;
@@ -67,8 +67,6 @@ namespace DefenseShields
         public int BulletCoolDown { get; internal set; } = -1;
         public int WebCoolDown { get; internal set; } = -1;
         public int HitCoolDown { get; private set; } = -11;
-        //internal int LiveEntCounter;
-        internal int CleanCycle;
 
         private int _count = -1;
         private int _lCount;
@@ -110,17 +108,10 @@ namespace DefenseShields
         internal volatile bool WasPaused;
         internal volatile uint LastWokenTick;
 
-        internal bool WasSuspended = true;
         internal bool WasOnline;
         internal bool DeformEnabled;
         internal bool ExplosionEnabled;
-        internal bool PrePowerInit;
-        internal bool PowerInited;
-        internal bool AllInited;
-        internal bool ContainerInited;
-        internal bool HealthInited;
         internal bool WarmedUp;
-        internal bool ComingOnline;
         internal bool Warming;
         internal bool UpdateDimensions;
         internal bool FitChanged;
@@ -132,16 +123,21 @@ namespace DefenseShields
         internal bool WebSuspend;
         internal bool IsFunctional;
         internal bool IsWorking;
-        internal bool Tick60;
-        internal bool Tick180;
-        internal bool Tick600;
         internal bool ControlBlockWorking;
-        internal bool EnablePhysics = true;
         internal bool EntCleanUpTime;
-        internal bool UserDebugEnabled;
         internal bool ModulateGrids;
+        internal bool EffectsCleanup;
 
-
+        private bool _wasSuspended = true;
+        private bool _enablePhysics = true;
+        private bool _allInited;
+        private bool _containerInited;
+        private bool _healthInited;
+        private bool _comingOnline;
+        private bool _tick60;
+        private bool _tick180;
+        private bool _tick600;
+        private bool _userDebugEnabled;
         private bool _resetEntity;
         private bool _empOverLoad;
         private bool _isDedicated;
@@ -153,7 +149,6 @@ namespace DefenseShields
         private bool _slaveLink;
         private bool _subUpdate;
         private bool _updateGridDistributor;
-        internal bool EffectsCleanup;
         private bool _hideShield;
         private bool _hideColor;
         private bool _supressedColor;
@@ -197,15 +192,12 @@ namespace DefenseShields
         internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         internal Vector3D EmpDetonation { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         internal Vector3D ShieldSize { get; set; }
-        internal Vector3D DebugVector3D;
         private Vector3D _localImpactPosition;
         private Vector3D _oldGridHalfExtents;
 
         internal MatrixD DetectMatrixOutsideInv;
-        internal MatrixD DetectMatrixInInv;
         internal MatrixD ShieldShapeMatrix;
         internal MatrixD DetectMatrixOutside;
-        internal MatrixD DetectMatrixIn;
         internal MatrixD ShieldMatrix;
         internal MatrixD OldShieldMatrix;
         internal MatrixD OffsetEmitterWMatrix;
@@ -217,15 +209,14 @@ namespace DefenseShields
 
         internal BoundingSphereD ShieldSphere3K = new BoundingSphereD(Vector3D.Zero, 1f);
         internal BoundingSphereD WebSphere = new BoundingSphereD(Vector3D.Zero, 1f);
-        public BoundingSphereD ShieldSphere = new BoundingSphereD(Vector3D.Zero, 1);
-
-        public MyOrientedBoundingBoxD SOriBBoxD = new MyOrientedBoundingBoxD();
+        internal BoundingSphereD ShieldSphere = new BoundingSphereD(Vector3D.Zero, 1);
+        internal MyOrientedBoundingBoxD SOriBBoxD = new MyOrientedBoundingBoxD();
 
         private Quaternion _sQuaternion;
-
         private Color _oldPercentColor = Color.Transparent;
+
         internal Task FuncTask;
-        internal readonly object GetCubesLock = new Object();
+        internal readonly object GetCubesLock = new object();
 
         internal readonly int[] ExpChargeReductions = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
 
@@ -317,14 +308,10 @@ namespace DefenseShields
         private static readonly MyStringHash DelDamage = MyStringHash.GetOrCompute("DelDamage");
         private static readonly Type MissileObj = typeof(MyObjectBuilder_Missile);
 
-        internal MyResourceSinkInfo ResourceInfo;
-        internal MyResourceSinkComponent Sink;
-
-        //private readonly DataStructures _dataStructures = new DataStructures();
-        //private readonly StructureBuilder _structureBuilder = new StructureBuilder();
+        private MyResourceSinkInfo _resourceInfo;
+        private MyResourceSinkComponent _sink;
 
         internal IMyUpgradeModule Shield;
-
         internal ShieldType ShieldMode;
         internal MyCubeGrid MyGrid;
         internal MyCubeBlock MyCube;
@@ -334,32 +321,25 @@ namespace DefenseShields
 
         private static readonly MyDefinitionId GId = MyResourceDistributorComponent.ElectricityId;
         internal MyResourceDistributorComponent MyGridDistributor;
-
+        private readonly RunningAverage _dpsAvg = new RunningAverage(2);
         private MyParticleEffect _effect = new MyParticleEffect();
 
-        internal readonly Spawn Spawn = new Spawn();
-        internal readonly EllipsoidOxygenProvider EllipsoidOxyProvider = new EllipsoidOxygenProvider(Matrix.Zero);
-        internal readonly EllipsoidSA EllipsoidSa = new EllipsoidSA(double.MinValue, double.MinValue, double.MinValue);
+        private readonly EllipsoidOxygenProvider _ellipsoidOxyProvider = new EllipsoidOxygenProvider(Matrix.Zero);
+        private readonly EllipsoidSA _ellipsoidSa = new EllipsoidSA(double.MinValue, double.MinValue, double.MinValue);
 
-        internal Icosphere.Instance Icosphere;
-        internal DSUtils Dsutil1 = new DSUtils();
-        internal DSUtils Dsutil2 = new DSUtils();
-        internal DSUtils Dsutil3 = new DSUtils();
-        internal DSUtils Dsutil4 = new DSUtils();
-        internal DSUtils Dsutil5 = new DSUtils();
+        private DSUtils _dsutil1 = new DSUtils();
 
         internal ControllerSettings DsSet;
         internal ControllerState DsState;
-
+        internal Icosphere.Instance Icosphere;
         internal ShieldGridComponent ShieldComp;
-        internal RunningAverage DpsAvg = new RunningAverage(2);
 
         internal MyStringId CustomDataTooltip = MyStringId.GetOrCompute("Shows an Editor for custom data to be used by scripts and mods");
         internal MyStringId CustomData = MyStringId.GetOrCompute("CustomData");
         internal MyStringId Password = MyStringId.GetOrCompute("Password");
         internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Set the shield modulation password");
 
-        public enum ShieldType
+        internal enum ShieldType
         {
             Station,
             LargeGrid,
@@ -377,8 +357,6 @@ namespace DefenseShields
             {
                 DetectMatrixOutside = value;
                 DetectMatrixOutsideInv = MatrixD.Invert(value);
-                DetectMatrixIn = MatrixD.Rescale(value, 1d + -6.0d / 100d);
-                DetectMatrixInInv = MatrixD.Invert(DetectMatrixIn);
             }
         }
         #endregion

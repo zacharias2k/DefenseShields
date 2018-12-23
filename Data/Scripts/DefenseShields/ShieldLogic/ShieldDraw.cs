@@ -363,7 +363,7 @@ namespace DefenseShields
 
         public void DrawShieldDownIcon()
         {
-            if (Tick % 60 != 0 && !Session.DedicatedServer) HudCheck();
+            if (_tick % 60 != 0 && !Session.DedicatedServer) HudCheck();
             var enemy = false;
             var relation = MyAPIGateway.Session.Player.GetRelationTo(MyCube.OwnerId);
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;

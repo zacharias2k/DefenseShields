@@ -22,7 +22,7 @@ namespace DefenseShields
             }
             if (_power < 0.0001f) _power = 0.001f;
 
-            if (_power < ShieldCurrentPower || _count == 28 && !_power.Equals(ShieldCurrentPower)) Sink.Update();
+            if (_power < ShieldCurrentPower || _count == 28 && !_power.Equals(ShieldCurrentPower)) _sink.Update();
             if (Absorb > 0)
             {
                 _damageReadOut += Absorb;
@@ -231,7 +231,7 @@ namespace DefenseShields
                 {
                     DsState.State.NoPower = true;
                     DsState.State.Message = true;
-                    if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: NoPower - forShield:{powerForShield} - rounded:{_roundedGridMax} - max:{GridMaxPower} - avail{GridAvailablePower} - sCurr:{ShieldCurrentPower} - count:{_powerSources.Count} - DistEna:{MyGridDistributor.SourcesEnabled} - State:{MyGridDistributor?.ResourceState} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 1) Log.Line($"StateUpdate: NoPower - forShield:{powerForShield} - rounded:{_roundedGridMax} - max:{GridMaxPower} - avail{GridAvailablePower} - sCurr:{ShieldCurrentPower} - count:{_powerSources.Count} - DistEna:{MyGridDistributor.SourcesEnabled} - State:{MyGridDistributor?.ResourceState} - ShieldId [{Shield.EntityId}]");
                     ShieldChangeState();
                 }
 
@@ -315,7 +315,7 @@ namespace DefenseShields
             var metThreshold = _accumulatedHeat > currentThreshold;
             var underThreshold = !pastThreshold && !metThreshold;
             var venting = lastStep && pastThreshold;
-            var leftCritical = lastStep && Tick >= _heatVentingTick;
+            var leftCritical = lastStep && _tick >= _heatVentingTick;
             var backOneCycles = (_currentHeatStep - 1) * scaledHeatingSteps + scaledOverHeat + 1;
             var backTwoCycles = (_currentHeatStep - 2) * scaledHeatingSteps + scaledOverHeat + 1;
 
@@ -356,7 +356,7 @@ namespace DefenseShields
                     _currentHeatStep++;
                     DsState.State.Heat = _currentHeatStep * 10;
                     _accumulatedHeat = 0;
-                    if (_currentHeatStep == 10) _heatVentingTick = Tick + CoolingStep;
+                    if (_currentHeatStep == 10) _heatVentingTick = _tick + CoolingStep;
                 }
                 else if (metThreshold)
                 {
@@ -392,7 +392,7 @@ namespace DefenseShields
             else if (venting)
             {
                 if (Session.Enforced.Debug == 4) Log.Line($"mainc - stage:{_currentHeatStep} - cycle:{_heatCycle} - resetCycle:xxxx - heat:{_accumulatedHeat} - threshold:{nextThreshold} - ShieldId [{Shield.EntityId}]");
-                _heatVentingTick = Tick + CoolingStep;
+                _heatVentingTick = _tick + CoolingStep;
                 _accumulatedHeat = 0;
             }
             else if (leftCritical)
@@ -405,7 +405,7 @@ namespace DefenseShields
                 _accumulatedHeat = 0;
             }
 
-            if (_heatCycle > HeatingStep * 10 + OverHeat && Tick >= _heatVentingTick)
+            if (_heatCycle > HeatingStep * 10 + OverHeat && _tick >= _heatVentingTick)
             {
                 if (Session.Enforced.Debug == 4) Log.Line($"HeatCycle over limit, resetting: heatCycle:{_heatCycle} - fallCycle:{_fallbackCycle}");
                 _heatCycle = -1;
