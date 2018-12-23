@@ -21,26 +21,26 @@ namespace DefenseShields
             {
                 if (clear)
                 {
-                    _eject.Clear();
-                    _destroyedBlocks.Clear();
-                    _missileDmg.Clear();
-                    _meteorDmg.Clear();
-                    _voxelDmg.Clear();
-                    _characterDmg.Clear();
-                    _fewDmgBlocks.Clear();
-                    _dmgBlocks.Clear();
-                    _empDmg.Clear();
-                    _forceData.Clear();
-                    _impulseData.Clear();
+                    Eject.Clear();
+                    DestroyedBlocks.Clear();
+                    MissileDmg.Clear();
+                    MeteorDmg.Clear();
+                    VoxelDmg.Clear();
+                    CharacterDmg.Clear();
+                    FewDmgBlocks.Clear();
+                    DmgBlocks.Clear();
+                    EmpDmg.Clear();
+                    ForceData.Clear();
+                    ImpulseData.Clear();
                     return;
                 }
 
                 try
                 {
-                    if (_eject.Count != 0)
+                    if (!Eject.IsEmpty)
                     {
                         MyCubeGrid myGrid;
-                        while (_eject.TryDequeue(out myGrid))
+                        while (Eject.TryDequeue(out myGrid))
                         {
                             if (myGrid == null || myGrid.MarkedForClose) continue;
                             myGrid.Physics.LinearVelocity *= -0.25f;
@@ -51,10 +51,10 @@ namespace DefenseShields
 
                 try
                 {
-                    if (_forceData.Count != 0)
+                    if (!ForceData.IsEmpty)
                     {
                         MyAddForceData data;
-                        while (_forceData.TryDequeue(out data))
+                        while (ForceData.TryDequeue(out data))
                         {
                             var myGrid = data.MyGrid;
                             if (myGrid == null || myGrid.MarkedForClose) continue;
@@ -66,10 +66,10 @@ namespace DefenseShields
 
                 try
                 {
-                    if (_impulseData.Count != 0)
+                    if (!ImpulseData.IsEmpty)
                     {
                         MyImpulseData data;
-                        while (_impulseData.TryDequeue(out data))
+                        while (ImpulseData.TryDequeue(out data))
                         {
                             var myGrid = data.MyGrid;
                             if (myGrid == null || myGrid.MarkedForClose) continue;
@@ -81,14 +81,13 @@ namespace DefenseShields
 
                 if (client) return;
 
-                var destroyedLen = _destroyedBlocks.Count;
                 try
                 {
-                    if (destroyedLen != 0)
+                    if (!DestroyedBlocks.IsEmpty)
                     {
                         IMySlimBlock block;
                         var nullCount = 0;
-                        while (_destroyedBlocks.TryDequeue(out block))
+                        while (DestroyedBlocks.TryDequeue(out block))
                         {
                             var myGrid = block.CubeGrid as MyCubeGrid;
                             if (myGrid == null) continue;
@@ -112,10 +111,10 @@ namespace DefenseShields
 
                 try
                 {
-                    if (_missileDmg.Count != 0)
+                    if (!MissileDmg.IsEmpty)
                     {
                         MyEntity ent;
-                        while (_missileDmg.TryDequeue(out ent))
+                        while (MissileDmg.TryDequeue(out ent))
                         {
                             if (ent == null || !ent.InScene || ent.MarkedForClose) continue;
                             var computedDamage = ComputeAmmoDamage(ent);
@@ -151,10 +150,10 @@ namespace DefenseShields
 
                 try
                 {
-                    if (_meteorDmg.Count != 0)
+                    if (!MeteorDmg.IsEmpty)
                     {
                         IMyMeteor meteor;
-                        while (_meteorDmg.TryDequeue(out meteor))
+                        while (MeteorDmg.TryDequeue(out meteor))
                         {
                             if (meteor == null || meteor.MarkedForClose || meteor.Closed) continue;
                             var damage = 5000 * DsState.State.ModulateKinetic;
@@ -178,10 +177,10 @@ namespace DefenseShields
 
                 try
                 {
-                    if (_voxelDmg.Count != 0)
+                    if (!VoxelDmg.IsEmpty)
                     {
                         MyVoxelBase voxel;
-                        while (_voxelDmg.TryDequeue(out voxel))
+                        while (VoxelDmg.TryDequeue(out voxel))
                         {
                             if (voxel == null || voxel.RootVoxel.MarkedForClose || voxel.RootVoxel.Closed) continue;
                             voxel.RootVoxel.RequestVoxelOperationElipsoid(Vector3.One * 1.0f, DetectMatrixOutside, 0, MyVoxelBase.OperationType.Cut);
@@ -192,10 +191,10 @@ namespace DefenseShields
 
                 try
                 {
-                    if (_characterDmg.Count != 0)
+                    if (!CharacterDmg.IsEmpty)
                     {
                         IMyCharacter character;
-                        while (_characterDmg.TryDequeue(out character))
+                        while (CharacterDmg.TryDequeue(out character))
                         {
                             var npcname = character.ToString();
                             if (npcname.Equals("Space_Wolf"))
@@ -222,12 +221,12 @@ namespace DefenseShields
 
                 try
                 {
-                    if (_dmgBlocks.Count != 0)
+                    if (!DmgBlocks.IsEmpty)
                     {
                         IMySlimBlock block;
                         var damageMulti = 350;
                         if (ShieldMode == ShieldType.Station && DsState.State.Enhancer) damageMulti = 10000;
-                        while (_dmgBlocks.TryDequeue(out block))
+                        while (DmgBlocks.TryDequeue(out block))
                         {
                             if (block == null) continue;
                             var myGrid = block.CubeGrid as MyCubeGrid;
@@ -245,10 +244,10 @@ namespace DefenseShields
 
                 try
                 {
-                    if (_fewDmgBlocks.Count != 0)
+                    if (!FewDmgBlocks.IsEmpty)
                     {
                         IMySlimBlock block;
-                        while (_fewDmgBlocks.TryDequeue(out block))
+                        while (FewDmgBlocks.TryDequeue(out block))
                         {
                             if (block == null) continue;
                             var myGrid = block.CubeGrid as MyCubeGrid;
@@ -268,10 +267,10 @@ namespace DefenseShields
 
                 try
                 {
-                    if (_empDmg.Count != 0)
+                    if (!EmpDmg.IsEmpty)
                     {
                         IMyWarhead block;
-                        while (_empDmg.TryDequeue(out block))
+                        while (EmpDmg.TryDequeue(out block))
                         {
                             if (block == null || block.MarkedForClose || block.Closed) continue;
                             var myGrid = block.CubeGrid as MyCubeGrid;

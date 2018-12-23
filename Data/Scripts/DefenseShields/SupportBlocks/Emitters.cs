@@ -73,7 +73,6 @@ namespace DefenseShields
         internal MyCubeGrid MyGrid;
         internal MyCubeBlock MyCube;
 
-        private readonly Dictionary<long, Emitters> _emitters = new Dictionary<long, Emitters>();
         private readonly MyConcurrentList<int> _vertsSighted = new MyConcurrentList<int>();
         private readonly MyConcurrentList<int> _noBlocksLos = new MyConcurrentList<int>();
         private readonly MyConcurrentHashSet<int> _blocksLos = new MyConcurrentHashSet<int>();
@@ -93,8 +92,7 @@ namespace DefenseShields
             try
             {
                 if (Emitter.CubeGrid.Physics == null) return;
-                Session.Instance.Emitters.Add(this);
-                _emitters.Add(Entity.EntityId, this);
+                Session.Emitters.Add(this);
                 PowerInit();
                 _isServer = Session.IsServer;
                 _isDedicated = Session.DedicatedServer;
@@ -790,8 +788,7 @@ namespace DefenseShields
             {
                 base.Close();
                 if (Session.Enforced.Debug == 3) Log.Line($"Close: {EmitterMode} - EmitterId [{Entity.EntityId}]");
-                if (_emitters.ContainsKey(Entity.EntityId)) _emitters.Remove(Entity.EntityId);
-                if (Session.Instance.Emitters.Contains(this)) Session.Instance.Emitters.Remove(this);
+                if (Session.Emitters.Contains(this)) Session.Emitters.Remove(this);
                 if (ShieldComp?.StationEmitter == this)
                 {
                     if ((int)EmitterMode == ShieldComp.EmitterMode)

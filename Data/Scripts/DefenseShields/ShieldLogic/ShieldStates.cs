@@ -102,7 +102,7 @@ namespace DefenseShields
             LastWokenTick = Session.Tick;
             Asleep = false;
             PlayerByShield = true;
-            Session.Instance.ActiveShields.Add(this);
+            Session.ActiveShields.Add(this);
             WasPaused = false;
             if (Session.Enforced.Debug == 1) Log.Line($"Logic Resumed");
         }
@@ -140,10 +140,10 @@ namespace DefenseShields
                     ShieldFailing();
                     return false;
                 }
-                _syncEnts = _forceData.Count != 0 || _impulseData.Count != 0 || _missileDmg.Count != 0 ||
-                            _fewDmgBlocks.Count != 0 || _dmgBlocks.Count != 0 || _meteorDmg.Count != 0 ||
-                            _empDmg.Count != 0 || _eject.Count != 0 || _destroyedBlocks.Count != 0 ||
-                            _voxelDmg.Count != 0 || _characterDmg.Count != 0;
+                _syncEnts = !ForceData.IsEmpty || !ImpulseData.IsEmpty|| !MissileDmg.IsEmpty ||
+                            !FewDmgBlocks.IsEmpty || !DmgBlocks.IsEmpty || !MeteorDmg.IsEmpty ||
+                            !EmpDmg.IsEmpty || !Eject.IsEmpty || !DestroyedBlocks.IsEmpty ||
+                            !VoxelDmg.IsEmpty || !CharacterDmg.IsEmpty;
             }
             else
             {
@@ -157,7 +157,7 @@ namespace DefenseShields
                 _clientOn = true;
                 _clientLowered = false;
 
-                _syncEnts = _forceData.Count != 0 || _impulseData.Count != 0 || _eject.Count != 0;
+                _syncEnts = !ForceData.IsEmpty|| !ImpulseData.IsEmpty || !Eject.IsEmpty;
             }
 
             return true;
@@ -187,7 +187,7 @@ namespace DefenseShields
                 Shield.RefreshCustomInfo();
                 if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
             }
-            Session.Instance.ActiveShields.Add(this);
+            Session.ActiveShields.Add(this);
         }
 
 
@@ -227,7 +227,7 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: ShieldOff - ShieldId [{Shield.EntityId}]");
 
             }
-            Session.Instance.ActiveShields.Remove(this);
+            Session.ActiveShields.Remove(this);
         }
 
         private bool ControllerFunctional()
@@ -680,8 +680,8 @@ namespace DefenseShields
 
             if (DsState.State.Suspended != WasSuspended)
             {
-                if (DsState.State.Suspended) Session.Instance.FunctionalShields.Remove(this);
-                else Session.Instance.FunctionalShields.Add(this);
+                if (DsState.State.Suspended) Session.FunctionalShields.Remove(this);
+                else Session.FunctionalShields.Add(this);
             }
             WasSuspended = DsState.State.Suspended;
 

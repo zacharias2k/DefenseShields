@@ -61,9 +61,9 @@ namespace DefenseShields
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(EllipsoidOxyProvider);
 
                 if (_isServer) Enforcements.SaveEnforcement(Shield, Session.Enforced, true);
-                else Session.Instance.FunctionalShields.Add(this);
+                else Session.FunctionalShields.Add(this);
 
-                Session.Instance.Controllers.Add(this);
+                Session.Controllers.Add(this);
                 if (Session.Enforced.Debug == 3) Log.Line($"UpdateOnceBeforeFrame: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in Controller UpdateOnceBeforeFrame: {ex}"); }
@@ -117,7 +117,7 @@ namespace DefenseShields
                         if (Tick600)
                         {
                             var message = $"User({MyAPIGateway.Multiplayer.Players.TryGetSteamId(Shield.OwnerId)}) Debugging\n" +
-                                          $"On:{DsState.State.Online} - Active:{Session.Instance.ActiveShields.Contains(this)} - Suspend:{DsState.State.Suspended}\n" +
+                                          $"On:{DsState.State.Online} - Active:{Session.ActiveShields.Contains(this)} - Suspend:{DsState.State.Suspended}\n" +
                                           $"Web:{Asleep} - Tick/LWoke:{Tick}/{LastWokenTick}\n" +
                                           $"Mo:{DsState.State.Mode} - Su:{DsState.State.Suspended} - Wa:{DsState.State.Waking}\n" +
                                           $"Np:{DsState.State.NoPower} - Lo:{DsState.State.Lowered} - Sl:{DsState.State.Sleeping}\n" +
@@ -195,9 +195,9 @@ namespace DefenseShields
             {
                 base.Close();
                 if (Session.Enforced.Debug == 3) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-                if (Session.Instance.Controllers.Contains(this)) Session.Instance.Controllers.Remove(this);
-                if (Session.Instance.FunctionalShields.Contains(this)) Session.Instance.FunctionalShields.Remove(this);
-                if (Session.Instance.ActiveShields.Contains(this)) Session.Instance.ActiveShields.Remove(this);
+                if (Session.Controllers.Contains(this)) Session.Controllers.Remove(this);
+                if (Session.FunctionalShields.Contains(this)) Session.FunctionalShields.Remove(this);
+                if (Session.ActiveShields.Contains(this)) Session.ActiveShields.Remove(this);
                 WasActive = false;
                 Icosphere = null;
                 InitEntities(false);

@@ -58,8 +58,6 @@ namespace DefenseShields
         internal MyCubeBlock MyCube;
         private IMyInventory _inventory;
 
-        private readonly Dictionary<long, O2Generators> _o2Generator = new Dictionary<long, O2Generators>();
-
         public override void UpdateBeforeSimulation()
         {
             try
@@ -398,8 +396,7 @@ namespace DefenseShields
             base.UpdateOnceBeforeFrame();
             try
             {
-                Session.Instance.O2Generators.Add(this);
-                _o2Generator.Add(Entity.EntityId, this);
+                Session.O2Generators.Add(this);
                 Source = O2Generator.Components.Get<MyResourceSourceComponent>();
                 _isServer = Session.IsServer;
                 _isDedicated = Session.DedicatedServer;
@@ -431,7 +428,7 @@ namespace DefenseShields
                 {
                     return;
                 }
-                if (Session.Instance.O2Generators.Contains(this)) Session.Instance.O2Generators.Remove(this);
+                if (Session.O2Generators.Contains(this)) Session.O2Generators.Remove(this);
                 RegisterEvents(false);
                 IsWorking = false;
                 IsFunctional = false;
@@ -466,8 +463,7 @@ namespace DefenseShields
             base.Close();
             try
             {
-                if (_o2Generator.ContainsKey(Entity.EntityId)) _o2Generator.Remove(Entity.EntityId);
-                if (Session.Instance.O2Generators.Contains(this)) Session.Instance.O2Generators.Remove(this);
+                if (Session.O2Generators.Contains(this)) Session.O2Generators.Remove(this);
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
         }

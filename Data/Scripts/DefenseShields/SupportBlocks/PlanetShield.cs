@@ -41,7 +41,6 @@ namespace DefenseShields
 
         private const float Power = 0.01f;
 
-        private readonly Dictionary<long, PlanetShields> _planetShields = new Dictionary<long, PlanetShields>();
         public IMyUpgradeModule PlanetShield => (IMyUpgradeModule)Entity;
         internal MyCubeGrid MyGrid;
         internal MyResourceDistributorComponent MyGridDistributor;
@@ -295,8 +294,7 @@ namespace DefenseShields
                 _isServer = Session.IsServer;
                 _isDedicated = Session.DedicatedServer;
                 _mpActive = Session.MpActive;
-                _planetShields.Add(Entity.EntityId, this);
-                Session.Instance.PlanetShields.Add(this);
+                Session.PlanetShields.Add(this);
                 PowerInit();
                 PlanetShield.AppendingCustomInfo += AppendingCustomInfo;
                 PlanetShield.RefreshCustomInfo();
@@ -386,7 +384,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Instance.PlanetShields.Contains(this)) Session.Instance.PlanetShields.Remove(this);
+                if (Session.PlanetShields.Contains(this)) Session.PlanetShields.Remove(this);
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
@@ -396,7 +394,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Instance.PlanetShields.Contains(this)) Session.Instance.PlanetShields.Remove(this);
+                if (Session.PlanetShields.Contains(this)) Session.PlanetShields.Remove(this);
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
             base.Close();

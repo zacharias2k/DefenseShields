@@ -139,6 +139,7 @@ namespace DefenseShields
         internal bool EnablePhysics = true;
         internal bool EntCleanUpTime;
         internal bool UserDebugEnabled;
+        internal bool ModulateGrids;
 
 
         private bool _resetEntity;
@@ -250,17 +251,17 @@ namespace DefenseShields
 
         internal readonly MyConcurrentQueue<MyCubeGrid> StaleGrids = new MyConcurrentQueue<MyCubeGrid>();
 
-        private readonly MyConcurrentQueue<MyCubeGrid> _eject = new MyConcurrentQueue<MyCubeGrid>();
-        private readonly MyConcurrentQueue<IMySlimBlock> _dmgBlocks = new MyConcurrentQueue<IMySlimBlock>();
-        private readonly MyConcurrentQueue<IMyWarhead> _empDmg = new MyConcurrentQueue<IMyWarhead>();
-        private readonly MyConcurrentQueue<IMySlimBlock> _fewDmgBlocks = new MyConcurrentQueue<IMySlimBlock>();
-        private readonly MyConcurrentQueue<MyEntity> _missileDmg = new MyConcurrentQueue<MyEntity>();
-        private readonly MyConcurrentQueue<IMyMeteor> _meteorDmg = new MyConcurrentQueue<IMyMeteor>();
-        private readonly MyConcurrentQueue<IMySlimBlock> _destroyedBlocks = new MyConcurrentQueue<IMySlimBlock>();
-        private readonly MyConcurrentQueue<IMyCharacter> _characterDmg = new MyConcurrentQueue<IMyCharacter>();
-        private readonly MyConcurrentQueue<MyVoxelBase> _voxelDmg = new MyConcurrentQueue<MyVoxelBase>();
-        private readonly MyConcurrentQueue<MyImpulseData> _impulseData = new MyConcurrentQueue<MyImpulseData>();
-        private readonly MyConcurrentQueue<MyAddForceData> _forceData = new MyConcurrentQueue<MyAddForceData>();
+        internal readonly ConcurrentQueue<MyCubeGrid> Eject = new ConcurrentQueue<MyCubeGrid>();
+        internal readonly ConcurrentQueue<IMySlimBlock> DmgBlocks = new ConcurrentQueue<IMySlimBlock>();
+        internal readonly ConcurrentQueue<IMyWarhead> EmpDmg = new ConcurrentQueue<IMyWarhead>();
+        internal readonly ConcurrentQueue<IMySlimBlock> FewDmgBlocks = new ConcurrentQueue<IMySlimBlock>();
+        internal readonly ConcurrentQueue<MyEntity> MissileDmg = new ConcurrentQueue<MyEntity>();
+        internal readonly ConcurrentQueue<IMyMeteor> MeteorDmg = new ConcurrentQueue<IMyMeteor>();
+        internal readonly ConcurrentQueue<IMySlimBlock> DestroyedBlocks = new ConcurrentQueue<IMySlimBlock>();
+        internal readonly ConcurrentQueue<IMyCharacter> CharacterDmg = new ConcurrentQueue<IMyCharacter>();
+        internal readonly ConcurrentQueue<MyVoxelBase> VoxelDmg = new ConcurrentQueue<MyVoxelBase>();
+        internal readonly ConcurrentQueue<MyImpulseData> ImpulseData = new ConcurrentQueue<MyImpulseData>();
+        internal readonly ConcurrentQueue<MyAddForceData> ForceData = new ConcurrentQueue<MyAddForceData>();
 
         private static readonly MyStringId HudIconOffline = MyStringId.GetOrCompute("DS_ShieldOffline");
         private static readonly MyStringId HudIconHealth10 = MyStringId.GetOrCompute("DS_ShieldHealth10");

@@ -258,8 +258,7 @@ namespace DefenseShields
                             }
                             var isExplosionDmg = info.Type == MyDamageType.Explosion;
                             var isDeformationDmg = info.Type == MyDamageType.Deformation;
-
-                            if (trueAttacker is MyVoxelBase || isDeformationDmg && trueAttacker is MyCubeGrid && (Enforced.DisableGridDamageSupport == 1 || shield.ShieldComp?.Modulator != null && shield.ShieldComp.Modulator.ModSet.Settings.ModulateGrids))
+                            if (trueAttacker is MyVoxelBase || trueAttacker is MyCubeGrid && isDeformationDmg && shield.ModulateGrids)
                             {
                                 shield.DeformEnabled = true;
                                 return;

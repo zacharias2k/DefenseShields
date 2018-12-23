@@ -10,7 +10,7 @@ using MyVisualScriptLogicProvider = Sandbox.Game.MyVisualScriptLogicProvider;
 
 namespace DefenseShields
 {
-    [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation | MyUpdateOrder.AfterSimulation)]
+    [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation | MyUpdateOrder.AfterSimulation, int.MinValue)]
     public partial class Session : MySessionComponentBase
     {
         #region Simulation / Init
@@ -39,7 +39,7 @@ namespace DefenseShields
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdO2GeneratorState, O2GeneratorStateReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEmitterState, EmitterStateReceived);
 
-                if (!MpActive) Players.Add(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
+                if (!MpActive) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
                 MyVisualScriptLogicProvider.PlayerDisconnected += PlayerDisconnected;
                 MyVisualScriptLogicProvider.PlayerRespawnRequest += PlayerConnected;
                 if (!DedicatedServer)
@@ -162,7 +162,8 @@ namespace DefenseShields
         {
             try
             {
-                Players.Remove(l);
+                IMyPlayer removedPlayer;
+                Players.TryRemove(l, out removedPlayer);
                 if (Enforced.Debug >= 3) Log.Line($"Removed player, new playerCount:{Players.Count}");
             }
             catch (Exception ex) { Log.Line($"Exception in PlayerDisconnected: {ex}"); }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Sandbox.Game.Entities;
@@ -18,6 +19,14 @@ namespace DefenseShields.Support
         }
     }
 
+    internal static class ConcurrentQueueExtensions
+    {
+        public static void Clear<T>(this ConcurrentQueue<T> queue)
+        {
+            T item;
+            while (queue.TryDequeue(out item)) { }
+        }
+    }
 
     public struct MyImpulseData
     {

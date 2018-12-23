@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -160,7 +161,7 @@ namespace DefenseShields.Support
             for (int i = 0; i < voxelHitVecs.Count; i++) shieldGrid.Physics.ApplyImpulse((bOriBBoxD.Center - voxelHitVecs[i]) * shieldGridMass / 100, voxelHitVecs[i]);
         }
 
-        public static void SmallIntersect(EntIntersectInfo entInfo, MyConcurrentQueue<IMySlimBlock> fewDmgBlocks, MyConcurrentQueue<IMySlimBlock> destroyedBlocks, MyConcurrentQueue<MyAddForceData> force, MyConcurrentQueue<MyImpulseData> impulse, MyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
+        public static void SmallIntersect(EntIntersectInfo entInfo, ConcurrentQueue<IMySlimBlock> fewDmgBlocks, ConcurrentQueue<IMySlimBlock> destroyedBlocks, ConcurrentQueue<MyAddForceData> force, ConcurrentQueue<MyImpulseData> impulse, MyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
         {
             try
             {
@@ -220,7 +221,7 @@ namespace DefenseShields.Support
             catch (Exception ex) { Log.Line($"Exception in SmallIntersect: {ex}"); }
         }
 
-        public static void ClientSmallIntersect(EntIntersectInfo entInfo, MyCubeGrid grid, MatrixD matrix, MatrixD matrixInv, MyConcurrentQueue<MyCubeGrid> eject)
+        public static void ClientSmallIntersect(EntIntersectInfo entInfo, MyCubeGrid grid, MatrixD matrix, MatrixD matrixInv, ConcurrentQueue<MyCubeGrid> eject)
         {
             try
             {

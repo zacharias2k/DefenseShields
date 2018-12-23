@@ -36,7 +36,6 @@ namespace DefenseShields
 
         private const float Power = 0.01f;
 
-        private readonly Dictionary<long, Enhancers> _enhancers = new Dictionary<long, Enhancers>();
         public IMyUpgradeModule Enhancer;
         internal MyCubeGrid MyGrid;
         internal MyCubeBlock MyCube;
@@ -209,8 +208,7 @@ namespace DefenseShields
             try
             {
                 if (Enhancer.CubeGrid.Physics == null) return;
-                _enhancers.Add(Entity.EntityId, this);
-                Session.Instance.Enhancers.Add(this);
+                Session.Enhancers.Add(this);
                 PowerInit();
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
                 _isServer = Session.IsServer;
@@ -348,7 +346,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Instance.Enhancers.Contains(this)) Session.Instance.Enhancers.Remove(this);
+                if (Session.Enhancers.Contains(this)) Session.Enhancers.Remove(this);
                 if (ShieldComp?.Enhancer == this)
                 {
                     ShieldComp.Enhancer = null;
@@ -391,7 +389,7 @@ namespace DefenseShields
             try
             {
                 base.Close();
-                if (Session.Instance.Enhancers.Contains(this)) Session.Instance.Enhancers.Remove(this);
+                if (Session.Enhancers.Contains(this)) Session.Enhancers.Remove(this);
                 if (ShieldComp?.Enhancer == this)
                 {
                     ShieldComp.Enhancer = null;

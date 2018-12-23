@@ -266,8 +266,7 @@ namespace DefenseShields
             var grid = ent as MyCubeGrid;
             if (grid != null)
             {
-                var ignoreGrids = ShieldComp.Modulator != null && ShieldComp.Modulator.ModSet.Settings.ModulateGrids || Session.Enforced.DisableGridDamageSupport == 1;
-
+                ModulateGrids = ShieldComp.Modulator != null && ShieldComp.Modulator.ModSet.Settings.ModulateGrids || Session.Enforced.DisableGridDamageSupport == 1;
                 ModulatorGridComponent modComp;
                 grid.Components.TryGet(out modComp);
                 if (!string.IsNullOrEmpty(modComp?.ModulationPassword) && modComp.ModulationPassword == Shield.CustomData)
@@ -287,9 +286,9 @@ namespace DefenseShields
                 var bigOwnersCnt = bigOwners.Count;
                 var blockCnt = grid.BlocksCount;
                 if (CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, DetectMatrixOutsideInv)) return Ent.Protected;
-                if (!ignoreGrids && blockCnt < 10 && bigOwnersCnt == 0) return  Ent.SmallNobodyGrid;
-                if (!ignoreGrids && bigOwnersCnt == 0) return Ent.LargeNobodyGrid;
-                var enemy = !ignoreGrids && GridEnemy(grid, bigOwners);
+                if (!ModulateGrids && blockCnt < 10 && bigOwnersCnt == 0) return  Ent.SmallNobodyGrid;
+                if (!ModulateGrids && bigOwnersCnt == 0) return Ent.LargeNobodyGrid;
+                var enemy = !ModulateGrids && GridEnemy(grid, bigOwners);
                 if (!enemy)
                 {
                     if (ShieldComp.GetSubGrids.Contains(grid)) return Ent.Protected;

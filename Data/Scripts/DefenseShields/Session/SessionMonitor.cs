@@ -128,9 +128,9 @@ namespace DefenseShields
                     });
                     if (_workData.Tick % 180 == 0)
                     {
-                        _entRefreshTmpList.Clear();
-                        _entRefreshTmpList.AddRange(GlobalEntTmp.Where(info => _workData.Tick - info.Value > 540));
-                        foreach (var dict in _entRefreshTmpList)
+                        EntRefreshTmpList.Clear();
+                        EntRefreshTmpList.AddRange(GlobalEntTmp.Where(info => _workData.Tick - info.Value > 540));
+                        foreach (var dict in EntRefreshTmpList)
                         {
                             var ent = dict.Key;
                             EntRefreshQueue.Enqueue(ent);

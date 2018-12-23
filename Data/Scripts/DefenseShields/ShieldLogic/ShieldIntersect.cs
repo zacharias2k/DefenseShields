@@ -78,12 +78,12 @@ namespace DefenseShields
                         var meteor = webent as IMyMeteor;
                         if (meteor != null)
                         {
-                            if (CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv)) _meteorDmg.Enqueue(meteor);
+                            if (CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv)) MeteorDmg.Enqueue(meteor);
                         }
                         else
                         {
                             var predictedHit = CustomCollision.MissileIntersect(this, webent, DetectionMatrix, DetectMatrixOutsideInv);
-                            if (predictedHit != null) _missileDmg.Enqueue(webent);
+                            if (predictedHit != null) MissileDmg.Enqueue(webent);
                         }
                         return;
                     }
@@ -109,7 +109,7 @@ namespace DefenseShields
                     var sASpeedLen = sASpeed.LengthSquared();
                     var sSpeedLen = sLSpeedLen > sASpeedLen ? sLSpeedLen : sASpeedLen;
                     var forceData = new MyAddForceData { MyGrid = grid, Force = -(grid.PositionComp.WorldAABB.Center - sPhysics.CenterOfMassWorld) * -sMass, MaxSpeed = sSpeedLen + 3 };
-                    if (!bPhysics.IsStatic) _forceData.Enqueue(forceData);
+                    if (!bPhysics.IsStatic) ForceData.Enqueue(forceData);
                     return true;
                 }
             }
@@ -148,8 +148,8 @@ namespace DefenseShields
             WebEnts.TryGetValue(ent, out entInfo);
             if (entInfo == null) return;
 
-            if (_isServer) CustomCollision.SmallIntersect(entInfo, _fewDmgBlocks, _destroyedBlocks, _forceData, _impulseData, grid, DetectMatrixOutside, DetectMatrixOutsideInv);
-            else CustomCollision.ClientSmallIntersect(entInfo, grid, DetectMatrixOutside, DetectMatrixOutsideInv, _eject);
+            if (_isServer) CustomCollision.SmallIntersect(entInfo, FewDmgBlocks, DestroyedBlocks, ForceData, ImpulseData, grid, DetectMatrixOutside, DetectMatrixOutsideInv);
+            else CustomCollision.ClientSmallIntersect(entInfo, grid, DetectMatrixOutside, DetectMatrixOutsideInv, Eject);
             var contactpoint = entInfo.ContactPoint;
             entInfo.ContactPoint = Vector3D.NegativeInfinity;
             if (contactpoint != Vector3D.NegativeInfinity)
@@ -223,8 +223,8 @@ namespace DefenseShields
                 var ejectorAccel = numOfPointsInside > 10 ? numOfPointsInside : 10;
                 var impulseData = new MyImpulseData { MyGrid = grid, Direction = (resultVelocity - bVel) * bMass, Position = bPhysics.CenterOfMassWorld };
                 var forceData = new MyAddForceData { MyGrid = grid, Force = (bPhysics.CenterOfMassWorld - collisionAvg) * bMass * ejectorAccel, MaxSpeed = MathHelper.Clamp(bVelLen, 1f, 50f) };
-                _impulseData.Enqueue(impulseData);
-                _forceData.Enqueue(forceData);
+                ImpulseData.Enqueue(impulseData);
+                ForceData.Enqueue(forceData);
             }
             if (!_isServer || numOfPointsInside <= 0) return;
 
@@ -287,7 +287,7 @@ namespace DefenseShields
             var npcname = character.ToString();
             if (npcname.Equals(SpaceWolf))
             {
-                if (_isServer) _characterDmg.Enqueue(character);
+                if (_isServer) CharacterDmg.Enqueue(character);
                 return;
             }
 
@@ -312,7 +312,7 @@ namespace DefenseShields
             var hydrogenId = MyCharacterOxygenComponent.HydrogenId;
             var playerGasLevel = character.GetSuitGasFillLevel(hydrogenId);
             if (!(playerGasLevel > 0.01f)) return;
-            _characterDmg.Enqueue(character);
+            CharacterDmg.Enqueue(character);
         }
 
         private void BlockIntersect(MyCubeGrid breaching, MyOrientedBoundingBoxD bOriBBoxD, EntIntersectInfo entInfo)
@@ -365,7 +365,7 @@ namespace DefenseShields
                             if (result > rc) continue;
                             if (block.IsDestroyed)
                             {
-                                _destroyedBlocks.Enqueue(block);
+                                DestroyedBlocks.Enqueue(block);
                                 continue;
                             }
                             if (block.CubeGrid != breaching)
@@ -408,18 +408,18 @@ namespace DefenseShields
                                             if (Vector3I.DistanceManhattan(warhead.Position, blockPos) <= 5)
                                             {
                                                 warhead.IsArmed = false;
-                                                _empDmg.Enqueue(warhead);
+                                                EmpDmg.Enqueue(warhead);
                                                 empCount++;
                                             }
                                         }
                                     }
                                 }
-                                else if (_empDmg.Count > 0) break;
+                                else if (EmpDmg.Count > 0) break;
                             }
-                            if (_dmgBlocks.Count > blockDmgNum) break;
+                            if (DmgBlocks.Count > blockDmgNum) break;
 
                             rawDamage += MathHelper.Clamp(block.Integrity, 0, 350);
-                            _dmgBlocks.Enqueue(block);
+                            DmgBlocks.Enqueue(block);
                             break;
                         }
                     }
@@ -445,9 +445,9 @@ namespace DefenseShields
                             var impulseData1 = new MyImpulseData { MyGrid = breaching, Direction = (resultVelocity - bPhysics.LinearVelocity) * bMass, Position = bPhysics.CenterOfMassWorld };
                             var impulseData2 = new MyImpulseData { MyGrid = breaching, Direction = surfaceMulti * (surfaceMass * 0.025) * -Vector3D.Dot(bPhysics.LinearVelocity, surfaceNormal) * surfaceNormal, Position = collisionAvg };
                             var forceData = new MyAddForceData { MyGrid = breaching, Force = (bPhysics.CenterOfMassWorld - collisionAvg) * (bMass * bSpeedLen), MaxSpeed = MathHelper.Clamp(bSpeedLen, 1f, 8f) };
-                            _impulseData.Enqueue(impulseData1);
-                            _impulseData.Enqueue(impulseData2);
-                            _forceData.Enqueue(forceData);
+                            ImpulseData.Enqueue(impulseData1);
+                            ImpulseData.Enqueue(impulseData2);
+                            ForceData.Enqueue(forceData);
                         }
                         else
                         {
@@ -456,25 +456,25 @@ namespace DefenseShields
                             if (!bPhysics.IsStatic)
                             {
                                 var bImpulseData = new MyImpulseData { MyGrid = breaching, Direction = (resultVelocity - bPhysics.LinearVelocity) * bMass, Position = bPhysics.CenterOfMassWorld };
-                                _impulseData.Enqueue(bImpulseData);
+                                ImpulseData.Enqueue(bImpulseData);
                             }
 
                             if (!sPhysics.IsStatic)
                             {
                                 var sImpulseData = new MyImpulseData { MyGrid = sGrid, Direction = (resultVelocity - sPhysics.LinearVelocity) * sMass, Position = sPhysics.CenterOfMassWorld };
-                                _impulseData.Enqueue(sImpulseData);
+                                ImpulseData.Enqueue(sImpulseData);
                             }
 
                             if (!sPhysics.IsStatic)
                             {
                                 var sForceData = new MyAddForceData { MyGrid = sGrid, Force = (sPhysics.CenterOfMassWorld - collisionAvg) * surfaceMass, MaxSpeed = null };
-                                _forceData.Enqueue(sForceData);
+                                ForceData.Enqueue(sForceData);
                             }
 
                             if (!bPhysics.IsStatic)
                             {
                                 var bForceData = new MyAddForceData { MyGrid = breaching, Force = (bPhysics.CenterOfMassWorld - collisionAvg) * surfaceMass, MaxSpeed = null };
-                                _forceData.Enqueue(bForceData);
+                                ForceData.Enqueue(bForceData);
                             }
                         }
                         WebDamage = true;

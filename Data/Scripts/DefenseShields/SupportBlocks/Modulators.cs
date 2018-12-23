@@ -52,8 +52,6 @@ namespace DefenseShields
         private float _wasModulateEnergy;
         private float _wasModulateKinetic;
 
-        private readonly Dictionary<long, Modulators> _modulators = new Dictionary<long, Modulators>();
-
         internal ModulatorGridComponent ModulatorComp;
         internal ShieldGridComponent ShieldComp;
         private MyEntitySubpart _subpartRotor;
@@ -329,8 +327,7 @@ namespace DefenseShields
 
                 ResetComp();
 
-                Session.Instance.Modulators.Add(this);
-                _modulators.Add(Entity.EntityId, this);
+                Session.Modulators.Add(this);
 
                 CreateUi();
                 ModUi.ComputeDamage(this, ModUi.GetDamage(Modulator));
@@ -518,7 +515,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
+                if (Session.Modulators.Contains(this)) Session.Modulators.Remove(this);
                 if (ShieldComp?.Modulator == this)
                 {
                     ShieldComp.Modulator = null;
@@ -565,7 +562,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
+                if (Session.Modulators.Contains(this)) Session.Modulators.Remove(this);
                 if (ShieldComp?.Modulator == this)
                 {
                     ShieldComp.Modulator = null;
