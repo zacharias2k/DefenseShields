@@ -30,12 +30,14 @@ namespace DefenseShields
         private int _count = -1;
         private int _lCount;
         private int _eCount;
+        private int _oldThreadPeak;
 
         internal int OnCount;
         internal int RefreshCycle;
         private const int EntCleanCycle = 3600;
         private const int EntMaxTickAge = 36000;
 
+        internal static int ThreadPeak;
         internal static int EntSlotScaler = 9;
 
         internal long LastTerminalId;

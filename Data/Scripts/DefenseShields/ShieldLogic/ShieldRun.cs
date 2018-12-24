@@ -127,7 +127,7 @@ namespace DefenseShields
                                           $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.GlobalProtect.ContainsKey(MyGrid)}\n" +
                                           $"ShieldMode:{ShieldMode} - isStatic:{IsStatic}\n" +
                                           $"IsMobile:{GridIsMobile} - isMoving:{ShieldComp.GridIsMoving}\n" +
-                                          $"PSink:{_power} - Buffer:{DsState.State.Buffer}";
+                                          $"Sink:{_power} HP:{DsState.State.Buffer}: {ShieldMaxBuffer}";
 
                             if (!_isDedicated) MyAPIGateway.Utilities.ShowMessage("", message);
                             else Log.Line(message);

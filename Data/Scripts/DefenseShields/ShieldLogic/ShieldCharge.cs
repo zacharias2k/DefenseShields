@@ -21,7 +21,6 @@ namespace DefenseShields
                 return false;
             }
             if (_power < 0.0001f) _power = 0.001f;
-
             if (_power < ShieldCurrentPower || _count == 28 && !_power.Equals(ShieldCurrentPower)) _sink.Update();
             if (Absorb > 0)
             {
@@ -58,7 +57,7 @@ namespace DefenseShields
                         var noObjects = distOnState == MyMultipleEnabledEnum.NoObjects;
                         if (noObjects)
                         {
-                            if (Session.Enforced.Debug == 3) Log.Line($"NoObjects: {MyGrid?.DebugName} - Max:{MyGridDistributor?.MaxAvailableResourceByType(GId)} - Status:{MyGridDistributor?.SourcesEnabled} - Sources:{_powerSources.Count}");
+                            if (Session.Enforced.Debug >= 1) Log.Line($"NoObjects: {MyGrid?.DebugName} - Max:{MyGridDistributor?.MaxAvailableResourceByType(GId)} - Status:{MyGridDistributor?.SourcesEnabled} - Sources:{_powerSources.Count}");
                             FallBackPowerCalc();
                             FunctionalChanged(true);
                         }
@@ -167,8 +166,7 @@ namespace DefenseShields
             if (!WarmedUp) return;
 
             if (DsState.State.Buffer > ShieldMaxBuffer) DsState.State.Buffer = ShieldMaxBuffer;
-
-            var powerLost = _powerNeeded > _roundedGridMax || powerForShield <= 0;
+            var powerLost = powerForShield <= 0 || _powerNeeded > _roundedGridMax || (_roundedGridMax - _powerNeeded) / Math.Abs(_powerNeeded) * 100 < 0.001;
             var serverNoPower = _isServer && DsState.State.NoPower;
             if (powerLost || serverNoPower)
                 if (PowerLoss(powerForShield, powerLost, serverNoPower)) return;
@@ -211,7 +209,6 @@ namespace DefenseShields
                 _shieldConsumptionRate = (float)(remainingScaled * _shieldMaxChargeRate);
                 _shieldChargeRate = (float)(chargeSize * remainingScaled);
             }
-
             _powerNeeded = _shieldMaintaintPower + _shieldConsumptionRate + _otherPower;
             return powerForShield;
         }
@@ -231,7 +228,7 @@ namespace DefenseShields
                 {
                     DsState.State.NoPower = true;
                     DsState.State.Message = true;
-                    if (Session.Enforced.Debug == 1) Log.Line($"StateUpdate: NoPower - forShield:{powerForShield} - rounded:{_roundedGridMax} - max:{GridMaxPower} - avail{GridAvailablePower} - sCurr:{ShieldCurrentPower} - count:{_powerSources.Count} - DistEna:{MyGridDistributor.SourcesEnabled} - State:{MyGridDistributor?.ResourceState} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: NoPower - forShield:{powerForShield} - rounded:{_roundedGridMax} - max:{GridMaxPower} - avail{GridAvailablePower} - sCurr:{ShieldCurrentPower} - count:{_powerSources.Count} - DistEna:{MyGridDistributor?.SourcesEnabled} - State:{MyGridDistributor?.ResourceState} - ShieldId [{Shield.EntityId}]");
                     ShieldChangeState();
                 }
 

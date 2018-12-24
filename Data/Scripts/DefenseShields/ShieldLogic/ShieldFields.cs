@@ -188,6 +188,7 @@ namespace DefenseShields
 
         private Vector2D _shieldIconPos = new Vector2D(-0.89, -0.86);
 
+        internal Vector3D MyGridCenter;
         internal Vector3D DetectionCenter;
         internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         internal Vector3D EmpDetonation { get; set; } = new Vector3D(Vector3D.NegativeInfinity);

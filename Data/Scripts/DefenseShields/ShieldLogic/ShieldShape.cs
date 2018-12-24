@@ -78,7 +78,14 @@ namespace DefenseShields
 
         private void MobileUpdate()
         {
-            ShieldComp.GridIsMoving = MyGrid.Physics.IsMoving;
+            var checkForNewCenter = MyGrid.PositionComp.WorldVolume.Center;
+            if (!checkForNewCenter.Equals(MyGridCenter))
+            {
+                ShieldComp.GridIsMoving = true;
+                MyGridCenter = checkForNewCenter;
+            }
+            else ShieldComp.GridIsMoving = false;
+
             if (ShieldComp.GridIsMoving || _comingOnline)
             {
                 if (DsSet.Settings.FortifyShield && MyGrid.Physics.LinearVelocity.Length() > 15)
@@ -87,7 +94,6 @@ namespace DefenseShields
                     DsSet.Settings.FortifyShield = false;
                 }
             }
-            else ShieldComp.GridIsMoving = false;
 
             _shapeChanged = !DsState.State.EllipsoidAdjust.Equals(_oldEllipsoidAdjust) || !DsState.State.GridHalfExtents.Equals(_oldGridHalfExtents) || !DsState.State.ShieldFudge.Equals(_oldShieldFudge) || _updateMobileShape;
             _entityChanged = ShieldComp.GridIsMoving || _comingOnline || _shapeChanged;
@@ -113,10 +119,9 @@ namespace DefenseShields
             if (GridIsMobile)
             {
                 _updateMobileShape = false;
-                var shieldGridMatrix = MyGrid.WorldMatrix;
                 if (_shapeChanged) CreateMobileShape();
-                DetectionMatrix = ShieldShapeMatrix * shieldGridMatrix;
-                DetectionCenter = MyGrid.PositionComp.WorldVolume.Center;
+                DetectionMatrix = ShieldShapeMatrix * MyGrid.WorldMatrix;
+                DetectionCenter = MyGridCenter;
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(MyGrid.WorldMatrix);
                 ShieldSphere.Center = DetectionCenter;
                 ShieldSphere.Radius = ShieldSize.AbsMax();

@@ -4,7 +4,6 @@ using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using DefenseShields.Support;
 using Sandbox.Definitions;
-using VRage.Game;
 using VRageMath;
 using MyVisualScriptLogicProvider = Sandbox.Game.MyVisualScriptLogicProvider;
 
@@ -191,6 +190,9 @@ namespace DefenseShields
             Tick180 = Tick % 180 == 0;
             Tick600 = Tick % 600 == 0;
             Tick1800 = Tick % 1800 == 0;
+
+            if (ThreadPeak > _oldThreadPeak) _oldThreadPeak = ThreadPeak;
+            ThreadPeak = 0;
 
             if (_count++ == 59)
             {

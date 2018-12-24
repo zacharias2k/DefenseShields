@@ -205,6 +205,7 @@ namespace DefenseShields
                 Asleep = false;
                 LastWokenTick = tick;
                 if (!Dispatched) MyAPIGateway.Parallel.Start(WebDispatch, DispatchDone);
+                Session.ThreadPeak++;
                 Dispatched = true;
             }
         }
