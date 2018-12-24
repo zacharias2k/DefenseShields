@@ -69,7 +69,10 @@ namespace DefenseShields
             if (DedicatedServer) return;
             try
             {
-                if (Controllers.Count == 0) return;
+                var compCount = Controllers.Count;
+                if (compCount == 0) return;
+                if (SphereOnCamera.Length != compCount) Array.Resize(ref SphereOnCamera, compCount);
+
                 if (_count == 0 && _lCount == 0) OnCountThrottle = false;
                 var onCount = 0;
                 for (int i = 0; i < Controllers.Count; i++)
@@ -143,7 +146,7 @@ namespace DefenseShields
         #endregion
 
         #region Events
-        private static void PlayerConnected(long id)
+        private void PlayerConnected(long id)
         {
             try
             {
@@ -157,7 +160,7 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in PlayerConnected: {ex}"); }
         }
 
-        private static void PlayerDisconnected(long l)
+        private void PlayerDisconnected(long l)
         {
             try
             {
@@ -168,7 +171,7 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in PlayerDisconnected: {ex}"); }
         }
 
-        private static bool FindPlayer(IMyPlayer player, long id)
+        private bool FindPlayer(IMyPlayer player, long id)
         {
             if (player.IdentityId == id)
             {
@@ -212,6 +215,7 @@ namespace DefenseShields
             {
                 DefinitionsLoaded = true;
                 UtilsStatic.GetDefinitons();
+                if (!IsServer) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
             }
         }
 
@@ -232,6 +236,9 @@ namespace DefenseShields
             Instance = null;
             HudComp = null;
             Enforced = null;
+            Players.Clear();
+            ProtSets.Clean();
+
             _autoResetEvent.Set();
             _autoResetEvent = null;
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEnforce, EnforcementReceived);

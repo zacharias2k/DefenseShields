@@ -54,7 +54,7 @@ namespace DefenseShields
         {
             try
             {
-                _tick = Session.Tick;
+                _tick = Session.Instance.Tick;
                 _tick60 = _tick % 60 == 0;
                 var wait = _isServer && !_tick60 && EnhState.State.Backup;
 
@@ -208,11 +208,11 @@ namespace DefenseShields
             try
             {
                 if (Enhancer.CubeGrid.Physics == null) return;
-                Session.Enhancers.Add(this);
+                Session.Instance.Enhancers.Add(this);
                 PowerInit();
                 Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                _isServer = Session.IsServer;
-                _isDedicated = Session.DedicatedServer;
+                _isServer = Session.Instance.IsServer;
+                _isDedicated = Session.Instance.DedicatedServer;
                 Enhancer.RefreshCustomInfo();
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
@@ -346,7 +346,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Enhancers.Contains(this)) Session.Enhancers.Remove(this);
+                if (Session.Instance.Enhancers.Contains(this)) Session.Instance.Enhancers.Remove(this);
                 if (ShieldComp?.Enhancer == this)
                 {
                     ShieldComp.Enhancer = null;
@@ -389,7 +389,7 @@ namespace DefenseShields
             try
             {
                 base.Close();
-                if (Session.Enhancers.Contains(this)) Session.Enhancers.Remove(this);
+                if (Session.Instance.Enhancers.Contains(this)) Session.Instance.Enhancers.Remove(this);
                 if (ShieldComp?.Enhancer == this)
                 {
                     ShieldComp.Enhancer = null;

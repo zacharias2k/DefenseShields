@@ -53,17 +53,17 @@ namespace DefenseShields
             try
             {
                 if (Shield.CubeGrid.Physics == null) return;
-                _isServer = Session.IsServer;
-                _isDedicated = Session.DedicatedServer;
-                _mpActive = Session.MpActive;
+                _isServer = Session.Instance.IsServer;
+                _isDedicated = Session.Instance.DedicatedServer;
+                _mpActive = Session.Instance.MpActive;
 
                 PowerInit();
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(_ellipsoidOxyProvider);
 
                 if (_isServer) Enforcements.SaveEnforcement(Shield, Session.Enforced, true);
-                else Session.FunctionalShields.Add(this);
+                else Session.Instance.FunctionalShields.Add(this);
 
-                Session.Controllers.Add(this);
+                Session.Instance.Controllers.Add(this);
                 if (Session.Enforced.Debug == 3) Log.Line($"UpdateOnceBeforeFrame: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in Controller UpdateOnceBeforeFrame: {ex}"); }
@@ -74,6 +74,7 @@ namespace DefenseShields
             try
             {
                 if (!EntityAlive()) return;
+                if (_userDebugEnabled && _tick600) UserDebug();
                 if (!ShieldOn())
                 {
                     if (Session.Enforced.Debug == 3 && WasOnline) Log.Line($"Off: WasOn:{WasOnline} - Online:{DsState.State.Online}({_prevShieldActive}) - Lowered:{DsState.State.Lowered} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
@@ -84,15 +85,6 @@ namespace DefenseShields
                 if (DsState.State.Online)
                 {
                     if (_comingOnline) ComingOnlineSetup();
-                    /*
-                    var test = new LineD(MyAPIGateway.Session.Player.Character.PositionComp.WorldAABB.Center, MyAPIGateway.Session.Player.Character.PositionComp.WorldAABB.Center + MyAPIGateway.Session.Player.Character.WorldMatrix.Forward * 5000);
-                    DsDebugDraw.DrawLine(test, Vector4.One);
-                    var ray = new RayD(test.From, MyAPIGateway.Session.Camera.WorldMatrix.Forward);
-                    var test2 = CustomCollision.IntersectEllipsoid(DetectMatrixOutsideInv, DetectionMatrix, ray);
-                    var report = test2 == null ? "Null" : test2.ToString();
-                    MyAPIGateway.Utilities.ShowMessage("", $"{report}");
-                    */
-
                     if (_isServer)
                     {
                         var createHeTiming = _count == 6 && (_lCount == 1 || _lCount == 6);
@@ -112,29 +104,7 @@ namespace DefenseShields
                     }
                     else if (_syncEnts) SyncThreadedEnts();
                     if (!_isDedicated && _tick60) HudCheck();
-                    if (_userDebugEnabled)
-                    {
-                        if (_tick600)
-                        {
-                            var message = $"User({MyAPIGateway.Multiplayer.Players.TryGetSteamId(Shield.OwnerId)}) Debugging\n" +
-                                          $"On:{DsState.State.Online} - Active:{Session.ActiveShields.Contains(this)} - Suspend:{DsState.State.Suspended}\n" +
-                                          $"Web:{Asleep} - Tick/LWoke:{_tick}/{LastWokenTick}\n" +
-                                          $"Mo:{DsState.State.Mode} - Su:{DsState.State.Suspended} - Wa:{DsState.State.Waking}\n" +
-                                          $"Np:{DsState.State.NoPower} - Lo:{DsState.State.Lowered} - Sl:{DsState.State.Sleeping}\n" +
-                                          $"PSys:{MyGridDistributor?.SourcesEnabled} - PNull:{MyGridDistributor == null}\n" +
-                                          $"MaxPower:{GridMaxPower} - AvailPower:{GridAvailablePower}\n" +
-                                          $"Access:{DsState.State.ControllerGridAccess} - EmitterWorking:{DsState.State.EmitterWorking}\n" +
-                                          $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.GlobalProtect.ContainsKey(MyGrid)}\n" +
-                                          $"ShieldMode:{ShieldMode} - isStatic:{IsStatic}\n" +
-                                          $"IsMobile:{GridIsMobile} - isMoving:{ShieldComp.GridIsMoving}\n" +
-                                          $"Sink:{_power} HP:{DsState.State.Buffer}: {ShieldMaxBuffer}";
-
-                            if (!_isDedicated) MyAPIGateway.Utilities.ShowMessage("", message);
-                            else Log.Line(message);
-                        }
-                    }
                 }
-                if (Session.Enforced.Debug == 3) _dsutil1.StopWatchReport($"PerfCon: Online: {DsState.State.Online} - Asleep:{Asleep} - Tick: {_tick} loop: {_lCount}-{_count}", 4);
             }
             catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
@@ -195,9 +165,9 @@ namespace DefenseShields
             {
                 base.Close();
                 if (Session.Enforced.Debug == 3) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
-                if (Session.Controllers.Contains(this)) Session.Controllers.Remove(this);
-                if (Session.FunctionalShields.Contains(this)) Session.FunctionalShields.Remove(this);
-                if (Session.ActiveShields.Contains(this)) Session.ActiveShields.Remove(this);
+                if (Session.Instance.Controllers.Contains(this)) Session.Instance.Controllers.Remove(this);
+                if (Session.Instance.FunctionalShields.Contains(this)) Session.Instance.FunctionalShields.Remove(this);
+                if (Session.Instance.ActiveShields.Contains(this)) Session.Instance.ActiveShields.Remove(this);
                 WasActive = false;
                 Icosphere = null;
                 InitEntities(false);

@@ -34,10 +34,10 @@ namespace DefenseShields
 
                 Session.Instance.CreateControllerElements(Shield);
                 SetShieldType(false);
-                if (!Session.DsAction)
+                if (!Session.Instance.DsAction)
                 {
                     Session.AppendConditionToAction<IMyUpgradeModule>((a) => Session.Instance.DsActions.Contains(a.Id), (a, b) => b.GameLogic.GetAs<DefenseShields>() != null && Session.Instance.DsActions.Contains(a.Id));
-                    Session.DsAction = true;
+                    Session.Instance.DsAction = true;
                 }
 
                 if (!IsFunctional) return false;
@@ -263,7 +263,7 @@ namespace DefenseShields
 
             SelectPassiveShell();
             var parent = (MyEntity)MyGrid;
-            if (!Session.DedicatedServer)
+            if (!_isDedicated)
             {
                 _shellPassive = Spawn.EmptyEntity("dShellPassive", $"{Session.Instance.ModPath()}{_modelPassive}", parent, true);
                 _shellPassive.Render.CastShadows = false;
@@ -369,7 +369,7 @@ namespace DefenseShields
         public void AssignSlots()
         {
             LogicSlot = Session.GetSlot();
-            MonitorSlot = LogicSlot - 1 < 0 ? Session.EntSlotScaler - 1 : LogicSlot - 1;
+            MonitorSlot = LogicSlot - 1 < 0 ? Session.Instance.EntSlotScaler - 1 : LogicSlot - 1;
         }
 
         public void UpdatePassiveModel()

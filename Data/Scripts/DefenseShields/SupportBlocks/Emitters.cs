@@ -92,10 +92,10 @@ namespace DefenseShields
             try
             {
                 if (Emitter.CubeGrid.Physics == null) return;
-                Session.Emitters.Add(this);
+                Session.Instance.Emitters.Add(this);
                 PowerInit();
-                _isServer = Session.IsServer;
-                _isDedicated = Session.DedicatedServer;
+                _isServer = Session.Instance.IsServer;
+                _isDedicated = Session.Instance.DedicatedServer;
                 IsStatic = Emitter.CubeGrid.IsStatic;
                 StateChange(true);
             }
@@ -106,7 +106,7 @@ namespace DefenseShields
         {
             try
             {
-                _tick = Session.Tick;
+                _tick = Session.Instance.Tick;
                 _tick60 = _tick % 60 == 0;
                 var wait = _isServer && !_tick60 && EmiState.State.Backup;
 
@@ -244,7 +244,7 @@ namespace DefenseShields
             EmiState.State.BoundingRange = ShieldComp?.DefenseShields?.BoundingRange ?? 0f;
             EmiState.State.Compatible = IsStatic && EmitterMode == EmitterType.Station || !IsStatic && EmitterMode != EmitterType.Station;
             EmiState.SaveState();
-            if (Session.MpActive) EmiState.NetworkUpdate();
+            if (Session.Instance.MpActive) EmiState.NetworkUpdate();
         }
 
         public void UpdateState(ProtoEmitterState newState)
@@ -788,7 +788,7 @@ namespace DefenseShields
             {
                 base.Close();
                 if (Session.Enforced.Debug == 3) Log.Line($"Close: {EmitterMode} - EmitterId [{Entity.EntityId}]");
-                if (Session.Emitters.Contains(this)) Session.Emitters.Remove(this);
+                if (Session.Instance.Emitters.Contains(this)) Session.Instance.Emitters.Remove(this);
                 if (ShieldComp?.StationEmitter == this)
                 {
                     if ((int)EmitterMode == ShieldComp.EmitterMode)

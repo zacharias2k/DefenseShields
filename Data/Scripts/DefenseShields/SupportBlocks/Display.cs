@@ -17,7 +17,7 @@ namespace DefenseShields
         private int _count = -1;
 
         public bool ServerUpdate;
-        private bool _isServer = Session.IsServer;
+        private bool _isServer = Session.Instance.IsServer;
         internal ShieldGridComponent ShieldComp;
         private IMyTextPanel Display => (IMyTextPanel)Entity;
         internal DSUtils Dsutil1 = new DSUtils();
@@ -39,7 +39,7 @@ namespace DefenseShields
             try
             {
                 RemoveControls();
-                Session.Displays.Add(this);
+                Session.Instance.Displays.Add(this);
                 Display.ShowPublicTextOnScreen();
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
@@ -73,7 +73,7 @@ namespace DefenseShields
                 {
                     return;
                 }
-                Session.Displays.Remove(this);
+                Session.Instance.Displays.Remove(this);
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
@@ -83,7 +83,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Displays.Contains(this)) Session.Displays.Remove(this);
+                if (Session.Instance.Displays.Contains(this)) Session.Instance.Displays.Remove(this);
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
             base.Close();

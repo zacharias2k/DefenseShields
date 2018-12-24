@@ -62,7 +62,7 @@ namespace DefenseShields
         {
             try
             {
-                _tick = Session.Tick;
+                _tick = Session.Instance.Tick;
                 _tick60 = _tick % 60 == 0;
                 var wait = _isServer && !_tick60 && O2State.State.Backup;
 
@@ -396,10 +396,10 @@ namespace DefenseShields
             base.UpdateOnceBeforeFrame();
             try
             {
-                Session.O2Generators.Add(this);
+                Session.Instance.O2Generators.Add(this);
                 Source = O2Generator.Components.Get<MyResourceSourceComponent>();
-                _isServer = Session.IsServer;
-                _isDedicated = Session.DedicatedServer;
+                _isServer = Session.Instance.IsServer;
+                _isDedicated = Session.Instance.DedicatedServer;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
@@ -428,7 +428,7 @@ namespace DefenseShields
                 {
                     return;
                 }
-                if (Session.O2Generators.Contains(this)) Session.O2Generators.Remove(this);
+                if (Session.Instance.O2Generators.Contains(this)) Session.Instance.O2Generators.Remove(this);
                 RegisterEvents(false);
                 IsWorking = false;
                 IsFunctional = false;
@@ -463,7 +463,7 @@ namespace DefenseShields
             base.Close();
             try
             {
-                if (Session.O2Generators.Contains(this)) Session.O2Generators.Remove(this);
+                if (Session.Instance.O2Generators.Contains(this)) Session.Instance.O2Generators.Remove(this);
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
         }

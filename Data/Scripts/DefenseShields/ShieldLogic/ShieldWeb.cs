@@ -18,8 +18,8 @@ namespace DefenseShields
         public bool ResetEnts(MyEntity ent, uint tick)
         {
             MyProtectors protectors;
-            Session.GlobalProtect.TryGetValue(ent, out protectors);
-            if (protectors.Shields == null) protectors = Session.GlobalProtect[ent] = new MyProtectors(Session.ProtSets.Get(), LogicSlot, tick);
+            Session.Instance.GlobalProtect.TryGetValue(ent, out protectors);
+            if (protectors.Shields == null) protectors = Session.Instance.GlobalProtect[ent] = new MyProtectors(Session.ProtSets.Get(), LogicSlot, tick);
 
             var grid = ent as MyCubeGrid;
             if (grid != null)
@@ -54,7 +54,7 @@ namespace DefenseShields
             var voxelFound = false;
             var shieldFound = false;
             var entChanged = false;
-            var tick = Session.Tick;
+            var tick = Session.Instance.Tick;
 
             _enablePhysics = false;
             for (int i = 0; i < PruneList.Count; i++)
@@ -125,8 +125,8 @@ namespace DefenseShields
                         {
                             if (protectedEnt == null) ProtectedEntCache[ent] = new ProtectCache(tick, tick, tick, relation, relation);
                             MyProtectors protectors;
-                            Session.GlobalProtect.TryGetValue(ent, out protectors);
-                            if (protectors.Shields == null) protectors = Session.GlobalProtect[ent] = new MyProtectors(Session.ProtSets.Get(), LogicSlot, tick);
+                            Session.Instance.GlobalProtect.TryGetValue(ent, out protectors);
+                            if (protectors.Shields == null) protectors = Session.Instance.GlobalProtect[ent] = new MyProtectors(Session.ProtSets.Get(), LogicSlot, tick);
                             if (protectors.Shields.Contains(this)) continue;
 
                             protectors.Shields.Add(this);
@@ -205,7 +205,7 @@ namespace DefenseShields
                 Asleep = false;
                 LastWokenTick = tick;
                 if (!Dispatched) MyAPIGateway.Parallel.Start(WebDispatch, DispatchDone);
-                Session.ThreadPeak++;
+                Session.Instance.ThreadPeak++;
                 Dispatched = true;
             }
         }

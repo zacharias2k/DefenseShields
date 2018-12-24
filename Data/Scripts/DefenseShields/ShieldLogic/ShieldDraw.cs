@@ -36,7 +36,7 @@ namespace DefenseShields
             var hitAnim = DsSet.Settings.HitWaveAnimation;
             var refreshAnim = DsSet.Settings.RefreshAnimation;
             var config = MyAPIGateway.Session.Config;
-            var drawIcon = !enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
+            var drawIcon = !enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.Instance.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
             var viewCheck = _count == 0 || _count == 19 || _count == 39;
             if (viewCheck) _viewInShield = CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation, DetectMatrixOutsideInv);
             var clearView = !GridIsMobile || !_viewInShield;
@@ -221,21 +221,21 @@ namespace DefenseShields
             if (playerEnt?.Parent != null) playerEnt = playerEnt.Parent;
             if (playerEnt == null || DsState.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv) || !DsState.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
             {
-                if (Session.HudComp != this) return;
+                if (Session.Instance.HudComp != this) return;
                 ProtectCache protectedEnt = null;
                 if (playerEnt != null) ProtectedEntCache.TryGetValue(playerEnt, out protectedEnt);
                 if (protectedEnt != null && protectedEnt.Relation != Ent.Protected) return;
 
-                Session.HudComp = null;
-                Session.HudShieldDist = double.MaxValue;
+                Session.Instance.HudComp = null;
+                Session.Instance.HudShieldDist = double.MaxValue;
                 return;
             }
 
             var distFromShield = Vector3D.DistanceSquared(playerEnt.PositionComp.WorldVolume.Center, DetectionCenter);
-            if (Session.HudComp != this && distFromShield <= Session.HudShieldDist)
+            if (Session.Instance.HudComp != this && distFromShield <= Session.Instance.HudShieldDist)
             {
-                Session.HudShieldDist = distFromShield;
-                Session.HudComp = this;
+                Session.Instance.HudShieldDist = distFromShield;
+                Session.Instance.HudComp = this;
             }
         }
 
@@ -363,13 +363,13 @@ namespace DefenseShields
 
         public void DrawShieldDownIcon()
         {
-            if (_tick % 60 != 0 && !Session.DedicatedServer) HudCheck();
+            if (_tick % 60 != 0 && !_isDedicated) HudCheck();
             var enemy = false;
             var relation = MyAPIGateway.Session.Player.GetRelationTo(MyCube.OwnerId);
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
 
             var config = MyAPIGateway.Session.Config;
-            if (!enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible) UpdateIcon();
+            if (!enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.Instance.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible) UpdateIcon();
         }
     }
 }

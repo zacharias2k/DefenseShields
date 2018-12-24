@@ -22,7 +22,7 @@ namespace DefenseShields
             if (entInfo == null || webent == null || webent.MarkedForClose) return;
             var relation = entInfo.Relation;
 
-            var tick = Session.Tick;
+            var tick = Session.Instance.Tick;
             var tick25 = tick % 25 == 0;
             var entCenter = webent.PositionComp.WorldVolume.Center;
             
@@ -160,9 +160,9 @@ namespace DefenseShields
                 if (!_isServer) return;
 
                 var damage = entInfo.Damage * DsState.State.ModulateEnergy;
-                if (Session.MpActive)
+                if (_mpActive)
                 {
-                    if (Session.IsServer) ShieldDoDamage(damage, grid.EntityId);
+                    if (_isServer) ShieldDoDamage(damage, grid.EntityId);
                 }
                 else
                 {
@@ -540,7 +540,7 @@ namespace DefenseShields
             //Values as close to Zero (0) as possible, to best results, and less unintentional Results.
             //Shield-Damage: All values such as projectile Velocity & Mass for non-explosive types and Explosive-damage when dealing with Explosive-types.
             AmmoInfo ammoInfo;
-            Session.AmmoCollection.TryGetValue(ammoEnt.Model.AssetName, out ammoInfo);
+            Session.Instance.AmmoCollection.TryGetValue(ammoEnt.Model.AssetName, out ammoInfo);
             var damage = 10f;
             if (ammoInfo == null)
             {

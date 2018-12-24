@@ -26,28 +26,11 @@ namespace DefenseShields
                 }
             }
 
-            if (_count == 33)
+            if (_isServer)
             {
-                if (SettingsUpdated)
-                {
-                    SettingsUpdated = false;
-                    DsSet.SaveSettings();
-                    ResetShape(false, false);
-                    if (Session.Enforced.Debug == 3) Log.Line($"SettingsUpdated: server:{Session.IsServer} - ShieldId [{Shield.EntityId}]");
-                }
+                if (_shapeEvent || FitChanged) CheckExtents(true);
+                HeatManager();
             }
-            else if (_count == 34)
-            {
-                if (ClientUiUpdate)
-                {
-                    ClientUiUpdate = false;
-                    if (!_isServer) DsSet.NetworkUpdate();
-                }
-            }
-
-            if (_isServer && (_shapeEvent || FitChanged)) CheckExtents(true);
-
-            if (_isServer) HeatManager();
 
             if (_count == 29)
             {
@@ -61,6 +44,47 @@ namespace DefenseShields
                 _damageReadOut = 0;
             }
 
+        }
+
+        private void UpdateSettings()
+        {
+            if (_tick % 33 == 0)
+            {
+                if (SettingsUpdated)
+                {
+                    SettingsUpdated = false;
+                    DsSet.SaveSettings();
+                    ResetShape(false, false);
+                    if (Session.Enforced.Debug == 3) Log.Line($"SettingsUpdated: server:{_isServer} - ShieldId [{Shield.EntityId}]");
+                }
+            }
+            else if (_tick % 34 == 0)
+            {
+                if (ClientUiUpdate)
+                {
+                    ClientUiUpdate = false;
+                    if (!_isServer) DsSet.NetworkUpdate();
+                }
+            }
+        }
+
+        private void UserDebug()
+        {
+            var message = $"User({MyAPIGateway.Multiplayer.Players.TryGetSteamId(Shield.OwnerId)}) Debugging\n" +
+                          $"On:{DsState.State.Online} - Active:{Session.Instance.ActiveShields.Contains(this)} - Suspend:{DsState.State.Suspended}\n" +
+                          $"Web:{Asleep} - Tick/LWoke:{_tick}/{LastWokenTick}\n" +
+                          $"Mo:{DsState.State.Mode} - Su:{DsState.State.Suspended} - Wa:{DsState.State.Waking}\n" +
+                          $"Np:{DsState.State.NoPower} - Lo:{DsState.State.Lowered} - Sl:{DsState.State.Sleeping}\n" +
+                          $"PSys:{MyGridDistributor?.SourcesEnabled} - PNull:{MyGridDistributor == null}\n" +
+                          $"MaxPower:{GridMaxPower} - AvailPower:{GridAvailablePower}\n" +
+                          $"Access:{DsState.State.ControllerGridAccess} - EmitterWorking:{DsState.State.EmitterWorking}\n" +
+                          $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)}\n" +
+                          $"ShieldMode:{ShieldMode} - isStatic:{IsStatic}\n" +
+                          $"IsMobile:{GridIsMobile} - isMoving:{ShieldComp.GridIsMoving}\n" +
+                          $"Sink:{_power} HP:{DsState.State.Buffer}: {ShieldMaxBuffer}";
+
+            if (!_isDedicated) MyAPIGateway.Utilities.ShowMessage("", message);
+            else Log.Line(message);
         }
 
         private void BlockMonitor()

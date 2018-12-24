@@ -193,7 +193,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\Scripts\DefenseShields\Config\EmitterData.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Config\PlanetShieldDatga.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Config\PlanetShieldData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\O2GeneratorData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\EnhancerData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\PsUi.cs" />
@@ -221,7 +221,6 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\ButtonControl.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Checkbox.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\ColorControl.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Control\Controls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\Seperator.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\Enhancer.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\Box.cs" />

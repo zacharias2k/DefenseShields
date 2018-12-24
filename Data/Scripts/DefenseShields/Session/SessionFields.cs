@@ -14,7 +14,15 @@ namespace DefenseShields
 {
     public partial class Session
     {
-        internal static uint Tick;
+        internal static readonly ConcurrentDictionary<long, IMyPlayer> Players = new ConcurrentDictionary<long, IMyPlayer>();
+        internal static readonly MyConcurrentPool<CachingHashSet<DefenseShields>> ProtSets = new MyConcurrentPool<CachingHashSet<DefenseShields>>(150, null, 1000);
+        internal static Session Instance { get; private set; }
+        internal static DefenseShieldsEnforcement Enforced = new DefenseShieldsEnforcement();
+
+        private static double _syncDistSqr;
+        internal static bool EnforceInit;
+
+        internal uint Tick;
         internal uint OldestRefreshTick;
         internal const ushort PacketIdPlanetShieldSettings = 62514;
         internal const ushort PacketIdPlanetShieldState = 62515; // 
@@ -37,19 +45,15 @@ namespace DefenseShields
         private const int EntCleanCycle = 3600;
         private const int EntMaxTickAge = 36000;
 
-        internal static int ThreadPeak;
-        internal static int EntSlotScaler = 9;
+        internal int ThreadPeak;
+        internal int EntSlotScaler = 9;
 
         internal long LastTerminalId;
 
         internal float MaxEntitySpeed = 210;
         internal const double TickTimeDiv = 0.0625;
 
-        internal static double HudShieldDist = double.MaxValue;
-
-        private static double _syncDistSqr;
-
-        internal static bool EnforceInit;
+        internal double HudShieldDist = double.MaxValue;
 
         private volatile bool _newFrame;
 
@@ -57,11 +61,11 @@ namespace DefenseShields
         internal bool ShowOnHudReset = true;
         internal bool OnCountThrottle;
         internal bool DefinitionsLoaded;
-        internal static bool Tick20;
-        internal static bool Tick60;
-        internal static bool Tick180;
-        internal static bool Tick600;
-        internal static bool Tick1800;
+        internal bool Tick20;
+        internal bool Tick60;
+        internal bool Tick180;
+        internal bool Tick600;
+        internal bool Tick1800;
 
         internal volatile bool Wake;
         internal volatile bool Monitor = true;
@@ -73,23 +77,23 @@ namespace DefenseShields
         internal bool PsControl;
         internal bool ModControl;
 
-        internal static bool MpActive;
-        internal static bool IsServer;
-        internal static bool DedicatedServer;
-        internal static bool DsAction;
-        internal static bool PsAction;
-        internal static bool ModAction;
+        internal bool MpActive;
+        internal bool IsServer;
+        internal bool DedicatedServer;
+        internal bool DsAction;
+        internal bool PsAction;
+        internal bool ModAction;
 
         internal bool[] SphereOnCamera = new bool[0];
         internal readonly int[] SlotCnt = new int[9];
 
-        internal static readonly MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
-        internal static readonly MyStringHash DelDamage = MyStringHash.GetOrCompute("DelDamage");
-        internal static readonly MyStringHash DSdamage = MyStringHash.GetOrCompute("DSdamage");
-        internal static readonly MyStringHash DSheal = MyStringHash.GetOrCompute("DSheal");
-        internal static readonly MyStringHash DSbypass = MyStringHash.GetOrCompute("DSbypass");
-        internal static readonly MyStringHash MpDoDeform = MyStringHash.GetOrCompute("MpDoDeform");
-        internal static readonly MyStringHash MpDoExplosion = MyStringHash.GetOrCompute("MpDoExplosion");
+        internal readonly MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
+        internal readonly MyStringHash DelDamage = MyStringHash.GetOrCompute("DelDamage");
+        internal readonly MyStringHash DSdamage = MyStringHash.GetOrCompute("DSdamage");
+        internal readonly MyStringHash DSheal = MyStringHash.GetOrCompute("DSheal");
+        internal readonly MyStringHash DSbypass = MyStringHash.GetOrCompute("DSbypass");
+        internal readonly MyStringHash MpDoDeform = MyStringHash.GetOrCompute("MpDoDeform");
+        internal readonly MyStringHash MpDoExplosion = MyStringHash.GetOrCompute("MpDoExplosion");
 
         internal MyStringHash Bypass = MyStringHash.GetOrCompute("bypass");
         internal MyStringId Password = MyStringId.GetOrCompute("Shield Access Frequency");
@@ -110,9 +114,8 @@ namespace DefenseShields
         internal readonly Guid PlanetShieldStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811513");
 
         //internal static readonly TimeSpan SleepTime = TimeSpan.FromTicks(10);
-        internal static readonly Type MissileObj = typeof(MyObjectBuilder_Missile);
-        internal static Session Instance { get; private set; }
-        internal static DefenseShields HudComp;
+        internal readonly Type MissileObj = typeof(MyObjectBuilder_Missile);
+        internal DefenseShields HudComp;
         internal readonly MyModContext MyModContext = new MyModContext();
         internal readonly Icosphere Icosphere = new Icosphere(5);
         internal DSUtils Dsutil1 = new DSUtils();
@@ -121,26 +124,23 @@ namespace DefenseShields
         private DsAutoResetEvent _autoResetEvent = new DsAutoResetEvent();
         private readonly Work _workData = new Work();
 
-        private static readonly List<KeyValuePair<MyEntity, uint>> EntRefreshTmpList = new List<KeyValuePair<MyEntity, uint>>();
-        private static readonly ConcurrentQueue<MyEntity> EntRefreshQueue = new ConcurrentQueue<MyEntity>();
-        private static readonly ConcurrentDictionary<MyEntity, uint> GlobalEntTmp = new ConcurrentDictionary<MyEntity, uint>();
+        private readonly List<KeyValuePair<MyEntity, uint>> _entRefreshTmpList = new List<KeyValuePair<MyEntity, uint>>();
+        private readonly ConcurrentQueue<MyEntity> _entRefreshQueue = new ConcurrentQueue<MyEntity>();
+        private readonly ConcurrentDictionary<MyEntity, uint> _globalEntTmp = new ConcurrentDictionary<MyEntity, uint>();
 
-        internal static readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
-        internal static readonly Dictionary<MyEntity, MyProtectors> GlobalProtect = new Dictionary<MyEntity, MyProtectors>();
-        internal static readonly ConcurrentDictionary<long, IMyPlayer> Players = new ConcurrentDictionary<long, IMyPlayer>();
-        internal static readonly MyConcurrentPool<CachingHashSet<DefenseShields>> ProtSets = new MyConcurrentPool<CachingHashSet<DefenseShields>>(150, null, 1000);
-        internal static readonly MyConcurrentHashSet<DefenseShields> ActiveShields = new MyConcurrentHashSet<DefenseShields>();
-        internal static readonly MyConcurrentHashSet<DefenseShields> FunctionalShields = new MyConcurrentHashSet<DefenseShields>();
+        internal readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
+        internal readonly Dictionary<MyEntity, MyProtectors> GlobalProtect = new Dictionary<MyEntity, MyProtectors>();
 
-        internal static readonly List<PlanetShields> PlanetShields = new List<PlanetShields>();
-        internal static readonly List<Emitters> Emitters = new List<Emitters>();
-        internal static readonly List<Displays> Displays = new List<Displays>();
-        internal static readonly List<Enhancers> Enhancers = new List<Enhancers>();
-        internal static readonly List<O2Generators> O2Generators = new List<O2Generators>();
-        internal static readonly List<Modulators> Modulators = new List<Modulators>();
-        internal static readonly List<DefenseShields> Controllers = new List<DefenseShields>();
+        internal readonly MyConcurrentHashSet<DefenseShields> ActiveShields = new MyConcurrentHashSet<DefenseShields>();
+        internal readonly MyConcurrentHashSet<DefenseShields> FunctionalShields = new MyConcurrentHashSet<DefenseShields>();
 
-        internal static DefenseShieldsEnforcement Enforced = new DefenseShieldsEnforcement();
+        internal readonly List<PlanetShields> PlanetShields = new List<PlanetShields>();
+        internal readonly List<Emitters> Emitters = new List<Emitters>();
+        internal readonly List<Displays> Displays = new List<Displays>();
+        internal readonly List<Enhancers> Enhancers = new List<Enhancers>();
+        internal readonly List<O2Generators> O2Generators = new List<O2Generators>();
+        internal readonly List<Modulators> Modulators = new List<Modulators>();
+        internal readonly List<DefenseShields> Controllers = new List<DefenseShields>();
 
         internal readonly HashSet<string> DsActions = new HashSet<string>()
         {

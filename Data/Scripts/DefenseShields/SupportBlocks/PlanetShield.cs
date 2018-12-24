@@ -77,7 +77,7 @@ namespace DefenseShields
 
         private void UpdateFields()
         {
-            _tick = Session.Tick;
+            _tick = Session.Instance.Tick;
             _tick60 = _tick % 60 == 0;
             _tick600 = _tick % 600 == 0;
             MyGrid = PlanetShield.CubeGrid as MyCubeGrid;
@@ -93,7 +93,7 @@ namespace DefenseShields
                 if (_lCount == 10) _lCount = 0;
             }
 
-            if (_count == 29 && !Session.DedicatedServer && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
+            if (_count == 29 && !Session.Instance.DedicatedServer && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
             {
                 PlanetShield.RefreshCustomInfo();
                // ((MyCubeBlock)PlanetShield).UpdateTerminal();
@@ -225,7 +225,7 @@ namespace DefenseShields
             _shellActive?.Close();
             _shellPassive?.Close();
 
-            if (!Session.DedicatedServer)
+            if (!Session.Instance.DedicatedServer)
             {
                 var parent = (MyEntity)Planet;
                 _shellPassive = Spawn.EmptyEntity("dShellPassive", $"{Session.Instance.ModPath()}\\Models\\Cubes\\ShieldPassive11.mwm", parent, true);
@@ -291,10 +291,10 @@ namespace DefenseShields
             base.UpdateOnceBeforeFrame();
             try
             {
-                _isServer = Session.IsServer;
-                _isDedicated = Session.DedicatedServer;
-                _mpActive = Session.MpActive;
-                Session.PlanetShields.Add(this);
+                _isServer = Session.Instance.IsServer;
+                _isDedicated = Session.Instance.DedicatedServer;
+                _mpActive = Session.Instance.MpActive;
+                Session.Instance.PlanetShields.Add(this);
                 PowerInit();
                 PlanetShield.AppendingCustomInfo += AppendingCustomInfo;
                 PlanetShield.RefreshCustomInfo();
@@ -305,7 +305,7 @@ namespace DefenseShields
 
         public override bool IsSerialized()
         {
-            if (Session.IsServer)
+            if (Session.Instance.IsServer)
             {
                 if (PlanetShield.Storage != null) PlaState.SaveState();
             }
@@ -384,7 +384,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.PlanetShields.Contains(this)) Session.PlanetShields.Remove(this);
+                if (Session.Instance.PlanetShields.Contains(this)) Session.Instance.PlanetShields.Remove(this);
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
@@ -394,7 +394,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.PlanetShields.Contains(this)) Session.PlanetShields.Remove(this);
+                if (Session.Instance.PlanetShields.Contains(this)) Session.Instance.PlanetShields.Remove(this);
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
             base.Close();

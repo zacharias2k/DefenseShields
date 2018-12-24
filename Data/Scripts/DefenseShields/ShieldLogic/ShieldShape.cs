@@ -182,7 +182,7 @@ namespace DefenseShields
                 _ellipsoidSurfaceArea = _ellipsoidSa.Surface;
                 EllipsoidVolume = 1.333333 * Math.PI * DetectMatrixOutside.Scale.X * DetectMatrixOutside.Scale.Y * DetectMatrixOutside.Scale.Z;
                 _shieldVol = DetectMatrixOutside.Scale.Volume;
-                if (Session.IsServer)
+                if (_isServer)
                 {
                     if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: CreateShieldShape - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
                     ShieldChangeState();

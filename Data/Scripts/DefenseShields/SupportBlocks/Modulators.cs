@@ -72,7 +72,7 @@ namespace DefenseShields
         {
             try
             {
-                _tick = Session.Tick;
+                _tick = Session.Instance.Tick;
                 _tick60 = _tick % 60 == 0;
                 var wait = _isServer && !_tick60 && ModState.State.Backup;
 
@@ -245,7 +245,7 @@ namespace DefenseShields
                     SettingsUpdated = false;
                     ModSet.SaveSettings();
                     ModState.SaveState();
-                    if (Session.Enforced.Debug == 3) Log.Line($"SettingsUpdated: server:{Session.IsServer} - ModulatorId [{Modulator.EntityId}]");
+                    if (Session.Enforced.Debug == 3) Log.Line($"SettingsUpdated: server:{_isServer} - ModulatorId [{Modulator.EntityId}]");
                 }
             }
             else if (_count == 34)
@@ -289,7 +289,7 @@ namespace DefenseShields
         private void NeedUpdate()
         {
             ModState.SaveState();
-            if (Session.MpActive) ModState.NetworkUpdate();
+            if (Session.Instance.MpActive) ModState.NetworkUpdate();
         }
 
         public override void OnAddedToContainer()
@@ -322,12 +322,12 @@ namespace DefenseShields
             {
                 if (Modulator.CubeGrid.Physics == null) return;
 
-                _isServer = Session.IsServer;
-                _isDedicated = Session.DedicatedServer;
+                _isServer = Session.Instance.IsServer;
+                _isDedicated = Session.Instance.DedicatedServer;
 
                 ResetComp();
 
-                Session.Modulators.Add(this);
+                Session.Instance.Modulators.Add(this);
 
                 CreateUi();
                 ModUi.ComputeDamage(this, ModUi.GetDamage(Modulator));
@@ -336,9 +336,9 @@ namespace DefenseShields
                 PowerInit();
                 Modulator.RefreshCustomInfo();
                 StateChange(true);
-                if (!Session.ModAction)
+                if (!Session.Instance.ModAction)
                 {
-                    Session.ModAction = true;
+                    Session.Instance.ModAction = true;
                     Session.AppendConditionToAction<IMyUpgradeModule>((a) => Session.Instance.ModActions.Contains(a.Id), (a, b) => b.GameLogic.GetAs<Modulators>() != null && Session.Instance.ModActions.Contains(a.Id));
                 }
                 MainInit = true;
@@ -515,7 +515,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Modulators.Contains(this)) Session.Modulators.Remove(this);
+                if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
                 if (ShieldComp?.Modulator == this)
                 {
                     ShieldComp.Modulator = null;
@@ -562,7 +562,7 @@ namespace DefenseShields
         {
             try
             {
-                if (Session.Modulators.Contains(this)) Session.Modulators.Remove(this);
+                if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
                 if (ShieldComp?.Modulator == this)
                 {
                     ShieldComp.Modulator = null;

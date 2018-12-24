@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
-using VRage.Collections;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
@@ -13,7 +12,7 @@ using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
 namespace DefenseShields.Support
 {
-    internal static class CustomCollision
+    internal class CustomCollision
     {
         private static readonly Vector3D[] GridCorners = new Vector3D[8];
         private static readonly Vector3D[] GridPoints = new Vector3D[9];

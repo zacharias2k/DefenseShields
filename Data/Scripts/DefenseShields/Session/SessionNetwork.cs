@@ -37,7 +37,7 @@ namespace DefenseShields
                             if (data.Enforce == null) return;
 
                             if (Enforced.Debug >= 3) Log.Line($"EnforceData Received; Enforce - Server:\n{data.Enforce}");
-                            if (!IsServer)
+                            if (!MyAPIGateway.Multiplayer.IsServer)
                             {
                                 Enforcements.SaveEnforcement(logic.Shield, data.Enforce);
                                 EnforceInit = true;
@@ -92,7 +92,7 @@ namespace DefenseShields
 
                             if (Enforced.Debug >= 5) Log.Line($"Packet State Packet received data:\n{data.State}");
 
-                            if (IsServer) ControllerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                            if (MyAPIGateway.Multiplayer.IsServer) ControllerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                             else logic.UpdateState(data.State);
                         }
                         break;
@@ -129,7 +129,7 @@ namespace DefenseShields
                             if (data.Settings == null) return;
 
                             logic.UpdateSettings(data.Settings);
-                            if (IsServer) ControllerSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                            if (MyAPIGateway.Multiplayer.IsServer) ControllerSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                             if (Enforced.Debug >= 3) Log.Line($"Packet Settings Packet received:- data:\n{data.Settings}");
                         }
                         break;
@@ -165,7 +165,7 @@ namespace DefenseShields
                             if (data.Settings == null) return;
 
                             logic.UpdateSettings(data.Settings);
-                            if (IsServer) ModulatorSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                            if (MyAPIGateway.Multiplayer.IsServer) ModulatorSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                             if (Enforced.Debug >= 3) Log.Line($"Modulator received:\n{data.Settings}");
                         }
                         break;
@@ -203,7 +203,7 @@ namespace DefenseShields
 
                             if (Enforced.Debug >= 3) Log.Line($"Modulator received:\n{data.State}");
 
-                            if (IsServer) ModulatorStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                            if (MyAPIGateway.Multiplayer.IsServer) ModulatorStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                             else logic.UpdateState(data.State);
                         }
                         break;
@@ -241,7 +241,7 @@ namespace DefenseShields
 
                             if (Enforced.Debug >= 3) Log.Line($"O2Generator received:\n{data.State}");
 
-                            if (IsServer) O2GeneratorStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                            if (MyAPIGateway.Multiplayer.IsServer) O2GeneratorStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                             else logic.UpdateState(data.State);
                         }
                         break;
@@ -279,7 +279,7 @@ namespace DefenseShields
 
                             if (Enforced.Debug >= 3) Log.Line($"Enhancer received:\n{data.State}");
 
-                            if (IsServer) EnhancerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                            if (MyAPIGateway.Multiplayer.IsServer) EnhancerStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                             else logic.UpdateState(data.State);
                         }
                         break;
@@ -315,7 +315,7 @@ namespace DefenseShields
                         {
                             if (data.State == null) return;
                             if (Enforced.Debug >= 3) Log.Line($"Emitter received:\n{data.State}");
-                            if (IsServer) EmitterStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                            if (MyAPIGateway.Multiplayer.IsServer) EmitterStateToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
                             else logic.UpdateState(data.State);
                         }
                         break;

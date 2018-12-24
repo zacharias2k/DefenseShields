@@ -58,7 +58,7 @@ namespace DefenseShields
         public void NetworkUpdate()
         {
 
-            if (Session.IsServer)
+            if (Session.Instance.IsServer)
             {
                 if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - EnhancerId [{Enhancer.EntityId}]: network state update for Enhancer");
                 Session.PacketizeEnhancerState(Enhancer, State); // update clients with server's settings

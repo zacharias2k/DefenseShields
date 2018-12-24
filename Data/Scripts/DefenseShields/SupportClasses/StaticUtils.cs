@@ -251,8 +251,8 @@ namespace DefenseShields.Support
                     var ammo = MyDefinitionManager.Static.GetAmmoDefinition(ammoDef.AmmoDefinitionId);
                     if (!(ammo is MyMissileAmmoDefinition)) continue;
                     var shot = ammo as MyMissileAmmoDefinition;
-                    if (Session.AmmoCollection.ContainsKey(shot.MissileModelName)) continue;
-                    Session.AmmoCollection.Add(shot.MissileModelName, new AmmoInfo(shot.IsExplosive, shot.MissileExplosionDamage, shot.MissileExplosionRadius, shot.DesiredSpeed, shot.MissileMass, shot.BackkickForce));
+                    if (Session.Instance.AmmoCollection.ContainsKey(shot.MissileModelName)) continue;
+                    Session.Instance.AmmoCollection.Add(shot.MissileModelName, new AmmoInfo(shot.IsExplosive, shot.MissileExplosionDamage, shot.MissileExplosionRadius, shot.DesiredSpeed, shot.MissileMass, shot.BackkickForce));
                 }
                 if (Session.Enforced.Debug == 3) Log.Line($"Definitions: Session");
             }

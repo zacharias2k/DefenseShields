@@ -19,12 +19,11 @@ namespace DefenseShields
         public static int EntSlotAssigner;
         public static int GetSlot()
         {
-            if (++EntSlotAssigner >= EntSlotScaler) EntSlotAssigner = 0;
+            if (++EntSlotAssigner >= Instance.EntSlotScaler) EntSlotAssigner = 0;
             return EntSlotAssigner;
         }
 
         #region WebMonitor
-
         public void WebMonitor()
         {
             try
@@ -128,13 +127,13 @@ namespace DefenseShields
                     });
                     if (_workData.Tick % 180 == 0)
                     {
-                        EntRefreshTmpList.Clear();
-                        EntRefreshTmpList.AddRange(GlobalEntTmp.Where(info => _workData.Tick - info.Value > 540));
-                        foreach (var dict in EntRefreshTmpList)
+                        _entRefreshTmpList.Clear();
+                        _entRefreshTmpList.AddRange(_globalEntTmp.Where(info => _workData.Tick - info.Value > 540));
+                        foreach (var dict in _entRefreshTmpList)
                         {
                             var ent = dict.Key;
-                            EntRefreshQueue.Enqueue(ent);
-                            GlobalEntTmp.Remove(ent);
+                            _entRefreshQueue.Enqueue(ent);
+                            _globalEntTmp.Remove(ent);
                         }
                     }
                     if (Monitor && Enforced.Debug == 5 && EntSlotTick) Dsutil2.StopWatchReport("monitor", -1);
@@ -170,12 +169,12 @@ namespace DefenseShields
                 //Log.Line($"{ent.DebugName} - {test}");
                 if (CustomCollision.ObbPointsInShield(ent, s.DetectMatrixOutsideInv) > 0)
                 {
-                    if (!GlobalEntTmp.ContainsKey(ent))
+                    if (!_globalEntTmp.ContainsKey(ent))
                     {
                         foundNewEnt = true;
                         s.Asleep = false;
                     }
-                    GlobalEntTmp[ent] = tick;
+                    _globalEntTmp[ent] = tick;
                 }
                 s.NewEntByShield = foundNewEnt;
             }
@@ -260,7 +259,7 @@ namespace DefenseShields
 
                 if (++RefreshCycle >= EntSlotScaler) RefreshCycle = 0;
                 MyEntity ent;
-                while (EntRefreshQueue.TryDequeue(out ent))
+                while (_entRefreshQueue.TryDequeue(out ent))
                 {
                     MyProtectors myProtector;
                     if (!GlobalProtect.TryGetValue(ent, out myProtector)) continue;
@@ -291,6 +290,7 @@ namespace DefenseShields
                     if (refreshCount == 0)
                     {
                         GlobalProtect.Remove(ent);
+                        ProtSets.Return(myProtector.Shields);
                         entsremoved++;
                     }
                     else entsUpdated++;
@@ -326,9 +326,6 @@ namespace DefenseShields
             }
             if (Enforced.Debug >= 5 && EntSlotTick) Dsutil1.StopWatchReport($"[LogicUpdate] tick:{Tick} - WebbingShields:{y} - CPU:", -1);
             else if (Enforced.Debug >= 5) Dsutil1.Sw.Reset();
-
-            var compCount = Controllers.Count;
-            if (SphereOnCamera.Length != compCount) Array.Resize(ref SphereOnCamera, compCount);
         }
 
         private void Scale()
@@ -348,6 +345,7 @@ namespace DefenseShields
             if (oldScaler != EntSlotScaler)
             {
                 GlobalProtect.Clear();
+                ProtSets.Clean();
                 foreach (var s in FunctionalShields)
                 {
                     s.AssignSlots();
