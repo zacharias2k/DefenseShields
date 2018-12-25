@@ -61,7 +61,7 @@ namespace DefenseShields
             if (Session.Instance.IsServer)
             {
                 if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - Online:{State.Online} Link:{State.Link} - Backup:{State.Backup} - ModulatorId [{Modulator.EntityId}]: network state update for modulator");
-                Session.PacketizeModulatorState(Modulator, State); // update clients with server's settings
+                Session.Instance.PacketizeModulatorState(Modulator, State); // update clients with server's settings
             }
         }
         #endregion
@@ -121,7 +121,7 @@ namespace DefenseShields
             if (Session.Instance.IsServer)
             {
                 if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - ModulatorId [{Modulator.EntityId}]: network settings update for modulator");
-                Session.PacketizeModulatorSettings(Modulator, Settings); // update clients with server's settings
+                Session.Instance.PacketizeModulatorSettings(Modulator, Settings); // update clients with server's settings
             }
             else // client, send settings to server
             {

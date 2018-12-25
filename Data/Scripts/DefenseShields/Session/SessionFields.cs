@@ -14,13 +14,12 @@ namespace DefenseShields
 {
     public partial class Session
     {
-        internal static readonly ConcurrentDictionary<long, IMyPlayer> Players = new ConcurrentDictionary<long, IMyPlayer>();
         internal static readonly MyConcurrentPool<CachingHashSet<DefenseShields>> ProtSets = new MyConcurrentPool<CachingHashSet<DefenseShields>>(150, null, 1000);
-        internal static Session Instance { get; private set; }
-        internal static DefenseShieldsEnforcement Enforced = new DefenseShieldsEnforcement();
+        internal static DefenseShieldsEnforcement Enforced { get; set; } = new DefenseShieldsEnforcement();
 
-        private static double _syncDistSqr;
+        internal static Session Instance { get; private set; }
         internal static bool EnforceInit;
+
 
         internal uint Tick;
         internal uint OldestRefreshTick;
@@ -54,6 +53,7 @@ namespace DefenseShields
         internal const double TickTimeDiv = 0.0625;
 
         internal double HudShieldDist = double.MaxValue;
+        private double _syncDistSqr;
 
         private volatile bool _newFrame;
 
@@ -124,6 +124,7 @@ namespace DefenseShields
         private DsAutoResetEvent _autoResetEvent = new DsAutoResetEvent();
         private readonly Work _workData = new Work();
 
+        internal readonly ConcurrentDictionary<long, IMyPlayer> Players = new ConcurrentDictionary<long, IMyPlayer>();
         private readonly List<KeyValuePair<MyEntity, uint>> _entRefreshTmpList = new List<KeyValuePair<MyEntity, uint>>();
         private readonly ConcurrentQueue<MyEntity> _entRefreshQueue = new ConcurrentQueue<MyEntity>();
         private readonly ConcurrentDictionary<MyEntity, uint> _globalEntTmp = new ConcurrentDictionary<MyEntity, uint>();

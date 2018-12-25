@@ -768,7 +768,7 @@ namespace DefenseShields
             var center = GridIsMobile ? MyGrid.PositionComp.WorldVolume.Center : OffsetEmitterWMatrix.Translation;
             var sphere = new BoundingSphereD(center, radius);
             var sendMessage = false;
-            foreach (var player in Session.Players.Values)
+            foreach (var player in Session.Instance.Players.Values)
             {
                 if (player.IdentityId != MyAPIGateway.Session.Player.IdentityId) continue;
                 if (!sphere.Intersects(player.Character.WorldVolume)) continue;
@@ -804,7 +804,7 @@ namespace DefenseShields
 
         private void BroadcastMessage(bool forceNoPower = false)
         {
-            if (Session.Enforced.Debug == 3) Log.Line($"Broadcasting message to local playerId{Session.Players.Count} - Server:{_isServer} - Dedicated:{_isDedicated} - Id:{MyAPIGateway.Multiplayer.MyId}");
+            if (Session.Enforced.Debug == 3) Log.Line($"Broadcasting message to local playerId{Session.Instance.Players.Count} - Server:{_isServer} - Dedicated:{_isDedicated} - Id:{MyAPIGateway.Multiplayer.MyId}");
 
             var checkMobLos = GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los;
             if (!DsState.State.EmitterWorking && (!DsState.State.Waking || checkMobLos && _genericDownLoop > -1 || checkMobLos && !_isServer))

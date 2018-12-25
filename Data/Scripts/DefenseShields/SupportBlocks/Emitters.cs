@@ -86,6 +86,54 @@ namespace DefenseShields
             Small,
         };
 
+
+        public override void OnAddedToContainer()
+        {
+            if (!ContainerInited)
+            {
+                PowerPreInit();
+                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                if (!MyAPIGateway.Utilities.IsDedicated) NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+                else NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
+                Emitter = (IMyUpgradeModule)Entity;
+                ContainerInited = true;
+                if (Session.Enforced.Debug == 3) Log.Line($"ContainerInited: EmitterId [{Emitter.EntityId}]");
+            }
+            if (Entity.InScene) OnAddedToScene();
+        }
+
+        public override void Init(MyObjectBuilder_EntityBase objectBuilder)
+        {
+            try
+            {
+                base.Init(objectBuilder);
+                StorageSetup();
+            }
+            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
+        }
+
+        public override bool IsSerialized()
+        {
+            if (MyAPIGateway.Multiplayer.IsServer)
+            {
+                if (Emitter.Storage != null) EmiState.SaveState();
+            }
+            return false;
+        }
+
+        public override void OnAddedToScene()
+        {
+            try
+            {
+                MyGrid = (MyCubeGrid)Emitter.CubeGrid;
+                MyCube = Emitter as MyCubeBlock;
+                SetEmitterType();
+                RegisterEvents();
+                if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
+            }
+            catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
+        }
+
         public override void UpdateOnceBeforeFrame()
         {
             base.UpdateOnceBeforeFrame();
@@ -113,7 +161,6 @@ namespace DefenseShields
                 MyGrid = MyCube.CubeGrid;
                 if (wait || MyGrid?.Physics == null) return;
                 IsStatic = MyGrid.IsStatic;
-
                 Timing();
                 if (!ControllerLink()) return;
                 if (!_isDedicated && UtilsStatic.DistanceCheck(Emitter, 1000, EmiState.State.BoundingRange))
@@ -132,6 +179,22 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
 
+        public override void UpdateBeforeSimulation10()
+        {
+            try
+            {
+                if (_count++ == 5) _count = 0;
+                var wait = _isServer && _count != 0 && EmiState.State.Backup;
+
+                MyGrid = MyCube.CubeGrid;
+                if (wait || MyGrid?.Physics == null) return;
+                IsStatic = MyGrid.IsStatic;
+
+                ControllerLink();
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation10: {ex}"); }
+        }
+
         private void Timing()
         {
             if (_count++ == 59)
@@ -140,7 +203,7 @@ namespace DefenseShields
                 _lCount++;
                 if (_lCount == 10) _lCount = 0;
             }
-            if (_count == 29 && !_isDedicated && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
+            if (_count == 29 && !_isDedicated && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == Emitter.EntityId)
             {
                 Emitter.RefreshCustomInfo();
             }
@@ -575,52 +638,6 @@ namespace DefenseShields
             }
             if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("The shield emitter DOES NOT have a CLEAR ENOUGH LINE OF SIGHT to the shield, SHUTTING DOWN.", 960, "Red", Emitter.OwnerId);
             if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("Blue means clear line of sight, black means blocked......................................................................", 960, "Red", Emitter.OwnerId);
-        }
-
-        public override void OnAddedToContainer()
-        {
-            if (!ContainerInited)
-            {
-                PowerPreInit();
-                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-                Emitter = (IMyUpgradeModule)Entity;
-                ContainerInited = true;
-                if (Session.Enforced.Debug == 3) Log.Line($"ContainerInited: EmitterId [{Emitter.EntityId}]");
-            }
-            if (Entity.InScene) OnAddedToScene();
-        }
-
-        public override void Init(MyObjectBuilder_EntityBase objectBuilder)
-        {
-            try
-            {
-                base.Init(objectBuilder);
-                StorageSetup();
-            }
-            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
-        }
-
-        public override bool IsSerialized()
-        {
-            if (MyAPIGateway.Multiplayer.IsServer)
-            {
-                if (Emitter.Storage != null) EmiState.SaveState();
-            }
-            return false;
-        }
-
-        public override void OnAddedToScene()
-        {
-            try
-            {
-                MyGrid = (MyCubeGrid)Emitter.CubeGrid;
-                MyCube = Emitter as MyCubeBlock;
-                SetEmitterType();
-                RegisterEvents();
-                if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
-            }
-            catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
 
         private void CheckEmitter(IMyTerminalBlock myTerminalBlock)

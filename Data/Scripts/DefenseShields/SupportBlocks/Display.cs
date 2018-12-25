@@ -27,8 +27,8 @@ namespace DefenseShields
             try
             {
                 base.Init(objectBuilder);
-                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
+                if (!MyAPIGateway.Utilities.IsDedicated) NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                if (!MyAPIGateway.Utilities.IsDedicated) NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -47,7 +47,6 @@ namespace DefenseShields
 
         public override void UpdateBeforeSimulation10()
         {
-            //if (!_isServer) return;
             if (_count++ == 9) _count = 0;
             if (_count != 9) return;
 

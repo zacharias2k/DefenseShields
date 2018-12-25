@@ -21,21 +21,18 @@ namespace DefenseShields
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OxygenGenerator), false, "DSSupergen")]
     public class O2Generators : MyGameLogicComponent
     {
-        private uint _tick;
-        private int _count = -1;
         private int _airIPercent = -1;
-        private int _lCount;
+        private int _count = -1;
+        private int _lCount = -1;
         internal int RotationTime;
         internal int AnimationLoop;
         internal int TranslationTime;
-
         private double _shieldVolFilled;
         private double _oldShieldVol;
         internal float EmissiveIntensity;
 
         private bool _isServer;
         private bool _isDedicated;
-        private bool _tick60;
 
         internal bool IsFunctional;
         internal bool IsWorking;
@@ -58,18 +55,71 @@ namespace DefenseShields
         internal MyCubeBlock MyCube;
         private IMyInventory _inventory;
 
-        public override void UpdateBeforeSimulation()
+
+        public override void OnAddedToContainer()
+        {
+            if (!ContainerInited)
+            {
+                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
+                O2Generator = (IMyGasGenerator)Entity;
+                ContainerInited = true;
+            }
+            if (Entity.InScene) OnAddedToScene();
+        }
+
+
+        public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
             try
             {
-                _tick = Session.Instance.Tick;
-                _tick60 = _tick % 60 == 0;
-                var wait = _isServer && !_tick60 && O2State.State.Backup;
+                base.Init(objectBuilder);
+                StorageSetup();
+            }
+            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
+        }
+
+        public override void OnAddedToScene()
+        {
+            try
+            {
+                MyGrid = (MyCubeGrid)O2Generator.CubeGrid;
+                MyCube = O2Generator as MyCubeBlock;
+                RegisterEvents();
+                if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: - O2GeneatorId [{O2Generator.EntityId}]");
+            }
+            catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
+        }
+
+        public override void UpdateOnceBeforeFrame()
+        {
+            base.UpdateOnceBeforeFrame();
+            try
+            {
+                Session.Instance.O2Generators.Add(this);
+                Source = O2Generator.Components.Get<MyResourceSourceComponent>();
+                _isServer = Session.Instance.IsServer;
+                _isDedicated = Session.Instance.DedicatedServer;
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
+        }
+
+        public override void UpdateBeforeSimulation10()
+        {
+            try
+            {
+                if (_count++ == 5)
+                {
+                    _count = 0;
+                    _lCount++;
+                    if (_lCount == 10) _lCount = 0;
+                }
+
+                var wait = _isServer && _count != 0 && O2State.State.Backup;
 
                 MyGrid = MyCube.CubeGrid;
                 if (wait || MyGrid?.Physics == null) return;
-
-                Timing();
+                if (!_isDedicated && _count == 0) Timing();
 
                 if (!O2GeneratorReady()) return;
 
@@ -86,19 +136,12 @@ namespace DefenseShields
 
         private void Timing()
         {
-            if (_count++ == 59)
+            if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == O2Generator.EntityId)
             {
-                _count = 0;
-                _lCount++;
-                if (_lCount == 10) _lCount = 0;
-            }
-
-            if (_count == 29 && !_isDedicated && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
-            {
+                Log.Line($"test");
                 O2Generator.RefreshCustomInfo();
                 MyCube.UpdateTerminal();
             }
-            else if (_lCount % 2 == 0 && _count == 0) O2Generator.RefreshCustomInfo();
         }
 
         private bool InitO2Generator()
@@ -184,13 +227,6 @@ namespace DefenseShields
                     O2State.State.Backup = true;
                     O2State.State.Pressurized = false;
                 }
-
-                if (!_isDedicated && _tick % 300 == 0)
-                {
-                    O2Generator.RefreshCustomInfo();
-                    MyCube.UpdateTerminal();
-                }
-
             }
 
             if (!O2State.State.Backup && ShieldComp.ActiveO2Generator == this)
@@ -354,54 +390,6 @@ namespace DefenseShields
             O2State.State = newState;
             if (!_isDedicated) UpdateVisuals();
             if (Session.Enforced.Debug == 3) Log.Line($"UpdateState - O2GenId [{O2Generator.EntityId}]:\n{newState}");
-        }
-
-        public override void OnAddedToContainer()
-        {
-            if (!ContainerInited)
-            {
-                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-                O2Generator = (IMyGasGenerator)Entity;
-                ContainerInited = true;
-            }
-            if (Entity.InScene) OnAddedToScene();
-        }
-
-
-        public override void Init(MyObjectBuilder_EntityBase objectBuilder)
-        {
-            try
-            {
-                base.Init(objectBuilder);
-                StorageSetup();
-            }
-            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
-        }
-
-        public override void OnAddedToScene()
-        {
-            try
-            {
-                MyGrid = (MyCubeGrid)O2Generator.CubeGrid;
-                MyCube = O2Generator as MyCubeBlock;
-                RegisterEvents();
-                if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: - O2GeneatorId [{O2Generator.EntityId}]");
-            }
-            catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
-        }
-
-        public override void UpdateOnceBeforeFrame()
-        {
-            base.UpdateOnceBeforeFrame();
-            try
-            {
-                Session.Instance.O2Generators.Add(this);
-                Source = O2Generator.Components.Get<MyResourceSourceComponent>();
-                _isServer = Session.Instance.IsServer;
-                _isDedicated = Session.Instance.DedicatedServer;
-            }
-            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
 
         private void StorageSetup()

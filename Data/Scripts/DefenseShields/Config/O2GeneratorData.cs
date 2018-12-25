@@ -61,7 +61,7 @@ namespace DefenseShields
             if (Session.Instance.IsServer)
             {
                 if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - O2GeneratorId [{O2Generator.EntityId}]: network state update for O2Generator");
-                Session.PacketizeO2GeneratorState(O2Generator, State); // update clients with server's settings
+                Session.Instance.PacketizeO2GeneratorState(O2Generator, State); // update clients with server's settings
             }
         }
         #endregion

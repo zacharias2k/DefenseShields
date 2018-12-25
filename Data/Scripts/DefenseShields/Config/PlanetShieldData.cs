@@ -61,7 +61,7 @@ namespace DefenseShields
             if (Session.Instance.IsServer)
             {
                 if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - Online:{State.Online} - Backup:{State.Backup} - PlanetShieldId [{PlanetShield.EntityId}]: network state update for PlanetShield");
-                Session.PacketizePlanetShieldState(PlanetShield, State); // update clients with server's settings
+                Session.Instance.PacketizePlanetShieldState(PlanetShield, State); // update clients with server's settings
             }
         }
         #endregion
@@ -121,7 +121,7 @@ namespace DefenseShields
             if (Session.Instance.IsServer)
             {
                 if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - PlanetShieldId [{PlanetShield.EntityId}]: network settings update for PlanetShield");
-                Session.PacketizePlanetShieldSettings(PlanetShield, Settings); // update clients with server's settings
+                Session.Instance.PacketizePlanetShieldSettings(PlanetShield, Settings); // update clients with server's settings
             }
             else // client, send settings to server
             {

@@ -50,6 +50,69 @@ namespace DefenseShields
 
         private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
+        public override void OnAddedToContainer()
+        {
+            if (!ContainerInited)
+            {
+                PowerPreInit();
+                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                if (!MyAPIGateway.Utilities.IsDedicated) NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+                else NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
+                Enhancer = (IMyUpgradeModule)Entity;
+                ContainerInited = true;
+                if (Session.Enforced.Debug == 3) Log.Line($"ContainerInited:  EnhancerId [{Enhancer.EntityId}]");
+            }
+            if (Entity.InScene) OnAddedToScene();
+        }
+
+
+        public override void Init(MyObjectBuilder_EntityBase objectBuilder)
+        {
+            try
+            {
+                base.Init(objectBuilder);
+                StorageSetup();
+            }
+            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
+        }
+
+        public override void UpdateOnceBeforeFrame()
+        {
+            base.UpdateOnceBeforeFrame();
+            try
+            {
+                if (Enhancer.CubeGrid.Physics == null) return;
+                Session.Instance.Enhancers.Add(this);
+                PowerInit();
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                _isServer = Session.Instance.IsServer;
+                _isDedicated = Session.Instance.DedicatedServer;
+                Enhancer.RefreshCustomInfo();
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
+        }
+
+        public override bool IsSerialized()
+        {
+            if (MyAPIGateway.Multiplayer.IsServer)
+            {
+                if (Enhancer.Storage != null) EnhState.SaveState();
+            }
+            return false;
+        }
+
+        public override void OnAddedToScene()
+        {
+            try
+            {
+                MyGrid = (MyCubeGrid)Enhancer.CubeGrid;
+                MyCube = Enhancer as MyCubeBlock;
+                RegisterEvents();
+                if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: - EnhancerId [{Enhancer.EntityId}]");
+            }
+            catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
+        }
+
         public override void UpdateBeforeSimulation()
         {
             try
@@ -72,6 +135,22 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
 
+        public override void UpdateBeforeSimulation10()
+        {
+            try
+            {
+                _tick = Session.Instance.Tick;
+                if (_count++ == 5) _count = 0;
+                var wait = _isServer && _count != 0 && EnhState.State.Backup;
+
+                MyGrid = MyCube.CubeGrid;
+                if (wait || MyGrid?.Physics == null) return;
+
+                EnhancerReady();
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation10: {ex}"); }
+        }
+
         private void Timing()
         {
             if (_count++ == 59)
@@ -81,7 +160,7 @@ namespace DefenseShields
                 if (_lCount == 10) _lCount = 0;
             }
 
-            if (!_isDedicated && _count == 29 && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
+            if (!_isDedicated && _count == 29 && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == Enhancer.EntityId)
             {
                 Enhancer.RefreshCustomInfo();
             }
@@ -177,67 +256,6 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 3) Log.Line($"UpdateState: EnhancerId [{Enhancer.EntityId}]");
         }
 
-        public override void OnAddedToContainer()
-        {
-            if (!ContainerInited)
-            {
-                PowerPreInit();
-                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-                Enhancer = (IMyUpgradeModule)Entity;
-                ContainerInited = true;
-                if (Session.Enforced.Debug == 3) Log.Line($"ContainerInited:  EnhancerId [{Enhancer.EntityId}]");
-            }
-            if (Entity.InScene) OnAddedToScene();
-        }
-
-
-        public override void Init(MyObjectBuilder_EntityBase objectBuilder)
-        {
-            try
-            {
-                base.Init(objectBuilder);
-                StorageSetup();
-            }
-            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
-        }
-
-        public override void UpdateOnceBeforeFrame()
-        {
-            base.UpdateOnceBeforeFrame();
-            try
-            {
-                if (Enhancer.CubeGrid.Physics == null) return;
-                Session.Instance.Enhancers.Add(this);
-                PowerInit();
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                _isServer = Session.Instance.IsServer;
-                _isDedicated = Session.Instance.DedicatedServer;
-                Enhancer.RefreshCustomInfo();
-            }
-            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
-        }
-
-        public override bool IsSerialized()
-        {
-            if (MyAPIGateway.Multiplayer.IsServer)
-            {
-                if (Enhancer.Storage != null) EnhState.SaveState();
-            }
-            return false;
-        }
-
-        public override void OnAddedToScene()
-        {
-            try
-            {
-                MyGrid = (MyCubeGrid)Enhancer.CubeGrid;
-                MyCube = Enhancer as MyCubeBlock;
-                RegisterEvents();
-                if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: - EnhancerId [{Enhancer.EntityId}]");
-            }
-            catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
-        }
 
         private void StorageSetup()
         {

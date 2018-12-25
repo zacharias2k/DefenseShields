@@ -234,9 +234,7 @@ namespace DefenseShields
         {
             Monitor = false;
             Instance = null;
-            HudComp = null;
             Enforced = null;
-            Players.Clear();
             ProtSets.Clean();
 
             _autoResetEvent.Set();

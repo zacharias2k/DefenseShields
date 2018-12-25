@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
@@ -36,12 +35,8 @@ namespace DefenseShields
         private uint _tick;
         private uint _subTick = 1;
 
-        private int _count = -1;
-        private int _lCount;
-
         private float _power = 0.01f;
 
-        private bool _tick60;
         private bool _isServer;
         private bool _isDedicated;
         private bool _wasOnline;
@@ -49,6 +44,10 @@ namespace DefenseShields
         private bool _wasBackup;
         private bool _firstRun = true;
         private int _wasModulateDamage;
+        private int _count = -1;
+        private bool _tock33;
+        private bool _tock34;
+        private bool _tock60;
         private float _wasModulateEnergy;
         private float _wasModulateKinetic;
 
@@ -68,13 +67,91 @@ namespace DefenseShields
 
         internal DSUtils Dsutil1 = new DSUtils();
 
+        public override void OnAddedToContainer()
+        {
+            if (!ContainerInited)
+            {
+                PowerPreInit();
+                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                if (!MyAPIGateway.Utilities.IsDedicated) NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+                else NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
+                Modulator = (IMyUpgradeModule)Entity;
+                ContainerInited = true;
+            }
+            if (Entity.InScene) OnAddedToScene();
+        }
+
+        public override void Init(MyObjectBuilder_EntityBase objectBuilder)
+        {
+            try
+            {
+                base.Init(objectBuilder);
+                StorageSetup();
+            }
+            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
+        }
+
+
+        public override void OnAddedToScene()
+        {
+            try
+            {
+                MyGrid = (MyCubeGrid)Modulator.CubeGrid;
+                MyCube = Modulator as MyCubeBlock;
+                RegisterEvents();
+                if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: - ModulatorId [{Modulator.EntityId}]");
+                if (!MainInit) return;
+                ResetComp();
+            }
+            catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
+        }
+
+        public override void UpdateOnceBeforeFrame()
+        {
+            base.UpdateOnceBeforeFrame();
+            try
+            {
+                if (Modulator.CubeGrid.Physics == null) return;
+
+                _isServer = Session.Instance.IsServer;
+                _isDedicated = Session.Instance.DedicatedServer;
+
+                ResetComp();
+
+                Session.Instance.Modulators.Add(this);
+
+                CreateUi();
+                ModUi.ComputeDamage(this, ModUi.GetDamage(Modulator));
+
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                PowerInit();
+                Modulator.RefreshCustomInfo();
+                StateChange(true);
+                if (!Session.Instance.ModAction)
+                {
+                    Session.Instance.ModAction = true;
+                    Session.AppendConditionToAction<IMyUpgradeModule>((a) => Session.Instance.ModActions.Contains(a.Id), (a, b) => b.GameLogic.GetAs<Modulators>() != null && Session.Instance.ModActions.Contains(a.Id));
+                }
+                MainInit = true;
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
+        }
+
         public override void UpdateBeforeSimulation()
         {
             try
             {
                 _tick = Session.Instance.Tick;
-                _tick60 = _tick % 60 == 0;
-                var wait = _isServer && !_tick60 && ModState.State.Backup;
+                _tock33 = _tick % 33 == 0;
+                _tock34 = _tick % 33 == 0;
+                if (_count++ == 59)
+                {
+                    _count = 0;
+                    _tock60 = true;
+                }
+                else _tock60 = false;
+
+                var wait = _isServer && _count != 0 && ModState.State.Backup;
 
                 MyGrid = MyCube.CubeGrid;
                 if (wait || MyGrid?.Physics == null) return;
@@ -94,24 +171,60 @@ namespace DefenseShields
                     if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && IsWorking) BlockMoveAnimation();
                 }
 
-                if (_isServer)
-                {
-                    if (ShieldComp?.GetSubGrids != null && !ShieldComp.GetSubGrids.Equals(ModulatorComp.GetSubGrids))
-                        ModulatorComp.GetSubGrids = ShieldComp.GetSubGrids;
-
-                    if (_count == 0 || _firstRun)
-                    {
-                        if (Modulator.CustomData != ModulatorComp.ModulationPassword)
-                        {
-                            ModulatorComp.ModulationPassword = Modulator.CustomData;
-                            ModSet.SaveSettings();
-                            if (Session.Enforced.Debug == 3) Log.Line($"Updating modulator password");
-                        }
-                    }
-                }
+                if (_isServer) UpdateStates();
                 _firstRun = false;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
+        }
+
+        public override void UpdateBeforeSimulation10()
+        {
+            try
+            {
+                _tick = Session.Instance.Tick;
+                if (_count++ == 5)
+                {
+                    _count = 0;
+                    _tock60 = true;
+                }
+                else _tock60 = false;
+                _tock33 = _count == 3;
+                _tock34 = _count == 4;
+
+                var wait = _isServer && _count != 0 && ModState.State.Backup;
+
+                MyGrid = MyCube.CubeGrid;
+                if (wait || MyGrid?.Physics == null) return;
+                Timing();
+
+                if (!ModulatorReady())
+                {
+                    ModulatorOff();
+                    return;
+                }
+                ModulatorOn();
+
+                if (_isServer) UpdateStates();
+
+                _firstRun = false;
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation10: {ex}"); }
+        }
+
+        private void UpdateStates()
+        {
+            if (ShieldComp?.GetSubGrids != null && !ShieldComp.GetSubGrids.Equals(ModulatorComp.GetSubGrids))
+                ModulatorComp.GetSubGrids = ShieldComp.GetSubGrids;
+
+            if (_tock60 || _firstRun)
+            {
+                if (Modulator.CustomData != ModulatorComp.ModulationPassword)
+                {
+                    ModulatorComp.ModulationPassword = Modulator.CustomData;
+                    ModSet.SaveSettings();
+                    if (Session.Enforced.Debug == 3) Log.Line($"Updating modulator password");
+                }
+            }
         }
 
         private void ModulatorOff()
@@ -168,17 +281,17 @@ namespace DefenseShields
             else
             {
                 if (!ModState.State.Online) return false;
-                if (_count == 29 || _firstRun) ClientCheckForCompLink();
+                if (_tock60 || _firstRun) ClientCheckForCompLink();
             }
             return true;
         }
 
         private bool BlockWorking()
         {
-            if (_count <= 0) _powered = Sink.IsPowerAvailable(GId, 0.01f);
+            if (_tock60 || _firstRun) _powered = Sink.IsPowerAvailable(GId, 0.01f);
             if (!IsWorking || !_powered)
             {
-                if (!_isDedicated && _count == 29)
+                if (!_isDedicated && _tock60)
                 {
                     Modulator.RefreshCustomInfo();
                 }
@@ -195,7 +308,7 @@ namespace DefenseShields
 
             ModState.State.Backup = false;
 
-            if (_count == 59 && _lCount == 9 || _firstRun) ServerCheckForCompLink();
+            if (_tock60 || _firstRun) ServerCheckForCompLink();
             ModState.State.Online = true;
             return true;
         }
@@ -227,18 +340,13 @@ namespace DefenseShields
 
         private void Timing()
         {
-            if (_count++ == 59)
-            {
-                _count = 0;
-                _lCount++;
-                if (_lCount == 10) _lCount = 0;
-            }
-            if (_count == 29 && !_isDedicated && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel)
+            if (_tock60 && !_isDedicated && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == Modulator.EntityId)
             {
                 Modulator.RefreshCustomInfo();
+                MyCube.UpdateTerminal();
             }
 
-            if (_count == 33)
+            if (_tock33)
             {
                 if (SettingsUpdated)
                 {
@@ -248,7 +356,7 @@ namespace DefenseShields
                     if (Session.Enforced.Debug == 3) Log.Line($"SettingsUpdated: server:{_isServer} - ModulatorId [{Modulator.EntityId}]");
                 }
             }
-            else if (_count == 34)
+            else if (_tock34)
             {
                 if (ClientUiUpdate)
                 {
@@ -259,7 +367,7 @@ namespace DefenseShields
                 }
             }
 
-            if (_subDelayed && _tick > _subTick + 9)
+            if (_isDedicated || _subDelayed && _tick > _subTick + 9)
             {
                 if (Session.Enforced.Debug == 3) Log.Line($"Delayed tick: {_tick} - hierarchytick: {_subTick}");
                 _subDelayed = false;
@@ -292,59 +400,7 @@ namespace DefenseShields
             if (Session.Instance.MpActive) ModState.NetworkUpdate();
         }
 
-        public override void OnAddedToContainer()
-        {
-            if (!ContainerInited)
-            {
-                PowerPreInit();
-                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-                Modulator = (IMyUpgradeModule)Entity;
-                ContainerInited = true;
-            }
-            if (Entity.InScene) OnAddedToScene();
-        }
 
-        public override void Init(MyObjectBuilder_EntityBase objectBuilder)
-        {
-            try
-            {
-                base.Init(objectBuilder);
-                StorageSetup();
-            }
-            catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
-        }
-
-        public override void UpdateOnceBeforeFrame()
-        {
-            base.UpdateOnceBeforeFrame();
-            try
-            {
-                if (Modulator.CubeGrid.Physics == null) return;
-
-                _isServer = Session.Instance.IsServer;
-                _isDedicated = Session.Instance.DedicatedServer;
-
-                ResetComp();
-
-                Session.Instance.Modulators.Add(this);
-
-                CreateUi();
-                ModUi.ComputeDamage(this, ModUi.GetDamage(Modulator));
-
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                PowerInit();
-                Modulator.RefreshCustomInfo();
-                StateChange(true);
-                if (!Session.Instance.ModAction)
-                {
-                    Session.Instance.ModAction = true;
-                    Session.AppendConditionToAction<IMyUpgradeModule>((a) => Session.Instance.ModActions.Contains(a.Id), (a, b) => b.GameLogic.GetAs<Modulators>() != null && Session.Instance.ModActions.Contains(a.Id));
-                }
-                MainInit = true;
-            }
-            catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
-        }
 
         private void ResetComp()
         {
@@ -410,8 +466,8 @@ namespace DefenseShields
         {
             try
             {
-                if (_tick == _subTick || ShieldComp?.DefenseShields != null) return;
-                if (_subTick > _tick - 9)
+                if (!_isDedicated && _tick == _subTick || ShieldComp?.DefenseShields != null) return;
+                if (!_isDedicated && _subTick > _tick - 9)
                 {
                     _subDelayed = true;
                     return;
@@ -495,20 +551,6 @@ namespace DefenseShields
                 }
             }
             return false;
-        }
-
-        public override void OnAddedToScene()
-        {
-            try
-            {
-                MyGrid = (MyCubeGrid)Modulator.CubeGrid;
-                MyCube = Modulator as MyCubeBlock;
-                RegisterEvents();
-                if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: - ModulatorId [{Modulator.EntityId}]");
-                if (!MainInit) return;
-                ResetComp();
-            }
-            catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
 
         public override void OnRemovedFromScene()
