@@ -155,7 +155,7 @@ namespace DefenseShields
             {
                 if (SettingsUpdated)
                 {
-                    if (Session.Enforced.Debug == 1) Log.Line($"SettingsUpdated: server:{_isServer} - FixRooms:{O2Set.Settings.FixRoomPressure} - O2GeneratorId [{O2Generator.EntityId}]");
+                    if (Session.Enforced.Debug == 3) Log.Line($"SettingsUpdated: server:{_isServer} - FixRooms:{O2Set.Settings.FixRoomPressure} - O2GeneratorId [{O2Generator.EntityId}]");
                     SettingsUpdated = false;
                     O2Set.SaveSettings();
                     O2State.SaveState();
@@ -181,7 +181,7 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 1) Log.Line($"RestartDoorFix - O2GeneratorId[{O2Generator.EntityId}]");
             if (!_doorsStage3 || !_doorsStage2 || !_doorsStage3 || !_doorsStage4)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"RestartDoorFix already running:{!_doorsStage1} - {!_doorsStage2} - {!_doorsStage3} - {!_doorsStage4}! - O2GeneratorId[{O2Generator.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"RestartDoorFix already running:{!_doorsStage1} - {!_doorsStage2} - {!_doorsStage3} - {!_doorsStage4}! - O2GeneratorId[{O2Generator.EntityId}]");
                 return;
             }
             _doorsStage1 = false;
