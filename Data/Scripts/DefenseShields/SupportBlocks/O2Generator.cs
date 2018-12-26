@@ -50,6 +50,7 @@ namespace DefenseShields
         internal bool BlockIsWorking;
         internal bool BlockWasWorking;
         internal bool ContainerInited;
+        internal bool AirPressure;
 
         internal ShieldGridComponent ShieldComp;
         internal MyResourceSourceComponent Source;
@@ -109,6 +110,7 @@ namespace DefenseShields
                 Source = O2Generator.Components.Get<MyResourceSourceComponent>();
                 _isServer = Session.Instance.IsServer;
                 _isDedicated = Session.Instance.DedicatedServer;
+                AirPressure = MyAPIGateway.Session.SessionSettings.EnableOxygenPressurization; 
                 RemoveControls();
                 CreateUi();
             }
@@ -193,6 +195,12 @@ namespace DefenseShields
         private void SendFixBroadcast()
         {
             var sendMessage = false;
+            if (MyAPIGateway.Session?.Player?.Character?.WorldVolume != null)
+            {
+                if (ShieldComp.DefenseShields.ShieldSphere.Intersects(MyAPIGateway.Session.Player.Character.WorldVolume)) sendMessage = true;
+            }
+
+            /*
             foreach (var player in Session.Instance.Players.Values)
             {
                 if (player.IdentityId != MyAPIGateway.Session.Player.IdentityId) continue;
@@ -200,11 +208,22 @@ namespace DefenseShields
                 sendMessage = true;
                 break;
             }
+            */
             if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- Keen Bug, Shield Pressurizer Room Fixer, fixing rooms, resetting doors!", 8000, "Red");
         }
 
         private void DoorTightnessFix()
         {
+            if (!AirPressure)
+            {
+                _doorsStage1 = true;
+                _doorsStage2 = true;
+                _doorsStage3 = true;
+                _doorsStage4 = true;
+                O2Set.Settings.FixRoomPressure = false;
+                if (Session.Enforced.Debug == 1) Log.Line($"AirPressure is disabled");
+                return;
+            }
             if (!_doorsStage1)
             {
                 Doors.Clear();
@@ -549,6 +568,7 @@ namespace DefenseShields
 
             O2Set.LoadSettings();
             O2State.LoadState();
+            if (MyAPIGateway.Multiplayer.IsServer) O2Set.Settings.FixRoomPressure = false;
         }
 
         public override bool IsSerialized()

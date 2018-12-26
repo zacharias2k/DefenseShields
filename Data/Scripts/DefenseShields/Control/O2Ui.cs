@@ -28,7 +28,11 @@ namespace DefenseShields
         public static void FixRooms(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<O2Generators>();
-            if (comp == null) return;
+            if (comp == null || !comp.AirPressure)
+            {
+                if (comp != null) comp.O2Set.Settings.FixRoomPressure = false;
+                return;
+            }
             comp.O2Set.Settings.FixRoomPressure = newValue;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;

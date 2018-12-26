@@ -525,7 +525,7 @@ namespace DefenseShields
 
         public void O2GeneratorSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
-            if (Enforced.Debug >= 1) Log.Line($"O2GeneratorStateToClients - Players:{Players.Count}");
+            if (Enforced.Debug >= 1) Log.Line($"O2GeneratorSettingsToClients - Players:{Players.Count}");
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
 
             foreach (var p in Players.Values)
@@ -534,7 +534,7 @@ namespace DefenseShields
 
                 if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= _syncDistSqr)
                 {
-                    if (Enforced.Debug >= 1) Log.Line($"O2GeneratorStateToClients - Player:{p.SteamUserId}");
+                    if (Enforced.Debug >= 1) Log.Line($"O2GeneratorSettingsToClients - Player:{p.SteamUserId}");
                     MyAPIGateway.Multiplayer.SendMessageTo(PacketIdO2GeneratorSettings, bytes, p.SteamUserId);
                 }
             }
