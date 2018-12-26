@@ -1,8 +1,11 @@
 ﻿using System.Collections.Generic;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
+using Sandbox.Game.GameSystems;
 using Sandbox.ModAPI;
+using SpaceEngineers.Game.ModAPI;
 using VRage.Game;
+using VRage.ModAPI;
 using VRageMath;
 
 namespace DefenseShields

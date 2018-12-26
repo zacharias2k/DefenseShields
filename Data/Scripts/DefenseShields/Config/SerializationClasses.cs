@@ -300,16 +300,16 @@ namespace DefenseShields
     public class ProtoO2GeneratorSettings
     {
         [ProtoMember(1)]
-        public bool Unused;
+        public bool FixRoomPressure;
 
         [ProtoMember(2), DefaultValue(true)]
-        public bool ModulateVoxels = true;
+        public bool Unused2 = true;
 
         [ProtoMember(3)]
-        public bool ModulateGrids = false;
+        public bool Unused3 = false;
 
         [ProtoMember(4), DefaultValue(-1)]
-        public int ModulateDamage = 100;
+        public int Unused4 = 100;
 
         public override string ToString()
         {

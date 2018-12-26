@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using DefenseShields.Support;
 using Sandbox.Common.ObjectBuilders;
@@ -64,7 +63,6 @@ namespace DefenseShields
             }
             if (Entity.InScene) OnAddedToScene();
         }
-
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {

@@ -196,6 +196,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Config\PlanetShieldData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\O2GeneratorData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\EnhancerData.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Control\O2Ui.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\PsUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\PlanetShield.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionControls.cs" />
@@ -217,11 +218,6 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\DsUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\TerminalHelpers.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\Display.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Control\BaseControl.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Control\ButtonControl.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Control\Checkbox.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Control\ColorControl.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Control\Seperator.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\Enhancer.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\Box.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\ConvexHull.cs" />
@@ -262,7 +258,6 @@
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\CSupport\ResourcePool.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Debug\DebugDraw.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Logging.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Control\Slider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Utils.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Render.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldTimings.cs" />

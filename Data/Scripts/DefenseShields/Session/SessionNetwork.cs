@@ -212,6 +212,43 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in ModulatorStateReceived: {ex}"); }
         }
 
+
+        private void O2GeneratorSettingsReceived(byte[] bytes)
+        {
+            try
+            {
+                if (bytes.Length <= 2) return;
+
+                var data = MyAPIGateway.Utilities.SerializeFromBinary<DataO2GeneratorSettings>(bytes); // this will throw errors on invalid data
+
+                if (data == null) return;
+
+                IMyEntity ent;
+                if (!MyAPIGateway.Entities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
+                {
+                    Log.Line($"O2Generator PacketReceive; {data.Type}; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    return;
+                }
+
+                var logic = ent.GameLogic.GetAs<O2Generators>();
+                if (logic == null) return;
+
+                switch (data.Type)
+                {
+                    case PacketType.O2Generatorsettings:
+                    {
+                        if (data.Settings == null) return;
+
+                        logic.UpdateSettings(data.Settings);
+                        if (MyAPIGateway.Multiplayer.IsServer) O2GeneratorSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                        if (Enforced.Debug >= 1) Log.Line($"O2Generator received:\n{data.Settings} - Server:{MyAPIGateway.Multiplayer.IsServer}");
+                    }
+                        break;
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in ModulatorSettingsReceived: {ex}"); }
+        }
+
         private void O2GeneratorStateReceived(byte[] bytes)
         {
             try
@@ -373,6 +410,14 @@ namespace DefenseShields
             PlanetShieldStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
         }
 
+        public void PacketizeO2GeneratorSettings(IMyCubeBlock block, ProtoO2GeneratorSettings settings)
+        {
+            if (Enforced.Debug >= 1) Log.Line($"PacketizeO2GeneratorSettings");
+            var data = new DataO2GeneratorSettings(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            O2GeneratorSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
         public void PacketizeO2GeneratorState(IMyCubeBlock block, ProtoO2GeneratorState state)
         {
             var data = new DataO2GeneratorState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
@@ -478,6 +523,23 @@ namespace DefenseShields
             }
         }
 
+        public void O2GeneratorSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        {
+            if (Enforced.Debug >= 1) Log.Line($"O2GeneratorStateToClients - Players:{Players.Count}");
+            var localSteamId = MyAPIGateway.Multiplayer.MyId;
+
+            foreach (var p in Players.Values)
+            {
+                var id = p.SteamUserId;
+
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= _syncDistSqr)
+                {
+                    if (Enforced.Debug >= 1) Log.Line($"O2GeneratorStateToClients - Player:{p.SteamUserId}");
+                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdO2GeneratorSettings, bytes, p.SteamUserId);
+                }
+            }
+        }
+
         public void O2GeneratorStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
@@ -487,7 +549,6 @@ namespace DefenseShields
                 var id = p.SteamUserId;
 
                 if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= _syncDistSqr)
-
                     MyAPIGateway.Multiplayer.SendMessageTo(PacketIdO2GeneratorState, bytes, p.SteamUserId);
             }
         }

@@ -141,6 +141,18 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in CreateModulatorUi: {ex}"); }
         }
 
+        public void CreateO2GeneratorUi(IMyTerminalBlock block)
+        {
+            try
+            {
+                if (O2Control) return;
+                var comp = block?.GameLogic?.GetAs<O2Generators>();
+                O2DoorFix = TerminalHelpers.AddCheckbox(comp?.O2Generator, "DS-FixRoomPressure", "Keen-Bug, Fix Room Pressure", "Keen-Bug, Fix Room Pressure", O2Ui.FixStatus, O2Ui.FixRooms);
+                O2Control = true;
+            }
+            catch (Exception ex) { Log.Line($"Exception in CreateO2GeneratorUi: {ex}"); }
+        }
+
         public static void AppendConditionToAction<T>(Func<IMyTerminalAction, bool> actionFindCondition, Func<IMyTerminalAction, IMyTerminalBlock, bool> actionEnabledAppend)
         {
             List<IMyTerminalAction> actions;

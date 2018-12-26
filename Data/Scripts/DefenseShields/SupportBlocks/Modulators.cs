@@ -400,8 +400,6 @@ namespace DefenseShields
             if (Session.Instance.MpActive) ModState.NetworkUpdate();
         }
 
-
-
         private void ResetComp()
         {
             ModulatorGridComponent comp;

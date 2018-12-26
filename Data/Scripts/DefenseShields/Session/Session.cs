@@ -30,6 +30,7 @@ namespace DefenseShields
 
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEnforce, EnforcementReceived);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdO2GeneratorSettings, O2GeneratorSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdControllerState, ControllerStateReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdControllerSettings, ControllerSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdModulatorSettings, ModulatorSettingsReceived);
@@ -240,6 +241,7 @@ namespace DefenseShields
             _autoResetEvent.Set();
             _autoResetEvent = null;
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEnforce, EnforcementReceived);
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdO2GeneratorSettings, O2GeneratorSettingsReceived);
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdControllerState, ControllerStateReceived);
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdControllerSettings, ControllerSettingsReceived);
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdModulatorSettings, ModulatorSettingsReceived);

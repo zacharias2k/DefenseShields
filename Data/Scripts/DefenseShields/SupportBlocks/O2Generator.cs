@@ -7,14 +7,16 @@ using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
+using Sandbox.ModAPI.Ingame;
 using Sandbox.ModAPI.Interfaces.Terminal;
-using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
-using VRage.Game.ObjectBuilders.Definitions;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRageMath;
+using IMyDoor = Sandbox.ModAPI.IMyDoor;
+using IMyGasGenerator = Sandbox.ModAPI.IMyGasGenerator;
+using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
 
 namespace DefenseShields
 {
@@ -33,7 +35,13 @@ namespace DefenseShields
 
         private bool _isServer;
         private bool _isDedicated;
+        private bool _doorsStage1;
+        private bool _doorsStage2;
+        private bool _doorsStage3;
+        private bool _doorsStage4;
 
+        internal bool SettingsUpdated;
+        internal bool ClientUiUpdate;
         internal bool IsFunctional;
         internal bool IsWorking;
         internal bool AllInited;
@@ -46,8 +54,9 @@ namespace DefenseShields
         internal ShieldGridComponent ShieldComp;
         internal MyResourceSourceComponent Source;
         internal O2GeneratorState O2State;
-        private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
+        internal O2GeneratorSettings O2Set;
 
+        internal readonly Dictionary<IMyDoor, DoorStatus> Doors = new Dictionary<IMyDoor, DoorStatus>();
         internal DSUtils Dsutil1 = new DSUtils();
 
         public IMyGasGenerator O2Generator;
@@ -100,6 +109,8 @@ namespace DefenseShields
                 Source = O2Generator.Components.Get<MyResourceSourceComponent>();
                 _isServer = Session.Instance.IsServer;
                 _isDedicated = Session.Instance.DedicatedServer;
+                RemoveControls();
+                CreateUi();
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
@@ -119,13 +130,17 @@ namespace DefenseShields
 
                 MyGrid = MyCube.CubeGrid;
                 if (wait || MyGrid?.Physics == null) return;
-                if (!_isDedicated && _count == 0) Timing();
+                if (!_isDedicated && _count == 0) TerminalRefresh();
 
                 if (!O2GeneratorReady()) return;
 
-                if (_count > 0) return;
+                if (SettingsUpdated || ClientUiUpdate) SettingsUpdate();
 
-                if (_isServer)
+                if (_count == 5 && (!_doorsStage1 || !_doorsStage2)) DoorTightnessFix();
+                else if (_count == 5 && _doorsStage1 && _doorsStage2 && !_doorsStage3) DoorTightnessFix();
+                else if (_count == 0 && _doorsStage3 && !_doorsStage4) DoorTightnessFix();
+
+                if (_isServer && _count == 0)
                 {
                     Pressurize();
                     NeedUpdate(O2State.State.Pressurized, true);
@@ -134,11 +149,186 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
 
-        private void Timing()
+        private void SettingsUpdate()
+        {
+            if (_count == 3)
+            {
+                if (SettingsUpdated)
+                {
+                    if (Session.Enforced.Debug == 1) Log.Line($"SettingsUpdated: server:{_isServer} - FixRooms:{O2Set.Settings.FixRoomPressure} - O2GeneratorId [{O2Generator.EntityId}]");
+                    SettingsUpdated = false;
+                    O2Set.SaveSettings();
+                    O2State.SaveState();
+                    if (!ClientUiUpdate && O2Set.Settings.FixRoomPressure) RestartDoorFix();
+                }
+            }
+            else if (_count == 4 && !SettingsUpdated)
+            {
+                if (ClientUiUpdate)
+                {
+                    if (Session.Enforced.Debug == 1) Log.Line($"ClientUiUpdate: server:{_isServer} - FixRooms:{O2Set.Settings.FixRoomPressure} - O2GeneratorId [{O2Generator.EntityId}]");
+                    ClientUiUpdate = false;
+                    MyCube.UpdateTerminal();
+                    O2Generator.RefreshCustomInfo();
+                    if (!_isServer) O2Set.NetworkUpdate();
+                    if (O2Set.Settings.FixRoomPressure) RestartDoorFix();
+                }
+            }
+        }
+
+        public void RestartDoorFix()
+        {
+            if (Session.Enforced.Debug == 1) Log.Line($"RestartDoorFix - O2GeneratorId[{O2Generator.EntityId}]");
+            if (!_doorsStage3 || !_doorsStage2 || !_doorsStage3 || !_doorsStage4)
+            {
+                if (Session.Enforced.Debug == 1) Log.Line($"RestartDoorFix already running:{!_doorsStage1} - {!_doorsStage2} - {!_doorsStage3} - {!_doorsStage4}! - O2GeneratorId[{O2Generator.EntityId}]");
+                return;
+            }
+            _doorsStage1 = false;
+            _doorsStage2 = false;
+            _doorsStage3 = false;
+            _doorsStage4 = false;
+        }
+
+        private void SendFixBroadcast()
+        {
+            var sendMessage = false;
+            foreach (var player in Session.Instance.Players.Values)
+            {
+                if (player.IdentityId != MyAPIGateway.Session.Player.IdentityId) continue;
+                if (!ShieldComp.DefenseShields.ShieldSphere.Intersects(player.Character.WorldVolume)) continue;
+                sendMessage = true;
+                break;
+            }
+            if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- Keen Bug, Shield Pressurizer Room Fixer, fixing rooms, resetting doors!", 8000, "Red");
+        }
+
+        private void DoorTightnessFix()
+        {
+            if (!_doorsStage1)
+            {
+                Doors.Clear();
+                foreach (var grid in ShieldComp.DefenseShields.ProtectedEntCache.Keys)
+                {
+                    if (!(grid is MyCubeGrid)) continue;
+                    foreach (var myCube in ((MyCubeGrid)grid).GetFatBlocks())
+                    {
+                        var myDoor = myCube as IMyDoor;
+                        if (myDoor != null)
+                        {
+                            var status = myDoor.Status;
+                            if (status == DoorStatus.Opening || status == DoorStatus.Open)
+                            {
+                                status = DoorStatus.Open;
+                                myDoor.CloseDoor();
+                            }
+                            else
+                            {
+                                status = DoorStatus.Closed;
+                                myDoor.OpenDoor();
+                            }
+                            Doors.Add(myDoor, status);
+                        }
+                    }
+                }
+                if (!_isDedicated) SendFixBroadcast();
+                _doorsStage1 = true;
+            }
+            else if (!_doorsStage2)
+            {
+                foreach (var item in Doors)
+                {
+                    if (item.Value == DoorStatus.Open)
+                    {
+                        item.Key.OpenDoor();
+                    }
+                    else
+                    {
+                        item.Key.CloseDoor();
+                    }
+
+                }
+                _doorsStage2 = true;
+            }
+            else if (!_doorsStage3)
+            {
+                foreach (var item in Doors)
+                {
+                    if (item.Value == DoorStatus.Closed)
+                    {
+                        item.Key.OpenDoor();
+                    }
+                }
+                _doorsStage3 = true;
+            }
+            else if (!_doorsStage4)
+            {
+                foreach (var item in Doors)
+                {
+                    if (item.Value == DoorStatus.Closed)
+                    {
+                        item.Key.OpenDoor();
+                        item.Key.CloseDoor();
+                    }
+                }
+                _doorsStage4 = true;
+                O2Set.Settings.FixRoomPressure = false;
+                O2Set.SaveSettings();
+                Doors.Clear();
+            }
+        }
+
+        private void Pressurize()
+        {
+            var sc = ShieldComp;
+            var shieldFullVol = sc.ShieldVolume;
+            var startingO2Fpercent = sc.DefaultO2 + sc.DefenseShields.DsState.State.IncreaseO2ByFPercent;
+
+            if (shieldFullVol < _oldShieldVol)
+            {
+                var ratio = _oldShieldVol / shieldFullVol;
+                if (startingO2Fpercent * ratio > 1) startingO2Fpercent = 1d;
+                else startingO2Fpercent = startingO2Fpercent * ratio;
+            }
+            else if (shieldFullVol > _oldShieldVol)
+            {
+                var ratio = _oldShieldVol / shieldFullVol;
+                startingO2Fpercent = startingO2Fpercent * ratio;
+            }
+            _oldShieldVol = shieldFullVol;
+
+            _shieldVolFilled = shieldFullVol * startingO2Fpercent;
+            if (!_isDedicated) UpdateAirEmissives(startingO2Fpercent);
+
+            var shieldVolStillEmpty = shieldFullVol - _shieldVolFilled;
+            if (!(shieldVolStillEmpty > 0)) return;
+
+            var amount = _inventory.CurrentVolume.RawValue;
+            if (amount <= 0) return;
+            if (amount - 10.3316326531 > 0)
+            {
+                _inventory.RemoveItems(0, 2700);
+                _shieldVolFilled += 10.3316326531 * 261.333333333;
+            }
+            else
+            {
+                _inventory.RemoveItems(0, _inventory.CurrentVolume);
+                _shieldVolFilled += amount * 261.333333333;
+            }
+            if (_shieldVolFilled > shieldFullVol) _shieldVolFilled = shieldFullVol;
+
+            var shieldVolPercentFull = _shieldVolFilled * 100.0;
+            var fPercentToAddToDefaultO2Level = shieldVolPercentFull / shieldFullVol * 0.01 - sc.DefaultO2;
+
+            sc.DefenseShields.DsState.State.IncreaseO2ByFPercent = fPercentToAddToDefaultO2Level;
+            sc.O2Updated = true;
+            if (Session.Enforced.Debug == 3) Log.Line($"default:{ShieldComp.DefaultO2} - Filled/(Max):{O2State.State.VolFilled}/({shieldFullVol}) - ShieldO2Level:{sc.DefenseShields.DsState.State.IncreaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(MyAPIGateway.Session.Player.GetPosition())}");
+        }
+
+        private void TerminalRefresh()
         {
             if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == O2Generator.EntityId)
             {
-                Log.Line($"test");
                 O2Generator.RefreshCustomInfo();
                 MyCube.UpdateTerminal();
             }
@@ -150,7 +340,7 @@ namespace DefenseShields
             {
                 if (_isServer)
                 {
-                    if (ShieldComp == null) MyGrid.Components.TryGet(out ShieldComp);
+                    if (ShieldComp?.DefenseShields?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
 
                     if (ShieldComp?.DefenseShields == null || ShieldComp?.ActiveO2Generator != null || !ShieldComp.DefenseShields.Warming || ShieldComp.ShieldVolume <= 0) return false;
                     ShieldComp.ActiveO2Generator = this;
@@ -159,17 +349,17 @@ namespace DefenseShields
                 }
                 else
                 {
-                    if (ShieldComp == null) MyGrid.Components.TryGet(out ShieldComp);
+                    if (ShieldComp?.DefenseShields?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
 
                     if (ShieldComp?.DefenseShields == null) return false;
                     if (ShieldComp.ActiveO2Generator == null) ShieldComp.ActiveO2Generator = this;
                 }
 
-                RemoveControls();
-                O2Generator.AppendingCustomInfo += AppendingCustomInfo;
+
                 Source.Enabled = false;
                 O2Generator.AutoRefill = false;
-
+                RemoveControls();
+                O2Generator.AppendingCustomInfo += AppendingCustomInfo;
                 ResetAirEmissives(-1);
                 BlockWasWorking = true;
                 AllInited = true;
@@ -188,7 +378,6 @@ namespace DefenseShields
             else
             {
                 if (!AllInited && !InitO2Generator()) return false;
-
                 if (ShieldComp?.DefenseShields == null) return false;
 
                 if (!O2State.State.Backup && ShieldComp.ActiveO2Generator != this) ShieldComp.ActiveO2Generator = this;
@@ -236,53 +425,6 @@ namespace DefenseShields
             }
             NeedUpdate(O2State.State.Pressurized, false);
             return false;
-        }
-
-        private void Pressurize()
-        {
-            var sc = ShieldComp;
-            var shieldFullVol = sc.ShieldVolume;
-            var startingO2Fpercent = sc.DefaultO2 + sc.DefenseShields.DsState.State.IncreaseO2ByFPercent;
-
-            if (shieldFullVol < _oldShieldVol)
-            {
-                var ratio = _oldShieldVol / shieldFullVol;
-                if (startingO2Fpercent * ratio > 1) startingO2Fpercent = 1d;
-                else startingO2Fpercent = startingO2Fpercent * ratio;
-            }
-            else if (shieldFullVol > _oldShieldVol)
-            {
-                var ratio = _oldShieldVol / shieldFullVol;
-                startingO2Fpercent = startingO2Fpercent * ratio;
-            }
-            _oldShieldVol = shieldFullVol;
-
-            _shieldVolFilled = shieldFullVol * startingO2Fpercent;
-            if (!_isDedicated) UpdateAirEmissives(startingO2Fpercent);
-
-            var shieldVolStillEmpty = shieldFullVol - _shieldVolFilled;
-            if (!(shieldVolStillEmpty > 0)) return;
-
-            var amount = _inventory.CurrentVolume.RawValue;
-            if (amount <= 0) return;
-            if (amount - 10.3316326531 > 0)
-            {
-                _inventory.RemoveItems(0, 2700);
-                _shieldVolFilled += 10.3316326531 * 261.333333333;
-            }
-            else
-            {
-                _inventory.RemoveItems(0, _inventory.CurrentVolume);
-                _shieldVolFilled += amount * 261.333333333;
-            }
-            if (_shieldVolFilled > shieldFullVol) _shieldVolFilled = shieldFullVol;
-
-            var shieldVolPercentFull = _shieldVolFilled * 100.0;
-            var fPercentToAddToDefaultO2Level = shieldVolPercentFull / shieldFullVol * 0.01 - sc.DefaultO2;
-
-            sc.DefenseShields.DsState.State.IncreaseO2ByFPercent = fPercentToAddToDefaultO2Level;
-            sc.O2Updated = true;
-            if (Session.Enforced.Debug == 3) Log.Line($"default:{ShieldComp.DefaultO2} - Filled/(Max):{O2State.State.VolFilled}/({shieldFullVol}) - ShieldO2Level:{sc.DefenseShields.DsState.State.IncreaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(O2Generator.PositionComp.WorldVolume.Center)}");
         }
 
         private void UpdateVisuals()
@@ -392,10 +534,20 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 3) Log.Line($"UpdateState - O2GenId [{O2Generator.EntityId}]:\n{newState}");
         }
 
+        public void UpdateSettings(ProtoO2GeneratorSettings newSettings)
+        {
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings for O2Generator - Fix:{newSettings.FixRoomPressure} - O2GenId [{O2Generator.EntityId}]");
+            SettingsUpdated = true;
+            O2Set.Settings = newSettings;
+        }
+
         private void StorageSetup()
         {
+            if (O2Set == null) O2Set = new O2GeneratorSettings(O2Generator);
             if (O2State == null) O2State = new O2GeneratorState(O2Generator);
-            O2State.StorageInit();
+            if (O2Generator.Storage == null) O2State.StorageInit();
+
+            O2Set.LoadSettings();
             O2State.LoadState();
         }
 
@@ -403,7 +555,11 @@ namespace DefenseShields
         {
             if (MyAPIGateway.Multiplayer.IsServer)
             {
-                if (O2Generator.Storage != null) O2State.SaveState();
+                if (O2Generator.Storage != null)
+                {
+                    O2State.SaveState();
+                    O2Set.SaveSettings();
+                }
             }
             return false;
         }
@@ -465,17 +621,24 @@ namespace DefenseShields
             base.MarkForClose();
         }
 
+        #region Create UI
+        private void CreateUi()
+        {
+            O2Ui.CreateUi(O2Generator);
+        }
+        #endregion
+
         public static void RemoveControls()
         {
             var actions = new List<IMyTerminalAction>();
-            MyAPIGateway.TerminalControls.GetActions<Sandbox.ModAPI.Ingame.IMyGasGenerator>(out actions);
+            MyAPIGateway.TerminalControls.GetActions<IMyGasGenerator>(out actions);
             var aRefill = actions.First((x) => x.Id.ToString() == "Refill");
             aRefill.Enabled = block => false;
             var aAutoRefill = actions.First((x) => x.Id.ToString() == "Auto-Refill");
             aAutoRefill.Enabled = block => false;
 
             var controls = new List<IMyTerminalControl>();
-            MyAPIGateway.TerminalControls.GetControls<Sandbox.ModAPI.Ingame.IMyGasGenerator>(out controls);
+            MyAPIGateway.TerminalControls.GetControls<IMyGasGenerator>(out controls);
             var cRefill = controls.First((x) => x.Id.ToString() == "Refill");
             cRefill.Enabled = block => false;
             cRefill.Visible = block => false;
@@ -485,6 +648,11 @@ namespace DefenseShields
             cAutoRefill.Enabled = block => false;
             cAutoRefill.Visible = block => false;
             cAutoRefill.RedrawControl();
+
+            var cCustomData = controls.First((x) => x.Id.ToString() == "CustomData");
+            cCustomData.Enabled = block => false;
+            cCustomData.Visible = block => false;
+            cCustomData.RedrawControl();
         }
     }
 }

@@ -23,6 +23,7 @@ namespace DefenseShields
 
         internal uint Tick;
         internal uint OldestRefreshTick;
+        internal const ushort PacketIdO2GeneratorSettings = 62513;
         internal const ushort PacketIdPlanetShieldSettings = 62514;
         internal const ushort PacketIdPlanetShieldState = 62515; // 
         internal const ushort PacketIdEmitterState = 62516;
@@ -32,7 +33,7 @@ namespace DefenseShields
         internal const ushort PacketIdControllerSettings = 62520;
         internal const ushort PacketIdEnforce = 62521;
         internal const ushort PacketIdModulatorSettings = 62522;
-        internal const ushort PacketIdModulatorState = 62523; // 
+        internal const ushort PacketIdModulatorState = 62523;
 
         private int _count = -1;
         private int _lCount;
@@ -76,6 +77,7 @@ namespace DefenseShields
         internal bool DsControl;
         internal bool PsControl;
         internal bool ModControl;
+        internal bool O2Control;
 
         internal bool MpActive;
         internal bool IsServer;
@@ -101,6 +103,7 @@ namespace DefenseShields
         internal MyStringId ShieldFreq = MyStringId.GetOrCompute("Shield Frequency");
         internal MyStringId ShieldFreqTooltip = MyStringId.GetOrCompute("Set this to the secret frequency/code used for shield access");
 
+        internal readonly Guid O2GeneratorSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811502");
         internal readonly Guid EnhancerStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811503");
         internal readonly Guid O2GeneratorStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811504");
         internal readonly Guid ControllerStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811505");
@@ -197,6 +200,8 @@ namespace DefenseShields
         internal IMyTerminalControlCheckbox ModEmp;
         internal IMyTerminalControlSeparator ModSep1;
         internal IMyTerminalControlSeparator ModSep2;
+
+        internal IMyTerminalControlCheckbox O2DoorFix;
 
         internal IMyTerminalControlCheckbox PsBatteryBoostCheckBox;
         internal IMyTerminalControlCheckbox PsHideActiveCheckBox;
