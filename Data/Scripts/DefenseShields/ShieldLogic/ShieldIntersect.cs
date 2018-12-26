@@ -14,7 +14,8 @@ namespace DefenseShields
     public partial class DefenseShields
     {
         #region Intersect
-        private void EntIntersectSelector(KeyValuePair<MyEntity, EntIntersectInfo> pair)
+
+        internal void EntIntersectSelector(KeyValuePair<MyEntity, EntIntersectInfo> pair)
         {
             var entInfo = pair.Value;
             var webent = pair.Key;
@@ -244,7 +245,7 @@ namespace DefenseShields
             }
         }
 
-        private void VoxelIntersect()
+        internal void VoxelIntersect()
         {
             foreach (var dict in VoxelsToIntersect)
             {

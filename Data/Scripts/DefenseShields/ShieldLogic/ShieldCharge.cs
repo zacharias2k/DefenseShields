@@ -25,7 +25,7 @@ namespace DefenseShields
             if (Absorb > 0)
             {
                 _damageReadOut += Absorb;
-                EffectsCleanup = true;
+                EffectsCleanTick = _tick;
                 DsState.State.Buffer -= Absorb / Session.Enforced.Efficiency;
             }
             else if (Absorb < 0) DsState.State.Buffer += Absorb / Session.Enforced.Efficiency;

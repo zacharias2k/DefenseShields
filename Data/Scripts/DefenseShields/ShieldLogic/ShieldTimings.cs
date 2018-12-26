@@ -282,7 +282,6 @@ namespace DefenseShields
                                 }
                             }
                         }
-                        EffectsCleanup = false;
                         break;
                 }
             }

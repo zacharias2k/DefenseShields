@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
+using Sandbox.Game.Entities;
 using VRage.Collections;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
@@ -80,7 +82,6 @@ namespace DefenseShields.Support
 
     public class EntIntersectInfo
     {
-        public readonly long EntId;
         public float Damage;
         public double EmpSize;
         public bool Touched;
@@ -95,10 +96,9 @@ namespace DefenseShields.Support
         public DefenseShields.Ent Relation;
         public List<IMySlimBlock> CacheBlockList;
 
-        public EntIntersectInfo(long entId, float damage, double empSize, bool touched, BoundingBox box, Vector3D contactPoint, Vector3D empDetonation, uint firstTick, uint lastTick, uint refreshTick, uint blockUpdateTick, DefenseShields.Ent relation, List<IMySlimBlock> cacheBlockList)
+        public EntIntersectInfo(float damage, double empSize, bool touched, BoundingBox box, Vector3D contactPoint, Vector3D empDetonation, uint firstTick, uint lastTick, uint refreshTick, uint blockUpdateTick, DefenseShields.Ent relation, List<IMySlimBlock> cacheBlockList)
         {
             CacheBlockList = cacheBlockList;
-            EntId = entId;
             Damage = damage;
             EmpSize = empSize;
             Touched = touched;

@@ -195,9 +195,6 @@ namespace DefenseShields
             Tick600 = Tick % 600 == 0;
             Tick1800 = Tick % 1800 == 0;
 
-            if (ThreadPeak > _oldThreadPeak) _oldThreadPeak = ThreadPeak;
-            ThreadPeak = 0;
-
             if (_count++ == 59)
             {
                 _count = 0;

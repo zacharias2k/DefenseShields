@@ -38,14 +38,12 @@ namespace DefenseShields
         private int _count = -1;
         private int _lCount;
         private int _eCount;
-        private int _oldThreadPeak;
 
         internal int OnCount;
         internal int RefreshCycle;
         private const int EntCleanCycle = 3600;
         private const int EntMaxTickAge = 36000;
 
-        internal int ThreadPeak;
         internal int EntSlotScaler = 9;
 
         internal long LastTerminalId;
@@ -71,7 +69,9 @@ namespace DefenseShields
         internal volatile bool Wake;
         internal volatile bool Monitor = true;
         internal volatile bool EntSlotTick;
+        internal volatile bool Dispatched;
 
+        internal bool WebWrapperOn;
         internal bool ScalerChanged;
         internal bool HideActions;
         internal bool DsControl;
@@ -130,6 +130,8 @@ namespace DefenseShields
         internal readonly ConcurrentDictionary<long, IMyPlayer> Players = new ConcurrentDictionary<long, IMyPlayer>();
         private readonly List<KeyValuePair<MyEntity, uint>> _entRefreshTmpList = new List<KeyValuePair<MyEntity, uint>>();
         private readonly ConcurrentQueue<MyEntity> _entRefreshQueue = new ConcurrentQueue<MyEntity>();
+        internal readonly ConcurrentQueue<DefenseShields> WebWrapper = new ConcurrentQueue<DefenseShields>();
+
         private readonly ConcurrentDictionary<MyEntity, uint> _globalEntTmp = new ConcurrentDictionary<MyEntity, uint>();
 
         internal readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();

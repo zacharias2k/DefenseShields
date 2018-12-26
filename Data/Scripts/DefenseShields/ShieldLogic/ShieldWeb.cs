@@ -176,7 +176,7 @@ namespace DefenseShields
                         }
                         entChanged = true;
                         _enablePhysics = true;
-                        WebEnts.TryAdd(ent, new EntIntersectInfo(ent.EntityId, 0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, tick, tick, tick, tick, relation, new List<IMySlimBlock>()));
+                        WebEnts.TryAdd(ent, new EntIntersectInfo(0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, tick, tick, tick, tick, relation, new List<IMySlimBlock>()));
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in WebEntities entInfo: {ex}"); }
@@ -204,21 +204,9 @@ namespace DefenseShields
             {
                 Asleep = false;
                 LastWokenTick = tick;
-                if (!Dispatched) MyAPIGateway.Parallel.Start(WebDispatch, DispatchDone);
-                Session.Instance.ThreadPeak++;
-                Dispatched = true;
+                Session.Instance.WebWrapper.Enqueue(this);
+                Session.Instance.WebWrapperOn = true;
             }
-        }
-
-        private void DispatchDone()
-        {
-            Dispatched = false;
-        }
-
-        public void WebDispatch()
-        {
-            if (VoxelsToIntersect.Count > 0) MyAPIGateway.Parallel.Start(VoxelIntersect);
-            MyAPIGateway.Parallel.ForEach(WebEnts, EntIntersectSelector);
         }
         #endregion
 

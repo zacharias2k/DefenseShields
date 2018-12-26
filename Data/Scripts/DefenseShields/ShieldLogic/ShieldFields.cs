@@ -7,7 +7,6 @@ using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
-using VRage.Collections;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
@@ -31,6 +30,7 @@ namespace DefenseShields
         internal uint UnsuspendTick;
         internal uint LosCheckTick;
         internal uint TicksWithNoActivity;
+        internal uint EffectsCleanTick;
 
         internal float ImpactSize { get; set; } = 9f;
         internal float Absorb { get; set; }
@@ -126,7 +126,6 @@ namespace DefenseShields
         internal bool ControlBlockWorking;
         internal bool EntCleanUpTime;
         internal bool ModulateGrids;
-        internal bool EffectsCleanup;
 
         private bool _wasSuspended = true;
         private bool _enablePhysics = true;
@@ -137,7 +136,7 @@ namespace DefenseShields
         private bool _tick60;
         private bool _tick180;
         private bool _tick600;
-        private bool _userDebugEnabled;
+        private bool _tick1800;
         private bool _resetEntity;
         private bool _empOverLoad;
         private bool _isDedicated;
@@ -241,7 +240,7 @@ namespace DefenseShields
         internal readonly ConcurrentDictionary<MyEntity, MoverInfo> EntsByMe = new ConcurrentDictionary<MyEntity, MoverInfo>();
         internal readonly ConcurrentDictionary<MyVoxelBase, bool> VoxelsToIntersect = new ConcurrentDictionary<MyVoxelBase, bool>();
 
-        internal readonly MyConcurrentQueue<MyCubeGrid> StaleGrids = new MyConcurrentQueue<MyCubeGrid>();
+        internal readonly ConcurrentQueue<MyCubeGrid> StaleGrids = new ConcurrentQueue<MyCubeGrid>();
 
         internal readonly ConcurrentQueue<MyCubeGrid> Eject = new ConcurrentQueue<MyCubeGrid>();
         internal readonly ConcurrentQueue<IMySlimBlock> DmgBlocks = new ConcurrentQueue<IMySlimBlock>();

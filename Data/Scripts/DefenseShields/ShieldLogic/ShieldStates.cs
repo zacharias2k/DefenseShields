@@ -64,9 +64,10 @@ namespace DefenseShields
         private bool EntityAlive()
         {
             _tick = Session.Instance.Tick;
-            _tick60 = _tick % 60 == 0;
-            _tick180 = _tick % 180 == 0;
-            _tick600 = _tick % 600 == 0;
+            _tick60 = Session.Instance.Tick60;
+            _tick180 = Session.Instance.Tick180;
+            _tick600 = Session.Instance.Tick600;
+            _tick1800 = Session.Instance.Tick1800;
 
             if (WasPaused) UnPauseLogic();
             LostPings = 0;
@@ -80,10 +81,13 @@ namespace DefenseShields
 
             if (wait ||!_allInited && !PostInit()) return false;
 
-            if (Session.Enforced.Debug > 0)
+            if (_tick1800 && Session.Enforced.Debug > 0)
             {
-                if (_tick600 && Shield.CustomName == "DEBUG") _userDebugEnabled = true;
-                else if (_tick600) _userDebugEnabled = false;
+                if (Shield.CustomName == "DEBUG")
+                {
+                    if (_tick <= 3600) Shield.CustomName = "DEBUGAUTODISABLED";
+                    else UserDebug();
+                }
             }
 
             IsStatic = MyGrid.IsStatic;

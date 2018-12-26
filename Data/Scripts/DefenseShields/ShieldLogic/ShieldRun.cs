@@ -74,7 +74,6 @@ namespace DefenseShields
             try
             {
                 if (!EntityAlive()) return;
-                if (_userDebugEnabled && _tick600) UserDebug();
                 if (!ShieldOn())
                 {
                     if (Session.Enforced.Debug == 3 && WasOnline) Log.Line($"Off: WasOn:{WasOnline} - Online:{DsState.State.Online}({_prevShieldActive}) - Lowered:{DsState.State.Lowered} - Buff:{DsState.State.Buffer} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");

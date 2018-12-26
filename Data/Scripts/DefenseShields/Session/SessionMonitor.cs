@@ -253,7 +253,6 @@ namespace DefenseShields
             {
                 var shieldsWaking = 0;
                 var entsUpdated = 0;
-                var entsRefreshed = 0;
                 var entsremoved = 0;
                 var entsLostShield = 0;
 
@@ -265,7 +264,6 @@ namespace DefenseShields
                     if (!GlobalProtect.TryGetValue(ent, out myProtector)) continue;
 
                     var entShields = myProtector.Shields;
-                    entsRefreshed++;
                     var refreshCount = 0;
                     foreach (var s in entShields)
                     {
@@ -302,8 +300,7 @@ namespace DefenseShields
                 }
                 if (Enforced.Debug == 5 || Enforced.Debug == 1 && Tick1800) {
                     Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - EntsUpdated:{entsUpdated} - ShieldsWaking:{shieldsWaking} - EntsRemoved: {entsremoved} - EntsLostShield:{entsLostShield} - EntInRefreshSlots:({SlotCnt[0]} - {SlotCnt[1]} - {SlotCnt[2]} - {SlotCnt[3]} - {SlotCnt[4]} - {SlotCnt[5]} - {SlotCnt[6]} - {SlotCnt[7]} - {SlotCnt[8]}) \n" +
-                                                  $"                                     ThreadPeak:{_oldThreadPeak} - ProtectedEnts:{GlobalProtect.Count} - ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count}");
-                    _oldThreadPeak = 0;
+                                                  $"                                     ProtectedEnts:{GlobalProtect.Count} - ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count}");
                 }
             }
         }
@@ -315,17 +312,39 @@ namespace DefenseShields
             foreach (var s in ActiveShields)
             {
                 if (!s.WasOnline || s.Asleep) continue;
-
-                if (s.StaleGrids.Count != 0) s.CleanUp(0);
-                if (Tick20 && s.EffectsCleanup) s.CleanUp(3);
-                if (Tick180) s.CleanUp(2);
+                if (!s.StaleGrids.IsEmpty) s.CleanUp(0);
+                if (Tick20 && Tick - s.EffectsCleanTick < 41) s.CleanUp(2);
                 if (Tick600) s.CleanUp(1);
 
                 s.WebEntities();
                 y++;
             }
+
+            if (!Dispatched && WebWrapperOn)
+            {
+                MyAPIGateway.Parallel.Start(WebDispatch, DispatchDone);
+                Dispatched = true;
+                WebWrapperOn = false;
+            }
+
             if (Enforced.Debug >= 5 && EntSlotTick) Dsutil1.StopWatchReport($"[LogicUpdate] tick:{Tick} - WebbingShields:{y} - CPU:", -1);
             else if (Enforced.Debug >= 5) Dsutil1.Sw.Reset();
+        }
+
+        private void DispatchDone()
+        {
+            Dispatched = false;
+        }
+
+        public void WebDispatch()
+        {
+            DefenseShields shield;
+            while (WebWrapper.TryDequeue(out shield))
+            {
+                if (shield == null) continue;
+                if (!shield.VoxelsToIntersect.IsEmpty) MyAPIGateway.Parallel.Start(shield.VoxelIntersect);
+                if (!shield.WebEnts.IsEmpty) MyAPIGateway.Parallel.ForEach(shield.WebEnts, shield.EntIntersectSelector);
+            }
         }
 
         private void Scale()

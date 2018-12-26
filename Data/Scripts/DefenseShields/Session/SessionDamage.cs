@@ -296,7 +296,13 @@ namespace DefenseShields
                                 shield.WorldImpactPosition = shieldHitPos;
                                 shield.ImpactSize = info.Amount;
                             }
-                            if (isDeformationDmg && trueAttacker != null) _ignoreAttackerId = attackerId;
+
+                            if (trueAttacker != null)
+                            {
+                                shield.LastWokenTick = Tick;
+                                if (isDeformationDmg) _ignoreAttackerId = attackerId;
+                            }
+
                             shield.Absorb += info.Amount;
                             info.Amount = 0f;
                             if (Enforced.Debug == 4) Log.Line($"[Shield Absorb] Type:{info.Type} - Amount:{info.Amount} - shieldId:{shield.Shield.EntityId}");
