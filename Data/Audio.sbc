@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Sounds>
-    <Sound>
+    <!--<Sound>
       <Id>
         <TypeId>AudioDefinition</TypeId>
         <SubtypeId>DefenseShieldsLS</SubtypeId>
@@ -46,6 +46,26 @@
         <Start>Audio\RealBlockGravityGenLoop3d.wav</Start>
       </Wave>
     </Waves>
-  </Sound>
-  <!--</Sounds> Leave marked out to prevent this file from being loaded, causes CTD-->
+  </Sound> -->
+  
+
+    <Sound>
+      <Id>
+        <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+        <SubtypeId>ShieldStartLoopEnd</SubtypeId>
+      </Id>
+      <Category>BLOCK</Category>
+      <MaxDistance>75</MaxDistance>
+      <Loopable>true</Loopable>
+      <Volume>0.5</Volume>
+      <SoundLimit>4</SoundLimit>
+      <Waves>
+        <Wave Type="D3">
+          <Start>Audio\ShieldStart_3d.wav</Start>
+          <Loop>Audio\ShieldLoop_3d.wav</Loop>
+          <End>Audio\ShieldEnd_3d.wav</End>
+        </Wave>
+      </Waves>
+    </Sound>
+  </Sounds> Leave marked out to prevent this file from being loaded, causes CTD-->
 </Definitions>
