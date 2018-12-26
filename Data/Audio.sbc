@@ -3,29 +3,30 @@
   <Sounds>
     <Sound>
       <Id>
-        <TypeId>AudioDefinition</TypeId>
+        <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
         <SubtypeId>DefenseShieldsLS</SubtypeId>
       </Id>
       <Category>BLOCK</Category>
       <MaxDistance>30</MaxDistance>
       <Volume>1</Volume>
 	  <Loopable>true</Loopable>
+      <SoundLimit>4</SoundLimit>
       <Waves>
   		<Wave Type="D3">
           <Start>Audio\RealBlockGravityGenLoop3d.wav</Start>
         </Wave>
       </Waves>
     </Sound>
-  </Sounds>
   <Sound>
     <Id>
-      <TypeId>AudioDefinition</TypeId>
+      <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
       <SubtypeId>DefenseShieldsSS</SubtypeId>
     </Id>
     <Category>BLOCK</Category>
     <MaxDistance>30</MaxDistance>
     <Volume>1</Volume>
     <Loopable>true</Loopable>
+      <SoundLimit>4</SoundLimit>
     <Waves>
       <Wave Type="D3">
         <Start>Audio\RealBlockGravityGenLoop3d.wav</Start>
@@ -34,18 +35,44 @@
   </Sound>
   <Sound>
     <Id>
-      <TypeId>AudioDefinition</TypeId>
+      <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
       <SubtypeId>DefenseShieldsST</SubtypeId>
     </Id>
     <Category>BLOCK</Category>
     <MaxDistance>30</MaxDistance>
     <Volume>1</Volume>
     <Loopable>true</Loopable>
+      <SoundLimit>4</SoundLimit>
     <Waves>
       <Wave Type="D3">
         <Start>Audio\RealBlockGravityGenLoop3d.wav</Start>
       </Wave>
     </Waves>
   </Sound>
-  <!--</Sounds> Leave marked out to prevent this file from being loaded, causes CTD-->
+  
+
+    <Sound>
+      <Id>
+        <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+        <SubtypeId>ShieldStartLoopEnd</SubtypeId>
+      </Id>
+      <Category>BLOCK</Category>
+      <MaxDistance>75</MaxDistance>
+      <Loopable>true</Loopable>
+      <Volume>0.5</Volume>
+      <SoundLimit>4</SoundLimit>
+      <Waves>
+        <Wave Type="D2"> <!-- Stereo -->
+          <Start>Audio\ShieldStart_3d.wav</Start>
+          <Loop>Audio\ShieldLoop_3d.wav</Loop>
+          <End>Audio\ShieldEnd_3d.wav</End>
+        </Wave>
+		<Wave Type="D3"> <!-- Mono -->
+          <Start>Audio\ShieldStart_2d.wav</Start>
+          <Loop>Audio\ShieldLoop_2d.wav</Loop>
+          <End>Audio\ShieldEnd_2d.wav</End>
+        </Wave>
+      </Waves>
+    </Sound>
+  </Sounds> 
 </Definitions>
