@@ -79,9 +79,9 @@ namespace DefenseShields
                           $"MaxPower:{GridMaxPower} - AvailPower:{GridAvailablePower}\n" +
                           $"Access:{DsState.State.ControllerGridAccess} - EmitterWorking:{DsState.State.EmitterWorking}\n" +
                           $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)}\n" +
-                          $"ShieldMode:{ShieldMode} - isStatic:{IsStatic}\n" +
-                          $"IsMobile:{GridIsMobile} - isMoving:{ShieldComp.GridIsMoving}\n" +
-                          $"Sink:{_power} HP:{DsState.State.Buffer}: {ShieldMaxBuffer}";
+                          $"ShieldMode:{ShieldMode} - pFail:{_powerFail}\n" +
+                          $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{_roundedGridMax}\n" +
+                          $"Pow:{_power} HP:{DsState.State.Buffer}: {ShieldMaxBuffer}";
 
             if (!_isDedicated) MyAPIGateway.Utilities.ShowMessage("", message);
             else Log.Line(message);

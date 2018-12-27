@@ -169,6 +169,7 @@ namespace DefenseShields
         private bool _clientOn;
         private bool _syncEnts;
         private bool _viewInShield;
+        private bool _powerFail;
 
         private const string SpaceWolf = "Space_Wolf";
         private string _modelActive = "\\Models\\Cubes\\ShieldActiveBase.mwm";

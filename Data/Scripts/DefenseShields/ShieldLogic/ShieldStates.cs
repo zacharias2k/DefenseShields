@@ -85,7 +85,7 @@ namespace DefenseShields
             {
                 if (Shield.CustomName == "DEBUG")
                 {
-                    if (_tick <= 3600) Shield.CustomName = "DEBUGAUTODISABLED";
+                    if (_tick <= 1800) Shield.CustomName = "DEBUGAUTODISABLED";
                     else UserDebug();
                 }
             }

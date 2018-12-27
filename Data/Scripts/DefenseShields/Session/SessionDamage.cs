@@ -114,11 +114,13 @@ namespace DefenseShields
                         var missile = hostileEnt.DefinitionId != null && hostileEnt.DefinitionId.Value.TypeId == MissileObj;
 
                         var hostileCenter = hostileEnt.PositionComp.WorldVolume.Center;
-                        var line = new LineD(hostileCenter, ds.SOriBBoxD.Center);
-                        var testDir = Vector3D.Normalize(line.From - line.To);
-                        var ray = new RayD(line.From, -testDir);
+                        Vector3D dir;
+                        if (hostileEnt.Physics == null) dir = hostileEnt.WorldMatrix.Forward;
+                        else dir = hostileEnt.Physics.LinearVelocity;
+                        var testDir = Vector3D.Normalize(dir);
+                        var ray = new RayD(hostileCenter, -testDir);
                         var ellipsoid = CustomCollision.IntersectEllipsoid(ds.DetectMatrixOutsideInv, ds.DetectionMatrix, ray) ?? 0;
-                        var hitPos = line.From + testDir * -ellipsoid;
+                        var hitPos = ray.Position + testDir * -ellipsoid;
                         ds.WorldImpactPosition = hitPos;
 
                         if (missile)

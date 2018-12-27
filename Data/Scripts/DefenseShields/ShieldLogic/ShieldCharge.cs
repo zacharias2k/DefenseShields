@@ -162,14 +162,23 @@ namespace DefenseShields
 
             ShieldMaxBuffer = hpBase * hpScaler;
             var powerForShield = PowerNeeded(chargePercent, hpsEfficiency, hpScaler);
-
             if (!WarmedUp) return;
 
             if (DsState.State.Buffer > ShieldMaxBuffer) DsState.State.Buffer = ShieldMaxBuffer;
-            var powerLost = powerForShield <= 0 || _powerNeeded > _roundedGridMax || (_roundedGridMax - _powerNeeded) / Math.Abs(_powerNeeded) * 100 < 0.001;
-            var serverNoPower = _isServer && DsState.State.NoPower;
-            if (powerLost || serverNoPower)
-                if (PowerLoss(powerForShield, powerLost, serverNoPower)) return;
+            if (_isServer)
+            {
+                var powerLost = powerForShield <= 0 || _powerNeeded > _roundedGridMax || (_roundedGridMax - _powerNeeded) / Math.Abs(_powerNeeded) * 100 < 0.001;
+                var serverNoPower = DsState.State.NoPower;
+                if (powerLost || serverNoPower)
+                {
+                    if (PowerLoss(powerForShield, powerLost, serverNoPower))
+                    {
+                        _powerFail = true;
+                        return;
+                    }
+                }
+                else _powerFail = false;
+            }
 
             if (DsState.State.Heat != 0) UpdateHeatState();
 
@@ -217,14 +226,14 @@ namespace DefenseShields
         {
             if (powerLost)
             {
-                if (_isServer && !DsState.State.Online)
+                if (!DsState.State.Online)
                 {
                     DsState.State.Buffer = 0.01f;
                     _shieldChargeRate = 0f;
                     _shieldConsumptionRate = 0f;
                     return true;
                 }
-                if (_isServer && !DsState.State.NoPower)
+                if (!DsState.State.NoPower)
                 {
                     DsState.State.NoPower = true;
                     DsState.State.Message = true;
