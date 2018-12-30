@@ -123,6 +123,8 @@ namespace DefenseShields
         public bool EmpProtection = false;
         [ProtoMember(30)]
         public float GridIntegrity;
+        [ProtoMember(31)]
+        public bool ReInforce = false;
 
         public override string ToString()
         {
@@ -234,6 +236,9 @@ namespace DefenseShields
 
         [ProtoMember(4), DefaultValue(-1)]
         public int ModulateDamage = 100;
+
+        [ProtoMember(5)]
+        public bool ReInforceEnabled = false;
 
         public override string ToString()
         {
@@ -387,6 +392,28 @@ namespace DefenseShields
         {
             return $"";
         }
+    }
+
+    [ProtoContract]
+    public class ProtoShieldHit
+    {
+        [ProtoMember(1)]
+        public long AttackerId;
+
+        [ProtoMember(2)]
+        public float Amount;
+
+        [ProtoMember(3)]
+        public string DamageType;
+
+        [ProtoMember(4)]
+        public Vector3D HitPos;
+
+        public override string ToString()
+        {
+            return $"";
+        }
+
     }
 
     [ProtoContract]
@@ -797,6 +824,40 @@ namespace DefenseShields
         }
     }
 
+    [ProtoContract]
+    public class DataShieldHit
+    {
+        [ProtoMember(1)]
+        public PacketType Type = PacketType.Shieldhit;
+
+        [ProtoMember(2)]
+        public long EntityId = 0;
+
+        [ProtoMember(3)]
+        public ulong Sender = 0;
+
+        [ProtoMember(4)]
+        public ProtoShieldHit ShieldHit = null;
+
+        public DataShieldHit() { } // empty ctor is required for deserialization
+
+        public DataShieldHit(ulong sender, long entityId, ProtoShieldHit shieldHit)
+        {
+            Type = PacketType.Shieldhit;
+            Sender = sender;
+            EntityId = entityId;
+            ShieldHit = shieldHit;
+        }
+
+        public DataShieldHit(ulong sender, long entityId, PacketType action)
+        {
+            Type = action;
+            Sender = sender;
+            EntityId = entityId;
+            ShieldHit = null;
+        }
+    }
+
     public enum PacketType : byte
     {
         Enforce,
@@ -810,6 +871,7 @@ namespace DefenseShields
         O2Generatorstate,
         Enhancersettings,
         Enhancerstate,
-        Emitterstate
+        Emitterstate,
+        Shieldhit
     }
 }

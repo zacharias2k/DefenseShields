@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Sandbox.Game.Entities;
 using VRage.Collections;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
@@ -26,6 +27,7 @@ namespace DefenseShields.Support
             BackKickForce = backKickForce;
         }
     }
+    /*
 
     public class BlockDamageInfo
     {
@@ -43,20 +45,23 @@ namespace DefenseShields.Support
             Count = count;
         }
     }
+    */
 
     public struct ShieldHit
     {
-        public readonly IMySlimBlock Block;
-        public readonly float Amount;
-        public readonly MyEntity Attacker;
-        public readonly MyStringHash Type;
 
-        public ShieldHit(IMySlimBlock block, float amount, MyEntity attacker, MyStringHash type)
+        public readonly MyEntity Attacker;
+        public readonly float Amount;
+        public readonly MyStringHash DamageType;
+        public readonly Vector3D HitPos;
+
+        public ShieldHit(MyEntity attacker, float amount, MyStringHash damageType, Vector3D hitPos)
         {
-            Block = block;
-            Amount = amount;
+
             Attacker = attacker;
-            Type = type;
+            Amount = amount;
+            DamageType = damageType;
+            HitPos = hitPos;
         }
     }
 
@@ -111,16 +116,33 @@ namespace DefenseShields.Support
         }
     }
 
-    public struct MyProtectors
+    public class MyProtectors
     {
-        public readonly CachingHashSet<DefenseShields> Shields;
-        public readonly int RefreshSlot;
-        public readonly uint CreationTick;
-        public MyProtectors(CachingHashSet<DefenseShields> shields, int refreshSlot, uint creationTick)
+        public readonly CachingHashSet<DefenseShields> Shields = new CachingHashSet<DefenseShields>();
+        public int RefreshSlot;
+        public uint CreationTick;
+        public DefenseShields IntegrityShield;
+
+        // Damage Handler Field Cache
+        internal DefenseShields BlockingShield = null;
+        internal DefenseShields ClientExpShield = null;
+        internal IMySlimBlock OriginBlock = null;
+        internal long IgnoreAttackerId;
+        internal Vector3D OriginHit;
+        //
+
+        public void Init(int refreshSlot, uint creationTick)
         {
-            Shields = shields;
             RefreshSlot = refreshSlot;
             CreationTick = creationTick;
+        }
+
+        public void CleanUp()
+        {
+            Shields.Clear();
+            RefreshSlot = 0;
+            CreationTick = 0;
+            IntegrityShield = null;
         }
     }
 

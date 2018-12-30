@@ -164,7 +164,7 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
 
-            comp.DsSet.Settings.ShieldOffset.X = (int) newValue;
+            comp.DsSet.Settings.ShieldOffset.X = (int)newValue;
             comp.UpdateDimensions = true;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;

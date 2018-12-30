@@ -1,19 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using DefenseShields.Control;
-using DefenseShields.Support;
-using Sandbox.Game.Localization;
-using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces.Terminal;
-using VRage.ModAPI;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using global::DefenseShields.Control;
+    using global::DefenseShields.Support;
+    using Sandbox.Game.Localization;
+    using Sandbox.ModAPI;
+    using Sandbox.ModAPI.Interfaces.Terminal;
+    using VRage.ModAPI;
+
     public partial class Session
     {
         #region UI Config
+        public static void AppendConditionToAction<T>(Func<IMyTerminalAction, bool> actionFindCondition, Func<IMyTerminalAction, IMyTerminalBlock, bool> actionEnabledAppend)
+        {
+            List<IMyTerminalAction> actions;
+            MyAPIGateway.TerminalControls.GetActions<T>(out actions);
+
+            foreach (var a in actions)
+            {
+                if (actionFindCondition(a))
+                {
+                    var existingAction = a.Enabled;
+
+                    a.Enabled = (b) => (existingAction == null ? true : existingAction.Invoke(b)) && actionEnabledAppend(a, b);
+                }
+            }
+        }
+
         public void CreateControllerElements(IMyTerminalBlock block)
         {
             try
@@ -28,7 +44,7 @@ namespace DefenseShields
 
                 if (comp != null && comp.GridIsMobile)
                 {
-                    TerminalHelpers.Separator(comp?.Shield, "DS-C_sep2");
+                    TerminalHelpers.Separator(comp.Shield, "DS-C_sep2");
                 }
 
                 ExtendFit = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_ExtendFit", "Extend Shield", "Extend Shield", DsUi.GetExtend, DsUi.SetExtend);
@@ -127,8 +143,9 @@ namespace DefenseShields
                 ModDamage = TerminalHelpers.AddSlider(comp?.Modulator, "DS-M_DamageModulation", "Balance Shield Protection", "Balance Shield Protection", ModUi.GetDamage, ModUi.SetDamage);
                 ModDamage.SetLimits(20, 180);
                 ModSep2 = TerminalHelpers.Separator(comp?.Modulator, "DS-M_sep2");
-                ModVoxels = TerminalHelpers.AddCheckbox(comp?.Modulator, "DS-M_ModulateVoxels", "Let voxels bypass shield", "Let voxels bypass shield", ModUi.GetVoxels, ModUi.SetVoxels);
-                ModGrids = TerminalHelpers.AddCheckbox(comp?.Modulator, "DS-M_ModulateGrids", "Let grids bypass shield", "Let grid bypass shield", ModUi.GetGrids, ModUi.SetGrids);
+                ModReInforce = TerminalHelpers.AddCheckbox(comp?.Modulator, "DS-M_ModulateReInforceProt", "Enhance structural integrity", "Enhance structural integrity, prevents damage from collisions", ModUi.GetReInforceProt, ModUi.SetReInforceProt);
+                ModVoxels = TerminalHelpers.AddCheckbox(comp?.Modulator, " DS-M_ModulateVoxels", "Terrian is ignored by shield", "Let voxels bypass shield", ModUi.GetVoxels, ModUi.SetVoxels);
+                ModGrids = TerminalHelpers.AddCheckbox(comp?.Modulator, "DS-M_ModulateGrids", "Entities may pass the shield", "Let grid bypass shield", ModUi.GetGrids, ModUi.SetGrids);
                 ModEmp = TerminalHelpers.AddCheckbox(comp?.Modulator, "DS-M_ModulateEmpProt", "Protects against EMPs", "But generates heat 10x faster", ModUi.GetEmpProt, ModUi.SetEmpProt);
 
                 CreateActionDamageModRate<IMyUpgradeModule>(ModDamage);
@@ -136,6 +153,7 @@ namespace DefenseShields
                 CreateAction<IMyUpgradeModule>(ModVoxels);
                 CreateAction<IMyUpgradeModule>(ModGrids);
                 CreateAction<IMyUpgradeModule>(ModEmp);
+                CreateAction<IMyUpgradeModule>(ModReInforce);
                 ModControl = true;
             }
             catch (Exception ex) { Log.Line($"Exception in CreateModulatorUi: {ex}"); }
@@ -153,20 +171,47 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in CreateO2GeneratorUi: {ex}"); }
         }
 
-        public static void AppendConditionToAction<T>(Func<IMyTerminalAction, bool> actionFindCondition, Func<IMyTerminalAction, IMyTerminalBlock, bool> actionEnabledAppend)
+        public void CreateAction<T>(IMyTerminalControlOnOffSwitch c)
         {
-            List<IMyTerminalAction> actions;
-            MyAPIGateway.TerminalControls.GetActions<T>(out actions);
-
-            foreach (var a in actions)
+            try
             {
-                if (actionFindCondition(a))
+                var id = ((IMyTerminalControl)c).Id;
+                var gamePath = MyAPIGateway.Utilities.GamePaths.ContentPath;
+                Action<IMyTerminalBlock, StringBuilder> writer = (b, s) => s.Append(c.Getter(b) ? c.OnText : c.OffText);
                 {
-                    var existingAction = a.Enabled;
+                    var a = MyAPIGateway.TerminalControls.CreateAction<T>(id + "_Toggle");
+                    a.Name = new StringBuilder(c.Title.String).Append(" - ").Append(c.OnText.String).Append("/").Append(c.OffText.String);
 
-                    a.Enabled = (b) => (existingAction == null ? true : existingAction.Invoke(b)) && actionEnabledAppend(a, b);
+                    a.Icon = gamePath + @"\Textures\GUI\Icons\Actions\SmallShipToggle.dds";
+
+                    a.ValidForGroups = true;
+                    a.Action = (b) => c.Setter(b, !c.Getter(b));
+                    a.Writer = writer;
+
+                    MyAPIGateway.TerminalControls.AddAction<T>(a);
+                }
+                {
+                    var a = MyAPIGateway.TerminalControls.CreateAction<T>(id + "_On");
+                    a.Name = new StringBuilder(c.Title.String).Append(" - ").Append(c.OnText.String);
+                    a.Icon = gamePath + @"\Textures\GUI\Icons\Actions\SmallShipSwitchOn.dds";
+                    a.ValidForGroups = true;
+                    a.Action = (b) => c.Setter(b, true);
+                    a.Writer = writer;
+
+                    MyAPIGateway.TerminalControls.AddAction<T>(a);
+                }
+                {
+                    var a = MyAPIGateway.TerminalControls.CreateAction<T>(id + "_Off");
+                    a.Name = new StringBuilder(c.Title.String).Append(" - ").Append(c.OffText.String);
+                    a.Icon = gamePath + @"\Textures\GUI\Icons\Actions\LargeShipSwitchOn.dds";
+                    a.ValidForGroups = true;
+                    a.Action = (b) => c.Setter(b, false);
+                    a.Writer = writer;
+
+                    MyAPIGateway.TerminalControls.AddAction<T>(a);
                 }
             }
+            catch (Exception ex) { Log.Line($"Exception in CreateAction: {ex}"); }
         }
 
         private void CustomControls(IMyTerminalBlock block, List<IMyTerminalControl> myTerminalControls)
@@ -220,50 +265,6 @@ namespace DefenseShields
             CustomDataReset = true;
         }
 
-
-        public void CreateAction<T>(IMyTerminalControlOnOffSwitch c)
-        {
-            try
-            {
-                var id = ((IMyTerminalControl)c).Id;
-                var gamePath = MyAPIGateway.Utilities.GamePaths.ContentPath;
-                Action<IMyTerminalBlock, StringBuilder> writer = (b, s) => s.Append(c.Getter(b) ? c.OnText : c.OffText);
-                {
-                    var a = MyAPIGateway.TerminalControls.CreateAction<T>(id + "_Toggle");
-                    a.Name = new StringBuilder(c.Title.String).Append(" - ").Append(c.OnText.String).Append("/").Append(c.OffText.String);
-
-                    a.Icon = gamePath + @"\Textures\GUI\Icons\Actions\SmallShipToggle.dds";
-
-                    a.ValidForGroups = true;
-                    a.Action = (b) => c.Setter(b, !c.Getter(b));
-                    a.Writer = writer;
-
-                    MyAPIGateway.TerminalControls.AddAction<T>(a);
-                }
-                {
-                    var a = MyAPIGateway.TerminalControls.CreateAction<T>(id + "_On");
-                    a.Name = new StringBuilder(c.Title.String).Append(" - ").Append(c.OnText.String);
-                    a.Icon = gamePath + @"\Textures\GUI\Icons\Actions\SmallShipSwitchOn.dds";
-                    a.ValidForGroups = true;
-                    a.Action = (b) => c.Setter(b, true);
-                    a.Writer = writer;
-
-                    MyAPIGateway.TerminalControls.AddAction<T>(a);
-                }
-                {
-                    var a = MyAPIGateway.TerminalControls.CreateAction<T>(id + "_Off");
-                    a.Name = new StringBuilder(c.Title.String).Append(" - ").Append(c.OffText.String);
-                    a.Icon = gamePath + @"\Textures\GUI\Icons\Actions\LargeShipSwitchOn.dds";
-                    a.ValidForGroups = true;
-                    a.Action = (b) => c.Setter(b, false);
-                    a.Writer = writer;
-
-                    MyAPIGateway.TerminalControls.AddAction<T>(a);
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in CreateAction: {ex}"); }
-        }
-
         private void CreateAction<T>(IMyTerminalControlCheckbox c,
             bool addToggle = true,
             bool addOnOff = false,
@@ -281,7 +282,7 @@ namespace DefenseShields
 
                 if (iconToggle == null && iconOn == null && iconOff == null)
                 {
-                    var pack = iconPack ?? "";
+                    var pack = iconPack ?? string.Empty;
                     var gamePath = MyAPIGateway.Utilities.GamePaths.ContentPath;
                     iconToggle = gamePath + @"\Textures\GUI\Icons\Actions\" + pack + "Toggle.dds";
                     iconOn = gamePath + @"\Textures\GUI\Icons\Actions\" + pack + "SwitchOn.dds";
@@ -369,7 +370,6 @@ namespace DefenseShields
                     a.Icon = iconIncrease;
                     a.ValidForGroups = true;
                     a.Action = ActionAddChargeRate;
-                    //a.Action = (b) => c.Setter(b, c.Getter(b) + modifier);
                     a.Writer = (b, s) => s.Append(c.Getter(b));
 
                     MyAPIGateway.TerminalControls.AddAction<T>(a);
@@ -380,7 +380,6 @@ namespace DefenseShields
                     a.Icon = iconDecrease;
                     a.ValidForGroups = true;
                     a.Action = ActionSubtractChargeRate;
-                    //a.Action = (b) =>  c.Setter(b, c.Getter(b) - modifier);
                     a.Writer = (b, s) => s.Append(c.Getter(b).ToString("0.###"));
 
                     MyAPIGateway.TerminalControls.AddAction<T>(a);
@@ -393,10 +392,10 @@ namespace DefenseShields
         {
             try
             {
-                var controls = new List<IMyTerminalControl>();
+                List<IMyTerminalControl> controls;
                 MyAPIGateway.TerminalControls.GetControls<IMyUpgradeModule>(out controls);
                 var chargeRate = controls.First((x) => x.Id.ToString() == "DS-C_ChargeRate");
-                var c = ((IMyTerminalControlSlider)chargeRate);
+                var c = (IMyTerminalControlSlider)chargeRate;
                 if (c.Getter(b) > 94)
                 {
                     c.Setter(b, 95f);
@@ -414,7 +413,7 @@ namespace DefenseShields
                 var controls = new List<IMyTerminalControl>();
                 MyAPIGateway.TerminalControls.GetControls<IMyUpgradeModule>(out controls);
                 var chargeRate = controls.First((x) => x.Id.ToString() == "DS-C_ChargeRate");
-                var c = ((IMyTerminalControlSlider)chargeRate);
+                var c = (IMyTerminalControlSlider)chargeRate;
                 if (c.Getter(b) < 21)
                 {
                     c.Setter(b, 20f);
@@ -453,7 +452,7 @@ namespace DefenseShields
                         a.Name.Append(" (").Append(defaultValue.ToString("0.###")).Append(")");
                     a.Icon = iconReset;
                     a.ValidForGroups = true;
-                    a.Action = (b) => c.Setter(b, (gridSizeDefaultValue ? b.CubeGrid.GridSize : defaultValue));
+                    a.Action = (b) => c.Setter(b, gridSizeDefaultValue ? b.CubeGrid.GridSize : defaultValue);
                     a.Writer = (b, s) => s.Append(c.Getter(b));
 
                     MyAPIGateway.TerminalControls.AddAction<T>(a);
@@ -464,7 +463,6 @@ namespace DefenseShields
                     a.Icon = iconIncrease;
                     a.ValidForGroups = true;
                     a.Action = ActionAddDamageMod;
-                    //a.Action = (b) => c.Setter(b, c.Getter(b) + modifier);
                     a.Writer = (b, s) => s.Append(c.Getter(b));
 
                     MyAPIGateway.TerminalControls.AddAction<T>(a);
@@ -475,7 +473,6 @@ namespace DefenseShields
                     a.Icon = iconDecrease;
                     a.ValidForGroups = true;
                     a.Action = ActionSubtractDamageMod;
-                    //a.Action = (b) =>  c.Setter(b, c.Getter(b) - modifier);
                     a.Writer = (b, s) => s.Append(c.Getter(b).ToString("0.###"));
 
                     MyAPIGateway.TerminalControls.AddAction<T>(a);
@@ -488,10 +485,10 @@ namespace DefenseShields
         {
             try
             {
-                var controls = new List<IMyTerminalControl>();
+                List<IMyTerminalControl> controls;
                 MyAPIGateway.TerminalControls.GetControls<IMyUpgradeModule>(out controls);
                 var damageMod = controls.First((x) => x.Id.ToString() == "DS-M_DamageModulation");
-                var c = ((IMyTerminalControlSlider)damageMod);
+                var c = (IMyTerminalControlSlider)damageMod;
                 if (c.Getter(b) > 179)
                 {
                     c.Setter(b, 180f);
@@ -506,10 +503,10 @@ namespace DefenseShields
         {
             try
             {
-                var controls = new List<IMyTerminalControl>();
+                List<IMyTerminalControl> controls;
                 MyAPIGateway.TerminalControls.GetControls<IMyUpgradeModule>(out controls);
                 var chargeRate = controls.First((x) => x.Id.ToString() == "DS-M_DamageModulation");
-                var c = ((IMyTerminalControlSlider)chargeRate);
+                var c = (IMyTerminalControlSlider)chargeRate;
                 if (c.Getter(b) < 21)
                 {
                     c.Setter(b, 20f);
@@ -530,7 +527,7 @@ namespace DefenseShields
 
             foreach (var item in items)
             {
-                var id = (itemIds == null ? item.Value.String : itemIds[item.Key]);
+                var id = itemIds == null ? item.Value.String : itemIds[item.Key];
 
                 if (id == null)
                     continue; // item id is null intentionally in the array, this means "don't add action".

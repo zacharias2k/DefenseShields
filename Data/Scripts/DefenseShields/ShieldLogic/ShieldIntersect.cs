@@ -1,16 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using DefenseShields.Support;
-using Sandbox.Game.Entities;
-using Sandbox.Game.Entities.Character.Components;
-using Sandbox.ModAPI;
-using VRage.Game.Entity;
-using VRage.Game.ModAPI;
-using VRage.ModAPI;
-using VRageMath;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using System.Collections.Generic;
+    using global::DefenseShields.Support;
+    using Sandbox.Game.Entities;
+    using Sandbox.Game.Entities.Character.Components;
+    using Sandbox.ModAPI;
+    using VRage.Game.Entity;
+    using VRage.Game.ModAPI;
+    using VRage.ModAPI;
+    using VRageMath;
+
     public partial class DefenseShields
     {
         #region Intersect
@@ -155,7 +155,6 @@ namespace DefenseShields
             entInfo.ContactPoint = Vector3D.NegativeInfinity;
             if (contactpoint != Vector3D.NegativeInfinity)
             {
-                //Log.Line($"Small- Contact point not neginf - ejectors:{_eject.Count}");
                 entInfo.Touched = true;
                 WebDamage = true;
                 if (!_isServer) return;
@@ -210,7 +209,7 @@ namespace DefenseShields
 
             var bVel = bPhysics.LinearVelocity;
             var bVelLen = bVel.Length();
-            var momentum = bMass * bVel + sMass * sPhysics.LinearVelocity;
+            var momentum = (bMass * bVel) + (sMass * sPhysics.LinearVelocity);
             var resultVelocity = momentum / (bMass + sMass);
 
             var collisionAvg = Vector3D.Zero;
@@ -273,9 +272,10 @@ namespace DefenseShields
                     ImpactSize = 12000;
                     WorldImpactPosition = collision;
                     WebDamage = true;
-                    //if (!Session.MpActive && !(voxelBase is MyPlanet)) _voxelDmg.Enqueue(voxelBase);
-                    //There is ContainmentType Intersect(ref BoundingBox box, bool lazy) which is super fast
-                    //void ExecuteOperationFast<TVoxelOperator>(ref TVoxelOperator voxelOperator, MyStorageDataTypeFlags dataToWrite, ref Vector3I voxelRangeMin, ref Vector3I voxelRangeMax, bool notifyRangeChanged)
+
+                    // if (!Session.MpActive && !(voxelBase is MyPlanet)) _voxelDmg.Enqueue(voxelBase);
+                    // There is ContainmentType Intersect(ref BoundingBox box, bool lazy) which is super fast
+                    // void ExecuteOperationFast<TVoxelOperator>(ref TVoxelOperator voxelOperator, MyStorageDataTypeFlags dataToWrite, ref Vector3I voxelRangeMin, ref Vector3I voxelRangeMax, bool notifyRangeChanged)
                 }
             }
         }
@@ -332,10 +332,10 @@ namespace DefenseShields
                     var cacheBlockList = entInfo.CacheBlockList;
                     var bPhysics = ((IMyCubeGrid)breaching).Physics;
                     var sPhysics = Shield.CubeGrid.Physics;
-                    var sGrid = (MyCubeGrid) Shield.CubeGrid;
+                    var sGrid = (MyCubeGrid)Shield.CubeGrid;
                     var bMass = breaching.GetCurrentMass();
                     var sMass = sGrid.GetCurrentMass();
-                    var momentum = bMass * bPhysics.LinearVelocity + sMass * sPhysics.LinearVelocity;
+                    var momentum = (bMass * bPhysics.LinearVelocity) + (sMass * sPhysics.LinearVelocity);
                     var resultVelocity = momentum / (bMass + sMass);
                     Vector3D bBlockCenter;
                     var stale = false;
@@ -345,21 +345,21 @@ namespace DefenseShields
                     if (blockSize < 1) empRadius = 7;
                     var empCount = 0;
                     IMyWarhead firstWarhead = null;
-                    Vector3I gc = breaching.WorldToGridInteger(DetectionCenter);
-                    double rc = ShieldSize.AbsMax() / blockSize;
+                    var gc = breaching.WorldToGridInteger(DetectionCenter);
+                    var rc = ShieldSize.AbsMax() / blockSize;
                     rc *= rc;
                     rc = rc + 1;
                     rc = Math.Ceiling(rc);
                     var hits = 0;
-                    Vector3D[] blockPoints = new Vector3D[9];
+                    var blockPoints = new Vector3D[9];
                     for (int i = 0; i < cacheBlockList.Count; i++)
                     {
                         var block = cacheBlockList[i];
-                        Vector3I blockPos = block.Position;
-                        int num1 = gc.X - blockPos.X;
-                        int num2 = gc.Y - blockPos.Y;
-                        int num3 = gc.Z - blockPos.Z;
-                        int result = num1 * num1 + num2 * num2 + num3 * num3;
+                        var blockPos = block.Position;
+                        var num1 = gc.X - blockPos.X;
+                        var num2 = gc.Y - blockPos.Y;
+                        var num3 = gc.Z - blockPos.Z;
+                        var result = (num1 * num1) + (num2 * num2) + (num3 * num3);
 
                         if (_isServer)
                         {
@@ -492,10 +492,10 @@ namespace DefenseShields
                         var scaler = 1f;
                         if (DsState.State.EmpProtection) scaler = 0.05f;
                         var empSize = 1.33333333333 * Math.PI * (empRadius * empRadius * empRadius) * 0.5 * DsState.State.ModulateKinetic * scaler;
-                        var scaledEmpSize = empSize * empCount + empCount * (empCount * 0.1); 
-                        shieldFractionLoss = (float) (EllipsoidVolume / scaledEmpSize);
+                        var scaledEmpSize = (empSize * empCount) + (empCount * (empCount * 0.1)); 
+                        shieldFractionLoss = (float)(EllipsoidVolume / scaledEmpSize);
                         var efficiency = Session.Enforced.Efficiency;
-                        damage = damage + ShieldMaxBuffer * efficiency / shieldFractionLoss;
+                        damage = damage + (ShieldMaxBuffer * efficiency / shieldFractionLoss);
                         var warCenter = firstWarhead.PositionComp.WorldAABB.Center;
                         entInfo.EmpSize = scaledEmpSize;
                         entInfo.EmpDetonation = warCenter;
@@ -523,23 +523,14 @@ namespace DefenseShields
                         }
                     }
                     Absorb += damage;
-                    //Log.Line($"[status] obb: true - blocks:{cacheBlockList.Count.ToString()} - sphered:{c1.ToString()} [{c5.ToString()}] - IsDestroyed:{c6.ToString()} not:[{c2.ToString()}] - bCenter Inside Ellipsoid:{c3.ToString()} - Damaged:{c4.ToString()}");
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in BlockIntersect: {ex}"); }
         }
         #endregion
 
-        #region Compute Missile Intersect Damage
         private float ComputeAmmoDamage(IMyEntity ammoEnt)
         {
-            //bypass < 0 kickback
-            //Ignores Shield entirely.
-            //
-            //healing < 0 mass ,  radius 0
-            //Heals Shield, converting weapon damage to healing value.
-            //Values as close to Zero (0) as possible, to best results, and less unintentional Results.
-            //Shield-Damage: All values such as projectile Velocity & Mass for non-explosive types and Explosive-damage when dealing with Explosive-types.
             AmmoInfo ammoInfo;
             Session.Instance.AmmoCollection.TryGetValue(ammoEnt.Model.AssetName, out ammoInfo);
             var damage = 10f;
@@ -567,6 +558,5 @@ namespace DefenseShields
             if (ammoInfo.Mass < 0 && ammoInfo.Radius <= 0) damage = -damage;
             return damage;
         }
-        #endregion
     }
 }

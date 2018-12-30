@@ -1,18 +1,17 @@
-﻿using System;
-using System.Text;
-using DefenseShields.Support;
-using Sandbox.Common.ObjectBuilders;
-using Sandbox.Game.Entities;
-using Sandbox.Game.Entities.Debris;
-using Sandbox.ModAPI;
-using Sandbox.ModAPI.Weapons;
-using VRage;
-using VRage.Game;
-using VRage.Game.Entity;
-using VRage.Game.ModAPI;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using System.Text;
+    using global::DefenseShields.Support;
+
+    using Sandbox.Common.ObjectBuilders;
+    using Sandbox.Game.Entities;
+    using Sandbox.ModAPI;
+    using Sandbox.ModAPI.Weapons;
+    using VRage;
+    using VRage.Game.Entity;
+    using VRage.Game.ModAPI;
+
     public partial class DefenseShields
     {
         private void RegisterEvents(bool register = true)
@@ -59,6 +58,7 @@ namespace DefenseShields
         {
             try
             {
+                if (DsState.State.ReInforce) return;
                 if (myEntity?.Physics == null || !myEntity.InScene || myEntity.MarkedForClose || myEntity is MyFloatingObject || myEntity is IMyEngineerToolBase) return;
                 var isMissile = myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile);
                 if (!isMissile && !(myEntity is MyCubeGrid)) return;
@@ -76,7 +76,7 @@ namespace DefenseShields
         {
             try
             {
-                if (!_isServer) return;
+                if (!_isServer || DsState.State.ReInforce) return;
                 if (myEntity == null || !(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))) return;
                 Missiles.Remove(myEntity);
                 FriendlyMissileCache.Remove(myEntity);

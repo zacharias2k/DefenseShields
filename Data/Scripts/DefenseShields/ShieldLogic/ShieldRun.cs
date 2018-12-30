@@ -1,15 +1,14 @@
-﻿using System;
-using Sandbox.Common.ObjectBuilders;
-using Sandbox.ModAPI;
-using VRage.Game.Components;
-using DefenseShields.Support;
-using Sandbox.Game.Entities;
-using VRage.ModAPI;
-using VRage.ObjectBuilders;
-using VRageMath;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using global::DefenseShields.Support;
+    using Sandbox.Common.ObjectBuilders;
+    using Sandbox.Game.Entities;
+    using Sandbox.ModAPI;
+    using VRage.Game.Components;
+    using VRage.ModAPI;
+    using VRage.ObjectBuilders;
+
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DSControlLarge", "DSControlSmall", "DSControlTable")]
     public partial class DefenseShields : MyGameLogicComponent
     {
@@ -24,7 +23,8 @@ namespace DefenseShields
                 Shield = (IMyUpgradeModule)Entity;
                 _containerInited = true;
             }
-            if (Entity.InScene) OnAddedToScene();
+
+            if (Entity.InScene) this.OnAddedToScene();
         }
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
@@ -83,6 +83,16 @@ namespace DefenseShields
                 }
                 if (DsState.State.Online)
                 {
+                    /*
+                    if (_tick600)
+                    {
+                        MyProtectors protectors;
+                        Session.Instance.GlobalProtect.TryGetValue(MyGrid, out protectors);
+                        Log.Line(protectors != null
+                            ? $"Shielded:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)} - ReInforce:{DsState.State.ReInforce} - ProtectorCnt:{protectors.Shields.Count} - iShield:{protectors.IntegrityShield != null}"
+                            : $"Shielded:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)} - ReInforce:{DsState.State.ReInforce}");
+                    }
+                    */
                     if (_comingOnline) ComingOnlineSetup();
                     if (_isServer)
                     {
@@ -105,7 +115,7 @@ namespace DefenseShields
                     if (!_isDedicated && _tick60) HudCheck();
                 }
             }
-            catch (Exception ex) {Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
+            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
 
         public override bool IsSerialized()

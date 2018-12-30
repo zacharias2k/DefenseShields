@@ -1,31 +1,23 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using DefenseShields.Support;
-using Sandbox.Common.ObjectBuilders;
-using Sandbox.ModAPI.Interfaces.Terminal;
-using VRage.Collections;
-using VRage.Game;
-using VRage.Game.Entity;
-using VRage.Game.ModAPI;
-using VRage.Utils;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using global::DefenseShields.Support;
+    using Sandbox.Common.ObjectBuilders;
+    using Sandbox.ModAPI.Interfaces.Terminal;
+    using VRage.Collections;
+    using VRage.Game;
+    using VRage.Game.Entity;
+    using VRage.Game.ModAPI;
+    using VRage.Utils;
+
     public partial class Session
     {
-        internal static readonly MyConcurrentPool<CachingHashSet<DefenseShields>> ProtSets = new MyConcurrentPool<CachingHashSet<DefenseShields>>(150, null, 1000);
-        internal static DefenseShieldsEnforcement Enforced { get; set; } = new DefenseShieldsEnforcement();
-
-        internal static Session Instance { get; private set; }
-        internal static bool EnforceInit;
-
-
-        internal uint Tick;
-        internal uint OldestRefreshTick;
+        internal const ushort PacketIdShieldHit = 62512;
         internal const ushort PacketIdO2GeneratorSettings = 62513;
         internal const ushort PacketIdPlanetShieldSettings = 62514;
-        internal const ushort PacketIdPlanetShieldState = 62515; // 
+        internal const ushort PacketIdPlanetShieldState = 62515;  
         internal const ushort PacketIdEmitterState = 62516;
         internal const ushort PacketIdO2GeneratorState = 62517;
         internal const ushort PacketIdEnhancerState = 62518;
@@ -34,59 +26,10 @@ namespace DefenseShields
         internal const ushort PacketIdEnforce = 62521;
         internal const ushort PacketIdModulatorSettings = 62522;
         internal const ushort PacketIdModulatorState = 62523;
-
-        private int _count = -1;
-        private int _lCount;
-        private int _eCount;
-
-        internal int OnCount;
-        internal int RefreshCycle;
-        private const int EntCleanCycle = 3600;
-        private const int EntMaxTickAge = 36000;
-
-        internal int EntSlotScaler = 9;
-
-        internal long LastTerminalId;
-
-        internal float MaxEntitySpeed = 210;
         internal const double TickTimeDiv = 0.0625;
 
-        internal double HudShieldDist = double.MaxValue;
-        private double _syncDistSqr;
+        internal static readonly MyConcurrentPool<MyProtectors> ProtSets = new MyConcurrentPool<MyProtectors>(150, null, 1000);
 
-        private volatile bool _newFrame;
-
-        internal bool CustomDataReset = true;
-        internal bool ShowOnHudReset = true;
-        internal bool OnCountThrottle;
-        internal bool DefinitionsLoaded;
-        internal bool Tick20;
-        internal bool Tick60;
-        internal bool Tick180;
-        internal bool Tick600;
-        internal bool Tick1800;
-
-        internal volatile bool Wake;
-        internal volatile bool Monitor = true;
-        internal volatile bool EntSlotTick;
-        internal volatile bool Dispatched;
-
-        internal bool WebWrapperOn;
-        internal bool ScalerChanged;
-        internal bool HideActions;
-        internal bool DsControl;
-        internal bool PsControl;
-        internal bool ModControl;
-        internal bool O2Control;
-
-        internal bool MpActive;
-        internal bool IsServer;
-        internal bool DedicatedServer;
-        internal bool DsAction;
-        internal bool PsAction;
-        internal bool ModAction;
-
-        internal bool[] SphereOnCamera = new bool[0];
         internal readonly int[] SlotCnt = new int[9];
 
         internal readonly MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
@@ -96,12 +39,13 @@ namespace DefenseShields
         internal readonly MyStringHash DSbypass = MyStringHash.GetOrCompute("DSbypass");
         internal readonly MyStringHash MpDoDeform = MyStringHash.GetOrCompute("MpDoDeform");
         internal readonly MyStringHash MpDoExplosion = MyStringHash.GetOrCompute("MpDoExplosion");
+        internal readonly MyStringHash MpDmgEffect = MyStringHash.GetOrCompute("MpDmgEffect");
 
-        internal MyStringHash Bypass = MyStringHash.GetOrCompute("bypass");
-        internal MyStringId Password = MyStringId.GetOrCompute("Shield Access Frequency");
-        internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Match a shield's modulation frequency/code");
-        internal MyStringId ShieldFreq = MyStringId.GetOrCompute("Shield Frequency");
-        internal MyStringId ShieldFreqTooltip = MyStringId.GetOrCompute("Set this to the secret frequency/code used for shield access");
+        internal readonly MyStringHash Bypass = MyStringHash.GetOrCompute("bypass");
+        internal readonly MyStringId Password = MyStringId.GetOrCompute("Shield Access Frequency");
+        internal readonly MyStringId PasswordTooltip = MyStringId.GetOrCompute("Match a shield's modulation frequency/code");
+        internal readonly MyStringId ShieldFreq = MyStringId.GetOrCompute("Shield Frequency");
+        internal readonly MyStringId ShieldFreqTooltip = MyStringId.GetOrCompute("Set this to the secret frequency/code used for shield access");
 
         internal readonly Guid O2GeneratorSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811502");
         internal readonly Guid EnhancerStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811503");
@@ -116,23 +60,14 @@ namespace DefenseShields
         internal readonly Guid PlanetShieldSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811512");
         internal readonly Guid PlanetShieldStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811513");
 
-        //internal static readonly TimeSpan SleepTime = TimeSpan.FromTicks(10);
         internal readonly Type MissileObj = typeof(MyObjectBuilder_Missile);
-        internal DefenseShields HudComp;
+
         internal readonly MyModContext MyModContext = new MyModContext();
         internal readonly Icosphere Icosphere = new Icosphere(5);
-        internal DSUtils Dsutil1 = new DSUtils();
-        internal DSUtils Dsutil2 = new DSUtils();
-
-        private DsAutoResetEvent _autoResetEvent = new DsAutoResetEvent();
-        private readonly Work _workData = new Work();
 
         internal readonly ConcurrentDictionary<long, IMyPlayer> Players = new ConcurrentDictionary<long, IMyPlayer>();
-        private readonly List<KeyValuePair<MyEntity, uint>> _entRefreshTmpList = new List<KeyValuePair<MyEntity, uint>>();
-        private readonly ConcurrentQueue<MyEntity> _entRefreshQueue = new ConcurrentQueue<MyEntity>();
-        internal readonly ConcurrentQueue<DefenseShields> WebWrapper = new ConcurrentQueue<DefenseShields>();
 
-        private readonly ConcurrentDictionary<MyEntity, uint> _globalEntTmp = new ConcurrentDictionary<MyEntity, uint>();
+        internal readonly ConcurrentQueue<DefenseShields> WebWrapper = new ConcurrentQueue<DefenseShields>();
 
         internal readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         internal readonly Dictionary<MyEntity, MyProtectors> GlobalProtect = new Dictionary<MyEntity, MyProtectors>();
@@ -176,41 +111,158 @@ namespace DefenseShields
             "DS-M_ModulateEmpProt_Toggle"
         };
 
-        internal IMyTerminalControlSlider WidthSlider;
-        internal IMyTerminalControlSlider HeightSlider;
-        internal IMyTerminalControlSlider DepthSlider;
-        internal IMyTerminalControlSlider OffsetWidthSlider;
-        internal IMyTerminalControlSlider OffsetHeightSlider;
-        internal IMyTerminalControlSlider OffsetDepthSlider;
-        internal IMyTerminalControlSlider ChargeSlider;
-        internal IMyTerminalControlCheckbox ExtendFit;
-        internal IMyTerminalControlCheckbox SphereFit;
-        internal IMyTerminalControlCheckbox FortifyShield;
-        internal IMyTerminalControlCheckbox BatteryBoostCheckBox;
-        internal IMyTerminalControlCheckbox HideActiveCheckBox;
-        internal IMyTerminalControlCheckbox RefreshAnimationCheckBox;
-        internal IMyTerminalControlCheckbox HitWaveAnimationCheckBox;
+        internal readonly MyStringId HudIconOffline = MyStringId.GetOrCompute("DS_ShieldOffline");
+        internal readonly MyStringId HudIconHealth10 = MyStringId.GetOrCompute("DS_ShieldHealth10");
+        internal readonly MyStringId HudIconHealth20 = MyStringId.GetOrCompute("DS_ShieldHealth20");
+        internal readonly MyStringId HudIconHealth30 = MyStringId.GetOrCompute("DS_ShieldHealth30");
+        internal readonly MyStringId HudIconHealth40 = MyStringId.GetOrCompute("DS_ShieldHealth40");
+        internal readonly MyStringId HudIconHealth50 = MyStringId.GetOrCompute("DS_ShieldHealth50");
+        internal readonly MyStringId HudIconHealth60 = MyStringId.GetOrCompute("DS_ShieldHealth60");
+        internal readonly MyStringId HudIconHealth70 = MyStringId.GetOrCompute("DS_ShieldHealth70");
+        internal readonly MyStringId HudIconHealth80 = MyStringId.GetOrCompute("DS_ShieldHealth80");
+        internal readonly MyStringId HudIconHealth90 = MyStringId.GetOrCompute("DS_ShieldHealth90");
+        internal readonly MyStringId HudIconHealth100 = MyStringId.GetOrCompute("DS_ShieldHealth100");
 
-        internal IMyTerminalControlCheckbox SendToHudCheckBox;
-        internal IMyTerminalControlOnOffSwitch ToggleShield;
-        internal IMyTerminalControlCombobox ShellSelect;
-        internal IMyTerminalControlCombobox ShellVisibility;
+        internal readonly MyStringId HudIconHeal10 = MyStringId.GetOrCompute("DS_ShieldHeal10");
+        internal readonly MyStringId HudIconHeal20 = MyStringId.GetOrCompute("DS_ShieldHeal20");
+        internal readonly MyStringId HudIconHeal30 = MyStringId.GetOrCompute("DS_ShieldHeal30");
+        internal readonly MyStringId HudIconHeal40 = MyStringId.GetOrCompute("DS_ShieldHeal40");
+        internal readonly MyStringId HudIconHeal50 = MyStringId.GetOrCompute("DS_ShieldHeal50");
+        internal readonly MyStringId HudIconHeal60 = MyStringId.GetOrCompute("DS_ShieldHeal60");
+        internal readonly MyStringId HudIconHeal70 = MyStringId.GetOrCompute("DS_ShieldHeal70");
+        internal readonly MyStringId HudIconHeal80 = MyStringId.GetOrCompute("DS_ShieldHeal80");
+        internal readonly MyStringId HudIconHeal90 = MyStringId.GetOrCompute("DS_ShieldHeal90");
+        internal readonly MyStringId HudIconHeal100 = MyStringId.GetOrCompute("DS_ShieldHeal100");
 
-        internal IMyTerminalControlSlider ModDamage;
-        internal IMyTerminalControlCheckbox ModVoxels;
-        internal IMyTerminalControlCheckbox ModGrids;
-        internal IMyTerminalControlCheckbox ModEmp;
-        internal IMyTerminalControlSeparator ModSep1;
-        internal IMyTerminalControlSeparator ModSep2;
+        internal readonly MyStringId HudIconDps10 = MyStringId.GetOrCompute("DS_ShieldDps10");
+        internal readonly MyStringId HudIconDps20 = MyStringId.GetOrCompute("DS_ShieldDps20");
+        internal readonly MyStringId HudIconDps30 = MyStringId.GetOrCompute("DS_ShieldDps30");
+        internal readonly MyStringId HudIconDps40 = MyStringId.GetOrCompute("DS_ShieldDps40");
+        internal readonly MyStringId HudIconDps50 = MyStringId.GetOrCompute("DS_ShieldDps50");
+        internal readonly MyStringId HudIconDps60 = MyStringId.GetOrCompute("DS_ShieldDps60");
+        internal readonly MyStringId HudIconDps70 = MyStringId.GetOrCompute("DS_ShieldDps70");
+        internal readonly MyStringId HudIconDps80 = MyStringId.GetOrCompute("DS_ShieldDps80");
+        internal readonly MyStringId HudIconDps90 = MyStringId.GetOrCompute("DS_ShieldDps90");
+        internal readonly MyStringId HudIconDps100 = MyStringId.GetOrCompute("DS_ShieldDps100");
 
-        internal IMyTerminalControlCheckbox O2DoorFix;
+        internal readonly MyStringId HudIconHeat10 = MyStringId.GetOrCompute("DS_ShieldHeat10");
+        internal readonly MyStringId HudIconHeat20 = MyStringId.GetOrCompute("DS_ShieldHeat20");
+        internal readonly MyStringId HudIconHeat30 = MyStringId.GetOrCompute("DS_ShieldHeat30");
+        internal readonly MyStringId HudIconHeat40 = MyStringId.GetOrCompute("DS_ShieldHeat40");
+        internal readonly MyStringId HudIconHeat50 = MyStringId.GetOrCompute("DS_ShieldHeat50");
+        internal readonly MyStringId HudIconHeat60 = MyStringId.GetOrCompute("DS_ShieldHeat60");
+        internal readonly MyStringId HudIconHeat70 = MyStringId.GetOrCompute("DS_ShieldHeat70");
+        internal readonly MyStringId HudIconHeat80 = MyStringId.GetOrCompute("DS_ShieldHeat80");
+        internal readonly MyStringId HudIconHeat90 = MyStringId.GetOrCompute("DS_ShieldHeat90");
+        internal readonly MyStringId HudIconHeat100 = MyStringId.GetOrCompute("DS_ShieldHeat100");
 
-        internal IMyTerminalControlCheckbox PsBatteryBoostCheckBox;
-        internal IMyTerminalControlCheckbox PsHideActiveCheckBox;
-        internal IMyTerminalControlCheckbox PsRefreshAnimationCheckBox;
-        internal IMyTerminalControlCheckbox PsHitWaveAnimationCheckBox;
+        internal bool[] SphereOnCamera = Array.Empty<bool>();
 
-        internal IMyTerminalControlCheckbox PsSendToHudCheckBox;
-        internal IMyTerminalControlOnOffSwitch PsToggleShield;
+        internal volatile bool Wake;
+        internal volatile bool Monitor = true;
+        internal volatile bool EntSlotTick;
+        internal volatile bool Dispatched;
+
+        private const int EntCleanCycle = 3600;
+        private const int EntMaxTickAge = 36000;
+
+        private readonly Work _workData = new Work();
+        private readonly List<KeyValuePair<MyEntity, uint>> _entRefreshTmpList = new List<KeyValuePair<MyEntity, uint>>();
+        private readonly ConcurrentQueue<MyEntity> _entRefreshQueue = new ConcurrentQueue<MyEntity>();
+        private readonly ConcurrentDictionary<MyEntity, uint> _globalEntTmp = new ConcurrentDictionary<MyEntity, uint>();
+
+        private volatile bool _newFrame;
+
+        internal static DefenseShieldsEnforcement Enforced { get; set; } = new DefenseShieldsEnforcement();
+        internal static Session Instance { get; private set; }
+        internal static bool EnforceInit { get; set; }
+
+        internal uint Tick { get; set; }
+        internal uint OldestRefreshTick { get; set; }
+
+        internal int OnCount { get; set; }
+        internal int RefreshCycle { get; set; }
+        internal int EntSlotScaler { get; set; } = 9;
+
+        internal long LastTerminalId { get; set; }
+
+        internal float MaxEntitySpeed { get; set; } = 210;
+
+        internal double HudShieldDist { get; set; } = double.MaxValue;
+
+        internal bool CustomDataReset { get; set; } = true;
+        internal bool ShowOnHudReset { get; set; } = true;
+        internal bool OnCountThrottle { get; set; }
+        internal bool DefinitionsLoaded { get; set; }
+        internal bool Tick20 { get; set; }
+        internal bool Tick60 { get; set; }
+        internal bool Tick180 { get; set; }
+        internal bool Tick600 { get; set; }
+        internal bool Tick1800 { get; set; }
+
+        internal bool WebWrapperOn { get; set; }
+        internal bool ScalerChanged { get; set; }
+        internal bool HideActions { get; set; }
+        internal bool DsControl { get; set; }
+        internal bool PsControl { get; set; }
+        internal bool ModControl { get; set; }
+        internal bool O2Control { get; set; }
+
+        internal bool MpActive { get; set; }
+        internal bool IsServer { get; set; }
+        internal bool DedicatedServer { get; set; }
+        internal bool DsAction { get; set; }
+        internal bool PsAction { get; set; }
+        internal bool ModAction { get; set; }
+
+        internal DefenseShields HudComp { get; set; }
+        internal DSUtils Dsutil1 { get; set; } = new DSUtils();
+        internal DSUtils Dsutil2 { get; set; } = new DSUtils();
+
+        internal IMyTerminalControlSlider WidthSlider { get; set; }
+        internal IMyTerminalControlSlider HeightSlider { get; set; }
+        internal IMyTerminalControlSlider DepthSlider { get; set; }
+        internal IMyTerminalControlSlider OffsetWidthSlider { get; set; }
+        internal IMyTerminalControlSlider OffsetHeightSlider { get; set; }
+        internal IMyTerminalControlSlider OffsetDepthSlider { get; set; }
+        internal IMyTerminalControlSlider ChargeSlider { get; set; }
+        internal IMyTerminalControlCheckbox ExtendFit { get; set; }
+        internal IMyTerminalControlCheckbox SphereFit { get; set; }
+        internal IMyTerminalControlCheckbox FortifyShield { get; set; }
+        internal IMyTerminalControlCheckbox BatteryBoostCheckBox { get; set; }
+        internal IMyTerminalControlCheckbox HideActiveCheckBox { get; set; }
+        internal IMyTerminalControlCheckbox RefreshAnimationCheckBox { get; set; }
+        internal IMyTerminalControlCheckbox HitWaveAnimationCheckBox { get; set; }
+
+        internal IMyTerminalControlCheckbox SendToHudCheckBox { get; set; }
+        internal IMyTerminalControlOnOffSwitch ToggleShield { get; set; }
+        internal IMyTerminalControlCombobox ShellSelect { get; set; }
+        internal IMyTerminalControlCombobox ShellVisibility { get; set; }
+
+        internal IMyTerminalControlSlider ModDamage { get; set; }
+        internal IMyTerminalControlCheckbox ModVoxels { get; set; }
+        internal IMyTerminalControlCheckbox ModGrids { get; set; }
+        internal IMyTerminalControlCheckbox ModEmp { get; set; }
+        internal IMyTerminalControlCheckbox ModReInforce { get; set; }
+        internal IMyTerminalControlSeparator ModSep1 { get; set; }
+        internal IMyTerminalControlSeparator ModSep2 { get; set; }
+
+        internal IMyTerminalControlCheckbox O2DoorFix { get; set; }
+
+        internal IMyTerminalControlCheckbox PsBatteryBoostCheckBox { get; set; }
+        internal IMyTerminalControlCheckbox PsHideActiveCheckBox { get; set; }
+        internal IMyTerminalControlCheckbox PsRefreshAnimationCheckBox { get; set; }
+        internal IMyTerminalControlCheckbox PsHitWaveAnimationCheckBox { get; set; }
+
+        internal IMyTerminalControlCheckbox PsSendToHudCheckBox { get; set; }
+        internal IMyTerminalControlOnOffSwitch PsToggleShield { get; set; }
+
+        private DsAutoResetEvent _autoResetEvent { get; set; } = new DsAutoResetEvent();
+
+        private double _syncDistSqr { get; set; }
+
+        private int _count { get; set; } = -1;
+        private int _lCount { get; set; }
+        private int _eCount { get; set; }
     }
 }

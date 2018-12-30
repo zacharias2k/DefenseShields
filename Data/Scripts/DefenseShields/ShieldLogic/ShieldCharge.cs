@@ -1,10 +1,11 @@
-﻿using System;
-using Sandbox.ModAPI;
-using DefenseShields.Support;
-using VRage;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using global::DefenseShields.Support;
+    using Sandbox.ModAPI;
+    using VRage;
+    using VRageMath;
+
     public partial class DefenseShields
     {
         #region Block Power Logic
@@ -21,7 +22,23 @@ namespace DefenseShields
                 return false;
             }
             if (_power < 0.0001f) _power = 0.001f;
-            if (_power < ShieldCurrentPower || _count == 28 && !_power.Equals(ShieldCurrentPower)) _sink.Update();
+            if (_power < ShieldCurrentPower || (_count == 28 && !_power.Equals(ShieldCurrentPower))) _sink.Update();
+            if (!_isDedicated)
+            {
+                var hitCnt = ShieldHits.Count;
+                if (hitCnt > 0)
+                {
+                    for (int i = 0; i < hitCnt; i++)
+                    {
+                        var hit = ShieldHits[i];
+                        ImpactSize = 12001;
+                        if (Session.Enforced.Debug >= 2) Log.Line($"MpAbsorb: Amount:{hit.Amount} - attacker:{hit.Attacker != null} - dType:{hit.DamageType} - hitPos:{hit.HitPos}");
+                        if (hit.HitPos != Vector3D.Zero && WorldImpactPosition == Vector3D.NegativeInfinity) WorldImpactPosition = hit.HitPos;
+                        Absorb += hit.Amount;
+                    }
+                    ShieldHits.Clear();
+                }
+            }
             if (Absorb > 0)
             {
                 _damageReadOut += Absorb;
@@ -91,7 +108,6 @@ namespace DefenseShields
             }
             GridAvailablePower = GridMaxPower - GridCurrentPower;
             if (!GridMaxPower.Equals(tempGridMaxPower) || _roundedGridMax <= 0) _roundedGridMax = Math.Round(GridMaxPower, 1);
-            //if (Tick600) Log.Line($"[PowerTest] Func:{FuncTask.IsComplete} - MyDist!Null:{MyGridDistributor != null} - !Event:{!_functionalEvent} - Max:{GridMaxPower} - Avail:{GridAvailablePower} - Current:{GridCurrentPower}");
             return GridMaxPower > 0;
         }
 
@@ -103,7 +119,9 @@ namespace DefenseShields
             for (int i = 0; i < _powerSources.Count; i++)
             {
                 var source = _powerSources[i];
-                if (!source.Enabled || !source.ProductionEnabledByType(rId) || source.Entity is IMyReactor && !source.HasCapacityRemainingByType(rId)) continue;
+                if (!source.Enabled || !source.ProductionEnabledByType(rId) || (source.Entity is IMyReactor && !source.HasCapacityRemainingByType(rId)))
+                    continue;
+
                 if (source.Entity is IMyBatteryBlock)
                 {
                     _batteryMaxPower += source.MaxOutputByType(rId);
@@ -125,9 +143,6 @@ namespace DefenseShields
 
         private void CalculatePowerCharge()
         {
-            const float convToDec = 0.01f;
-            const double magicRatio = 2.40063050674088;
-            const float chargeRatio = 1.25f;
             var capScaler = Session.Enforced.CapScaler;
             var hpsEfficiency = Session.Enforced.HpsEfficiency;
             var baseScaler = Session.Enforced.BaseScaler;
@@ -138,11 +153,11 @@ namespace DefenseShields
             if (baseScaler < 1) baseScaler = 1;
             if (maintenanceCost <= 0) maintenanceCost = 1f;
 
-            var percent = DsSet.Settings.Rate * chargeRatio;
-            var chargePercent = percent / chargeRatio * convToDec;
+            var percent = DsSet.Settings.Rate * ChargeRatio;
+            var chargePercent = percent / ChargeRatio * ConvToDec;
 
             var shieldMaintainPercent = maintenanceCost / percent;
-            _sizeScaler = _shieldVol / (_ellipsoidSurfaceArea * magicRatio);
+            _sizeScaler = _shieldVol / (_ellipsoidSurfaceArea * MagicRatio);
 
             float bufferScaler;
             if (ShieldMode == ShieldType.Station && DsState.State.Enhancer) bufferScaler = 100 / percent * baseScaler * _shieldRatio;
@@ -150,13 +165,13 @@ namespace DefenseShields
 
             var hpBase = GridMaxPower * bufferScaler;
 
-            var gridIntegrity = DsState.State.GridIntegrity * (efficiency * convToDec) * convToDec;
+            var gridIntegrity = DsState.State.GridIntegrity * (efficiency * ConvToDec) * ConvToDec;
             if (capScaler > 0) gridIntegrity *= capScaler;
 
             var hpScaler = 1f;
             if (hpBase > gridIntegrity) hpScaler = gridIntegrity / hpBase;
 
-            shieldMaintainPercent = shieldMaintainPercent * DsState.State.EnhancerPowerMulti * (DsState.State.ShieldPercent * convToDec);
+            shieldMaintainPercent = shieldMaintainPercent * DsState.State.EnhancerPowerMulti * (DsState.State.ShieldPercent * ConvToDec);
             if (DsState.State.Lowered) shieldMaintainPercent = shieldMaintainPercent * 0.25f;
             _shieldMaintaintPower = GridMaxPower * hpScaler * shieldMaintainPercent;
 
@@ -196,13 +211,12 @@ namespace DefenseShields
 
         private float PowerNeeded(float chargePercent, float hpsEfficiency, float hpScaler)
         {
-            var powerForShield = 0f;
             var powerScaler = 1f;
             if (hpScaler < 0.5) powerScaler = hpScaler + hpScaler;
 
             var cleanPower = GridAvailablePower + ShieldCurrentPower;
             _otherPower = GridMaxPower - cleanPower;
-            powerForShield = ((cleanPower * chargePercent) - _shieldMaintaintPower) * powerScaler;
+            var powerForShield = ((cleanPower * chargePercent) - _shieldMaintaintPower) * powerScaler;
             var rawMaxChargeRate = powerForShield > 0 ? powerForShield : 0f;
             _shieldMaxChargeRate = rawMaxChargeRate;
             var chargeSize = _shieldMaxChargeRate * hpsEfficiency / _sizeScaler;
@@ -315,15 +329,15 @@ namespace DefenseShields
             var overloadStep = _heatCycle == scaledOverHeat;
             var scaledHeatingSteps = HeatingStep / _empScaleTime;
             var afterOverload = _heatCycle > scaledOverHeat;
-            var nextCycle = _heatCycle == _currentHeatStep * scaledHeatingSteps + scaledOverHeat;
+            var nextCycle = _heatCycle == (_currentHeatStep * scaledHeatingSteps) + scaledOverHeat;
             var overload = _accumulatedHeat > hp * hpLoss * 2;
             var pastThreshold = _accumulatedHeat > nextThreshold;
             var metThreshold = _accumulatedHeat > currentThreshold;
             var underThreshold = !pastThreshold && !metThreshold;
             var venting = lastStep && pastThreshold;
             var leftCritical = lastStep && _tick >= _heatVentingTick;
-            var backOneCycles = (_currentHeatStep - 1) * scaledHeatingSteps + scaledOverHeat + 1;
-            var backTwoCycles = (_currentHeatStep - 2) * scaledHeatingSteps + scaledOverHeat + 1;
+            var backOneCycles = ((_currentHeatStep - 1) * scaledHeatingSteps) + scaledOverHeat + 1;
+            var backTwoCycles = ((_currentHeatStep - 2) * scaledHeatingSteps) + scaledOverHeat + 1;
 
             if (overloadStep)
             {
@@ -353,7 +367,6 @@ namespace DefenseShields
                         _accumulatedHeat = 0;
                     }
                     else _fallbackCycle++;
-                    //if (Session.Enforced.Debug == 4) Log.Line($"empProt fallbackCycle:{_fallbackCycle} - {FallBackStep}");
                 }
 
                 if (pastThreshold)
@@ -373,7 +386,7 @@ namespace DefenseShields
                 }
                 else _heatCycle = backOneCycles;
 
-                if (empProt && _fallbackCycle == FallBackStep || !empProt && underThreshold)
+                if ((empProt && _fallbackCycle == FallBackStep) || (!empProt && underThreshold))
                 {
                     if (_currentHeatStep == 0)
                     {
@@ -411,7 +424,7 @@ namespace DefenseShields
                 _accumulatedHeat = 0;
             }
 
-            if (_heatCycle > HeatingStep * 10 + OverHeat && _tick >= _heatVentingTick)
+            if (_heatCycle > (HeatingStep * 10) + OverHeat && _tick >= _heatVentingTick)
             {
                 if (Session.Enforced.Debug == 4) Log.Line($"HeatCycle over limit, resetting: heatCycle:{_heatCycle} - fallCycle:{_fallbackCycle}");
                 _heatCycle = -1;

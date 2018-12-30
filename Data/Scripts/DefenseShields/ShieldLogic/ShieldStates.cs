@@ -1,15 +1,12 @@
-﻿using System.Collections.Generic;
-using DefenseShields.Support;
-using Sandbox.Game.Entities;
-using Sandbox.Game.GameSystems;
-using Sandbox.ModAPI;
-using SpaceEngineers.Game.ModAPI;
-using VRage.Game;
-using VRage.ModAPI;
-using VRageMath;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System.Collections.Generic;
+    using global::DefenseShields.Support;
+    using Sandbox.Game.Entities;
+    using Sandbox.ModAPI;
+    using VRage.Game;
+    using VRageMath;
+
     public partial class DefenseShields
     {
         public enum PlayerNotice
@@ -21,7 +18,23 @@ namespace DefenseShields
             Remodulate,
             NoPower,
             NoLos
-        };
+        }
+
+        internal void UpdateSettings(ProtoControllerSettings newSettings)
+        {
+            var newShape = newSettings.ExtendFit != DsSet.Settings.ExtendFit || newSettings.FortifyShield != DsSet.Settings.FortifyShield || newSettings.SphereFit != DsSet.Settings.SphereFit;
+            DsSet.Settings = newSettings;
+            SettingsUpdated = true;
+            if (newShape) FitChanged = true;
+            if (Session.Enforced.Debug == 3) Log.Line($"UpdateSettings - server:{Session.Instance.IsServer} - ShieldId [{Shield.EntityId}]:\n{newSettings}");
+        }
+
+        internal void UpdateState(ProtoControllerState newState)
+        {
+            DsState.State = newState;
+            if (!_isServer && Session.Enforced.Debug == 3 && (_clientNotReady || DsState.State.Mode < 0)) Log.Line($"UpdateState - ClientAndReady:{!_clientNotReady} - Mode:{DsState.State.Mode} - server:{Session.Instance.IsServer} - ShieldId [{Shield.EntityId}]:\n{newState}");
+            _clientNotReady = false;
+        }
 
         private void ShieldChangeState()
         {
@@ -38,27 +51,11 @@ namespace DefenseShields
             if (!_isDedicated && DsState.State.Message)
             {
                 BroadcastMessage();
-                if (Session.Enforced.Debug == 3) Log.Line($"ShieldChangeState");
+                if (Session.Enforced.Debug == 3) Log.Line("ShieldChangeState");
                 Shield.RefreshCustomInfo();
             }
             DsState.State.Message = false;
             DsState.SaveState();
-        }
-
-        public void UpdateSettings(ProtoControllerSettings newSettings)
-        {
-            var newShape = newSettings.ExtendFit != DsSet.Settings.ExtendFit || newSettings.FortifyShield != DsSet.Settings.FortifyShield || newSettings.SphereFit != DsSet.Settings.SphereFit;
-            DsSet.Settings = newSettings;
-            SettingsUpdated = true;
-            if (newShape) FitChanged = true;
-            if (Session.Enforced.Debug == 3) Log.Line($"UpdateSettings - server:{Session.Instance.IsServer} - ShieldId [{Shield.EntityId}]:\n{newSettings}");
-        }
-
-        public void UpdateState(ProtoControllerState newState)
-        {
-            DsState.State = newState;
-            if (!_isServer && Session.Enforced.Debug == 3 && (_clientNotReady || DsState.State.Mode < 0)) Log.Line($"UpdateState - ClientAndReady:{!_clientNotReady} - Mode:{DsState.State.Mode} - server:{Session.Instance.IsServer} - ShieldId [{Shield.EntityId}]:\n{newState}");
-            _clientNotReady = false;
         }
 
         private bool EntityAlive()
@@ -79,7 +76,7 @@ namespace DefenseShields
 
             if (_resetEntity) ResetEntity();
 
-            if (wait ||!_allInited && !PostInit()) return false;
+            if (wait || (!_allInited && !PostInit())) return false;
 
             if (_tick1800 && Session.Enforced.Debug > 0)
             {
@@ -96,6 +93,8 @@ namespace DefenseShields
 
             if (_subUpdate && _tick >= _subTick) HierarchyUpdate();
             if (_blockEvent && _tick >= _funcTick) BlockChanged(true);
+            if (_tick - 1 > _lastSendDamageTick) ShieldHitReset(ShieldHit.Amount > 0 && ShieldHit.HitPos != Vector3D.Zero);
+            if (ProtoShieldHits.Count != 0) SendShieldHits();
             return true;
         }
 
@@ -107,7 +106,7 @@ namespace DefenseShields
             PlayerByShield = true;
             Session.Instance.ActiveShields.Add(this);
             WasPaused = false;
-            if (Session.Enforced.Debug == 3) Log.Line($"Logic Resumed");
+            if (Session.Enforced.Debug == 3) Log.Line("Logic Resumed");
         }
 
         private bool ShieldOn()
@@ -138,14 +137,14 @@ namespace DefenseShields
                 }
                 SetShieldServerStatus(powerState);
                 Timing();
-                if (!DsState.State.Online || _comingOnline && (!GridOwnsController() || GridIsMobile && FieldShapeBlocked()))
+                if (!DsState.State.Online || (_comingOnline && (!GridOwnsController() || (GridIsMobile && FieldShapeBlocked()))))
                 {
                     _prevShieldActive = false;
                     if (_genericDownLoop == -1) _genericDownLoop = 0;
                     ShieldFailing();
                     return false;
                 }
-                _syncEnts = !ForceData.IsEmpty || !ImpulseData.IsEmpty|| !MissileDmg.IsEmpty ||
+                _syncEnts = !ForceData.IsEmpty || !ImpulseData.IsEmpty || !MissileDmg.IsEmpty ||
                             !FewDmgBlocks.IsEmpty || !DmgBlocks.IsEmpty || !MeteorDmg.IsEmpty ||
                             !EmpDmg.IsEmpty || !Eject.IsEmpty || !DestroyedBlocks.IsEmpty ||
                             !VoxelDmg.IsEmpty || !CharacterDmg.IsEmpty;
@@ -163,7 +162,7 @@ namespace DefenseShields
                 _clientOn = true;
                 _clientLowered = false;
 
-                _syncEnts = !ForceData.IsEmpty|| !ImpulseData.IsEmpty || !Eject.IsEmpty;
+                _syncEnts = !ForceData.IsEmpty || !ImpulseData.IsEmpty || !Eject.IsEmpty;
             }
 
             return true;
@@ -195,7 +194,6 @@ namespace DefenseShields
             }
             Session.Instance.ActiveShields.Add(this);
         }
-
 
         private bool ShieldFailing()
         {
@@ -465,7 +463,7 @@ namespace DefenseShields
             }
             if (UnsuspendTick != uint.MinValue && _tick >= UnsuspendTick)
             {
-                ResetShape(false, false);
+                ResetShape(false);
                 _updateRender = true;
                 UnsuspendTick = uint.MinValue;
             }
@@ -499,7 +497,7 @@ namespace DefenseShields
                 Shield.Enabled = false;
                 DsState.State.FieldBlocked = true;
                 DsState.State.Message = true;
-                if (Session.Enforced.Debug == 3)Log.Line($"Field blocked: - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"Field blocked: - ShieldId [{Shield.EntityId}]");
                 return true;
             }
             DsState.State.FieldBlocked = false;
@@ -630,7 +628,7 @@ namespace DefenseShields
                 {
                     var otherSize = ds.MyGrid.PositionComp.WorldAABB.Size.Volume;
                     var otherEntityId = ds.MyGrid.EntityId;
-                    if (!IsStatic && ds.IsStatic || mySize < otherSize || mySize.Equals(otherEntityId) && myEntityId < otherEntityId)
+                    if ((!IsStatic && ds.IsStatic) || mySize < otherSize || (mySize.Equals(otherEntityId) && myEntityId < otherEntityId))
                     {
                         _slaveLink = true;
                         return true;
@@ -723,12 +721,10 @@ namespace DefenseShields
             if (MyCube.OwnerId == 0) MyCube.ChangeOwner(myGridBigOwners[0], MyOwnershipShareModeEnum.Faction);
 
             var controlToGridRelataion = MyCube.GetUserRelationToOwner(myGridBigOwners[0]);
-            const MyRelationsBetweenPlayerAndBlock faction = MyRelationsBetweenPlayerAndBlock.FactionShare;
-            var owner = MyRelationsBetweenPlayerAndBlock.Owner;
-            DsState.State.InFaction = controlToGridRelataion == faction;
-            DsState.State.IsOwner = controlToGridRelataion == owner;
+            DsState.State.InFaction = controlToGridRelataion == MyRelationsBetweenPlayerAndBlock.FactionShare;
+            DsState.State.IsOwner = controlToGridRelataion == MyRelationsBetweenPlayerAndBlock.Owner;
             
-            if (controlToGridRelataion != owner && controlToGridRelataion != faction)
+            if (controlToGridRelataion != MyRelationsBetweenPlayerAndBlock.Owner && controlToGridRelataion != MyRelationsBetweenPlayerAndBlock.FactionShare)
             {
                 if (DsState.State.ControllerGridAccess)
                 {
@@ -757,7 +753,7 @@ namespace DefenseShields
             _blockChanged = true;
             _functionalChanged = true;
             ResetShape(false, true);
-            ResetShape(false, false);
+            ResetShape(false);
             SetShieldType(false);
             if (!_isDedicated) ShellVisibility(true);
             if (Session.Enforced.Debug == 3) Log.Line($"UpdateEntity: sEnt:{ShieldEnt == null} - sPassive:{_shellPassive == null} - controller mode is: {ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
@@ -767,7 +763,6 @@ namespace DefenseShields
 
         private void PlayerMessages(PlayerNotice notice)
         {
-
             double radius;
             if (notice == PlayerNotice.EmpOverLoad || notice == PlayerNotice.OverLoad) radius = 500;
             else radius = ShieldSphere.Radius * 2;
@@ -785,7 +780,7 @@ namespace DefenseShields
             switch (notice)
             {
                 case PlayerNotice.EmitterInit:
-                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- shield is reinitializing and checking LOS, attempting startup in 30 seconds!", 4816, "White");
+                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- shield is reinitializing and checking LOS, attempting startup in 30 seconds!", 4816);
                     break;
                 case PlayerNotice.FieldBlocked:
                     if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + "-- the shield's field cannot form when in contact with a solid body", 6720, "Blue");
@@ -797,7 +792,7 @@ namespace DefenseShields
                     if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- shield was EMPed, restarting in 60 seconds!!", 8000, "Red");
                     break;
                 case PlayerNotice.Remodulate:
-                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- shield remodulating, restarting in 5 seconds.", 4800, "White");
+                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- shield remodulating, restarting in 5 seconds.", 4800);
                     break;
                 case PlayerNotice.NoLos:
                     if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- Emitter does not have line of sight, shield offline", 8000, "Red");
@@ -814,7 +809,7 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 3) Log.Line($"Broadcasting message to local playerId{Session.Instance.Players.Count} - Server:{_isServer} - Dedicated:{_isDedicated} - Id:{MyAPIGateway.Multiplayer.MyId}");
 
             var checkMobLos = GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los;
-            if (!DsState.State.EmitterWorking && (!DsState.State.Waking || checkMobLos && _genericDownLoop > -1 || checkMobLos && !_isServer))
+            if (!DsState.State.EmitterWorking && (!DsState.State.Waking || (checkMobLos && _genericDownLoop > -1) || (checkMobLos && !_isServer)))
             {
                 if (checkMobLos) PlayerMessages(PlayerNotice.NoLos);
                 else if (!GridIsMobile && ShieldComp.StationEmitter != null && !ShieldComp.StationEmitter.EmiState.State.Los) PlayerMessages(PlayerNotice.NoLos);
@@ -832,7 +827,7 @@ namespace DefenseShields
             var message = DsState.State.Message;
             if (message)
             {
-                if (Session.Enforced.Debug == 3) Log.Line($"ClientOffline: Broadcasting message");
+                if (Session.Enforced.Debug == 3) Log.Line("ClientOffline: Broadcasting message");
                 BroadcastMessage();
                 DsState.State.Message = false;
             }

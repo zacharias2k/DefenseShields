@@ -1,24 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces.Terminal;
-using VRage.ModAPI;
-using VRage.Utils;
-using VRageMath;
-
-namespace DefenseShields.Control
+﻿namespace DefenseShields.Control
 {
+    using System;
+    using System.Collections.Generic;
+    using Sandbox.ModAPI;
+    using Sandbox.ModAPI.Interfaces.Terminal;
+    using VRage.ModAPI;
+    using VRage.Utils;
+    using VRageMath;
+
     public static class TerminalHelpers
     {
-        private static Func<IMyTerminalBlock, bool> GetDefaultEnabled(IMyTerminalBlock block)
-        {
-            return b => b.BlockDefinition.SubtypeId.StartsWith("DSControl");
-        }
-
         public static IMyTerminalControlOnOffSwitch AddOnOff<T>(T block, string name, string title, string tooltip, string onText, string offText, Func<IMyTerminalBlock, bool> getter, Action<IMyTerminalBlock, bool> setter, Func<IMyTerminalBlock, bool> enabledGetter = null, Func<IMyTerminalBlock, bool> visibleGetter = null) where T : IMyTerminalBlock
         {
             var c = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlOnOffSwitch, T>(name);
-            var d = GetDefaultEnabled(block);
+            var d = GetDefaultEnabled();
 
             c.Title = MyStringId.GetOrCompute(title);
             c.Tooltip = MyStringId.GetOrCompute(tooltip);
@@ -36,7 +31,7 @@ namespace DefenseShields.Control
         public static IMyTerminalControlButton AddButton<T>(T block, string name, string title, string tooltip, Func<IMyTerminalBlock, bool> visibleGetter = null) where T : IMyTerminalBlock
         {
             var c = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlButton, T>(name);
-            var d = GetDefaultEnabled(block);
+            var d = GetDefaultEnabled();
 
             c.Title = MyStringId.GetOrCompute(title);
             c.Tooltip = MyStringId.GetOrCompute(tooltip);
@@ -49,7 +44,7 @@ namespace DefenseShields.Control
         public static IMyTerminalControlSeparator Separator<T>(T block, string name, Func<IMyTerminalBlock, bool> enabledGetter = null, Func<IMyTerminalBlock, bool> visibleGetter = null) where T : IMyTerminalBlock
         {
             var c = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlSeparator, T>(name);
-            var d = GetDefaultEnabled(block);
+            var d = GetDefaultEnabled();
 
             c.Enabled = enabledGetter ?? d;
             c.Visible = visibleGetter ?? d;
@@ -61,7 +56,7 @@ namespace DefenseShields.Control
         public static IMyTerminalControlColor AddColorEditor<T>(T block, string name, string title, string tooltip, Func<IMyTerminalBlock, Color> getter, Action<IMyTerminalBlock, Color> setter, Func<IMyTerminalBlock, bool> enabledGetter = null, Func<IMyTerminalBlock, bool> visibleGetter = null) where T : IMyTerminalBlock
         {
             var c = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlColor, T>(name);
-            var d = GetDefaultEnabled(block);
+            var d = GetDefaultEnabled();
 
             c.Title = MyStringId.GetOrCompute(title);
             c.Tooltip = MyStringId.GetOrCompute(tooltip);
@@ -77,7 +72,7 @@ namespace DefenseShields.Control
         public static IMyTerminalControlSlider AddSlider<T>(T block, string name, string title, string tooltip, Func<IMyTerminalBlock, float> getter, Action<IMyTerminalBlock, float> setter, Func<IMyTerminalBlock, bool> enabledGetter = null, Func<IMyTerminalBlock, bool> visibleGetter = null) where T : IMyTerminalBlock
         {
             var s = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlSlider, T>(name);
-            var d = GetDefaultEnabled(block);
+            var d = GetDefaultEnabled();
 
             s.Title = MyStringId.GetOrCompute(title);
             s.Tooltip = MyStringId.GetOrCompute(tooltip);
@@ -93,7 +88,7 @@ namespace DefenseShields.Control
         public static IMyTerminalControlCombobox AddCombobox<T>(T block, string name, string title, string tooltip, Func<IMyTerminalBlock, long> getter, Action<IMyTerminalBlock, long> setter, Action<List<MyTerminalControlComboBoxItem>> fillAction, Func<IMyTerminalBlock, bool> enabledGetter = null, Func<IMyTerminalBlock, bool> visibleGetter = null) where T : IMyTerminalBlock
         {
             var cmb = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlCombobox, T>(name);
-            var d = GetDefaultEnabled(block);
+            var d = GetDefaultEnabled();
 
             cmb.Title = MyStringId.GetOrCompute(title);
             cmb.Tooltip = MyStringId.GetOrCompute(tooltip);
@@ -110,7 +105,7 @@ namespace DefenseShields.Control
         {
             var controls = new IMyTerminalControl[4];
 
-            var d = GetDefaultEnabled(block);
+            var d = GetDefaultEnabled();
 
             var lb = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlLabel, T>(name + "_Label");
             lb.Label = MyStringId.GetOrCompute(title);
@@ -135,7 +130,6 @@ namespace DefenseShields.Control
             x.SetLimits(min, max);
             MyAPIGateway.TerminalControls.AddControl<T>(x);
             controls[1] = x;
-
 
             var y = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlSlider, T>(name + "_Y");
             y.Title = MyStringId.GetOrCompute("Y");
@@ -177,7 +171,7 @@ namespace DefenseShields.Control
         public static IMyTerminalControlCheckbox AddCheckbox<T>(T block, string name, string title, string tooltip, Func<IMyTerminalBlock, bool> getter, Action<IMyTerminalBlock, bool> setter, Func<IMyTerminalBlock, bool> enabledGetter = null, Func<IMyTerminalBlock, bool> visibleGetter = null) where T : IMyTerminalBlock
         {
             var c = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlCheckbox, T>(name);
-            var d = GetDefaultEnabled(block);
+            var d = GetDefaultEnabled();
 
             c.Title = MyStringId.GetOrCompute(title);
             c.Tooltip = MyStringId.GetOrCompute(tooltip);
@@ -188,6 +182,11 @@ namespace DefenseShields.Control
 
             MyAPIGateway.TerminalControls.AddControl<T>(c);
             return c;
+        }
+
+        private static Func<IMyTerminalBlock, bool> GetDefaultEnabled()
+        {
+            return b => b.BlockDefinition.SubtypeId.StartsWith("DSControl");
         }
     }
 }

@@ -1,63 +1,27 @@
-﻿using System;
-using DefenseShields.Support;
-using Sandbox.ModAPI;
-using VRage.Game;
-using VRage.Game.Entity;
-using VRage.Utils;
-using VRageMath;
-using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using global::DefenseShields.Support;
+    using Sandbox.ModAPI;
+    using VRage.Game;
+    using VRage.Game.Entity;
+    using VRage.Utils;
+    using VRageMath;
+    using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
+
     public partial class DefenseShields
     {
-        private void ShellVisibility(bool forceInvisible = false)
-        {
-            if (forceInvisible)
-            {
-                _shellPassive.Render.UpdateRenderObject(false);
-                _shellActive.Render.UpdateRenderObject(false);
-                return;
-            }
-
-            if (DsSet.Settings.Visible == 0) _shellPassive.Render.UpdateRenderObject(true);
-            _shellActive.Render.UpdateRenderObject(true);
-            _shellActive.Render.UpdateRenderObject(false);
-        }
-
         public void Draw(int onCount, bool sphereOnCamera)
         {
             _onCount = onCount;
-            var enemy = false;
-            var relation = MyAPIGateway.Session.Player.GetRelationTo(MyCube.OwnerId);
-            if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
+
             var renderId = MyGrid.Render.GetRenderObjectID();
             var percent = DsState.State.ShieldPercent;
-            var hitAnim = DsSet.Settings.HitWaveAnimation;
-            var refreshAnim = DsSet.Settings.RefreshAnimation;
-            var config = MyAPIGateway.Session.Config;
-            var drawIcon = !enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.Instance.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
-            var viewCheck = _count == 0 || _count == 19 || _count == 39;
-            if (viewCheck) _viewInShield = CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation, DetectMatrixOutsideInv);
-            var clearView = !GridIsMobile || !_viewInShield;
-            if (viewCheck && _hideColor && !_supressedColor && _viewInShield)
-            {
-                _modelPassive = ModelMediumReflective;
-                UpdatePassiveModel();
-                _supressedColor = true;
-                _hideShield = false;
-            }
-            else if (viewCheck && _supressedColor && _hideColor && !_viewInShield)
-            {
-                SelectPassiveShell();
-                UpdatePassiveModel();
-                _supressedColor = false;
-                _hideShield = false;
-            }
-            if (drawIcon) UpdateIcon();
+            var reInforce = DsState.State.ReInforce;
+            var hitAnim = !reInforce && DsSet.Settings.HitWaveAnimation;
+            var refreshAnim = !reInforce && DsSet.Settings.RefreshAnimation;
 
-            var activeVisible = !DsSet.Settings.ActiveInvisible && clearView || enemy;
-            CalcualteVisibility(DsSet.Settings.Visible, activeVisible);
+            var activeVisible = DetermineVisualState(reInforce);
 
             var impactPos = WorldImpactPosition;
             var webEffect = WebDamage && BulletCoolDown > -1 && WebCoolDown < 0;
@@ -106,6 +70,139 @@ namespace DefenseShields
             _shapeChanged = false;
         }
 
+        public void DrawShieldDownIcon()
+        {
+            if (_tick % 60 != 0 && !_isDedicated) HudCheck();
+            var enemy = false;
+            var relation = MyAPIGateway.Session.Player.GetRelationTo(MyCube.OwnerId);
+            if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
+
+            var config = MyAPIGateway.Session.Config;
+            if (!enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.Instance.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible) UpdateIcon();
+        }
+
+        public void HitParticleStop()
+        {
+            if (_effect == null) return;
+            _effect.Stop();
+            _effect.Close(false, true);
+            _effect = null;
+        }
+
+        private static MyStringId GetHudIcon1FromFloat(float percent)
+        {
+            if (percent >= 99) return Session.Instance.HudIconHealth100;
+            if (percent >= 90) return Session.Instance.HudIconHealth90;
+            if (percent >= 80) return Session.Instance.HudIconHealth80;
+            if (percent >= 70) return Session.Instance.HudIconHealth70;
+            if (percent >= 60) return Session.Instance.HudIconHealth60;
+            if (percent >= 50) return Session.Instance.HudIconHealth50;
+            if (percent >= 40) return Session.Instance.HudIconHealth40;
+            if (percent >= 30) return Session.Instance.HudIconHealth30;
+            if (percent >= 20) return Session.Instance.HudIconHealth20;
+            if (percent > 0) return Session.Instance.HudIconHealth10;
+            return Session.Instance.HudIconOffline;
+        }
+
+        private static MyStringId GetHudIcon2FromFloat(float fState)
+        {
+            if (fState >= 0)
+            {
+                if (fState < 9) return MyStringId.NullOrEmpty;
+                if (fState < 19) return Session.Instance.HudIconHeal10;
+                if (fState < 29) return Session.Instance.HudIconHeal20;
+                if (fState < 39) return Session.Instance.HudIconHeal30;
+                if (fState < 49) return Session.Instance.HudIconHeal40;
+                if (fState < 59) return Session.Instance.HudIconHeal50;
+                if (fState < 69) return Session.Instance.HudIconHeal60;
+                if (fState < 79) return Session.Instance.HudIconHeal70;
+                if (fState < 89) return Session.Instance.HudIconHeal80;
+                if (fState < 99) return Session.Instance.HudIconHeal90;
+                return Session.Instance.HudIconHeal100;
+            }
+
+            if (fState > -9) return MyStringId.NullOrEmpty;
+            if (fState > -19) return Session.Instance.HudIconDps10;
+            if (fState > -29) return Session.Instance.HudIconDps20;
+            if (fState > -39) return Session.Instance.HudIconDps30;
+            if (fState > -49) return Session.Instance.HudIconDps40;
+            if (fState > -59) return Session.Instance.HudIconDps50;
+            if (fState > -69) return Session.Instance.HudIconDps60;
+            if (fState > -79) return Session.Instance.HudIconDps70;
+            if (fState > -89) return Session.Instance.HudIconDps80;
+            if (fState > -99) return Session.Instance.HudIconDps90;
+            return Session.Instance.HudIconDps100;
+        }
+
+        private static MyStringId GetHudIcon3FromInt(int heat, bool flash)
+        {
+            if (heat == 100 && flash) return Session.Instance.HudIconHeat100;
+            if (heat == 90) return Session.Instance.HudIconHeat90;
+            if (heat == 80) return Session.Instance.HudIconHeat80;
+            if (heat == 70) return Session.Instance.HudIconHeat70;
+            if (heat == 60) return Session.Instance.HudIconHeat60;
+            if (heat == 50) return Session.Instance.HudIconHeat50;
+            if (heat == 40) return Session.Instance.HudIconHeat40;
+            if (heat == 30) return Session.Instance.HudIconHeat30;
+            if (heat == 20) return Session.Instance.HudIconHeat20;
+            if (heat == 10) return Session.Instance.HudIconHeat10;
+            return MyStringId.NullOrEmpty;
+        }
+
+        private bool DetermineVisualState(bool reInforce)
+        {
+            var viewCheck = _count == 0 || _count == 19 || _count == 39;
+            if (viewCheck) _viewInShield = CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation, DetectMatrixOutsideInv);
+
+            if (reInforce)
+                _hideShield = false;
+            else if (viewCheck && _hideColor && !_supressedColor && _viewInShield)
+            {
+                _modelPassive = ModelMediumReflective;
+                UpdatePassiveModel();
+                _supressedColor = true;
+                _hideShield = false;
+            }
+            else if (viewCheck && _supressedColor && _hideColor && !_viewInShield)
+            {
+                SelectPassiveShell();
+                UpdatePassiveModel();
+                _supressedColor = false;
+                _hideShield = false;
+            }
+
+            var enemy = false;
+            var relation = MyAPIGateway.Session.Player.GetRelationTo(MyCube.OwnerId);
+            if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
+
+            var config = MyAPIGateway.Session.Config;
+            var drawIcon = !enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.Instance.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
+            if (drawIcon) UpdateIcon();
+
+            var clearView = !GridIsMobile || !_viewInShield;
+            var activeInvisible = DsSet.Settings.ActiveInvisible;
+            var activeVisible = !reInforce && ((!activeInvisible && clearView) || enemy);
+
+            var visible = !reInforce ? DsSet.Settings.Visible : 1;
+            CalcualteVisibility(visible, activeVisible);
+
+            return activeVisible;
+        }
+
+        private void ShellVisibility(bool forceInvisible = false)
+        {
+            if (forceInvisible)
+            {
+                _shellPassive.Render.UpdateRenderObject(false);
+                _shellActive.Render.UpdateRenderObject(false);
+                return;
+            }
+
+            if (DsSet.Settings.Visible == 0) _shellPassive.Render.UpdateRenderObject(true);
+            _shellActive.Render.UpdateRenderObject(true);
+            _shellActive.Render.UpdateRenderObject(false);
+        }
+
         private int CalculateLod(int onCount)
         {
             var lod = 4;
@@ -122,12 +219,12 @@ namespace DefenseShields
             var pos = WorldImpactPosition;
             var matrix = MatrixD.CreateTranslation(pos);
 
-            MyParticlesManager.TryCreateParticleEffect(6667, out _effect, ref matrix, ref pos, _shieldEntRendId, true); // 15, 16, 24, 25, 28, (31, 32) 211 215 53
+            MyParticlesManager.TryCreateParticleEffect(6667, out _effect, ref matrix, ref pos, _shieldEntRendId, true); 
             if (_effect == null) return;
             var playerDist = Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos);
             if (playerDist < 15) playerDist = 20;
             var radius = playerDist * 0.15d;
-            var scale = (playerDist + playerDist * 0.001) / playerDist * 0.03;
+            var scale = (playerDist + (playerDist * 0.001)) / playerDist * 0.03;
             if (ImpactSize < 150)
             {
                 scale = scale * 0.3;
@@ -137,7 +234,6 @@ namespace DefenseShields
             else if (ImpactSize > 3600) scale = scale * (ImpactSize / 3600);
             if (scale > 0.1) scale = 0.1;
 
-            //Log.Line($"D:{playerDist} - R:{radius} - S:{scale} - I:{ImpactSize} - {MyAPIGateway.Session.IsCameraUserControlledSpectator} = {MyAPIGateway.Session.CameraTargetDistance} - {Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos)}");
             _effect.UserRadiusMultiplier = (float)radius;
             _effect.UserEmitterScale = (float)scale;
             _effect.Velocity = MyGrid.Physics.LinearVelocity;
@@ -146,7 +242,7 @@ namespace DefenseShields
 
         private void EmpParticleStart()
         {
-            _effect.Stop(true);
+            _effect.Stop();
             var pos = EmpDetonation;
             var matrix = MatrixD.CreateTranslation(pos);
 
@@ -154,7 +250,7 @@ namespace DefenseShields
             if (_effect == null) return;
             var playerDist = Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos);
             var radius = playerDist * 0.15d;
-            var scale = (playerDist + playerDist * 0.001) / playerDist * 0.03 * (EmpSize * 0.0008);
+            var scale = (playerDist + (playerDist * 0.001)) / playerDist * 0.03 * (EmpSize * 0.0008);
             if (scale > 0.3)
             {
                 var scaler = EmpSize / 16755 * 0.05;
@@ -167,14 +263,6 @@ namespace DefenseShields
             _effect.Play();
         }
 
-        public void HitParticleStop()
-        {
-            if (_effect == null) return;
-            _effect.Stop();
-            _effect.Close(false, true);
-            _effect = null;
-        }
-
         private void CalcualteVisibility(long visible, bool activeVisible)
         {
             if (visible != 2) HitCoolDown = -11;
@@ -183,43 +271,38 @@ namespace DefenseShields
             if (HitCoolDown > 59) HitCoolDown = -11;
 
             var passiveSet = visible != 0 && !_hideShield && HitCoolDown == -11;
-            var passiveReset = visible == 0 && _hideShield || _hideShield && visible != 0 && !activeVisible && _hideShield && HitCoolDown == -10;
+            var passiveReset = (visible == 0 && _hideShield) || (visible != 0 && !activeVisible && _hideShield && HitCoolDown == -10);
             var passiveFade = HitCoolDown > -1 && visible != 0;
             var fadeReset = visible == 2 && !passiveFade && HitCoolDown != -11;
 
             if (fadeReset)
-            {
-                _shellPassive.Render.UpdateRenderObject(false);
-                _shellPassive.Render.Transparency = 0f;
-                _shellPassive.Render.UpdateRenderObject(true);
-            }
-
-            if (passiveFade)
-            {
-                _shellPassive.Render.UpdateRenderObject(false);
-                _shellPassive.Render.Transparency = (HitCoolDown + 1) * 0.0166666666667f;
-                _shellPassive.Render.UpdateRenderObject(true);
-            }
+                ResetShellRender(false);
+            else if (passiveFade)
+                ResetShellRender(true);
             else if (passiveSet)
             {
                 _hideShield = true;
-                _shellPassive.Render.UpdateRenderObject(false);
-                _shellPassive.Render.Transparency = 0f;
+                ResetShellRender(false, false);
             }
             else if (passiveReset)
             {
-                _shellPassive.Render.UpdateRenderObject(false);
                 _hideShield = false;
-                _shellPassive.Render.Transparency = 0f;
-                _shellPassive.Render.UpdateRenderObject(true);
+                ResetShellRender(false);
             }
+        }
+
+        private void ResetShellRender(bool fade, bool updates = true)
+        {
+            _shellPassive.Render.UpdateRenderObject(false);
+            _shellPassive.Render.Transparency = fade ? (HitCoolDown + 1) * 0.0166666666667f : 0f;
+            if (updates) _shellPassive.Render.UpdateRenderObject(true);
         }
 
         private void HudCheck()
         {
             var playerEnt = MyAPIGateway.Session.ControlledObject?.Entity as MyEntity;
             if (playerEnt?.Parent != null) playerEnt = playerEnt.Parent;
-            if (playerEnt == null || DsState.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv) || !DsState.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
+            if (playerEnt == null || (DsState.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv)) || (!DsState.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv)))
             {
                 if (Session.Instance.HudComp != this) return;
                 ProtectCache protectedEnt = null;
@@ -241,7 +324,7 @@ namespace DefenseShields
 
         private void UpdateIcon()
         {
-            //Moving average of the average of the two values, then moving average if the difference from the average.
+            // Moving average of the average of the two values, then moving average if the difference from the average.
             var position = new Vector3D(_shieldIconPos.X, _shieldIconPos.Y, 0);
             var fov = MyAPIGateway.Session.Camera.FovWithZoom;
             double aspectratio = MyAPIGateway.Session.Camera.ViewportSize.X / MyAPIGateway.Session.Camera.ViewportSize.Y;
@@ -254,8 +337,7 @@ namespace DefenseShields
             var origin = position;
             var left = cameraWorldMatrix.Left;
             var up = cameraWorldMatrix.Up;
-            const double scaler = 0.08;
-            scale = scaler * scale;
+            scale = 0.08 * scale;
 
             var icon2FSelect = GetIconMeterfloat();
             var percent = DsState.State.ShieldPercent;
@@ -281,7 +363,7 @@ namespace DefenseShields
             if (hps < 1) hps = 1;
             if (dps < 1) dps = 1;
 
-            var maxHps = GridMaxPower - consumptionRate * 0.05f;
+            var maxHps = GridMaxPower - (consumptionRate * 0.05f);
             var dpsScaledRate = dps * (consumptionRate / hps);
             var charging = hps > dps;
             var hpsOfMax = consumptionRate / maxHps * 100;
@@ -299,77 +381,6 @@ namespace DefenseShields
 
             if (charging) return percentOfMax;
             return -percentOfMax;
-        }
-
-        public static MyStringId GetHudIcon1FromFloat(float percent)
-        {
-            if (percent >= 99) return HudIconHealth100;
-            if (percent >= 90) return HudIconHealth90;
-            if (percent >= 80) return HudIconHealth80;
-            if (percent >= 70) return HudIconHealth70;
-            if (percent >= 60) return HudIconHealth60;
-            if (percent >= 50) return HudIconHealth50;
-            if (percent >= 40) return HudIconHealth40;
-            if (percent >= 30) return HudIconHealth30;
-            if (percent >= 20) return HudIconHealth20;
-            if (percent > 0) return HudIconHealth10;
-            return HudIconOffline;
-        }
-
-        public static MyStringId GetHudIcon2FromFloat(float fState)
-        {
-            if (fState >= 0)
-            {
-                if (fState < 9) return MyStringId.NullOrEmpty;
-                if (fState < 19) return HudIconHeal10;
-                if (fState < 29) return HudIconHeal20;
-                if (fState < 39) return HudIconHeal30;
-                if (fState < 49) return HudIconHeal40;
-                if (fState < 59) return HudIconHeal50;
-                if (fState < 69) return HudIconHeal60;
-                if (fState < 79) return HudIconHeal70;
-                if (fState < 89) return HudIconHeal80;
-                if (fState < 99) return HudIconHeal90;
-                return HudIconHeal100;
-            }
-
-            if (fState > -9) return MyStringId.NullOrEmpty;
-            if (fState > -19) return HudIconDps10;
-            if (fState > -29) return HudIconDps20;
-            if (fState > -39) return HudIconDps30;
-            if (fState > -49) return HudIconDps40;
-            if (fState > -59) return HudIconDps50;
-            if (fState > -69) return HudIconDps60;
-            if (fState > -79) return HudIconDps70;
-            if (fState > -89) return HudIconDps80;
-            if (fState > -99) return HudIconDps90;
-            return HudIconDps100;
-        }
-
-        public static MyStringId GetHudIcon3FromInt(int heat, bool flash)
-        {
-            if (heat == 100 && flash) return HudIconHeat100;
-            if (heat == 90) return HudIconHeat90;
-            if (heat == 80) return HudIconHeat80;
-            if (heat == 70) return HudIconHeat70;
-            if (heat == 60) return HudIconHeat60;
-            if (heat == 50) return HudIconHeat50;
-            if (heat == 40) return HudIconHeat40;
-            if (heat == 30) return HudIconHeat30;
-            if (heat == 20) return HudIconHeat20;
-            if (heat == 10) return HudIconHeat10;
-            return MyStringId.NullOrEmpty;
-        }
-
-        public void DrawShieldDownIcon()
-        {
-            if (_tick % 60 != 0 && !_isDedicated) HudCheck();
-            var enemy = false;
-            var relation = MyAPIGateway.Session.Player.GetRelationTo(MyCube.OwnerId);
-            if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
-
-            var config = MyAPIGateway.Session.Config;
-            if (!enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.Instance.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible) UpdateIcon();
         }
     }
 }

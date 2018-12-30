@@ -1,15 +1,111 @@
-﻿using System;
-using DefenseShields.Support;
-using Sandbox.ModAPI;
-using VRage.Game.ModAPI;
-using VRage.ModAPI;
-using VRageMath;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using global::DefenseShields.Support;
+    using Sandbox.Game.Entities;
+    using Sandbox.ModAPI;
+    using VRage.Game.Entity;
+    using VRage.Game.ModAPI;
+    using VRage.ModAPI;
+    using VRage.Utils;
+    using VRageMath;
+
     public partial class Session
     {
         #region Network sync
+
+        internal static void PacketizeEnforcements(IMyCubeBlock block, ulong senderId)
+        {
+            var data = new DataEnforce(MyAPIGateway.Multiplayer.MyId, block.EntityId, Enforced);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            MyAPIGateway.Multiplayer.SendMessageTo(PacketIdEnforce, bytes, senderId);
+        }
+
+        internal void PacketizeShieldHit(MyCubeBlock block, ProtoShieldHit shieldHit)
+        {
+            var data = new DataShieldHit(MyAPIGateway.Multiplayer.MyId, block.EntityId, shieldHit);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            var syncPosition = block.CubeGrid.WorldMatrix.Translation;
+            var localSteamId = MyAPIGateway.Multiplayer.MyId;
+
+            foreach (var p in Players.Values)
+            {
+                var id = p.SteamUserId;
+                if (id != localSteamId && id != data.Sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= _syncDistSqr)
+                    MyAPIGateway.Multiplayer.SendMessageTo(PacketIdShieldHit, bytes, p.SteamUserId);
+            }
+        }
+
+        internal void PacketizeControllerState(IMyCubeBlock block, ProtoControllerState state)
+        {
+            var data = new DataControllerState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            ControllerStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        internal void PacketizeControllerSettings(IMyCubeBlock block, ProtoControllerSettings settings)
+        {
+            var data = new DataControllerSettings(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            ControllerSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        internal void PacketizeModulatorSettings(IMyCubeBlock block, ProtoModulatorSettings settings)
+        {
+            var data = new DataModulatorSettings(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            ModulatorSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        internal void PacketizeModulatorState(IMyCubeBlock block, ProtoModulatorState state)
+        {
+            var data = new DataModulatorState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            ModulatorStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        internal void PacketizePlanetShieldSettings(IMyCubeBlock block, ProtoPlanetShieldSettings settings)
+        {
+            var data = new DataPlanetShieldSettings(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            PlanetShieldSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        internal void PacketizePlanetShieldState(IMyCubeBlock block, ProtoPlanetShieldState state)
+        {
+            var data = new DataPlanetShieldState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            PlanetShieldStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        internal void PacketizeO2GeneratorSettings(IMyCubeBlock block, ProtoO2GeneratorSettings settings)
+        {
+            var data = new DataO2GeneratorSettings(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            O2GeneratorSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        internal void PacketizeO2GeneratorState(IMyCubeBlock block, ProtoO2GeneratorState state)
+        {
+            var data = new DataO2GeneratorState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            O2GeneratorStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        internal void PacketizeEnhancerState(IMyCubeBlock block, ProtoEnhancerState state)
+        {
+            var data = new DataEnhancerState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            EnhancerStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
+        internal void PacketizeEmitterState(IMyCubeBlock block, ProtoEmitterState state)
+        {
+            var data = new DataEmitterState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+            EmitterStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
+        }
+
         private static void EnforcementReceived(byte[] bytes)
         {
             try
@@ -41,7 +137,7 @@ namespace DefenseShields
                             {
                                 Enforcements.SaveEnforcement(logic.Shield, data.Enforce);
                                 EnforceInit = true;
-                                if (Enforced.Debug >= 3) Log.Line($"client accepted enforcement");
+                                if (Enforced.Debug >= 3) Log.Line("client accepted enforcement");
                                 if (Enforced.Debug >= 3) Log.Line($"Client EnforceInit Complete with enforcements:\n{data.Enforce}");
                             }
                             else PacketizeEnforcements(logic.Shield, data.Enforce.SenderId);
@@ -50,6 +146,31 @@ namespace DefenseShields
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in PacketEnforcementReceived: {ex}"); }
+        }
+
+        private static void ShieldHitReceived(byte[] bytes)
+        {
+            try
+            {
+                if (bytes.Length <= 2) return;
+
+                var data = MyAPIGateway.Utilities.SerializeFromBinary<DataShieldHit>(bytes); // this will throw errors on invalid data
+
+                MyEntity ent = null;
+                if (MyAPIGateway.Multiplayer.IsServer || data?.ShieldHit == null || !MyEntities.TryGetEntityById(data.EntityId, out ent) || ent.Closed)
+                {
+                    Log.Line($"EnforceData Received;; {(ent == null ? "can't find entity" : (ent.Closed ? "found closed entity" : "entity not a shield"))}");
+                    return;
+                }
+                var shield = ent.GameLogic.GetAs<DefenseShields>();
+                if (shield == null) return;
+
+                var hit = data.ShieldHit;
+                var attacker = MyEntities.GetEntityById(hit.AttackerId);
+                shield.ShieldHits.Add(new ShieldHit(attacker, hit.Amount, MyStringHash.GetOrCompute(hit.DamageType), hit.HitPos));
+
+            }
+            catch (Exception ex) { Log.Line($"Exception in ShieldHitReceived: {ex}"); }
         }
 
         private void ControllerStateReceived(byte[] bytes)
@@ -62,7 +183,7 @@ namespace DefenseShields
 
                 if (data == null)
                 {
-                    if (Enforced.Debug >= 3) Log.Line($"Data State null");
+                    if (Enforced.Debug >= 3) Log.Line("Data State null");
                     return;
                 }
 
@@ -76,7 +197,7 @@ namespace DefenseShields
                 var logic = ent.GameLogic.GetAs<DefenseShields>();
                 if (logic == null)
                 {
-                    if (Enforced.Debug >= 3) Log.Line($"Logic State null");
+                    if (Enforced.Debug >= 3) Log.Line("Logic State null");
                     return;
                 }
 
@@ -86,7 +207,7 @@ namespace DefenseShields
                         {
                             if (data.State == null)
                             {
-                                if (Enforced.Debug >= 3) Log.Line($"Packet State null");
+                                if (Enforced.Debug >= 3) Log.Line("Packet State null");
                                 return;
                             }
 
@@ -100,7 +221,6 @@ namespace DefenseShields
             }
             catch (Exception ex) { Log.Line($"Exception in PacketStatsReceived: {ex}"); }
         }
-
 
         private void ControllerSettingsReceived(byte[] bytes)
         {
@@ -212,7 +332,6 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in ModulatorStateReceived: {ex}"); }
         }
 
-
         private void O2GeneratorSettingsReceived(byte[] bytes)
         {
             try
@@ -236,13 +355,13 @@ namespace DefenseShields
                 switch (data.Type)
                 {
                     case PacketType.O2Generatorsettings:
-                    {
-                        if (data.Settings == null) return;
+                        {
+                            if (data.Settings == null) return;
 
-                        logic.UpdateSettings(data.Settings);
-                        if (MyAPIGateway.Multiplayer.IsServer) O2GeneratorSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
-                        if (Enforced.Debug >= 1) Log.Line($"O2Generator received:\n{data.Settings} - Server:{MyAPIGateway.Multiplayer.IsServer}");
-                    }
+                            logic.UpdateSettings(data.Settings);
+                            if (MyAPIGateway.Multiplayer.IsServer) O2GeneratorSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
+                            if (Enforced.Debug >= 1) Log.Line($"O2Generator received:\n{data.Settings} - Server:{MyAPIGateway.Multiplayer.IsServer}");
+                        }
                         break;
                 }
             }
@@ -361,85 +480,7 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in EmitterStateReceived: {ex}"); }
         }
 
-        public static void PacketizeEnforcements(IMyCubeBlock block, ulong senderId)
-        {
-            var data = new DataEnforce(MyAPIGateway.Multiplayer.MyId, block.EntityId, Enforced);
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            MyAPIGateway.Multiplayer.SendMessageTo(PacketIdEnforce, bytes, senderId);
-        }
-
-        public void PacketizeControllerState(IMyCubeBlock block, ProtoControllerState state)
-        {
-            var data = new DataControllerState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            ControllerStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
-        }
-
-        public void PacketizeControllerSettings(IMyCubeBlock block, ProtoControllerSettings settings)
-        {
-            var data = new DataControllerSettings(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            ControllerSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
-        }
-
-        public void PacketizeModulatorSettings(IMyCubeBlock block, ProtoModulatorSettings settings)
-        {
-            var data = new DataModulatorSettings(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            ModulatorSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
-        }
-
-        public void PacketizeModulatorState(IMyCubeBlock block, ProtoModulatorState state)
-        {
-            var data = new DataModulatorState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            ModulatorStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
-        }
-
-        public void PacketizePlanetShieldSettings(IMyCubeBlock block, ProtoPlanetShieldSettings settings)
-        {
-            var data = new DataPlanetShieldSettings(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            PlanetShieldSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
-        }
-
-        public void PacketizePlanetShieldState(IMyCubeBlock block, ProtoPlanetShieldState state)
-        {
-            var data = new DataPlanetShieldState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            PlanetShieldStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
-        }
-
-        public void PacketizeO2GeneratorSettings(IMyCubeBlock block, ProtoO2GeneratorSettings settings)
-        {
-            if (Enforced.Debug >= 1) Log.Line($"PacketizeO2GeneratorSettings");
-            var data = new DataO2GeneratorSettings(MyAPIGateway.Multiplayer.MyId, block.EntityId, settings);
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            O2GeneratorSettingsToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
-        }
-
-        public void PacketizeO2GeneratorState(IMyCubeBlock block, ProtoO2GeneratorState state)
-        {
-            var data = new DataO2GeneratorState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            O2GeneratorStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
-        }
-
-        public void PacketizeEnhancerState(IMyCubeBlock block, ProtoEnhancerState state)
-        {
-            var data = new DataEnhancerState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            EnhancerStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
-        }
-
-        public void PacketizeEmitterState(IMyCubeBlock block, ProtoEmitterState state)
-        {
-            var data = new DataEmitterState(MyAPIGateway.Multiplayer.MyId, block.EntityId, state);
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            EmitterStateToClients(block.CubeGrid.GetPosition(), bytes, data.Sender);
-        }
-
-        public void ControllerStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        private void ControllerStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
 
@@ -453,7 +494,7 @@ namespace DefenseShields
             }
         }
 
-        public void ControllerSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        private void ControllerSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
 
@@ -466,7 +507,7 @@ namespace DefenseShields
             }
         }
 
-        public void ModulatorSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        private void ModulatorSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
 
@@ -479,7 +520,7 @@ namespace DefenseShields
             }
         }
 
-        public void ModulatorStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        private void ModulatorStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
 
@@ -494,7 +535,7 @@ namespace DefenseShields
             }
         }
 
-        public void PlanetShieldSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        private void PlanetShieldSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
 
@@ -507,7 +548,7 @@ namespace DefenseShields
             }
         }
 
-        public void PlanetShieldStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        private void PlanetShieldStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
 
@@ -523,7 +564,7 @@ namespace DefenseShields
             }
         }
 
-        public void O2GeneratorSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        private void O2GeneratorSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
             if (Enforced.Debug >= 1) Log.Line($"O2GeneratorSettingsToClients - Players:{Players.Count}");
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
@@ -540,7 +581,7 @@ namespace DefenseShields
             }
         }
 
-        public void O2GeneratorStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        private void O2GeneratorStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
 
@@ -553,7 +594,7 @@ namespace DefenseShields
             }
         }
 
-        public void EnhancerStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        private void EnhancerStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
 
@@ -567,7 +608,7 @@ namespace DefenseShields
             }
         }
 
-        public void EmitterStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
+        private void EmitterStateToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
             foreach (var p in Players.Values)

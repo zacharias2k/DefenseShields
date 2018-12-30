@@ -1,17 +1,64 @@
-﻿using System;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI;
-using VRage.Game.ModAPI;
-using System.Linq;
-using DefenseShields.Support;
-using Sandbox.Game.Entities;
-using VRage;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using System.Linq;
+    using global::DefenseShields.Support;
+    using Sandbox.Game.Entities;
+    using Sandbox.Game.EntityComponents;
+    using Sandbox.ModAPI;
+    using VRage;
+    using VRage.Game.ModAPI;
+
     public partial class DefenseShields
     {
-        #region Main
+        public void CleanUp(int task)
+        {
+            try
+            {
+                switch (task)
+                {
+                    case 0:
+                        MyCubeGrid grid;
+                        while (StaleGrids.TryDequeue(out grid))
+                        {
+                            EntIntersectInfo gridRemoved;
+                            WebEnts.TryRemove(grid, out gridRemoved);
+                        }
+                        break;
+                    case 1:
+                        AuthenticatedCache.Clear();
+                        EnemyShields.Clear();
+                        IgnoreCache.Clear();
+
+                        _porotectEntsTmp.Clear();
+                        _porotectEntsTmp.AddRange(ProtectedEntCache.Where(info => _tick - info.Value.LastTick > 180));
+                        foreach (var protectedEnt in _porotectEntsTmp) ProtectedEntCache.Remove(protectedEnt.Key);
+
+                        _webEntsTmp.Clear();
+                        _webEntsTmp.AddRange(WebEnts.Where(info => _tick - info.Value.LastTick > 180));
+                        foreach (var webent in _webEntsTmp)
+                        {
+                            EntIntersectInfo removedEnt;
+                            WebEnts.TryRemove(webent.Key, out removedEnt);
+                        }
+                        break;
+                    case 2:
+                        if (DsState.State.Online && !DsState.State.Lowered)
+                        {
+                            lock (GetCubesLock)
+                            {
+                                foreach (var funcBlock in _functionalBlocks)
+                                {
+                                    if (funcBlock == null) continue;
+                                    if (funcBlock.IsFunctional) funcBlock.SetDamageEffect(false);
+                                }
+                            }
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in CleanUp: {ex}"); }
+        }
         private void Timing()
         {
             if (_count++ == 59)
@@ -40,7 +87,7 @@ namespace DefenseShields
                     if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == Shield.EntityId)
                         MyCube.UpdateTerminal();
                 }
-                _runningDamage = _dpsAvg.Add((int) _damageReadOut);
+                _runningDamage = _dpsAvg.Add((int)_damageReadOut);
                 _damageReadOut = 0;
             }
 
@@ -54,7 +101,7 @@ namespace DefenseShields
                 {
                     SettingsUpdated = false;
                     DsSet.SaveSettings();
-                    ResetShape(false, false);
+                    ResetShape(false);
                     if (Session.Enforced.Debug == 3) Log.Line($"SettingsUpdated: server:{_isServer} - ShieldId [{Shield.EntityId}]");
                 }
             }
@@ -83,7 +130,7 @@ namespace DefenseShields
                           $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{_roundedGridMax}\n" +
                           $"Pow:{_power} HP:{DsState.State.Buffer}: {ShieldMaxBuffer}";
 
-            if (!_isDedicated) MyAPIGateway.Utilities.ShowMessage("", message);
+            if (!_isDedicated) MyAPIGateway.Utilities.ShowMessage(string.Empty, message);
             else Log.Line(message);
         }
 
@@ -189,7 +236,6 @@ namespace DefenseShields
                 }
             }
         }
-        #endregion
 
         #region Checks
         private void HierarchyUpdate()
@@ -230,7 +276,6 @@ namespace DefenseShields
         }
         #endregion
 
-        #region Cleanup
         private void CleanAll()
         {
             CleanUp(0);
@@ -238,55 +283,5 @@ namespace DefenseShields
             CleanUp(2);
             SyncThreadedEnts(true);
         }
-
-        public void CleanUp(int task)
-        {
-            try
-            {
-                switch (task)
-                {
-                    case 0:
-                        MyCubeGrid grid;
-                        while (StaleGrids.TryDequeue(out grid))
-                        {
-                            EntIntersectInfo gridRemoved;
-                            WebEnts.TryRemove(grid, out gridRemoved);
-                        }
-                        break;
-                    case 1:
-                        AuthenticatedCache.Clear();
-                        EnemyShields.Clear();
-                        IgnoreCache.Clear();
-
-                        _porotectEntsTmp.Clear();
-                        _porotectEntsTmp.AddRange(ProtectedEntCache.Where(info => _tick - info.Value.LastTick > 180));
-                        foreach (var protectedEnt in _porotectEntsTmp) ProtectedEntCache.Remove(protectedEnt.Key);
-
-                        _webEntsTmp.Clear();
-                        _webEntsTmp.AddRange(WebEnts.Where(info => _tick - info.Value.LastTick > 180));
-                        foreach (var webent in _webEntsTmp)
-                        {
-                            EntIntersectInfo removedEnt;
-                            WebEnts.TryRemove(webent.Key, out removedEnt);
-                        }
-                        break;
-                    case 2:
-                        if (DsState.State.Online && !DsState.State.Lowered)
-                        {
-                            lock (GetCubesLock)
-                            {
-                                foreach (var funcBlock in _functionalBlocks)
-                                {
-                                    if (funcBlock == null) continue;
-                                    if (funcBlock.IsFunctional) funcBlock.SetDamageEffect(false);
-                                }
-                            }
-                        }
-                        break;
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in CleanUp: {ex}"); }
-        }
-        #endregion
     }
 }

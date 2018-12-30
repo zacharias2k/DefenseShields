@@ -1,18 +1,17 @@
-﻿using System;
-using Sandbox.ModAPI;
-using VRage.Game.Components;
-using VRage.Game.ModAPI;
-using DefenseShields.Support;
-using Sandbox.Definitions;
-using VRageMath;
-using MyVisualScriptLogicProvider = Sandbox.Game.MyVisualScriptLogicProvider;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using global::DefenseShields.Support;
+    using Sandbox.Definitions;
+    using Sandbox.ModAPI;
+    using VRage.Game.Components;
+    using VRage.Game.ModAPI;
+    using VRageMath;
+    using MyVisualScriptLogicProvider = Sandbox.Game.MyVisualScriptLogicProvider;
+
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation | MyUpdateOrder.AfterSimulation, int.MinValue)]
     public partial class Session : MySessionComponentBase
     {
-        #region Simulation / Init
         public override void BeforeStart()
         {
             try
@@ -29,6 +28,7 @@ namespace DefenseShields
                 Log.Line($"Logging Started: Server:{IsServer} - Dedicated:{DedicatedServer} - MpActive:{MpActive}");
 
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
+                MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdShieldHit, ShieldHitReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEnforce, EnforcementReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdO2GeneratorSettings, O2GeneratorSettingsReceived);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdControllerState, ControllerStateReceived);
@@ -49,7 +49,7 @@ namespace DefenseShields
 
                 if (IsServer)
                 {
-                    Log.Line($"LoadConf - Session: This is a server");
+                    Log.Line("LoadConf - Session: This is a server");
                     UtilsStatic.PrepConfigFile();
                     UtilsStatic.ReadConfigFile();
                 }
@@ -62,9 +62,7 @@ namespace DefenseShields
             }
             catch (Exception ex) { Log.Line($"Exception in BeforeStart: {ex}"); }
         }
-        #endregion
 
-        #region Draw
         public override void Draw()
         {
             if (DedicatedServer) return;
@@ -126,8 +124,7 @@ namespace DefenseShields
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
         }
-        #endregion
-        
+
         #region Simulation
         public override void UpdateBeforeSimulation()
         {
@@ -146,44 +143,47 @@ namespace DefenseShields
         }
         #endregion
 
-        #region Events
-        private void PlayerConnected(long id)
-        {
-            try
-            {
-                if (Players.ContainsKey(id))
-                {
-                    if (Enforced.Debug >= 3 ) Log.Line($"Player id({id}) already exists");
-                    return;
-                }
-                MyAPIGateway.Multiplayer.Players.GetPlayers(null, myPlayer => FindPlayer(myPlayer, id));
-            }
-            catch (Exception ex) { Log.Line($"Exception in PlayerConnected: {ex}"); }
-        }
-
-        private void PlayerDisconnected(long l)
-        {
-            try
-            {
-                IMyPlayer removedPlayer;
-                Players.TryRemove(l, out removedPlayer);
-                if (Enforced.Debug >= 3) Log.Line($"Removed player, new playerCount:{Players.Count}");
-            }
-            catch (Exception ex) { Log.Line($"Exception in PlayerDisconnected: {ex}"); }
-        }
-
-        private bool FindPlayer(IMyPlayer player, long id)
-        {
-            if (player.IdentityId == id)
-            {
-                Players[id] = player;
-                if (Enforced.Debug >= 3) Log.Line($"Added player: {player.DisplayName}, new playerCount:{Players.Count}");
-            }
-            return false;
-        }
-        #endregion
-
         #region Misc
+        public string ModPath()
+        {
+            var modPath = ModContext.ModPath;
+            return modPath;
+        }
+
+        public override void LoadData()
+        {
+            Instance = this;
+        }
+
+        protected override void UnloadData()
+        {
+            Monitor = false;
+            Instance = null;
+            Enforced = null;
+            ProtSets.Clean();
+
+            _autoResetEvent.Set();
+            _autoResetEvent = null;
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdShieldHit, ShieldHitReceived);
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEnforce, EnforcementReceived);
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdO2GeneratorSettings, O2GeneratorSettingsReceived);
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdControllerState, ControllerStateReceived);
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdControllerSettings, ControllerSettingsReceived);
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdModulatorSettings, ModulatorSettingsReceived);
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdModulatorState, ModulatorStateReceived);
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEnhancerState, EnhancerStateReceived);
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdO2GeneratorState, O2GeneratorStateReceived);
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEmitterState, EmitterStateReceived);
+
+            MyVisualScriptLogicProvider.PlayerDisconnected -= PlayerDisconnected;
+            MyVisualScriptLogicProvider.PlayerRespawnRequest -= PlayerConnected;
+
+            if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter -= CustomControls;
+
+            Log.Line("Logging stopped.");
+            Log.Close();
+        }
+
         private void Timings()
         {
             _newFrame = true;
@@ -216,47 +216,43 @@ namespace DefenseShields
                 if (!IsServer) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
             }
         }
-
-        public string ModPath()
-        {
-            var modPath = ModContext.ModPath;
-            return modPath;
-        }
-
-        public override void LoadData()
-        {
-            Instance = this;
-        }
-
-        protected override void UnloadData()
-        {
-            Monitor = false;
-            Instance = null;
-            Enforced = null;
-            ProtSets.Clean();
-
-            _autoResetEvent.Set();
-            _autoResetEvent = null;
-            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEnforce, EnforcementReceived);
-            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdO2GeneratorSettings, O2GeneratorSettingsReceived);
-            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdControllerState, ControllerStateReceived);
-            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdControllerSettings, ControllerSettingsReceived);
-            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdModulatorSettings, ModulatorSettingsReceived);
-            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdModulatorState, ModulatorStateReceived);
-            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEnhancerState, EnhancerStateReceived);
-            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdO2GeneratorState, O2GeneratorStateReceived);
-            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEmitterState, EmitterStateReceived);
-
-            MyVisualScriptLogicProvider.PlayerDisconnected -= PlayerDisconnected;
-            MyVisualScriptLogicProvider.PlayerRespawnRequest -= PlayerConnected;
-
-            if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter -= CustomControls;
-
-            //Terminate();
-            Log.Line("Logging stopped.");
-            Log.Close();
-        }
         #endregion
 
+        #region Events
+        private void PlayerConnected(long id)
+        {
+            try
+            {
+                if (Players.ContainsKey(id))
+                {
+                    if (Enforced.Debug >= 3) Log.Line($"Player id({id}) already exists");
+                    return;
+                }
+                MyAPIGateway.Multiplayer.Players.GetPlayers(null, myPlayer => FindPlayer(myPlayer, id));
+            }
+            catch (Exception ex) { Log.Line($"Exception in PlayerConnected: {ex}"); }
+        }
+
+        private void PlayerDisconnected(long l)
+        {
+            try
+            {
+                IMyPlayer removedPlayer;
+                Players.TryRemove(l, out removedPlayer);
+                if (Enforced.Debug >= 3) Log.Line($"Removed player, new playerCount:{Players.Count}");
+            }
+            catch (Exception ex) { Log.Line($"Exception in PlayerDisconnected: {ex}"); }
+        }
+
+        private bool FindPlayer(IMyPlayer player, long id)
+        {
+            if (player.IdentityId == id)
+            {
+                Players[id] = player;
+                if (Enforced.Debug >= 3) Log.Line($"Added player: {player.DisplayName}, new playerCount:{Players.Count}");
+            }
+            return false;
+        }
+        #endregion
     }
 }

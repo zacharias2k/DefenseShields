@@ -1,10 +1,10 @@
-﻿using System;
-using DefenseShields.Support;
-using VRage.Game;
-using VRageMath;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using global::DefenseShields.Support;
+    using VRage.Game;
+    using VRageMath;
+
     public partial class DefenseShields
     {
         #region Shield Shape
@@ -198,7 +198,7 @@ namespace DefenseShields
 
         private void CreateMobileShape()
         {
-            var shieldSize = DsState.State.GridHalfExtents * DsState.State.EllipsoidAdjust + DsState.State.ShieldFudge;
+            var shieldSize = (DsState.State.GridHalfExtents * DsState.State.EllipsoidAdjust) + DsState.State.ShieldFudge;
             ShieldSize = shieldSize;
             var mobileMatrix = MatrixD.CreateScale(shieldSize);
             mobileMatrix.Translation = MyGrid.PositionComp.LocalVolume.Center;

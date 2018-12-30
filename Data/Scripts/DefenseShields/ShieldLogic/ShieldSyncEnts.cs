@@ -1,18 +1,17 @@
-﻿using System;
-using DefenseShields.Support;
-using Sandbox.Game;
-using Sandbox.Game.Entities;
-using Sandbox.Game.Entities.Character.Components;
-using Sandbox.ModAPI;
-using VRage.Game;
-using VRage.Game.Components;
-using VRage.Game.Entity;
-using VRage.Game.ModAPI;
-using VRage.Utils;
-using VRageMath;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using global::DefenseShields.Support;
+    using Sandbox.Game;
+    using Sandbox.Game.Entities;
+    using Sandbox.Game.Entities.Character.Components;
+    using Sandbox.ModAPI;
+    using VRage.Game.Components;
+    using VRage.Game.Entity;
+    using VRage.Game.ModAPI;
+    using VRage.Utils;
+    using VRageMath;
+
     public partial class DefenseShields
     {
         private void SyncThreadedEnts(bool clear = false, bool client = false)
@@ -134,7 +133,7 @@ namespace DefenseShields
                                 var ray = new RayD(ent.PositionComp.WorldVolume.Center, rayDir);
                                 var intersect = CustomCollision.IntersectEllipsoid(DetectMatrixOutsideInv, DetectionMatrix, ray);
                                 var hitDist = intersect ?? 0;
-                                var hitPos = ray.Position + ray.Direction * -hitDist;
+                                var hitPos = ray.Position + (ray.Direction * -hitDist);
 
                                 WorldImpactPosition = hitPos;
                                 Absorb += damage;
@@ -159,16 +158,15 @@ namespace DefenseShields
                             var damage = 5000 * DsState.State.ModulateKinetic;
                             if (_mpActive)
                             {
-
                                 ShieldDoDamage(damage, meteor.EntityId);
-                                meteor.DoDamage(10000f, DelDamage, true, null, MyGrid.EntityId);
+                                meteor.DoDamage(10000f, Session.Instance.DelDamage, true, null, MyGrid.EntityId);
                             }
                             else
                             {
                                 WorldImpactPosition = meteor.PositionComp.WorldVolume.Center;
                                 Absorb += damage;
                                 ImpactSize = damage;
-                                meteor.DoDamage(10000f, DelDamage, true, null, MyGrid.EntityId);
+                                meteor.DoDamage(10000f, Session.Instance.DelDamage, true, null, MyGrid.EntityId);
                             }
                         }
                     }
@@ -206,13 +204,13 @@ namespace DefenseShields
                             var playerGasLevel = character.GetSuitGasFillLevel(hId);
                             character.Components.Get<MyCharacterOxygenComponent>().UpdateStoredGasLevel(ref hId, (playerGasLevel * -0.0001f) + .002f);
                             MyVisualScriptLogicProvider.CreateExplosion(character.GetPosition(), 0, 0);
-                            character.DoDamage(50f, DelDamage, true, null, MyGrid.EntityId);
+                            character.DoDamage(50f, Session.Instance.DelDamage, true, null, MyGrid.EntityId);
                             var vel = character.Physics.LinearVelocity;
                             if (vel == new Vector3D(0, 0, 0)) vel = MyUtils.GetRandomVector3Normalized();
                             var speedDir = Vector3D.Normalize(vel);
                             var rnd = new Random();
                             var randomSpeed = rnd.Next(10, 20);
-                            var additionalSpeed = vel + speedDir * randomSpeed;
+                            var additionalSpeed = vel + (speedDir * randomSpeed);
                             character.Physics.LinearVelocity = additionalSpeed;
                         }
                     }
@@ -235,7 +233,7 @@ namespace DefenseShields
                                 myGrid.EnqueueDestroyedBlock(block.Position);
                                 continue;
                             }
-                            block.DoDamage(damageMulti, DelDamage, true, null, myGrid.EntityId); 
+                            block.DoDamage(damageMulti, Session.Instance.DelDamage, true, null, myGrid.EntityId); 
                             if (myGrid.BlocksCount == 0) myGrid.SendGridCloseRequest();
                         }
                     }
@@ -258,7 +256,7 @@ namespace DefenseShields
                                 myGrid.Close();
                                 continue;
                             }
-                            block.DoDamage(block.MaxIntegrity * 0.9f, DelDamage, true, null, myGrid.EntityId); 
+                            block.DoDamage(block.MaxIntegrity * 0.9f, Session.Instance.DelDamage, true, null, myGrid.EntityId); 
                             if (myGrid.BlocksCount == 0) myGrid.SendGridCloseRequest();
                         }
                     }

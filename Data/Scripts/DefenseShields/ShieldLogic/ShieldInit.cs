@@ -1,25 +1,114 @@
-﻿using System;
-using System.Collections.Generic;
-using DefenseShields.Support;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI;
-using VRage.Game;
-using VRage.Game.Components;
-using VRage.Game.Entity;
-using VRage.Game.ModAPI;
-using VRage.Utils;
-using VRageMath;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using System.Collections.Generic;
+    using global::DefenseShields.Support;
+    using Sandbox.Game.EntityComponents;
+    using Sandbox.ModAPI;
+    using VRage.Game;
+    using VRage.Game.Components;
+    using VRage.Game.Entity;
+    using VRage.Game.ModAPI;
+    using VRage.Utils;
+
+    using VRageMath;
+
     public partial class DefenseShields
     {
         #region Startup Logic
-        public bool PostInit()
+        internal void AssignSlots()
+        {
+            LogicSlot = Session.GetSlot();
+            MonitorSlot = LogicSlot - 1 < 0 ? Session.Instance.EntSlotScaler - 1 : LogicSlot - 1;
+        }
+
+
+        internal void SelectPassiveShell()
         {
             try
             {
-                if (_isServer && (ShieldComp.EmitterMode < 0 || ShieldComp.EmitterMode == 0 && ShieldComp.StationEmitter == null || ShieldComp.EmittersSuspended || !IsFunctional))
+                switch (DsSet.Settings.ShieldShell)
+                {
+                    case 0:
+                        _modelPassive = ModelMediumReflective;
+                        _hideColor = false;
+                        _supressedColor = false;
+                        break;
+                    case 1:
+                        _modelPassive = ModelHighReflective;
+                        _hideColor = false;
+                        _supressedColor = false;
+                        break;
+                    case 2:
+                        _modelPassive = ModelLowReflective;
+                        _hideColor = false;
+                        _supressedColor = false;
+                        break;
+                    case 3:
+                        _modelPassive = ModelRed;
+                        _hideColor = true;
+                        _supressedColor = false;
+                        break;
+                    case 4:
+                        _modelPassive = ModelBlue;
+                        _hideColor = true;
+                        _supressedColor = false;
+                        break;
+                    case 5:
+                        _modelPassive = ModelGreen;
+                        _hideColor = true;
+                        _supressedColor = false;
+                        break;
+                    case 6:
+                        _modelPassive = ModelPurple;
+                        _hideColor = true;
+                        _supressedColor = false;
+                        break;
+                    case 7:
+                        _modelPassive = ModelGold;
+                        _hideColor = true;
+                        _supressedColor = false;
+                        break;
+                    case 8:
+                        _modelPassive = ModelOrange;
+                        _hideColor = true;
+                        _supressedColor = false;
+                        break;
+                    case 9:
+                        _modelPassive = ModelCyan;
+                        _hideColor = true;
+                        _supressedColor = false;
+                        break;
+                    default:
+                        _modelPassive = ModelMediumReflective;
+                        _hideColor = false;
+                        _supressedColor = false;
+                        break;
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in SelectPassiveShell: {ex}"); }
+        }
+
+        internal void UpdatePassiveModel()
+        {
+            try
+            {
+                if (_shellPassive == null) return;
+                _shellPassive.Render.Visible = true;
+                _shellPassive.RefreshModels($"{Session.Instance.ModPath()}{_modelPassive}", null);
+                _shellPassive.Render.RemoveRenderObjects();
+                _shellPassive.Render.UpdateRenderObject(true);
+                _hideShield = false;
+                if (Session.Enforced.Debug == 3) Log.Line($"UpdatePassiveModel: modelString:{_modelPassive} - ShellNumber:{DsSet.Settings.ShieldShell} - ShieldId [{Shield.EntityId}]");
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdatePassiveModel: {ex}"); }
+        }
+
+        private bool PostInit()
+        {
+            try
+            {
+                if (_isServer && (ShieldComp.EmitterMode < 0 || (ShieldComp.EmitterMode == 0 && ShieldComp.StationEmitter == null) || ShieldComp.EmittersSuspended || !IsFunctional))
                 {
                     if (_tick600)
                     {
@@ -30,7 +119,10 @@ namespace DefenseShields
                     return false;
                 }
 
-                if (RequestEnforcement() || _clientNotReady || !_isServer && (DsState.State.Mode < 0 || DsState.State.Mode == 0 && ShieldComp.StationEmitter == null)) return false;
+                if (RequestEnforcement() || _clientNotReady || (!_isServer && (DsState.State.Mode < 0 || (DsState.State.Mode == 0 && ShieldComp.StationEmitter == null))))
+                {
+                    return false;
+                }
 
                 Session.Instance.CreateControllerElements(Shield);
                 SetShieldType(false);
@@ -84,7 +176,7 @@ namespace DefenseShields
             _blockChanged = true;
             _functionalChanged = true;
 
-            ResetShape(false, false);
+            ResetShape(false);
             ResetShape(false, true);
 
             _oldGridHalfExtents = DsState.State.GridHalfExtents;
@@ -184,7 +276,7 @@ namespace DefenseShields
             return Session.Enforced.Version <= 0;
         }
 
-        public void SetShieldType(bool quickCheck)
+        private void SetShieldType(bool quickCheck)
         {
             var noChange = false;
             var oldMode = ShieldMode;
@@ -215,7 +307,7 @@ namespace DefenseShields
 
             if (ShieldMode == oldMode) noChange = true;
 
-            if (quickCheck && noChange || ShieldMode == ShieldType.Unknown) return;
+            if ((quickCheck && noChange) || ShieldMode == ShieldType.Unknown) return;
 
             switch (ShieldMode)
             {
@@ -287,7 +379,7 @@ namespace DefenseShields
                 _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.Transparent, 0f);
             }
 
-            ShieldEnt = Spawn.EmptyEntity("dShield", null, parent, false);
+            ShieldEnt = Spawn.EmptyEntity("dShield", null, parent);
             ShieldEnt.Render.CastShadows = false;
             ShieldEnt.Render.RemoveRenderObjects();
             ShieldEnt.Render.UpdateRenderObject(true);
@@ -298,93 +390,6 @@ namespace DefenseShields
 
             if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
             if (Session.Enforced.Debug == 3) Log.Line($"InitEntities: mode: {ShieldMode}, spawn complete - ShieldId [{Shield.EntityId}]");
-        }
-
-        public void SelectPassiveShell()
-        {
-            try
-            {
-                switch (DsSet.Settings.ShieldShell)
-                {
-                    case 0:
-                        _modelPassive = ModelMediumReflective;
-                        _hideColor = false;
-                        _supressedColor = false;
-                        break;
-                    case 1:
-                        _modelPassive = ModelHighReflective;
-                        _hideColor = false;
-                        _supressedColor = false;
-                        break;
-                    case 2:
-                        _modelPassive = ModelLowReflective;
-                        _hideColor = false;
-                        _supressedColor = false;
-                        break;
-                    case 3:
-                        _modelPassive = ModelRed;
-                        _hideColor = true;
-                        _supressedColor = false;
-                        break;
-                    case 4:
-                        _modelPassive = ModelBlue;
-                        _hideColor = true;
-                        _supressedColor = false;
-                        break;
-                    case 5:
-                        _modelPassive = ModelGreen;
-                        _hideColor = true;
-                        _supressedColor = false;
-                        break;
-                    case 6:
-                        _modelPassive = ModelPurple;
-                        _hideColor = true;
-                        _supressedColor = false;
-                        break;
-                    case 7:
-                        _modelPassive = ModelGold;
-                        _hideColor = true;
-                        _supressedColor = false;
-                        break;
-                    case 8:
-                        _modelPassive = ModelOrange;
-                        _hideColor = true;
-                        _supressedColor = false;
-                        break;
-                    case 9:
-                        _modelPassive = ModelCyan;
-                        _hideColor = true;
-                        _supressedColor = false;
-                        break;
-                    default:
-                        _modelPassive = ModelMediumReflective;
-                        _hideColor = false;
-                        _supressedColor = false;
-                        break;
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in SelectPassiveShell: {ex}"); }
-        }
-
-        public void AssignSlots()
-        {
-            LogicSlot = Session.GetSlot();
-            MonitorSlot = LogicSlot - 1 < 0 ? Session.Instance.EntSlotScaler - 1 : LogicSlot - 1;
-        }
-
-        public void UpdatePassiveModel()
-        {
-            try
-            {
-                if (_shellPassive == null) return;
-                _shellPassive.Render.Visible = true;
-                _shellPassive.RefreshModels($"{Session.Instance.ModPath()}{_modelPassive}", null);
-                _shellPassive.Render.RemoveRenderObjects();
-                _shellPassive.Render.UpdateRenderObject(true);
-                _hideShield = false;
-                if (Session.Enforced.Debug == 3) Log.Line($"UpdatePassiveModel: modelString:{_modelPassive} - ShellNumber:{DsSet.Settings.ShieldShell} - ShieldId [{Shield.EntityId}]");
-            }
-            catch (Exception ex) { Log.Line($"Exception in UpdatePassiveModel: {ex}"); }
         }
 
         private void GridIntegrity()

@@ -1,34 +1,13 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
-using Sandbox.Game.Entities;
-using VRageMath;
-
-namespace DefenseShields.Support
+﻿namespace DefenseShields.Support
 {
-    internal class Work
-    {
-        internal List<DefenseShields> ShieldList;
-        internal uint Tick;
+    using System;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using Sandbox.Game.Entities;
+    using VRageMath;
 
-        internal void DoIt(List<DefenseShields> s, uint t)
-        {
-            ShieldList = s;
-            Tick = t;
-        }
-    }
-
-    internal static class ConcurrentQueueExtensions
-    {
-        public static void Clear<T>(this ConcurrentQueue<T> queue)
-        {
-            T item;
-            while (queue.TryDequeue(out item)) { }
-        }
-    }
-
-    public struct MyImpulseData
+    internal struct MyImpulseData
     {
         public MyCubeGrid MyGrid;
         public Vector3D Direction;
@@ -42,6 +21,44 @@ namespace DefenseShields.Support
         }
     }
 
+
+    internal struct MyAddForceData
+    {
+        public MyCubeGrid MyGrid;
+        public Vector3D Force;
+        public float? MaxSpeed;
+        public bool Immediate;
+
+        public MyAddForceData(MyCubeGrid myGrid, Vector3D force, float? maxSpeed, bool immediate)
+        {
+            MyGrid = myGrid;
+            Force = force;
+            MaxSpeed = maxSpeed;
+            Immediate = immediate;
+        }
+    }
+
+
+    internal static class ConcurrentQueueExtensions
+    {
+        public static void Clear<T>(this ConcurrentQueue<T> queue)
+        {
+            T item;
+            while (queue.TryDequeue(out item)) { }
+        }
+    }
+
+    internal class Work
+    {
+        internal List<DefenseShields> ShieldList;
+        internal uint Tick;
+
+        internal void DoIt(List<DefenseShields> s, uint t)
+        {
+            ShieldList = s;
+            Tick = t;
+        }
+    }
 
     class FiniteFifoQueueSet<T1, T2>
     {
@@ -83,104 +100,29 @@ namespace DefenseShields.Support
         }
     }
 
-    /*
-    public class MyApplyImpulse
+
+    internal class DSUtils
     {
-
-        public static MyApplyImpulse GetOne(ref MyImpulseData data)
-        {
-            var instance = Session.ImpulsePool.Get();
-            instance.Data = data;
-            return instance;
-        }
-
-        public readonly Action Delegate;
-
-        public MyApplyImpulse()
-        {
-            Delegate = DoWorkOnMainThread;
-        }
-
-        public MyImpulseData Data;
-
-        private void DoWorkOnMainThread()
-        {
-            if (Data.MyGrid == null) return;
-            Log.Line($"Doimpluse");
-            Data.MyGrid.Physics.ApplyImpulse(Data.Direction, Data.Position);
-            Session.ImpulsePool.Return(this);
-        }
-    }
-    */
-    public struct MyAddForceData
-    {
-        public MyCubeGrid MyGrid;
-        public Vector3D Force;
-        public float? MaxSpeed;
-        public bool Immediate;
-
-        public MyAddForceData(MyCubeGrid myGrid, Vector3D force, float? maxSpeed, bool immediate)
-        {
-            MyGrid = myGrid;
-            Force = force;
-            MaxSpeed = maxSpeed;
-            Immediate = immediate;
-        }
-    }
-    /*
-    public class MyAddForce
-    {
-        public static MyAddForce GetOne(ref MyAddForceData data)
-        {
-            var instance = Session.ForcePool.Get();
-            instance.Data = data;
-            return instance;
-        }
-
-        public readonly Action Delegate;
-
-        public MyAddForce()
-        {
-            Delegate = DoWorkOnMainThread;
-        }
-
-        public MyAddForceData Data;
-
-        private void DoWorkOnMainThread()
-        {
-            if (Data.MyGrid == null) return;
-            Log.Line($"DoForce");
-            Data.MyGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, Data.Force, null, Vector3D.Zero, Data.MaxSpeed, Data.Immediate);
-            Session.ForcePool.Return(this);
-        }
-    }
-    */
-    public class DSUtils
-    {
-        public static float Mod(int x, int m)
-        {
-            return (x % m + m) % m;
-        }
-
+        private double _last;
         public Stopwatch Sw { get; } = new Stopwatch();
-        public double Last;
+
         public void StopWatchReport(string message, float log)
         {
             Sw.Stop();
-            long ticks = Sw.ElapsedTicks;
-            double ns = 1000000000.0 * ticks / Stopwatch.Frequency;
-            double ms = ns / 1000000.0;
-            double s = ms / 1000;
-            if (log <= -1) Log.Line($"{message} ms:{(float)ms} last-ms:{(float)Last} s:{(int)s}");
+            var ticks = Sw.ElapsedTicks;
+            var ns = 1000000000.0 * ticks / Stopwatch.Frequency;
+            var ms = ns / 1000000.0;
+            var s = ms / 1000;
+            if (log <= -1) Log.Line($"{message} ms:{(float)ms} last-ms:{(float)_last} s:{(int)s}");
             else
             {
-                if (ms >= log) Log.Line($"{message} ms:{(float)ms} last-ms:{(float)Last} s:{(int)s}");
+                if (ms >= log) Log.Line($"{message} ms:{(float)ms} last-ms:{(float)_last} s:{(int)s}");
             }
-            Last = ms;
+            _last = ms;
             Sw.Reset();
         }
 
-        public static BoundingSphereD CreateFromPointsList(List<Vector3D> points)
+        internal static BoundingSphereD CreateFromPointsList(List<Vector3D> points)
         {
             Vector3D current;
             Vector3D Vector3D_1 = current = points[0];
@@ -244,8 +186,8 @@ namespace DefenseShields.Support
                 double num2 = Vector3D_8.Length();
                 if (num2 > num1)
                 {
-                    num1 = ((num1 + num2) * 0.5);
-                    result4 += (1.0 - num1 / num2) * Vector3D_8;
+                    num1 = (num1 + num2) * 0.5;
+                    result4 += (1.0 - (num1 / num2)) * Vector3D_8;
                 }
             }
             BoundingSphereD boundingSphereD;
@@ -255,25 +197,25 @@ namespace DefenseShields.Support
         }
 
     }
-    class RunningAverage
+    internal class RunningAverage
     {
-        int _size;
-        int[] _values = null;
-        int _valuesIndex = 0;
-        int _valueCount = 0;
-        int _sum = 0;
+        private readonly int _size;
+        private readonly int[] _values;
+        private int _valuesIndex;
+        private int _valueCount;
+        private int _sum;
 
-        public RunningAverage(int size)
+        internal RunningAverage(int size)
         {
             _size = Math.Max(size, 1);
             _values = new int[_size];
         }
 
-        public int Add(int newValue)
+        internal int Add(int newValue)
         {
             // calculate new value to add to sum by subtracting the 
             // value that is replaced from the new value; 
-            int temp = newValue - _values[_valuesIndex];
+            var temp = newValue - _values[_valuesIndex];
             _values[_valuesIndex] = newValue;
             _sum += temp;
 

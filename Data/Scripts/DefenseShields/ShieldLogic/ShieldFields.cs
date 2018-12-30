@@ -1,25 +1,118 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using DefenseShields.Support;
-using ParallelTasks;
-using Sandbox.Common.ObjectBuilders;
-using Sandbox.Game.Entities;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI;
-using VRage.Game;
-using VRage.Game.Components;
-using VRage.Game.Entity;
-using VRage.Game.ModAPI;
-using VRage.ModAPI;
-using VRage.Utils;
-using VRageMath;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using global::DefenseShields.Support;
+    using ParallelTasks;
+    using Sandbox.Game.Entities;
+    using Sandbox.Game.EntityComponents;
+    using Sandbox.ModAPI;
+    using VRage.Game;
+    using VRage.Game.Components;
+    using VRage.Game.Entity;
+    using VRage.Game.ModAPI;
+    using VRage.ModAPI;
+    using VRage.Utils;
+    using VRageMath;
+
     public partial class DefenseShields 
     {
         #region Setup
+        internal readonly MyDefinitionId GId = MyResourceDistributorComponent.ElectricityId;
+
+        internal readonly object GetCubesLock = new object();
+
+        internal readonly int[] ExpChargeReductions = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024 };
+
+        internal readonly List<MyEntity> PruneList = new List<MyEntity>();
+        internal readonly List<MyEntity> FriendRefreshList = new List<MyEntity>();
+        internal readonly List<ShieldHit> ShieldHits = new List<ShieldHit>();
+        internal readonly Queue<ProtoShieldHit> ProtoShieldHits = new Queue<ProtoShieldHit>();
+
+        internal readonly HashSet<IMyEntity> AuthenticatedCache = new HashSet<IMyEntity>();
+        internal readonly HashSet<MyEntity> IgnoreCache = new HashSet<MyEntity>();
+        internal readonly HashSet<MyEntity> EnemyShields = new HashSet<MyEntity>();
+        internal readonly HashSet<MyEntity> Missiles = new HashSet<MyEntity>();
+        internal readonly HashSet<MyEntity> FriendlyMissileCache = new HashSet<MyEntity>();
+
+        internal readonly Dictionary<MyEntity, ProtectCache> ProtectedEntCache = new Dictionary<MyEntity, ProtectCache>();
+
+        internal readonly ConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<MyEntity, EntIntersectInfo>();
+        internal readonly ConcurrentDictionary<MyEntity, MoverInfo> EntsByMe = new ConcurrentDictionary<MyEntity, MoverInfo>();
+        internal readonly ConcurrentDictionary<MyVoxelBase, bool> VoxelsToIntersect = new ConcurrentDictionary<MyVoxelBase, bool>();
+
+        internal readonly ConcurrentQueue<MyCubeGrid> StaleGrids = new ConcurrentQueue<MyCubeGrid>();
+
+        internal readonly ConcurrentQueue<MyCubeGrid> Eject = new ConcurrentQueue<MyCubeGrid>();
+        internal readonly ConcurrentQueue<IMySlimBlock> DmgBlocks = new ConcurrentQueue<IMySlimBlock>();
+        internal readonly ConcurrentQueue<IMyWarhead> EmpDmg = new ConcurrentQueue<IMyWarhead>();
+        internal readonly ConcurrentQueue<IMySlimBlock> FewDmgBlocks = new ConcurrentQueue<IMySlimBlock>();
+        internal readonly ConcurrentQueue<MyEntity> MissileDmg = new ConcurrentQueue<MyEntity>();
+        internal readonly ConcurrentQueue<IMyMeteor> MeteorDmg = new ConcurrentQueue<IMyMeteor>();
+        internal readonly ConcurrentQueue<IMySlimBlock> DestroyedBlocks = new ConcurrentQueue<IMySlimBlock>();
+        internal readonly ConcurrentQueue<IMyCharacter> CharacterDmg = new ConcurrentQueue<IMyCharacter>();
+        internal readonly ConcurrentQueue<MyVoxelBase> VoxelDmg = new ConcurrentQueue<MyVoxelBase>();
+        internal readonly ConcurrentQueue<MyImpulseData> ImpulseData = new ConcurrentQueue<MyImpulseData>();
+        internal readonly ConcurrentQueue<MyAddForceData> ForceData = new ConcurrentQueue<MyAddForceData>();
+
+        internal volatile int LogicSlot;
+        internal volatile int MonitorSlot;
+        internal volatile int LostPings;
+        internal volatile bool WasActive;
+        internal volatile bool MoverByShield;
+        internal volatile bool PlayerByShield;
+        internal volatile bool NewEntByShield;
+        internal volatile bool Dispatched;
+        internal volatile bool Asleep = true;
+        internal volatile bool WasPaused;
+        internal volatile uint LastWokenTick;
+        internal volatile bool ReInforcedShield;
+
+        internal BoundingBoxD WebBox = new BoundingBoxD();
+        internal MatrixD OldShieldMatrix;
+        internal ShieldGridComponent ShieldComp;
+        internal BoundingBoxD ShieldBox3K = new BoundingBoxD();
+        internal MyOrientedBoundingBoxD SOriBBoxD = new MyOrientedBoundingBoxD();
+        internal BoundingSphereD ShieldSphere = new BoundingSphereD(Vector3D.Zero, 1);
+        internal BoundingBox ShieldAabbScaled = new BoundingBox(Vector3D.One, -Vector3D.One);
+        internal BoundingBox ShieldAabbNoScale = new BoundingBox(Vector3D.One, -Vector3D.One);
+        internal BoundingSphereD ShieldSphere3K = new BoundingSphereD(Vector3D.Zero, 1f);
+        internal BoundingSphereD WebSphere = new BoundingSphereD(Vector3D.Zero, 1f);
+
+        private const int ReModulationCount = 300;
+        private const int ShieldDownCount = 1200;
+        private const int EmpDownCount = 3600;
+        private const int GenericDownCount = 300;
+        private const int PowerNoticeCount = 600;
+        private const int OverHeat = 1200;
+        private const int HeatingStep = 600;
+        private const int CoolingStep = 1200;
+        private const int FallBackStep = 10;
+        private const float ConvToDec = 0.01f;
+        private const double MagicRatio = 2.40063050674088;
+        private const float ChargeRatio = 1.25f;
+
+        private const string SpaceWolf = "Space_Wolf";
+        private const string ModelMediumReflective = "\\Models\\Cubes\\ShieldPassive11.mwm";
+        private const string ModelHighReflective = "\\Models\\Cubes\\ShieldPassive.mwm";
+        private const string ModelLowReflective = "\\Models\\Cubes\\ShieldPassive10.mwm";
+        private const string ModelRed = "\\Models\\Cubes\\ShieldPassive09.mwm";
+        private const string ModelBlue = "\\Models\\Cubes\\ShieldPassive08.mwm";
+        private const string ModelGreen = "\\Models\\Cubes\\ShieldPassive07.mwm";
+        private const string ModelPurple = "\\Models\\Cubes\\ShieldPassive06.mwm";
+        private const string ModelGold = "\\Models\\Cubes\\ShieldPassive05.mwm";
+        private const string ModelOrange = "\\Models\\Cubes\\ShieldPassive04.mwm";
+        private const string ModelCyan = "\\Models\\Cubes\\ShieldPassive03.mwm";
+
+        private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
+        private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
+        private readonly List<IMyBatteryBlock> _batteryBlocks = new List<IMyBatteryBlock>();
+        private readonly List<KeyValuePair<MyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<MyEntity, EntIntersectInfo>>();
+        private readonly List<KeyValuePair<MyEntity, ProtectCache>> _porotectEntsTmp = new List<KeyValuePair<MyEntity, ProtectCache>>();
+        private readonly RunningAverage _dpsAvg = new RunningAverage(2);
+        private readonly EllipsoidOxygenProvider _ellipsoidOxyProvider = new EllipsoidOxygenProvider(Matrix.Zero);
+        private readonly EllipsoidSA _ellipsoidSa = new EllipsoidSA(double.MinValue, double.MinValue, double.MinValue);
+        private readonly Vector3D[] _resetEntCorners = new Vector3D[8];
 
         private uint _tick;
         private uint _shieldEntRendId;
@@ -27,18 +120,7 @@ namespace DefenseShields
         private uint _funcTick;
         private uint _shapeTick;
         private uint _heatVentingTick = uint.MaxValue;
-        internal uint UnsuspendTick;
-        internal uint LosCheckTick;
-        internal uint TicksWithNoActivity;
-        internal uint EffectsCleanTick;
-
-        internal float ImpactSize { get; set; } = 9f;
-        internal float Absorb { get; set; }
-        internal float ShieldMaxBuffer;
-        internal float GridMaxPower;
-        internal float GridCurrentPower;
-        internal float GridAvailablePower;
-        internal float ShieldCurrentPower;
+        private uint _lastSendDamageTick = uint.MaxValue;
 
         private float _power = 0.001f;
         private float _powerNeeded;
@@ -55,18 +137,11 @@ namespace DefenseShields
         private float _empScaleHp = 1f;
         private float _runningDamage;
 
-        internal double EmpSize { get; set; }
-        internal double BoundingRange;
-        internal double EllipsoidVolume;
         private double _oldEllipsoidAdjust;
         private double _ellipsoidSurfaceArea;
         private double _shieldVol;
         private double _sizeScaler;
         private double _roundedGridMax;
-
-        public int BulletCoolDown { get; internal set; } = -1;
-        public int WebCoolDown { get; internal set; } = -1;
-        public int HitCoolDown { get; private set; } = -11;
 
         private int _count = -1;
         private int _lCount;
@@ -82,51 +157,11 @@ namespace DefenseShields
         private int _currentHeatStep;
         private int _empScaleTime = 1;
 
-        private const int ReModulationCount = 300;
-        private const int ShieldDownCount = 1200;
-        private const int EmpDownCount = 3600;
-        private const int GenericDownCount = 300;
-        private const int PowerNoticeCount = 600;
-        private const int OverHeat = 1200;
-        private const int HeatingStep = 600;
-        private const int CoolingStep = 1200;
-        private const int FallBackStep = 10;
-
         private int _prevLod;
         private int _onCount;
         private int _shieldRatio = 1;
 
-        internal volatile int LogicSlot;
-        internal volatile int MonitorSlot;
-        internal volatile int LostPings;
-        internal volatile bool WasActive;
-        internal volatile bool MoverByShield;
-        internal volatile bool PlayerByShield;
-        internal volatile bool NewEntByShield;
-        internal volatile bool Dispatched;
-        internal volatile bool Asleep = true;
-        internal volatile bool WasPaused;
-        internal volatile uint LastWokenTick;
-
-        internal bool WasOnline;
-        internal bool DeformEnabled;
-        internal bool ExplosionEnabled;
-        internal bool WarmedUp;
-        internal bool Warming;
-        internal bool UpdateDimensions;
-        internal bool FitChanged;
-        internal bool GridIsMobile;
-        internal bool SettingsUpdated;
-        internal bool ClientUiUpdate;
-        internal bool IsStatic;
-        internal bool WebDamage;
-        internal bool WebSuspend;
-        internal bool IsFunctional;
-        internal bool IsWorking;
-        internal bool ControlBlockWorking;
-        internal bool EntCleanUpTime;
-        internal bool ModulateGrids;
-
+        private bool _needPhysics;
         private bool _wasSuspended = true;
         private bool _enablePhysics = true;
         private bool _allInited;
@@ -171,174 +206,41 @@ namespace DefenseShields
         private bool _viewInShield;
         private bool _powerFail;
 
-        private const string SpaceWolf = "Space_Wolf";
         private string _modelActive = "\\Models\\Cubes\\ShieldActiveBase.mwm";
-        private string _modelPassive = "";
-
-        private const string ModelMediumReflective = "\\Models\\Cubes\\ShieldPassive11.mwm";
-        private const string ModelHighReflective = "\\Models\\Cubes\\ShieldPassive.mwm";
-        private const string ModelLowReflective = "\\Models\\Cubes\\ShieldPassive10.mwm";
-        private const string ModelRed = "\\Models\\Cubes\\ShieldPassive09.mwm";
-        private const string ModelBlue = "\\Models\\Cubes\\ShieldPassive08.mwm";
-        private const string ModelGreen = "\\Models\\Cubes\\ShieldPassive07.mwm";
-        private const string ModelPurple = "\\Models\\Cubes\\ShieldPassive06.mwm";
-        private const string ModelGold = "\\Models\\Cubes\\ShieldPassive05.mwm";
-        private const string ModelOrange = "\\Models\\Cubes\\ShieldPassive04.mwm";
-        private const string ModelCyan = "\\Models\\Cubes\\ShieldPassive03.mwm";
+        private string _modelPassive = string.Empty;
 
         private Vector2D _shieldIconPos = new Vector2D(-0.89, -0.86);
-
-        internal Vector3D MyGridCenter;
-        internal Vector3D DetectionCenter;
-        internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
-        internal Vector3D EmpDetonation { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
-        internal Vector3D ShieldSize { get; set; }
         private Vector3D _localImpactPosition;
         private Vector3D _oldGridHalfExtents;
-
-        internal MatrixD DetectMatrixOutsideInv;
-        internal MatrixD ShieldShapeMatrix;
-        internal MatrixD DetectMatrixOutside;
-        internal MatrixD ShieldMatrix;
-        internal MatrixD OldShieldMatrix;
-        internal MatrixD OffsetEmitterWMatrix;
-
-        internal BoundingBox ShieldAabbScaled = new BoundingBox(Vector3D.One, -Vector3D.One);
-        internal BoundingBox ShieldAabbNoScale = new BoundingBox(Vector3D.One, -Vector3D.One);
-        internal BoundingBoxD WebBox = new BoundingBoxD();
-        internal BoundingBoxD ShieldBox3K = new BoundingBoxD();
-
-        internal BoundingSphereD ShieldSphere3K = new BoundingSphereD(Vector3D.Zero, 1f);
-        internal BoundingSphereD WebSphere = new BoundingSphereD(Vector3D.Zero, 1f);
-        internal BoundingSphereD ShieldSphere = new BoundingSphereD(Vector3D.Zero, 1);
-        internal MyOrientedBoundingBoxD SOriBBoxD = new MyOrientedBoundingBoxD();
 
         private Quaternion _sQuaternion;
         private Color _oldPercentColor = Color.Transparent;
 
-        internal Task FuncTask;
-        internal readonly object GetCubesLock = new object();
-
-        internal readonly int[] ExpChargeReductions = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
-
-        internal readonly List<MyEntity> PruneList = new List<MyEntity>();
-        internal readonly List<MyEntity> FriendRefreshList = new List<MyEntity>();
-        private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
-        private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
-        private readonly List<IMyBatteryBlock> _batteryBlocks = new List<IMyBatteryBlock>();
-        private readonly List<KeyValuePair<MyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<MyEntity, EntIntersectInfo>>();
-        private readonly List<KeyValuePair<MyEntity, ProtectCache>> _porotectEntsTmp = new List<KeyValuePair<MyEntity, ProtectCache>>();
-
-        internal readonly HashSet<IMyEntity> AuthenticatedCache = new HashSet<IMyEntity>();
-        internal readonly HashSet<MyEntity> IgnoreCache = new HashSet<MyEntity>();
-        internal readonly HashSet<MyEntity> EnemyShields = new HashSet<MyEntity>();
-        internal readonly HashSet<MyEntity> Missiles = new HashSet<MyEntity>();
-        internal readonly HashSet<MyEntity> FriendlyMissileCache = new HashSet<MyEntity>();
-
-        internal readonly Dictionary<MyEntity, ProtectCache> ProtectedEntCache = new Dictionary<MyEntity, ProtectCache>();
-
-        internal readonly ConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<MyEntity, EntIntersectInfo>();
-        internal readonly ConcurrentDictionary<MyEntity, MoverInfo> EntsByMe = new ConcurrentDictionary<MyEntity, MoverInfo>();
-        internal readonly ConcurrentDictionary<MyVoxelBase, bool> VoxelsToIntersect = new ConcurrentDictionary<MyVoxelBase, bool>();
-
-        internal readonly ConcurrentQueue<MyCubeGrid> StaleGrids = new ConcurrentQueue<MyCubeGrid>();
-
-        internal readonly ConcurrentQueue<MyCubeGrid> Eject = new ConcurrentQueue<MyCubeGrid>();
-        internal readonly ConcurrentQueue<IMySlimBlock> DmgBlocks = new ConcurrentQueue<IMySlimBlock>();
-        internal readonly ConcurrentQueue<IMyWarhead> EmpDmg = new ConcurrentQueue<IMyWarhead>();
-        internal readonly ConcurrentQueue<IMySlimBlock> FewDmgBlocks = new ConcurrentQueue<IMySlimBlock>();
-        internal readonly ConcurrentQueue<MyEntity> MissileDmg = new ConcurrentQueue<MyEntity>();
-        internal readonly ConcurrentQueue<IMyMeteor> MeteorDmg = new ConcurrentQueue<IMyMeteor>();
-        internal readonly ConcurrentQueue<IMySlimBlock> DestroyedBlocks = new ConcurrentQueue<IMySlimBlock>();
-        internal readonly ConcurrentQueue<IMyCharacter> CharacterDmg = new ConcurrentQueue<IMyCharacter>();
-        internal readonly ConcurrentQueue<MyVoxelBase> VoxelDmg = new ConcurrentQueue<MyVoxelBase>();
-        internal readonly ConcurrentQueue<MyImpulseData> ImpulseData = new ConcurrentQueue<MyImpulseData>();
-        internal readonly ConcurrentQueue<MyAddForceData> ForceData = new ConcurrentQueue<MyAddForceData>();
-
-        private static readonly MyStringId HudIconOffline = MyStringId.GetOrCompute("DS_ShieldOffline");
-        private static readonly MyStringId HudIconHealth10 = MyStringId.GetOrCompute("DS_ShieldHealth10");
-        private static readonly MyStringId HudIconHealth20 = MyStringId.GetOrCompute("DS_ShieldHealth20");
-        private static readonly MyStringId HudIconHealth30 = MyStringId.GetOrCompute("DS_ShieldHealth30");
-        private static readonly MyStringId HudIconHealth40 = MyStringId.GetOrCompute("DS_ShieldHealth40");
-        private static readonly MyStringId HudIconHealth50 = MyStringId.GetOrCompute("DS_ShieldHealth50");
-        private static readonly MyStringId HudIconHealth60 = MyStringId.GetOrCompute("DS_ShieldHealth60");
-        private static readonly MyStringId HudIconHealth70 = MyStringId.GetOrCompute("DS_ShieldHealth70");
-        private static readonly MyStringId HudIconHealth80 = MyStringId.GetOrCompute("DS_ShieldHealth80");
-        private static readonly MyStringId HudIconHealth90 = MyStringId.GetOrCompute("DS_ShieldHealth90");
-        private static readonly MyStringId HudIconHealth100 = MyStringId.GetOrCompute("DS_ShieldHealth100");
-
-        //private static readonly MyStringId HudIconHeal = MyStringId.GetOrCompute("DS_ShieldHeal");
-        private static readonly MyStringId HudIconHeal10 = MyStringId.GetOrCompute("DS_ShieldHeal10");
-        private static readonly MyStringId HudIconHeal20 = MyStringId.GetOrCompute("DS_ShieldHeal20");
-        private static readonly MyStringId HudIconHeal30 = MyStringId.GetOrCompute("DS_ShieldHeal30");
-        private static readonly MyStringId HudIconHeal40 = MyStringId.GetOrCompute("DS_ShieldHeal40");
-        private static readonly MyStringId HudIconHeal50 = MyStringId.GetOrCompute("DS_ShieldHeal50");
-        private static readonly MyStringId HudIconHeal60 = MyStringId.GetOrCompute("DS_ShieldHeal60");
-        private static readonly MyStringId HudIconHeal70 = MyStringId.GetOrCompute("DS_ShieldHeal70");
-        private static readonly MyStringId HudIconHeal80 = MyStringId.GetOrCompute("DS_ShieldHeal80");
-        private static readonly MyStringId HudIconHeal90 = MyStringId.GetOrCompute("DS_ShieldHeal90");
-        private static readonly MyStringId HudIconHeal100 = MyStringId.GetOrCompute("DS_ShieldHeal100");
-
-        //private static readonly MyStringId HudIconDps = MyStringId.GetOrCompute("DS_HudIconDps");
-        private static readonly MyStringId HudIconDps10 = MyStringId.GetOrCompute("DS_ShieldDps10");
-        private static readonly MyStringId HudIconDps20 = MyStringId.GetOrCompute("DS_ShieldDps20");
-        private static readonly MyStringId HudIconDps30 = MyStringId.GetOrCompute("DS_ShieldDps30");
-        private static readonly MyStringId HudIconDps40 = MyStringId.GetOrCompute("DS_ShieldDps40");
-        private static readonly MyStringId HudIconDps50 = MyStringId.GetOrCompute("DS_ShieldDps50");
-        private static readonly MyStringId HudIconDps60 = MyStringId.GetOrCompute("DS_ShieldDps60");
-        private static readonly MyStringId HudIconDps70 = MyStringId.GetOrCompute("DS_ShieldDps70");
-        private static readonly MyStringId HudIconDps80 = MyStringId.GetOrCompute("DS_ShieldDps80");
-        private static readonly MyStringId HudIconDps90 = MyStringId.GetOrCompute("DS_ShieldDps90");
-        private static readonly MyStringId HudIconDps100 = MyStringId.GetOrCompute("DS_ShieldDps100");
-
-        //private static readonly MyStringId HudIconHeat = MyStringId.GetOrCompute("DS_HudIconHeat");
-        private static readonly MyStringId HudIconHeat10 = MyStringId.GetOrCompute("DS_ShieldHeat10");
-        private static readonly MyStringId HudIconHeat20 = MyStringId.GetOrCompute("DS_ShieldHeat20");
-        private static readonly MyStringId HudIconHeat30 = MyStringId.GetOrCompute("DS_ShieldHeat30");
-        private static readonly MyStringId HudIconHeat40 = MyStringId.GetOrCompute("DS_ShieldHeat40");
-        private static readonly MyStringId HudIconHeat50 = MyStringId.GetOrCompute("DS_ShieldHeat50");
-        private static readonly MyStringId HudIconHeat60 = MyStringId.GetOrCompute("DS_ShieldHeat60");
-        private static readonly MyStringId HudIconHeat70 = MyStringId.GetOrCompute("DS_ShieldHeat70");
-        private static readonly MyStringId HudIconHeat80 = MyStringId.GetOrCompute("DS_ShieldHeat80");
-        private static readonly MyStringId HudIconHeat90 = MyStringId.GetOrCompute("DS_ShieldHeat90");
-        private static readonly MyStringId HudIconHeat100 = MyStringId.GetOrCompute("DS_ShieldHeat100");
-
-        private static readonly MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
-        private static readonly MyStringHash MpDoDeform = MyStringHash.GetOrCompute("MpDoDeform");
-        private static readonly MyStringHash MpDoExplosion = MyStringHash.GetOrCompute("MpDoExplosion");
-        private static readonly MyStringHash DelDamage = MyStringHash.GetOrCompute("DelDamage");
-        private static readonly Type MissileObj = typeof(MyObjectBuilder_Missile);
-
         private MyResourceSinkInfo _resourceInfo;
         private MyResourceSinkComponent _sink;
 
-        internal IMyUpgradeModule Shield;
-        internal ShieldType ShieldMode;
-        internal MyCubeGrid MyGrid;
-        internal MyCubeBlock MyCube;
-        internal MyEntity ShieldEnt;
         private MyEntity _shellPassive;
         private MyEntity _shellActive;
 
-        private static readonly MyDefinitionId GId = MyResourceDistributorComponent.ElectricityId;
-        internal MyResourceDistributorComponent MyGridDistributor;
-        private readonly RunningAverage _dpsAvg = new RunningAverage(2);
         private MyParticleEffect _effect = new MyParticleEffect();
 
-        private readonly EllipsoidOxygenProvider _ellipsoidOxyProvider = new EllipsoidOxygenProvider(Matrix.Zero);
-        private readonly EllipsoidSA _ellipsoidSa = new EllipsoidSA(double.MinValue, double.MinValue, double.MinValue);
-
-        private DSUtils _dsutil1 = new DSUtils();
-
-        internal ControllerSettings DsSet;
-        internal ControllerState DsState;
-        internal Icosphere.Instance Icosphere;
-        internal ShieldGridComponent ShieldComp;
-
-        internal MyStringId CustomDataTooltip = MyStringId.GetOrCompute("Shows an Editor for custom data to be used by scripts and mods");
-        internal MyStringId CustomData = MyStringId.GetOrCompute("CustomData");
-        internal MyStringId Password = MyStringId.GetOrCompute("Password");
-        internal MyStringId PasswordTooltip = MyStringId.GetOrCompute("Set the shield modulation password");
+        public enum Ent
+        {
+            Unknown,
+            Ignore,
+            Protected,
+            Friendly,
+            EnemyPlayer,
+            SmallNobodyGrid,
+            LargeNobodyGrid,
+            SmallEnemyGrid,
+            LargeEnemyGrid,
+            Shielded,
+            Other,
+            VoxelBase,
+            Weapon,
+            Authenticated
+        }
 
         internal enum ShieldType
         {
@@ -346,20 +248,96 @@ namespace DefenseShields
             LargeGrid,
             SmallGrid,
             Unknown
-        };
-        #endregion
+        }
 
-        #region constructors
+        public int BulletCoolDown { get; internal set; } = -1;
+        public int WebCoolDown { get; internal set; } = -1;
+        public int HitCoolDown { get; private set; } = -11;
+
+        internal IMyUpgradeModule Shield { get; set; }
+        internal ShieldType ShieldMode { get; set; }
+        internal MyCubeGrid MyGrid { get; set; }
+        internal MyCubeBlock MyCube { get; set; }
+        internal MyEntity ShieldEnt { get; set; }
+        internal MyResourceDistributorComponent MyGridDistributor { get; set; }
+
+        internal ControllerSettings DsSet { get; set; }
+        internal ControllerState DsState { get; set; }
+        internal ProtoShieldHit ShieldHit { get; set; } = new ProtoShieldHit();
+        internal Icosphere.Instance Icosphere { get; set; }
+
+        internal MyStringId CustomDataTooltip { get; set; } = MyStringId.GetOrCompute("Shows an Editor for custom data to be used by scripts and mods");
+        internal MyStringId CustomData { get; set; } = MyStringId.GetOrCompute("CustomData");
+        internal MyStringId Password { get; set; } = MyStringId.GetOrCompute("Password");
+        internal MyStringId PasswordTooltip { get; set; } = MyStringId.GetOrCompute("Set the shield modulation password");
+
+        internal uint UnsuspendTick { get; set; }
+        internal uint LosCheckTick { get; set; }
+        internal uint TicksWithNoActivity { get; set; }
+        internal uint EffectsCleanTick { get; set; }
+
+        internal float ShieldMaxBuffer { get; set; }
+        internal float GridMaxPower { get; set; }
+        internal float GridCurrentPower { get; set; }
+        internal float GridAvailablePower { get; set; }
+        internal float ShieldCurrentPower { get; set; }
+
+        internal double BoundingRange { get; set; }
+        internal double EllipsoidVolume { get; set; }
+
+        internal bool WasOnline { get; set; }
+        internal bool DeformEnabled { get; set; }
+        internal bool ExplosionEnabled { get; set; }
+        internal bool WarmedUp { get; set; }
+        internal bool Warming { get; set; }
+        internal bool UpdateDimensions { get; set; }
+        internal bool FitChanged { get; set; }
+        internal bool GridIsMobile { get; set; }
+        internal bool SettingsUpdated { get; set; }
+        internal bool ClientUiUpdate { get; set; }
+        internal bool IsStatic { get; set; }
+        internal bool WebDamage { get; set; }
+        internal bool WebSuspend { get; set; }
+        internal bool IsFunctional { get; set; }
+        internal bool IsWorking { get; set; }
+        internal bool ControlBlockWorking { get; set; }
+        internal bool EntCleanUpTime { get; set; }
+        internal bool ModulateGrids { get; set; }
+
+        internal Vector3D MyGridCenter { get; set; }
+        internal Vector3D DetectionCenter { get; set; }
+
+        internal MatrixD DetectMatrixOutsideInv { get; set; }
+        internal MatrixD ShieldShapeMatrix { get; set; }
+        internal MatrixD DetectMatrixOutside { get; set; }
+        internal MatrixD ShieldMatrix { get; set; }
+
+        internal MatrixD OffsetEmitterWMatrix { get; set; }
+
+        internal Task FuncTask { get; set; }
+
+        internal float ImpactSize { get; set; } = 9f;
+        internal float Absorb { get; set; }
+
+        internal double EmpSize { get; set; }
+
+        internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
+        internal Vector3D EmpDetonation { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
+        internal Vector3D ShieldSize { get; set; }
+        #endregion
 
         internal MatrixD DetectionMatrix
         {
-            get { return DetectMatrixOutside; }
+            get
+            {
+                return DetectMatrixOutside;
+            }
+
             set
             {
                 DetectMatrixOutside = value;
                 DetectMatrixOutsideInv = MatrixD.Invert(value);
             }
         }
-        #endregion
     }
 }

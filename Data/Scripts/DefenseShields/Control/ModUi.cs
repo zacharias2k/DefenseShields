@@ -18,6 +18,8 @@ namespace DefenseShields
             Session.Instance.ModGrids.Visible = ShowControl;
             Session.Instance.ModEmp.Enabled = block => true;
             Session.Instance.ModEmp.Visible = ShowEmp;
+            Session.Instance.ModReInforce.Enabled = block => true;
+            Session.Instance.ModReInforce.Visible = ShowReInforce;
             Session.Instance.ModSep1.Visible = ShowControl;
             Session.Instance.ModSep2.Visible = ShowControl;
         }
@@ -117,6 +119,30 @@ namespace DefenseShields
             var comp = block?.GameLogic?.GetAs<Modulators>();
             if (comp == null) return;
             comp.ModSet.Settings.EmpEnabled = newValue;
+            comp.ModSet.NetworkUpdate();
+            comp.ModSet.SaveSettings();
+        }
+
+        internal static bool ShowReInforce(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<Modulators>();
+            var reInforceControl = comp?.ShieldComp?.Enhancer != null && comp.ShieldComp?.DefenseShields != null && !comp.ShieldComp.DefenseShields.IsStatic;
+            if (!reInforceControl && comp?.ShieldComp?.DefenseShields != null && comp.ShieldComp.DefenseShields.IsStatic) comp.ModSet.Settings.ReInforceEnabled = true;
+            return reInforceControl;
+        }
+
+        public static bool GetReInforceProt(IMyTerminalBlock block)
+        {
+            ShowReInforce(block);
+            var comp = block?.GameLogic?.GetAs<Modulators>();
+            return comp?.ModSet.Settings.ReInforceEnabled ?? false;
+        }
+
+        public static void SetReInforceProt(IMyTerminalBlock block, bool newValue)
+        {
+            var comp = block?.GameLogic?.GetAs<Modulators>();
+            if (comp == null) return;
+            comp.ModSet.Settings.ReInforceEnabled = newValue;
             comp.ModSet.NetworkUpdate();
             comp.ModSet.SaveSettings();
         }
