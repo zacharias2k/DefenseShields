@@ -265,26 +265,30 @@
 
         private void CalcualteVisibility(long visible, bool activeVisible)
         {
-            if (visible != 2) HitCoolDown = -11;
-            else if (visible == 2 && WorldImpactPosition != Vector3D.NegativeInfinity) HitCoolDown = -10;
-            else if (visible == 2 && HitCoolDown > -11) HitCoolDown++;
+            if (visible != 2)
+                HitCoolDown = -11;
+            else if (visible == 2 && WorldImpactPosition != Vector3D.NegativeInfinity)
+                HitCoolDown = -10;
+            else if (visible == 2 && HitCoolDown > -11)
+                HitCoolDown++;
+
             if (HitCoolDown > 59) HitCoolDown = -11;
 
-            var passiveSet = visible != 0 && !_hideShield && HitCoolDown == -11;
-            var passiveReset = (visible == 0 && _hideShield) || (visible != 0 && !activeVisible && _hideShield && HitCoolDown == -10);
-            var passiveFade = HitCoolDown > -1 && visible != 0;
-            var fadeReset = visible == 2 && !passiveFade && HitCoolDown != -11;
-
-            if (fadeReset)
+            // ifChecks: #1 FadeReset - #2 PassiveFade - #3 PassiveSet - #4 PassiveReset
+            if (visible == 2 && !(visible != 0 && HitCoolDown > -1) && HitCoolDown != -11) 
+            {
                 ResetShellRender(false);
-            else if (passiveFade)
+            }
+            else if (visible != 0 && HitCoolDown > -1) 
+            {
                 ResetShellRender(true);
-            else if (passiveSet)
+            }
+            else if (visible != 0 && HitCoolDown == -11 && !_hideShield)
             {
                 _hideShield = true;
                 ResetShellRender(false, false);
             }
-            else if (passiveReset)
+            else if ((visible == 0 || (!activeVisible && HitCoolDown == -10)) && _hideShield)
             {
                 _hideShield = false;
                 ResetShellRender(false);

@@ -348,15 +348,13 @@
             if (!IsFunctional) return false;
             if (_subpartRotor == null)
             {
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                if (_subpartRotor == null) return false;
+                return Entity.TryGetSubpart("Rotor", out _subpartRotor);
             }
 
             if (!_subpartRotor.Closed) return true;
 
             _subpartRotor.Subparts.Clear();
-            Entity.TryGetSubpart("Rotor", out _subpartRotor);
-            return true;
+            return Entity.TryGetSubpart("Rotor", out _subpartRotor);
         }
 
         private void BlockMoveAnimation()
