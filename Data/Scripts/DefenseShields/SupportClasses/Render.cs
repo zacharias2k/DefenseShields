@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using VRage.Game;
-using VRage.Game.Entity;
-using VRage.Utils;
-using VRageMath;
-using static VRageMath.MathHelper;
-
-namespace DefenseShields.Support
+﻿namespace DefenseShields.Support
 {
+    using System;
+    using System.Collections.Generic;
+    using VRage.Game;
+    using VRage.Game.Entity;
+    using VRage.Utils;
+    using VRageMath;
+    using static VRageMath.MathHelper;
+
     public class Icosphere 
     {   
         public readonly Vector3[] VertexBuffer;

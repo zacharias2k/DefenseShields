@@ -1,34 +1,32 @@
-﻿using System;
-using System.Text;
-using DefenseShields.Support;
-using Sandbox.Common.ObjectBuilders;
-using Sandbox.Game.Entities;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI;
-using VRage.Game;
-using VRage.Game.Components;
-using VRage.Game.Entity;
-using VRage.Game.ModAPI;
-using VRage.Game.ObjectBuilders.Definitions;
-using VRage.ModAPI;
-using VRage.ObjectBuilders;
-using VRage.Utils;
-using VRageMath;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using System.Text;
+    using global::DefenseShields.Support;
+    using Sandbox.Common.ObjectBuilders;
+    using Sandbox.Game.Entities;
+    using Sandbox.Game.EntityComponents;
+    using Sandbox.ModAPI;
+    using VRage.Game;
+    using VRage.Game.Components;
+    using VRage.Game.Entity;
+    using VRage.Game.ModAPI;
+    using VRage.Game.ObjectBuilders.Definitions;
+    using VRage.ModAPI;
+    using VRage.ObjectBuilders;
+    using VRage.Utils;
+    using VRageMath;
+
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "LargeShieldModulator", "SmallShieldModulator")]
     public class Modulators : MyGameLogicComponent
     {
+        internal ModulatorGridComponent ModulatorComp;
+        internal ShieldGridComponent ShieldComp;
+        internal MyResourceSinkInfo ResourceInfo;
 
-        private bool _subDelayed;
-        internal int RotationTime;
-        internal bool MainInit;
-        internal bool SettingsUpdated;
-        internal bool ClientUiUpdate;
-        internal bool ContainerInited;
-        internal bool IsFunctional;
-        internal bool IsWorking;
+        private readonly MyDefinitionId _gId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
+
+        private MyEntitySubpart _subpartRotor;
 
         private bool _powered;
 
@@ -50,22 +48,22 @@ namespace DefenseShields
         private bool _tock60;
         private float _wasModulateEnergy;
         private float _wasModulateKinetic;
+        private bool _subDelayed;
 
-        internal ModulatorGridComponent ModulatorComp;
-        internal ShieldGridComponent ShieldComp;
-        private MyEntitySubpart _subpartRotor;
-        internal ModulatorSettings ModSet;
-        internal ModulatorState ModState;
-        internal MyResourceSinkInfo ResourceInfo;
-        internal MyResourceSinkComponent Sink;
+        internal int RotationTime { get; set; }
+        internal bool MainInit { get; set; }
+        internal bool SettingsUpdated { get; set; }
+        internal bool ClientUiUpdate { get; set; }
+        internal bool ContainerInited { get; set; }
+        internal bool IsFunctional { get; set; }
+        internal bool IsWorking { get; set; }
 
-        private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
-
-        public IMyUpgradeModule Modulator;
-        internal MyCubeGrid MyGrid;
-        internal MyCubeBlock MyCube;
-
-        internal DSUtils Dsutil1 = new DSUtils();
+        internal ModulatorSettings ModSet { get; set; }
+        internal ModulatorState ModState { get; set; }
+        internal MyResourceSinkComponent Sink { get; set; }
+        internal MyCubeGrid MyGrid { get; set; }
+        internal MyCubeBlock MyCube { get; set; }
+        internal IMyUpgradeModule Modulator { get; set; }
 
         public override void OnAddedToContainer()
         {
@@ -90,7 +88,6 @@ namespace DefenseShields
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
-
 
         public override void OnAddedToScene()
         {
@@ -211,6 +208,88 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation10: {ex}"); }
         }
 
+        public override bool IsSerialized()
+        {
+            if (MyAPIGateway.Multiplayer.IsServer)
+            {
+                if (Modulator.Storage != null)
+                {
+                    ModState.SaveState();
+                    ModSet.SaveSettings();
+                }
+            }
+            return false;
+        }
+
+        public override void OnRemovedFromScene()
+        {
+            try
+            {
+                if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
+                if (ShieldComp?.Modulator == this)
+                {
+                    ShieldComp.Modulator = null;
+                }
+
+                if (ModulatorComp?.Modulator == this)
+                {
+                    ModulatorComp.Modulator = null;
+                    ModulatorComp = null;
+                }
+                RegisterEvents(false);
+                IsWorking = false;
+                IsFunctional = false;
+            }
+            catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
+        }
+
+        public override void OnBeforeRemovedFromContainer()
+        {
+            if (Entity.InScene) OnRemovedFromScene();
+        }
+
+        public override void Close()
+        {
+            try
+            {
+                if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
+                if (ShieldComp?.Modulator == this)
+                {
+                    ShieldComp.Modulator = null;
+                }
+
+                if (ModulatorComp?.Modulator == this)
+                {
+                    ModulatorComp.Modulator = null;
+                    ModulatorComp = null;
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
+            base.Close();
+        }
+
+        public override void MarkForClose()
+        {
+            try
+            {
+            }
+            catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
+            base.MarkForClose();
+        }
+
+        internal void UpdateSettings(ProtoModulatorSettings newSettings)
+        {
+            SettingsUpdated = true;
+            ModSet.Settings = newSettings;
+            if (Session.Enforced.Debug == 3) Log.Line("UpdateSettings for modulator");
+        }
+
+        internal void UpdateState(ProtoModulatorState newState)
+        {
+            ModState.State = newState;
+            if (Session.Enforced.Debug == 3) Log.Line($"UpdateState - ModulatorId [{Modulator.EntityId}]:\n{ModState.State}");
+        }
+
         private void UpdateStates()
         {
             if (ShieldComp?.GetSubGrids != null && !ShieldComp.GetSubGrids.Equals(ModulatorComp.GetSubGrids))
@@ -222,7 +301,7 @@ namespace DefenseShields
                 {
                     ModulatorComp.ModulationPassword = Modulator.CustomData;
                     ModSet.SaveSettings();
-                    if (Session.Enforced.Debug == 3) Log.Line($"Updating modulator password");
+                    if (Session.Enforced.Debug == 3) Log.Line("Updating modulator password");
                 }
             }
         }
@@ -288,7 +367,7 @@ namespace DefenseShields
 
         private bool BlockWorking()
         {
-            if (_tock60 || _firstRun) _powered = Sink.IsPowerAvailable(GId, 0.01f);
+            if (_tock60 || _firstRun) _powered = Sink.IsPowerAvailable(_gId, 0.01f);
             if (!IsWorking || !_powered)
             {
                 if (!_isDedicated && _tock60)
@@ -367,7 +446,7 @@ namespace DefenseShields
                 }
             }
 
-            if (_isDedicated || _subDelayed && _tick > _subTick + 9)
+            if (_isDedicated || (_subDelayed && _tick > _subTick + 9))
             {
                 if (Session.Enforced.Debug == 3) Log.Line($"Delayed tick: {_tick} - hierarchytick: {_subTick}");
                 _subDelayed = false;
@@ -422,7 +501,7 @@ namespace DefenseShields
                 }
                 ResourceInfo = new MyResourceSinkInfo()
                 {
-                    ResourceTypeId = GId,
+                    ResourceTypeId = _gId,
                     MaxRequiredInput = 0f,
                     RequiredInputFunc = () => _power
                 };
@@ -464,7 +543,7 @@ namespace DefenseShields
         {
             try
             {
-                if (!_isDedicated && _tick == _subTick || ShieldComp?.DefenseShields != null) return;
+                if ((!_isDedicated && _tick == _subTick) || ShieldComp?.DefenseShields != null) return;
                 if (!_isDedicated && _subTick > _tick - 9)
                 {
                     _subDelayed = true;
@@ -483,12 +562,10 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in HierarchyChanged: {ex}"); }
         }
 
-        #region Create UI
         private void CreateUi()
         {
             ModUi.CreateUi(Modulator);
         }
-        #endregion
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
@@ -525,55 +602,6 @@ namespace DefenseShields
             _subpartRotor.PositionComp.LocalMatrix = rotationMatrix;
         }
 
-        public void UpdateSettings(ProtoModulatorSettings newSettings)
-        {
-            SettingsUpdated = true;
-            ModSet.Settings = newSettings;
-            if (Session.Enforced.Debug == 3) Log.Line($"UpdateSettings for modulator");
-        }
-
-        public void UpdateState(ProtoModulatorState newState)
-        {
-            ModState.State = newState;
-            if (Session.Enforced.Debug == 3) Log.Line($"UpdateState - ModulatorId [{Modulator.EntityId}]:\n{ModState.State}");
-        }
-
-        public override bool IsSerialized()
-        {
-            if (MyAPIGateway.Multiplayer.IsServer)
-            {
-                if (Modulator.Storage != null)
-                {
-                    ModState.SaveState();
-                    ModSet.SaveSettings();
-                }
-            }
-            return false;
-        }
-
-        public override void OnRemovedFromScene()
-        {
-            try
-            {
-                if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
-                if (ShieldComp?.Modulator == this)
-                {
-                    ShieldComp.Modulator = null;
-                }
-
-                if (ModulatorComp?.Modulator == this)
-                {
-                    ModulatorComp.Modulator = null;
-                    ModulatorComp = null;
-                }
-                RegisterEvents(false);
-                IsWorking = false;
-                IsFunctional = false;
-            }
-            catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
-        }
-
-
         private void RegisterEvents(bool register = true)
         {
             if (register)
@@ -595,36 +623,6 @@ namespace DefenseShields
         {
             IsFunctional = myCubeBlock.IsFunctional;
             IsWorking = myCubeBlock.IsWorking;
-        }
-
-        public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
-        public override void Close()
-        {
-            try
-            {
-                if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
-                if (ShieldComp?.Modulator == this)
-                {
-                    ShieldComp.Modulator = null;
-                }
-
-                if (ModulatorComp?.Modulator == this)
-                {
-                    ModulatorComp.Modulator = null;
-                    ModulatorComp = null;
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
-            base.Close();
-        }
-
-        public override void MarkForClose()
-        {
-            try
-            {
-            }
-            catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
-            base.MarkForClose();
         }
     }
 }

@@ -1,25 +1,27 @@
-﻿using System;
-using DefenseShields.Support;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using global::DefenseShields.Support;
+    using Sandbox.Game.EntityComponents;
+    using Sandbox.ModAPI;
+
     public class ControllerState
     {
-        internal ProtoControllerState State = new ProtoControllerState();
         internal readonly IMyFunctionalBlock Shield;
+
         internal ControllerState(IMyFunctionalBlock shield)
         {
             Shield = shield;
         }
 
-        public void StorageInit()
+        internal ProtoControllerState State { get; set; } = new ProtoControllerState();
+
+        internal void StorageInit()
         {
             Shield.Storage = new MyModStorageComponent {[Session.Instance.ControllerSettingsGuid] = ""};
         }
 
-        public void SaveState(bool createStorage = false)
+        internal void SaveState(bool createStorage = false)
         {
             if (createStorage && Shield.Storage == null) Shield.Storage = new MyModStorageComponent();
             else if (Shield.Storage == null) return;
@@ -28,7 +30,7 @@ namespace DefenseShields
             Shield.Storage[Session.Instance.ControllerStateGuid] = Convert.ToBase64String(binary);
         }
 
-        public bool LoadState()
+        internal bool LoadState()
         {
             if (Shield.Storage == null) return false;
 
@@ -37,9 +39,8 @@ namespace DefenseShields
 
             if (Shield.Storage.TryGetValue(Session.Instance.ControllerStateGuid, out rawData))
             {
-                ProtoControllerState loadedState = null;
                 var base64 = Convert.FromBase64String(rawData);
-                loadedState = MyAPIGateway.Utilities.SerializeFromBinary<ProtoControllerState>(base64);
+                var loadedState = MyAPIGateway.Utilities.SerializeFromBinary<ProtoControllerState>(base64);
 
                 if (loadedState != null)
                 {
@@ -58,18 +59,19 @@ namespace DefenseShields
         }
     }
 
-    public class ControllerSettings
+    internal class ControllerSettings
     {
-        internal ProtoControllerSettings Settings = new ProtoControllerSettings();
         internal readonly IMyFunctionalBlock Shield;
+
         internal ControllerSettings(IMyFunctionalBlock shield)
         {
             Shield = shield;
         }
 
-        public void SaveSettings(bool createStorage = false)
+        internal ProtoControllerSettings Settings { get; set; } = new ProtoControllerSettings();
+
+        internal void SaveSettings(bool createStorage = false)
         {
-            
             if (createStorage && Shield.Storage == null) Shield.Storage = new MyModStorageComponent();
             else if (Shield.Storage == null) return;
 
@@ -77,16 +79,16 @@ namespace DefenseShields
             Shield.Storage[Session.Instance.ControllerSettingsGuid] = Convert.ToBase64String(binary);
         }
 
-        public bool LoadSettings()
+        internal bool LoadSettings()
         {
             if (Shield.Storage == null) return false;
 
             string rawData;
-            bool loadedSomething = false;
+            var loadedSomething = false;
 
             if (Shield.Storage.TryGetValue(Session.Instance.ControllerSettingsGuid, out rawData))
             {
-                ProtoControllerSettings loadedSettings = null;
+                ProtoControllerSettings loadedSettings;
 
                 try
                 {
@@ -111,13 +113,12 @@ namespace DefenseShields
 
         internal void NetworkUpdate()
         {
-
             if (Session.Instance.IsServer)
             {
                 if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - ShieldId [{Shield.EntityId}]: network settings update for shield");
-                Session.Instance.PacketizeControllerSettings(Shield, Settings); // update clients with server's settings
+                Session.Instance.PacketizeControllerSettings(Shield, Settings); 
             }
-            else // client, send settings to server
+            else 
             {
                 if (Session.Enforced.Debug == 3) Log.Line($"ClientRelay - ShieldId [{Shield.EntityId}]: network settings update for shield");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataControllerSettings(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, Settings));

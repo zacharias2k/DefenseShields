@@ -1,53 +1,52 @@
-﻿using System;
-using System.Text;
-using DefenseShields.Support;
-using Sandbox.Common.ObjectBuilders;
-using Sandbox.Game.Entities;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI;
-using VRage.Game;
-using VRage.Game.Components;
-using VRage.ModAPI;
-using VRage.Game.Entity;
-using VRage.Game.ModAPI;
-using VRage.Game.ObjectBuilders.Definitions;
-using VRage.ObjectBuilders;
-using VRage.Utils;
-using VRageMath;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using System.Text;
+    using global::DefenseShields.Support;
+    using Sandbox.Common.ObjectBuilders;
+    using Sandbox.Game.Entities;
+    using Sandbox.Game.EntityComponents;
+    using Sandbox.ModAPI;
+    using VRage.Game;
+    using VRage.Game.Components;
+    using VRage.Game.Entity;
+    using VRage.Game.ModAPI;
+    using VRage.Game.ObjectBuilders.Definitions;
+    using VRage.ModAPI;
+    using VRage.ObjectBuilders;
+    using VRage.Utils;
+    using VRageMath;
+
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "LargeEnhancer", "SmallEnhancer")]
     public class Enhancers : MyGameLogicComponent
     {
+        internal ShieldGridComponent ShieldComp;
+        internal MyResourceSinkInfo ResourceInfo;
+
+        private const float Power = 0.01f;
+
+        private readonly MyDefinitionId _gId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
+
         private uint _tick;
         private int _count = -1;
         private int _lCount;
-        internal int RotationTime;
-        internal bool ContainerInited;
-        internal bool IsFunctional;
-        internal bool IsWorking;
-
         private bool _tick60;
         private bool _powered;
         private bool _isServer;
         private bool _isDedicated;
 
-        private const float Power = 0.01f;
-
-        public IMyUpgradeModule Enhancer;
-        internal MyCubeGrid MyGrid;
-        internal MyCubeBlock MyCube;
-
-        internal ShieldGridComponent ShieldComp;
-        internal EnhancerState EnhState;
-        internal DSUtils Dsutil1 = new DSUtils();
-
-        internal MyResourceSinkInfo ResourceInfo;
-        internal MyResourceSinkComponent Sink;
         private MyEntitySubpart _subpartRotor;
 
-        private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
+        internal EnhancerState EnhState { get; set; }
+        internal MyResourceSinkComponent Sink { get; set; }
+
+        internal int RotationTime { get; set; }
+        internal bool ContainerInited { get; set; }
+        internal bool IsFunctional { get; set; }
+        internal bool IsWorking { get; set; }
+        internal IMyUpgradeModule Enhancer { get; set; }
+        internal MyCubeGrid MyGrid { get; set; }
+        internal MyCubeBlock MyCube { get; set; }
 
         public override void OnAddedToContainer()
         {
@@ -149,6 +148,57 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation10: {ex}"); }
         }
 
+        public override void OnRemovedFromScene()
+        {
+            try
+            {
+                if (Session.Instance.Enhancers.Contains(this)) Session.Instance.Enhancers.Remove(this);
+                if (ShieldComp?.Enhancer == this)
+                {
+                    ShieldComp.Enhancer = null;
+                }
+                RegisterEvents(false);
+
+                IsWorking = false;
+                IsFunctional = false;
+            }
+            catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
+        }
+
+        public override void Close()
+        {
+            try
+            {
+                base.Close();
+                if (Session.Instance.Enhancers.Contains(this)) Session.Instance.Enhancers.Remove(this);
+                if (ShieldComp?.Enhancer == this)
+                {
+                    ShieldComp.Enhancer = null;
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
+        }
+
+        public override void MarkForClose()
+        {
+            try
+            {
+                base.MarkForClose();
+            }
+            catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
+        }
+
+        public override void OnBeforeRemovedFromContainer()
+        {
+            if (Entity.InScene) OnRemovedFromScene();
+        }
+
+        internal void UpdateState(ProtoEnhancerState newState)
+        {
+            EnhState.State = newState;
+            if (Session.Enforced.Debug == 3) Log.Line($"UpdateState: EnhancerId [{Enhancer.EntityId}]");
+        }
+
         private void Timing()
         {
             if (_count++ == 59)
@@ -190,7 +240,7 @@ namespace DefenseShields
 
         private bool BlockWorking()
         {
-            if (_count <= 0) _powered = Sink.IsPowerAvailable(GId, 0.01f);
+            if (_count <= 0) _powered = Sink.IsPowerAvailable(_gId, 0.01f);
             if (!IsWorking || !_powered)
             {
                 NeedUpdate(EnhState.State.Online, false);
@@ -248,13 +298,6 @@ namespace DefenseShields
             }
         }
 
-        public void UpdateState(ProtoEnhancerState newState)
-        {
-            EnhState.State = newState;
-            if (Session.Enforced.Debug == 3) Log.Line($"UpdateState: EnhancerId [{Enhancer.EntityId}]");
-        }
-
-
         private void StorageSetup()
         {
             if (EnhState == null) EnhState = new EnhancerState(Enhancer);
@@ -272,7 +315,7 @@ namespace DefenseShields
                 }
                 ResourceInfo = new MyResourceSinkInfo()
                 {
-                    ResourceTypeId = GId,
+                    ResourceTypeId = _gId,
                     MaxRequiredInput = 0.02f,
                     RequiredInputFunc = () => Power
                 };
@@ -324,13 +367,6 @@ namespace DefenseShields
             _subpartRotor.PositionComp.LocalMatrix = rotationMatrix;
         }
 
-        #region Create UI
-        private void CreateUi()
-        {
-            //EnhUi.CreateUi(Enhancer);
-        }
-        #endregion
-
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
             if (ShieldComp?.DefenseShields == null)
@@ -358,23 +394,6 @@ namespace DefenseShields
             }
         }
 
-        public override void OnRemovedFromScene()
-        {
-            try
-            {
-                if (Session.Instance.Enhancers.Contains(this)) Session.Instance.Enhancers.Remove(this);
-                if (ShieldComp?.Enhancer == this)
-                {
-                    ShieldComp.Enhancer = null;
-                }
-                RegisterEvents(false);
-
-                IsWorking = false;
-                IsFunctional = false;
-            }
-            catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
-        }
-
         private void RegisterEvents(bool register = true)
         {
             if (register)
@@ -394,33 +413,6 @@ namespace DefenseShields
         {
             IsFunctional = myCubeBlock.IsFunctional;
             IsWorking = myCubeBlock.IsWorking;
-        }
-
-        public override void OnBeforeRemovedFromContainer()
-        {
-            if (Entity.InScene) OnRemovedFromScene();
-        }
-        public override void Close()
-        {
-            try
-            {
-                base.Close();
-                if (Session.Instance.Enhancers.Contains(this)) Session.Instance.Enhancers.Remove(this);
-                if (ShieldComp?.Enhancer == this)
-                {
-                    ShieldComp.Enhancer = null;
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
-        }
-
-        public override void MarkForClose()
-        {
-            try
-            {
-                base.MarkForClose();
-            }
-            catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
         }
     }
 }

@@ -21,7 +21,6 @@
         }
     }
 
-
     internal struct MyAddForceData
     {
         public MyCubeGrid MyGrid;
@@ -37,7 +36,6 @@
             Immediate = immediate;
         }
     }
-
 
     internal static class ConcurrentQueueExtensions
     {
@@ -100,7 +98,6 @@
         }
     }
 
-
     internal class DSUtils
     {
         private double _last;
@@ -121,7 +118,7 @@
             _last = ms;
             Sw.Reset();
         }
-
+        /*
         internal static BoundingSphereD CreateFromPointsList(List<Vector3D> points)
         {
             Vector3D current;
@@ -195,8 +192,9 @@
             boundingSphereD.Radius = num1;
             return boundingSphereD;
         }
-
+    */
     }
+
     internal class RunningAverage
     {
         private readonly int _size;

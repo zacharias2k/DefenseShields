@@ -1,12 +1,12 @@
-﻿using System.Threading;
-using VRage;
-
-namespace DefenseShields.Support
+﻿namespace DefenseShields.Support
 {
+    using System.Threading;
+    using VRage;
+
     internal class DsAutoResetEvent
     {
-        private int _waiters;
         private readonly FastResourceLock _lock = new FastResourceLock();
+        private int _waiters;
 
         public void WaitOne()
         {

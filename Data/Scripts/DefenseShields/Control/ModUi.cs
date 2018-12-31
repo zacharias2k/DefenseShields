@@ -1,9 +1,9 @@
-﻿using DefenseShields.Support;
-using Sandbox.Game.Entities;
-using Sandbox.ModAPI;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using global::DefenseShields.Support;
+    using Sandbox.Game.Entities;
+    using Sandbox.ModAPI;
+
     internal static class ModUi
     {
         #region Create UI
@@ -31,13 +31,13 @@ namespace DefenseShields
             return station;
         }
 
-        public static float GetDamage(IMyTerminalBlock block)
+        internal static float GetDamage(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<Modulators>();
             return comp?.ModSet.Settings.ModulateDamage ?? 0;
         }
 
-        public static void SetDamage(IMyTerminalBlock block, float newValue)
+        internal static void SetDamage(IMyTerminalBlock block, float newValue)
         {
             var comp = block?.GameLogic?.GetAs<Modulators>();
             if (comp == null) return;
@@ -49,7 +49,7 @@ namespace DefenseShields
             ((MyCubeBlock)block).UpdateTerminal();
         }
 
-        public static void ComputeDamage(Modulators comp, float newValue)
+        internal static void ComputeDamage(Modulators comp, float newValue)
         {
             if (newValue < 100)
             {
@@ -69,13 +69,13 @@ namespace DefenseShields
             comp.ModState.State.ModulateDamage = (int)newValue;
         }
 
-        public static bool GetVoxels(IMyTerminalBlock block)
+        internal static bool GetVoxels(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<Modulators>();
             return comp?.ModSet.Settings.ModulateVoxels ?? false;
         }
 
-        public static void SetVoxels(IMyTerminalBlock block, bool newValue)
+        internal static void SetVoxels(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<Modulators>();
             if (comp == null) return;
@@ -84,13 +84,13 @@ namespace DefenseShields
             comp.ModSet.SaveSettings();
         }
 
-        public static bool GetGrids(IMyTerminalBlock block)
+        internal static bool GetGrids(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<Modulators>();
             return comp?.ModSet.Settings.ModulateGrids ?? false;
         }
 
-        public static void SetGrids(IMyTerminalBlock block, bool newValue)
+        internal static void SetGrids(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<Modulators>();
             if (comp == null) return;
@@ -107,14 +107,14 @@ namespace DefenseShields
             return empControl;
         }
 
-        public static bool GetEmpProt(IMyTerminalBlock block)
+        internal static bool GetEmpProt(IMyTerminalBlock block)
         {
             ShowEmp(block);
             var comp = block?.GameLogic?.GetAs<Modulators>();
             return comp?.ModSet.Settings.EmpEnabled ?? false;
         }
 
-        public static void SetEmpProt(IMyTerminalBlock block, bool newValue)
+        internal static void SetEmpProt(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<Modulators>();
             if (comp == null) return;
@@ -131,14 +131,14 @@ namespace DefenseShields
             return reInforceControl;
         }
 
-        public static bool GetReInforceProt(IMyTerminalBlock block)
+        internal static bool GetReInforceProt(IMyTerminalBlock block)
         {
             ShowReInforce(block);
             var comp = block?.GameLogic?.GetAs<Modulators>();
             return comp?.ModSet.Settings.ReInforceEnabled ?? false;
         }
 
-        public static void SetReInforceProt(IMyTerminalBlock block, bool newValue)
+        internal static void SetReInforceProt(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<Modulators>();
             if (comp == null) return;

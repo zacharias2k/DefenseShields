@@ -1,8 +1,7 @@
-﻿using DefenseShields.Support;
-using Sandbox.ModAPI;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using Sandbox.ModAPI;
+
     internal static class PsUi
     {
         #region Create UI
@@ -31,13 +30,13 @@ namespace DefenseShields
             return valid;
         }
 
-        public static bool GetBatteries(IMyTerminalBlock block)
+        internal static bool GetBatteries(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             return comp?.DsSet.Settings.UseBatteries ?? false;
         }
 
-        public static void SetBatteries(IMyTerminalBlock block, bool newValue)
+        internal static void SetBatteries(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
@@ -46,13 +45,13 @@ namespace DefenseShields
             comp.ClientUiUpdate = true;
         }
 
-        public static bool GetHideActive(IMyTerminalBlock block)
+        internal static bool GetHideActive(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             return comp?.DsSet.Settings.ActiveInvisible ?? false;
         }
 
-        public static void SetHideActive(IMyTerminalBlock block, bool newValue)
+        internal static void SetHideActive(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
@@ -61,13 +60,13 @@ namespace DefenseShields
             comp.ClientUiUpdate = true;
         }
 
-        public static bool GetRefreshAnimation(IMyTerminalBlock block)
+        internal static bool GetRefreshAnimation(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             return comp?.DsSet.Settings.RefreshAnimation ?? false;
         }
 
-        public static void SetRefreshAnimation(IMyTerminalBlock block, bool newValue)
+        internal static void SetRefreshAnimation(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
@@ -76,13 +75,13 @@ namespace DefenseShields
             comp.ClientUiUpdate = true;
         }
 
-        public static bool GetHitWaveAnimation(IMyTerminalBlock block)
+        internal static bool GetHitWaveAnimation(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             return comp?.DsSet.Settings.HitWaveAnimation ?? false;
         }
 
-        public static void SetHitWaveAnimation(IMyTerminalBlock block, bool newValue)
+        internal static void SetHitWaveAnimation(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
@@ -91,13 +90,13 @@ namespace DefenseShields
             comp.ClientUiUpdate = true;
         }
 
-        public static bool GetSendToHud(IMyTerminalBlock block)
+        internal static bool GetSendToHud(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             return comp?.DsSet.Settings.SendToHud ?? false;
         }
 
-        public static void SetSendToHud(IMyTerminalBlock block, bool newValue)
+        internal static void SetSendToHud(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
@@ -106,13 +105,13 @@ namespace DefenseShields
             comp.ClientUiUpdate = true;
         }
 
-        public static bool GetRaiseShield(IMyTerminalBlock block)
+        internal static bool GetRaiseShield(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             return comp?.DsSet.Settings.RaiseShield ?? false;
         }
 
-        public static void SetRaiseShield(IMyTerminalBlock block, bool newValue)
+        internal static void SetRaiseShield(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;

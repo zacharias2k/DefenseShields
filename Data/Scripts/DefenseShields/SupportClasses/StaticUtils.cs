@@ -1,33 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Sandbox.Common.ObjectBuilders;
-using Sandbox.Definitions;
-using Sandbox.Game;
-using Sandbox.Game.Entities;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI;
-using VRage.Game;
-using VRage.Game.Entity;
-using VRage.Game.ModAPI;
-using VRage.ModAPI;
-using VRageMath;
-
-namespace DefenseShields.Support
+﻿namespace DefenseShields.Support
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using Sandbox.Common.ObjectBuilders;
+    using Sandbox.Definitions;
+    using Sandbox.Game;
+    using Sandbox.Game.Entities;
+    using Sandbox.Game.EntityComponents;
+    using Sandbox.ModAPI;
+    using VRage.Game;
+    using VRage.Game.ModAPI;
+    using VRageMath;
+
     internal static class UtilsStatic
     {
-        internal static Color White1 = new Color(255, 255, 255);
-        internal static Color White2 = new Color(90, 118, 255);
-        internal static Color White3 = new Color(47, 86, 255);
-        internal static Color Blue1 = Color.Aquamarine;
-        internal static Color Blue2 = new Color(0, 66, 255);
-        internal static Color Blue3 = new Color(0, 7, 255, 255);
-        internal static Color Blue4 = new Color(22, 0, 170);
-        internal static Color Red1 = new Color(87, 0, 66);
-        internal static Color Red2 = new Color(121, 0, 13);
-        internal static Color Red3 = new Color(255, 0, 0);
-
         private static readonly Dictionary<float, float> DmgTable = new Dictionary<float, float>
         {
             [0.00000000001f] = -1f,
@@ -51,8 +38,6 @@ namespace DefenseShields.Support
             [0.0000000090f] = 9,
             [0.0000000100f] = 10,
         };
-
-
 
         public static void UpdateTerminal(this MyCubeBlock block)
         {
@@ -85,6 +70,7 @@ namespace DefenseShields.Support
             return tmp;
         }
 
+        /*
         public static float ImpactFactor(MatrixD obbMatrix, Vector3 obbExtents, Vector3D impactPos, Vector3 direction)
         {
             var impactPosLcl = (Vector3)(impactPos - obbMatrix.Translation);
@@ -139,13 +125,6 @@ namespace DefenseShields.Support
             return Math.Max(w, Math.Max(x, Math.Max(y, z)));
         }
 
-        public static float GetDmgMulti(float damage)
-        {
-            float tableVal;
-            DmgTable.TryGetValue(damage, out tableVal);
-            return tableVal;
-        }
-
         public static void GetRealPlayers(Vector3D center, float radius, HashSet<long> realPlayers)
         {
             var realPlayersIdentities = new List<IMyIdentity>();
@@ -176,19 +155,27 @@ namespace DefenseShields.Support
                 if (realPlayersIdentities.Contains(player.Identity)) realPlayers.Add(player.IdentityId);
             }
         }
+        */
+
+        public static float GetDmgMulti(float damage)
+        {
+            float tableVal;
+            DmgTable.TryGetValue(damage, out tableVal);
+            return tableVal;
+        }
 
         public static Color GetShieldColorFromFloat(float percent)
         {
-            if (percent > 90) return White1;
-            if (percent > 80) return White2;
-            if (percent > 70) return White3;
-            if (percent > 60) return Blue1;
-            if (percent > 50) return Blue2;
-            if (percent > 40) return Blue3;
-            if (percent > 30) return Blue4;
-            if (percent > 20) return Red1;
-            if (percent > 10) return Red2;
-            return Red3;
+            if (percent > 90) return Session.Instance.White1;
+            if (percent > 80) return Session.Instance.White2;
+            if (percent > 70) return Session.Instance.White3;
+            if (percent > 60) return Session.Instance.Blue1;
+            if (percent > 50) return Session.Instance.Blue2;
+            if (percent > 40) return Session.Instance.Blue3;
+            if (percent > 30) return Session.Instance.Blue4;
+            if (percent > 20) return Session.Instance.Red1;
+            if (percent > 10) return Session.Instance.Red2;
+            return Session.Instance.Red3;
         }
 
         public static Color GetAirEmissiveColorFromDouble(double percent)
@@ -198,6 +185,7 @@ namespace DefenseShields.Support
             return Color.Red;
         }
 
+        /*
         public static long ThereCanBeOnlyOne(IMyCubeBlock shield)
         {
             if (Session.Enforced.Debug == 3) Log.Line($"ThereCanBeOnlyOne start");
@@ -228,6 +216,7 @@ namespace DefenseShields.Support
             if (Session.Enforced.Debug == 3) Log.Line($"ThereCanBeOnlyOne complete, found shield: {shieldId}");
             return shieldId;
         }
+        */
 
         public static bool DistanceCheck(IMyCubeBlock block, int x, double range)
         {
@@ -254,7 +243,7 @@ namespace DefenseShields.Support
                     if (Session.Instance.AmmoCollection.ContainsKey(shot.MissileModelName)) continue;
                     Session.Instance.AmmoCollection.Add(shot.MissileModelName, new AmmoInfo(shot.IsExplosive, shot.MissileExplosionDamage, shot.MissileExplosionRadius, shot.DesiredSpeed, shot.MissileMass, shot.BackkickForce));
                 }
-                if (Session.Enforced.Debug == 3) Log.Line($"Definitions: Session");
+                if (Session.Enforced.Debug == 3) Log.Line("Definitions: Session");
             }
             catch (Exception ex) { Log.Line($"Exception in GetAmmoDefinitions: {ex}"); }
         }
@@ -270,12 +259,11 @@ namespace DefenseShields.Support
             var bQuaternion = Quaternion.CreateFromRotationMatrix(shield.CubeGrid.WorldMatrix);
             var sqrt2 = Math.Sqrt(2);
             var sqrt3 = Math.Sqrt(3);
-            const double percent = 0.1;
             var last = 0;
             var repeat = 0;
             for (int i = 0; i <= 10; i++)
             {
-                var ellipsoidAdjust = MathHelper.Lerp(sqrt2, sqrt3, i * percent);
+                var ellipsoidAdjust = MathHelper.Lerp(sqrt2, sqrt3, i * 0.1);
 
                 var shieldSize = gridHalfExtents * ellipsoidAdjust;
                 var mobileMatrix = MatrixD.CreateScale(shieldSize);
@@ -307,10 +295,10 @@ namespace DefenseShields.Support
 
                 if (c == 0)
                 {
-                    return MathHelper.Lerp(sqrt2, sqrt3, i * percent);
+                    return MathHelper.Lerp(sqrt2, sqrt3, i * 0.1);
                 }
                 last = c;
-                if (i == 10 && repeat > 2) return MathHelper.Lerp(sqrt2, sqrt3, ((10 - repeat) + 1) * percent);
+                if (i == 10 && repeat > 2) return MathHelper.Lerp(sqrt2, sqrt3, ((10 - repeat) + 1) * 0.1);
             }
             return sqrt3;
         }
@@ -326,12 +314,11 @@ namespace DefenseShields.Support
             var bQuaternion = Quaternion.CreateFromRotationMatrix(shield.CubeGrid.WorldMatrix);
             var sqrt3 = Math.Sqrt(3);
             var sqrt5 = Math.Sqrt(5);
-            const double percent = 0.1;
             var last = 0;
             var repeat = 0;
             for (int i = 0; i <= 10; i++)
             {
-                var ellipsoidAdjust = MathHelper.Lerp(sqrt3, sqrt5, i * percent);
+                var ellipsoidAdjust = MathHelper.Lerp(sqrt3, sqrt5, i * 0.1);
 
                 var shieldSize = gridHalfExtents * ellipsoidAdjust;
                 var mobileMatrix = MatrixD.CreateScale(shieldSize);
@@ -363,10 +350,10 @@ namespace DefenseShields.Support
 
                 if (c == 0)
                 {
-                    return MathHelper.Lerp(sqrt3, sqrt5, i * percent);
+                    return MathHelper.Lerp(sqrt3, sqrt5, i * 0.1);
                 }
                 last = c;
-                if (i == 10 && repeat > 2) return MathHelper.Lerp(sqrt3, sqrt5, ((10 - repeat) + 1) * percent);
+                if (i == 10 && repeat > 2) return MathHelper.Lerp(sqrt3, sqrt5, ((10 - repeat) + 1) * 0.1);
             }
             return sqrt5;
         }
@@ -380,7 +367,8 @@ namespace DefenseShields.Support
                 blockCnt += ((MyCubeGrid) grid).BlocksCount;
             }
             return blockCnt;
-        }	
+        }
+
         public static void PrepConfigFile()
         {
             const int baseScaler = 10;
@@ -482,6 +470,56 @@ namespace DefenseShields.Support
             if (Session.Enforced.Debug == 3) Log.Line($"Writing settings to mod:\n{data}");
         }
 
+        public static void CreateExplosion(Vector3D position, float radius, int damage = 5000)
+        {
+            MyExplosionTypeEnum explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_50;
+            if ((double)radius < 2.0)
+                explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_02;
+            else if ((double)radius < 15.0)
+                explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_15;
+            else if ((double)radius < 30.0)
+                explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_30;
+            MyExplosionInfo explosionInfo = new MyExplosionInfo()
+            {
+                PlayerDamage = 0.0f,
+                Damage = (float)damage,
+                ExplosionType = explosionTypeEnum,
+                ExplosionSphere = new BoundingSphereD(position, (double)radius),
+                LifespanMiliseconds = 700,
+                ParticleScale = 1f,
+                Direction = new Vector3?(Vector3.Down),
+                VoxelExplosionCenter = position,
+                ExplosionFlags = MyExplosionFlags.CREATE_DEBRIS | MyExplosionFlags.AFFECT_VOXELS | MyExplosionFlags.APPLY_FORCE_AND_DAMAGE | MyExplosionFlags.CREATE_DECALS | MyExplosionFlags.CREATE_PARTICLE_EFFECT | MyExplosionFlags.CREATE_SHRAPNELS | MyExplosionFlags.APPLY_DEFORMATION,
+                VoxelCutoutScale = 1f,
+                PlaySound = true,
+                ApplyForceAndDamage = true,
+                ObjectsRemoveDelayInMiliseconds = 40
+            };
+            MyExplosions.AddExplosion(ref explosionInfo, true);
+        }
+
+        public static void CreateFakeSmallExplosion(Vector3D position)
+        {
+            MyExplosionInfo explosionInfo = new MyExplosionInfo()
+            {
+                PlayerDamage = 0.0f,
+                Damage = 0f,
+                ExplosionType = MyExplosionTypeEnum.WARHEAD_EXPLOSION_02,
+                ExplosionSphere = new BoundingSphereD(position, 0d),
+                LifespanMiliseconds = 0,
+                ParticleScale = 1f,
+                Direction = Vector3.Down,
+                VoxelExplosionCenter = position,
+                ExplosionFlags = MyExplosionFlags.CREATE_PARTICLE_EFFECT,
+                VoxelCutoutScale = 0f,
+                PlaySound = true,
+                ApplyForceAndDamage = false,
+                ObjectsRemoveDelayInMiliseconds = 0
+            };
+            MyExplosions.AddExplosion(ref explosionInfo, true);
+        }
+
+        /*
         private static double PowerCalculation(IMyEntity breaching, IMyCubeGrid grid)
         {
             var bPhysics = breaching.Physics;
@@ -497,6 +535,7 @@ namespace DefenseShields.Support
 
             return powerCorrectionInJoules * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
         }
+        */
 
         private const string OB = @"<?xml version=""1.0"" encoding=""utf-16""?>
 <MyObjectBuilder_Cockpit xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"">
@@ -541,56 +580,6 @@ namespace DefenseShields.Support
             blk.FatBlock?.Close();
 
             return distributor;
-        }
-
-        public static void CreateExplosion(Vector3D position, float radius, int damage = 5000)
-        {
-            MyExplosionTypeEnum explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_50;
-            if ((double)radius < 2.0)
-                explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_02;
-            else if ((double)radius < 15.0)
-                explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_15;
-            else if ((double)radius < 30.0)
-                explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_30;
-            MyExplosionInfo explosionInfo = new MyExplosionInfo()
-            {
-                PlayerDamage = 0.0f,
-                Damage = (float)damage,
-                ExplosionType = explosionTypeEnum,
-                ExplosionSphere = new BoundingSphereD(position, (double)radius),
-                LifespanMiliseconds = 700,
-                ParticleScale = 1f,
-                Direction = new Vector3?(Vector3.Down),
-                VoxelExplosionCenter = position,
-                ExplosionFlags = MyExplosionFlags.CREATE_DEBRIS | MyExplosionFlags.AFFECT_VOXELS | MyExplosionFlags.APPLY_FORCE_AND_DAMAGE | MyExplosionFlags.CREATE_DECALS | MyExplosionFlags.CREATE_PARTICLE_EFFECT | MyExplosionFlags.CREATE_SHRAPNELS | MyExplosionFlags.APPLY_DEFORMATION,
-                VoxelCutoutScale = 1f,
-                PlaySound = true,
-                ApplyForceAndDamage = true,
-                ObjectsRemoveDelayInMiliseconds = 40
-            };
-            MyExplosions.AddExplosion(ref explosionInfo, true);
-        }
-
-        public static void CreateFakeSmallExplosion(Vector3D position)
-        {
-            const MyExplosionTypeEnum explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_02;
-            MyExplosionInfo explosionInfo = new MyExplosionInfo()
-            {
-                PlayerDamage = 0.0f,
-                Damage = 0f,
-                ExplosionType = explosionTypeEnum,
-                ExplosionSphere = new BoundingSphereD(position, 0d),
-                LifespanMiliseconds = 0,
-                ParticleScale = 1f,
-                Direction = Vector3.Down,
-                VoxelExplosionCenter = position,
-                ExplosionFlags = MyExplosionFlags.CREATE_PARTICLE_EFFECT,
-                VoxelCutoutScale = 0f,
-                PlaySound = true,
-                ApplyForceAndDamage = false,
-                ObjectsRemoveDelayInMiliseconds = 0
-            };
-            MyExplosions.AddExplosion(ref explosionInfo, true);
         }
     }
 }

@@ -1,13 +1,40 @@
-﻿using System.Collections.Generic;
-using Sandbox.Game.Entities;
-using VRage.Collections;
-using VRage.Game.Entity;
-using VRage.Game.ModAPI;
-using VRage.Utils;
-using VRageMath;
-
-namespace DefenseShields.Support
+﻿namespace DefenseShields.Support
 {
+    using System.Collections.Generic;
+    using VRage.Collections;
+    using VRage.Game.Entity;
+    using VRage.Game.ModAPI;
+    using VRage.Utils;
+    using VRageMath;
+
+    public struct ShieldHit
+    {
+        public readonly MyEntity Attacker;
+        public readonly float Amount;
+        public readonly MyStringHash DamageType;
+        public readonly Vector3D HitPos;
+
+        public ShieldHit(MyEntity attacker, float amount, MyStringHash damageType, Vector3D hitPos)
+        {
+
+            Attacker = attacker;
+            Amount = amount;
+            DamageType = damageType;
+            HitPos = hitPos;
+        }
+    }
+
+    public struct MoverInfo
+    {
+        public readonly Vector3D Pos;
+        public readonly uint CreationTick;
+        public MoverInfo(Vector3D pos, uint creationTick)
+        {
+            Pos = pos;
+            CreationTick = creationTick;
+        }
+    }
+
     public class AmmoInfo
     {
         public readonly bool Explosive;
@@ -46,24 +73,6 @@ namespace DefenseShields.Support
         }
     }
     */
-
-    public struct ShieldHit
-    {
-
-        public readonly MyEntity Attacker;
-        public readonly float Amount;
-        public readonly MyStringHash DamageType;
-        public readonly Vector3D HitPos;
-
-        public ShieldHit(MyEntity attacker, float amount, MyStringHash damageType, Vector3D hitPos)
-        {
-
-            Attacker = attacker;
-            Amount = amount;
-            DamageType = damageType;
-            HitPos = hitPos;
-        }
-    }
 
     public class ProtectCache
     {
@@ -143,17 +152,6 @@ namespace DefenseShields.Support
             RefreshSlot = 0;
             CreationTick = 0;
             IntegrityShield = null;
-        }
-    }
-
-    public struct MoverInfo
-    {
-        public readonly Vector3D Pos;
-        public readonly uint CreationTick;
-        public MoverInfo(Vector3D pos, uint creationTick)
-        {
-            Pos = pos;
-            CreationTick = creationTick;
         }
     }
 }

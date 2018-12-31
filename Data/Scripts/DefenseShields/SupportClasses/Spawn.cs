@@ -1,67 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Sandbox.ModAPI;
-using VRage;
-using VRage.Game;
-using VRage.Game.Entity;
-using VRage.ModAPI;
-using VRage.ObjectBuilders;
-using VRageMath;
-
-namespace DefenseShields.Support
+﻿namespace DefenseShields.Support
 {
-    #region Spawn
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+    using Sandbox.ModAPI;
+    using VRage;
+    using VRage.Game;
+    using VRage.Game.Entity;
+    using VRage.ModAPI;
+    using VRage.ObjectBuilders;
+    using VRageMath;
+
     internal class Spawn
     {
-        //Shell Entities
-        public static MyEntity EmptyEntity(string displayName, string model, MyEntity parent, bool parented = false)
-        {
-            try
-            {
-                var myParent = parented ? parent : null;
-                var ent = new MyEntity { NeedsWorldMatrix = true };
-
-                ent.Init(new StringBuilder(displayName), model, myParent, null, null);
-                ent.Name = $"{parent.EntityId}";
-                MyAPIGateway.Entities.AddEntity(ent);
-                return ent;
-            }
-            catch (Exception ex) { Log.Line($"Exception in EmptyEntity: {ex}"); return null; }
-        }
-
-        //Spawn Block
-        public static IMyEntity SpawnBlock(string subtypeId, string name, bool isVisible = false, bool hasPhysics = false, bool isStatic = false, bool toSave = false, bool destructible = false, long ownerId = 0)
-        {
-            try
-            {
-                CubeGridBuilder.Name = name;
-                CubeGridBuilder.CubeBlocks[0].SubtypeName = subtypeId;
-                CubeGridBuilder.CreatePhysics = hasPhysics;
-                CubeGridBuilder.IsStatic = isStatic;
-                CubeGridBuilder.DestructibleBlocks = destructible;
-                var ent = MyAPIGateway.Entities.CreateFromObjectBuilder(CubeGridBuilder);
-
-                ent.Flags &= ~EntityFlags.Save;
-                ent.Visible = isVisible;
-                MyAPIGateway.Entities.AddEntity(ent, true);
-
-                return ent;
-            }
-            catch (Exception ex)
-            {
-                Log.Line($"Exception in Spawn");
-                Log.Line($"{ex}");
-                return null;
-            }
-        }
-
         private static readonly SerializableBlockOrientation EntityOrientation = new SerializableBlockOrientation(Base6Directions.Direction.Forward, Base6Directions.Direction.Up);
 
-        //OBJECTBUILDERS
         private static readonly MyObjectBuilder_CubeGrid CubeGridBuilder = new MyObjectBuilder_CubeGrid()
         {
-
             EntityId = 0,
             GridSizeEnum = MyCubeSize.Large,
             IsStatic = true,
@@ -87,8 +42,8 @@ namespace DefenseShields.Support
                     {
                         EntityId = 0,
                         BlockOrientation = EntityOrientation,
-                        SubtypeName = "",
-                        Name = "",
+                        SubtypeName = string.Empty,
+                        Name = string.Empty,
                         Min = Vector3I.Zero,
                         Owner = 0,
                         ShareMode = MyOwnershipShareModeEnum.None,
@@ -96,6 +51,45 @@ namespace DefenseShields.Support
                     }
                 }
         };
+
+        public static MyEntity EmptyEntity(string displayName, string model, MyEntity parent, bool parented = false)
+        {
+            try
+            {
+                var myParent = parented ? parent : null;
+                var ent = new MyEntity { NeedsWorldMatrix = true };
+
+                ent.Init(new StringBuilder(displayName), model, myParent, null);
+                ent.Name = $"{parent.EntityId}";
+                MyAPIGateway.Entities.AddEntity(ent);
+                return ent;
+            }
+            catch (Exception ex) { Log.Line($"Exception in EmptyEntity: {ex}"); return null; }
+        }
+
+        public static IMyEntity SpawnBlock(string subtypeId, string name, bool isVisible = false, bool hasPhysics = false, bool isStatic = false, bool toSave = false, bool destructible = false, long ownerId = 0)
+        {
+            try
+            {
+                CubeGridBuilder.Name = name;
+                CubeGridBuilder.CubeBlocks[0].SubtypeName = subtypeId;
+                CubeGridBuilder.CreatePhysics = hasPhysics;
+                CubeGridBuilder.IsStatic = isStatic;
+                CubeGridBuilder.DestructibleBlocks = destructible;
+                var ent = MyAPIGateway.Entities.CreateFromObjectBuilder(CubeGridBuilder);
+
+                ent.Flags &= ~EntityFlags.Save;
+                ent.Visible = isVisible;
+                MyAPIGateway.Entities.AddEntity(ent);
+
+                return ent;
+            }
+            catch (Exception ex)
+            {
+                Log.Line("Exception in Spawn");
+                Log.Line($"{ex}");
+                return null;
+            }
+        }
     }
-    #endregion
 }

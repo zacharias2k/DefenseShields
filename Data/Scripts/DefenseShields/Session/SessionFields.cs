@@ -12,6 +12,8 @@
     using VRage.Game.ModAPI;
     using VRage.Utils;
 
+    using VRageMath;
+
     public partial class Session
     {
         internal const ushort PacketIdShieldHit = 62512;
@@ -111,6 +113,17 @@
             "DS-M_ModulateEmpProt_Toggle"
         };
 
+        internal readonly Color White1 = new Color(255, 255, 255);
+        internal readonly Color White2 = new Color(90, 118, 255);
+        internal readonly Color White3 = new Color(47, 86, 255);
+        internal readonly Color Blue1 = Color.Aquamarine;
+        internal readonly Color Blue2 = new Color(0, 66, 255);
+        internal readonly Color Blue3 = new Color(0, 7, 255, 255);
+        internal readonly Color Blue4 = new Color(22, 0, 170);
+        internal readonly Color Red1 = new Color(87, 0, 66);
+        internal readonly Color Red2 = new Color(121, 0, 13);
+        internal readonly Color Red3 = new Color(255, 0, 0);
+
         internal readonly MyStringId HudIconOffline = MyStringId.GetOrCompute("DS_ShieldOffline");
         internal readonly MyStringId HudIconHealth10 = MyStringId.GetOrCompute("DS_ShieldHealth10");
         internal readonly MyStringId HudIconHealth20 = MyStringId.GetOrCompute("DS_ShieldHealth20");
@@ -170,6 +183,14 @@
         private readonly List<KeyValuePair<MyEntity, uint>> _entRefreshTmpList = new List<KeyValuePair<MyEntity, uint>>();
         private readonly ConcurrentQueue<MyEntity> _entRefreshQueue = new ConcurrentQueue<MyEntity>();
         private readonly ConcurrentDictionary<MyEntity, uint> _globalEntTmp = new ConcurrentDictionary<MyEntity, uint>();
+
+        private DsAutoResetEvent _autoResetEvent = new DsAutoResetEvent();
+
+        private double _syncDistSqr;
+
+        private int _count = -1;
+        private int _lCount;
+        private int _eCount;
 
         private volatile bool _newFrame;
 
@@ -256,13 +277,5 @@
 
         internal IMyTerminalControlCheckbox PsSendToHudCheckBox { get; set; }
         internal IMyTerminalControlOnOffSwitch PsToggleShield { get; set; }
-
-        private DsAutoResetEvent _autoResetEvent { get; set; } = new DsAutoResetEvent();
-
-        private double _syncDistSqr { get; set; }
-
-        private int _count { get; set; } = -1;
-        private int _lCount { get; set; }
-        private int _eCount { get; set; }
     }
 }

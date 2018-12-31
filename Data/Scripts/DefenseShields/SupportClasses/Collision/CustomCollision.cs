@@ -1,28 +1,30 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using Sandbox.Game.Entities;
-using Sandbox.ModAPI;
-using VRage.Game;
-using VRage.Game.Components;
-using VRage.Game.Entity;
-using VRage.Game.ModAPI;
-using VRageMath;
-using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
-
-namespace DefenseShields.Support
+﻿namespace DefenseShields.Support
 {
+    using System;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using Sandbox.Game.Entities;
+    using Sandbox.ModAPI;
+    using VRage.Game;
+    using VRage.Game.Components;
+    using VRage.Game.Entity;
+    using VRage.Game.ModAPI;
+    using VRageMath;
+    using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
+
     internal class CustomCollision
     {
         private static readonly Vector3D[] GridCorners = new Vector3D[8];
         private static readonly Vector3D[] GridPoints = new Vector3D[9];
 
+        private static BoundingSphereD _normSphere = new BoundingSphereD(Vector3.Zero, 1f);
+        private static RayD _kRay = new RayD(Vector3D.Zero, Vector3D.Forward);
+
         public static Vector3D? MissileIntersect(DefenseShields ds, MyEntity missile, MatrixD detectMatrix, MatrixD detectMatrixInv)
         {
             var missileVel = missile.Physics.LinearVelocity;
             var missileCenter = missile.PositionComp.WorldVolume.Center;
-            const float gameSteps = MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 2;
-            var velStepSize = missileVel * gameSteps;
+            var velStepSize = missileVel * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 2;
             var futureCenter = missileCenter + velStepSize;
             var testDir = Vector3D.Normalize(missileCenter - futureCenter);
             var ellipsoid = IntersectEllipsoid(ds.DetectMatrixOutsideInv, ds.DetectionMatrix, new RayD(futureCenter, -testDir));
@@ -62,12 +64,10 @@ namespace DefenseShields.Support
         {
             var missileVel = missile.Physics.LinearVelocity;
             var missileCenter = missile.PositionComp.WorldVolume.Center;
-            var leaving = Vector3D.Transform(missileCenter + -missileVel * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 2, detectMatrixInv).LengthSquared() <= 1;
+            var leaving = Vector3D.Transform(missileCenter + (-missileVel * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 2), detectMatrixInv).LengthSquared() <= 1;
             return leaving;
         }
 
-        private static BoundingSphereD _normSphere = new BoundingSphereD(Vector3.Zero, 1f);
-        private static RayD _kRay = new RayD(Vector3D.Zero, Vector3D.Forward);
         public static float? IntersectEllipsoid(MatrixD ellipsoidMatrixInv, MatrixD ellipsoidMatrix, RayD ray)
         {
             var krayPos = Vector3D.Transform(ray.Position, ellipsoidMatrixInv);
@@ -78,37 +78,35 @@ namespace DefenseShields.Support
             var nullDist = _normSphere.Intersects(_kRay);
             if (!nullDist.HasValue) return null;
 
-            var hitPos = krayPos + krayDir * -nullDist.Value;
+            var hitPos = krayPos + (krayDir * -nullDist.Value);
             var worldHitPos = Vector3D.Transform(hitPos, ellipsoidMatrix);
             return Vector3.Distance(worldHitPos, ray.Position);
         }
 
         public static bool RayIntersectsTriangle(Vector3D rayOrigin, Vector3D rayVector, Vector3D v0, Vector3D v1, Vector3D v2, Vector3D outIntersectionPoint)
         {
-            const double epsilon = 0.0000001;
+            const double Epsilon = 0.0000001;
             var edge1 = v1 - v0;
             var edge2 = v2 - v0;
             var h = rayVector.Cross(edge2);
             var a = edge1.Dot(h);
-            if (a > -epsilon && a < epsilon) return false;
+            if (a > -Epsilon && a < Epsilon) return false;
 
             var f = 1 / a;
             var s = rayOrigin - v0;
-            var u = f * (s.Dot(h));
+            var u = f * s.Dot(h);
             if (u < 0.0 || u > 1.0) return false;
 
             var q = s.Cross(edge1);
             var v = f * rayVector.Dot(q);
             if (v < 0.0 || u + v > 1.0) return false;
             
-            // At this stage we can compute t to find out where the intersection point is on the line.
             var t = f * edge2.Dot(q);
-            if (t > epsilon) // ray intersection
+            if (t > Epsilon) 
             {
-                outIntersectionPoint = rayOrigin + rayVector * t;
+                // outIntersectionPoint = rayOrigin + rayVector * t;
                 return true;
             }
-            // This means that there is a line intersection but not a ray intersection.
             return false;
         }
 
@@ -130,7 +128,6 @@ namespace DefenseShields.Support
             var sVelSqr = sVel.LengthSquared();
             var sAvelSqr = shieldGrid.Physics.AngularVelocity.LengthSquared();
             var voxelSphere = voxelBase.PositionComp.WorldVolume;
-            //var obbSphere = new BoundingSphereD(bOriBBoxD.Center, bOriBBoxD.HalfExtent.Max());
             var lerpedVerts = new Vector3D[642];
             var shieldGridMass = shieldGrid.Physics.Mass;
             for (int i = 0; i < 642; i++)
@@ -140,21 +137,17 @@ namespace DefenseShields.Support
             }
 
             var voxelHitVecs = new List<Vector3D>();
-            const int filter = CollisionLayers.VoxelCollisionLayer;
-            if ((sVelSqr > 0.00001 || sAvelSqr > 0.00001)) //&& voxelMap.GetIntersectionWithSphere(ref obbSphere))
+            if (sVelSqr > 0.00001 || sAvelSqr > 0.00001) 
             {
                 var obbSphereTest = bOriBBoxD.Intersects(ref voxelSphere);
                 if (!obbSphereTest) return;
                 for (int i = 0; i < 642; i++)
                 {
-                    IHitInfo hit = null;
+                    IHitInfo hit;
                     var from = physicsVerts[i];
                     var to = lerpedVerts[i];
-                    //var dir = to - from;
-                    //if (sAvelSqr < 1e-4f && Vector3D.Dot(dir, sVel) < 0) continue;
-                    MyAPIGateway.Physics.CastRay(from, to, out hit, filter);
+                    MyAPIGateway.Physics.CastRay(from, to, out hit, CollisionLayers.VoxelCollisionLayer);
                     if (hit?.HitEntity is MyVoxelBase) voxelHitVecs.Add(hit.Position);
-                    //DsDebugDraw.DrawLineToVec(from, to, Color.Black);
                 }
             }
             for (int i = 0; i < voxelHitVecs.Count; i++) shieldGrid.Physics.ApplyImpulse((bOriBBoxD.Center - voxelHitVecs[i]) * shieldGridMass / 100, voxelHitVecs[i]);
@@ -169,10 +162,9 @@ namespace DefenseShields.Support
 
                 var getBlocks = new List<IMySlimBlock>();
                 (grid as IMyCubeGrid).GetBlocks(getBlocks);
-                Vector3D[] blockPoints = new Vector3D[9];
+                var blockPoints = new Vector3D[9];
                 var collisionAvg = Vector3D.Zero;
                 var c3 = 0;
-                var damage = 0f;
                 for (int i = 0; i < getBlocks.Count; i++)
                 {
                     var block = getBlocks[i];
@@ -210,7 +202,7 @@ namespace DefenseShields.Support
                     var gridLinearVel = grid.Physics.LinearVelocity;
                     var gridLinearLen = gridLinearVel.Length();
 
-                    var forceData = new MyAddForceData { MyGrid = grid, Force = (grid.PositionComp.WorldAABB.Center - matrix.Translation) * (mass * gridLinearLen), MaxSpeed = MathHelper.Clamp(gridLinearLen, 10, gridLinearLen * 0.5f)};
+                    var forceData = new MyAddForceData { MyGrid = grid, Force = (grid.PositionComp.WorldAABB.Center - matrix.Translation) * (mass * gridLinearLen), MaxSpeed = MathHelper.Clamp(gridLinearLen, 10, gridLinearLen * 0.5f) };
                     var impulseData = new MyImpulseData { MyGrid = grid, Direction = mass * 0.015 * -Vector3D.Dot(gridLinearVel, surfaceNormal) * surfaceNormal, Position = collisionAvg };
                     force.Enqueue(forceData);
                     impulse.Enqueue(impulseData);
@@ -272,7 +264,6 @@ namespace DefenseShields.Support
             return Vector3D.Transform(entCenter, matrixInv).LengthSquared() <= 1;
         }
 
-
         public static bool VoxelContact(Vector3D[] physicsVerts, MyVoxelBase voxelBase)
         {
             try
@@ -308,9 +299,9 @@ namespace DefenseShields.Support
         public static Vector3D VoxelCollisionSphere(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, MyVoxelBase voxelBase, MyOrientedBoundingBoxD sOriBBoxD, MatrixD detectMatrix)
         {
             var collisionAvg = Vector3D.Zero;
-
             try
             {
+
                 var sVel = shieldGrid.Physics.LinearVelocity;
                 var sVelSqr = sVel.LengthSquared();
                 var sAvelSqr = shieldGrid.Physics.AngularVelocity.LengthSquared();
@@ -350,7 +341,7 @@ namespace DefenseShields.Support
                 var aSpeed = sPhysics.AngularVelocity.Length() * 20;
                 var speed = 0f;
                 speed = lSpeed > aSpeed ? lSpeed : aSpeed;
-                Vector3D collisionAdd = Vector3D.Zero;
+                var collisionAdd = Vector3D.Zero;
                 for (int i = 0; i < voxelHitVecs.Count; i++)
                 {
                     var point = voxelHitVecs[i];
@@ -381,7 +372,6 @@ namespace DefenseShields.Support
 
         public static int CornerOrCenterInShield(MyEntity ent, MatrixD matrixInv, Vector3D[] corners, bool firstMatch = false)
         {
-
             var c = 0;
             if (Vector3D.Transform(ent.PositionComp.WorldAABB.Center, matrixInv).LengthSquared() <= 1) c++;
             if (firstMatch && c > 0) return c;
@@ -533,7 +523,7 @@ namespace DefenseShields.Support
 
         public static void IntersectSmallBox(int[] closestFace, Vector3D[] physicsVerts, BoundingBoxD bWorldAabb, List<Vector3D> intersections)
         {
-            for (int i = 0, j = 0; i < closestFace.Length; i += 3, j++)
+            for (int i = 0; i < closestFace.Length; i += 3)
             {
                 var v0 = physicsVerts[closestFace[i]];
                 var v1 = physicsVerts[closestFace[i + 1]];
@@ -551,12 +541,11 @@ namespace DefenseShields.Support
             var minValue1 = double.MaxValue;
             var closestVert = Vector3D.NegativeInfinity;
 
-
             for (int p = 0; p < physicsVerts.Length; p++)
             {
                 var vert = physicsVerts[p];
                 var range = vert - pos;
-                var test = (range.X * range.X + range.Y * range.Y + range.Z * range.Z);
+                var test = (range.X * range.X) + (range.Y * range.Y) + (range.Z * range.Z);
                 if (test < minValue1)
                 {
                     minValue1 = test;
@@ -571,12 +560,11 @@ namespace DefenseShields.Support
             var minValue1 = double.MaxValue;
             var closestVertNum = int.MaxValue;
 
-
             for (int p = 0; p < physicsVerts.Length; p++)
             {
                 var vert = physicsVerts[p];
                 var range = vert - pos;
-                var test = (range.X * range.X + range.Y * range.Y + range.Z * range.Z);
+                var test = (range.X * range.X) + (range.Y * range.Y) + (range.Z * range.Z);
                 if (test < minValue1)
                 {
                     minValue1 = test;
@@ -590,8 +578,6 @@ namespace DefenseShields.Support
         {
             var triDist1 = double.MaxValue;
             var triNum = 0;
-            //var ttri = new Triangle3d(Vector3D.Zero, Vector3D.Zero, Vector3D.Zero);
-            //var odistTri = new DistPoint3Triangle3(pos, ttri);
 
             for (int i = 0; i < physicsOutside.Length; i += 3)
             {
@@ -609,7 +595,6 @@ namespace DefenseShields.Support
                     triNum = i;
                 }
             }
-            //Log.Line($"tri: {triNum}");
             return triNum;
         }
     }

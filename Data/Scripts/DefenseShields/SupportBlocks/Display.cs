@@ -1,26 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using DefenseShields.Support;
-using Sandbox.Common.ObjectBuilders;
-using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces.Terminal;
-using VRage.Game.Components;
-using VRage.ModAPI;
-using VRage.ObjectBuilders;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using global::DefenseShields.Support;
+    using Sandbox.Common.ObjectBuilders;
+    using Sandbox.ModAPI;
+    using Sandbox.ModAPI.Interfaces.Terminal;
+    using VRage.Game.Components;
+    using VRage.ModAPI;
+    using VRage.ObjectBuilders;
+
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_TextPanel), false, "DSControlLCD")]
     public class Displays : MyGameLogicComponent
     {
         private int _count = -1;
+        private ShieldGridComponent _shieldComp;
 
-        public bool ServerUpdate;
-        private bool _isServer = Session.Instance.IsServer;
-        internal ShieldGridComponent ShieldComp;
         private IMyTextPanel Display => (IMyTextPanel)Entity;
-        internal DSUtils Dsutil1 = new DSUtils();
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
@@ -50,17 +47,17 @@ namespace DefenseShields
             if (_count++ == 9) _count = 0;
             if (_count != 9) return;
 
-            if (ShieldComp?.DefenseShields?.MyGrid != Display.CubeGrid)
+            if (_shieldComp?.DefenseShields?.MyGrid != Display.CubeGrid)
             {
-                Display.CubeGrid.Components.TryGet(out ShieldComp);
+                Display.CubeGrid.Components.TryGet(out _shieldComp);
             }
-            if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.DefenseShields.Warming || !ShieldComp.DefenseShields.IsWorking)
+            if (_shieldComp?.DefenseShields?.Shield == null || !_shieldComp.DefenseShields.Warming || !_shieldComp.DefenseShields.IsWorking)
             {
                 if (Display.ShowText) Display.SetShowOnScreen(0);
                 return;
             }
-            ShieldComp.DefenseShields.Shield.RefreshCustomInfo();
-            Display.WritePublicText(ShieldComp.DefenseShields.Shield.CustomInfo);
+            _shieldComp.DefenseShields.Shield.RefreshCustomInfo();
+            Display.WritePublicText(_shieldComp.DefenseShields.Shield.CustomInfo);
             if (!Display.ShowText) Display.ShowPublicTextOnScreen();
         }
 
@@ -77,7 +74,11 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
 
-        public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
+        public override void OnBeforeRemovedFromContainer()
+        {
+            if (Entity.InScene) OnRemovedFromScene();
+        }
+
         public override void Close()
         {
             try
@@ -96,7 +97,11 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
             base.MarkForClose();
         }
-        public override void OnAddedToContainer() { if (Entity.InScene) OnAddedToScene(); }
+
+        public override void OnAddedToContainer()
+        {
+            if (Entity.InScene) OnAddedToScene();
+        }
 
         private static bool HideControls(IMyTerminalBlock block)
         {
@@ -105,43 +110,43 @@ namespace DefenseShields
 
         public static void RemoveControls()
         {
-            var actions = new List<IMyTerminalAction>();
+            List<IMyTerminalAction> actions;
             MyAPIGateway.TerminalControls.GetActions<Sandbox.ModAPI.Ingame.IMyTextPanel>(out actions);
 
-            var IncreaseFontSize = actions.First((x) => x.Id.ToString() == "IncreaseFontSize");
-            IncreaseFontSize.Enabled = HideControls;
-            var DecreaseFontSize = actions.First((x) => x.Id.ToString() == "DecreaseFontSize");
-            DecreaseFontSize.Enabled = HideControls;
-            var IncreaseChangeIntervalSlider = actions.First((x) => x.Id.ToString() == "IncreaseChangeIntervalSlider");
-            IncreaseChangeIntervalSlider.Enabled = HideControls;
-            var DecreaseChangeIntervalSlider = actions.First((x) => x.Id.ToString() == "DecreaseChangeIntervalSlider");
-            DecreaseChangeIntervalSlider.Enabled = HideControls;
+            var increaseFontSize = actions.First((x) => x.Id.ToString() == "IncreaseFontSize");
+            increaseFontSize.Enabled = HideControls;
+            var decreaseFontSize = actions.First((x) => x.Id.ToString() == "DecreaseFontSize");
+            decreaseFontSize.Enabled = HideControls;
+            var increaseChangeIntervalSlider = actions.First((x) => x.Id.ToString() == "IncreaseChangeIntervalSlider");
+            increaseChangeIntervalSlider.Enabled = HideControls;
+            var decreaseChangeIntervalSlider = actions.First((x) => x.Id.ToString() == "DecreaseChangeIntervalSlider");
+            decreaseChangeIntervalSlider.Enabled = HideControls;
 
-            var controls = new List<IMyTerminalControl>();
+            List<IMyTerminalControl> controls;
             MyAPIGateway.TerminalControls.GetControls<Sandbox.ModAPI.Ingame.IMyTextPanel>(out controls);
 
-            var CustomData = controls.First((x) => x.Id.ToString() == "CustomData");
-            CustomData.Visible = HideControls;
-            var Title = controls.First((x) => x.Id.ToString() == "Title");
-            Title.Visible = HideControls;
-            var ShowTextPanel = controls.First((x) => x.Id.ToString() == "ShowTextPanel");
-            ShowTextPanel.Visible = HideControls;
-            var ShowTextOnScreen = controls.First((x) => x.Id.ToString() == "ShowTextOnScreen");
-            ShowTextOnScreen.Visible = HideControls;
-            var FontSize = controls.First((x) => x.Id.ToString() == "FontSize");
-            FontSize.Visible = HideControls;
-            var BackgroundColor = controls.First((x) => x.Id.ToString() == "BackgroundColor");
-            BackgroundColor.Visible = HideControls;
-            var ImageList = controls.First((x) => x.Id.ToString() == "ImageList");
-            ImageList.Visible = HideControls;
-            var SelectTextures = controls.First((x) => x.Id.ToString() == "SelectTextures");
-            SelectTextures.Visible = HideControls;
-            var ChangeIntervalSlider = controls.First((x) => x.Id.ToString() == "ChangeIntervalSlider");
-            ChangeIntervalSlider.Visible = HideControls;
-            var SelectedImageList = controls.First((x) => x.Id.ToString() == "SelectedImageList");
-            SelectedImageList.Visible = HideControls;
-            var RemoveSelectedTextures = controls.First((x) => x.Id.ToString() == "RemoveSelectedTextures");
-            RemoveSelectedTextures.Visible = HideControls;
+            var customData = controls.First((x) => x.Id.ToString() == "CustomData");
+            customData.Visible = HideControls;
+            var title = controls.First((x) => x.Id.ToString() == "Title");
+            title.Visible = HideControls;
+            var showTextPanel = controls.First((x) => x.Id.ToString() == "ShowTextPanel");
+            showTextPanel.Visible = HideControls;
+            var showTextOnScreen = controls.First((x) => x.Id.ToString() == "ShowTextOnScreen");
+            showTextOnScreen.Visible = HideControls;
+            var fontSize = controls.First((x) => x.Id.ToString() == "FontSize");
+            fontSize.Visible = HideControls;
+            var backgroundColor = controls.First((x) => x.Id.ToString() == "BackgroundColor");
+            backgroundColor.Visible = HideControls;
+            var imageList = controls.First((x) => x.Id.ToString() == "ImageList");
+            imageList.Visible = HideControls;
+            var selectTextures = controls.First((x) => x.Id.ToString() == "SelectTextures");
+            selectTextures.Visible = HideControls;
+            var changeIntervalSlider = controls.First((x) => x.Id.ToString() == "ChangeIntervalSlider");
+            changeIntervalSlider.Visible = HideControls;
+            var selectedImageList = controls.First((x) => x.Id.ToString() == "SelectedImageList");
+            selectedImageList.Visible = HideControls;
+            var removeSelectedTextures = controls.First((x) => x.Id.ToString() == "RemoveSelectedTextures");
+            removeSelectedTextures.Visible = HideControls;
         }
     }
 }

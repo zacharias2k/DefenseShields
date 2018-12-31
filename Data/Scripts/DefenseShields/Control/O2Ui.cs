@@ -1,7 +1,7 @@
-﻿using Sandbox.ModAPI;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using Sandbox.ModAPI;
+
     internal static class O2Ui
     {
         #region Create UI
@@ -19,13 +19,13 @@ namespace DefenseShields
             return valid;
         }
 
-        public static bool FixStatus(IMyTerminalBlock block)
+        internal static bool FixStatus(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<O2Generators>();
             return comp != null && comp.O2Set.Settings.FixRoomPressure;
         }
 
-        public static void FixRooms(IMyTerminalBlock block, bool newValue)
+        internal static void FixRooms(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<O2Generators>();
             if (comp == null || !comp.AirPressure)

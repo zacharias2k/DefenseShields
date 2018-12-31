@@ -1,37 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using DefenseShields.Support;
-using Sandbox.Common.ObjectBuilders;
-using Sandbox.Game.Entities;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI;
-using Sandbox.ModAPI.Ingame;
-using Sandbox.ModAPI.Interfaces.Terminal;
-using VRage.Game.Components;
-using VRage.Game.ModAPI;
-using VRage.ModAPI;
-using VRage.ObjectBuilders;
-using VRageMath;
-using IMyDoor = Sandbox.ModAPI.IMyDoor;
-using IMyGasGenerator = Sandbox.ModAPI.IMyGasGenerator;
-using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using global::DefenseShields.Support;
+    using Sandbox.Common.ObjectBuilders;
+    using Sandbox.Game.Entities;
+    using Sandbox.Game.EntityComponents;
+    using Sandbox.ModAPI;
+    using Sandbox.ModAPI.Ingame;
+    using Sandbox.ModAPI.Interfaces.Terminal;
+    using VRage.Game.Components;
+    using VRage.Game.ModAPI;
+    using VRage.ModAPI;
+    using VRage.ObjectBuilders;
+    using VRageMath;
+    using IMyDoor = Sandbox.ModAPI.IMyDoor;
+    using IMyGasGenerator = Sandbox.ModAPI.IMyGasGenerator;
+    using IMyTerminalBlock = Sandbox.ModAPI.IMyTerminalBlock;
+
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OxygenGenerator), false, "DSSupergen")]
     public class O2Generators : MyGameLogicComponent
     {
+        internal ShieldGridComponent ShieldComp;
+
+        internal readonly Dictionary<IMyDoor, DoorStatus> Doors = new Dictionary<IMyDoor, DoorStatus>();
+
         private int _airIPercent = -1;
         private int _count = -1;
         private int _lCount = -1;
-        internal int RotationTime;
-        internal int AnimationLoop;
-        internal int TranslationTime;
+
         private double _shieldVolFilled;
         private double _oldShieldVol;
-        internal float EmissiveIntensity;
 
         private bool _isServer;
         private bool _isDedicated;
@@ -40,31 +41,32 @@ namespace DefenseShields
         private bool _doorsStage3;
         private bool _doorsStage4;
 
-        internal bool SettingsUpdated;
-        internal bool ClientUiUpdate;
-        internal bool IsFunctional;
-        internal bool IsWorking;
-        internal bool AllInited;
-        internal bool Suspended;
-        internal bool IsStatic;
-        internal bool BlockIsWorking;
-        internal bool BlockWasWorking;
-        internal bool ContainerInited;
-        internal bool AirPressure;
-
-        internal ShieldGridComponent ShieldComp;
-        internal MyResourceSourceComponent Source;
-        internal O2GeneratorState O2State;
-        internal O2GeneratorSettings O2Set;
-
-        internal readonly Dictionary<IMyDoor, DoorStatus> Doors = new Dictionary<IMyDoor, DoorStatus>();
-        internal DSUtils Dsutil1 = new DSUtils();
-
-        public IMyGasGenerator O2Generator;
-        internal MyCubeGrid MyGrid;
-        internal MyCubeBlock MyCube;
         private IMyInventory _inventory;
 
+        internal int RotationTime { get; set; }
+        internal int AnimationLoop { get; set; }
+        internal int TranslationTime { get; set; }
+        internal float EmissiveIntensity { get; set; }
+
+        internal bool SettingsUpdated { get; set; }
+        internal bool ClientUiUpdate { get; set; }
+        internal bool IsFunctional { get; set; }
+        internal bool IsWorking { get; set; }
+        internal bool AllInited { get; set; }
+        internal bool Suspended { get; set; }
+        internal bool IsStatic { get; set; }
+        internal bool BlockIsWorking { get; set; }
+        internal bool BlockWasWorking { get; set; }
+        internal bool ContainerInited { get; set; }
+        internal bool AirPressure { get; set; }
+
+        internal MyResourceSourceComponent Source { get; set; }
+        internal O2GeneratorState O2State { get; set; }
+        internal O2GeneratorSettings O2Set { get; set; }
+
+        internal IMyGasGenerator O2Generator { get; set; }
+        internal MyCubeGrid MyGrid { get; set; }
+        internal MyCubeBlock MyCube { get; set; }
 
         public override void OnAddedToContainer()
         {
@@ -77,7 +79,6 @@ namespace DefenseShields
             }
             if (Entity.InScene) OnAddedToScene();
         }
-
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
@@ -151,6 +152,114 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
 
+        public override bool IsSerialized()
+        {
+            if (MyAPIGateway.Multiplayer.IsServer)
+            {
+                if (O2Generator.Storage != null)
+                {
+                    O2State.SaveState();
+                    O2Set.SaveSettings();
+                }
+            }
+            return false;
+        }
+
+        public override void OnRemovedFromScene()
+        {
+            try
+            {
+                if (!Entity.MarkedForClose)
+                {
+                    return;
+                }
+                if (Session.Instance.O2Generators.Contains(this)) Session.Instance.O2Generators.Remove(this);
+                RegisterEvents(false);
+                IsWorking = false;
+                IsFunctional = false;
+            }
+            catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
+        }
+
+        public override void OnBeforeRemovedFromContainer()
+        {
+            if (Entity.InScene) OnRemovedFromScene();
+        }
+
+        public override void Close()
+        {
+            base.Close();
+            try
+            {
+                if (Session.Instance.O2Generators.Contains(this)) Session.Instance.O2Generators.Remove(this);
+            }
+            catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
+        }
+
+        public override void MarkForClose()
+        {
+            try
+            {
+            }
+            catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
+            base.MarkForClose();
+        }
+
+        internal static void RemoveControls()
+        {
+            List<IMyTerminalAction> actions;
+            MyAPIGateway.TerminalControls.GetActions<IMyGasGenerator>(out actions);
+            var aRefill = actions.First((x) => x.Id.ToString() == "Refill");
+            aRefill.Enabled = block => false;
+            var aAutoRefill = actions.First((x) => x.Id.ToString() == "Auto-Refill");
+            aAutoRefill.Enabled = block => false;
+
+            List<IMyTerminalControl> controls;
+            MyAPIGateway.TerminalControls.GetControls<IMyGasGenerator>(out controls);
+            var cRefill = controls.First((x) => x.Id.ToString() == "Refill");
+            cRefill.Enabled = block => false;
+            cRefill.Visible = block => false;
+            cRefill.RedrawControl();
+
+            var cAutoRefill = controls.First((x) => x.Id.ToString() == "Auto-Refill");
+            cAutoRefill.Enabled = block => false;
+            cAutoRefill.Visible = block => false;
+            cAutoRefill.RedrawControl();
+
+            var cCustomData = controls.First((x) => x.Id.ToString() == "CustomData");
+            cCustomData.Enabled = block => false;
+            cCustomData.Visible = block => false;
+            cCustomData.RedrawControl();
+        }
+
+        internal void RestartDoorFix()
+        {
+            if (Session.Enforced.Debug == 1) Log.Line($"RestartDoorFix - O2GeneratorId[{O2Generator.EntityId}]");
+            if (!_doorsStage3 || !_doorsStage2 || !_doorsStage3 || !_doorsStage4)
+            {
+                if (Session.Enforced.Debug == 3) Log.Line($"RestartDoorFix already running:{!_doorsStage1} - {!_doorsStage2} - {!_doorsStage3} - {!_doorsStage4}! - O2GeneratorId[{O2Generator.EntityId}]");
+                return;
+            }
+            _doorsStage1 = false;
+            _doorsStage2 = false;
+            _doorsStage3 = false;
+            _doorsStage4 = false;
+        }
+
+        internal void UpdateState(ProtoO2GeneratorState newState)
+        {
+            O2State.State = newState;
+            if (!_isDedicated) UpdateVisuals();
+            if (Session.Enforced.Debug == 3) Log.Line($"UpdateState - O2GenId [{O2Generator.EntityId}]:\n{newState}");
+        }
+
+        internal void UpdateSettings(ProtoO2GeneratorSettings newSettings)
+        {
+            if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings for O2Generator - Fix:{newSettings.FixRoomPressure} - O2GenId [{O2Generator.EntityId}]");
+            SettingsUpdated = true;
+            O2Set.Settings = newSettings;
+        }
+
         private void SettingsUpdate()
         {
             if (_count == 3)
@@ -176,20 +285,6 @@ namespace DefenseShields
                     if (O2Set.Settings.FixRoomPressure) RestartDoorFix();
                 }
             }
-        }
-
-        public void RestartDoorFix()
-        {
-            if (Session.Enforced.Debug == 1) Log.Line($"RestartDoorFix - O2GeneratorId[{O2Generator.EntityId}]");
-            if (!_doorsStage3 || !_doorsStage2 || !_doorsStage3 || !_doorsStage4)
-            {
-                if (Session.Enforced.Debug == 3) Log.Line($"RestartDoorFix already running:{!_doorsStage1} - {!_doorsStage2} - {!_doorsStage3} - {!_doorsStage4}! - O2GeneratorId[{O2Generator.EntityId}]");
-                return;
-            }
-            _doorsStage1 = false;
-            _doorsStage2 = false;
-            _doorsStage3 = false;
-            _doorsStage4 = false;
         }
 
         private void SendFixBroadcast()
@@ -221,7 +316,7 @@ namespace DefenseShields
                 _doorsStage3 = true;
                 _doorsStage4 = true;
                 O2Set.Settings.FixRoomPressure = false;
-                if (Session.Enforced.Debug == 1) Log.Line($"AirPressure is disabled");
+                if (Session.Enforced.Debug == 1) Log.Line("AirPressure is disabled");
                 return;
             }
             if (!_doorsStage1)
@@ -337,7 +432,7 @@ namespace DefenseShields
             if (_shieldVolFilled > shieldFullVol) _shieldVolFilled = shieldFullVol;
 
             var shieldVolPercentFull = _shieldVolFilled * 100.0;
-            var fPercentToAddToDefaultO2Level = shieldVolPercentFull / shieldFullVol * 0.01 - sc.DefaultO2;
+            var fPercentToAddToDefaultO2Level = (shieldVolPercentFull / shieldFullVol * 0.01) - sc.DefaultO2;
 
             sc.DefenseShields.DsState.State.IncreaseO2ByFPercent = fPercentToAddToDefaultO2Level;
             sc.O2Updated = true;
@@ -374,7 +469,6 @@ namespace DefenseShields
                     if (ShieldComp.ActiveO2Generator == null) ShieldComp.ActiveO2Generator = this;
                 }
 
-
                 Source.Enabled = false;
                 O2Generator.AutoRefill = false;
                 RemoveControls();
@@ -392,7 +486,7 @@ namespace DefenseShields
             if (ShieldComp?.DefenseShields?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
             if (_isServer)
             {
-                if (!AllInited && !InitO2Generator() || !BlockWorking()) return false;
+                if ((!AllInited && !InitO2Generator()) || !BlockWorking()) return false;
             }
             else
             {
@@ -546,20 +640,6 @@ namespace DefenseShields
             }
         }
 
-        public void UpdateState(ProtoO2GeneratorState newState)
-        {
-            O2State.State = newState;
-            if (!_isDedicated) UpdateVisuals();
-            if (Session.Enforced.Debug == 3) Log.Line($"UpdateState - O2GenId [{O2Generator.EntityId}]:\n{newState}");
-        }
-
-        public void UpdateSettings(ProtoO2GeneratorSettings newSettings)
-        {
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings for O2Generator - Fix:{newSettings.FixRoomPressure} - O2GenId [{O2Generator.EntityId}]");
-            SettingsUpdated = true;
-            O2Set.Settings = newSettings;
-        }
-
         private void StorageSetup()
         {
             if (O2Set == null) O2Set = new O2GeneratorSettings(O2Generator);
@@ -570,36 +650,6 @@ namespace DefenseShields
             O2State.LoadState();
             if (MyAPIGateway.Multiplayer.IsServer) O2Set.Settings.FixRoomPressure = false;
         }
-
-        public override bool IsSerialized()
-        {
-            if (MyAPIGateway.Multiplayer.IsServer)
-            {
-                if (O2Generator.Storage != null)
-                {
-                    O2State.SaveState();
-                    O2Set.SaveSettings();
-                }
-            }
-            return false;
-        }
-
-        public override void OnRemovedFromScene()
-        {
-            try
-            {
-                if (!Entity.MarkedForClose)
-                {
-                    return;
-                }
-                if (Session.Instance.O2Generators.Contains(this)) Session.Instance.O2Generators.Remove(this);
-                RegisterEvents(false);
-                IsWorking = false;
-                IsFunctional = false;
-            }
-            catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
-        }
-
 
         private void RegisterEvents(bool register = true)
         {
@@ -621,58 +671,10 @@ namespace DefenseShields
             IsWorking = myCubeBlock.IsWorking;
         }
 
-        public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
-        public override void Close()
-        {
-            base.Close();
-            try
-            {
-                if (Session.Instance.O2Generators.Contains(this)) Session.Instance.O2Generators.Remove(this);
-            }
-            catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
-        }
-
-        public override void MarkForClose()
-        {
-            try
-            {
-            }
-            catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
-            base.MarkForClose();
-        }
-
-        #region Create UI
         private void CreateUi()
         {
             O2Ui.CreateUi(O2Generator);
         }
-        #endregion
 
-        public static void RemoveControls()
-        {
-            var actions = new List<IMyTerminalAction>();
-            MyAPIGateway.TerminalControls.GetActions<IMyGasGenerator>(out actions);
-            var aRefill = actions.First((x) => x.Id.ToString() == "Refill");
-            aRefill.Enabled = block => false;
-            var aAutoRefill = actions.First((x) => x.Id.ToString() == "Auto-Refill");
-            aAutoRefill.Enabled = block => false;
-
-            var controls = new List<IMyTerminalControl>();
-            MyAPIGateway.TerminalControls.GetControls<IMyGasGenerator>(out controls);
-            var cRefill = controls.First((x) => x.Id.ToString() == "Refill");
-            cRefill.Enabled = block => false;
-            cRefill.Visible = block => false;
-            cRefill.RedrawControl();
-
-            var cAutoRefill = controls.First((x) => x.Id.ToString() == "Auto-Refill");
-            cAutoRefill.Enabled = block => false;
-            cAutoRefill.Visible = block => false;
-            cAutoRefill.RedrawControl();
-
-            var cCustomData = controls.First((x) => x.Id.ToString() == "CustomData");
-            cCustomData.Enabled = block => false;
-            cCustomData.Visible = block => false;
-            cCustomData.RedrawControl();
-        }
     }
 }

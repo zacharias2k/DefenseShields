@@ -211,7 +211,6 @@
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldEvents.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldStates.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Config\API\dsApi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Enforcements.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\ModulatorData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\ModUi.cs" />
@@ -228,8 +227,6 @@
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\Segment.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\Sphere.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\DsAutoResetEvent.cs" />
-    <Compile Include="HoldingArea\HyperSession.cs" />
-    <Compile Include="HoldingArea\Logger.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\O2Generator.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldWeb.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\GridComps\ModulatorGridComp.cs" />
@@ -253,7 +250,6 @@
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\CustomCollision.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\CSupport\CollisionMath.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\CustomTypes.cs" />
-    <Compile Include="Structure\DataStructure.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\CSupport\Octree.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\CSupport\ResourcePool.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Debug\DebugDraw.cs" />
@@ -261,9 +257,7 @@
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Utils.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Render.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldTimings.cs" />
-    <Compile Include="Structure\StructureBuilder.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\CSupport\Triangle3.cs" />
-    <Compile Include="HoldingArea\HyperComp.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Audio\" />

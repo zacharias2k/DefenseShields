@@ -1,45 +1,44 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using DefenseShields.Support;
-using Sandbox.Common.ObjectBuilders;
-using Sandbox.Game;
-using Sandbox.Game.Entities;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI;
-using VRage.Collections;
-using VRage.Game;
-using VRage.Game.Components;
-using VRage.Game.Entity;
-using VRage.Game.ModAPI;
-using VRage.Game.ObjectBuilders.Definitions;
-using VRage.ModAPI;
-using VRage.ObjectBuilders;
-using VRage.Utils;
-using VRageMath;
-using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using System.Text;
+    using global::DefenseShields.Support;
+    using Sandbox.Common.ObjectBuilders;
+    using Sandbox.Game;
+    using Sandbox.Game.Entities;
+    using Sandbox.Game.EntityComponents;
+    using Sandbox.ModAPI;
+    using VRage.Collections;
+    using VRage.Game;
+    using VRage.Game.Components;
+    using VRage.Game.Entity;
+    using VRage.Game.ModAPI;
+    using VRage.Game.ObjectBuilders.Definitions;
+    using VRage.ModAPI;
+    using VRage.ObjectBuilders;
+    using VRage.Utils;
+    using VRageMath;
+    using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
+
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "EmitterL", "EmitterS", "EmitterST", "EmitterLA", "EmitterSA")]
     public class Emitters : MyGameLogicComponent
     {
+        internal ShieldGridComponent ShieldComp;
+        internal MyResourceSinkInfo ResourceInfo;
+
+        private const string PlasmaEmissive = "PlasmaEmissive";
+
+        private readonly MyConcurrentList<int> _vertsSighted = new MyConcurrentList<int>();
+        private readonly MyConcurrentList<int> _noBlocksLos = new MyConcurrentList<int>();
+        private readonly MyConcurrentHashSet<int> _blocksLos = new MyConcurrentHashSet<int>();
+        private readonly MyDefinitionId _gId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
+
         private uint _tick;
         private int _count = -1;
         private int _lCount;
-        internal int RotationTime;
-        internal int AnimationLoop;
-        internal int TranslationTime;
+        private int _wasMode;
 
         private float _power = 0.01f;
-        internal float EmissiveIntensity;
-
-        public bool ServerUpdate;
-        internal bool IsStatic;
-        internal bool TookControl;
-        internal bool ContainerInited;
-        internal bool IsFunctional;
-        internal bool IsWorking;
 
         private bool _tick60;
         private bool _isServer;
@@ -51,41 +50,40 @@ namespace DefenseShields
         private bool _wasLos;
         private bool _wasCompact;
         private bool _wasCompatible;
-        private int _wasMode;
         private double _wasBoundingRange;
-
-        private const string PlasmaEmissive = "PlasmaEmissive";
-
         private Vector3D _sightPos;
-
-        internal ShieldGridComponent ShieldComp;
         private MyEntitySubpart _subpartRotor;
         //private MyParticleEffect _effect = new MyParticleEffect();
-        internal MyResourceSinkInfo ResourceInfo;
-        internal MyResourceSinkComponent Sink;
-
-        internal Definition Definition;
-        internal DSUtils Dsutil1 = new DSUtils();
-        internal EmitterState EmiState;
-
-        public IMyUpgradeModule Emitter;
-        public EmitterType EmitterMode;
-        internal MyCubeGrid MyGrid;
-        internal MyCubeBlock MyCube;
-
-        private readonly MyConcurrentList<int> _vertsSighted = new MyConcurrentList<int>();
-        private readonly MyConcurrentList<int> _noBlocksLos = new MyConcurrentList<int>();
-        private readonly MyConcurrentHashSet<int> _blocksLos = new MyConcurrentHashSet<int>();
-
-        private static readonly MyDefinitionId GId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
         public enum EmitterType
         {
             Station,
             Large,
             Small,
-        };
+        }
 
+        internal Definition Definition { get; set; }
+        internal EmitterState EmiState { get; set; }
+
+        internal IMyUpgradeModule Emitter { get; set; }
+        internal EmitterType EmitterMode { get; set; }
+        internal MyCubeGrid MyGrid { get; set; }
+        internal MyCubeBlock MyCube { get; set; }
+
+        internal MyResourceSinkComponent Sink { get; set; }
+
+        internal int RotationTime { get; set; }
+        internal int AnimationLoop { get; set; }
+        internal int TranslationTime { get; set; }
+
+        internal float EmissiveIntensity { get; set; }
+
+        internal bool ServerUpdate { get; set; }
+        internal bool IsStatic { get; set; }
+        internal bool TookControl { get; set; }
+        internal bool ContainerInited { get; set; }
+        internal bool IsFunctional { get; set; }
+        internal bool IsWorking { get; set; }
 
         public override void OnAddedToContainer()
         {
@@ -165,13 +163,13 @@ namespace DefenseShields
                 if (!ControllerLink()) return;
                 if (!_isDedicated && UtilsStatic.DistanceCheck(Emitter, 1000, EmiState.State.BoundingRange))
                 {
-                    //if (ShieldComp.GridIsMoving && !Compact) BlockParticleUpdate();
+                    // if (ShieldComp.GridIsMoving && !Compact) BlockParticleUpdate();
                     var blockCam = MyCube.PositionComp.WorldVolume;
                     var onCam = MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam);
                     if (onCam)
                     {
-                        //if (_effect == null && ShieldComp.ShieldPercent <= 97 && !Compact) BlockParticleStart();
-                        //else if (_effect != null && ShieldComp.ShieldPercent > 97f && !Compact) BlockParticleStop();
+                        // if (_effect == null && ShieldComp.ShieldPercent <= 97 && !Compact) BlockParticleStart();
+                        // else if (_effect != null && ShieldComp.ShieldPercent > 97f && !Compact) BlockParticleStop();
                         BlockMoveAnimation();
                     }
                 }
@@ -193,6 +191,69 @@ namespace DefenseShields
                 ControllerLink();
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation10: {ex}"); }
+        }
+
+        public override void OnRemovedFromScene()
+        {
+            try
+            {
+                if (Session.Enforced.Debug == 3) Log.Line($"OnRemovedFromScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
+                //// BlockParticleStop();
+                RegisterEvents(false);
+                IsWorking = false;
+                IsFunctional = false;
+            }
+            catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
+        }
+
+        public override void OnBeforeRemovedFromContainer()
+        {
+            if (Entity.InScene) OnRemovedFromScene();
+        }
+        public override void Close()
+        {
+            try
+            {
+                base.Close();
+                if (Session.Enforced.Debug == 3) Log.Line($"Close: {EmitterMode} - EmitterId [{Entity.EntityId}]");
+                if (Session.Instance.Emitters.Contains(this)) Session.Instance.Emitters.Remove(this);
+                if (ShieldComp?.StationEmitter == this)
+                {
+                    if ((int)EmitterMode == ShieldComp.EmitterMode)
+                    {
+                        ShieldComp.EmittersWorking = false;
+                        ShieldComp.EmitterEvent = true;
+                    }
+                    ShieldComp.StationEmitter = null;
+                }
+                else if (ShieldComp?.ShipEmitter == this)
+                {
+                    if ((int)EmitterMode == ShieldComp.EmitterMode)
+                    {
+                        ShieldComp.EmittersWorking = false;
+                        ShieldComp.EmitterEvent = true;
+                    }
+                    ShieldComp.ShipEmitter = null;
+                }
+                ////BlockParticleStop();
+            }
+            catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
+        }
+
+        public override void MarkForClose()
+        {
+            try
+            {
+                base.MarkForClose();
+                if (Session.Enforced.Debug == 3) Log.Line($"MarkForClose: {EmitterMode} - EmitterId [{Entity.EntityId}]");
+            }
+            catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
+        }
+
+        internal void UpdateState(ProtoEmitterState newState)
+        {
+            EmiState.State = newState;
+            if (Session.Enforced.Debug <= 3) Log.Line($"UpdateState - EmitterId [{Emitter.EntityId}]:\n{EmiState.State}");
         }
 
         private void Timing()
@@ -305,22 +366,16 @@ namespace DefenseShields
         {
             EmiState.State.Mode = (int)EmitterMode;
             EmiState.State.BoundingRange = ShieldComp?.DefenseShields?.BoundingRange ?? 0f;
-            EmiState.State.Compatible = IsStatic && EmitterMode == EmitterType.Station || !IsStatic && EmitterMode != EmitterType.Station;
+            EmiState.State.Compatible = (IsStatic && EmitterMode == EmitterType.Station) || (!IsStatic && EmitterMode != EmitterType.Station);
             EmiState.SaveState();
             if (Session.Instance.MpActive) EmiState.NetworkUpdate();
-        }
-
-        public void UpdateState(ProtoEmitterState newState)
-        {
-            EmiState.State = newState;
-            if (Session.Enforced.Debug <= 3) Log.Line($"UpdateState - EmitterId [{Emitter.EntityId}]:\n{EmiState.State}");
         }
 
         #region Block Animation
         private void BlockReset(bool force = false)
         {
-            //if (_effect != null && !Session.DedicatedServer && !Compact) BlockParticleStop();
-            if (!_isDedicated && !EmissiveIntensity.Equals(0) || !_isDedicated && force) BlockMoveAnimationReset(true);
+            // if (_effect != null && !Session.DedicatedServer && !Compact) BlockParticleStop();
+            if ((!_isDedicated && !EmissiveIntensity.Equals(0)) || (!_isDedicated && force)) BlockMoveAnimationReset(true);
         }
 
         private bool BlockMoveAnimationReset(bool clearAnimation)
@@ -438,8 +493,8 @@ namespace DefenseShields
             var logic = ShieldComp.DefenseShields;
             var controllerReady = logic != null && logic.Warming && logic.IsWorking && logic.IsFunctional && !logic.DsState.State.Suspended && logic.DsState.State.ControllerGridAccess;
             var losCheckReq = online && controllerReady;
-            if (losCheckReq && ShieldComp.CheckEmitters || controllerReady && TookControl) CheckShieldLineOfSight();
-            //if (losCheckReq && !EmiState.State.Los && !Session.DedicatedServer) DrawHelper();
+            if ((losCheckReq && ShieldComp.CheckEmitters) || (controllerReady && TookControl)) CheckShieldLineOfSight();
+            //// if (losCheckReq && !EmiState.State.Los && !Session.DedicatedServer) DrawHelper();
             ShieldComp.EmittersWorking = EmiState.State.Los && online;
             if (!ShieldComp.EmittersWorking || logic == null || !ShieldComp.DefenseShields.DsState.State.Online || !(_tick >= logic.UnsuspendTick))
             {
@@ -487,9 +542,9 @@ namespace DefenseShields
             var working = IsWorking;
             var stationMode = EmitterMode == EmitterType.Station;
             var shipMode = EmitterMode != EmitterType.Station;
-            var modes = IsStatic && stationMode || !IsStatic && shipMode;
-            var mySlotNull = stationMode && ShieldComp.StationEmitter == null || shipMode && ShieldComp.ShipEmitter == null;
-            var myComp = stationMode && ShieldComp.StationEmitter == this || shipMode && ShieldComp.ShipEmitter == this;
+            var modes = (IsStatic && stationMode) || (!IsStatic && shipMode);
+            var mySlotNull = (stationMode && ShieldComp.StationEmitter == null) || (shipMode && ShieldComp.ShipEmitter == null);
+            var myComp = (stationMode && ShieldComp.StationEmitter == this) || (shipMode && ShieldComp.ShipEmitter == this);
 
             var myMode = working && modes;
             var mySlotOpen = working && mySlotNull;
@@ -535,16 +590,16 @@ namespace DefenseShields
             else if (!myMode)
             {
                 var compMode = ShieldComp.EmitterMode;
-                if (!EmiState.State.Suspend && (compMode == 0 && !IsStatic || compMode != 0 && IsStatic) || !EmiState.State.Suspend && iStopped)
+                if ((!EmiState.State.Suspend && ((compMode == 0 && !IsStatic) || (compMode != 0 && IsStatic))) || (!EmiState.State.Suspend && iStopped))
                 {
                     ShieldComp.EmittersSuspended = true;
                     ShieldComp.EmittersWorking = false;
                     ShieldComp.EmitterEvent = true;
-                    if (Session.Enforced.Debug == 3) Log.Line($"!myMode: {Definition.Name} suspending - myMode: {myMode} - myShield: {myShield} - Match:{(int)EmitterMode == ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{EmiState.State.Suspend} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
+                    if (Session.Enforced.Debug == 3) Log.Line($"!myMode: {Definition.Name} suspending - Match:{(int)EmitterMode == ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{EmiState.State.Suspend} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
                 }
                 else if (!EmiState.State.Suspend)
                 {
-                    if (Session.Enforced.Debug == 3) Log.Line($"!myMode: {Definition.Name} suspending - myMode: {myMode} - myShield: {myShield} - Match:{(int)EmitterMode == ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{EmiState.State.Suspend} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
+                    if (Session.Enforced.Debug == 3) Log.Line($"!myMode: {Definition.Name} suspending - Match:{(int)EmitterMode == ShieldComp.EmitterMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{EmiState.State.Suspend} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
                 }
                 EmiState.State.Suspend = true;
             }
@@ -587,9 +642,9 @@ namespace DefenseShields
             var testDir = MyCube.PositionComp.WorldMatrix.Up;
             if (!EmiState.State.Compact) testDir = _subpartRotor.PositionComp.WorldVolume.Center - MyCube.PositionComp.WorldVolume.Center;
             testDir.Normalize();
-            var testPos = MyCube.PositionComp.WorldVolume.Center + testDir * testDist;
+            var testPos = MyCube.PositionComp.WorldVolume.Center + (testDir * testDist);
             _sightPos = testPos;
-            ShieldComp.DefenseShields.ResetShape(false, false);
+            ShieldComp.DefenseShields.ResetShape(false);
             if (EmitterMode == EmitterType.Station)
             {
                 EmiState.State.Los = true;
@@ -618,23 +673,23 @@ namespace DefenseShields
 
         private void DrawHelper()
         {
-            const float lineWidth = 0.025f;
+            const float LineWidth = 0.025f;
             var lineDist = Definition.HelperDist;
 
             foreach (var blocking in _blocksLos)
             {
                 var blockedDir = ShieldComp.PhysicsOutside[blocking] - _sightPos;
                 blockedDir.Normalize();
-                var blockedPos = _sightPos + blockedDir * lineDist;
-                DsDebugDraw.DrawLineToVec(_sightPos, blockedPos, Color.Black, lineWidth);
+                var blockedPos = _sightPos + (blockedDir * lineDist);
+                DsDebugDraw.DrawLineToVec(_sightPos, blockedPos, Color.Black, LineWidth);
             }
 
             foreach (var sighted in _vertsSighted)
             {
                 var sightedDir = ShieldComp.PhysicsOutside[sighted] - _sightPos;
                 sightedDir.Normalize();
-                var sightedPos = _sightPos + sightedDir * lineDist;
-                DsDebugDraw.DrawLineToVec(_sightPos, sightedPos, Color.Blue, lineWidth);
+                var sightedPos = _sightPos + (sightedDir * lineDist);
+                DsDebugDraw.DrawLineToVec(_sightPos, sightedPos, Color.Blue, LineWidth);
             }
             if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("The shield emitter DOES NOT have a CLEAR ENOUGH LINE OF SIGHT to the shield, SHUTTING DOWN.", 960, "Red", Emitter.OwnerId);
             if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("Blue means clear line of sight, black means blocked......................................................................", 960, "Red", Emitter.OwnerId);
@@ -666,7 +721,7 @@ namespace DefenseShields
                 }
                 ResourceInfo = new MyResourceSinkInfo()
                 {
-                    ResourceTypeId = GId,
+                    ResourceTypeId = _gId,
                     MaxRequiredInput = 0f,
                     RequiredInputFunc = () => _power
                 };
@@ -763,19 +818,6 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in AppendingCustomInfo: {ex}"); }
         }
 
-        public override void OnRemovedFromScene()
-        {
-            try
-            {
-                if (Session.Enforced.Debug == 3) Log.Line($"OnRemovedFromScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
-                //BlockParticleStop();
-                RegisterEvents(false);
-                IsWorking = false;
-                IsFunctional = false;
-            }
-            catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
-        }
-
         private void RegisterEvents(bool register = true)
         {
             if (register)
@@ -796,47 +838,6 @@ namespace DefenseShields
         {
             IsFunctional = myCubeBlock.IsWorking;
             IsWorking = myCubeBlock.IsWorking;
-        }
-
-        public override void OnBeforeRemovedFromContainer() { if (Entity.InScene) OnRemovedFromScene(); }
-        public override void Close()
-        {
-            try
-            {
-                base.Close();
-                if (Session.Enforced.Debug == 3) Log.Line($"Close: {EmitterMode} - EmitterId [{Entity.EntityId}]");
-                if (Session.Instance.Emitters.Contains(this)) Session.Instance.Emitters.Remove(this);
-                if (ShieldComp?.StationEmitter == this)
-                {
-                    if ((int)EmitterMode == ShieldComp.EmitterMode)
-                    {
-                        ShieldComp.EmittersWorking = false;
-                        ShieldComp.EmitterEvent = true;
-                    }
-                    ShieldComp.StationEmitter = null;
-                }
-                else if (ShieldComp?.ShipEmitter == this)
-                {
-                    if ((int)EmitterMode == ShieldComp.EmitterMode)
-                    {
-                        ShieldComp.EmittersWorking = false;
-                        ShieldComp.EmitterEvent = true;
-                    }
-                    ShieldComp.ShipEmitter = null;
-                }
-                //BlockParticleStop();
-            }
-            catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
-        }
-
-        public override void MarkForClose()
-        {
-            try
-            {
-                base.MarkForClose();
-                if (Session.Enforced.Debug == 3) Log.Line($"MarkForClose: {EmitterMode} - EmitterId [{Entity.EntityId}]");
-            }
-            catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
         }
     }
 }

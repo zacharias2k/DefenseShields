@@ -1,25 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using DefenseShields.Support;
-using Sandbox.Common.ObjectBuilders;
-using Sandbox.Game.Entities;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI;
-using VRage.Game;
-using VRage.Game.Components;
-using VRage.Game.Entity;
-using VRage.ModAPI;
-using VRage.Game.ModAPI;
-using VRage.Game.ObjectBuilders.Definitions;
-using VRage.ObjectBuilders;
-using VRage.Utils;
-using VRageMath;
-using VRageRender;
-using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using System.Text;
+    using global::DefenseShields.Support;
+    using Sandbox.Common.ObjectBuilders;
+    using Sandbox.Game.Entities;
+    using Sandbox.Game.EntityComponents;
+    using Sandbox.ModAPI;
+    using VRage.Game;
+    using VRage.Game.Components;
+    using VRage.Game.Entity;
+    using VRage.Game.ModAPI;
+    using VRage.Game.ObjectBuilders.Definitions;
+    using VRage.ModAPI;
+    using VRage.ObjectBuilders;
+    using VRage.Utils;
+    using VRageMath;
+    using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
+
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "PlanetaryEmitterLarge")]
     public class PlanetShields : MyGameLogicComponent
     {
