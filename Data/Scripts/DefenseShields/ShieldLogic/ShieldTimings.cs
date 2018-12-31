@@ -127,7 +127,7 @@
                           $"Access:{DsState.State.ControllerGridAccess} - EmitterWorking:{DsState.State.EmitterWorking}\n" +
                           $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)}\n" +
                           $"ShieldMode:{ShieldMode} - pFail:{_powerFail}\n" +
-                          $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{_roundedGridMax}\n" +
+                          $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{GridMaxPower}\n" +
                           $"Pow:{_power} HP:{DsState.State.Buffer}: {ShieldMaxBuffer}";
 
             if (!_isDedicated) MyAPIGateway.Utilities.ShowMessage(string.Empty, message);

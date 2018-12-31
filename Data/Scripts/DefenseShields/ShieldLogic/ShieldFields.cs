@@ -141,7 +141,7 @@
         private double _ellipsoidSurfaceArea;
         private double _shieldVol;
         private double _sizeScaler;
-        private double _roundedGridMax;
+        //private double _roundedGridMax;
 
         private int _count = -1;
         private int _lCount;

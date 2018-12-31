@@ -59,7 +59,7 @@
 
         private bool UpdateGridPower()
         {
-            var tempGridMaxPower = GridMaxPower;
+            ////var tempGridMaxPower = GridMaxPower;
             var cleanDistributor = FuncTask.IsComplete && MyGridDistributor != null && !_functionalEvent;
             GridAvailablePower = 0;
             _batteryMaxPower = 0;
@@ -107,7 +107,7 @@
                 else FallBackPowerCalc();
             }
             GridAvailablePower = GridMaxPower - GridCurrentPower;
-            if (!GridMaxPower.Equals(tempGridMaxPower) || _roundedGridMax <= 0) _roundedGridMax = Math.Round(GridMaxPower, 1);
+            //// if (!GridMaxPower.Equals(tempGridMaxPower) || _roundedGridMax <= 0) _roundedGridMax = Math.Round(GridMaxPower, 1);
             return GridMaxPower > 0;
         }
 
@@ -182,7 +182,7 @@
             if (DsState.State.Buffer > ShieldMaxBuffer) DsState.State.Buffer = ShieldMaxBuffer;
             if (_isServer)
             {
-                var powerLost = powerForShield <= 0 || _powerNeeded > _roundedGridMax || (_roundedGridMax - _powerNeeded) / Math.Abs(_powerNeeded) * 100 < 0.001;
+                var powerLost = powerForShield <= 0 || _powerNeeded > GridMaxPower || (GridMaxPower - _powerNeeded) / Math.Abs(_powerNeeded) * 100 < 0.001;
                 var serverNoPower = DsState.State.NoPower;
                 if (powerLost || serverNoPower)
                 {
@@ -251,7 +251,7 @@
                 {
                     DsState.State.NoPower = true;
                     DsState.State.Message = true;
-                    if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: NoPower - forShield:{powerForShield} - rounded:{_roundedGridMax} - max:{GridMaxPower} - avail{GridAvailablePower} - sCurr:{ShieldCurrentPower} - count:{_powerSources.Count} - DistEna:{MyGridDistributor?.SourcesEnabled} - State:{MyGridDistributor?.ResourceState} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: NoPower - forShield:{powerForShield} - rounded:{GridMaxPower} - max:{GridMaxPower} - avail{GridAvailablePower} - sCurr:{ShieldCurrentPower} - count:{_powerSources.Count} - DistEna:{MyGridDistributor?.SourcesEnabled} - State:{MyGridDistributor?.ResourceState} - ShieldId [{Shield.EntityId}]");
                     ShieldChangeState();
                 }
 

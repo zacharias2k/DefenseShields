@@ -106,32 +106,9 @@
 
         private static MyStringId GetHudIcon2FromFloat(float fState)
         {
-            if (fState >= 0)
-            {
-                if (fState < 9) return MyStringId.NullOrEmpty;
-                if (fState < 19) return Session.Instance.HudIconHeal10;
-                if (fState < 29) return Session.Instance.HudIconHeal20;
-                if (fState < 39) return Session.Instance.HudIconHeal30;
-                if (fState < 49) return Session.Instance.HudIconHeal40;
-                if (fState < 59) return Session.Instance.HudIconHeal50;
-                if (fState < 69) return Session.Instance.HudIconHeal60;
-                if (fState < 79) return Session.Instance.HudIconHeal70;
-                if (fState < 89) return Session.Instance.HudIconHeal80;
-                if (fState < 99) return Session.Instance.HudIconHeal90;
-                return Session.Instance.HudIconHeal100;
-            }
-
-            if (fState > -9) return MyStringId.NullOrEmpty;
-            if (fState > -19) return Session.Instance.HudIconDps10;
-            if (fState > -29) return Session.Instance.HudIconDps20;
-            if (fState > -39) return Session.Instance.HudIconDps30;
-            if (fState > -49) return Session.Instance.HudIconDps40;
-            if (fState > -59) return Session.Instance.HudIconDps50;
-            if (fState > -69) return Session.Instance.HudIconDps60;
-            if (fState > -79) return Session.Instance.HudIconDps70;
-            if (fState > -89) return Session.Instance.HudIconDps80;
-            if (fState > -99) return Session.Instance.HudIconDps90;
-            return Session.Instance.HudIconDps100;
+            var oneTenth = fState * 0.1;
+            if (oneTenth > -0.1 && oneTenth < 0.1) return MyStringId.NullOrEmpty;
+            return oneTenth > 0 ? Session.Instance.HudHealthHpIcons[(int)Math.Floor(MathHelper.Clamp(oneTenth, 0, 10))] : Session.Instance.HudHealthHpIcons[(int)Math.Floor(MathHelper.Clamp(-oneTenth * 0.1, 0, 9)) + 10];
         }
 
         private static MyStringId GetHudIcon3FromInt(int heat, bool flash)
