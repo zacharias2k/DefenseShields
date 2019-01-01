@@ -74,7 +74,7 @@
                         var noObjects = distOnState == MyMultipleEnabledEnum.NoObjects;
                         if (noObjects)
                         {
-                            if (Session.Enforced.Debug >= 1) Log.Line($"NoObjects: {MyGrid?.DebugName} - Max:{MyGridDistributor?.MaxAvailableResourceByType(GId)} - Status:{MyGridDistributor?.SourcesEnabled} - Sources:{_powerSources.Count}");
+                            if (Session.Enforced.Debug == 3) Log.Line($"NoObjects: {MyGrid?.DebugName} - Max:{MyGridDistributor?.MaxAvailableResourceByType(GId)} - Status:{MyGridDistributor?.SourcesEnabled} - Sources:{_powerSources.Count}");
                             FallBackPowerCalc();
                             FunctionalChanged(true);
                         }
@@ -154,8 +154,7 @@
             if (maintenanceCost <= 0) maintenanceCost = 1f;
 
             var percent = DsSet.Settings.Rate * ChargeRatio;
-            var chargePercent = percent / ChargeRatio * ConvToDec;
-
+            var chargePercent = DsSet.Settings.Rate * ConvToDec;
             var shieldMaintainPercent = maintenanceCost / percent;
             _sizeScaler = _shieldVol / (_ellipsoidSurfaceArea * MagicRatio);
 
@@ -168,15 +167,15 @@
             var gridIntegrity = DsState.State.GridIntegrity * (efficiency * ConvToDec) * ConvToDec;
             if (capScaler > 0) gridIntegrity *= capScaler;
 
-            var hpScaler = 1f;
-            if (hpBase > gridIntegrity) hpScaler = gridIntegrity / hpBase;
+            if (hpBase > gridIntegrity) _hpScaler = gridIntegrity / hpBase;
+            else _hpScaler = 1f;
 
             shieldMaintainPercent = shieldMaintainPercent * DsState.State.EnhancerPowerMulti * (DsState.State.ShieldPercent * ConvToDec);
             if (DsState.State.Lowered) shieldMaintainPercent = shieldMaintainPercent * 0.25f;
-            _shieldMaintaintPower = GridMaxPower * hpScaler * shieldMaintainPercent;
+            _shieldMaintaintPower = GridMaxPower * _hpScaler * shieldMaintainPercent;
 
-            ShieldMaxBuffer = hpBase * hpScaler;
-            var powerForShield = PowerNeeded(chargePercent, hpsEfficiency, hpScaler);
+            ShieldMaxBuffer = hpBase * _hpScaler;
+            var powerForShield = PowerNeeded(chargePercent, hpsEfficiency);
             if (!WarmedUp) return;
 
             if (DsState.State.Buffer > ShieldMaxBuffer) DsState.State.Buffer = ShieldMaxBuffer;
@@ -196,6 +195,7 @@
             }
 
             if (DsState.State.Heat != 0) UpdateHeatState();
+            else _expChargeReduction = 0;
 
             if (_count == 29 && DsState.State.Buffer < ShieldMaxBuffer) DsState.State.Buffer += _shieldChargeRate;
             else if (DsState.State.Buffer.Equals(ShieldMaxBuffer))
@@ -209,28 +209,28 @@
             else DsState.State.ShieldPercent = 100f;
         }
 
-        private float PowerNeeded(float chargePercent, float hpsEfficiency, float hpScaler)
+        private float PowerNeeded(float chargePercent, float hpsEfficiency)
         {
             var powerScaler = 1f;
-            if (hpScaler < 0.5) powerScaler = hpScaler + hpScaler;
+            if (_hpScaler < 0.5) powerScaler = _hpScaler + _hpScaler;
 
             var cleanPower = GridAvailablePower + ShieldCurrentPower;
             _otherPower = GridMaxPower - cleanPower;
             var powerForShield = ((cleanPower * chargePercent) - _shieldMaintaintPower) * powerScaler;
             var rawMaxChargeRate = powerForShield > 0 ? powerForShield : 0f;
             _shieldMaxChargeRate = rawMaxChargeRate;
-            var chargeSize = _shieldMaxChargeRate * hpsEfficiency / _sizeScaler;
-            if (DsState.State.Buffer + chargeSize < ShieldMaxBuffer)
+            _shieldPeakRate = _shieldMaxChargeRate * hpsEfficiency / (float)_sizeScaler;
+            if (DsState.State.Buffer + _shieldPeakRate < ShieldMaxBuffer)
             {
-                _shieldChargeRate = (float)chargeSize;
+                _shieldChargeRate = _shieldPeakRate;
                 _shieldConsumptionRate = _shieldMaxChargeRate;
             }
             else
             {
                 var remaining = ShieldMaxBuffer - DsState.State.Buffer;
-                var remainingScaled = remaining / chargeSize;
-                _shieldConsumptionRate = (float)(remainingScaled * _shieldMaxChargeRate);
-                _shieldChargeRate = (float)(chargeSize * remainingScaled);
+                var remainingScaled = remaining / _shieldPeakRate;
+                _shieldConsumptionRate = remainingScaled * _shieldMaxChargeRate;
+                _shieldChargeRate = _shieldPeakRate * remainingScaled;
             }
             _powerNeeded = _shieldMaintaintPower + _shieldConsumptionRate + _otherPower;
             return powerForShield;
@@ -289,8 +289,8 @@
             if (heat >= 10) _shieldChargeRate = 0;
             else
             {
-                var expChargeReduction = ExpChargeReductions[heat];
-                _shieldChargeRate = _shieldChargeRate / expChargeReduction;
+                _expChargeReduction = ExpChargeReductions[heat];
+                _shieldChargeRate = _shieldChargeRate / _expChargeReduction;
             }
         }
 

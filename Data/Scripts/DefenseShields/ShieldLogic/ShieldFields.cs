@@ -110,6 +110,7 @@
         private readonly List<KeyValuePair<MyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<MyEntity, EntIntersectInfo>>();
         private readonly List<KeyValuePair<MyEntity, ProtectCache>> _porotectEntsTmp = new List<KeyValuePair<MyEntity, ProtectCache>>();
         private readonly RunningAverage _dpsAvg = new RunningAverage(2);
+        private readonly RunningAverage _hpsAvg = new RunningAverage(2);
         private readonly EllipsoidOxygenProvider _ellipsoidOxyProvider = new EllipsoidOxygenProvider(Matrix.Zero);
         private readonly EllipsoidSA _ellipsoidSa = new EllipsoidSA(double.MinValue, double.MinValue, double.MinValue);
         private readonly Vector3D[] _resetEntCorners = new Vector3D[8];
@@ -129,6 +130,7 @@
         private float _batteryCurrentPower;
         private float _shieldMaxChargeRate;
         private float _shieldChargeRate;
+        private float _shieldPeakRate;
         private float _damageReadOut;
         private float _accumulatedHeat;
         private float _shieldMaintaintPower;
@@ -136,6 +138,8 @@
         private float _oldShieldFudge;
         private float _empScaleHp = 1f;
         private float _runningDamage;
+        private float _runningHeal;
+        private float _hpScaler = 1f;
 
         private double _oldEllipsoidAdjust;
         private double _ellipsoidSurfaceArea;
@@ -156,10 +160,10 @@
         private int _fallbackCycle;
         private int _currentHeatStep;
         private int _empScaleTime = 1;
-
         private int _prevLod;
         private int _onCount;
         private int _shieldRatio = 1;
+        private int _expChargeReduction;
 
         private bool _needPhysics;
         private bool _wasSuspended = true;

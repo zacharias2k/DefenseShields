@@ -364,27 +364,27 @@
             var blockCnt = 0;
             foreach (var grid in subGrids)
             {
-                blockCnt += ((MyCubeGrid) grid).BlocksCount;
+                blockCnt += ((MyCubeGrid)grid).BlocksCount;
             }
             return blockCnt;
         }
 
         public static void PrepConfigFile()
         {
-            const int baseScaler = 10;
-            const float heatScaler = 1f;
-            const float efficiency = 100f;
-            const int stationRatio = 1;
-            const int largeShipRate = 1;
-            const int smallShipRatio = 1;
-            const int disableVoxel = 0;
-            const int disableGridDmg = 0;
-            const int debug = 0;
-            const bool altRecharge = false;
-            const int version = 62;
-            const float capScaler = 1f;
-            const float hpsEfficiency = 0.5f;
-            const float maintenanceCost = 0.5f;
+            const int BaseScaler = 10;
+            const float HeatScaler = 1f;
+            const float Efficiency = 100f;
+            const int StationRatio = 1;
+            const int LargeShipRate = 1;
+            const int SmallShipRatio = 1;
+            const int DisableVoxel = 0;
+            const int DisableGridDmg = 0;
+            const int Debug = 1;
+            const bool AltRecharge = false;
+            const int Version = 63;
+            const float CapScaler = 1f;
+            const float HpsEfficiency = 0.5f;
+            const float MaintenanceCost = 0.5f;
 
             var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg");
             if (dsCfgExists)
@@ -394,27 +394,26 @@
 
                 if (Session.Enforced.Debug == 3) Log.Line($"unPackedData is: {unPackedData}\nServEnforced are: {Session.Enforced}");
 
-                if (unPackedData.Version == version) return;
-                Log.Line($"outdated config file regenerating, file version: {unPackedData.Version} - current version: {version}");
-                Session.Enforced.BaseScaler = !unPackedData.BaseScaler.Equals(-1) ? unPackedData.BaseScaler : baseScaler;
-                Session.Enforced.HeatScaler = !unPackedData.HeatScaler.Equals(-1f) ? unPackedData.HeatScaler : heatScaler;
-                Session.Enforced.Efficiency = !unPackedData.Efficiency.Equals(-1f) ? unPackedData.Efficiency : efficiency;
-                Session.Enforced.StationRatio = !unPackedData.StationRatio.Equals(-1) ? unPackedData.StationRatio : stationRatio;
-                Session.Enforced.LargeShipRatio = !unPackedData.LargeShipRatio.Equals(-1) ? unPackedData.LargeShipRatio : largeShipRate;
-                Session.Enforced.SmallShipRatio = !unPackedData.SmallShipRatio.Equals(-1) ? unPackedData.SmallShipRatio : smallShipRatio;
-                if (unPackedData.Version <= 61)
-                {
-                    Session.Enforced.HeatScaler = 0.0065f;
-                }
-                Session.Enforced.DisableVoxelSupport = !unPackedData.DisableVoxelSupport.Equals(-1) ? unPackedData.DisableVoxelSupport : disableVoxel;
-                Session.Enforced.DisableGridDamageSupport = !unPackedData.DisableGridDamageSupport.Equals(-1) ? unPackedData.DisableGridDamageSupport : disableGridDmg;
-                Session.Enforced.Debug = !unPackedData.Debug.Equals(-1) ? unPackedData.Debug : debug;
+                if (unPackedData.Version == Version) return;
+                Log.Line($"outdated config file regenerating, file version: {unPackedData.Version} - current version: {Version}");
+                Session.Enforced.BaseScaler = !unPackedData.BaseScaler.Equals(-1) ? unPackedData.BaseScaler : BaseScaler;
+                Session.Enforced.HeatScaler = !unPackedData.HeatScaler.Equals(-1f) ? unPackedData.HeatScaler : HeatScaler;
+                Session.Enforced.Efficiency = !unPackedData.Efficiency.Equals(-1f) ? unPackedData.Efficiency : Efficiency;
+                Session.Enforced.StationRatio = !unPackedData.StationRatio.Equals(-1) ? unPackedData.StationRatio : StationRatio;
+                Session.Enforced.LargeShipRatio = !unPackedData.LargeShipRatio.Equals(-1) ? unPackedData.LargeShipRatio : LargeShipRate;
+                Session.Enforced.SmallShipRatio = !unPackedData.SmallShipRatio.Equals(-1) ? unPackedData.SmallShipRatio : SmallShipRatio;
+                Session.Enforced.DisableVoxelSupport = !unPackedData.DisableVoxelSupport.Equals(-1) ? unPackedData.DisableVoxelSupport : DisableVoxel;
+                Session.Enforced.DisableGridDamageSupport = !unPackedData.DisableGridDamageSupport.Equals(-1) ? unPackedData.DisableGridDamageSupport : DisableGridDmg;
+                Session.Enforced.Debug = !unPackedData.Debug.Equals(-1) ? unPackedData.Debug : Debug;
                 Session.Enforced.AltRecharge = false;
-                Session.Enforced.CapScaler = !unPackedData.CapScaler.Equals(-1f) ? unPackedData.CapScaler : capScaler;
-                Session.Enforced.HpsEfficiency = !unPackedData.HpsEfficiency.Equals(-1f) ? unPackedData.HpsEfficiency : hpsEfficiency;
-                Session.Enforced.MaintenanceCost = !unPackedData.MaintenanceCost.Equals(-1f) ? unPackedData.MaintenanceCost : maintenanceCost;
-
-                Session.Enforced.Version = version;
+                Session.Enforced.CapScaler = !unPackedData.CapScaler.Equals(-1f) ? unPackedData.CapScaler : CapScaler;
+                Session.Enforced.HpsEfficiency = !unPackedData.HpsEfficiency.Equals(-1f) ? unPackedData.HpsEfficiency : HpsEfficiency;
+                Session.Enforced.MaintenanceCost = !unPackedData.MaintenanceCost.Equals(-1f) ? unPackedData.MaintenanceCost : MaintenanceCost;
+                if (unPackedData.Version <= 62)
+                {
+                    Session.Enforced.Debug = 1;
+                }
+                Session.Enforced.Version = Version;
 
                 unPackedData = null;
                 unPackCfg.Close();
@@ -430,20 +429,20 @@
             }
             else
             {
-                Session.Enforced.BaseScaler = baseScaler;
-                Session.Enforced.HeatScaler = heatScaler;
-                Session.Enforced.Efficiency = efficiency;
-                Session.Enforced.StationRatio = stationRatio;
-                Session.Enforced.LargeShipRatio = largeShipRate;
-                Session.Enforced.SmallShipRatio = smallShipRatio;
-                Session.Enforced.DisableVoxelSupport = disableVoxel;
-                Session.Enforced.DisableGridDamageSupport = disableGridDmg;
-                Session.Enforced.Debug = debug;
-                Session.Enforced.AltRecharge = altRecharge;
-                Session.Enforced.CapScaler = capScaler;
-                Session.Enforced.HpsEfficiency = hpsEfficiency;
-                Session.Enforced.MaintenanceCost = maintenanceCost;
-                Session.Enforced.Version = version;
+                Session.Enforced.BaseScaler = BaseScaler;
+                Session.Enforced.HeatScaler = HeatScaler;
+                Session.Enforced.Efficiency = Efficiency;
+                Session.Enforced.StationRatio = StationRatio;
+                Session.Enforced.LargeShipRatio = LargeShipRate;
+                Session.Enforced.SmallShipRatio = SmallShipRatio;
+                Session.Enforced.DisableVoxelSupport = DisableVoxel;
+                Session.Enforced.DisableGridDamageSupport = DisableGridDmg;
+                Session.Enforced.Debug = Debug;
+                Session.Enforced.AltRecharge = AltRecharge;
+                Session.Enforced.CapScaler = CapScaler;
+                Session.Enforced.HpsEfficiency = HpsEfficiency;
+                Session.Enforced.MaintenanceCost = MaintenanceCost;
+                Session.Enforced.Version = Version;
 
                 var cfg = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShields.cfg");
                 var data = MyAPIGateway.Utilities.SerializeToXML(Session.Enforced);
@@ -473,21 +472,21 @@
         public static void CreateExplosion(Vector3D position, float radius, int damage = 5000)
         {
             MyExplosionTypeEnum explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_50;
-            if ((double)radius < 2.0)
+            if (radius < 2.0)
                 explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_02;
-            else if ((double)radius < 15.0)
+            else if (radius < 15.0)
                 explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_15;
-            else if ((double)radius < 30.0)
+            else if (radius < 30.0)
                 explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_30;
             MyExplosionInfo explosionInfo = new MyExplosionInfo()
             {
                 PlayerDamage = 0.0f,
-                Damage = (float)damage,
+                Damage = damage,
                 ExplosionType = explosionTypeEnum,
-                ExplosionSphere = new BoundingSphereD(position, (double)radius),
+                ExplosionSphere = new BoundingSphereD(position, radius),
                 LifespanMiliseconds = 700,
                 ParticleScale = 1f,
-                Direction = new Vector3?(Vector3.Down),
+                Direction = Vector3.Down,
                 VoxelExplosionCenter = position,
                 ExplosionFlags = MyExplosionFlags.CREATE_DEBRIS | MyExplosionFlags.AFFECT_VOXELS | MyExplosionFlags.APPLY_FORCE_AND_DAMAGE | MyExplosionFlags.CREATE_DECALS | MyExplosionFlags.CREATE_PARTICLE_EFFECT | MyExplosionFlags.CREATE_SHRAPNELS | MyExplosionFlags.APPLY_DEFORMATION,
                 VoxelCutoutScale = 1f,
@@ -495,7 +494,7 @@
                 ApplyForceAndDamage = true,
                 ObjectsRemoveDelayInMiliseconds = 40
             };
-            MyExplosions.AddExplosion(ref explosionInfo, true);
+            MyExplosions.AddExplosion(ref explosionInfo);
         }
 
         public static void CreateFakeSmallExplosion(Vector3D position)
@@ -516,7 +515,7 @@
                 ApplyForceAndDamage = false,
                 ObjectsRemoveDelayInMiliseconds = 0
             };
-            MyExplosions.AddExplosion(ref explosionInfo, true);
+            MyExplosions.AddExplosion(ref explosionInfo);
         }
 
         /*

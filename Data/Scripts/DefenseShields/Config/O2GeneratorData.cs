@@ -51,7 +51,7 @@ namespace DefenseShields
                     loadedSomething = true;
                 }
 
-                if (Session.Enforced.Debug == 1) Log.Line($"Loaded - O2GeneratorId [{O2Generator.EntityId}]:\n{State.ToString()}");
+                if (Session.Enforced.Debug == 3) Log.Line($"Loaded - O2GeneratorId [{O2Generator.EntityId}]:\n{State.ToString()}");
             }
 
             return loadedSomething;
@@ -121,24 +121,20 @@ namespace DefenseShields
             return loadedSomething;
         }
 
-        #region Network
-
         public void NetworkUpdate()
         {
 
             if (Session.Instance.IsServer)
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"ServRelay - O2GeneratorId [{O2Generator.EntityId}]: network settings update for O2Generator");
+                if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - O2GeneratorId [{O2Generator.EntityId}]: network settings update for O2Generator");
                 Session.Instance.PacketizeO2GeneratorSettings(O2Generator, Settings); // update clients with server's settings
             }
-            else // client, send settings to server
+            else
             {
-                if (Session.Enforced.Debug == 1) Log.Line($"ClientRelay - O2GeneratorId [{O2Generator.EntityId}]: sent network settings update for O2Generator");
+                if (Session.Enforced.Debug == 3) Log.Line($"ClientRelay - O2GeneratorId [{O2Generator.EntityId}]: sent network settings update for O2Generator");
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataO2GeneratorSettings(MyAPIGateway.Multiplayer.MyId, O2Generator.EntityId, Settings));
                 MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdO2GeneratorSettings, bytes);
             }
         }
-
-        #endregion
     }
 }

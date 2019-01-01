@@ -138,6 +138,7 @@
 
         internal readonly MyStringId[] HudHealthHpIcons = 
         {
+            MyStringId.NullOrEmpty,
             MyStringId.GetOrCompute("DS_ShieldHeal10"),
             MyStringId.GetOrCompute("DS_ShieldHeal20"),
             MyStringId.GetOrCompute("DS_ShieldHeal30"),
@@ -148,16 +149,16 @@
             MyStringId.GetOrCompute("DS_ShieldHeal80"),
             MyStringId.GetOrCompute("DS_ShieldHeal90"),
             MyStringId.GetOrCompute("DS_ShieldHeal100"),
-            MyStringId.GetOrCompute("DS_ShieldDps10"),
-            MyStringId.GetOrCompute("DS_ShieldDps20"),
-            MyStringId.GetOrCompute("DS_ShieldDps30"),
-            MyStringId.GetOrCompute("DS_ShieldDps40"),
-            MyStringId.GetOrCompute("DS_ShieldDps50"),
-            MyStringId.GetOrCompute("DS_ShieldDps60"),
-            MyStringId.GetOrCompute("DS_ShieldDps70"),
-            MyStringId.GetOrCompute("DS_ShieldDps80"),
-            MyStringId.GetOrCompute("DS_ShieldDps90"),
             MyStringId.GetOrCompute("DS_ShieldDps100"),
+            MyStringId.GetOrCompute("DS_ShieldDps90"),
+            MyStringId.GetOrCompute("DS_ShieldDps80"),
+            MyStringId.GetOrCompute("DS_ShieldDps70"),
+            MyStringId.GetOrCompute("DS_ShieldDps60"),
+            MyStringId.GetOrCompute("DS_ShieldDps50"),
+            MyStringId.GetOrCompute("DS_ShieldDps40"),
+            MyStringId.GetOrCompute("DS_ShieldDps30"),
+            MyStringId.GetOrCompute("DS_ShieldDps20"),
+            MyStringId.GetOrCompute("DS_ShieldDps10"),
         };
 
         internal readonly MyStringId HudIconHeat10 = MyStringId.GetOrCompute("DS_ShieldHeat10");

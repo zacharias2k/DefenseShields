@@ -234,7 +234,7 @@
 
         internal void RestartDoorFix()
         {
-            if (Session.Enforced.Debug == 1) Log.Line($"RestartDoorFix - O2GeneratorId[{O2Generator.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"RestartDoorFix - O2GeneratorId[{O2Generator.EntityId}]");
             if (!_doorsStage3 || !_doorsStage2 || !_doorsStage3 || !_doorsStage4)
             {
                 if (Session.Enforced.Debug == 3) Log.Line($"RestartDoorFix already running:{!_doorsStage1} - {!_doorsStage2} - {!_doorsStage3} - {!_doorsStage4}! - O2GeneratorId[{O2Generator.EntityId}]");
@@ -255,7 +255,7 @@
 
         internal void UpdateSettings(ProtoO2GeneratorSettings newSettings)
         {
-            if (Session.Enforced.Debug == 1) Log.Line($"UpdateSettings for O2Generator - Fix:{newSettings.FixRoomPressure} - O2GenId [{O2Generator.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"UpdateSettings for O2Generator - Fix:{newSettings.FixRoomPressure} - O2GenId [{O2Generator.EntityId}]");
             SettingsUpdated = true;
             O2Set.Settings = newSettings;
         }
@@ -277,7 +277,7 @@
             {
                 if (ClientUiUpdate)
                 {
-                    if (Session.Enforced.Debug == 1) Log.Line($"ClientUiUpdate: server:{_isServer} - FixRooms:{O2Set.Settings.FixRoomPressure} - O2GeneratorId [{O2Generator.EntityId}]");
+                    if (Session.Enforced.Debug == 3) Log.Line($"ClientUiUpdate: server:{_isServer} - FixRooms:{O2Set.Settings.FixRoomPressure} - O2GeneratorId [{O2Generator.EntityId}]");
                     ClientUiUpdate = false;
                     MyCube.UpdateTerminal();
                     O2Generator.RefreshCustomInfo();

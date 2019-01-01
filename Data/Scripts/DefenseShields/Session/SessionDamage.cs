@@ -313,21 +313,30 @@
                         }
 
                         var iShield = protectors.IntegrityShield;
-                        if (iShield != null && iShield.DsState.State.Online && !iShield.DsState.State.Lowered && info.Type == MyDamageType.Deformation)
+                        if (iShield != null && iShield.DsState.State.Online && !iShield.DsState.State.Lowered)
                         {
-                            if (trueAttacker != null)
+                            var attackingVoxel = trueAttacker as MyVoxelBase;
+                            if (attackingVoxel != null || trueAttacker is MyCubeGrid) iShield.DeformEnabled = true;
+                            else if (trueAttacker != null) iShield.DeformEnabled = false;
+
+                            if (info.Type == MyDamageType.Deformation && iShield.DeformEnabled)
                             {
-                                if (iShield.Absorb < 1 && iShield.WorldImpactPosition == Vector3D.NegativeInfinity && iShield.BulletCoolDown == -1)
+                                if (attackingVoxel != null)
                                 {
-                                    var voxelBase = trueAttacker as MyVoxelBase;
-                                    voxelBase?.RootVoxel.RequestVoxelOperationElipsoid(Vector3.One, iShield.DetectMatrixOutside, 0, MyVoxelBase.OperationType.Cut);
+                                    if (iShield.Absorb < 1 && iShield.WorldImpactPosition == Vector3D.NegativeInfinity && iShield.BulletCoolDown == -1)
+                                    {
+                                        attackingVoxel.RootVoxel.RequestVoxelOperationElipsoid(Vector3.One, iShield.DetectMatrixOutside, 0, MyVoxelBase.OperationType.Cut);
+                                    }
                                 }
+                                var dmgAmount = info.Amount * 10;
+                                if (IsServer)
+                                {
+                                    iShield.AddShieldHit(attackerId, dmgAmount, info.Type, block);
+                                    iShield.Absorb += dmgAmount;
+                                }
+                                info.Amount = 0;
+                                return;
                             }
-                            var dmgAmount = info.Amount * 10;
-                            if (IsServer) iShield.AddShieldHit(attackerId, dmgAmount, info.Type, block);
-                            iShield.Absorb += dmgAmount;
-                            info.Amount = 0;
-                            return;
                         } 
                         if (!IsServer && (info.Type == MyDamageType.Deformation || info.Type == MyDamageType.Explosion)) 
                         {

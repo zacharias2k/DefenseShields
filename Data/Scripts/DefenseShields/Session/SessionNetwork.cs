@@ -360,7 +360,7 @@
 
                             logic.UpdateSettings(data.Settings);
                             if (MyAPIGateway.Multiplayer.IsServer) O2GeneratorSettingsToClients(((IMyCubeBlock)ent).CubeGrid.GetPosition(), bytes, data.Sender);
-                            if (Enforced.Debug >= 1) Log.Line($"O2Generator received:\n{data.Settings} - Server:{MyAPIGateway.Multiplayer.IsServer}");
+                            if (Enforced.Debug == 3) Log.Line($"O2Generator received:\n{data.Settings} - Server:{MyAPIGateway.Multiplayer.IsServer}");
                         }
                         break;
                 }
@@ -566,7 +566,7 @@
 
         private void O2GeneratorSettingsToClients(Vector3D syncPosition, byte[] bytes, ulong sender)
         {
-            if (Enforced.Debug >= 1) Log.Line($"O2GeneratorSettingsToClients - Players:{Players.Count}");
+            if (Enforced.Debug == 3) Log.Line($"O2GeneratorSettingsToClients - Players:{Players.Count}");
             var localSteamId = MyAPIGateway.Multiplayer.MyId;
 
             foreach (var p in Players.Values)
@@ -575,7 +575,7 @@
 
                 if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= _syncDistSqr)
                 {
-                    if (Enforced.Debug >= 1) Log.Line($"O2GeneratorSettingsToClients - Player:{p.SteamUserId}");
+                    if (Enforced.Debug == 3) Log.Line($"O2GeneratorSettingsToClients - Player:{p.SteamUserId}");
                     MyAPIGateway.Multiplayer.SendMessageTo(PacketIdO2GeneratorSettings, bytes, p.SteamUserId);
                 }
             }

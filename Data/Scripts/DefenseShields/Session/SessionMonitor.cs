@@ -409,6 +409,7 @@
 
                 if (s.DsState.State.ReInforce)
                 {
+                    s.DeformEnabled = true;
                     s.ProtectSubs(Tick);
                     continue;
                 }

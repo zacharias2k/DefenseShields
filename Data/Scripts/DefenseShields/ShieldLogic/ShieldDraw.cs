@@ -106,9 +106,9 @@
 
         private static MyStringId GetHudIcon2FromFloat(float fState)
         {
-            var oneTenth = fState * 0.1;
-            if (oneTenth > -0.1 && oneTenth < 0.1) return MyStringId.NullOrEmpty;
-            return oneTenth > 0 ? Session.Instance.HudHealthHpIcons[(int)Math.Floor(MathHelper.Clamp(oneTenth, 0, 10))] : Session.Instance.HudHealthHpIcons[(int)Math.Floor(MathHelper.Clamp(-oneTenth * 0.1, 0, 9)) + 10];
+            var slot = (int)Math.Floor(fState * 10);
+            if (slot < 0) slot = (slot * -1) + 10;
+            return Session.Instance.HudHealthHpIcons[slot];
         }
 
         private static MyStringId GetHudIcon3FromInt(int heat, bool flash)
@@ -338,30 +338,23 @@
 
         private float GetIconMeterfloat()
         {
-            var consumptionRate = _shieldConsumptionRate;
-            var hps = _shieldChargeRate;
-            var dps = _runningDamage / 60;
-            if (hps < 1) hps = 1;
-            if (dps < 1) dps = 1;
-
-            var maxHps = GridMaxPower - (consumptionRate * 0.05f);
-            var dpsScaledRate = dps * (consumptionRate / hps);
-            var charging = hps > dps;
-            var hpsOfMax = consumptionRate / maxHps * 100;
-            var dpsOfMax = dpsScaledRate / maxHps * 100;
-
-            float percentOfMax = 0;
-            if (charging)
+            var dps = _runningDamage;
+            var hps = _runningHeal;
+            var reduction = _expChargeReduction > 0 ? _shieldPeakRate / _expChargeReduction : _shieldPeakRate;
+            if (hps > 0 && dps <= 0)
             {
-                if (hps > 0.01) percentOfMax = hpsOfMax - dpsOfMax;
+                return reduction / _shieldPeakRate;
             }
-            else
-            {
-                if (dps > 0.01) percentOfMax = dpsOfMax - hpsOfMax;
-            }
+            if (DsState.State.ShieldPercent > 99 || (hps <= 0 && dps <= 0)) return 0;
+            if (hps <= 0) return 0.0999f;
 
-            if (charging) return percentOfMax;
-            return -percentOfMax;
+            if (hps > dps)
+            {
+                var healing = MathHelper.Clamp(dps / hps, 0, reduction / _shieldPeakRate);
+                return healing;
+            }
+            var damage = hps / dps;
+            return -damage;
         }
     }
 }
