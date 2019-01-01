@@ -22,6 +22,8 @@
 
 .idea/
 .vs/
+.vs/DefenseShields/
+.vs/DefenseShields/v15
 *.lock
 *.ide
 *.ide-shm
@@ -31,4 +33,5 @@
 *.suo
 *.cache
 obj/
+obj/Debug/
 bin/
