@@ -15,16 +15,16 @@
 
         public Icosphere(int lods)
         {
-            const float x = 0.525731112119133606f;
-            const float z = 0.850650808352039932f;
-            const float y = 0;
+            const float X = 0.525731112119133606f;
+            const float Z = 0.850650808352039932f;
+            const float Y = 0;
             Vector3[] data =
             {
-                new Vector3(-x, y, z), new Vector3(x, y, z), new Vector3(-x, y, -z), new Vector3(x, y, -z),
-                new Vector3(y, z, x), new Vector3(y, z, -x), new Vector3(y, -z, x), new Vector3(y, -z, -x),
-                new Vector3(z, x, y), new Vector3(-z, x, y), new Vector3(z, -x, y), new Vector3(-z, -x, y)
+                new Vector3(-X, Y, Z), new Vector3(X, Y, Z), new Vector3(-X, Y, -Z), new Vector3(X, Y, -Z),
+                new Vector3(Y, Z, X), new Vector3(Y, Z, -X), new Vector3(Y, -Z, X), new Vector3(Y, -Z, -X),
+                new Vector3(Z, X, Y), new Vector3(-Z, X, Y), new Vector3(Z, -X, Y), new Vector3(-Z, -X, Y)
             };
-            List<Vector3> points = new List<Vector3>(12 * (1 << (lods - 1)));
+            var points = new List<Vector3>(12 * (1 << (lods - 1)));
             points.AddRange(data);
             var index = new int[lods][];
             index[0] = new int[]
@@ -42,7 +42,7 @@
         }
         private static int SubdividedAddress(IList<Vector3> pts, IDictionary<string, int> assoc, int a, int b)
         {
-            string key = a < b ? (a.ToString() + "_" + b.ToString()) : (b.ToString() + "_" + a.ToString());
+            var key = a < b ? (a.ToString() + "_" + b.ToString()) : (b.ToString() + "_" + a.ToString());
             int res;
             if (assoc.TryGetValue(key, out res))
                 return res;
@@ -55,17 +55,17 @@
 
         private static int[] Subdivide(IList<Vector3> vbuffer, IReadOnlyList<int> prevLod)
         {
-            Dictionary<string, int> assoc = new Dictionary<string, int>();
-            int[] res = new int[prevLod.Count * 4];
-            int rI = 0;
+            var assoc = new Dictionary<string, int>();
+            var res = new int[prevLod.Count * 4];
+            var rI = 0;
             for (int i = 0; i < prevLod.Count; i += 3)
             {
-                int v1 = prevLod[i];
-                int v2 = prevLod[i + 1];
-                int v3 = prevLod[i + 2];
-                int v12 = SubdividedAddress(vbuffer, assoc, v1, v2);
-                int v23 = SubdividedAddress(vbuffer, assoc, v2, v3);
-                int v31 = SubdividedAddress(vbuffer, assoc, v3, v1);
+                var v1 = prevLod[i];
+                var v2 = prevLod[i + 1];
+                var v3 = prevLod[i + 2];
+                var v12 = SubdividedAddress(vbuffer, assoc, v1, v2);
+                var v23 = SubdividedAddress(vbuffer, assoc, v2, v3);
+                var v31 = SubdividedAddress(vbuffer, assoc, v3, v1);
 
                 res[rI++] = v1;
                 res[rI++] = v12;
@@ -87,33 +87,54 @@
             return res;
         }
 
-        public static long VertsForLod(int lod)
+        private static long VertsForLod(int lod)
         {
             var shift = lod * 2;
             var k = (1L << shift) - 1;
-            return 12 + 30 * (k & 0x5555555555555555L);
+            return 12 + (30 * (k & 0x5555555555555555L));
         }
 
         public class Instance
         {
+            private const string ShieldEmissiveAlpha = "ShieldEmissiveAlpha";
+            private const int SideSteps = 60;
+            private const int ImpactSteps = 60;
+            private const int RefreshSteps = 30;
+            private const int SmallImpact = ImpactSteps / 3;
+            private const float WaveMultiplier = Pi / ImpactSteps;
+            private static readonly Random Random = new Random();
+
             private readonly Icosphere _backing;
 
-            public double[] SideDistArray = {
-                0, 0, 0, 0, 0, 0
-            };
+            private readonly Vector4 _waveColor = Color.FromNonPremultiplied(0, 0, 0, 84);
+            private readonly Vector4 _refreshColor = Color.FromNonPremultiplied(255, 255, 255, 255);
 
-            public string[] SideNameArray = {
-                "ShieldLeft", "ShieldRight", "ShieldTop", "ShieldBottom", "ShieldFront", "ShieldBack"
-            };
+            private readonly Vector2 _v20 = new Vector2(.5f);
+            private readonly Vector2 _v21 = new Vector2(0.25f);
+            private readonly Vector2 _v22 = new Vector2(0.25f);
 
-            public MyEntitySubpart[] SidePartArray = {
-                null, null, null, null, null, null
-            };
+            private readonly int[] _impactCnt = new int[6];
+            private readonly int[] _sideLoops = new int[6];
 
-            private readonly Vector3D[] _impactPos = {Vector3D.NegativeInfinity, Vector3D.NegativeInfinity,
-                Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity};
-            private readonly Vector3D[] _localImpacts = {Vector3D.NegativeInfinity, Vector3D.NegativeInfinity,
-                Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity};
+            private readonly List<int> _hitFaces = new List<int>();
+
+            private readonly MyEntitySubpart[] _sidePartArray = { null, null, null, null, null, null };
+
+            private readonly Vector3D[] _impactPos =
+                {
+                    Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity,
+                    Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity
+                };
+
+            private readonly Vector3D[] _localImpacts =
+                {
+                    Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity,
+                    Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity
+                };
+
+            private readonly MyStringId _faceCharge = MyStringId.GetOrCompute("Charge"); 
+            private readonly MyStringId _faceWave = MyStringId.GetOrCompute("GlassOutside"); 
+
             private Vector3D[] _preCalcNormLclPos;
             private Vector3D[] _vertexBuffer;
             private Vector3D[] _physicsBuffer;
@@ -124,17 +145,6 @@
             private Vector3D _impactPosState;
             private Vector3D _refreshPoint;
             private MatrixD _matrix;
-            private Vector2 _v20 = new Vector2(.5f);
-            private Vector2 _v21 = new Vector2(0.25f);
-            private Vector2 _v22 = new Vector2(0.25f);
-
-            private const string ShieldEmissiveAlpha = "ShieldEmissiveAlpha";
-
-            private static readonly Random Random = new Random();
-
-            private readonly int[] _impactCnt = new int[6];
-            private readonly int[] _sideLoops = new int[6];
-            private readonly List<int> _hitFaces = new List<int>();
 
             private int _mainLoop = -1;
             private int _lCount;
@@ -142,30 +152,22 @@
             private int _refreshDrawStep;
             private int _lod;
 
-            private const int SideSteps = 60;
-            private const int ImpactSteps = 60;
-            private const int RefreshSteps = 30;
-
             private Color _activeColor = Color.Transparent;
-            private readonly Vector4 _waveColor = Color.FromNonPremultiplied(0, 0, 0, 84);
-            private readonly Vector4 _refreshColor = Color.FromNonPremultiplied(255, 255, 255, 255);
-            public bool ImpactsFinished = true;
+
             private bool _impact;
             private bool _refresh;
             private bool _active;
 
-            public MyEntity ShellActive;
-
-            private readonly MyStringId _faceCharge = MyStringId.GetOrCompute("Charge");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
-            private readonly MyStringId _faceWave = MyStringId.GetOrCompute("GlassOutside");  //GlareLsThrustLarge //ReflectorCone //SunDisk  //GlassOutside //Spark1 //Lightning_Spherical //Atlas_A_01
             private MyStringId _faceMaterial;
-
-            private DSUtils _dsutil1 = new DSUtils();
 
             internal Instance(Icosphere backing)
             {
                 _backing = backing;
             }
+
+            internal bool ImpactsFinished { get; set; } = true;
+
+            internal MyEntity ShellActive { get; set; }
 
             internal void CalculateTransform(MatrixD matrix, int lod)
             {
@@ -291,70 +293,18 @@
                 if (_impact)
                 {
                     _impact = false;
-                    if (_active)
-                    {
-                        var impactTransNorm = _impactPosState - _matrix.Translation;
-                        _hitFaces.Clear();
-                        GetIntersectingFace(_matrix, impactTransNorm, _hitFaces);
-                        foreach (var face in _hitFaces)
-                        {
-                            _sideLoops[face] = 1;
-                            SidePartArray[face].Render.UpdateRenderObject(true);
-                            UpdateColor(SidePartArray[face]);
-                        }
-                    }
+                    if (_active) HitFace();
 
                     ImpactsFinished = false;
                     _refresh = false;
                     _refreshDrawStep = 0;
                 }
 
-                if (_refresh)
-                {
-                    _refreshDrawStep++;
-                    if (_refreshDrawStep == RefreshSteps + 1)
-                    {
-                        _refresh = false;
-                        _refreshDrawStep = 0;
-                        for (int i = 0; i < _triColorBuffer.Length; i++) _triColorBuffer[i] = 0;
-                    }
-                }
-                if (!ImpactsFinished)
-                {
-                    // Log.Line($"{_impactCnt[0]} - {_impactCnt[1]} - {_impactCnt[2]} - {_impactCnt[3]} - {_impactCnt[4]} - {_impactCnt[5]}");
-                    for (int i = 0; i < _sideLoops.Length; i++)
-                    {
-                        if (_sideLoops[i] != 0) _sideLoops[i]++;
-                        else continue;
+                if (_refresh) RefreshEffect();
 
-                        if (_sideLoops[i] == SideSteps + 1)
-                        {
-                            SidePartArray[i].Render.UpdateRenderObject(false);
-                            _sideLoops[i] = 0;
-                        }
-                    }
-                    for (int i = 0; i < _impactCnt.Length; i++)
-                    {
-                        if (_impactPos[i] != Vector3D.NegativeInfinity)
-                        {
-                            _impactCnt[i]++;
-                        }
-                        if (_impactCnt[i] == ImpactSteps + 1)
-                        {
-                            _impactCnt[i] = 0;
-                            _impactPos[i] = Vector3D.NegativeInfinity;
-                            _localImpacts[i] = Vector3D.NegativeInfinity;
-                        }
-                    }
-                    if (_impactCnt[0] == 0 && _impactCnt[1] == 0 && _impactCnt[2] == 0 && _impactCnt[3] == 0 && _impactCnt[4] == 0 && _impactCnt[5] == 0)
-                    {
-                        ShellActive.Render.UpdateRenderObject(false);
-                        ImpactsFinished = true;
-                        for (int i = 0; i < _triColorBuffer.Length; i++) _triColorBuffer[i] = 0;
-                    }
-                }
+                if (!ImpactsFinished) UpdateImpactState();
             }
-
+            
             internal void Draw(uint renderId)
             {
                 try
@@ -395,7 +345,7 @@
                 catch (Exception ex) { Log.Line($"Exception in IcoSphere Draw - renderId {renderId.ToString()}: {ex}"); }
             }
 
-            private static void GetIntersectingFace(MatrixD matrix, Vector3D hitPosLocal, List<int> impactFaces)
+            private static void GetIntersectingFace(MatrixD matrix, Vector3D hitPosLocal, ICollection<int> impactFaces)
             {
                 var boxMax = matrix.Backward + matrix.Right + matrix.Up;
                 var boxMin = -boxMax;
@@ -446,7 +396,7 @@
 
                         if (prevLod != _lod)
                         {
-                            var lclPos = (v0 + v1 + v2) / 3 - _matrix.Translation;
+                            var lclPos = ((v0 + v1 + v2) / 3) - _matrix.Translation;
                             var normlclPos = Vector3D.Normalize(lclPos);
                             _preCalcNormLclPos[j] = normlclPos;
                             for (int c = 0; c < _triColorBuffer.Length; c++)
@@ -456,21 +406,19 @@
                         {
                             for (int s = 0; s < 6; s++)
                             {
-                                // basically the same as for a sphere: offset by radius, except the radius will depend on the axis
-                                // if you already have the mesh generated, it's easy to get the vector from point - origin
-                                // when you have the vector, save the magnitude as the length (radius at that point), then normalize the vector 
-                                // so it's length is 1, then multiply by length + wave offset you would need the original vertex points for each iteration
-                                var smallImpact = ImpactSteps / 3;
+                                //// basically the same as for a sphere: offset by radius, except the radius will depend on the axis
+                                //// if you already have the mesh generated, it's easy to get the vector from point - origin
+                                //// when you have the vector, save the magnitude as the length (radius at that point), then normalize the vector 
+                                //// so it's length is 1, then multiply by length + wave offset you would need the original vertex points for each iteration
 
-                                if (_localImpacts[s] == Vector3D.NegativeInfinity || _impactCnt[s] > smallImpact + 1) continue;
+                                if (_localImpacts[s] == Vector3D.NegativeInfinity || _impactCnt[s] > SmallImpact + 1) continue;
                                 var dotOfNormLclImpact = Vector3D.Dot(_preCalcNormLclPos[i / 3], _localImpacts[s]);
                                 var impactFactor = (((-0.69813170079773212 * dotOfNormLclImpact * dotOfNormLclImpact) - 0.87266462599716477) * dotOfNormLclImpact) + 1.5707963267948966;
-                                var waveMultiplier = Pi / ImpactSteps;
-                                var wavePosition = waveMultiplier * _impactCnt[s];
+                                var wavePosition = WaveMultiplier * _impactCnt[s];
                                 var relativeToWavefront = Math.Abs(impactFactor - wavePosition);
                                 if (impactFactor < wavePosition && relativeToWavefront >= 0 && relativeToWavefront < 0.25)
                                 {
-                                    if (_impactCnt[s] != smallImpact + 1) _triColorBuffer[j] = 1;
+                                    if (_impactCnt[s] != SmallImpact + 1) _triColorBuffer[j] = 1;
                                     else _triColorBuffer[j] = 0;
                                     break;
                                 }
@@ -485,6 +433,52 @@
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in ImpactColorAssignments {ex}"); }
+            }
+
+            private void RefreshEffect()
+            {
+                _refreshDrawStep++;
+                if (_refreshDrawStep == RefreshSteps + 1)
+                {
+                    _refresh = false;
+                    _refreshDrawStep = 0;
+                    for (int i = 0; i < _triColorBuffer.Length; i++) _triColorBuffer[i] = 0;
+                }
+            }
+
+            private void UpdateImpactState()
+            {
+                // Log.Line($"{_impactCnt[0]} - {_impactCnt[1]} - {_impactCnt[2]} - {_impactCnt[3]} - {_impactCnt[4]} - {_impactCnt[5]}");
+                for (int i = 0; i < _sideLoops.Length; i++)
+                {
+                    if (_sideLoops[i] != 0) _sideLoops[i]++;
+                    else continue;
+
+                    if (_sideLoops[i] == SideSteps + 1)
+                    {
+                        _sidePartArray[i].Render.UpdateRenderObject(false);
+                        _sideLoops[i] = 0;
+                    }
+                }
+                for (int i = 0; i < _impactCnt.Length; i++)
+                {
+                    if (_impactPos[i] != Vector3D.NegativeInfinity)
+                    {
+                        _impactCnt[i]++;
+                    }
+                    if (_impactCnt[i] == ImpactSteps + 1)
+                    {
+                        _impactCnt[i] = 0;
+                        _impactPos[i] = Vector3D.NegativeInfinity;
+                        _localImpacts[i] = Vector3D.NegativeInfinity;
+                    }
+                }
+                if (_impactCnt[0] == 0 && _impactCnt[1] == 0 && _impactCnt[2] == 0 && _impactCnt[3] == 0 && _impactCnt[4] == 0 && _impactCnt[5] == 0)
+                {
+                    ShellActive.Render.UpdateRenderObject(false);
+                    ImpactsFinished = true;
+                    for (int i = 0; i < _triColorBuffer.Length; i++) _triColorBuffer[i] = 0;
+                }
             }
 
             private void RefreshColorAssignments(int prevLod)
@@ -538,15 +532,28 @@
                 }
             }
 
+            private void HitFace()
+            {
+                var impactTransNorm = _impactPosState - _matrix.Translation;
+                _hitFaces.Clear();
+                GetIntersectingFace(_matrix, impactTransNorm, _hitFaces);
+                foreach (var face in _hitFaces)
+                {
+                    _sideLoops[face] = 1;
+                    _sidePartArray[face].Render.UpdateRenderObject(true);
+                    UpdateColor(_sidePartArray[face]);
+                }
+            }
+
             private void ComputeSides(MyEntity shellActive)
             {
                 if (shellActive == null) return;
-                shellActive.TryGetSubpart("ShieldLeft", out SidePartArray[0]);
-                shellActive.TryGetSubpart("ShieldRight", out SidePartArray[1]);
-                shellActive.TryGetSubpart("ShieldTop", out SidePartArray[2]);
-                shellActive.TryGetSubpart("ShieldBottom", out SidePartArray[3]);
-                shellActive.TryGetSubpart("ShieldFront", out SidePartArray[4]);
-                shellActive.TryGetSubpart("ShieldBack", out SidePartArray[5]);
+                shellActive.TryGetSubpart("ShieldLeft", out _sidePartArray[0]);
+                shellActive.TryGetSubpart("ShieldRight", out _sidePartArray[1]);
+                shellActive.TryGetSubpart("ShieldTop", out _sidePartArray[2]);
+                shellActive.TryGetSubpart("ShieldBottom", out _sidePartArray[3]);
+                shellActive.TryGetSubpart("ShieldFront", out _sidePartArray[4]);
+                shellActive.TryGetSubpart("ShieldBack", out _sidePartArray[5]);
                 ShellActive = shellActive;
             }
 

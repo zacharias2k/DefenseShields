@@ -360,8 +360,7 @@
                     var myEntity = target as MyEntity;
                     if (myEntity == null) return;
 
-                    if (info.Type == DelDamage || info.Type == MyDamageType.Destruction || info.Type == MyDamageType.Drill || info.Type == MyDamageType.Grind
-                        || info.Type == MyDamageType.Environment || info.Type == MyDamageType.LowPressure) return;
+                    if (info.Type == DelDamage || info.Type == MpDoExplosion || info.Type == MPdamage) return;
 
                     MyProtectors protectors;
                     GlobalProtect.TryGetValue(myEntity, out protectors);
