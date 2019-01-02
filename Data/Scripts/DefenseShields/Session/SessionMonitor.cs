@@ -159,17 +159,6 @@
             catch (Exception ex) { Log.Line($"Exception in WebMonitor: {ex}"); }
         }
 
-        internal void WebDispatch()
-        {
-            DefenseShields shield;
-            while (WebWrapper.TryDequeue(out shield))
-            {
-                if (shield == null) continue;
-                if (!shield.VoxelsToIntersect.IsEmpty) MyAPIGateway.Parallel.Start(shield.VoxelIntersect);
-                if (!shield.WebEnts.IsEmpty) MyAPIGateway.Parallel.ForEach(shield.WebEnts, shield.EntIntersectSelector);
-            }
-        }
-
         internal void MonitorRefreshTasks(int x, ref List<MyEntity> monitorList, bool reInforce, ref bool newSub)
         {
             var s = _workData.ShieldList[x];
@@ -430,6 +419,17 @@
 
             if (Enforced.Debug >= 5 && EntSlotTick) Dsutil1.StopWatchReport($"[LogicUpdate] tick:{Tick} - WebbingShields:{y} - CPU:", -1);
             else if (Enforced.Debug >= 5) Dsutil1.Sw.Reset();
+        }
+
+        private void WebDispatch()
+        {
+            DefenseShields shield;
+            while (WebWrapper.TryDequeue(out shield))
+            {
+                if (shield == null) continue;
+                if (!shield.VoxelsToIntersect.IsEmpty) MyAPIGateway.Parallel.Start(shield.VoxelIntersect);
+                if (!shield.WebEnts.IsEmpty) MyAPIGateway.Parallel.ForEach(shield.WebEnts, shield.EntIntersectSelector);
+            }
         }
 
         private void DispatchDone()
