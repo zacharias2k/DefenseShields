@@ -197,21 +197,23 @@
             var collisionAvg = Vector3D.Zero;
             try
             {
-                if (voxelBase.MarkedForClose) return Vector3D.NegativeInfinity;
+                if (voxelBase.RootVoxel.MarkedForClose || voxelBase.RootVoxel.Storage.Closed) return Vector3D.NegativeInfinity;
                 var planet = voxelBase as MyPlanet;
                 var map = voxelBase as MyVoxelMap;
                 var isPlanet = voxelBase is MyPlanet;
                 var collision = Vector3D.Zero;
                 var collisionCnt = 0;
+                var flag = MyVoxelRequestFlags.EmptyContent;
 
                 if (isPlanet)
                 {
                     for (int i = 0; i < 162; i++)
                     {
                         var from = physicsVerts[i];
-                        //var hit = planet.RootVoxel.DoOverlapSphereTest(0.1f, from);
-                        var hit = PosInVoxel(planet, from, cache);
-                        if (hit)
+                        Vector3I voxelCoord;
+                        MyVoxelCoordSystems.WorldPositionToVoxelCoord(planet.PositionLeftBottomCorner, ref from, out voxelCoord);
+                        planet.Storage.ReadRange(cache, MyStorageDataTypeFlags.Content, 0, voxelCoord, voxelCoord, ref flag);
+                        if (cache.Content(ref Vector3I.Zero) != 0)
                         {
                             collision += from;
                             collisionCnt++;
@@ -220,13 +222,21 @@
                 }
                 else
                 {
+                    if (map == null) return Vector3D.NegativeInfinity;
                     for (int i = 0; i < 162; i++)
                     {
-                        if (map == null) continue;
+                        //MyVoxelCoordSystems.WorldPositionToLocalPosition(referenceVoxelMapPosition, ref worldPosition, out localPosition);
+                        //MyVoxelCoordSystems.LocalPositionToVoxelCoord(ref localPosition, out voxelCoord);
+                        //MyVoxelCoordSystems.WorldPositionToVoxelCoord(map.PositionLeftBottomCorner, ref from, out voxelCoord);
+
                         var from = physicsVerts[i];
-                        //var hit = map.DoOverlapSphereTest(0.1f, from);
-                        var hit = PosInVoxel(map, from, cache);
-                        if (hit)
+                        var localPosition = (Vector3)(from - map.PositionLeftBottomCorner);
+                        var v = localPosition / 1f;
+                        Vector3I voxelCoord;
+                        Vector3I.Floor(ref v, out voxelCoord);
+
+                        map.Storage.ReadRange(cache, MyStorageDataTypeFlags.Content, 0, voxelCoord, voxelCoord, ref flag);
+                        if (cache.Content(ref Vector3I.Zero) != 0)
                         {
                             collision += from;
                             collisionCnt++;
