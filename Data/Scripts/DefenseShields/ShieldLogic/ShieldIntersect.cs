@@ -3,12 +3,17 @@
     using System;
     using System.Collections.Generic;
     using global::DefenseShields.Support;
+
+    using Sandbox.Engine.Voxels;
     using Sandbox.Game.Entities;
     using Sandbox.Game.Entities.Character.Components;
     using Sandbox.ModAPI;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRage.ModAPI;
+    using VRage.Voxels;
+    using VRage.Voxels.Storage;
+
     using VRageMath;
 
     public partial class DefenseShields
@@ -246,23 +251,32 @@
 
         internal void VoxelIntersect()
         {
-            foreach (var dict in VoxelsToIntersect)
+            //Dsutil1.Sw.Restart();
+            foreach (var item in VoxelsToIntersect)
             {
-                var voxelBase = dict.Key;
-                var seen = dict.Value;
+                var voxelBase = item.Key;
+                var newVoxel = item.Value == 1;
+                var stage1Check = false;
 
-                var aabb = (BoundingBox)ShieldEnt.PositionComp.WorldAABB;
-                aabb.Translate(-voxelBase.RootVoxel.PositionLeftBottomCorner);
-                if (!seen || voxelBase.RootVoxel.Storage.Intersect(ref aabb, false) == ContainmentType.Disjoint)
+                if (item.Value > 1) stage1Check = true;
+                else if (newVoxel)
                 {
-                    bool oldValue;
+                    var aabb = (BoundingBox)ShieldEnt.PositionComp.WorldAABB;
+                    aabb.Translate(-voxelBase.RootVoxel.PositionLeftBottomCorner);
+                    if (voxelBase.RootVoxel.Storage.Intersect(ref aabb, false) != ContainmentType.Disjoint) stage1Check = true;
+                }
+
+                if (!stage1Check)
+                {
+                    int oldValue;
                     VoxelsToIntersect.TryRemove(voxelBase, out oldValue);
                     continue;
                 }
 
-                var collision = CustomCollision.VoxelCollisionSphere(MyGrid, ShieldComp.PhysicsOutsideLow, voxelBase, SOriBBoxD, DetectMatrixOutside);
+                var collision = CustomCollision.VoxelEllipsoidCheck(MyGrid, ShieldComp.PhysicsOutsideLow, voxelBase, _voxelStorageCache);
                 if (collision != Vector3D.NegativeInfinity)
                 {
+                    VoxelsToIntersect[voxelBase]++;
                     if (_isServer)
                     {
                         var mass = MyGrid.GetCurrentMass();
@@ -274,12 +288,13 @@
                     WorldImpactPosition = collision;
                     WebDamage = true;
 
-                    // if (!Session.MpActive && !(voxelBase is MyPlanet)) _voxelDmg.Enqueue(voxelBase);
-                    // There is ContainmentType Intersect(ref BoundingBox box, bool lazy) which is super fast
-                    // void ExecuteOperationFast<TVoxelOperator>(ref TVoxelOperator voxelOperator, MyStorageDataTypeFlags dataToWrite, ref Vector3I voxelRangeMin, ref Vector3I voxelRangeMax, bool notifyRangeChanged)
+                    //// if (!Session.MpActive && !(voxelBase is MyPlanet)) _voxelDmg.Enqueue(voxelBase);
+                    //// There is ContainmentType Intersect(ref BoundingBox box, bool lazy) which is super fast
+                    //// void ExecuteOperationFast<TVoxelOperator>(ref TVoxelOperator voxelOperator, MyStorageDataTypeFlags dataToWrite, ref Vector3I voxelRangeMin, ref Vector3I voxelRangeMax, bool notifyRangeChanged)
                 }
-                else VoxelsToIntersect[voxelBase] = false;
+                else VoxelsToIntersect[voxelBase] = 0;
             }
+            //Dsutil1.StopWatchReport("voxelIntersect", -1);
         }
 
         private void PlayerIntersect(MyEntity ent)

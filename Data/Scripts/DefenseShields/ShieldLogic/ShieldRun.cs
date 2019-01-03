@@ -5,9 +5,13 @@
     using Sandbox.Common.ObjectBuilders;
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
+
+    using VRage.Game;
     using VRage.Game.Components;
     using VRage.ModAPI;
     using VRage.ObjectBuilders;
+
+    using VRageMath;
 
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DSControlLarge", "DSControlSmall", "DSControlTable")]
     public partial class DefenseShields : MyGameLogicComponent
@@ -64,6 +68,7 @@
                 else Session.Instance.FunctionalShields.Add(this);
 
                 Session.Instance.Controllers.Add(this);
+                _voxelStorageCache.Resize(Vector3I.One);
                 if (Session.Enforced.Debug == 3) Log.Line($"UpdateOnceBeforeFrame: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in Controller UpdateOnceBeforeFrame: {ex}"); }

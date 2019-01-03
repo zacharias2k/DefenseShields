@@ -70,6 +70,11 @@
             return tmp;
         }
 
+        public static bool VoxelOp()
+        {
+            return true;
+        }
+
         /*
         public static float ImpactFactor(MatrixD obbMatrix, Vector3 obbExtents, Vector3D impactPos, Vector3 direction)
         {

@@ -91,7 +91,8 @@
 
                 if (voxel != null)
                 {
-                    VoxelsToIntersect[voxel] = true;
+                    if (VoxelsToIntersect.ContainsKey(voxel)) VoxelsToIntersect[voxel]++;
+                    else VoxelsToIntersect[voxel] = 1;
                     voxelFound = true;
                     entChanged = true;
                     _enablePhysics = true;

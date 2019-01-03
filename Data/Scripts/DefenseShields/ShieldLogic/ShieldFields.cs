@@ -13,6 +13,8 @@
     using VRage.Game.ModAPI;
     using VRage.ModAPI;
     using VRage.Utils;
+    using VRage.Voxels;
+
     using VRageMath;
 
     public partial class DefenseShields 
@@ -39,7 +41,7 @@
 
         internal readonly ConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<MyEntity, EntIntersectInfo>();
         internal readonly ConcurrentDictionary<MyEntity, MoverInfo> EntsByMe = new ConcurrentDictionary<MyEntity, MoverInfo>();
-        internal readonly ConcurrentDictionary<MyVoxelBase, bool> VoxelsToIntersect = new ConcurrentDictionary<MyVoxelBase, bool>();
+        internal readonly ConcurrentDictionary<MyVoxelBase, int> VoxelsToIntersect = new ConcurrentDictionary<MyVoxelBase, int>();
 
         internal readonly ConcurrentQueue<MyCubeGrid> StaleGrids = new ConcurrentQueue<MyCubeGrid>();
 
@@ -114,6 +116,7 @@
         private readonly EllipsoidOxygenProvider _ellipsoidOxyProvider = new EllipsoidOxygenProvider(Matrix.Zero);
         private readonly EllipsoidSA _ellipsoidSa = new EllipsoidSA(double.MinValue, double.MinValue, double.MinValue);
         private readonly Vector3D[] _resetEntCorners = new Vector3D[8];
+        private readonly MyStorageData _voxelStorageCache = new MyStorageData();
 
         private uint _tick;
         private uint _shieldEntRendId;
@@ -324,6 +327,8 @@
         internal float Absorb { get; set; }
 
         internal double EmpSize { get; set; }
+
+        internal DSUtils Dsutil1 { get; set; } = new DSUtils();
 
         internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         internal Vector3D EmpDetonation { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
