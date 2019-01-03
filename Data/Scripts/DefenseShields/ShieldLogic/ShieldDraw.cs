@@ -107,6 +107,11 @@
         private static MyStringId GetHudIcon2FromFloat(float fState)
         {
             var slot = (int)Math.Floor(fState * 10);
+            if (slot > 19 || slot < 0)
+            {
+                if (Session.Enforced.Debug > 1) Log.Line($"GetHudIconSlotError: {slot} - {fState} - {fState * 10}");
+                return Session.Instance.HudHealthHpIcons[0];
+            }
             if (slot < 0) slot = (slot * -1) + 10;
             return Session.Instance.HudHealthHpIcons[slot];
         }
@@ -320,8 +325,8 @@
             var up = cameraWorldMatrix.Up;
             scale = 0.08 * scale;
 
-            var icon2FSelect = GetIconMeterfloat();
             var percent = DsState.State.ShieldPercent;
+            var icon2FSelect = percent < 99 ? GetIconMeterfloat() : 0;
             var heat = DsState.State.Heat;
 
             var icon1 = GetHudIcon1FromFloat(percent);
@@ -338,13 +343,11 @@
 
         private float GetIconMeterfloat()
         {
+            if (_shieldPeakRate <= 0) return 0;
             var dps = _runningDamage;
             var hps = _runningHeal;
             var reduction = _expChargeReduction > 0 ? _shieldPeakRate / _expChargeReduction : _shieldPeakRate;
-            if (hps > 0 && dps <= 0)
-            {
-                return reduction / _shieldPeakRate;
-            }
+            if (hps > 0 && dps <= 0) return reduction / _shieldPeakRate;
             if (DsState.State.ShieldPercent > 99 || (hps <= 0 && dps <= 0)) return 0;
             if (hps <= 0) return 0.0999f;
 

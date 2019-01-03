@@ -251,13 +251,14 @@
                 var voxelBase = dict.Key;
                 var seen = dict.Value;
 
-                if (!seen)
+                var aabb = (BoundingBox)ShieldEnt.PositionComp.WorldAABB;
+                aabb.Translate(-voxelBase.RootVoxel.PositionLeftBottomCorner);
+                if (!seen || voxelBase.RootVoxel.Storage.Intersect(ref aabb, false) == ContainmentType.Disjoint)
                 {
                     bool oldValue;
                     VoxelsToIntersect.TryRemove(voxelBase, out oldValue);
                     continue;
                 }
-                VoxelsToIntersect[voxelBase] = false;
 
                 var collision = CustomCollision.VoxelCollisionSphere(MyGrid, ShieldComp.PhysicsOutsideLow, voxelBase, SOriBBoxD, DetectMatrixOutside);
                 if (collision != Vector3D.NegativeInfinity)
@@ -277,6 +278,7 @@
                     // There is ContainmentType Intersect(ref BoundingBox box, bool lazy) which is super fast
                     // void ExecuteOperationFast<TVoxelOperator>(ref TVoxelOperator voxelOperator, MyStorageDataTypeFlags dataToWrite, ref Vector3I voxelRangeMin, ref Vector3I voxelRangeMax, bool notifyRangeChanged)
                 }
+                else VoxelsToIntersect[voxelBase] = false;
             }
         }
 

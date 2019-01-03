@@ -426,7 +426,7 @@
             DefenseShields shield;
             while (WebWrapper.TryDequeue(out shield))
             {
-                if (shield == null) continue;
+                if (shield == null || shield.MarkedForClose) continue;
                 if (!shield.VoxelsToIntersect.IsEmpty) MyAPIGateway.Parallel.Start(shield.VoxelIntersect);
                 if (!shield.WebEnts.IsEmpty) MyAPIGateway.Parallel.ForEach(shield.WebEnts, shield.EntIntersectSelector);
             }

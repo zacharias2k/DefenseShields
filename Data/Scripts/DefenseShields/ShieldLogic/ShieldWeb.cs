@@ -72,6 +72,7 @@
             var voxelFound = false;
             var shieldFound = false;
             var entChanged = false;
+            var iMoving = ShieldComp.GridIsMoving;
             var tick = Session.Instance.Tick;
 
             _enablePhysics = false;
@@ -79,7 +80,7 @@
             {
                 var ent = PruneList[i];
                 var voxel = ent as MyVoxelBase;
-                if (ent == null || ent.MarkedForClose || (voxel == null && (ent.Physics == null || ent.DefinitionId == null)) || (!GridIsMobile && voxel != null) || (disableVoxels && voxel != null) || (voxel != null && voxel != voxel.RootVoxel)) continue;
+                if (ent == null || ent.MarkedForClose || (voxel == null && (ent.Physics == null || ent.DefinitionId == null)) || (voxel != null && (!iMoving || !GridIsMobile || disableVoxels || voxel != voxel.RootVoxel))) continue;
 
                 if (reInforce && !ShieldComp.GetSubGrids.Contains(ent as MyCubeGrid)) continue;
 
@@ -227,7 +228,7 @@
                 if (voxelFound) Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
             }
 
-            if (ShieldComp.GridIsMoving || entChanged)
+            if (iMoving || entChanged)
             {
                 Asleep = false;
                 LastWokenTick = tick;
