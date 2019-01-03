@@ -220,6 +220,7 @@
                                 }
                             }
                         }
+
                         var battery = block as IMyBatteryBlock;
                         if (battery != null && block.IsFunctional && mechanical) _batteryBlocks.Add(battery);
                         if (block.IsFunctional && mechanical) _functionalBlocks.Add(block);

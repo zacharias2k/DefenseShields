@@ -68,7 +68,7 @@
                 else Session.Instance.FunctionalShields.Add(this);
 
                 Session.Instance.Controllers.Add(this);
-                _voxelStorageCache.Resize(Vector3I.One);
+                //// _voxelStorageCache.Resize(Vector3I.One);
                 if (Session.Enforced.Debug == 3) Log.Line($"UpdateOnceBeforeFrame: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in Controller UpdateOnceBeforeFrame: {ex}"); }

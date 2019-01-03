@@ -4,8 +4,23 @@
     using VRage.Collections;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
+    using VRage.ModAPI;
     using VRage.Utils;
+    using VRage.Voxels;
     using VRageMath;
+
+    public struct VoxelHit : IVoxelOperator
+    {
+        public bool HasHit;
+
+        public void Op(ref Vector3I pos, MyStorageDataTypeEnum dataType, ref byte content)
+        {
+            if (content != MyVoxelConstants.VOXEL_CONTENT_EMPTY)
+            {
+                HasHit = true;
+            }
+        }
+    }
 
     public struct ShieldHit
     {

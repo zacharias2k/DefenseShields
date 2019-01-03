@@ -4,15 +4,12 @@
     using System.Collections.Generic;
     using global::DefenseShields.Support;
 
-    using Sandbox.Engine.Voxels;
     using Sandbox.Game.Entities;
     using Sandbox.Game.Entities.Character.Components;
     using Sandbox.ModAPI;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRage.ModAPI;
-    using VRage.Voxels;
-    using VRage.Voxels.Storage;
 
     using VRageMath;
 
@@ -251,7 +248,6 @@
 
         internal void VoxelIntersect()
         {
-            //Dsutil1.Sw.Restart();
             foreach (var item in VoxelsToIntersect)
             {
                 var voxelBase = item.Key;
@@ -273,8 +269,8 @@
                     continue;
                 }
 
-                var collision = CustomCollision.VoxelEllipsoidCheck(MyGrid, ShieldComp.PhysicsOutsideLow, voxelBase, _voxelStorageCache);
-                if (collision != Vector3D.NegativeInfinity)
+                var collision = CustomCollision.VoxelEllipsoidCheck(MyGrid, ShieldComp.PhysicsOutsideLow, voxelBase);
+                if (collision.HasValue)
                 {
                     VoxelsToIntersect[voxelBase]++;
                     if (_isServer)
@@ -285,16 +281,11 @@
                         Absorb += (momentum.Length() / 500) * DsState.State.ModulateEnergy;
                     }
                     ImpactSize = 12000;
-                    WorldImpactPosition = collision;
+                    WorldImpactPosition = collision.Value;
                     WebDamage = true;
-
-                    //// if (!Session.MpActive && !(voxelBase is MyPlanet)) _voxelDmg.Enqueue(voxelBase);
-                    //// There is ContainmentType Intersect(ref BoundingBox box, bool lazy) which is super fast
-                    //// void ExecuteOperationFast<TVoxelOperator>(ref TVoxelOperator voxelOperator, MyStorageDataTypeFlags dataToWrite, ref Vector3I voxelRangeMin, ref Vector3I voxelRangeMax, bool notifyRangeChanged)
                 }
                 else VoxelsToIntersect[voxelBase] = 0;
             }
-            //Dsutil1.StopWatchReport("voxelIntersect", -1);
         }
 
         private void PlayerIntersect(MyEntity ent)

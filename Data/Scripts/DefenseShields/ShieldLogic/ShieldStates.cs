@@ -492,7 +492,7 @@
             foreach (var voxel in pruneList)
             {
                 if (voxel.RootVoxel == null || voxel != voxel.RootVoxel) continue;
-                if (!CustomCollision.VoxelContact(ShieldComp.PhysicsOutsideLow, voxel, _voxelStorageCache)) continue;
+                if (!CustomCollision.VoxelContact(ShieldComp.PhysicsOutsideLow, voxel)) continue;
 
                 Shield.Enabled = false;
                 DsState.State.FieldBlocked = true;

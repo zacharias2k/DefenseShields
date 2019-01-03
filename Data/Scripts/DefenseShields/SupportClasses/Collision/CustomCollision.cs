@@ -143,6 +143,7 @@
         {
         }
 
+        /*
         public static bool PosInVoxel(MyVoxelBase voxelBase, Vector3D pos, MyStorageData cache)
         {
             if (voxelBase.Storage.Closed) return false;
@@ -158,13 +159,60 @@
             }
             return false;
         }
+        */
 
+        public static bool VoxelContact(Vector3D[] physicsVerts, MyVoxelBase voxelBase)
+        {
+            try
+            {
+                if (voxelBase.RootVoxel.MarkedForClose || voxelBase.RootVoxel.Storage.Closed) return false;
+                var planet = voxelBase as MyPlanet;
+                var map = voxelBase as MyVoxelMap;
 
+                if (planet != null)
+                {
+                    for (int i = 0; i < 162; i++)
+                    {
+                        var from = physicsVerts[i];
+                        var localPosition = (Vector3)(from - planet.PositionLeftBottomCorner);
+                        var v = localPosition / 1f;
+                        Vector3I voxelCoord;
+                        Vector3I.Floor(ref v, out voxelCoord);
+
+                        var hit = new VoxelHit();
+                        planet.Storage.ExecuteOperationFast(ref hit, MyStorageDataTypeFlags.Content, ref voxelCoord, ref voxelCoord, notifyRangeChanged: false);
+
+                        if (hit.HasHit) return true;
+                    }
+                }
+                else if (map != null)
+                {
+                    for (int i = 0; i < 162; i++)
+                    {
+                        var from = physicsVerts[i];
+                        var localPosition = (Vector3)(from - map.PositionLeftBottomCorner);
+                        var v = localPosition / 1f;
+                        Vector3I voxelCoord;
+                        Vector3I.Floor(ref v, out voxelCoord);
+
+                        var hit = new VoxelHit();
+                        map.Storage.ExecuteOperationFast(ref hit, MyStorageDataTypeFlags.Content, ref voxelCoord, ref voxelCoord, notifyRangeChanged: false);
+
+                        if (hit.HasHit) return true;
+                    }
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in VoxelContact: {ex}"); }
+
+            return false;
+        }
+
+        /*
         public static bool VoxelContact(Vector3D[] physicsVerts, MyVoxelBase voxelBase, MyStorageData cache)
         {
             try
             {
-                if (voxelBase.Closed) return false;
+                if (voxelBase.RootVoxel.MarkedForClose || voxelBase.RootVoxel.Storage.Closed) return false;
                 var planet = voxelBase as MyPlanet;
                 var map = voxelBase as MyVoxelMap;
                 var isPlanet = voxelBase is MyPlanet;
@@ -191,52 +239,53 @@
             catch (Exception ex) { Log.Line($"Exception in VoxelCollisionSphere: {ex}"); }
             return false;
         }
-
-        public static Vector3D VoxelEllipsoidCheck(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, MyVoxelBase voxelBase, MyStorageData cache)
+        */
+        public static Vector3D? VoxelEllipsoidCheck(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, MyVoxelBase voxelBase)
         {
             var collisionAvg = Vector3D.Zero;
             try
             {
-                if (voxelBase.RootVoxel.MarkedForClose || voxelBase.RootVoxel.Storage.Closed) return Vector3D.NegativeInfinity;
+                if (voxelBase.RootVoxel.MarkedForClose || voxelBase.RootVoxel.Storage.Closed) return null;
                 var planet = voxelBase as MyPlanet;
                 var map = voxelBase as MyVoxelMap;
-                var isPlanet = voxelBase is MyPlanet;
+
                 var collision = Vector3D.Zero;
                 var collisionCnt = 0;
-                var flag = MyVoxelRequestFlags.EmptyContent;
-
-                if (isPlanet)
+                
+                if (planet != null)
                 {
                     for (int i = 0; i < 162; i++)
                     {
                         var from = physicsVerts[i];
+                        var localPosition = (Vector3)(from - planet.PositionLeftBottomCorner);
+                        var v = localPosition / 1f;
                         Vector3I voxelCoord;
-                        MyVoxelCoordSystems.WorldPositionToVoxelCoord(planet.PositionLeftBottomCorner, ref from, out voxelCoord);
-                        planet.Storage.ReadRange(cache, MyStorageDataTypeFlags.Content, 0, voxelCoord, voxelCoord, ref flag);
-                        if (cache.Content(ref Vector3I.Zero) != 0)
+                        Vector3I.Floor(ref v, out voxelCoord);
+
+                        var hit = new VoxelHit();
+                        planet.Storage.ExecuteOperationFast(ref hit, MyStorageDataTypeFlags.Content, ref voxelCoord, ref voxelCoord, notifyRangeChanged: false);
+
+                        if (hit.HasHit)
                         {
                             collision += from;
                             collisionCnt++;
                         }
                     }
                 }
-                else
+                else if (map != null)
                 {
-                    if (map == null) return Vector3D.NegativeInfinity;
                     for (int i = 0; i < 162; i++)
                     {
-                        //MyVoxelCoordSystems.WorldPositionToLocalPosition(referenceVoxelMapPosition, ref worldPosition, out localPosition);
-                        //MyVoxelCoordSystems.LocalPositionToVoxelCoord(ref localPosition, out voxelCoord);
-                        //MyVoxelCoordSystems.WorldPositionToVoxelCoord(map.PositionLeftBottomCorner, ref from, out voxelCoord);
-
                         var from = physicsVerts[i];
                         var localPosition = (Vector3)(from - map.PositionLeftBottomCorner);
                         var v = localPosition / 1f;
                         Vector3I voxelCoord;
                         Vector3I.Floor(ref v, out voxelCoord);
 
-                        map.Storage.ReadRange(cache, MyStorageDataTypeFlags.Content, 0, voxelCoord, voxelCoord, ref flag);
-                        if (cache.Content(ref Vector3I.Zero) != 0)
+                        var hit = new VoxelHit();
+                        map.Storage.ExecuteOperationFast(ref hit, MyStorageDataTypeFlags.Content, ref voxelCoord, ref voxelCoord, notifyRangeChanged: false);
+
+                        if (hit.HasHit)
                         {
                             collision += from;
                             collisionCnt++;
@@ -244,7 +293,7 @@
                     }
                 }
 
-                if (collisionCnt == 0) return Vector3D.NegativeInfinity;
+                if (collisionCnt == 0) return null;
                 var sPhysics = shieldGrid.Physics;
                 var lSpeed = sPhysics.LinearVelocity.Length();
                 var aSpeed = sPhysics.AngularVelocity.Length() * 20;
