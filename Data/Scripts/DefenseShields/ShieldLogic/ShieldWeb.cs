@@ -285,14 +285,14 @@
                 var bigOwners = grid.BigOwners;
                 var bigOwnersCnt = bigOwners.Count;
                 var blockCnt = grid.BlocksCount;
-                if (CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, DetectMatrixOutsideInv)) return Ent.Protected;
+                if (CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, DetectMatrixOutsideInv, _obbCorners)) return Ent.Protected;
                 if (!ModulateGrids && blockCnt < 10 && bigOwnersCnt == 0) return Ent.SmallNobodyGrid;
                 if (!ModulateGrids && bigOwnersCnt == 0) return Ent.LargeNobodyGrid;
                 var enemy = !ModulateGrids && GridEnemy(grid, bigOwners);
                 if (!enemy)
                 {
                     if (ShieldComp.GetSubGrids.Contains(grid)) return Ent.Protected;
-                    var pointsInShield = CustomCollision.ObbPointsInShield(grid, DetectMatrixOutsideInv);
+                    var pointsInShield = CustomCollision.ObbPointsInShield(grid, DetectMatrixOutsideInv, _obbPoints);
                     return pointsInShield > 0 ? Ent.Protected : Ent.Friendly;
                 }
 

@@ -116,7 +116,10 @@
         private readonly EllipsoidOxygenProvider _ellipsoidOxyProvider = new EllipsoidOxygenProvider(Matrix.Zero);
         private readonly EllipsoidSA _ellipsoidSa = new EllipsoidSA(double.MinValue, double.MinValue, double.MinValue);
         private readonly Vector3D[] _resetEntCorners = new Vector3D[8];
-        //private readonly MyStorageData _voxelStorageCache = new MyStorageData();
+        private readonly Vector3D[] _obbCorners = new Vector3D[8];
+        private readonly Vector3D[] _obbPoints = new Vector3D[9];
+
+        //// private readonly MyStorageData _voxelStorageCache = new MyStorageData();
 
         private uint _tick;
         private uint _shieldEntRendId;

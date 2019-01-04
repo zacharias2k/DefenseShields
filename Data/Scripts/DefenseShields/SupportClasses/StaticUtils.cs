@@ -377,7 +377,7 @@
         public static void PrepConfigFile()
         {
             const int BaseScaler = 10;
-            const float HeatScaler = 1f;
+            const float HeatScaler = 0.0065f;
             const float Efficiency = 100f;
             const int StationRatio = 1;
             const int LargeShipRate = 1;
@@ -386,7 +386,7 @@
             const int DisableGridDmg = 0;
             const int Debug = 1;
             const bool AltRecharge = false;
-            const int Version = 63;
+            const int Version = 64;
             const float CapScaler = 1f;
             const float HpsEfficiency = 0.5f;
             const float MaintenanceCost = 0.5f;
@@ -419,6 +419,10 @@
                     Session.Enforced.Debug = 1;
                 }
                 Session.Enforced.Version = Version;
+                if (unPackedData.Version <= 63 && unPackedData.HeatScaler >= 1)
+                {
+                    Session.Enforced.HeatScaler = 0.0065f;
+                }
 
                 unPackedData = null;
                 unPackCfg.Close();

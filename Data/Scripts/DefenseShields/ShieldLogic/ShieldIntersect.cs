@@ -101,7 +101,7 @@
         {
             if (grid != null && CustomCollision.PointInShield(grid.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
             {
-                if (CustomCollision.AllCornersInShield(bOriBBoxD, DetectMatrixOutsideInv))
+                if (CustomCollision.AllCornersInShield(bOriBBoxD, DetectMatrixOutsideInv, _obbCorners))
                 {
                     var sMass = ((MyCubeGrid)Shield.CubeGrid).GetCurrentMass();
                     var bPhysics = ((IMyCubeGrid)grid).Physics;
