@@ -26,7 +26,7 @@
             DsSet.Settings = newSettings;
             SettingsUpdated = true;
             if (newShape) FitChanged = true;
-            if (Session.Enforced.Debug == 3) Log.Line($"UpdateSettings - server:{Session.Instance.IsServer} - ShieldId [{Shield.EntityId}]:\n{newSettings}");
+            if (Session.Enforced.Debug == 4) Log.Line($"UpdateSettings - server:{Session.Instance.IsServer} - ShieldId [{Shield.EntityId}]:\n{newSettings}");
         }
 
         internal void UpdateState(ProtoControllerState newState)
@@ -45,7 +45,7 @@
             }
             if (Session.Instance.MpActive)
             {
-                if (Session.Enforced.Debug == 3) Log.Line($"ServerUpdate: Broadcast:{DsState.State.Message}");
+                if (Session.Enforced.Debug == 4) Log.Line($"ServerUpdate: Broadcast:{DsState.State.Message} - Percent:{DsState.State.ShieldPercent} - HeatLvl:{DsState.State.Heat} - Buffer:{DsState.State.Buffer} - EmpProt:{DsState.State.EmpProtection} - ShieldId [{Shield.EntityId}]");
                 DsState.NetworkUpdate();
             }
             if (!_isDedicated && DsState.State.Message)
@@ -144,10 +144,10 @@
                     ShieldFailing();
                     return false;
                 }
-                _syncEnts = !ForceData.IsEmpty || !ImpulseData.IsEmpty || !MissileDmg.IsEmpty ||
-                            !FewDmgBlocks.IsEmpty || !DmgBlocks.IsEmpty || !MeteorDmg.IsEmpty ||
-                            !EmpDmg.IsEmpty || !Eject.IsEmpty || !DestroyedBlocks.IsEmpty ||
-                            !VoxelDmg.IsEmpty || !CharacterDmg.IsEmpty;
+
+                _syncEnts = !ForceData.IsEmpty || !ImpulseData.IsEmpty || !MissileDmg.IsEmpty || !FewDmgBlocks.IsEmpty
+                            || !DmgBlocks.IsEmpty || !MeteorDmg.IsEmpty || !EmpBlast.IsEmpty || !Eject.IsEmpty
+                            || !DestroyedBlocks.IsEmpty || !VoxelDmg.IsEmpty || !CharacterDmg.IsEmpty;
             }
             else
             {
@@ -228,7 +228,7 @@
             {
                 UpdateSubGrids();
                 Shield.RefreshCustomInfo();
-                if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: ShieldOff - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 4) Log.Line($"StateUpdate: ShieldOff - ShieldId [{Shield.EntityId}]");
 
             }
             Session.Instance.ActiveShields.Remove(this);

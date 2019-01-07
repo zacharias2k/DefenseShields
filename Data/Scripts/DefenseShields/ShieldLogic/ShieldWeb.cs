@@ -292,7 +292,7 @@
                 if (!enemy)
                 {
                     if (ShieldComp.GetSubGrids.Contains(grid)) return Ent.Protected;
-                    var pointsInShield = CustomCollision.ObbPointsInShield(grid, DetectMatrixOutsideInv, _obbPoints);
+                    var pointsInShield = CustomCollision.NewObbPointsInShield(grid, DetectMatrixOutsideInv, _obbPoints);
                     return pointsInShield > 0 ? Ent.Protected : Ent.Friendly;
                 }
 

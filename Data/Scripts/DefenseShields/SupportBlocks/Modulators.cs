@@ -41,6 +41,7 @@
         private bool _wasLink;
         private bool _wasBackup;
         private bool _firstRun = true;
+
         private int _wasModulateDamage;
         private int _count = -1;
         private bool _tock33;
@@ -57,6 +58,7 @@
         internal bool ContainerInited { get; set; }
         internal bool IsFunctional { get; set; }
         internal bool IsWorking { get; set; }
+        internal bool EnhancerLink { get; set; }
 
         internal ModulatorSettings ModSet { get; set; }
         internal ModulatorState ModState { get; set; }
@@ -161,7 +163,6 @@
                     return;
                 }
                 ModulatorOn();
-
                 if (!_isDedicated && UtilsStatic.DistanceCheck(Modulator, 1000, 1))
                 {
                     var blockCam = MyCube.PositionComp.WorldVolume;
@@ -403,6 +404,20 @@
                 if (ShieldComp.Modulator != this) ShieldComp.Modulator = this;
                 ModState.State.Link = true;
             }
+
+            var wasLink = EnhancerLink;
+            if (ModState.State.Link && ShieldComp.Enhancer != null && ShieldComp.Enhancer.IsWorking)
+            {
+                EnhancerLink = true;
+                if (ShieldComp.DefenseShields.IsStatic) ModSet.Settings.EmpEnabled = true;
+            }
+            else EnhancerLink = false;
+
+            if (!EnhancerLink && EnhancerLink != wasLink)
+            {
+                ModSet.Settings.ReInforceEnabled = false;
+                ModSet.Settings.EmpEnabled = false;
+            }
         }
 
         private void ClientCheckForCompLink()
@@ -415,6 +430,7 @@
             {
                 if (ShieldComp.Modulator != this) ShieldComp.Modulator = this;
             }
+            EnhancerLink = ShieldComp.DefenseShields.DsState.State.Enhancer;
         }
 
         private void Timing()

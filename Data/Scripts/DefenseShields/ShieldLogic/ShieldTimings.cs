@@ -116,25 +116,6 @@
             }
         }
 
-        private void UserDebug()
-        {
-            var message = $"User({MyAPIGateway.Multiplayer.Players.TryGetSteamId(Shield.OwnerId)}) Debugging\n" +
-                          $"On:{DsState.State.Online} - Active:{Session.Instance.ActiveShields.Contains(this)} - Suspend:{DsState.State.Suspended}\n" +
-                          $"Web:{Asleep} - Tick/LWoke:{_tick}/{LastWokenTick}\n" +
-                          $"Mo:{DsState.State.Mode} - Su:{DsState.State.Suspended} - Wa:{DsState.State.Waking}\n" +
-                          $"Np:{DsState.State.NoPower} - Lo:{DsState.State.Lowered} - Sl:{DsState.State.Sleeping}\n" +
-                          $"PSys:{MyGridDistributor?.SourcesEnabled} - PNull:{MyGridDistributor == null}\n" +
-                          $"MaxPower:{GridMaxPower} - AvailPower:{GridAvailablePower}\n" +
-                          $"Access:{DsState.State.ControllerGridAccess} - EmitterWorking:{DsState.State.EmitterWorking}\n" +
-                          $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)}\n" +
-                          $"ShieldMode:{ShieldMode} - pFail:{_powerFail}\n" +
-                          $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{GridMaxPower}\n" +
-                          $"Pow:{_power} HP:{DsState.State.Buffer}: {ShieldMaxBuffer}";
-
-            if (!_isDedicated) MyAPIGateway.Utilities.ShowMessage(string.Empty, message);
-            else Log.Line(message);
-        }
-
         private void BlockMonitor()
         {
             if (_blockChanged)

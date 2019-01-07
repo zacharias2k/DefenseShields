@@ -2,6 +2,8 @@
 {
     using global::DefenseShields.Support;
     using Sandbox.Game.Entities;
+    using Sandbox.ModAPI;
+
     using VRage.Game.ModAPI;
     using VRage.Utils;
     using VRageMath;
@@ -56,7 +58,6 @@
                 DsState.State.EnhancerPowerMulti = 1;
                 DsState.State.EnhancerProtMulti = 1;
                 DsState.State.Enhancer = false;
-                DsState.State.EmpProtection = false;
                 if (!DsState.State.Overload) DsState.State.ReInforce = false;
                 if (update) ShieldChangeState();
             }
@@ -65,7 +66,6 @@
 
         public void ShieldDoDamage(float damage, long entityId, float shieldFractionLoss = 0f)
         {
-            EmpSize = shieldFractionLoss;
             ImpactSize = damage;
 
             if (shieldFractionLoss > 0)
@@ -98,6 +98,15 @@
             if (amount > 0) _lastSendDamageTick = _tick;
         }
 
+        internal void AddEmpBlastHit(long attackerId, float amount, string damageType, Vector3D hitPos)
+        {
+            ShieldHit.Amount += amount;
+            ShieldHit.DamageType = damageType;
+            ShieldHit.HitPos = hitPos;
+            ShieldHit.AttackerId = attackerId;
+            _lastSendDamageTick = _tick;
+        }
+
         internal void SendShieldHits()
         {
             while (ProtoShieldHits.Count != 0)
@@ -108,15 +117,16 @@
         {
             if (enQueue)
             {
-                if (Session.Enforced.Debug >= 2) Log.Line("enQueue hit");
+                if (Session.Enforced.Debug >= 2) Log.Line($"enQueue hit: Type:{ShieldHit.DamageType} - Amount:{ShieldHit.Amount} - HitPos:{ShieldHit.HitPos}");
                 if (_isServer)
                 {
                     if (_mpActive) ProtoShieldHits.Enqueue(CloneHit());
                     if (!_isDedicated) AddLocalHit();
                 }
             }
-            if (Session.Enforced.Debug >= 2) Log.Line($"ShieldHitReset - previous wasType:{ShieldHit.DamageType} - Amount:{ShieldHit.Amount} - hitPos:{ShieldHit.HitPos}");
+            if (Session.Enforced.Debug >= 2) Log.Line($"[ShieldHitReset] OldType:{ShieldHit.DamageType} - OldAmount:{ShieldHit.Amount} - OldhitPos:{ShieldHit.HitPos}");
             _lastSendDamageTick = uint.MaxValue;
+            _forceBufferSync = true;
             ShieldHit.AttackerId = 0;
             ShieldHit.Amount = 0;
             ShieldHit.DamageType = string.Empty;
@@ -140,5 +150,25 @@
         {
             ShieldHits.Add(new ShieldHit(MyEntities.GetEntityById(ShieldHit.AttackerId), ShieldHit.Amount, MyStringHash.GetOrCompute(ShieldHit.DamageType), ShieldHit.HitPos));
         }
+
+        private void UserDebug()
+        {
+            var message = $"User({MyAPIGateway.Multiplayer.Players.TryGetSteamId(Shield.OwnerId)}) Debugging\n" +
+                          $"On:{DsState.State.Online} - Active:{Session.Instance.ActiveShields.Contains(this)} - Suspend:{DsState.State.Suspended}\n" +
+                          $"Web:{Asleep} - Tick/LWoke:{_tick}/{LastWokenTick}\n" +
+                          $"Mo:{DsState.State.Mode} - Su:{DsState.State.Suspended} - Wa:{DsState.State.Waking}\n" +
+                          $"Np:{DsState.State.NoPower} - Lo:{DsState.State.Lowered} - Sl:{DsState.State.Sleeping}\n" +
+                          $"PSys:{MyGridDistributor?.SourcesEnabled} - PNull:{MyGridDistributor == null}\n" +
+                          $"MaxPower:{GridMaxPower} - AvailPower:{GridAvailablePower}\n" +
+                          $"Access:{DsState.State.ControllerGridAccess} - EmitterWorking:{DsState.State.EmitterWorking}\n" +
+                          $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)}\n" +
+                          $"ShieldMode:{ShieldMode} - pFail:{_powerFail}\n" +
+                          $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{GridMaxPower}\n" +
+                          $"Pow:{_power} HP:{DsState.State.Buffer}: {ShieldMaxBuffer}";
+
+            if (!_isDedicated) MyAPIGateway.Utilities.ShowMessage(string.Empty, message);
+            else Log.Line(message);
+        }
+
     }
 }

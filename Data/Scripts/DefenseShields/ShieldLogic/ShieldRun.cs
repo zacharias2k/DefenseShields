@@ -105,13 +105,14 @@
                         if (GridIsMobile && createHeTiming) CreateHalfExtents();
                         if (_syncEnts) SyncThreadedEnts();
 
-                        if (_mpActive && _count == 29)
+                        if (_mpActive && (_forceBufferSync || _count == 29))
                         {
                             var newPercentColor = UtilsStatic.GetShieldColorFromFloat(DsState.State.ShieldPercent);
-                            if (newPercentColor != _oldPercentColor)
+                            if (_forceBufferSync || newPercentColor != _oldPercentColor)
                             {
                                 ShieldChangeState();
                                 _oldPercentColor = newPercentColor;
+                                _forceBufferSync = false;
                             }
                             else if (_lCount == 7 && _eCount == 7) ShieldChangeState();
                         }

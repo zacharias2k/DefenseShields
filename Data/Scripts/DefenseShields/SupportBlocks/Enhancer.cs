@@ -265,11 +265,6 @@
                     EnhState.State.Backup = true;
                     EnhState.State.Online = false;
                 }
-
-                if (!_isDedicated && Enhancer != null && _count == 29)
-                {
-                    Enhancer.RefreshCustomInfo();
-                }
             }
 
             if (!EnhState.State.Backup && ShieldComp.Enhancer == this && ShieldComp.DefenseShields.WasOnline)
@@ -289,12 +284,14 @@
                 EnhState.State.Online = true;
                 EnhState.SaveState();
                 EnhState.NetworkUpdate();
+                if (!_isDedicated) Enhancer.RefreshCustomInfo();
             }
             else if (onState & !turnOn)
             {
                 EnhState.State.Online = false;
                 EnhState.SaveState();
                 EnhState.NetworkUpdate();
+                if (!_isDedicated) Enhancer.RefreshCustomInfo();
             }
         }
 

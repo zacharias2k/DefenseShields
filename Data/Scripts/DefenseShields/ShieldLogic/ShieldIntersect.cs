@@ -101,7 +101,7 @@
         {
             if (grid != null && CustomCollision.PointInShield(grid.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv))
             {
-                if (CustomCollision.AllCornersInShield(bOriBBoxD, DetectMatrixOutsideInv, _obbCorners))
+                if (CustomCollision.ObbCornersInShield(bOriBBoxD, DetectMatrixOutsideInv, _obbCorners))
                 {
                     var sMass = ((MyCubeGrid)Shield.CubeGrid).GetCurrentMass();
                     var bPhysics = ((IMyCubeGrid)grid).Physics;
@@ -349,10 +349,6 @@
                     var stale = false;
                     var rawDamage = 0f;
                     var blockSize = breaching.GridSize;
-                    var empRadius = 35;
-                    if (blockSize < 1) empRadius = 7;
-                    var empCount = 0;
-                    IMyWarhead firstWarhead = null;
                     var gc = breaching.WorldToGridInteger(DetectionCenter);
                     var rc = ShieldSize.AbsMax() / blockSize;
                     rc *= rc;
@@ -402,29 +398,6 @@
                             hits++;
                             if (!_isServer) break;
 
-                            var warheadCheck = block.FatBlock as IMyWarhead;
-                            if (warheadCheck != null)
-                            {
-                                if (warheadCheck.IsWorking && warheadCheck.IsArmed)
-                                {
-                                    firstWarhead = warheadCheck;
-                                    var possibleWarHeads = breaching.GetFatBlocks();
-                                    for (int w = 0; w < possibleWarHeads.Count; w++)
-                                    {
-                                        var warhead = possibleWarHeads[w] as IMyWarhead;
-                                        if (warhead != null && !warhead.MarkedForClose && !warhead.Closed && warhead.IsWorking && warhead.IsArmed)
-                                        {
-                                            if (Vector3I.DistanceManhattan(warhead.Position, blockPos) <= 5)
-                                            {
-                                                warhead.IsArmed = false;
-                                                EmpDmg.Enqueue(warhead);
-                                                empCount++;
-                                            }
-                                        }
-                                    }
-                                }
-                                else if (EmpDmg.Count > 0) break;
-                            }
                             if (DmgBlocks.Count > blockDmgNum) break;
 
                             rawDamage += MathHelper.Clamp(block.Integrity, 0, 350);
@@ -493,29 +466,11 @@
                     if (!_isServer) return;
 
                     var damage = rawDamage * DsState.State.ModulateEnergy;
-                    var shieldFractionLoss = 0f;
-
-                    if (firstWarhead != null && empCount > 0)
-                    {
-                        var scaler = 1f;
-                        if (DsState.State.EmpProtection) scaler = 0.05f;
-                        var empSize = 1.33333333333 * Math.PI * (empRadius * empRadius * empRadius) * 0.5 * DsState.State.ModulateKinetic * scaler;
-                        var scaledEmpSize = (empSize * empCount) + (empCount * (empCount * 0.1)); 
-                        shieldFractionLoss = (float)(EllipsoidVolume / scaledEmpSize);
-                        var efficiency = Session.Enforced.Efficiency;
-                        damage = damage + (ShieldMaxBuffer * efficiency / shieldFractionLoss);
-                        var warCenter = firstWarhead.PositionComp.WorldAABB.Center;
-                        entInfo.EmpSize = scaledEmpSize;
-                        entInfo.EmpDetonation = warCenter;
-                        EmpDetonation = warCenter;
-                        if (damage > DsState.State.Buffer * efficiency) _empOverLoad = true;
-                    }
 
                     entInfo.Damage = damage;
                     if (_mpActive)
                     {
-                        var hitEntity = firstWarhead?.EntityId ?? breaching.EntityId;
-                        if (_isServer && bBlockCenter != Vector3D.NegativeInfinity) ShieldDoDamage(damage, hitEntity, shieldFractionLoss);
+                        if (_isServer && bBlockCenter != Vector3D.NegativeInfinity) ShieldDoDamage(damage, breaching.EntityId);
                     }
                     else
                     {
@@ -523,7 +478,6 @@
                         {
                             entInfo.ContactPoint = bBlockCenter;
                             ImpactSize = entInfo.Damage;
-                            EmpSize = entInfo.EmpSize;
 
                             entInfo.Damage = 0;
                             entInfo.EmpSize = 0;
@@ -536,7 +490,6 @@
             catch (Exception ex) { Log.Line($"Exception in BlockIntersect: {ex}"); }
         }
         #endregion
-
         private float ComputeAmmoDamage(IMyEntity ammoEnt)
         {
             AmmoInfo ammoInfo;
@@ -564,6 +517,25 @@
             else damage = ammoInfo.Mass * ammoInfo.Speed;
 
             if (ammoInfo.Mass < 0 && ammoInfo.Radius <= 0) damage = -damage;
+            return damage;
+        }
+
+        private float ComputeAmmoDamage2(IMyEntity ammoEnt)
+        {
+            AmmoInfo ammoInfo;
+            Session.Instance.AmmoCollection.TryGetValue(ammoEnt.Model.AssetName, out ammoInfo);
+            var damage = 10f;
+            if (ammoInfo == null)
+            {
+                if (Session.Enforced.Debug == 3) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - No Missile Ammo Match Found for {((MyEntity)ammoEnt).DebugName}! Let wepaon mod author know their ammo definition has improper model path");
+                return damage;
+            }
+            /*
+            if (ammoInfo.KineticWeapon)
+                damage = ammoInfo.shieldDamage * DsState.State.ModulateEnergy; //kinetic weapon
+            else
+                damage = ammoInfo.shieldDamage * DsState.State.ModulateKinetic; //energy weapon
+            */
             return damage;
         }
     }

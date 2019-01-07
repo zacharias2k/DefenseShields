@@ -208,14 +208,14 @@
         internal static void RemoveControls()
         {
             List<IMyTerminalAction> actions;
-            MyAPIGateway.TerminalControls.GetActions<IMyGasGenerator>(out actions);
+            MyAPIGateway.TerminalControls.GetActions<Sandbox.ModAPI.Ingame.IMyGasGenerator>(out actions);
             var aRefill = actions.First((x) => x.Id.ToString() == "Refill");
             aRefill.Enabled = block => false;
             var aAutoRefill = actions.First((x) => x.Id.ToString() == "Auto-Refill");
             aAutoRefill.Enabled = block => false;
 
             List<IMyTerminalControl> controls;
-            MyAPIGateway.TerminalControls.GetControls<IMyGasGenerator>(out controls);
+            MyAPIGateway.TerminalControls.GetControls<Sandbox.ModAPI.Ingame.IMyGasGenerator>(out controls);
             var cRefill = controls.First((x) => x.Id.ToString() == "Refill");
             cRefill.Enabled = block => false;
             cRefill.Visible = block => false;
@@ -225,11 +225,6 @@
             cAutoRefill.Enabled = block => false;
             cAutoRefill.Visible = block => false;
             cAutoRefill.RedrawControl();
-
-            var cCustomData = controls.First((x) => x.Id.ToString() == "CustomData");
-            cCustomData.Enabled = block => false;
-            cCustomData.Visible = block => false;
-            cCustomData.RedrawControl();
         }
 
         internal void RestartDoorFix()

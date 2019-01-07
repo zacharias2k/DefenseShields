@@ -13,11 +13,11 @@
             Session.Instance.ModDamage.Enabled = block => true;
             Session.Instance.ModDamage.Visible = ShowControl;
             Session.Instance.ModVoxels.Enabled = block => true;
-            Session.Instance.ModVoxels.Visible = ShowControl;
+            Session.Instance.ModVoxels.Visible = ShowVoxels;
             Session.Instance.ModGrids.Enabled = block => true;
             Session.Instance.ModGrids.Visible = ShowControl;
             Session.Instance.ModEmp.Enabled = block => true;
-            Session.Instance.ModEmp.Visible = ShowEmp;
+            Session.Instance.ModEmp.Visible = ShowEMP;
             Session.Instance.ModReInforce.Enabled = block => true;
             Session.Instance.ModReInforce.Visible = ShowReInforce;
             Session.Instance.ModSep1.Visible = ShowControl;
@@ -69,6 +69,14 @@
             comp.ModState.State.ModulateDamage = (int)newValue;
         }
 
+        internal static bool ShowVoxels(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<Modulators>();
+            if (comp?.ShieldComp?.DefenseShields == null || comp.ShieldComp.DefenseShields.IsStatic) return false;
+
+            return comp.ModState.State.Link;
+        }
+
         internal static bool GetVoxels(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<Modulators>();
@@ -99,17 +107,16 @@
             comp.ModSet.SaveSettings();
         }
 
-        internal static bool ShowEmp(IMyTerminalBlock block)
+        internal static bool ShowEMP(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<Modulators>();
-            var empControl = comp?.ShieldComp?.Enhancer != null && comp.ShieldComp?.DefenseShields != null && !comp.ShieldComp.DefenseShields.IsStatic;
-            if (!empControl && comp?.ShieldComp?.DefenseShields != null && comp.ShieldComp.DefenseShields.IsStatic) comp.ModSet.Settings.EmpEnabled = true;
-            return empControl;
+            if (comp?.ShieldComp?.DefenseShields == null || comp.ShieldComp.DefenseShields.IsStatic) return false;
+
+            return comp.EnhancerLink;
         }
 
         internal static bool GetEmpProt(IMyTerminalBlock block)
         {
-            ShowEmp(block);
             var comp = block?.GameLogic?.GetAs<Modulators>();
             return comp?.ModSet.Settings.EmpEnabled ?? false;
         }
@@ -126,14 +133,14 @@
         internal static bool ShowReInforce(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<Modulators>();
-            var reInforceControl = comp?.ShieldComp?.Enhancer != null && comp.ShieldComp?.DefenseShields != null && !comp.ShieldComp.DefenseShields.IsStatic;
-            if (!reInforceControl && comp?.ShieldComp?.DefenseShields != null && comp.ShieldComp.DefenseShields.IsStatic) comp.ModSet.Settings.ReInforceEnabled = true;
-            return reInforceControl;
+            if (comp?.ShieldComp?.DefenseShields == null || comp.ShieldComp.DefenseShields.IsStatic)
+                return false;
+
+            return comp.EnhancerLink;
         }
 
         internal static bool GetReInforceProt(IMyTerminalBlock block)
         {
-            ShowReInforce(block);
             var comp = block?.GameLogic?.GetAs<Modulators>();
             return comp?.ModSet.Settings.ReInforceEnabled ?? false;
         }

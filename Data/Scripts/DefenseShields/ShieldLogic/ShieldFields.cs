@@ -13,8 +13,6 @@
     using VRage.Game.ModAPI;
     using VRage.ModAPI;
     using VRage.Utils;
-    using VRage.Voxels;
-
     using VRageMath;
 
     public partial class DefenseShields 
@@ -42,6 +40,7 @@
         internal readonly ConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<MyEntity, EntIntersectInfo>();
         internal readonly ConcurrentDictionary<MyEntity, MoverInfo> EntsByMe = new ConcurrentDictionary<MyEntity, MoverInfo>();
         internal readonly ConcurrentDictionary<MyVoxelBase, int> VoxelsToIntersect = new ConcurrentDictionary<MyVoxelBase, int>();
+        internal readonly ConcurrentDictionary<long, WarHeadBlast> EmpBlast = new ConcurrentDictionary<long, WarHeadBlast>();
 
         internal readonly ConcurrentQueue<MyCubeGrid> StaleGrids = new ConcurrentQueue<MyCubeGrid>();
 
@@ -176,7 +175,7 @@
         private bool _enablePhysics = true;
         private bool _allInited;
         private bool _containerInited;
-        private bool _healthInited;
+        private bool _forceBufferSync;
         private bool _comingOnline;
         private bool _tick60;
         private bool _tick180;
@@ -231,7 +230,6 @@
 
         private MyEntity _shellPassive;
         private MyEntity _shellActive;
-
         private MyParticleEffect _effect = new MyParticleEffect();
 
         public enum Ent

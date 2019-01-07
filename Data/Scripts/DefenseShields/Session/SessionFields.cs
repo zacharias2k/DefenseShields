@@ -5,6 +5,7 @@
     using System.Collections.Generic;
     using global::DefenseShields.Support;
     using Sandbox.Common.ObjectBuilders;
+    using Sandbox.ModAPI;
     using Sandbox.ModAPI.Interfaces.Terminal;
     using VRage.Collections;
     using VRage.Game;
@@ -70,6 +71,7 @@
         internal readonly ConcurrentDictionary<long, IMyPlayer> Players = new ConcurrentDictionary<long, IMyPlayer>();
 
         internal readonly ConcurrentQueue<DefenseShields> WebWrapper = new ConcurrentQueue<DefenseShields>();
+        internal readonly ConcurrentDictionary<long, WarHeadBlast> EmpDraw = new ConcurrentDictionary<long, WarHeadBlast>();
 
         internal readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         internal readonly Dictionary<MyEntity, MyProtectors> GlobalProtect = new Dictionary<MyEntity, MyProtectors>();
@@ -173,11 +175,12 @@
         internal readonly MyStringId HudIconHeat100 = MyStringId.GetOrCompute("DS_ShieldHeat100");
 
         internal bool[] SphereOnCamera = Array.Empty<bool>();
-
-        internal volatile bool Wake;
+        internal volatile bool CustomDataReset = true;
         internal volatile bool Monitor = true;
+        internal volatile bool Wake;
         internal volatile bool EntSlotTick;
         internal volatile bool Dispatched;
+        internal volatile bool WarHeadLoaded;
 
         private const int EntCleanCycle = 3600;
         private const int EntMaxTickAge = 36000;
@@ -188,8 +191,7 @@
         private readonly ConcurrentDictionary<MyEntity, uint> _globalEntTmp = new ConcurrentDictionary<MyEntity, uint>();
 
         private DsAutoResetEvent _autoResetEvent = new DsAutoResetEvent();
-
-        private double _syncDistSqr;
+        private MyParticleEffect _effect = new MyParticleEffect();
 
         private int _count = -1;
         private int _lCount;
@@ -213,17 +215,19 @@
         internal float MaxEntitySpeed { get; set; } = 210;
 
         internal double HudShieldDist { get; set; } = double.MaxValue;
+        internal double SyncDistSqr { get; private set; }
+        internal double SyncDist { get; private set; }
 
-        internal bool CustomDataReset { get; set; } = true;
+        internal bool WarheadButtonAdd { get; set; }
         internal bool ShowOnHudReset { get; set; } = true;
         internal bool OnCountThrottle { get; set; }
-        internal bool DefinitionsLoaded { get; set; }
+        internal bool GameLoaded { get; set; }
+        internal bool MiscLoaded { get; set; }
         internal bool Tick20 { get; set; }
         internal bool Tick60 { get; set; }
         internal bool Tick180 { get; set; }
         internal bool Tick600 { get; set; }
         internal bool Tick1800 { get; set; }
-
         internal bool WebWrapperOn { get; set; }
         internal bool ScalerChanged { get; set; }
         internal bool HideActions { get; set; }
@@ -231,7 +235,6 @@
         internal bool PsControl { get; set; }
         internal bool ModControl { get; set; }
         internal bool O2Control { get; set; }
-
         internal bool MpActive { get; set; }
         internal bool IsServer { get; set; }
         internal bool DedicatedServer { get; set; }
@@ -239,7 +242,10 @@
         internal bool PsAction { get; set; }
         internal bool ModAction { get; set; }
 
+        internal Vector3 ResetWarHeadHSV { get; set; } = new Vector3(0, -1, 0);
+
         internal DefenseShields HudComp { get; set; }
+
         internal DSUtils Dsutil1 { get; set; } = new DSUtils();
         internal DSUtils Dsutil2 { get; set; } = new DSUtils();
 
@@ -280,5 +286,7 @@
 
         internal IMyTerminalControlCheckbox PsSendToHudCheckBox { get; set; }
         internal IMyTerminalControlOnOffSwitch PsToggleShield { get; set; }
+
+        internal IMyTerminalBlock WarTerminalReset { get; set; }
     }
 }

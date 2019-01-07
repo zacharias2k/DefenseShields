@@ -359,7 +359,7 @@
                     var impulseData = new MyImpulseData { MyGrid = grid, Direction = mass * 0.015 * -Vector3D.Dot(gridLinearVel, surfaceNormal) * surfaceNormal, Position = collisionAvg };
                     force.Enqueue(forceData);
                     impulse.Enqueue(impulseData);
-                    entInfo.Damage = mass * 0.1f;
+                    entInfo.Damage = mass * 0.5f;
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in SmallIntersect: {ex}"); }
@@ -446,7 +446,7 @@
             return c;
         }
 
-        public static int CornersInShield(MyEntity ent, MatrixD matrixInv, Vector3D[] entCorners)
+        public static int EntCornersInShield(MyEntity ent, MatrixD matrixInv, Vector3D[] entCorners)
         {
             var entAabb = ent.PositionComp.WorldAABB;
             entAabb.GetCorners(entCorners);
@@ -460,7 +460,7 @@
             return c;
         }
 
-        public static int NotAllCornersInShield(IMyCubeGrid grid, MatrixD matrixInv, Vector3D[] gridCorners)
+        public static int NotAllCornersInShield(MyCubeGrid grid, MatrixD matrixInv, Vector3D[] gridCorners)
         {
             var gridAabb = grid.PositionComp.WorldAABB;
             gridAabb.GetCorners(gridCorners);
@@ -475,53 +475,33 @@
             return c;
         }
 
-        /*
-        public static Vector3D ClosestPointInShield(MyOrientedBoundingBoxD bOriBBoxD, MatrixD matrixInv)
+        public static bool AllAabbInShield(BoundingBoxD gridAabb, MatrixD matrixInv, Vector3D[] gridCorners = null)
         {
-            var webentPoints = new Vector3D[15];
-            bOriBBoxD.GetCorners(webentPoints, 0);
+            if (gridCorners == null) gridCorners = new Vector3D[8];
 
-            webentPoints[8] = bOriBBoxD.Center;
-            webentPoints[9] = (webentPoints[0] + webentPoints[5]) / 2;
-            webentPoints[10] = (webentPoints[3] + webentPoints[7]) / 2;
-            webentPoints[11] = (webentPoints[0] + webentPoints[7]) / 2;
-            webentPoints[12] = (webentPoints[1] + webentPoints[6]) / 2;
-            webentPoints[13] = (webentPoints[4] + webentPoints[7]) / 2;
-            webentPoints[14] = (webentPoints[0] + webentPoints[2]) / 2;
-
-            var minValue1 = double.MaxValue;
-            var closestPoint = Vector3D.NegativeInfinity;
-            for (int i = 0; i < 15; i++)
-            {
-                var point = webentPoints[i];
-                var pointInside = Vector3D.Transform(point, matrixInv).LengthSquared();
-                if (!(pointInside <= 1) || !(pointInside < minValue1)) continue;
-                minValue1 = pointInside;
-                closestPoint = point;
-            }
-            return closestPoint;
-        }
-        */
-
-        public static bool AllCornersInShield(MyOrientedBoundingBoxD bOriBBoxD, MatrixD matrixInv, Vector3D[] gridCorners)
-        {
-            bOriBBoxD.GetCorners(gridCorners, 0);
+            gridAabb.GetCorners(gridCorners);
             var c = 0;
             for (int i = 0; i < 8; i++)
                 if (Vector3D.Transform(gridCorners[i], matrixInv).LengthSquared() <= 1) c++;
             return c == 8;
         }
 
-        public static bool AnyCornerInShield(MyOrientedBoundingBoxD bOriBBoxD, MatrixD matrixInv, Vector3D[] gridCorners)
+        public static bool ObbCornersInShield(MyOrientedBoundingBoxD bOriBBoxD, MatrixD matrixInv, Vector3D[] gridCorners, bool anyCorner = false)
         {
             bOriBBoxD.GetCorners(gridCorners, 0);
             var c = 0;
             for (int i = 0; i < 8; i++)
-                if (Vector3D.Transform(gridCorners[i], matrixInv).LengthSquared() <= 1) c++;
-            return c > 0;
+            {
+                if (Vector3D.Transform(gridCorners[i], matrixInv).LengthSquared() <= 1)
+                {
+                    if (anyCorner) return true;
+                    c++;
+                }
+            }
+            return c == 8;
         }
 
-        public static int ObbPointsInShield(MyEntity ent, MatrixD matrixInv, Vector3D[] gridPoints = null)
+        public static int NewObbPointsInShield(MyEntity ent, MatrixD matrixInv, Vector3D[] gridPoints = null)
         {
             if (gridPoints == null) gridPoints = new Vector3D[9];
 
@@ -538,7 +518,7 @@
             return c;
         }
 
-        public static int ObbCornersInShield(MyEntity ent, MatrixD matrixInv, Vector3D[] gridCorners = null)
+        public static int NewObbCornersInShield(MyEntity ent, MatrixD matrixInv, Vector3D[] gridCorners = null)
         {
             if (gridCorners == null) gridCorners = new Vector3D[8];
 
@@ -554,7 +534,7 @@
             return c;
         }
 
-        public static bool AllObbCornersInShield(MyEntity ent, MatrixD matrixInv, Vector3D[] gridCorners = null)
+        public static bool NewAllObbCornersInShield(MyEntity ent, MatrixD matrixInv, bool anyCorner, Vector3D[] gridCorners = null)
         {
             if (gridCorners == null) gridCorners = new Vector3D[8];
 
@@ -566,33 +546,13 @@
             obb.GetCorners(gridCorners, 0);
             var c = 0;
             for (int i = 0; i < 8; i++)
-                if (Vector3D.Transform(gridCorners[i], matrixInv).LengthSquared() <= 1) c++;
-            return c == 8;
-        }
-
-        public static bool AnyObbCornerInShield(MyEntity ent, MatrixD matrixInv, Vector3D[] gridCorners = null)
-        {
-            if (gridCorners == null) gridCorners = new Vector3D[8];
-
-            var quaternion = Quaternion.CreateFromRotationMatrix(ent.WorldMatrix);
-            var halfExtents = ent.PositionComp.LocalAABB.HalfExtents;
-            var gridCenter = ent.PositionComp.WorldAABB.Center;
-            var obb = new MyOrientedBoundingBoxD(gridCenter, halfExtents, quaternion);
-            obb.GetCorners(gridCorners, 0);
-            var c = 0;
-            for (int i = 0; i < 8; i++)
-                if (Vector3D.Transform(gridCorners[i], matrixInv).LengthSquared() <= 1) c++;
-            return c > 0;
-        }
-
-        public static bool AllAabbInShield(BoundingBoxD gridAabb, MatrixD matrixInv, Vector3D[] gridCorners = null)
-        {
-            if (gridCorners == null) gridCorners = new Vector3D[8];
-
-            gridAabb.GetCorners(gridCorners);
-            var c = 0;
-            for (int i = 0; i < 8; i++)
-                if (Vector3D.Transform(gridCorners[i], matrixInv).LengthSquared() <= 1) c++;
+            {
+                if (Vector3D.Transform(gridCorners[i], matrixInv).LengthSquared() <= 1)
+                {
+                    if (anyCorner) return true;
+                    c++;
+                }
+            }
             return c == 8;
         }
 

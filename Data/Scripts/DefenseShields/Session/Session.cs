@@ -4,6 +4,7 @@
     using global::DefenseShields.Support;
     using Sandbox.Definitions;
     using Sandbox.ModAPI;
+    using VRage.Game;
     using VRage.Game.Components;
     using VRage.Game.ModAPI;
     using VRageMath;
@@ -54,11 +55,22 @@
                     UtilsStatic.ReadConfigFile();
                 }
 
-                _syncDistSqr = MyAPIGateway.Session.SessionSettings.SyncDistance;
-                _syncDistSqr += 500;
-                _syncDistSqr *= _syncDistSqr;
-                MyAPIGateway.Parallel.StartBackground(WebMonitor);
-                if (Enforced.Debug >= 3) Log.Line($"SyncDistSqr:{_syncDistSqr} - DistNorm:{Math.Sqrt(_syncDistSqr)}");
+                if (MpActive)
+                {
+                    SyncDist = MyAPIGateway.Session.SessionSettings.SyncDistance;
+                    var syncDistBuffered = SyncDist + 500;
+                    SyncDistSqr = syncDistBuffered * syncDistBuffered;
+
+                    MyAPIGateway.Parallel.StartBackground(WebMonitor);
+                    if (Enforced.Debug >= 3) Log.Line($"SyncDistSqr:{SyncDistSqr} - DistNorm:{SyncDist}");
+                }
+                else
+                {
+                    SyncDist = MyAPIGateway.Session.SessionSettings.ViewDistance;
+                    var syncDistBuffered = SyncDist + 500;
+                    SyncDistSqr = syncDistBuffered * syncDistBuffered;
+                    if (Enforced.Debug >= 3) Log.Line($"SyncDistSqr:{SyncDistSqr} - DistNorm:{SyncDist}");
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in BeforeStart: {ex}"); }
         }
@@ -68,6 +80,8 @@
             if (DedicatedServer) return;
             try
             {
+                if (!EmpDraw.IsEmpty) EmpDrawExplosion();
+
                 var compCount = Controllers.Count;
                 if (compCount == 0) return;
                 if (SphereOnCamera.Length != compCount) Array.Resize(ref SphereOnCamera, compCount);
@@ -144,6 +158,53 @@
         #endregion
 
         #region Misc
+        private void EmpDrawExplosion()
+        {
+            _effect.Stop();
+            var stackCount = 0;
+            var warHeadSize = 0;
+            var epiCenter = Vector3D.Zero;
+
+            foreach (var empChild in EmpDraw)
+            {
+                if (empChild.Value.CustomData == string.Empty || !empChild.Value.CustomData.Contains("!EMP"))
+                {
+                    stackCount++;
+                    warHeadSize = empChild.Value.WarSize;
+                    epiCenter += empChild.Value.Position;
+                }
+            }
+            EmpDraw.Clear();
+            if (stackCount == 0) return;
+
+            epiCenter /= stackCount;
+            var cameraPos = MyAPIGateway.Session.Camera.Position;
+            var realDistanceSqr = Vector3D.DistanceSquared(epiCenter, cameraPos);
+            if (realDistanceSqr > 4000000)
+            {
+                var testDir = Vector3D.Normalize(cameraPos - epiCenter);
+                var newEpiCenter = cameraPos + (testDir * -1990);
+                epiCenter = newEpiCenter;
+            }
+
+            var invSqrDist = UtilsStatic.InverseSqrDist(epiCenter, cameraPos, 2000);
+            //Log.Line($"invSqrDist:{invSqrDist} - Dist:{Vector3D.Distance(epiCenter, MyAPIGateway.Session.Camera.Position)} - epicCenter:{epiCenter} - {stackCount}");
+            if (invSqrDist <= 0) return;
+
+            var matrix = MatrixD.CreateTranslation(epiCenter);
+            MyParticlesManager.TryCreateParticleEffect(6667, out _effect, ref matrix, ref epiCenter, 0, true); // 15, 16, 24, 25, 28, (31, 32) 211 215 53
+            if (_effect == null) return;
+
+            var empSize = warHeadSize * stackCount;
+            var radius = empSize * invSqrDist;
+            var scale = 1 / invSqrDist;
+            //Log.Line($"[Scaler] scale:{scale} - {radius}");
+            _effect.UserRadiusMultiplier = (float)radius;
+            _effect.UserEmitterScale = (float)scale;
+            _effect.UserColorMultiplier = new Vector4(255, 255, 255, 10);
+            _effect.Play();
+        }
+
         public string ModPath()
         {
             var modPath = ModContext.ModPath;
@@ -209,11 +270,22 @@
                     }
                 }
             }
-            if (!DefinitionsLoaded && Tick > 100)
+            if (!GameLoaded && Tick > 100)
             {
-                DefinitionsLoaded = true;
-                UtilsStatic.GetDefinitons();
-                if (!IsServer) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
+                if (!WarHeadLoaded && WarTerminalReset != null)
+                {
+                    WarTerminalReset.ShowInTerminal = true;
+                    WarTerminalReset = null;
+                    WarHeadLoaded = true;
+                } 
+
+                if (!MiscLoaded)
+                {
+                    MiscLoaded = true;
+                    UtilsStatic.GetDefinitons();
+                    if (!IsServer) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
+                }
+                GameLoaded = true;
             }
         }
         #endregion

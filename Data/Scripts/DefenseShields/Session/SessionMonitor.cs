@@ -38,7 +38,7 @@
                     {
                         var s = _workData.ShieldList[x];
                         var tick = _workData.Tick;
-                        if (_newFrame || !s.Warming) return;
+                        if (_newFrame || s.MarkedForClose || !s.Warming) return;
                         var reInforce = s.DsState.State.ReInforce;
 
                         if (!IsServer)
@@ -227,7 +227,7 @@
                         // var shape2 = new Box(-halfExtents, halfExtents).Transformed(ent.WorldMatrix);
                         // var test = Gjk.Intersects(ref shape1, ref shape2);
                         // Log.Line($"{ent.DebugName} - {test}");
-                        if (CustomCollision.ObbPointsInShield(ent, s.DetectMatrixOutsideInv) > 0)
+                        if (CustomCollision.NewObbPointsInShield(ent, s.DetectMatrixOutsideInv) > 0)
                         {
                             if (!_globalEntTmp.ContainsKey(ent))
                             {
@@ -246,7 +246,7 @@
                             var character = player.Character;
                             if (character == null) continue;
 
-                            if (Vector3D.DistanceSquared(character.PositionComp.WorldMatrix.Translation, s.DetectionCenter) < _syncDistSqr)
+                            if (Vector3D.DistanceSquared(character.PositionComp.WorldMatrix.Translation, s.DetectionCenter) < SyncDistSqr)
                             {
                                 foundPlayer = true;
                                 break;

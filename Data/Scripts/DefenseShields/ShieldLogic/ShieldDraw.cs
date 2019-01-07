@@ -47,10 +47,7 @@
                 }
             }
 
-            if (EmpDetonation != Vector3D.NegativeInfinity) EmpParticleStart();
-
             WorldImpactPosition = Vector3D.NegativeInfinity;
-            EmpDetonation = Vector3D.NegativeInfinity;
             WebDamage = false;
 
             if (IsWorking)
@@ -107,12 +104,9 @@
         private static MyStringId GetHudIcon2FromFloat(float fState)
         {
             var slot = (int)Math.Floor(fState * 10);
-            if (slot > 19 || slot < 0)
-            {
-                if (Session.Enforced.Debug > 1) Log.Line($"GetHudIconSlotError: {slot} - {fState} - {fState * 10}");
-                return Session.Instance.HudHealthHpIcons[0];
-            }
+
             if (slot < 0) slot = (slot * -1) + 10;
+
             return Session.Instance.HudHealthHpIcons[slot];
         }
 
@@ -219,29 +213,6 @@
             _effect.UserRadiusMultiplier = (float)radius;
             _effect.UserEmitterScale = (float)scale;
             _effect.Velocity = MyGrid.Physics.LinearVelocity;
-            _effect.Play();
-        }
-
-        private void EmpParticleStart()
-        {
-            _effect.Stop();
-            var pos = EmpDetonation;
-            var matrix = MatrixD.CreateTranslation(pos);
-
-            MyParticlesManager.TryCreateParticleEffect(6667, out _effect, ref matrix, ref pos, _shieldEntRendId, true); // 15, 16, 24, 25, 28, (31, 32) 211 215 53
-            if (_effect == null) return;
-            var playerDist = Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos);
-            var radius = playerDist * 0.15d;
-            var scale = (playerDist + (playerDist * 0.001)) / playerDist * 0.03 * (EmpSize * 0.0008);
-            if (scale > 0.3)
-            {
-                var scaler = EmpSize / 16755 * 0.05;
-                scale = 0.3 + scaler;
-            }
-            _effect.UserRadiusMultiplier = (float)radius;
-            _effect.UserEmitterScale = (float)scale;
-            _effect.Velocity = MyGrid.Physics.LinearVelocity;
-            _effect.UserColorMultiplier = new Vector4(255, 255, 255, 10);
             _effect.Play();
         }
 

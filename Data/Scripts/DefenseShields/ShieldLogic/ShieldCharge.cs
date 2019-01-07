@@ -32,9 +32,9 @@
                     {
                         var hit = ShieldHits[i];
                         ImpactSize = 12001;
-                        if (Session.Enforced.Debug >= 2) Log.Line($"MpAbsorb: Amount:{hit.Amount} - attacker:{hit.Attacker != null} - dType:{hit.DamageType} - hitPos:{hit.HitPos}");
+                        if (Session.Enforced.Debug >= 2) Log.Line($"MpDamageEvent: Amount:{hit.Amount} - attacker:{hit.Attacker != null} - dType:{hit.DamageType} - hitPos:{hit.HitPos}");
                         if (hit.HitPos != Vector3D.Zero && WorldImpactPosition == Vector3D.NegativeInfinity) WorldImpactPosition = hit.HitPos;
-                        Absorb += hit.Amount;
+                        Absorb += hit.Amount / Session.Enforced.Efficiency;
                     }
                     ShieldHits.Clear();
                 }

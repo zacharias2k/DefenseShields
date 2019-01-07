@@ -4,7 +4,6 @@
     using System.Collections.Generic;
     using global::DefenseShields.Support;
     using Sandbox.Game.Entities;
-    using Sandbox.ModAPI;
     using VRage.Game;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
@@ -140,15 +139,6 @@
                                 hostileEnt.InScene = false;
                                 ds.ImpactSize = info.Amount;
                             }
-                        }
-                        else if (hostileEnt is IMyWarhead)
-                        {
-                            var magicValue = info.Amount;
-                            var empPos = hostileEnt.PositionComp.WorldAABB.Center;
-                            ds.EmpDetonation = empPos;
-                            ds.EmpSize = ds.EllipsoidVolume / magicValue;
-                            info.Amount = ds.ShieldMaxBuffer * Enforced.Efficiency / magicValue;
-                            UtilsStatic.CreateExplosion(empPos, 2.1f, 9999);
                         }
                         else ds.ImpactSize = info.Amount;
                     }

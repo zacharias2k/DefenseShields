@@ -15,29 +15,33 @@
 
     internal static class UtilsStatic
     {
-        private static readonly Dictionary<float, float> DmgTable = new Dictionary<float, float>
+        public static float GetDmgMulti(float damage)
         {
-            [0.00000000001f] = -1f,
-            [0.0000000001f] = 0.1f,
-            [0.0000000002f] = 0.2f,
-            [0.0000000003f] = 0.3f,
-            [0.0000000004f] = 0.4f,
-            [0.0000000005f] = 0.5f,
-            [0.0000000006f] = 0.6f,
-            [0.0000000007f] = 0.7f,
-            [0.0000000008f] = 0.8f,
-            [0.0000000009f] = 0.9f,
-            [0.0000000010f] = 1,
-            [0.0000000020f] = 2,
-            [0.0000000030f] = 3,
-            [0.0000000040f] = 4,
-            [0.0000000050f] = 5,
-            [0.0000000060f] = 6,
-            [0.0000000070f] = 7,
-            [0.0000000080f] = 8,
-            [0.0000000090f] = 9,
-            [0.0000000100f] = 10,
-        };
+            float tableVal;
+            DmgTable.TryGetValue(damage, out tableVal);
+            return tableVal;
+        }
+
+        public static Color GetShieldColorFromFloat(float percent)
+        {
+            if (percent > 90) return Session.Instance.White1;
+            if (percent > 80) return Session.Instance.White2;
+            if (percent > 70) return Session.Instance.White3;
+            if (percent > 60) return Session.Instance.Blue1;
+            if (percent > 50) return Session.Instance.Blue2;
+            if (percent > 40) return Session.Instance.Blue3;
+            if (percent > 30) return Session.Instance.Blue4;
+            if (percent > 20) return Session.Instance.Red1;
+            if (percent > 10) return Session.Instance.Red2;
+            return Session.Instance.Red3;
+        }
+
+        public static Color GetAirEmissiveColorFromDouble(double percent)
+        {
+            if (percent >= 80) return Color.Green;
+            if (percent > 10) return Color.Yellow;
+            return Color.Red;
+        }
 
         public static void UpdateTerminal(this MyCubeBlock block)
         {
@@ -70,10 +74,88 @@
             return tmp;
         }
 
-        public static bool VoxelOp()
+        public static double InverseSqrDist(Vector3D source, Vector3D target, double range)
         {
-            return true;
+            var rangeSq = range * range;
+            var distSq = (target - source).LengthSquared();
+            if (distSq > rangeSq)
+                return 0.0;
+            return 1.0 - (distSq / rangeSq);
         }
+
+        public static double GetIntersectingSurfaceArea(MatrixD matrix, Vector3D hitPosLocal)
+        {
+            var surfaceArea = -1d; 
+
+            var boxMax = matrix.Backward + matrix.Right + matrix.Up;
+            var boxMin = -boxMax;
+            var box = new BoundingBoxD(boxMin, boxMax);
+
+            var maxWidth = box.Max.LengthSquared();
+            var testLine = new LineD(Vector3D.Zero, Vector3D.Normalize(hitPosLocal) * maxWidth); 
+            LineD testIntersection;
+            box.Intersect(ref testLine, out testIntersection);
+
+            var intersection = testIntersection.To;
+
+            var epsilon = 1e-6; 
+            var projFront = VectorProjection(intersection, matrix.Forward);
+            if (Math.Abs(projFront.LengthSquared() - matrix.Forward.LengthSquared()) < epsilon)
+            {
+                var a = Vector3D.Distance(matrix.Left, matrix.Right);
+                var b = Vector3D.Distance(matrix.Up, matrix.Down);
+                surfaceArea = a * b;
+            }
+
+            var projLeft = VectorProjection(intersection, matrix.Left);
+            if (Math.Abs(projLeft.LengthSquared() - matrix.Left.LengthSquared()) < epsilon) 
+            {
+                var a = Vector3D.Distance(matrix.Forward, matrix.Backward);
+                var b = Vector3D.Distance(matrix.Up, matrix.Down);
+                surfaceArea = a * b;
+            }
+
+            var projUp = VectorProjection(intersection, matrix.Up);
+            if (Math.Abs(projUp.LengthSquared() - matrix.Up.LengthSquared()) < epsilon) 
+            {
+                var a = Vector3D.Distance(matrix.Forward, matrix.Backward);
+                var b = Vector3D.Distance(matrix.Left, matrix.Right);
+                surfaceArea = a * b;
+            }
+            return surfaceArea;
+        }
+
+        private static Vector3D VectorProjection(Vector3D a, Vector3D b)
+        {
+            if (Vector3D.IsZero(b))
+                return Vector3D.Zero;
+
+            return a.Dot(b) / b.LengthSquared() * b;
+        }
+
+        private static readonly Dictionary<float, float> DmgTable = new Dictionary<float, float>
+        {
+            [0.00000000001f] = -1f,
+            [0.0000000001f] = 0.1f,
+            [0.0000000002f] = 0.2f,
+            [0.0000000003f] = 0.3f,
+            [0.0000000004f] = 0.4f,
+            [0.0000000005f] = 0.5f,
+            [0.0000000006f] = 0.6f,
+            [0.0000000007f] = 0.7f,
+            [0.0000000008f] = 0.8f,
+            [0.0000000009f] = 0.9f,
+            [0.0000000010f] = 1,
+            [0.0000000020f] = 2,
+            [0.0000000030f] = 3,
+            [0.0000000040f] = 4,
+            [0.0000000050f] = 5,
+            [0.0000000060f] = 6,
+            [0.0000000070f] = 7,
+            [0.0000000080f] = 8,
+            [0.0000000090f] = 9,
+            [0.0000000100f] = 10,
+        };
 
         /*
         public static float ImpactFactor(MatrixD obbMatrix, Vector3 obbExtents, Vector3D impactPos, Vector3 direction)
@@ -161,34 +243,6 @@
             }
         }
         */
-
-        public static float GetDmgMulti(float damage)
-        {
-            float tableVal;
-            DmgTable.TryGetValue(damage, out tableVal);
-            return tableVal;
-        }
-
-        public static Color GetShieldColorFromFloat(float percent)
-        {
-            if (percent > 90) return Session.Instance.White1;
-            if (percent > 80) return Session.Instance.White2;
-            if (percent > 70) return Session.Instance.White3;
-            if (percent > 60) return Session.Instance.Blue1;
-            if (percent > 50) return Session.Instance.Blue2;
-            if (percent > 40) return Session.Instance.Blue3;
-            if (percent > 30) return Session.Instance.Blue4;
-            if (percent > 20) return Session.Instance.Red1;
-            if (percent > 10) return Session.Instance.Red2;
-            return Session.Instance.Red3;
-        }
-
-        public static Color GetAirEmissiveColorFromDouble(double percent)
-        {
-            if (percent >= 80) return Color.Green;
-            if (percent > 10) return Color.Yellow;
-            return Color.Red;
-        }
 
         /*
         public static long ThereCanBeOnlyOne(IMyCubeBlock shield)

@@ -2,15 +2,18 @@
 {
     using System;
     using global::DefenseShields.Support;
+
     using Sandbox.Game;
     using Sandbox.Game.Entities;
     using Sandbox.Game.Entities.Character.Components;
+    using Sandbox.Game.Entities.Cube;
     using Sandbox.ModAPI;
     using VRage.Game.Components;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRage.Utils;
     using VRageMath;
+    using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
     public partial class DefenseShields
     {
@@ -28,7 +31,6 @@
                     CharacterDmg.Clear();
                     FewDmgBlocks.Clear();
                     DmgBlocks.Clear();
-                    EmpDmg.Clear();
                     ForceData.Clear();
                     ImpulseData.Clear();
                     return;
@@ -265,25 +267,76 @@
 
                 try
                 {
-                    if (!EmpDmg.IsEmpty)
+                    if (!EmpBlast.IsEmpty)
                     {
-                        IMyWarhead block;
-                        while (EmpDmg.TryDequeue(out block))
-                        {
-                            if (block == null || block.MarkedForClose || block.Closed) continue;
-                            var myGrid = block.CubeGrid as MyCubeGrid;
+                        var stackCount = 0;
+                        var warHeadYield = 0d;
+                        var epiCenter = Vector3D.Zero;
+                        var empResistenceRatio = 1f;
+                        var attackerId = 0L;
+                        var energyResistenceRatio = DsState.State.ModulateKinetic;
 
-                            if (block.SlimBlock.IsDestroyed)
-                            {
-                                myGrid.EnqueueDestroyedBlock(block.Position);
-                                continue;
-                            }
-                            UtilsStatic.CreateExplosion(block.PositionComp.WorldAABB.Center, 2.1f, 9999);
-                            if (myGrid.BlocksCount == 0) myGrid.Close();
+                        if (DsState.State.EmpProtection)
+                        {
+                            if (energyResistenceRatio < 0.4) energyResistenceRatio = 0.4f;
+                            empResistenceRatio = 0.1f;
                         }
+
+                        foreach (var empChild in EmpBlast)
+                        {
+                            if (empChild.Value.CustomData == string.Empty || !empChild.Value.CustomData.Contains("!EMP"))
+                            {
+                                var entityId = empChild.Key;
+                                if (entityId != 0) attackerId = entityId;
+                                warHeadYield = empChild.Value.Yield;
+                                epiCenter += empChild.Value.Position;
+                                stackCount++;
+                            }
+                        }
+                        EmpBlast.Clear();
+                        if (stackCount == 0) return;
+                        epiCenter /= stackCount;
+                        var line = new LineD(epiCenter, SOriBBoxD.Center);
+                        var testDir = Vector3D.Normalize(line.From - line.To);
+                        var ray = new RayD(line.From, -testDir);
+                        var ellipsoid = CustomCollision.IntersectEllipsoid(DetectMatrixOutsideInv, DetectionMatrix, ray);
+                        if (!ellipsoid.HasValue) return;
+                        var impactPos = line.From + (testDir * -ellipsoid.Value);
+                        IHitInfo hitInfo;
+                        MyAPIGateway.Physics.CastRay(epiCenter, impactPos, out hitInfo, CollisionLayers.DefaultCollisionLayer);
+                        if (hitInfo != null) 
+                        {
+                            if (Session.Enforced.Debug >= 2) Log.Line($"[EmpBlast] {((MyEntity)hitInfo.HitEntity).DebugName} occluded EMP for:{MyGrid.DebugName}");
+                            return;
+                        }
+                        var gridLocalMatrix = MyGrid.PositionComp.LocalMatrix;
+                        var worldDirection = impactPos - gridLocalMatrix.Translation;
+                        var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(gridLocalMatrix));
+                        var hitFaceSurfaceArea = UtilsStatic.GetIntersectingSurfaceArea(ShieldShapeMatrix, localPosition);
+
+                        var empDirYield = (warHeadYield * stackCount) * 0.5;
+                        var rangeCap = MathHelper.Clamp(stackCount * warHeadYield, warHeadYield, Session.Instance.SyncDist);
+                        var invSqrDist = UtilsStatic.InverseSqrDist(epiCenter, impactPos, rangeCap);
+                        var damageScaler = invSqrDist * hitFaceSurfaceArea;
+                        if (invSqrDist < 0)
+                        {
+                            Log.Line($"insqrDist was 0, should never happen!!!");
+                            return;
+                        }
+
+                        var targetDamage = (float)(((empDirYield * damageScaler) * energyResistenceRatio) * empResistenceRatio);
+
+                        if (targetDamage >= DsState.State.Buffer * Session.Enforced.Efficiency) _empOverLoad = true;
+                        //if (Session.Enforced.Debug == 4) Log.Line($"targetDist:{Vector3D.Distance(epiCenter, impactPos)} - invSqrDist:{invSqrDist} - RangeCap:{rangeCap} - SurfaceA:{hitFaceSurfaceArea}({_ellipsoidSurfaceArea * 0.5}) - targetDamage:{targetDamage} - toOver:({(targetDamage / (DsState.State.Buffer * Session.Enforced.Efficiency))}) - warheadYield:{warHeadYield} - numInStack:{stackCount} - directYield:{empDirYield} - damageScaler:{damageScaler} - energyRatio:{energyResistenceRatio} - empRatio:{empResistenceRatio}");
+
+                        if (_isServer && _mpActive)
+                            AddEmpBlastHit(attackerId, targetDamage, "MPEMP", impactPos);
+
+                        WorldImpactPosition = epiCenter;
+                        Absorb += targetDamage;
                     }
                 }
-                catch (Exception ex) { Log.Line($"Exception in fewBlocks: {ex}"); }
+                catch (Exception ex) { Log.Line($"Exception in EmpBlast: {ex}"); }
             }
             catch (Exception ex) { Log.Line($"Exception in DamageGrids: {ex}"); }
         }

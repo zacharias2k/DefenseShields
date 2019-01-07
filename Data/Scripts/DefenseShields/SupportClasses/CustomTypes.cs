@@ -1,5 +1,6 @@
 ﻿namespace DefenseShields.Support
 {
+    using System;
     using System.Collections.Generic;
     using VRage.Collections;
     using VRage.Game.Entity;
@@ -8,6 +9,22 @@
     using VRage.Utils;
     using VRage.Voxels;
     using VRageMath;
+
+    public struct WarHeadBlast
+    {
+        public readonly int WarSize;
+        public readonly double Yield;
+        public readonly Vector3D Position;
+        public readonly string CustomData;
+
+        public WarHeadBlast(int warSize, Vector3D position, string customData)
+        {
+            WarSize = warSize;
+            Yield = WarSize * 50;
+            Position = position;
+            CustomData = customData;
+        }
+    }
 
     public struct VoxelHit : IVoxelOperator
     {
@@ -67,6 +84,93 @@
             Speed = speed;
             Mass = mass;
             BackKickForce = backKickForce;
+        }
+    }
+
+    public class AmmoInfo2
+    {
+        public readonly bool Explosive;
+        public readonly float Damage;
+        public readonly float Radius;
+        public readonly float Speed;
+        public readonly float Mass;
+        public readonly float BackKickForce;
+
+        public readonly bool KineticWeapon; //0 is energy, 1 is kinetic
+        public readonly bool HealingWeapon; //0 is damaging, 1 is healing
+        public readonly bool BypassWeapon; //0 is normal, 1 is bypass
+        public readonly float DmgMulti;
+        public readonly float ShieldDamage;
+
+        public AmmoInfo2(bool explosive, float damage, float radius, float speed, float mass, float backKickForce)
+        {
+            Explosive = explosive;
+            Damage = damage;
+            Radius = radius;
+            Speed = (float)Math.Truncate(speed);
+            Mass = mass;
+            BackKickForce = (float)Math.Truncate(backKickForce);
+
+            var backCompat = UtilsStatic.GetDmgMulti(backKickForce);
+            if (Math.Abs(backCompat) >= 0.001) //back compat, != 0 might get weird
+            {
+                KineticWeapon = !Explosive;
+                BypassWeapon = false;
+                DmgMulti = backCompat;
+                if (Mass < 0 && Radius <= 0) //ye olde heal check
+                    HealingWeapon = true;
+            }
+            else if (BackKickForce < 0) //emulates the weirdest old behavior
+            {
+                KineticWeapon = !Explosive;
+                BypassWeapon = false;
+                DmgMulti = 0;
+                ShieldDamage = float.NegativeInfinity; //bls gob no
+                if (Mass < 0 && Radius <= 0)
+                    ShieldDamage = -ShieldDamage;
+                return;
+            }
+            else //new API
+            {
+                var slice = Math.Abs(backKickForce - Math.Truncate(backKickForce)) * 10;
+                var opNum = (int)Math.Truncate(slice); ////gets first decimal digit
+                DmgMulti = (float)Math.Truncate((slice - Math.Truncate(slice)) * 10); ////gets second decimal digit
+                var uuid = (int)Math.Round(Math.Abs(speed - Math.Truncate(speed)) * 1000); ////gets UUID
+
+                if (uuid != 537 || backKickForce >= 131072 || speed >= 16384)
+                {   ////confirms UUID or if backkick/speed are out of range of float precision
+                    KineticWeapon = !Explosive;
+                    HealingWeapon = false;
+                    BypassWeapon = false;
+                    DmgMulti = 1;
+                }
+                else if (opNum == 8) ////8 is bypass, ignores all other flags
+                {
+                    KineticWeapon = !Explosive;
+                    HealingWeapon = false;
+                    BypassWeapon = true;
+                    DmgMulti = 1;
+                }
+                else //eval flags
+                {
+                    if (Convert.ToBoolean(opNum & 1))  ////bitcheck first bit; 0 is fractional, 1 is whole num
+                    {
+                        if (Math.Abs(DmgMulti) <= 0.001d) ////fractional and mult 0 = no damage
+                            DmgMulti = 10;
+                    }
+                    else DmgMulti /= 10;
+                    KineticWeapon = Convert.ToBoolean(opNum & 2); //second bit; 0 is energy, 1 is kinetic
+                    HealingWeapon = Convert.ToBoolean(opNum & 4); //third bit; 0 is damaging, 1 is healing
+                }
+            }
+
+            if (Explosive)
+                ShieldDamage = (Damage * (Radius * 0.5f)) * 7.5f * DmgMulti;
+            else
+                ShieldDamage = Mass * Speed * DmgMulti;
+            //  shieldDamage = Mass * Math.Pow(Speed,2) * DmgMulti / 2; //kinetic equation
+            if (HealingWeapon)
+                ShieldDamage = -ShieldDamage;
         }
     }
     /*
