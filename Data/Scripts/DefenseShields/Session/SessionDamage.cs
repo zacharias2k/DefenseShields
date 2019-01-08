@@ -100,9 +100,9 @@
                     if (!DedicatedServer)
                     {
                         var shieldActive = ds.DsState.State.Online && !ds.DsState.State.Lowered;
-                        if (!shieldActive || ds.DsState.State.Buffer <= 0)
+                        if (!shieldActive || ds.DsState.State.Charge <= 0)
                         {
-                            if (Enforced.Debug == 4) Log.Line($"MP-shield inactive or no buff - Active:{shieldActive} - Buffer:{ds.DsState.State.Buffer} - Amount:{info.Amount}");
+                            if (Enforced.Debug == 4) Log.Line($"MP-shield inactive or no buff - Active:{shieldActive} - Buffer:{ds.DsState.State.Charge} - Amount:{info.Amount}");
                             info.Amount = 0;
                             return;
                         }
@@ -113,7 +113,7 @@
 
                         if (hostileEnt == null)
                         {
-                            if (Enforced.Debug == 4) Log.Line($"MP-shield nullAttacker - Amount:{info.Amount} - Buffer:{ds.DsState.State.Buffer}");
+                            if (Enforced.Debug == 4) Log.Line($"MP-shield nullAttacker - Amount:{info.Amount} - Buffer:{ds.DsState.State.Charge}");
                             info.Amount = 0;
                             return;
                         }

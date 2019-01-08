@@ -88,7 +88,7 @@
                         MyCube.UpdateTerminal();
                 }
                 _runningDamage = _dpsAvg.Add((int)_damageReadOut);
-                _runningHeal = _hpsAvg.Add((int)(_shieldChargeRate * Session.Enforced.Efficiency));
+                _runningHeal = _hpsAvg.Add((int)(_shieldChargeRate * ConvToHp));
                 _damageReadOut = 0;
             }
 

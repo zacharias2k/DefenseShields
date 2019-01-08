@@ -230,8 +230,8 @@
             }
             if (!_isServer || numOfPointsInside <= 0) return;
 
-            var gridMaxCharge = ds._shieldMaxChargeRate;
-            var damage = gridMaxCharge * Session.Enforced.Efficiency * DsState.State.ModulateKinetic * 0.01666666666f;
+            var shieldMaxChargeRate = ds._shieldMaxChargeRate;
+            var damage = ((shieldMaxChargeRate * ConvToHp) * DsState.State.ModulateKinetic) * 0.01666666666f;
             if (_mpActive)
             {
                 if (_isServer) ShieldDoDamage(damage, grid.EntityId);

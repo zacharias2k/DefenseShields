@@ -15,7 +15,7 @@ namespace DefenseShields
         public int BaseScaler = -1;
 
         [ProtoMember(3), DefaultValue(-1)]
-        public float Efficiency = -1f;
+        public float Unused = -1f;
 
         [ProtoMember(4), DefaultValue(-1)]
         public int StationRatio = -1;
@@ -64,7 +64,7 @@ namespace DefenseShields
     public class ProtoControllerState
     {
         [ProtoMember(1), DefaultValue(-1)]
-        public float Buffer;
+        public float Charge;
         [ProtoMember(2), DefaultValue(-1)]
         public double IncreaseO2ByFPercent = 0f;
         [ProtoMember(3), DefaultValue(1f)]

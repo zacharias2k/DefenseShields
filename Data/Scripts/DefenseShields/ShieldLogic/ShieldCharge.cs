@@ -15,7 +15,7 @@
             CalculatePowerCharge();
             _power = _shieldConsumptionRate + _shieldMaintaintPower;
             if (!WarmedUp) return true;
-            if (_isServer && _hadPowerBefore && _shieldConsumptionRate.Equals(0f) && DsState.State.Buffer.Equals(0.01f) && _genericDownLoop == -1)
+            if (_isServer && _hadPowerBefore && _shieldConsumptionRate.Equals(0f) && DsState.State.Charge.Equals(0.01f) && _genericDownLoop == -1)
             {
                 _power = 0.0001f;
                 _genericDownLoop = 0;
@@ -34,7 +34,7 @@
                         ImpactSize = 12001;
                         if (Session.Enforced.Debug >= 2) Log.Line($"MpDamageEvent: Amount:{hit.Amount} - attacker:{hit.Attacker != null} - dType:{hit.DamageType} - hitPos:{hit.HitPos}");
                         if (hit.HitPos != Vector3D.Zero && WorldImpactPosition == Vector3D.NegativeInfinity) WorldImpactPosition = hit.HitPos;
-                        Absorb += hit.Amount / Session.Enforced.Efficiency;
+                        Absorb += hit.Amount * ConvToWatts;
                     }
                     ShieldHits.Clear();
                 }
@@ -43,13 +43,13 @@
             {
                 _damageReadOut += Absorb;
                 EffectsCleanTick = _tick;
-                DsState.State.Buffer -= Absorb / Session.Enforced.Efficiency;
+                DsState.State.Charge -= Absorb * ConvToWatts;
             }
-            else if (Absorb < 0) DsState.State.Buffer += Absorb / Session.Enforced.Efficiency;
+            else if (Absorb < 0) DsState.State.Charge += Absorb * ConvToWatts;
 
-            if (_isServer && DsState.State.Buffer < 0)
+            if (_isServer && DsState.State.Charge < 0)
             {
-                DsState.State.Buffer = 0;
+                DsState.State.Charge = 0;
                 if (!_empOverLoad) _overLoadLoop = 0;
                 else _empOverLoadLoop = 0;
             }
@@ -147,7 +147,6 @@
             var hpsEfficiency = Session.Enforced.HpsEfficiency;
             var baseScaler = Session.Enforced.BaseScaler;
             var maintenanceCost = Session.Enforced.MaintenanceCost;
-            var efficiency = Session.Enforced.Efficiency;
 
             if (hpsEfficiency <= 0) hpsEfficiency = 1f;
             if (baseScaler < 1) baseScaler = 1;
@@ -164,7 +163,7 @@
 
             var hpBase = GridMaxPower * bufferScaler;
 
-            var gridIntegrity = DsState.State.GridIntegrity * (efficiency * ConvToDec) * ConvToDec;
+            var gridIntegrity = DsState.State.GridIntegrity * ConvToDec;
             if (capScaler > 0) gridIntegrity *= capScaler;
 
             if (hpBase > gridIntegrity) _hpScaler = gridIntegrity / hpBase;
@@ -174,11 +173,11 @@
             if (DsState.State.Lowered) shieldMaintainPercent = shieldMaintainPercent * 0.25f;
             _shieldMaintaintPower = GridMaxPower * _hpScaler * shieldMaintainPercent;
 
-            ShieldMaxBuffer = hpBase * _hpScaler;
+            ShieldMaxCharge = hpBase * _hpScaler;
             var powerForShield = PowerNeeded(chargePercent, hpsEfficiency);
             if (!WarmedUp) return;
 
-            if (DsState.State.Buffer > ShieldMaxBuffer) DsState.State.Buffer = ShieldMaxBuffer;
+            if (DsState.State.Charge > ShieldMaxCharge) DsState.State.Charge = ShieldMaxCharge;
             if (_isServer)
             {
                 var powerLost = powerForShield <= 0 || _powerNeeded > GridMaxPower || (GridMaxPower - _powerNeeded) / Math.Abs(_powerNeeded) * 100 < 0.001;
@@ -197,15 +196,15 @@
             if (DsState.State.Heat != 0) UpdateHeatState();
             else _expChargeReduction = 0;
 
-            if (_count == 29 && DsState.State.Buffer < ShieldMaxBuffer) DsState.State.Buffer += _shieldChargeRate;
-            else if (DsState.State.Buffer.Equals(ShieldMaxBuffer))
+            if (_count == 29 && DsState.State.Charge < ShieldMaxCharge) DsState.State.Charge += _shieldChargeRate;
+            else if (DsState.State.Charge.Equals(ShieldMaxCharge))
             {
                 _shieldChargeRate = 0f;
                 _shieldConsumptionRate = 0f;
             }
 
-            if (DsState.State.Buffer < ShieldMaxBuffer) DsState.State.ShieldPercent = DsState.State.Buffer / ShieldMaxBuffer * 100;
-            else if (DsState.State.Buffer < ShieldMaxBuffer * 0.1) DsState.State.ShieldPercent = 0f;
+            if (DsState.State.Charge < ShieldMaxCharge) DsState.State.ShieldPercent = DsState.State.Charge / ShieldMaxCharge * 100;
+            else if (DsState.State.Charge < ShieldMaxCharge * 0.1) DsState.State.ShieldPercent = 0f;
             else DsState.State.ShieldPercent = 100f;
         }
 
@@ -220,14 +219,14 @@
             var rawMaxChargeRate = powerForShield > 0 ? powerForShield : 0f;
             _shieldMaxChargeRate = rawMaxChargeRate;
             _shieldPeakRate = _shieldMaxChargeRate * hpsEfficiency / (float)_sizeScaler;
-            if (DsState.State.Buffer + _shieldPeakRate < ShieldMaxBuffer)
+            if (DsState.State.Charge + _shieldPeakRate < ShieldMaxCharge)
             {
                 _shieldChargeRate = _shieldPeakRate;
                 _shieldConsumptionRate = _shieldMaxChargeRate;
             }
             else
             {
-                var remaining = ShieldMaxBuffer - DsState.State.Buffer;
+                var remaining = ShieldMaxCharge - DsState.State.Charge;
                 var remainingScaled = remaining / _shieldPeakRate;
                 _shieldConsumptionRate = remainingScaled * _shieldMaxChargeRate;
                 _shieldChargeRate = _shieldPeakRate * remainingScaled;
@@ -242,7 +241,7 @@
             {
                 if (!DsState.State.Online)
                 {
-                    DsState.State.Buffer = 0.01f;
+                    DsState.State.Charge = 0.01f;
                     _shieldChargeRate = 0f;
                     _shieldConsumptionRate = 0f;
                     return true;
@@ -255,12 +254,12 @@
                     ShieldChangeState();
                 }
 
-                var shieldLoss = ShieldMaxBuffer * 0.0016667f;
-                DsState.State.Buffer = DsState.State.Buffer - shieldLoss;
-                if (DsState.State.Buffer < 0.01f) DsState.State.Buffer = 0.01f;
+                var shieldLoss = ShieldMaxCharge * 0.0016667f;
+                DsState.State.Charge = DsState.State.Charge - shieldLoss;
+                if (DsState.State.Charge < 0.01f) DsState.State.Charge = 0.01f;
 
-                if (DsState.State.Buffer < ShieldMaxBuffer) DsState.State.ShieldPercent = DsState.State.Buffer / ShieldMaxBuffer * 100;
-                else if (DsState.State.Buffer < ShieldMaxBuffer * 0.1) DsState.State.ShieldPercent = 0f;
+                if (DsState.State.Charge < ShieldMaxCharge) DsState.State.ShieldPercent = DsState.State.Charge / ShieldMaxCharge * 100;
+                else if (DsState.State.Charge < ShieldMaxCharge * 0.1) DsState.State.ShieldPercent = 0f;
                 else DsState.State.ShieldPercent = 100f;
 
                 _shieldChargeRate = 0f;
@@ -296,7 +295,7 @@
 
         private void HeatManager()
         {
-            var hp = ShieldMaxBuffer * Session.Enforced.Efficiency;
+            var hp = ShieldMaxCharge * ConvToHp;
             var oldHeat = DsState.State.Heat;
             if (_count == 29 && _damageReadOut > 0 && _heatCycle == -1)
             {

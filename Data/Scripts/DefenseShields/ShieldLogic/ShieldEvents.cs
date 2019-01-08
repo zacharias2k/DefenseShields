@@ -188,10 +188,10 @@
                 var secToFull = 0;
                 var shieldPercent = !DsState.State.Online ? 0f : 100f;
 
-                if (DsState.State.Buffer < ShieldMaxBuffer) shieldPercent = DsState.State.Buffer / ShieldMaxBuffer * 100;
+                if (DsState.State.Charge < ShieldMaxCharge) shieldPercent = DsState.State.Charge / ShieldMaxCharge * 100;
                 if (_shieldChargeRate > 0)
                 {
-                    var toMax = ShieldMaxBuffer - DsState.State.Buffer;
+                    var toMax = ShieldMaxCharge - DsState.State.Charge;
                     var secs = toMax / _shieldChargeRate;
                     if (secs.Equals(1)) secToFull = 0;
                     else secToFull = (int)secs;
@@ -210,10 +210,10 @@
                 var status = GetShieldStatus();
                 if (status == "[Shield Up]" || status == "[Shield Down]" || status == "[Shield Offline]")
                 {
-                    stringBuilder.Append(status + " MaxHP: " + (ShieldMaxBuffer * Session.Enforced.Efficiency).ToString("N0") +
+                    stringBuilder.Append(status + " MaxHP: " + (ShieldMaxCharge * ConvToHp).ToString("N0") +
                                          "\n" +
-                                         "\n[Shield HP__]: " + (DsState.State.Buffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
-                                         "\n[HP Per Sec_]: " + (_shieldChargeRate * Session.Enforced.Efficiency).ToString("N0") +
+                                         "\n[Shield HP__]: " + (DsState.State.Charge * ConvToHp).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
+                                         "\n[HP Per Sec_]: " + (_shieldChargeRate * ConvToHp).ToString("N0") +
                                          "\n[Damage In__]: " + _damageReadOut.ToString("N0") +
                                          "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
                                          "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
@@ -228,7 +228,7 @@
                                          "\n" +
                                          "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
                                          "\n[Other Power]: " + otherPower.ToString("0.0") + " Mw" +
-                                         "\n[HP Stored]: " + (DsState.State.Buffer * Session.Enforced.Efficiency).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
+                                         "\n[HP Stored]: " + (DsState.State.Charge * ConvToHp).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
                                          "\n[Needed Power]: " + shieldPowerNeeds.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw" +
                                          "\n[Emitter Working]: " + DsState.State.EmitterWorking +
                                          "\n[Ship Emitter]: " + (ShieldComp?.ShipEmitter != null) +

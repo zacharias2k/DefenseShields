@@ -174,6 +174,7 @@
                     return;
                 }
                 if (Session.Instance.O2Generators.Contains(this)) Session.Instance.O2Generators.Remove(this);
+                if (ShieldComp?.ActiveO2Generator == this) ShieldComp.ActiveO2Generator = null;
                 RegisterEvents(false);
                 IsWorking = false;
                 IsFunctional = false;

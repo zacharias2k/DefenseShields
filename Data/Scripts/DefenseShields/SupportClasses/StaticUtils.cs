@@ -432,7 +432,7 @@
         {
             const int BaseScaler = 10;
             const float HeatScaler = 0.0065f;
-            const float Efficiency = 100f;
+            const float Unused = 0f;
             const int StationRatio = 1;
             const int LargeShipRate = 1;
             const int SmallShipRatio = 1;
@@ -440,7 +440,7 @@
             const int DisableGridDmg = 0;
             const int Debug = 1;
             const bool AltRecharge = false;
-            const int Version = 64;
+            const int Version = 65;
             const float CapScaler = 1f;
             const float HpsEfficiency = 0.5f;
             const float MaintenanceCost = 0.5f;
@@ -457,7 +457,7 @@
                 Log.Line($"outdated config file regenerating, file version: {unPackedData.Version} - current version: {Version}");
                 Session.Enforced.BaseScaler = !unPackedData.BaseScaler.Equals(-1) ? unPackedData.BaseScaler : BaseScaler;
                 Session.Enforced.HeatScaler = !unPackedData.HeatScaler.Equals(-1f) ? unPackedData.HeatScaler : HeatScaler;
-                Session.Enforced.Efficiency = !unPackedData.Efficiency.Equals(-1f) ? unPackedData.Efficiency : Efficiency;
+                Session.Enforced.Unused = !unPackedData.Unused.Equals(-1f) ? unPackedData.Unused : Unused;
                 Session.Enforced.StationRatio = !unPackedData.StationRatio.Equals(-1) ? unPackedData.StationRatio : StationRatio;
                 Session.Enforced.LargeShipRatio = !unPackedData.LargeShipRatio.Equals(-1) ? unPackedData.LargeShipRatio : LargeShipRate;
                 Session.Enforced.SmallShipRatio = !unPackedData.SmallShipRatio.Equals(-1) ? unPackedData.SmallShipRatio : SmallShipRatio;
@@ -494,7 +494,7 @@
             {
                 Session.Enforced.BaseScaler = BaseScaler;
                 Session.Enforced.HeatScaler = HeatScaler;
-                Session.Enforced.Efficiency = Efficiency;
+                Session.Enforced.Unused = Unused;
                 Session.Enforced.StationRatio = StationRatio;
                 Session.Enforced.LargeShipRatio = LargeShipRate;
                 Session.Enforced.SmallShipRatio = SmallShipRatio;

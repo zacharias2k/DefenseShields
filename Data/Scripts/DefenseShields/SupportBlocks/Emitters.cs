@@ -198,6 +198,8 @@
             try
             {
                 if (Session.Enforced.Debug == 3) Log.Line($"OnRemovedFromScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
+                if (ShieldComp?.StationEmitter == this) ShieldComp.StationEmitter = null;
+                if (ShieldComp?.ShipEmitter == this) ShieldComp.ShipEmitter = null;
                 //// BlockParticleStop();
                 RegisterEvents(false);
                 IsWorking = false;

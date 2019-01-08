@@ -45,7 +45,7 @@
             }
             if (Session.Instance.MpActive)
             {
-                if (Session.Enforced.Debug == 4) Log.Line($"ServerUpdate: Broadcast:{DsState.State.Message} - Percent:{DsState.State.ShieldPercent} - HeatLvl:{DsState.State.Heat} - Buffer:{DsState.State.Buffer} - EmpProt:{DsState.State.EmpProtection} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 4) Log.Line($"ServerUpdate: Broadcast:{DsState.State.Message} - Percent:{DsState.State.ShieldPercent} - HeatLvl:{DsState.State.Heat} - ShieldCharge:{DsState.State.Charge} - EmpProt:{DsState.State.EmpProtection} - ShieldId [{Shield.EntityId}]");
                 DsState.NetworkUpdate();
             }
             if (!_isDedicated && DsState.State.Message)
@@ -216,7 +216,7 @@
             if (_isServer && !DsState.State.Lowered && !DsState.State.Sleeping)
             {
                 DsState.State.ShieldPercent = 0f;
-                DsState.State.Buffer = 0f;
+                DsState.State.Charge = 0f;
             }
 
             if (_isServer)
@@ -353,7 +353,7 @@
                         DsState.State.Overload = false;
                         _overLoadLoop = -1;
                         var recharged = _shieldChargeRate * ShieldDownCount / 60;
-                        DsState.State.Buffer = MathHelper.Clamp(recharged, ShieldMaxBuffer * 0.10f, ShieldMaxBuffer * 0.25f);
+                        DsState.State.Charge = MathHelper.Clamp(recharged, ShieldMaxCharge * 0.10f, ShieldMaxCharge * 0.25f);
                     }
                 }
             }
@@ -374,7 +374,7 @@
                         DsState.State.EmpOverLoad = false;
                         _empOverLoadLoop = -1;
                         var recharged = _shieldChargeRate * EmpDownCount / 60;
-                        DsState.State.Buffer = MathHelper.Clamp(recharged, ShieldMaxBuffer * 0.25f, ShieldMaxBuffer * 0.62f);
+                        DsState.State.Charge = MathHelper.Clamp(recharged, ShieldMaxCharge * 0.25f, ShieldMaxCharge * 0.62f);
                     }
                 }
             }
@@ -396,7 +396,7 @@
                 _accumulatedHeat = 0;
                 _heatCycle = -1;
                 Absorb = 0f;
-                DsState.State.Buffer = 0f;
+                DsState.State.Charge = 0f;
                 DsState.State.ShieldPercent = 0f;
                 DsState.State.IncreaseO2ByFPercent = 0f;
 

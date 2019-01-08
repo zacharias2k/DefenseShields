@@ -164,7 +164,7 @@
                           $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)}\n" +
                           $"ShieldMode:{ShieldMode} - pFail:{_powerFail}\n" +
                           $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{GridMaxPower}\n" +
-                          $"Pow:{_power} HP:{DsState.State.Buffer}: {ShieldMaxBuffer}";
+                          $"Pow:{_power} HP:{DsState.State.Charge}: {ShieldMaxCharge}";
 
             if (!_isDedicated) MyAPIGateway.Utilities.ShowMessage(string.Empty, message);
             else Log.Line(message);

@@ -326,8 +326,8 @@
 
                         var targetDamage = (float)(((empDirYield * damageScaler) * energyResistenceRatio) * empResistenceRatio);
 
-                        if (targetDamage >= DsState.State.Buffer * Session.Enforced.Efficiency) _empOverLoad = true;
-                        //if (Session.Enforced.Debug == 4) Log.Line($"targetDist:{Vector3D.Distance(epiCenter, impactPos)} - invSqrDist:{invSqrDist} - RangeCap:{rangeCap} - SurfaceA:{hitFaceSurfaceArea}({_ellipsoidSurfaceArea * 0.5}) - targetDamage:{targetDamage} - toOver:({(targetDamage / (DsState.State.Buffer * Session.Enforced.Efficiency))}) - warheadYield:{warHeadYield} - numInStack:{stackCount} - directYield:{empDirYield} - damageScaler:{damageScaler} - energyRatio:{energyResistenceRatio} - empRatio:{empResistenceRatio}");
+                        if (targetDamage >= DsState.State.Charge * ConvToHp) _empOverLoad = true;
+                        //if (Session.Enforced.Debug == 4) Log.Line($"targetDist:{Vector3D.Distance(epiCenter, impactPos)} - invSqrDist:{invSqrDist} - RangeCap:{rangeCap} - SurfaceA:{hitFaceSurfaceArea}({_ellipsoidSurfaceArea * 0.5}) - targetDamage:{targetDamage} - toOver:({(targetDamage / (DsState.State.Buffer * ConvToHp))}) - warheadYield:{warHeadYield} - numInStack:{stackCount} - directYield:{empDirYield} - damageScaler:{damageScaler} - energyRatio:{energyResistenceRatio} - empRatio:{empResistenceRatio}");
 
                         if (_isServer && _mpActive)
                             AddEmpBlastHit(attackerId, targetDamage, "MPEMP", impactPos);
