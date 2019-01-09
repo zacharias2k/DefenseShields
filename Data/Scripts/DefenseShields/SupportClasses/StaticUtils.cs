@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using Sandbox.Common.ObjectBuilders;
     using Sandbox.Definitions;
@@ -15,6 +16,104 @@
 
     internal static class UtilsStatic
     {
+        
+        public static void PrepConfigFile()
+        {
+            const int BaseScaler = 10;
+            const float HeatScaler = 0.0065f;
+            const float Unused = 0f;
+            const int StationRatio = 1;
+            const int LargeShipRate = 1;
+            const int SmallShipRatio = 1;
+            const int DisableVoxel = 0;
+            const int DisableGridDmg = 0;
+            const int Debug = 1;
+            const bool AltRecharge = false;
+            const int Version = 67;
+            const float CapScaler = 1f;
+            const float HpsEfficiency = 0.5f;
+            const float MaintenanceCost = 0.5f;
+
+            var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg");
+            if (dsCfgExists)
+            {
+                var unPackCfg = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShields.cfg");
+                var unPackedData = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsEnforcement>(unPackCfg.ReadToEnd());
+
+                var invalidValue = unPackedData.HpsEfficiency <= 0 || unPackedData.BaseScaler < 1 || unPackedData.MaintenanceCost <= 0;
+                if (invalidValue)
+                {
+                    if (unPackedData.HpsEfficiency <= 0) unPackedData.HpsEfficiency = HpsEfficiency;
+                    if (unPackedData.BaseScaler < 1) unPackedData.BaseScaler = BaseScaler;
+                    if (unPackedData.MaintenanceCost <= 0) unPackedData.MaintenanceCost = MaintenanceCost;
+                }
+
+                if (unPackedData.Version == Version && !invalidValue) return;
+
+                if (!invalidValue) Log.Line($"outdated config file regenerating, file version: {unPackedData.Version} - current version: {Version}");
+                else Log.Line("Invalid config file, fixing");
+
+                Session.Enforced.BaseScaler = !unPackedData.BaseScaler.Equals(-1) ? unPackedData.BaseScaler : BaseScaler;
+                Session.Enforced.HeatScaler = !unPackedData.HeatScaler.Equals(-1f) ? unPackedData.HeatScaler : HeatScaler;
+                Session.Enforced.Unused = !unPackedData.Unused.Equals(-1f) ? unPackedData.Unused : Unused;
+                Session.Enforced.StationRatio = !unPackedData.StationRatio.Equals(-1) ? unPackedData.StationRatio : StationRatio;
+                Session.Enforced.LargeShipRatio = !unPackedData.LargeShipRatio.Equals(-1) ? unPackedData.LargeShipRatio : LargeShipRate;
+                Session.Enforced.SmallShipRatio = !unPackedData.SmallShipRatio.Equals(-1) ? unPackedData.SmallShipRatio : SmallShipRatio;
+                Session.Enforced.DisableVoxelSupport = !unPackedData.DisableVoxelSupport.Equals(-1) ? unPackedData.DisableVoxelSupport : DisableVoxel;
+                Session.Enforced.DisableGridDamageSupport = !unPackedData.DisableGridDamageSupport.Equals(-1) ? unPackedData.DisableGridDamageSupport : DisableGridDmg;
+                Session.Enforced.Debug = !unPackedData.Debug.Equals(-1) ? unPackedData.Debug : Debug;
+                Session.Enforced.AltRecharge = false;
+                Session.Enforced.CapScaler = !unPackedData.CapScaler.Equals(-1f) ? unPackedData.CapScaler : CapScaler;
+                Session.Enforced.HpsEfficiency = !unPackedData.HpsEfficiency.Equals(-1f) ? unPackedData.HpsEfficiency : HpsEfficiency;
+                Session.Enforced.MaintenanceCost = !unPackedData.MaintenanceCost.Equals(-1f) ? unPackedData.MaintenanceCost : MaintenanceCost;
+                if (unPackedData.Version <= 62)
+                {
+                    Session.Enforced.Debug = 1;
+                }
+                Session.Enforced.Version = Version;
+                if (unPackedData.Version <= 63 && unPackedData.HeatScaler >= 1)
+                {
+                    Session.Enforced.HeatScaler = 0.0065f;
+                }
+                UpdateConfigFile(unPackCfg);
+            }
+            else
+            {
+                Session.Enforced.BaseScaler = BaseScaler;
+                Session.Enforced.HeatScaler = HeatScaler;
+                Session.Enforced.Unused = Unused;
+                Session.Enforced.StationRatio = StationRatio;
+                Session.Enforced.LargeShipRatio = LargeShipRate;
+                Session.Enforced.SmallShipRatio = SmallShipRatio;
+                Session.Enforced.DisableVoxelSupport = DisableVoxel;
+                Session.Enforced.DisableGridDamageSupport = DisableGridDmg;
+                Session.Enforced.Debug = Debug;
+                Session.Enforced.AltRecharge = AltRecharge;
+                Session.Enforced.CapScaler = CapScaler;
+                Session.Enforced.HpsEfficiency = HpsEfficiency;
+                Session.Enforced.MaintenanceCost = MaintenanceCost;
+                Session.Enforced.Version = Version;
+
+                WriteNewConfigFile();
+
+                Log.Line($"wrote new config file - file exists: {MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg")}");
+            }
+        }
+
+        public static void ReadConfigFile()
+        {
+            var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg");
+
+            if (Session.Enforced.Debug == 3) Log.Line($"Reading config, file exists? {dsCfgExists}");
+
+            if (!dsCfgExists) return;
+
+            var cfg = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShields.cfg");
+            var data = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsEnforcement>(cfg.ReadToEnd());
+            Session.Enforced = data;
+
+            if (Session.Enforced.Debug == 3) Log.Line($"Writing settings to mod:\n{data}");
+        }
         public static float GetDmgMulti(float damage)
         {
             float tableVal;
@@ -124,158 +223,6 @@
             }
             return surfaceArea;
         }
-
-        private static Vector3D VectorProjection(Vector3D a, Vector3D b)
-        {
-            if (Vector3D.IsZero(b))
-                return Vector3D.Zero;
-
-            return a.Dot(b) / b.LengthSquared() * b;
-        }
-
-        private static readonly Dictionary<float, float> DmgTable = new Dictionary<float, float>
-        {
-            [0.00000000001f] = -1f,
-            [0.0000000001f] = 0.1f,
-            [0.0000000002f] = 0.2f,
-            [0.0000000003f] = 0.3f,
-            [0.0000000004f] = 0.4f,
-            [0.0000000005f] = 0.5f,
-            [0.0000000006f] = 0.6f,
-            [0.0000000007f] = 0.7f,
-            [0.0000000008f] = 0.8f,
-            [0.0000000009f] = 0.9f,
-            [0.0000000010f] = 1,
-            [0.0000000020f] = 2,
-            [0.0000000030f] = 3,
-            [0.0000000040f] = 4,
-            [0.0000000050f] = 5,
-            [0.0000000060f] = 6,
-            [0.0000000070f] = 7,
-            [0.0000000080f] = 8,
-            [0.0000000090f] = 9,
-            [0.0000000100f] = 10,
-        };
-
-        /*
-        public static float ImpactFactor(MatrixD obbMatrix, Vector3 obbExtents, Vector3D impactPos, Vector3 direction)
-        {
-            var impactPosLcl = (Vector3)(impactPos - obbMatrix.Translation);
-            var xProj = (Vector3)obbMatrix.Right;
-            var yProj = (Vector3)obbMatrix.Up;
-            var zProj = (Vector3)obbMatrix.Backward;
-
-            // quick inverse transform normal: dot(xProj, pos), dot(yProj, pos), dot(zProj, pos)
-            impactPosLcl = new Vector3(impactPosLcl.Dot(xProj), impactPosLcl.Dot(yProj), impactPosLcl.Dot(zProj));
-            direction = new Vector3(direction.Dot(xProj), direction.Dot(yProj), direction.Dot(zProj));
-
-            // find point outside of box along ray, then scale by inverse box size
-            const float expandFactor = 25;
-            var faceDirection = (impactPosLcl - direction * obbExtents.AbsMax() * expandFactor) / obbExtents;
-
-            // dominant axis project, then sign
-            // faceNormal = Vector3.Sign(Vector3.DominantAxisProjection(faceDirection));
-            Vector3 faceNormal;
-            if (Math.Abs(faceDirection.X) > Math.Abs(faceDirection.Y))
-            {
-                // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
-                if (Math.Abs(faceDirection.X) > Math.Abs(faceDirection.Z))
-                    faceNormal = new Vector3(Math.Sign(faceDirection.X), 0, 0);
-                else
-                    faceNormal = new Vector3(0, 0, Math.Sign(faceDirection.Z));
-            }
-            else if (Math.Abs(faceDirection.Y) > Math.Abs(faceDirection.Z))
-                faceNormal = new Vector3(0, Math.Sign(faceDirection.Y), 0);
-            else
-                faceNormal = new Vector3(0, 0, Math.Sign(faceDirection.Z));
-
-            return Math.Abs(faceNormal.Dot(direction));
-        }
-
-        // This method only exists for consistency, so you can *always* call
-        // MoreMath.Max instead of alternating between MoreMath.Max and Math.Max
-        // depending on your argument count.
-        public static int Max(int x, int y)
-        {
-            return Math.Max(x, y);
-        }
-
-        public static int Max(int x, int y, int z)
-        {
-            // Or inline it as x < y ? (y < z ? z : y) : (x < z ? z : x);
-            // Time it before micro-optimizing though!
-            return Math.Max(x, Math.Max(y, z));
-        }
-
-        public static int Max(int w, int x, int y, int z)
-        {
-            return Math.Max(w, Math.Max(x, Math.Max(y, z)));
-        }
-
-        public static void GetRealPlayers(Vector3D center, float radius, HashSet<long> realPlayers)
-        {
-            var realPlayersIdentities = new List<IMyIdentity>();
-            MyAPIGateway.Players.GetAllIdentites(realPlayersIdentities, p => !string.IsNullOrEmpty(p?.DisplayName));
-            var pruneSphere = new BoundingSphereD(center, radius);
-            var pruneList = new List<MyEntity>();
-            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
-
-            foreach (var ent in pruneList)
-            {
-                if (ent == null || !(ent is IMyCubeGrid || ent is IMyCharacter)) continue;
-
-                IMyPlayer player = null;
-
-                if (ent is IMyCharacter)
-                {
-                    player = MyAPIGateway.Players.GetPlayerControllingEntity(ent);
-                    if (player == null) continue;
-                }
-                else
-                {
-                    var playerTmp = MyAPIGateway.Players.GetPlayerControllingEntity(ent);
-
-                    if (playerTmp?.Character != null) player = playerTmp;
-                }
-
-                if (player == null) continue;
-                if (realPlayersIdentities.Contains(player.Identity)) realPlayers.Add(player.IdentityId);
-            }
-        }
-        */
-
-        /*
-        public static long ThereCanBeOnlyOne(IMyCubeBlock shield)
-        {
-            if (Session.Enforced.Debug == 3) Log.Line($"ThereCanBeOnlyOne start");
-            var shieldBlocks = new List<MyCubeBlock>();
-            foreach (var block in ((MyCubeGrid)shield.CubeGrid).GetFatBlocks())
-            {
-                if (block == null) continue;
-
-                if (block.BlockDefinition.BlockPairName == "DS_Control" || block.BlockDefinition.BlockPairName == "DS_Control_Table")
-                {
-                    if (block.IsWorking) return block.EntityId;
-                    shieldBlocks.Add(block);
-                }
-            }
-            var shieldDistFromCenter = double.MinValue;
-            var shieldId = long.MinValue;
-            foreach (var s in shieldBlocks)
-            {
-                if (s == null) continue;
-
-                var dist = Vector3D.DistanceSquared(s.PositionComp.WorldVolume.Center, shield.CubeGrid.WorldVolume.Center);
-                if (dist > shieldDistFromCenter)
-                {
-                    shieldDistFromCenter = dist;
-                    shieldId = s.EntityId;
-                }
-            }
-            if (Session.Enforced.Debug == 3) Log.Line($"ThereCanBeOnlyOne complete, found shield: {shieldId}");
-            return shieldId;
-        }
-        */
 
         public static bool DistanceCheck(IMyCubeBlock block, int x, double range)
         {
@@ -428,110 +375,6 @@
             return blockCnt;
         }
 
-        public static void PrepConfigFile()
-        {
-            const int BaseScaler = 10;
-            const float HeatScaler = 0.0065f;
-            const float Unused = 0f;
-            const int StationRatio = 1;
-            const int LargeShipRate = 1;
-            const int SmallShipRatio = 1;
-            const int DisableVoxel = 0;
-            const int DisableGridDmg = 0;
-            const int Debug = 1;
-            const bool AltRecharge = false;
-            const int Version = 65;
-            const float CapScaler = 1f;
-            const float HpsEfficiency = 0.5f;
-            const float MaintenanceCost = 0.5f;
-
-            var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg");
-            if (dsCfgExists)
-            {
-                var unPackCfg = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShields.cfg");
-                var unPackedData = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsEnforcement>(unPackCfg.ReadToEnd());
-
-                if (Session.Enforced.Debug == 3) Log.Line($"unPackedData is: {unPackedData}\nServEnforced are: {Session.Enforced}");
-
-                if (unPackedData.Version == Version) return;
-                Log.Line($"outdated config file regenerating, file version: {unPackedData.Version} - current version: {Version}");
-                Session.Enforced.BaseScaler = !unPackedData.BaseScaler.Equals(-1) ? unPackedData.BaseScaler : BaseScaler;
-                Session.Enforced.HeatScaler = !unPackedData.HeatScaler.Equals(-1f) ? unPackedData.HeatScaler : HeatScaler;
-                Session.Enforced.Unused = !unPackedData.Unused.Equals(-1f) ? unPackedData.Unused : Unused;
-                Session.Enforced.StationRatio = !unPackedData.StationRatio.Equals(-1) ? unPackedData.StationRatio : StationRatio;
-                Session.Enforced.LargeShipRatio = !unPackedData.LargeShipRatio.Equals(-1) ? unPackedData.LargeShipRatio : LargeShipRate;
-                Session.Enforced.SmallShipRatio = !unPackedData.SmallShipRatio.Equals(-1) ? unPackedData.SmallShipRatio : SmallShipRatio;
-                Session.Enforced.DisableVoxelSupport = !unPackedData.DisableVoxelSupport.Equals(-1) ? unPackedData.DisableVoxelSupport : DisableVoxel;
-                Session.Enforced.DisableGridDamageSupport = !unPackedData.DisableGridDamageSupport.Equals(-1) ? unPackedData.DisableGridDamageSupport : DisableGridDmg;
-                Session.Enforced.Debug = !unPackedData.Debug.Equals(-1) ? unPackedData.Debug : Debug;
-                Session.Enforced.AltRecharge = false;
-                Session.Enforced.CapScaler = !unPackedData.CapScaler.Equals(-1f) ? unPackedData.CapScaler : CapScaler;
-                Session.Enforced.HpsEfficiency = !unPackedData.HpsEfficiency.Equals(-1f) ? unPackedData.HpsEfficiency : HpsEfficiency;
-                Session.Enforced.MaintenanceCost = !unPackedData.MaintenanceCost.Equals(-1f) ? unPackedData.MaintenanceCost : MaintenanceCost;
-                if (unPackedData.Version <= 62)
-                {
-                    Session.Enforced.Debug = 1;
-                }
-                Session.Enforced.Version = Version;
-                if (unPackedData.Version <= 63 && unPackedData.HeatScaler >= 1)
-                {
-                    Session.Enforced.HeatScaler = 0.0065f;
-                }
-
-                unPackedData = null;
-                unPackCfg.Close();
-                unPackCfg.Dispose();
-                MyAPIGateway.Utilities.DeleteFileInGlobalStorage("DefenseShields.cfg");
-                var newCfg = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShields.cfg");
-                var newData = MyAPIGateway.Utilities.SerializeToXML(Session.Enforced);
-                newCfg.Write(newData);
-                newCfg.Flush();
-                newCfg.Close();
-
-                if (Session.Enforced.Debug == 3) Log.Line($"wrote modified config file - file exists: {MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg")}");
-            }
-            else
-            {
-                Session.Enforced.BaseScaler = BaseScaler;
-                Session.Enforced.HeatScaler = HeatScaler;
-                Session.Enforced.Unused = Unused;
-                Session.Enforced.StationRatio = StationRatio;
-                Session.Enforced.LargeShipRatio = LargeShipRate;
-                Session.Enforced.SmallShipRatio = SmallShipRatio;
-                Session.Enforced.DisableVoxelSupport = DisableVoxel;
-                Session.Enforced.DisableGridDamageSupport = DisableGridDmg;
-                Session.Enforced.Debug = Debug;
-                Session.Enforced.AltRecharge = AltRecharge;
-                Session.Enforced.CapScaler = CapScaler;
-                Session.Enforced.HpsEfficiency = HpsEfficiency;
-                Session.Enforced.MaintenanceCost = MaintenanceCost;
-                Session.Enforced.Version = Version;
-
-                var cfg = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShields.cfg");
-                var data = MyAPIGateway.Utilities.SerializeToXML(Session.Enforced);
-                cfg.Write(data);
-                cfg.Flush();
-                cfg.Close();
-
-                if (Session.Enforced.Debug == 3) Log.Line($"wrote new config file - file exists: {MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg")}");
-            }
-        }
-
-        public static void ReadConfigFile()
-        {
-            var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg");
-
-            if (Session.Enforced.Debug == 3) Log.Line($"Reading config, file exists? {dsCfgExists}");
-
-            if (!dsCfgExists) return;
-
-            var cfg = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShields.cfg");
-            var data = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsEnforcement>(cfg.ReadToEnd());
-            Session.Enforced = data;
-
-            if (Session.Enforced.Debug == 3) Log.Line($"Writing settings to mod:\n{data}");
-        }
-
         public static void CreateExplosion(Vector3D position, float radius, int damage = 5000)
         {
             MyExplosionTypeEnum explosionTypeEnum = MyExplosionTypeEnum.WARHEAD_EXPLOSION_50;
@@ -581,23 +424,59 @@
             MyExplosions.AddExplosion(ref explosionInfo);
         }
 
-        /*
-        private static double PowerCalculation(IMyEntity breaching, IMyCubeGrid grid)
+        private static void UpdateConfigFile(TextReader unPackCfg)
         {
-            var bPhysics = breaching.Physics;
-            var sPhysics = grid.Physics;
-
-            const double wattsPerNewton = (3.36e6 / 288000);
-            var velTarget = sPhysics.GetVelocityAtPoint(breaching.Physics.CenterOfMassWorld);
-            var accelLinear = sPhysics.LinearAcceleration;
-            var velTargetNext = velTarget + accelLinear * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
-            var velModifyNext = bPhysics.LinearVelocity;
-            var linearImpulse = bPhysics.Mass * (velTargetNext - velModifyNext);
-            var powerCorrectionInJoules = wattsPerNewton * linearImpulse.Length();
-
-            return powerCorrectionInJoules * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
+            unPackCfg.Close();
+            unPackCfg.Dispose();
+            MyAPIGateway.Utilities.DeleteFileInGlobalStorage("DefenseShields.cfg");
+            var newCfg = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShields.cfg");
+            var newData = MyAPIGateway.Utilities.SerializeToXML(Session.Enforced);
+            newCfg.Write(newData);
+            newCfg.Flush();
+            newCfg.Close();
+            Log.Line($"wrote modified config file - file exists: {MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg")}");
         }
-        */
+
+        private static void WriteNewConfigFile()
+        {
+            var cfg = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShields.cfg");
+            var data = MyAPIGateway.Utilities.SerializeToXML(Session.Enforced);
+            cfg.Write(data);
+            cfg.Flush();
+            cfg.Close();
+        }
+
+        private static Vector3D VectorProjection(Vector3D a, Vector3D b)
+        {
+            if (Vector3D.IsZero(b))
+                return Vector3D.Zero;
+
+            return a.Dot(b) / b.LengthSquared() * b;
+        }
+
+        private static readonly Dictionary<float, float> DmgTable = new Dictionary<float, float>
+        {
+            [0.00000000001f] = -1f,
+            [0.0000000001f] = 0.1f,
+            [0.0000000002f] = 0.2f,
+            [0.0000000003f] = 0.3f,
+            [0.0000000004f] = 0.4f,
+            [0.0000000005f] = 0.5f,
+            [0.0000000006f] = 0.6f,
+            [0.0000000007f] = 0.7f,
+            [0.0000000008f] = 0.8f,
+            [0.0000000009f] = 0.9f,
+            [0.0000000010f] = 1,
+            [0.0000000020f] = 2,
+            [0.0000000030f] = 3,
+            [0.0000000040f] = 4,
+            [0.0000000050f] = 5,
+            [0.0000000060f] = 6,
+            [0.0000000070f] = 7,
+            [0.0000000080f] = 8,
+            [0.0000000090f] = 9,
+            [0.0000000100f] = 10,
+        };
 
         private const string OB = @"<?xml version=""1.0"" encoding=""utf-16""?>
 <MyObjectBuilder_Cockpit xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"">
@@ -643,5 +522,143 @@
 
             return distributor;
         }
+
+        /*
+        private static double PowerCalculation(IMyEntity breaching, IMyCubeGrid grid)
+        {
+            var bPhysics = breaching.Physics;
+            var sPhysics = grid.Physics;
+
+            const double wattsPerNewton = (3.36e6 / 288000);
+            var velTarget = sPhysics.GetVelocityAtPoint(breaching.Physics.CenterOfMassWorld);
+            var accelLinear = sPhysics.LinearAcceleration;
+            var velTargetNext = velTarget + accelLinear * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
+            var velModifyNext = bPhysics.LinearVelocity;
+            var linearImpulse = bPhysics.Mass * (velTargetNext - velModifyNext);
+            var powerCorrectionInJoules = wattsPerNewton * linearImpulse.Length();
+
+            return powerCorrectionInJoules * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS;
+        }
+        */
+
+
+
+        /*
+        public static float ImpactFactor(MatrixD obbMatrix, Vector3 obbExtents, Vector3D impactPos, Vector3 direction)
+        {
+            var impactPosLcl = (Vector3)(impactPos - obbMatrix.Translation);
+            var xProj = (Vector3)obbMatrix.Right;
+            var yProj = (Vector3)obbMatrix.Up;
+            var zProj = (Vector3)obbMatrix.Backward;
+
+            // quick inverse transform normal: dot(xProj, pos), dot(yProj, pos), dot(zProj, pos)
+            impactPosLcl = new Vector3(impactPosLcl.Dot(xProj), impactPosLcl.Dot(yProj), impactPosLcl.Dot(zProj));
+            direction = new Vector3(direction.Dot(xProj), direction.Dot(yProj), direction.Dot(zProj));
+
+            // find point outside of box along ray, then scale by inverse box size
+            const float expandFactor = 25;
+            var faceDirection = (impactPosLcl - direction * obbExtents.AbsMax() * expandFactor) / obbExtents;
+
+            // dominant axis project, then sign
+            // faceNormal = Vector3.Sign(Vector3.DominantAxisProjection(faceDirection));
+            Vector3 faceNormal;
+            if (Math.Abs(faceDirection.X) > Math.Abs(faceDirection.Y))
+            {
+                // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
+                if (Math.Abs(faceDirection.X) > Math.Abs(faceDirection.Z))
+                    faceNormal = new Vector3(Math.Sign(faceDirection.X), 0, 0);
+                else
+                    faceNormal = new Vector3(0, 0, Math.Sign(faceDirection.Z));
+            }
+            else if (Math.Abs(faceDirection.Y) > Math.Abs(faceDirection.Z))
+                faceNormal = new Vector3(0, Math.Sign(faceDirection.Y), 0);
+            else
+                faceNormal = new Vector3(0, 0, Math.Sign(faceDirection.Z));
+
+            return Math.Abs(faceNormal.Dot(direction));
+        }
+
+        // This method only exists for consistency, so you can *always* call
+        // MoreMath.Max instead of alternating between MoreMath.Max and Math.Max
+        // depending on your argument count.
+        public static int Max(int x, int y)
+        {
+            return Math.Max(x, y);
+        }
+
+        public static int Max(int x, int y, int z)
+        {
+            // Or inline it as x < y ? (y < z ? z : y) : (x < z ? z : x);
+            // Time it before micro-optimizing though!
+            return Math.Max(x, Math.Max(y, z));
+        }
+
+        public static int Max(int w, int x, int y, int z)
+        {
+            return Math.Max(w, Math.Max(x, Math.Max(y, z)));
+        }
+
+        public static void GetRealPlayers(Vector3D center, float radius, HashSet<long> realPlayers)
+        {
+            var realPlayersIdentities = new List<IMyIdentity>();
+            MyAPIGateway.Players.GetAllIdentites(realPlayersIdentities, p => !string.IsNullOrEmpty(p?.DisplayName));
+            var pruneSphere = new BoundingSphereD(center, radius);
+            var pruneList = new List<MyEntity>();
+            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref pruneSphere, pruneList);
+
+            foreach (var ent in pruneList)
+            {
+                if (ent == null || !(ent is IMyCubeGrid || ent is IMyCharacter)) continue;
+
+                IMyPlayer player = null;
+
+                if (ent is IMyCharacter)
+                {
+                    player = MyAPIGateway.Players.GetPlayerControllingEntity(ent);
+                    if (player == null) continue;
+                }
+                else
+                {
+                    var playerTmp = MyAPIGateway.Players.GetPlayerControllingEntity(ent);
+
+                    if (playerTmp?.Character != null) player = playerTmp;
+                }
+
+                if (player == null) continue;
+                if (realPlayersIdentities.Contains(player.Identity)) realPlayers.Add(player.IdentityId);
+            }
+        }
+
+        public static long ThereCanBeOnlyOne(IMyCubeBlock shield)
+        {
+            if (Session.Enforced.Debug == 3) Log.Line($"ThereCanBeOnlyOne start");
+            var shieldBlocks = new List<MyCubeBlock>();
+            foreach (var block in ((MyCubeGrid)shield.CubeGrid).GetFatBlocks())
+            {
+                if (block == null) continue;
+
+                if (block.BlockDefinition.BlockPairName == "DS_Control" || block.BlockDefinition.BlockPairName == "DS_Control_Table")
+                {
+                    if (block.IsWorking) return block.EntityId;
+                    shieldBlocks.Add(block);
+                }
+            }
+            var shieldDistFromCenter = double.MinValue;
+            var shieldId = long.MinValue;
+            foreach (var s in shieldBlocks)
+            {
+                if (s == null) continue;
+
+                var dist = Vector3D.DistanceSquared(s.PositionComp.WorldVolume.Center, shield.CubeGrid.WorldVolume.Center);
+                if (dist > shieldDistFromCenter)
+                {
+                    shieldDistFromCenter = dist;
+                    shieldId = s.EntityId;
+                }
+            }
+            if (Session.Enforced.Debug == 3) Log.Line($"ThereCanBeOnlyOne complete, found shield: {shieldId}");
+            return shieldId;
+        }
+        */
     }
 }

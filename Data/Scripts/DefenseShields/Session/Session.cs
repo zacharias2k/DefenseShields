@@ -61,7 +61,6 @@
                     var syncDistBuffered = SyncDist + 500;
                     SyncDistSqr = syncDistBuffered * syncDistBuffered;
 
-                    MyAPIGateway.Parallel.StartBackground(WebMonitor);
                     if (Enforced.Debug >= 3) Log.Line($"SyncDistSqr:{SyncDistSqr} - DistNorm:{SyncDist}");
                 }
                 else
@@ -71,6 +70,7 @@
                     SyncDistSqr = syncDistBuffered * syncDistBuffered;
                     if (Enforced.Debug >= 3) Log.Line($"SyncDistSqr:{SyncDistSqr} - DistNorm:{SyncDist}");
                 }
+                MyAPIGateway.Parallel.StartBackground(WebMonitor);
             }
             catch (Exception ex) { Log.Line($"Exception in BeforeStart: {ex}"); }
         }

@@ -170,5 +170,17 @@
             else Log.Line(message);
         }
 
+        private void AbsorbClientShieldHits()
+        {
+            for (int i = 0; i < ShieldHits.Count; i++)
+            {
+                var hit = ShieldHits[i];
+                ImpactSize = 12001;
+                if (Session.Enforced.Debug >= 2) Log.Line($"MpDamageEvent: Amount:{hit.Amount} - attacker:{hit.Attacker != null} - dType:{hit.DamageType} - hitPos:{hit.HitPos}");
+                if (hit.HitPos != Vector3D.Zero && WorldImpactPosition == Vector3D.NegativeInfinity) WorldImpactPosition = hit.HitPos;
+                Absorb += hit.Amount * ConvToWatts;
+            }
+            ShieldHits.Clear();
+        }
     }
 }

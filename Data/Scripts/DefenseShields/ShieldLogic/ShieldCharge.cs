@@ -4,7 +4,6 @@
     using global::DefenseShields.Support;
     using Sandbox.ModAPI;
     using VRage;
-    using VRageMath;
 
     public partial class DefenseShields
     {
@@ -13,32 +12,21 @@
         {
             if (!UpdateGridPower()) return false;
             CalculatePowerCharge();
-            _power = _shieldConsumptionRate + _shieldMaintaintPower;
+
             if (!WarmedUp) return true;
             if (_isServer && _hadPowerBefore && _shieldConsumptionRate.Equals(0f) && DsState.State.Charge.Equals(0.01f) && _genericDownLoop == -1)
             {
-                _power = 0.0001f;
                 _genericDownLoop = 0;
                 return false;
             }
-            if (_power < 0.0001f) _power = 0.001f;
-            if (_power < ShieldCurrentPower || (_count == 28 && !_power.Equals(ShieldCurrentPower))) _sink.Update();
-            if (!_isDedicated)
-            {
-                var hitCnt = ShieldHits.Count;
-                if (hitCnt > 0)
-                {
-                    for (int i = 0; i < hitCnt; i++)
-                    {
-                        var hit = ShieldHits[i];
-                        ImpactSize = 12001;
-                        if (Session.Enforced.Debug >= 2) Log.Line($"MpDamageEvent: Amount:{hit.Amount} - attacker:{hit.Attacker != null} - dType:{hit.DamageType} - hitPos:{hit.HitPos}");
-                        if (hit.HitPos != Vector3D.Zero && WorldImpactPosition == Vector3D.NegativeInfinity) WorldImpactPosition = hit.HitPos;
-                        Absorb += hit.Amount * ConvToWatts;
-                    }
-                    ShieldHits.Clear();
-                }
-            }
+
+            _power = _shieldMaxChargeRate > 0 ? _shieldConsumptionRate + _shieldMaintaintPower : 0f;
+            if (_power < ShieldCurrentPower && (_power - _shieldMaxChargeRate) >= 0.0001f) //overpower
+                _sink.Update();
+            else if (_count == 28 && Math.Abs(_power - ShieldCurrentPower) >= 0.0001f)
+                _sink.Update();
+
+            if (!_isDedicated && ShieldHits.Count != 0) AbsorbClientShieldHits();
             if (Absorb > 0)
             {
                 _damageReadOut += Absorb;
@@ -59,7 +47,6 @@
 
         private bool UpdateGridPower()
         {
-            ////var tempGridMaxPower = GridMaxPower;
             var cleanDistributor = FuncTask.IsComplete && MyGridDistributor != null && !_functionalEvent;
             GridAvailablePower = 0;
             _batteryMaxPower = 0;
@@ -107,7 +94,6 @@
                 else FallBackPowerCalc();
             }
             GridAvailablePower = GridMaxPower - GridCurrentPower;
-            //// if (!GridMaxPower.Equals(tempGridMaxPower) || _roundedGridMax <= 0) _roundedGridMax = Math.Round(GridMaxPower, 1);
             return GridMaxPower > 0;
         }
 
@@ -147,10 +133,6 @@
             var hpsEfficiency = Session.Enforced.HpsEfficiency;
             var baseScaler = Session.Enforced.BaseScaler;
             var maintenanceCost = Session.Enforced.MaintenanceCost;
-
-            if (hpsEfficiency <= 0) hpsEfficiency = 1f;
-            if (baseScaler < 1) baseScaler = 1;
-            if (maintenanceCost <= 0) maintenanceCost = 1f;
 
             var percent = DsSet.Settings.Rate * ChargeRatio;
             var chargePercent = DsSet.Settings.Rate * ConvToDec;
