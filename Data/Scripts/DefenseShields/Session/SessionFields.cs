@@ -180,12 +180,15 @@
         internal volatile bool Wake;
         internal volatile bool EntSlotTick;
         internal volatile bool Dispatched;
+        internal volatile bool EmpDispatched;
         internal volatile bool WarHeadLoaded;
 
         private const int EntCleanCycle = 3600;
         private const int EntMaxTickAge = 36000;
 
         private readonly Work _workData = new Work();
+        private readonly EmpWork _empWork = new EmpWork();
+
         private readonly List<KeyValuePair<MyEntity, uint>> _entRefreshTmpList = new List<KeyValuePair<MyEntity, uint>>();
         private readonly ConcurrentQueue<MyEntity> _entRefreshQueue = new ConcurrentQueue<MyEntity>();
         private readonly ConcurrentDictionary<MyEntity, uint> _globalEntTmp = new ConcurrentDictionary<MyEntity, uint>();

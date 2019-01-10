@@ -16,7 +16,6 @@
 
     internal static class UtilsStatic
     {
-        
         public static void PrepConfigFile()
         {
             const int BaseScaler = 10;
@@ -114,6 +113,33 @@
 
             if (Session.Enforced.Debug == 3) Log.Line($"Writing settings to mod:\n{data}");
         }
+
+        public static Vector3D? GetLineIntersectionExactAll(MyCubeGrid grid, ref LineD line, out double distance, out IMySlimBlock intersectedBlock)
+        {
+            intersectedBlock = (IMySlimBlock)null;
+            distance = 3.40282346638529E+38;
+            Vector3I? nullable = new Vector3I?();
+            Vector3I zero = Vector3I.Zero;
+            double distanceSquared = double.MaxValue;
+            if (grid.GetLineIntersectionExactGrid(ref line, ref zero, ref distanceSquared))
+            {
+                distanceSquared = Math.Sqrt(distanceSquared);
+                nullable = new Vector3I?(zero);
+            }
+            if (!nullable.HasValue)
+                return new Vector3D?();
+            distance = distanceSquared;
+            intersectedBlock = grid.GetCubeBlock(nullable.Value);
+            if (intersectedBlock == null)
+                return new Vector3D?();
+            return new Vector3D?((Vector3D)zero);
+        }
+
+        public static void GetFatBlocksInObb()
+        {
+
+        }
+
         public static float GetDmgMulti(float damage)
         {
             float tableVal;

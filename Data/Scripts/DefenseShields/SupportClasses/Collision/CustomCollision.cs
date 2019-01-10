@@ -534,6 +534,94 @@
             return c;
         }
 
+        public static BoundingSphereD NewObbClosestTriCorners(MyEntity ent, Vector3D pos)
+        {
+            var entCorners = new Vector3D[8];
+
+            var quaternion = Quaternion.CreateFromRotationMatrix(ent.PositionComp.GetOrientation());
+            var halfExtents = ent.PositionComp.LocalAABB.HalfExtents;
+            var gridCenter = ent.PositionComp.WorldAABB.Center;
+            var obb = new MyOrientedBoundingBoxD(gridCenter, halfExtents, quaternion);
+
+            var minValue = double.MaxValue;
+            var minValue0 = double.MaxValue;
+            var minValue1 = double.MaxValue;
+            var minValue2 = double.MaxValue;
+            var minValue3 = double.MaxValue;
+
+            var minNum = -2;
+            var minNum0 = -2;
+            var minNum1 = -2;
+            var minNum2 = -2;
+            var minNum3 = -2;
+
+            obb.GetCorners(entCorners, 0);
+            for (int i = 0; i < entCorners.Length; i++)
+            {
+                var gridCorner = entCorners[i];
+                var range = gridCorner - pos;
+                var test = (range.X * range.X) + (range.Y * range.Y) + (range.Z * range.Z);
+                if (test < minValue3)
+                {
+                    if (test < minValue)
+                    {
+                        minValue3 = minValue2;
+                        minNum3 = minNum2;
+                        minValue2 = minValue1;
+                        minNum2 = minNum1;
+                        minValue1 = minValue0;
+                        minNum1 = minNum0;
+                        minValue0 = minValue;
+                        minNum0 = minNum;
+                        minValue = test;
+                        minNum = i;
+                    }
+                    else if (test < minValue0)
+                    {
+                        minValue3 = minValue2;
+                        minNum3 = minNum2;
+                        minValue2 = minValue1;
+                        minNum2 = minNum1;
+                        minValue1 = minValue0;
+                        minNum1 = minNum0;
+                        minValue0 = test;
+                        minNum0 = i;
+                    }
+                    else if (test < minValue1)
+                    {
+                        minValue3 = minValue2;
+                        minNum3 = minNum2;
+                        minValue2 = minValue1;
+                        minNum2 = minNum1;
+                        minValue1 = test;
+                        minNum1 = i;
+                    }
+                    else if (test < minValue2)
+                    {
+                        minValue3 = minValue2;
+                        minNum3 = minNum2;
+                        minValue2 = test;
+                        minNum2 = i;
+                    }
+                    else
+                    {
+                        minValue3 = test;
+                        minNum3 = i;
+                    }
+                }
+            }
+            var corner = entCorners[minNum];
+            var corner0 = entCorners[minNum0];
+            var corner1 = entCorners[minNum1];
+            var corner2 = entCorners[minNum2];
+            var corner3 = gridCenter;
+            Vector3D[] closestCorners = { corner, corner0, corner3};
+
+            var sphere = BoundingSphereD.CreateFromPoints(closestCorners);
+            //var subObb = MyOrientedBoundingBoxD.CreateFromBoundingBox(box);
+            return sphere;
+        }
+
         public static bool NewAllObbCornersInShield(MyEntity ent, MatrixD matrixInv, bool anyCorner, Vector3D[] gridCorners = null)
         {
             if (gridCorners == null) gridCorners = new Vector3D[8];

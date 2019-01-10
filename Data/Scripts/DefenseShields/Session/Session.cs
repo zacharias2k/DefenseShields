@@ -1,11 +1,16 @@
 ﻿namespace DefenseShields
 {
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
+
     using global::DefenseShields.Support;
     using Sandbox.Definitions;
+    using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
     using VRage.Game;
     using VRage.Game.Components;
+    using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRageMath;
     using MyVisualScriptLogicProvider = Sandbox.Game.MyVisualScriptLogicProvider;
@@ -80,8 +85,6 @@
             if (DedicatedServer) return;
             try
             {
-                if (!EmpDraw.IsEmpty) EmpDrawExplosion();
-
                 var compCount = Controllers.Count;
                 if (compCount == 0) return;
                 if (SphereOnCamera.Length != compCount) Array.Resize(ref SphereOnCamera, compCount);
@@ -147,6 +150,21 @@
                 Timings();
                 LoadBalancer();
                 LogicUpdates();
+                if (!EmpDispatched && !EmpDraw.IsEmpty)
+                {
+                    EmpDispatched = true;
+                    MyAPIGateway.Parallel.Start(ComputeEmpBlast, EmpCallBack);
+                }
+                foreach (var line in _testLineList)
+                {
+                    DsDebugDraw.DrawLine(line, Color.Blue);
+                }
+                /*
+                foreach (var sub in _warHeadGridShapes)
+                {
+                    DsDebugDraw.DrawSphere(sub.Value, Color.Red);
+                }
+                */
             }
             catch (Exception ex) { Log.Line($"Exception in SessionBeforeSim: {ex}"); }
         }
@@ -158,9 +176,40 @@
         #endregion
 
         #region Misc
-        private void EmpDrawExplosion()
+        private readonly List<LineD> _testLineList = new List<LineD>();
+        private readonly List<MyCubeBlock> _warHeadCubeHits = new List<MyCubeBlock>();
+        private readonly List<MyCubeGrid> _warHeadGridHits = new List<MyCubeGrid>();
+        private readonly Dictionary<MyCubeGrid, BoundingSphereD> _warHeadGridShapes = new Dictionary<MyCubeGrid, BoundingSphereD>();
+        private readonly Dictionary<MyCubeBlock, int> _warEffectedCubes = new Dictionary<MyCubeBlock, int>();
+
+        private void GetFilteredItems(List<MyEntity> myEntities, Vector3D epiCenter)
         {
-            _effect.Stop();
+            _warHeadCubeHits.Clear();
+            _warHeadGridHits.Clear();
+            for (int i = 0; i < myEntities.Count; i++)
+            {
+                var myEntity = myEntities[i];
+                var myGrid = myEntity as MyCubeGrid;
+                var myCube = myEntities[i] as MyCubeBlock;
+
+                if (myEntity == null || (myGrid == null && myCube == null) || myEntity.MarkedForClose) continue;
+
+                if (myGrid != null)
+                {
+                    _warHeadGridHits.Add(myGrid);
+                    continue;
+                }
+
+                if ((myCube is IMyThrust || myCube is IMyUserControllableGun || myCube is IMyUpgradeModule) && myCube.IsFunctional && myCube.IsWorking)
+                {
+                    _warHeadCubeHits.Add(myCube);
+                }
+            }
+        }
+
+        private void ComputeEmpBlast()
+        {
+            Dsutil1.Sw.Restart();
             var stackCount = 0;
             var warHeadSize = 0;
             var epiCenter = Vector3D.Zero;
@@ -178,6 +227,48 @@
             if (stackCount == 0) return;
 
             epiCenter /= stackCount;
+            var sphere = new BoundingSphereD(epiCenter, 25000);
+            var pruneList = new List<MyEntity>();
+            MyGamePruningStructure.GetAllEntitiesInSphere(ref sphere, pruneList);
+            GetFilteredItems(pruneList, epiCenter);
+            _warHeadGridShapes.Clear();
+            foreach (var grid in _warHeadGridHits)
+            {
+                var sub = CustomCollision.NewObbClosestTriCorners(grid, epiCenter);
+                _warHeadGridShapes.Add(grid, sub);
+            }
+
+            foreach (var cube in _warHeadCubeHits)
+            {
+                var mySphere = new BoundingSphereD();
+                var foundSphere = _warHeadGridShapes.TryGetValue(cube.CubeGrid, out sphere);
+                if (foundSphere && mySphere.Contains(cube.PositionComp.WorldAABB.Center) != ContainmentType.Disjoint)
+                {
+                    Log.Line("test");
+                    var testDir = Vector3D.Normalize(cube.PositionComp.WorldAABB.Center - epiCenter);
+                    var testPos = cube.PositionComp.WorldAABB.Center + (testDir * -3);
+                    var hit = cube.CubeGrid.RayCastBlocks(testPos, epiCenter);
+                    if (hit == null) _warEffectedCubes.Add(cube, 0);
+                }
+            }
+            _empWork.EpiCenter = epiCenter;
+            _empWork.StackCount = stackCount;
+            _empWork.WarHeadSize = warHeadSize;
+            Dsutil1.StopWatchReport($"test - range: 25km - grids:{_warHeadGridHits.Count} - cubes:{_warHeadCubeHits.Count} - effectedCubes:{_warEffectedCubes.Count}", -1);
+        }
+
+        private void EmpCallBack()
+        {
+            EmpDrawExplosion();
+            EmpDispatched = false;
+        }
+
+        private void EmpDrawExplosion()
+        {
+            _effect.Stop();
+            var epiCenter = _empWork.EpiCenter;
+            var warHeadSize = _empWork.WarHeadSize;
+            var stackCount = _empWork.StackCount;
             var cameraPos = MyAPIGateway.Session.Camera.Position;
             var realDistanceSqr = Vector3D.DistanceSquared(epiCenter, cameraPos);
             if (realDistanceSqr > 4000000)

@@ -5,13 +5,9 @@
     using Sandbox.Common.ObjectBuilders;
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
-
-    using VRage.Game;
     using VRage.Game.Components;
     using VRage.ModAPI;
     using VRage.ObjectBuilders;
-
-    using VRageMath;
 
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DSControlLarge", "DSControlSmall", "DSControlTable")]
     public partial class DefenseShields : MyGameLogicComponent

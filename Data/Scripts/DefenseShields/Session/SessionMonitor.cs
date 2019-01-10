@@ -412,7 +412,7 @@
 
             if (!Dispatched && WebWrapperOn)
             {
-                MyAPIGateway.Parallel.Start(WebDispatch, DispatchDone);
+                MyAPIGateway.Parallel.Start(WebDispatch, WebDispatchDone);
                 Dispatched = true;
                 WebWrapperOn = false;
             }
@@ -432,7 +432,7 @@
             }
         }
 
-        private void DispatchDone()
+        private void WebDispatchDone()
         {
             Dispatched = false;
         }

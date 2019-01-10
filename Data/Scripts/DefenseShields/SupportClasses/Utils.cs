@@ -5,6 +5,7 @@
     using System.Collections.Generic;
     using System.Diagnostics;
     using Sandbox.Game.Entities;
+    using VRage.Game.Entity;
     using VRageMath;
 
     internal struct MyImpulseData
@@ -55,6 +56,22 @@
         {
             ShieldList = s;
             Tick = t;
+        }
+    }
+
+    internal class EmpWork
+    {
+        internal MyCubeGrid Grid;
+        internal Vector3D EpiCenter;
+        internal int WarHeadSize;
+        internal int StackCount;
+
+        internal void DoIt(List<MyEntity> myEntities, MyCubeGrid grid, Vector3D epiCenter, Vector3D[] gridCorners, int warheadSize, int stackCount)
+        {
+            Grid = grid;
+            EpiCenter = epiCenter;
+            WarHeadSize = warheadSize;
+            StackCount = stackCount;
         }
     }
 
