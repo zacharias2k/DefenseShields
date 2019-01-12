@@ -71,7 +71,7 @@
         internal readonly ConcurrentDictionary<long, IMyPlayer> Players = new ConcurrentDictionary<long, IMyPlayer>();
 
         internal readonly ConcurrentQueue<DefenseShields> WebWrapper = new ConcurrentQueue<DefenseShields>();
-        internal readonly ConcurrentDictionary<long, WarHeadBlast> EmpDraw = new ConcurrentDictionary<long, WarHeadBlast>();
+        internal readonly ConcurrentDictionary<long, WarHeadBlast> EmpStore = new ConcurrentDictionary<long, WarHeadBlast>();
 
         internal readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         internal readonly Dictionary<MyEntity, MyProtectors> GlobalProtect = new Dictionary<MyEntity, MyProtectors>();

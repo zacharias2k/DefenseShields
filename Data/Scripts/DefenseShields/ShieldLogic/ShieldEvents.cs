@@ -77,24 +77,7 @@
         {
             try
             {
-                if (myEntity == null || DsState.State.ReInforce) return;
-                var warhead = myEntity as IMyWarhead;
-                if (warhead != null)
-                {
-                    if (warhead.IsWorking && !warhead.IsFunctional && (warhead.IsArmed || (warhead.DetonationTime <= 0 && warhead.IsCountingDown)))
-                    {
-                        var epicCenter = warhead.PositionComp.WorldAABB.Center;
-                        if (Vector3D.DistanceSquared(DetectionCenter, epicCenter) < Session.Instance.SyncDistSqr)
-                        {
-                            var blastRatio = warhead.CubeGrid.GridSizeEnum == MyCubeSize.Small ? 1 : 5;
-                            var blast = new WarHeadBlast(blastRatio, epicCenter, warhead.CustomData);
-                            if (!_isDedicated) Session.Instance.EmpDraw.TryAdd(warhead.EntityId, blast);
-                            if (_isServer) EmpBlast.TryAdd(warhead.EntityId, blast);
-                        }
-                    }
-                    return;
-                }
-                if (!_isServer) return;
+                if (myEntity == null || !_isServer || DsState.State.ReInforce) return;
 
                 if (!(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))) return;
 

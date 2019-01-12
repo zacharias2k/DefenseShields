@@ -1,6 +1,8 @@
 ﻿namespace DefenseShields
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
+
     using global::DefenseShields.Support;
 
     using Sandbox.Game;

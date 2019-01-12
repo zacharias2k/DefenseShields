@@ -46,6 +46,8 @@
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PacketIdEmitterState, EmitterStateReceived);
 
                 if (!MpActive) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
+                MyEntities.OnEntityRemove += OnEntityRemove;
+
                 MyVisualScriptLogicProvider.PlayerDisconnected += PlayerDisconnected;
                 MyVisualScriptLogicProvider.PlayerRespawnRequest += PlayerConnected;
                 if (!DedicatedServer)
@@ -150,15 +152,18 @@
                 Timings();
                 LoadBalancer();
                 LogicUpdates();
-                if (!EmpDispatched && !EmpDraw.IsEmpty)
+                if (!EmpDispatched && !EmpStore.IsEmpty)
                 {
                     EmpDispatched = true;
+                    PrepEmpBlast();
                     MyAPIGateway.Parallel.Start(ComputeEmpBlast, EmpCallBack);
                 }
+
                 foreach (var line in _testLineList)
                 {
                     DsDebugDraw.DrawLine(line, Color.Blue);
                 }
+
                 /*
                 foreach (var sub in _warHeadGridShapes)
                 {
@@ -207,14 +212,13 @@
             }
         }
 
-        private void ComputeEmpBlast()
+        private void PrepEmpBlast()
         {
-            Dsutil1.Sw.Restart();
             var stackCount = 0;
             var warHeadSize = 0;
             var epiCenter = Vector3D.Zero;
 
-            foreach (var empChild in EmpDraw)
+            foreach (var empChild in EmpStore)
             {
                 if (empChild.Value.CustomData == string.Empty || !empChild.Value.CustomData.Contains("!EMP"))
                 {
@@ -223,10 +227,22 @@
                     epiCenter += empChild.Value.Position;
                 }
             }
-            EmpDraw.Clear();
+
+            EmpStore.Clear();
             if (stackCount == 0) return;
 
             epiCenter /= stackCount;
+
+            _empWork.EpiCenter = epiCenter;
+            _empWork.StackCount = stackCount;
+            _empWork.WarHeadSize = warHeadSize;
+        }
+
+        private void ComputeEmpBlast()
+        {
+            Dsutil1.Sw.Restart();
+            var epiCenter = _empWork.EpiCenter;
+
             var sphere = new BoundingSphereD(epiCenter, 25000);
             var pruneList = new List<MyEntity>();
             MyGamePruningStructure.GetAllEntitiesInSphere(ref sphere, pruneList);
@@ -251,9 +267,6 @@
                     if (hit == null) _warEffectedCubes.Add(cube, 0);
                 }
             }
-            _empWork.EpiCenter = epiCenter;
-            _empWork.StackCount = stackCount;
-            _empWork.WarHeadSize = warHeadSize;
             Dsutil1.StopWatchReport($"test - range: 25km - grids:{_warHeadGridHits.Count} - cubes:{_warHeadCubeHits.Count} - effectedCubes:{_warEffectedCubes.Count}", -1);
         }
 
@@ -327,6 +340,7 @@
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdO2GeneratorState, O2GeneratorStateReceived);
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEmitterState, EmitterStateReceived);
 
+            MyEntities.OnEntityRemove -= OnEntityRemove;
             MyVisualScriptLogicProvider.PlayerDisconnected -= PlayerDisconnected;
             MyVisualScriptLogicProvider.PlayerRespawnRequest -= PlayerConnected;
 
@@ -382,6 +396,33 @@
         #endregion
 
         #region Events
+
+        private void OnEntityRemove(MyEntity myEntity)
+        {
+            var warhead = myEntity as IMyWarhead;
+            if (warhead != null)
+            {
+                if (warhead.IsWorking && !warhead.IsFunctional && (!EmpStore.ContainsKey(warhead.EntityId) || warhead.IsArmed  || (warhead.DetonationTime <= 0 && warhead.IsCountingDown)))
+                {
+                    var blastRatio = warhead.CubeGrid.GridSizeEnum == MyCubeSize.Small ? 1 : 5;
+                    var epicCenter = warhead.PositionComp.WorldAABB.Center;
+                    var blast = new WarHeadBlast(blastRatio, epicCenter, warhead.CustomData);
+                    EmpStore.TryAdd(warhead.EntityId, blast);
+                    /*
+                    var epicCenter = warhead.PositionComp.WorldAABB.Center;
+                    if (Vector3D.DistanceSquared(DetectionCenter, epicCenter) < Session.Instance.SyncDistSqr)
+                    {
+                        var blastRatio = warhead.CubeGrid.GridSizeEnum == MyCubeSize.Small ? 1 : 5;
+                        var blast = new WarHeadBlast(blastRatio, epicCenter, warhead.CustomData);
+                        if (!_isDedicated) Session.Instance.EmpDraw.TryAdd(warhead.EntityId, blast);
+                        if (_isServer) EmpBlast.TryAdd(warhead.EntityId, blast);
+                    }
+                    */
+                }
+                // return;
+            }
+        }
+
         private void PlayerConnected(long id)
         {
             try
