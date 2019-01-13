@@ -3,9 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Text;
-
     using Sandbox.Common.ObjectBuilders;
-    using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
     using VRage;
     using VRage.Game;
@@ -74,7 +72,6 @@
                 ent.Init(new StringBuilder(displayName), model, myParent, null);
                 ent.Name = $"{parent.EntityId}";
                 MyAPIGateway.Entities.AddEntity(ent);
-                MyEntities.CreateFromObjectBuilder(new MyObjectBuilder_Meteor());
                 return ent;
             }
             catch (Exception ex) { Log.Line($"Exception in EmptyEntity: {ex}"); return null; }
@@ -104,5 +101,6 @@
                 return null;
             }
         }
+
     }
 }

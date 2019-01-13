@@ -12,6 +12,8 @@
     using VRage.ModAPI;
     using VRage.ObjectBuilders;
 
+    using VRageMath;
+
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DSControlLarge", "DSControlSmall", "DSControlTable")]
     public partial class DefenseShields : MyGameLogicComponent
     {
@@ -100,11 +102,12 @@
                     if (_comingOnline) ComingOnlineSetup();
                     if (_isServer)
                     {
-                        var damageEnt = ShieldEnt as IMyDestroyableObject;
-                        if (damageEnt != null)
+                        var testArray = new Vector3D[100];
+
+                        UtilsStatic.SphereCloud(500, 100, 1, testArray);
+                        foreach (var p in testArray)
                         {
-                            //damageEnt.DoDamage(1, MyDamageType.Bolt, true, null);
-                            Log.Line($"test");
+                            DsDebugDraw.DrawSingleVec(p, 2.5f, Color.Red);
                         }
                         var createHeTiming = _count == 6 && (_lCount == 1 || _lCount == 6);
                         if (GridIsMobile && createHeTiming) CreateHalfExtents();

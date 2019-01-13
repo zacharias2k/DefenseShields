@@ -114,6 +114,37 @@
             if (Session.Enforced.Debug == 3) Log.Line($"Writing settings to mod:\n{data}");
         }
 
+        public static void FibonacciSeq(int magicNum)
+        {
+            var root5 = Math.Sqrt(5);
+            var phi = (1 + root5) / 2;
+
+            var n = 0;
+            int Fn;
+            do
+            {
+                Fn = (int)((Math.Pow(phi, n) - Math.Pow(-phi, -n)) / ((2 * phi) - 1));
+                Console.Write("{0} ", Fn);
+                ++n;
+            }
+            while (Fn < magicNum);
+        }
+
+        public static void SphereCloud(float radius, int points, int rotateTime, Vector3D[] physicsArray)
+        {
+            if (physicsArray.Length != points) Array.Resize(ref physicsArray, points);
+
+            for (int i = 0; i < points; i++)
+            {
+                var rho = rotateTime + i;
+                var phi = 2 * Math.PI * i / points;
+                var x = (float)(radius * Math.Sin(phi) * Math.Cos(rho));
+                var z = (float)(radius * Math.Sin(phi) * Math.Sin(rho));
+                var y = (float)(radius * Math.Cos(phi));
+                physicsArray[i] = new Vector3D(x, y, z);
+            }
+        }
+
         public static Vector3D? GetLineIntersectionExactAll(MyCubeGrid grid, ref LineD line, out double distance, out IMySlimBlock intersectedBlock)
         {
             intersectedBlock = (IMySlimBlock)null;
