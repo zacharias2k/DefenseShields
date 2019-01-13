@@ -173,7 +173,6 @@
         private int _expChargeReduction;
 
         private bool _needPhysics;
-        private bool _wasSuspended = true;
         private bool _enablePhysics = true;
         private bool _allInited;
         private bool _containerInited;
@@ -313,6 +312,7 @@
         internal bool ControlBlockWorking { get; set; }
         internal bool EntCleanUpTime { get; set; }
         internal bool ModulateGrids { get; set; }
+        internal bool WasSuspended { get; set; } = true;
 
         internal Vector3D MyGridCenter { get; set; }
         internal Vector3D DetectionCenter { get; set; }

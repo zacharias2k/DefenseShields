@@ -71,7 +71,7 @@
                         {
                             if (shieldActive)
                             {
-                                if (Enforced.Debug == 4) Log.Line("Logic Paused");
+                                if (Enforced.Debug >= 2) Log.Line("Logic Paused by lost pings");
                                 ActiveShields.Remove(s);
                                 s.WasPaused = true;
                             }
@@ -91,7 +91,15 @@
                             }
                         }
 
-                        if (!shieldActive)
+                        if (s.Asleep && EmpStore.Count != 0 && Vector3D.DistanceSquared(s.DetectionCenter, EmpWork.EpiCenter) <= SyncDistSqr)
+                        {
+                            s.TicksWithNoActivity = 0;
+                            s.LastWokenTick = tick;
+                            s.Asleep = false;
+                            return;
+                        }
+
+                        if (!shieldActive && s.LostPings > 59)
                         {
                             s.Asleep = true;
                             return;
@@ -113,7 +121,16 @@
                         if (!s.PlayerByShield && !s.MoverByShield && !s.NewEntByShield)
                         {
                             if (s.TicksWithNoActivity++ % EntCleanCycle == 0) s.EntCleanUpTime = true;
-                            s.Asleep = true;
+                            if (tick > 1200 && !s.WasPaused)
+                            {
+                                if (Enforced.Debug >= 2) Log.Line("Logic Paused by monitor");
+                                ActiveShields.Remove(s);
+                                s.WasPaused = true;
+                                s.Asleep = false;
+                                s.TicksWithNoActivity = 0;
+                                s.LastWokenTick = tick;
+                            }
+                            else s.Asleep = true;
                             return;
                         }
                         var intersect = false;
@@ -142,7 +159,7 @@
                         s.LastWokenTick = tick;
                         s.Asleep = false;
                     });
-                    if (_workData.Tick % 180 == 0)
+                    if (_workData.Tick % 180 == 0 && _workData.Tick > 1199)
                     {
                         _entRefreshTmpList.Clear();
                         _entRefreshTmpList.AddRange(_globalEntTmp.Where(info => _workData.Tick - 540 > info.Value));
@@ -171,11 +188,11 @@
                 if (!newMode) return;
                 foreach (var sub in subs)
                 {
-                    if (Enforced.Debug == 4) Log.Line("Server queuing entFresh for reinforced shield");
+                    if (Enforced.Debug >= 2) Log.Line("Server queuing entFresh for reinforced shield");
 
                     if (!_globalEntTmp.ContainsKey(sub)) newSub = true;
                     _entRefreshQueue.Enqueue(sub);
-                    _globalEntTmp[sub] = _workData.Tick;
+                    if (!s.WasPaused) _globalEntTmp[sub] = _workData.Tick;
                 }
 
                 s.ReInforcedShield = true;
@@ -193,9 +210,9 @@
                     foreach (var sub in subs)
                     {
                         _entRefreshQueue.Enqueue(sub);
-                        _globalEntTmp[sub] = _workData.Tick;
+                        if (!s.WasPaused) _globalEntTmp[sub] = _workData.Tick;
                     }
-
+                    if (Enforced.Debug >= 2) Log.Line($"found Reinforce");
                     s.ReInforcedShield = false;
                     s.TicksWithNoActivity = 0;
                     s.LastWokenTick = _workData.Tick;
@@ -229,12 +246,14 @@
                         // Log.Line($"{ent.DebugName} - {test}");
                         if (CustomCollision.NewObbPointsInShield(ent, s.DetectMatrixOutsideInv) > 0)
                         {
-                            if (!_globalEntTmp.ContainsKey(ent))
+                            if (!s.WasPaused && !_globalEntTmp.ContainsKey(ent))
                             {
                                 foundNewEnt = true;
                                 s.Asleep = false;
+                                if (Enforced.Debug >= 2) Log.Line($"New entity");
                             }
-                            _globalEntTmp[ent] = _workData.Tick;
+
+                            if (!s.WasPaused) _globalEntTmp[ent] = _workData.Tick;
                         }
                         s.NewEntByShield = foundNewEnt;
                     }
@@ -294,13 +313,13 @@
 
                 if (s.EntCleanUpTime)
                 {
-                    var entsByMeTmp = new List<KeyValuePair<MyEntity, MoverInfo>>();
-                    entsByMeTmp.AddRange(s.EntsByMe.Where(info => !info.Key.InScene || _workData.Tick - info.Value.CreationTick > EntMaxTickAge));
-                    for (int i = 0; i < entsByMeTmp.Count; i++)
-                    {
-                        s.EntsByMe.Remove(entsByMeTmp[i].Key);
-                    }
                     s.EntCleanUpTime = false;
+                    if (!s.EntsByMe.IsEmpty)
+                    {
+                        var entsByMeTmp = new List<KeyValuePair<MyEntity, MoverInfo>>();
+                        entsByMeTmp.AddRange(s.EntsByMe.Where(info => !info.Key.InScene || _workData.Tick - info.Value.CreationTick > EntMaxTickAge));
+                        for (int i = 0; i < entsByMeTmp.Count; i++) s.EntsByMe.Remove(entsByMeTmp[i].Key);
+                    }
                 }
             }
         }

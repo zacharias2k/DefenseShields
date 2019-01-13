@@ -269,46 +269,37 @@
 
                 try
                 {
-                    if (!EmpBlast.IsEmpty)
+                    if (Session.Instance.EmpWork.EventRunning && Vector3D.DistanceSquared(DetectionCenter, Session.Instance.EmpWork.EpiCenter) <= Session.Instance.EmpWork.RangeCapSqr)
                     {
-                        var stackCount = 0;
-                        var warHeadYield = 0d;
-                        var epiCenter = Vector3D.Zero;
                         var empResistenceRatio = 1f;
-                        var attackerId = 0L;
+                        const long AttackerId = 0L;
                         var energyResistenceRatio = DsState.State.ModulateKinetic;
+                        var epiCenter = Session.Instance.EmpWork.EpiCenter;
+                        var warHeadYield = Session.Instance.EmpWork.WarHeadYield;
+                        var stackCount = Session.Instance.EmpWork.StackCount;
+                        var rangeCap = Session.Instance.EmpWork.RangeCap;
 
                         if (DsState.State.EmpProtection)
                         {
                             if (energyResistenceRatio < 0.4) energyResistenceRatio = 0.4f;
                             empResistenceRatio = 0.1f;
                         }
-
-                        foreach (var empChild in EmpBlast)
-                        {
-                            if (empChild.Value.CustomData == string.Empty || !empChild.Value.CustomData.Contains("!EMP"))
-                            {
-                                var entityId = empChild.Key;
-                                if (entityId != 0) attackerId = entityId;
-                                warHeadYield = empChild.Value.Yield;
-                                epiCenter += empChild.Value.Position;
-                                stackCount++;
-                            }
-                        }
-                        EmpBlast.Clear();
-                        if (stackCount == 0) return;
-                        epiCenter /= stackCount;
+                        if (Session.Enforced.Debug >= 2) Log.Line($"[EmpBlastShield - Start] ShieldOwner:{MyGrid.DebugName} - Yield:{warHeadYield} - StackCount:{stackCount} - ProtectionRatio:{energyResistenceRatio * empResistenceRatio} - epiCenter:{epiCenter}");
                         var line = new LineD(epiCenter, SOriBBoxD.Center);
                         var testDir = Vector3D.Normalize(line.From - line.To);
                         var ray = new RayD(line.From, -testDir);
                         var ellipsoid = CustomCollision.IntersectEllipsoid(DetectMatrixOutsideInv, DetectionMatrix, ray);
-                        if (!ellipsoid.HasValue) return;
+                        if (!ellipsoid.HasValue)
+                        {
+                            if (Session.Enforced.Debug >= 2) Log.Line($"[EmpBlastShield - Ellipsoid null hit] ShieldOwner:{MyGrid.DebugName} - Yield:{warHeadYield} - StackCount:{stackCount} - ProtectionRatio:{energyResistenceRatio * empResistenceRatio} - epiCenter:{epiCenter}");
+                            return;
+                        }
                         var impactPos = line.From + (testDir * -ellipsoid.Value);
                         IHitInfo hitInfo;
                         MyAPIGateway.Physics.CastRay(epiCenter, impactPos, out hitInfo, CollisionLayers.DefaultCollisionLayer);
                         if (hitInfo != null) 
                         {
-                            if (Session.Enforced.Debug >= 2) Log.Line($"[EmpBlast] {((MyEntity)hitInfo.HitEntity).DebugName} occluded EMP for:{MyGrid.DebugName}");
+                            if (Session.Enforced.Debug >= 2) Log.Line($"[EmpBlastShield - occluded] ShieldOwner:{MyGrid.DebugName} - by {((MyEntity)hitInfo.HitEntity).DebugName}");
                             return;
                         }
                         var gridLocalMatrix = MyGrid.PositionComp.LocalMatrix;
@@ -317,22 +308,21 @@
                         var hitFaceSurfaceArea = UtilsStatic.GetIntersectingSurfaceArea(ShieldShapeMatrix, localPosition);
 
                         var empDirYield = (warHeadYield * stackCount) * 0.5;
-                        var rangeCap = MathHelper.Clamp(stackCount * warHeadYield, warHeadYield, Session.Instance.SyncDist);
                         var invSqrDist = UtilsStatic.InverseSqrDist(epiCenter, impactPos, rangeCap);
                         var damageScaler = invSqrDist * hitFaceSurfaceArea;
-                        if (invSqrDist < 0)
+                        if (invSqrDist <= 0)
                         {
-                            Log.Line($"insqrDist was 0, should never happen!!!");
+                            if (Session.Enforced.Debug >= 2) Log.Line($"[EmpBlastShield - Range] ShieldOwner:{MyGrid.DebugName} - insqrDist was 0");
                             return;
                         }
 
                         var targetDamage = (float)(((empDirYield * damageScaler) * energyResistenceRatio) * empResistenceRatio);
 
                         if (targetDamage >= DsState.State.Charge * ConvToHp) _empOverLoad = true;
-                        //if (Session.Enforced.Debug == 4) Log.Line($"targetDist:{Vector3D.Distance(epiCenter, impactPos)} - invSqrDist:{invSqrDist} - RangeCap:{rangeCap} - SurfaceA:{hitFaceSurfaceArea}({_ellipsoidSurfaceArea * 0.5}) - targetDamage:{targetDamage} - toOver:({(targetDamage / (DsState.State.Buffer * ConvToHp))}) - warheadYield:{warHeadYield} - numInStack:{stackCount} - directYield:{empDirYield} - damageScaler:{damageScaler} - energyRatio:{energyResistenceRatio} - empRatio:{empResistenceRatio}");
+                        if (Session.Enforced.Debug >= 2) Log.Line($"-----------------------] epiDist:{Vector3D.Distance(epiCenter, impactPos)} - iSqrDist:{invSqrDist} - RangeCap:{rangeCap} - SurfaceA:{hitFaceSurfaceArea}({_ellipsoidSurfaceArea * 0.5}) - dirYield:{empDirYield} - damageScaler:{damageScaler} - Damage:{targetDamage}(toOver:{(targetDamage / (DsState.State.Charge * ConvToHp))})");
 
                         if (_isServer && _mpActive)
-                            AddEmpBlastHit(attackerId, targetDamage, "MPEMP", impactPos);
+                            AddEmpBlastHit(AttackerId, targetDamage, "MPEMP", impactPos);
 
                         WorldImpactPosition = epiCenter;
                         Absorb += targetDamage;

@@ -66,7 +66,7 @@
             _tick600 = Session.Instance.Tick600;
             _tick1800 = Session.Instance.Tick1800;
 
-            if (WasPaused) UnPauseLogic();
+            if (WasPaused && (PlayerByShield || MoverByShield || NewEntByShield || LostPings > 59)) UnPauseLogic();
             LostPings = 0;
 
             var wait = _isServer && !_tick60 && DsState.State.Suspended;
@@ -106,7 +106,7 @@
             PlayerByShield = true;
             Session.Instance.ActiveShields.Add(this);
             WasPaused = false;
-            if (Session.Enforced.Debug == 3) Log.Line("Logic Resumed");
+            if (Session.Enforced.Debug >= 2) Log.Line("Logic Resumed");
         }
 
         private bool ShieldOn()
@@ -144,10 +144,9 @@
                     ShieldFailing();
                     return false;
                 }
-
                 _syncEnts = !ForceData.IsEmpty || !ImpulseData.IsEmpty || !MissileDmg.IsEmpty || !FewDmgBlocks.IsEmpty
-                            || !DmgBlocks.IsEmpty || !MeteorDmg.IsEmpty || !EmpBlast.IsEmpty || !Eject.IsEmpty
-                            || !DestroyedBlocks.IsEmpty || !VoxelDmg.IsEmpty || !CharacterDmg.IsEmpty;
+                            || !DmgBlocks.IsEmpty || !MeteorDmg.IsEmpty || !Eject.IsEmpty || !DestroyedBlocks.IsEmpty 
+                            || !VoxelDmg.IsEmpty || !CharacterDmg.IsEmpty || Session.Instance.EmpWork.EventRunning;
             }
             else
             {
@@ -682,12 +681,12 @@
             }
             if (DsState.State.Suspended) SetShieldType(true);
 
-            if (DsState.State.Suspended != _wasSuspended)
+            if (DsState.State.Suspended != WasSuspended)
             {
                 if (DsState.State.Suspended) Session.Instance.FunctionalShields.Remove(this);
                 else Session.Instance.FunctionalShields.Add(this);
             }
-            _wasSuspended = DsState.State.Suspended;
+            WasSuspended = DsState.State.Suspended;
 
             return DsState.State.Suspended;
         }

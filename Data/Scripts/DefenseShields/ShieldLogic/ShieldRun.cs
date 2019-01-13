@@ -5,7 +5,10 @@
     using Sandbox.Common.ObjectBuilders;
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
+
+    using VRage.Game;
     using VRage.Game.Components;
+    using VRage.Game.ModAPI.Interfaces;
     using VRage.ModAPI;
     using VRage.ObjectBuilders;
 
@@ -97,6 +100,12 @@
                     if (_comingOnline) ComingOnlineSetup();
                     if (_isServer)
                     {
+                        var damageEnt = ShieldEnt as IMyDestroyableObject;
+                        if (damageEnt != null)
+                        {
+                            //damageEnt.DoDamage(1, MyDamageType.Bolt, true, null);
+                            Log.Line($"test");
+                        }
                         var createHeTiming = _count == 6 && (_lCount == 1 || _lCount == 6);
                         if (GridIsMobile && createHeTiming) CreateHalfExtents();
                         if (_syncEnts) SyncThreadedEnts();

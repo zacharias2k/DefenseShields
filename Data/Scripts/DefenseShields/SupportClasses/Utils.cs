@@ -64,14 +64,40 @@
         internal MyCubeGrid Grid;
         internal Vector3D EpiCenter;
         internal int WarHeadSize;
+        internal double WarHeadYield;
         internal int StackCount;
+        internal double RangeCap;
+        internal double RangeCapSqr;
+        internal bool Stored;
+        internal bool Computed;
+        internal bool Drawed;
+        internal bool EventRunning;
 
-        internal void DoIt(List<MyEntity> myEntities, MyCubeGrid grid, Vector3D epiCenter, Vector3D[] gridCorners, int warheadSize, int stackCount)
+        internal void StoreEmpBlast(Vector3D epicCenter, int warHeadSize, double warHeadYield, int stackCount, double rangeCap)
         {
-            Grid = grid;
-            EpiCenter = epiCenter;
-            WarHeadSize = warheadSize;
+            EpiCenter = epicCenter;
+            WarHeadSize = warHeadSize;
+            WarHeadYield = warHeadYield;
             StackCount = stackCount;
+            RangeCap = rangeCap;
+            RangeCapSqr = rangeCap * rangeCap;
+            Stored = true;
+            EventRunning = true;
+        }
+
+        internal void ComputeComplete()
+        {
+            Computed = true;
+        }
+
+        internal void EmpDrawComplete()
+        {
+            Drawed = true;
+        }
+
+        internal void EventComplete()
+        {
+            EventRunning = false;
         }
     }
 

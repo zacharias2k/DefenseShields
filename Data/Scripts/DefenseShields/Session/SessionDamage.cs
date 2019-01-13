@@ -155,7 +155,6 @@
                     MyProtectors protectors;
                     GlobalProtect.TryGetValue(myEntity, out protectors);
                     if (protectors == null) return;
-
                     if (info.Type == DelDamage)
                     {
                         protectors.IgnoreAttackerId = info.AttackerId;

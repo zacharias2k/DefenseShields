@@ -142,7 +142,6 @@
             private Vector3D[] _normalBuffer;
             private int[] _triColorBuffer;
 
-            private Vector3D _impactPosState;
             private Vector3D _refreshPoint;
             private MatrixD _matrix;
 
@@ -168,6 +167,8 @@
             internal bool ImpactsFinished { get; set; } = true;
 
             internal MyEntity ShellActive { get; set; }
+
+            internal Vector3D ImpactPosState { get; set; }
 
             internal void CalculateTransform(MatrixD matrix, int lod)
             {
@@ -237,7 +238,7 @@
                 _activeColor = newActiveColor;
 
                 _matrix = matrix;
-                _impactPosState = impactPos;
+                ImpactPosState = impactPos;
                 _active = activeVisible;
 
                 if (prevLod != _lod)
@@ -288,7 +289,7 @@
                     }
                 }
 
-                if (_impactPosState != Vector3D.NegativeInfinity) ComputeImpacts();
+                if (ImpactPosState != Vector3D.NegativeInfinity) ComputeImpacts();
 
                 if (_impact)
                 {
@@ -448,7 +449,7 @@
 
             private void UpdateImpactState()
             {
-                // Log.Line($"{_impactCnt[0]} - {_impactCnt[1]} - {_impactCnt[2]} - {_impactCnt[3]} - {_impactCnt[4]} - {_impactCnt[5]}");
+                //Log.Line($"{_impactCnt[0]} - {_impactCnt[1]} - {_impactCnt[2]} - {_impactCnt[3]} - {_impactCnt[4]} - {_impactCnt[5]}");
                 for (int i = 0; i < _sideLoops.Length; i++)
                 {
                     if (_sideLoops[i] != 0) _sideLoops[i]++;
@@ -524,7 +525,7 @@
                 {
                     if (_impactPos[i] == Vector3D.NegativeInfinity)
                     {
-                        _impactPos[i] = _impactPosState;
+                        _impactPos[i] = ImpactPosState;
                         _localImpacts[i] = _impactPos[i] - _matrix.Translation;
                         _localImpacts[i].Normalize();
                         break;
@@ -534,7 +535,7 @@
 
             private void HitFace()
             {
-                var impactTransNorm = _impactPosState - _matrix.Translation;
+                var impactTransNorm = ImpactPosState - _matrix.Translation;
                 _hitFaces.Clear();
                 GetIntersectingFace(_matrix, impactTransNorm, _hitFaces);
                 foreach (var face in _hitFaces)

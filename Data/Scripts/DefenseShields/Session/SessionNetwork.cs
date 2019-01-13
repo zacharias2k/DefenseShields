@@ -31,7 +31,7 @@
             foreach (var p in Players.Values)
             {
                 var id = p.SteamUserId;
-                if (id != localSteamId && id != data.Sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncDistSqr)
+                if (id != localSteamId && id != data.Sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncBufferedDistSqr)
                     MyAPIGateway.Multiplayer.SendMessageTo(PacketIdShieldHit, bytes, p.SteamUserId);
             }
         }
@@ -488,7 +488,7 @@
             {
                 var id = p.SteamUserId;
 
-                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncDistSqr)
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncBufferedDistSqr)
 
                     MyAPIGateway.Multiplayer.SendMessageTo(PacketIdControllerState, bytes, p.SteamUserId);
             }
@@ -502,7 +502,7 @@
             {
                 var id = p.SteamUserId;
 
-                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncDistSqr)
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncBufferedDistSqr)
                     MyAPIGateway.Multiplayer.SendMessageTo(PacketIdControllerSettings, bytes, p.SteamUserId);
             }
         }
@@ -515,7 +515,7 @@
             {
                 var id = p.SteamUserId;
 
-                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncDistSqr)
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncBufferedDistSqr)
                     MyAPIGateway.Multiplayer.SendMessageTo(PacketIdModulatorSettings, bytes, p.SteamUserId);
             }
         }
@@ -528,7 +528,7 @@
             {
                 var id = p.SteamUserId;
 
-                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncDistSqr)
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncBufferedDistSqr)
                 {
                     MyAPIGateway.Multiplayer.SendMessageTo(PacketIdModulatorState, bytes, p.SteamUserId);
                 }
@@ -543,7 +543,7 @@
             {
                 var id = p.SteamUserId;
 
-                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncDistSqr)
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncBufferedDistSqr)
                     MyAPIGateway.Multiplayer.SendMessageTo(PacketIdPlanetShieldSettings, bytes, p.SteamUserId);
             }
         }
@@ -557,7 +557,7 @@
                 var id = p.SteamUserId;
 
                 if (id != localSteamId && id != sender &&
-                    Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncDistSqr)
+                    Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncBufferedDistSqr)
                 {
                     MyAPIGateway.Multiplayer.SendMessageTo(PacketIdPlanetShieldState, bytes, p.SteamUserId);
                 }
@@ -573,7 +573,7 @@
             {
                 var id = p.SteamUserId;
 
-                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncDistSqr)
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncBufferedDistSqr)
                 {
                     if (Enforced.Debug == 3) Log.Line($"O2GeneratorSettingsToClients - Player:{p.SteamUserId}");
                     MyAPIGateway.Multiplayer.SendMessageTo(PacketIdO2GeneratorSettings, bytes, p.SteamUserId);
@@ -589,7 +589,7 @@
             {
                 var id = p.SteamUserId;
 
-                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncDistSqr)
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncBufferedDistSqr)
                     MyAPIGateway.Multiplayer.SendMessageTo(PacketIdO2GeneratorState, bytes, p.SteamUserId);
             }
         }
@@ -602,7 +602,7 @@
             {
                 var id = p.SteamUserId;
 
-                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncDistSqr)
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncBufferedDistSqr)
 
                     MyAPIGateway.Multiplayer.SendMessageTo(PacketIdEnhancerState, bytes, p.SteamUserId);
             }
@@ -615,7 +615,7 @@
             {
                 var id = p.SteamUserId;
 
-                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncDistSqr)
+                if (id != localSteamId && id != sender && Vector3D.DistanceSquared(p.GetPosition(), syncPosition) <= SyncBufferedDistSqr)
 
                     MyAPIGateway.Multiplayer.SendMessageTo(PacketIdEmitterState, bytes, p.SteamUserId);
             }

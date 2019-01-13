@@ -65,13 +65,15 @@
 
         internal readonly Type MissileObj = typeof(MyObjectBuilder_Missile);
 
+        internal readonly EmpWork EmpWork = new EmpWork();
+
         internal readonly MyModContext MyModContext = new MyModContext();
         internal readonly Icosphere Icosphere = new Icosphere(5);
 
         internal readonly ConcurrentDictionary<long, IMyPlayer> Players = new ConcurrentDictionary<long, IMyPlayer>();
 
         internal readonly ConcurrentQueue<DefenseShields> WebWrapper = new ConcurrentQueue<DefenseShields>();
-        internal readonly ConcurrentDictionary<long, WarHeadBlast> EmpStore = new ConcurrentDictionary<long, WarHeadBlast>();
+        internal readonly Queue<WarHeadBlast> EmpStore = new Queue<WarHeadBlast>();
 
         internal readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         internal readonly Dictionary<MyEntity, MyProtectors> GlobalProtect = new Dictionary<MyEntity, MyProtectors>();
@@ -187,7 +189,6 @@
         private const int EntMaxTickAge = 36000;
 
         private readonly Work _workData = new Work();
-        private readonly EmpWork _empWork = new EmpWork();
 
         private readonly List<KeyValuePair<MyEntity, uint>> _entRefreshTmpList = new List<KeyValuePair<MyEntity, uint>>();
         private readonly ConcurrentQueue<MyEntity> _entRefreshQueue = new ConcurrentQueue<MyEntity>();
@@ -219,6 +220,7 @@
 
         internal double HudShieldDist { get; set; } = double.MaxValue;
         internal double SyncDistSqr { get; private set; }
+        internal double SyncBufferedDistSqr { get; private set; }
         internal double SyncDist { get; private set; }
 
         internal bool WarheadButtonAdd { get; set; }

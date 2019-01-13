@@ -1,9 +1,7 @@
 ﻿namespace DefenseShields
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-
     using global::DefenseShields.Support;
     using Sandbox.Definitions;
     using Sandbox.Game.Entities;
@@ -65,17 +63,16 @@
                 if (MpActive)
                 {
                     SyncDist = MyAPIGateway.Session.SessionSettings.SyncDistance;
-                    var syncDistBuffered = SyncDist + 500;
-                    SyncDistSqr = syncDistBuffered * syncDistBuffered;
-
-                    if (Enforced.Debug >= 3) Log.Line($"SyncDistSqr:{SyncDistSqr} - DistNorm:{SyncDist}");
+                    SyncDistSqr = SyncDist * SyncDist;
+                    SyncBufferedDistSqr = SyncDistSqr + 250000;
+                    if (Enforced.Debug >= 2) Log.Line($"SyncDistSqr:{SyncDistSqr} - SyncBufferedDistSqr:{SyncBufferedDistSqr} - DistNorm:{SyncDist}");
                 }
                 else
                 {
                     SyncDist = MyAPIGateway.Session.SessionSettings.ViewDistance;
-                    var syncDistBuffered = SyncDist + 500;
-                    SyncDistSqr = syncDistBuffered * syncDistBuffered;
-                    if (Enforced.Debug >= 3) Log.Line($"SyncDistSqr:{SyncDistSqr} - DistNorm:{SyncDist}");
+                    SyncDistSqr = SyncDist * SyncDist;
+                    SyncBufferedDistSqr = SyncDistSqr + 250000;
+                    if (Enforced.Debug >= 2) Log.Line($"SyncDistSqr:{SyncDistSqr} - SyncBufferedDistSqr:{SyncBufferedDistSqr} - DistNorm:{SyncDist}");
                 }
                 MyAPIGateway.Parallel.StartBackground(WebMonitor);
             }
@@ -93,9 +90,11 @@
 
                 if (_count == 0 && _lCount == 0) OnCountThrottle = false;
                 var onCount = 0;
-                for (int i = 0; i < Controllers.Count; i++)
+                for (int i = 0; i < compCount; i++)
                 {
                     var s = Controllers[i];
+                    if (s.WasPaused || s.DsState.State.Suspended) continue;
+
                     if (s.BulletCoolDown > -1)
                     {
                         s.BulletCoolDown++;
@@ -126,19 +125,27 @@
                 }
                 else if (!OnCountThrottle && _count == 59 && _lCount == 9) OnCount = onCount;
 
-                for (int i = 0; i < Controllers.Count; i++)
+                for (int i = 0; i < compCount; i++)
                 {
                     var s = Controllers[i];
-                    if (!s.WarmedUp || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterWorking) continue;
-                    if (s.DsState.State.Online && SphereOnCamera[i]) s.Draw(OnCount, SphereOnCamera[i]);
-                    else
+                    var drawSuspended = s.WasPaused || s.DsState.State.Suspended || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterWorking || !s.WarmedUp;
+
+                    if (drawSuspended) continue;
+
+                    if (s.DsState.State.Online)
                     {
-                        if (s.DsState.State.Online)
+                        if (SphereOnCamera[i]) s.Draw(OnCount, SphereOnCamera[i]);
+                        else if (s.Icosphere.ImpactsFinished)
                         {
-                            if (!s.Icosphere.ImpactsFinished) s.Icosphere.StepEffects();
+                            if (s.WorldImpactPosition != Vector3D.NegativeInfinity)
+                            {
+                                s.Draw(OnCount, true);
+                                s.Icosphere.ImpactPosState = Vector3D.NegativeInfinity;
+                            }
                         }
-                        else if (s.IsWorking && SphereOnCamera[i]) s.DrawShieldDownIcon();
+                        else s.Icosphere.StepEffects();
                     }
+                    else if (s.IsWorking && SphereOnCamera[i]) s.DrawShieldDownIcon();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
@@ -152,7 +159,7 @@
                 Timings();
                 LoadBalancer();
                 LogicUpdates();
-                if (!EmpDispatched && !EmpStore.IsEmpty)
+                if (!EmpDispatched && EmpStore.Count != 0)
                 {
                     EmpDispatched = true;
                     PrepEmpBlast();
@@ -181,134 +188,6 @@
         #endregion
 
         #region Misc
-        private readonly List<LineD> _testLineList = new List<LineD>();
-        private readonly List<MyCubeBlock> _warHeadCubeHits = new List<MyCubeBlock>();
-        private readonly List<MyCubeGrid> _warHeadGridHits = new List<MyCubeGrid>();
-        private readonly Dictionary<MyCubeGrid, BoundingSphereD> _warHeadGridShapes = new Dictionary<MyCubeGrid, BoundingSphereD>();
-        private readonly Dictionary<MyCubeBlock, int> _warEffectedCubes = new Dictionary<MyCubeBlock, int>();
-
-        private void GetFilteredItems(List<MyEntity> myEntities, Vector3D epiCenter)
-        {
-            _warHeadCubeHits.Clear();
-            _warHeadGridHits.Clear();
-            for (int i = 0; i < myEntities.Count; i++)
-            {
-                var myEntity = myEntities[i];
-                var myGrid = myEntity as MyCubeGrid;
-                var myCube = myEntities[i] as MyCubeBlock;
-
-                if (myEntity == null || (myGrid == null && myCube == null) || myEntity.MarkedForClose) continue;
-
-                if (myGrid != null)
-                {
-                    _warHeadGridHits.Add(myGrid);
-                    continue;
-                }
-
-                if ((myCube is IMyThrust || myCube is IMyUserControllableGun || myCube is IMyUpgradeModule) && myCube.IsFunctional && myCube.IsWorking)
-                {
-                    _warHeadCubeHits.Add(myCube);
-                }
-            }
-        }
-
-        private void PrepEmpBlast()
-        {
-            var stackCount = 0;
-            var warHeadSize = 0;
-            var epiCenter = Vector3D.Zero;
-
-            foreach (var empChild in EmpStore)
-            {
-                if (empChild.Value.CustomData == string.Empty || !empChild.Value.CustomData.Contains("!EMP"))
-                {
-                    stackCount++;
-                    warHeadSize = empChild.Value.WarSize;
-                    epiCenter += empChild.Value.Position;
-                }
-            }
-
-            EmpStore.Clear();
-            if (stackCount == 0) return;
-
-            epiCenter /= stackCount;
-
-            _empWork.EpiCenter = epiCenter;
-            _empWork.StackCount = stackCount;
-            _empWork.WarHeadSize = warHeadSize;
-        }
-
-        private void ComputeEmpBlast()
-        {
-            Dsutil1.Sw.Restart();
-            var epiCenter = _empWork.EpiCenter;
-
-            var sphere = new BoundingSphereD(epiCenter, 25000);
-            var pruneList = new List<MyEntity>();
-            MyGamePruningStructure.GetAllEntitiesInSphere(ref sphere, pruneList);
-            GetFilteredItems(pruneList, epiCenter);
-            _warHeadGridShapes.Clear();
-            foreach (var grid in _warHeadGridHits)
-            {
-                var sub = CustomCollision.NewObbClosestTriCorners(grid, epiCenter);
-                _warHeadGridShapes.Add(grid, sub);
-            }
-
-            foreach (var cube in _warHeadCubeHits)
-            {
-                var mySphere = new BoundingSphereD();
-                var foundSphere = _warHeadGridShapes.TryGetValue(cube.CubeGrid, out sphere);
-                if (foundSphere && mySphere.Contains(cube.PositionComp.WorldAABB.Center) != ContainmentType.Disjoint)
-                {
-                    Log.Line("test");
-                    var testDir = Vector3D.Normalize(cube.PositionComp.WorldAABB.Center - epiCenter);
-                    var testPos = cube.PositionComp.WorldAABB.Center + (testDir * -3);
-                    var hit = cube.CubeGrid.RayCastBlocks(testPos, epiCenter);
-                    if (hit == null) _warEffectedCubes.Add(cube, 0);
-                }
-            }
-            Dsutil1.StopWatchReport($"test - range: 25km - grids:{_warHeadGridHits.Count} - cubes:{_warHeadCubeHits.Count} - effectedCubes:{_warEffectedCubes.Count}", -1);
-        }
-
-        private void EmpCallBack()
-        {
-            EmpDrawExplosion();
-            EmpDispatched = false;
-        }
-
-        private void EmpDrawExplosion()
-        {
-            _effect.Stop();
-            var epiCenter = _empWork.EpiCenter;
-            var warHeadSize = _empWork.WarHeadSize;
-            var stackCount = _empWork.StackCount;
-            var cameraPos = MyAPIGateway.Session.Camera.Position;
-            var realDistanceSqr = Vector3D.DistanceSquared(epiCenter, cameraPos);
-            if (realDistanceSqr > 4000000)
-            {
-                var testDir = Vector3D.Normalize(cameraPos - epiCenter);
-                var newEpiCenter = cameraPos + (testDir * -1990);
-                epiCenter = newEpiCenter;
-            }
-
-            var invSqrDist = UtilsStatic.InverseSqrDist(epiCenter, cameraPos, 2000);
-            //Log.Line($"invSqrDist:{invSqrDist} - Dist:{Vector3D.Distance(epiCenter, MyAPIGateway.Session.Camera.Position)} - epicCenter:{epiCenter} - {stackCount}");
-            if (invSqrDist <= 0) return;
-
-            var matrix = MatrixD.CreateTranslation(epiCenter);
-            MyParticlesManager.TryCreateParticleEffect(6667, out _effect, ref matrix, ref epiCenter, 0, true); // 15, 16, 24, 25, 28, (31, 32) 211 215 53
-            if (_effect == null) return;
-
-            var empSize = warHeadSize * stackCount;
-            var radius = empSize * invSqrDist;
-            var scale = 1 / invSqrDist;
-            //Log.Line($"[Scaler] scale:{scale} - {radius}");
-            _effect.UserRadiusMultiplier = (float)radius;
-            _effect.UserEmitterScale = (float)scale;
-            _effect.UserColorMultiplier = new Vector4(255, 255, 255, 10);
-            _effect.Play();
-        }
-
         public string ModPath()
         {
             var modPath = ModContext.ModPath;
@@ -324,14 +203,11 @@
         {
             Monitor = false;
             Instance = null;
+            HudComp = null;
             Enforced = null;
-            ProtSets.Clean();
-
             _autoResetEvent.Set();
             _autoResetEvent = null;
-            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdShieldHit, ShieldHitReceived);
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEnforce, EnforcementReceived);
-            MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdO2GeneratorSettings, O2GeneratorSettingsReceived);
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdControllerState, ControllerStateReceived);
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdControllerSettings, ControllerSettingsReceived);
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdModulatorSettings, ModulatorSettingsReceived);
@@ -340,14 +216,165 @@
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdO2GeneratorState, O2GeneratorStateReceived);
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PacketIdEmitterState, EmitterStateReceived);
 
-            MyEntities.OnEntityRemove -= OnEntityRemove;
             MyVisualScriptLogicProvider.PlayerDisconnected -= PlayerDisconnected;
             MyVisualScriptLogicProvider.PlayerRespawnRequest -= PlayerConnected;
 
+            MyEntities.OnEntityRemove -= OnEntityRemove;
+
             if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter -= CustomControls;
 
+            //Terminate();
             Log.Line("Logging stopped.");
             Log.Close();
+        }
+        #endregion
+
+        private readonly List<LineD> _testLineList = new List<LineD>();
+        private readonly List<MyCubeBlock> _warHeadCubeHits = new List<MyCubeBlock>();
+        private readonly List<MyCubeGrid> _warHeadGridHits = new List<MyCubeGrid>();
+        private readonly Dictionary<MyCubeGrid, BoundingSphereD> _warHeadGridShapes = new Dictionary<MyCubeGrid, BoundingSphereD>();
+        private readonly Dictionary<MyCubeBlock, int> _warEffectedCubes = new Dictionary<MyCubeBlock, int>();
+
+        private void GetFilteredItems(List<MyEntity> myEntities)
+        {
+            _warHeadCubeHits.Clear();
+            _warHeadGridHits.Clear();
+            var myCubeList = new List<MyEntity>();
+            for (int i = 0; i < myEntities.Count; i++)
+            {
+                var myEntity = myEntities[i];
+                var myGrid = myEntity as MyCubeGrid;
+                if (myGrid == null || myGrid.MarkedForClose) continue;
+                var gridAabb = myGrid.PositionComp.WorldAABB;
+                _warHeadGridHits.Add(myGrid);
+                myGrid.Hierarchy.QueryAABB(ref gridAabb, myCubeList);
+            }
+
+            for (int i = 0; i < myCubeList.Count; i++)
+            {
+                var myEntity = myCubeList[i];
+                var myCube = myEntity as MyCubeBlock;
+                if (myCube == null || myCube.MarkedForClose) continue;
+                if ((myCube is IMyThrust || myCube is IMyUserControllableGun || myCube is IMyUpgradeModule) && myCube.IsFunctional && myCube.IsWorking)
+                {
+                    _warHeadCubeHits.Add(myCube);
+                }
+            }
+            if (Enforced.Debug >= 2) Log.Line($"[ComputeEmpBlast] AllFat:{myCubeList.Count} - TrimmedFat:{_warHeadCubeHits.Count}");
+        }
+
+        private void PrepEmpBlast()
+        {
+            var stackCount = 0;
+            var warHeadSize = 0;
+            var warHeadYield = 0d;
+            var epiCenter = Vector3D.Zero;
+
+            WarHeadBlast empChild;
+            while (EmpStore.TryDequeue(out empChild))
+            {
+                if (empChild.CustomData == string.Empty || !empChild.CustomData.Contains("!EMP"))
+                {
+                    stackCount++;
+                    warHeadSize = empChild.WarSize;
+                    warHeadYield = empChild.Yield;
+                    epiCenter += empChild.Position;
+                }
+            }
+
+            if (stackCount == 0)
+            {
+                EmpWork.EventComplete();
+                return;
+            }
+            epiCenter /= stackCount;
+            var rangeCap = MathHelper.Clamp(stackCount * warHeadYield, warHeadYield, SyncDist);
+
+            EmpWork.StoreEmpBlast(epiCenter, warHeadSize, warHeadYield, stackCount, rangeCap);
+        }
+
+        private void ComputeEmpBlast()
+        {
+            if (Enforced.Debug >= 2) Dsutil1.Sw.Restart();
+
+            var epiCenter = EmpWork.EpiCenter;
+            var rangeCap = EmpWork.RangeCapSqr > SyncDistSqr ? SyncDist : EmpWork.RangeCap;
+
+            var sphere = new BoundingSphereD(epiCenter, rangeCap);
+            var pruneList = new List<MyEntity>();
+            //MyGamePruningStructure.GetAllEntitiesInSphere(ref sphere, pruneList);
+            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref sphere, pruneList, MyEntityQueryType.Static);
+            GetFilteredItems(pruneList);
+            _warHeadGridShapes.Clear();
+            foreach (var grid in _warHeadGridHits)
+            {
+                var sub = CustomCollision.NewObbClosestTriCorners(grid, epiCenter);
+                _warHeadGridShapes.Add(grid, sub);
+            }
+
+            foreach (var cube in _warHeadCubeHits)
+            {
+                var mySphere = new BoundingSphereD();
+                var foundSphere = _warHeadGridShapes.TryGetValue(cube.CubeGrid, out sphere);
+                if (foundSphere && mySphere.Contains(cube.PositionComp.WorldAABB.Center) != ContainmentType.Disjoint)
+                {
+                    var testDir = Vector3D.Normalize(cube.PositionComp.WorldAABB.Center - epiCenter);
+                    var testPos = cube.PositionComp.WorldAABB.Center + (testDir * -3);
+                    var hit = cube.CubeGrid.RayCastBlocks(testPos, epiCenter);
+                    if (hit == null) _warEffectedCubes.Add(cube, 0);
+                }
+            }
+
+            EmpWork.ComputeComplete();
+            if (Enforced.Debug >= 2) Dsutil1.StopWatchReport($"----------------] Grids:{_warHeadGridHits.Count} - cubes:{_warHeadCubeHits.Count} - effectedCubes:{_warEffectedCubes.Count}", -1);
+        }
+
+        private void EmpCallBack()
+        {
+            EmpDrawExplosion();
+            EmpDispatched = false;
+        }
+
+        private void EmpDrawExplosion()
+        {
+            _effect.Stop();
+            var epiCenter = EmpWork.EpiCenter;
+            var warHeadSize = EmpWork.WarHeadSize;
+            var stackCount = EmpWork.StackCount;
+            var cameraPos = MyAPIGateway.Session.Camera.Position;
+            var realDistanceSqr = Vector3D.DistanceSquared(epiCenter, cameraPos);
+            if (realDistanceSqr > SyncDistSqr)
+            {
+                var testDir = Vector3D.Normalize(cameraPos - epiCenter);
+                var newEpiCenter = cameraPos + (testDir * -1990);
+                epiCenter = newEpiCenter;
+            }
+
+            var invSqrDist = UtilsStatic.InverseSqrDist(epiCenter, cameraPos, 2000);
+            //Log.Line($"invSqrDist:{invSqrDist} - Dist:{Vector3D.Distance(epiCenter, MyAPIGateway.Session.Camera.Position)} - epicCenter:{epiCenter} - {stackCount}");
+            if (invSqrDist <= 0)
+            {
+                EmpWork.EmpDrawComplete();
+                return;
+            }
+
+            var matrix = MatrixD.CreateTranslation(epiCenter);
+            MyParticlesManager.TryCreateParticleEffect(6667, out _effect, ref matrix, ref epiCenter, 0, true); // 15, 16, 24, 25, 28, (31, 32) 211 215 53
+            if (_effect == null)
+            {
+                EmpWork.EmpDrawComplete();
+                return;
+            }
+
+            var empSize = warHeadSize * stackCount;
+            var radius = empSize * invSqrDist;
+            var scale = 1 / invSqrDist;
+            //Log.Line($"[Scaler] scale:{scale} - {radius}");
+            _effect.UserRadiusMultiplier = (float)radius;
+            _effect.UserEmitterScale = (float)scale;
+            _effect.UserColorMultiplier = new Vector4(255, 255, 255, 10);
+            _effect.Play();
+            EmpWork.EmpDrawComplete();
         }
 
         private void Timings()
@@ -392,8 +419,13 @@
                 }
                 GameLoaded = true;
             }
+
+            if (EmpWork.EventRunning && EmpWork.Computed)
+            {
+                EmpWork.EventComplete();
+                if (Enforced.Debug >= 2) Log.Line($"====================================================================== [WarHead EventComplete]");
+            }
         }
-        #endregion
 
         #region Events
 
@@ -402,24 +434,13 @@
             var warhead = myEntity as IMyWarhead;
             if (warhead != null)
             {
-                if (warhead.IsWorking && !warhead.IsFunctional && (!EmpStore.ContainsKey(warhead.EntityId) || warhead.IsArmed  || (warhead.DetonationTime <= 0 && warhead.IsCountingDown)))
+                if (warhead.IsWorking && !warhead.IsFunctional && (warhead.IsArmed  || (warhead.DetonationTime <= 0 && warhead.IsCountingDown)))
                 {
                     var blastRatio = warhead.CubeGrid.GridSizeEnum == MyCubeSize.Small ? 1 : 5;
                     var epicCenter = warhead.PositionComp.WorldAABB.Center;
-                    var blast = new WarHeadBlast(blastRatio, epicCenter, warhead.CustomData);
-                    EmpStore.TryAdd(warhead.EntityId, blast);
-                    /*
-                    var epicCenter = warhead.PositionComp.WorldAABB.Center;
-                    if (Vector3D.DistanceSquared(DetectionCenter, epicCenter) < Session.Instance.SyncDistSqr)
-                    {
-                        var blastRatio = warhead.CubeGrid.GridSizeEnum == MyCubeSize.Small ? 1 : 5;
-                        var blast = new WarHeadBlast(blastRatio, epicCenter, warhead.CustomData);
-                        if (!_isDedicated) Session.Instance.EmpDraw.TryAdd(warhead.EntityId, blast);
-                        if (_isServer) EmpBlast.TryAdd(warhead.EntityId, blast);
-                    }
-                    */
+                    EmpStore.Enqueue(new WarHeadBlast(blastRatio, epicCenter, warhead.CustomData));
+                    if (Enforced.Debug >= 2 && EmpStore.Count == 0) Log.Line($"====================================================================== [WarHead EventStart]");
                 }
-                // return;
             }
         }
 

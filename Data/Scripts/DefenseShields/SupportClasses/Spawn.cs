@@ -3,6 +3,9 @@
     using System;
     using System.Collections.Generic;
     using System.Text;
+
+    using Sandbox.Common.ObjectBuilders;
+    using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
     using VRage;
     using VRage.Game;
@@ -52,16 +55,26 @@
                 }
         };
 
+        private static readonly MyObjectBuilder_Meteor TestBuilder = new MyObjectBuilder_Meteor()
+        {
+            EntityId = 0,
+            LinearVelocity = Vector3.Zero,
+            AngularVelocity = Vector3.Zero,
+            PersistentFlags = MyPersistentEntityFlags2.InScene,
+            Name = "GravityMissile",
+            PositionAndOrientation = new MyPositionAndOrientation(Vector3D.Zero, Vector3D.Forward, Vector3D.Up)
+        };
+
         public static MyEntity EmptyEntity(string displayName, string model, MyEntity parent, bool parented = false)
         {
             try
             {
                 var myParent = parented ? parent : null;
                 var ent = new MyEntity { NeedsWorldMatrix = true };
-
                 ent.Init(new StringBuilder(displayName), model, myParent, null);
                 ent.Name = $"{parent.EntityId}";
                 MyAPIGateway.Entities.AddEntity(ent);
+                MyEntities.CreateFromObjectBuilder(new MyObjectBuilder_Meteor());
                 return ent;
             }
             catch (Exception ex) { Log.Line($"Exception in EmptyEntity: {ex}"); return null; }

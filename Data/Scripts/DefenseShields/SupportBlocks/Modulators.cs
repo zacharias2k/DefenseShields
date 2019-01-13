@@ -418,6 +418,7 @@
                 ModSet.Settings.ReInforceEnabled = false;
                 ModSet.Settings.EmpEnabled = false;
             }
+            else if (ModState.State.Link && ShieldComp.DefenseShields.IsStatic) ModSet.Settings.ReInforceEnabled = false;
         }
 
         private void ClientCheckForCompLink()
