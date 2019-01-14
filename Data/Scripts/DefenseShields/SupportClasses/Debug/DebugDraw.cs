@@ -14,6 +14,8 @@ namespace DefenseShields.Support
     public static class DsDebugDraw
     {
         #region Debug and Utils
+        private static MyStringId LineId = MyStringId.GetOrCompute("Square");
+
         public static int GetVertNum(Vector3D[] physicsVerts, Vector3D vec)
         {
             var pmatch = false;
@@ -233,6 +235,43 @@ namespace DefenseShields.Support
             var v0 = toVec;
             var v1 = fromVec;
             MySimpleObjectDraw.DrawLine(v0, v1, lineId, ref c, lineWidth);
+        }
+
+        public static void DrawX(Vector3D center, MatrixD referenceMatrix, double lineLength)
+        {
+            var halfLineLength = lineLength * 0.5;
+            var lineWdith = (float)(lineLength * 0.1);
+            var color1 = (Vector4)Color.Red;
+            var color2 = (Vector4)Color.Yellow;
+            var testDir0 = Vector3D.Normalize(referenceMatrix.Backward - referenceMatrix.Forward);
+            var testDir1 = Vector3D.Normalize(referenceMatrix.Left - referenceMatrix.Right);
+            var line0Vec0 = center + (testDir0 * -halfLineLength);
+            var line0Vec1 = center + (testDir0 * halfLineLength);
+
+            var line1Vec0 = center + (testDir1 * -halfLineLength);
+            var line1Vec1 = center + (testDir1 * halfLineLength);
+            MySimpleObjectDraw.DrawLine(line0Vec0, line0Vec1, LineId, ref color1, lineWdith);
+            MySimpleObjectDraw.DrawLine(line1Vec0, line1Vec1, LineId, ref color2, lineWdith);
+        }
+
+        public static void DrawLosBlocked(Vector3D center, MatrixD referenceMatrix)
+        {
+            var color1 = (Vector4)Color.DarkOrange;
+            var testDir0 = Vector3D.Normalize(referenceMatrix.Backward - referenceMatrix.Forward);
+            var line0Vec0 = center + (testDir0 * -0.25);
+            var line0Vec1 = center + (testDir0 * 0.25);
+
+            MySimpleObjectDraw.DrawLine(line0Vec0, line0Vec1, LineId, ref color1, 0.025f);
+        }
+
+        public static void DrawLosClear(Vector3D center, MatrixD referenceMatrix)
+        {
+            var color1 = (Vector4)Color.Green;
+            var testDir0 = Vector3D.Normalize(referenceMatrix.Backward - referenceMatrix.Forward);
+            var line0Vec0 = center + (testDir0 * -0.25);
+            var line0Vec1 = center + (testDir0 * 0.25);
+
+            MySimpleObjectDraw.DrawLine(line0Vec0, line0Vec1, LineId, ref color1, 0.025f);
         }
 
         public static void DrawLine(LineD line, Vector4 color)

@@ -11,8 +11,13 @@
     using Sandbox.Game.EntityComponents;
     using Sandbox.ModAPI;
     using VRage.Game;
+    using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRageMath;
+
+    using Color = VRageMath.Color;
+    using Quaternion = VRageMath.Quaternion;
+    using Vector3 = VRageMath.Vector3;
 
     internal static class UtilsStatic
     {
@@ -124,24 +129,96 @@
             do
             {
                 Fn = (int)((Math.Pow(phi, n) - Math.Pow(-phi, -n)) / ((2 * phi) - 1));
-                Console.Write("{0} ", Fn);
+                //Console.Write("{0} ", Fn);
                 ++n;
             }
             while (Fn < magicNum);
         }
 
-        public static void SphereCloud(float radius, int points, int rotateTime, Vector3D[] physicsArray)
+        public static void SphereCloud(int pointLimit, Vector3D[] physicsArray, MyEntity shieldEnt, bool transformAndScale, bool debug, Random rnd = null)
         {
-            if (physicsArray.Length != points) Array.Resize(ref physicsArray, points);
+            if (pointLimit > 9999) pointLimit = 9999;
+            if (rnd == null) rnd = new Random(0);
 
-            for (int i = 0; i < points; i++)
+            var sPosComp = shieldEnt.PositionComp;
+            var unscaledPosWorldMatrix = MatrixD.Rescale(MatrixD.CreateTranslation(sPosComp.WorldAABB.Center), sPosComp.WorldVolume.Radius);
+            var radius = sPosComp.WorldVolume.Radius;
+            for (int i = 0; i < pointLimit; i++)
             {
-                var rho = rotateTime + i;
-                var phi = 2 * Math.PI * i / points;
-                var x = (float)(radius * Math.Sin(phi) * Math.Cos(rho));
-                var z = (float)(radius * Math.Sin(phi) * Math.Sin(rho));
+                var value = rnd.Next(0, physicsArray.Length - 1);
+                var phi = 2 * Math.PI * i / pointLimit;
+                var x = (float)(radius * Math.Sin(phi) * Math.Cos(value));
+                var z = (float)(radius * Math.Sin(phi) * Math.Sin(value));
                 var y = (float)(radius * Math.Cos(phi));
-                physicsArray[i] = new Vector3D(x, y, z);
+                var v = new Vector3D(x, y, z);
+
+                if (transformAndScale) v = Vector3D.Transform(Vector3D.Normalize(v), unscaledPosWorldMatrix);
+                if (debug) DsDebugDraw.DrawX(v, sPosComp.LocalMatrix, 0.5);
+                physicsArray[i] = v;
+            }
+        }
+
+        public static void UnitSphereCloudQuick(int pointLimit, ref Vector3D[] physicsArray, MyEntity shieldEnt, bool translateAndScale, bool debug, Random rnd = null)
+        {
+            if (pointLimit > 9999) pointLimit = 9999;
+            if (rnd == null) rnd = new Random(0);
+
+            var sPosComp = shieldEnt.PositionComp;
+            var radius = sPosComp.WorldVolume.Radius;
+            var center = sPosComp.WorldAABB.Center;
+            var v = Vector3D.Zero;
+
+            for (int i = 0; i < pointLimit; i++)
+            {
+                while (true)
+                {
+                    v.X = (rnd.NextDouble() * 2) - 1;
+                    v.Y = (rnd.NextDouble() * 2) - 1;
+                    v.Z = (rnd.NextDouble() * 2) - 1;
+                    var len2 = v.LengthSquared();
+                    if (len2 < .0001) continue;
+                    v *= radius / Math.Sqrt(len2);
+                    break;
+                }
+
+                if (translateAndScale) physicsArray[i] = v += center;
+                else physicsArray[i] = v;
+                if (debug) DsDebugDraw.DrawX(v, sPosComp.LocalMatrix, 0.5);
+            }
+        }
+
+        public static void UnitSphereRandomOnly(ref Vector3D[] physicsArray, Random rnd = null)
+        {
+            if (rnd == null) rnd = new Random(0);
+            var v = Vector3D.Zero;
+
+            for (int i = 0; i < physicsArray.Length; i++)
+            {
+                v.X = 0;
+                v.Y = 0;
+                v.Z = 0;
+                while ((v.X * v.X) + (v.Y * v.Y) + (v.Z * v.Z) < 0.0001)
+                {
+                    v.X = (rnd.NextDouble() * 2) - 1;
+                    v.Y = (rnd.NextDouble() * 2) - 1;
+                    v.Z = (rnd.NextDouble() * 2) - 1;
+                }
+                v.Normalize();
+                physicsArray[i] = v;
+            }
+        }
+
+        public static void UnitSphereTranslateScale(int pointLimit, ref Vector3D[] physicsArray, ref Vector3D[] scaledCloudArray, MyEntity shieldEnt, bool debug)
+        {
+            var sPosComp = shieldEnt.PositionComp;
+            var radius = sPosComp.WorldVolume.Radius;
+            var center = sPosComp.WorldAABB.Center;
+
+            for (int i = 0; i < pointLimit; i++)
+            {
+                var v = physicsArray[i];
+                scaledCloudArray[i] = v = center + (radius * v);
+                if (debug) DsDebugDraw.DrawX(v, sPosComp.LocalMatrix, 0.5);
             }
         }
 

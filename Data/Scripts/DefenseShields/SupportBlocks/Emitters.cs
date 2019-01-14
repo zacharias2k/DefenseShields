@@ -496,7 +496,10 @@
             var controllerReady = logic != null && logic.Warming && logic.IsWorking && logic.IsFunctional && !logic.DsState.State.Suspended && logic.DsState.State.ControllerGridAccess;
             var losCheckReq = online && controllerReady;
             if ((losCheckReq && ShieldComp.CheckEmitters) || (controllerReady && TookControl)) CheckShieldLineOfSight();
-            //// if (losCheckReq && !EmiState.State.Los && !Session.DedicatedServer) DrawHelper();
+            var dsUtil = new DSUtils();
+            dsUtil.Sw.Restart();
+            if (losCheckReq && !EmiState.State.Los && !Session.Instance.DedicatedServer) DrawHelper();
+            dsUtil.StopWatchReport($"test {losCheckReq} - {online} - {controllerReady} - {!EmiState.State.Los} - {_blocksLos.Count}", -1);
             ShieldComp.EmittersWorking = EmiState.State.Los && online;
             if (!ShieldComp.EmittersWorking || logic == null || !ShieldComp.DefenseShields.DsState.State.Online || !(_tick >= logic.UnsuspendTick))
             {
@@ -637,15 +640,7 @@
         {
             if (!EmiState.State.Compact && _subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(false);
             TookControl = false;
-            _blocksLos.Clear();
-            _noBlocksLos.Clear();
-            _vertsSighted.Clear();
-            var testDist = Definition.FieldDist;
-            var testDir = MyCube.PositionComp.WorldMatrix.Up;
-            if (!EmiState.State.Compact) testDir = _subpartRotor.PositionComp.WorldVolume.Center - MyCube.PositionComp.WorldVolume.Center;
-            testDir.Normalize();
-            var testPos = MyCube.PositionComp.WorldVolume.Center + (testDir * testDist);
-            _sightPos = testPos;
+
             ShieldComp.DefenseShields.ResetShape(false);
             if (EmitterMode == EmitterType.Station)
             {
@@ -654,47 +649,88 @@
             }
             else
             {
-                ShieldComp.DefenseShields.Icosphere.ReturnPhysicsVerts(ShieldComp.DefenseShields.DetectionMatrix, ShieldComp.PhysicsOutside);
-                MyAPIGateway.Parallel.For(0, ShieldComp.PhysicsOutside.Length, i =>
-                {
-                    var hit = MyGrid.RayCastBlocks(testPos, ShieldComp.PhysicsOutside[i]);
-                    if (hit.HasValue)
-                    {
-                        _blocksLos.Add(i);
-                        return;
-                    }
-                    _noBlocksLos.Add(i);
-                });
-                for (int i = 0; i < ShieldComp.PhysicsOutside.Length; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
-                EmiState.State.Los = _blocksLos.Count < 552;
+                UpdateLosState();
+                EmiState.State.Los = _blocksLos.Count < 1000;
                 if (!EmiState.State.Los) ShieldComp.EmitterEvent = true;
                 ShieldComp.CheckEmitters = false;
             }
             if (Session.Enforced.Debug == 3 && !EmiState.State.Los) Log.Line($"LOS: Mode: {EmitterMode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {EmiState.State.Los.ToString()} - EmitterId [{Emitter.EntityId}]");
         }
 
+        private void UpdateLosState()
+        {
+            _blocksLos.Clear();
+            _noBlocksLos.Clear();
+            _vertsSighted.Clear();
+
+            var testDist = Definition.FieldDist;
+            var testDir = MyCube.PositionComp.WorldMatrix.Up;
+            if (!EmiState.State.Compact) testDir = _subpartRotor.PositionComp.WorldVolume.Center - MyCube.PositionComp.WorldVolume.Center;
+            testDir.Normalize();
+            var testPos = MyCube.PositionComp.WorldVolume.Center + (testDir * testDist);
+            _sightPos = testPos;
+            var losUnitCloud = ShieldComp.DefenseShields.LosUnitCloud;
+            var pointLimit = 1500;
+
+            UtilsStatic.UnitSphereTranslateScale(pointLimit, ref losUnitCloud, ref ShieldComp.DefenseShields.LosScaledCloud, ShieldComp.DefenseShields.ShieldEnt, false);
+            MyAPIGateway.Parallel.For(0, pointLimit, i =>
+            {
+                var hit = MyGrid.RayCastBlocks(testPos, ShieldComp.DefenseShields.LosScaledCloud[i]);
+                if (hit.HasValue)
+                {
+                    _blocksLos.Add(i);
+                    return;
+                }
+                _noBlocksLos.Add(i);
+            });
+            for (int i = 0; i < pointLimit; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
+        }
+
         private void DrawHelper()
         {
-            const float LineWidth = 0.025f;
-            var lineDist = Definition.HelperDist;
-
-            foreach (var blocking in _blocksLos)
+            var comp = ShieldComp.DefenseShields;
+            if (Vector3D.DistanceSquared(MyAPIGateway.Session.Player.Character.PositionComp.WorldAABB.Center, comp.DetectionCenter) < 2250000)
             {
-                var blockedDir = ShieldComp.PhysicsOutside[blocking] - _sightPos;
-                blockedDir.Normalize();
-                var blockedPos = _sightPos + (blockedDir * lineDist);
-                DsDebugDraw.DrawLineToVec(_sightPos, blockedPos, Color.Black, LineWidth);
-            }
+                var blockCam = ShieldComp.DefenseShields.ShieldEnt.PositionComp.WorldVolume;
+                var onCam = MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam);
+                if (onCam)
+                {
+                    var pointLimit = 1500;
 
-            foreach (var sighted in _vertsSighted)
-            {
-                var sightedDir = ShieldComp.PhysicsOutside[sighted] - _sightPos;
-                sightedDir.Normalize();
-                var sightedPos = _sightPos + (sightedDir * lineDist);
-                DsDebugDraw.DrawLineToVec(_sightPos, sightedPos, Color.Blue, LineWidth);
+                    var losUnitCloud = comp.LosUnitCloud;
+                    if (comp.GridIsMobile) comp.MobileUpdate();
+
+                    UtilsStatic.UnitSphereTranslateScale(pointLimit, ref losUnitCloud, ref comp.LosScaledCloud, comp.ShieldEnt, false);
+
+                    if (_lCount % 2 == 1)
+                    {
+                        if (_count == 59) UpdateLosState();
+                    }
+                    else
+                    {
+                        foreach (var blocking in _blocksLos)
+                        {
+                            var blockedPos = comp.LosScaledCloud[blocking];
+                            DsDebugDraw.DrawLosBlocked(blockedPos, MyGrid.PositionComp.LocalMatrix);
+                        }
+                    }
+
+                    foreach (var clear in _vertsSighted)
+                    {
+                        var blockedPos = comp.LosScaledCloud[clear];
+                        DsDebugDraw.DrawLosClear(blockedPos, MyGrid.PositionComp.LocalMatrix);
+                    }
+                    var blocked = _blocksLos.Count;
+                    var sighted = _vertsSighted.Count;
+                    var needed = blocked - 999;
+                    if (needed <= 0)
+                    {
+                        //
+                    }
+                    if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("The shield emitter DOES NOT have a CLEAR ENOUGH LINE OF SIGHT to the shield, SHUTTING DOWN.", 960, "Red", Emitter.OwnerId);
+                    if (_count == 0) MyVisualScriptLogicProvider.ShowNotification($"Green means clear line of sight, Flashing Orange means blocked | Blocked: {blocked} | Clear: {sighted} | Needed: {blocked - 999}", 960, "Red", Emitter.OwnerId);
+                }
             }
-            if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("The shield emitter DOES NOT have a CLEAR ENOUGH LINE OF SIGHT to the shield, SHUTTING DOWN.", 960, "Red", Emitter.OwnerId);
-            if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("Blue means clear line of sight, black means blocked......................................................................", 960, "Red", Emitter.OwnerId);
         }
 
         private void CheckEmitter(IMyTerminalBlock myTerminalBlock)

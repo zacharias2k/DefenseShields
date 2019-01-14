@@ -10,7 +10,6 @@
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRage.Utils;
-
     using VRageMath;
 
     public partial class DefenseShields

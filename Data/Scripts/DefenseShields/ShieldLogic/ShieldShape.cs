@@ -30,6 +30,40 @@
             }
         }
 
+        public void MobileUpdate()
+        {
+            var checkForNewCenter = MyGrid.PositionComp.WorldVolume.Center;
+            if (!checkForNewCenter.Equals(MyGridCenter))
+            {
+                ShieldComp.GridIsMoving = true;
+                MyGridCenter = checkForNewCenter;
+            }
+            else ShieldComp.GridIsMoving = false;
+
+            if (ShieldComp.GridIsMoving || _comingOnline)
+            {
+                if (DsSet.Settings.FortifyShield && MyGrid.Physics.LinearVelocity.Length() > 15)
+                {
+                    FitChanged = true;
+                    DsSet.Settings.FortifyShield = false;
+                }
+            }
+
+            _shapeChanged = !DsState.State.EllipsoidAdjust.Equals(_oldEllipsoidAdjust) || !DsState.State.GridHalfExtents.Equals(_oldGridHalfExtents) || !DsState.State.ShieldFudge.Equals(_oldShieldFudge) || _updateMobileShape;
+            _entityChanged = ShieldComp.GridIsMoving || _comingOnline || _shapeChanged;
+            _oldGridHalfExtents = DsState.State.GridHalfExtents;
+            _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
+            _oldShieldFudge = DsState.State.ShieldFudge;
+            if (_entityChanged || BoundingRange <= 0) CreateShieldShape();
+        }
+
+        public void RefreshDimensions()
+        {
+            UpdateDimensions = false;
+            _shapeChanged = true;
+            CreateShieldShape();
+        }
+
         public void CreateHalfExtents()
         {
             var myAabb = MyGrid.PositionComp.LocalAABB;
@@ -74,33 +108,6 @@
             if (DsSet.Settings.SphereFit || DsSet.Settings.FortifyShield) DsState.State.EllipsoidAdjust = 1f;
             else if (!DsSet.Settings.ExtendFit) DsState.State.EllipsoidAdjust = UtilsStatic.CreateNormalFit(Shield, DsState.State.GridHalfExtents);
             else DsState.State.EllipsoidAdjust = UtilsStatic.CreateExtendedFit(Shield, DsState.State.GridHalfExtents);
-        }
-
-        private void MobileUpdate()
-        {
-            var checkForNewCenter = MyGrid.PositionComp.WorldVolume.Center;
-            if (!checkForNewCenter.Equals(MyGridCenter))
-            {
-                ShieldComp.GridIsMoving = true;
-                MyGridCenter = checkForNewCenter;
-            }
-            else ShieldComp.GridIsMoving = false;
-
-            if (ShieldComp.GridIsMoving || _comingOnline)
-            {
-                if (DsSet.Settings.FortifyShield && MyGrid.Physics.LinearVelocity.Length() > 15)
-                {
-                    FitChanged = true;
-                    DsSet.Settings.FortifyShield = false;
-                }
-            }
-
-            _shapeChanged = !DsState.State.EllipsoidAdjust.Equals(_oldEllipsoidAdjust) || !DsState.State.GridHalfExtents.Equals(_oldGridHalfExtents) || !DsState.State.ShieldFudge.Equals(_oldShieldFudge) || _updateMobileShape;
-            _entityChanged = ShieldComp.GridIsMoving || _comingOnline || _shapeChanged;
-            _oldGridHalfExtents = DsState.State.GridHalfExtents;
-            _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
-            _oldShieldFudge = DsState.State.ShieldFudge;
-            if (_entityChanged || BoundingRange <= 0) CreateShieldShape();
         }
 
         private void CreateShieldShape()
@@ -198,9 +205,8 @@
 
         private void CreateMobileShape()
         {
-            var shieldSize = (DsState.State.GridHalfExtents * DsState.State.EllipsoidAdjust) + DsState.State.ShieldFudge;
-            ShieldSize = shieldSize;
-            var mobileMatrix = MatrixD.CreateScale(shieldSize);
+            ShieldSize = (DsState.State.GridHalfExtents * DsState.State.EllipsoidAdjust) + DsState.State.ShieldFudge;
+            var mobileMatrix = MatrixD.Rescale(MatrixD.Identity, ShieldSize);
             mobileMatrix.Translation = MyGrid.PositionComp.LocalVolume.Center;
             ShieldShapeMatrix = mobileMatrix;
         }
@@ -221,13 +227,6 @@
                 ShieldEnt.PositionComp.LocalAABB = ShieldAabbScaled;
             }
             ShieldEnt.PositionComp.SetPosition(DetectionCenter);
-        }
-
-        private void RefreshDimensions()
-        {
-            UpdateDimensions = false;
-            _shapeChanged = true;
-            CreateShieldShape();
         }
         #endregion
     }

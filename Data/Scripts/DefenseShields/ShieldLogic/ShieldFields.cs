@@ -1,5 +1,6 @@
 ﻿namespace DefenseShields
 {
+    using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using global::DefenseShields.Support;
@@ -19,6 +20,7 @@
     {
         #region Setup
         internal readonly MyDefinitionId GId = MyResourceDistributorComponent.ElectricityId;
+        internal readonly Random Rnd = new Random(0);
 
         internal readonly object GetCubesLock = new object();
 
@@ -79,6 +81,8 @@
         internal BoundingBox ShieldAabbNoScale = new BoundingBox(Vector3D.One, -Vector3D.One);
         internal BoundingSphereD ShieldSphere3K = new BoundingSphereD(Vector3D.Zero, 1f);
         internal BoundingSphereD WebSphere = new BoundingSphereD(Vector3D.Zero, 1f);
+        internal readonly Vector3D[] LosUnitCloud = new Vector3D[9999];
+        internal Vector3D[] LosScaledCloud = new Vector3D[9999];
 
         private const int ReModulationCount = 300;
         private const int ShieldDownCount = 1200;
@@ -120,8 +124,6 @@
         private readonly Vector3D[] _obbCorners = new Vector3D[8];
         private readonly Vector3D[] _obbPoints = new Vector3D[9];
 
-        //// private readonly MyStorageData _voxelStorageCache = new MyStorageData();
-
         private uint _tick;
         private uint _shieldEntRendId;
         private uint _subTick;
@@ -152,7 +154,6 @@
         private double _ellipsoidSurfaceArea;
         private double _shieldVol;
         private double _sizeScaler;
-        //private double _roundedGridMax;
 
         private int _count = -1;
         private int _lCount;
@@ -232,6 +233,13 @@
         private MyEntity _shellPassive;
         private MyEntity _shellActive;
         private MyParticleEffect _effect = new MyParticleEffect();
+
+        #endregion
+
+        public DefenseShields()
+        {
+            UtilsStatic.UnitSphereRandomOnly(ref LosUnitCloud);
+        }
 
         public enum Ent
         {
@@ -336,7 +344,6 @@
         internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         internal Vector3D EmpDetonation { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         internal Vector3D ShieldSize { get; set; }
-        #endregion
 
         internal MatrixD DetectionMatrix
         {
