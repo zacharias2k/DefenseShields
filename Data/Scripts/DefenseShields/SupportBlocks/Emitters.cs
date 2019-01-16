@@ -1,10 +1,10 @@
 ﻿namespace DefenseShields
 {
     using System;
+    using System.Collections.Generic;
     using System.Text;
     using global::DefenseShields.Support;
     using Sandbox.Common.ObjectBuilders;
-    using Sandbox.Game;
     using Sandbox.Game.Entities;
     using Sandbox.Game.EntityComponents;
     using Sandbox.ModAPI;
@@ -18,28 +18,31 @@
     using VRage.ObjectBuilders;
     using VRage.Utils;
     using VRageMath;
-    using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "EmitterL", "EmitterS", "EmitterST", "EmitterLA", "EmitterSA")]
     public class Emitters : MyGameLogicComponent
     {
         internal ShieldGridComponent ShieldComp;
         internal MyResourceSinkInfo ResourceInfo;
+        internal List<Vector3D> LosScaledCloud = new List<Vector3D>(2000);
 
         private const string PlasmaEmissive = "PlasmaEmissive";
 
-        private readonly MyConcurrentList<int> _vertsSighted = new MyConcurrentList<int>();
-        private readonly MyConcurrentList<int> _noBlocksLos = new MyConcurrentList<int>();
+
+        private readonly List<int> _vertsSighted = new List<int>();
         private readonly MyConcurrentHashSet<int> _blocksLos = new MyConcurrentHashSet<int>();
         private readonly MyDefinitionId _gId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
+
+        private DSUtils _dsUtil = new DSUtils();
 
         private uint _tick;
         private int _count = -1;
         private int _lCount;
         private int _wasMode;
+        private int _unitSpherePoints = 2000;
+        private bool _updateLosState = true;
 
         private float _power = 0.01f;
-
         private bool _tick60;
         private bool _isServer;
         private bool _isDedicated;
@@ -48,12 +51,13 @@
         private bool _wasBackup;
         private bool _wasSuspend;
         private bool _wasLos;
+        private bool _wasLosState;
+        private bool _losBroadcasted;
+
         private bool _wasCompact;
         private bool _wasCompatible;
         private double _wasBoundingRange;
-        private Vector3D _sightPos;
         private MyEntitySubpart _subpartRotor;
-        //private MyParticleEffect _effect = new MyParticleEffect();
 
         public enum EmitterType
         {
@@ -85,6 +89,7 @@
         internal bool IsFunctional { get; set; }
         internal bool IsWorking { get; set; }
 
+        #region Simulation
         public override void OnAddedToContainer()
         {
             if (!ContainerInited)
@@ -158,20 +163,16 @@
 
                 MyGrid = MyCube.CubeGrid;
                 if (wait || MyGrid?.Physics == null) return;
+
                 IsStatic = MyGrid.IsStatic;
                 Timing();
+
                 if (!ControllerLink()) return;
+
                 if (!_isDedicated && UtilsStatic.DistanceCheck(Emitter, 1000, EmiState.State.BoundingRange))
                 {
-                    // if (ShieldComp.GridIsMoving && !Compact) BlockParticleUpdate();
                     var blockCam = MyCube.PositionComp.WorldVolume;
-                    var onCam = MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam);
-                    if (onCam)
-                    {
-                        // if (_effect == null && ShieldComp.ShieldPercent <= 97 && !Compact) BlockParticleStart();
-                        // else if (_effect != null && ShieldComp.ShieldPercent > 97f && !Compact) BlockParticleStop();
-                        BlockMoveAnimation();
-                    }
+                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam)) BlockMoveAnimation();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
@@ -200,7 +201,6 @@
                 if (Session.Enforced.Debug == 3) Log.Line($"OnRemovedFromScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
                 if (ShieldComp?.StationEmitter == this) ShieldComp.StationEmitter = null;
                 if (ShieldComp?.ShipEmitter == this) ShieldComp.ShipEmitter = null;
-                //// BlockParticleStop();
                 RegisterEvents(false);
                 IsWorking = false;
                 IsFunctional = false;
@@ -212,6 +212,7 @@
         {
             if (Entity.InScene) OnRemovedFromScene();
         }
+
         public override void Close()
         {
             try
@@ -237,7 +238,6 @@
                     }
                     ShieldComp.ShipEmitter = null;
                 }
-                ////BlockParticleStop();
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
         }
@@ -251,50 +251,9 @@
             }
             catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
         }
+        #endregion
 
-        internal void UpdateState(ProtoEmitterState newState)
-        {
-            EmiState.State = newState;
-            if (Session.Enforced.Debug <= 3) Log.Line($"UpdateState - EmitterId [{Emitter.EntityId}]:\n{EmiState.State}");
-        }
-
-        private void Timing()
-        {
-            if (_count++ == 59)
-            {
-                _count = 0;
-                _lCount++;
-                if (_lCount == 10) _lCount = 0;
-            }
-            if (_count == 29 && !_isDedicated && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == Emitter.EntityId)
-            {
-                Emitter.RefreshCustomInfo();
-            }
-        }
-
-        private bool StateChange(bool update = false)
-        {
-            if (update)
-            {
-                _wasOnline = EmiState.State.Online;
-                _wasLink = EmiState.State.Link;
-                _wasBackup = EmiState.State.Backup;
-                _wasSuspend = EmiState.State.Suspend;
-                _wasLos = EmiState.State.Los;
-                _wasCompact = EmiState.State.Compact;
-                _wasCompatible = EmiState.State.Compatible;
-                _wasMode = EmiState.State.Mode;
-                _wasBoundingRange = EmiState.State.BoundingRange;
-                return true;
-            }
-
-            return _wasOnline != EmiState.State.Online || _wasLink != EmiState.State.Link ||
-                   _wasBackup != EmiState.State.Backup || _wasSuspend != EmiState.State.Suspend ||
-                   _wasLos != EmiState.State.Los || _wasCompact != EmiState.State.Compact ||
-                   _wasCompatible != EmiState.State.Compatible || _wasMode != EmiState.State.Mode ||
-                   !_wasBoundingRange.Equals(EmiState.State.BoundingRange);
-        }
-
+        #region Block Status
         private bool ControllerLink()
         {
             if (!EmitterReady())
@@ -348,7 +307,6 @@
             else
             {
                 if (ShieldComp == null) return false;
-
                 if (EmiState.State.Mode == 0 && EmiState.State.Link && ShieldComp.StationEmitter == null) ShieldComp.StationEmitter = this;
                 else if (EmiState.State.Mode != 0 && EmiState.State.Link && ShieldComp.ShipEmitter == null) ShieldComp.ShipEmitter = this;
 
@@ -359,162 +317,13 @@
                     Entity.TryGetSubpart("Rotor", out _subpartRotor);
                     if (_subpartRotor == null) return false;
                 }
+
+                if (EmiState.State.Online && !EmiState.State.Los) LosLogic();
+
                 if (!EmiState.State.Link || !EmiState.State.Online) return false;
+
             }
             return true;
-        }
-
-        private void NeedUpdate()
-        {
-            EmiState.State.Mode = (int)EmitterMode;
-            EmiState.State.BoundingRange = ShieldComp?.DefenseShields?.BoundingRange ?? 0f;
-            EmiState.State.Compatible = (IsStatic && EmitterMode == EmitterType.Station) || (!IsStatic && EmitterMode != EmitterType.Station);
-            EmiState.SaveState();
-            if (Session.Instance.MpActive) EmiState.NetworkUpdate();
-        }
-
-        #region Block Animation
-        private void BlockReset(bool force = false)
-        {
-            // if (_effect != null && !Session.DedicatedServer && !Compact) BlockParticleStop();
-            if ((!_isDedicated && !EmissiveIntensity.Equals(0)) || (!_isDedicated && force)) BlockMoveAnimationReset(true);
-        }
-
-        private bool BlockMoveAnimationReset(bool clearAnimation)
-        {
-            if (!IsFunctional) return false;
-
-            if (!EmiState.State.Compact && _subpartRotor == null)
-            {
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                if (_subpartRotor == null) return false;
-            }
-            else if (!EmiState.State.Compact)
-            {
-                if (_subpartRotor.Closed) _subpartRotor.Subparts.Clear();
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
-            }
-
-            if (clearAnimation)
-            {
-                RotationTime = 0;
-                TranslationTime = 0;
-                AnimationLoop = 0;
-                EmissiveIntensity = 0;
-
-                if (!EmiState.State.Compact)
-                {
-                    var rotationMatrix = MatrixD.CreateRotationY(0);
-                    var matrix = rotationMatrix * MatrixD.CreateTranslation(0, 0, 0);
-                    _subpartRotor.PositionComp.LocalMatrix = matrix;
-                    _subpartRotor.SetEmissiveParts(PlasmaEmissive, Color.Transparent, 0);
-                }
-                else MyCube.SetEmissiveParts(PlasmaEmissive, Color.Transparent, 0);
-            }
-
-            if (Session.Enforced.Debug == 3) Log.Line($"EmitterAnimationReset: [EmitterType: {Definition.Name} - Compact({EmiState.State.Compact})] - Tick:{_tick.ToString()} - EmitterId [{Emitter.EntityId}]");
-            return true;
-        }
-
-        private void BlockMoveAnimation()
-        {
-            var percent = ShieldComp.DefenseShields.DsState.State.ShieldPercent;
-            if (EmiState.State.Compact)
-            {
-                if (_count == 0) EmissiveIntensity = 2;
-                if (_count < 30) EmissiveIntensity += 1;
-                else EmissiveIntensity -= 1;
-                MyCube.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetShieldColorFromFloat(percent), 0.1f * EmissiveIntensity);
-                return;
-            }
-
-            if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(false);
-            RotationTime -= 1;
-            if (AnimationLoop == 0) TranslationTime = 0;
-            if (AnimationLoop < 299) TranslationTime += 1;
-            else TranslationTime -= 1;
-            if (_count == 0) EmissiveIntensity = 2;
-            if (_count < 30) EmissiveIntensity += 1;
-            else EmissiveIntensity -= 1;
-
-            var rotationMatrix = MatrixD.CreateRotationY(0.025f * RotationTime);
-            var matrix = rotationMatrix * MatrixD.CreateTranslation(0, Definition.BlockMoveTranslation * TranslationTime, 0);
-
-            _subpartRotor.PositionComp.LocalMatrix = matrix;
-            _subpartRotor.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetShieldColorFromFloat(percent), 0.1f * EmissiveIntensity);
-
-            if (AnimationLoop++ == 599) AnimationLoop = 0;
-        }
-
-        /*
-        private void BlockParticleUpdate()
-        {
-            if (_effect == null) return;
-
-            var testDist = Definition.ParticleDist;
-
-            var spawnDir = _subpartRotor.PositionComp.WorldVolume.Center - Emitter.PositionComp.WorldVolume.Center;
-            spawnDir.Normalize();
-            var spawnPos = Emitter.PositionComp.WorldVolume.Center + spawnDir * testDist;
-
-            var predictedMatrix = Emitter.PositionComp.WorldMatrix;
-
-            predictedMatrix.Translation = spawnPos;
-            if (ShieldComp.ShieldVelocitySqr > 4000) predictedMatrix.Translation = spawnPos + Emitter.CubeGrid.Physics.GetVelocityAtPoint(Emitter.PositionComp.WorldMatrix.Translation) * MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS;
-            _effect.WorldMatrix = predictedMatrix;
-        }
-
-        private void BlockParticleStop()
-        {
-            if (_effect == null) return;
-            _effect?.Stop();
-            _effect?.Close(false, true);
-            _effect = null;
-        }
-
-        private void BlockParticleStart()
-        {
-            var scale = Definition.ParticleScale;
-            var matrix = Emitter.WorldMatrix;
-            var pos = Emitter.WorldVolume.Center;
-            MyParticlesManager.TryCreateParticleEffect(6666, out _effect, ref matrix, ref pos, _myRenderId, true); // 15, 16, 17, 24, 25, 28, (31, 32) 211 215 53
-            _effect.UserRadiusMultiplier = scale;
-            _effect.Play();
-            BlockParticleUpdate();
-        }
-        */
-        #endregion
-
-        private bool BlockWorking()
-        {
-            if (ShieldComp.EmitterMode != (int)EmitterMode) ShieldComp.EmitterMode = (int)EmitterMode;
-            if (ShieldComp.EmittersSuspended) SuspendCollisionDetected();
-
-            EmiState.State.Online = true;
-            var online = EmiState.State.Online;
-            var logic = ShieldComp.DefenseShields;
-            var controllerReady = logic != null && logic.Warming && logic.IsWorking && logic.IsFunctional && !logic.DsState.State.Suspended && logic.DsState.State.ControllerGridAccess;
-            var losCheckReq = online && controllerReady;
-            if ((losCheckReq && ShieldComp.CheckEmitters) || (controllerReady && TookControl)) CheckShieldLineOfSight();
-            var dsUtil = new DSUtils();
-            dsUtil.Sw.Restart();
-            if (losCheckReq && !EmiState.State.Los && !Session.Instance.DedicatedServer) DrawHelper();
-            dsUtil.StopWatchReport($"test {losCheckReq} - {online} - {controllerReady} - {!EmiState.State.Los} - {_blocksLos.Count}", -1);
-            ShieldComp.EmittersWorking = EmiState.State.Los && online;
-            if (!ShieldComp.EmittersWorking || logic == null || !ShieldComp.DefenseShields.DsState.State.Online || !(_tick >= logic.UnsuspendTick))
-            {
-                BlockReset();
-                return false;
-            }
-            return true;
-        }
-
-        private void SuspendCollisionDetected()
-        {
-            ShieldComp.EmitterMode = (int)EmitterMode;
-            ShieldComp.EmittersSuspended = false;
-            ShieldComp.EmitterEvent = true;
-            TookControl = true;
         }
 
         private bool Suspend()
@@ -636,6 +445,132 @@
             return false;
         }
 
+        private bool BlockWorking()
+        {
+            EmiState.State.Online = true;
+            if (ShieldComp.EmitterMode != (int)EmitterMode) ShieldComp.EmitterMode = (int)EmitterMode;
+            if (ShieldComp.EmittersSuspended) SuspendCollisionDetected();
+
+            LosLogic();
+
+            ShieldComp.EmittersWorking = EmiState.State.Los && EmiState.State.Online;
+            if (!ShieldComp.EmittersWorking || ShieldComp.DefenseShields == null || !ShieldComp.DefenseShields.DsState.State.Online || !(_tick >= ShieldComp.DefenseShields.UnsuspendTick))
+            {
+                BlockReset();
+                return false;
+            }
+            return true;
+        }
+
+        private void SuspendCollisionDetected()
+        {
+            ShieldComp.EmitterMode = (int)EmitterMode;
+            ShieldComp.EmittersSuspended = false;
+            ShieldComp.EmitterEvent = true;
+            TookControl = true;
+        }
+        #endregion
+
+        #region Block Animation
+        private void BlockReset(bool force = false)
+        {
+            if ((!_isDedicated && !EmissiveIntensity.Equals(0)) || (!_isDedicated && force)) BlockMoveAnimationReset(true);
+        }
+
+        private void BlockMoveAnimationReset(bool clearAnimation)
+        {
+            if (!IsFunctional) return;
+
+            if (!EmiState.State.Compact && _subpartRotor == null)
+            {
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                if (_subpartRotor == null) return;
+            }
+            else if (!EmiState.State.Compact)
+            {
+                if (_subpartRotor.Closed) _subpartRotor.Subparts.Clear();
+                Entity.TryGetSubpart("Rotor", out _subpartRotor);
+            }
+
+            if (clearAnimation)
+            {
+                RotationTime = 0;
+                TranslationTime = 0;
+                AnimationLoop = 0;
+                EmissiveIntensity = 0;
+
+                if (!EmiState.State.Compact)
+                {
+                    var rotationMatrix = MatrixD.CreateRotationY(0);
+                    var matrix = rotationMatrix * MatrixD.CreateTranslation(0, 0, 0);
+                    _subpartRotor.PositionComp.LocalMatrix = matrix;
+                    _subpartRotor.SetEmissiveParts(PlasmaEmissive, Color.Transparent, 0);
+                }
+                else MyCube.SetEmissiveParts(PlasmaEmissive, Color.Transparent, 0);
+            }
+
+            if (Session.Enforced.Debug == 3) Log.Line($"EmitterAnimationReset: [EmitterType: {Definition.Name} - Compact({EmiState.State.Compact})] - Tick:{_tick.ToString()} - EmitterId [{Emitter.EntityId}]");
+        }
+
+        private void BlockMoveAnimation()
+        {
+            var percent = ShieldComp.DefenseShields.DsState.State.ShieldPercent;
+            if (EmiState.State.Compact)
+            {
+                if (_count == 0) EmissiveIntensity = 2;
+                if (_count < 30) EmissiveIntensity += 1;
+                else EmissiveIntensity -= 1;
+                MyCube.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetShieldColorFromFloat(percent), 0.1f * EmissiveIntensity);
+                return;
+            }
+
+            if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(false);
+            RotationTime -= 1;
+            if (AnimationLoop == 0) TranslationTime = 0;
+            if (AnimationLoop < 299) TranslationTime += 1;
+            else TranslationTime -= 1;
+            if (_count == 0) EmissiveIntensity = 2;
+            if (_count < 30) EmissiveIntensity += 1;
+            else EmissiveIntensity -= 1;
+
+            var rotationMatrix = MatrixD.CreateRotationY(0.025f * RotationTime);
+            var matrix = rotationMatrix * MatrixD.CreateTranslation(0, Definition.BlockMoveTranslation * TranslationTime, 0);
+
+            _subpartRotor.PositionComp.LocalMatrix = matrix;
+            _subpartRotor.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetShieldColorFromFloat(percent), 0.1f * EmissiveIntensity);
+
+            if (AnimationLoop++ == 599) AnimationLoop = 0;
+        }
+        #endregion
+
+        #region LosTest
+        private void LosLogic()
+        {
+            var controller = ShieldComp.DefenseShields;
+            var controllerReady = controller != null && controller.Warming && controller.IsWorking && controller.IsFunctional && !controller.DsState.State.Suspended && controller.DsState.State.ControllerGridAccess;
+            var controllerLinked = EmiState.State.Online && controllerReady;
+            if (!controllerLinked) return;
+
+            if (!_isDedicated)
+            {
+                if (EmiState.State.Los != _wasLosState || controller.LosCheckTick == _tick + 1800) _updateLosState = true;
+                _wasLosState = EmiState.State.Los;
+
+                if (!_isServer)
+                {
+                    if (!EmiState.State.Los) DrawHelper();
+                    return;
+                }
+
+                if (!EmiState.State.Los) DrawHelper();
+            }
+
+            if (ShieldComp.CheckEmitters || TookControl)
+            {
+                CheckShieldLineOfSight();
+            }
+        }
+
         private void CheckShieldLineOfSight()
         {
             if (!EmiState.State.Compact && _subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(false);
@@ -650,87 +585,164 @@
             else
             {
                 UpdateLosState();
-                EmiState.State.Los = _blocksLos.Count < 1000;
+                EmiState.State.Los = _blocksLos.Count <= 1300;
+
                 if (!EmiState.State.Los) ShieldComp.EmitterEvent = true;
+                else LosScaledCloud.Clear();
+
                 ShieldComp.CheckEmitters = false;
             }
             if (Session.Enforced.Debug == 3 && !EmiState.State.Los) Log.Line($"LOS: Mode: {EmitterMode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {EmiState.State.Los.ToString()} - EmitterId [{Emitter.EntityId}]");
         }
 
-        private void UpdateLosState()
+        private void UpdateLosState(bool updateTestSphere = true)
         {
             _blocksLos.Clear();
-            _noBlocksLos.Clear();
             _vertsSighted.Clear();
 
-            var testDist = Definition.FieldDist;
-            var testDir = MyCube.PositionComp.WorldMatrix.Up;
-            if (!EmiState.State.Compact) testDir = _subpartRotor.PositionComp.WorldVolume.Center - MyCube.PositionComp.WorldVolume.Center;
-            testDir.Normalize();
-            var testPos = MyCube.PositionComp.WorldVolume.Center + (testDir * testDist);
-            _sightPos = testPos;
-            var losUnitCloud = ShieldComp.DefenseShields.LosUnitCloud;
-            var pointLimit = 1500;
+            if (updateTestSphere) UpdateUnitSphere();
 
-            UtilsStatic.UnitSphereTranslateScale(pointLimit, ref losUnitCloud, ref ShieldComp.DefenseShields.LosScaledCloud, ShieldComp.DefenseShields.ShieldEnt, false);
-            MyAPIGateway.Parallel.For(0, pointLimit, i =>
+            MyAPIGateway.Parallel.For(0, _unitSpherePoints, i =>
             {
-                var hit = MyGrid.RayCastBlocks(testPos, ShieldComp.DefenseShields.LosScaledCloud[i]);
+                var testDist = Definition.FieldDist;
+                var testDir = MyCube.PositionComp.WorldMatrix.Up;
+                if (!EmiState.State.Compact) testDir = _subpartRotor.PositionComp.WorldVolume.Center - MyCube.PositionComp.WorldVolume.Center;
+                testDir.Normalize();
+                var testPos = MyCube.PositionComp.WorldVolume.Center + (testDir * testDist);
+
+                var hit = MyGrid.RayCastBlocks(testPos, LosScaledCloud[i]);
+
                 if (hit.HasValue)
                 {
                     _blocksLos.Add(i);
-                    return;
                 }
-                _noBlocksLos.Add(i);
             });
-            for (int i = 0; i < pointLimit; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
+            for (int i = 0; i < _unitSpherePoints; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
         }
 
         private void DrawHelper()
         {
-            var comp = ShieldComp.DefenseShields;
-            if (Vector3D.DistanceSquared(MyAPIGateway.Session.Player.Character.PositionComp.WorldAABB.Center, comp.DetectionCenter) < 2250000)
+            if (Vector3D.DistanceSquared(MyAPIGateway.Session.Player.Character.PositionComp.WorldAABB.Center, Emitter.PositionComp.WorldAABB.Center) < 2250000)
             {
+                var controller = ShieldComp.DefenseShields;
+                controller.MobileUpdate();
+
+                var needsUpdate = controller.GridIsMobile && (ShieldComp.GridIsMoving || _updateLosState);
+
                 var blockCam = ShieldComp.DefenseShields.ShieldEnt.PositionComp.WorldVolume;
-                var onCam = MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam);
-                if (onCam)
+                if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam))
                 {
-                    var pointLimit = 1500;
-
-                    var losUnitCloud = comp.LosUnitCloud;
-                    if (comp.GridIsMobile) comp.MobileUpdate();
-
-                    UtilsStatic.UnitSphereTranslateScale(pointLimit, ref losUnitCloud, ref comp.LosScaledCloud, comp.ShieldEnt, false);
+                    if (needsUpdate) UpdateUnitSphere();
 
                     if (_lCount % 2 == 1)
                     {
-                        if (_count == 59) UpdateLosState();
+                        if (_count == 59 && needsUpdate)
+                        {
+                            UpdateLosState(_updateLosState);
+                            _losBroadcasted = false;
+                            _updateLosState = false;
+                        }
                     }
                     else
                     {
                         foreach (var blocking in _blocksLos)
                         {
-                            var blockedPos = comp.LosScaledCloud[blocking];
+                            var blockedPos = LosScaledCloud[blocking];
                             DsDebugDraw.DrawLosBlocked(blockedPos, MyGrid.PositionComp.LocalMatrix);
                         }
                     }
 
                     foreach (var clear in _vertsSighted)
                     {
-                        var blockedPos = comp.LosScaledCloud[clear];
+                        var blockedPos = LosScaledCloud[clear];
                         DsDebugDraw.DrawLosClear(blockedPos, MyGrid.PositionComp.LocalMatrix);
                     }
+
                     var blocked = _blocksLos.Count;
-                    var sighted = _vertsSighted.Count;
-                    var needed = blocked - 999;
-                    if (needed <= 0)
-                    {
-                        //
-                    }
-                    if (_count == 0) MyVisualScriptLogicProvider.ShowNotification("The shield emitter DOES NOT have a CLEAR ENOUGH LINE OF SIGHT to the shield, SHUTTING DOWN.", 960, "Red", Emitter.OwnerId);
-                    if (_count == 0) MyVisualScriptLogicProvider.ShowNotification($"Green means clear line of sight, Flashing Orange means blocked | Blocked: {blocked} | Clear: {sighted} | Needed: {blocked - 999}", 960, "Red", Emitter.OwnerId);
+                    var needed = -700 + _vertsSighted.Count;
+                    if (!_isServer && needed >= 0) LosScaledCloud.Clear();
+                    if (_count == 0) BroadCastLosMessage(blocked, needed);
                 }
             }
+        }
+
+        private void UpdateUnitSphere(bool updateShape = false)
+        {
+            if (updateShape)
+            {
+                if (ShieldComp.DefenseShields.GridIsMobile) ShieldComp.DefenseShields.MobileUpdate();
+            }
+            var losPointSphere = Session.Instance.LosPointSphere;
+            LosScaledCloud.Clear();
+            UtilsStatic.UnitSphereTranslateScaleList(_unitSpherePoints, ref losPointSphere, ref LosScaledCloud, ShieldComp.DefenseShields.ShieldEnt, false);
+        }
+
+        private void BroadCastLosMessage(int blocked, int needed)
+        {
+            var sphere = new BoundingSphereD(Emitter.PositionComp.WorldAABB.Center, 1500);
+            var sendMessage = false;
+            foreach (var player in Session.Instance.Players.Values)
+            {
+                if (player.IdentityId != MyAPIGateway.Session.Player.IdentityId) continue;
+                if (!sphere.Intersects(player.Character.WorldVolume)) continue;
+                sendMessage = true;
+                break;
+            }
+
+            if (sendMessage)
+            {
+                var sighted = _vertsSighted.Count;
+                if (needed < 0)
+                {
+                    MyAPIGateway.Utilities.ShowNotification("The shield emitter DOES NOT have a CLEAR ENOUGH LINE OF SIGHT to the shield, SHUTTING DOWN.", 960, "Red");
+                    MyAPIGateway.Utilities.ShowNotification($"Green means clear line of sight, Flashing Orange means blocked | Blocked: {blocked} | Clear: {sighted} | Needed: {needed}", 960, "Red");
+                }
+                else if (!_losBroadcasted)
+                {
+                    MyAPIGateway.Utilities.ShowNotification("The shield emitter is now clear, shield restarting in 30 seconds.", 8000, "White");
+                    _losBroadcasted = true;
+                }
+            }
+        }
+        #endregion
+
+        #region Block States
+        internal void UpdateState(ProtoEmitterState newState)
+        {
+            EmiState.State = newState;
+            if (Session.Enforced.Debug <= 3) Log.Line($"UpdateState - EmitterId [{Emitter.EntityId}]:\n{EmiState.State}");
+        }
+
+        private bool StateChange(bool update = false)
+        {
+            if (update)
+            {
+                _wasOnline = EmiState.State.Online;
+                _wasLink = EmiState.State.Link;
+                _wasBackup = EmiState.State.Backup;
+                _wasSuspend = EmiState.State.Suspend;
+                _wasLos = EmiState.State.Los;
+                _wasCompact = EmiState.State.Compact;
+                _wasCompatible = EmiState.State.Compatible;
+                _wasMode = EmiState.State.Mode;
+                _wasBoundingRange = EmiState.State.BoundingRange;
+                return true;
+            }
+
+            return _wasOnline != EmiState.State.Online || _wasLink != EmiState.State.Link ||
+                   _wasBackup != EmiState.State.Backup || _wasSuspend != EmiState.State.Suspend ||
+                   _wasLos != EmiState.State.Los || _wasCompact != EmiState.State.Compact ||
+                   _wasCompatible != EmiState.State.Compatible || _wasMode != EmiState.State.Mode ||
+                   !_wasBoundingRange.Equals(EmiState.State.BoundingRange);
+        }
+
+        private void NeedUpdate()
+        {
+            EmiState.State.Mode = (int)EmitterMode;
+            EmiState.State.BoundingRange = ShieldComp?.DefenseShields?.BoundingRange ?? 0f;
+            EmiState.State.Compatible = (IsStatic && EmitterMode == EmitterType.Station) || (!IsStatic && EmitterMode != EmitterType.Station);
+            EmiState.SaveState();
+            if (Session.Instance.MpActive) EmiState.NetworkUpdate();
         }
 
         private void CheckEmitter(IMyTerminalBlock myTerminalBlock)
@@ -742,6 +754,39 @@
             catch (Exception ex) { Log.Line($"Exception in CheckEmitter: {ex}"); }
         }
 
+        private void IsWorkingChanged(MyCubeBlock myCubeBlock)
+        {
+            IsFunctional = myCubeBlock.IsWorking;
+            IsWorking = myCubeBlock.IsWorking;
+        }
+
+        private void SetEmitterType()
+        {
+            Definition = DefinitionManager.Get(Emitter.BlockDefinition.SubtypeId);
+            switch (Definition.Name)
+            {
+                case "EmitterST":
+                    EmitterMode = EmitterType.Station;
+                    Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                    break;
+                case "EmitterL":
+                case "EmitterLA":
+                    EmitterMode = EmitterType.Large;
+                    if (Definition.Name == "EmitterLA") EmiState.State.Compact = true;
+                    else Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                    break;
+                case "EmitterS":
+                case "EmitterSA":
+                    EmitterMode = EmitterType.Small;
+                    if (Definition.Name == "EmitterSA") EmiState.State.Compact = true;
+                    else Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                    break;
+            }
+            Emitter.AppendingCustomInfo += AppendingCustomInfo;
+        }
+        #endregion
+
+        #region Init/Misc
         private void StorageSetup()
         {
             if (EmiState == null) EmiState = new EmitterState(Emitter);
@@ -786,31 +831,6 @@
                 if (Session.Enforced.Debug == 3) Log.Line($"PowerInit: EmitterId [{Emitter.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
-        }
-
-        private void SetEmitterType()
-        {
-            Definition = DefinitionManager.Get(Emitter.BlockDefinition.SubtypeId);
-            switch (Definition.Name)
-            {
-                case "EmitterST":
-                    EmitterMode = EmitterType.Station;
-                    Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                    break;
-                case "EmitterL":
-                case "EmitterLA":
-                    EmitterMode = EmitterType.Large;
-                    if (Definition.Name == "EmitterLA") EmiState.State.Compact = true;
-                    else Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                    break;
-                case "EmitterS":
-                case "EmitterSA":
-                    EmitterMode = EmitterType.Small;
-                    if (Definition.Name == "EmitterSA") EmiState.State.Compact = true;
-                    else Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                    break;
-            }
-            Emitter.AppendingCustomInfo += AppendingCustomInfo;
         }
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
@@ -872,10 +892,19 @@
             }
         }
 
-        private void IsWorkingChanged(MyCubeBlock myCubeBlock)
+        private void Timing()
         {
-            IsFunctional = myCubeBlock.IsWorking;
-            IsWorking = myCubeBlock.IsWorking;
+            if (_count++ == 59)
+            {
+                _count = 0;
+                _lCount++;
+                if (_lCount == 10) _lCount = 0;
+            }
+            if (_count == 29 && !_isDedicated && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == Emitter.EntityId)
+            {
+                Emitter.RefreshCustomInfo();
+            }
         }
+        #endregion
     }
 }

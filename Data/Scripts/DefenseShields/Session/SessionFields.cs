@@ -34,7 +34,7 @@
         internal static readonly MyConcurrentPool<MyProtectors> ProtSets = new MyConcurrentPool<MyProtectors>(150, null, 1000);
 
         internal readonly int[] SlotCnt = new int[9];
-
+        internal readonly Vector3D[] LosPointSphere = new Vector3D[2000];
         internal readonly MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
         internal readonly MyStringHash DelDamage = MyStringHash.GetOrCompute("DelDamage");
         internal readonly MyStringHash DSdamage = MyStringHash.GetOrCompute("DSdamage");
@@ -202,6 +202,11 @@
         private int _eCount;
 
         private volatile bool _newFrame;
+
+        public Session()
+        {
+            UtilsStatic.UnitSphereRandomOnly(ref LosPointSphere);
+        }
 
         internal static DefenseShieldsEnforcement Enforced { get; set; } = new DefenseShieldsEnforcement();
         internal static Session Instance { get; private set; }

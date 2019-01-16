@@ -137,7 +137,7 @@
 
         public static void SphereCloud(int pointLimit, Vector3D[] physicsArray, MyEntity shieldEnt, bool transformAndScale, bool debug, Random rnd = null)
         {
-            if (pointLimit > 9999) pointLimit = 9999;
+            if (pointLimit > 10000) pointLimit = 10000;
             if (rnd == null) rnd = new Random(0);
 
             var sPosComp = shieldEnt.PositionComp;
@@ -160,7 +160,7 @@
 
         public static void UnitSphereCloudQuick(int pointLimit, ref Vector3D[] physicsArray, MyEntity shieldEnt, bool translateAndScale, bool debug, Random rnd = null)
         {
-            if (pointLimit > 9999) pointLimit = 9999;
+            if (pointLimit > 10000) pointLimit = 10000;
             if (rnd == null) rnd = new Random(0);
 
             var sPosComp = shieldEnt.PositionComp;
@@ -219,6 +219,44 @@
                 var v = physicsArray[i];
                 scaledCloudArray[i] = v = center + (radius * v);
                 if (debug) DsDebugDraw.DrawX(v, sPosComp.LocalMatrix, 0.5);
+            }
+        }
+
+        public static void UnitSphereTranslateScaleList(int pointLimit, ref Vector3D[] physicsArray, ref List<Vector3D> scaledCloudList, MyEntity shieldEnt, bool debug)
+        {
+            var sPosComp = shieldEnt.PositionComp;
+            var radius = sPosComp.WorldVolume.Radius;
+            var center = sPosComp.WorldAABB.Center;
+
+            for (int i = 0; i < pointLimit; i++)
+            {
+                var v = physicsArray[i];
+                scaledCloudList.Add(v = center + (radius * v));
+                if (debug) DsDebugDraw.DrawX(v, sPosComp.LocalMatrix, 0.5);
+            }
+        }
+
+        public static void DetermisticSphereCloud(List<Vector3D> physicsArray, int pointsInSextant)
+        {
+            physicsArray.Clear();
+            int stepsPerCoord = (int)Math.Sqrt(pointsInSextant);
+            double radPerStep = MathHelperD.PiOver2 / stepsPerCoord;
+
+            for (double az = -MathHelperD.PiOver4; az < MathHelperD.PiOver4; az += radPerStep)
+            {
+                for (double el = -MathHelperD.PiOver4; el < MathHelperD.PiOver4; el += radPerStep)
+                {
+                    Vector3D vec;
+                    Vector3D.CreateFromAzimuthAndElevation(az, el, out vec);
+                    Vector3D vec2 = new Vector3D(vec.Z, vec.X, vec.Y);
+                    Vector3D vec3 = new Vector3D(vec.Y, vec.Z, vec.X);
+                    physicsArray.Add(vec); //first sextant
+                    physicsArray.Add(vec2); //2nd sextant
+                    physicsArray.Add(vec3); //3rd sextant
+                    physicsArray.Add(-vec); //4th sextant
+                    physicsArray.Add(-vec2); //5th sextant
+                    physicsArray.Add(-vec3); //6th sextant
+                }
             }
         }
 

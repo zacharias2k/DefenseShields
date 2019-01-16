@@ -210,27 +210,25 @@
             _sink.Update();
             WasOnline = false;
             WasActive = false;
-            ShieldEnt.Render.Visible = false;
-            ShieldEnt.PositionComp.SetPosition(Vector3D.Zero);
-            if (_isServer && !DsState.State.Lowered && !DsState.State.Sleeping)
-            {
-                DsState.State.ShieldPercent = 0f;
-                DsState.State.Charge = 0f;
-            }
 
+            ShieldEnt.Render.Visible = false;
             if (_isServer)
             {
-                if (Session.Enforced.Debug == 4) Log.Line($"StateUpdate: ShieldOff - ShieldId [{Shield.EntityId}]");
+                //ShieldEnt.PositionComp.SetPosition(Vector3D.Zero);
                 ShieldChangeState();
+                if (!DsState.State.Lowered && !DsState.State.Sleeping)
+                {
+                    DsState.State.ShieldPercent = 0f;
+                    DsState.State.Charge = 0f;
+                }
             }
             else
             {
                 UpdateSubGrids();
                 Shield.RefreshCustomInfo();
-                if (Session.Enforced.Debug == 4) Log.Line($"StateUpdate: ShieldOff - ShieldId [{Shield.EntityId}]");
-
             }
             Session.Instance.ActiveShields.Remove(this);
+            if (Session.Enforced.Debug == 4) Log.Line($"StateUpdate: ShieldOff - ShieldId [{Shield.EntityId}]");
         }
 
         private bool ControllerFunctional()

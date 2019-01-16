@@ -81,8 +81,6 @@
         internal BoundingBox ShieldAabbNoScale = new BoundingBox(Vector3D.One, -Vector3D.One);
         internal BoundingSphereD ShieldSphere3K = new BoundingSphereD(Vector3D.Zero, 1f);
         internal BoundingSphereD WebSphere = new BoundingSphereD(Vector3D.Zero, 1f);
-        internal readonly Vector3D[] LosUnitCloud = new Vector3D[9999];
-        internal Vector3D[] LosScaledCloud = new Vector3D[9999];
 
         private const int ReModulationCount = 300;
         private const int ShieldDownCount = 1200;
@@ -235,12 +233,12 @@
         private MyParticleEffect _effect = new MyParticleEffect();
 
         #endregion
-
+        /*
         public DefenseShields()
         {
             UtilsStatic.UnitSphereRandomOnly(ref LosUnitCloud);
         }
-
+        */
         public enum Ent
         {
             Unknown,

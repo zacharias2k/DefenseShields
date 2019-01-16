@@ -9,6 +9,8 @@
     using VRage.ModAPI;
     using VRage.ObjectBuilders;
 
+    using VRageMath;
+
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DSControlLarge", "DSControlSmall", "DSControlTable")]
     public partial class DefenseShields : MyGameLogicComponent
     {
@@ -64,11 +66,30 @@
                 else Session.Instance.FunctionalShields.Add(this);
 
                 Session.Instance.Controllers.Add(this);
-
                 if (Session.Enforced.Debug == 3) Log.Line($"UpdateOnceBeforeFrame: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in Controller UpdateOnceBeforeFrame: {ex}"); }
         }
+
+        /*
+        private void PrintArray()
+        {
+            var c = 0;
+            Log.Chars($"internal Vector3D[] UnitSphereCloud = new Vector3D[]");
+            Log.Chars("{");
+            foreach (var v in LosUnitCloud)
+            {
+                if (c == 3)
+                {
+                    c = 0;
+                    Log.CleanLine("\n");
+                }
+                Log.Chars($"new Vector3D({v.X}, {v.Y}, {v.Z}), ");
+                c++;
+            }
+            Log.CleanLine("};");
+        }
+        */
 
         public override void UpdateBeforeSimulation()
         {
@@ -84,16 +105,6 @@
                 }
                 if (DsState.State.Online)
                 {
-                    /*
-                    if (_tick600)
-                    {
-                        MyProtectors protectors;
-                        Session.Instance.GlobalProtect.TryGetValue(MyGrid, out protectors);
-                        Log.Line(protectors != null
-                            ? $"Shielded:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)} - ReInforce:{DsState.State.ReInforce} - ProtectorCnt:{protectors.Shields.Count} - iShield:{protectors.IntegrityShield != null}"
-                            : $"Shielded:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)} - ReInforce:{DsState.State.ReInforce}");
-                    }
-                    */ 
                     if (_comingOnline) ComingOnlineSetup();
                     if (_isServer)
                     {

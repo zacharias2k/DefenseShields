@@ -37,6 +37,12 @@
                 HasHit = true;
             }
         }
+        /*
+        public VoxelOperatorFlags Flags
+        {
+            get { return VoxelOperatorFlags.Read; }
+        }
+        */
     }
 
     public struct ShieldHit

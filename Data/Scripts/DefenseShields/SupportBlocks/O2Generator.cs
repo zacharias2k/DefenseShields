@@ -23,7 +23,8 @@
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_OxygenGenerator), false, "DSSupergen")]
     public class O2Generators : MyGameLogicComponent
     {
-        internal ShieldGridComponent ShieldComp;
+        private const double MysteriousH2ToO2 = (double)783 / 3;
+        private const double ForgottenMagicConst = 10.3316326531d;
 
         internal readonly Dictionary<IMyDoor, DoorStatus> Doors = new Dictionary<IMyDoor, DoorStatus>();
 
@@ -34,6 +35,7 @@
         private double _shieldVolFilled;
         private double _oldShieldVol;
 
+
         private bool _isServer;
         private bool _isDedicated;
         private bool _doorsStage1;
@@ -42,6 +44,8 @@
         private bool _doorsStage4;
 
         private IMyInventory _inventory;
+
+        internal ShieldGridComponent ShieldComp;
 
         internal int RotationTime { get; set; }
         internal int AnimationLoop { get; set; }
@@ -415,15 +419,15 @@
 
             var amount = _inventory.CurrentVolume.RawValue;
             if (amount <= 0) return;
-            if (amount - 10.3316326531 > 0)
+            if (amount - ForgottenMagicConst > 0)
             {
                 _inventory.RemoveItems(0, 2700);
-                _shieldVolFilled += 10.3316326531 * 261.333333333;
+                _shieldVolFilled += ForgottenMagicConst * MysteriousH2ToO2;
             }
             else
             {
                 _inventory.RemoveItems(0, _inventory.CurrentVolume);
-                _shieldVolFilled += amount * 261.333333333;
+                _shieldVolFilled += amount * MysteriousH2ToO2;
             }
             if (_shieldVolFilled > shieldFullVol) _shieldVolFilled = shieldFullVol;
 

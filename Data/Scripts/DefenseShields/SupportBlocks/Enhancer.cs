@@ -310,12 +310,14 @@
                 {
                     Sink = new MyResourceSinkComponent();
                 }
+
                 ResourceInfo = new MyResourceSinkInfo()
                 {
                     ResourceTypeId = _gId,
                     MaxRequiredInput = 0.02f,
                     RequiredInputFunc = () => Power
                 };
+
                 Sink.Init(MyStringHash.GetOrCompute("Utility"), ResourceInfo);
                 Sink.AddType(ref ResourceInfo);
                 Entity.Components.Add(Sink);
@@ -328,11 +330,13 @@
             try
             {
                 var enableState = Enhancer.Enabled;
+
                 if (enableState)
                 {
                     Enhancer.Enabled = false;
                     Enhancer.Enabled = true;
                 }
+
                 Sink.Update();
                 IsWorking = MyCube.IsWorking;
                 if (Session.Enforced.Debug == 3) Log.Line($"PowerInit: EnhancerId [{Enhancer.EntityId}]");
