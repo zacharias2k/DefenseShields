@@ -139,7 +139,7 @@
                         {
                             var ent = monitorList[i];
 
-                            if (!(ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor)) continue;
+                            if (ent.Physics == null || ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor ) continue;
                             if (ent.Physics.IsMoving)
                             {
                                 if (s.WebBox.Intersects(ent.PositionComp.WorldAABB))
@@ -284,7 +284,7 @@
                         {
                             var ent = moverList[i];
 
-                            if (!(ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor)) continue;
+                            if (!(ent.Physics == null || ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor)) continue;
                             var entPos = ent.PositionComp.WorldMatrix.Translation;
 
                             var keyFound = s.EntsByMe.ContainsKey(ent);

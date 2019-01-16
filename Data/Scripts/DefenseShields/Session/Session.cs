@@ -302,8 +302,7 @@
 
             var sphere = new BoundingSphereD(epiCenter, rangeCap);
             var pruneList = new List<MyEntity>();
-            //MyGamePruningStructure.GetAllEntitiesInSphere(ref sphere, pruneList);
-            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref sphere, pruneList, MyEntityQueryType.Static);
+            MyGamePruningStructure.GetAllEntitiesInSphere(ref sphere, pruneList);
             GetFilteredItems(pruneList);
             _warHeadGridShapes.Clear();
             foreach (var grid in _warHeadGridHits)
