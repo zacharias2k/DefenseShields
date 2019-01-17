@@ -1,6 +1,7 @@
 ﻿namespace DefenseShields
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using global::DefenseShields.Support;
     using Sandbox.Definitions;
@@ -166,10 +167,7 @@
                     MyAPIGateway.Parallel.Start(ComputeEmpBlast, EmpCallBack);
                 }
 
-                foreach (var line in _testLineList)
-                {
-                    DsDebugDraw.DrawLine(line, Color.Blue);
-                }
+                if (_warEffect) WarEffect();
 
                 /*
                 foreach (var sub in _warHeadGridShapes)
@@ -229,38 +227,37 @@
         }
         #endregion
 
-        private readonly List<LineD> _testLineList = new List<LineD>();
-        private readonly List<MyCubeBlock> _warHeadCubeHits = new List<MyCubeBlock>();
-        private readonly List<MyCubeGrid> _warHeadGridHits = new List<MyCubeGrid>();
-        private readonly Dictionary<MyCubeGrid, BoundingSphereD> _warHeadGridShapes = new Dictionary<MyCubeGrid, BoundingSphereD>();
-        private readonly Dictionary<MyCubeBlock, int> _warEffectedCubes = new Dictionary<MyCubeBlock, int>();
-
-        private void GetFilteredItems(List<MyEntity> myEntities)
+        private void WarEffect()
         {
-            _warHeadCubeHits.Clear();
-            _warHeadGridHits.Clear();
-            var myCubeList = new List<MyEntity>();
-            for (int i = 0; i < myEntities.Count; i++)
+            foreach (var item in _warEffectCubes)
             {
-                var myEntity = myEntities[i];
-                var myGrid = myEntity as MyCubeGrid;
-                if (myGrid == null || myGrid.MarkedForClose) continue;
-                var gridAabb = myGrid.PositionComp.WorldAABB;
-                _warHeadGridHits.Add(myGrid);
-                myGrid.Hierarchy.QueryAABB(ref gridAabb, myCubeList);
+                var functBlock = item.Key.FunctBlock;
+                if (functBlock == null)
+                {
+                    Log.Line($"Null functBlock, purging");
+                    _warEffectPurge.Enqueue(item.Key);
+                    continue;
+                }
+                if (item.Value == 0) functBlock.SetDamageEffect(true);
+                if (functBlock.Enabled) functBlock.Enabled = false;
+
+                if (item.Value >= 1000)
+                {
+                    functBlock.Enabled = item.Key.EnableState;
+                    functBlock.SetDamageEffect(false);
+                    _warEffectPurge.Enqueue(item.Key);
+                    continue;
+                }
+                _warEffectCubes[item.Key]++;
             }
 
-            for (int i = 0; i < myCubeList.Count; i++)
+            while (_warEffectPurge.Count != 0)
             {
-                var myEntity = myCubeList[i];
-                var myCube = myEntity as MyCubeBlock;
-                if (myCube == null || myCube.MarkedForClose) continue;
-                if ((myCube is IMyThrust || myCube is IMyUserControllableGun || myCube is IMyUpgradeModule) && myCube.IsFunctional && myCube.IsWorking)
-                {
-                    _warHeadCubeHits.Add(myCube);
-                }
+                int value;
+                _warEffectCubes.TryRemove(_warEffectPurge.Dequeue(), out value);
             }
-            if (Enforced.Debug >= 2) Log.Line($"[ComputeEmpBlast] AllFat:{myCubeList.Count} - TrimmedFat:{_warHeadCubeHits.Count}");
+
+            if (_warEffectCubes.IsEmpty) _warEffect = false;
         }
 
         private void PrepEmpBlast()
@@ -293,6 +290,40 @@
             EmpWork.StoreEmpBlast(epiCenter, warHeadSize, warHeadYield, stackCount, rangeCap);
         }
 
+        private readonly List<MyCubeBlock> _warHeadCubeHits = new List<MyCubeBlock>();
+        private readonly List<MyCubeGrid> _warHeadGridHits = new List<MyCubeGrid>();
+        private readonly Dictionary<MyCubeGrid, BoundingSphereD> _warHeadGridShapes = new Dictionary<MyCubeGrid, BoundingSphereD>();
+        private readonly ConcurrentDictionary<BlockState, int> _warEffectCubes = new ConcurrentDictionary<BlockState, int>();
+
+        private void GetFilteredItems(List<MyEntity> myEntities)
+        {
+            _warHeadCubeHits.Clear();
+            _warHeadGridHits.Clear();
+            var myCubeList = new List<MyEntity>();
+            for (int i = 0; i < myEntities.Count; i++)
+            {
+                var myEntity = myEntities[i];
+                var myGrid = myEntity as MyCubeGrid;
+                if (myGrid?.Physics == null || myGrid.MarkedForClose) continue;
+                var gridAabb = myGrid.PositionComp.WorldAABB;
+                _warHeadGridHits.Add(myGrid);
+                myGrid.Hierarchy.QueryAABB(ref gridAabb, myCubeList);
+            }
+
+            for (int i = 0; i < myCubeList.Count; i++)
+            {
+                var myEntity = myCubeList[i];
+                var myCube = myEntity as MyCubeBlock;
+
+                if (myCube == null || myCube.MarkedForClose) continue;
+                if ((myCube is IMyThrust || myCube is IMyUserControllableGun || myCube is IMyUpgradeModule) && myCube.IsFunctional && myCube.IsWorking)
+                {
+                    _warHeadCubeHits.Add(myCube);
+                }
+            }
+            if (Enforced.Debug >= 2) Log.Line($"[ComputeEmpBlast] AllFat:{myCubeList.Count} - TrimmedFat:{_warHeadCubeHits.Count}");
+        }
+
         private void ComputeEmpBlast()
         {
             if (Enforced.Debug >= 2) Dsutil1.Sw.Restart();
@@ -302,8 +333,9 @@
 
             var sphere = new BoundingSphereD(epiCenter, rangeCap);
             var pruneList = new List<MyEntity>();
-            MyGamePruningStructure.GetAllEntitiesInSphere(ref sphere, pruneList);
+            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref sphere, pruneList);
             GetFilteredItems(pruneList);
+
             _warHeadGridShapes.Clear();
             foreach (var grid in _warHeadGridHits)
             {
@@ -311,27 +343,32 @@
                 _warHeadGridShapes.Add(grid, sub);
             }
 
+            const double BlockInflate = 1.25;
             foreach (var cube in _warHeadCubeHits)
             {
-                var mySphere = new BoundingSphereD();
-                var foundSphere = _warHeadGridShapes.TryGetValue(cube.CubeGrid, out sphere);
-                if (foundSphere && mySphere.Contains(cube.PositionComp.WorldAABB.Center) != ContainmentType.Disjoint)
+                BoundingSphereD testSphere;
+                var foundSphere = _warHeadGridShapes.TryGetValue(cube.CubeGrid, out testSphere);
+                if (foundSphere && testSphere.Contains(cube.PositionComp.WorldAABB.Center) != ContainmentType.Disjoint)
                 {
-                    var testDir = Vector3D.Normalize(cube.PositionComp.WorldAABB.Center - epiCenter);
-                    var testPos = cube.PositionComp.WorldAABB.Center + (testDir * -3);
-                    var hit = cube.CubeGrid.RayCastBlocks(testPos, epiCenter);
-                    if (hit == null) _warEffectedCubes.Add(cube, 0);
+                    var clearance = cube.CubeGrid.GridSize * BlockInflate;
+                    var testDir = Vector3D.Normalize(epiCenter - cube.PositionComp.WorldAABB.Center);
+                    var testPos = cube.PositionComp.WorldAABB.Center + (testDir * clearance);
+                    var hit = cube.CubeGrid.RayCastBlocks(epiCenter, testPos);
+
+                    if (hit == null) _warEffectCubes[new BlockState(cube)] = 0;
+                    else if (cube.SlimBlock == cube.CubeGrid.GetCubeBlock(hit.Value)) _warEffectCubes[new BlockState(cube)] = 0;
                 }
             }
 
             EmpWork.ComputeComplete();
-            if (Enforced.Debug >= 2) Dsutil1.StopWatchReport($"----------------] Grids:{_warHeadGridHits.Count} - cubes:{_warHeadCubeHits.Count} - effectedCubes:{_warEffectedCubes.Count}", -1);
+            if (Enforced.Debug >= 2) Dsutil1.StopWatchReport($"----------------] Grids:{_warHeadGridHits.Count} - cubes:{_warHeadCubeHits.Count} - effectedCubes:{_warEffectCubes.Count}", -1);
         }
 
         private void EmpCallBack()
         {
             EmpDrawExplosion();
             EmpDispatched = false;
+            if (!_warEffectCubes.IsEmpty) _warEffect = true;
         }
 
         private void EmpDrawExplosion()
@@ -437,8 +474,9 @@
                 {
                     var blastRatio = warhead.CubeGrid.GridSizeEnum == MyCubeSize.Small ? 1 : 5;
                     var epicCenter = warhead.PositionComp.WorldAABB.Center;
-                    EmpStore.Enqueue(new WarHeadBlast(blastRatio, epicCenter, warhead.CustomData));
+
                     if (Enforced.Debug >= 2 && EmpStore.Count == 0) Log.Line($"====================================================================== [WarHead EventStart]");
+                    EmpStore.Enqueue(new WarHeadBlast(blastRatio, epicCenter, warhead.CustomData));
                 }
             }
         }

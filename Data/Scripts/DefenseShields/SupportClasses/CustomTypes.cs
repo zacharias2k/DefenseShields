@@ -2,6 +2,11 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+
+    using Sandbox.Game.Entities;
+    using Sandbox.ModAPI;
+
     using VRage.Collections;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
@@ -70,6 +75,19 @@
         {
             Pos = pos;
             CreationTick = creationTick;
+        }
+    }
+
+    public struct BlockState
+    {
+        public readonly MyCubeBlock CubeBlock;
+        public readonly IMyFunctionalBlock FunctBlock;
+        public readonly bool EnableState;
+        public BlockState(MyCubeBlock cubeBlock)
+        {
+            CubeBlock = cubeBlock;
+            FunctBlock = cubeBlock as IMyFunctionalBlock;
+            EnableState = ((IMyFunctionalBlock)cubeBlock).Enabled;
         }
     }
 

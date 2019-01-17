@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using VRage.Game;
 using VRage.Utils;
 using VRageMath;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
-using VRageRender;
 
 namespace DefenseShields.Support
 {
@@ -274,12 +269,23 @@ namespace DefenseShields.Support
             MySimpleObjectDraw.DrawLine(line0Vec0, line0Vec1, LineId, ref color1, 0.025f);
         }
 
-        public static void DrawLine(LineD line, Vector4 color)
+        public static void DrawMark(Vector3D center, MatrixD referenceMatrix, int length)
+        {
+            var halfLength = length * 0.5;
+            var width = (float)(halfLength * 0.1);
+
+            var color1 = (Vector4)Color.Green;
+            var testDir0 = Vector3D.Normalize(referenceMatrix.Backward - referenceMatrix.Forward);
+            var line0Vec0 = center + (testDir0 * -halfLength);
+            var line0Vec1 = center + (testDir0 * halfLength);
+
+            MySimpleObjectDraw.DrawLine(line0Vec0, line0Vec1, LineId, ref color1, width);
+        }
+
+        public static void DrawLine(Vector3D start, Vector3D end, Vector4 color, float width)
         {
             var c = color;
-            var lineId = MyStringId.GetOrCompute("Square");
-
-            MySimpleObjectDraw.DrawLine(line.From, line.To, lineId, ref c, 0.1f);
+            MySimpleObjectDraw.DrawLine(start, end, LineId, ref c, width);
         }
 
         public static void DrawRootVerts(Vector3D[] rootVerts, Color[] zoneColors)

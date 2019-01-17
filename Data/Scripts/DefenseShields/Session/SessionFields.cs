@@ -5,6 +5,7 @@
     using System.Collections.Generic;
     using global::DefenseShields.Support;
     using Sandbox.Common.ObjectBuilders;
+    using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
     using Sandbox.ModAPI.Interfaces.Terminal;
     using VRage.Collections;
@@ -192,6 +193,7 @@
 
         private readonly List<KeyValuePair<MyEntity, uint>> _entRefreshTmpList = new List<KeyValuePair<MyEntity, uint>>();
         private readonly ConcurrentQueue<MyEntity> _entRefreshQueue = new ConcurrentQueue<MyEntity>();
+        private readonly Queue<BlockState> _warEffectPurge = new Queue<BlockState>();
         private readonly ConcurrentDictionary<MyEntity, uint> _globalEntTmp = new ConcurrentDictionary<MyEntity, uint>();
 
         private DsAutoResetEvent _autoResetEvent = new DsAutoResetEvent();
@@ -200,6 +202,8 @@
         private int _count = -1;
         private int _lCount;
         private int _eCount;
+
+        private bool _warEffect;
 
         private volatile bool _newFrame;
 

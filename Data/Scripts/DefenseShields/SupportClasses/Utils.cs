@@ -5,7 +5,6 @@
     using System.Collections.Generic;
     using System.Diagnostics;
     using Sandbox.Game.Entities;
-    using VRage.Game.Entity;
     using VRageMath;
 
     internal struct MyImpulseData
