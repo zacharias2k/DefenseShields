@@ -248,6 +248,7 @@
         </DynamicMode>
       </VoxelPlacement>
       <BlockPairName>DS_Control_LCD</BlockPairName>
+      <Description>Controller for shield emitters, must have at least one for emitters to function.</Description>
       <MirroringZ>Y</MirroringZ>
       <EdgeType>Light</EdgeType>
       <BuildTimeSeconds>3</BuildTimeSeconds>
@@ -301,6 +302,7 @@
       </BuildProgressModels>
       <EdgeType>Light</EdgeType>
       <BuildTimeSeconds>70</BuildTimeSeconds>
+      <Description>This block pressurizes station shields for breathable atmosphere.</Description>
 	    <ResourceSourceGroup>Reactors</ResourceSourceGroup>
 	    <ResourceSinkGroup>Factory</ResourceSinkGroup>
       <IceConsumptionPerSecond>1000</IceConsumptionPerSecond>
@@ -380,6 +382,7 @@
         <Model BuildPercentUpperBound="1.00" File="Models\Cubes\large\DefenseShieldBase_Large_Constr1.mwm" />
       </BuildProgressModels>
       <BlockPairName>Emitter</BlockPairName>
+      <Description>An emitter for ships. Must be in the open to function and have a control block to work.</Description>
       <EdgeType>Light</EdgeType>
       <MirroringY>Z</MirroringY>
       <MirroringZ>Y</MirroringZ>
@@ -484,6 +487,7 @@
 		<Model BuildPercentUpperBound="1.00" File="Models\Cubes\small\DefenseShieldBaseS_Small_Constr1.mwm" />
       </BuildProgressModels>
       <BlockPairName>Emitter</BlockPairName>
+      <Description>An emitter for ships. Must be in the open to function and have a control block to work.</Description>
       <EdgeType>Light</EdgeType>
       <MirroringY>Z</MirroringY>
       <MirroringZ>Y</MirroringZ>
@@ -579,6 +583,7 @@
 		<Model BuildPercentUpperBound="1.00" File="Models\Cubes\large\DefenseShieldStation_Large_Constr1.mwm" />
       </BuildProgressModels>
       <BlockPairName>StationEmitter</BlockPairName>
+      <Description>This emitter only works as a station block, if converted to ship it will not function. Also allows pressurization.</Description>
       <EdgeType>Light</EdgeType>
       <MirroringY>Z</MirroringY>
       <MirroringZ>Y</MirroringZ>
@@ -621,6 +626,7 @@
         <Model BuildPercentUpperBound="1.00" File="Models\Cubes\ShieldModulatorLarge_Constr3.mwm" />
       </BuildProgressModels>
       <BlockPairName>ShieldModulator</BlockPairName>
+      <Description>Allows access to shields that have a modulation setting, set this block to the same setting as you have in the shielded grid.</Description>
       <EdgeType>Light</EdgeType>
       <BuildTimeSeconds>8</BuildTimeSeconds>
       <MountPoints>
