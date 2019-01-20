@@ -423,39 +423,22 @@
         {
             _effect.Stop();
             var epiCenter = EmpWork.EpiCenter;
-            var warHeadSize = EmpWork.WarHeadSize;
-            var stackCount = EmpWork.StackCount;
-            var cameraPos = MyAPIGateway.Session.Camera.Position;
-            var realDistanceSqr = Vector3D.DistanceSquared(epiCenter, cameraPos);
-            if (realDistanceSqr > SyncDistSqr)
-            {
-                var testDir = Vector3D.Normalize(cameraPos - epiCenter);
-                var newEpiCenter = cameraPos + (testDir * -1990);
-                epiCenter = newEpiCenter;
-            }
-
-            var invSqrDist = UtilsStatic.InverseSqrDist(epiCenter, cameraPos, 2000);
-            //Log.Line($"invSqrDist:{invSqrDist} - Dist:{Vector3D.Distance(epiCenter, MyAPIGateway.Session.Camera.Position)} - epicCenter:{epiCenter} - {stackCount}");
-            if (invSqrDist <= 0)
-            {
-                EmpWork.EmpDrawComplete();
-                return;
-            }
+            var rangeCap = EmpWork.RangeCap;
+            var radius = (float)(rangeCap * 0.01);
+            const int Scale = 7;
 
             var matrix = MatrixD.CreateTranslation(epiCenter);
-            MyParticlesManager.TryCreateParticleEffect(6667, out _effect, ref matrix, ref epiCenter, 0, true); // 15, 16, 24, 25, 28, (31, 32) 211 215 53
+            MyParticlesManager.TryCreateParticleEffect(6666, out _effect, ref matrix, ref epiCenter, 0, true); // 15, 16, 24, 25, 28, (31, 32) 211 215 53
             if (_effect == null)
             {
                 EmpWork.EmpDrawComplete();
                 return;
             }
 
-            var empSize = warHeadSize * stackCount;
-            var radius = empSize * invSqrDist;
-            var scale = 1 / invSqrDist;
-            //Log.Line($"[Scaler] scale:{scale} - {radius}");
-            _effect.UserRadiusMultiplier = (float)radius;
-            _effect.UserEmitterScale = (float)scale;
+            if (Enforced.Debug >= 2) Log.Line($"[EmpDraw] scale:{Scale} - radius:{radius} - rangeCap:{rangeCap}");
+
+            _effect.UserRadiusMultiplier = radius;
+            _effect.UserEmitterScale = Scale;
             _effect.UserColorMultiplier = new Vector4(255, 255, 255, 10);
             _effect.Play();
             EmpWork.EmpDrawComplete();

@@ -31,9 +31,10 @@
                 {
                     _autoResetEvent.WaitOne();
                     if (!Monitor) break;
-                    if (Enforced.Debug == 5 && EntSlotTick) Dsutil2.Sw.Restart();
+                    if (Enforced.Debug >= 3 && EntSlotTick) Dsutil2.Sw.Restart();
+
                     _newFrame = false;
-                    _workData.DoIt(new List<DefenseShields>(FunctionalShields), Tick);
+                    _workData.DoIt(new List<DefenseShields>(FunctionalShields.Keys), Tick);
                     MyAPIGateway.Parallel.For(0, _workData.ShieldList.Count, x =>
                     {
                         var s = _workData.ShieldList[x];
@@ -65,13 +66,14 @@
                             return;
                         }
 
-                        var shieldActive = ActiveShields.Contains(s);
+                        var shieldActive = ActiveShields.ContainsKey(s);
                         if (s.LostPings > 59)
                         {
                             if (shieldActive)
                             {
                                 if (Enforced.Debug >= 2) Log.Line("Logic Paused by lost pings");
-                                ActiveShields.Remove(s);
+                                bool value;
+                                ActiveShields.TryRemove(s, out value);
                                 s.WasPaused = true;
                             }
                             s.Asleep = false;
@@ -124,7 +126,8 @@
                             if (tick > 1200 && !s.WasPaused)
                             {
                                 if (Enforced.Debug >= 2) Log.Line("Logic Paused by monitor");
-                                ActiveShields.Remove(s);
+                                bool value;
+                                ActiveShields.TryRemove(s, out value);
                                 s.WasPaused = true;
                                 s.Asleep = false;
                                 s.TicksWithNoActivity = 0;
@@ -169,10 +172,11 @@
                         {
                             var ent = dict.Key;
                             _entRefreshQueue.Enqueue(ent);
-                            _globalEntTmp.Remove(ent);
+                            uint value;
+                            _globalEntTmp.TryRemove(ent, out value);
                         }
                     }
-                    if (Monitor && Enforced.Debug == 5 && EntSlotTick) Dsutil2.StopWatchReport("monitor", -1);
+                    if (Enforced.Debug >= 3 && EntSlotTick) Dsutil2.StopWatchReport("monitor", -1);
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in WebMonitor: {ex}"); }
@@ -320,7 +324,11 @@
                     {
                         var entsByMeTmp = new List<KeyValuePair<MyEntity, MoverInfo>>();
                         entsByMeTmp.AddRange(s.EntsByMe.Where(info => !info.Key.InScene || _workData.Tick - info.Value.CreationTick > EntMaxTickAge));
-                        for (int i = 0; i < entsByMeTmp.Count; i++) s.EntsByMe.Remove(entsByMeTmp[i].Key);
+                        for (int i = 0; i < entsByMeTmp.Count; i++)
+                        {
+                            MoverInfo mInfo;
+                            s.EntsByMe.TryRemove(entsByMeTmp[i].Key, out mInfo);
+                        }
                     }
                 }
             }
@@ -412,8 +420,8 @@
         private void LogicUpdates()
         {
             var y = 0;
-            if (Enforced.Debug >= 5 && EntSlotTick) Dsutil1.Sw.Restart();
-            foreach (var s in ActiveShields)
+            if (Enforced.Debug >= 3 && EntSlotTick) Dsutil1.Sw.Restart();
+            foreach (var s in ActiveShields.Keys)
             {
                 if (!s.WasOnline || s.Asleep) continue;
 
@@ -438,8 +446,8 @@
                 WebWrapperOn = false;
             }
 
-            if (Enforced.Debug >= 5 && EntSlotTick) Dsutil1.StopWatchReport($"[LogicUpdate] tick:{Tick} - WebbingShields:{y} - CPU:", -1);
-            else if (Enforced.Debug >= 5) Dsutil1.Sw.Reset();
+            if (Enforced.Debug >= 3 && EntSlotTick) Dsutil1.StopWatchReport("[LogicUpdate] - CPU:", -1);
+            else if (Enforced.Debug >= 3) Dsutil1.Sw.Reset();
         }
 
         private void WebDispatch()
@@ -464,26 +472,28 @@
 
             var oldScaler = EntSlotScaler;
             var globalProtCnt = GlobalProtect.Count;
-            if (globalProtCnt <= 25) EntSlotScaler = 1;
-            else if (globalProtCnt <= 50) EntSlotScaler = 2;
-            else if (globalProtCnt <= 75) EntSlotScaler = 3;
-            else if (globalProtCnt <= 100) EntSlotScaler = 4;
-            else if (globalProtCnt <= 150) EntSlotScaler = 5;
-            else if (globalProtCnt <= 200) EntSlotScaler = 6;
+            var funcShieldCnt = FunctionalShields.Count;
+
+            if (globalProtCnt <= 25 && funcShieldCnt <= 25) EntSlotScaler = 1;
+            else if (globalProtCnt <= 50 && funcShieldCnt <= 50) EntSlotScaler = 2;
+            else if (globalProtCnt <= 75 && funcShieldCnt <= 75) EntSlotScaler = 3;
+            else if (globalProtCnt <= 100 && funcShieldCnt <= 100) EntSlotScaler = 4;
+            else if (globalProtCnt <= 150 && funcShieldCnt <= 150) EntSlotScaler = 5;
+            else if (globalProtCnt <= 200 && funcShieldCnt <= 200) EntSlotScaler = 6;
             else EntSlotScaler = 9;
 
             if (oldScaler != EntSlotScaler)
             {
                 GlobalProtect.Clear();
                 ProtSets.Clean();
-                foreach (var s in FunctionalShields)
+                foreach (var s in FunctionalShields.Keys)
                 {
                     s.AssignSlots();
                     s.Asleep = false;
                 }
                 foreach (var c in Controllers)
                 {
-                    if (FunctionalShields.Contains(c)) continue;
+                    if (FunctionalShields.ContainsKey(c)) continue;
                     c.AssignSlots();
                     c.Asleep = false;
                 }

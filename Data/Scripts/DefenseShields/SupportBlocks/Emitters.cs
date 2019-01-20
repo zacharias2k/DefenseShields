@@ -1,6 +1,7 @@
 ﻿namespace DefenseShields
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Text;
     using global::DefenseShields.Support;
@@ -8,7 +9,6 @@
     using Sandbox.Game.Entities;
     using Sandbox.Game.EntityComponents;
     using Sandbox.ModAPI;
-    using VRage.Collections;
     using VRage.Game;
     using VRage.Game.Components;
     using VRage.Game.Entity;
@@ -30,7 +30,7 @@
 
 
         private readonly List<int> _vertsSighted = new List<int>();
-        private readonly MyConcurrentHashSet<int> _blocksLos = new MyConcurrentHashSet<int>();
+        private readonly ConcurrentDictionary<int, bool> _blocksLos = new ConcurrentDictionary<int, bool>();
         private readonly MyDefinitionId _gId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
 
         private DSUtils _dsUtil = new DSUtils();
@@ -614,10 +614,10 @@
 
                 if (hit.HasValue)
                 {
-                    _blocksLos.Add(i);
+                    _blocksLos[i] = false;
                 }
             });
-            for (int i = 0; i < _unitSpherePoints; i++) if (!_blocksLos.Contains(i)) _vertsSighted.Add(i);
+            for (int i = 0; i < _unitSpherePoints; i++) if (!_blocksLos.ContainsKey(i)) _vertsSighted.Add(i);
         }
 
         private void DrawHelper()
@@ -645,7 +645,7 @@
                     }
                     else
                     {
-                        foreach (var blocking in _blocksLos)
+                        foreach (var blocking in _blocksLos.Keys)
                         {
                             var blockedPos = LosScaledCloud[blocking];
                             DsDebugDraw.DrawLosBlocked(blockedPos, MyGrid.PositionComp.LocalMatrix);

@@ -236,12 +236,7 @@
         private MyParticleEffect _effect = new MyParticleEffect();
 
         #endregion
-        /*
-        public DefenseShields()
-        {
-            UtilsStatic.UnitSphereRandomOnly(ref LosUnitCloud);
-        }
-        */
+
         public enum Ent
         {
             Unknown,

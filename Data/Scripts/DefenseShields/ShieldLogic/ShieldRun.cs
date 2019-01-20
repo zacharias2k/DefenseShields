@@ -63,7 +63,7 @@
                 MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(_ellipsoidOxyProvider);
 
                 if (_isServer) Enforcements.SaveEnforcement(Shield, Session.Enforced, true);
-                else Session.Instance.FunctionalShields.Add(this);
+                else Session.Instance.FunctionalShields[this] = false;
 
                 Session.Instance.Controllers.Add(this);
                 if (Session.Enforced.Debug == 3) Log.Line($"UpdateOnceBeforeFrame: ShieldId [{Shield.EntityId}]");
@@ -168,8 +168,10 @@
                 base.Close();
                 if (Session.Enforced.Debug == 3) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 if (Session.Instance.Controllers.Contains(this)) Session.Instance.Controllers.Remove(this);
-                if (Session.Instance.FunctionalShields.Contains(this)) Session.Instance.FunctionalShields.Remove(this);
-                if (Session.Instance.ActiveShields.Contains(this)) Session.Instance.ActiveShields.Remove(this);
+                bool value1;
+                if (Session.Instance.FunctionalShields.ContainsKey(this)) Session.Instance.FunctionalShields.TryRemove(this, out value1);
+                bool value2;
+                if (Session.Instance.ActiveShields.ContainsKey(this)) Session.Instance.ActiveShields.TryRemove(this, out value2);
                 WasActive = false;
                 Icosphere = null;
                 InitEntities(false);

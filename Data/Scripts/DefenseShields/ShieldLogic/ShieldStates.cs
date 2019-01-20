@@ -108,7 +108,7 @@
             LastWokenTick = _tick;
             Asleep = false;
             PlayerByShield = true;
-            Session.Instance.ActiveShields.Add(this);
+            Session.Instance.ActiveShields[this] = false;
             WasPaused = false;
             if (Session.Enforced.Debug >= 2) Log.Line("Logic Resumed");
         }
@@ -195,7 +195,7 @@
                 Shield.RefreshCustomInfo();
                 if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
             }
-            Session.Instance.ActiveShields.Add(this);
+            Session.Instance.ActiveShields[this] = false;
         }
 
         private bool ShieldFailing()
@@ -231,7 +231,8 @@
                 UpdateSubGrids();
                 Shield.RefreshCustomInfo();
             }
-            Session.Instance.ActiveShields.Remove(this);
+            bool value;
+            Session.Instance.ActiveShields.TryRemove(this, out value);
             if (Session.Enforced.Debug == 4) Log.Line($"StateUpdate: ShieldOff - ShieldId [{Shield.EntityId}]");
         }
 
@@ -684,8 +685,12 @@
 
             if (DsState.State.Suspended != WasSuspended)
             {
-                if (DsState.State.Suspended) Session.Instance.FunctionalShields.Remove(this);
-                else Session.Instance.FunctionalShields.Add(this);
+                if (DsState.State.Suspended)
+                {
+                    bool value;
+                    Session.Instance.FunctionalShields.TryRemove(this, out value);
+                }
+                else Session.Instance.FunctionalShields[this] = false;
             }
             WasSuspended = DsState.State.Suspended;
 

@@ -154,7 +154,7 @@
         private void UserDebug()
         {
             var message = $"User({MyAPIGateway.Multiplayer.Players.TryGetSteamId(Shield.OwnerId)}) Debugging\n" +
-                          $"On:{DsState.State.Online} - Active:{Session.Instance.ActiveShields.Contains(this)} - Suspend:{DsState.State.Suspended}\n" +
+                          $"On:{DsState.State.Online} - Active:{Session.Instance.ActiveShields.ContainsKey(this)} - Suspend:{DsState.State.Suspended}\n" +
                           $"Web:{Asleep} - Tick/LWoke:{_tick}/{LastWokenTick}\n" +
                           $"Mo:{DsState.State.Mode} - Su:{DsState.State.Suspended} - Wa:{DsState.State.Waking}\n" +
                           $"Np:{DsState.State.NoPower} - Lo:{DsState.State.Lowered} - Sl:{DsState.State.Sleeping}\n" +
