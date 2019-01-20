@@ -2,6 +2,9 @@
 {
     using System;
     using global::DefenseShields.Support;
+
+    using Sandbox.ModAPI;
+
     using VRage.Game;
     using VRageMath;
 
@@ -17,7 +20,7 @@
                 UpdateSubGrids();
                 BlockMonitor();
                 if (_blockEvent) BlockChanged(background);
-                if (_shapeEvent) CheckExtents(background);
+                if (_shapeEvent) CheckExtents();
                 if (GridIsMobile) _updateMobileShape = true;
                 return;
             }
@@ -49,9 +52,8 @@
                 }
             }
 
-            _shapeChanged = !DsState.State.EllipsoidAdjust.Equals(_oldEllipsoidAdjust) || !DsState.State.GridHalfExtents.Equals(_oldGridHalfExtents) || !DsState.State.ShieldFudge.Equals(_oldShieldFudge) || _updateMobileShape;
+            _shapeChanged = _halfExtentsChanged || !DsState.State.EllipsoidAdjust.Equals(_oldEllipsoidAdjust) || !DsState.State.ShieldFudge.Equals(_oldShieldFudge) || _updateMobileShape;
             _entityChanged = ShieldComp.GridIsMoving || _comingOnline || _shapeChanged;
-            _oldGridHalfExtents = DsState.State.GridHalfExtents;
             _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
             _oldShieldFudge = DsState.State.ShieldFudge;
             if (_entityChanged || BoundingRange <= 0) CreateShieldShape();
@@ -64,8 +66,31 @@
             CreateShieldShape();
         }
 
-        public void CreateHalfExtents()
+        private void AdjustShape(bool backGround)
         {
+            if (backGround) MyAPIGateway.Parallel.StartBackground(GetShapeAdjust);
+            else GetShapeAdjust();
+            _adjustShape = false;
+        }
+
+        private void GetShapeAdjust()
+        {
+            if (DsSet.Settings.SphereFit || DsSet.Settings.FortifyShield) DsState.State.EllipsoidAdjust = 1f;
+            else if (!DsSet.Settings.ExtendFit) DsState.State.EllipsoidAdjust = UtilsStatic.CreateNormalFit(Shield, DsState.State.GridHalfExtents);
+            else DsState.State.EllipsoidAdjust = UtilsStatic.CreateExtendedFit(Shield, DsState.State.GridHalfExtents);
+        }
+
+        private void CheckExtents()
+        {
+            FitChanged = false;
+            _shapeEvent = false;
+            if (!_isServer || !GridIsMobile) return;
+            CreateHalfExtents();
+        }
+
+        private void CreateHalfExtents()
+        {
+            _oldGridHalfExtents = DsState.State.GridHalfExtents;
             var myAabb = MyGrid.PositionComp.LocalAABB;
             var shieldGrid = MyGrid;
             var expandedAabb = myAabb;
@@ -101,13 +126,8 @@
                 var extentsDiff = DsState.State.GridHalfExtents.LengthSquared() - expandedAabb.HalfExtents.LengthSquared();
                 if (extentsDiff < -1 || extentsDiff > 1 || DsState.State.GridHalfExtents == Vector3D.Zero) DsState.State.GridHalfExtents = expandedAabb.HalfExtents;
             }
-        }
-
-        private void GetShapeAdjust()
-        {
-            if (DsSet.Settings.SphereFit || DsSet.Settings.FortifyShield) DsState.State.EllipsoidAdjust = 1f;
-            else if (!DsSet.Settings.ExtendFit) DsState.State.EllipsoidAdjust = UtilsStatic.CreateNormalFit(Shield, DsState.State.GridHalfExtents);
-            else DsState.State.EllipsoidAdjust = UtilsStatic.CreateExtendedFit(Shield, DsState.State.GridHalfExtents);
+            _halfExtentsChanged = !DsState.State.GridHalfExtents.Equals(_oldGridHalfExtents);
+            if (_halfExtentsChanged) _adjustShape = true;
         }
 
         private void CreateShieldShape()

@@ -71,26 +71,6 @@
             catch (Exception ex) { Log.Line($"Exception in Controller UpdateOnceBeforeFrame: {ex}"); }
         }
 
-        /*
-        private void PrintArray()
-        {
-            var c = 0;
-            Log.Chars($"internal Vector3D[] UnitSphereCloud = new Vector3D[]");
-            Log.Chars("{");
-            foreach (var v in LosUnitCloud)
-            {
-                if (c == 3)
-                {
-                    c = 0;
-                    Log.CleanLine("\n");
-                }
-                Log.Chars($"new Vector3D({v.X}, {v.Y}, {v.Z}), ");
-                c++;
-            }
-            Log.CleanLine("};");
-        }
-        */
-
         public override void UpdateBeforeSimulation()
         {
             try
@@ -125,7 +105,7 @@
                         }
                     }
                     else if (_syncEnts) SyncThreadedEnts();
-                    if (!_isDedicated && _tick60) HudCheck();
+                    if (!_isDedicated && (_tick60 || Session.Instance.HudIconReset)) HudCheck();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }

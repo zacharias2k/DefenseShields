@@ -259,16 +259,32 @@
         {
             var playerEnt = MyAPIGateway.Session.ControlledObject?.Entity as MyEntity;
             if (playerEnt?.Parent != null) playerEnt = playerEnt.Parent;
-            if (playerEnt == null || (DsState.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv)) || (!DsState.State.Online && !CustomCollision.PointInShield(playerEnt.PositionComp.WorldVolume.Center, DetectMatrixOutsideInv)))
+            if (playerEnt == null)
             {
-                if (Session.Instance.HudComp != this) return;
-                ProtectCache protectedEnt = null;
-                if (playerEnt != null) ProtectedEntCache.TryGetValue(playerEnt, out protectedEnt);
-                if (protectedEnt != null && protectedEnt.Relation != Ent.Protected) return;
-
+                Session.Instance.HudIconReset = true;
                 Session.Instance.HudComp = null;
                 Session.Instance.HudShieldDist = double.MaxValue;
                 return;
+            }
+
+            if (!CustomCollision.PointInShield(playerEnt.PositionComp.WorldAABB.Center, DetectMatrixOutsideInv))
+            {
+                if (Session.Instance.HudComp != this)
+                {
+                    Session.Instance.HudIconReset = false;
+                    return;
+                }
+                Session.Instance.HudIconReset = true;
+                Session.Instance.HudComp = null;
+                Session.Instance.HudShieldDist = double.MaxValue;
+                return;
+            }
+
+            if (!Asleep)
+            {
+                ProtectCache protectedEnt;
+                ProtectedEntCache.TryGetValue(playerEnt, out protectedEnt);
+                if (protectedEnt != null && protectedEnt.Relation != Ent.Protected) return;
             }
 
             var distFromShield = Vector3D.DistanceSquared(playerEnt.PositionComp.WorldVolume.Center, DetectionCenter);
@@ -276,6 +292,7 @@
             {
                 Session.Instance.HudShieldDist = distFromShield;
                 Session.Instance.HudComp = this;
+                Session.Instance.HudIconReset = false;
             }
         }
 

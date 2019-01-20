@@ -476,7 +476,7 @@
                 }
                 if (_impactCnt[0] == 0 && _impactCnt[1] == 0 && _impactCnt[2] == 0 && _impactCnt[3] == 0 && _impactCnt[4] == 0 && _impactCnt[5] == 0)
                 {
-                    ShellActive.Render.UpdateRenderObject(false);
+                    ShellActive?.Render.UpdateRenderObject(false);
                     ImpactsFinished = true;
                     for (int i = 0; i < _triColorBuffer.Length; i++) _triColorBuffer[i] = 0;
                 }

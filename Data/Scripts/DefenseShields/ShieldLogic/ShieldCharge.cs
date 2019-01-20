@@ -29,6 +29,7 @@
             if (!_isDedicated && ShieldHits.Count != 0) AbsorbClientShieldHits();
             if (Absorb > 0)
             {
+                Log.Line($"DamageAmount:{Absorb}");
                 _damageReadOut += Absorb;
                 EffectsCleanTick = _tick;
                 DsState.State.Charge -= Absorb * ConvToWatts;
@@ -47,13 +48,12 @@
 
         private bool UpdateGridPower()
         {
-            var cleanDistributor = FuncTask.IsComplete && MyGridDistributor != null && !_functionalEvent;
             GridAvailablePower = 0;
             _batteryMaxPower = 0;
             _batteryCurrentPower = 0;
             lock (GetCubesLock)
             {
-                if (cleanDistributor)
+                if (MyGridDistributor != null && FuncTask.IsComplete && !_functionalEvent)
                 {
                     if (GridMaxPower <= 0)
                     {

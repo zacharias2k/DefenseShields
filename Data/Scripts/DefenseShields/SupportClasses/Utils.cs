@@ -64,6 +64,7 @@
         internal Vector3D EpiCenter;
         internal int WarHeadSize;
         internal double WarHeadYield;
+        internal double DirYield;
         internal int StackCount;
         internal double RangeCap;
         internal double RangeCapSqr;
@@ -80,6 +81,7 @@
             StackCount = stackCount;
             RangeCap = rangeCap;
             RangeCapSqr = rangeCap * rangeCap;
+            DirYield = (warHeadYield * stackCount) * 0.5;
             Stored = true;
             EventRunning = true;
         }

@@ -1,10 +1,14 @@
 ﻿namespace DefenseShields
 {
     using System.Collections.Generic;
+    using System.Xml;
+
     using global::DefenseShields.Support;
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
     using VRage.Game;
+    using VRage.Game.ModAPI;
+
     using VRageMath;
 
     public partial class DefenseShields
@@ -570,7 +574,7 @@
 
         private bool ShieldSleeping()
         {
-            if (ShieldComp.EmittersSuspended || SlaveControllerLink(IsStatic))
+            if (ShieldComp.EmittersSuspended || SlaveControllerLink())
             {
                 if (!DsState.State.Sleeping)
                 {
@@ -607,12 +611,11 @@
             return false;
         }
 
-        private bool SlaveControllerLink(bool isStatic)
+        private bool SlaveControllerLink()
         {
-            var notTime = _tick != 0 && _tick % 120 != 0;
-
+            var notTime = _tick % 120 != 0;
             if (notTime && _slaveLink) return true;
-            if (notTime || isStatic) return false;
+            if (IsStatic || (notTime && _count != -1)) return false;
             var mySize = MyGrid.PositionComp.WorldAABB.Size.Volume;
             var myEntityId = MyGrid.EntityId;
             foreach (var grid in ShieldComp.GetLinkedGrids)

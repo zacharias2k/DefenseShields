@@ -22,4 +22,31 @@
                 _lock.ReleaseExclusive();
         }
     }
+
+    internal class DsPulseEvent
+    {
+        private readonly object _signal = new object();
+        private bool _signalSet;
+
+        public void WaitOne()
+        {
+            lock (_signal)
+            {
+                while (!_signalSet)
+                {
+                    Monitor.Wait(_signal);
+                }
+                _signalSet = false;
+            }
+        }
+
+        public void Set()
+        {
+            lock (_signal)
+            {
+                _signalSet = true;
+                Monitor.Pulse(_signal);
+            }
+        }
+    }
 }

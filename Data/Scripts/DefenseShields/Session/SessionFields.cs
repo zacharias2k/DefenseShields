@@ -18,6 +18,7 @@
 
     public partial class Session
     {
+
         internal const ushort PacketIdShieldHit = 62512;
         internal const ushort PacketIdO2GeneratorSettings = 62513;
         internal const ushort PacketIdPlanetShieldSettings = 62514;
@@ -191,12 +192,18 @@
 
         private readonly Work _workData = new Work();
 
+        private readonly List<MyCubeBlock> _warHeadCubeHits = new List<MyCubeBlock>();
+        private readonly List<MyCubeGrid> _warHeadGridHits = new List<MyCubeGrid>();
+        private readonly List<MyEntity> _pruneWarGrids = new List<MyEntity>();
         private readonly List<KeyValuePair<MyEntity, uint>> _entRefreshTmpList = new List<KeyValuePair<MyEntity, uint>>();
+        private readonly Dictionary<MyCubeGrid, WarHeadHit> _warHeadGridShapes = new Dictionary<MyCubeGrid, WarHeadHit>();
+        private readonly Queue<long> _warEffectPurge = new Queue<long>();
         private readonly ConcurrentQueue<MyEntity> _entRefreshQueue = new ConcurrentQueue<MyEntity>();
-        private readonly Queue<BlockState> _warEffectPurge = new Queue<BlockState>();
         private readonly ConcurrentDictionary<MyEntity, uint> _globalEntTmp = new ConcurrentDictionary<MyEntity, uint>();
+        private readonly ConcurrentDictionary<long, BlockState> _warEffectCubes = new ConcurrentDictionary<long, BlockState>();
 
-        private DsAutoResetEvent _autoResetEvent = new DsAutoResetEvent();
+        //private DsAutoResetEvent _autoResetEvent = new DsAutoResetEvent();
+        private DsPulseEvent _autoResetEvent = new DsPulseEvent();
         private MyParticleEffect _effect = new MyParticleEffect();
 
         private int _count = -1;
@@ -233,7 +240,7 @@
         internal double SyncDist { get; private set; }
 
         internal bool WarheadButtonAdd { get; set; }
-        internal bool ShowOnHudReset { get; set; } = true;
+        internal bool HudIconReset { get; set; } = true;
         internal bool OnCountThrottle { get; set; }
         internal bool GameLoaded { get; set; }
         internal bool MiscLoaded { get; set; }

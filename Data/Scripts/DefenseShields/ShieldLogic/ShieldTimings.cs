@@ -75,7 +75,8 @@
 
             if (_isServer)
             {
-                if (_shapeEvent || FitChanged) CheckExtents(true);
+                if (_shapeEvent || FitChanged) CheckExtents();
+                if (_adjustShape) AdjustShape(true);
                 HeatManager();
             }
 
@@ -157,24 +158,10 @@
             _functionalEvent = false;
         }
 
-        private void CheckExtents(bool backGround)
-        {
-            FitChanged = false;
-            _shapeEvent = false;
-            if (!_isServer) return;
-            if (GridIsMobile)
-            {
-                CreateHalfExtents();
-                if (backGround) MyAPIGateway.Parallel.StartBackground(GetShapeAdjust);
-                else GetShapeAdjust();
-            }
-        }
-
         private void BackGroundChecks()
         {
             var gridDistNeedUpdate = _updateGridDistributor || MyGridDistributor?.SourcesEnabled == MyMultipleEnabledEnum.NoObjects;
             _updateGridDistributor = false;
-             
             lock (GetCubesLock)
             {
                 _powerSources.Clear();
@@ -187,28 +174,32 @@
                     if (grid == null) continue;
                     foreach (var block in grid.GetFatBlocks())
                     {
-                        if (mechanical && gridDistNeedUpdate)
+                        if (mechanical)
                         {
-                            var controller = block as MyShipController;
-                            if (controller != null)
+                            if (gridDistNeedUpdate)
                             {
-                                var distributor = controller.GridResourceDistributor;
-                                if (distributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects)
+                                var controller = block as MyShipController;
+                                if (controller != null)
                                 {
-                                    if (Session.Enforced.Debug == 3) Log.Line($"Found MyGridDistributor from type:{block.BlockDefinition} - ShieldId [{Shield.EntityId}]");
-                                    MyGridDistributor = controller.GridResourceDistributor;
-                                    gridDistNeedUpdate = false;
+                                    var distributor = controller.GridResourceDistributor;
+                                    if (distributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects)
+                                    {
+                                        if (Session.Enforced.Debug == 3) Log.Line($"Found MyGridDistributor from type:{block.BlockDefinition} - ShieldId [{Shield.EntityId}]");
+                                        MyGridDistributor = controller.GridResourceDistributor;
+                                        gridDistNeedUpdate = false;
+                                    }
                                 }
                             }
+
+                            _functionalBlocks.Add(block);
+
+                            var battery = block as IMyBatteryBlock;
+                            if (battery != null) _batteryBlocks.Add(battery);
                         }
 
-                        var battery = block as IMyBatteryBlock;
-                        if (battery != null && block.IsFunctional && mechanical) _batteryBlocks.Add(battery);
-                        if (block.IsFunctional && mechanical) _functionalBlocks.Add(block);
-
                         var source = block.Components.Get<MyResourceSourceComponent>();
-
                         if (source == null) continue;
+
                         foreach (var type in source.ResourceTypes)
                         {
                             if (type != MyResourceDistributorComponent.ElectricityId) continue;

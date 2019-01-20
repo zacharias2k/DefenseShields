@@ -2,11 +2,8 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
-
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
-
     using VRage.Collections;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
@@ -28,6 +25,18 @@
             Yield = WarSize * 50;
             Position = position;
             CustomData = customData;
+        }
+    }
+
+    public struct WarHeadHit
+    {
+        public readonly uint Duration;
+        public BoundingSphereD Sphere;
+
+        public WarHeadHit(BoundingSphereD sphere, uint duration)
+        {
+            Sphere = sphere;
+            Duration = duration;
         }
     }
 
@@ -83,9 +92,13 @@
         public readonly MyCubeBlock CubeBlock;
         public readonly IMyFunctionalBlock FunctBlock;
         public readonly bool EnableState;
-        public BlockState(MyCubeBlock cubeBlock)
+        public readonly uint StartTick;
+        public readonly uint Endtick;
+        public BlockState(MyCubeBlock cubeBlock, uint startTick, uint endTick)
         {
             CubeBlock = cubeBlock;
+            StartTick = startTick;
+            Endtick = endTick;
             FunctBlock = cubeBlock as IMyFunctionalBlock;
             EnableState = ((IMyFunctionalBlock)cubeBlock).Enabled;
         }

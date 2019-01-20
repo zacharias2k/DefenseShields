@@ -281,11 +281,6 @@
             return new Vector3D?((Vector3D)zero);
         }
 
-        public static void GetFatBlocksInObb()
-        {
-
-        }
-
         public static float GetDmgMulti(float damage)
         {
             float tableVal;

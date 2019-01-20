@@ -40,7 +40,6 @@
                         var tick = _workData.Tick;
                         if (_newFrame || s.MarkedForClose || !s.Warming) return;
                         var reInforce = s.DsState.State.ReInforce;
-
                         if (!IsServer)
                         {
                             lock (s.GetCubesLock)
@@ -118,6 +117,7 @@
                             s.Asleep = false;
                             return;
                         }
+
                         if (!s.PlayerByShield && !s.MoverByShield && !s.NewEntByShield)
                         {
                             if (s.TicksWithNoActivity++ % EntCleanCycle == 0) s.EntCleanUpTime = true;
@@ -133,13 +133,14 @@
                             else s.Asleep = true;
                             return;
                         }
+
                         var intersect = false;
                         if (!(EntSlotTick && RefreshCycle == s.MonitorSlot)) MyGamePruningStructure.GetTopmostEntitiesInBox(ref s.WebBox, monitorList, MyEntityQueryType.Dynamic);
                         for (int i = 0; i < monitorList.Count; i++)
                         {
                             var ent = monitorList[i];
 
-                            if (ent.Physics == null || ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor ) continue;
+                            if (ent.Physics == null || !(ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor)) continue;
                             if (ent.Physics.IsMoving)
                             {
                                 if (s.WebBox.Intersects(ent.PositionComp.WorldAABB))
@@ -159,6 +160,7 @@
                         s.LastWokenTick = tick;
                         s.Asleep = false;
                     });
+
                     if (_workData.Tick % 180 == 0 && _workData.Tick > 1199)
                     {
                         _entRefreshTmpList.Clear();

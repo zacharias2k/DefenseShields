@@ -48,6 +48,8 @@
 
         internal readonly ConcurrentQueue<MyCubeGrid> Eject = new ConcurrentQueue<MyCubeGrid>();
         internal readonly ConcurrentQueue<IMySlimBlock> DmgBlocks = new ConcurrentQueue<IMySlimBlock>();
+        internal readonly ConcurrentQueue<MyCubeBlock> FatAddQueue = new ConcurrentQueue<MyCubeBlock>();
+        internal readonly ConcurrentQueue<MyCubeBlock> FatRemoveQueue = new ConcurrentQueue<MyCubeBlock>();
         internal readonly ConcurrentQueue<IMyWarhead> EmpDmg = new ConcurrentQueue<IMyWarhead>();
         internal readonly ConcurrentQueue<IMySlimBlock> FewDmgBlocks = new ConcurrentQueue<IMySlimBlock>();
         internal readonly ConcurrentQueue<MyEntity> MissileDmg = new ConcurrentQueue<MyEntity>();
@@ -87,7 +89,7 @@
         private const int EmpDownCount = 3600;
         private const int GenericDownCount = 300;
         private const int PowerNoticeCount = 600;
-        private const int OverHeat = 1200;
+        private const int OverHeat = 600;
         private const int HeatingStep = 600;
         private const int CoolingStep = 1200;
         private const int FallBackStep = 10;
@@ -214,7 +216,8 @@
         private bool _syncEnts;
         private bool _viewInShield;
         private bool _powerFail;
-
+        private bool _halfExtentsChanged;
+        private bool _adjustShape;
         private string _modelActive = "\\Models\\Cubes\\ShieldActiveBase.mwm";
         private string _modelPassive = string.Empty;
 

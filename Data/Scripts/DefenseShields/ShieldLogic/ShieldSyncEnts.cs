@@ -1,14 +1,10 @@
 ﻿namespace DefenseShields
 {
     using System;
-    using System.Diagnostics.CodeAnalysis;
-
     using global::DefenseShields.Support;
-
     using Sandbox.Game;
     using Sandbox.Game.Entities;
     using Sandbox.Game.Entities.Character.Components;
-    using Sandbox.Game.Entities.Cube;
     using Sandbox.ModAPI;
     using VRage.Game.Components;
     using VRage.Game.Entity;
@@ -122,7 +118,7 @@
                             if (ent == null || !ent.InScene || ent.MarkedForClose) continue;
                             var computedDamage = ComputeAmmoDamage(ent);
 
-                            var damage = computedDamage * DsState.State.ModulateEnergy;
+                            var damage = computedDamage * DsState.State.ModulateKinetic;
                             if (computedDamage < 0) damage = computedDamage;
 
                             if (_mpActive)
@@ -159,7 +155,7 @@
                         while (MeteorDmg.TryDequeue(out meteor))
                         {
                             if (meteor == null || meteor.MarkedForClose || meteor.Closed) continue;
-                            var damage = 5000 * DsState.State.ModulateKinetic;
+                            var damage = 5000 * DsState.State.ModulateEnergy;
                             if (_mpActive)
                             {
                                 ShieldDoDamage(damage, meteor.EntityId);
@@ -275,23 +271,22 @@
                         const long AttackerId = 0L;
                         var energyResistenceRatio = DsState.State.ModulateKinetic;
                         var epiCenter = Session.Instance.EmpWork.EpiCenter;
-                        var warHeadYield = Session.Instance.EmpWork.WarHeadYield;
-                        var stackCount = Session.Instance.EmpWork.StackCount;
                         var rangeCap = Session.Instance.EmpWork.RangeCap;
+                        var empDirYield = Session.Instance.EmpWork.DirYield;
 
                         if (DsState.State.EmpProtection)
                         {
                             if (energyResistenceRatio < 0.4) energyResistenceRatio = 0.4f;
                             empResistenceRatio = 0.1f;
                         }
-                        if (Session.Enforced.Debug >= 2) Log.Line($"[EmpBlastShield - Start] ShieldOwner:{MyGrid.DebugName} - Yield:{warHeadYield} - StackCount:{stackCount} - ProtectionRatio:{energyResistenceRatio * empResistenceRatio} - epiCenter:{epiCenter}");
+                        //if (Session.Enforced.Debug >= 2) Log.Line($"[EmpBlastShield - Start] ShieldOwner:{MyGrid.DebugName} - Yield:{warHeadYield} - StackCount:{stackCount} - ProtectionRatio:{energyResistenceRatio * empResistenceRatio} - epiCenter:{epiCenter}");
                         var line = new LineD(epiCenter, SOriBBoxD.Center);
                         var testDir = Vector3D.Normalize(line.From - line.To);
                         var ray = new RayD(line.From, -testDir);
                         var ellipsoid = CustomCollision.IntersectEllipsoid(DetectMatrixOutsideInv, DetectionMatrix, ray);
                         if (!ellipsoid.HasValue)
                         {
-                            if (Session.Enforced.Debug >= 2) Log.Line($"[EmpBlastShield - Ellipsoid null hit] ShieldOwner:{MyGrid.DebugName} - Yield:{warHeadYield} - StackCount:{stackCount} - ProtectionRatio:{energyResistenceRatio * empResistenceRatio} - epiCenter:{epiCenter}");
+                            //if (Session.Enforced.Debug >= 2) Log.Line($"[EmpBlastShield - Ellipsoid null hit] ShieldOwner:{MyGrid.DebugName} - Yield:{warHeadYield} - StackCount:{stackCount} - ProtectionRatio:{energyResistenceRatio * empResistenceRatio} - epiCenter:{epiCenter}");
                             return;
                         }
                         var impactPos = line.From + (testDir * -ellipsoid.Value);
@@ -299,7 +294,7 @@
                         MyAPIGateway.Physics.CastRay(epiCenter, impactPos, out hitInfo, CollisionLayers.DefaultCollisionLayer);
                         if (hitInfo != null) 
                         {
-                            if (Session.Enforced.Debug >= 2) Log.Line($"[EmpBlastShield - occluded] ShieldOwner:{MyGrid.DebugName} - by {((MyEntity)hitInfo.HitEntity).DebugName}");
+                            //if (Session.Enforced.Debug >= 2) Log.Line($"[EmpBlastShield - occluded] ShieldOwner:{MyGrid.DebugName} - by {((MyEntity)hitInfo.HitEntity).DebugName}");
                             return;
                         }
                         var gridLocalMatrix = MyGrid.PositionComp.LocalMatrix;
@@ -307,19 +302,18 @@
                         var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(gridLocalMatrix));
                         var hitFaceSurfaceArea = UtilsStatic.GetIntersectingSurfaceArea(ShieldShapeMatrix, localPosition);
 
-                        var empDirYield = (warHeadYield * stackCount) * 0.5;
                         var invSqrDist = UtilsStatic.InverseSqrDist(epiCenter, impactPos, rangeCap);
                         var damageScaler = invSqrDist * hitFaceSurfaceArea;
                         if (invSqrDist <= 0)
                         {
-                            if (Session.Enforced.Debug >= 2) Log.Line($"[EmpBlastShield - Range] ShieldOwner:{MyGrid.DebugName} - insqrDist was 0");
+                            //if (Session.Enforced.Debug >= 2) Log.Line($"[EmpBlastShield - Range] ShieldOwner:{MyGrid.DebugName} - insqrDist was 0");
                             return;
                         }
 
                         var targetDamage = (float)(((empDirYield * damageScaler) * energyResistenceRatio) * empResistenceRatio);
 
                         if (targetDamage >= DsState.State.Charge * ConvToHp) _empOverLoad = true;
-                        if (Session.Enforced.Debug >= 2) Log.Line($"-----------------------] epiDist:{Vector3D.Distance(epiCenter, impactPos)} - iSqrDist:{invSqrDist} - RangeCap:{rangeCap} - SurfaceA:{hitFaceSurfaceArea}({_ellipsoidSurfaceArea * 0.5}) - dirYield:{empDirYield} - damageScaler:{damageScaler} - Damage:{targetDamage}(toOver:{(targetDamage / (DsState.State.Charge * ConvToHp))})");
+                        //if (Session.Enforced.Debug >= 2) Log.Line($"-----------------------] epiDist:{Vector3D.Distance(epiCenter, impactPos)} - iSqrDist:{invSqrDist} - RangeCap:{rangeCap} - SurfaceA:{hitFaceSurfaceArea}({_ellipsoidSurfaceArea * 0.5}) - dirYield:{empDirYield} - damageScaler:{damageScaler} - Damage:{targetDamage}(toOver:{(targetDamage / (DsState.State.Charge * ConvToHp))})");
 
                         if (_isServer && _mpActive)
                             AddEmpBlastHit(AttackerId, targetDamage, "MPEMP", impactPos);
