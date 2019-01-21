@@ -29,7 +29,6 @@
             if (!_isDedicated && ShieldHits.Count != 0) AbsorbClientShieldHits();
             if (Absorb > 0)
             {
-                Log.Line($"DamageAmount:{Absorb}");
                 _damageReadOut += Absorb;
                 EffectsCleanTick = _tick;
                 DsState.State.Charge -= Absorb * ConvToWatts;

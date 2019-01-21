@@ -414,18 +414,20 @@
 
         private void EmpCallBack()
         {
-            EmpDrawExplosion();
+            if (!DedicatedServer) EmpDrawExplosion();
             EmpDispatched = false;
             if (!_warEffectCubes.IsEmpty) _warEffect = true;
         }
 
         private void EmpDrawExplosion()
         {
-            _effect.Stop();
+            _effect?.Stop();
             var epiCenter = EmpWork.EpiCenter;
             var rangeCap = EmpWork.RangeCap;
             var radius = (float)(rangeCap * 0.01);
-            const int Scale = 7;
+            var scale = 7f;
+
+            if (radius < 7) scale = radius; 
 
             var matrix = MatrixD.CreateTranslation(epiCenter);
             MyParticlesManager.TryCreateParticleEffect(6666, out _effect, ref matrix, ref epiCenter, 0, true); // 15, 16, 24, 25, 28, (31, 32) 211 215 53
@@ -435,10 +437,10 @@
                 return;
             }
 
-            if (Enforced.Debug >= 2) Log.Line($"[EmpDraw] scale:{Scale} - radius:{radius} - rangeCap:{rangeCap}");
+            if (Enforced.Debug >= 2) Log.Line($"[EmpDraw] scale:{scale} - radius:{radius} - rangeCap:{rangeCap}");
 
             _effect.UserRadiusMultiplier = radius;
-            _effect.UserEmitterScale = Scale;
+            _effect.UserEmitterScale = scale;
             _effect.UserColorMultiplier = new Vector4(255, 255, 255, 10);
             _effect.Play();
             EmpWork.EmpDrawComplete();

@@ -98,10 +98,10 @@
             if (amount > 0) _lastSendDamageTick = _tick;
         }
 
-        internal void AddEmpBlastHit(long attackerId, float amount, string damageType, Vector3D hitPos)
+        internal void AddEmpBlastHit(long attackerId, float amount, MyStringHash damageType, Vector3D hitPos)
         {
             ShieldHit.Amount += amount;
-            ShieldHit.DamageType = damageType;
+            ShieldHit.DamageType = damageType.String;
             ShieldHit.HitPos = hitPos;
             ShieldHit.AttackerId = attackerId;
             _lastSendDamageTick = _tick;
@@ -177,7 +177,13 @@
                 var hit = ShieldHits[i];
                 ImpactSize = 12001;
                 if (Session.Enforced.Debug >= 2) Log.Line($"MpDamageEvent: Amount:{hit.Amount} - attacker:{hit.Attacker != null} - dType:{hit.DamageType} - hitPos:{hit.HitPos}");
-                if (hit.HitPos != Vector3D.Zero && WorldImpactPosition == Vector3D.NegativeInfinity) WorldImpactPosition = hit.HitPos;
+
+                if (hit.HitPos != Vector3D.Zero && WorldImpactPosition == Vector3D.NegativeInfinity)
+                {
+                    if (hit.DamageType == Session.Instance.MPEMP) EnergyHit = true;
+                    WorldImpactPosition = hit.HitPos;
+                }
+
                 Absorb += hit.Amount * ConvToWatts;
             }
             ShieldHits.Clear();

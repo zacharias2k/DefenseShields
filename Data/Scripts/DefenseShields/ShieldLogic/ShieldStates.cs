@@ -210,10 +210,12 @@
 
         private void OfflineShield()
         {
-            _power = 0.001f;
-            _sink.Update();
+            WorldImpactPosition = Vector3D.NegativeInfinity;
             WasOnline = false;
             WasActive = false;
+            EnergyHit = false;
+            _power = 0.001f;
+            _sink.Update();
 
             ShieldEnt.Render.Visible = false;
             if (_isServer)

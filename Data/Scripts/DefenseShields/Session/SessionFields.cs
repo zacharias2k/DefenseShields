@@ -45,7 +45,7 @@
         internal readonly MyStringHash MpDoDeform = MyStringHash.GetOrCompute("MpDoDeform");
         internal readonly MyStringHash MpDoExplosion = MyStringHash.GetOrCompute("MpDoExplosion");
         internal readonly MyStringHash MpDmgEffect = MyStringHash.GetOrCompute("MpDmgEffect");
-
+        internal readonly MyStringHash MPEMP = MyStringHash.GetOrCompute("MPEMP");
         internal readonly MyStringHash Bypass = MyStringHash.GetOrCompute("bypass");
         internal readonly MyStringId Password = MyStringId.GetOrCompute("Shield Access Frequency");
         internal readonly MyStringId PasswordTooltip = MyStringId.GetOrCompute("Match a shield's modulation frequency/code");

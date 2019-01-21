@@ -125,7 +125,6 @@
                         var ray = new RayD(line.From, -testDir);
                         var ellipsoid = CustomCollision.IntersectEllipsoid(ds.DetectMatrixOutsideInv, ds.DetectionMatrix, ray) ?? 0;
                         var hitPos = line.From + (testDir * -ellipsoid);
-                        ds.WorldImpactPosition = hitPos;
 
                         if (missile)
                         {
@@ -138,9 +137,16 @@
                                 hostileEnt.Close();
                                 hostileEnt.InScene = false;
                                 ds.ImpactSize = info.Amount;
+                                ds.EnergyHit = true;
                             }
                         }
+                        else if ((hostileEnt as MyCubeBlock)?.GameLogic is DefenseShields)
+                        {
+                            ds.ImpactSize = info.Amount;
+                            ds.EnergyHit = true;
+                        }
                         else ds.ImpactSize = info.Amount;
+                        ds.WorldImpactPosition = hitPos;
                     }
                     ds.Absorb += info.Amount;
                     info.Amount = 0f;

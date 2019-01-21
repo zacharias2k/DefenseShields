@@ -210,6 +210,12 @@
             else if (ImpactSize > 3600) scale = scale * (ImpactSize / 3600);
             if (scale > 0.1) scale = 0.1;
 
+            if (EnergyHit)
+            {
+                _effect.UserColorMultiplier = new Vector4(255, 69, 0, 1);
+                EnergyHit = false;
+            }
+
             _effect.UserRadiusMultiplier = (float)radius;
             _effect.UserEmitterScale = (float)scale;
             _effect.Velocity = MyGrid.Physics.LinearVelocity;

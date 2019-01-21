@@ -474,12 +474,12 @@
             var globalProtCnt = GlobalProtect.Count;
             var funcShieldCnt = FunctionalShields.Count;
 
-            if (globalProtCnt <= 25 && funcShieldCnt <= 25) EntSlotScaler = 1;
-            else if (globalProtCnt <= 50 && funcShieldCnt <= 50) EntSlotScaler = 2;
-            else if (globalProtCnt <= 75 && funcShieldCnt <= 75) EntSlotScaler = 3;
-            else if (globalProtCnt <= 100 && funcShieldCnt <= 100) EntSlotScaler = 4;
-            else if (globalProtCnt <= 150 && funcShieldCnt <= 150) EntSlotScaler = 5;
-            else if (globalProtCnt <= 200 && funcShieldCnt <= 200) EntSlotScaler = 6;
+            if (globalProtCnt <= 25 && funcShieldCnt <= 50) EntSlotScaler = 1;
+            else if (globalProtCnt <= 50 && funcShieldCnt <= 100) EntSlotScaler = 2;
+            else if (globalProtCnt <= 75 && funcShieldCnt <= 150) EntSlotScaler = 3;
+            else if (globalProtCnt <= 100 && funcShieldCnt <= 200) EntSlotScaler = 4;
+            else if (globalProtCnt <= 150 && funcShieldCnt <= 300) EntSlotScaler = 5;
+            else if (globalProtCnt <= 200 && funcShieldCnt <= 400) EntSlotScaler = 6;
             else EntSlotScaler = 9;
 
             if (oldScaler != EntSlotScaler)

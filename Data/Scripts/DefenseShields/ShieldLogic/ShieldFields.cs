@@ -173,8 +173,8 @@
         private int _shieldRatio = 1;
         private int _expChargeReduction;
 
-        private bool _needPhysics;
         private bool _enablePhysics = true;
+        private bool _needPhysics;
         private bool _allInited;
         private bool _containerInited;
         private bool _forceBufferSync;
@@ -218,6 +218,7 @@
         private bool _powerFail;
         private bool _halfExtentsChanged;
         private bool _adjustShape;
+
         private string _modelActive = "\\Models\\Cubes\\ShieldActiveBase.mwm";
         private string _modelPassive = string.Empty;
 
@@ -317,6 +318,7 @@
         internal bool EntCleanUpTime { get; set; }
         internal bool ModulateGrids { get; set; }
         internal bool WasSuspended { get; set; } = true;
+        internal bool EnergyHit { get; set; }
 
         internal Vector3D MyGridCenter { get; set; }
         internal Vector3D DetectionCenter { get; set; }

@@ -135,6 +135,7 @@
                                 var hitDist = intersect ?? 0;
                                 var hitPos = ray.Position + (ray.Direction * -hitDist);
 
+                                EnergyHit = true;
                                 WorldImpactPosition = hitPos;
                                 Absorb += damage;
                                 ImpactSize = damage;
@@ -316,8 +317,9 @@
                         //if (Session.Enforced.Debug >= 2) Log.Line($"-----------------------] epiDist:{Vector3D.Distance(epiCenter, impactPos)} - iSqrDist:{invSqrDist} - RangeCap:{rangeCap} - SurfaceA:{hitFaceSurfaceArea}({_ellipsoidSurfaceArea * 0.5}) - dirYield:{empDirYield} - damageScaler:{damageScaler} - Damage:{targetDamage}(toOver:{(targetDamage / (DsState.State.Charge * ConvToHp))})");
 
                         if (_isServer && _mpActive)
-                            AddEmpBlastHit(AttackerId, targetDamage, "MPEMP", impactPos);
+                            AddEmpBlastHit(AttackerId, targetDamage, Session.Instance.MPEMP, impactPos);
 
+                        EnergyHit = true;
                         WorldImpactPosition = epiCenter;
                         Absorb += targetDamage;
                     }

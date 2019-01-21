@@ -234,12 +234,16 @@
             var damage = ((shieldMaxChargeRate * ConvToHp) * DsState.State.ModulateKinetic) * 0.01666666666f;
             if (_mpActive)
             {
-                if (_isServer) ShieldDoDamage(damage, grid.EntityId);
+                if (_isServer) ShieldDoDamage(damage, ds.Shield.EntityId);
             }
             else
             {
+                EnergyHit = true;
                 WorldImpactPosition = collisionAvg;
+
+                ds.EnergyHit = true;
                 ds.WorldImpactPosition = collisionAvg;
+
                 Absorb += damage;
                 ImpactSize = damage;
                 WebDamage = true;
