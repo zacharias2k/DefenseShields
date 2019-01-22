@@ -422,11 +422,11 @@
                         if (sPhysics.IsStatic && !bPhysics.IsStatic)
                         {
                             var bLSpeed = bPhysics.LinearVelocity;
-                            var bASpeed = bPhysics.AngularVelocity * 50;
+                            var bASpeed = bPhysics.AngularVelocity * 100;
                             var bLSpeedLen = bLSpeed.Length();
                             var bASpeedLen = bASpeed.Length();
+                            bASpeedLen = MathHelper.Clamp(bASpeedLen, 0, 50);
                             var bSpeedLen = bLSpeedLen > bASpeedLen ? bLSpeedLen : bASpeedLen;
-
                             var surfaceMass = (bMass > sMass) ? sMass : bMass;
 
                             var surfaceMulti = (hits > 5) ? 5 : hits;
@@ -443,11 +443,13 @@
                         else
                         {
                             var bLSpeed = bPhysics.LinearVelocity;
-                            var bASpeed = bPhysics.AngularVelocity * 50;
+                            var bASpeed = bPhysics.AngularVelocity * 100;
                             var bLSpeedLen = bLSpeed.Length();
                             var bASpeedLen = bASpeed.Length();
+                            bASpeedLen = MathHelper.Clamp(bASpeedLen, 0, 50);
                             var bSpeedLen = bLSpeedLen > bASpeedLen ? bLSpeedLen : bASpeedLen;
-                            var surfaceMass = (bMass > sMass) ? bMass : sMass;
+                            float? speed;
+
 
                             if (!bPhysics.IsStatic)
                             {
@@ -463,13 +465,25 @@
 
                             if (!sPhysics.IsStatic)
                             {
-                                var sForceData = new MyAddForceData { MyGrid = sGrid, Force = (sPhysics.CenterOfMassWorld - collisionAvg) * surfaceMass, MaxSpeed = MathHelper.Clamp(bSpeedLen, 0f, bSpeedLen * 0.5f) };
+                                if (bMass / sMass > 20 && Vector3.Dot(bLSpeed, breaching.PositionComp.WorldAABB.Center - collisionAvg) < 0)
+                                {
+                                    speed = MathHelper.Clamp(bSpeedLen, 1f, bSpeedLen * 0.5f);
+                                }
+                                else speed = null;
+
+                                var sForceData = new MyAddForceData { MyGrid = sGrid, Force = (sPhysics.CenterOfMassWorld - collisionAvg) * bMass, MaxSpeed = speed };
                                 ForceData.Enqueue(sForceData);
                             }
 
                             if (!bPhysics.IsStatic)
                             {
-                                var bForceData = new MyAddForceData { MyGrid = breaching, Force = (bPhysics.CenterOfMassWorld - collisionAvg) * surfaceMass, MaxSpeed = MathHelper.Clamp(bSpeedLen, 1f, bSpeedLen * 0.5f) };
+                                if (sMass / bMass > 20 && Vector3.Dot(bLSpeed, breaching.PositionComp.WorldAABB.Center - collisionAvg) < 0)
+                                {
+                                    speed = MathHelper.Clamp(bSpeedLen, 1f, bSpeedLen * 0.5f);
+                                }
+                                else speed = null;
+
+                                var bForceData = new MyAddForceData { MyGrid = breaching, Force = (bPhysics.CenterOfMassWorld - collisionAvg) * sMass, MaxSpeed = speed };
                                 ForceData.Enqueue(bForceData);
                             }
                         }
