@@ -179,9 +179,9 @@
         internal readonly MyStringId HudIconHeat100 = MyStringId.GetOrCompute("DS_ShieldHeat100");
 
         internal bool[] SphereOnCamera = Array.Empty<bool>();
-        internal volatile bool CustomDataReset = true;
+        internal bool CustomDataReset = true;
+
         internal volatile bool Monitor = true;
-        internal volatile bool Wake;
         internal volatile bool EntSlotTick;
         internal volatile bool Dispatched;
         internal volatile bool EmpDispatched;
@@ -229,6 +229,7 @@
         internal int OnCount { get; set; }
         internal int RefreshCycle { get; set; }
         internal int EntSlotScaler { get; set; } = 9;
+        internal int MinScaler { get; set; } = 1;
 
         internal long LastTerminalId { get; set; }
 

@@ -277,12 +277,15 @@
                     if (_lCount == 10)
                     {
                         _lCount = 0;
-                        if ((_longerLoop == 0 && Random.Next(0, 2) == 1) || _longerLoop == 3)
+                        if ((_longerLoop == 0 && Random.Next(0, 3) == 1) || _longerLoop == 3)
                         {
-                            _refresh = true;
-                            var localImpacts = Vector3D.Zero - _matrix.Translation;
-                            localImpacts.Normalize();
-                            _refreshPoint = localImpacts;
+                            if (ShellActive != null)
+                            {
+                                _refresh = true;
+                                var localImpacts = ShellActive.PositionComp.LocalMatrix.Forward;
+                                localImpacts.Normalize();
+                                _refreshPoint = localImpacts;
+                            }
                         }
                         _longerLoop++;
                         if (_longerLoop == 6) _longerLoop = 0;

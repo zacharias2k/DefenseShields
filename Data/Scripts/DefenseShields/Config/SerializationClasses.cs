@@ -30,7 +30,7 @@ namespace DefenseShields
         public int DisableVoxelSupport = -1;
 
         [ProtoMember(8), DefaultValue(-1)]
-        public int DisableGridDamageSupport = -1;
+        public int DisableEntityBarrier = -1;
 
         [ProtoMember(9), DefaultValue(-1)]
         public int Debug = -1;
@@ -52,6 +52,12 @@ namespace DefenseShields
 
         [ProtoMember(15), DefaultValue(-1)]
         public float MaintenanceCost = -1f;
+
+        [ProtoMember(16), DefaultValue(-1)]
+        public int DisableBlockDamage = -1;
+
+        [ProtoMember(17), DefaultValue(-1)]
+        public int DisableLineOfSight = -1;
 
         public override string ToString()
         {

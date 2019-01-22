@@ -2,9 +2,7 @@
 {
     using System;
     using global::DefenseShields.Support;
-
     using Sandbox.ModAPI;
-
     using VRage.Game;
     using VRageMath;
 
@@ -54,6 +52,8 @@
 
             _shapeChanged = _halfExtentsChanged || !DsState.State.EllipsoidAdjust.Equals(_oldEllipsoidAdjust) || !DsState.State.ShieldFudge.Equals(_oldShieldFudge) || _updateMobileShape;
             _entityChanged = ShieldComp.GridIsMoving || _comingOnline || _shapeChanged;
+
+            _halfExtentsChanged = false;
             _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
             _oldShieldFudge = DsState.State.ShieldFudge;
             if (_entityChanged || BoundingRange <= 0) CreateShieldShape();
@@ -122,12 +122,17 @@
             }
             else
             {
+                var blockHalfSize = MyGrid.GridSize * 0.5;
                 DsState.State.ShieldFudge = 0f;
                 var extentsDiff = DsState.State.GridHalfExtents.LengthSquared() - expandedAabb.HalfExtents.LengthSquared();
-                if (extentsDiff < -1 || extentsDiff > 1 || DsState.State.GridHalfExtents == Vector3D.Zero) DsState.State.GridHalfExtents = expandedAabb.HalfExtents;
+                var overThreshold = extentsDiff < -blockHalfSize || extentsDiff > blockHalfSize;
+                if (overThreshold || DsState.State.GridHalfExtents == Vector3D.Zero) DsState.State.GridHalfExtents = expandedAabb.HalfExtents;
             }
             _halfExtentsChanged = !DsState.State.GridHalfExtents.Equals(_oldGridHalfExtents);
-            if (_halfExtentsChanged) _adjustShape = true;
+            if (_halfExtentsChanged)
+            {
+                _adjustShape = true;
+            }
         }
 
         private void CreateShieldShape()

@@ -266,7 +266,7 @@
             var grid = ent as MyCubeGrid;
             if (grid != null)
             {
-                ModulateGrids = (ShieldComp.Modulator != null && ShieldComp.Modulator.ModSet.Settings.ModulateGrids) || Session.Enforced.DisableGridDamageSupport == 1;
+                ModulateGrids = (ShieldComp.Modulator != null && ShieldComp.Modulator.ModSet.Settings.ModulateGrids) || Session.Enforced.DisableEntityBarrier == 1;
                 ModulatorGridComponent modComp;
                 grid.Components.TryGet(out modComp);
                 if (!string.IsNullOrEmpty(modComp?.ModulationPassword) && modComp.ModulationPassword == Shield.CustomData)

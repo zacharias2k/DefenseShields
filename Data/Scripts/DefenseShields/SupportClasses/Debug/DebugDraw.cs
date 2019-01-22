@@ -249,24 +249,28 @@ namespace DefenseShields.Support
             MySimpleObjectDraw.DrawLine(line1Vec0, line1Vec1, LineId, ref color2, lineWdith);
         }
 
-        public static void DrawLosBlocked(Vector3D center, MatrixD referenceMatrix)
+        public static void DrawLosBlocked(Vector3D center, MatrixD referenceMatrix, double length)
         {
+            var halfLength = length * 0.5;
+            var width = (float)length * 0.05f;
             var color1 = (Vector4)Color.DarkOrange;
             var testDir0 = Vector3D.Normalize(referenceMatrix.Backward - referenceMatrix.Forward);
-            var line0Vec0 = center + (testDir0 * -0.25);
-            var line0Vec1 = center + (testDir0 * 0.25);
+            var line0Vec0 = center + (testDir0 * -halfLength);
+            var line0Vec1 = center + (testDir0 * halfLength);
 
-            MySimpleObjectDraw.DrawLine(line0Vec0, line0Vec1, LineId, ref color1, 0.025f);
+            MySimpleObjectDraw.DrawLine(line0Vec0, line0Vec1, LineId, ref color1, width);
         }
 
-        public static void DrawLosClear(Vector3D center, MatrixD referenceMatrix)
+        public static void DrawLosClear(Vector3D center, MatrixD referenceMatrix, double length)
         {
+            var halfLength = length * 0.5;
+            var width = (float)length * 0.05f;
             var color1 = (Vector4)Color.Green;
             var testDir0 = Vector3D.Normalize(referenceMatrix.Backward - referenceMatrix.Forward);
-            var line0Vec0 = center + (testDir0 * -0.25);
-            var line0Vec1 = center + (testDir0 * 0.25);
+            var line0Vec0 = center + (testDir0 * -halfLength);
+            var line0Vec1 = center + (testDir0 * halfLength);
 
-            MySimpleObjectDraw.DrawLine(line0Vec0, line0Vec1, LineId, ref color1, 0.025f);
+            MySimpleObjectDraw.DrawLine(line0Vec0, line0Vec1, LineId, ref color1, width);
         }
 
         public static void DrawMark(Vector3D center, MatrixD referenceMatrix, int length)

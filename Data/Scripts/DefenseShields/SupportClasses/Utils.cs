@@ -50,11 +50,17 @@
     {
         internal List<DefenseShields> ShieldList;
         internal uint Tick;
+        internal int ShieldCnt;
+        internal int MinScaler;
 
         internal void DoIt(List<DefenseShields> s, uint t)
         {
             ShieldList = s;
             Tick = t;
+            ShieldCnt = ShieldList.Count;
+            var preMinScaler = ShieldCnt / 30;
+            if (preMinScaler <= 0) preMinScaler = 1;
+            MinScaler = preMinScaler > 6 ? 9 : preMinScaler;
         }
     }
 

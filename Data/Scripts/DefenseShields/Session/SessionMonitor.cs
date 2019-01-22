@@ -32,9 +32,10 @@
                     _autoResetEvent.WaitOne();
                     if (!Monitor) break;
                     if (Enforced.Debug >= 3 && EntSlotTick) Dsutil2.Sw.Restart();
-
                     _newFrame = false;
                     _workData.DoIt(new List<DefenseShields>(FunctionalShields.Keys), Tick);
+                    MinScaler = _workData.MinScaler;
+
                     MyAPIGateway.Parallel.For(0, _workData.ShieldList.Count, x =>
                     {
                         var s = _workData.ShieldList[x];
@@ -469,18 +470,18 @@
         private void Scale()
         {
             if (Tick < 600) return;
-
             var oldScaler = EntSlotScaler;
             var globalProtCnt = GlobalProtect.Count;
-            var funcShieldCnt = FunctionalShields.Count;
 
-            if (globalProtCnt <= 25 && funcShieldCnt <= 50) EntSlotScaler = 1;
-            else if (globalProtCnt <= 50 && funcShieldCnt <= 100) EntSlotScaler = 2;
-            else if (globalProtCnt <= 75 && funcShieldCnt <= 150) EntSlotScaler = 3;
-            else if (globalProtCnt <= 100 && funcShieldCnt <= 200) EntSlotScaler = 4;
-            else if (globalProtCnt <= 150 && funcShieldCnt <= 300) EntSlotScaler = 5;
-            else if (globalProtCnt <= 200 && funcShieldCnt <= 400) EntSlotScaler = 6;
+            if (globalProtCnt <= 25) EntSlotScaler = 1;
+            else if (globalProtCnt <= 50) EntSlotScaler = 2;
+            else if (globalProtCnt <= 75) EntSlotScaler = 3;
+            else if (globalProtCnt <= 100) EntSlotScaler = 4;
+            else if (globalProtCnt <= 150) EntSlotScaler = 5;
+            else if (globalProtCnt <= 200) EntSlotScaler = 6;
             else EntSlotScaler = 9;
+
+            if (EntSlotScaler < MinScaler) EntSlotScaler = MinScaler;
 
             if (oldScaler != EntSlotScaler)
             {

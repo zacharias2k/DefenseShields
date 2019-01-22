@@ -30,13 +30,15 @@
             const int LargeShipRate = 1;
             const int SmallShipRatio = 1;
             const int DisableVoxel = 0;
-            const int DisableGridDmg = 0;
+            const int DisableEntityBarrier = 0;
             const int Debug = 1;
             const bool AltRecharge = false;
-            const int Version = 67;
+            const int Version = 68;
             const float CapScaler = 1f;
             const float HpsEfficiency = 0.5f;
             const float MaintenanceCost = 0.5f;
+            const int DisableBlockDamage = 0;
+            const int DisableLineOfSight = 0;
 
             var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg");
             if (dsCfgExists)
@@ -64,12 +66,14 @@
                 Session.Enforced.LargeShipRatio = !unPackedData.LargeShipRatio.Equals(-1) ? unPackedData.LargeShipRatio : LargeShipRate;
                 Session.Enforced.SmallShipRatio = !unPackedData.SmallShipRatio.Equals(-1) ? unPackedData.SmallShipRatio : SmallShipRatio;
                 Session.Enforced.DisableVoxelSupport = !unPackedData.DisableVoxelSupport.Equals(-1) ? unPackedData.DisableVoxelSupport : DisableVoxel;
-                Session.Enforced.DisableGridDamageSupport = !unPackedData.DisableGridDamageSupport.Equals(-1) ? unPackedData.DisableGridDamageSupport : DisableGridDmg;
+                Session.Enforced.DisableEntityBarrier = !unPackedData.DisableEntityBarrier.Equals(-1) ? unPackedData.DisableEntityBarrier : DisableEntityBarrier;
                 Session.Enforced.Debug = !unPackedData.Debug.Equals(-1) ? unPackedData.Debug : Debug;
                 Session.Enforced.AltRecharge = false;
                 Session.Enforced.CapScaler = !unPackedData.CapScaler.Equals(-1f) ? unPackedData.CapScaler : CapScaler;
                 Session.Enforced.HpsEfficiency = !unPackedData.HpsEfficiency.Equals(-1f) ? unPackedData.HpsEfficiency : HpsEfficiency;
                 Session.Enforced.MaintenanceCost = !unPackedData.MaintenanceCost.Equals(-1f) ? unPackedData.MaintenanceCost : MaintenanceCost;
+                Session.Enforced.DisableBlockDamage = !unPackedData.DisableBlockDamage.Equals(-1) ? unPackedData.DisableBlockDamage : DisableBlockDamage;
+                Session.Enforced.DisableLineOfSight = !unPackedData.DisableLineOfSight.Equals(-1) ? unPackedData.DisableLineOfSight : DisableLineOfSight;
                 if (unPackedData.Version <= 62)
                 {
                     Session.Enforced.Debug = 1;
@@ -90,13 +94,15 @@
                 Session.Enforced.LargeShipRatio = LargeShipRate;
                 Session.Enforced.SmallShipRatio = SmallShipRatio;
                 Session.Enforced.DisableVoxelSupport = DisableVoxel;
-                Session.Enforced.DisableGridDamageSupport = DisableGridDmg;
+                Session.Enforced.DisableEntityBarrier = DisableEntityBarrier;
                 Session.Enforced.Debug = Debug;
                 Session.Enforced.AltRecharge = AltRecharge;
                 Session.Enforced.CapScaler = CapScaler;
                 Session.Enforced.HpsEfficiency = HpsEfficiency;
                 Session.Enforced.MaintenanceCost = MaintenanceCost;
                 Session.Enforced.Version = Version;
+                Session.Enforced.DisableBlockDamage = DisableBlockDamage;
+                Session.Enforced.DisableLineOfSight = DisableLineOfSight;
 
                 WriteNewConfigFile();
 

@@ -306,7 +306,7 @@
             return collisionAvg;
         }
 
-        public static void SmallIntersect(EntIntersectInfo entInfo, ConcurrentQueue<IMySlimBlock> fewDmgBlocks, ConcurrentQueue<IMySlimBlock> destroyedBlocks, ConcurrentQueue<MyAddForceData> force, ConcurrentQueue<MyImpulseData> impulse, MyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
+        public static void SmallIntersect(EntIntersectInfo entInfo, ConcurrentQueue<IMySlimBlock> fewDmgBlocks, ConcurrentQueue<IMySlimBlock> destroyedBlocks, ConcurrentQueue<MyAddForceData> force, ConcurrentQueue<MyImpulseData> impulse, MyCubeGrid grid, MatrixD matrix, MatrixD matrixInv, bool damageBlocks = true)
         {
             try
             {
@@ -321,7 +321,7 @@
                 for (int i = 0; i < getBlocks.Count; i++)
                 {
                     var block = getBlocks[i];
-                    if (block.IsDestroyed)
+                    if (damageBlocks && block.IsDestroyed)
                     {
                         destroyedBlocks.Enqueue(block);
                         continue;
@@ -337,7 +337,7 @@
                         if (Vector3.Transform(point, matrixInv).LengthSquared() > 1) continue;
                         c3++;
                         collisionAvg += point;
-                        fewDmgBlocks.Enqueue(block);
+                        if (damageBlocks) fewDmgBlocks.Enqueue(block);
                         break;
                     }
                 }

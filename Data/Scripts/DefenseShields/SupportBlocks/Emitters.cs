@@ -53,7 +53,7 @@
         private bool _wasLos;
         private bool _wasLosState;
         private bool _losBroadcasted;
-
+        private bool _disableLos;
         private bool _wasCompact;
         private bool _wasCompatible;
         private double _wasBoundingRange;
@@ -149,6 +149,7 @@
                 _isDedicated = Session.Instance.DedicatedServer;
                 IsStatic = Emitter.CubeGrid.IsStatic;
                 StateChange(true);
+                _disableLos = Session.Enforced.DisableLineOfSight == 1;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
@@ -546,6 +547,14 @@
         #region LosTest
         private void LosLogic()
         {
+            if (_disableLos)
+            {
+                if (!_isServer) return;
+                EmiState.State.Los = true;
+                ShieldComp.CheckEmitters = false;
+                return;
+            }
+
             var controller = ShieldComp.DefenseShields;
             var controllerReady = controller != null && controller.Warming && controller.IsWorking && controller.IsFunctional && !controller.DsState.State.Suspended && controller.DsState.State.ControllerGridAccess;
             var controllerLinked = EmiState.State.Online && controllerReady;
@@ -629,7 +638,7 @@
 
                 var needsUpdate = controller.GridIsMobile && (ShieldComp.GridIsMoving || _updateLosState);
 
-                var blockCam = ShieldComp.DefenseShields.ShieldEnt.PositionComp.WorldVolume;
+                var blockCam = controller.ShieldEnt.PositionComp.WorldVolume;
                 if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam))
                 {
                     if (needsUpdate) UpdateUnitSphere();
@@ -648,14 +657,14 @@
                         foreach (var blocking in _blocksLos.Keys)
                         {
                             var blockedPos = LosScaledCloud[blocking];
-                            DsDebugDraw.DrawLosBlocked(blockedPos, MyGrid.PositionComp.LocalMatrix);
+                            DsDebugDraw.DrawLosBlocked(blockedPos, MyGrid.PositionComp.LocalMatrix, (blockCam.Radius / 25));
                         }
                     }
 
                     foreach (var clear in _vertsSighted)
                     {
                         var blockedPos = LosScaledCloud[clear];
-                        DsDebugDraw.DrawLosClear(blockedPos, MyGrid.PositionComp.LocalMatrix);
+                        DsDebugDraw.DrawLosClear(blockedPos, MyGrid.PositionComp.LocalMatrix, (blockCam.Radius / 25));
                     }
 
                     var blocked = _blocksLos.Count;

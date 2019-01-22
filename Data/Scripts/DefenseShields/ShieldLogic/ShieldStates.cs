@@ -1,14 +1,10 @@
 ﻿namespace DefenseShields
 {
     using System.Collections.Generic;
-    using System.Xml;
-
     using global::DefenseShields.Support;
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
     using VRage.Game;
-    using VRage.Game.ModAPI;
-
     using VRageMath;
 
     public partial class DefenseShields
@@ -425,6 +421,7 @@
         {
             LosCheckTick = uint.MaxValue;
             ShieldComp.CheckEmitters = true;
+            _adjustShape = true;
         }
 
         private void SetShieldServerStatus(bool powerState)

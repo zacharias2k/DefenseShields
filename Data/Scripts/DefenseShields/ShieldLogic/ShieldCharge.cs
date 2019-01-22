@@ -134,12 +134,21 @@
             var maintenanceCost = Session.Enforced.MaintenanceCost;
 
             var percent = DsSet.Settings.Rate * ChargeRatio;
+
             var chargePercent = DsSet.Settings.Rate * ConvToDec;
             var shieldMaintainPercent = maintenanceCost / percent;
             _sizeScaler = _shieldVol / (_ellipsoidSurfaceArea * MagicRatio);
 
             float bufferScaler;
-            if (ShieldMode == ShieldType.Station && DsState.State.Enhancer) bufferScaler = 100 / percent * baseScaler * _shieldRatio;
+            if (ShieldMode == ShieldType.Station)
+            {
+                if (DsState.State.Enhancer) bufferScaler = 100 / percent * baseScaler * _shieldRatio;
+                else bufferScaler = 100 / percent * baseScaler / (float)_sizeScaler * _shieldRatio;
+            }
+            else if (_sizeScaler > 1 && DsSet.Settings.FortifyShield)
+            {
+                bufferScaler = 100 / percent * baseScaler * _shieldRatio;
+            }
             else bufferScaler = 100 / percent * baseScaler / (float)_sizeScaler * _shieldRatio;
 
             var hpBase = GridMaxPower * bufferScaler;
