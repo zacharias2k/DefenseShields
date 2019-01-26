@@ -46,7 +46,7 @@
         }
     }
 
-    internal class Work
+    internal class MonitorWork
     {
         internal List<DefenseShields> ShieldList;
         internal uint Tick;

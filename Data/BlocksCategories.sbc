@@ -20,7 +20,7 @@
 		<string>DSControlLarge</string>
 		<string>EmitterL</string>
 		<string>EmitterS</string>
-		<!--<string>PlanetaryEmitter</string> -->
+		<string>PlanetaryEmitter</string>
 		<string>EmitterST</string>
 		<string>EmitterLA</string>
 		<string>EmitterSA</string>
@@ -393,7 +393,7 @@
       <DamagedSound>ParticleElectrical</DamagedSound>
       <Upgrades></Upgrades>
     </Definition>
-<!-- Planetary Emitter
+<!-- PlanetShield
     <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
         <TypeId>UpgradeModule</TypeId>
@@ -448,7 +448,6 @@
       <DamagedSound>ParticleElectrical</DamagedSound>
       <Upgrades></Upgrades>
     </Definition>
-    -->
     <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
         <TypeId>UpgradeModule</TypeId>
@@ -497,8 +496,7 @@
       <DamageEffectId>214</DamageEffectId>
       <DamagedSound>ParticleElectrical</DamagedSound>
     </Definition>
-
-    <!--<Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
+    <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
         <TypeId>UpgradeModule</TypeId>
         <SubtypeId>EmitterP</SubtypeId>

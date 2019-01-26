@@ -35,8 +35,7 @@
                     _newFrame = false;
                     _workData.DoIt(new List<DefenseShields>(FunctionalShields.Keys), Tick);
                     MinScaler = _workData.MinScaler;
-
-                    MyAPIGateway.Parallel.For(0, _workData.ShieldList.Count, x =>
+                    MyAPIGateway.Parallel.For(0, _workData.ShieldCnt, x =>
                     {
                         var s = _workData.ShieldList[x];
                         var tick = _workData.Tick;
@@ -126,7 +125,7 @@
                             if (s.TicksWithNoActivity++ % EntCleanCycle == 0) s.EntCleanUpTime = true;
                             if (tick > 1200 && !s.WasPaused)
                             {
-                                if (Enforced.Debug >= 2) Log.Line("Logic Paused by monitor");
+                                if (Enforced.Debug >= 2) Log.Line($"Logic Paused by monitor");
                                 bool value;
                                 ActiveShields.TryRemove(s, out value);
                                 s.WasPaused = true;
@@ -299,6 +298,7 @@
                             {
                                 if (!s.EntsByMe[ent].Pos.Equals(entPos, 1e-3))
                                 {
+                                    if (Enforced.Debug >= 2) Log.Line($"[Moved] Ent:{ent.DebugName}");
                                     MoverInfo moverInfo;
                                     s.EntsByMe.TryRemove(ent, out moverInfo);
                                     s.EntsByMe.TryAdd(ent, new MoverInfo(entPos, _workData.Tick));

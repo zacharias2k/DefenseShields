@@ -273,6 +273,9 @@ namespace DefenseShields
         [ProtoMember(1)]
         public bool ShieldActive = false;
 
+        [ProtoMember(2)]
+        public long ShieldShell = 0;
+
         public override string ToString()
         {
             return "";

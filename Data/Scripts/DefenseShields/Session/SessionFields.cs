@@ -190,7 +190,7 @@
         private const int EntCleanCycle = 3600;
         private const int EntMaxTickAge = 36000;
 
-        private readonly Work _workData = new Work();
+        private readonly MonitorWork _workData = new MonitorWork();
 
         private readonly List<MyCubeBlock> _warHeadCubeHits = new List<MyCubeBlock>();
         private readonly List<MyCubeGrid> _warHeadGridHits = new List<MyCubeGrid>();

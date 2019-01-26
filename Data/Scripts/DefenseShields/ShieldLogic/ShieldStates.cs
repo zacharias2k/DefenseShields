@@ -100,13 +100,13 @@
 
         private void UnPauseLogic()
         {
+            if (Session.Enforced.Debug >= 2) Log.Line($"[Logic Resumed] Player:{PlayerByShield} - Mover:{MoverByShield} - NewEnt:{NewEntByShield} - Lost:{LostPings > 59} - LastWoken:{LastWokenTick} - ASleep:{Asleep} - TicksNoActivity:{TicksWithNoActivity}");
             TicksWithNoActivity = 0;
             LastWokenTick = _tick;
             Asleep = false;
             PlayerByShield = true;
             Session.Instance.ActiveShields[this] = false;
             WasPaused = false;
-            if (Session.Enforced.Debug >= 2) Log.Line("Logic Resumed");
         }
 
         private bool ShieldOn()

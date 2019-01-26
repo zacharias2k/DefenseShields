@@ -77,7 +77,7 @@
             catch (Exception ex) { Log.Line($"Exception in EmptyEntity: {ex}"); return null; }
         }
 
-        public static IMyEntity SpawnBlock(string subtypeId, string name, bool isVisible = false, bool hasPhysics = false, bool isStatic = false, bool toSave = false, bool destructible = false, long ownerId = 0)
+        public static MyEntity SpawnBlock(string subtypeId, string name, bool isVisible = false, bool hasPhysics = false, bool isStatic = false, bool toSave = false, bool destructible = false, long ownerId = 0)
         {
             try
             {
@@ -86,10 +86,10 @@
                 CubeGridBuilder.CreatePhysics = hasPhysics;
                 CubeGridBuilder.IsStatic = isStatic;
                 CubeGridBuilder.DestructibleBlocks = destructible;
-                var ent = MyAPIGateway.Entities.CreateFromObjectBuilder(CubeGridBuilder);
+                var ent = (MyEntity)MyAPIGateway.Entities.CreateFromObjectBuilder(CubeGridBuilder);
 
                 ent.Flags &= ~EntityFlags.Save;
-                ent.Visible = isVisible;
+                ent.Render.Visible = isVisible;
                 MyAPIGateway.Entities.AddEntity(ent);
 
                 return ent;
