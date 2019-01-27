@@ -288,7 +288,7 @@
                 var tick = Tick;
 
                 var functBlock = blockInfo.FunctBlock;
-                if (functBlock == null)
+                if (functBlock == null || functBlock.MarkedForClose)
                 {
                     _warEffectPurge.Enqueue(cubeid);
                     continue;
@@ -487,6 +487,54 @@
                     if (!IsServer) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
                 }
                 GameLoaded = true;
+            }
+
+            if (MPDamageEvent)
+            {
+                if (Tick - LastMpEventTick >= 60)
+                {
+                    Log.Line($"end MP event, timeout");
+                    MPDamageEvent = false;
+                    _monitorBlocks.Clear();
+                }
+                else
+                {
+                    if (!_monitorBlocks.IsEmpty)
+                    {
+                        Log.Line($"monitoring blocks");
+                        var mpBlocks = new Queue<DamageCheck>();
+                        foreach (var mBlock in _monitorBlocks)
+                        {
+                            var newMonitor = new DamageCheck(mBlock.Damage, mBlock.Block.CubeGrid.EntityId, mBlock.DamageType);
+                            if (Tick - mBlock.Tick > 60)
+                            {
+                                mpBlocks.Enqueue(newMonitor);
+                                continue;
+                            }
+
+                            DamageCheck mpDamageBlock;
+                            var found = MpDamageCheck.TryGetValue(newMonitor, out mpDamageBlock);
+                            if (found)
+                            {
+                                Log.Line($"damaging blocks");
+                                mBlock.Block.DoDamage(mBlock.Damage, mBlock.DamageType, false, null, mBlock.Block.CubeGrid.EntityId);
+                                mpBlocks.Enqueue(newMonitor);
+                            }
+                        }
+
+                        DamageCheck damageBlock;
+                        while (mpBlocks.TryDequeue(out damageBlock))
+                        {
+                            DamageCheck outValue;
+                            MpDamageCheck.TryRemove(damageBlock, out outValue);
+                        }
+                    }
+                    else
+                    {
+                        Log.Line($"end MP event, no more blocks");
+                        MPDamageEvent = false;
+                    }
+                }
             }
 
             if (EmpWork.EventRunning && EmpWork.Computed)

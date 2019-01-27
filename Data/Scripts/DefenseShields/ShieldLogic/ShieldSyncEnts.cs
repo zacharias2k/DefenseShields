@@ -6,6 +6,8 @@
     using Sandbox.Game.Entities;
     using Sandbox.Game.Entities.Character.Components;
     using Sandbox.ModAPI;
+
+    using VRage.Game;
     using VRage.Game.Components;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
@@ -28,7 +30,7 @@
                     VoxelDmg.Clear();
                     CharacterDmg.Clear();
                     FewDmgBlocks.Clear();
-                    DmgBlocks.Clear();
+                    CollidingBlocks.Clear();
                     ForceData.Clear();
                     ImpulseData.Clear();
                     return;
@@ -121,20 +123,20 @@
                             var damage = computedDamage * DsState.State.ModulateKinetic;
                             if (computedDamage < 0) damage = computedDamage;
 
+                            var rayDir = Vector3D.Normalize(ent.Physics.LinearVelocity);
+                            var ray = new RayD(ent.PositionComp.WorldVolume.Center, rayDir);
+                            var intersect = CustomCollision.IntersectEllipsoid(DetectMatrixOutsideInv, DetectionMatrix, ray);
+                            var hitDist = intersect ?? 0;
+                            var hitPos = ray.Position + (ray.Direction * -hitDist);
+
                             if (_mpActive)
                             {
-                                ShieldDoDamage(damage, ent.EntityId);
+                                AddShieldHit(ent.EntityId, damage, Session.Instance.MPExplosion, null, false, hitPos);
                                 ent.Close();
                                 ent.InScene = false;
                             }
                             else
                             {
-                                var rayDir = Vector3D.Normalize(ent.Physics.LinearVelocity);
-                                var ray = new RayD(ent.PositionComp.WorldVolume.Center, rayDir);
-                                var intersect = CustomCollision.IntersectEllipsoid(DetectMatrixOutsideInv, DetectionMatrix, ray);
-                                var hitDist = intersect ?? 0;
-                                var hitPos = ray.Position + (ray.Direction * -hitDist);
-
                                 EnergyHit = true;
                                 WorldImpactPosition = hitPos;
                                 Absorb += damage;
@@ -159,15 +161,15 @@
                             var damage = 5000 * DsState.State.ModulateEnergy;
                             if (_mpActive)
                             {
-                                ShieldDoDamage(damage, meteor.EntityId);
-                                meteor.DoDamage(10000f, Session.Instance.DelDamage, true, null, MyGrid.EntityId);
+                                AddShieldHit(meteor.EntityId, damage, Session.Instance.MPKinetic, null, false, meteor.PositionComp.WorldVolume.Center);
+                                meteor.DoDamage(10000f, Session.Instance.MPKinetic, true, null, MyGrid.EntityId);
                             }
                             else
                             {
                                 WorldImpactPosition = meteor.PositionComp.WorldVolume.Center;
                                 Absorb += damage;
                                 ImpactSize = damage;
-                                meteor.DoDamage(10000f, Session.Instance.DelDamage, true, null, MyGrid.EntityId);
+                                meteor.DoDamage(10000f, MyDamageType.Bullet, true, null, MyGrid.EntityId);
                             }
                         }
                     }
@@ -205,7 +207,7 @@
                             var playerGasLevel = character.GetSuitGasFillLevel(hId);
                             character.Components.Get<MyCharacterOxygenComponent>().UpdateStoredGasLevel(ref hId, (playerGasLevel * -0.0001f) + .002f);
                             MyVisualScriptLogicProvider.CreateExplosion(character.GetPosition(), 0, 0);
-                            character.DoDamage(50f, Session.Instance.DelDamage, true, null, MyGrid.EntityId);
+                            character.DoDamage(50f, Session.Instance.MPExplosion, true, null, MyGrid.EntityId);
                             var vel = character.Physics.LinearVelocity;
                             if (vel == new Vector3D(0, 0, 0)) vel = MyUtils.GetRandomVector3Normalized();
                             var speedDir = Vector3D.Normalize(vel);
@@ -220,12 +222,12 @@
 
                 try
                 {
-                    if (!DmgBlocks.IsEmpty)
+                    if (!CollidingBlocks.IsEmpty)
                     {
                         IMySlimBlock block;
                         var damageMulti = 350;
                         if (ShieldMode == ShieldType.Station && DsState.State.Enhancer) damageMulti = 10000;
-                        while (DmgBlocks.TryDequeue(out block))
+                        while (CollidingBlocks.TryDequeue(out block))
                         {
                             if (block == null) continue;
                             var myGrid = block.CubeGrid as MyCubeGrid;
@@ -234,7 +236,7 @@
                                 myGrid.EnqueueDestroyedBlock(block.Position);
                                 continue;
                             }
-                            block.DoDamage(damageMulti, Session.Instance.DelDamage, true, null, myGrid.EntityId); 
+                            block.DoDamage(damageMulti, MyDamageType.Bullet, true, null, myGrid.EntityId); 
                             if (myGrid.BlocksCount == 0) myGrid.SendGridCloseRequest();
                         }
                     }
@@ -257,7 +259,7 @@
                                 myGrid.Close();
                                 continue;
                             }
-                            block.DoDamage(block.MaxIntegrity * 0.9f, Session.Instance.DelDamage, true, null, myGrid.EntityId); 
+                            block.DoDamage(block.MaxIntegrity * 0.9f, MyDamageType.Bullet, true, null, myGrid.EntityId); 
                             if (myGrid.BlocksCount == 0) myGrid.SendGridCloseRequest();
                         }
                     }

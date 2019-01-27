@@ -164,7 +164,7 @@
                 var damage = entInfo.Damage * DsState.State.ModulateEnergy;
                 if (_mpActive)
                 {
-                    if (_isServer) ShieldDoDamage(damage, grid.EntityId);
+                    if (_isServer) AddShieldHit(grid.EntityId, damage, Session.Instance.MPKinetic, null, false, contactpoint);
                 }
                 else
                 {
@@ -234,7 +234,7 @@
             var damage = ((shieldMaxChargeRate * ConvToHp) * DsState.State.ModulateKinetic) * 0.01666666666f;
             if (_mpActive)
             {
-                if (_isServer) ShieldDoDamage(damage, ds.Shield.EntityId);
+                if (_isServer) AddShieldHit(ds.Shield.EntityId, damage, Session.Instance.MPEnergy, null, false, collisionAvg);
             }
             else
             {
@@ -407,10 +407,10 @@
                             {
                                 if (hits > blockDmgNum) break;
                             }
-                            else if (DmgBlocks.Count > blockDmgNum) break;
+                            else if (CollidingBlocks.Count > blockDmgNum) break;
 
                             rawDamage += MathHelper.Clamp(block.Integrity, 0, 350);
-                            if (damageBlocks) DmgBlocks.Enqueue(block);
+                            if (damageBlocks) CollidingBlocks.Enqueue(block);
                             break;
                         }
                     }
@@ -498,7 +498,7 @@
                     entInfo.Damage = damage;
                     if (_mpActive)
                     {
-                        if (_isServer && bBlockCenter != Vector3D.NegativeInfinity) ShieldDoDamage(damage, breaching.EntityId);
+                        if (_isServer && bBlockCenter != Vector3D.NegativeInfinity) AddShieldHit(breaching.EntityId, damage, Session.Instance.MPKinetic, null, false, collisionAvg);
                     }
                     else
                     {

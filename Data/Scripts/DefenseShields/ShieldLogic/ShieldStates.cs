@@ -95,6 +95,7 @@
             if (_blockEvent && _tick >= _funcTick) BlockChanged(true);
             if (_tick - 1 > _lastSendDamageTick) ShieldHitReset(ShieldHit.Amount > 0 && ShieldHit.HitPos != Vector3D.Zero);
             if (ProtoShieldHits.Count != 0) SendShieldHits();
+            if (!_isDedicated && ShieldHits.Count != 0) AbsorbClientShieldHits();
             return true;
         }
 
@@ -145,7 +146,7 @@
                     return false;
                 }
                 _syncEnts = !ForceData.IsEmpty || !ImpulseData.IsEmpty || !MissileDmg.IsEmpty || !FewDmgBlocks.IsEmpty
-                            || !DmgBlocks.IsEmpty || !MeteorDmg.IsEmpty || !Eject.IsEmpty || !DestroyedBlocks.IsEmpty 
+                            || !CollidingBlocks.IsEmpty || !MeteorDmg.IsEmpty || !Eject.IsEmpty || !DestroyedBlocks.IsEmpty 
                             || !VoxelDmg.IsEmpty || !CharacterDmg.IsEmpty || Session.Instance.EmpWork.EventRunning;
             }
             else

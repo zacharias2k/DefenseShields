@@ -37,15 +37,15 @@
 
         internal readonly int[] SlotCnt = new int[9];
         internal readonly Vector3D[] LosPointSphere = new Vector3D[2000];
-        internal readonly MyStringHash MPdamage = MyStringHash.GetOrCompute("MPdamage");
-        internal readonly MyStringHash DelDamage = MyStringHash.GetOrCompute("DelDamage");
+        internal readonly MyStringHash MPExplosion = MyStringHash.GetOrCompute("MPExplosion");
+        internal readonly MyStringHash MPEnergy = MyStringHash.GetOrCompute("MPEnergy");
+        internal readonly MyStringHash MPKinetic = MyStringHash.GetOrCompute("MPKinetic");
+        internal readonly MyStringHash MPEMP = MyStringHash.GetOrCompute("MPEMP");
+        internal readonly MyStringHash MpDmgEffect = MyStringHash.GetOrCompute("MpDmgEffect");
+        internal readonly MyStringHash MpAllowDamage = MyStringHash.GetOrCompute("MpAllowDamage");
         internal readonly MyStringHash DSdamage = MyStringHash.GetOrCompute("DSdamage");
         internal readonly MyStringHash DSheal = MyStringHash.GetOrCompute("DSheal");
         internal readonly MyStringHash DSbypass = MyStringHash.GetOrCompute("DSbypass");
-        internal readonly MyStringHash MpDoDeform = MyStringHash.GetOrCompute("MpDoDeform");
-        internal readonly MyStringHash MpDoExplosion = MyStringHash.GetOrCompute("MpDoExplosion");
-        internal readonly MyStringHash MpDmgEffect = MyStringHash.GetOrCompute("MpDmgEffect");
-        internal readonly MyStringHash MPEMP = MyStringHash.GetOrCompute("MPEMP");
         internal readonly MyStringHash Bypass = MyStringHash.GetOrCompute("bypass");
         internal readonly MyStringId Password = MyStringId.GetOrCompute("Shield Access Frequency");
         internal readonly MyStringId PasswordTooltip = MyStringId.GetOrCompute("Match a shield's modulation frequency/code");
@@ -82,6 +82,7 @@
 
         internal readonly ConcurrentDictionary<DefenseShields, bool> ActiveShields = new ConcurrentDictionary<DefenseShields, bool>();
         internal readonly ConcurrentDictionary<DefenseShields, bool> FunctionalShields = new ConcurrentDictionary<DefenseShields, bool>();
+        internal readonly ConcurrentDictionary<DamageCheck, DamageCheck> MpDamageCheck = new ConcurrentDictionary<DamageCheck, DamageCheck>();
 
         internal readonly List<PlanetShields> PlanetShields = new List<PlanetShields>();
         internal readonly List<Emitters> Emitters = new List<Emitters>();
@@ -199,6 +200,9 @@
         private readonly Dictionary<MyCubeGrid, WarHeadHit> _warHeadGridShapes = new Dictionary<MyCubeGrid, WarHeadHit>();
         private readonly Queue<long> _warEffectPurge = new Queue<long>();
         private readonly ConcurrentQueue<MyEntity> _entRefreshQueue = new ConcurrentQueue<MyEntity>();
+        private readonly ConcurrentQueue<DamageCheck> _damageBlocks = new ConcurrentQueue<DamageCheck>();
+        private readonly ConcurrentQueue<MonitorBlock> _monitorBlocks = new ConcurrentQueue<MonitorBlock>();
+
         private readonly ConcurrentDictionary<MyEntity, uint> _globalEntTmp = new ConcurrentDictionary<MyEntity, uint>();
         private readonly ConcurrentDictionary<long, BlockState> _warEffectCubes = new ConcurrentDictionary<long, BlockState>();
 
@@ -225,7 +229,7 @@
 
         internal uint Tick { get; set; }
         internal uint OldestRefreshTick { get; set; }
-
+        internal uint LastMpEventTick { get; set; }
         internal int OnCount { get; set; }
         internal int RefreshCycle { get; set; }
         internal int EntSlotScaler { get; set; } = 9;
@@ -263,6 +267,7 @@
         internal bool DsAction { get; set; }
         internal bool PsAction { get; set; }
         internal bool ModAction { get; set; }
+        internal bool MPDamageEvent { get; set; }
 
         internal Vector3 ResetWarHeadHSV { get; set; } = new Vector3(0, -1, 0);
 

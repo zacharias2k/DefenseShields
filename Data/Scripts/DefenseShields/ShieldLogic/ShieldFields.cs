@@ -45,9 +45,8 @@
         internal readonly ConcurrentDictionary<long, WarHeadBlast> EmpBlast = new ConcurrentDictionary<long, WarHeadBlast>();
 
         internal readonly ConcurrentQueue<MyCubeGrid> StaleGrids = new ConcurrentQueue<MyCubeGrid>();
-
         internal readonly ConcurrentQueue<MyCubeGrid> Eject = new ConcurrentQueue<MyCubeGrid>();
-        internal readonly ConcurrentQueue<IMySlimBlock> DmgBlocks = new ConcurrentQueue<IMySlimBlock>();
+        internal readonly ConcurrentQueue<IMySlimBlock> CollidingBlocks = new ConcurrentQueue<IMySlimBlock>();
         internal readonly ConcurrentQueue<MyCubeBlock> FatAddQueue = new ConcurrentQueue<MyCubeBlock>();
         internal readonly ConcurrentQueue<MyCubeBlock> FatRemoveQueue = new ConcurrentQueue<MyCubeBlock>();
         internal readonly ConcurrentQueue<IMyWarhead> EmpDmg = new ConcurrentQueue<IMyWarhead>();

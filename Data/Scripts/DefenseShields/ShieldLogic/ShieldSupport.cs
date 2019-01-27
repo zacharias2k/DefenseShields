@@ -64,38 +64,24 @@
         }
         #endregion
 
-        public void ShieldDoDamage(float damage, long entityId, float shieldFractionLoss = 0f)
+        internal void AddShieldHit(long attackerId, float amount, MyStringHash damageType, IMySlimBlock block, bool reset, Vector3D? hitPos = null)
         {
-            ImpactSize = damage;
-
-            if (shieldFractionLoss > 0)
+            lock (ShieldHit)
             {
-                damage = shieldFractionLoss;
+                ShieldHit.Amount += amount;
+                ShieldHit.DamageType = damageType.String;
+
+                if (block != null && !hitPos.HasValue && ShieldHit.HitPos == Vector3D.Zero)
+                {
+                    if (block.FatBlock != null) ShieldHit.HitPos = block.FatBlock.PositionComp.WorldAABB.Center;
+                    else block.ComputeWorldCenter(out ShieldHit.HitPos);
+                }
+                else if (hitPos.HasValue) ShieldHit.HitPos = hitPos.Value;
+
+                if (attackerId != 0) ShieldHit.AttackerId = attackerId;
+                if (amount > 0) _lastSendDamageTick = _tick;
+                if (reset) ShieldHitReset(true);
             }
-            Shield.SlimBlock.DoDamage(damage, Session.Instance.MPdamage, true, null, entityId);
-        }
-
-        public void DamageBlock(IMySlimBlock block, float damage, long entityId, MyStringHash damageType)
-        {
-            block.DoDamage(damage, damageType, true, null, entityId);
-        }
-
-        public void DamageBlockEffects(IMySlimBlock block, float damage, long entityId, MyStringHash damageType)
-        {
-            block.DoDamage(damage, Session.Instance.MpDmgEffect, true, null, entityId);
-        }
-
-        internal void AddShieldHit(long attackerId, float amount, MyStringHash damageType, IMySlimBlock block)
-        {
-            ShieldHit.Amount += amount;
-            ShieldHit.DamageType = damageType.String;
-            if (ShieldHit.HitPos == Vector3D.Zero)
-            {
-                if (block.FatBlock != null) ShieldHit.HitPos = block.FatBlock.PositionComp.WorldAABB.Center;
-                else block.ComputeWorldCenter(out ShieldHit.HitPos);
-            }
-            if (attackerId != 0) ShieldHit.AttackerId = attackerId;
-            if (amount > 0) _lastSendDamageTick = _tick;
         }
 
         internal void AddEmpBlastHit(long attackerId, float amount, MyStringHash damageType, Vector3D hitPos)
@@ -175,16 +161,56 @@
             for (int i = 0; i < ShieldHits.Count; i++)
             {
                 var hit = ShieldHits[i];
-                ImpactSize = 12001;
-                if (Session.Enforced.Debug >= 2) Log.Line($"MpDamageEvent: Amount:{hit.Amount} - attacker:{hit.Attacker != null} - dType:{hit.DamageType} - hitPos:{hit.HitPos}");
+                var damageType = hit.DamageType;
+                if (Session.Enforced.Debug >= 2) Log.Line($"MpDamageEvent: Amount:{hit.Amount} - attacker:{hit.Attacker != null} - dType:{damageType} - hitPos:{hit.HitPos} - wasOnline:{WasOnline}");
 
-                if (hit.HitPos != Vector3D.Zero && WorldImpactPosition == Vector3D.NegativeInfinity)
+                if (damageType == Session.Instance.MpAllowDamage)
                 {
-                    if (hit.DamageType == Session.Instance.MPEMP) EnergyHit = true;
-                    WorldImpactPosition = hit.HitPos;
+                    var damageBlock = new DamageCheck(hit.Amount, 0, hit.DamageType);
+                    Session.Instance.MpDamageCheck.TryAdd(damageBlock, damageBlock);
+                    Session.Instance.MPDamageEvent = true;
+                    continue;
                 }
+                if (!WasOnline) continue;
 
-                Absorb += hit.Amount * ConvToWatts;
+                if (damageType == Session.Instance.MPExplosion)
+                {
+                    ImpactSize = hit.Amount;
+                    WorldImpactPosition = hit.HitPos;
+                    EnergyHit = true;
+                    Absorb += hit.Amount * ConvToWatts;
+                    UtilsStatic.CreateFakeSmallExplosion(WorldImpactPosition);
+                    if (hit.Attacker != null)
+                    {
+                        hit.Attacker.Close();
+                        hit.Attacker.InScene = false;
+                    }
+                    continue;
+                }
+                if (damageType == Session.Instance.MPKinetic)
+                {
+                    ImpactSize = hit.Amount;
+                    WorldImpactPosition = hit.HitPos;
+                    EnergyHit = false;
+                    Absorb += hit.Amount * ConvToWatts;
+                    continue;
+                }
+                if (damageType == Session.Instance.MPEnergy)
+                {
+                    ImpactSize = hit.Amount;
+                    WorldImpactPosition = hit.HitPos;
+                    EnergyHit = true;
+                    Absorb += hit.Amount * ConvToWatts;
+                    continue;
+                }
+                if (damageType == Session.Instance.MPEMP)
+                {
+                    ImpactSize = 12001;
+                    WorldImpactPosition = hit.HitPos;
+                    EnergyHit = true;
+                    Absorb += hit.Amount * ConvToWatts;
+                    continue;
+                }
             }
             ShieldHits.Clear();
         }

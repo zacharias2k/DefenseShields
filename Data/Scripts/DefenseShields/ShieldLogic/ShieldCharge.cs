@@ -26,7 +26,6 @@
             else if (_count == 28 && Math.Abs(_power - ShieldCurrentPower) >= 0.0001f)
                 _sink.Update();
 
-            if (!_isDedicated && ShieldHits.Count != 0) AbsorbClientShieldHits();
             if (Absorb > 0)
             {
                 _damageReadOut += Absorb;

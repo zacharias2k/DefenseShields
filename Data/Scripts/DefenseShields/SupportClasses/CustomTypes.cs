@@ -5,6 +5,7 @@
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
     using VRage.Collections;
+    using VRage.Game;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRage.ModAPI;
@@ -84,6 +85,57 @@
         {
             Pos = pos;
             CreationTick = creationTick;
+        }
+    }
+
+    public struct DamageCheck
+    {
+        public readonly float Damage;
+        public readonly long AttackerId;
+        public readonly MyStringHash DamageType;
+        public DamageCheck(float damage, long attackerId, MyStringHash damageType)
+        {
+            Damage = damage;
+            AttackerId = attackerId;
+            DamageType = damageType;
+        }
+    }
+
+    public struct MonitorBlock : IEquatable<MonitorBlock>
+    {
+        public readonly IMySlimBlock Block;
+        public readonly float Damage;
+        public readonly MyStringHash DamageType;
+        public readonly uint Tick;
+
+        internal MonitorBlock(IMySlimBlock block, float damage, MyStringHash damageType, uint tick)
+        {
+            Block = block;
+            Damage = damage;
+            DamageType = damageType;
+            Tick = tick;
+        }
+
+        public bool Equals(MonitorBlock other)
+        {
+            return true;
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var result = 0;
+                result = (result * 397) ^ Block.Position.GetHashCode();
+                result = (result * 397) ^ DamageType.GetHashCode();
+                result = (result * 397) ^ Damage.GetHashCode();
+                return result;
+            }
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is MonitorBlock && Equals((MonitorBlock)obj);
         }
     }
 
@@ -210,25 +262,6 @@
                 ShieldDamage = -ShieldDamage;
         }
     }
-    /*
-
-    public class BlockDamageInfo
-    {
-        public MyEntity Entity;
-        public Vector3I Vector;
-        public bool NormalDamage;
-        public bool Deformation;
-        public int Count;
-        public BlockDamageInfo(MyEntity entity, Vector3I vector, bool normalDamage, bool deformation, int count)
-        {
-            Entity = entity;
-            NormalDamage = normalDamage;
-            Deformation = deformation;
-            Vector = vector;
-            Count = count;
-        }
-    }
-    */
 
     public class ProtectCache
     {
@@ -287,14 +320,13 @@
         public int RefreshSlot;
         public uint CreationTick;
         public DefenseShields IntegrityShield;
-
-        // Damage Handler Field Cache
-        internal DefenseShields BlockingShield = null;
-        internal DefenseShields ClientExpShield = null;
-        internal IMySlimBlock OriginBlock = null;
-        internal long IgnoreAttackerId;
-        internal Vector3D OriginHit;
-        //
+        public DefenseShields BlockingShield = null;
+        public DefenseShields NotBlockingShield = null;
+        public long NotBlockingAttackerId = -1;
+        public MyStringHash NotBlockingMainDamageType;
+        public IMySlimBlock OriginBlock = null;
+        public long IgnoreAttackerId = -1;
+        public Vector3D OriginHit;
 
         public void Init(int refreshSlot, uint creationTick)
         {
@@ -308,6 +340,22 @@
             RefreshSlot = 0;
             CreationTick = 0;
             IntegrityShield = null;
+            NotBlockingShield = null;
+            NotBlockingAttackerId = -1;
+            IgnoreAttackerId = -1;
+            OriginBlock = null;
+            OriginHit = Vector3D.Zero;
+        }
+
+        public void ProtectDamageReset()
+        {
+            IntegrityShield = null;
+            NotBlockingShield = null;
+            NotBlockingAttackerId = -1;
+            IgnoreAttackerId = -1;
+            OriginBlock = null;
+            OriginHit = Vector3D.Zero;
+            NotBlockingMainDamageType = MyStringHash.NullOrEmpty;
         }
     }
 }

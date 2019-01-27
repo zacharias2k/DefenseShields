@@ -31,7 +31,7 @@
                 {
                     _autoResetEvent.WaitOne();
                     if (!Monitor) break;
-                    if (Enforced.Debug >= 3 && EntSlotTick) Dsutil2.Sw.Restart();
+                    //if (Enforced.Debug >= 3 && EntSlotTick) Dsutil2.Sw.Restart();
                     _newFrame = false;
                     _workData.DoIt(new List<DefenseShields>(FunctionalShields.Keys), Tick);
                     MinScaler = _workData.MinScaler;
@@ -54,7 +54,7 @@
 
                                 if (reInforce != s.ReInforcedShield)
                                 {
-                                    if (Enforced.Debug == 4) Log.Line("Client queuing entFresh for reinforced shield");
+                                    //if (Enforced.Debug == 4) Log.Line("Client queuing entFresh for reinforced shield");
                                     foreach (var sub in s.ShieldComp.GetSubGrids) _entRefreshQueue.Enqueue(sub);
                                     s.ReInforcedShield = reInforce;
                                 }
@@ -79,7 +79,7 @@
                             s.Asleep = false;
                             return;
                         }
-                        if (Enforced.Debug == 4 && s.LostPings > 0) Log.Line($"Lost Logic Pings:{s.LostPings}");
+                        //if (Enforced.Debug >= 2 && s.LostPings > 0) Log.Line($"Lost Logic Pings:{s.LostPings}");
                         if (shieldActive) s.LostPings++;
 
                         lock (s.GetCubesLock)
@@ -176,7 +176,7 @@
                             _globalEntTmp.TryRemove(ent, out value);
                         }
                     }
-                    if (Enforced.Debug >= 3 && EntSlotTick) Dsutil2.StopWatchReport("monitor", -1);
+                    //if (Enforced.Debug >= 3 && EntSlotTick) Dsutil2.StopWatchReport("monitor", -1);
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in WebMonitor: {ex}"); }
@@ -194,7 +194,7 @@
                 if (!newMode) return;
                 foreach (var sub in subs)
                 {
-                    if (Enforced.Debug >= 2) Log.Line("Server queuing entFresh for reinforced shield");
+                    //if (Enforced.Debug >= 2) Log.Line("Server queuing entFresh for reinforced shield");
 
                     if (!_globalEntTmp.ContainsKey(sub)) newSub = true;
                     _entRefreshQueue.Enqueue(sub);
@@ -218,7 +218,7 @@
                         _entRefreshQueue.Enqueue(sub);
                         if (!s.WasPaused) _globalEntTmp[sub] = _workData.Tick;
                     }
-                    if (Enforced.Debug >= 2) Log.Line($"found Reinforce");
+                    //if (Enforced.Debug >= 2) Log.Line($"found Reinforce");
                     s.ReInforcedShield = false;
                     s.TicksWithNoActivity = 0;
                     s.LastWokenTick = _workData.Tick;
@@ -256,7 +256,7 @@
                             {
                                 foundNewEnt = true;
                                 s.Asleep = false;
-                                if (Enforced.Debug >= 2) Log.Line($"New entity");
+                                //if (Enforced.Debug >= 2) Log.Line($"New entity");
                             }
 
                             if (!s.WasPaused) _globalEntTmp[ent] = _workData.Tick;
@@ -298,7 +298,7 @@
                             {
                                 if (!s.EntsByMe[ent].Pos.Equals(entPos, 1e-3))
                                 {
-                                    if (Enforced.Debug >= 2) Log.Line($"[Moved] Ent:{ent.DebugName}");
+                                    //if (Enforced.Debug >= 2) Log.Line($"[Moved] Ent:{ent.DebugName}");
                                     MoverInfo moverInfo;
                                     s.EntsByMe.TryRemove(ent, out moverInfo);
                                     s.EntsByMe.TryAdd(ent, new MoverInfo(entPos, _workData.Tick));
@@ -364,7 +364,7 @@
                         if (s.WasPaused) continue;
                         if (s.DsState.State.ReInforce && s.ShieldComp.GetSubGrids.Contains(ent))
                         {
-                            if (Enforced.Debug == 4) Log.Line("_entRefreshQueue adding Reinfroced");
+                            //if (Enforced.Debug == 4) Log.Line("_entRefreshQueue adding Reinfroced");
                             iShield = s;
                             refreshCount++;
                         }
@@ -420,7 +420,6 @@
 
         private void LogicUpdates()
         {
-            var y = 0;
             if (Enforced.Debug >= 3 && EntSlotTick) Dsutil1.Sw.Restart();
             foreach (var s in ActiveShields.Keys)
             {
@@ -437,7 +436,6 @@
                 if (Tick600) s.CleanUp(1);
 
                 s.WebEntities();
-                y++;
             }
 
             if (!Dispatched && WebWrapperOn)
