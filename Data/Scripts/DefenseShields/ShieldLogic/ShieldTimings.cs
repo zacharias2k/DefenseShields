@@ -11,54 +11,40 @@
 
     public partial class DefenseShields
     {
-        public void CleanUp(int task)
+        public void ResetDamageEffects()
         {
-            try
+            if (DsState.State.Online && !DsState.State.Lowered)
             {
-                switch (task)
+                lock (GetCubesLock)
                 {
-                    case 0:
-                        MyCubeGrid grid;
-                        while (StaleGrids.TryDequeue(out grid))
-                        {
-                            EntIntersectInfo gridRemoved;
-                            WebEnts.TryRemove(grid, out gridRemoved);
-                        }
-                        break;
-                    case 1:
-                        AuthenticatedCache.Clear();
-                        EnemyShields.Clear();
-                        IgnoreCache.Clear();
-
-                        _porotectEntsTmp.Clear();
-                        _porotectEntsTmp.AddRange(ProtectedEntCache.Where(info => _tick - info.Value.LastTick > 180));
-                        foreach (var protectedEnt in _porotectEntsTmp) ProtectedEntCache.Remove(protectedEnt.Key);
-
-                        _webEntsTmp.Clear();
-                        _webEntsTmp.AddRange(WebEnts.Where(info => _tick - info.Value.LastTick > 180));
-                        foreach (var webent in _webEntsTmp)
-                        {
-                            EntIntersectInfo removedEnt;
-                            WebEnts.TryRemove(webent.Key, out removedEnt);
-                        }
-                        break;
-                    case 2:
-                        if (DsState.State.Online && !DsState.State.Lowered)
-                        {
-                            lock (GetCubesLock)
-                            {
-                                foreach (var funcBlock in _functionalBlocks)
-                                {
-                                    if (funcBlock == null) continue;
-                                    if (funcBlock.IsFunctional) funcBlock.SetDamageEffect(false);
-                                }
-                            }
-                        }
-                        break;
+                    foreach (var funcBlock in _functionalBlocks)
+                    {
+                        if (funcBlock == null) continue;
+                        if (funcBlock.IsFunctional) funcBlock.SetDamageEffect(false);
+                    }
                 }
             }
-            catch (Exception ex) { Log.Line($"Exception in CleanUp: {ex}"); }
         }
+
+        public void CleanWebEnts()
+        {
+            AuthenticatedCache.Clear();
+            EnemyShields.Clear();
+            IgnoreCache.Clear();
+
+            _porotectEntsTmp.Clear();
+            _porotectEntsTmp.AddRange(ProtectedEntCache.Where(info => _tick - info.Value.LastTick > 180));
+            foreach (var protectedEnt in _porotectEntsTmp) ProtectedEntCache.Remove(protectedEnt.Key);
+
+            _webEntsTmp.Clear();
+            _webEntsTmp.AddRange(WebEnts.Where(info => _tick - info.Value.LastTick > 180));
+            foreach (var webent in _webEntsTmp)
+            {
+                EntIntersectInfo removedEnt;
+                WebEnts.TryRemove(webent.Key, out removedEnt);
+            }
+        }
+
         private void Timing()
         {
             if (_count++ == 59)
@@ -252,9 +238,8 @@
 
         private void CleanAll()
         {
-            CleanUp(0);
-            CleanUp(1);
-            CleanUp(2);
+            CleanWebEnts();
+            ResetDamageEffects();
             SyncThreadedEnts(true);
         }
     }

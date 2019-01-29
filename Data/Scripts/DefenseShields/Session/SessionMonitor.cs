@@ -119,7 +119,6 @@
                             s.Asleep = false;
                             return;
                         }
-
                         if (!s.PlayerByShield && !s.MoverByShield && !s.NewEntByShield)
                         {
                             if (s.TicksWithNoActivity++ % EntCleanCycle == 0) s.EntCleanUpTime = true;
@@ -338,89 +337,85 @@
 
         private void LoadBalancer()
         {
-            if (Tick20) Scale();
-            EntSlotTick = Tick % (180 / EntSlotScaler) == 0;
+            var shieldsWaking = 0;
+            var entsUpdated = 0;
+            var entsremoved = 0;
+            var entsLostShield = 0;
 
-            if (EntSlotTick)
+            if (++RefreshCycle >= EntSlotScaler) RefreshCycle = 0;
+            MyEntity ent;
+            while (_entRefreshQueue.TryDequeue(out ent))
             {
-                var shieldsWaking = 0;
-                var entsUpdated = 0;
-                var entsremoved = 0;
-                var entsLostShield = 0;
+                MyProtectors myProtector;
+                if (!GlobalProtect.TryGetValue(ent, out myProtector)) continue;
 
-                if (++RefreshCycle >= EntSlotScaler) RefreshCycle = 0;
-                MyEntity ent;
-                while (_entRefreshQueue.TryDequeue(out ent))
+                var entShields = myProtector.Shields;
+                var refreshCount = 0;
+                DefenseShields iShield = null;
+                var removeIShield = false;
+                foreach (var s in entShields)
                 {
-                    MyProtectors myProtector;
-                    if (!GlobalProtect.TryGetValue(ent, out myProtector)) continue;
-
-                    var entShields = myProtector.Shields;
-                    var refreshCount = 0;
-                    DefenseShields iShield = null;
-                    var removeIShield = false;
-                    foreach (var s in entShields)
+                    if (s.WasPaused) continue;
+                    if (s.DsState.State.ReInforce && s.ShieldComp.GetSubGrids.Contains(ent))
                     {
-                        if (s.WasPaused) continue;
-                        if (s.DsState.State.ReInforce && s.ShieldComp.GetSubGrids.Contains(ent))
-                        {
-                            //if (Enforced.Debug == 4) Log.Line("_entRefreshQueue adding Reinfroced");
-                            iShield = s;
-                            refreshCount++;
-                        }
-                        else if (!ent.InScene || !s.ResetEnts(ent, Tick))
-                        {
-                            myProtector.Shields.Remove(s);
-                            entsLostShield++;
-                        }
-                        else refreshCount++;
+                        //if (Enforced.Debug == 4) Log.Line("_entRefreshQueue adding Reinfroced");
+                        iShield = s;
+                        refreshCount++;
+                    }
+                    else if (!ent.InScene || !s.ResetEnts(ent, Tick))
+                    {
+                        myProtector.Shields.Remove(s);
+                        entsLostShield++;
+                    }
+                    else refreshCount++;
 
-                        if (iShield == null && myProtector.IntegrityShield == s)
-                        {
-                            removeIShield = true;
-                            myProtector.IntegrityShield = null;
-                        }
-
-                        var detectedStates = s.PlayerByShield || s.MoverByShield || Tick <= s.LastWokenTick + 580 || iShield != null || removeIShield;
-                        if (ScalerChanged || detectedStates)
-                        {
-                            s.Asleep = false;
-                            shieldsWaking++;
-                        }
+                    if (iShield == null && myProtector.IntegrityShield == s)
+                    {
+                        removeIShield = true;
+                        myProtector.IntegrityShield = null;
                     }
 
-                    if (iShield != null)
+                    var detectedStates = s.PlayerByShield || s.MoverByShield || Tick <= s.LastWokenTick + 580 || iShield != null || removeIShield;
+                    if (ScalerChanged || detectedStates)
                     {
-                        myProtector.Shields.Remove(iShield);
-                        myProtector.IntegrityShield = iShield;
+                        s.Asleep = false;
+                        shieldsWaking++;
                     }
+                }
 
-                    myProtector.Shields.ApplyChanges();
+                if (iShield != null)
+                {
+                    myProtector.Shields.Remove(iShield);
+                    myProtector.IntegrityShield = iShield;
+                }
 
-                    if (refreshCount == 0)
-                    {
-                        GlobalProtect.Remove(ent);
-                        ProtSets.Return(myProtector);
-                        entsremoved++;
-                    }
-                    else entsUpdated++;
-                }
-                if (Enforced.Debug == 5 || (Tick1800 && Enforced.Debug == 1))
+                myProtector.Shields.ApplyChanges();
+
+                if (refreshCount == 0)
                 {
-                    for (int i = 0; i < SlotCnt.Length; i++) SlotCnt[i] = 0;
-                    foreach (var pair in GlobalProtect) SlotCnt[pair.Value.RefreshSlot]++;
+                    GlobalProtect.Remove(ent);
+                    ProtSets.Return(myProtector);
+                    entsremoved++;
                 }
-                if (Enforced.Debug == 5 || (Enforced.Debug == 1 && Tick1800))
-                {
-                    Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - EntsUpdated:{entsUpdated} - ShieldsWaking:{shieldsWaking} - EntsRemoved: {entsremoved} - EntsLostShield:{entsLostShield} - EntInRefreshSlots:({SlotCnt[0]} - {SlotCnt[1]} - {SlotCnt[2]} - {SlotCnt[3]} - {SlotCnt[4]} - {SlotCnt[5]} - {SlotCnt[6]} - {SlotCnt[7]} - {SlotCnt[8]}) \n" +
-                                                  $"                                     ProtectedEnts:{GlobalProtect.Count} - ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count}");
-                }
+                else entsUpdated++;
             }
+            /*
+            if (Enforced.Debug >= 2 || (Tick1800 && Enforced.Debug == 1))
+            {
+                for (int i = 0; i < SlotCnt.Length; i++) SlotCnt[i] = 0;
+                foreach (var pair in GlobalProtect) SlotCnt[pair.Value.RefreshSlot]++;
+            }
+            if (Enforced.Debug >= 2 || (Enforced.Debug == 1 && Tick1800))
+            {
+                Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - EntsUpdated:{entsUpdated} - ShieldsWaking:{shieldsWaking} - EntsRemoved: {entsremoved} - EntsLostShield:{entsLostShield} - EntInRefreshSlots:({SlotCnt[0]} - {SlotCnt[1]} - {SlotCnt[2]} - {SlotCnt[3]} - {SlotCnt[4]} - {SlotCnt[5]} - {SlotCnt[6]} - {SlotCnt[7]} - {SlotCnt[8]}) \n" +
+                                                $"                                     ProtectedEnts:{GlobalProtect.Count} - ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count}");
+            }
+            */
         }
 
         private void LogicUpdates()
         {
-            if (Enforced.Debug >= 3 && EntSlotTick) Dsutil1.Sw.Restart();
+            //if (Enforced.Debug >= 3 && EntSlotTick) Dsutil1.Sw.Restart();
             foreach (var s in ActiveShields.Keys)
             {
                 if (!s.WasOnline || s.Asleep) continue;
@@ -431,9 +426,8 @@
                     s.ProtectSubs(Tick);
                     continue;
                 }
-                if (!s.StaleGrids.IsEmpty) s.CleanUp(0);
-                if (Tick20 && Tick - s.EffectsCleanTick < 41) s.CleanUp(2);
-                if (Tick600) s.CleanUp(1);
+                if (Tick20 && Tick - s.EffectsCleanTick < 41) s.ResetDamageEffects();
+                if (Tick600) s.CleanWebEnts();
 
                 s.WebEntities();
             }
@@ -445,8 +439,8 @@
                 WebWrapperOn = false;
             }
 
-            if (Enforced.Debug >= 3 && EntSlotTick) Dsutil1.StopWatchReport("[LogicUpdate] - CPU:", -1);
-            else if (Enforced.Debug >= 3) Dsutil1.Sw.Reset();
+            //if (Enforced.Debug >= 3 && EntSlotTick) Dsutil1.StopWatchReport("[LogicUpdate] - CPU:", -1);
+            //else if (Enforced.Debug >= 3) Dsutil1.Sw.Reset();
         }
 
         private void WebDispatch()

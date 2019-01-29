@@ -3,7 +3,6 @@
     using global::DefenseShields.Support;
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
-
     using VRage.Game.ModAPI;
     using VRage.Utils;
     using VRageMath;
@@ -103,14 +102,12 @@
         {
             if (enQueue)
             {
-                if (Session.Enforced.Debug >= 2) Log.Line($"enQueue hit: Type:{ShieldHit.DamageType} - Amount:{ShieldHit.Amount} - HitPos:{ShieldHit.HitPos}");
                 if (_isServer)
                 {
                     if (_mpActive) ProtoShieldHits.Enqueue(CloneHit());
                     if (!_isDedicated) AddLocalHit();
                 }
             }
-            if (Session.Enforced.Debug >= 2) Log.Line($"[ShieldHitReset] OldType:{ShieldHit.DamageType} - OldAmount:{ShieldHit.Amount} - OldhitPos:{ShieldHit.HitPos}");
             _lastSendDamageTick = uint.MaxValue;
             _forceBufferSync = true;
             ShieldHit.AttackerId = 0;
@@ -162,15 +159,7 @@
             {
                 var hit = ShieldHits[i];
                 var damageType = hit.DamageType;
-                if (Session.Enforced.Debug >= 2) Log.Line($"MpDamageEvent: Amount:{hit.Amount} - attacker:{hit.Attacker != null} - dType:{damageType} - hitPos:{hit.HitPos} - wasOnline:{WasOnline}");
 
-                if (damageType == Session.Instance.MpAllowDamage)
-                {
-                    var damageBlock = new DamageCheck(hit.Amount, 0, hit.DamageType);
-                    Session.Instance.MpDamageCheck.TryAdd(damageBlock, damageBlock);
-                    Session.Instance.MPDamageEvent = true;
-                    continue;
-                }
                 if (!WasOnline) continue;
 
                 if (damageType == Session.Instance.MPExplosion)

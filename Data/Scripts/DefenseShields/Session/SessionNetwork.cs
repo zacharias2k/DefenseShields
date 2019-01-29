@@ -13,7 +13,6 @@
     public partial class Session
     {
         #region Network sync
-
         internal static void PacketizeEnforcements(IMyCubeBlock block, ulong senderId)
         {
             var data = new DataEnforce(MyAPIGateway.Multiplayer.MyId, block.EntityId, Enforced);

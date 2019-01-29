@@ -13,12 +13,10 @@
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRage.Utils;
-
     using VRageMath;
 
     public partial class Session
     {
-
         internal const ushort PacketIdShieldHit = 62512;
         internal const ushort PacketIdO2GeneratorSettings = 62513;
         internal const ushort PacketIdPlanetShieldSettings = 62514;
@@ -37,12 +35,13 @@
 
         internal readonly int[] SlotCnt = new int[9];
         internal readonly Vector3D[] LosPointSphere = new Vector3D[2000];
+
         internal readonly MyStringHash MPExplosion = MyStringHash.GetOrCompute("MPExplosion");
         internal readonly MyStringHash MPEnergy = MyStringHash.GetOrCompute("MPEnergy");
         internal readonly MyStringHash MPKinetic = MyStringHash.GetOrCompute("MPKinetic");
         internal readonly MyStringHash MPEMP = MyStringHash.GetOrCompute("MPEMP");
         internal readonly MyStringHash MpDmgEffect = MyStringHash.GetOrCompute("MpDmgEffect");
-        internal readonly MyStringHash MpAllowDamage = MyStringHash.GetOrCompute("MpAllowDamage");
+        internal readonly MyStringHash MpIgnoreDamage = MyStringHash.GetOrCompute("MpIgnoreDamage");
         internal readonly MyStringHash DSdamage = MyStringHash.GetOrCompute("DSdamage");
         internal readonly MyStringHash DSheal = MyStringHash.GetOrCompute("DSheal");
         internal readonly MyStringHash DSbypass = MyStringHash.GetOrCompute("DSbypass");
@@ -82,7 +81,6 @@
 
         internal readonly ConcurrentDictionary<DefenseShields, bool> ActiveShields = new ConcurrentDictionary<DefenseShields, bool>();
         internal readonly ConcurrentDictionary<DefenseShields, bool> FunctionalShields = new ConcurrentDictionary<DefenseShields, bool>();
-        internal readonly ConcurrentDictionary<DamageCheck, DamageCheck> MpDamageCheck = new ConcurrentDictionary<DamageCheck, DamageCheck>();
 
         internal readonly List<PlanetShields> PlanetShields = new List<PlanetShields>();
         internal readonly List<Emitters> Emitters = new List<Emitters>();
@@ -200,13 +198,9 @@
         private readonly Dictionary<MyCubeGrid, WarHeadHit> _warHeadGridShapes = new Dictionary<MyCubeGrid, WarHeadHit>();
         private readonly Queue<long> _warEffectPurge = new Queue<long>();
         private readonly ConcurrentQueue<MyEntity> _entRefreshQueue = new ConcurrentQueue<MyEntity>();
-        private readonly ConcurrentQueue<DamageCheck> _damageBlocks = new ConcurrentQueue<DamageCheck>();
-        private readonly ConcurrentQueue<MonitorBlock> _monitorBlocks = new ConcurrentQueue<MonitorBlock>();
-
         private readonly ConcurrentDictionary<MyEntity, uint> _globalEntTmp = new ConcurrentDictionary<MyEntity, uint>();
         private readonly ConcurrentDictionary<long, BlockState> _warEffectCubes = new ConcurrentDictionary<long, BlockState>();
 
-        //private DsAutoResetEvent _autoResetEvent = new DsAutoResetEvent();
         private DsPulseEvent _autoResetEvent = new DsPulseEvent();
         private MyParticleEffect _effect = new MyParticleEffect();
 
@@ -267,7 +261,6 @@
         internal bool DsAction { get; set; }
         internal bool PsAction { get; set; }
         internal bool ModAction { get; set; }
-        internal bool MPDamageEvent { get; set; }
 
         internal Vector3 ResetWarHeadHSV { get; set; } = new Vector3(0, -1, 0);
 

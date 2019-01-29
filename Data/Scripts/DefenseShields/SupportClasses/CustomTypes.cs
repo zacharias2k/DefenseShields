@@ -5,7 +5,6 @@
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
     using VRage.Collections;
-    using VRage.Game;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRage.ModAPI;
@@ -85,57 +84,6 @@
         {
             Pos = pos;
             CreationTick = creationTick;
-        }
-    }
-
-    public struct DamageCheck
-    {
-        public readonly float Damage;
-        public readonly long AttackerId;
-        public readonly MyStringHash DamageType;
-        public DamageCheck(float damage, long attackerId, MyStringHash damageType)
-        {
-            Damage = damage;
-            AttackerId = attackerId;
-            DamageType = damageType;
-        }
-    }
-
-    public struct MonitorBlock : IEquatable<MonitorBlock>
-    {
-        public readonly IMySlimBlock Block;
-        public readonly float Damage;
-        public readonly MyStringHash DamageType;
-        public readonly uint Tick;
-
-        internal MonitorBlock(IMySlimBlock block, float damage, MyStringHash damageType, uint tick)
-        {
-            Block = block;
-            Damage = damage;
-            DamageType = damageType;
-            Tick = tick;
-        }
-
-        public bool Equals(MonitorBlock other)
-        {
-            return true;
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                var result = 0;
-                result = (result * 397) ^ Block.Position.GetHashCode();
-                result = (result * 397) ^ DamageType.GetHashCode();
-                result = (result * 397) ^ Damage.GetHashCode();
-                return result;
-            }
-        }
-
-        public override bool Equals(object obj)
-        {
-            return obj is MonitorBlock && Equals((MonitorBlock)obj);
         }
     }
 
@@ -296,6 +244,7 @@
         public readonly uint FirstTick;
         public DefenseShields.Ent Relation;
         public List<IMySlimBlock> CacheBlockList;
+        public bool MarkForClose;
 
         public EntIntersectInfo(float damage, double empSize, bool touched, BoundingBox box, Vector3D contactPoint, Vector3D empDetonation, uint firstTick, uint lastTick, uint refreshTick, uint blockUpdateTick, DefenseShields.Ent relation, List<IMySlimBlock> cacheBlockList)
         {

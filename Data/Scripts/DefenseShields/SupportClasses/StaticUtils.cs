@@ -419,7 +419,6 @@
                     var ammo = MyDefinitionManager.Static.GetAmmoDefinition(ammoDef.AmmoDefinitionId);
                     if (!(ammo is MyMissileAmmoDefinition)) continue;
                     var shot = ammo as MyMissileAmmoDefinition;
-                    //Log.Line($"{ammoDef.Id.SubtypeId}");
                     if (Session.Instance.AmmoCollection.ContainsKey(shot.MissileModelName)) continue;
                     Session.Instance.AmmoCollection.Add(shot.MissileModelName, new AmmoInfo(shot.IsExplosive, shot.MissileExplosionDamage, shot.MissileExplosionRadius, shot.DesiredSpeed, shot.MissileMass, shot.BackkickForce));
                 }

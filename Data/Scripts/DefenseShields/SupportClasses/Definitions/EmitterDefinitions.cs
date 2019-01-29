@@ -8,7 +8,7 @@ namespace DefenseShields.Support
         {
             ["EmitterL"] = new Definition { Name = "EmitterL", ParticleScale = 10f, ParticleDist = 1.5d, HelperDist = 5.0d, FieldDist = 4.5d, BlockMoveTranslation = 0.0018f },
             ["EmitterS"] = new Definition { Name = "EmitterS", ParticleScale = 2.5f, ParticleDist = 1.25d, HelperDist = 3d, FieldDist = 0.8d, BlockMoveTranslation = 0.00032f },
-            ["EmitterLA"] = new Definition { Name = "EmitterLA", ParticleScale = 10f, ParticleDist = 1.5d, HelperDist = 5.0d, FieldDist = 4.5d, BlockMoveTranslation = 0.0018f },
+            ["EmitterLA"] = new Definition { Name = "EmitterLA", ParticleScale = 10f, ParticleDist = 1.5d, HelperDist = 5.0d, FieldDist = 2.7d, BlockMoveTranslation = 0.0018f },
             ["EmitterSA"] = new Definition { Name = "EmitterSA", ParticleScale = 2.5f, ParticleDist = 1.25d, HelperDist = 3d, FieldDist = 0.8d, BlockMoveTranslation = 0.00032f },
             ["EmitterST"] = new Definition { Name = "EmitterST", ParticleScale = 20f, ParticleDist = 3.5d, HelperDist = 7.5d, FieldDist = 8.0d, BlockMoveTranslation = 0.005f },
         };

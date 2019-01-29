@@ -44,7 +44,6 @@
         internal readonly ConcurrentDictionary<MyVoxelBase, int> VoxelsToIntersect = new ConcurrentDictionary<MyVoxelBase, int>();
         internal readonly ConcurrentDictionary<long, WarHeadBlast> EmpBlast = new ConcurrentDictionary<long, WarHeadBlast>();
 
-        internal readonly ConcurrentQueue<MyCubeGrid> StaleGrids = new ConcurrentQueue<MyCubeGrid>();
         internal readonly ConcurrentQueue<MyCubeGrid> Eject = new ConcurrentQueue<MyCubeGrid>();
         internal readonly ConcurrentQueue<IMySlimBlock> CollidingBlocks = new ConcurrentQueue<IMySlimBlock>();
         internal readonly ConcurrentQueue<MyCubeBlock> FatAddQueue = new ConcurrentQueue<MyCubeBlock>();

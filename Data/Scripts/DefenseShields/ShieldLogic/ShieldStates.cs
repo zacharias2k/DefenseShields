@@ -93,9 +93,16 @@
 
             if (_subUpdate && _tick >= _subTick) HierarchyUpdate();
             if (_blockEvent && _tick >= _funcTick) BlockChanged(true);
-            if (_tick - 1 > _lastSendDamageTick) ShieldHitReset(ShieldHit.Amount > 0 && ShieldHit.HitPos != Vector3D.Zero);
-            if (ProtoShieldHits.Count != 0) SendShieldHits();
-            if (!_isDedicated && ShieldHits.Count != 0) AbsorbClientShieldHits();
+            if (_mpActive)
+            {
+                if (_isServer)
+                {
+                    if (_tick - 1 > _lastSendDamageTick) ShieldHitReset(ShieldHit.Amount > 0 && ShieldHit.HitPos != Vector3D.Zero);
+                    if (ProtoShieldHits.Count != 0) SendShieldHits();
+                    if (!_isDedicated && ShieldHits.Count != 0) AbsorbClientShieldHits();
+                }
+                else if (ShieldHits.Count != 0) AbsorbClientShieldHits();
+            }
             return true;
         }
 
@@ -217,7 +224,6 @@
             ShieldEnt.Render.Visible = false;
             if (_isServer)
             {
-                //ShieldEnt.PositionComp.SetPosition(Vector3D.Zero);
                 ShieldChangeState();
                 if (!DsState.State.Lowered && !DsState.State.Sleeping)
                 {
@@ -390,8 +396,7 @@
                 _sink.Update();
                 ShieldCurrentPower = _sink.CurrentInputByType(GId);
                 ResetShape(true, true);
-                CleanUp(0);
-                CleanUp(1);
+                CleanWebEnts();
 
                 _currentHeatStep = 0;
                 _accumulatedHeat = 0;

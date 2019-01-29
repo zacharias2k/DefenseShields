@@ -104,35 +104,37 @@
 
         internal void EventComplete()
         {
+            Computed = false;
+            Drawed = false;
+            Stored = false;
             EventRunning = false;
+            if (Session.Enforced.Debug >= 2) Log.Line($"====================================================================== [WarHead EventComplete]");
         }
     }
 
     class FiniteFifoQueueSet<T1, T2>
     {
         private readonly T1[] _nodes;
-        private int _emptySpot;
         private readonly Dictionary<T1, T2> _backingDict;
+        private int _nextSlotToEvict;
 
         public FiniteFifoQueueSet(int size)
         {
             _nodes = new T1[size];
             _backingDict = new Dictionary<T1, T2>(size + 1);
-            _emptySpot = 0;
+            _nextSlotToEvict = 0;
         }
 
         public void Enqueue(T1 key, T2 value)
         {
             try
             {
-                _backingDict.Remove(_nodes[0]);
-                _nodes[_emptySpot] = key;
+                _backingDict.Remove(_nodes[_nextSlotToEvict]);
+                _nodes[_nextSlotToEvict] = key;
                 _backingDict.Add(key, value);
-                _emptySpot++;
-                if (_emptySpot >= _nodes.Length)
-                {
-                    _emptySpot = 0;
-                }
+
+                _nextSlotToEvict++;
+                if (_nextSlotToEvict >= _nodes.Length) _nextSlotToEvict = 0;
             }
             catch (Exception ex) { Log.Line($"Exception in Enqueue: {ex}"); }
         }

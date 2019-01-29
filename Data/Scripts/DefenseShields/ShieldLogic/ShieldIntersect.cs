@@ -3,14 +3,12 @@
     using System;
     using System.Collections.Generic;
     using global::DefenseShields.Support;
-
     using Sandbox.Game.Entities;
     using Sandbox.Game.Entities.Character.Components;
     using Sandbox.ModAPI;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRage.ModAPI;
-
     using VRageMath;
 
     public partial class DefenseShields
@@ -131,6 +129,14 @@
             var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB);
             if (entInfo.Relation != Ent.LargeEnemyGrid && GridInside(grid, bOriBBoxD)) return;
             BlockIntersect(grid, bOriBBoxD, entInfo);
+
+            if (entInfo.MarkForClose)
+            {
+                EntIntersectInfo gridRemoved;
+                WebEnts.TryRemove(grid, out gridRemoved);
+                return;
+            }
+
             if (!_isServer) return;
 
             var contactpoint = entInfo.ContactPoint;
@@ -380,7 +386,6 @@
                             }
                             if (block.CubeGrid != breaching)
                             {
-                                if (!stale) StaleGrids.Enqueue(breaching);
                                 stale = true;
                                 continue;
                             }
@@ -414,6 +419,8 @@
                             break;
                         }
                     }
+
+                    entInfo.MarkForClose = stale;
 
                     if (collisionAvg != Vector3D.Zero)
                     {
@@ -465,7 +472,7 @@
 
                             if (!sPhysics.IsStatic)
                             {
-                                if (bMass / sMass > 20 && Vector3.Dot(bLSpeed, breaching.PositionComp.WorldAABB.Center - collisionAvg) < 0)
+                                if (bMass / sMass > 20)
                                 {
                                     speed = MathHelper.Clamp(bSpeedLen, 1f, bSpeedLen * 0.5f);
                                 }
@@ -477,7 +484,7 @@
 
                             if (!bPhysics.IsStatic)
                             {
-                                if (sMass / bMass > 20 && Vector3.Dot(bLSpeed, breaching.PositionComp.WorldAABB.Center - collisionAvg) < 0)
+                                if (sMass / bMass > 20)
                                 {
                                     speed = MathHelper.Clamp(bSpeedLen, 1f, bSpeedLen * 0.5f);
                                 }
@@ -517,6 +524,7 @@
             }
             catch (Exception ex) { Log.Line($"Exception in BlockIntersect: {ex}"); }
         }
+
         #endregion
         private float ComputeAmmoDamage(IMyEntity ammoEnt)
         {

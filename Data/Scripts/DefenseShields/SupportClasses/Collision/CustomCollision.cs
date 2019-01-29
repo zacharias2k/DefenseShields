@@ -10,7 +10,6 @@
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRage.Voxels;
-
     using VRageMath;
     using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
@@ -56,6 +55,7 @@
             return hitPos;
         }
         */
+
         public static bool MissileNoIntersect(MyEntity missile, MatrixD detectMatrix, MatrixD detectMatrixInv)
         {
             var missileVel = missile.Physics.LinearVelocity;

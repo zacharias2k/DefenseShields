@@ -23,11 +23,10 @@
             try
             {
                 var block = target as IMySlimBlock;
-
                 if (block != null)
                 {
                     var damageType = info.Type;
-                    if (damageType == MyDamageType.Drill || damageType == MyDamageType.Grind) return;
+                    if (damageType == MpIgnoreDamage || damageType == MyDamageType.Drill || damageType == MyDamageType.Grind) return;
 
                     var myEntity = block.CubeGrid as MyEntity;
 
@@ -37,9 +36,8 @@
                     GlobalProtect.TryGetValue(myEntity, out protectors);
                     if (protectors == null) return;
 
-                    var attackerId = info.AttackerId;
-
                     MyEntity hostileEnt;
+                    var attackerId = info.AttackerId;
                     if (attackerId == _previousEntId) hostileEnt = _previousEnt;
                     else UpdatedHostileEnt(attackerId, out hostileEnt);
 
@@ -179,15 +177,6 @@
                         }
                     }
 
-                    if (IsServer)
-                    {
-                        if (protectors.NotBlockingShield != null && protectors.NotBlockingMainDamageType == MyDamageType.Explosion)
-                        {
-                            if (Enforced.Debug >= 2) Log.Line($"Sending origin explosion MpAllowDamage: {damageType} - {info.Amount} - {protectors.OriginBlock.Position} - {protectors.NotBlockingAttackerId} - {attackerId}");
-                            protectors.NotBlockingShield.AddShieldHit(protectors.NotBlockingAttackerId, info.Amount, MpAllowDamage, block, true);
-                        }
-                    }
-
                     if (info.AttackerId == protectors.IgnoreAttackerId && damageType == MyDamageType.Deformation)
                     {
                         if (Enforced.Debug >= 2) Log.Line($"old Del/Mp Attacker, ignoring: {damageType} - {info.Amount} - attackerId:{attackerId}");
@@ -195,13 +184,6 @@
                         return;
                     }
                     protectors.IgnoreAttackerId = -1;
-
-                    if (!IsServer && attackerId == 0 && (damageType == MyDamageType.Deformation || damageType == MyDamageType.Explosion))
-                    {
-                        LastMpEventTick = Tick;
-                        _monitorBlocks.Enqueue(new MonitorBlock(block, info.Amount, damageType, Tick));
-                        return;
-                    }
 
                     if (Enforced.Debug >= 2) Log.Line($"[Uncaught Damage] Type:{damageType} - Amount:{info.Amount} - nullHostileEnt:{trueAttacker == null} - nullShield:{protectors.BlockingShield == null} - iShell:{protectors.IntegrityShield != null} - protectorShields:{protectors.Shields.Count} - attackerId:{info.AttackerId}");
                 }
@@ -212,7 +194,7 @@
 
         private void CharacterProtection(object target, MyDamageInformation info)
         {
-            if (info.Type == MyDamageType.LowPressure) return;
+            if (info.Type != MpIgnoreDamage || info.Type == MyDamageType.LowPressure) return;
 
             var myEntity = target as MyEntity;
             if (myEntity == null) return;

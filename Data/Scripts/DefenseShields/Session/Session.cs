@@ -1,7 +1,6 @@
 ﻿namespace DefenseShields
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using global::DefenseShields.Support;
     using Sandbox.Definitions;
@@ -160,13 +159,13 @@
             try
             {
                 Timings();
-                LoadBalancer();
                 LogicUpdates();
-                if (!EmpDispatched && EmpStore.Count != 0)
+                if (EmpStore.Count != 0 && !EmpDispatched)
                 {
                     EmpDispatched = true;   
                     PrepEmpBlast();
-                    MyAPIGateway.Parallel.Start(ComputeEmpBlast, EmpCallBack);
+                    if (EmpWork.EventRunning) MyAPIGateway.Parallel.Start(ComputeEmpBlast, EmpCallBack);
+                    else EmpDispatched = false;
                 }
 
                 if (_warEffect && Tick20) WarEffect();
@@ -221,7 +220,61 @@
             Log.Close();
         }
         #endregion
+        private void Timings()
+        {
+            _newFrame = true;
+            Tick = (uint)(Session.ElapsedPlayTime.TotalMilliseconds * TickTimeDiv);
+            Tick20 = Tick % 20 == 0;
+            Tick60 = Tick % 60 == 0;
+            Tick60 = Tick % 60 == 0;
+            Tick180 = Tick % 180 == 0;
+            Tick600 = Tick % 600 == 0;
+            Tick1800 = Tick % 1800 == 0;
 
+            if (_count++ == 59)
+            {
+                _count = 0;
+                _lCount++;
+                if (_lCount == 10)
+                {
+                    _lCount = 0;
+                    _eCount++;
+                    if (_eCount == 10)
+                    {
+                        _eCount = 0;
+                    }
+                }
+            }
+            if (!GameLoaded && Tick > 100)
+            {
+                if (!WarHeadLoaded && WarTerminalReset != null)
+                {
+                    WarTerminalReset.ShowInTerminal = true;
+                    WarTerminalReset = null;
+                    WarHeadLoaded = true;
+                }
+
+                if (!MiscLoaded)
+                {
+                    MiscLoaded = true;
+                    UtilsStatic.GetDefinitons();
+                    if (!IsServer) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
+                }
+                GameLoaded = true;
+            }
+
+            if (EmpWork.EventRunning && EmpWork.Computed) EmpWork.EventComplete();
+
+            if (Tick20)
+            {
+                Scale();
+                EntSlotTick = Tick % (180 / EntSlotScaler) == 0;
+                if (EntSlotTick) LoadBalancer();
+            }
+            else EntSlotTick = false;
+        }
+
+        #region EMP
         private void PrepEmpBlast()
         {
             var stackCount = 0;
@@ -277,57 +330,6 @@
             EmpWork.StoreEmpBlast(epiCenter, warHeadSize, warHeadYield, stackCount, rangeCap);
         }
 
-        private void WarEffect()
-        {
-            foreach (var item in _warEffectCubes)
-            {
-
-                var cubeid = item.Key;
-                var blockInfo = item.Value;
-                var startTick = blockInfo.StartTick;
-                var tick = Tick;
-
-                var functBlock = blockInfo.FunctBlock;
-                if (functBlock == null || functBlock.MarkedForClose)
-                {
-                    _warEffectPurge.Enqueue(cubeid);
-                    continue;
-                }
-
-                if (tick <= startTick)
-                {
-                    if (tick < startTick) continue;
-                    functBlock.Enabled = false;
-                    functBlock.EnabledChanged += ForceDisable;
-                }
-
-                if (tick < blockInfo.Endtick)
-                {
-                    if (Tick60) functBlock.SetDamageEffect(true);
-                }
-                else 
-                {
-                    functBlock.EnabledChanged -= ForceDisable;
-                    functBlock.Enabled = blockInfo.EnableState;
-                    functBlock.SetDamageEffect(false);
-                    _warEffectPurge.Enqueue(cubeid);
-                }
-            }
-
-            while (_warEffectPurge.Count != 0)
-            {
-                BlockState value;
-                _warEffectCubes.TryRemove(_warEffectPurge.Dequeue(), out value);
-            }
-
-            if (_warEffectCubes.IsEmpty) _warEffect = false;
-        }
-
-        private void ForceDisable(IMyTerminalBlock myTerminalBlock)
-        {
-            ((IMyFunctionalBlock)myTerminalBlock).Enabled = false;
-        }
-
         private void ComputeEmpBlast()
         {
             var epiCenter = EmpWork.EpiCenter;
@@ -378,7 +380,6 @@
                     }
                 }
             }
-
             EmpWork.ComputeComplete();
         }
 
@@ -427,7 +428,7 @@
             var radius = (float)(rangeCap * 0.01);
             var scale = 7f;
 
-            if (radius < 7) scale = radius; 
+            if (radius < 7) scale = radius;
 
             var matrix = MatrixD.CreateTranslation(epiCenter);
             MyParticlesManager.TryCreateParticleEffect(6666, out _effect, ref matrix, ref epiCenter, 0, true); // 15, 16, 24, 25, 28, (31, 32) 211 215 53
@@ -446,106 +447,59 @@
             EmpWork.EmpDrawComplete();
         }
 
-        private void Timings()
+        private void WarEffect()
         {
-            _newFrame = true;
-            Tick = (uint)(Session.ElapsedPlayTime.TotalMilliseconds * TickTimeDiv);
-            Tick20 = Tick % 20 == 0;
-            Tick60 = Tick % 60 == 0;
-            Tick60 = Tick % 60 == 0;
-            Tick180 = Tick % 180 == 0;
-            Tick600 = Tick % 600 == 0;
-            Tick1800 = Tick % 1800 == 0;
-
-            if (_count++ == 59)
+            foreach (var item in _warEffectCubes)
             {
-                _count = 0;
-                _lCount++;
-                if (_lCount == 10)
+
+                var cubeid = item.Key;
+                var blockInfo = item.Value;
+                var startTick = blockInfo.StartTick;
+                var tick = Tick;
+
+                var functBlock = blockInfo.FunctBlock;
+                if (functBlock == null || functBlock.MarkedForClose)
                 {
-                    _lCount = 0;
-                    _eCount++;
-                    if (_eCount == 10)
-                    {
-                        _eCount = 0;
-                    }
+                    _warEffectPurge.Enqueue(cubeid);
+                    continue;
                 }
-            }
-            if (!GameLoaded && Tick > 100)
-            {
-                if (!WarHeadLoaded && WarTerminalReset != null)
-                {
-                    WarTerminalReset.ShowInTerminal = true;
-                    WarTerminalReset = null;
-                    WarHeadLoaded = true;
-                } 
 
-                if (!MiscLoaded)
+                if (tick <= startTick)
                 {
-                    MiscLoaded = true;
-                    UtilsStatic.GetDefinitons();
-                    if (!IsServer) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
+                    if (tick < startTick) continue;
+                    functBlock.Enabled = false;
+                    functBlock.EnabledChanged += ForceDisable;
                 }
-                GameLoaded = true;
-            }
 
-            if (MPDamageEvent)
-            {
-                if (Tick - LastMpEventTick >= 60)
+                if (tick < blockInfo.Endtick)
                 {
-                    Log.Line($"end MP event, timeout");
-                    MPDamageEvent = false;
-                    _monitorBlocks.Clear();
+                    if (Tick60) functBlock.SetDamageEffect(true);
                 }
                 else
                 {
-                    if (!_monitorBlocks.IsEmpty)
-                    {
-                        Log.Line($"monitoring blocks");
-                        var mpBlocks = new Queue<DamageCheck>();
-                        foreach (var mBlock in _monitorBlocks)
-                        {
-                            var newMonitor = new DamageCheck(mBlock.Damage, mBlock.Block.CubeGrid.EntityId, mBlock.DamageType);
-                            if (Tick - mBlock.Tick > 60)
-                            {
-                                mpBlocks.Enqueue(newMonitor);
-                                continue;
-                            }
-
-                            DamageCheck mpDamageBlock;
-                            var found = MpDamageCheck.TryGetValue(newMonitor, out mpDamageBlock);
-                            if (found)
-                            {
-                                Log.Line($"damaging blocks");
-                                mBlock.Block.DoDamage(mBlock.Damage, mBlock.DamageType, false, null, mBlock.Block.CubeGrid.EntityId);
-                                mpBlocks.Enqueue(newMonitor);
-                            }
-                        }
-
-                        DamageCheck damageBlock;
-                        while (mpBlocks.TryDequeue(out damageBlock))
-                        {
-                            DamageCheck outValue;
-                            MpDamageCheck.TryRemove(damageBlock, out outValue);
-                        }
-                    }
-                    else
-                    {
-                        Log.Line($"end MP event, no more blocks");
-                        MPDamageEvent = false;
-                    }
+                    functBlock.EnabledChanged -= ForceDisable;
+                    functBlock.Enabled = blockInfo.EnableState;
+                    functBlock.SetDamageEffect(false);
+                    _warEffectPurge.Enqueue(cubeid);
                 }
             }
 
-            if (EmpWork.EventRunning && EmpWork.Computed)
+            while (_warEffectPurge.Count != 0)
             {
-                EmpWork.EventComplete();
-                if (Enforced.Debug >= 2) Log.Line($"====================================================================== [WarHead EventComplete]");
+                BlockState value;
+                _warEffectCubes.TryRemove(_warEffectPurge.Dequeue(), out value);
             }
+
+            if (_warEffectCubes.IsEmpty) _warEffect = false;
         }
 
-        #region Events
+        private void ForceDisable(IMyTerminalBlock myTerminalBlock)
+        {
+            ((IMyFunctionalBlock)myTerminalBlock).Enabled = false;
+        }
+        #endregion
 
+        #region Events
         private void OnEntityRemove(MyEntity myEntity)
         {
             var warhead = myEntity as IMyWarhead;

@@ -6,8 +6,6 @@
     using Sandbox.Game.Entities;
     using Sandbox.Game.Entities.Character.Components;
     using Sandbox.ModAPI;
-
-    using VRage.Game;
     using VRage.Game.Components;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
@@ -162,14 +160,14 @@
                             if (_mpActive)
                             {
                                 AddShieldHit(meteor.EntityId, damage, Session.Instance.MPKinetic, null, false, meteor.PositionComp.WorldVolume.Center);
-                                meteor.DoDamage(10000f, Session.Instance.MPKinetic, true, null, MyGrid.EntityId);
+                                meteor.DoDamage(10000f, Session.Instance.MpIgnoreDamage, true, null, MyCube.EntityId);
                             }
                             else
                             {
                                 WorldImpactPosition = meteor.PositionComp.WorldVolume.Center;
                                 Absorb += damage;
                                 ImpactSize = damage;
-                                meteor.DoDamage(10000f, MyDamageType.Bullet, true, null, MyGrid.EntityId);
+                                meteor.DoDamage(10000f, Session.Instance.MpIgnoreDamage, true, null, MyCube.EntityId);
                             }
                         }
                     }
@@ -207,7 +205,7 @@
                             var playerGasLevel = character.GetSuitGasFillLevel(hId);
                             character.Components.Get<MyCharacterOxygenComponent>().UpdateStoredGasLevel(ref hId, (playerGasLevel * -0.0001f) + .002f);
                             MyVisualScriptLogicProvider.CreateExplosion(character.GetPosition(), 0, 0);
-                            character.DoDamage(50f, Session.Instance.MPExplosion, true, null, MyGrid.EntityId);
+                            character.DoDamage(50f, Session.Instance.MpIgnoreDamage, true, null, MyCube.EntityId);
                             var vel = character.Physics.LinearVelocity;
                             if (vel == new Vector3D(0, 0, 0)) vel = MyUtils.GetRandomVector3Normalized();
                             var speedDir = Vector3D.Normalize(vel);
@@ -236,7 +234,7 @@
                                 myGrid.EnqueueDestroyedBlock(block.Position);
                                 continue;
                             }
-                            block.DoDamage(damageMulti, MyDamageType.Bullet, true, null, myGrid.EntityId); 
+                            block.DoDamage(damageMulti, Session.Instance.MpIgnoreDamage, true, null, MyCube.EntityId); 
                             if (myGrid.BlocksCount == 0) myGrid.SendGridCloseRequest();
                         }
                     }
@@ -259,7 +257,7 @@
                                 myGrid.Close();
                                 continue;
                             }
-                            block.DoDamage(block.MaxIntegrity * 0.9f, MyDamageType.Bullet, true, null, myGrid.EntityId); 
+                            block.DoDamage(block.MaxIntegrity * 0.9f, Session.Instance.MpIgnoreDamage, true, null, MyCube.EntityId); 
                             if (myGrid.BlocksCount == 0) myGrid.SendGridCloseRequest();
                         }
                     }

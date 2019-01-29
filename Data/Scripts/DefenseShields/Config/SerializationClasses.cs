@@ -5,6 +5,10 @@ using VRageMath;
 
 namespace DefenseShields
 {
+    using System.Collections.Concurrent;
+
+    using Sandbox.Game.Entities;
+
     [ProtoContract]
     public class DefenseShieldsEnforcement
     {
@@ -422,7 +426,6 @@ namespace DefenseShields
         {
             return $"";
         }
-
     }
 
     [ProtoContract]
