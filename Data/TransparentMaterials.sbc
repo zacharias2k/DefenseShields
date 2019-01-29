@@ -214,7 +214,7 @@
         <Z>0</Z>
         <W>0</W>
       </LightMultiplier>
-      <Reflectivity>0.4</Reflectivity>
+      <Reflectivity>0.3</Reflectivity>
       <Fresnel>1</Fresnel>
       <ReflectionShadow>1</ReflectionShadow>
       <Gloss>0.4</Gloss>

@@ -134,7 +134,7 @@
                 _hideShield = false;
             else if (viewCheck && _hideColor && !_supressedColor && _viewInShield)
             {
-                _modelPassive = ModelMediumReflective;
+                _modelPassive = ModelLowReflective;
                 UpdatePassiveModel();
                 _supressedColor = true;
                 _hideShield = false;
@@ -197,26 +197,23 @@
 
             MyParticlesManager.TryCreateParticleEffect(6667, out _effect, ref matrix, ref pos, _shieldEntRendId, true); 
             if (_effect == null) return;
-            var playerDist = Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos);
-            if (playerDist < 15) playerDist = 20;
-            var radius = playerDist * 0.15d;
-            var scale = (playerDist + (playerDist * 0.001)) / playerDist * 0.03;
-            if (ImpactSize < 150)
-            {
-                scale = scale * 0.3;
-                radius = radius * 9;
-            }
-            else if (ImpactSize > 12000) scale = 0.1;
-            else if (ImpactSize > 3600) scale = scale * (ImpactSize / 3600);
-            if (scale > 0.1) scale = 0.1;
-
+            var scale = 0.0075;
+            var logOfPlayerDist = Math.Log(Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos));
+            int radius;
+            var baseScaler = ImpactSize / 30;
+            scale = scale * Math.Max(Math.Log(baseScaler), 1);
             if (EnergyHit)
             {
+                radius = (int)(logOfPlayerDist * 15);
                 _effect.UserColorMultiplier = new Vector4(255, 69, 0, 1);
                 EnergyHit = false;
             }
-
-            _effect.UserRadiusMultiplier = (float)radius;
+            else
+            {
+                radius = (int)(logOfPlayerDist * 8);
+                _effect.UserColorMultiplier = new Vector4(255, 255, 255, 1);
+            }
+            _effect.UserRadiusMultiplier = radius;
             _effect.UserEmitterScale = (float)scale;
             _effect.Velocity = MyGrid.Physics.LinearVelocity;
             _effect.Play();

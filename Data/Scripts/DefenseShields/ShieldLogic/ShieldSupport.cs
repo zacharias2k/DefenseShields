@@ -194,7 +194,7 @@
                 }
                 if (damageType == Session.Instance.MPEMP)
                 {
-                    ImpactSize = 12001;
+                    ImpactSize = hit.Amount;
                     WorldImpactPosition = hit.HitPos;
                     EnergyHit = true;
                     Absorb += hit.Amount * ConvToWatts;

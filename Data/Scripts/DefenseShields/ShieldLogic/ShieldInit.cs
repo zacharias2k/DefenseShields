@@ -30,12 +30,12 @@
                 {
                     case 0:
                         _modelPassive = ModelMediumReflective;
-                        _hideColor = false;
+                        _hideColor = true;
                         _supressedColor = false;
                         break;
                     case 1:
                         _modelPassive = ModelHighReflective;
-                        _hideColor = false;
+                        _hideColor = true;
                         _supressedColor = false;
                         break;
                     case 2:

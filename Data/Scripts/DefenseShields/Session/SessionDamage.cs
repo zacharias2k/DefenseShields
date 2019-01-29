@@ -143,6 +143,7 @@
                         {
                             shield.WorldImpactPosition = shieldHitPos;
                             shield.ImpactSize = info.Amount;
+                            if (!bullet) shield.EnergyHit = true;
                         }
                         if (isDeformationDmg && trueAttacker != null) protectors.IgnoreAttackerId = attackerId;
                         shield.Absorb += info.Amount;
@@ -194,7 +195,7 @@
 
         private void CharacterProtection(object target, MyDamageInformation info)
         {
-            if (info.Type != MpIgnoreDamage || info.Type == MyDamageType.LowPressure) return;
+            if (info.Type == MpIgnoreDamage || info.Type == MyDamageType.LowPressure) return;
 
             var myEntity = target as MyEntity;
             if (myEntity == null) return;
