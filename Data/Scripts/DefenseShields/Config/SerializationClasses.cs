@@ -154,7 +154,7 @@ namespace DefenseShields
         public float Depth = 30f;
 
         [ProtoMember(5)]
-        public bool Unused = false;
+        public bool NoWarningSounds = false;
 
         [ProtoMember(6)]
         public bool ActiveInvisible = false;

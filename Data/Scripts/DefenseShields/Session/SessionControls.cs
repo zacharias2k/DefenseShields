@@ -84,6 +84,7 @@
 
                 RefreshAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_RefreshAnimation", "Show Refresh Animation  ", "Show Random Refresh Animation", DsUi.GetRefreshAnimation, DsUi.SetRefreshAnimation);
                 HitWaveAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_HitWaveAnimation", "Show Hit Wave Animation", "Show Wave Effect On Shield Damage", DsUi.GetHitWaveAnimation, DsUi.SetHitWaveAnimation);
+                NoWarningSoundsCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_NoWarningSounds", "Disable audio warnings    ", "Supress shield audio warnings", DsUi.GetNoWarningSounds, DsUi.SetNoWarningSounds);
 
                 CreateAction<IMyUpgradeModule>(ToggleShield);
 

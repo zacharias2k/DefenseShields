@@ -11,8 +11,8 @@
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRageMath;
-    using MyVisualScriptLogicProvider = Sandbox.Game.MyVisualScriptLogicProvider;
     using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
+    using MyVisualScriptLogicProvider = Sandbox.Game.MyVisualScriptLogicProvider;
 
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation | MyUpdateOrder.AfterSimulation, int.MinValue)]
     public partial class Session : MySessionComponentBase

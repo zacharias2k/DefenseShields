@@ -228,16 +228,18 @@
             }
         }
 
-        public static void UnitSphereTranslateScaleList(int pointLimit, ref Vector3D[] physicsArray, ref List<Vector3D> scaledCloudList, MyEntity shieldEnt, bool debug)
+        public static void UnitSphereTranslateScaleList(int pointLimit, ref Vector3D[] physicsArray, ref List<Vector3D> scaledCloudList, MyEntity shieldEnt, bool debug, MyEntity grid, bool rotate = true)
         {
             var sPosComp = shieldEnt.PositionComp;
             var radius = sPosComp.WorldVolume.Radius;
             var center = sPosComp.WorldAABB.Center;
-
+            var gMatrix = grid.WorldMatrix;
             for (int i = 0; i < pointLimit; i++)
             {
                 var v = physicsArray[i];
-                scaledCloudList.Add(v = center + (radius * v));
+                if (rotate) Vector3D.Rotate(ref v, ref gMatrix, out v);
+                v = center + (radius * v);
+                scaledCloudList.Add(v);
                 if (debug) DsDebugDraw.DrawX(v, sPosComp.LocalMatrix, 0.5);
             }
         }

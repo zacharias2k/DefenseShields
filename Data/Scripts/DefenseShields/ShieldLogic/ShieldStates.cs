@@ -5,6 +5,9 @@
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
     using VRage.Game;
+    using VRage.Game.Entity;
+    using VRage.Game.ModAPI;
+
     using VRageMath;
 
     public partial class DefenseShields
@@ -780,13 +783,18 @@
             var center = GridIsMobile ? MyGrid.PositionComp.WorldVolume.Center : OffsetEmitterWMatrix.Translation;
             var sphere = new BoundingSphereD(center, radius);
             var sendMessage = false;
+            IMyPlayer targetPlayer = null;
             foreach (var player in Session.Instance.Players.Values)
             {
                 if (player.IdentityId != MyAPIGateway.Session.Player.IdentityId) continue;
                 if (!sphere.Intersects(player.Character.WorldVolume)) continue;
                 sendMessage = true;
+                targetPlayer = player;
                 break;
             }
+
+            if (sendMessage && !DsSet.Settings.NoWarningSounds) BroadcastSound(targetPlayer, notice);
+
             switch (notice)
             {
                 case PlayerNotice.EmitterInit:
@@ -811,7 +819,39 @@
                     if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- Insufficient Power, shield is failing!", 5000, "Red");
                     break;
             }
+        }
 
+        private void BroadcastSound(IMyPlayer player, PlayerNotice notice)
+        {
+            var soundEmitter = Session.Instance.SoundEmitter;
+            soundEmitter.Entity = (MyEntity)player.Character.Entity;
+
+            MySoundPair pair = null;
+            switch (notice)
+            {
+                case PlayerNotice.EmitterInit:
+                    pair = new MySoundPair("Arc_reinizializing");
+                    break;
+                case PlayerNotice.FieldBlocked:
+                    pair = new MySoundPair("Arc_solidbody");
+                    break;
+                case PlayerNotice.OverLoad:
+                    pair = new MySoundPair("Arc_overloaded");
+                    break;
+                case PlayerNotice.EmpOverLoad:
+                    pair = new MySoundPair("Arc_EMP");
+                    break;
+                case PlayerNotice.Remodulate:
+                    pair = new MySoundPair("Arc_remodulating");
+                    break;
+                case PlayerNotice.NoLos:
+                    pair = new MySoundPair("Arc_noLOS");
+                    break;
+                case PlayerNotice.NoPower:
+                    pair = new MySoundPair("Arc_insufficientpower");
+                    break;
+            }
+           if (soundEmitter.Entity != null && pair != null) soundEmitter.PlaySingleSound(pair, true);
         }
 
         private void BroadcastMessage(bool forceNoPower = false)

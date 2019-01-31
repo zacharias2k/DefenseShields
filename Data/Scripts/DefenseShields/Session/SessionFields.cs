@@ -268,6 +268,11 @@
 
         internal DSUtils Dsutil1 { get; set; } = new DSUtils();
         internal DSUtils Dsutil2 { get; set; } = new DSUtils();
+        internal MyEntity3DSoundEmitter SoundEmitter { get; set; } = new MyEntity3DSoundEmitter(null)
+        {
+            CustomMaxDistance = float.MaxValue,
+            VolumeMultiplier = 2
+        };
 
         internal IMyTerminalControlSlider WidthSlider { get; set; }
         internal IMyTerminalControlSlider HeightSlider { get; set; }
@@ -283,6 +288,7 @@
         internal IMyTerminalControlCheckbox HideActiveCheckBox { get; set; }
         internal IMyTerminalControlCheckbox RefreshAnimationCheckBox { get; set; }
         internal IMyTerminalControlCheckbox HitWaveAnimationCheckBox { get; set; }
+        internal IMyTerminalControlCheckbox NoWarningSoundsCheckBox { get; set; }
 
         internal IMyTerminalControlCheckbox SendToHudCheckBox { get; set; }
         internal IMyTerminalControlOnOffSwitch ToggleShield { get; set; }

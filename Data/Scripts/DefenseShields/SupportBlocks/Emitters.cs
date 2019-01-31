@@ -52,7 +52,6 @@
         private bool _wasSuspend;
         private bool _wasLos;
         private bool _wasLosState;
-        private bool _losBroadcasted;
         private bool _disableLos;
         private bool _wasCompact;
         private bool _wasCompatible;
@@ -321,6 +320,12 @@
 
                 if (EmiState.State.Online && !EmiState.State.Los) LosLogic();
 
+                if (EmiState.State.Los && !_wasLosState)
+                {
+                    _wasLosState = EmiState.State.Los;
+                    _updateLosState = false;
+                    LosScaledCloud.Clear();
+                }
                 if (!EmiState.State.Link || !EmiState.State.Online) return false;
 
             }
@@ -562,12 +567,12 @@
 
             if (!_isDedicated)
             {
-                if (EmiState.State.Los != _wasLosState || controller.LosCheckTick == _tick + 1800) _updateLosState = true;
+                if (!_updateLosState && (EmiState.State.Los != _wasLosState || controller.LosCheckTick == _tick + 1799 || controller.LosCheckTick == _tick + 1800)) _updateLosState = true;
                 _wasLosState = EmiState.State.Los;
 
                 if (!_isServer)
                 {
-                    if (!EmiState.State.Los) DrawHelper();
+                    DrawHelper();
                     return;
                 }
 
@@ -594,7 +599,7 @@
             else
             {
                 UpdateLosState();
-                EmiState.State.Los = _blocksLos.Count <= 1300;
+                EmiState.State.Los = _blocksLos.Count <= 1500;
 
                 if (!EmiState.State.Los) ShieldComp.EmitterEvent = true;
                 else LosScaledCloud.Clear();
@@ -617,7 +622,7 @@
                 var testDir = MyCube.PositionComp.WorldMatrix.Up;
                 if (!EmiState.State.Compact) testDir = _subpartRotor.PositionComp.WorldVolume.Center - MyCube.PositionComp.WorldVolume.Center;
                 testDir.Normalize();
-                var testPos = MyCube.PositionComp.WorldVolume.Center + (testDir * testDist);
+                var testPos = MyCube.PositionComp.WorldAABB.Center + (testDir * testDist);
 
                 var hit = MyGrid.RayCastBlocks(testPos, LosScaledCloud[i]);
 
@@ -641,36 +646,35 @@
                 var blockCam = controller.ShieldEnt.PositionComp.WorldVolume;
                 if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam))
                 {
-                    if (needsUpdate) UpdateUnitSphere();
 
                     if (_lCount % 2 == 1)
                     {
                         if (_count == 59 && needsUpdate)
                         {
                             UpdateLosState(_updateLosState);
-                            _losBroadcasted = false;
                             _updateLosState = false;
                         }
+                        else if (needsUpdate) UpdateUnitSphere();
                     }
                     else
                     {
+                        if (needsUpdate) UpdateUnitSphere();
                         foreach (var blocking in _blocksLos.Keys)
                         {
                             var blockedPos = LosScaledCloud[blocking];
-                            DsDebugDraw.DrawLosBlocked(blockedPos, MyGrid.PositionComp.LocalMatrix, (blockCam.Radius / 25));
+                            DsDebugDraw.DrawLosBlocked(blockedPos, MyGrid.PositionComp.LocalMatrix, blockCam.Radius / 25);
                         }
                     }
 
                     foreach (var clear in _vertsSighted)
                     {
                         var blockedPos = LosScaledCloud[clear];
-                        DsDebugDraw.DrawLosClear(blockedPos, MyGrid.PositionComp.LocalMatrix, (blockCam.Radius / 25));
+                        DsDebugDraw.DrawLosClear(blockedPos, MyGrid.PositionComp.LocalMatrix, blockCam.Radius / 25);
                     }
 
                     var blocked = _blocksLos.Count;
-                    var needed = -700 + _vertsSighted.Count;
-                    if (!_isServer && needed >= 0) LosScaledCloud.Clear();
-                    if (_count == 0) BroadCastLosMessage(blocked, needed);
+                    var needed = -500 + _vertsSighted.Count;
+                    if (_count == 0) BroadCastLosMessage(blocked, needed, controller);
                 }
             }
         }
@@ -683,10 +687,10 @@
             }
             var losPointSphere = Session.Instance.LosPointSphere;
             LosScaledCloud.Clear();
-            UtilsStatic.UnitSphereTranslateScaleList(_unitSpherePoints, ref losPointSphere, ref LosScaledCloud, ShieldComp.DefenseShields.ShieldEnt, false);
+            UtilsStatic.UnitSphereTranslateScaleList(_unitSpherePoints, ref losPointSphere, ref LosScaledCloud, ShieldComp.DefenseShields.ShieldEnt, false, MyGrid);
         }
 
-        private void BroadCastLosMessage(int blocked, int needed)
+        private void BroadCastLosMessage(int blocked, int needed, DefenseShields controller)
         {
             var sphere = new BoundingSphereD(Emitter.PositionComp.WorldAABB.Center, 1500);
             var sendMessage = false;
@@ -701,16 +705,12 @@
             if (sendMessage)
             {
                 var sighted = _vertsSighted.Count;
-                if (needed < 0)
-                {
-                    MyAPIGateway.Utilities.ShowNotification("The shield emitter DOES NOT have a CLEAR ENOUGH LINE OF SIGHT to the shield, SHUTTING DOWN.", 960, "Red");
-                    MyAPIGateway.Utilities.ShowNotification($"Green means clear line of sight, Flashing Orange means blocked | Blocked: {blocked} | Clear: {sighted} | Needed: {needed}", 960, "Red");
-                }
-                else if (!_losBroadcasted)
-                {
-                    MyAPIGateway.Utilities.ShowNotification("The shield emitter is now clear, shield restarting in 30 seconds.", 8000, "White");
-                    _losBroadcasted = true;
-                }
+                if (needed > 0) needed = 0;
+
+                MyAPIGateway.Utilities.ShowNotification("The shield emitter DOES NOT have a CLEAR ENOUGH LINE OF SIGHT to the shield, SHUTTING DOWN.", 960, "Red");
+                MyAPIGateway.Utilities.ShowNotification($"Green means clear line of sight, Flashing Orange means blocked | Blocked: {blocked} | Clear: {sighted} | Needed (Approximate): {needed}", 960, "Red");
+                if (needed == 0 && controller.LosCheckTick != uint.MaxValue) MyAPIGateway.Utilities.ShowNotification($"Needed is only an approximation, if shield does not start in 30 seconds or is unstable, then it is not clear.", 960, "White");
+                else if (needed == 0 && _lCount % 2 == 1) MyAPIGateway.Utilities.ShowNotification($"Shield is still not clear!", 960, "White");
             }
         }
         #endregion
