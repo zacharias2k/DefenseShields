@@ -204,13 +204,19 @@
             scale = scale * Math.Max(Math.Log(baseScaler), 1);
             if (EnergyHit)
             {
-                radius = (int)(logOfPlayerDist * 15);
+                var scaler = 15;
+                if (_viewInShield && DsSet.Settings.DimShieldHits) scaler = 6;
+
+                radius = (int)(logOfPlayerDist * scaler);
                 _effect.UserColorMultiplier = new Vector4(255, 69, 0, 1);
                 EnergyHit = false;
             }
             else
             {
-                radius = (int)(logOfPlayerDist * 8);
+                var scaler = 8;
+                if (_viewInShield && DsSet.Settings.DimShieldHits) scaler = 3;
+
+                radius = (int)(logOfPlayerDist * scaler);
                 _effect.UserColorMultiplier = new Vector4(255, 255, 255, 1);
             }
             _effect.UserRadiusMultiplier = radius;

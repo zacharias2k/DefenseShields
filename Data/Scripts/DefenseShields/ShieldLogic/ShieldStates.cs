@@ -824,7 +824,7 @@
         private void BroadcastSound(IMyPlayer player, PlayerNotice notice)
         {
             var soundEmitter = Session.Instance.SoundEmitter;
-            soundEmitter.Entity = (MyEntity)player.Character.Entity;
+            soundEmitter.Entity = (MyEntity)player.Character;
 
             MySoundPair pair = null;
             switch (notice)

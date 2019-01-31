@@ -177,8 +177,8 @@ namespace DefenseShields
         [ProtoMember(12), DefaultValue(true)]
         public bool UseBatteries = true;
 
-        [ProtoMember(13)]
-        public bool Unused2 = false;
+        [ProtoMember(13), DefaultValue(true)]
+        public bool DimShieldHits = true;
 
         [ProtoMember(14), DefaultValue(true)]
         public bool RaiseShield = true;

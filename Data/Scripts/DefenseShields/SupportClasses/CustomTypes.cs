@@ -40,6 +40,7 @@
         }
     }
 
+#if VERSION_189
     public struct VoxelHit : IVoxelOperator
     {
         public bool HasHit;
@@ -51,13 +52,27 @@
                 HasHit = true;
             }
         }
-        /*
+
         public VoxelOperatorFlags Flags
         {
             get { return VoxelOperatorFlags.Read; }
         }
-        */
     }
+#else 
+    public struct VoxelHit : IVoxelOperator
+    {
+        public bool HasHit;
+
+        public void Op(ref Vector3I pos, MyStorageDataTypeEnum dataType, ref byte content)
+        {
+            if (content != MyVoxelConstants.VOXEL_CONTENT_EMPTY)
+            {
+                HasHit = true;
+            }
+        }
+    }
+#endif
+
 
     public struct ShieldHit
     {

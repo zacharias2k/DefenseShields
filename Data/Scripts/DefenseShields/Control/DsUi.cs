@@ -290,6 +290,21 @@
             return comp?.DsSet.Settings.NoWarningSounds ?? false;
         }
 
+        internal static void SetDimShieldHits(IMyTerminalBlock block, bool newValue)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            if (comp == null) return;
+            comp.DsSet.Settings.DimShieldHits = newValue;
+            comp.SettingsUpdated = true;
+            comp.ClientUiUpdate = true;
+        }
+
+        internal static bool GetDimShieldHits(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            return comp?.DsSet.Settings.DimShieldHits ?? false;
+        }
+
         internal static void SetNoWarningSounds(IMyTerminalBlock block, bool newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();

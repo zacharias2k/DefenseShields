@@ -3,7 +3,7 @@
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using global::DefenseShields.Support;
+    using Support;
     using ParallelTasks;
     using Sandbox.Game.Entities;
     using Sandbox.Game.EntityComponents;
@@ -27,7 +27,6 @@
         internal readonly int[] ExpChargeReductions = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024 };
 
         internal readonly List<MyEntity> PruneList = new List<MyEntity>();
-        internal readonly List<MyEntity> FriendRefreshList = new List<MyEntity>();
         internal readonly List<ShieldHit> ShieldHits = new List<ShieldHit>();
         internal readonly Queue<ProtoShieldHit> ProtoShieldHits = new Queue<ProtoShieldHit>();
 
@@ -46,9 +45,6 @@
 
         internal readonly ConcurrentQueue<MyCubeGrid> Eject = new ConcurrentQueue<MyCubeGrid>();
         internal readonly ConcurrentQueue<IMySlimBlock> CollidingBlocks = new ConcurrentQueue<IMySlimBlock>();
-        internal readonly ConcurrentQueue<MyCubeBlock> FatAddQueue = new ConcurrentQueue<MyCubeBlock>();
-        internal readonly ConcurrentQueue<MyCubeBlock> FatRemoveQueue = new ConcurrentQueue<MyCubeBlock>();
-        internal readonly ConcurrentQueue<IMyWarhead> EmpDmg = new ConcurrentQueue<IMyWarhead>();
         internal readonly ConcurrentQueue<IMySlimBlock> FewDmgBlocks = new ConcurrentQueue<IMySlimBlock>();
         internal readonly ConcurrentQueue<MyEntity> MissileDmg = new ConcurrentQueue<MyEntity>();
         internal readonly ConcurrentQueue<IMyMeteor> MeteorDmg = new ConcurrentQueue<IMyMeteor>();
@@ -78,7 +74,6 @@
         internal MyOrientedBoundingBoxD SOriBBoxD = new MyOrientedBoundingBoxD();
         internal BoundingSphereD ShieldSphere = new BoundingSphereD(Vector3D.Zero, 1);
         internal BoundingBox ShieldAabbScaled = new BoundingBox(Vector3D.One, -Vector3D.One);
-        internal BoundingBox ShieldAabbNoScale = new BoundingBox(Vector3D.One, -Vector3D.One);
         internal BoundingSphereD ShieldSphere3K = new BoundingSphereD(Vector3D.Zero, 1f);
         internal BoundingSphereD WebSphere = new BoundingSphereD(Vector3D.Zero, 1f);
 
@@ -220,7 +215,7 @@
         private string _modelActive = "\\Models\\Cubes\\ShieldActiveBase.mwm";
         private string _modelPassive = string.Empty;
 
-        private Vector2D _shieldIconPos = new Vector2D(-0.89, -0.86);
+        private readonly Vector2D _shieldIconPos = new Vector2D(-0.89, -0.86);
         private Vector3D _localImpactPosition;
         private Vector3D _oldGridHalfExtents;
 
@@ -278,11 +273,6 @@
         internal ProtoShieldHit ShieldHit { get; set; } = new ProtoShieldHit();
         internal Icosphere.Instance Icosphere { get; set; }
 
-        internal MyStringId CustomDataTooltip { get; set; } = MyStringId.GetOrCompute("Shows an Editor for custom data to be used by scripts and mods");
-        internal MyStringId CustomData { get; set; } = MyStringId.GetOrCompute("CustomData");
-        internal MyStringId Password { get; set; } = MyStringId.GetOrCompute("Password");
-        internal MyStringId PasswordTooltip { get; set; } = MyStringId.GetOrCompute("Set the shield modulation password");
-
         internal uint UnsuspendTick { get; set; }
         internal uint LosCheckTick { get; set; }
         internal uint TicksWithNoActivity { get; set; }
@@ -309,7 +299,6 @@
         internal bool ClientUiUpdate { get; set; }
         internal bool IsStatic { get; set; }
         internal bool WebDamage { get; set; }
-        internal bool WebSuspend { get; set; }
         internal bool IsFunctional { get; set; }
         internal bool IsWorking { get; set; }
         internal bool ControlBlockWorking { get; set; }
@@ -333,12 +322,9 @@
         internal float ImpactSize { get; set; } = 9f;
         internal float Absorb { get; set; }
 
-        internal double EmpSize { get; set; }
-
         internal DSUtils Dsutil1 { get; set; } = new DSUtils();
 
         internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
-        internal Vector3D EmpDetonation { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         internal Vector3D ShieldSize { get; set; }
 
         internal MatrixD DetectionMatrix

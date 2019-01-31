@@ -3,7 +3,7 @@
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using global::DefenseShields.Support;
+    using Support;
     using Sandbox.Common.ObjectBuilders;
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
@@ -40,7 +40,6 @@
         internal readonly MyStringHash MPEnergy = MyStringHash.GetOrCompute("MPEnergy");
         internal readonly MyStringHash MPKinetic = MyStringHash.GetOrCompute("MPKinetic");
         internal readonly MyStringHash MPEMP = MyStringHash.GetOrCompute("MPEMP");
-        internal readonly MyStringHash MpDmgEffect = MyStringHash.GetOrCompute("MpDmgEffect");
         internal readonly MyStringHash MpIgnoreDamage = MyStringHash.GetOrCompute("MpIgnoreDamage");
         internal readonly MyStringHash DSdamage = MyStringHash.GetOrCompute("DSdamage");
         internal readonly MyStringHash DSheal = MyStringHash.GetOrCompute("DSheal");
@@ -68,7 +67,6 @@
 
         internal readonly EmpWork EmpWork = new EmpWork();
 
-        internal readonly MyModContext MyModContext = new MyModContext();
         internal readonly Icosphere Icosphere = new Icosphere(5);
 
         internal readonly ConcurrentDictionary<long, IMyPlayer> Players = new ConcurrentDictionary<long, IMyPlayer>();
@@ -222,8 +220,6 @@
         internal static bool EnforceInit { get; set; }
 
         internal uint Tick { get; set; }
-        internal uint OldestRefreshTick { get; set; }
-        internal uint LastMpEventTick { get; set; }
         internal int OnCount { get; set; }
         internal int RefreshCycle { get; set; }
         internal int EntSlotScaler { get; set; } = 9;
@@ -250,7 +246,6 @@
         internal bool Tick1800 { get; set; }
         internal bool WebWrapperOn { get; set; }
         internal bool ScalerChanged { get; set; }
-        internal bool HideActions { get; set; }
         internal bool DsControl { get; set; }
         internal bool PsControl { get; set; }
         internal bool ModControl { get; set; }
@@ -262,12 +257,9 @@
         internal bool PsAction { get; set; }
         internal bool ModAction { get; set; }
 
-        internal Vector3 ResetWarHeadHSV { get; set; } = new Vector3(0, -1, 0);
-
         internal DefenseShields HudComp { get; set; }
 
         internal DSUtils Dsutil1 { get; set; } = new DSUtils();
-        internal DSUtils Dsutil2 { get; set; } = new DSUtils();
         internal MyEntity3DSoundEmitter SoundEmitter { get; set; } = new MyEntity3DSoundEmitter(null)
         {
             CustomMaxDistance = float.MaxValue,
@@ -289,6 +281,7 @@
         internal IMyTerminalControlCheckbox RefreshAnimationCheckBox { get; set; }
         internal IMyTerminalControlCheckbox HitWaveAnimationCheckBox { get; set; }
         internal IMyTerminalControlCheckbox NoWarningSoundsCheckBox { get; set; }
+        internal IMyTerminalControlCheckbox DimShieldHitsCheckBox { get; set; }
 
         internal IMyTerminalControlCheckbox SendToHudCheckBox { get; set; }
         internal IMyTerminalControlOnOffSwitch ToggleShield { get; set; }
