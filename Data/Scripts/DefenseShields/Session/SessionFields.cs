@@ -17,18 +17,7 @@
 
     public partial class Session
     {
-        internal const ushort PacketIdShieldHit = 62512;
-        internal const ushort PacketIdO2GeneratorSettings = 62513;
-        internal const ushort PacketIdPlanetShieldSettings = 62514;
-        internal const ushort PacketIdPlanetShieldState = 62515;  
-        internal const ushort PacketIdEmitterState = 62516;
-        internal const ushort PacketIdO2GeneratorState = 62517;
-        internal const ushort PacketIdEnhancerState = 62518;
-        internal const ushort PacketIdControllerState = 62519;
-        internal const ushort PacketIdControllerSettings = 62520;
-        internal const ushort PacketIdEnforce = 62521;
-        internal const ushort PacketIdModulatorSettings = 62522;
-        internal const ushort PacketIdModulatorState = 62523;
+        internal const ushort PACKET_ID = 62520;
         internal const double TickTimeDiv = 0.0625;
 
         internal static readonly MyConcurrentPool<MyProtectors> ProtSets = new MyConcurrentPool<MyProtectors>(150, null, 1000);

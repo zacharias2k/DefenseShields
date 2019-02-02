@@ -1,5 +1,6 @@
 ﻿using System;
 using DefenseShields.Support;
+using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 
@@ -60,8 +61,7 @@ namespace DefenseShields
 
             if (Session.Instance.IsServer)
             {
-                if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - Online:{State.Online} Link:{State.Link} - Backup:{State.Backup} - ModulatorId [{Modulator.EntityId}]: network state update for modulator");
-                Session.Instance.PacketizeModulatorState(Modulator, State); // update clients with server's settings
+                Session.Instance.PacketizeToClientsInRange(Modulator, new DataModulatorState(Modulator.EntityId, State)); // update clients with server's state
             }
         }
         #endregion
@@ -120,14 +120,12 @@ namespace DefenseShields
 
             if (Session.Instance.IsServer)
             {
-                if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - ModulatorId [{Modulator.EntityId}]: network settings update for modulator");
-                Session.Instance.PacketizeModulatorSettings(Modulator, Settings); // update clients with server's settings
+                Session.Instance.PacketizeToClientsInRange(Modulator, new DataModulatorSettings(Modulator.EntityId, Settings)); // update clients with server's settings
             }
             else // client, send settings to server
             {
-                if (Session.Enforced.Debug == 3) Log.Line($"ClientRelay - ModulatorId [{Modulator.EntityId}]: sent network settings update for modulator");
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataModulatorSettings(MyAPIGateway.Multiplayer.MyId, Modulator.EntityId, Settings));
-                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdModulatorSettings, bytes);
+                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataModulatorSettings(Modulator.EntityId, Settings));
+                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PACKET_ID, bytes);
             }
         }
         #endregion

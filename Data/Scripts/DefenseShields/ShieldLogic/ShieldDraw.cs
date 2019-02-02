@@ -205,7 +205,7 @@
             if (EnergyHit)
             {
                 var scaler = 15;
-                if (_viewInShield && DsSet.Settings.DimShieldHits) scaler = 6;
+                if (_viewInShield && DsSet.Settings.DimShieldHits) scaler = 3;
 
                 radius = (int)(logOfPlayerDist * scaler);
                 _effect.UserColorMultiplier = new Vector4(255, 69, 0, 1);

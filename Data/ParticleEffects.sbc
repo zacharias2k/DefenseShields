@@ -548,7 +548,7 @@
       <Length>14</Length>
       <DurationMin>15</DurationMin>
       <DurationMax>0</DurationMax>
-      <DistanceMax>2000</DistanceMax>
+      <DistanceMax>5000</DistanceMax>
       <Loop>false</Loop>
       <ParticleGenerations>
 

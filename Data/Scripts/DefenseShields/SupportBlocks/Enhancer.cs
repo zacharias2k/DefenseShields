@@ -2,7 +2,7 @@
 {
     using System;
     using System.Text;
-    using global::DefenseShields.Support;
+    using Support;
     using Sandbox.Common.ObjectBuilders;
     using Sandbox.Game.Entities;
     using Sandbox.Game.EntityComponents;

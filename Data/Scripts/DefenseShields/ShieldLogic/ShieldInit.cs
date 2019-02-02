@@ -2,7 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
-    using global::DefenseShields.Support;
+    using Support;
     using Sandbox.Game.EntityComponents;
     using Sandbox.ModAPI;
     using VRage.Game;

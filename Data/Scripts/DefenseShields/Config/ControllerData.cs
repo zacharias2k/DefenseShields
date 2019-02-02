@@ -1,7 +1,7 @@
 ﻿namespace DefenseShields
 {
     using System;
-    using global::DefenseShields.Support;
+    using Support;
     using Sandbox.Game.EntityComponents;
     using Sandbox.ModAPI;
 
@@ -54,8 +54,7 @@
 
         internal void NetworkUpdate()
         {
-            if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - ShieldId [{Shield.EntityId}]: network state update for shield");
-            Session.Instance.PacketizeControllerState(Shield, State); // update clients with server's state
+            Session.Instance.PacketizeToClientsInRange(Shield, new DataControllerState(Shield.EntityId, State)); // update clients with server's state
         }
     }
 
@@ -115,14 +114,12 @@
         {
             if (Session.Instance.IsServer)
             {
-                if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - ShieldId [{Shield.EntityId}]: network settings update for shield");
-                Session.Instance.PacketizeControllerSettings(Shield, Settings); 
+                Session.Instance.PacketizeToClientsInRange(Shield, new DataControllerSettings(Shield.EntityId, Settings)); 
             }
             else 
             {
-                if (Session.Enforced.Debug == 3) Log.Line($"ClientRelay - ShieldId [{Shield.EntityId}]: network settings update for shield");
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataControllerSettings(MyAPIGateway.Multiplayer.MyId, Shield.EntityId, Settings));
-                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdControllerSettings, bytes);
+                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataControllerSettings(Shield.EntityId, Settings));
+                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PACKET_ID, bytes);
             }
         }
     }

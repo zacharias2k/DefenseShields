@@ -60,7 +60,7 @@
                         else trueAttacker = myGrid;
 
                         protectors.OriginBlock = block;
-                        protectors.OriginBlock.ComputeWorldCenter(out protectors.OriginHit);
+                        block.ComputeWorldCenter(out protectors.OriginHit);
                         var line = new LineD(trueAttacker.PositionComp.WorldAABB.Center, protectors.OriginHit);
                         var testDir = Vector3D.Normalize(line.From - line.To);
                         var ray = new RayD(line.From, -testDir);
@@ -242,11 +242,17 @@
                 ent = null;
                 return;
             }
-            if (_backingDict.TryGetValue(attackerId, out _previousEnt))
+            MyEntity tmpPreviousEnt;
+            if (_backingDict.TryGetValue(attackerId, out tmpPreviousEnt))
             {
-                ent = _previousEnt;
-                _previousEntId = attackerId;
-                return;
+                if (!tmpPreviousEnt.MarkedForClose)
+                {
+                    _previousEnt = tmpPreviousEnt;
+                    ent = _previousEnt;
+                    _previousEntId = attackerId;
+                    return;
+                }
+                _backingDict.Remove(attackerId);
             }
             if (MyEntities.TryGetEntityById(attackerId, out _previousEnt))
             {

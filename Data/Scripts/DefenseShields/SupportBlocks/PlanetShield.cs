@@ -1,7 +1,5 @@
 ﻿namespace DefenseShields
 {
-    using System;
-    using System.Text;
     using global::DefenseShields.Support;
     using Sandbox.Common.ObjectBuilders;
     using Sandbox.Game.Entities;

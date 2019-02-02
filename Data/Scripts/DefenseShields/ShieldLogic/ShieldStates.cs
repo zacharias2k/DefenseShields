@@ -1,7 +1,7 @@
 ﻿namespace DefenseShields
 {
     using System.Collections.Generic;
-    using global::DefenseShields.Support;
+    using Support;
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
     using VRage.Game;
@@ -29,13 +29,13 @@
             DsSet.Settings = newSettings;
             SettingsUpdated = true;
             if (newShape) FitChanged = true;
-            if (Session.Enforced.Debug == 4) Log.Line($"UpdateSettings - server:{Session.Instance.IsServer} - ShieldId [{Shield.EntityId}]:\n{newSettings}");
+            if (Session.Enforced.Debug == 3) Log.Line($"UpdateSettings - server:{Session.Instance.IsServer} - ShieldId [{Shield.EntityId}]:\n{newSettings}");
         }
 
         internal void UpdateState(ProtoControllerState newState)
         {
             DsState.State = newState;
-            if (!_isServer && Session.Enforced.Debug == 3 && (_clientNotReady || DsState.State.Mode < 0)) Log.Line($"UpdateState - ClientAndReady:{!_clientNotReady} - Mode:{DsState.State.Mode} - server:{Session.Instance.IsServer} - ShieldId [{Shield.EntityId}]:\n{newState}");
+            if (Session.Enforced.Debug == 3) Log.Line($"UpdateState - ClientAndReady:{!_clientNotReady} - Mode:{DsState.State.Mode} - server:{Session.Instance.IsServer} - ShieldId [{Shield.EntityId}]:\n{newState}");
             _clientNotReady = false;
         }
 

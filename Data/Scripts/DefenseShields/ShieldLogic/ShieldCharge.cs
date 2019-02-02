@@ -1,7 +1,7 @@
 ﻿namespace DefenseShields
 {
     using System;
-    using global::DefenseShields.Support;
+    using Support;
     using Sandbox.ModAPI;
     using VRage;
 

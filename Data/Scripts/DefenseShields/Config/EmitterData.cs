@@ -1,5 +1,6 @@
 ﻿using System;
 using DefenseShields.Support;
+using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 
@@ -61,8 +62,7 @@ namespace DefenseShields
 
             if (Session.Instance.IsServer)
             {
-                if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - EmitterId [{Emitter.EntityId}]: network state update for emitter");
-                Session.Instance.PacketizeEmitterState(Emitter, State); // update clients with server's settings
+                Session.Instance.PacketizeToClientsInRange(Emitter, new DataEmitterState(Emitter.EntityId, State)); // update clients with server's settings
             }
         }
         #endregion

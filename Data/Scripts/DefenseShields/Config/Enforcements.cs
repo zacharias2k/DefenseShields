@@ -1,5 +1,6 @@
 ﻿using System;
 using DefenseShields.Support;
+using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 
@@ -36,10 +37,10 @@ namespace DefenseShields
 
         public static void EnforcementRequest(long shieldId)
         {
-            if (Session.Enforced.Debug == 3) Log.Line($"Client [{MyAPIGateway.Multiplayer.MyId}] requesting enforcement - current:\n{Session.Enforced}");
+            if (Session.Enforced.Debug == 2) Log.Line($"Client [{MyAPIGateway.Multiplayer.MyId}] requesting enforcement - current:\n{Session.Enforced}");
             Session.Enforced.SenderId = MyAPIGateway.Multiplayer.MyId;
-            var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataEnforce(MyAPIGateway.Multiplayer.MyId, shieldId, Session.Enforced));
-            MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdEnforce, bytes);
+            var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataEnforce(shieldId, Session.Enforced));
+            MyAPIGateway.Multiplayer.SendMessageToServer(Session.PACKET_ID, bytes);
         }
     }
 }

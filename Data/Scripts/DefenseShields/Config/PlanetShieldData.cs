@@ -1,5 +1,6 @@
 ﻿using System;
 using DefenseShields.Support;
+using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 
@@ -60,8 +61,7 @@ namespace DefenseShields
 
             if (Session.Instance.IsServer)
             {
-                if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - Online:{State.Online} - Backup:{State.Backup} - PlanetShieldId [{PlanetShield.EntityId}]: network state update for PlanetShield");
-                Session.Instance.PacketizePlanetShieldState(PlanetShield, State); // update clients with server's settings
+                Session.Instance.PacketizeToClientsInRange(PlanetShield, new DataPlanetShieldState(PlanetShield.EntityId, State)); // update clients with server's state
             }
         }
         #endregion
@@ -120,14 +120,12 @@ namespace DefenseShields
 
             if (Session.Instance.IsServer)
             {
-                if (Session.Enforced.Debug == 3) Log.Line($"ServRelay - PlanetShieldId [{PlanetShield.EntityId}]: network settings update for PlanetShield");
-                Session.Instance.PacketizePlanetShieldSettings(PlanetShield, Settings); // update clients with server's settings
+                Session.Instance.PacketizeToClientsInRange(PlanetShield, new DataPlanetShieldSettings(PlanetShield.EntityId, Settings)); // update clients with server's settings
             }
             else // client, send settings to server
             {
-                if (Session.Enforced.Debug == 3) Log.Line($"ClientRelay - PlanetShieldId [{PlanetShield.EntityId}]: sent network settings update for PlanetShield");
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataPlanetShieldSettings(MyAPIGateway.Multiplayer.MyId, PlanetShield.EntityId, Settings));
-                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PacketIdPlanetShieldSettings, bytes);
+                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataPlanetShieldSettings(PlanetShield.EntityId, Settings));
+                MyAPIGateway.Multiplayer.SendMessageToServer(Session.PACKET_ID, bytes);
             }
         }
         #endregion

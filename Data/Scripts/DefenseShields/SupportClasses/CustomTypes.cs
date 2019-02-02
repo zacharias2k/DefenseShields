@@ -313,7 +313,6 @@
 
         public void ProtectDamageReset()
         {
-            IntegrityShield = null;
             NotBlockingShield = null;
             NotBlockingAttackerId = -1;
             IgnoreAttackerId = -1;

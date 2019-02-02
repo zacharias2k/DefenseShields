@@ -95,7 +95,7 @@
         internal void SendShieldHits()
         {
             while (ProtoShieldHits.Count != 0)
-                Session.Instance.PacketizeShieldHit(MyCube, ProtoShieldHits.Dequeue());
+                Session.Instance.PacketizeToClientsInRange(Shield, new DataShieldHit(MyCube.EntityId, ProtoShieldHits.Dequeue()));
         }
 
         private void ShieldHitReset(bool enQueue)
