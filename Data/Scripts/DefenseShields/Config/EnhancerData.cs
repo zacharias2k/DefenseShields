@@ -1,14 +1,13 @@
-﻿using System;
-using DefenseShields.Support;
-using Sandbox.Game.Entities;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using Support;
+    using Sandbox.Game.EntityComponents;
+    using Sandbox.ModAPI;
+
     public class EnhancerState
     {
-        internal ProtoEnhancerState State = new ProtoEnhancerState();
+        internal EnhancerStateValues State = new EnhancerStateValues();
         internal readonly IMyFunctionalBlock Enhancer;
         internal EnhancerState(IMyFunctionalBlock enhancer)
         {
@@ -41,9 +40,9 @@ namespace DefenseShields
 
             if (Enhancer.Storage.TryGetValue(Session.Instance.EnhancerStateGuid, out rawData))
             {
-                ProtoEnhancerState loadedState = null;
+                EnhancerStateValues loadedState = null;
                 var base64 = Convert.FromBase64String(rawData);
-                loadedState = MyAPIGateway.Utilities.SerializeFromBinary<ProtoEnhancerState>(base64);
+                loadedState = MyAPIGateway.Utilities.SerializeFromBinary<EnhancerStateValues>(base64);
 
                 if (loadedState != null)
                 {

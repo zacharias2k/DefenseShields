@@ -278,14 +278,14 @@
             base.MarkForClose();
         }
 
-        internal void UpdateSettings(ProtoModulatorSettings newSettings)
+        internal void UpdateSettings(ModulatorSettingsValues newSettings)
         {
             SettingsUpdated = true;
             ModSet.Settings = newSettings;
             if (Session.Enforced.Debug == 3) Log.Line("UpdateSettings for modulator");
         }
 
-        internal void UpdateState(ProtoModulatorState newState)
+        internal void UpdateState(ModulatorStateValues newState)
         {
             ModState.State = newState;
             if (Session.Enforced.Debug == 3) Log.Line($"UpdateState - ModulatorId [{Modulator.EntityId}]:\n{ModState.State}");

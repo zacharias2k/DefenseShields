@@ -1,6 +1,6 @@
 ﻿namespace DefenseShields
 {
-    using global::DefenseShields.Support;
+    using Support;
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
 

@@ -204,7 +204,7 @@
             UtilsStatic.UnitSphereRandomOnly(ref LosPointSphere);
         }
 
-        internal static DefenseShieldsEnforcement Enforced { get; set; } = new DefenseShieldsEnforcement();
+        internal static EnforcementValues Enforced { get; set; } = new EnforcementValues();
         internal static Session Instance { get; private set; }
         internal static bool EnforceInit { get; set; }
 

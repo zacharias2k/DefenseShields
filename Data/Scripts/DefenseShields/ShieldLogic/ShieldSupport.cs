@@ -116,9 +116,9 @@
             ShieldHit.HitPos = Vector3D.Zero;
         }
 
-        private ProtoShieldHit CloneHit()
+        private ShieldHitValues CloneHit()
         {
-            var hitClone = new ProtoShieldHit
+            var hitClone = new ShieldHitValues
             {
                 Amount = ShieldHit.Amount,
                 AttackerId = ShieldHit.AttackerId,

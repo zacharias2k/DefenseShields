@@ -1,7 +1,7 @@
 ﻿namespace DefenseShields
 {
     using System.Collections.Generic;
-    using global::DefenseShields.Support;
+    using Support;
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
     using VRage.ModAPI;

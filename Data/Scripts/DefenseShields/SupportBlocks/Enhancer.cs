@@ -193,7 +193,7 @@
             if (Entity.InScene) OnRemovedFromScene();
         }
 
-        internal void UpdateState(ProtoEnhancerState newState)
+        internal void UpdateState(EnhancerStateValues newState)
         {
             EnhState.State = newState;
             if (Session.Enforced.Debug == 3) Log.Line($"UpdateState: EnhancerId [{Enhancer.EntityId}]");

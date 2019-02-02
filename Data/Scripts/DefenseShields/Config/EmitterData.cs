@@ -1,14 +1,13 @@
-﻿using System;
-using DefenseShields.Support;
-using Sandbox.Game.Entities;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using Support;
+    using Sandbox.Game.EntityComponents;
+    using Sandbox.ModAPI;
+
     public class EmitterState
     {
-        internal ProtoEmitterState State = new ProtoEmitterState();
+        internal EmitterStateValues State = new EmitterStateValues();
         internal readonly IMyFunctionalBlock Emitter;
         internal EmitterState(IMyFunctionalBlock emitter)
         {
@@ -42,9 +41,9 @@ namespace DefenseShields
 
             if (Emitter.Storage.TryGetValue(Session.Instance.EmitterStateGuid, out rawData))
             {
-                ProtoEmitterState loadedState = null;
+                EmitterStateValues loadedState = null;
                 var base64 = Convert.FromBase64String(rawData);
-                loadedState = MyAPIGateway.Utilities.SerializeFromBinary<ProtoEmitterState>(base64);
+                loadedState = MyAPIGateway.Utilities.SerializeFromBinary<EmitterStateValues>(base64);
 
                 if (loadedState != null)
                 {

@@ -1,14 +1,13 @@
-﻿using System;
-using DefenseShields.Support;
-using Sandbox.Game.Entities;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using Support;
+    using Sandbox.Game.EntityComponents;
+    using Sandbox.ModAPI;
+
     public class ModulatorState
     {
-        internal ProtoModulatorState State = new ProtoModulatorState();
+        internal ModulatorStateValues State = new ModulatorStateValues();
         internal readonly IMyFunctionalBlock Modulator;
         internal ModulatorState(IMyFunctionalBlock modulator)
         {
@@ -41,9 +40,9 @@ namespace DefenseShields
 
             if (Modulator.Storage.TryGetValue(Session.Instance.ModulatorStateGuid, out rawData))
             {
-                ProtoModulatorState loadedState = null;
+                ModulatorStateValues loadedState = null;
                 var base64 = Convert.FromBase64String(rawData);
-                loadedState = MyAPIGateway.Utilities.SerializeFromBinary<ProtoModulatorState>(base64);
+                loadedState = MyAPIGateway.Utilities.SerializeFromBinary<ModulatorStateValues>(base64);
 
                 if (loadedState != null)
                 {
@@ -69,7 +68,7 @@ namespace DefenseShields
 
     public class ModulatorSettings
     {
-        internal ProtoModulatorSettings Settings = new ProtoModulatorSettings();
+        internal ModulatorSettingsValues Settings = new ModulatorSettingsValues();
         internal readonly IMyFunctionalBlock Modulator;
         internal ModulatorSettings(IMyFunctionalBlock modulator)
         {
@@ -93,11 +92,11 @@ namespace DefenseShields
 
             if (Modulator.Storage.TryGetValue(Session.Instance.ModulatorSettingsGuid, out rawData))
             {
-                ProtoModulatorSettings loadedSettings = null;
+                ModulatorSettingsValues loadedSettings = null;
 
                 try
                 {
-                    loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<ProtoModulatorSettings>(rawData);
+                    loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<ModulatorSettingsValues>(rawData);
                 }
                 catch (Exception e)
                 {

@@ -1,14 +1,13 @@
-﻿using System;
-using DefenseShields.Support;
-using Sandbox.Game.Entities;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using Support;
+    using Sandbox.Game.EntityComponents;
+    using Sandbox.ModAPI;
+
     public class O2GeneratorState
     {
-        internal ProtoO2GeneratorState State = new ProtoO2GeneratorState();
+        internal O2GeneratorStateValues State = new O2GeneratorStateValues();
         internal readonly IMyFunctionalBlock O2Generator;
 
         internal O2GeneratorState(IMyFunctionalBlock o2Generator)
@@ -42,9 +41,9 @@ namespace DefenseShields
 
             if (O2Generator.Storage.TryGetValue(Session.Instance.O2GeneratorStateGuid, out rawData))
             {
-                ProtoO2GeneratorState loadedState = null;
+                O2GeneratorStateValues loadedState = null;
                 var base64 = Convert.FromBase64String(rawData);
-                loadedState = MyAPIGateway.Utilities.SerializeFromBinary<ProtoO2GeneratorState>(base64);
+                loadedState = MyAPIGateway.Utilities.SerializeFromBinary<O2GeneratorStateValues>(base64);
 
                 if (loadedState != null)
                 {
@@ -74,7 +73,7 @@ namespace DefenseShields
 
     public class O2GeneratorSettings
     {
-        internal ProtoO2GeneratorSettings Settings = new ProtoO2GeneratorSettings();
+        internal O2GeneratorSettingsValues Settings = new O2GeneratorSettingsValues();
         internal readonly IMyFunctionalBlock O2Generator;
 
         internal O2GeneratorSettings(IMyFunctionalBlock o2Generator)
@@ -99,11 +98,11 @@ namespace DefenseShields
 
             if (O2Generator.Storage.TryGetValue(Session.Instance.O2GeneratorSettingsGuid, out rawData))
             {
-                ProtoO2GeneratorSettings loadedSettings = null;
+                O2GeneratorSettingsValues loadedSettings = null;
 
                 try
                 {
-                    loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<ProtoO2GeneratorSettings>(rawData);
+                    loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<O2GeneratorSettingsValues>(rawData);
                 }
                 catch (Exception e)
                 {

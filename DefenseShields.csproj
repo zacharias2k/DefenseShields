@@ -196,6 +196,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Config\PlanetShieldData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\O2GeneratorData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\EnhancerData.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Config\SerializedValues.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\O2Ui.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\PsUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\PlanetShield.cs" />
@@ -246,7 +247,7 @@
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\StaticUtils.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Ellipsoid\EllipsoidOxygenProvider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Ellipsoid\EllipsoidSA.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Config\SerializationClasses.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Config\SerializeDataClasses.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\CustomCollision.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\CSupport\CollisionMath.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\CustomTypes.cs" />

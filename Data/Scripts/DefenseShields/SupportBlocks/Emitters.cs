@@ -716,7 +716,7 @@
         #endregion
 
         #region Block States
-        internal void UpdateState(ProtoEmitterState newState)
+        internal void UpdateState(EmitterStateValues newState)
         {
             EmiState.State = newState;
             if (Session.Enforced.Debug <= 3) Log.Line($"UpdateState - EmitterId [{Emitter.EntityId}]:\n{EmiState.State}");

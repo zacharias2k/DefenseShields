@@ -23,7 +23,7 @@
             NoLos
         }
 
-        internal void UpdateSettings(ProtoControllerSettings newSettings)
+        internal void UpdateSettings(ControllerSettingsValues newSettings)
         {
             var newShape = newSettings.ExtendFit != DsSet.Settings.ExtendFit || newSettings.FortifyShield != DsSet.Settings.FortifyShield || newSettings.SphereFit != DsSet.Settings.SphereFit;
             DsSet.Settings = newSettings;
@@ -32,7 +32,7 @@
             if (Session.Enforced.Debug == 3) Log.Line($"UpdateSettings - server:{Session.Instance.IsServer} - ShieldId [{Shield.EntityId}]:\n{newSettings}");
         }
 
-        internal void UpdateState(ProtoControllerState newState)
+        internal void UpdateState(ControllerStateValues newState)
         {
             DsState.State = newState;
             if (Session.Enforced.Debug == 3) Log.Line($"UpdateState - ClientAndReady:{!_clientNotReady} - Mode:{DsState.State.Mode} - server:{Session.Instance.IsServer} - ShieldId [{Shield.EntityId}]:\n{newState}");

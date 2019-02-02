@@ -4,7 +4,7 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    using global::DefenseShields.Support;
+    using Support;
     using Sandbox.Common.ObjectBuilders;
     using Sandbox.Game.Entities;
     using Sandbox.Game.EntityComponents;
@@ -246,14 +246,14 @@
             _doorsStage4 = false;
         }
 
-        internal void UpdateState(ProtoO2GeneratorState newState)
+        internal void UpdateState(O2GeneratorStateValues newState)
         {
             O2State.State = newState;
             if (!_isDedicated) UpdateVisuals();
             if (Session.Enforced.Debug == 3) Log.Line($"UpdateState - O2GenId [{O2Generator.EntityId}]:\n{newState}");
         }
 
-        internal void UpdateSettings(ProtoO2GeneratorSettings newSettings)
+        internal void UpdateSettings(O2GeneratorSettingsValues newSettings)
         {
             if (Session.Enforced.Debug == 3) Log.Line($"UpdateSettings for O2Generator - Fix:{newSettings.FixRoomPressure} - O2GenId [{O2Generator.EntityId}]");
             SettingsUpdated = true;

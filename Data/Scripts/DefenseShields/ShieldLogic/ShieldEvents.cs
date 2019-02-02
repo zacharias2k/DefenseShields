@@ -2,16 +2,14 @@
 {
     using System;
     using System.Text;
-    using global::DefenseShields.Support;
+    using Support;
     using Sandbox.Common.ObjectBuilders;
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
     using Sandbox.ModAPI.Weapons;
     using VRage;
-    using VRage.Game;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
-    using VRageMath;
 
     public partial class DefenseShields
     {

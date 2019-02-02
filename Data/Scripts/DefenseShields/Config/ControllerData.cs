@@ -14,7 +14,7 @@
             Shield = shield;
         }
 
-        internal ProtoControllerState State { get; set; } = new ProtoControllerState();
+        internal ControllerStateValues State { get; set; } = new ControllerStateValues();
 
         internal void StorageInit()
         {
@@ -40,7 +40,7 @@
             if (Shield.Storage.TryGetValue(Session.Instance.ControllerStateGuid, out rawData))
             {
                 var base64 = Convert.FromBase64String(rawData);
-                var loadedState = MyAPIGateway.Utilities.SerializeFromBinary<ProtoControllerState>(base64);
+                var loadedState = MyAPIGateway.Utilities.SerializeFromBinary<ControllerStateValues>(base64);
 
                 if (loadedState != null)
                 {
@@ -67,7 +67,7 @@
             Shield = shield;
         }
 
-        internal ProtoControllerSettings Settings { get; set; } = new ProtoControllerSettings();
+        internal ControllerSettingsValues Settings { get; set; } = new ControllerSettingsValues();
 
         internal void SaveSettings(bool createStorage = false)
         {
@@ -87,12 +87,12 @@
 
             if (Shield.Storage.TryGetValue(Session.Instance.ControllerSettingsGuid, out rawData))
             {
-                ProtoControllerSettings loadedSettings;
+                ControllerSettingsValues loadedSettings;
 
                 try
                 {
                     var base64 = Convert.FromBase64String(rawData);
-                    loadedSettings = MyAPIGateway.Utilities.SerializeFromBinary<ProtoControllerSettings>(base64);
+                    loadedSettings = MyAPIGateway.Utilities.SerializeFromBinary<ControllerSettingsValues>(base64);
                 }
                 catch (Exception e)
                 {

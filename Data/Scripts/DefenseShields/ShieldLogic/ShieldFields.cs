@@ -28,7 +28,7 @@
 
         internal readonly List<MyEntity> PruneList = new List<MyEntity>();
         internal readonly List<ShieldHit> ShieldHits = new List<ShieldHit>();
-        internal readonly Queue<ProtoShieldHit> ProtoShieldHits = new Queue<ProtoShieldHit>();
+        internal readonly Queue<ShieldHitValues> ProtoShieldHits = new Queue<ShieldHitValues>();
 
         internal readonly HashSet<IMyEntity> AuthenticatedCache = new HashSet<IMyEntity>();
         internal readonly HashSet<MyEntity> IgnoreCache = new HashSet<MyEntity>();
@@ -270,7 +270,7 @@
 
         internal ControllerSettings DsSet { get; set; }
         internal ControllerState DsState { get; set; }
-        internal ProtoShieldHit ShieldHit { get; set; } = new ProtoShieldHit();
+        internal ShieldHitValues ShieldHit { get; set; } = new ShieldHitValues();
         internal Icosphere.Instance Icosphere { get; set; }
 
         internal uint UnsuspendTick { get; set; }

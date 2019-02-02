@@ -1,7 +1,7 @@
 ﻿namespace DefenseShields
 {
     using System;
-    using global::DefenseShields.Support;
+    using Support;
     using Sandbox.Game;
     using Sandbox.Game.Entities;
     using Sandbox.Game.Entities.Character.Components;

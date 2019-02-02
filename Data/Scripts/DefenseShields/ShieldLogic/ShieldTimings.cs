@@ -1,8 +1,7 @@
 ﻿namespace DefenseShields
 {
-    using System;
     using System.Linq;
-    using global::DefenseShields.Support;
+    using Support;
     using Sandbox.Game.Entities;
     using Sandbox.Game.EntityComponents;
     using Sandbox.ModAPI;

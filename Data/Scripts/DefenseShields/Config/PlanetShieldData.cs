@@ -1,14 +1,13 @@
-﻿using System;
-using DefenseShields.Support;
-using Sandbox.Game.Entities;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
+    using System;
+    using Support;
+    using Sandbox.Game.EntityComponents;
+    using Sandbox.ModAPI;
+
     public class PlanetShieldState
     {
-        internal ProtoPlanetShieldState State = new ProtoPlanetShieldState();
+        internal PlanetShieldStateValues State = new PlanetShieldStateValues();
         internal readonly IMyFunctionalBlock PlanetShield;
         internal PlanetShieldState(IMyFunctionalBlock planetShield)
         {
@@ -41,9 +40,9 @@ namespace DefenseShields
 
             if (PlanetShield.Storage.TryGetValue(Session.Instance.PlanetShieldStateGuid, out rawData))
             {
-                ProtoPlanetShieldState loadedState = null;
+                PlanetShieldStateValues loadedState = null;
                 var base64 = Convert.FromBase64String(rawData);
-                loadedState = MyAPIGateway.Utilities.SerializeFromBinary<ProtoPlanetShieldState>(base64);
+                loadedState = MyAPIGateway.Utilities.SerializeFromBinary<PlanetShieldStateValues>(base64);
 
                 if (loadedState != null)
                 {
@@ -69,7 +68,7 @@ namespace DefenseShields
 
     public class PlanetShieldSettings
     {
-        internal ProtoPlanetShieldSettings Settings = new ProtoPlanetShieldSettings();
+        internal PlanetShieldSettingsValues Settings = new PlanetShieldSettingsValues();
         internal readonly IMyFunctionalBlock PlanetShield;
         internal PlanetShieldSettings(IMyFunctionalBlock planetShield)
         {
@@ -93,11 +92,11 @@ namespace DefenseShields
 
             if (PlanetShield.Storage.TryGetValue(Session.Instance.PlanetShieldSettingsGuid, out rawData))
             {
-                ProtoPlanetShieldSettings loadedSettings = null;
+                PlanetShieldSettingsValues loadedSettings = null;
 
                 try
                 {
-                    loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<ProtoPlanetShieldSettings>(rawData);
+                    loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<PlanetShieldSettingsValues>(rawData);
                 }
                 catch (Exception e)
                 {
