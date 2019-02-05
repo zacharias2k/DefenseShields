@@ -3,12 +3,10 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using global::DefenseShields.Support;
+    using Support;
     using Sandbox.Game.Entities;
-    using Sandbox.Game.EntityComponents;
     using Sandbox.ModAPI;
     using Sandbox.ModAPI.Weapons;
-    using VRage;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRageMath;
@@ -31,7 +29,6 @@
                 {
                     _autoResetEvent.WaitOne();
                     if (!Monitor) break;
-                    //if (Enforced.Debug >= 3 && EntSlotTick) Dsutil2.Sw.Restart();
                     _newFrame = false;
                     _workData.DoIt(new List<DefenseShields>(FunctionalShields.Keys), Tick);
                     MinScaler = _workData.MinScaler;
@@ -43,22 +40,18 @@
                         var reInforce = s.DsState.State.ReInforce;
                         if (!IsServer)
                         {
-                            lock (s.GetCubesLock)
+                            if (reInforce != s.ReInforcedShield)
                             {
-                                var cleanDistributor = s.MyGridDistributor != null && s.FuncTask.IsComplete && s.MyGridDistributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects;
-                                if (cleanDistributor)
-                                {
-                                    s.GridCurrentPower = s.MyGridDistributor.TotalRequiredInputByType(MyResourceDistributorComponent.ElectricityId);
-                                    s.GridMaxPower = s.MyGridDistributor.MaxAvailableResourceByType(MyResourceDistributorComponent.ElectricityId);
-                                }
+                                foreach (var sub in s.ShieldComp.SubGrids.Keys) _entRefreshQueue.Enqueue(sub);
+                                s.ReInforcedShield = reInforce;
+                            }
 
-                                if (reInforce != s.ReInforcedShield)
-                                {
-                                    //if (Enforced.Debug == 4) Log.Line("Client queuing entFresh for reinforced shield");
-                                    foreach (var sub in s.ShieldComp.GetSubGrids) _entRefreshQueue.Enqueue(sub);
-                                    s.ReInforcedShield = reInforce;
-                                }
-
+                            if (EntSlotTick && RefreshCycle == s.MonitorSlot)
+                            {
+                                List<MyEntity> monitorListClient = null;
+                                var newSubClient = false;
+                                if (!reInforce) monitorListClient = new List<MyEntity>();
+                                MonitorRefreshTasks(x, ref monitorListClient, reInforce, ref newSubClient);
                             }
                             s.TicksWithNoActivity = 0;
                             s.LastWokenTick = tick;
@@ -81,16 +74,6 @@
                         }
                         //if (Enforced.Debug >= 2 && s.LostPings > 0) Log.Line($"Lost Logic Pings:{s.LostPings}");
                         if (shieldActive) s.LostPings++;
-
-                        lock (s.GetCubesLock)
-                        {
-                            var cleanDistributor = s.MyGridDistributor != null && s.FuncTask.IsComplete && s.MyGridDistributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects;
-                            if (cleanDistributor)
-                            {
-                                s.GridCurrentPower = s.MyGridDistributor.TotalRequiredInputByType(MyResourceDistributorComponent.ElectricityId);
-                                s.GridMaxPower = s.MyGridDistributor.MaxAvailableResourceByType(MyResourceDistributorComponent.ElectricityId);
-                            }
-                        }
 
                         if (s.Asleep && EmpStore.Count != 0 && Vector3D.DistanceSquared(s.DetectionCenter, EmpWork.EpiCenter) <= SyncDistSqr)
                         {
@@ -175,7 +158,6 @@
                             _globalEntTmp.TryRemove(ent, out value);
                         }
                     }
-                    //if (Enforced.Debug >= 3 && EntSlotTick) Dsutil2.StopWatchReport("monitor", -1);
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in WebMonitor: {ex}"); }
@@ -188,7 +170,7 @@
             if (reInforce)
             {
                 HashSet<MyCubeGrid> subs;
-                lock (s.GetCubesLock) subs = new HashSet<MyCubeGrid>(s.ShieldComp.GetSubGrids);
+                lock (s.GetCubesLock) subs = new HashSet<MyCubeGrid>(s.ShieldComp.SubGrids.Keys);
                 var newMode = !s.ReInforcedShield;
                 if (!newMode) return;
                 foreach (var sub in subs)
@@ -211,7 +193,7 @@
                 if (s.ReInforcedShield)
                 {
                     HashSet<MyCubeGrid> subs;
-                    lock (s.GetCubesLock) subs = new HashSet<MyCubeGrid>(s.ShieldComp.GetSubGrids); 
+                    lock (s.GetCubesLock) subs = new HashSet<MyCubeGrid>(s.ShieldComp.SubGrids.Keys); 
                     foreach (var sub in subs)
                     {
                         _entRefreshQueue.Enqueue(sub);
@@ -356,7 +338,7 @@
                 foreach (var s in entShields)
                 {
                     if (s.WasPaused) continue;
-                    if (s.DsState.State.ReInforce && s.ShieldComp.GetSubGrids.Contains(ent))
+                    if (s.DsState.State.ReInforce && s.ShieldComp.SubGrids.ContainsKey((MyCubeGrid)ent))
                     {
                         //if (Enforced.Debug == 4) Log.Line("_entRefreshQueue adding Reinfroced");
                         iShield = s;
@@ -399,18 +381,13 @@
                 }
                 else entsUpdated++;
             }
-            /*
-            if (Enforced.Debug >= 2 || (Tick1800 && Enforced.Debug == 1))
+            if (Tick1800 && Enforced.Debug >= 1)
             {
                 for (int i = 0; i < SlotCnt.Length; i++) SlotCnt[i] = 0;
                 foreach (var pair in GlobalProtect) SlotCnt[pair.Value.RefreshSlot]++;
-            }
-            if (Enforced.Debug >= 2 || (Enforced.Debug == 1 && Tick1800))
-            {
                 Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - EntsUpdated:{entsUpdated} - ShieldsWaking:{shieldsWaking} - EntsRemoved: {entsremoved} - EntsLostShield:{entsLostShield} - EntInRefreshSlots:({SlotCnt[0]} - {SlotCnt[1]} - {SlotCnt[2]} - {SlotCnt[3]} - {SlotCnt[4]} - {SlotCnt[5]} - {SlotCnt[6]} - {SlotCnt[7]} - {SlotCnt[8]}) \n" +
-                                                $"                                     ProtectedEnts:{GlobalProtect.Count} - ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count}");
+                         $"                                     ProtectedEnts:{GlobalProtect.Count} - ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count}");
             }
-            */
         }
 
         private void LogicUpdates()

@@ -32,8 +32,8 @@
             const int DisableVoxel = 0;
             const int DisableEntityBarrier = 0;
             const int Debug = 1;
-            const bool AltRecharge = false;
-            const int Version = 68;
+            const int SuperWeapons = 1;
+            const int Version = 69;
             const float CapScaler = 1f;
             const float HpsEfficiency = 0.5f;
             const float MaintenanceCost = 0.5f;
@@ -68,7 +68,7 @@
                 Session.Enforced.DisableVoxelSupport = !unPackedData.DisableVoxelSupport.Equals(-1) ? unPackedData.DisableVoxelSupport : DisableVoxel;
                 Session.Enforced.DisableEntityBarrier = !unPackedData.DisableEntityBarrier.Equals(-1) ? unPackedData.DisableEntityBarrier : DisableEntityBarrier;
                 Session.Enforced.Debug = !unPackedData.Debug.Equals(-1) ? unPackedData.Debug : Debug;
-                Session.Enforced.AltRecharge = false;
+                Session.Enforced.SuperWeapons = !unPackedData.SuperWeapons.Equals(-1) ? unPackedData.SuperWeapons : SuperWeapons;
                 Session.Enforced.CapScaler = !unPackedData.CapScaler.Equals(-1f) ? unPackedData.CapScaler : CapScaler;
                 Session.Enforced.HpsEfficiency = !unPackedData.HpsEfficiency.Equals(-1f) ? unPackedData.HpsEfficiency : HpsEfficiency;
                 Session.Enforced.MaintenanceCost = !unPackedData.MaintenanceCost.Equals(-1f) ? unPackedData.MaintenanceCost : MaintenanceCost;
@@ -96,7 +96,7 @@
                 Session.Enforced.DisableVoxelSupport = DisableVoxel;
                 Session.Enforced.DisableEntityBarrier = DisableEntityBarrier;
                 Session.Enforced.Debug = Debug;
-                Session.Enforced.AltRecharge = AltRecharge;
+                Session.Enforced.SuperWeapons = SuperWeapons;
                 Session.Enforced.CapScaler = CapScaler;
                 Session.Enforced.HpsEfficiency = HpsEfficiency;
                 Session.Enforced.MaintenanceCost = MaintenanceCost;

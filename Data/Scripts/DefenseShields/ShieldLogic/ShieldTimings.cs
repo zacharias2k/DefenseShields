@@ -1,4 +1,6 @@
-﻿namespace DefenseShields
+﻿using System.Collections.Generic;
+
+namespace DefenseShields
 {
     using System.Linq;
     using Support;
@@ -153,10 +155,9 @@
                 _functionalBlocks.Clear();
                 _batteryBlocks.Clear();
 
-                foreach (var grid in ShieldComp.GetLinkedGrids)
+                foreach (var grid in ShieldComp.LinkedGrids)
                 {
-                    var mechanical = ShieldComp.GetSubGrids.Contains(grid);
-                    if (grid == null) continue;
+                    var mechanical = ShieldComp.SubGrids.ContainsKey(grid);
                     foreach (var block in grid.GetFatBlocks())
                     {
                         if (mechanical)
@@ -209,26 +210,42 @@
             }
         }
 
-        private void UpdateSubGrids()
+        private void UpdateSubGrids(bool force = false)
         {
             _subUpdate = false;
 
             var gotGroups = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
-            if (gotGroups.Count == ShieldComp.GetLinkedGrids.Count) return;
-            if (Session.Enforced.Debug == 3 && ShieldComp.GetLinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.GetLinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.GetLinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
+            if (gotGroups.Count == ShieldComp.LinkedGrids.Count && !force) return;
+            if (Session.Enforced.Debug == 3 && ShieldComp.LinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.LinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.LinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
 
             lock (GetCubesLock)
             {
-                ShieldComp.GetSubGrids.Clear();
-                ShieldComp.GetLinkedGrids.Clear();
+                ShieldComp.RemSubs.Clear();
+                foreach (var sub in ShieldComp.SubGrids.Keys) ShieldComp.RemSubs.Add(sub);
+
+                ShieldComp.SubGrids.Clear();
+                ShieldComp.LinkedGrids.Clear();
                 for (int i = 0; i < gotGroups.Count; i++)
                 {
                     var sub = gotGroups[i];
                     if (sub == null) continue;
-                    if (MyAPIGateway.GridGroups.HasConnection(MyGrid, sub, GridLinkTypeEnum.Mechanical)) ShieldComp.GetSubGrids.Add(sub as MyCubeGrid);
-                    ShieldComp.GetLinkedGrids.Add(sub as MyCubeGrid);
+                    if (MyAPIGateway.GridGroups.HasConnection(MyGrid, sub, GridLinkTypeEnum.Mechanical)) ShieldComp.SubGrids.Add((MyCubeGrid)sub, null);
+                    ShieldComp.LinkedGrids.Add(sub as MyCubeGrid);
                 }
+
+                ShieldComp.AddSubs.Clear();
+                foreach (var sub in ShieldComp.SubGrids.Keys)
+                {
+                    ShieldComp.AddSubs.Add(sub);
+                    ShieldComp.NewTmp1.Add(sub);
+                }
+
+                ShieldComp.NewTmp1.IntersectWith(ShieldComp.RemSubs);
+                ShieldComp.RemSubs.ExceptWith(ShieldComp.AddSubs);
+                ShieldComp.AddSubs.ExceptWith(ShieldComp.NewTmp1);
+                ShieldComp.NewTmp1.Clear();
             }
+            Log.Line($"[1] NewSubs:{ShieldComp.SubGrids.Keys.Count} - addSubs:{ShieldComp.AddSubs.Count} - RemSubs:{ShieldComp.RemSubs.Count}");
             _blockChanged = true;
             _functionalChanged = true;
             _updateGridDistributor = true;

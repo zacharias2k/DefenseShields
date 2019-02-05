@@ -352,8 +352,8 @@
                     var bPhysics = ((IMyCubeGrid)breaching).Physics;
                     var sPhysics = Shield.CubeGrid.Physics;
                     var sGrid = (MyCubeGrid)Shield.CubeGrid;
-                    var bMass = breaching.GetCurrentMass();
-                    var sMass = sGrid.GetCurrentMass();
+                    var bMass = (float)breaching.GetCurrentMass();
+                    var sMass = (float)sGrid.GetCurrentMass();
                     var momentum = (bMass * bPhysics.LinearVelocity) + (sMass * sPhysics.LinearVelocity);
                     var resultVelocity = momentum / (bMass + sMass);
                     Vector3D bBlockCenter;
@@ -449,26 +449,29 @@
                         }
                         else
                         {
-                            var bLSpeed = bPhysics.LinearVelocity;
-                            var bASpeed = bPhysics.AngularVelocity * 100;
-                            var bLSpeedLen = bLSpeed.Length();
-                            var bASpeedLen = bASpeed.Length();
-                            bASpeedLen = MathHelper.Clamp(bASpeedLen, 0, 50);
-                            var bSpeedLen = bLSpeedLen > bASpeedLen ? bLSpeedLen : bASpeedLen;
-                            float? speed;
-
-
                             if (!bPhysics.IsStatic)
                             {
-                                var bImpulseData = new MyImpulseData { MyGrid = breaching, Direction = (resultVelocity - bLSpeed) * bMass, Position = bPhysics.CenterOfMassWorld };
+                                var com = bPhysics.CenterOfMassWorld;
+                                var massRelation = bMass / sMass;
+                                var relationClamp = MathHelper.Clamp(massRelation, 0, 1);
+                                //Log.Line($"breaching: relationClamp:{relationClamp} - bMass:{bMass} - sMass:{sMass} - m/s:{bMass / sMass}");
+                                var collisionCorrection = Vector3D.Lerp(com, collisionAvg, relationClamp);
+
+                                var bImpulseData = new MyImpulseData { MyGrid = breaching, Direction = (resultVelocity - bPhysics.LinearVelocity) * bMass, Position = collisionCorrection };
                                 ImpulseData.Enqueue(bImpulseData);
                             }
 
                             if (!sPhysics.IsStatic)
                             {
-                                var sImpulseData = new MyImpulseData { MyGrid = sGrid, Direction = (resultVelocity - sPhysics.LinearVelocity) * sMass, Position = sPhysics.CenterOfMassWorld };
+                                var com = sPhysics.CenterOfMassWorld;
+                                var massRelation = sMass / bMass;
+                                var relationClamp = MathHelper.Clamp(massRelation, 0, 1);
+                                //Log.Line($"shield: relationClamp:{relationClamp} - bMass:{bMass} - sMass:{sMass} - s/m:{sMass / bMass}");
+                                var collisionCorrection = Vector3D.Lerp(com, collisionAvg, relationClamp);
+                                var sImpulseData = new MyImpulseData { MyGrid = sGrid, Direction = (resultVelocity - sPhysics.LinearVelocity) * sMass, Position = collisionCorrection };
                                 ImpulseData.Enqueue(sImpulseData);
                             }
+                            /*
 
                             if (!sPhysics.IsStatic)
                             {
@@ -493,6 +496,33 @@
                                 var bForceData = new MyAddForceData { MyGrid = breaching, Force = (bPhysics.CenterOfMassWorld - collisionAvg) * sMass, MaxSpeed = speed };
                                 ForceData.Enqueue(bForceData);
                             }
+                            // Fix this if broke
+
+                            Vector3 bVel = bPhysics.LinearVelocity;
+                            Vector3 sVel = sPhysics.LinearVelocity;
+                            Vector3 relVel = bVel - sVel;
+
+                            // Assuming headon collision for simplicity
+                            Vector3 bVelFinal = (bMass - sMass) / (bMass + sMass) * relVel;
+                            Vector3 sVelFinal = (sMass - bMass) / (bMass + sMass) * relVel;
+
+                            Vector3 bImpulse = bMass * bVelFinal;
+                            Vector3 sImpulse = sMass * sVelFinal;
+
+                            if (!bPhysics.IsStatic)
+                            {
+                                var bImpulseData = new MyImpulseData { MyGrid = breaching, Direction = bImpulse, Position = collisionAvg };
+                                ImpulseData.Enqueue(bImpulseData);
+                            }
+
+                            if (!sPhysics.IsStatic)
+                            {
+                                var sImpulseData = new MyImpulseData { MyGrid = sGrid, Direction = sImpulse, Position = collisionAvg };
+                                ImpulseData.Enqueue(sImpulseData);
+                            }
+                            Log.Line($"sImpulse:{sImpulse} -sMass:{sMass} - sVel:{sVel.Length()} - bImpulse:{bImpulse} - bMass:{bMass} - bVel:{bVel.Length()} - Position:{collisionAvg}");
+                            */
+
                         }
                         WebDamage = true;
                         bBlockCenter = collisionAvg;

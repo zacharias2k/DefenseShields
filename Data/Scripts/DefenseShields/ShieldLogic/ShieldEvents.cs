@@ -57,8 +57,8 @@
         {
             try
             {
+                if (myEntity?.Physics == null || myEntity is MyVoxelBase || myEntity is MyFloatingObject || myEntity is IMyCharacter || myEntity is IMyEngineerToolBase || !myEntity.InScene || myEntity.MarkedForClose || myEntity.IsPreview) return;
                 if (DsState.State.ReInforce) return;
-                if (myEntity?.Physics == null || !myEntity.InScene || myEntity.MarkedForClose || myEntity is MyFloatingObject || myEntity is IMyEngineerToolBase) return;
                 var isMissile = myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile);
                 if (!isMissile && !(myEntity is MyCubeGrid)) return;
 
@@ -75,7 +75,9 @@
         {
             try
             {
-                if (myEntity == null || !_isServer || DsState.State.ReInforce) return;
+                if (myEntity?.Physics == null || myEntity is MyVoxelBase || myEntity is MyFloatingObject || myEntity is IMyCharacter || myEntity is IMyEngineerToolBase || !myEntity.InScene || myEntity.MarkedForClose || myEntity.IsPreview) return;
+
+                if (!_isServer || DsState.State.ReInforce) return;
 
                 if (!(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))) return;
 
@@ -182,12 +184,6 @@
                 var powerUsage = shieldPowerNeeds;
                 var otherPower = _otherPower;
                 var gridMaxPower = GridMaxPower;
-                if (!DsSet.Settings.UseBatteries)
-                {
-                    powerUsage = powerUsage + _batteryCurrentPower;
-                    otherPower = _otherPower + _batteryCurrentPower;
-                    gridMaxPower = gridMaxPower + _batteryMaxPower;
-                }
                 var status = GetShieldStatus();
                 if (status == "[Shield Up]" || status == "[Shield Down]" || status == "[Shield Offline]")
                 {

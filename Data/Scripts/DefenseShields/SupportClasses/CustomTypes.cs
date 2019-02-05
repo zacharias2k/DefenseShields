@@ -91,6 +91,17 @@
         }
     }
 
+    public class SubGridInfo
+    {
+        public readonly bool MainGrid;
+        public readonly float Integrity;
+        public SubGridInfo(bool mainGrid, float integrity)
+        {
+            MainGrid = mainGrid;
+            Integrity = integrity;
+        }
+    }
+
     public struct MoverInfo
     {
         public readonly Vector3D Pos;

@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
+using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage.Game.Components;
+using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace DefenseShields
@@ -55,15 +57,16 @@ namespace DefenseShields
             return true;
         }
 
-        public HashSet<MyCubeGrid> GetSubGrids { get; set; } = new HashSet<MyCubeGrid>();
-        public HashSet<MyCubeGrid> GetLinkedGrids { get; set; } = new HashSet<MyCubeGrid>();
+        public HashSet<MyCubeGrid> NewTmp1 { get; set; } = new HashSet<MyCubeGrid>();
+        public HashSet<MyCubeGrid> AddSubs { get; set; } = new HashSet<MyCubeGrid>();
+        public HashSet<MyCubeGrid> RemSubs { get; set; } = new HashSet<MyCubeGrid>();
+        public Dictionary<MyCubeGrid, SubGridInfo> SubGrids { get; set; } = new Dictionary<MyCubeGrid, SubGridInfo>();
+        public HashSet<MyCubeGrid> LinkedGrids { get; set; } = new HashSet<MyCubeGrid>();
 
         public Vector3D[] PhysicsOutside { get; set; } = new Vector3D[642];
 
         public Vector3D[] PhysicsOutsideLow { get; set; } = new Vector3D[162];
         
-        public Vector3D[] PhysicsInside { get; set; } = new Vector3D[642];
-
         public Enhancers Enhancer { get; set; }
 
         public Modulators Modulator { get; set; }

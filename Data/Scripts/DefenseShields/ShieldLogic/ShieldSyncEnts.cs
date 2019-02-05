@@ -85,7 +85,6 @@
                     if (!DestroyedBlocks.IsEmpty)
                     {
                         IMySlimBlock block;
-                        var nullCount = 0;
                         while (DestroyedBlocks.TryDequeue(out block))
                         {
                             var myGrid = block.CubeGrid as MyCubeGrid;
@@ -94,15 +93,10 @@
                             WebEnts.TryGetValue(myGrid, out entInfo);
                             if (entInfo == null)
                             {
-                                nullCount++;
                                 myGrid.EnqueueDestroyedBlock(block.Position);
                                 continue;
                             }
-
-                            EntIntersectInfo entRemoved;
-                            if (nullCount > 0) WebEnts.TryRemove(myGrid, out entRemoved);
                             entInfo.CacheBlockList.Remove(block);
-                            myGrid.EnqueueDestroyedBlock(block.Position);
                         }
                     }
                 }

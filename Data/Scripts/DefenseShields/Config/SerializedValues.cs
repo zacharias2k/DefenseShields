@@ -6,7 +6,7 @@
     using VRageMath;
 
     [ProtoContract]
-    public class EnforcementValues
+    public class DefenseShieldsEnforcement
     {
         [ProtoMember(1), DefaultValue(-1)] public float HeatScaler = -1f;
         [ProtoMember(2), DefaultValue(-1)] public int BaseScaler = -1;
@@ -17,7 +17,7 @@
         [ProtoMember(7), DefaultValue(-1)] public int DisableVoxelSupport = -1;
         [ProtoMember(8), DefaultValue(-1)] public int DisableEntityBarrier = -1;
         [ProtoMember(9), DefaultValue(-1)] public int Debug = -1;
-        [ProtoMember(10)] public bool AltRecharge = false;
+        [ProtoMember(10), DefaultValue(-1)] public int SuperWeapons = 1;
         [ProtoMember(11), DefaultValue(-1)] public int Version = -1;
         [ProtoMember(12)] public ulong SenderId = 0;
         [ProtoMember(13), DefaultValue(-1)] public float CapScaler = -1f;

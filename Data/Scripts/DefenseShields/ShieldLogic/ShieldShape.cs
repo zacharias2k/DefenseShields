@@ -94,11 +94,11 @@
             var myAabb = MyGrid.PositionComp.LocalAABB;
             var shieldGrid = MyGrid;
             var expandedAabb = myAabb;
-            if (ShieldComp.GetSubGrids.Count > 1)
+            if (ShieldComp.SubGrids.Count > 1)
             {
-                foreach (var grid in ShieldComp.GetSubGrids)
+                foreach (var grid in ShieldComp.SubGrids.Keys)
                 {
-                    if (grid == null || grid == shieldGrid) continue;
+                    if (grid == shieldGrid) continue;
                     var shieldMatrix = shieldGrid.PositionComp.WorldMatrixNormalizedInv;
                     var gQuaternion = Quaternion.CreateFromRotationMatrix(grid.WorldMatrix);
                     var gOriBBoxD = new MyOrientedBoundingBox(grid.PositionComp.WorldAABB.Center, grid.PositionComp.LocalAABB.HalfExtents, gQuaternion);

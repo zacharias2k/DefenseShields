@@ -165,6 +165,45 @@
             return activeVisible;
         }
 
+        private void CalcualteVisibility(long visible, bool activeVisible)
+        {
+            if (visible != 2)
+                HitCoolDown = -11;
+            else if (visible == 2 && WorldImpactPosition != Vector3D.NegativeInfinity)
+                HitCoolDown = -10;
+            else if (visible == 2 && HitCoolDown > -11)
+                HitCoolDown++;
+
+            if (HitCoolDown > 59) HitCoolDown = -11;
+
+            // ifChecks: #1 FadeReset - #2 PassiveFade - #3 PassiveSet - #4 PassiveReset
+            if (visible == 2 && !(visible != 0 && HitCoolDown > -1) && HitCoolDown != -11)
+            {
+                ResetShellRender(false);
+            }
+            else if (visible != 0 && HitCoolDown > -1)
+            {
+                ResetShellRender(true);
+            }
+            else if (visible != 0 && HitCoolDown == -11 && !_hideShield)
+            {
+                _hideShield = true;
+                ResetShellRender(false, false);
+            }
+            else if ((visible == 0 || (!activeVisible && HitCoolDown == -10)) && _hideShield)
+            {
+                _hideShield = false;
+                ResetShellRender(false);
+            }
+        }
+
+        private void ResetShellRender(bool fade, bool updates = true)
+        {
+            _shellPassive.Render.UpdateRenderObject(false);
+            _shellPassive.Render.Transparency = fade ? (HitCoolDown + 1) * 0.0166666666667f : 0f;
+            if (updates) _shellPassive.Render.UpdateRenderObject(true);
+        }
+
         private void ShellVisibility(bool forceInvisible = false)
         {
             if (forceInvisible)
@@ -223,45 +262,6 @@
             _effect.UserEmitterScale = (float)scale;
             _effect.Velocity = MyGrid.Physics.LinearVelocity;
             _effect.Play();
-        }
-
-        private void CalcualteVisibility(long visible, bool activeVisible)
-        {
-            if (visible != 2)
-                HitCoolDown = -11;
-            else if (visible == 2 && WorldImpactPosition != Vector3D.NegativeInfinity)
-                HitCoolDown = -10;
-            else if (visible == 2 && HitCoolDown > -11)
-                HitCoolDown++;
-
-            if (HitCoolDown > 59) HitCoolDown = -11;
-
-            // ifChecks: #1 FadeReset - #2 PassiveFade - #3 PassiveSet - #4 PassiveReset
-            if (visible == 2 && !(visible != 0 && HitCoolDown > -1) && HitCoolDown != -11) 
-            {
-                ResetShellRender(false);
-            }
-            else if (visible != 0 && HitCoolDown > -1) 
-            {
-                ResetShellRender(true);
-            }
-            else if (visible != 0 && HitCoolDown == -11 && !_hideShield)
-            {
-                _hideShield = true;
-                ResetShellRender(false, false);
-            }
-            else if ((visible == 0 || (!activeVisible && HitCoolDown == -10)) && _hideShield)
-            {
-                _hideShield = false;
-                ResetShellRender(false);
-            }
-        }
-
-        private void ResetShellRender(bool fade, bool updates = true)
-        {
-            _shellPassive.Render.UpdateRenderObject(false);
-            _shellPassive.Render.Transparency = fade ? (HitCoolDown + 1) * 0.0166666666667f : 0f;
-            if (updates) _shellPassive.Render.UpdateRenderObject(true);
         }
 
         private void HudCheck()

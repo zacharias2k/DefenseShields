@@ -366,9 +366,9 @@
         {
         } // Empty constructor required for deserialization
 
-        [ProtoMember(1)] public EnforcementValues State = null;
+        [ProtoMember(1)] public DefenseShieldsEnforcement State = null;
 
-        public DataEnforce(long entityId, EnforcementValues state) : base(entityId)
+        public DataEnforce(long entityId, DefenseShieldsEnforcement state) : base(entityId)
         {
             State = state;
         }

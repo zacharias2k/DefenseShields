@@ -236,7 +236,7 @@
             }
             else
             {
-                UpdateSubGrids();
+                UpdateSubGrids(true);
                 Shield.RefreshCustomInfo();
             }
             bool value;
@@ -627,7 +627,7 @@
             if (IsStatic || (notTime && _count != -1)) return false;
             var mySize = MyGrid.PositionComp.WorldAABB.Size.Volume;
             var myEntityId = MyGrid.EntityId;
-            foreach (var grid in ShieldComp.GetLinkedGrids)
+            foreach (var grid in ShieldComp.LinkedGrids)
             {
                 if (grid == MyGrid) continue;   
                 ShieldGridComponent shieldComponent;
@@ -761,8 +761,8 @@
 
         private void UpdateEntity()
         {
-            ShieldComp.GetLinkedGrids.Clear();
-            ShieldComp.GetSubGrids.Clear();
+            ShieldComp.LinkedGrids.Clear();
+            ShieldComp.SubGrids.Clear();
             _blockChanged = true;
             _functionalChanged = true;
             ResetShape(false, true);

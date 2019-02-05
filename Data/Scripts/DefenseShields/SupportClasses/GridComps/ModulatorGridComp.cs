@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using VRage.Game.Components;
 
@@ -55,9 +56,7 @@ namespace DefenseShields
             return true;
         }
 
-        public HashSet<MyCubeGrid> GetSubGrids { get; set; } = new HashSet<MyCubeGrid>();
-
-        public bool ModulatorOnline => Modulator.ModState.State.Online;
+        public Dictionary<MyCubeGrid, SubGridInfo> SubGrids { get; set; } = new Dictionary<MyCubeGrid, SubGridInfo>();
 
         public string ModulationPassword
         {

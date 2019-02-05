@@ -129,7 +129,8 @@
         private float _powerNeeded;
         private float _otherPower;
         private float _batteryMaxPower;
-        private float _batteryCurrentPower;
+        private float _batteryCurrentOutput;
+        private float _batteryCurrentInput;
         private float _shieldPeakRate;
         private float _shieldMaxChargeRate;
         private float _shieldChargeRate;

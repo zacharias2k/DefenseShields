@@ -1,4 +1,6 @@
-﻿namespace DefenseShields
+﻿using System.Collections.ObjectModel;
+
+namespace DefenseShields
 {
     using System;
     using System.Collections.Generic;
@@ -17,7 +19,7 @@
 
         public void ProtectSubs(uint tick)
         {
-            foreach (var sub in ShieldComp.GetSubGrids)
+            foreach (var sub in ShieldComp.SubGrids.Keys)
             {
                 MyProtectors protectors;
                 Session.Instance.GlobalProtect.TryGetValue(sub, out protectors);
@@ -82,7 +84,7 @@
                 var voxel = ent as MyVoxelBase;
                 if (ent == null || ent.MarkedForClose || (voxel == null && (ent.Physics == null || ent.DefinitionId == null)) || (voxel != null && (!iMoving || !GridIsMobile || disableVoxels || voxel != voxel.RootVoxel))) continue;
 
-                if (reInforce && !ShieldComp.GetSubGrids.Contains(ent as MyCubeGrid)) continue;
+                if (reInforce && !ShieldComp.SubGrids.ContainsKey(ent as MyCubeGrid)) continue;
 
                 bool quickReject;
                 if (_isServer) quickReject = ent is IMyFloatingObject || ent is IMyEngineerToolBase || IgnoreCache.Contains(ent) || FriendlyMissileCache.Contains(ent) || AuthenticatedCache.Contains(ent);
@@ -271,7 +273,8 @@
                 grid.Components.TryGet(out modComp);
                 if (!string.IsNullOrEmpty(modComp?.ModulationPassword) && modComp.ModulationPassword == Shield.CustomData)
                 {
-                    foreach (var subGrid in modComp.GetSubGrids)
+                    var keyPair = modComp.Modulator?.ShieldComp?.DefenseShields != null ? modComp.Modulator.ShieldComp.DefenseShields.ShieldComp.SubGrids.Keys : modComp.SubGrids.Keys;
+                    foreach (var subGrid in keyPair)
                     {
                         if (ShieldEnt.PositionComp.WorldVolume.Intersects(grid.PositionComp.WorldVolume))
                         {
@@ -291,7 +294,7 @@
                 var enemy = !ModulateGrids && GridEnemy(grid, bigOwners);
                 if (!enemy)
                 {
-                    if (ShieldComp.GetSubGrids.Contains(grid)) return Ent.Protected;
+                    if (ShieldComp.SubGrids.ContainsKey(grid)) return Ent.Protected;
                     var pointsInShield = CustomCollision.NewObbPointsInShield(grid, DetectMatrixOutsideInv, _obbPoints);
                     return pointsInShield > 0 ? Ent.Protected : Ent.Friendly;
                 }

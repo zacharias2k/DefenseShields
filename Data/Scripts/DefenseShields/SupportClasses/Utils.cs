@@ -25,13 +25,17 @@
     {
         public MyCubeGrid MyGrid;
         public Vector3D Force;
+        public Vector3D? Position;
+        public Vector3D? Torque;
         public float? MaxSpeed;
         public bool Immediate;
 
-        public MyAddForceData(MyCubeGrid myGrid, Vector3D force, float? maxSpeed, bool immediate)
+        public MyAddForceData(MyCubeGrid myGrid, Vector3D force, Vector3D? position, Vector3D? torque, float? maxSpeed, bool immediate)
         {
             MyGrid = myGrid;
             Force = force;
+            Position = position;
+            Torque = torque;
             MaxSpeed = maxSpeed;
             Immediate = immediate;
         }

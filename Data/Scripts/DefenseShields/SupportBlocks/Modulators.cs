@@ -2,7 +2,7 @@
 {
     using System;
     using System.Text;
-    using global::DefenseShields.Support;
+    using Support;
     using Sandbox.Common.ObjectBuilders;
     using Sandbox.Game.Entities;
     using Sandbox.Game.EntityComponents;
@@ -293,9 +293,6 @@
 
         private void UpdateStates()
         {
-            if (ShieldComp?.GetSubGrids != null && !ShieldComp.GetSubGrids.Equals(ModulatorComp.GetSubGrids))
-                ModulatorComp.GetSubGrids = ShieldComp.GetSubGrids;
-
             if (_tock60 || _firstRun)
             {
                 if (Modulator.CustomData != ModulatorComp.ModulationPassword)
@@ -560,7 +557,7 @@
         {
             try
             {
-                if ((!_isDedicated && _tick == _subTick) || ShieldComp?.DefenseShields != null) return;
+                if (ModulatorComp == null || ModState.State.Backup || ShieldComp?.DefenseShields != null || (!_isDedicated && _tick == _subTick)) return;
                 if (!_isDedicated && _subTick > _tick - 9)
                 {
                     _subDelayed = true;
@@ -568,12 +565,11 @@
                 }
                 _subTick = _tick;
                 var gotGroups = MyAPIGateway.GridGroups.GetGroup(Modulator?.CubeGrid, GridLinkTypeEnum.Mechanical);
-                ModulatorComp?.GetSubGrids?.Clear();
+                ModulatorComp.SubGrids.Clear();
                 for (int i = 0; i < gotGroups.Count; i++)
                 {
                     var sub = gotGroups[i];
-                    if (sub == null) continue;
-                    ModulatorComp?.GetSubGrids?.Add(sub as MyCubeGrid);
+                    ModulatorComp.SubGrids.Add((MyCubeGrid)sub, null); 
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in HierarchyChanged: {ex}"); }
