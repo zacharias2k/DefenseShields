@@ -60,8 +60,8 @@ namespace DefenseShields
         public HashSet<MyCubeGrid> NewTmp1 { get; set; } = new HashSet<MyCubeGrid>();
         public HashSet<MyCubeGrid> AddSubs { get; set; } = new HashSet<MyCubeGrid>();
         public HashSet<MyCubeGrid> RemSubs { get; set; } = new HashSet<MyCubeGrid>();
-        public Dictionary<MyCubeGrid, SubGridInfo> SubGrids { get; set; } = new Dictionary<MyCubeGrid, SubGridInfo>();
-        public HashSet<MyCubeGrid> LinkedGrids { get; set; } = new HashSet<MyCubeGrid>();
+        public HashSet<MyCubeGrid> SubGrids { get; set; } = new HashSet<MyCubeGrid>();
+        public Dictionary<MyCubeGrid, SubGridInfo> LinkedGrids { get; set; } = new Dictionary<MyCubeGrid, SubGridInfo>();
 
         public Vector3D[] PhysicsOutside { get; set; } = new Vector3D[642];
 

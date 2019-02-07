@@ -1,4 +1,7 @@
-﻿namespace DefenseShields.Support
+﻿using VRage.Collections;
+using VRage.Library.Threading;
+
+namespace DefenseShields.Support
 {
     using System;
     using System.Collections.Concurrent;
@@ -151,6 +154,280 @@
         public bool TryGet(T1 value, out T2 hostileEnt)
         {
             return _backingDict.TryGetValue(value, out hostileEnt);
+        }
+    }
+
+    public class DsUniqueListFastRemove<T>
+    {
+        private List<T> _list = new List<T>();
+        private Dictionary<T, int> _dictionary = new Dictionary<T, int>();
+        private int _index;
+
+        /// <summary>O(1)</summary>
+        public int Count
+        {
+            get
+            {
+                return _list.Count;
+            }
+        }
+
+        /// <summary>O(1)</summary>
+        public T this[int index]
+        {
+            get
+            {
+                return _list[index];
+            }
+        }
+
+        /// <summary>O(1)</summary>
+        public bool Add(T item)
+        {
+            if (_dictionary.ContainsKey(item))
+                return false;
+            _dictionary.Add(item, _index);
+            _list.Add(item);
+            _index++;
+            return true;
+        }
+
+        /// <summary>O(1)</summary>
+        public bool Remove(T item)
+        {
+            if (!_dictionary.ContainsKey(item)) return false;
+
+            var oldIndex = _dictionary[item];
+            _dictionary.Remove(item);
+            if (_index != oldIndex)
+            {
+                _list[oldIndex - 1] = _list[_index - 1];
+                _list.RemoveAt(_index - 1);
+            }
+            else _list.RemoveAt(_index - 1);
+
+            _index--;
+
+            return true;
+        }
+
+        public void Clear()
+        {
+            _list.Clear();
+            _dictionary.Clear();
+        }
+
+        /// <summary>O(1)</summary>
+        public bool Contains(T item)
+        {
+            return _dictionary.ContainsKey(item);
+        }
+
+        public UniqueListReader<T> Items
+        {
+            get
+            {
+                return new UniqueListReader<T>();
+            }
+        }
+
+        public ListReader<T> ItemList
+        {
+            get
+            {
+                return new ListReader<T>(_list);
+            }
+        }
+
+        public List<T>.Enumerator GetEnumerator()
+        {
+            return _list.GetEnumerator();
+        }
+    }
+
+    public class DsUniqueList<T>
+    {
+        private List<T> _list = new List<T>();
+        private HashSet<T> _hashSet = new HashSet<T>();
+
+        /// <summary>O(1)</summary>
+        public int Count
+        {
+            get
+            {
+                return _list.Count;
+            }
+        }
+
+        /// <summary>O(1)</summary>
+        public T this[int index]
+        {
+            get
+            {
+                return _list[index];
+            }
+        }
+
+        /// <summary>O(1)</summary>
+        public bool Add(T item)
+        {
+            if (!_hashSet.Add(item))
+                return false;
+            _list.Add(item);
+            return true;
+        }
+
+        /// <summary>O(n)</summary>
+        public bool Insert(int index, T item)
+        {
+            if (_hashSet.Add(item))
+            {
+                _list.Insert(index, item);
+                return true;
+            }
+            _list.Remove(item);
+            _list.Insert(index, item);
+            return false;
+        }
+
+        /// <summary>O(n)</summary>
+        public bool Remove(T item)
+        {
+            if (!_hashSet.Remove(item))
+                return false;
+            _list.Remove(item);
+            return true;
+        }
+
+        public void Clear()
+        {
+            _list.Clear();
+            _hashSet.Clear();
+        }
+
+        /// <summary>O(1)</summary>
+        public bool Contains(T item)
+        {
+            return _hashSet.Contains(item);
+        }
+
+        public UniqueListReader<T> Items
+        {
+            get
+            {
+                return new UniqueListReader<T>();
+            }
+        }
+
+        public ListReader<T> ItemList
+        {
+            get
+            {
+                return new ListReader<T>(_list);
+            }
+        }
+
+        public List<T>.Enumerator GetEnumerator()
+        {
+            return _list.GetEnumerator();
+        }
+    }
+
+    public class DsConcurrentUniqueList<T>
+    {
+        private List<T> _list = new List<T>();
+        private HashSet<T> _hashSet = new HashSet<T>();
+        private SpinLockRef _lock = new SpinLockRef();
+
+        /// <summary>O(1)</summary>
+        public int Count
+        {
+            get
+            {
+                return _list.Count;
+            }
+        }
+
+        /// <summary>O(1)</summary>
+        public T this[int index]
+        {
+            get
+            {
+                return _list[index];
+            }
+        }
+
+        /// <summary>O(1)</summary>
+        public bool Add(T item)
+        {
+            using (_lock.Acquire())
+            {
+                if (!_hashSet.Add(item))
+                    return false;
+                _list.Add(item);
+                return true;
+            }
+        }
+
+        /// <summary>O(n)</summary>
+        public bool Insert(int index, T item)
+        {
+            using (_lock.Acquire())
+            {
+                if (_hashSet.Add(item))
+                {
+                    _list.Insert(index, item);
+                    return true;
+                }
+                _list.Remove(item);
+                _list.Insert(index, item);
+                return false;
+            }
+        }
+
+        /// <summary>O(n)</summary>
+        public bool Remove(T item)
+        {
+            using (_lock.Acquire())
+            {
+                if (!_hashSet.Remove(item))
+                    return false;
+                _list.Remove(item);
+                return true;
+            }
+        }
+
+        public void Clear()
+        {
+            _list.Clear();
+            _hashSet.Clear();
+        }
+
+        /// <summary>O(1)</summary>
+        public bool Contains(T item)
+        {
+            return _hashSet.Contains(item);
+        }
+
+        public UniqueListReader<T> Items
+        {
+            get
+            {
+                return new UniqueListReader<T>();
+            }
+        }
+
+        public ListReader<T> ItemList
+        {
+            get
+            {
+                return new ListReader<T>(_list);
+            }
+        }
+
+        public List<T>.Enumerator GetEnumerator()
+        {
+            return _list.GetEnumerator();
         }
     }
 

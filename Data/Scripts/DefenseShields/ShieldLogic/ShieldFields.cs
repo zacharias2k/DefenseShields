@@ -13,7 +13,7 @@
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRage.ModAPI;
-    using VRage.Utils;
+    using VRage.Collections;
     using VRageMath;
 
     public partial class DefenseShields 
@@ -22,12 +22,14 @@
         internal readonly MyDefinitionId GId = MyResourceDistributorComponent.ElectricityId;
         internal readonly Random Rnd = new Random(0);
 
-        internal readonly object GetCubesLock = new object();
+        internal readonly object SubLock = new object();
+        internal readonly object SubUpdateLock = new object();
 
         internal readonly int[] ExpChargeReductions = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024 };
 
         internal readonly List<MyEntity> PruneList = new List<MyEntity>();
         internal readonly List<ShieldHit> ShieldHits = new List<ShieldHit>();
+        internal readonly HashSet<MyCubeBlock> CubeBlocks = new HashSet<MyCubeBlock>();
         internal readonly Queue<ShieldHitValues> ProtoShieldHits = new Queue<ShieldHitValues>();
 
         internal readonly HashSet<IMyEntity> AuthenticatedCache = new HashSet<IMyEntity>();
@@ -37,6 +39,8 @@
         internal readonly HashSet<MyEntity> FriendlyMissileCache = new HashSet<MyEntity>();
 
         internal readonly Dictionary<MyEntity, ProtectCache> ProtectedEntCache = new Dictionary<MyEntity, ProtectCache>();
+        internal readonly Dictionary<MyCubeGrid, BlockSets> BlockSets = new Dictionary<MyCubeGrid, BlockSets>();
+        internal readonly CachingDictionary<MyCubeBlock, uint> DirtyCubeBlocks = new CachingDictionary<MyCubeBlock, uint>();
 
         internal readonly ConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<MyEntity, EntIntersectInfo>();
         internal readonly ConcurrentDictionary<MyEntity, MoverInfo> EntsByMe = new ConcurrentDictionary<MyEntity, MoverInfo>();
@@ -53,6 +57,7 @@
         internal readonly ConcurrentQueue<MyVoxelBase> VoxelDmg = new ConcurrentQueue<MyVoxelBase>();
         internal readonly ConcurrentQueue<MyImpulseData> ImpulseData = new ConcurrentQueue<MyImpulseData>();
         internal readonly ConcurrentQueue<MyAddForceData> ForceData = new ConcurrentQueue<MyAddForceData>();
+        internal readonly ConcurrentQueue<SubGridComputedInfo> AddSubGridInfo = new ConcurrentQueue<SubGridComputedInfo>();
 
         internal volatile int LogicSlot;
         internal volatile int MonitorSlot;
@@ -61,7 +66,6 @@
         internal volatile bool MoverByShield;
         internal volatile bool PlayerByShield;
         internal volatile bool NewEntByShield;
-        internal volatile bool Dispatched;
         internal volatile bool Asleep = true;
         internal volatile bool WasPaused;
         internal volatile uint LastWokenTick;
@@ -104,9 +108,6 @@
         private const string ModelOrange = "\\Models\\Cubes\\ShieldPassive04.mwm";
         private const string ModelCyan = "\\Models\\Cubes\\ShieldPassive03.mwm";
 
-        private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
-        private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
-        private readonly List<IMyBatteryBlock> _batteryBlocks = new List<IMyBatteryBlock>();
         private readonly List<KeyValuePair<MyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<MyEntity, EntIntersectInfo>>();
         private readonly List<KeyValuePair<MyEntity, ProtectCache>> _porotectEntsTmp = new List<KeyValuePair<MyEntity, ProtectCache>>();
         private readonly RunningAverage _dpsAvg = new RunningAverage(2);
@@ -120,7 +121,7 @@
         private uint _tick;
         private uint _shieldEntRendId;
         private uint _subTick;
-        private uint _funcTick;
+        private uint _fatTick;
         private uint _shapeTick;
         private uint _heatVentingTick = uint.MaxValue;
         private uint _lastSendDamageTick = uint.MaxValue;
@@ -187,21 +188,14 @@
         private bool _requestedEnforcement;
         private bool _slaveLink;
         private bool _subUpdate;
-        private bool _updateGridDistributor;
         private bool _hideShield;
         private bool _hideColor;
         private bool _supressedColor;
         private bool _shapeChanged;
         private bool _entityChanged;
         private bool _updateRender;
-        private bool _functionalAdded;
-        private bool _functionalRemoved;
-        private bool _functionalChanged;
-        private bool _functionalEvent;
         private bool _blockAdded;
-        private bool _blockRemoved;
         private bool _blockChanged;
-        private bool _blockEvent;
         private bool _shapeEvent;
         private bool _updateMobileShape;
         private bool _clientNotReady;
@@ -212,6 +206,7 @@
         private bool _powerFail;
         private bool _halfExtentsChanged;
         private bool _adjustShape;
+        private bool _checkForDistributor;
 
         private string _modelActive = "\\Models\\Cubes\\ShieldActiveBase.mwm";
         private string _modelPassive = string.Empty;
@@ -277,7 +272,6 @@
         internal uint UnsuspendTick { get; set; }
         internal uint LosCheckTick { get; set; }
         internal uint TicksWithNoActivity { get; set; }
-        internal uint EffectsCleanTick { get; set; }
 
         internal float ShieldMaxCharge { get; set; }
         internal float GridMaxPower { get; set; }
@@ -307,6 +301,7 @@
         internal bool ModulateGrids { get; set; }
         internal bool WasSuspended { get; set; } = true;
         internal bool EnergyHit { get; set; }
+        internal bool EffectsDirty { get; set; }
 
         internal Vector3D MyGridCenter { get; set; }
         internal Vector3D DetectionCenter { get; set; }

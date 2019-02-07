@@ -86,6 +86,7 @@
                     if (_comingOnline) ComingOnlineSetup();
                     if (_isServer)
                     {
+                        if (_tick600) Log.Line($"Grid:{MyGrid.DebugName} - TotalIntegrity: {DsState.State.GridIntegrity} - Distrib:{MyGridDistributor != null}");
                         var createHeTiming = _count == 6 && (_lCount == 1 || _lCount == 6);
                         if (GridIsMobile && createHeTiming) CreateHalfExtents();
                         if (_syncEnts) SyncThreadedEnts();

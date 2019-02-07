@@ -56,7 +56,7 @@ namespace DefenseShields
             return true;
         }
 
-        public Dictionary<MyCubeGrid, SubGridInfo> SubGrids { get; set; } = new Dictionary<MyCubeGrid, SubGridInfo>();
+        public HashSet<MyCubeGrid> SubGrids { get; set; } = new HashSet<MyCubeGrid>();
 
         public string ModulationPassword
         {

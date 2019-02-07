@@ -73,7 +73,7 @@
 
                 TerminalHelpers.Separator(comp?.Shield, "DS-C_sep4");
 
-                BatteryBoostCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_UseBatteries", "Batteries Contribute To Shields", "Batteries May Contribute To Shield Strength", DsUi.GetBatteries, DsUi.SetBatteries);
+                BatteryBoostCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_UseBatteries", "Ignore battery input power ", "Allow shields to fight with batteries for power", DsUi.GetBatteries, DsUi.SetBatteries);
                 SendToHudCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_HideIcon", "Broadcast Shield Status To Hud", "Broadcast Shield Status To Nearby Friendly Huds", DsUi.GetSendToHud, DsUi.SetSendToHud);
                 TerminalHelpers.Separator(comp?.Shield, "DS-C_sep5");
                 ShellSelect = TerminalHelpers.AddCombobox(comp?.Shield, "DS-C_ShellSelect", "Select Shield Look", "Select shield's shell texture", DsUi.GetShell, DsUi.SetShell, DsUi.ListShell);

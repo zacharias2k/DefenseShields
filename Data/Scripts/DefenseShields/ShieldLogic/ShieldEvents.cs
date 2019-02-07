@@ -7,7 +7,6 @@
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
     using Sandbox.ModAPI.Weapons;
-    using VRage;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
 
@@ -18,11 +17,7 @@
             if (register)
             {
                 ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
-                ((MyCubeGrid)Shield.CubeGrid).OnBlockAdded += BlockAdded;
-                ((MyCubeGrid)Shield.CubeGrid).OnBlockRemoved += BlockRemoved;
-                ((MyCubeGrid)Shield.CubeGrid).OnFatBlockAdded += FatBlockAdded;
-                ((MyCubeGrid)Shield.CubeGrid).OnFatBlockRemoved += FatBlockRemoved;
-                ((MyCubeGrid)Shield.CubeGrid).OnGridSplit += GridSplit;
+                RegisterGridEvents();
                 MyEntities.OnEntityAdd += OnEntityAdd;
                 MyEntities.OnEntityRemove += OnEntityRemove;
                 Shield.AppendingCustomInfo += AppendingCustomInfo;
@@ -34,16 +29,34 @@
             else
             {
                 ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated -= HierarchyChanged;
-                ((MyCubeGrid)Shield.CubeGrid).OnBlockAdded -= BlockAdded;
-                ((MyCubeGrid)Shield.CubeGrid).OnBlockRemoved -= BlockRemoved;
-                ((MyCubeGrid)Shield.CubeGrid).OnFatBlockAdded -= FatBlockAdded;
-                ((MyCubeGrid)Shield.CubeGrid).OnFatBlockRemoved -= FatBlockRemoved;
-                ((MyCubeGrid)Shield.CubeGrid).OnGridSplit -= GridSplit;
+                RegisterGridEvents(false);
                 MyEntities.OnEntityAdd -= OnEntityAdd;
                 MyEntities.OnEntityRemove -= OnEntityRemove;
                 Shield.AppendingCustomInfo -= AppendingCustomInfo;
                 _sink.CurrentInputChanged -= CurrentInputChanged;
                 MyCube.IsWorkingChanged -= IsWorkingChanged;
+            }
+        }
+
+        private void RegisterGridEvents(bool register = true, MyCubeGrid grid = null)
+        {
+            if (grid == null) grid = MyGrid;
+            if (register)
+            {
+                grid.OnBlockAdded += BlockAdded;
+                grid.OnBlockRemoved += BlockRemoved;
+                grid.OnFatBlockAdded += FatBlockAdded;
+                grid.OnFatBlockRemoved += FatBlockRemoved;
+                grid.OnGridSplit += GridSplit;
+
+            }
+            else
+            {
+                grid.OnBlockAdded -= BlockAdded;
+                grid.OnBlockRemoved -= BlockRemoved;
+                grid.OnFatBlockAdded -= FatBlockAdded;
+                grid.OnFatBlockRemoved -= FatBlockRemoved;
+                grid.OnGridSplit -= GridSplit;
             }
         }
 
@@ -116,7 +129,6 @@
         {
             try
             {
-                _blockRemoved = true;
                 _blockChanged = true;
                 if (_isServer) DsState.State.GridIntegrity -= mySlimBlock.MaxIntegrity;
             }
@@ -127,13 +139,12 @@
         {
             try
             {
-                _functionalAdded = true;
-                _functionalChanged = true;
-                if (MyGridDistributor == null)
+                lock (CubeBlocks) CubeBlocks.Add(myCubeBlock);
+                var controller = myCubeBlock as MyShipController;
+                if (controller != null)
                 {
-                    var controller = myCubeBlock as MyShipController;
-                    if (controller != null)
-                        if (controller.GridResourceDistributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects) _updateGridDistributor = true;
+                    lock (BlockSets) BlockSets[myCubeBlock.CubeGrid].ShipControllers.Add(controller);
+                    if (MyGridDistributor == null) GetDistributor();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in Controller FatBlockAdded: {ex}"); }
@@ -143,8 +154,7 @@
         {
             try
             {
-                _functionalRemoved = true;
-                _functionalChanged = true;
+                lock (CubeBlocks) CubeBlocks.Remove(myCubeBlock);
             }
             catch (Exception ex) { Log.Line($"Exception in Controller FatBlockRemoved: {ex}"); }
         }

@@ -1,4 +1,7 @@
-﻿namespace DefenseShields.Support
+﻿using System.Collections.Concurrent;
+using Sandbox.Game.EntityComponents;
+
+namespace DefenseShields.Support
 {
     using System;
     using System.Collections.Generic;
@@ -93,11 +96,32 @@
 
     public class SubGridInfo
     {
+        public readonly MyCubeGrid Grid;
         public readonly bool MainGrid;
-        public readonly float Integrity;
-        public SubGridInfo(bool mainGrid, float integrity)
+        public readonly bool MechSub;
+        public float Integrity;
+        public SubGridInfo(MyCubeGrid grid, bool mainGrid, bool mechSub)
         {
+            Grid = grid;
             MainGrid = mainGrid;
+            MechSub = mechSub;
+        }
+    }
+
+    public class BlockSets
+    {
+        public readonly HashSet<MyResourceSourceComponent> Sources = new HashSet<MyResourceSourceComponent>();
+        public readonly HashSet<MyShipController> ShipControllers = new HashSet<MyShipController>();
+        public readonly HashSet<IMyBatteryBlock> Batteries = new HashSet<IMyBatteryBlock>();
+    }
+
+    public struct SubGridComputedInfo
+    {
+        public readonly MyCubeGrid Grid;
+        public readonly float Integrity;
+        public SubGridComputedInfo(MyCubeGrid grid, float integrity)
+        {
+            Grid = grid;
             Integrity = integrity;
         }
     }

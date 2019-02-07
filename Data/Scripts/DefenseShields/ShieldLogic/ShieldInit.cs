@@ -173,11 +173,10 @@
             }
 
             _blockChanged = true;
-            _functionalChanged = true;
 
             ResetShape(false);
             ResetShape(false, true);
-
+            
             _oldGridHalfExtents = DsState.State.GridHalfExtents;
             _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
 
@@ -391,13 +390,33 @@
             if (Session.Enforced.Debug == 3) Log.Line($"InitEntities: mode: {ShieldMode}, spawn complete - ShieldId [{Shield.EntityId}]");
         }
 
-        private void GridIntegrity()
+        private float GridIntegrity(IMyCubeGrid grid = null, bool remove = false)
         {
-            DsState.State.GridIntegrity = 0;
+            var mainSub = false;
+            if (grid == null)
+            {
+                DsState.State.GridIntegrity = 0;
+                grid = Shield.CubeGrid;
+            }
+            else if (grid == MyGrid) mainSub = true;
+
+            var integrityAdjustment = 0f;
+
             var blockList = new List<IMySlimBlock>();
-            Shield.CubeGrid.GetBlocks(blockList);
-            for (int i = 0; i < blockList.Count; i++) DsState.State.GridIntegrity += blockList[i].MaxIntegrity;
-            if (Session.Enforced.Debug == 3) Log.Line($"IntegrityCheck: GridName:{Shield.CubeGrid.DisplayName} - GridHP:{DsState.State.GridIntegrity} - ShieldId [{Shield.EntityId}]");
+            grid.GetBlocks(blockList);
+
+            for (int i = 0; i < blockList.Count; i++)
+            {
+                integrityAdjustment += blockList[i].MaxIntegrity;
+            }
+
+            if (!mainSub)
+            {
+                if (!remove) DsState.State.GridIntegrity += integrityAdjustment;
+                else DsState.State.GridIntegrity -= integrityAdjustment;
+            }
+
+            return integrityAdjustment;
         }
         #endregion
     }

@@ -1,7 +1,7 @@
 ﻿namespace DefenseShields
 {
     using System;
-    using global::DefenseShields.Support;
+    using Support;
     using Sandbox.ModAPI;
     using VRage.Game;
     using VRageMath;
@@ -11,13 +11,12 @@
         #region Shield Shape
         public void ResetShape(bool background, bool newShape = false)
         {
-            if (Session.Enforced.Debug == 3) Log.Line($"ResetShape: Mobile:{GridIsMobile} - Mode:{ShieldMode}/{DsState.State.Mode} - newShape:{newShape} - Offline:{!DsState.State.Online} - offCnt:{_offlineCnt} - blockChanged:{_blockEvent} - functional:{_functionalEvent} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - EWorking:{ShieldComp.EmittersWorking} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"ResetShape: Mobile:{GridIsMobile} - Mode:{ShieldMode}/{DsState.State.Mode} - newShape:{newShape} - Offline:{!DsState.State.Online} - offCnt:{_offlineCnt} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - EWorking:{ShieldComp.EmittersWorking} - ShieldId [{Shield.EntityId}]");
 
             if (newShape)
             {
                 UpdateSubGrids();
                 BlockMonitor();
-                if (_blockEvent) BlockChanged(background);
                 if (_shapeEvent) CheckExtents();
                 if (GridIsMobile) _updateMobileShape = true;
                 return;
@@ -96,7 +95,7 @@
             var expandedAabb = myAabb;
             if (ShieldComp.SubGrids.Count > 1)
             {
-                foreach (var grid in ShieldComp.SubGrids.Keys)
+                foreach (var grid in ShieldComp.SubGrids)
                 {
                     if (grid == shieldGrid) continue;
                     var shieldMatrix = shieldGrid.PositionComp.WorldMatrixNormalizedInv;

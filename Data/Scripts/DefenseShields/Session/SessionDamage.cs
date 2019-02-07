@@ -28,12 +28,12 @@
                     var damageType = info.Type;
                     if (damageType == MpIgnoreDamage || damageType == MyDamageType.Drill || damageType == MyDamageType.Grind) return;
 
-                    var myEntity = block.CubeGrid as MyEntity;
+                    var myGrid = block.CubeGrid as MyCubeGrid;
 
-                    if (myEntity == null) return;
+                    if (myGrid == null) return;
 
                     MyProtectors protectors;
-                    GlobalProtect.TryGetValue(myEntity, out protectors);
+                    GlobalProtect.TryGetValue(myGrid, out protectors);
                     if (protectors == null) return;
 
                     MyEntity hostileEnt;
@@ -42,6 +42,7 @@
                     else UpdatedHostileEnt(attackerId, out hostileEnt);
 
                     var shieldHitPos = Vector3D.NegativeInfinity;
+
                     MyEntity trueAttacker = null;
                     if (hostileEnt != null)
                     {
@@ -49,15 +50,15 @@
                         var notBlockingShield = false;
                         protectors.ProtectDamageReset();
 
-                        MyCubeGrid myGrid;
-                        if (damageType != MyDamageType.Environment) myGrid = hostileEnt as MyCubeGrid;
-                        else myGrid = hostileEnt.Parent as MyCubeGrid;
-                        if (myGrid == null)
+                        MyCubeGrid grid;
+                        if (damageType != MyDamageType.Environment) grid = hostileEnt as MyCubeGrid;
+                        else grid = hostileEnt.Parent as MyCubeGrid;
+                        if (grid == null)
                         {
                             var hostileCube = hostileEnt.Parent as MyCubeBlock;
                             trueAttacker = (hostileCube ?? (hostileEnt as IMyGunBaseUser)?.Owner) ?? hostileEnt;
                         }
-                        else trueAttacker = myGrid;
+                        else trueAttacker = grid;
 
                         protectors.OriginBlock = block;
                         block.ComputeWorldCenter(out protectors.OriginHit);
@@ -146,6 +147,18 @@
                             if (!bullet) shield.EnergyHit = true;
                         }
                         if (isDeformationDmg && trueAttacker != null) protectors.IgnoreAttackerId = attackerId;
+
+                        var fatBlock = block.FatBlock as MyCubeBlock;
+                        if (fatBlock != null)
+                        {
+                            lock (shield.DirtyCubeBlocks)
+                            {
+                                shield.EffectsDirty = true;
+                                shield.DirtyCubeBlocks[fatBlock] = Tick;
+                                shield.DirtyCubeBlocks.ApplyAdditionsAndModifications();
+                            }
+                        }
+
                         shield.Absorb += info.Amount;
                         info.Amount = 0f;
                         return;

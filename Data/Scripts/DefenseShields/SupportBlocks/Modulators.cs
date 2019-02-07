@@ -566,11 +566,7 @@
                 _subTick = _tick;
                 var gotGroups = MyAPIGateway.GridGroups.GetGroup(Modulator?.CubeGrid, GridLinkTypeEnum.Mechanical);
                 ModulatorComp.SubGrids.Clear();
-                for (int i = 0; i < gotGroups.Count; i++)
-                {
-                    var sub = gotGroups[i];
-                    ModulatorComp.SubGrids.Add((MyCubeGrid)sub, null); 
-                }
+                for (int i = 0; i < gotGroups.Count; i++) ModulatorComp.SubGrids.Add(gotGroups[i] as MyCubeGrid); 
             }
             catch (Exception ex) { Log.Line($"Exception in HierarchyChanged: {ex}"); }
         }

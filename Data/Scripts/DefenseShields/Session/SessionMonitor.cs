@@ -42,7 +42,7 @@
                         {
                             if (reInforce != s.ReInforcedShield)
                             {
-                                foreach (var sub in s.ShieldComp.SubGrids.Keys) _entRefreshQueue.Enqueue(sub);
+                                lock (s.SubLock) foreach (var sub in s.ShieldComp.SubGrids) _entRefreshQueue.Enqueue(sub);
                                 s.ReInforcedShield = reInforce;
                             }
 
@@ -170,7 +170,7 @@
             if (reInforce)
             {
                 HashSet<MyCubeGrid> subs;
-                lock (s.GetCubesLock) subs = new HashSet<MyCubeGrid>(s.ShieldComp.SubGrids.Keys);
+                lock (s.SubLock) subs = new HashSet<MyCubeGrid>(s.ShieldComp.SubGrids);
                 var newMode = !s.ReInforcedShield;
                 if (!newMode) return;
                 foreach (var sub in subs)
@@ -193,7 +193,7 @@
                 if (s.ReInforcedShield)
                 {
                     HashSet<MyCubeGrid> subs;
-                    lock (s.GetCubesLock) subs = new HashSet<MyCubeGrid>(s.ShieldComp.SubGrids.Keys); 
+                    lock (s.SubLock) subs = new HashSet<MyCubeGrid>(s.ShieldComp.SubGrids); 
                     foreach (var sub in subs)
                     {
                         _entRefreshQueue.Enqueue(sub);
@@ -338,7 +338,7 @@
                 foreach (var s in entShields)
                 {
                     if (s.WasPaused) continue;
-                    if (s.DsState.State.ReInforce && s.ShieldComp.SubGrids.ContainsKey((MyCubeGrid)ent))
+                    if (s.DsState.State.ReInforce && s.ShieldComp.SubGrids.Contains(ent))
                     {
                         //if (Enforced.Debug == 4) Log.Line("_entRefreshQueue adding Reinfroced");
                         iShield = s;
@@ -403,7 +403,7 @@
                     s.ProtectSubs(Tick);
                     continue;
                 }
-                if (Tick20 && Tick - s.EffectsCleanTick < 41) s.ResetDamageEffects();
+                if (Tick20 && s.EffectsDirty) s.ResetDamageEffects();
                 if (Tick600) s.CleanWebEnts();
 
                 s.WebEntities();

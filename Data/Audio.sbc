@@ -79,13 +79,13 @@
       <!-- Shield is reinitializing and checking LOS, attempting startup in 30 seconds. -->
       <Id>
         <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
-        <SubtypeId>Arc_reinizializing</SubtypeId>
+        <SubtypeId>Arc_reinitializing</SubtypeId>
       </Id>
       <Category>Sb</Category>
       <MaxDistance>100</MaxDistance>
       <Waves>
         <Wave Type="D3">
-          <Start>Audio\SB\Arc_reinizializing.wav</Start>
+          <Start>Audio\SB\Arc_reinitializing.wav</Start>
         </Wave>
       </Waves>
     </Sound>

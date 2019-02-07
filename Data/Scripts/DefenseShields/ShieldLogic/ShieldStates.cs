@@ -7,7 +7,6 @@
     using VRage.Game;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
-
     using VRageMath;
 
     public partial class DefenseShields
@@ -95,7 +94,6 @@
             if (!Warming) WarmUpSequence();
 
             if (_subUpdate && _tick >= _subTick) HierarchyUpdate();
-            if (_blockEvent && _tick >= _funcTick) BlockChanged(true);
             if (_mpActive)
             {
                 if (_isServer)
@@ -198,7 +196,7 @@
             }
             else
             {
-                UpdateSubGrids();
+                UpdateSubGrids(true);
                 Shield.RefreshCustomInfo();
                 if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
             }
@@ -604,10 +602,8 @@
                 DsState.State.Sleeping = false;
                 if (!_isDedicated) ShellVisibility();
                 _blockChanged = true;
-                _functionalChanged = true;
                 UpdateSubGrids();
                 BlockMonitor();
-                BlockChanged(false);
                 if (GridIsMobile) _updateMobileShape = true;
                 else UpdateDimensions = true;
 
@@ -627,7 +623,7 @@
             if (IsStatic || (notTime && _count != -1)) return false;
             var mySize = MyGrid.PositionComp.WorldAABB.Size.Volume;
             var myEntityId = MyGrid.EntityId;
-            foreach (var grid in ShieldComp.LinkedGrids)
+            foreach (var grid in ShieldComp.LinkedGrids.Keys)
             {
                 if (grid == MyGrid) continue;   
                 ShieldGridComponent shieldComponent;
@@ -764,7 +760,6 @@
             ShieldComp.LinkedGrids.Clear();
             ShieldComp.SubGrids.Clear();
             _blockChanged = true;
-            _functionalChanged = true;
             ResetShape(false, true);
             ResetShape(false);
             SetShieldType(false);
@@ -830,7 +825,7 @@
             switch (notice)
             {
                 case PlayerNotice.EmitterInit:
-                    pair = new MySoundPair("Arc_reinizializing");
+                    pair = new MySoundPair("Arc_reinitializing");
                     break;
                 case PlayerNotice.FieldBlocked:
                     pair = new MySoundPair("Arc_solidbody");

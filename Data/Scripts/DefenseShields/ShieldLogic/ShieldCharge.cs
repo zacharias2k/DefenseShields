@@ -1,6 +1,4 @@
-﻿using VRage.Game.Components;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
     using System;
     using Support;
@@ -14,7 +12,6 @@ namespace DefenseShields
         {
             if (!UpdateGridPower()) return false;
             CalculatePowerCharge();
-            if (_tick600) FallBackPowerCalc(true);
             if (!WarmedUp) return true;
             if (_isServer && _hadPowerBefore && _shieldConsumptionRate.Equals(0f) && DsState.State.Charge.Equals(0.01f) && _genericDownLoop == -1)
             {
@@ -30,7 +27,6 @@ namespace DefenseShields
             if (Absorb > 0)
             {
                 _damageReadOut += Absorb;
-                EffectsCleanTick = _tick;
                 DsState.State.Charge -= Absorb * ConvToWatts;
             }
             else if (Absorb < 0) DsState.State.Charge += Absorb * ConvToWatts;
@@ -53,29 +49,26 @@ namespace DefenseShields
             _batteryMaxPower = 0;
             _batteryCurrentOutput = 0;
             _batteryCurrentInput = 0;
-            lock (GetCubesLock)
+
+            if (MyGridDistributor != null || _checkForDistributor && GetDistributor())
             {
-                if (MyGridDistributor != null && FuncTask.IsComplete && !_functionalEvent)
+                if (MyGridDistributor.SourcesEnabled == MyMultipleEnabledEnum.NoObjects)
                 {
-                    var noObjects = MyGridDistributor.SourcesEnabled == MyMultipleEnabledEnum.NoObjects;
-                    if (noObjects)
-                    {
-                        if (Session.Enforced.Debug == 2) Log.Line($"NoObjects: {MyGrid?.DebugName} - Max:{MyGridDistributor?.MaxAvailableResourceByType(GId)} - Status:{MyGridDistributor?.SourcesEnabled} - Sources:{_powerSources.Count}");
-                        FallBackPowerCalc();
-                        FunctionalChanged(true);
-                    }
-                    else
-                    {
-                        GridMaxPower = MyGridDistributor.MaxAvailableResourceByType(GId);
-                        GridCurrentPower = MyGridDistributor.TotalRequiredInputByType(GId);
-                        if (DsSet.Settings.UseBatteries && _batteryBlocks.Count != 0) CalculateBatteryInput();
-                    }
+                    if (Session.Enforced.Debug == 2) Log.Line($"NoObjects: {MyGrid?.DebugName} - Max:{MyGridDistributor?.MaxAvailableResourceByType(GId)} - Status:{MyGridDistributor?.SourcesEnabled}");
+                    if (!GetDistributor()) FallBackPowerCalc();
                 }
-                else FallBackPowerCalc();
+                else
+                {
+                    GridMaxPower = MyGridDistributor.MaxAvailableResourceByType(GId);
+                    GridCurrentPower = MyGridDistributor.TotalRequiredInputByType(GId);
+                    if (!DsSet.Settings.UseBatteries) CalculateBatteryInput(); // add battery exist check
+                }
             }
+            else FallBackPowerCalc();
+
             GridAvailablePower = GridMaxPower - GridCurrentPower;
 
-            if (DsSet.Settings.UseBatteries)
+            if (!DsSet.Settings.UseBatteries)
             {
                 GridCurrentPower += _batteryCurrentInput;
                 GridAvailablePower -= _batteryCurrentInput;
@@ -86,63 +79,102 @@ namespace DefenseShields
 
         private void FallBackPowerCalc(bool reportOnly = false)
         {
-            if (reportOnly)
+            lock (BlockSets)
             {
-                var gridMaxPowerReport = 0f;
-                var gridCurrentPowerReport = 0f;
-                var gridAvailablePowerReport = 0f;
-                var batteryMaxPowerReport = 0f;
-                var batteryCurrentPowerReport = 0f;
-                var batteryCurrentInputreport = 0f;
-                for (int i = 0; i < _powerSources.Count; i++)
+                if (reportOnly)
                 {
-                    var source = _powerSources[i];
-
-                    var battery = source.Entity as IMyBatteryBlock;
-                    if (battery != null)
+                    var gridMaxPowerReport = 0f;
+                    var gridCurrentPowerReport = 0f;
+                    var gridAvailablePowerReport = 0f;
+                    var batteryMaxPowerReport = 0f;
+                    var batteryCurrentPowerReport = 0f;
+                    var batteryCurrentInputreport = 0f;
+                    foreach (var values in BlockSets.Values)
                     {
-                        //Log.Line($"bMaxO:{battery.MaxOutput} - bCurrO:{battery.CurrentOutput} - bCurrI:{battery.CurrentInput} - Charging:{battery.IsCharging}");
-                        if (!battery.IsWorking) continue;
-                        var currentInput = battery.CurrentInput;
-                        var currentOutput = battery.CurrentOutput;
-                        var maxOutput = battery.MaxOutput;
-                        if (currentInput > 0)
+                        foreach (var source in values.Sources)
                         {
-                            batteryCurrentInputreport += currentInput;
-                            if (battery.IsCharging) batteryCurrentPowerReport -= currentInput;
-                            else batteryCurrentPowerReport -= currentInput;
+                            var battery = source.Entity as IMyBatteryBlock;
+                            if (battery != null)
+                            {
+                                //Log.Line($"bMaxO:{battery.MaxOutput} - bCurrO:{battery.CurrentOutput} - bCurrI:{battery.CurrentInput} - Charging:{battery.IsCharging}");
+                                if (!battery.IsWorking) continue;
+                                var currentInput = battery.CurrentInput;
+                                var currentOutput = battery.CurrentOutput;
+                                var maxOutput = battery.MaxOutput;
+                                if (currentInput > 0)
+                                {
+                                    batteryCurrentInputreport += currentInput;
+                                    if (battery.IsCharging) batteryCurrentPowerReport -= currentInput;
+                                    else batteryCurrentPowerReport -= currentInput;
+                                }
+                                batteryMaxPowerReport += maxOutput;
+                                batteryCurrentPowerReport += currentOutput;
+                            }
+                            else
+                            {
+                                gridMaxPowerReport += source.MaxOutputByType(GId);
+                                gridCurrentPowerReport += source.CurrentOutputByType(GId);
+                            }
                         }
-                        batteryMaxPowerReport += maxOutput;
-                        batteryCurrentPowerReport += currentOutput;
-                    }
-                    else
-                    {
-                        gridMaxPowerReport += source.MaxOutputByType(GId);
-                        gridCurrentPowerReport += source.CurrentOutputByType(GId);
+
+                        gridMaxPowerReport += batteryMaxPowerReport;
+                        gridCurrentPowerReport += batteryCurrentPowerReport;
+                        gridAvailablePowerReport = gridMaxPowerReport - gridCurrentPowerReport;
+
+                        if (!DsSet.Settings.UseBatteries)
+                        {
+                            gridCurrentPowerReport += batteryCurrentInputreport;
+                            gridAvailablePowerReport -= batteryCurrentInputreport;
+                        }
+
+                        Log.Line($"Report: PriGMax:{GridMaxPower}(BetaGMax:{gridMaxPowerReport}) - PriGCurr:{GridCurrentPower}(BetaGCurr:{gridCurrentPowerReport}) - PriGAvail:{GridMaxPower - GridCurrentPower}(BetaGAvail:{gridAvailablePowerReport}) - BatInput:{batteryCurrentInputreport} - SCurr:{ShieldCurrentPower}");
                     }
                 }
-
-                gridMaxPowerReport += batteryMaxPowerReport;
-                gridCurrentPowerReport += batteryCurrentPowerReport;
-                gridAvailablePowerReport = gridMaxPowerReport - gridCurrentPowerReport;
-
-                if (DsSet.Settings.UseBatteries)
+                else
                 {
-                    gridCurrentPowerReport += batteryCurrentInputreport;
-                    gridAvailablePowerReport -= batteryCurrentInputreport;
+                    foreach (var values in BlockSets.Values)
+                    {
+                        foreach (var source in values.Sources)
+                        {
+                            var battery = source.Entity as IMyBatteryBlock;
+                            if (battery != null)
+                            {
+                                //Log.Line($"bMaxO:{battery.MaxOutput} - bCurrO:{battery.CurrentOutput} - bCurrI:{battery.CurrentInput} - Charging:{battery.IsCharging}");
+                                if (!battery.IsWorking) continue;
+                                var currentInput = battery.CurrentInput;
+                                var currentOutput = battery.CurrentOutput;
+                                var maxOutput = battery.MaxOutput;
+                                if (currentInput > 0)
+                                {
+                                    _batteryCurrentInput += currentInput;
+                                    if (battery.IsCharging) _batteryCurrentOutput -= currentInput;
+                                    else _batteryCurrentOutput -= currentInput;
+                                }
+                                _batteryMaxPower += maxOutput;
+                                _batteryCurrentOutput += currentOutput;
+                            }
+                            else
+                            {
+                                GridMaxPower += source.MaxOutputByType(GId);
+                                GridCurrentPower += source.CurrentOutputByType(GId);
+                            }
+                        }
+                    }
+                    GridMaxPower += _batteryMaxPower;
+                    GridCurrentPower += _batteryCurrentOutput;
                 }
-
-                Log.Line($"Report: PriGMax:{GridMaxPower}(BetaGMax:{gridMaxPowerReport}) - PriGCurr:{GridCurrentPower}(BetaGCurr:{gridCurrentPowerReport}) - PriGAvail:{GridMaxPower - GridCurrentPower}(BetaGAvail:{gridAvailablePowerReport}) - BatInput:{batteryCurrentInputreport} - SCurr:{ShieldCurrentPower}");
             }
-            else
+        }
+
+        private void CalculateBatteryInput()
+        {
+            Dsutil1.Sw.Restart();
+            lock (BlockSets)
             {
-                for (int i = 0; i < _powerSources.Count; i++)
+                foreach (var values in BlockSets.Values)
                 {
-                    var source = _powerSources[i];
-                    var battery = source.Entity as IMyBatteryBlock;
-                    if (battery != null)
+                    foreach (var battery in values.Batteries)
                     {
-                        //Log.Line($"bMaxO:{battery.MaxOutput} - bCurrO:{battery.CurrentOutput} - bCurrI:{battery.CurrentInput} - Charging:{battery.IsCharging}");
                         if (!battery.IsWorking) continue;
                         var currentInput = battery.CurrentInput;
                         var currentOutput = battery.CurrentOutput;
@@ -156,35 +188,9 @@ namespace DefenseShields
                         _batteryMaxPower += maxOutput;
                         _batteryCurrentOutput += currentOutput;
                     }
-                    else
-                    {
-                        GridMaxPower += source.MaxOutputByType(GId);
-                        GridCurrentPower += source.CurrentOutputByType(GId);
-                    }
                 }
-                GridMaxPower += _batteryMaxPower;
-                GridCurrentPower += _batteryCurrentOutput;
             }
-        }
-
-        private void CalculateBatteryInput()
-        {
-            for (int i = 0; i < _batteryBlocks.Count; i++)
-            {
-                var battery = _batteryBlocks[i];
-                if (!battery.IsWorking) continue;
-                var currentInput = battery.CurrentInput;
-                var currentOutput = battery.CurrentOutput;
-                var maxOutput = battery.MaxOutput;
-                if (currentInput > 0)
-                {
-                    _batteryCurrentInput += currentInput;
-                    if (battery.IsCharging) _batteryCurrentOutput -= currentInput;
-                    else _batteryCurrentOutput -= currentInput;
-                }
-                _batteryMaxPower += maxOutput;
-                _batteryCurrentOutput += currentOutput;
-            }
+            Dsutil1.StopWatchReport("test", -1);
         }
 
         private void CalculatePowerCharge()
@@ -237,7 +243,6 @@ namespace DefenseShields
                 {
                     if (PowerLoss(powerForShield, powerLost, serverNoPower))
                     {
-                        Log.Line($"soft power failure");
                         _powerFail = true;
                         return;
                     }
@@ -302,7 +307,7 @@ namespace DefenseShields
                 {
                     DsState.State.NoPower = true;
                     DsState.State.Message = true;
-                    if (Session.Enforced.Debug == 2) Log.Line($"StateUpdate: NoPower - forShield:{powerForShield} - rounded:{GridMaxPower} - max:{GridMaxPower} - avail{GridAvailablePower} - sCurr:{ShieldCurrentPower} - count:{_powerSources.Count} - DistEna:{MyGridDistributor?.SourcesEnabled} - State:{MyGridDistributor?.ResourceState} - ShieldId [{Shield.EntityId}]");
+                    //if (Session.Enforced.Debug == 2) Log.Line($"StateUpdate: NoPower - forShield:{powerForShield} - rounded:{GridMaxPower} - max:{GridMaxPower} - avail{GridAvailablePower} - sCurr:{ShieldCurrentPower} - count:{_powerSources.Count} - DistEna:{MyGridDistributor?.SourcesEnabled} - State:{MyGridDistributor?.ResourceState} - ShieldId [{Shield.EntityId}]");
                     ShieldChangeState();
                 }
 
