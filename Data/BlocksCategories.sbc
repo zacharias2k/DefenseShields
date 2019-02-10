@@ -1,5 +1,144 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<!-- Research Blocks -->
+  <ResearchBlocks> 
+    <ResearchBlock xsi:type="ResearchBlock"> <!-- put here all blocks you want in a specific group -->
+      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="SmallShieldModulator" /> 
+      <UnlockedByGroups>
+        <GroupSubtype>ShieldEmitters</GroupSubtype>
+      </UnlockedByGroups>
+    </ResearchBlock>
+    <ResearchBlock xsi:type="ResearchBlock">
+      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="LargeShieldModulator" />
+      <UnlockedByGroups>
+        <GroupSubtype>ShieldEmitters</GroupSubtype>
+      </UnlockedByGroups>
+    </ResearchBlock>
+    <ResearchBlock xsi:type="ResearchBlock">
+      <Id Type="MyObjectBuilder_TextPanel" Subtype="DSControlLCD" />
+      <UnlockedByGroups>
+        <GroupSubtype>JumpDrivePlaceholder</GroupSubtype>
+      </UnlockedByGroups>
+    </ResearchBlock>
+    <ResearchBlock xsi:type="ResearchBlock">
+      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="DSControlTable" />
+      <UnlockedByGroups>
+        <GroupSubtype>JumpDrivePlaceholder</GroupSubtype>
+      </UnlockedByGroups>
+    </ResearchBlock>
+    <ResearchBlock xsi:type="ResearchBlock">
+      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="DSControlSmall" />
+      <UnlockedByGroups>
+        <GroupSubtype>JumpDrivePlaceholder</GroupSubtype>
+      </UnlockedByGroups>
+    </ResearchBlock>
+    <ResearchBlock xsi:type="ResearchBlock">
+      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="DSControlLarge" />
+      <UnlockedByGroups>
+        <GroupSubtype>JumpDrivePlaceholder</GroupSubtype>
+      </UnlockedByGroups>
+    </ResearchBlock>
+    <ResearchBlock xsi:type="ResearchBlock">
+      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="EmitterL" />
+      <UnlockedByGroups>
+        <GroupSubtype>ShieldControllers</GroupSubtype>
+      </UnlockedByGroups>
+    </ResearchBlock>
+    <ResearchBlock xsi:type="ResearchBlock">
+      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="EmitterS" />
+      <UnlockedByGroups>
+        <GroupSubtype>ShieldControllers</GroupSubtype>
+      </UnlockedByGroups>
+    </ResearchBlock>
+    <ResearchBlock xsi:type="ResearchBlock">
+      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="EmitterST" />
+      <UnlockedByGroups>
+        <GroupSubtype>ShieldControllers</GroupSubtype>
+      </UnlockedByGroups>
+    </ResearchBlock>
+    <ResearchBlock xsi:type="ResearchBlock">
+      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="EmitterLA" />
+      <UnlockedByGroups>
+        <GroupSubtype>ShieldControllers</GroupSubtype>
+      </UnlockedByGroups>
+    </ResearchBlock>
+    <ResearchBlock xsi:type="ResearchBlock">
+      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="EmitterSA" />
+      <UnlockedByGroups>
+        <GroupSubtype>ShieldControllers</GroupSubtype>
+      </UnlockedByGroups>
+    </ResearchBlock>
+    <ResearchBlock xsi:type="ResearchBlock">
+      <Id Type="MyObjectBuilder_OxygenGenerator" Subtype="DSSupergen" />
+      <UnlockedByGroups>
+        <GroupSubtype>ShieldEmitters</GroupSubtype>
+      </UnlockedByGroups>
+    </ResearchBlock>
+    <ResearchBlock xsi:type="ResearchBlock">
+      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="LargeEnhancer" />
+      <UnlockedByGroups>
+        <GroupSubtype>ShieldEmitters</GroupSubtype>
+      </UnlockedByGroups>
+    </ResearchBlock>
+    <ResearchBlock xsi:type="ResearchBlock">
+      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="SmallEnhancer" />
+      <UnlockedByGroups>
+        <GroupSubtype>ShieldEmitters</GroupSubtype>
+      </UnlockedByGroups>
+    </ResearchBlock>
+   </ResearchBlocks>
+  
+<!-- ResearchGroups -->
+  <ResearchGroups>
+    <ResearchGroup xsi:type="ResearchGroup">
+      <Id Type="MyObjectBuilder_ResearchGroupDefinition" Subtype="ShieldControllers" /><!-- the subtype can be anything you want, it is used in the UnlockedByGroups tag -->
+      <Members>
+      <BlockId Type="MyObjectBuilder_TextPanel" Subtype="DSControlLCD" />
+      <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="DSControlTable" />
+      <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="DSControlSmall" />
+      <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="DSControlLarge" /> <!-- Only block that is visible in the block grouping (block variants) here, if multiple single blocks place each one here-->
+      </Members>
+    </ResearchGroup>
+	<ResearchGroup>
+	 <Id Type="MyObjectBuilder_ResearchGroupDefinition" Subtype="ShieldOxygen" />
+	 <Members>
+      <BlockId Type="MyObjectBuilder_OxygenGenerator" Subtype="DSSupergen" />
+	 </Members>
+	</ResearchGroup>
+	<ResearchGroup>
+	 <Id Type="MyObjectBuilder_ResearchGroupDefinition" Subtype="ShieldEmitters" />
+	 <Members>
+      <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="EmitterST" />
+      <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="EmitterL" />
+      <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="EmitterS" />
+      <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="EmitterLA" />
+      <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="EmitterSA" />
+	 </Members>
+	</ResearchGroup>
+	<ResearchGroup>
+	 <Id Type="MyObjectBuilder_ResearchGroupDefinition" Subtype="ShieldEnhancement" />
+	 <Members>
+      <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="LargeEnhancer" />
+      <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="SmallEnhancer" />
+      <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="SmallShieldModulator" /> 
+      <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="LargeShieldModulator" />
+	 </Members>
+	</ResearchGroup>
+	<ResearchGroup>
+	 <Id Type="MyObjectBuilder_ResearchGroupDefinition" Subtype="JumpDrivePlaceholder" />
+	 <Members>
+      <BlockId Type="MyObjectBuilder_JumpDrive" Subtype="LargeJumpDrive" />
+      <BlockId Type="MyObjectBuilder_VirtualMass" Subtype="VirtualMassLarge" />
+      <BlockId Type="MyObjectBuilder_SpaceBall" Subtype="SpaceBallLarge" />
+      <BlockId Type="MyObjectBuilder_VirtualMass" Subtype="VirtualMassSmall" />
+      <BlockId Type="MyObjectBuilder_SpaceBall" Subtype="SpaceBallSmall" />
+	 </Members>
+	</ResearchGroup>
+  </ResearchGroups>
+
+
+
+
  
 <!-- What category they show in on g-menu, eg. DarkStar -->
  <CategoryClasses>
