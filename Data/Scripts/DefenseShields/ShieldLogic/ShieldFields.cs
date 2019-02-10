@@ -52,7 +52,7 @@
         internal readonly ConcurrentQueue<IMySlimBlock> FewDmgBlocks = new ConcurrentQueue<IMySlimBlock>();
         internal readonly ConcurrentQueue<MyEntity> MissileDmg = new ConcurrentQueue<MyEntity>();
         internal readonly ConcurrentQueue<IMyMeteor> MeteorDmg = new ConcurrentQueue<IMyMeteor>();
-        internal readonly ConcurrentQueue<IMySlimBlock> DestroyedBlocks = new ConcurrentQueue<IMySlimBlock>();
+        internal readonly ConcurrentQueue<BlockAccel> DestroyedBlocks = new ConcurrentQueue<BlockAccel>();
         internal readonly ConcurrentQueue<IMyCharacter> CharacterDmg = new ConcurrentQueue<IMyCharacter>();
         internal readonly ConcurrentQueue<MyVoxelBase> VoxelDmg = new ConcurrentQueue<MyVoxelBase>();
         internal readonly ConcurrentQueue<MyImpulseData> ImpulseData = new ConcurrentQueue<MyImpulseData>();

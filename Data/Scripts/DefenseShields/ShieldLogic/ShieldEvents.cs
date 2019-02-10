@@ -109,6 +109,7 @@
         {
             try
             {
+                Log.Line($"_subUpdate on");
                 _subUpdate = true;
             }
             catch (Exception ex) { Log.Line($"Exception in Controller HierarchyChanged: {ex}"); }

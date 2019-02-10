@@ -4,24 +4,22 @@
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using Sandbox.Game.Entities;
-    using Sandbox.ModAPI;
     using VRage.Game;
     using VRage.Game.Components;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRage.Voxels;
     using VRageMath;
-    using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
     internal class CustomCollision
     {
-        public static Vector3D? MissileIntersect(DefenseShields ds, MyEntity missile, MatrixD detectMatrix, MatrixD detectMatrixInv)
+        public static Vector3D? FutureIntersect(DefenseShields ds, MyEntity ent, MatrixD detectMatrix, MatrixD detectMatrixInv)
         {
-            var missileVel = missile.Physics.LinearVelocity;
-            var missileCenter = missile.PositionComp.WorldVolume.Center;
-            var velStepSize = missileVel * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 2;
-            var futureCenter = missileCenter + velStepSize;
-            var testDir = Vector3D.Normalize(missileCenter - futureCenter);
+            var entVel = ent.Physics.LinearVelocity;
+            var entCenter = ent.PositionComp.WorldVolume.Center;
+            var velStepSize = entVel * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 2;
+            var futureCenter = entCenter + velStepSize;
+            var testDir = Vector3D.Normalize(entCenter - futureCenter);
             var ellipsoid = IntersectEllipsoid(ds.DetectMatrixOutsideInv, ds.DetectionMatrix, new RayD(futureCenter, -testDir));
             if (ellipsoid == null || ellipsoid > 0) return null;
             return futureCenter; 
@@ -121,43 +119,6 @@
             for (int i = 0; i < 162; i++) if (Vector3D.Transform(shield2Verts[i], shield1MatrixInv).LengthSquared() <= 1) insidePoints.Add(shield2Verts[i]);
         }
 
-        public static void VoxelCollision(MyCubeGrid shieldGrid, Vector3D[] physicsVerts, MyVoxelBase voxelBase)
-        {
-            var tmpList = new List<IHitInfo>();
-            for (int i = 0; i < 642; i++)
-            {
-                var from = physicsVerts[i];
-                var dir = Vector3D.Normalize(shieldGrid.PositionComp.WorldAABB.Center - from);
-                var to = from + (dir * 0.01f);
-                MyAPIGateway.Physics.CastRayParallel(ref from, ref to, tmpList, CollisionLayers.VoxelCollisionLayer, VoxelCollisionCallback);
-                //MyAPIGateway.Physics.CastRay(from, to, out hit, CollisionLayers.VoxelCollisionLayer);
-                //if (hit?.HitEntity is MyVoxelBase)
-                    //shieldGrid.Physics.ApplyImpulse((shieldCenter - hit.Position) * shieldGridMass / 100, hit.Position);
-            }
-        }
-
-        public static void VoxelCollisionCallback(List<IHitInfo> hitInfos)
-        {
-        }
-
-        /*
-        public static bool PosInVoxel(MyVoxelBase voxelBase, Vector3D pos, MyStorageData cache)
-        {
-            if (voxelBase.Storage.Closed) return false;
-            //cache.Clear(MyStorageDataTypeEnum.Content, 0);
-            //cache.Resize(Vector3I.One);
-            Vector3I voxelCoord;
-            MyVoxelCoordSystems.WorldPositionToVoxelCoord(voxelBase.RootVoxel.PositionLeftBottomCorner, ref pos, out voxelCoord);
-            var flag = MyVoxelRequestFlags.EmptyContent;
-            voxelBase.RootVoxel.Storage.ReadRange(cache, MyStorageDataTypeFlags.Content, 0, voxelCoord, voxelCoord, ref flag);
-            if (cache.Content(ref Vector3I.Zero) != (byte)0)
-            {
-                return true;
-            }
-            return false;
-        }
-        */
-
         public static bool VoxelContact(Vector3D[] physicsVerts, MyVoxelBase voxelBase)
         {
             try
@@ -204,39 +165,6 @@
             return false;
         }
 
-        /*
-        public static bool VoxelContact(Vector3D[] physicsVerts, MyVoxelBase voxelBase, MyStorageData cache)
-        {
-            try
-            {
-                if (voxelBase.RootVoxel.MarkedForClose || voxelBase.RootVoxel.Storage.Closed) return false;
-                var planet = voxelBase as MyPlanet;
-                var map = voxelBase as MyVoxelMap;
-                var isPlanet = voxelBase is MyPlanet;
-                if (isPlanet)
-                {
-                    for (int i = 0; i < 162; i++)
-                    {
-                        var hit = PosInVoxel(planet, physicsVerts[i], cache);
-                        //var hit = planet.DoOverlapSphereTest(0.1f, from);
-                        if (hit) return true;
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < 162; i++)
-                    {
-                        if (map == null) continue;
-                        //var hit = map.DoOverlapSphereTest(0.1f, from);
-                        var hit = PosInVoxel(map, physicsVerts[i], cache);
-                        if (hit) return true;
-                    }
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in VoxelCollisionSphere: {ex}"); }
-            return false;
-        }
-        */
         public static Vector3D? VoxelEllipsoidCheck(IMyCubeGrid shieldGrid, Vector3D[] physicsVerts, MyVoxelBase voxelBase)
         {
             var collisionAvg = Vector3D.Zero;
@@ -306,7 +234,205 @@
             return collisionAvg;
         }
 
-        public static void SmallIntersect(EntIntersectInfo entInfo, ConcurrentQueue<IMySlimBlock> fewDmgBlocks, ConcurrentQueue<IMySlimBlock> destroyedBlocks, ConcurrentQueue<MyAddForceData> force, ConcurrentQueue<MyImpulseData> impulse, MyCubeGrid grid, MatrixD matrix, MatrixD matrixInv, bool damageBlocks = true)
+        public static Vector3D? BlockIntersect(IMySlimBlock block, bool cubeExists, Quaternion bQuaternion, MatrixD matrix, MatrixD matrixInv, ref Vector3D[] blockPoints, bool debug = false)
+        {
+            BoundingBoxD blockBox;
+            Vector3D center;
+            if (cubeExists)
+            {
+                blockBox = block.FatBlock.LocalAABB;
+                center = block.FatBlock.WorldAABB.Center;
+            }
+            else
+            {
+                Vector3 halfExt;
+                block.ComputeScaledHalfExtents(out halfExt);
+                blockBox = new BoundingBoxD(-halfExt, halfExt);
+                block.ComputeWorldCenter(out center);
+            }
+
+            new MyOrientedBoundingBoxD(center, blockBox.HalfExtents, bQuaternion).GetCorners(blockPoints, 0);
+            blockPoints[8] = center;
+
+            var point0 = blockPoints[0];
+            if (Vector3.Transform(point0, matrixInv).LengthSquared() <= 1) return point0;
+            var point1 = blockPoints[1];
+            if (Vector3.Transform(point1, matrixInv).LengthSquared() <= 1) return point1;
+            var point2 = blockPoints[2];
+            if (Vector3.Transform(point2, matrixInv).LengthSquared() <= 1) return point2;
+            var point3 = blockPoints[3];
+            if (Vector3.Transform(point3, matrixInv).LengthSquared() <= 1) return point3;
+            var point4 = blockPoints[4];
+            if (Vector3.Transform(point4, matrixInv).LengthSquared() <= 1) return point4;
+            var point5 = blockPoints[5];
+            if (Vector3.Transform(point5, matrixInv).LengthSquared() <= 1) return point5;
+            var point6 = blockPoints[6];
+            if (Vector3.Transform(point6, matrixInv).LengthSquared() <= 1) return point6;
+            var point7 = blockPoints[7];
+            if (Vector3.Transform(point7, matrixInv).LengthSquared() <= 1) return point7;
+            var point8 = blockPoints[8];
+            if (Vector3.Transform(point8, matrixInv).LengthSquared() <= 1) return point8;
+
+            var blockSize = (float)blockBox.HalfExtents.AbsMax() * 2;
+            var testDir = Vector3D.Normalize(point0 - point1);
+            var ray = new RayD(point0, -testDir);
+            var intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point0, point1) >= Vector3D.DistanceSquared(point1, point))
+                {
+                    //Log.Line($"ray0: {intersect} - {Vector3D.Distance(point1, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point0 - point3);
+            ray = new RayD(point0, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point0, point3) >= Vector3D.DistanceSquared(point3, point))
+                {
+                    //Log.Line($"ray1: {intersect} - {Vector3D.Distance(point3, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point0 - point4);
+            ray = new RayD(point0, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point0, point4) >= Vector3D.DistanceSquared(point4, point))
+                {
+                    //Log.Line($"ray2: {intersect} - {Vector3D.Distance(point4, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point1 - point2);
+            ray = new RayD(point1, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point1, point2) >= Vector3D.DistanceSquared(point2, point))
+                {
+                    //Log.Line($"ray3: {intersect} - {Vector3D.Distance(point2, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point1 - point5);
+            ray = new RayD(point1, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point1, point5) >= Vector3D.DistanceSquared(point5, point))
+                {
+                    //Log.Line($"ray4: {intersect} - {Vector3D.Distance(point5, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point2 - point3);
+            ray = new RayD(point2, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point2, point3) >= Vector3D.DistanceSquared(point3, point))
+                {
+                    //Log.Line($"ray5: {intersect} - {Vector3D.Distance(point3, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point2 - point6);
+            ray = new RayD(point2, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point2, point6) >= Vector3D.DistanceSquared(point6, point))
+                {
+                    //Log.Line($"ray6: {intersect} - {Vector3D.Distance(point6, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point3 - point7);
+            ray = new RayD(point3, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point3, point7) >= Vector3D.DistanceSquared(point7, point))
+                {
+                    //Log.Line($"ray7: {intersect} - {Vector3D.Distance(point7, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point4 - point5);
+            ray = new RayD(point4, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point4, point5) >= Vector3D.DistanceSquared(point5, point))
+                {
+                    //Log.Line($"ray8: {intersect} - {Vector3D.Distance(point5, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point4 - point7);
+            ray = new RayD(point4, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point4, point7) >= Vector3D.DistanceSquared(point7, point))
+                {
+                    //Log.Line($"ray9: {intersect} - {Vector3D.Distance(point7, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point5 - point6);
+            ray = new RayD(point5, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point5, point6) >= Vector3D.DistanceSquared(point6, point))
+                {
+                    //Log.Line($"ray10: {intersect} - {Vector3D.Distance(point6, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point6 - point7);
+            ray = new RayD(point6, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point6, point7) >= Vector3D.DistanceSquared(point7, point))
+                {
+                    //Log.Line($"ray11: {intersect} - {Vector3D.Distance(point7, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+            return null;
+        } 
+
+        public static void SmallIntersect(EntIntersectInfo entInfo, ConcurrentQueue<IMySlimBlock> fewDmgBlocks, ConcurrentQueue<BlockAccel> destroyedBlocks, ConcurrentQueue<MyAddForceData> force, ConcurrentQueue<MyImpulseData> impulse, MyCubeGrid grid, MatrixD matrix, MatrixD matrixInv, bool damageBlocks = true)
         {
             try
             {
@@ -323,7 +449,7 @@
                     var block = getBlocks[i];
                     if (damageBlocks && block.IsDestroyed)
                     {
-                        destroyedBlocks.Enqueue(block);
+                        destroyedBlocks.Enqueue(new BlockAccel(block));
                         continue;
                     }
 

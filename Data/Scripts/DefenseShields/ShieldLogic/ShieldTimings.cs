@@ -128,7 +128,6 @@
         private void HierarchyUpdate()
         {
             var checkGroups = MyCube.IsWorking && MyCube.IsFunctional && (DsState.State.Online || DsState.State.NoPower || DsState.State.Sleeping || DsState.State.Waking);
-            if (Session.Enforced.Debug == 2) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Online:{DsState.State.Online} - Power:{!DsState.State.NoPower} - Sleep:{DsState.State.Sleeping} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
             if (checkGroups)
             {
                 _subTick = _tick + 10;
@@ -139,6 +138,7 @@
 
         private void UpdateSubGrids(bool force = false)
         {
+            if (Session.Enforced.Debug == 2) Log.Line($"UpdateSubGrids: Su:{DsState.State.Suspended}({WasSuspended}) - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Online:{DsState.State.Online} - Power:{!DsState.State.NoPower} - Sleep:{DsState.State.Sleeping} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
             var newLinkGrop = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
             var newLinkGropCnt = newLinkGrop.Count;
             lock (SubUpdateLock)
@@ -285,6 +285,7 @@
             if (!gotDistributor) MyGridDistributor = null;
 
             Log.Line($"GetDistributor: {gotDistributor}");
+            _checkForDistributor = false;
             return gotDistributor;
         }
 

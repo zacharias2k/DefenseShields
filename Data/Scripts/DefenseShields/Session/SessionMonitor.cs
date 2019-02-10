@@ -271,7 +271,19 @@
                         {
                             var ent = moverList[i];
 
-                            if (!(ent.Physics == null || ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor)) continue;
+                            var meteor = ent as IMyMeteor;
+                            if (meteor != null)
+                            {
+                                if (CustomCollision.FutureIntersect(s, ent, s.DetectMatrixOutside, s.DetectMatrixOutsideInv) != null)
+                                {
+                                    if (Enforced.Debug >= 2) Log.Line($"[Future Intersecting Meteor] distance from shieldCenter: {Vector3D.Distance(s.DetectionCenter, ent.WorldMatrix.Translation)} - waking:");
+                                    newMover = true;
+                                    break;
+                                }
+                                continue;
+                            }
+
+                            if (!(ent.Physics == null || ent is MyCubeGrid || ent is IMyCharacter)) continue;
                             var entPos = ent.PositionComp.WorldMatrix.Translation;
 
                             var keyFound = s.EntsByMe.ContainsKey(ent);

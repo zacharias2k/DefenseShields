@@ -285,7 +285,6 @@ namespace DefenseShields.Support
         public double EmpSize;
         public bool Touched;
         public BoundingBox Box;
-
         public Vector3D ContactPoint;
         public Vector3D EmpDetonation;
         public uint LastTick;
@@ -293,12 +292,11 @@ namespace DefenseShields.Support
         public uint BlockUpdateTick;
         public readonly uint FirstTick;
         public DefenseShields.Ent Relation;
-        public List<IMySlimBlock> CacheBlockList;
+        public List<BlockAccel> CacheBlockList = new List<BlockAccel>();
         public bool MarkForClose;
 
-        public EntIntersectInfo(float damage, double empSize, bool touched, BoundingBox box, Vector3D contactPoint, Vector3D empDetonation, uint firstTick, uint lastTick, uint refreshTick, uint blockUpdateTick, DefenseShields.Ent relation, List<IMySlimBlock> cacheBlockList)
+        public EntIntersectInfo(float damage, double empSize, bool touched, BoundingBox box, Vector3D contactPoint, Vector3D empDetonation, uint firstTick, uint lastTick, uint refreshTick, uint blockUpdateTick, DefenseShields.Ent relation)
         {
-            CacheBlockList = cacheBlockList;
             Damage = damage;
             EmpSize = empSize;
             Touched = touched;
@@ -310,6 +308,19 @@ namespace DefenseShields.Support
             RefreshTick = refreshTick;
             BlockUpdateTick = blockUpdateTick;
             Relation = relation;
+        }
+    }
+
+    public struct BlockAccel
+    {
+        public readonly IMySlimBlock Block;
+        public readonly Vector3I BlockPos;
+        public readonly bool CubeExists; 
+        public BlockAccel(IMySlimBlock block)
+        {
+            Block = block;
+            BlockPos = block.Position;
+            CubeExists = block.FatBlock != null;
         }
     }
 

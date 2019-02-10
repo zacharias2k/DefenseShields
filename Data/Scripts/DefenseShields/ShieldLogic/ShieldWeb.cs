@@ -80,7 +80,7 @@
             {
                 var ent = PruneList[i];
                 var voxel = ent as MyVoxelBase;
-                if (ent == null || ent.MarkedForClose || (voxel == null && (ent.Physics == null || ent.DefinitionId == null)) || (voxel != null && (!iMoving || !GridIsMobile || disableVoxels || voxel != voxel.RootVoxel))) continue;
+                if (ent == null || (voxel == null && (ent.Physics == null || ent.DefinitionId == null)) || (voxel != null && (!iMoving || !GridIsMobile || disableVoxels || voxel != voxel.RootVoxel))) continue;
 
                 if (reInforce && !ShieldComp.SubGrids.Contains(ent as MyCubeGrid)) continue;
 
@@ -205,7 +205,7 @@
                         }
                         entChanged = true;
                         _enablePhysics = true;
-                        WebEnts.TryAdd(ent, new EntIntersectInfo(0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, tick, tick, tick, tick, relation, new List<IMySlimBlock>()));
+                        WebEnts.TryAdd(ent, new EntIntersectInfo(0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, tick, tick, tick, tick, relation));
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in WebEntities entInfo: {ex}"); }

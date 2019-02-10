@@ -1,4 +1,6 @@
-﻿namespace DefenseShields
+﻿using System.Collections.Generic;
+
+namespace DefenseShields
 {
     using System;
     using Support;
@@ -84,19 +86,19 @@
                 {
                     if (!DestroyedBlocks.IsEmpty)
                     {
-                        IMySlimBlock block;
-                        while (DestroyedBlocks.TryDequeue(out block))
+                        BlockAccel accel;
+                        while (DestroyedBlocks.TryDequeue(out accel))
                         {
-                            var myGrid = block.CubeGrid as MyCubeGrid;
+                            var myGrid = accel.Block.CubeGrid as MyCubeGrid;
                             if (myGrid == null) continue;
                             EntIntersectInfo entInfo;
                             WebEnts.TryGetValue(myGrid, out entInfo);
                             if (entInfo == null)
                             {
-                                myGrid.EnqueueDestroyedBlock(block.Position);
+                                myGrid.EnqueueDestroyedBlock(accel.BlockPos);
                                 continue;
                             }
-                            entInfo.CacheBlockList.Remove(block);
+                            entInfo.CacheBlockList.Remove(accel);
                         }
                     }
                 }

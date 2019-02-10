@@ -456,13 +456,17 @@
                 {
                     BoundingBoxD blockBox;
                     Vector3D center;
-                    block.ComputeWorldCenter(out center);
                     if (block.FatBlock != null)
                     {
                         blockBox = block.FatBlock.Model.BoundingBox;
+                        center = blockBox.Center;
                         blockBox.Translate(center);
                     }
-                    else block.GetWorldBoundingBox(out blockBox);
+                    else
+                    {
+                        block.GetWorldBoundingBox(out blockBox);
+                        center = blockBox.Center;
+                    }
 
                     var bOriBBoxD = new MyOrientedBoundingBoxD(center, blockBox.HalfExtents, bQuaternion);
 
@@ -511,13 +515,17 @@
                 {
                     BoundingBoxD blockBox;
                     Vector3D center;
-                    block.ComputeWorldCenter(out center);
                     if (block.FatBlock != null)
                     {
                         blockBox = block.FatBlock.Model.BoundingBox;
+                        center = blockBox.Center;
                         blockBox.Translate(center);
                     }
-                    else block.GetWorldBoundingBox(out blockBox);
+                    else
+                    {
+                        block.GetWorldBoundingBox(out blockBox);
+                        center = blockBox.Center;
+                    }
 
                     var bOriBBoxD = new MyOrientedBoundingBoxD(center, blockBox.HalfExtents, bQuaternion);
 

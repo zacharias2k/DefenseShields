@@ -29,7 +29,13 @@
             
             if (entInfo.LastTick != tick) return;
             if (entInfo.BlockUpdateTick == tick && (relation == Ent.LargeNobodyGrid || relation == Ent.LargeEnemyGrid))
-                (webent as IMyCubeGrid)?.GetBlocks(entInfo.CacheBlockList);
+            {
+                (webent as IMyCubeGrid)?.GetBlocks(null, block =>
+                {
+                    entInfo.CacheBlockList.Add(new BlockAccel(block));
+                    return false;
+                });
+            }
             switch (relation)
             {
                 case Ent.EnemyPlayer:
@@ -83,7 +89,7 @@
                         }
                         else
                         {
-                            var predictedHit = CustomCollision.MissileIntersect(this, webent, DetectionMatrix, DetectMatrixOutsideInv);
+                            var predictedHit = CustomCollision.FutureIntersect(this, webent, DetectionMatrix, DetectMatrixOutsideInv);
                             if (predictedHit != null) MissileDmg.Enqueue(webent);
                         }
                         return;
@@ -336,18 +342,19 @@
 
         private void BlockIntersect(MyCubeGrid breaching, MyOrientedBoundingBoxD bOriBBoxD, EntIntersectInfo entInfo)
         {
-            var collisionAvg = Vector3D.Zero;
-            var transformInv = DetectMatrixOutsideInv;
-            var normalMat = MatrixD.Transpose(transformInv);
-            var damageBlocks = Session.Enforced.DisableBlockDamage == 0;
-
-            var blockDmgNum = 5;
-            if (ShieldMode == ShieldType.Station && DsState.State.Enhancer) blockDmgNum = 50;
-            var intersection = bOriBBoxD.Intersects(ref SOriBBoxD);
             try
             {
-                if (intersection)
+                if (bOriBBoxD.Intersects(ref SOriBBoxD))
                 {
+                    var collisionAvg = Vector3D.Zero;
+                    var transformInv = DetectMatrixOutsideInv;
+                    var normalMat = MatrixD.Transpose(transformInv);
+                    var damageBlocks = Session.Enforced.DisableBlockDamage == 0;
+                    var bQuaternion = Quaternion.CreateFromRotationMatrix(breaching.WorldMatrix);
+
+                    var blockDmgNum = 5;
+                    if (ShieldMode == ShieldType.Station && DsState.State.Enhancer) blockDmgNum = 50;
+
                     var cacheBlockList = entInfo.CacheBlockList;
                     var bPhysics = ((IMyCubeGrid)breaching).Physics;
                     var sPhysics = Shield.CubeGrid.Physics;
@@ -360,6 +367,7 @@
                     var stale = false;
                     var rawDamage = 0f;
                     var blockSize = breaching.GridSize;
+                    var scaledBlockSize = blockSize * 3;
                     var gc = breaching.WorldToGridInteger(DetectionCenter);
                     var rc = ShieldSize.AbsMax() / blockSize;
                     rc *= rc;
@@ -369,8 +377,8 @@
                     var blockPoints = new Vector3D[9];
                     for (int i = 0; i < cacheBlockList.Count; i++)
                     {
-                        var block = cacheBlockList[i];
-                        var blockPos = block.Position;
+                        var accel = cacheBlockList[i];
+                        var blockPos = accel.BlockPos;
                         var num1 = gc.X - blockPos.X;
                         var num2 = gc.Y - blockPos.Y;
                         var num3 = gc.Z - blockPos.Z;
@@ -378,13 +386,13 @@
 
                         if (_isServer)
                         {
-                            if (result > rc) continue;
-                            if (damageBlocks && block.IsDestroyed)
+                            if (result > rc || accel.CubeExists && result > rc + scaledBlockSize) continue;
+                            if (damageBlocks && accel.Block.IsDestroyed)
                             {
-                                DestroyedBlocks.Enqueue(block);
+                                DestroyedBlocks.Enqueue(accel);
                                 continue;
                             }
-                            if (block.CubeGrid != breaching)
+                            if (accel.Block.CubeGrid != breaching)
                             {
                                 stale = true;
                                 continue;
@@ -393,33 +401,25 @@
                         else
                         {
                             if (hits > blockDmgNum) break;
-                            if (result > rc || block.IsDestroyed || block.CubeGrid != breaching) continue;
+                            if (result > rc || accel.CubeExists && result > rc + scaledBlockSize || accel.Block.IsDestroyed || accel.Block.CubeGrid != breaching) continue;
                         }
-                        BoundingBoxD blockBox;
-                        block.GetWorldBoundingBox(out blockBox);
 
-                        blockBox.GetCorners(blockPoints);
-                        blockPoints[8] = blockBox.Center;
-                        for (int j = 8; j > -1; j--)
+                        var block = accel.Block;
+                        var point = CustomCollision.BlockIntersect(block, accel.CubeExists, bQuaternion, DetectMatrixOutside, DetectMatrixOutsideInv, ref blockPoints);
+                        if (point == null) continue;
+                        collisionAvg += (Vector3D)point;
+                        hits++;
+                        if (!_isServer) continue;
+
+                        if (!damageBlocks)
                         {
-                            var point = blockPoints[j];
-                            if (Vector3.Transform(point, DetectMatrixOutsideInv).LengthSquared() > 1) continue;
-                            collisionAvg += point;
-                            hits++;
-                            if (!_isServer) break;
-
-                            if (!damageBlocks)
-                            {
-                                if (hits > blockDmgNum) break;
-                            }
-                            else if (CollidingBlocks.Count > blockDmgNum) break;
-
-                            rawDamage += MathHelper.Clamp(block.Integrity, 0, 350);
-                            if (damageBlocks) CollidingBlocks.Enqueue(block);
-                            break;
+                            if (hits > blockDmgNum) break;
                         }
-                    }
+                        else if (CollidingBlocks.Count > blockDmgNum) break;
 
+                        rawDamage += MathHelper.Clamp(block.Integrity, 0, 350);
+                        if (damageBlocks) CollidingBlocks.Enqueue(block);
+                    }
                     entInfo.MarkForClose = stale;
 
                     if (collisionAvg != Vector3D.Zero)
@@ -472,7 +472,6 @@
                                 ImpulseData.Enqueue(sImpulseData);
                             }
                             /*
-
                             if (!sPhysics.IsStatic)
                             {
                                 if (bMass / sMass > 20)
@@ -480,11 +479,9 @@
                                     speed = MathHelper.Clamp(bSpeedLen, 1f, bSpeedLen * 0.5f);
                                 }
                                 else speed = null;
-
                                 var sForceData = new MyAddForceData { MyGrid = sGrid, Force = (sPhysics.CenterOfMassWorld - collisionAvg) * bMass, MaxSpeed = speed };
                                 ForceData.Enqueue(sForceData);
                             }
-
                             if (!bPhysics.IsStatic)
                             {
                                 if (sMass / bMass > 20)
@@ -492,29 +489,23 @@
                                     speed = MathHelper.Clamp(bSpeedLen, 1f, bSpeedLen * 0.5f);
                                 }
                                 else speed = null;
-
                                 var bForceData = new MyAddForceData { MyGrid = breaching, Force = (bPhysics.CenterOfMassWorld - collisionAvg) * sMass, MaxSpeed = speed };
                                 ForceData.Enqueue(bForceData);
                             }
                             // Fix this if broke
-
                             Vector3 bVel = bPhysics.LinearVelocity;
                             Vector3 sVel = sPhysics.LinearVelocity;
                             Vector3 relVel = bVel - sVel;
-
                             // Assuming headon collision for simplicity
                             Vector3 bVelFinal = (bMass - sMass) / (bMass + sMass) * relVel;
                             Vector3 sVelFinal = (sMass - bMass) / (bMass + sMass) * relVel;
-
                             Vector3 bImpulse = bMass * bVelFinal;
                             Vector3 sImpulse = sMass * sVelFinal;
-
                             if (!bPhysics.IsStatic)
                             {
                                 var bImpulseData = new MyImpulseData { MyGrid = breaching, Direction = bImpulse, Position = collisionAvg };
                                 ImpulseData.Enqueue(bImpulseData);
                             }
-
                             if (!sPhysics.IsStatic)
                             {
                                 var sImpulseData = new MyImpulseData { MyGrid = sGrid, Direction = sImpulse, Position = collisionAvg };
@@ -554,6 +545,7 @@
             }
             catch (Exception ex) { Log.Line($"Exception in BlockIntersect: {ex}"); }
         }
+
 
         #endregion
         private float ComputeAmmoDamage(IMyEntity ammoEnt)

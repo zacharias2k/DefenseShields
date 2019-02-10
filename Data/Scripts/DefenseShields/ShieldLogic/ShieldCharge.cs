@@ -168,7 +168,6 @@
 
         private void CalculateBatteryInput()
         {
-            Dsutil1.Sw.Restart();
             lock (BlockSets)
             {
                 foreach (var values in BlockSets.Values)
@@ -190,7 +189,6 @@
                     }
                 }
             }
-            Dsutil1.StopWatchReport("test", -1);
         }
 
         private void CalculatePowerCharge()
