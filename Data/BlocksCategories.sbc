@@ -75,15 +75,27 @@
       </UnlockedByGroups>
     </ResearchBlock>
     <ResearchBlock xsi:type="ResearchBlock">
-      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="LargeEnhancer" />
+      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="LargeShieldModulator" />
       <UnlockedByGroups>
         <GroupSubtype>ShieldEmitters</GroupSubtype>
       </UnlockedByGroups>
     </ResearchBlock>
     <ResearchBlock xsi:type="ResearchBlock">
-      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="SmallEnhancer" />
+      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="SmallShieldModulator" />
       <UnlockedByGroups>
         <GroupSubtype>ShieldEmitters</GroupSubtype>
+      </UnlockedByGroups>
+    </ResearchBlock>
+    <ResearchBlock xsi:type="ResearchBlock">
+      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="LargeEnhancer" />
+      <UnlockedByGroups>
+        <GroupSubtype>ShieldModulation</GroupSubtype>
+      </UnlockedByGroups>
+    </ResearchBlock>
+    <ResearchBlock xsi:type="ResearchBlock">
+      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="SmallEnhancer" />
+      <UnlockedByGroups>
+        <GroupSubtype>ShieldModulation</GroupSubtype>
       </UnlockedByGroups>
     </ResearchBlock>
    </ResearchBlocks>
@@ -120,6 +132,11 @@
 	 <Members>
       <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="LargeEnhancer" />
       <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="SmallEnhancer" />
+	 </Members>
+	</ResearchGroup>
+	<ResearchGroup>
+	 <Id Type="MyObjectBuilder_ResearchGroupDefinition" Subtype="ShieldModulation" />
+	 <Members>
       <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="SmallShieldModulator" /> 
       <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="LargeShieldModulator" />
 	 </Members>
