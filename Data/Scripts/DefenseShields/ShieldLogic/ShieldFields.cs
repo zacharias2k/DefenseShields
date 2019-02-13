@@ -29,7 +29,6 @@
 
         internal readonly List<MyEntity> PruneList = new List<MyEntity>();
         internal readonly List<ShieldHit> ShieldHits = new List<ShieldHit>();
-        internal readonly HashSet<MyCubeBlock> CubeBlocks = new HashSet<MyCubeBlock>();
         internal readonly Queue<ShieldHitValues> ProtoShieldHits = new Queue<ShieldHitValues>();
 
         internal readonly HashSet<IMyEntity> AuthenticatedCache = new HashSet<IMyEntity>();
@@ -45,7 +44,6 @@
         internal readonly ConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<MyEntity, EntIntersectInfo>();
         internal readonly ConcurrentDictionary<MyEntity, MoverInfo> EntsByMe = new ConcurrentDictionary<MyEntity, MoverInfo>();
         internal readonly ConcurrentDictionary<MyVoxelBase, int> VoxelsToIntersect = new ConcurrentDictionary<MyVoxelBase, int>();
-        internal readonly ConcurrentDictionary<long, WarHeadBlast> EmpBlast = new ConcurrentDictionary<long, WarHeadBlast>();
 
         internal readonly ConcurrentQueue<MyCubeGrid> Eject = new ConcurrentQueue<MyCubeGrid>();
         internal readonly ConcurrentQueue<IMySlimBlock> CollidingBlocks = new ConcurrentQueue<IMySlimBlock>();
@@ -168,6 +166,9 @@
         private int _shieldRatio = 1;
         private int _expChargeReduction;
 
+        private long _gridOwnerId = -1;
+        private long _controllerOwnerId = -1;
+
         private bool _enablePhysics = true;
         private bool _needPhysics;
         private bool _allInited;
@@ -207,6 +208,7 @@
         private bool _halfExtentsChanged;
         private bool _adjustShape;
         private bool _checkForDistributor;
+        private bool _updatePowerSources;
 
         private string _modelActive = "\\Models\\Cubes\\ShieldActiveBase.mwm";
         private string _modelPassive = string.Empty;

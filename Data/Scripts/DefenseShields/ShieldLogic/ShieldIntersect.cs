@@ -14,7 +14,6 @@
     public partial class DefenseShields
     {
         #region Intersect
-
         internal void EntIntersectSelector(KeyValuePair<MyEntity, EntIntersectInfo> pair)
         {
             var entInfo = pair.Value;

@@ -1,4 +1,9 @@
-﻿namespace DefenseShields
+﻿using Sandbox.Game.EntityComponents;
+using VRage;
+using VRage.Game;
+using VRage.Game.Components;
+
+namespace DefenseShields
 {
     using System;
     using System.Text;
@@ -16,10 +21,15 @@
         {
             if (register)
             {
+                if (_isServer)
+                {
+                    ((MyCubeGrid)Shield.CubeGrid).OnBlockOwnershipChanged += OwnerChanged;
+                    MyEntities.OnEntityAdd += OnEntityAdd;
+                    MyEntities.OnEntityRemove += OnEntityRemove;
+                }
+                
                 ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
                 RegisterGridEvents();
-                MyEntities.OnEntityAdd += OnEntityAdd;
-                MyEntities.OnEntityRemove += OnEntityRemove;
                 Shield.AppendingCustomInfo += AppendingCustomInfo;
                 _sink.CurrentInputChanged += CurrentInputChanged;
                 MyCube.IsWorkingChanged += IsWorkingChanged;
@@ -28,10 +38,15 @@
             }
             else
             {
+                if (_isServer)
+                {
+                    ((MyCubeGrid)Shield.CubeGrid).OnBlockOwnershipChanged -= OwnerChanged;
+                    MyEntities.OnEntityAdd -= OnEntityAdd;
+                    MyEntities.OnEntityRemove -= OnEntityRemove;
+                }
+
                 ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated -= HierarchyChanged;
                 RegisterGridEvents(false);
-                MyEntities.OnEntityAdd -= OnEntityAdd;
-                MyEntities.OnEntityRemove -= OnEntityRemove;
                 Shield.AppendingCustomInfo -= AppendingCustomInfo;
                 _sink.CurrentInputChanged -= CurrentInputChanged;
                 MyCube.IsWorkingChanged -= IsWorkingChanged;
@@ -48,7 +63,6 @@
                 grid.OnFatBlockAdded += FatBlockAdded;
                 grid.OnFatBlockRemoved += FatBlockRemoved;
                 grid.OnGridSplit += GridSplit;
-
             }
             else
             {
@@ -66,6 +80,12 @@
             IsFunctional = myCubeBlock.IsFunctional;
         }
 
+        private void OwnerChanged(MyCubeGrid myCubeGrid)
+        {
+            if (MyCube == null || MyGrid == null || MyCube.OwnerId == _controllerOwnerId && MyGrid.BigOwners[0] == _gridOwnerId) return;
+            GridOwnsController();
+        }
+
         private void OnEntityAdd(MyEntity myEntity)
         {
             try
@@ -79,7 +99,7 @@
                 if (!ShieldBox3K.Intersects(ref aabb)) return;
 
                 Asleep = false;
-                if (_isServer && isMissile) Missiles.Add(myEntity);
+                if (isMissile) Missiles.Add(myEntity);
             }
             catch (Exception ex) { Log.Line($"Exception in Controller OnEntityAdd: {ex}"); }
         }
@@ -90,7 +110,7 @@
             {
                 if (myEntity?.Physics == null || myEntity is MyVoxelBase || myEntity is MyFloatingObject || myEntity is IMyCharacter || myEntity is IMyEngineerToolBase || !myEntity.InScene || myEntity.MarkedForClose || myEntity.IsPreview) return;
 
-                if (!_isServer || DsState.State.ReInforce) return;
+                if (DsState.State.ReInforce) return;
 
                 if (!(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))) return;
 
@@ -107,12 +127,7 @@
 
         private void HierarchyChanged(MyCubeGrid myCubeGrid = null)
         {
-            try
-            {
-                Log.Line($"_subUpdate on");
-                _subUpdate = true;
-            }
-            catch (Exception ex) { Log.Line($"Exception in Controller HierarchyChanged: {ex}"); }
+            _subUpdate = true;
         }
 
         private void BlockAdded(IMySlimBlock mySlimBlock)
@@ -140,12 +155,29 @@
         {
             try
             {
-                lock (CubeBlocks) CubeBlocks.Add(myCubeBlock);
                 var controller = myCubeBlock as MyShipController;
                 if (controller != null)
                 {
                     lock (BlockSets) BlockSets[myCubeBlock.CubeGrid].ShipControllers.Add(controller);
-                    if (MyGridDistributor == null) GetDistributor();
+                    _checkForDistributor = true;
+                    return;
+                }
+
+                var source = myCubeBlock.Components.Get<MyResourceSourceComponent>();
+                if (source != null)
+                {
+                    if (source.ResourceTypes[0] != GId) return;
+                    lock (BlockSets)
+                    {
+                        var battery = myCubeBlock as IMyBatteryBlock;
+                        if (battery != null)
+                        {
+                            BlockSets[myCubeBlock.CubeGrid].Batteries.Add(new BatteryInfo(source));
+                        }
+
+                        BlockSets[myCubeBlock.CubeGrid].Sources.Add(source);
+                    }
+                    _updatePowerSources = true;
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in Controller FatBlockAdded: {ex}"); }
@@ -155,7 +187,31 @@
         {
             try
             {
-                lock (CubeBlocks) CubeBlocks.Remove(myCubeBlock);
+                var controller = myCubeBlock as MyShipController;
+
+                if (controller != null)
+                {
+                    lock (BlockSets) BlockSets[myCubeBlock.CubeGrid].ShipControllers.Remove(controller);
+                    _checkForDistributor = true;
+                    return;
+                }
+                var source = myCubeBlock.Components.Get<MyResourceSourceComponent>();
+                if (source != null)
+                {
+                    if (source.ResourceTypes[0] != GId) return;
+
+                    lock (BlockSets)
+                    {
+                        var battery = myCubeBlock as IMyBatteryBlock;
+                        if (battery != null)
+                        {
+                            BlockSets[myCubeBlock.CubeGrid].Batteries.Remove(new BatteryInfo(source));
+                        }
+
+                        BlockSets[myCubeBlock.CubeGrid].Sources.Remove(source);
+                    }
+                    _updatePowerSources = true;
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in Controller FatBlockRemoved: {ex}"); }
         }

@@ -146,7 +146,7 @@
                 }
                 SetShieldServerStatus(powerState);
                 Timing();
-                if (!DsState.State.Online || (_comingOnline && (!GridOwnsController() || (GridIsMobile && FieldShapeBlocked()))))
+                if (!DsState.State.Online || _comingOnline && GridIsMobile && FieldShapeBlocked())
                 {
                     _prevShieldActive = false;
                     if (_genericDownLoop == -1) _genericDownLoop = 0;
@@ -253,6 +253,7 @@
                 return false;
             }
             if (ShieldComp.EmitterEvent) EmitterEventDetected();
+
             ControlBlockWorking = IsWorking && IsFunctional;
 
             if (!ControlBlockWorking || !ShieldComp.EmittersWorking)
@@ -664,7 +665,7 @@
             else if (ShieldMode == ShieldType.Station && !IsStatic) InitSuspend();
             else if (ShieldMode == ShieldType.Unknown) InitSuspend();
             else if (ShieldComp.DefenseShields != this || primeMode || betaMode) InitSuspend(true);
-            else if (!GridOwnsController()) InitSuspend(true);
+            else if (!DsState.State.ControllerGridAccess) InitSuspend(true);
             else
             {
                 if (DsState.State.Suspended)
@@ -715,21 +716,19 @@
             DsState.State.Suspended = true;
         }
 
-        private bool GridOwnsController()
+        private void GridOwnsController()
         {
-            var notTime = _tick != 0 && _tick % 600 != 0;
+            _gridOwnerId = MyGrid.BigOwners[0];
+            _controllerOwnerId = MyCube.OwnerId;
 
-            if (notTime && !DsState.State.ControllerGridAccess) return false;
-            if (notTime) return true;
-            var myGridBigOwners = MyGrid.BigOwners;
-            if (myGridBigOwners.Count == 0)
+            if (MyGrid.BigOwners.Count == 0)
             {
                 DsState.State.ControllerGridAccess = false;
-                return false;
+                return;
             }
-            if (MyCube.OwnerId == 0) MyCube.ChangeOwner(myGridBigOwners[0], MyOwnershipShareModeEnum.Faction);
+            if (_controllerOwnerId == 0) MyCube.ChangeOwner(_gridOwnerId, MyOwnershipShareModeEnum.Faction);
 
-            var controlToGridRelataion = MyCube.GetUserRelationToOwner(myGridBigOwners[0]);
+            var controlToGridRelataion = MyCube.GetUserRelationToOwner(_gridOwnerId);
             DsState.State.InFaction = controlToGridRelataion == MyRelationsBetweenPlayerAndBlock.FactionShare;
             DsState.State.IsOwner = controlToGridRelataion == MyRelationsBetweenPlayerAndBlock.Owner;
             
@@ -742,7 +741,7 @@
                     if (Session.Enforced.Debug == 4) Log.Line($"GridOwner: controller is not owned: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.ControllerGridAccess = false;
-                return false;
+                return;
             }
 
             if (!DsState.State.ControllerGridAccess)
@@ -752,7 +751,7 @@
                 if (Session.Enforced.Debug == 4) Log.Line($"GridOwner: controller is owned: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
             DsState.State.ControllerGridAccess = true;
-            return true;
+            return;
         }
 
         private void UpdateEntity()
@@ -764,7 +763,7 @@
             ResetShape(false);
             SetShieldType(false);
             if (!_isDedicated) ShellVisibility(true);
-            if (Session.Enforced.Debug == 3) Log.Line($"UpdateEntity: sEnt:{ShieldEnt == null} - sPassive:{_shellPassive == null} - controller mode is: {ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 2) Log.Line($"UpdateEntity: sEnt:{ShieldEnt == null} - sPassive:{_shellPassive == null} - controller mode is: {ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
             Icosphere.ShellActive = null;
             _updateRender = true;
         }

@@ -130,7 +130,7 @@
             var checkGroups = MyCube.IsWorking && MyCube.IsFunctional && (DsState.State.Online || DsState.State.NoPower || DsState.State.Sleeping || DsState.State.Waking);
             if (checkGroups)
             {
-                _subTick = _tick + 10;
+                _subTick = uint.MinValue;
                 _subUpdate = false;
                 UpdateSubGrids();
             }
@@ -150,7 +150,6 @@
             lock (SubLock)
             {
                 if (newLinkGropCnt == ShieldComp.LinkedGrids.Count && !force) return;
-
                 ShieldComp.SubGrids.Clear();
                 ShieldComp.LinkedGrids.Clear();
                 for (int i = 0; i < newLinkGropCnt; i++)
@@ -180,7 +179,7 @@
                 ShieldComp.AddSubs.ExceptWith(ShieldComp.NewTmp1);
                 ShieldComp.NewTmp1.Clear();
                 Log.Line($"Adds:{ShieldComp.AddSubs.Count} - Rems{ShieldComp.RemSubs.Count} - Total:{ShieldComp.LinkedGrids.Count}");
-                if (ShieldComp.AddSubs.Count != 0 || ShieldComp.RemSubs.Count != 0) MyAPIGateway.Parallel.Do(SubChangePreEvents, SubChangeCallback);
+                if (ShieldComp.AddSubs.Count != 0 || ShieldComp.RemSubs.Count != 0) MyAPIGateway.Parallel.StartBackground(SubChangePreEvents, SubChangeCallback);
                 else SetSubFlags();
             }
         }
@@ -219,27 +218,30 @@
             if (remove)
             {
                 lock (BlockSets) BlockSets.Remove(sub);
+                return;
             }
-            else
+
+            foreach (var block in sub.GetFatBlocks())
             {
-                foreach (var block in sub.GetFatBlocks())
+                if (mechSub)
                 {
-                    if (mechSub)
-                    {
-                        var controller = block as MyShipController;
-                        if (controller != null) lock (BlockSets) BlockSets[sub].ShipControllers.Add(controller);
-                    }
+                    var controller = block as MyShipController;
+                    if (controller != null) lock (BlockSets) BlockSets[sub].ShipControllers.Add(controller);
+                }
 
-                    var battery = block as IMyBatteryBlock;
-                    if (battery != null) lock (BlockSets) BlockSets[sub].Batteries.Add(battery);
-                    var source = block.Components.Get<MyResourceSourceComponent>();
-                    if (source == null) continue;
+                var source = block.Components.Get<MyResourceSourceComponent>();
+                if (source != null)
+                {
+                    if (source.ResourceTypes[0] != GId) continue;
 
-                    foreach (var type in source.ResourceTypes)
+                    lock (BlockSets)
                     {
-                        if (type != MyResourceDistributorComponent.ElectricityId) continue;
-                        lock (BlockSets) BlockSets[sub].Sources.Add(source);
-                        break;
+                        var battery = block as IMyBatteryBlock;
+                        if (battery != null)
+                        {
+                            BlockSets[sub].Batteries.Add(new BatteryInfo(source));
+                        }
+                        BlockSets[sub].Sources.Add(source);
                     }
                 }
             }
@@ -292,6 +294,7 @@
         private void SetSubFlags()
         {
             _blockChanged = true;
+            _subTick = _tick + 10;
         }
 
         private void CleanAll()

@@ -112,7 +112,6 @@
                     if (_tick600)
                     {
                         if (Session.Enforced.Debug == 3) Log.Line($"PostInit: Server Not Ready - GridComp:{MyGrid.Components.Has<ShieldGridComponent>()} - InvalidMode:{ShieldComp.EmitterMode < 0} - Functional:{IsFunctional} - EmitterSus:{ShieldComp.EmittersSuspended} - StationEmitterNull:{ShieldComp.StationEmitter == null } - EmitterNull:{ShieldComp.StationEmitter?.Emitter == null} - ShieldId [{Shield.EntityId}]");
-                        GridOwnsController();
                         Shield.RefreshCustomInfo();
                     }
                     return false;
@@ -387,7 +386,7 @@
             _updateRender = true;
 
             if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
-            if (Session.Enforced.Debug == 3) Log.Line($"InitEntities: mode: {ShieldMode}, spawn complete - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 2) Log.Line($"InitEntities: mode: {ShieldMode}, spawn complete - ShieldId [{Shield.EntityId}]");
         }
 
         private float GridIntegrity(IMyCubeGrid grid = null, bool remove = false)

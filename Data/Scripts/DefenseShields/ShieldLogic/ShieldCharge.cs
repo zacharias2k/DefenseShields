@@ -1,4 +1,6 @@
-﻿namespace DefenseShields
+﻿using Sandbox.Game.Entities;
+
+namespace DefenseShields
 {
     using System;
     using Support;
@@ -81,6 +83,7 @@
         {
             lock (BlockSets)
             {
+                var batteries = !DsSet.Settings.UseBatteries;
                 if (reportOnly)
                 {
                     var gridMaxPowerReport = 0f;
@@ -94,7 +97,7 @@
                         foreach (var source in values.Sources)
                         {
                             var battery = source.Entity as IMyBatteryBlock;
-                            if (battery != null)
+                            if (battery != null && batteries)
                             {
                                 //Log.Line($"bMaxO:{battery.MaxOutput} - bCurrO:{battery.CurrentOutput} - bCurrI:{battery.CurrentInput} - Charging:{battery.IsCharging}");
                                 if (!battery.IsWorking) continue;
@@ -137,17 +140,17 @@
                         foreach (var source in values.Sources)
                         {
                             var battery = source.Entity as IMyBatteryBlock;
-                            if (battery != null)
+                            if (battery != null && batteries)
                             {
                                 //Log.Line($"bMaxO:{battery.MaxOutput} - bCurrO:{battery.CurrentOutput} - bCurrI:{battery.CurrentInput} - Charging:{battery.IsCharging}");
                                 if (!battery.IsWorking) continue;
                                 var currentInput = battery.CurrentInput;
-                                var currentOutput = battery.CurrentOutput;
-                                var maxOutput = battery.MaxOutput;
+                                var currentOutput = source.CurrentOutputByType(GId);
+                                var maxOutput = source.MaxOutputByType(GId);
                                 if (currentInput > 0)
                                 {
                                     _batteryCurrentInput += currentInput;
-                                    if (battery.IsCharging) _batteryCurrentOutput -= currentInput;
+                                    if (currentOutput <= 0 && maxOutput <= 0) _batteryCurrentOutput -= currentInput;
                                     else _batteryCurrentOutput -= currentInput;
                                 }
                                 _batteryMaxPower += maxOutput;
@@ -168,20 +171,21 @@
 
         private void CalculateBatteryInput()
         {
+            Dsutil1.Sw.Restart();
             lock (BlockSets)
             {
                 foreach (var values in BlockSets.Values)
                 {
                     foreach (var battery in values.Batteries)
                     {
-                        if (!battery.IsWorking) continue;
-                        var currentInput = battery.CurrentInput;
-                        var currentOutput = battery.CurrentOutput;
-                        var maxOutput = battery.MaxOutput;
+                        if (!battery.CubeBlock.IsWorking) continue;
+                        var currentInput = battery.Sink.CurrentInputByType(GId);
+                        var currentOutput = battery.Source.CurrentOutputByType(GId);
+                        var maxOutput = battery.Source.MaxOutputByType(GId);
                         if (currentInput > 0)
                         {
                             _batteryCurrentInput += currentInput;
-                            if (battery.IsCharging) _batteryCurrentOutput -= currentInput;
+                            if (currentOutput <= 0 && maxOutput <= 0) _batteryCurrentOutput -= currentInput;
                             else _batteryCurrentOutput -= currentInput;
                         }
                         _batteryMaxPower += maxOutput;
@@ -189,6 +193,7 @@
                     }
                 }
             }
+            Dsutil1.StopWatchReport("test", -1);
         }
 
         private void CalculatePowerCharge()

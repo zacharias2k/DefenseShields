@@ -1,6 +1,4 @@
-﻿using VRageMath;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
     using System;
     using Support;
@@ -88,7 +86,7 @@ namespace DefenseShields
                     if (_comingOnline) ComingOnlineSetup();
                     if (_isServer)
                     {
-                        if (_tick600) Log.Line($"Grid:{MyGrid.DebugName} - TotalIntegrity: {DsState.State.GridIntegrity} - Distrib:{MyGridDistributor != null}");
+                        //if (_tick60) FallBackPowerCalc(true);
                         var createHeTiming = _count == 6 && (_lCount == 1 || _lCount == 6);
                         if (GridIsMobile && createHeTiming) CreateHalfExtents();
                         if (_syncEnts) SyncThreadedEnts();
