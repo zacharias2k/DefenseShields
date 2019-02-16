@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
     using System;
     using Support;
