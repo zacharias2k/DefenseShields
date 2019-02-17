@@ -1,4 +1,6 @@
-﻿namespace DefenseShields.Support
+﻿using VRage.ModAPI;
+
+namespace DefenseShields.Support
 {
     using System;
     using System.Collections.Generic;
@@ -123,6 +125,53 @@
             Session.Enforced = data;
 
             if (Session.Enforced.Debug == 3) Log.Line($"Writing settings to mod:\n{data}");
+        }
+
+        public static float ComputeAmmoDamage(IMyEntity ammoEnt)
+        {
+            AmmoInfo ammoInfo;
+            Session.Instance.AmmoCollection.TryGetValue(ammoEnt.Model.AssetName, out ammoInfo);
+            var damage = 10f;
+            if (ammoInfo == null)
+            {
+                return damage;
+            }
+            var dmgMulti = GetDmgMulti(ammoInfo.BackKickForce);
+            if (dmgMulti > 0)
+            {
+                if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.5f)) * 7.5f * dmgMulti;
+                else damage = ammoInfo.Mass * ammoInfo.Speed * dmgMulti;
+                return damage;
+            }
+            if (dmgMulti.Equals(-1f))
+            {
+                damage = -damage;
+                return damage;
+            }
+            if (ammoInfo.BackKickForce < 0 && dmgMulti.Equals(0)) damage = float.NegativeInfinity;
+            else if (ammoInfo.Explosive) damage = ammoInfo.Damage * (ammoInfo.Radius * 0.5f) * 7.5f;
+            else damage = ammoInfo.Mass * ammoInfo.Speed;
+
+            if (ammoInfo.Mass < 0 && ammoInfo.Radius <= 0) damage = -damage;
+            return damage;
+        }
+
+        public static float ComputeAmmoDamage2(IMyEntity ammoEnt)
+        {
+            AmmoInfo ammoInfo;
+            Session.Instance.AmmoCollection.TryGetValue(ammoEnt.Model.AssetName, out ammoInfo);
+            var damage = 10f;
+            if (ammoInfo == null)
+            {
+                return damage;
+            }
+            /*
+            if (ammoInfo.KineticWeapon)
+                damage = ammoInfo.shieldDamage * DsState.State.ModulateEnergy; //kinetic weapon
+            else
+                damage = ammoInfo.shieldDamage * DsState.State.ModulateKinetic; //energy weapon
+            */
+            return damage;
         }
 
         public static void FibonacciSeq(int magicNum)

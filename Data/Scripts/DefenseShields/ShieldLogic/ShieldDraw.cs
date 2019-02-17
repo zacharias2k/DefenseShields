@@ -24,10 +24,10 @@
             var activeVisible = DetermineVisualState(reInforce);
 
             var impactPos = WorldImpactPosition;
-            var webEffect = WebDamage && BulletCoolDown > -1 && WebCoolDown < 0;
+            var webEffect = WebDamage && (KineticCoolDown > -1  || EnergyCoolDown > -1) && WebCoolDown < 0;
 
             _localImpactPosition = Vector3D.NegativeInfinity;
-            if (impactPos != Vector3D.NegativeInfinity && (BulletCoolDown < 0 || webEffect))
+            if (impactPos != Vector3D.NegativeInfinity && (KineticCoolDown < 0 || EnergyCoolDown < 0 || webEffect))
             {
                 if (webEffect)
                 {
@@ -37,7 +37,9 @@
                 else
                 {
                     if (WebDamage) WebCoolDown = 0;
-                    BulletCoolDown = 0;
+                    else if (EnergyHit) EnergyCoolDown = 0;
+                    else KineticCoolDown = 0;
+
                     HitParticleStart();
                     var cubeBlockLocalMatrix = MyGrid.PositionComp.LocalMatrix;
                     var referenceWorldPosition = cubeBlockLocalMatrix.Translation;

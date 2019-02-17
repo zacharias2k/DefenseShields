@@ -140,7 +140,9 @@
                         if (bullet || isDeformationDmg) info.Amount = info.Amount * shield.DsState.State.ModulateEnergy;
                         else info.Amount = info.Amount * shield.DsState.State.ModulateKinetic;
 
-                        if (!DedicatedServer && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity && shield.BulletCoolDown == -1)
+                        var noHits = !DedicatedServer && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity;
+                        var hitSlotAvailable = noHits & (bullet && shield.KineticCoolDown == -1) || (!bullet && shield.EnergyCoolDown == -1);
+                        if (hitSlotAvailable)
                         {
                             shield.WorldImpactPosition = shieldHitPos;
                             shield.ImpactSize = info.Amount;
@@ -175,7 +177,7 @@
                         {
                             if (attackingVoxel != null)
                             {
-                                if (iShield.Absorb < 1 && iShield.WorldImpactPosition == Vector3D.NegativeInfinity && iShield.BulletCoolDown == -1)
+                                if (iShield.Absorb < 1 && iShield.WorldImpactPosition == Vector3D.NegativeInfinity && iShield.KineticCoolDown == -1)
                                 {
                                     attackingVoxel.RootVoxel.RequestVoxelOperationElipsoid(Vector3.One, iShield.DetectMatrixOutside, 0, MyVoxelBase.OperationType.Cut);
                                 }

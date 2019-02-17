@@ -80,7 +80,8 @@
             if (createStorage && Modulator.Storage == null) Modulator.Storage = new MyModStorageComponent();
             else if (Modulator.Storage == null) return;
 
-            Modulator.Storage[Session.Instance.ModulatorSettingsGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
+            var binary = MyAPIGateway.Utilities.SerializeToBinary(Settings);
+            Modulator.Storage[Session.Instance.ModulatorSettingsGuid] = Convert.ToBase64String(binary);
         }
 
         public bool LoadSettings()
@@ -93,22 +94,15 @@
             if (Modulator.Storage.TryGetValue(Session.Instance.ModulatorSettingsGuid, out rawData))
             {
                 ModulatorSettingsValues loadedSettings = null;
-
-                try
-                {
-                    loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<ModulatorSettingsValues>(rawData);
-                }
-                catch (Exception e)
-                {
-                    loadedSettings = null;
-                    Log.Line($"ModulatorId:{Modulator.EntityId.ToString()} - Error loading settings!\n{e}");
-                }
+                var base64 = Convert.FromBase64String(rawData);
+                loadedSettings = MyAPIGateway.Utilities.SerializeFromBinary<ModulatorSettingsValues>(base64);
 
                 if (loadedSettings != null)
                 {
                     Settings = loadedSettings;
                     loadedSomething = true;
                 }
+                if (Session.Enforced.Debug == 3) Log.Line($"Loaded - ModulatorId [{Modulator.EntityId}]:\n{Settings.ToString()}");
             }
             return loadedSomething;
         }

@@ -4,8 +4,8 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    using global::DefenseShields.Control;
-    using global::DefenseShields.Support;
+    using Control;
+    using Support;
     using Sandbox.Game.Localization;
     using Sandbox.ModAPI;
     using Sandbox.ModAPI.Interfaces.Terminal;
@@ -598,6 +598,5 @@
             }
         }
         #endregion
-
     }
 }

@@ -1,14 +1,10 @@
-﻿using Sandbox.Game.EntityComponents;
-using VRage;
-using VRage.Game;
-using VRage.Game.Components;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
     using System;
     using System.Text;
     using Support;
     using Sandbox.Common.ObjectBuilders;
+    using Sandbox.Game.EntityComponents;
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
     using Sandbox.ModAPI.Weapons;
@@ -158,7 +154,7 @@ namespace DefenseShields
                 var controller = myCubeBlock as MyShipController;
                 if (controller != null)
                 {
-                    lock (BlockSets) BlockSets[myCubeBlock.CubeGrid].ShipControllers.Add(controller);
+                    BlockSets[myCubeBlock.CubeGrid].ShipControllers.Add(controller);
                     _checkForDistributor = true;
                     return;
                 }
@@ -167,16 +163,14 @@ namespace DefenseShields
                 if (source != null)
                 {
                     if (source.ResourceTypes[0] != GId) return;
-                    lock (BlockSets)
-                    {
-                        var battery = myCubeBlock as IMyBatteryBlock;
-                        if (battery != null)
-                        {
-                            BlockSets[myCubeBlock.CubeGrid].Batteries.Add(new BatteryInfo(source));
-                        }
 
-                        BlockSets[myCubeBlock.CubeGrid].Sources.Add(source);
+                    var battery = myCubeBlock as IMyBatteryBlock;
+                    if (battery != null)
+                    {
+                        BlockSets[myCubeBlock.CubeGrid].Batteries.Add(new BatteryInfo(source));
                     }
+
+                    BlockSets[myCubeBlock.CubeGrid].Sources.Add(source);
                     _updatePowerSources = true;
                 }
             }
@@ -191,7 +185,7 @@ namespace DefenseShields
 
                 if (controller != null)
                 {
-                    lock (BlockSets) BlockSets[myCubeBlock.CubeGrid].ShipControllers.Remove(controller);
+                    BlockSets[myCubeBlock.CubeGrid].ShipControllers.Remove(controller);
                     _checkForDistributor = true;
                     return;
                 }
@@ -200,16 +194,13 @@ namespace DefenseShields
                 {
                     if (source.ResourceTypes[0] != GId) return;
 
-                    lock (BlockSets)
+                    var battery = myCubeBlock as IMyBatteryBlock;
+                    if (battery != null)
                     {
-                        var battery = myCubeBlock as IMyBatteryBlock;
-                        if (battery != null)
-                        {
-                            BlockSets[myCubeBlock.CubeGrid].Batteries.Remove(new BatteryInfo(source));
-                        }
-
-                        BlockSets[myCubeBlock.CubeGrid].Sources.Remove(source);
+                        BlockSets[myCubeBlock.CubeGrid].Batteries.Remove(new BatteryInfo(source));
                     }
+
+                    BlockSets[myCubeBlock.CubeGrid].Sources.Remove(source);
                     _updatePowerSources = true;
                 }
             }

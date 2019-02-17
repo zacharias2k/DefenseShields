@@ -432,7 +432,7 @@
             return null;
         } 
 
-        public static void SmallIntersect(EntIntersectInfo entInfo, ConcurrentQueue<IMySlimBlock> fewDmgBlocks, ConcurrentQueue<BlockAccel> destroyedBlocks, ConcurrentQueue<MyAddForceData> force, ConcurrentQueue<MyImpulseData> impulse, MyCubeGrid grid, MatrixD matrix, MatrixD matrixInv, bool damageBlocks = true)
+        public static void SmallIntersect(DefenseShields shield, EntIntersectInfo entInfo, MyCubeGrid grid, MatrixD matrix, MatrixD matrixInv, bool damageBlocks = true)
         {
             try
             {
@@ -449,7 +449,7 @@
                     var block = getBlocks[i];
                     if (damageBlocks && block.IsDestroyed)
                     {
-                        destroyedBlocks.Enqueue(new BlockAccel(block));
+                        Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.DestroyedBlock, shield, new CubeAccel(block)));
                         continue;
                     }
 
@@ -463,7 +463,7 @@
                         if (Vector3.Transform(point, matrixInv).LengthSquared() > 1) continue;
                         c3++;
                         collisionAvg += point;
-                        if (damageBlocks) fewDmgBlocks.Enqueue(block);
+                        if (damageBlocks) Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.FewDmgBlocks, shield, new CubeAccel(block)));
                         break;
                     }
                 }
@@ -483,15 +483,15 @@
 
                     var forceData = new MyAddForceData { MyGrid = grid, Force = (grid.PositionComp.WorldAABB.Center - matrix.Translation) * (mass * gridLinearLen), MaxSpeed = MathHelper.Clamp(gridLinearLen, 10, gridLinearLen * 0.5f) };
                     var impulseData = new MyImpulseData { MyGrid = grid, Direction = mass * 0.015 * -Vector3D.Dot(gridLinearVel, surfaceNormal) * surfaceNormal, Position = collisionAvg };
-                    force.Enqueue(forceData);
-                    impulse.Enqueue(impulseData);
+                    Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.ForceData, shield, forceData));
+                    Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.ImpulseData, shield, impulseData));
                     entInfo.Damage = mass * 0.5f;
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in SmallIntersect: {ex}"); }
         }
 
-        public static void ClientSmallIntersect(EntIntersectInfo entInfo, MyCubeGrid grid, MatrixD matrix, MatrixD matrixInv, ConcurrentQueue<MyCubeGrid> eject)
+        public static void ClientSmallIntersect(DefenseShields shield, EntIntersectInfo entInfo, MyCubeGrid grid, MatrixD matrix, MatrixD matrixInv)
         {
             try
             {
@@ -501,7 +501,7 @@
                 entInfo.ContactPoint = contactPoint;
 
                 var approching = Vector3.Dot(grid.Physics.LinearVelocity, grid.PositionComp.WorldVolume.Center - contactPoint) < 0;
-                if (approching) eject.Enqueue(grid);
+                if (approching) Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.Eject, shield, grid));
             }
             catch (Exception ex) { Log.Line($"Exception in ClientSmallIntersect: {ex}"); }
         }

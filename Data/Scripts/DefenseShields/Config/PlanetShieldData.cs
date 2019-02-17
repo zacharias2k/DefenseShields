@@ -18,7 +18,7 @@
         {
             if (PlanetShield.Storage == null)
             {
-                PlanetShield.Storage = new MyModStorageComponent {[Session.Instance.ModulatorSettingsGuid] = ""};
+                PlanetShield.Storage = new MyModStorageComponent {[Session.Instance.PlanetShieldSettingsGuid] = ""};
             }
         }
 
@@ -80,7 +80,8 @@
             if (createStorage && PlanetShield.Storage == null) PlanetShield.Storage = new MyModStorageComponent();
             else if (PlanetShield.Storage == null) return;
 
-            PlanetShield.Storage[Session.Instance.PlanetShieldSettingsGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
+            var binary = MyAPIGateway.Utilities.SerializeToBinary(Settings);
+            PlanetShield.Storage[Session.Instance.PlanetShieldSettingsGuid] = Convert.ToBase64String(binary);
         }
 
         public bool LoadSettings()
@@ -93,22 +94,15 @@
             if (PlanetShield.Storage.TryGetValue(Session.Instance.PlanetShieldSettingsGuid, out rawData))
             {
                 PlanetShieldSettingsValues loadedSettings = null;
-
-                try
-                {
-                    loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<PlanetShieldSettingsValues>(rawData);
-                }
-                catch (Exception e)
-                {
-                    loadedSettings = null;
-                    Log.Line($"PlanetShieldId:{PlanetShield.EntityId.ToString()} - Error loading settings!\n{e}");
-                }
+                var base64 = Convert.FromBase64String(rawData);
+                loadedSettings = MyAPIGateway.Utilities.SerializeFromBinary<PlanetShieldSettingsValues>(base64);
 
                 if (loadedSettings != null)
                 {
                     Settings = loadedSettings;
                     loadedSomething = true;
                 }
+                if (Session.Enforced.Debug == 3) Log.Line($"Loaded - PlanetShieldId [{PlanetShield.EntityId}]:\n{Settings.ToString()}");
             }
             return loadedSomething;
         }

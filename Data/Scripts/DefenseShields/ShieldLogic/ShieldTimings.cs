@@ -127,7 +127,7 @@
         #region Checks
         private void HierarchyUpdate()
         {
-            var checkGroups = MyCube.IsWorking && MyCube.IsFunctional && (DsState.State.Online || DsState.State.NoPower || DsState.State.Sleeping || DsState.State.Waking);
+            var checkGroups = IsWorking && IsFunctional && (DsState.State.Online || DsState.State.NoPower || DsState.State.Sleeping || DsState.State.Waking);
             if (checkGroups)
             {
                 _subTick = uint.MinValue;
@@ -194,8 +194,8 @@
                     RegisterGridEvents(true, addSub);
                     var gridIntegrity = GridIntegrity(addSub);
                     AddSubGridInfo.Enqueue(new SubGridComputedInfo(addSub, gridIntegrity));
-                    lock (BlockSets) BlockSets.Add(addSub, new BlockSets());
-                    var mechSub = false;
+                    BlockSets.TryAdd(addSub, new BlockSets());
+                    bool mechSub;
                     lock (SubLock) mechSub = ShieldComp.SubGrids.Contains(addSub);
                     UpdateSubBlockCollections(addSub, mechSub);
                     Log.Line($"SubAdd: Integrity:{gridIntegrity} - newTotal:{DsState.State.GridIntegrity}");
@@ -212,12 +212,13 @@
             }
         }
 
-        private void UpdateSubBlockCollections(MyCubeGrid sub, bool mechSub,  bool remove = false)
+        private void UpdateSubBlockCollections(MyCubeGrid sub, bool mechSub, bool remove = false)
         {
 
             if (remove)
             {
-                lock (BlockSets) BlockSets.Remove(sub);
+                BlockSets value;
+                BlockSets.TryRemove(sub, out value);
                 return;
             }
 
@@ -226,7 +227,7 @@
                 if (mechSub)
                 {
                     var controller = block as MyShipController;
-                    if (controller != null) lock (BlockSets) BlockSets[sub].ShipControllers.Add(controller);
+                    if (controller != null) BlockSets[sub].ShipControllers.Add(controller);
                 }
 
                 var source = block.Components.Get<MyResourceSourceComponent>();
@@ -234,15 +235,12 @@
                 {
                     if (source.ResourceTypes[0] != GId) continue;
 
-                    lock (BlockSets)
+                    var battery = block as IMyBatteryBlock;
+                    if (battery != null)
                     {
-                        var battery = block as IMyBatteryBlock;
-                        if (battery != null)
-                        {
-                            BlockSets[sub].Batteries.Add(new BatteryInfo(source));
-                        }
-                        BlockSets[sub].Sources.Add(source);
+                        BlockSets[sub].Batteries.Add(new BatteryInfo(source));
                     }
+                    BlockSets[sub].Sources.Add(source);
                 }
             }
         }
@@ -266,20 +264,17 @@
         private bool GetDistributor()
         {
             var gotDistributor = false;
-            lock (BlockSets)
+            foreach (var set in BlockSets.Values)
             {
-                foreach (var set in BlockSets.Values)
+                foreach (var controller in set.ShipControllers)
                 {
-                    foreach (var controller in set.ShipControllers)
+                    var distributor = controller.GridResourceDistributor;
+                    if (distributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects)
                     {
-                        var distributor = controller.GridResourceDistributor;
-                        if (distributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects)
-                        {
-                            if (Session.Enforced.Debug == 2) Log.Line($"Found MyGridDistributor from type - ShieldId [{Shield.EntityId}]");
-                            MyGridDistributor = controller.GridResourceDistributor;
-                            gotDistributor = true;
-                            break;
-                        }
+                        if (Session.Enforced.Debug == 2) Log.Line($"Found MyGridDistributor from type - ShieldId [{Shield.EntityId}]");
+                        MyGridDistributor = controller.GridResourceDistributor;
+                        gotDistributor = true;
+                        break;
                     }
                 }
             }
@@ -301,7 +296,6 @@
         {
             CleanWebEnts();
             ResetDamageEffects();
-            SyncThreadedEnts(true);
         }
     }
 }

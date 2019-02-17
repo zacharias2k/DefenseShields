@@ -28,23 +28,17 @@
             DsSet.Settings = newSettings;
             SettingsUpdated = true;
             if (newShape) FitChanged = true;
-            if (Session.Enforced.Debug == 3) Log.Line($"UpdateSettings - server:{Session.Instance.IsServer} - ShieldId [{Shield.EntityId}]:\n{newSettings}");
         }
 
         internal void UpdateState(ControllerStateValues newState)
         {
             DsState.State = newState;
-            if (Session.Enforced.Debug == 3) Log.Line($"UpdateState - ClientAndReady:{!_clientNotReady} - Mode:{DsState.State.Mode} - server:{Session.Instance.IsServer} - ShieldId [{Shield.EntityId}]:\n{newState}");
             _clientNotReady = false;
         }
 
         private void ShieldChangeState()
         {
-            if (!WarmedUp && !DsState.State.Message)
-            {
-                if (Session.Enforced.Debug == 3) Log.Line($"ChangeStateSupression: WarmedUp:{WarmedUp} - Message:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
-                return;
-            }
+            if (!WarmedUp && !DsState.State.Message) return;
             if (Session.Instance.MpActive)
             {
                 if (Session.Enforced.Debug == 4) Log.Line($"ServerUpdate: Broadcast:{DsState.State.Message} - Percent:{DsState.State.ShieldPercent} - HeatLvl:{DsState.State.Heat} - ShieldCharge:{DsState.State.Charge} - EmpProt:{DsState.State.EmpProtection} - ShieldId [{Shield.EntityId}]");
@@ -153,9 +147,6 @@
                     ShieldFailing();
                     return false;
                 }
-                _syncEnts = !ForceData.IsEmpty || !ImpulseData.IsEmpty || !MissileDmg.IsEmpty || !FewDmgBlocks.IsEmpty
-                            || !CollidingBlocks.IsEmpty || !MeteorDmg.IsEmpty || !Eject.IsEmpty || !DestroyedBlocks.IsEmpty 
-                            || !VoxelDmg.IsEmpty || !CharacterDmg.IsEmpty || Session.Instance.EmpWork.EventRunning;
             }
             else
             {
@@ -169,8 +160,6 @@
                 Timing();
                 _clientOn = true;
                 _clientLowered = false;
-
-                _syncEnts = !ForceData.IsEmpty || !ImpulseData.IsEmpty || !Eject.IsEmpty;
             }
 
             return true;
@@ -411,7 +400,6 @@
                 DsState.State.Heat = 0;
 
                 if (!_isDedicated) ShellVisibility(true);
-                SyncThreadedEnts();
             }
 
             _prevShieldActive = false;

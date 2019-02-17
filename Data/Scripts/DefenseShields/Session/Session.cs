@@ -88,10 +88,16 @@
                     var s = Controllers[i];
                     if (s.WasPaused || s.DsState.State.Suspended) continue;
 
-                    if (s.BulletCoolDown > -1)
+                    if (s.KineticCoolDown > -1)
                     {
-                        s.BulletCoolDown++;
-                        if (s.BulletCoolDown == 9) s.BulletCoolDown = -1;
+                        s.KineticCoolDown++;
+                        if (s.KineticCoolDown == 9) s.KineticCoolDown = -1;
+                    }
+
+                    if (s.EnergyCoolDown > -1)
+                    {
+                        s.EnergyCoolDown++;
+                        if (s.EnergyCoolDown == 9) s.EnergyCoolDown = -1;
                     }
 
                     if (s.WebCoolDown > -1)
@@ -160,6 +166,7 @@
                 }
 
                 if (_warEffect && Tick20) WarEffect();
+                if (!EntSyncEvents.IsEmpty) SyncThreadedEnts();
             }
             catch (Exception ex) { Log.Line($"Exception in SessionBeforeSim: {ex}"); }
         }

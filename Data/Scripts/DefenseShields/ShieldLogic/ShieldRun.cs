@@ -86,10 +86,8 @@
                     if (_comingOnline) ComingOnlineSetup();
                     if (_isServer)
                     {
-                        //if (_tick60) FallBackPowerCalc(true);
                         var createHeTiming = _count == 6 && (_lCount == 1 || _lCount == 6);
                         if (GridIsMobile && createHeTiming) CreateHalfExtents();
-                        if (_syncEnts) SyncThreadedEnts();
 
                         if (_mpActive && (_forceBufferSync || _count == 29))
                         {
@@ -102,8 +100,8 @@
                             }
                             else if (_lCount == 7 && _eCount == 7) ShieldChangeState();
                         }
+                        if (Session.Instance.EmpWork.EventRunning) AbsorbEmp();
                     }
-                    else if (_syncEnts) SyncThreadedEnts();
                     if (!_isDedicated && (_tick60 || Session.Instance.HudIconReset)) HudCheck();
                 }
             }

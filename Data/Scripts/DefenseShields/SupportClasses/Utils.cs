@@ -10,40 +10,6 @@ namespace DefenseShields.Support
     using Sandbox.Game.Entities;
     using VRageMath;
 
-    internal struct MyImpulseData
-    {
-        public MyCubeGrid MyGrid;
-        public Vector3D Direction;
-        public Vector3D Position;
-
-        public MyImpulseData(MyCubeGrid myGrid, Vector3D direction, Vector3D position)
-        {
-            MyGrid = myGrid;
-            Direction = direction;
-            Position = position;
-        }
-    }
-
-    internal struct MyAddForceData
-    {
-        public MyCubeGrid MyGrid;
-        public Vector3D Force;
-        public Vector3D? Position;
-        public Vector3D? Torque;
-        public float? MaxSpeed;
-        public bool Immediate;
-
-        public MyAddForceData(MyCubeGrid myGrid, Vector3D force, Vector3D? position, Vector3D? torque, float? maxSpeed, bool immediate)
-        {
-            MyGrid = myGrid;
-            Force = force;
-            Position = position;
-            Torque = torque;
-            MaxSpeed = maxSpeed;
-            Immediate = immediate;
-        }
-    }
-
     internal static class ConcurrentQueueExtensions
     {
         public static void Clear<T>(this ConcurrentQueue<T> queue)

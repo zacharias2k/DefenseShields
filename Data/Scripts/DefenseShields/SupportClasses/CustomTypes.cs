@@ -1,6 +1,4 @@
-﻿using System.Collections.Concurrent;
-using Sandbox.Game.EntityComponents;
-using VRage.Game.Components;
+﻿using Sandbox.Game.EntityComponents;
 
 namespace DefenseShields.Support
 {
@@ -15,6 +13,20 @@ namespace DefenseShields.Support
     using VRage.Utils;
     using VRage.Voxels;
     using VRageMath;
+
+    public enum EntEvents
+    {
+        Eject,
+        DestroyedBlock,
+        MissileDmg,
+        MeteorDmg,
+        VoxelDmg,
+        CharacterDmg,
+        FewDmgBlocks,
+        CollidingBlocks,
+        ForceData,
+        ImpulseData
+    }
 
     public struct WarHeadBlast
     {
@@ -306,7 +318,7 @@ namespace DefenseShields.Support
         public uint BlockUpdateTick;
         public readonly uint FirstTick;
         public DefenseShields.Ent Relation;
-        public List<BlockAccel> CacheBlockList = new List<BlockAccel>();
+        public List<CubeAccel> CacheBlockList = new List<CubeAccel>();
         public bool MarkForClose;
 
         public EntIntersectInfo(float damage, double empSize, bool touched, BoundingBox box, Vector3D contactPoint, Vector3D empDetonation, uint firstTick, uint lastTick, uint refreshTick, uint blockUpdateTick, DefenseShields.Ent relation)
@@ -325,16 +337,123 @@ namespace DefenseShields.Support
         }
     }
 
-    public struct BlockAccel
+    public struct EntitySyncEvent
+    {
+        public readonly EntEvents EventType;
+        public readonly DefenseShields Shield;
+        public readonly MyEntity Entity;
+        public readonly MyVoxelBase VoxelBase;
+        public readonly IMyCharacter Character;
+        public readonly IMyMeteor Meteor;
+        public readonly CubeAccel? Accel;
+        public readonly MyAddForceData? AddForceData;
+        public readonly MyImpulseData? ImpulseData;
+
+        public EntitySyncEvent(EntEvents eventType, DefenseShields shield, object rawObject)
+        {
+            EventType = eventType;
+            Shield = shield;
+
+            Character = null;
+            Entity = null;
+            VoxelBase = null;
+            Meteor = null;
+            Accel = null;
+            AddForceData = null;
+            ImpulseData = null;
+
+            switch (EventType)
+            {
+                case EntEvents.MissileDmg:
+                    Entity = ((MyEntity)rawObject);
+                    break;
+                case EntEvents.ForceData:
+                    AddForceData = ((MyAddForceData)rawObject);
+                    break;
+                case EntEvents.ImpulseData:
+                    ImpulseData = ((MyImpulseData)rawObject);
+                    break;
+                case EntEvents.CollidingBlocks:
+                    Accel = ((CubeAccel) rawObject);
+                    break;
+                case EntEvents.FewDmgBlocks:
+                    Accel = ((CubeAccel)rawObject);
+                    break;
+                case EntEvents.DestroyedBlock:
+                    Accel = ((CubeAccel)rawObject);
+                    break;
+                case EntEvents.CharacterDmg:
+                    Character = ((IMyCharacter)rawObject);
+                    break;
+                case EntEvents.Eject:
+                    Accel = ((CubeAccel)rawObject);
+                    break;
+                case EntEvents.VoxelDmg:
+                    VoxelBase = ((MyVoxelBase)rawObject);
+                    break;
+                case EntEvents.MeteorDmg:
+                    Meteor = ((IMyMeteor)rawObject);
+                    break;
+            }
+        }
+    }
+
+    public struct MyImpulseData
+    {
+        public MyCubeGrid MyGrid;
+        public Vector3D Direction;
+        public Vector3D Position;
+
+        public MyImpulseData(MyCubeGrid myGrid, Vector3D direction, Vector3D position)
+        {
+            MyGrid = myGrid;
+            Direction = direction;
+            Position = position;
+        }
+    }
+
+    public struct MyAddForceData
+    {
+        public MyCubeGrid MyGrid;
+        public Vector3D Force;
+        public Vector3D? Position;
+        public Vector3D? Torque;
+        public float? MaxSpeed;
+        public bool Immediate;
+
+        public MyAddForceData(MyCubeGrid myGrid, Vector3D force, Vector3D? position, Vector3D? torque, float? maxSpeed, bool immediate)
+        {
+            MyGrid = myGrid;
+            Force = force;
+            Position = position;
+            Torque = torque;
+            MaxSpeed = maxSpeed;
+            Immediate = immediate;
+        }
+    }
+
+    public struct CubeAccel
     {
         public readonly IMySlimBlock Block;
+        public readonly MyCubeGrid Grid;
         public readonly Vector3I BlockPos;
         public readonly bool CubeExists; 
-        public BlockAccel(IMySlimBlock block)
+        public CubeAccel(IMySlimBlock block)
         {
-            Block = block;
-            BlockPos = block.Position;
-            CubeExists = block.FatBlock != null;
+            if (block == null)
+            {
+                Block = null;
+                Grid = null;
+                BlockPos = Vector3I.Zero;
+                CubeExists = false;
+            }
+            else
+            {
+                Block = block;
+                Grid = block.CubeGrid as MyCubeGrid;
+                BlockPos = block.Position;
+                CubeExists = block.FatBlock != null;
+            }
         }
     }
 

@@ -8,7 +8,6 @@
     using Sandbox.ModAPI;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
-    using VRage.ModAPI;
     using VRageMath;
 
     public partial class DefenseShields
@@ -31,7 +30,7 @@
             {
                 (webent as IMyCubeGrid)?.GetBlocks(null, block =>
                 {
-                    entInfo.CacheBlockList.Add(new BlockAccel(block));
+                    entInfo.CacheBlockList.Add(new CubeAccel(block));
                     return false;
                 });
             }
@@ -84,12 +83,12 @@
                         var meteor = webent as IMyMeteor;
                         if (meteor != null)
                         {
-                            if (CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv)) MeteorDmg.Enqueue(meteor);
+                            if (CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv)) Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.MeteorDmg, this, meteor));
                         }
                         else
                         {
                             var predictedHit = CustomCollision.FutureIntersect(this, webent, DetectionMatrix, DetectMatrixOutsideInv);
-                            if (predictedHit != null) MissileDmg.Enqueue(webent);
+                            if (predictedHit != null) Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.MissileDmg, this, webent));
                         }
                         return;
                     }
@@ -115,7 +114,7 @@
                     var sASpeedLen = sASpeed.LengthSquared();
                     var sSpeedLen = sLSpeedLen > sASpeedLen ? sLSpeedLen : sASpeedLen;
                     var forceData = new MyAddForceData { MyGrid = grid, Force = -(grid.PositionComp.WorldAABB.Center - sPhysics.CenterOfMassWorld) * -sMass, MaxSpeed = sSpeedLen + 3 };
-                    if (!bPhysics.IsStatic) ForceData.Enqueue(forceData);
+                    if (!bPhysics.IsStatic) Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.ForceData, this, forceData));
                     return true;
                 }
             }
@@ -162,8 +161,8 @@
             WebEnts.TryGetValue(ent, out entInfo);
             if (entInfo == null) return;
 
-            if (_isServer) CustomCollision.SmallIntersect(entInfo, FewDmgBlocks, DestroyedBlocks, ForceData, ImpulseData, grid, DetectMatrixOutside, DetectMatrixOutsideInv, Session.Enforced.DisableBlockDamage == 0);
-            else CustomCollision.ClientSmallIntersect(entInfo, grid, DetectMatrixOutside, DetectMatrixOutsideInv, Eject);
+            if (_isServer) CustomCollision.SmallIntersect(this, entInfo, grid, DetectMatrixOutside, DetectMatrixOutsideInv, Session.Enforced.DisableBlockDamage == 0);
+            else CustomCollision.ClientSmallIntersect(this, entInfo, grid, DetectMatrixOutside, DetectMatrixOutsideInv);
             var contactpoint = entInfo.ContactPoint;
             entInfo.ContactPoint = Vector3D.NegativeInfinity;
             if (contactpoint != Vector3D.NegativeInfinity)
@@ -236,8 +235,8 @@
                 var ejectorAccel = numOfPointsInside > 10 ? numOfPointsInside : 10;
                 var impulseData = new MyImpulseData { MyGrid = grid, Direction = (resultVelocity - bVel) * bMass, Position = bPhysics.CenterOfMassWorld };
                 var forceData = new MyAddForceData { MyGrid = grid, Force = (bPhysics.CenterOfMassWorld - collisionAvg) * bMass * ejectorAccel, MaxSpeed = MathHelper.Clamp(bVelLen, 1f, 50f) };
-                ImpulseData.Enqueue(impulseData);
-                ForceData.Enqueue(forceData);
+                Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.ImpulseData, this, impulseData));
+                Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.ForceData, this, forceData));
             }
             if (!_isServer || numOfPointsInside <= 0) return;
 
@@ -311,7 +310,7 @@
             var npcname = character.ToString();
             if (npcname.Equals(SpaceWolf))
             {
-                if (_isServer) CharacterDmg.Enqueue(character);
+                if (_isServer) Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.CharacterDmg, this, character));
                 return;
             }
 
@@ -336,7 +335,7 @@
             var hydrogenId = MyCharacterOxygenComponent.HydrogenId;
             var playerGasLevel = character.GetSuitGasFillLevel(hydrogenId);
             if (!(playerGasLevel > 0.01f)) return;
-            CharacterDmg.Enqueue(character);
+            Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.CharacterDmg, this, character));
         }
 
         private void BlockIntersect(MyCubeGrid breaching, MyOrientedBoundingBoxD bOriBBoxD, EntIntersectInfo entInfo)
@@ -388,7 +387,7 @@
                             if (result > rc || accel.CubeExists && result > rc + scaledBlockSize) continue;
                             if (damageBlocks && accel.Block.IsDestroyed)
                             {
-                                DestroyedBlocks.Enqueue(accel);
+                                Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.CollidingBlocks, this, accel));
                                 continue;
                             }
                             if (accel.Block.CubeGrid != breaching)
@@ -410,14 +409,10 @@
                         hits++;
                         if (!_isServer) continue;
 
-                        if (!damageBlocks)
-                        {
-                            if (hits > blockDmgNum) break;
-                        }
-                        else if (CollidingBlocks.Count > blockDmgNum) break;
+                        if (hits > blockDmgNum) break;
 
                         rawDamage += MathHelper.Clamp(block.Integrity, 0, 350);
-                        if (damageBlocks) CollidingBlocks.Enqueue(block);
+                        if (damageBlocks) Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.CollidingBlocks, this, accel));
                     }
                     entInfo.MarkForClose = stale;
 
@@ -442,9 +437,9 @@
                             var impulseData1 = new MyImpulseData { MyGrid = breaching, Direction = (resultVelocity - bLSpeed) * bMass, Position = bPhysics.CenterOfMassWorld };
                             var impulseData2 = new MyImpulseData { MyGrid = breaching, Direction = surfaceMulti * (surfaceMass * 0.025) * -Vector3D.Dot(bLSpeed, surfaceNormal) * surfaceNormal, Position = collisionAvg };
                             var forceData = new MyAddForceData { MyGrid = breaching, Force = (bPhysics.CenterOfMassWorld - collisionAvg) * (bMass * bSpeedLen), MaxSpeed = MathHelper.Clamp(bSpeedLen, 1f, bSpeedLen * 0.5f) };
-                            ImpulseData.Enqueue(impulseData1);
-                            ImpulseData.Enqueue(impulseData2);
-                            ForceData.Enqueue(forceData);
+                            Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.ImpulseData, this, impulseData1));
+                            Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.ImpulseData, this, impulseData2));
+                            Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.ForceData, this, forceData));
                         }
                         else
                         {
@@ -457,7 +452,7 @@
                                 var collisionCorrection = Vector3D.Lerp(com, collisionAvg, relationClamp);
 
                                 var bImpulseData = new MyImpulseData { MyGrid = breaching, Direction = (resultVelocity - bPhysics.LinearVelocity) * bMass, Position = collisionCorrection };
-                                ImpulseData.Enqueue(bImpulseData);
+                                Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.ImpulseData, this, bImpulseData));
                             }
 
                             if (!sPhysics.IsStatic)
@@ -468,7 +463,7 @@
                                 //Log.Line($"shield: relationClamp:{relationClamp} - bMass:{bMass} - sMass:{sMass} - s/m:{sMass / bMass}");
                                 var collisionCorrection = Vector3D.Lerp(com, collisionAvg, relationClamp);
                                 var sImpulseData = new MyImpulseData { MyGrid = sGrid, Direction = (resultVelocity - sPhysics.LinearVelocity) * sMass, Position = collisionCorrection };
-                                ImpulseData.Enqueue(sImpulseData);
+                                Session.Instance.EntSyncEvents.Enqueue(new EntitySyncEvent(EntEvents.ImpulseData, this, sImpulseData));
                             }
                             /*
                             if (!sPhysics.IsStatic)
@@ -544,56 +539,6 @@
             }
             catch (Exception ex) { Log.Line($"Exception in BlockIntersect: {ex}"); }
         }
-
-
         #endregion
-        private float ComputeAmmoDamage(IMyEntity ammoEnt)
-        {
-            AmmoInfo ammoInfo;
-            Session.Instance.AmmoCollection.TryGetValue(ammoEnt.Model.AssetName, out ammoInfo);
-            var damage = 10f;
-            if (ammoInfo == null)
-            {
-                if (Session.Enforced.Debug == 3) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - No Missile Ammo Match Found for {((MyEntity)ammoEnt).DebugName}! Let wepaon mod author know their ammo definition has improper model path");
-                return damage;
-            }
-            var dmgMulti = UtilsStatic.GetDmgMulti(ammoInfo.BackKickForce);
-            if (dmgMulti > 0)
-            {
-                if (ammoInfo.Explosive) damage = (ammoInfo.Damage * (ammoInfo.Radius * 0.5f)) * 7.5f * dmgMulti;
-                else damage = ammoInfo.Mass * ammoInfo.Speed * dmgMulti;
-                return damage;
-            }
-            if (dmgMulti.Equals(-1f))
-            {
-                damage = -damage;
-                return damage;
-            }
-            if (ammoInfo.BackKickForce < 0 && dmgMulti.Equals(0)) damage = float.NegativeInfinity; 
-            else if (ammoInfo.Explosive) damage = ammoInfo.Damage * (ammoInfo.Radius * 0.5f) * 7.5f;
-            else damage = ammoInfo.Mass * ammoInfo.Speed;
-
-            if (ammoInfo.Mass < 0 && ammoInfo.Radius <= 0) damage = -damage;
-            return damage;
-        }
-
-        private float ComputeAmmoDamage2(IMyEntity ammoEnt)
-        {
-            AmmoInfo ammoInfo;
-            Session.Instance.AmmoCollection.TryGetValue(ammoEnt.Model.AssetName, out ammoInfo);
-            var damage = 10f;
-            if (ammoInfo == null)
-            {
-                if (Session.Enforced.Debug == 3) Log.Line($"ShieldId:{Shield.EntityId.ToString()} - No Missile Ammo Match Found for {((MyEntity)ammoEnt).DebugName}! Let wepaon mod author know their ammo definition has improper model path");
-                return damage;
-            }
-            /*
-            if (ammoInfo.KineticWeapon)
-                damage = ammoInfo.shieldDamage * DsState.State.ModulateEnergy; //kinetic weapon
-            else
-                damage = ammoInfo.shieldDamage * DsState.State.ModulateKinetic; //energy weapon
-            */
-            return damage;
-        }
     }
 }

@@ -11,7 +11,6 @@
     using VRage.Game;
     using VRage.Game.Components;
     using VRage.Game.Entity;
-    using VRage.Game.ModAPI;
     using VRage.ModAPI;
     using VRage.Collections;
     using VRageMath;
@@ -38,23 +37,13 @@
         internal readonly HashSet<MyEntity> FriendlyMissileCache = new HashSet<MyEntity>();
 
         internal readonly Dictionary<MyEntity, ProtectCache> ProtectedEntCache = new Dictionary<MyEntity, ProtectCache>();
-        internal readonly Dictionary<MyCubeGrid, BlockSets> BlockSets = new Dictionary<MyCubeGrid, BlockSets>();
+        internal readonly MyConcurrentDictionary<MyCubeGrid, BlockSets> BlockSets = new MyConcurrentDictionary<MyCubeGrid, BlockSets>();
         internal readonly CachingDictionary<MyCubeBlock, uint> DirtyCubeBlocks = new CachingDictionary<MyCubeBlock, uint>();
 
         internal readonly ConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<MyEntity, EntIntersectInfo>();
         internal readonly ConcurrentDictionary<MyEntity, MoverInfo> EntsByMe = new ConcurrentDictionary<MyEntity, MoverInfo>();
         internal readonly ConcurrentDictionary<MyVoxelBase, int> VoxelsToIntersect = new ConcurrentDictionary<MyVoxelBase, int>();
 
-        internal readonly ConcurrentQueue<MyCubeGrid> Eject = new ConcurrentQueue<MyCubeGrid>();
-        internal readonly ConcurrentQueue<IMySlimBlock> CollidingBlocks = new ConcurrentQueue<IMySlimBlock>();
-        internal readonly ConcurrentQueue<IMySlimBlock> FewDmgBlocks = new ConcurrentQueue<IMySlimBlock>();
-        internal readonly ConcurrentQueue<MyEntity> MissileDmg = new ConcurrentQueue<MyEntity>();
-        internal readonly ConcurrentQueue<IMyMeteor> MeteorDmg = new ConcurrentQueue<IMyMeteor>();
-        internal readonly ConcurrentQueue<BlockAccel> DestroyedBlocks = new ConcurrentQueue<BlockAccel>();
-        internal readonly ConcurrentQueue<IMyCharacter> CharacterDmg = new ConcurrentQueue<IMyCharacter>();
-        internal readonly ConcurrentQueue<MyVoxelBase> VoxelDmg = new ConcurrentQueue<MyVoxelBase>();
-        internal readonly ConcurrentQueue<MyImpulseData> ImpulseData = new ConcurrentQueue<MyImpulseData>();
-        internal readonly ConcurrentQueue<MyAddForceData> ForceData = new ConcurrentQueue<MyAddForceData>();
         internal readonly ConcurrentQueue<SubGridComputedInfo> AddSubGridInfo = new ConcurrentQueue<SubGridComputedInfo>();
 
         internal volatile int LogicSlot;
@@ -202,7 +191,6 @@
         private bool _clientNotReady;
         private bool _clientLowered;
         private bool _clientOn;
-        private bool _syncEnts;
         private bool _viewInShield;
         private bool _powerFail;
         private bool _halfExtentsChanged;
@@ -255,7 +243,8 @@
             Unknown
         }
 
-        public int BulletCoolDown { get; internal set; } = -1;
+        public int KineticCoolDown { get; internal set; } = -1;
+        public int EnergyCoolDown { get; internal set; } = -1;
         public int WebCoolDown { get; internal set; } = -1;
         public int HitCoolDown { get; private set; } = -11;
 

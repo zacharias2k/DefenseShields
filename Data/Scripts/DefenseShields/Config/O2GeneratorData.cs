@@ -86,7 +86,8 @@
             if (createStorage && O2Generator.Storage == null) O2Generator.Storage = new MyModStorageComponent();
             else if (O2Generator.Storage == null) return;
 
-            O2Generator.Storage[Session.Instance.O2GeneratorSettingsGuid] = MyAPIGateway.Utilities.SerializeToXML(Settings);
+            var binary = MyAPIGateway.Utilities.SerializeToBinary(Settings);
+            O2Generator.Storage[Session.Instance.O2GeneratorSettingsGuid] = Convert.ToBase64String(binary);
         }
 
         public bool LoadSettings()
@@ -99,22 +100,16 @@
             if (O2Generator.Storage.TryGetValue(Session.Instance.O2GeneratorSettingsGuid, out rawData))
             {
                 O2GeneratorSettingsValues loadedSettings = null;
-
-                try
-                {
-                    loadedSettings = MyAPIGateway.Utilities.SerializeFromXML<O2GeneratorSettingsValues>(rawData);
-                }
-                catch (Exception e)
-                {
-                    loadedSettings = null;
-                    Log.Line($"O2GeneratorId:{O2Generator.EntityId.ToString()} - Error loading settings!\n{e}");
-                }
+                var base64 = Convert.FromBase64String(rawData);
+                loadedSettings = MyAPIGateway.Utilities.SerializeFromBinary<O2GeneratorSettingsValues>(base64);
 
                 if (loadedSettings != null)
                 {
                     Settings = loadedSettings;
                     loadedSomething = true;
                 }
+
+                if (Session.Enforced.Debug == 3) Log.Line($"Loaded - O2GeneratorId [{O2Generator.EntityId}]:\n{Settings.ToString()}");
             }
 
             return loadedSomething;
