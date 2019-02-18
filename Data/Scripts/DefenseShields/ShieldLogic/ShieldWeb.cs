@@ -118,11 +118,10 @@
                         var last = entInfo.LastTick;
                         var refresh = entInfo.RefreshTick;
                         var refreshTick = tick - last > 180 || (tick - last == 180 && tick - refresh >= 3600) || (tick - last == 1 && tick - refresh >= 60);
-                        refreshInfo = refreshTick || entInfo.RefreshNow;
-                        if (refreshInfo)
+                        refreshInfo = refreshTick;
+                        if (refreshInfo || entInfo.RefreshNow)
                         {
                             entInfo.RefreshTick = tick;
-                            entInfo.RefreshNow = false;
                             entInfo.Relation = EntType(ent);
                         }
                         relation = entInfo.Relation;
@@ -192,8 +191,7 @@
                         {
                             if ((relation == Ent.EnemyGrid || relation == Ent.NobodyGrid) && entInfo.CacheBlockList != null && entInfo.CacheBlockList.Count != (ent as MyCubeGrid).BlocksCount)
                             {
-                                entInfo.BlockUpdateTick = tick;
-                                entInfo.CacheBlockList.Clear();
+                                entInfo.RefreshNow = true;
                             }
                         }
                     }
@@ -213,7 +211,7 @@
                         }
                         entChanged = true;
                         _enablePhysics = true;
-                        WebEnts.TryAdd(ent, new EntIntersectInfo(0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, tick, tick, tick, tick, relation));
+                        WebEnts.TryAdd(ent, new EntIntersectInfo(0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, tick, tick, tick, relation));
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in WebEntities entInfo: {ex}"); }
@@ -252,7 +250,7 @@
         {
             if (ent is IMyFloatingObject)
             {
-                if (CustomCollision.PointInShield(ent.PositionComp.WorldAABB.Center, DetectMatrixOutsideInv)) return Ent.Ignore;
+                if (CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, DetectMatrixOutsideInv, _obbCorners)) return Ent.Ignore;
                 return Ent.Floater;
             }
 

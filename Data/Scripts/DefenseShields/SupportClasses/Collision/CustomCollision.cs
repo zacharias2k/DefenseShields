@@ -25,6 +25,15 @@
             return futureCenter; 
         }
 
+        public static Vector3D PastCenter(DefenseShields ds, MyEntity ent, MatrixD detectMatrix, MatrixD detectMatrixInv, int steps)
+        {
+            var entVel = -ent.Physics.LinearVelocity;
+            var entCenter = ent.PositionComp.WorldVolume.Center;
+            var velStepSize = entVel * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * steps;
+            var pastCenter = entCenter + velStepSize;
+            return pastCenter;
+        }
+
         /*
         public static Vector3D? MissileIntersect(DefenseShields ds, MyEntity missile, MatrixD detectMatrix, MatrixD detectMatrixInv)
         {

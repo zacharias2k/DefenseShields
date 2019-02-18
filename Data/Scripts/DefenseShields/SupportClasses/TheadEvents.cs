@@ -1,13 +1,11 @@
-﻿using System.Collections.Generic;
-using VRage.Game;
-
-namespace DefenseShields.Support
+﻿namespace DefenseShields.Support
 {
     using System;
     using Sandbox.Game;
     using Sandbox.Game.Entities;
     using Sandbox.Game.Entities.Character.Components;
     using Sandbox.ModAPI;
+    using System.Collections.Generic;
     using VRage.Game.Components;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
@@ -77,7 +75,6 @@ namespace DefenseShields.Support
         public void Execute()
         {
             if (Entity == null || Entity.MarkedForClose) return;
-
             var floater = (IMyFloatingObject)Entity;
             var entVel = Entity.Physics.LinearVelocity;
             var movingVel = entVel != Vector3.Zero ? entVel : -Shield.MyGrid.Physics.LinearVelocity;
@@ -116,8 +113,8 @@ namespace DefenseShields.Support
 
         public void Execute()
         {
-            if (ForceData.MyGrid == null || ForceData.MyGrid.MarkedForClose) return;
-            ForceData.MyGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, ForceData.Force, null, Vector3D.Zero, ForceData.MaxSpeed, ForceData.Immediate);
+            if (ForceData.Entity == null || ForceData.Entity.MarkedForClose) return;
+            ForceData.Entity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, ForceData.Force, null, Vector3D.Zero, ForceData.MaxSpeed, ForceData.Immediate);
         }
     }
 
@@ -134,8 +131,8 @@ namespace DefenseShields.Support
 
         public void Execute()
         {
-            if (ImpulseData.MyGrid == null || ImpulseData.MyGrid.MarkedForClose) return;
-            ImpulseData.MyGrid.Physics.ApplyImpulse(ImpulseData.Direction, ImpulseData.Position);
+            if (ImpulseData.Entity == null || ImpulseData.Entity.MarkedForClose) return;
+            ImpulseData.Entity.Physics.ApplyImpulse(ImpulseData.Direction, ImpulseData.Position);
         }
     }
 
@@ -169,8 +166,8 @@ namespace DefenseShields.Support
                     if (Shield.WebEnts.TryGetValue(accel.Grid, out entInfo)) entInfo.RefreshNow = true;
                     return;
                 }
-                var damageMulti = 350;
-                if (Shield.ShieldMode == DefenseShields.ShieldType.Station && Shield.DsState.State.Enhancer) damageMulti = 10000;
+                var damageMulti = 9999999999;
+                if (Shield.ShieldMode == DefenseShields.ShieldType.Station && Shield.DsState.State.Enhancer) damageMulti = 9999999999;
 
                 accel.Block.DoDamage(damageMulti, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
                 if (accel.Block.IsDestroyed)

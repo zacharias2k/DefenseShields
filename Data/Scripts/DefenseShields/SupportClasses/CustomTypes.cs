@@ -301,14 +301,14 @@ namespace DefenseShields.Support
         public Vector3D EmpDetonation;
         public uint LastTick;
         public uint RefreshTick;
-        public uint BlockUpdateTick;
         public readonly uint FirstTick;
         public DefenseShields.Ent Relation;
         public List<CubeAccel> CacheBlockList = new List<CubeAccel>();
         public bool RefreshNow;
         public bool IsDirty;
+        public Vector3D FirstPos;
 
-        public EntIntersectInfo(float damage, double empSize, bool touched, BoundingBox box, Vector3D contactPoint, Vector3D empDetonation, uint firstTick, uint lastTick, uint refreshTick, uint blockUpdateTick, DefenseShields.Ent relation)
+        public EntIntersectInfo(float damage, double empSize, bool touched, BoundingBox box, Vector3D contactPoint, Vector3D empDetonation, uint firstTick, uint lastTick, uint refreshTick, DefenseShields.Ent relation)
         {
             Damage = damage;
             EmpSize = empSize;
@@ -319,20 +319,20 @@ namespace DefenseShields.Support
             FirstTick = firstTick;
             LastTick = lastTick;
             RefreshTick = refreshTick;
-            BlockUpdateTick = blockUpdateTick;
             Relation = relation;
+            RefreshNow = true;
         }
     }
 
     public struct MyImpulseData
     {
-        public MyCubeGrid MyGrid;
+        public MyEntity Entity;
         public Vector3D Direction;
         public Vector3D Position;
 
-        public MyImpulseData(MyCubeGrid myGrid, Vector3D direction, Vector3D position)
+        public MyImpulseData(MyEntity entity, Vector3D direction, Vector3D position)
         {
-            MyGrid = myGrid;
+            Entity = entity;
             Direction = direction;
             Position = position;
         }
@@ -340,16 +340,16 @@ namespace DefenseShields.Support
 
     public struct MyForceData
     {
-        public MyCubeGrid MyGrid;
+        public MyEntity Entity;
         public Vector3D Force;
         public Vector3D? Position;
         public Vector3D? Torque;
         public float? MaxSpeed;
         public bool Immediate;
 
-        public MyForceData(MyCubeGrid myGrid, Vector3D force, Vector3D? position, Vector3D? torque, float? maxSpeed, bool immediate)
+        public MyForceData(MyEntity entity, Vector3D force, Vector3D? position, Vector3D? torque, float? maxSpeed, bool immediate)
         {
-            MyGrid = myGrid;
+            Entity = entity;
             Force = force;
             Position = position;
             Torque = torque;
@@ -379,41 +379,12 @@ namespace DefenseShields.Support
         public int RefreshSlot;
         public uint CreationTick;
         public DefenseShields IntegrityShield;
-        public DefenseShields BlockingShield = null;
-        public DefenseShields NotBlockingShield = null;
-        public long NotBlockingAttackerId = -1;
-        public MyStringHash NotBlockingMainDamageType;
-        public IMySlimBlock OriginBlock = null;
         public long IgnoreAttackerId = -1;
-        public Vector3D OriginHit;
 
         public void Init(int refreshSlot, uint creationTick)
         {
             RefreshSlot = refreshSlot;
             CreationTick = creationTick;
-        }
-
-        public void CleanUp()
-        {
-            Shields.Clear();
-            RefreshSlot = 0;
-            CreationTick = 0;
-            IntegrityShield = null;
-            NotBlockingShield = null;
-            NotBlockingAttackerId = -1;
-            IgnoreAttackerId = -1;
-            OriginBlock = null;
-            OriginHit = Vector3D.Zero;
-        }
-
-        public void ProtectDamageReset()
-        {
-            NotBlockingShield = null;
-            NotBlockingAttackerId = -1;
-            IgnoreAttackerId = -1;
-            OriginBlock = null;
-            OriginHit = Vector3D.Zero;
-            NotBlockingMainDamageType = MyStringHash.NullOrEmpty;
         }
     }
 }
