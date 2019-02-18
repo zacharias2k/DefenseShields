@@ -24,7 +24,7 @@
                 _containerInited = true;
             }
 
-            if (Entity.InScene) this.OnAddedToScene();
+            if (Entity.InScene) OnAddedToScene();
         }
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)

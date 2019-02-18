@@ -1,17 +1,14 @@
 ﻿namespace DefenseShields
 {
-    using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using Support;
-    using ParallelTasks;
     using Sandbox.Game.Entities;
     using Sandbox.Game.EntityComponents;
     using Sandbox.ModAPI;
     using VRage.Game;
     using VRage.Game.Components;
     using VRage.Game.Entity;
-    using VRage.ModAPI;
     using VRage.Collections;
     using VRageMath;
 
@@ -19,7 +16,6 @@
     {
         #region Setup
         internal readonly MyDefinitionId GId = MyResourceDistributorComponent.ElectricityId;
-        internal readonly Random Rnd = new Random(0);
 
         internal readonly object SubLock = new object();
         internal readonly object SubUpdateLock = new object();
@@ -30,16 +26,16 @@
         internal readonly List<ShieldHit> ShieldHits = new List<ShieldHit>();
         internal readonly Queue<ShieldHitValues> ProtoShieldHits = new Queue<ShieldHitValues>();
 
-        internal readonly HashSet<IMyEntity> AuthenticatedCache = new HashSet<IMyEntity>();
+        internal readonly HashSet<MyEntity> AuthenticatedCache = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> IgnoreCache = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> EnemyShields = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> Missiles = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> FriendlyMissileCache = new HashSet<MyEntity>();
 
         internal readonly Dictionary<MyEntity, ProtectCache> ProtectedEntCache = new Dictionary<MyEntity, ProtectCache>();
-        internal readonly MyConcurrentDictionary<MyCubeGrid, BlockSets> BlockSets = new MyConcurrentDictionary<MyCubeGrid, BlockSets>();
         internal readonly CachingDictionary<MyCubeBlock, uint> DirtyCubeBlocks = new CachingDictionary<MyCubeBlock, uint>();
 
+        internal readonly ConcurrentDictionary<MyCubeGrid, BlockSets> BlockSets = new ConcurrentDictionary<MyCubeGrid, BlockSets>();
         internal readonly ConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<MyEntity, EntIntersectInfo>();
         internal readonly ConcurrentDictionary<MyEntity, MoverInfo> EntsByMe = new ConcurrentDictionary<MyEntity, MoverInfo>();
         internal readonly ConcurrentDictionary<MyVoxelBase, int> VoxelsToIntersect = new ConcurrentDictionary<MyVoxelBase, int>();
@@ -215,24 +211,23 @@
         private MyEntity _shellActive;
         private MyParticleEffect _effect = new MyParticleEffect();
 
+        private DSUtils Dsutil1 { get; set; } = new DSUtils();
+
         #endregion
 
         public enum Ent
         {
-            Unknown,
             Ignore,
             Protected,
             Friendly,
             EnemyPlayer,
-            SmallNobodyGrid,
-            LargeNobodyGrid,
-            SmallEnemyGrid,
-            LargeEnemyGrid,
+            NobodyGrid,
+            EnemyGrid,
             Shielded,
             Other,
             VoxelBase,
-            Weapon,
-            Authenticated
+            Authenticated,
+            Floater
         }
 
         internal enum ShieldType
@@ -253,7 +248,7 @@
         internal MyCubeGrid MyGrid { get; set; }
         internal MyCubeBlock MyCube { get; set; }
         internal MyEntity ShieldEnt { get; set; }
-        internal MyResourceDistributorComponent MyGridDistributor { get; set; }
+        internal MyResourceDistributorComponent MyResourceDist { get; set; }
 
         internal ControllerSettings DsSet { get; set; }
         internal ControllerState DsState { get; set; }
@@ -304,12 +299,8 @@
 
         internal MatrixD OffsetEmitterWMatrix { get; set; }
 
-        internal Task FuncTask { get; set; }
-
         internal float ImpactSize { get; set; } = 9f;
         internal float Absorb { get; set; }
-
-        internal DSUtils Dsutil1 { get; set; } = new DSUtils();
 
         internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         internal Vector3D ShieldSize { get; set; }

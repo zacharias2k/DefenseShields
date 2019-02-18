@@ -144,7 +144,7 @@ namespace DefenseShields
                           $"Web:{Asleep} - Tick/LWoke:{_tick}/{LastWokenTick}\n" +
                           $"Mo:{DsState.State.Mode} - Su:{DsState.State.Suspended} - Wa:{DsState.State.Waking}\n" +
                           $"Np:{DsState.State.NoPower} - Lo:{DsState.State.Lowered} - Sl:{DsState.State.Sleeping}\n" +
-                          $"PSys:{MyGridDistributor?.SourcesEnabled} - PNull:{MyGridDistributor == null}\n" +
+                          $"PSys:{MyResourceDist?.SourcesEnabled} - PNull:{MyResourceDist == null}\n" +
                           $"MaxPower:{GridMaxPower} - AvailPower:{GridAvailablePower}\n" +
                           $"Access:{DsState.State.ControllerGridAccess} - EmitterWorking:{DsState.State.EmitterWorking}\n" +
                           $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)}\n" +

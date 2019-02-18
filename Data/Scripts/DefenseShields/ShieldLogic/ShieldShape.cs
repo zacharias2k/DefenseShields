@@ -33,12 +33,15 @@
         public void MobileUpdate()
         {
             var checkForNewCenter = MyGrid.PositionComp.WorldVolume.Center;
-            if (!checkForNewCenter.Equals(MyGridCenter))
+            if (!checkForNewCenter.Equals(MyGridCenter, 1e-3))
             {
                 ShieldComp.GridIsMoving = true;
                 MyGridCenter = checkForNewCenter;
             }
-            else ShieldComp.GridIsMoving = false;
+            else
+            {
+                ShieldComp.GridIsMoving = false;
+            }
 
             if (ShieldComp.GridIsMoving || _comingOnline)
             {

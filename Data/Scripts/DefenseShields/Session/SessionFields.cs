@@ -62,7 +62,7 @@
 
         internal readonly ConcurrentQueue<DefenseShields> WebWrapper = new ConcurrentQueue<DefenseShields>();
 
-        internal readonly ConcurrentQueue<EntitySyncEvent> EntSyncEvents = new ConcurrentQueue<EntitySyncEvent>();
+        internal readonly ConcurrentQueue<IThreadEvent> ThreadEvents = new ConcurrentQueue<IThreadEvent>();
 
         internal readonly Queue<WarHeadBlast> EmpStore = new Queue<WarHeadBlast>();
 

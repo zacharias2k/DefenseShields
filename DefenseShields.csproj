@@ -199,7 +199,6 @@
     <Compile Include="Data\Scripts\DefenseShields\Config\SerializedValues.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\O2Ui.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\PsUi.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Session\EntitySync.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\PlanetShield.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionControls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionDamage.cs" />
@@ -255,6 +254,7 @@
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\CSupport\ResourcePool.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Debug\DebugDraw.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Logging.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\TheadEvents.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Utils.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Render.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldTimings.cs" />

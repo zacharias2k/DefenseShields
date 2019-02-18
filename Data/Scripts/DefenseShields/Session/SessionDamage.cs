@@ -205,7 +205,7 @@
                 }
                 else if (target is IMyCharacter) CharacterProtection(target, info);
             }
-            catch (Exception ex) { Log.Line($"Exception in SessionDamageHandler: {ex}"); }
+            catch (Exception ex) { Log.Line($"Exception in SessionDamageHandler {_previousEnt == null}: {ex}"); }
         }
 
         private void CharacterProtection(object target, MyDamageInformation info)
@@ -263,8 +263,8 @@
                 if (!tmpPreviousEnt.MarkedForClose)
                 {
                     _previousEnt = tmpPreviousEnt;
-                    ent = _previousEnt;
                     _previousEntId = attackerId;
+                    ent = tmpPreviousEnt;
                     return;
                 }
                 _backingDict.Remove(attackerId);
@@ -277,11 +277,10 @@
 
                 if (_emptySpot++ >= _nodes.Length) _emptySpot = 0;
 
-                ent = _previousEnt;
                 _previousEntId = attackerId;
+                ent = _previousEnt;
                 return;
             }
-            _previousEnt = null;
             ent = null;
             _previousEntId = -1;
         }

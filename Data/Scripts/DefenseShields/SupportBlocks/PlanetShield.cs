@@ -57,7 +57,7 @@
 
             public IMyUpgradeModule PlanetShield => (IMyUpgradeModule)Entity;
             internal MyCubeGrid MyGrid;
-            internal MyResourceDistributorComponent MyGridDistributor;
+            internal MyResourceDistributorComponent MyResourceDist;
             internal MyEntity ShieldEnt;
             private MyEntity _shellPassive;
             private MyEntity _shellActive;

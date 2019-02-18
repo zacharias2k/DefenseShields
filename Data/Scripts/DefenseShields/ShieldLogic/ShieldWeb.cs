@@ -80,15 +80,17 @@
             {
                 var ent = PruneList[i];
                 var voxel = ent as MyVoxelBase;
-                if (ent == null || (voxel == null && (ent.Physics == null || ent.DefinitionId == null)) || (voxel != null && (!iMoving || !GridIsMobile || disableVoxels || voxel != voxel.RootVoxel))) continue;
+                var entPhysics = ent.Physics;
+                if (ent == null || (voxel == null && (entPhysics == null || ent.DefinitionId == null)) || (voxel != null && (!iMoving || !GridIsMobile || disableVoxels || voxel != voxel.RootVoxel))) continue;
 
                 if (reInforce && !ShieldComp.SubGrids.Contains(ent as MyCubeGrid)) continue;
 
                 bool quickReject;
-                if (_isServer) quickReject = ent is IMyFloatingObject || ent is IMyEngineerToolBase || IgnoreCache.Contains(ent) || FriendlyMissileCache.Contains(ent) || AuthenticatedCache.Contains(ent);
+                if (_isServer) quickReject = ent is IMyEngineerToolBase || IgnoreCache.Contains(ent) || FriendlyMissileCache.Contains(ent) || AuthenticatedCache.Contains(ent);
                 else quickReject = (!(ent is MyCubeGrid) && voxel == null && !(ent is IMyCharacter)) || IgnoreCache.Contains(ent) || AuthenticatedCache.Contains(ent);
-                if (quickReject || !WebSphere.Intersects(ent.PositionComp.WorldVolume)) continue;
 
+                var floater = ent as IMyFloatingObject;
+                if (quickReject || floater != null && (!iMoving && Vector3.IsZero(entPhysics.LinearVelocity, 1e-2f)) || !WebSphere.Intersects(ent.PositionComp.WorldVolume)) continue;
                 if (voxel != null)
                 {
                     if (VoxelsToIntersect.ContainsKey(voxel)) VoxelsToIntersect[voxel]++;
@@ -98,6 +100,7 @@
                     _enablePhysics = true;
                     continue;
                 }
+
                 Ent relation;
 
                 ProtectCache protectedEnt;
@@ -110,12 +113,16 @@
                     WebEnts.TryGetValue(ent, out entInfo);
                     if (entInfo != null)
                     {
+                        if (entInfo.IsDirty) continue;
+                        entInfo.IsDirty = true;
                         var last = entInfo.LastTick;
                         var refresh = entInfo.RefreshTick;
-                        refreshInfo = tick - last > 180 || (tick - last == 180 && tick - refresh >= 3600) || (tick - last == 1 && tick - refresh >= 60);
+                        var refreshTick = tick - last > 180 || (tick - last == 180 && tick - refresh >= 3600) || (tick - last == 1 && tick - refresh >= 60);
+                        refreshInfo = refreshTick || entInfo.RefreshNow;
                         if (refreshInfo)
                         {
                             entInfo.RefreshTick = tick;
+                            entInfo.RefreshNow = false;
                             entInfo.Relation = EntType(ent);
                         }
                         relation = entInfo.Relation;
@@ -127,7 +134,8 @@
                 {
                     var last = protectedEnt.LastTick;
                     var refresh = protectedEnt.RefreshTick;
-                    refreshInfo = tick - last > 180 || (tick - last == 180 && tick - refresh >= 3600) || (tick - last == 1 && tick - refresh >= 60);
+                    var refreshTick = tick - last > 180 || (tick - last == 180 && tick - refresh >= 3600) || (tick - last == 1 && tick - refresh >= 60);
+                    refreshInfo = refreshTick;
                     if (refreshInfo)
                     {
                         protectedEnt.RefreshTick = tick;
@@ -170,8 +178,8 @@
                 {
                     if (entInfo != null)
                     {
-                        var interestingEnts = relation == Ent.LargeEnemyGrid || relation == Ent.LargeNobodyGrid || relation == Ent.SmallEnemyGrid || relation == Ent.SmallNobodyGrid || relation == Ent.Shielded;
-                        if (ent.Physics != null && ent.Physics.IsMoving) entChanged = true;
+                        var interestingEnts = relation == Ent.Floater || relation == Ent.EnemyGrid || relation == Ent.NobodyGrid || relation == Ent.Shielded;
+                        if (entPhysics != null && entPhysics.IsMoving) entChanged = true;
                         else if (entInfo.Touched || (refreshInfo && interestingEnts && !ent.PositionComp.LocalAABB.Equals(entInfo.Box)))
                         {
                             entInfo.RefreshTick = tick;
@@ -182,7 +190,7 @@
                         _enablePhysics = true;
                         if (refreshInfo)
                         {
-                            if ((relation == Ent.LargeEnemyGrid || relation == Ent.LargeNobodyGrid) && entInfo.CacheBlockList != null && entInfo.CacheBlockList.Count != (ent as MyCubeGrid).BlocksCount)
+                            if ((relation == Ent.EnemyGrid || relation == Ent.NobodyGrid) && entInfo.CacheBlockList != null && entInfo.CacheBlockList.Count != (ent as MyCubeGrid).BlocksCount)
                             {
                                 entInfo.BlockUpdateTick = tick;
                                 entInfo.CacheBlockList.Clear();
@@ -193,10 +201,10 @@
                     {
                         if (relation == Ent.Other)
                         {
-                            var missilePast = -Vector3D.Normalize(ent.Physics.LinearVelocity) * 6;
-                            var missileTestLoc = ent.PositionComp.WorldVolume.Center + missilePast;
-                            var centerStep = -Vector3D.Normalize(missileTestLoc - DetectionCenter) * 2f;
-                            var counterDrift = centerStep + missileTestLoc;
+                            var entPast = -Vector3D.Normalize(entPhysics.LinearVelocity) * 6;
+                            var entTestLoc = ent.PositionComp.WorldVolume.Center + entPast;
+                            var centerStep = -Vector3D.Normalize(entTestLoc - DetectionCenter) * 2f;
+                            var counterDrift = centerStep + entTestLoc;
                             if (CustomCollision.PointInShield(counterDrift, DetectMatrixOutsideInv))
                             {
                                 FriendlyMissileCache.Add(ent);
@@ -242,7 +250,12 @@
         #region Gather Entity Information
         public Ent EntType(MyEntity ent)
         {
-            if (ent == null) return Ent.Ignore;
+            if (ent is IMyFloatingObject)
+            {
+                if (CustomCollision.PointInShield(ent.PositionComp.WorldAABB.Center, DetectMatrixOutsideInv)) return Ent.Ignore;
+                return Ent.Floater;
+            }
+
             var voxel = ent as MyVoxelBase;
             if (voxel != null && (Session.Enforced.DisableVoxelSupport == 1 || ShieldComp.Modulator == null || ShieldComp.Modulator.ModSet.Settings.ModulateVoxels || !GridIsMobile)) return Ent.Ignore;
 
@@ -285,10 +298,8 @@
                 }
                 var bigOwners = grid.BigOwners;
                 var bigOwnersCnt = bigOwners.Count;
-                var blockCnt = grid.BlocksCount;
                 if (CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, DetectMatrixOutsideInv, _obbCorners)) return Ent.Protected;
-                if (!ModulateGrids && blockCnt < 10 && bigOwnersCnt == 0) return Ent.SmallNobodyGrid;
-                if (!ModulateGrids && bigOwnersCnt == 0) return Ent.LargeNobodyGrid;
+                if (!ModulateGrids && bigOwnersCnt == 0) return Ent.NobodyGrid;
                 var enemy = !ModulateGrids && GridEnemy(grid, bigOwners);
                 if (!enemy)
                 {
@@ -306,7 +317,7 @@
                     dsComp.EnemyShields.Add(shieldEntity);
                     return Ent.Shielded;    
                 }
-                return Ent.LargeEnemyGrid;
+                return Ent.EnemyGrid;
             }
 
             if (ent is IMyMeteor || (ent.DefinitionId.HasValue && ent.DefinitionId.Value.TypeId == Session.Instance.MissileObj)) return Ent.Other;

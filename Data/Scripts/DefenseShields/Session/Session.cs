@@ -166,7 +166,11 @@
                 }
 
                 if (_warEffect && Tick20) WarEffect();
-                if (!EntSyncEvents.IsEmpty) SyncThreadedEnts();
+                if (!ThreadEvents.IsEmpty)
+                {
+                    IThreadEvent tEvent;
+                    while (ThreadEvents.TryDequeue(out tEvent)) tEvent.Execute();
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in SessionBeforeSim: {ex}"); }
         }
@@ -212,6 +216,7 @@
             Log.Close();
         }
         #endregion
+
         private void Timings()
         {
             _newFrame = true;
@@ -278,7 +283,7 @@
             WarHeadBlast empChild;
             while (EmpStore.TryDequeue(out empChild))
             {
-                if (empChild.CustomData == string.Empty || !empChild.CustomData.Contains("!EMP"))
+                if (empChild.CustomData.Contains("@EMP"))
                 {
                     stackCount++;
                     warHeadSize = empChild.WarSize;
@@ -498,7 +503,7 @@
             var warhead = myEntity as IMyWarhead;
             if (warhead != null)
             {
-                if (warhead.IsWorking && !warhead.IsFunctional && (warhead.IsArmed  || (warhead.DetonationTime <= 0 && warhead.IsCountingDown)))
+                if (warhead.IsWorking && !warhead.IsFunctional && (warhead.IsArmed || (warhead.DetonationTime <= 0 && warhead.IsCountingDown)) && warhead.CustomData.Length != 0)
                 {
                     var blastRatio = warhead.CubeGrid.GridSizeEnum == MyCubeSize.Small ? 1 : 5;
                     var epicCenter = warhead.PositionComp.WorldAABB.Center;

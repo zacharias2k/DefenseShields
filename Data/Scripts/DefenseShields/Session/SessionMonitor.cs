@@ -439,7 +439,15 @@
             {
                 if (shield == null || shield.MarkedForClose) continue;
                 if (!shield.VoxelsToIntersect.IsEmpty) MyAPIGateway.Parallel.Start(shield.VoxelIntersect);
-                if (!shield.WebEnts.IsEmpty) MyAPIGateway.Parallel.ForEach(shield.WebEnts, shield.EntIntersectSelector);
+                if (!shield.WebEnts.IsEmpty)
+                {
+                    var s = shield;
+                    MyAPIGateway.Parallel.ForEach(shield.WebEnts, x =>
+                    {
+                        s.EntIntersectSelector(x);
+                        x.Value.IsDirty = false;
+                    });
+                }
             }
         }
 

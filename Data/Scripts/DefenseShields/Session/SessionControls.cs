@@ -264,11 +264,11 @@
         private void WarheadSetter(IMyTerminalBlock tBlock, bool isSet)
         {
             var customData = tBlock.CustomData;
-            var iOf = tBlock.CustomData.IndexOf("!EMP", StringComparison.Ordinal);
-            if (!isSet && iOf == -1)
+            var iOf = tBlock.CustomData.IndexOf("@EMP", StringComparison.Ordinal);
+            if (isSet && iOf == -1)
             {
-                if (customData.Length == 0) tBlock.CustomData = "!EMP";
-                else if (!customData.Contains("!EMP")) tBlock.CustomData = customData + "\n!EMP";
+                if (customData.Length == 0) tBlock.CustomData = "@EMP";
+                else if (!customData.Contains("@EMP")) tBlock.CustomData = customData + "\n@EMP";
                 return;
             }
 
@@ -288,7 +288,7 @@
 
         private bool WarheadGetter(IMyTerminalBlock tBlock)
         {
-            return !tBlock.CustomData.Contains("!EMP");
+            return tBlock.CustomData.Contains("@EMP");
         }
 
         private void SetCustomDataToPassword(IEnumerable<IMyTerminalControl> controls)

@@ -256,7 +256,7 @@
                 }
             }
 
-            if (MyGridDistributor == null || MyGridDistributor.SourcesEnabled == MyMultipleEnabledEnum.NoObjects) _checkForDistributor = true;
+            if (MyResourceDist == null || MyResourceDist.SourcesEnabled == MyMultipleEnabledEnum.NoObjects) _checkForDistributor = true;
 
             SetSubFlags();
         }
@@ -271,15 +271,15 @@
                     var distributor = controller.GridResourceDistributor;
                     if (distributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects)
                     {
-                        if (Session.Enforced.Debug == 2) Log.Line($"Found MyGridDistributor from type - ShieldId [{Shield.EntityId}]");
-                        MyGridDistributor = controller.GridResourceDistributor;
+                        if (Session.Enforced.Debug == 2) Log.Line($"Found MyResourceDist from type - ShieldId [{Shield.EntityId}]");
+                        MyResourceDist = controller.GridResourceDistributor;
                         gotDistributor = true;
                         break;
                     }
                 }
             }
 
-            if (!gotDistributor) MyGridDistributor = null;
+            if (!gotDistributor) MyResourceDist = null;
 
             Log.Line($"GetDistributor: {gotDistributor}");
             _checkForDistributor = false;
