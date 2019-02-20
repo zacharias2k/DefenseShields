@@ -44,7 +44,7 @@
 
             if (Session.Instance.MpActive)
             {
-                Shield.AddShieldHit(Entity.EntityId, damage, Session.Instance.MPExplosion, null, false, hitPos);
+                Shield.AddShieldHit(Entity.EntityId, damage, Session.Instance.MPExplosion, null, true, hitPos);
                 Entity.Close();
                 Entity.InScene = false;
             }
@@ -52,12 +52,12 @@
             {
                 Shield.EnergyHit = true;
                 Shield.WorldImpactPosition = hitPos;
-                Shield.Absorb += damage;
                 Shield.ImpactSize = damage;
                 UtilsStatic.CreateFakeSmallExplosion(hitPos);
                 Entity.Close();
                 Entity.InScene = false;
             }
+            Shield.Absorb += damage;
         }
     }
 
@@ -93,10 +93,60 @@
             else
             {
                 Shield.WorldImpactPosition = hitPos;
-                Shield.Absorb += 1;
                 Shield.ImpactSize = 10;
                 floater.DoDamage(9999999, Session.Instance.MpIgnoreDamage, false, null, Shield.MyCube.EntityId);
             }
+            Shield.Absorb += 1;
+        }
+    }
+
+    public struct CollisionDataThreadEvent : IThreadEvent
+    {
+        public readonly MyCollisionPhysicsData CollisionData;
+        public readonly DefenseShields Shield;
+
+        public CollisionDataThreadEvent(MyCollisionPhysicsData collisionPhysicsData, DefenseShields shield)
+        {
+            CollisionData = collisionPhysicsData;
+            Shield = shield;
+        }
+
+        public void Execute()
+        {
+            if (CollisionData.Entity1 == null || CollisionData.Entity2 == null || CollisionData.Entity1.MarkedForClose || CollisionData.Entity2.MarkedForClose) return;
+            var tick = Session.Instance.Tick;
+            EntIntersectInfo entInfo;
+
+            var foundInfo = Shield.WebEnts.TryGetValue(CollisionData.Entity1, out entInfo);
+            if (!foundInfo || entInfo.LastCollision == tick) return;
+
+            if (entInfo.LastCollision >= tick - 2) entInfo.ConsecutiveCollisions++;
+            else entInfo.ConsecutiveCollisions = 0;
+
+            entInfo.LastCollision = tick;
+
+            if (!CollisionData.E1IsStatic)
+            {
+                CollisionData.Entity1.Physics.ApplyImpulse(CollisionData.ImpDirection1, CollisionData.Com1);
+                if (CollisionData.E2IsHeavier)
+                {
+                    var forceMulti = (CollisionData.Mass1 * ((entInfo.ConsecutiveCollisions + 1) * 25));
+                    if (CollisionData.Entity1.Physics.LinearVelocity.Length() <= (Session.Instance.MaxEntitySpeed * 0.75))
+                        CollisionData.Entity1.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceMulti * CollisionData.Force1, null, null, null, CollisionData.Immediate);
+                }
+            }
+
+            if (!CollisionData.E2IsStatic)
+            {
+                CollisionData.Entity2.Physics.ApplyImpulse(CollisionData.ImpDirection2, CollisionData.Com2);
+                if (CollisionData.E1IsHeavier)
+                {
+                    var forceMulti = (CollisionData.Mass2 * ((entInfo.ConsecutiveCollisions + 1) * 25));
+                    if (CollisionData.Entity2.Physics.LinearVelocity.Length() <= (Session.Instance.MaxEntitySpeed * 0.75))
+                        CollisionData.Entity2.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceMulti * CollisionData.Force2, null, null, null, CollisionData.Immediate);
+                }
+            }
+            entInfo.ActiveCollision = false;
         }
     }
 
@@ -166,8 +216,8 @@
                     if (Shield.WebEnts.TryGetValue(accel.Grid, out entInfo)) entInfo.RefreshNow = true;
                     return;
                 }
-                var damageMulti = 9999999999;
-                if (Shield.ShieldMode == DefenseShields.ShieldType.Station && Shield.DsState.State.Enhancer) damageMulti = 9999999999;
+                var damageMulti = 350;
+                if (Shield.ShieldMode == DefenseShields.ShieldType.Station && Shield.DsState.State.Enhancer) damageMulti = 10000;
 
                 accel.Block.DoDamage(damageMulti, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
                 if (accel.Block.IsDestroyed)
@@ -253,10 +303,10 @@
             else
             {
                 Shield.WorldImpactPosition = Meteor.PositionComp.WorldVolume.Center;
-                Shield.Absorb += damage;
                 Shield.ImpactSize = damage;
                 Meteor.DoDamage(10000f, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
             }
+            Shield.Absorb += damage;
         }
     }
 }

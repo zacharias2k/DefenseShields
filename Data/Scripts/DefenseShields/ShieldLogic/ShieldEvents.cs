@@ -17,7 +17,7 @@
         {
             if (register)
             {
-                if (_isServer)
+                if (MyAPIGateway.Multiplayer.IsServer)
                 {
                     ((MyCubeGrid)Shield.CubeGrid).OnBlockOwnershipChanged += OwnerChanged;
                     MyEntities.OnEntityAdd += OnEntityAdd;
@@ -34,7 +34,7 @@
             }
             else
             {
-                if (_isServer)
+                if (MyAPIGateway.Multiplayer.IsServer)
                 {
                     ((MyCubeGrid)Shield.CubeGrid).OnBlockOwnershipChanged -= OwnerChanged;
                     MyEntities.OnEntityAdd -= OnEntityAdd;
@@ -78,8 +78,12 @@
 
         private void OwnerChanged(MyCubeGrid myCubeGrid)
         {
-            if (MyCube == null || MyGrid == null || MyCube.OwnerId == _controllerOwnerId && MyGrid.BigOwners[0] == _gridOwnerId) return;
-            GridOwnsController();
+            try
+            {
+                if (MyCube == null || MyGrid == null || MyCube.OwnerId == _controllerOwnerId && MyGrid.BigOwners.Count != 0 && MyGrid.BigOwners[0] == _gridOwnerId) return;
+                GridOwnsController();
+            }
+            catch (Exception ex) { Log.Line($"Exception in Controller OwnerChanged: {ex}"); }
         }
 
         private void OnEntityAdd(MyEntity myEntity)
@@ -93,7 +97,6 @@
 
                 var aabb = myEntity.PositionComp.WorldAABB;
                 if (!ShieldBox3K.Intersects(ref aabb)) return;
-
                 Asleep = false;
                 if (isMissile) Missiles.Add(myEntity);
             }

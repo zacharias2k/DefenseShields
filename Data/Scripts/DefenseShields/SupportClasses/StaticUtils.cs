@@ -1,4 +1,5 @@
 ﻿using VRage.ModAPI;
+using VRageRender;
 
 namespace DefenseShields.Support
 {
@@ -487,54 +488,94 @@ namespace DefenseShields.Support
             foreach (var grid in subGrids) grid.GetBlocks(blocks);
 
             var bQuaternion = Quaternion.CreateFromRotationMatrix(shield.CubeGrid.WorldMatrix);
-            var sqrt2 = Math.Sqrt(2);
-            var sqrt3 = Math.Sqrt(3);
-            var last = 0;
-            var repeat = 0;
-            for (int i = 0; i <= 10; i++)
+
+            var end = 10;
+            var wasOutside = false;
+
+            for (int i = 0; i <= end + 1; i++)
             {
-                var ellipsoidAdjust = MathHelper.Lerp(sqrt2, sqrt3, i * 0.1);
+                var fitSeq = Session.Instance.FitSeq[i];
+
+                var ellipsoidAdjust = MathHelper.Lerp(fitSeq.SqrtStart, fitSeq.SqrtEnd, fitSeq.SeqMulti);
 
                 var shieldSize = gridHalfExtents * ellipsoidAdjust;
                 var mobileMatrix = MatrixD.CreateScale(shieldSize);
                 mobileMatrix.Translation = shield.CubeGrid.PositionComp.LocalAABB.Center;
                 var matrixInv = MatrixD.Invert(mobileMatrix * shield.CubeGrid.WorldMatrix);
 
-                var c = 0;
+                var pointOutside = false;
                 foreach (var block in blocks)
                 {
                     BoundingBoxD blockBox;
                     Vector3D center;
                     if (block.FatBlock != null)
                     {
-                        blockBox = block.FatBlock.Model.BoundingBox;
-                        center = blockBox.Center;
-                        blockBox.Translate(center);
+                        blockBox = block.FatBlock.LocalAABB;
+                        center = block.FatBlock.WorldAABB.Center;
                     }
                     else
                     {
-                        block.GetWorldBoundingBox(out blockBox);
-                        center = blockBox.Center;
+                        Vector3 halfExt;
+                        block.ComputeScaledHalfExtents(out halfExt);
+                        blockBox = new BoundingBoxD(-halfExt, halfExt);
+                        block.ComputeWorldCenter(out center);
                     }
 
                     var bOriBBoxD = new MyOrientedBoundingBoxD(center, blockBox.HalfExtents, bQuaternion);
 
                     bOriBBoxD.GetCorners(blockPoints, 0);
                     foreach (var point in blockPoints)
-                        if (!CustomCollision.PointInShield(point, matrixInv)) c++;
+                    {
+                        if (!CustomCollision.PointInShield(point, matrixInv))
+                        {
+                            pointOutside = true;
+                            break;
+                        }
+                    }
                 }
 
-                if (c == last) repeat++;
-                else repeat = 0;
-
-                if (c == 0)
+                //Log.Line($"i:{i} - end:{end} - sqrtStart:{fitSeq.SqrtStart} - sqrtEnd:{fitSeq.SqrtEnd} - multi:{fitSeq.SeqMulti}");
+                if (pointOutside)
                 {
-                    return MathHelper.Lerp(sqrt2, sqrt3, i * 0.1);
+                    wasOutside = true;
+                    //Log.Line($"Point is Outside");
+                    if (i == 0)
+                    {
+                        //Log.Line("i == 0 and points outside returning maxSize");
+                        return ellipsoidAdjust;
+                    }
+
+                    if (i == 2)
+                    {
+                        //Log.Line($"Mid outside, jumping to 11");
+                        i = 10;
+                        end = 19;
+                    }
                 }
-                last = c;
-                if (i == 10 && repeat > 2) return MathHelper.Lerp(sqrt2, sqrt3, ((10 - repeat) + 1) * 0.1);
+
+                if (!pointOutside)
+                {
+                    //Log.Line($"Point is Inside");
+                    if (i == 1)
+                    {
+                        //Log.Line($"i == 1, returning minValue");
+                        return ellipsoidAdjust;
+                    }
+                    if (wasOutside)
+                    {
+                        //Log.Line($"wasOutside and now in, returning value");
+                        return ellipsoidAdjust;
+                    }
+                }
+
+                if (i == end)
+                {
+                    //Log.Line($"reached end, returning current value");
+                    return ellipsoidAdjust;
+                }
             }
-            return sqrt3;
+            //Log.Line($"fitNoMatch");
+            return Math.Sqrt(5);
         }
 
         public static double CreateExtendedFit(IMyCubeBlock shield, Vector3D gridHalfExtents)
@@ -566,14 +607,15 @@ namespace DefenseShields.Support
                     Vector3D center;
                     if (block.FatBlock != null)
                     {
-                        blockBox = block.FatBlock.Model.BoundingBox;
-                        center = blockBox.Center;
-                        blockBox.Translate(center);
+                        blockBox = block.FatBlock.LocalAABB;
+                        center = block.FatBlock.WorldAABB.Center;
                     }
                     else
                     {
-                        block.GetWorldBoundingBox(out blockBox);
-                        center = blockBox.Center;
+                        Vector3 halfExt;
+                        block.ComputeScaledHalfExtents(out halfExt);
+                        blockBox = new BoundingBoxD(-halfExt, halfExt);
+                        block.ComputeWorldCenter(out center);
                     }
 
                     var bOriBBoxD = new MyOrientedBoundingBoxD(center, blockBox.HalfExtents, bQuaternion);

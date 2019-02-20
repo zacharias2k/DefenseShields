@@ -24,7 +24,7 @@
 
         internal readonly List<MyEntity> PruneList = new List<MyEntity>();
         internal readonly List<ShieldHit> ShieldHits = new List<ShieldHit>();
-        internal readonly Queue<ShieldHitValues> ProtoShieldHits = new Queue<ShieldHitValues>();
+        internal readonly Queue<ShieldHitValues> ShieldHitsToSend = new Queue<ShieldHitValues>();
 
         internal readonly HashSet<MyEntity> AuthenticatedCache = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> IgnoreCache = new HashSet<MyEntity>();
@@ -190,7 +190,6 @@
         private bool _viewInShield;
         private bool _powerFail;
         private bool _halfExtentsChanged;
-        private bool _adjustShape;
         private bool _checkForDistributor;
         private bool _updatePowerSources;
 
@@ -288,6 +287,7 @@
         internal bool WasSuspended { get; set; } = true;
         internal bool EnergyHit { get; set; }
         internal bool EffectsDirty { get; set; }
+        private bool _adjustShape;
 
         internal Vector3D MyGridCenter { get; set; }
         internal Vector3D DetectionCenter { get; set; }

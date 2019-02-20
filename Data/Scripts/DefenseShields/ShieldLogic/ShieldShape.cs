@@ -131,7 +131,7 @@
                 if (overThreshold || DsState.State.GridHalfExtents == Vector3D.Zero) DsState.State.GridHalfExtents = expandedAabb.HalfExtents;
             }
             _halfExtentsChanged = !DsState.State.GridHalfExtents.Equals(_oldGridHalfExtents);
-            if (_halfExtentsChanged)
+            if (_halfExtentsChanged || SettingsUpdated)
             {
                 _adjustShape = true;
             }

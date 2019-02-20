@@ -1,6 +1,4 @@
-﻿using Sandbox.Engine.Physics;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
     using Support;
     using Sandbox.Game.Entities;
@@ -97,8 +95,8 @@ namespace DefenseShields
 
         internal void SendShieldHits()
         {
-            while (ProtoShieldHits.Count != 0)
-                Session.Instance.PacketizeToClientsInRange(Shield, new DataShieldHit(MyCube.EntityId, ProtoShieldHits.Dequeue()));
+            while (ShieldHitsToSend.Count != 0)
+                Session.Instance.PacketizeToClientsInRange(Shield, new DataShieldHit(MyCube.EntityId, ShieldHitsToSend.Dequeue()));
         }
 
         private void ShieldHitReset(bool enQueue)
@@ -107,7 +105,7 @@ namespace DefenseShields
             {
                 if (_isServer)
                 {
-                    if (_mpActive) ProtoShieldHits.Enqueue(CloneHit());
+                    if (_mpActive) ShieldHitsToSend.Enqueue(CloneHit());
                     if (!_isDedicated) AddLocalHit();
                 }
             }

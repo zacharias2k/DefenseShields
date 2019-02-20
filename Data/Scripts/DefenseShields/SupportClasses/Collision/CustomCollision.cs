@@ -1,7 +1,6 @@
 ﻿namespace DefenseShields.Support
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using Sandbox.Game.Entities;
     using VRage.Game;

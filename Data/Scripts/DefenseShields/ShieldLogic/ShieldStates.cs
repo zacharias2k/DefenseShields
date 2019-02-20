@@ -32,6 +32,14 @@
 
         internal void UpdateState(ControllerStateValues newState)
         {
+            if (!_isServer)
+            {
+                if (!newState.EllipsoidAdjust.Equals(DsState.State.EllipsoidAdjust) || !newState.ShieldFudge.Equals(DsState.State.ShieldFudge) ||
+                    !newState.GridHalfExtents.Equals(DsState.State.GridHalfExtents))
+                {
+                    _updateMobileShape = true;
+                }
+            }
             DsState.State = newState;
             _clientNotReady = false;
         }
@@ -93,7 +101,7 @@
                 if (_isServer)
                 {
                     if (_tick - 1 > _lastSendDamageTick) ShieldHitReset(ShieldHit.Amount > 0 && ShieldHit.HitPos != Vector3D.Zero);
-                    if (ProtoShieldHits.Count != 0) SendShieldHits();
+                    if (ShieldHitsToSend.Count != 0) SendShieldHits();
                     if (!_isDedicated && ShieldHits.Count != 0) AbsorbClientShieldHits();
                 }
                 else if (ShieldHits.Count != 0) AbsorbClientShieldHits();
@@ -706,14 +714,15 @@
 
         private void GridOwnsController()
         {
-            _gridOwnerId = MyGrid.BigOwners[0];
-            _controllerOwnerId = MyCube.OwnerId;
-
             if (MyGrid.BigOwners.Count == 0)
             {
                 DsState.State.ControllerGridAccess = false;
                 return;
             }
+
+            _gridOwnerId = MyGrid.BigOwners[0];
+            _controllerOwnerId = MyCube.OwnerId;
+
             if (_controllerOwnerId == 0) MyCube.ChangeOwner(_gridOwnerId, MyOwnershipShareModeEnum.Faction);
 
             var controlToGridRelataion = MyCube.GetUserRelationToOwner(_gridOwnerId);

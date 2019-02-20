@@ -299,5 +299,28 @@
         internal IMyTerminalControlOnOffSwitch PsToggleShield { get; set; }
 
         internal IMyTerminalBlock WarTerminalReset { get; set; }
+        internal GetFitSeq[] FitSeq = new GetFitSeq[]
+        {
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 1f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 0.1f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 1f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 0.2f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 0.3f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 0.4f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 0.5f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 0.6f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 0.7f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 0.8f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 0.9f),
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.1f),
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.2f),
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.3f),
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.4f),
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.5f),
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.6f),
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.7f),
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.8f),
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.9f)
+        };
     }
 }

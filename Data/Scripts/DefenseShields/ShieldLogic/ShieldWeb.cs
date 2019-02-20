@@ -189,7 +189,7 @@
                         _enablePhysics = true;
                         if (refreshInfo)
                         {
-                            if ((relation == Ent.EnemyGrid || relation == Ent.NobodyGrid) && entInfo.CacheBlockList != null && entInfo.CacheBlockList.Count != (ent as MyCubeGrid).BlocksCount)
+                            if ((relation == Ent.EnemyGrid || relation == Ent.NobodyGrid)  && entInfo.CacheBlockList.Count != (ent as MyCubeGrid).BlocksCount)
                             {
                                 entInfo.RefreshNow = true;
                             }
