@@ -124,13 +124,13 @@
             else entInfo.ConsecutiveCollisions = 0;
 
             entInfo.LastCollision = tick;
-
+            if (entInfo.ConsecutiveCollisions > 0) Log.Line($"Consecutive:{entInfo.ConsecutiveCollisions}");
             if (!CollisionData.E1IsStatic)
             {
-                CollisionData.Entity1.Physics.ApplyImpulse(CollisionData.ImpDirection1, CollisionData.Com1);
+                if (entInfo.ConsecutiveCollisions == 0) CollisionData.Entity1.Physics.ApplyImpulse(CollisionData.ImpDirection1, CollisionData.CollisionCorrection1);
                 if (CollisionData.E2IsHeavier)
                 {
-                    var forceMulti = (CollisionData.Mass1 * ((entInfo.ConsecutiveCollisions + 1) * 25));
+                    var forceMulti = (CollisionData.Mass1 * ((entInfo.ConsecutiveCollisions + 1) * 5));
                     if (CollisionData.Entity1.Physics.LinearVelocity.Length() <= (Session.Instance.MaxEntitySpeed * 0.75))
                         CollisionData.Entity1.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceMulti * CollisionData.Force1, null, null, null, CollisionData.Immediate);
                 }
@@ -138,15 +138,14 @@
 
             if (!CollisionData.E2IsStatic)
             {
-                CollisionData.Entity2.Physics.ApplyImpulse(CollisionData.ImpDirection2, CollisionData.Com2);
+                if (entInfo.ConsecutiveCollisions == 0) CollisionData.Entity2.Physics.ApplyImpulse(CollisionData.ImpDirection2, CollisionData.CollisionCorrection2);
                 if (CollisionData.E1IsHeavier)
                 {
-                    var forceMulti = (CollisionData.Mass2 * ((entInfo.ConsecutiveCollisions + 1) * 25));
+                    var forceMulti = (CollisionData.Mass2 * ((entInfo.ConsecutiveCollisions + 1) * 5));
                     if (CollisionData.Entity2.Physics.LinearVelocity.Length() <= (Session.Instance.MaxEntitySpeed * 0.75))
                         CollisionData.Entity2.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceMulti * CollisionData.Force2, null, null, null, CollisionData.Immediate);
                 }
             }
-            entInfo.ActiveCollision = false;
         }
     }
 

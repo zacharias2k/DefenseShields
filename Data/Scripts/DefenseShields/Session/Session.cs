@@ -156,7 +156,15 @@
             try
             {
                 Timings();
+
+                if (!ThreadEvents.IsEmpty)
+                {
+                    IThreadEvent tEvent;
+                    while (ThreadEvents.TryDequeue(out tEvent)) tEvent.Execute();
+                }
+
                 LogicUpdates();
+
                 if (EmpStore.Count != 0 && !EmpDispatched)
                 {
                     EmpDispatched = true;   
@@ -166,11 +174,6 @@
                 }
 
                 if (_warEffect && Tick20) WarEffect();
-                if (!ThreadEvents.IsEmpty)
-                {
-                    IThreadEvent tEvent;
-                    while (ThreadEvents.TryDequeue(out tEvent)) tEvent.Execute();
-                }
             }
             catch (Exception ex) { Log.Line($"Exception in SessionBeforeSim: {ex}"); }
         }

@@ -113,8 +113,6 @@
                     WebEnts.TryGetValue(ent, out entInfo);
                     if (entInfo != null)
                     {
-                        if (entInfo.IsDirty) continue;
-                        entInfo.IsDirty = true;
                         var last = entInfo.LastTick;
                         var refresh = entInfo.RefreshTick;
                         var refreshTick = tick - last > 180 || (tick - last == 180 && tick - refresh >= 3600) || (tick - last == 1 && tick - refresh >= 60);

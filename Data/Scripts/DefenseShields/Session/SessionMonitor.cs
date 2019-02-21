@@ -404,32 +404,29 @@
 
         private void LogicUpdates()
         {
-            //if (Enforced.Debug >= 3 && EntSlotTick) Dsutil1.Sw.Restart();
-            foreach (var s in ActiveShields.Keys)
+            if (!Dispatched)
             {
-                if (!s.WasOnline || s.Asleep) continue;
-
-                if (s.DsState.State.ReInforce)
+                foreach (var s in ActiveShields.Keys)
                 {
-                    s.DeformEnabled = true;
-                    s.ProtectSubs(Tick);
-                    continue;
+                    if (!s.WasOnline || s.Asleep) continue;
+                    if (s.DsState.State.ReInforce)
+                    {
+                        s.DeformEnabled = true;
+                        s.ProtectSubs(Tick);
+                        continue;
+                    }
+                    if (Tick20 && s.EffectsDirty) s.ResetDamageEffects();
+                    if (Tick600) s.CleanWebEnts();
+
+                    s.WebEntities();
                 }
-                if (Tick20 && s.EffectsDirty) s.ResetDamageEffects();
-                if (Tick600) s.CleanWebEnts();
-
-                s.WebEntities();
+                if (WebWrapperOn)
+                {
+                    MyAPIGateway.Parallel.Start(WebDispatch, WebDispatchDone);
+                    Dispatched = true;
+                    WebWrapperOn = false;
+                }
             }
-
-            if (!Dispatched && WebWrapperOn)
-            {
-                MyAPIGateway.Parallel.Start(WebDispatch, WebDispatchDone);
-                Dispatched = true;
-                WebWrapperOn = false;
-            }
-
-            //if (Enforced.Debug >= 3 && EntSlotTick) Dsutil1.StopWatchReport("[LogicUpdate] - CPU:", -1);
-            //else if (Enforced.Debug >= 3) Dsutil1.Sw.Reset();
         }
 
         private void WebDispatch()
@@ -439,15 +436,7 @@
             {
                 if (shield == null || shield.MarkedForClose) continue;
                 if (!shield.VoxelsToIntersect.IsEmpty) MyAPIGateway.Parallel.Start(shield.VoxelIntersect);
-                if (!shield.WebEnts.IsEmpty)
-                {
-                    var s = shield;
-                    MyAPIGateway.Parallel.ForEach(shield.WebEnts, x =>
-                    {
-                        s.EntIntersectSelector(x);
-                        x.Value.IsDirty = false;
-                    });
-                }
+                if (!shield.WebEnts.IsEmpty) MyAPIGateway.Parallel.ForEach(shield.WebEnts, shield.EntIntersectSelector);
             }
         }
 

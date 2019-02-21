@@ -367,11 +367,7 @@ namespace DefenseShields
                     if (collisionAvg != Vector3D.Zero)
                     {
                         collisionAvg /= hits;
-                        if (Session.Instance.Tick != entInfo.LastCollision && !entInfo.ActiveCollision)
-                        {
-                            entInfo.ActiveCollision = true;
-                            ComputeGridCollisionPhysics(breaching, collisionAvg);
-                        }
+                        ComputeGridCollisionPhysics(breaching, collisionAvg);
 
                         WebDamage = true;
                         bBlockCenter = collisionAvg;

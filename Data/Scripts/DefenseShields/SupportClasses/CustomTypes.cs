@@ -304,8 +304,6 @@
         public List<CubeAccel> CacheBlockList = new List<CubeAccel>();
         public bool RefreshNow;
         public volatile bool Touched;
-        public volatile bool IsDirty;
-        public volatile bool ActiveCollision;
         public volatile uint LastCollision;
         public volatile int ConsecutiveCollisions;
 
