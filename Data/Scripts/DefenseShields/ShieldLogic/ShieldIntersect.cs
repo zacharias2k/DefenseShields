@@ -1,4 +1,5 @@
-﻿using VRage.Game.Components;
+﻿using VRage.Game;
+using VRage.Game.Components;
 
 namespace DefenseShields
 {
@@ -134,23 +135,12 @@ namespace DefenseShields
             var bOriBBoxD = MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB);
             if (entInfo.Relation != Ent.EnemyGrid && EntInside(grid, bOriBBoxD)) return;
             BlockIntersect(grid, bOriBBoxD, ref entInfo);
-
-            if (!_isServer) return;
-
-            var contactpoint = entInfo.ContactPoint;
-            entInfo.ContactPoint = Vector3D.NegativeInfinity;
-            entInfo.EmpDetonation = Vector3D.NegativeInfinity;
-            entInfo.Damage = 0;
-            entInfo.EmpSize = 0;
-            if (contactpoint == Vector3D.NegativeInfinity) return;
-            entInfo.Touched = true;
         }
 
         private void ShieldIntersect(MyEntity ent)
         {
             var grid = ent as MyCubeGrid;
             if (grid == null) return;
-
             if (EntInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB))) return;
             ShieldGridComponent shieldComponent;
             grid.Components.TryGet(out shieldComponent);
@@ -164,60 +154,21 @@ namespace DefenseShields
             }
             var dsVerts = ds.ShieldComp.PhysicsOutside;
             var dsMatrixInv = ds.DetectMatrixOutsideInv;
-            var myGrid = Shield.CubeGrid;
 
             var insidePoints = new List<Vector3D>();
-            if (_isServer) CustomCollision.ShieldX2PointsInside(dsVerts, dsMatrixInv, ShieldComp.PhysicsOutside, DetectMatrixOutsideInv, insidePoints);
-            else CustomCollision.ClientShieldX2PointsInside(dsVerts, dsMatrixInv, ShieldComp.PhysicsOutsideLow, DetectMatrixOutsideInv, insidePoints);
-
-            var bPhysics = ((IMyCubeGrid)grid).Physics;
-            var sPhysics = myGrid.Physics;
-
-            var bMass = grid.GetCurrentMass();
-            var sMass = ((MyCubeGrid)myGrid).GetCurrentMass();
-
-            if (bMass <= 0) bMass = int.MaxValue;
-            if (sMass <= 0) sMass = int.MaxValue;
-
-            var bVel = bPhysics.LinearVelocity;
-            var bVelLen = bVel.Length();
-            var momentum = (bMass * bVel) + (sMass * sPhysics.LinearVelocity);
-            var resultVelocity = momentum / (bMass + sMass);
+            CustomCollision.ShieldX2PointsInside(dsVerts, dsMatrixInv, ShieldComp.PhysicsOutside, DetectMatrixOutsideInv, insidePoints);
 
             var collisionAvg = Vector3D.Zero;
             var numOfPointsInside = insidePoints.Count;
             for (int i = 0; i < numOfPointsInside; i++) collisionAvg += insidePoints[i];
 
-            collisionAvg /= numOfPointsInside;
+            if (numOfPointsInside > 0) collisionAvg /= numOfPointsInside;
+            if (collisionAvg != Vector3D.Zero && MyGrid.EntityId > grid.EntityId) ComputeCollisionPhysics(grid, MyGrid, collisionAvg);
+            else if (!_isServer) return;
+            else return;
 
-            if (numOfPointsInside > 0 && !bPhysics.IsStatic)
-            {
-                var ejectorAccel = numOfPointsInside > 10 ? numOfPointsInside : 10;
-                var impulseData = new MyImpulseData { Entity = ent, Direction = (resultVelocity - bVel) * bMass, Position = bPhysics.CenterOfMassWorld };
-                var forceData = new MyForceData { Entity = ent, Force = (bPhysics.CenterOfMassWorld - collisionAvg) * bMass * ejectorAccel, MaxSpeed = MathHelper.Clamp(bVelLen, 1f, 50f) };
-                Session.Instance.ThreadEvents.Enqueue(new ImpulseDataThreadEvent(impulseData, this));
-                Session.Instance.ThreadEvents.Enqueue(new ForceDataThreadEvent(forceData, this));
-            }
-            if (!_isServer || numOfPointsInside <= 0) return;
-
-            var shieldMaxChargeRate = ds._shieldMaxChargeRate;
-            var damage = ((shieldMaxChargeRate * ConvToHp) * DsState.State.ModulateKinetic) * 0.01666666666f;
-            if (_mpActive)
-            {
-                if (_isServer) AddShieldHit(ds.Shield.EntityId, damage, Session.Instance.MPEnergy, null, false, collisionAvg);
-            }
-            else
-            {
-                EnergyHit = true;
-                WorldImpactPosition = collisionAvg;
-
-                ds.EnergyHit = true;
-                ds.WorldImpactPosition = collisionAvg;
-
-                Absorb += damage;
-                ImpactSize = damage;
-                WebDamage = true;
-            }
+            var damage = ((ds._shieldMaxChargeRate * ConvToHp) * DsState.State.ModulateKinetic) * 0.01666666666f;
+            Session.Instance.ThreadEvents.Enqueue(new ShieldVsShieldThreadEvent(this, damage, collisionAvg, grid.EntityId));
         }
 
         internal void VoxelIntersect()
@@ -256,7 +207,6 @@ namespace DefenseShields
                     }
                     ImpactSize = 12000;
                     WorldImpactPosition = collision.Value;
-                    WebDamage = true;
                 }
                 else VoxelsToIntersect[voxelBase] = 0;
             }
@@ -310,10 +260,8 @@ namespace DefenseShields
                     var damageBlocks = Session.Enforced.DisableBlockDamage == 0;
                     var bQuaternion = Quaternion.CreateFromRotationMatrix(breaching.WorldMatrix);
 
-                    var blockDmgNum = 50;
-                    if (ShieldMode == ShieldType.Station && DsState.State.Enhancer) blockDmgNum = 250;
+                    const int blockDmgNum = 250;
 
-                    Vector3D bBlockCenter;
                     var rawDamage = 0f;
                     var blockSize = breaching.GridSize;
                     var scaledBlockSize = blockSize * 3;
@@ -357,7 +305,7 @@ namespace DefenseShields
 
                         if (hits > blockDmgNum) break;
 
-                        rawDamage += MathHelper.Clamp(block.Integrity, 0, 350);
+                        rawDamage += block.Integrity;
                         if (damageBlocks)
                         {
                             cubeHitSet.Add(accel);
@@ -367,66 +315,45 @@ namespace DefenseShields
                     if (collisionAvg != Vector3D.Zero)
                     {
                         collisionAvg /= hits;
-                        ComputeGridCollisionPhysics(breaching, collisionAvg);
-
-                        WebDamage = true;
-                        bBlockCenter = collisionAvg;
+                        ComputeCollisionPhysics(breaching, MyGrid, collisionAvg);
+                        entInfo.Touched = true;
                     }
                     else return;
                     if (!_isServer) return;
 
-                    Session.Instance.ThreadEvents.Enqueue(new ManyBlocksThreadEvent(cubeHitSet, this));
-
                     var damage = rawDamage * DsState.State.ModulateEnergy;
 
-                    entInfo.Damage = damage;
-                    if (_mpActive)
-                    {
-                        if (_isServer && bBlockCenter != Vector3D.NegativeInfinity) AddShieldHit(breaching.EntityId, damage, Session.Instance.MPKinetic, null, true, collisionAvg);
-                    }
-                    else
-                    {
-                        if (bBlockCenter != Vector3D.NegativeInfinity)
-                        {
-                            entInfo.ContactPoint = bBlockCenter;
-                            ImpactSize = entInfo.Damage;
-                            entInfo.Damage = 0;
-                            WorldImpactPosition = bBlockCenter;
-                        }
-                    }
-                    Absorb += damage;
+                    Session.Instance.ThreadEvents.Enqueue(new ManyBlocksThreadEvent(cubeHitSet, this, damage, collisionAvg, breaching.EntityId));
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in BlockIntersect: {ex}"); }
         }
 
-        private void ComputeGridCollisionPhysics(MyCubeGrid breaching, Vector3D collisionAvg)
+        private void ComputeCollisionPhysics(MyCubeGrid entity1, MyCubeGrid entity2, Vector3D collisionAvg)
         {
-            var sGrid = (MyCubeGrid)Shield.CubeGrid;
-            var bPhysics = ((IMyCubeGrid)breaching).Physics;
-            var sPhysics = Shield.CubeGrid.Physics;
-            var breachingIsStatic = bPhysics.IsStatic;
-            var shieldIsStatic = sPhysics.IsStatic;
+            var e1Physics = ((IMyCubeGrid)entity1).Physics;
+            var e2Physics = ((IMyCubeGrid)entity2).Physics;
+            var e1IsStatic = e1Physics.IsStatic;
+            var e2IsStatic = e2Physics.IsStatic;
 
             float bMass;
-            if (breachingIsStatic) bMass = float.MaxValue * 0.001f;
-            else bMass = breaching.GetCurrentMass();
+            if (e1IsStatic) bMass = float.MaxValue * 0.001f;
+            else bMass = entity1.GetCurrentMass();
 
             float sMass;
-            if (shieldIsStatic) sMass = float.MaxValue * 0.001f;
-            else sMass = sGrid.GetCurrentMass();
-
-            var bCom = bPhysics.CenterOfMassWorld;
+            if (e2IsStatic) sMass = float.MaxValue * 0.001f;
+            else sMass = entity2.GetCurrentMass();
+            var bCom = e1Physics.CenterOfMassWorld;
             var bMassRelation = bMass / sMass;
             var bRelationClamp = MathHelper.Clamp(bMassRelation, 0, 1);
             var bCollisionCorrection = Vector3D.Lerp(bCom, collisionAvg, bRelationClamp);
-            var bVelAtPoint = bPhysics.GetVelocityAtPoint(bCollisionCorrection);
+            var bVelAtPoint = e1Physics.GetVelocityAtPoint(bCollisionCorrection);
 
-            var sCom = shieldIsStatic ? DetectionCenter : sPhysics.CenterOfMassWorld;
+            var sCom = e2IsStatic ? DetectionCenter : e2Physics.CenterOfMassWorld;
             var sMassRelation = sMass / bMass;
             var sRelationClamp = MathHelper.Clamp(sMassRelation, 0, 1);
             var sCollisionCorrection = Vector3D.Lerp(sCom, collisionAvg, sRelationClamp);
-            var sVelAtPoint = sPhysics.GetVelocityAtPoint(sCollisionCorrection);
+            var sVelAtPoint = e2Physics.GetVelocityAtPoint(sCollisionCorrection);
 
             var momentum = (bMass * bVelAtPoint) + (sMass * sVelAtPoint);
             var resultVelocity = momentum / (bMass + sMass);
@@ -439,12 +366,12 @@ namespace DefenseShields
 
             var collisionData = new MyCollisionPhysicsData
             {
-                Entity1 = breaching,
-                Entity2 = MyGrid,
-                E1IsStatic = breachingIsStatic,
-                E2IsStatic = shieldIsStatic,
-                E1IsHeavier = breachingIsStatic || bMass > sMass,
-                E2IsHeavier = shieldIsStatic || sMass > bMass,
+                Entity1 = entity1,
+                Entity2 = entity2,
+                E1IsStatic = e1IsStatic,
+                E2IsStatic = e2IsStatic,
+                E1IsHeavier = e1IsStatic || bMass > sMass,
+                E2IsHeavier = e2IsStatic || sMass > bMass,
                 Mass1 = bMass,
                 Mass2 = sMass,
                 Com1 = bCom,

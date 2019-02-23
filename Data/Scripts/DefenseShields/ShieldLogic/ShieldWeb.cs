@@ -209,7 +209,7 @@
                         }
                         entChanged = true;
                         _enablePhysics = true;
-                        WebEnts.TryAdd(ent, new EntIntersectInfo(0f, 0f, false, ent.PositionComp.LocalAABB, Vector3D.NegativeInfinity, Vector3D.NegativeInfinity, tick, tick, tick, relation));
+                        WebEnts.TryAdd(ent, new EntIntersectInfo(false, ent.PositionComp.LocalAABB, tick, tick, tick, relation));
                     }
                 }
                 catch (Exception ex) { Log.Line($"Exception in WebEntities entInfo: {ex}"); }

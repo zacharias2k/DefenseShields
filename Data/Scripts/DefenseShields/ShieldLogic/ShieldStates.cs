@@ -162,7 +162,7 @@
                 SetShieldClientStatus();
                 if (ClientUiUpdate || SettingsUpdated) UpdateSettings();
                 if (ClientOfflineStates() || ClientShieldLowered()) return false;
-                if (GridIsMobile) MobileUpdate();
+                //if (GridIsMobile) MobileUpdate();
                 if (UpdateDimensions) RefreshDimensions();
                 PowerOnline();
                 Timing();
@@ -260,7 +260,7 @@
             }
             if (ControlBlockWorking)
             {
-                if (GridIsMobile) MobileUpdate();
+                //if (GridIsMobile) MobileUpdate();
                 if (UpdateDimensions) RefreshDimensions();
             }
             return ControlBlockWorking;

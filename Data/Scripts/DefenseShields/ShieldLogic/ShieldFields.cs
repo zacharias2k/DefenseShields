@@ -11,6 +11,7 @@
     using VRage.Game.Entity;
     using VRage.Collections;
     using VRageMath;
+    using System;
 
     public partial class DefenseShields 
     {
@@ -211,6 +212,7 @@
         private MyParticleEffect _effect = new MyParticleEffect();
 
         private DSUtils Dsutil1 { get; set; } = new DSUtils();
+        private event Action<DefenseShields, DefenseShields> OnShieldDetectedEvent;
 
         #endregion
 
@@ -239,7 +241,6 @@
 
         public int KineticCoolDown { get; internal set; } = -1;
         public int EnergyCoolDown { get; internal set; } = -1;
-        public int WebCoolDown { get; internal set; } = -1;
         public int HitCoolDown { get; private set; } = -11;
 
         internal IMyUpgradeModule Shield { get; set; }
@@ -291,6 +292,7 @@
 
         internal Vector3D MyGridCenter { get; set; }
         internal Vector3D DetectionCenter { get; set; }
+        internal Vector3D VelAtPoint { get; set; }
 
         internal MatrixD DetectMatrixOutsideInv { get; set; }
         internal MatrixD ShieldShapeMatrix { get; set; }

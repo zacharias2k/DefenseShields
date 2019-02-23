@@ -91,7 +91,7 @@
                     if (s.KineticCoolDown > -1)
                     {
                         s.KineticCoolDown++;
-                        if (s.KineticCoolDown == 9) s.KineticCoolDown = -1;
+                        if (s.KineticCoolDown == 6) s.KineticCoolDown = -1;
                     }
 
                     if (s.EnergyCoolDown > -1)
@@ -100,14 +100,12 @@
                         if (s.EnergyCoolDown == 9) s.EnergyCoolDown = -1;
                     }
 
-                    if (s.WebCoolDown > -1)
-                    {
-                        s.WebCoolDown++;
-                        if (s.WebCoolDown == 6) s.WebCoolDown = -1;
-                    }
-
                     if (!s.WarmedUp || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterWorking) continue;
-                    var sp = new BoundingSphereD(s.DetectionCenter, s.BoundingRange);
+
+                    if (s.GridIsMobile) s.VelAtPoint = s.MyGrid.Physics.GetVelocityAtPoint(s.MyGrid.PositionComp.WorldAABB.Center);
+                    else s.VelAtPoint = s.DetectionCenter;
+
+                    var sp = new BoundingSphereD(s.DetectionCenter + s.VelAtPoint * OneStep, s.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {
                         SphereOnCamera[i] = false;
@@ -228,6 +226,7 @@
             Tick60 = Tick % 60 == 0;
             Tick60 = Tick % 60 == 0;
             Tick180 = Tick % 180 == 0;
+            Tick300 = Tick % 300 == 0;
             Tick600 = Tick % 600 == 0;
             Tick1800 = Tick % 1800 == 0;
 

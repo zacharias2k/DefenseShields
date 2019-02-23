@@ -19,7 +19,8 @@
     {
         internal const ushort PACKET_ID = 62520;
         internal const double TickTimeDiv = 0.0625;
-
+        internal const double OneStep = MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS * 1;
+        internal const double TwoStep = MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS * 2;
         internal static readonly MyConcurrentPool<MyProtectors> ProtSets = new MyConcurrentPool<MyProtectors>(150, null, 1000);
 
         internal readonly int[] SlotCnt = new int[9];
@@ -234,6 +235,7 @@
         internal bool Tick20 { get; set; }
         internal bool Tick60 { get; set; }
         internal bool Tick180 { get; set; }
+        internal bool Tick300 { get; set; }
         internal bool Tick600 { get; set; }
         internal bool Tick1800 { get; set; }
         internal bool WebWrapperOn { get; set; }

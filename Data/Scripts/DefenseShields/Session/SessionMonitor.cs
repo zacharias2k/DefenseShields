@@ -352,7 +352,6 @@
                     if (s.WasPaused) continue;
                     if (s.DsState.State.ReInforce && s.ShieldComp.SubGrids.Contains(ent))
                     {
-                        //if (Enforced.Debug == 4) Log.Line("_entRefreshQueue adding Reinfroced");
                         iShield = s;
                         refreshCount++;
                     }
@@ -408,22 +407,30 @@
             {
                 foreach (var s in ActiveShields.Keys)
                 {
-                    if (!s.WasOnline || s.Asleep) continue;
+                    if (!s.WasOnline) continue;
+
+                    if (s.GridIsMobile) s.MobileUpdate();
+                    if (s.Asleep) continue;
+
+                    if (Tick300 && s.GridIsMobile) s.CreateHalfExtents();
+
                     if (s.DsState.State.ReInforce)
                     {
                         s.DeformEnabled = true;
                         s.ProtectSubs(Tick);
                         continue;
                     }
+
                     if (Tick20 && s.EffectsDirty) s.ResetDamageEffects();
                     if (Tick600) s.CleanWebEnts();
 
                     s.WebEntities();
                 }
+
                 if (WebWrapperOn)
                 {
-                    MyAPIGateway.Parallel.Start(WebDispatch, WebDispatchDone);
                     Dispatched = true;
+                    MyAPIGateway.Parallel.Start(WebDispatch, WebDispatchDone);
                     WebWrapperOn = false;
                 }
             }

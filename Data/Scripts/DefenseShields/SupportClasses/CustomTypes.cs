@@ -292,11 +292,7 @@
 
     public class EntIntersectInfo
     {
-        public float Damage;
-        public double EmpSize;
         public BoundingBox Box;
-        public Vector3D ContactPoint;
-        public Vector3D EmpDetonation;
         public uint LastTick;
         public uint RefreshTick;
         public readonly uint FirstTick;
@@ -307,14 +303,10 @@
         public volatile uint LastCollision;
         public volatile int ConsecutiveCollisions;
 
-        public EntIntersectInfo(float damage, double empSize, bool touched, BoundingBox box, Vector3D contactPoint, Vector3D empDetonation, uint firstTick, uint lastTick, uint refreshTick, DefenseShields.Ent relation)
+        public EntIntersectInfo(bool touched, BoundingBox box, uint firstTick, uint lastTick, uint refreshTick, DefenseShields.Ent relation)
         {
-            Damage = damage;
-            EmpSize = empSize;
             Touched = touched;
             Box = box;
-            ContactPoint = contactPoint;
-            EmpDetonation = empDetonation;
             FirstTick = firstTick;
             LastTick = lastTick;
             RefreshTick = refreshTick;

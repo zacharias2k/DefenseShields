@@ -205,7 +205,7 @@
             ShieldHits.Clear();
         }
 
-        private void AbsorbEmp()
+        public void AbsorbEmp()
         {
             if (Vector3D.DistanceSquared(DetectionCenter, Session.Instance.EmpWork.EpiCenter) <= Session.Instance.EmpWork.RangeCapSqr)
             {

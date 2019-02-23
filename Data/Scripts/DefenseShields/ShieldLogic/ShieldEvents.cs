@@ -23,7 +23,9 @@
                     MyEntities.OnEntityAdd += OnEntityAdd;
                     MyEntities.OnEntityRemove += OnEntityRemove;
                 }
-                
+
+                OnShieldDetectedEvent += OnShieldDetected;
+
                 ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
                 RegisterGridEvents();
                 Shield.AppendingCustomInfo += AppendingCustomInfo;
@@ -40,6 +42,8 @@
                     MyEntities.OnEntityAdd -= OnEntityAdd;
                     MyEntities.OnEntityRemove -= OnEntityRemove;
                 }
+
+                OnShieldDetectedEvent -= OnShieldDetected;
 
                 ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated -= HierarchyChanged;
                 RegisterGridEvents(false);
@@ -208,6 +212,11 @@
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in Controller FatBlockRemoved: {ex}"); }
+        }
+
+        private void OnShieldDetected(DefenseShields detector, DefenseShields detected) 
+        {
+
         }
 
         private string GetShieldStatus()

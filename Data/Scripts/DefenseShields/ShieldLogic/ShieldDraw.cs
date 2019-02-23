@@ -20,37 +20,34 @@
             var reInforce = DsState.State.ReInforce;
             var hitAnim = !reInforce && DsSet.Settings.HitWaveAnimation;
             var refreshAnim = !reInforce && DsSet.Settings.RefreshAnimation;
-
+            var futureSteps = WebDamage ? Session.TwoStep : Session.OneStep;
+            
             var activeVisible = DetermineVisualState(reInforce);
 
             var impactPos = WorldImpactPosition;
-            var webEffect = WebDamage && (KineticCoolDown > -1  || EnergyCoolDown > -1) && WebCoolDown < 0;
-
-            _localImpactPosition = Vector3D.NegativeInfinity;
-            if (impactPos != Vector3D.NegativeInfinity && (KineticCoolDown < 0 || EnergyCoolDown < 0 || webEffect))
-            {
-                if (webEffect)
-                {
-                    WebCoolDown = 0;
-                    HitParticleStart();
-                }
-                else
-                {
-                    if (WebDamage) WebCoolDown = 0;
-                    else if (EnergyHit) EnergyCoolDown = 0;
-                    else KineticCoolDown = 0;
-
-                    HitParticleStart();
-                    var cubeBlockLocalMatrix = MyGrid.PositionComp.LocalMatrix;
-                    var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
-                    var worldDirection = impactPos - referenceWorldPosition;
-                    var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(cubeBlockLocalMatrix));
-                    _localImpactPosition = localPosition;
-                }
-            }
+            var kineticHit = !EnergyHit;
 
             WorldImpactPosition = Vector3D.NegativeInfinity;
-            WebDamage = false;
+            _localImpactPosition = Vector3D.NegativeInfinity;
+
+            if (impactPos != Vector3D.NegativeInfinity && (kineticHit && KineticCoolDown < 0 || EnergyHit && EnergyCoolDown < 0))
+            {
+                impactPos += VelAtPoint * futureSteps;
+
+                if (kineticHit) KineticCoolDown = 0;
+                else if (EnergyHit) EnergyCoolDown = 0;
+
+                HitParticleStart(impactPos);
+
+                kineticHit = false;
+                EnergyHit = false;
+
+                var cubeBlockLocalMatrix = MyGrid.PositionComp.LocalMatrix;
+                var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
+                var worldDirection = impactPos - referenceWorldPosition;
+                var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(cubeBlockLocalMatrix));
+                _localImpactPosition = localPosition;
+            }
 
             if (IsWorking)
             {
@@ -71,7 +68,7 @@
 
         public void DrawShieldDownIcon()
         {
-            if (_tick % 60 != 0 && !_isDedicated) HudCheck();
+            if (_tick % 60 != 0) HudCheck();
             var enemy = false;
             var relation = MyAPIGateway.Session.Player.GetRelationTo(MyCube.OwnerId);
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
@@ -129,9 +126,10 @@
 
         private bool DetermineVisualState(bool reInforce)
         {
-            var viewCheck = _count == 0 || _count == 19 || _count == 39;
-            if (viewCheck) _viewInShield = CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation, DetectMatrixOutsideInv);
+            if (_tick60 || Session.Instance.HudIconReset) HudCheck();
 
+            var viewCheck = _count == 0 || _count == 19 || _count == 39;
+            if (viewCheck) _viewInShield = CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation - (VelAtPoint * Session.OneStep), DetectMatrixOutsideInv);
             if (reInforce)
                 _hideShield = false;
             else if (viewCheck && _hideColor && !_supressedColor && _viewInShield)
@@ -231,11 +229,9 @@
             return lod;
         }
 
-        private void HitParticleStart()
+        private void HitParticleStart(Vector3D pos)
         {
-            var pos = WorldImpactPosition;
             var matrix = MatrixD.CreateTranslation(pos);
-
             MyParticlesManager.TryCreateParticleEffect(6667, out _effect, ref matrix, ref pos, _shieldEntRendId, true); 
             if (_effect == null) return;
             var scale = 0.0075;
@@ -250,7 +246,6 @@
 
                 radius = (int)(logOfPlayerDist * scaler);
                 _effect.UserColorMultiplier = new Vector4(255, 69, 0, 1);
-                EnergyHit = false;
             }
             else
             {
@@ -266,7 +261,7 @@
             _effect.Play();
         }
 
-        private void HudCheck()
+        public void HudCheck()
         {
             var playerEnt = MyAPIGateway.Session.ControlledObject?.Entity as MyEntity;
             if (playerEnt?.Parent != null) playerEnt = playerEnt.Parent;
@@ -278,7 +273,7 @@
                 return;
             }
 
-            if (!CustomCollision.PointInShield(playerEnt.PositionComp.WorldAABB.Center, DetectMatrixOutsideInv))
+            if (!CustomCollision.PointInShield(playerEnt.PositionComp.WorldAABB.Center - (VelAtPoint * Session.OneStep), DetectMatrixOutsideInv))
             {
                 if (Session.Instance.HudComp != this)
                 {
@@ -298,7 +293,7 @@
                 if (protectedEnt != null && protectedEnt.Relation != Ent.Protected) return;
             }
 
-            var distFromShield = Vector3D.DistanceSquared(playerEnt.PositionComp.WorldVolume.Center, DetectionCenter);
+            var distFromShield = Vector3D.DistanceSquared(playerEnt.PositionComp.WorldVolume.Center - Session.OneStep, DetectionCenter);
             if (Session.Instance.HudComp != this && distFromShield <= Session.Instance.HudShieldDist)
             {
                 Session.Instance.HudShieldDist = distFromShield;

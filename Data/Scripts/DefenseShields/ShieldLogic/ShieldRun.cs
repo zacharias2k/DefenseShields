@@ -8,6 +8,7 @@
     using VRage.Game.Components;
     using VRage.ModAPI;
     using VRage.ObjectBuilders;
+    using VRage.Game.Entity;
 
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DSControlLarge", "DSControlSmall", "DSControlTable")]
     public partial class DefenseShields : MyGameLogicComponent
@@ -86,9 +87,6 @@
                     if (_comingOnline) ComingOnlineSetup();
                     if (_isServer)
                     {
-                        var createHeTiming = _count == 6 && (_lCount == 1 || _lCount == 6);
-                        if (GridIsMobile && createHeTiming) CreateHalfExtents();
-
                         if (_mpActive && (_forceBufferSync || _count == 29))
                         {
                             var newPercentColor = UtilsStatic.GetShieldColorFromFloat(DsState.State.ShieldPercent);
@@ -102,7 +100,6 @@
                         }
                         if (Session.Instance.EmpWork.EventRunning) AbsorbEmp();
                     }
-                    if (!_isDedicated && (_tick60 || Session.Instance.HudIconReset)) HudCheck();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }

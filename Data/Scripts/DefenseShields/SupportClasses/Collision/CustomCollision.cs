@@ -88,6 +88,50 @@
             return Vector3.Distance(worldHitPos, ray.Position);
         }
 
+        public static void IntersectEllipsoidObb(MatrixD ellipsoidMatrixInv, MatrixD ellipsoidMatrix, Vector3D[] obbCorners)
+        {
+            // 4 + 5 + 6 + 7 = Front
+            // 0 + 1 + 2 + 3 = Back
+            // 1 + 2 + 5 + 6 = Top
+            // 0 + 3 + 4 + 7 = Bottom
+            var p0 = Vector3D.Transform(obbCorners[0], ellipsoidMatrixInv);
+            var p1 = Vector3D.Transform(obbCorners[1], ellipsoidMatrixInv);
+            var p2 = Vector3D.Transform(obbCorners[2], ellipsoidMatrixInv);
+            var p3 = Vector3D.Transform(obbCorners[3], ellipsoidMatrixInv);
+            var p4 = Vector3D.Transform(obbCorners[4], ellipsoidMatrixInv);
+            var p5 = Vector3D.Transform(obbCorners[5], ellipsoidMatrixInv);
+            var p6 = Vector3D.Transform(obbCorners[6], ellipsoidMatrixInv);
+            var p7 = Vector3D.Transform(obbCorners[7], ellipsoidMatrixInv);
+
+            var frontPlane = new PlaneD(p4, p5, p6);
+            var backPlane = new PlaneD(p0, p1, p2);
+            var topPlane = new PlaneD(p1, p2, p5);
+            var bottomPlane = new PlaneD(p0, p3, p4);
+
+            var normSphere = new BoundingSphereD(Vector3.Zero, 1f);
+            var test1 = frontPlane.Intersects(normSphere) == PlaneIntersectionType.Intersecting;
+            var test2 = backPlane.Intersects(normSphere) == PlaneIntersectionType.Intersecting;
+            var test3 = topPlane.Intersects(normSphere) == PlaneIntersectionType.Intersecting;
+            var test4 = bottomPlane.Intersects(normSphere) == PlaneIntersectionType.Intersecting;
+            var sphereCenter = normSphere.Center;
+            Vector3D t1Out;
+            Vector3D t2Out;
+            Vector3D t3Out;
+            Vector3D t4Out;
+            ClosestPointPlanePoint(ref frontPlane, ref sphereCenter, out t1Out);
+            ClosestPointPlanePoint(ref backPlane, ref sphereCenter, out t2Out);
+            ClosestPointPlanePoint(ref topPlane, ref sphereCenter, out t3Out);
+            ClosestPointPlanePoint(ref bottomPlane, ref sphereCenter, out t4Out);
+        }
+
+        public static void ClosestPointPlanePoint(ref PlaneD plane, ref Vector3D point, out Vector3D result)
+        {
+            double result1;
+            Vector3D.Dot(ref plane.Normal, ref point, out result1);
+            double num = result1 - plane.D;
+            result = point - num * plane.Normal;
+        }
+
         public static bool RayIntersectsTriangle(Vector3D rayOrigin, Vector3D rayVector, Vector3D v0, Vector3D v1, Vector3D v2, Vector3D outIntersectionPoint)
         {
             const double Epsilon = 0.0000001;
@@ -258,10 +302,13 @@
                 blockBox = new BoundingBoxD(-halfExt, halfExt);
                 block.ComputeWorldCenter(out center);
             }
-
+            
+            // 4 + 5 + 6 + 7 = Front
+            // 0 + 1 + 2 + 3 = Back
+            // 1 + 2 + 5 + 6 = Top
+            // 0 + 3 + 4 + 7 = Bottom
             new MyOrientedBoundingBoxD(center, blockBox.HalfExtents, bQuaternion).GetCorners(blockPoints, 0);
             blockPoints[8] = center;
-
             var point0 = blockPoints[0];
             if (Vector3.Transform(point0, matrixInv).LengthSquared() <= 1) return point0;
             var point1 = blockPoints[1];

@@ -178,7 +178,6 @@
                 ShieldComp.RemSubs.ExceptWith(ShieldComp.AddSubs);
                 ShieldComp.AddSubs.ExceptWith(ShieldComp.NewTmp1);
                 ShieldComp.NewTmp1.Clear();
-                Log.Line($"Adds:{ShieldComp.AddSubs.Count} - Rems{ShieldComp.RemSubs.Count} - Total:{ShieldComp.LinkedGrids.Count}");
                 if (ShieldComp.AddSubs.Count != 0 || ShieldComp.RemSubs.Count != 0) MyAPIGateway.Parallel.StartBackground(SubChangePreEvents, SubChangeCallback);
                 else SetSubFlags();
             }

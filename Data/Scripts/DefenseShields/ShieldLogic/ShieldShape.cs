@@ -2,7 +2,6 @@
 {
     using System;
     using Support;
-    using Sandbox.ModAPI;
     using VRage.Game;
     using VRageMath;
 
@@ -68,29 +67,7 @@
             CreateShieldShape();
         }
 
-        private void AdjustShape(bool backGround)
-        {
-            if (backGround) MyAPIGateway.Parallel.StartBackground(GetShapeAdjust);
-            else GetShapeAdjust();
-            _adjustShape = false;
-        }
-
-        private void GetShapeAdjust()
-        {
-            if (DsSet.Settings.SphereFit || DsSet.Settings.FortifyShield) DsState.State.EllipsoidAdjust = 1f;
-            else if (!DsSet.Settings.ExtendFit) DsState.State.EllipsoidAdjust = UtilsStatic.CreateNormalFit(Shield, DsState.State.GridHalfExtents);
-            else DsState.State.EllipsoidAdjust = UtilsStatic.CreateExtendedFit(Shield, DsState.State.GridHalfExtents);
-        }
-
-        private void CheckExtents()
-        {
-            FitChanged = false;
-            _shapeEvent = false;
-            if (!_isServer || !GridIsMobile) return;
-            CreateHalfExtents();
-        }
-
-        private void CreateHalfExtents()
+        public void CreateHalfExtents()
         {
             _oldGridHalfExtents = DsState.State.GridHalfExtents;
             var myAabb = MyGrid.PositionComp.LocalAABB;
@@ -135,6 +112,28 @@
             {
                 _adjustShape = true;
             }
+        }
+
+        private void AdjustShape(bool backGround)
+        {
+            if (backGround) GetShapeAdjust();
+            else GetShapeAdjust();
+            _adjustShape = false;
+        }
+
+        private void GetShapeAdjust()
+        {
+            if (DsSet.Settings.SphereFit || DsSet.Settings.FortifyShield) DsState.State.EllipsoidAdjust = 1f;
+            else if (!DsSet.Settings.ExtendFit) DsState.State.EllipsoidAdjust = UtilsStatic.CreateNormalFit(Shield, DsState.State.GridHalfExtents);
+            else DsState.State.EllipsoidAdjust = UtilsStatic.CreateExtendedFit(Shield, DsState.State.GridHalfExtents);
+        }
+
+        private void CheckExtents()
+        {
+            FitChanged = false;
+            _shapeEvent = false;
+            if (!_isServer || !GridIsMobile) return;
+            CreateHalfExtents();
         }
 
         private void CreateShieldShape()
