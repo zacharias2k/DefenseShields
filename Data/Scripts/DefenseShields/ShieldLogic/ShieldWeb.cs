@@ -59,16 +59,16 @@
         {
             PruneList.Clear();
             MyGamePruningStructure.GetTopMostEntitiesInBox(ref WebBox, PruneList);
-            foreach (var eShield in EnemyShields) PruneList.Add(eShield);
             if (Missiles.Count > 0)
             {
                 var missileBox = WebBox;
                 foreach (var missile in Missiles)
                     if (missile.InScene && !missile.MarkedForClose && missileBox.Intersects(missile.PositionComp.WorldAABB)) PruneList.Add(missile);
             }
+            var shieldsStartIndex = PruneList.Count;
+            foreach (var eShield in EnemyShields) PruneList.Add(eShield);
 
             var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || ShieldComp.Modulator == null || ShieldComp.Modulator.ModSet.Settings.ModulateVoxels;
-            var reInforce = DsState.State.ReInforce;
             var voxelFound = false;
             var shieldFound = false;
             var entChanged = false;
@@ -79,28 +79,29 @@
             for (int i = 0; i < PruneList.Count; i++)
             {
                 var ent = PruneList[i];
-                var voxel = ent as MyVoxelBase;
                 var entPhysics = ent.Physics;
-                if (ent == null || (voxel == null && (entPhysics == null || ent.DefinitionId == null)) || (voxel != null && (!iMoving || !GridIsMobile || disableVoxels || voxel != voxel.RootVoxel))) continue;
 
-                if (reInforce && !ShieldComp.SubGrids.Contains(ent as MyCubeGrid)) continue;
-
-                bool quickReject;
-                if (_isServer) quickReject = ent is IMyEngineerToolBase || IgnoreCache.Contains(ent) || FriendlyMissileCache.Contains(ent) || AuthenticatedCache.Contains(ent);
-                else quickReject = (!(ent is MyCubeGrid) && voxel == null && !(ent is IMyCharacter)) || IgnoreCache.Contains(ent) || AuthenticatedCache.Contains(ent);
-
-                var floater = ent as IMyFloatingObject;
-                if (quickReject || floater != null && (!iMoving && Vector3.IsZero(entPhysics.LinearVelocity, 1e-2f)) || !WebSphere.Intersects(ent.PositionComp.WorldVolume)) continue;
-                if (voxel != null)
+                if (i < shieldsStartIndex)
                 {
-                    if (VoxelsToIntersect.ContainsKey(voxel)) VoxelsToIntersect[voxel]++;
-                    else VoxelsToIntersect[voxel] = 1;
-                    voxelFound = true;
-                    entChanged = true;
-                    _enablePhysics = true;
-                    continue;
-                }
+                    var voxel = ent as MyVoxelBase;
+                    if (ent == null || (voxel == null && (entPhysics == null || ent.DefinitionId == null)) || (voxel != null && (!iMoving || !GridIsMobile || disableVoxels || voxel != voxel.RootVoxel))) continue;
 
+                    bool quickReject;
+                    if (_isServer) quickReject = ent is IMyEngineerToolBase || IgnoreCache.Contains(ent) || EnemyShields.Contains(ent) || FriendlyMissileCache.Contains(ent) || AuthenticatedCache.Contains(ent);
+                    else quickReject = (!(ent is MyCubeGrid) && voxel == null && !(ent is IMyCharacter)) || IgnoreCache.Contains(ent) || EnemyShields.Contains(ent) || AuthenticatedCache.Contains(ent);
+
+                    var floater = ent as IMyFloatingObject;
+                    if (quickReject || floater != null && (!iMoving && Vector3.IsZero(entPhysics.LinearVelocity, 1e-2f)) || !WebSphere.Intersects(ent.PositionComp.WorldVolume)) continue;
+                    if (voxel != null)
+                    {
+                        if (VoxelsToIntersect.ContainsKey(voxel)) VoxelsToIntersect[voxel]++;
+                        else VoxelsToIntersect[voxel] = 1;
+                        voxelFound = true;
+                        entChanged = true;
+                        _enablePhysics = true;
+                        continue;
+                    }
+                }
                 Ent relation;
 
                 ProtectCache protectedEnt;
@@ -168,7 +169,6 @@
                         IgnoreCache.Add(ent);
                         continue;
                 }
-                if (reInforce) continue;
 
                 if (relation == Ent.Shielded) shieldFound = true;
                 try
@@ -214,7 +214,7 @@
                 }
                 catch (Exception ex) { Log.Line($"Exception in WebEntities entInfo: {ex}"); }
             }
-            if (!_enablePhysics || reInforce)
+            if (!_enablePhysics)
             {
                 if (_isServer) Asleep = true;
                 return;
@@ -306,7 +306,7 @@
 
                 ShieldGridComponent shieldComponent;
                 grid.Components.TryGet(out shieldComponent);
-                if (shieldComponent?.DefenseShields?.ShieldComp != null && shieldComponent.DefenseShields.WasOnline)
+                if (shieldComponent?.DefenseShields?.ShieldComp != null && shieldComponent.DefenseShields.NotFailed)
                 {
                     var dsComp = shieldComponent.DefenseShields;
                     var shieldEntity = MyCube.Parent;

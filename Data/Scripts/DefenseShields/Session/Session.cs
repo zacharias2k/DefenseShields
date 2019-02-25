@@ -315,7 +315,7 @@
                 {
                     ShieldGridComponent sComp;
                     grid.Components.TryGet(out sComp);
-                    if (sComp?.DefenseShields != null && sComp.DefenseShields.WasOnline) continue;
+                    if (sComp?.DefenseShields != null && sComp.DefenseShields.NotFailed) continue;
 
                     var gridCenter = grid.PositionComp.WorldVolume.Center;
                     var testDir = Vector3D.Normalize(gridCenter - epiCenter);

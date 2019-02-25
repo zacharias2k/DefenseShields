@@ -267,7 +267,7 @@
                 }
             }
 
-            if (!EnhState.State.Backup && ShieldComp.Enhancer == this && ShieldComp.DefenseShields.WasOnline)
+            if (!EnhState.State.Backup && ShieldComp.Enhancer == this && ShieldComp.DefenseShields.NotFailed)
             {
                 NeedUpdate(EnhState.State.Online, true);
                 return true;

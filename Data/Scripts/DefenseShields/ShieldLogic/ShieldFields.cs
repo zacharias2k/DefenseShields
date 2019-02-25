@@ -50,7 +50,7 @@
         internal volatile bool MoverByShield;
         internal volatile bool PlayerByShield;
         internal volatile bool NewEntByShield;
-        internal volatile bool Asleep = true;
+        internal volatile bool Asleep;
         internal volatile bool WasPaused;
         internal volatile uint LastWokenTick;
         internal volatile bool ReInforcedShield;
@@ -242,6 +242,7 @@
         public int KineticCoolDown { get; internal set; } = -1;
         public int EnergyCoolDown { get; internal set; } = -1;
         public int HitCoolDown { get; private set; } = -11;
+        public int DtreeProxyId { get; set; } = -1;
 
         internal IMyUpgradeModule Shield { get; set; }
         internal ShieldType ShieldMode { get; set; }
@@ -268,7 +269,7 @@
         internal double BoundingRange { get; set; }
         internal double EllipsoidVolume { get; set; }
 
-        internal bool WasOnline { get; set; }
+        internal bool NotFailed { get; set; }
         internal bool DeformEnabled { get; set; }
         internal bool ExplosionEnabled { get; set; }
         internal bool WarmedUp { get; set; }

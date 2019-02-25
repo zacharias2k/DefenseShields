@@ -216,7 +216,7 @@
 
         private void OnShieldDetected(DefenseShields detector, DefenseShields detected) 
         {
-
+            Log.Line($"Detector is:{detector.MyGrid.DebugName} - detected is:{detected.MyGrid.DebugName}");
         }
 
         private string GetShieldStatus()

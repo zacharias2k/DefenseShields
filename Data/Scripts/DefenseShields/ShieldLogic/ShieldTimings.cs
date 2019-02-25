@@ -37,7 +37,6 @@
         public void CleanWebEnts()
         {
             AuthenticatedCache.Clear();
-            EnemyShields.Clear();
             IgnoreCache.Clear();
 
             _porotectEntsTmp.Clear();
@@ -50,6 +49,7 @@
             {
                 EntIntersectInfo removedEnt;
                 WebEnts.TryRemove(webent.Key, out removedEnt);
+                EnemyShields.Remove(webent.Key);
             }
         }
 
@@ -138,7 +138,7 @@
 
         private void UpdateSubGrids(bool force = false)
         {
-            if (Session.Enforced.Debug == 2) Log.Line($"UpdateSubGrids: Su:{DsState.State.Suspended}({WasSuspended}) - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Online:{DsState.State.Online} - Power:{!DsState.State.NoPower} - Sleep:{DsState.State.Sleeping} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"UpdateSubGrids: Su:{DsState.State.Suspended}({WasSuspended}) - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Online:{DsState.State.Online} - Power:{!DsState.State.NoPower} - Sleep:{DsState.State.Sleeping} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
             var newLinkGrop = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
             var newLinkGropCnt = newLinkGrop.Count;
             lock (SubUpdateLock)
@@ -197,7 +197,7 @@
                     bool mechSub;
                     lock (SubLock) mechSub = ShieldComp.SubGrids.Contains(addSub);
                     UpdateSubBlockCollections(addSub, mechSub);
-                    Log.Line($"SubAdd: Integrity:{gridIntegrity} - newTotal:{DsState.State.GridIntegrity}");
+                    if (Session.Enforced.Debug == 3) Log.Line($"SubAdd: Integrity:{gridIntegrity} - newTotal:{DsState.State.GridIntegrity}");
                 }
                 ShieldComp.AddSubs.Clear();
 
@@ -205,7 +205,7 @@
                 {
                     RegisterGridEvents(false, remSub);
                     GridIntegrity(remSub, true);
-                    Log.Line($"SubRemove: newTotal:{DsState.State.GridIntegrity}");
+                    if (Session.Enforced.Debug == 3) Log.Line($"SubRemove: newTotal:{DsState.State.GridIntegrity}");
                 }
                 ShieldComp.RemSubs.Clear();
             }
@@ -280,7 +280,6 @@
 
             if (!gotDistributor) MyResourceDist = null;
 
-            Log.Line($"GetDistributor: {gotDistributor}");
             _checkForDistributor = false;
             return gotDistributor;
         }

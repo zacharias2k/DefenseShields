@@ -58,15 +58,17 @@
                             s.Asleep = false;
                             return;
                         }
-
-                        var shieldActive = ActiveShields.ContainsKey(s);
+                        bool shieldActive;
+                        lock (ActiveShields)
+                        {
+                            shieldActive = ActiveShields.Contains(s);
+                        }
                         if (s.LostPings > 59)
                         {
                             if (shieldActive)
                             {
                                 if (Enforced.Debug >= 2) Log.Line("Logic Paused by lost pings");
-                                bool value;
-                                ActiveShields.TryRemove(s, out value);
+                                lock (ActiveShields) ActiveShields.Remove(s);
                                 s.WasPaused = true;
                             }
                             s.Asleep = false;
@@ -95,21 +97,26 @@
                         if (EntSlotTick && RefreshCycle == s.MonitorSlot) MonitorRefreshTasks(x, ref monitorList, reInforce, ref newSub);
 
                         if (reInforce) return;
-
-                        if (tick < s.LastWokenTick + 400 || s.ShieldComp.GridIsMoving || s.Missiles.Count > 0)
+                        if (tick < s.LastWokenTick + 400 || s.Missiles.Count > 0)
                         {
-                            if (s.ShieldComp.GridIsMoving) s.LastWokenTick = tick;
                             s.Asleep = false;
                             return;
                         }
+
+                        if (s.GridIsMobile && s.MyGrid.Physics.IsMoving)
+                        {
+                            s.LastWokenTick = tick;
+                            s.Asleep = false;
+                            return;
+                        }
+
                         if (!s.PlayerByShield && !s.MoverByShield && !s.NewEntByShield)
                         {
                             if (s.TicksWithNoActivity++ % EntCleanCycle == 0) s.EntCleanUpTime = true;
                             if (tick > 1200 && !s.WasPaused)
                             {
                                 if (Enforced.Debug >= 2) Log.Line($"Logic Paused by monitor");
-                                bool value;
-                                ActiveShields.TryRemove(s, out value);
+                                lock (ActiveShields) ActiveShields.Remove(s);
                                 s.WasPaused = true;
                                 s.Asleep = false;
                                 s.TicksWithNoActivity = 0;
@@ -175,8 +182,6 @@
                 if (!newMode) return;
                 foreach (var sub in subs)
                 {
-                    //if (Enforced.Debug >= 2) Log.Line("Server queuing entFresh for reinforced shield");
-
                     if (!_globalEntTmp.ContainsKey(sub)) newSub = true;
                     _entRefreshQueue.Enqueue(sub);
                     if (!s.WasPaused) _globalEntTmp[sub] = _workData.Tick;
@@ -397,7 +402,7 @@
                 for (int i = 0; i < SlotCnt.Length; i++) SlotCnt[i] = 0;
                 foreach (var pair in GlobalProtect) SlotCnt[pair.Value.RefreshSlot]++;
                 Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - EntsUpdated:{entsUpdated} - ShieldsWaking:{shieldsWaking} - EntsRemoved: {entsremoved} - EntsLostShield:{entsLostShield} - EntInRefreshSlots:({SlotCnt[0]} - {SlotCnt[1]} - {SlotCnt[2]} - {SlotCnt[3]} - {SlotCnt[4]} - {SlotCnt[5]} - {SlotCnt[6]} - {SlotCnt[7]} - {SlotCnt[8]}) \n" +
-                         $"                                     ProtectedEnts:{GlobalProtect.Count} - ActiveShields:{ActiveShields.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count}");
+                         $"                                     ProtectedEnts:{GlobalProtect.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count}");
             }
         }
 
@@ -405,26 +410,30 @@
         {
             if (!Dispatched)
             {
-                foreach (var s in ActiveShields.Keys)
+                lock (ActiveShields)
                 {
-                    if (!s.WasOnline) continue;
-
-                    if (s.GridIsMobile) s.MobileUpdate();
-                    if (s.Asleep) continue;
-
-                    if (Tick300 && s.GridIsMobile) s.CreateHalfExtents();
-
-                    if (s.DsState.State.ReInforce)
+                    foreach (var s in ActiveShields)
                     {
-                        s.DeformEnabled = true;
-                        s.ProtectSubs(Tick);
-                        continue;
+                        if (s.Asleep) continue;
+
+                        if (s.GridIsMobile)
+                        {
+                            s.MobileUpdate();
+                            if (Tick300) s.CreateHalfExtents();
+                        }
+
+                        if (s.DsState.State.ReInforce)
+                        {
+                            s.DeformEnabled = true;
+                            s.ProtectSubs(Tick);
+                            continue;
+                        }
+
+                        if (Tick20 && s.EffectsDirty) s.ResetDamageEffects();
+                        if (Tick600) s.CleanWebEnts();
+
+                        s.WebEntities();
                     }
-
-                    if (Tick20 && s.EffectsDirty) s.ResetDamageEffects();
-                    if (Tick600) s.CleanWebEnts();
-
-                    s.WebEntities();
                 }
 
                 if (WebWrapperOn)

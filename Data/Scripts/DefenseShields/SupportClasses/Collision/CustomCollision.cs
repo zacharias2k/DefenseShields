@@ -269,17 +269,8 @@
                         }
                     }
                 }
-
                 if (collisionCnt == 0) return null;
-                var sPhysics = shieldGrid.Physics;
-                var lSpeed = sPhysics.LinearVelocity.Length();
-                var aSpeed = sPhysics.AngularVelocity.Length() * 20;
-                var speed = 0f;
-                speed = lSpeed > aSpeed ? lSpeed : aSpeed;
-
                 collisionAvg = collision / collisionCnt;
-
-                shieldGrid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, -(collisionAvg - sPhysics.CenterOfMassWorld) * ((MyCubeGrid)shieldGrid).GetCurrentMass() * speed, null, Vector3D.Zero, MathHelper.Clamp(speed, 1f, 20f));
             }
             catch (Exception ex) { Log.Line($"Exception in VoxelCollisionSphere: {ex}"); }
 

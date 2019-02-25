@@ -70,7 +70,7 @@
         internal readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         internal readonly Dictionary<MyEntity, MyProtectors> GlobalProtect = new Dictionary<MyEntity, MyProtectors>();
 
-        internal readonly ConcurrentDictionary<DefenseShields, bool> ActiveShields = new ConcurrentDictionary<DefenseShields, bool>();
+        internal readonly HashSet<DefenseShields> ActiveShields = new HashSet<DefenseShields>();
         internal readonly ConcurrentDictionary<DefenseShields, bool> FunctionalShields = new ConcurrentDictionary<DefenseShields, bool>();
 
         internal readonly List<PlanetShields> PlanetShields = new List<PlanetShields>();
@@ -252,7 +252,6 @@
         internal bool ModAction { get; set; }
 
         internal DefenseShields HudComp { get; set; }
-
         internal DSUtils Dsutil1 { get; set; } = new DSUtils();
         internal MyEntity3DSoundEmitter SoundEmitter { get; set; } = new MyEntity3DSoundEmitter(null)
         {

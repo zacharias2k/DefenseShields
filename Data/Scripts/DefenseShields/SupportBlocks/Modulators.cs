@@ -37,7 +37,7 @@
 
         private bool _isServer;
         private bool _isDedicated;
-        private bool _wasOnline;
+        private bool _modulatorFailed;
         private bool _wasLink;
         private bool _wasBackup;
         private bool _firstRun = true;
@@ -472,7 +472,7 @@
         {
             if (update)
             {
-                _wasOnline = ModState.State.Online;
+                _modulatorFailed = ModState.State.Online;
                 _wasLink = ModState.State.Link;
                 _wasBackup = ModState.State.Backup;
                 _wasModulateDamage = ModState.State.ModulateDamage;
@@ -481,7 +481,7 @@
                 return true;
             }
 
-            var change = _wasOnline != ModState.State.Online || _wasLink != ModState.State.Link || _wasBackup != ModState.State.Backup 
+            var change = _modulatorFailed != ModState.State.Online || _wasLink != ModState.State.Link || _wasBackup != ModState.State.Backup 
                    || _wasModulateDamage != ModState.State.ModulateDamage || !_wasModulateEnergy.Equals(ModState.State.ModulateEnergy) 
                    || !_wasModulateKinetic.Equals(ModState.State.ModulateKinetic);
             return change;

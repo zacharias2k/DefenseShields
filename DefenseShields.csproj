@@ -199,6 +199,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Config\SerializedValues.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\O2Ui.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\PsUi.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\ShieldDtree.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\PlanetShield.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionControls.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionDamage.cs" />

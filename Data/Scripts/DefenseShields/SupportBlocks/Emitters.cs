@@ -25,6 +25,7 @@
         internal ShieldGridComponent ShieldComp;
         internal MyResourceSinkInfo ResourceInfo;
         internal List<Vector3D> LosScaledCloud = new List<Vector3D>(2000);
+        internal MyEntitySubpart SubpartRotor;
 
         private const string PlasmaEmissive = "PlasmaEmissive";
 
@@ -46,7 +47,7 @@
         private bool _tick60;
         private bool _isServer;
         private bool _isDedicated;
-        private bool _wasOnline;
+        private bool _emitterFailed;
         private bool _wasLink;
         private bool _wasBackup;
         private bool _wasSuspend;
@@ -56,7 +57,6 @@
         private bool _wasCompact;
         private bool _wasCompatible;
         private double _wasBoundingRange;
-        private MyEntitySubpart _subpartRotor;
 
         public enum EmitterType
         {
@@ -312,10 +312,10 @@
 
                 if (ShieldComp.DefenseShields == null || !IsFunctional) return false;
 
-                if (!EmiState.State.Compact && _subpartRotor == null)
+                if (!EmiState.State.Compact && SubpartRotor == null)
                 {
-                    Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                    if (_subpartRotor == null) return false;
+                    Entity.TryGetSubpart("Rotor", out SubpartRotor);
+                    if (SubpartRotor == null) return false;
                 }
 
                 if (EmiState.State.Online && !EmiState.State.Los) LosLogic();
@@ -343,10 +343,10 @@
                 else if (ShieldComp?.ShipEmitter == this) ShieldComp.ShipEmitter = null;
                 return true;
             }
-            if (!EmiState.State.Compact && _subpartRotor == null)
+            if (!EmiState.State.Compact && SubpartRotor == null)
             {
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                if (_subpartRotor == null)
+                Entity.TryGetSubpart("Rotor", out SubpartRotor);
+                if (SubpartRotor == null)
                 {
                     EmiState.State.Suspend = true;
                     return true;
@@ -487,15 +487,15 @@
         {
             if (!IsFunctional) return;
 
-            if (!EmiState.State.Compact && _subpartRotor == null)
+            if (!EmiState.State.Compact && SubpartRotor == null)
             {
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                if (_subpartRotor == null) return;
+                Entity.TryGetSubpart("Rotor", out SubpartRotor);
+                if (SubpartRotor == null) return;
             }
             else if (!EmiState.State.Compact)
             {
-                if (_subpartRotor.Closed) _subpartRotor.Subparts.Clear();
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                if (SubpartRotor.Closed) SubpartRotor.Subparts.Clear();
+                Entity.TryGetSubpart("Rotor", out SubpartRotor);
             }
 
             if (clearAnimation)
@@ -509,8 +509,8 @@
                 {
                     var rotationMatrix = MatrixD.CreateRotationY(0);
                     var matrix = rotationMatrix * MatrixD.CreateTranslation(0, 0, 0);
-                    _subpartRotor.PositionComp.LocalMatrix = matrix;
-                    _subpartRotor.SetEmissiveParts(PlasmaEmissive, Color.Transparent, 0);
+                    SubpartRotor.PositionComp.LocalMatrix = matrix;
+                    SubpartRotor.SetEmissiveParts(PlasmaEmissive, Color.Transparent, 0);
                 }
                 else MyCube.SetEmissiveParts(PlasmaEmissive, Color.Transparent, 0);
             }
@@ -530,7 +530,7 @@
                 return;
             }
 
-            if (_subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(false);
+            if (SubpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(false);
             RotationTime -= 1;
             if (AnimationLoop == 0) TranslationTime = 0;
             if (AnimationLoop < 299) TranslationTime += 1;
@@ -542,8 +542,8 @@
             var rotationMatrix = MatrixD.CreateRotationY(0.025f * RotationTime);
             var matrix = rotationMatrix * MatrixD.CreateTranslation(0, Definition.BlockMoveTranslation * TranslationTime, 0);
 
-            _subpartRotor.PositionComp.LocalMatrix = matrix;
-            _subpartRotor.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetShieldColorFromFloat(percent), 0.1f * EmissiveIntensity);
+            SubpartRotor.PositionComp.LocalMatrix = matrix;
+            SubpartRotor.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetShieldColorFromFloat(percent), 0.1f * EmissiveIntensity);
 
             if (AnimationLoop++ == 599) AnimationLoop = 0;
         }
@@ -578,8 +578,7 @@
 
                 if (!EmiState.State.Los) DrawHelper();
             }
-
-            if (ShieldComp.CheckEmitters || TookControl)
+            if ((ShieldComp.CheckEmitters || TookControl))
             {
                 CheckShieldLineOfSight();
             }
@@ -587,7 +586,7 @@
 
         private void CheckShieldLineOfSight()
         {
-            if (!EmiState.State.Compact && _subpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(false);
+            if (!EmiState.State.Compact && SubpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(false);
             TookControl = false;
 
             ShieldComp.DefenseShields.ResetShape(false);
@@ -606,7 +605,7 @@
 
                 ShieldComp.CheckEmitters = false;
             }
-            if (Session.Enforced.Debug == 3 && !EmiState.State.Los) Log.Line($"LOS: Mode: {EmitterMode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {EmiState.State.Los.ToString()} - EmitterId [{Emitter.EntityId}]");
+            if (Session.Enforced.Debug == 2 && !EmiState.State.Los) Log.Line($"LOS: Mode: {EmitterMode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {EmiState.State.Los.ToString()} - EmitterId [{Emitter.EntityId}]");
         }
 
         private void UpdateLosState(bool updateTestSphere = true)
@@ -620,7 +619,7 @@
             {
                 var testDist = Definition.FieldDist;
                 var testDir = MyCube.PositionComp.WorldMatrix.Up;
-                if (!EmiState.State.Compact) testDir = _subpartRotor.PositionComp.WorldVolume.Center - MyCube.PositionComp.WorldVolume.Center;
+                if (!EmiState.State.Compact) testDir = SubpartRotor.PositionComp.WorldVolume.Center - MyCube.PositionComp.WorldVolume.Center;
                 testDir.Normalize();
                 var testPos = MyCube.PositionComp.WorldAABB.Center + (testDir * testDist);
 
@@ -639,7 +638,7 @@
             if (Vector3D.DistanceSquared(MyAPIGateway.Session.Player.Character.PositionComp.WorldAABB.Center, Emitter.PositionComp.WorldAABB.Center) < 2250000)
             {
                 var controller = ShieldComp.DefenseShields;
-                controller.MobileUpdate();
+                //controller.MobileUpdate();
 
                 var needsUpdate = controller.GridIsMobile && (ShieldComp.GridIsMoving || _updateLosState);
 
@@ -683,7 +682,7 @@
         {
             if (updateShape)
             {
-                if (ShieldComp.DefenseShields.GridIsMobile) ShieldComp.DefenseShields.MobileUpdate();
+                //if (ShieldComp.DefenseShields.GridIsMobile) ShieldComp.DefenseShields.MobileUpdate();
             }
             var losPointSphere = Session.Instance.LosPointSphere;
             LosScaledCloud.Clear();
@@ -726,7 +725,7 @@
         {
             if (update)
             {
-                _wasOnline = EmiState.State.Online;
+                _emitterFailed = EmiState.State.Online;
                 _wasLink = EmiState.State.Link;
                 _wasBackup = EmiState.State.Backup;
                 _wasSuspend = EmiState.State.Suspend;
@@ -738,7 +737,7 @@
                 return true;
             }
 
-            return _wasOnline != EmiState.State.Online || _wasLink != EmiState.State.Link ||
+            return _emitterFailed != EmiState.State.Online || _wasLink != EmiState.State.Link ||
                    _wasBackup != EmiState.State.Backup || _wasSuspend != EmiState.State.Suspend ||
                    _wasLos != EmiState.State.Los || _wasCompact != EmiState.State.Compact ||
                    _wasCompatible != EmiState.State.Compatible || _wasMode != EmiState.State.Mode ||
@@ -776,19 +775,19 @@
             {
                 case "EmitterST":
                     EmitterMode = EmitterType.Station;
-                    Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                    Entity.TryGetSubpart("Rotor", out SubpartRotor);
                     break;
                 case "EmitterL":
                 case "EmitterLA":
                     EmitterMode = EmitterType.Large;
                     if (Definition.Name == "EmitterLA") EmiState.State.Compact = true;
-                    else Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                    else Entity.TryGetSubpart("Rotor", out SubpartRotor);
                     break;
                 case "EmitterS":
                 case "EmitterSA":
                     EmitterMode = EmitterType.Small;
                     if (Definition.Name == "EmitterSA") EmiState.State.Compact = true;
-                    else Entity.TryGetSubpart("Rotor", out _subpartRotor);
+                    else Entity.TryGetSubpart("Rotor", out SubpartRotor);
                     break;
             }
             Emitter.AppendingCustomInfo += AppendingCustomInfo;

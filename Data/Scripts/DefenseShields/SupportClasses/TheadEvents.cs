@@ -152,23 +152,25 @@
             EntIntersectInfo entInfo;
 
             var foundInfo = Shield.WebEnts.TryGetValue(CollisionData.Entity1, out entInfo);
-            if (!foundInfo || entInfo.LastCollision == tick)
-            {
-                Log.Line("testcol");
-                return;
-            }
+            if (!foundInfo || entInfo.LastCollision == tick) return;
+
 
             if (entInfo.LastCollision >= tick - 8) entInfo.ConsecutiveCollisions++;
             else entInfo.ConsecutiveCollisions = 0;
-
             entInfo.LastCollision = tick;
+
             if (entInfo.ConsecutiveCollisions > 0) if (Session.Enforced.Debug >= 2) Log.Line($"Consecutive:{entInfo.ConsecutiveCollisions}");
             if (!CollisionData.E1IsStatic)
             {
-                if (entInfo.ConsecutiveCollisions == 0) CollisionData.Entity1.Physics.ApplyImpulse(CollisionData.ImpDirection1, CollisionData.CollisionCorrection1);
+                if (entInfo.ConsecutiveCollisions == 0) CollisionData.Entity1.Physics.ApplyImpulse(CollisionData.ImpDirection1, CollisionData.CollisionAvg);
                 if (CollisionData.E2IsHeavier)
                 {
-                    var forceMulti = (CollisionData.Mass1 * ((entInfo.ConsecutiveCollisions + 1) * 25));
+                    var accelCap = CollisionData.E2IsStatic ? 10 : 50;
+                    var accelClamp = MathHelper.Clamp(CollisionData.Mass2 / CollisionData.Mass1, 1, accelCap);
+                    var collisions = entInfo.ConsecutiveCollisions + 1;
+                    var sizeAccel = accelClamp > collisions ? accelClamp : collisions;
+                    var forceMulti = (CollisionData.Mass1 * (collisions * sizeAccel));
+                    Log.Line($"sizeAccel:{sizeAccel}");
                     if (CollisionData.Entity1.Physics.LinearVelocity.Length() <= (Session.Instance.MaxEntitySpeed * 0.75))
                         CollisionData.Entity1.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceMulti * CollisionData.Force1, null, null, null, CollisionData.Immediate);
                 }
@@ -176,50 +178,19 @@
 
             if (!CollisionData.E2IsStatic)
             {
-                if (entInfo.ConsecutiveCollisions == 0) CollisionData.Entity2.Physics.ApplyImpulse(CollisionData.ImpDirection2, CollisionData.CollisionCorrection2);
+                if (entInfo.ConsecutiveCollisions == 0) CollisionData.Entity2.Physics.ApplyImpulse(CollisionData.ImpDirection2, CollisionData.CollisionAvg);
                 if (CollisionData.E1IsHeavier)
                 {
-                    var forceMulti = (CollisionData.Mass2 * ((entInfo.ConsecutiveCollisions + 1) * 25));
+                    var accelCap = CollisionData.E1IsStatic ? 10 : 50;
+                    var accelClamp = MathHelper.Clamp(CollisionData.Mass1 / CollisionData.Mass2, 1, accelCap);
+                    var collisions = entInfo.ConsecutiveCollisions + 1;
+                    var sizeAccel = accelClamp > collisions ? accelClamp : collisions;
+                    var forceMulti = (CollisionData.Mass2 * (collisions * sizeAccel));
+                    Log.Line($"sizeAccel:{sizeAccel}");
                     if (CollisionData.Entity2.Physics.LinearVelocity.Length() <= (Session.Instance.MaxEntitySpeed * 0.75))
                         CollisionData.Entity2.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceMulti * CollisionData.Force2, null, null, null, CollisionData.Immediate);
                 }
             }
-        }
-    }
-
-    public struct ForceDataThreadEvent : IThreadEvent
-    {
-        public readonly MyForceData ForceData;
-        public readonly DefenseShields Shield;
-
-        public ForceDataThreadEvent(MyForceData forceData, DefenseShields shield)
-        {
-            ForceData = forceData;
-            Shield = shield;
-        }
-
-        public void Execute()
-        {
-            if (ForceData.Entity == null || ForceData.Entity.MarkedForClose) return;
-            ForceData.Entity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, ForceData.Force, null, Vector3D.Zero, ForceData.MaxSpeed, ForceData.Immediate);
-        }
-    }
-
-    public struct ImpulseDataThreadEvent : IThreadEvent
-    {
-        public readonly MyImpulseData ImpulseData;
-        public readonly DefenseShields Shield;
-
-        public ImpulseDataThreadEvent(MyImpulseData impulseData, DefenseShields shield)
-        {
-            ImpulseData = impulseData;
-            Shield = shield;
-        }
-
-        public void Execute()
-        {
-            if (ImpulseData.Entity == null || ImpulseData.Entity.MarkedForClose) return;
-            ImpulseData.Entity.Physics.ApplyImpulse(ImpulseData.Direction, ImpulseData.Position);
         }
     }
 
@@ -279,6 +250,58 @@
             }
             Shield.WebDamage = true;
             Shield.Absorb += Damage;
+        }
+    }
+
+    public struct VoxelCollisionDmgThreadEvent : IThreadEvent
+    {
+        public readonly MyEntity Entity;
+        public readonly DefenseShields Shield;
+        public readonly float Damage;
+        public readonly Vector3D CollisionAvg;
+
+        public VoxelCollisionDmgThreadEvent(MyEntity entity, DefenseShields shield, float damage, Vector3D collisionAvg)
+        {
+            Entity = entity;
+            Shield = shield;
+            Damage = damage;
+            CollisionAvg = collisionAvg;
+        }
+
+        public void Execute()
+        {
+            if (Entity == null || Entity.MarkedForClose) return;
+            if (Session.Instance.MpActive)
+            {
+                Shield.AddShieldHit(Entity.EntityId, Damage, Session.Instance.MPKinetic, null, false, CollisionAvg);
+            }
+            else
+            {
+                Shield.WorldImpactPosition = CollisionAvg;
+                Shield.ImpactSize = 12000;
+            }
+            Shield.WebDamage = true;
+            Shield.Absorb += Damage;
+        }
+    }
+
+    public struct VoxelCollisionPhysicsThreadEvent : IThreadEvent
+    {
+        public readonly MyCollisionPhysicsData CollisionData;
+        public readonly DefenseShields Shield;
+
+        public VoxelCollisionPhysicsThreadEvent(MyCollisionPhysicsData collisionPhysicsData, DefenseShields shield)
+        {
+            CollisionData = collisionPhysicsData;
+            Shield = shield;
+        }
+
+        public void Execute()
+        {
+                var velAtPoint = CollisionData.Entity2.Physics.GetVelocityAtPoint(CollisionData.CollisionCorrection2);
+                var speed = MathHelper.Clamp(velAtPoint.Length(), 2f, 20f);
+                var forceMulti = (CollisionData.Mass2 * 10) * speed;
+                CollisionData.Entity2.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceMulti * CollisionData.Force2, null, null, speed, CollisionData.Immediate);
         }
     }
 
@@ -362,6 +385,42 @@
             }
             Shield.WebDamage = true;
             Shield.Absorb += damage;
+        }
+    }
+
+    public struct ForceDataThreadEvent : IThreadEvent
+    {
+        public readonly MyForceData ForceData;
+        public readonly DefenseShields Shield;
+
+        public ForceDataThreadEvent(MyForceData forceData, DefenseShields shield)
+        {
+            ForceData = forceData;
+            Shield = shield;
+        }
+
+        public void Execute()
+        {
+            if (ForceData.Entity == null || ForceData.Entity.MarkedForClose) return;
+            ForceData.Entity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, ForceData.Force, null, Vector3D.Zero, ForceData.MaxSpeed, ForceData.Immediate);
+        }
+    }
+
+    public struct ImpulseDataThreadEvent : IThreadEvent
+    {
+        public readonly MyImpulseData ImpulseData;
+        public readonly DefenseShields Shield;
+
+        public ImpulseDataThreadEvent(MyImpulseData impulseData, DefenseShields shield)
+        {
+            ImpulseData = impulseData;
+            Shield = shield;
+        }
+
+        public void Execute()
+        {
+            if (ImpulseData.Entity == null || ImpulseData.Entity.MarkedForClose) return;
+            ImpulseData.Entity.Physics.ApplyImpulse(ImpulseData.Direction, ImpulseData.Position);
         }
     }
 }

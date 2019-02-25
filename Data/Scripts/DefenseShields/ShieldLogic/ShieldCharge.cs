@@ -1,6 +1,4 @@
-﻿using Sandbox.Game.Entities;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
     using System;
     using Support;

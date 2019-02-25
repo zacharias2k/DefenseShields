@@ -32,7 +32,7 @@
         public void MobileUpdate()
         {
             var checkForNewCenter = MyGrid.PositionComp.WorldVolume.Center;
-            if (!checkForNewCenter.Equals(MyGridCenter, 1e-3))
+            if (!checkForNewCenter.Equals(MyGridCenter, 1e-4))
             {
                 ShieldComp.GridIsMoving = true;
                 MyGridCenter = checkForNewCenter;
@@ -217,11 +217,9 @@
                 _shieldVol = DetectMatrixOutside.Scale.Volume;
                 if (_isServer)
                 {
-                    if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: CreateShieldShape - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
                     ShieldChangeState();
                     ShieldComp.ShieldVolume = DetectMatrixOutside.Scale.Volume;
                 }
-                if (Session.Enforced.Debug == 3) Log.Line($"CreateShape: shapeChanged - GridMobile:{GridIsMobile} - ShieldId [{Shield.EntityId}]");
             }
             if (!DsState.State.Lowered) SetShieldShape();
 

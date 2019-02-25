@@ -1,7 +1,4 @@
-﻿using VRage.Game;
-using VRage.Game.Components;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
     using System;
     using System.Collections.Generic;
@@ -147,7 +144,7 @@ namespace DefenseShields
             if (shieldComponent?.DefenseShields == null) return;
 
             var ds = shieldComponent.DefenseShields;
-            if (!ds.WasOnline)
+            if (!ds.NotFailed)
             {
                 EntIntersectInfo entInfo;
                 WebEnts.TryRemove(ent, out entInfo);
@@ -163,9 +160,10 @@ namespace DefenseShields
             for (int i = 0; i < numOfPointsInside; i++) collisionAvg += insidePoints[i];
 
             if (numOfPointsInside > 0) collisionAvg /= numOfPointsInside;
-            if (collisionAvg != Vector3D.Zero && MyGrid.EntityId > grid.EntityId) ComputeCollisionPhysics(grid, MyGrid, collisionAvg);
+            if (collisionAvg == Vector3D.Zero) return;
+
+            if (MyGrid.EntityId > grid.EntityId) ComputeCollisionPhysics(grid, MyGrid, collisionAvg);
             else if (!_isServer) return;
-            else return;
 
             var damage = ((ds._shieldMaxChargeRate * ConvToHp) * DsState.State.ModulateKinetic) * 0.01666666666f;
             Session.Instance.ThreadEvents.Enqueue(new ShieldVsShieldThreadEvent(this, damage, collisionAvg, grid.EntityId));
@@ -197,16 +195,17 @@ namespace DefenseShields
                 var collision = CustomCollision.VoxelEllipsoidCheck(MyGrid, ShieldComp.PhysicsOutsideLow, voxelBase);
                 if (collision.HasValue)
                 {
+                    ComputeVoxelPhysics(voxelBase, MyGrid, collision.Value);
+
                     VoxelsToIntersect[voxelBase]++;
                     if (_isServer)
                     {
                         var mass = MyGrid.GetCurrentMass();
                         var sPhysics = Shield.CubeGrid.Physics;
-                        var momentum = mass * sPhysics.LinearVelocity;
-                        Absorb += (momentum.Length() / 500) * DsState.State.ModulateEnergy;
+                        var momentum = mass * sPhysics.GetVelocityAtPoint(collision.Value);
+                        var damage = (momentum.Length() / 500) * DsState.State.ModulateEnergy;
+                        Session.Instance.ThreadEvents.Enqueue(new VoxelCollisionDmgThreadEvent(voxelBase, this, damage, collision.Value));
                     }
-                    ImpactSize = 12000;
-                    WorldImpactPosition = collision.Value;
                 }
                 else VoxelsToIntersect[voxelBase] = 0;
             }
@@ -392,6 +391,59 @@ namespace DefenseShields
                 Immediate = false
             };
             Session.Instance.ThreadEvents.Enqueue(new CollisionDataThreadEvent(collisionData, this));
+        }
+
+        private void ComputeVoxelPhysics(MyEntity entity1, MyCubeGrid entity2, Vector3D collisionAvg)
+        {
+            var e2Physics = ((IMyCubeGrid)entity2).Physics;
+            var e2IsStatic = e2Physics.IsStatic;
+
+            float bMass;
+            if (e2IsStatic) bMass = float.MaxValue * 0.001f;
+            else bMass = entity2.GetCurrentMass();
+
+            var sMass = float.MaxValue * 0.001f;
+
+            var bCom = e2Physics.CenterOfMassWorld;
+            var bMassRelation = bMass / sMass;
+            var bRelationClamp = MathHelper.Clamp(bMassRelation, 0, 1);
+            var bCollisionCorrection = Vector3D.Lerp(bCom, collisionAvg, bRelationClamp);
+            var bVelAtPoint = e2Physics.GetVelocityAtPoint(bCollisionCorrection);
+
+            var momentum = (bMass * bVelAtPoint) + (sMass * 0);
+            var resultVelocity = momentum / (bMass + sMass);
+
+            var bDir = (resultVelocity - bVelAtPoint) * bMass;
+            var bForce = Vector3D.Normalize(bCom - collisionAvg);
+
+            var collisionData = new MyCollisionPhysicsData
+            {
+                Entity1 = entity1,
+                Entity2 = entity2,
+                E1IsStatic = true,
+                E2IsStatic = false,
+                E1IsHeavier = true,
+                E2IsHeavier = false,
+                Mass1 = sMass,
+                Mass2 = bMass,
+                Com1 = Vector3D.Zero,
+                Com2 = bCom,
+                CollisionCorrection1 = Vector3D.Zero,
+                CollisionCorrection2 = bCollisionCorrection,
+                ImpDirection1 = Vector3D.Zero,
+                ImpDirection2 = bDir,
+                ImpPosition1 = Vector3D.Zero,
+                ImpPosition2 = bCollisionCorrection,
+                Force1 = Vector3D.Zero,
+                Force2 = bForce,
+                ForcePos1 = null,
+                ForcePos2 = null,
+                ForceTorque1 = null,
+                ForceTorque2 = null,
+                CollisionAvg = collisionAvg,
+                Immediate = false
+            };
+            Session.Instance.ThreadEvents.Enqueue(new VoxelCollisionPhysicsThreadEvent(collisionData, this));
         }
         #endregion
     }

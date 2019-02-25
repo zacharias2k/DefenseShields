@@ -77,8 +77,7 @@
                 if (!EntityAlive()) return;
                 if (!ShieldOn())
                 {
-                    //if (Session.Enforced.Debug == 3 && WasOnline) Log.Line($"Off: WasOn:{WasOnline} - Online:{DsState.State.Online}({_prevShieldActive}) - Lowered:{DsState.State.Lowered} - ShieldCharge:{DsState.State.Charge} - Sus:{DsState.State.Suspended} - EW:{DsState.State.EmitterWorking} - Perc:{DsState.State.ShieldPercent} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
-                    if (WasOnline) OfflineShield();
+                    if (NotFailed) OfflineShield();
                     else if (DsState.State.Message) ShieldChangeState();
                     return;
                 }
@@ -164,8 +163,7 @@
                 if (Session.Instance.Controllers.Contains(this)) Session.Instance.Controllers.Remove(this);
                 bool value1;
                 if (Session.Instance.FunctionalShields.ContainsKey(this)) Session.Instance.FunctionalShields.TryRemove(this, out value1);
-                bool value2;
-                if (Session.Instance.ActiveShields.ContainsKey(this)) Session.Instance.ActiveShields.TryRemove(this, out value2);
+                lock (Session.Instance.ActiveShields) Session.Instance.ActiveShields.Remove(this);
                 WasActive = false;
                 Icosphere = null;
                 InitEntities(false);

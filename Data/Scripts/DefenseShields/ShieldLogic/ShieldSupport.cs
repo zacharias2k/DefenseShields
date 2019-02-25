@@ -138,7 +138,7 @@
         private void UserDebug()
         {
             var message = $"User({MyAPIGateway.Multiplayer.Players.TryGetSteamId(Shield.OwnerId)}) Debugging\n" +
-                          $"On:{DsState.State.Online} - Active:{Session.Instance.ActiveShields.ContainsKey(this)} - Suspend:{DsState.State.Suspended}\n" +
+                          $"On:{DsState.State.Online} - Suspend:{DsState.State.Suspended}\n" +
                           $"Web:{Asleep} - Tick/LWoke:{_tick}/{LastWokenTick}\n" +
                           $"Mo:{DsState.State.Mode} - Su:{DsState.State.Suspended} - Wa:{DsState.State.Waking}\n" +
                           $"Np:{DsState.State.NoPower} - Lo:{DsState.State.Lowered} - Sl:{DsState.State.Sleeping}\n" +
@@ -161,7 +161,7 @@
                 var hit = ShieldHits[i];
                 var damageType = hit.DamageType;
 
-                if (!WasOnline) continue;
+                if (!NotFailed) continue;
 
                 if (damageType == Session.Instance.MPExplosion)
                 {
