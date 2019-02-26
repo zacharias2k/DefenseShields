@@ -68,7 +68,7 @@
         private const int ReModulationCount = 300;
         private const int ShieldDownCount = 1200;
         private const int EmpDownCount = 3600;
-        private const int GenericDownCount = 300;
+        private const int GenericDownCount = 60;
         private const int PowerNoticeCount = 600;
         private const int OverHeat = 600;
         private const int HeatingStep = 600;

@@ -55,15 +55,17 @@
                 var lod = CalculateLod(_onCount);
                 if (_shapeChanged || _updateRender || lod != prevlod)
                 {
+                    _updateRender = false;
+                    _shapeChanged = false;
+
                     Icosphere.CalculateTransform(ShieldShapeMatrix, lod);
                     if (!GridIsMobile) Icosphere.ReturnPhysicsVerts(DetectionMatrix, ShieldComp.PhysicsOutside);
                 }
                 Icosphere.ComputeEffects(ShieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, percent, activeVisible, refreshAnim);
             }
-            if (hitAnim && sphereOnCamera && IsWorking) Icosphere.Draw(renderId);
+            else if (_shapeChanged) _updateRender = true;
 
-            _updateRender = false;
-            _shapeChanged = false;
+            if (hitAnim && sphereOnCamera && IsWorking) Icosphere.Draw(renderId);
         }
 
         public void DrawShieldDownIcon()

@@ -13,13 +13,6 @@
 
     public partial class Session
     {
-        private static volatile int _entSlotAssigner;
-        internal static int GetSlot()
-        {
-            if (++_entSlotAssigner >= Instance.EntSlotScaler) _entSlotAssigner = 0;
-            return _entSlotAssigner;
-        }
-
         #region WebMonitor
         internal void WebMonitor()
         {
@@ -334,6 +327,105 @@
         }
         #endregion
 
+        #region Timings / LoadBalancer
+        private void Timings()
+        {
+            _newFrame = true;
+            Tick = (uint)(Session.ElapsedPlayTime.TotalMilliseconds * TickTimeDiv);
+            Tick20 = Tick % 20 == 0;
+            Tick60 = Tick % 60 == 0;
+            Tick60 = Tick % 60 == 0;
+            Tick180 = Tick % 180 == 0;
+            Tick300 = Tick % 300 == 0;
+            Tick600 = Tick % 600 == 0;
+            Tick1800 = Tick % 1800 == 0;
+
+            if (_count++ == 59)
+            {
+                _count = 0;
+                _lCount++;
+                if (_lCount == 10)
+                {
+                    _lCount = 0;
+                    _eCount++;
+                    if (_eCount == 10)
+                    {
+                        _eCount = 0;
+                        _previousEntId = -1;
+                    }
+                }
+            }
+            if (!GameLoaded && Tick > 100)
+            {
+                if (!WarHeadLoaded && WarTerminalReset != null)
+                {
+                    WarTerminalReset.ShowInTerminal = true;
+                    WarTerminalReset = null;
+                    WarHeadLoaded = true;
+                }
+
+                if (!MiscLoaded)
+                {
+                    MiscLoaded = true;
+                    UtilsStatic.GetDefinitons();
+                    if (!IsServer) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
+                }
+                GameLoaded = true;
+            }
+
+            if (EmpWork.EventRunning && EmpWork.Computed) EmpWork.EventComplete();
+
+            if (Tick20)
+            {
+                Scale();
+                EntSlotTick = Tick % (180 / EntSlotScaler) == 0;
+                if (EntSlotTick) LoadBalancer();
+            }
+            else EntSlotTick = false;
+        }
+
+        internal static int GetSlot()
+        {
+            if (++_entSlotAssigner >= Instance.EntSlotScaler) _entSlotAssigner = 0;
+            return _entSlotAssigner;
+        }
+
+        private void Scale()
+        {
+            if (Tick < 600) return;
+            var oldScaler = EntSlotScaler;
+            var globalProtCnt = GlobalProtect.Count;
+
+            if (globalProtCnt <= 25) EntSlotScaler = 1;
+            else if (globalProtCnt <= 50) EntSlotScaler = 2;
+            else if (globalProtCnt <= 75) EntSlotScaler = 3;
+            else if (globalProtCnt <= 100) EntSlotScaler = 4;
+            else if (globalProtCnt <= 150) EntSlotScaler = 5;
+            else if (globalProtCnt <= 200) EntSlotScaler = 6;
+            else EntSlotScaler = 9;
+
+            if (EntSlotScaler < MinScaler) EntSlotScaler = MinScaler;
+
+            if (oldScaler != EntSlotScaler)
+            {
+                GlobalProtect.Clear();
+                ProtSets.Clean();
+                foreach (var s in FunctionalShields.Keys)
+                {
+                    s.AssignSlots();
+                    s.Asleep = false;
+                }
+                foreach (var c in Controllers)
+                {
+                    if (FunctionalShields.ContainsKey(c)) continue;
+                    c.AssignSlots();
+                    c.Asleep = false;
+                }
+                ScalerChanged = true;
+            }
+            else ScalerChanged = false;
+        }
+
         private void LoadBalancer()
         {
             var shieldsWaking = 0;
@@ -405,7 +497,9 @@
                          $"                                     ProtectedEnts:{GlobalProtect.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count}");
             }
         }
+        #endregion
 
+        #region LogicUpdates
         private void LogicUpdates()
         {
             if (!Dispatched)
@@ -460,41 +554,6 @@
         {
             Dispatched = false;
         }
-
-        private void Scale()
-        {
-            if (Tick < 600) return;
-            var oldScaler = EntSlotScaler;
-            var globalProtCnt = GlobalProtect.Count;
-
-            if (globalProtCnt <= 25) EntSlotScaler = 1;
-            else if (globalProtCnt <= 50) EntSlotScaler = 2;
-            else if (globalProtCnt <= 75) EntSlotScaler = 3;
-            else if (globalProtCnt <= 100) EntSlotScaler = 4;
-            else if (globalProtCnt <= 150) EntSlotScaler = 5;
-            else if (globalProtCnt <= 200) EntSlotScaler = 6;
-            else EntSlotScaler = 9;
-
-            if (EntSlotScaler < MinScaler) EntSlotScaler = MinScaler;
-
-            if (oldScaler != EntSlotScaler)
-            {
-                GlobalProtect.Clear();
-                ProtSets.Clean();
-                foreach (var s in FunctionalShields.Keys)
-                {
-                    s.AssignSlots();
-                    s.Asleep = false;
-                }
-                foreach (var c in Controllers)
-                {
-                    if (FunctionalShields.ContainsKey(c)) continue;
-                    c.AssignSlots();
-                    c.Asleep = false;
-                }
-                ScalerChanged = true;
-            }
-            else ScalerChanged = false;
-        }
+        #endregion
     }
 }

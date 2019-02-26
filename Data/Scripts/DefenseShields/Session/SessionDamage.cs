@@ -81,7 +81,7 @@
                                 }
                             }
                         }
-                        else if (Tick - protectors.BlockingTick > 3) protectors.BlockingShield = null;
+                        else if (Tick - protectors.BlockingTick > 10) protectors.BlockingShield = null;
                     }
                     catch (Exception ex) { Log.Line($"Exception in DamageFindShield {_previousEnt == null}: {ex}"); }
 

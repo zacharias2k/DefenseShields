@@ -199,6 +199,8 @@
     <Compile Include="Data\Scripts\DefenseShields\Config\SerializedValues.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\O2Ui.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\PsUi.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Session\SessionSupport.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Session\SessionSupWeaps.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\ShieldDtree.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\PlanetShield.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionControls.cs" />
@@ -243,7 +245,7 @@
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Definitions\EmitterDirMappingDef.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Definitions\EmitterDefinitions.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Spawn.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\Session\Session.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Session\SessionRun.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\StaticUtils.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Ellipsoid\EllipsoidOxygenProvider.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Ellipsoid\EllipsoidSA.cs" />

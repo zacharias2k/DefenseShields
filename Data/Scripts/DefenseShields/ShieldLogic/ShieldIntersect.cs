@@ -363,34 +363,54 @@
             var sDir = (resultVelocity - sVelAtPoint) * sMass;
             var sforce = Vector3D.Normalize(sCom - collisionAvg);
 
-            var collisionData = new MyCollisionPhysicsData
+            if (!e2IsStatic)
             {
-                Entity1 = entity1,
-                Entity2 = entity2,
-                E1IsStatic = e1IsStatic,
-                E2IsStatic = e2IsStatic,
-                E1IsHeavier = e1IsStatic || bMass > sMass,
-                E2IsHeavier = e2IsStatic || sMass > bMass,
-                Mass1 = bMass,
-                Mass2 = sMass,
-                Com1 = bCom,
-                Com2 = sCom,
-                CollisionCorrection1 = bCollisionCorrection,
-                CollisionCorrection2 = sCollisionCorrection,
-                ImpDirection1 = bDir,
-                ImpDirection2 = sDir,
-                ImpPosition1 = bCollisionCorrection,
-                ImpPosition2 = sCollisionCorrection,
-                Force1 = bForce,
-                Force2 = sforce,
-                ForcePos1 = null,
-                ForcePos2 = null,
-                ForceTorque1 = null,
-                ForceTorque2 = null,
-                CollisionAvg = collisionAvg,
-                Immediate = false
-            };
-            Session.Instance.ThreadEvents.Enqueue(new CollisionDataThreadEvent(collisionData, this));
+                var collisionData = new MyCollisionPhysicsData
+                {
+                    Entity1 = entity1,
+                    Entity2 = entity2,
+                    E1IsStatic = e1IsStatic,
+                    E2IsStatic = e2IsStatic,
+                    E1IsHeavier = e1IsStatic || bMass > sMass,
+                    E2IsHeavier = e2IsStatic || sMass > bMass,
+                    Mass1 = bMass,
+                    Mass2 = sMass,
+                    Com1 = bCom,
+                    Com2 = sCom,
+                    CollisionCorrection1 = bCollisionCorrection,
+                    CollisionCorrection2 = sCollisionCorrection,
+                    ImpDirection1 = bDir,
+                    ImpDirection2 = sDir,
+                    Force1 = bForce,
+                    Force2 = sforce,
+                    CollisionAvg = collisionAvg,
+                };
+                Session.Instance.ThreadEvents.Enqueue(new CollisionDataThreadEvent(collisionData, this));
+            }
+            else
+            {
+                var altMomentum = (bMass * bVelAtPoint);
+                var altResultVelocity = altMomentum / (bMass + (bMass * 0.5f));
+                var bDir2 = (altResultVelocity - bVelAtPoint) * bMass;
+
+                var transformInv = DetectMatrixOutsideInv;
+                var normalMat = MatrixD.Transpose(transformInv);
+                var localNormal = Vector3D.Transform(collisionAvg, transformInv);
+                var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
+                var bSurfaceDir = -Vector3D.Dot(e1Physics.GetVelocityAtPoint(collisionAvg), surfaceNormal) * surfaceNormal;
+                var collisionData = new MyCollisionPhysicsData
+                {
+                    Entity1 = entity1,
+                    Mass1 = bMass,
+                    Com1 = bCom,
+                    CollisionCorrection1 = bCollisionCorrection,
+                    ImpDirection1 = bDir2,
+                    ImpDirection2 = bSurfaceDir,
+                    Force1 = bForce,
+                    CollisionAvg = collisionAvg
+                };
+                Session.Instance.ThreadEvents.Enqueue(new StationCollisionDataThreadEvent(collisionData, this));
+            }
         }
 
         private void ComputeVoxelPhysics(MyEntity entity1, MyCubeGrid entity2, Vector3D collisionAvg)

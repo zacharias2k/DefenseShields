@@ -180,6 +180,9 @@
         private const int EntCleanCycle = 3600;
         private const int EntMaxTickAge = 36000;
 
+        private static volatile int _entSlotAssigner;
+        private volatile bool _newFrame;
+
         private readonly MonitorWork _workData = new MonitorWork();
 
         private readonly List<MyCubeBlock> _warHeadCubeHits = new List<MyCubeBlock>();
@@ -200,8 +203,6 @@
         private int _eCount;
 
         private bool _warEffect;
-
-        private volatile bool _newFrame;
 
         public Session()
         {
