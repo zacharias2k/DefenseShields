@@ -470,7 +470,7 @@ namespace DefenseShields
 
 
 <#+
-	const string YourNamespacePrefix = "Scratch";
+	const string YourNamespacePrefix = "DefenseShields";
 	const long YourChannel = 12345;
 
 	class ApiBaseType
