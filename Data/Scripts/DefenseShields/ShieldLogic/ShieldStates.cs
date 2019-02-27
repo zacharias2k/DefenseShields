@@ -23,7 +23,7 @@
             NoLos
         }
 
-        internal void UpdateSettings(ProtoControllerSettings newSettings)
+        internal void UpdateSettings(ControllerSettingsValues newSettings)
         {
             var newShape = newSettings.ExtendFit != DsSet.Settings.ExtendFit || newSettings.FortifyShield != DsSet.Settings.FortifyShield || newSettings.SphereFit != DsSet.Settings.SphereFit;
             DsSet.Settings = newSettings;
