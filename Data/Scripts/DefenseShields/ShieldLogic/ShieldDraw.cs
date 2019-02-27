@@ -215,9 +215,12 @@
                 return;
             }
 
-            if (DsSet.Settings.Visible == 0) _shellPassive.Render.UpdateRenderObject(true);
-            _shellActive.Render.UpdateRenderObject(true);
-            _shellActive.Render.UpdateRenderObject(false);
+            if (DsState.State.Online && !DsState.State.Lowered && !DsState.State.Sleeping)
+            {
+                if (DsSet.Settings.Visible == 0) _shellPassive.Render.UpdateRenderObject(true);
+                _shellActive.Render.UpdateRenderObject(true);
+                _shellActive.Render.UpdateRenderObject(false);
+            }
         }
 
         private int CalculateLod(int onCount)

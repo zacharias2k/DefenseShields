@@ -141,6 +141,7 @@
 
                 if (ClientUiUpdate || SettingsUpdated) UpdateSettings();
 
+                if (_tick >= LosCheckTick) LosCheck();
                 if (ShieldComp.EmitterEvent) EmitterEventDetected();
 
                 if (ShieldFailing(powerState))
@@ -178,24 +179,15 @@
         {
             if (_blockChanged) BlockMonitor();
 
-            if (_tick >= LosCheckTick) LosCheck();
             if (Suspend() || ShieldSleeping() || ShieldLowered())
             {
                 ControlBlockWorking = false;
                 return false;
             }
 
-            ControlBlockWorking = IsWorking && IsFunctional;
+            if (UpdateDimensions) RefreshDimensions();
 
-            if (!ControlBlockWorking)
-            {
-                return false;
-            }
-            if (ControlBlockWorking)
-            {
-                if (UpdateDimensions) RefreshDimensions();
-            }
-            return ControlBlockWorking;
+            return true;
         }
 
         private void EmitterEventDetected()
@@ -299,7 +291,7 @@
 
         private void FailureConditions()
         {
-            if (!WarmedUp && _genericDownLoop != -1)
+            if ((!WarmedUp || DsState.State.Lowered || DsState.State.Sleeping) && _genericDownLoop != -1)
             {
                 _genericDownLoop++;
                 if (_genericDownLoop == GenericDownCount) _genericDownLoop = -1;
@@ -541,7 +533,6 @@
                     DsState.State.Lowered = true;
                 }
                 PowerOnline();
-
                 if (ShieldComp.EmitterEvent) EmitterEventDetected();
                 if (!IsWorking || !ShieldComp.EmittersWorking)
                 {
@@ -605,6 +596,7 @@
                     if (!_isDedicated) ShellVisibility(true);
                     DsState.State.Sleeping = true;
                     Shield.RefreshCustomInfo();
+                    DsState.SaveState();
                     if (Session.Enforced.Debug == 4) Log.Line($"Sleep: controller detected sleeping emitter, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.Sleeping = true;
@@ -634,7 +626,7 @@
 
         private bool SlaveControllerLink()
         {
-            var notTime = _tick % 120 != 0;
+            var notTime = _tick % 120 != 0 && _subTick < _tick + 10 ;
             if (notTime && _slaveLink) return true;
             if (IsStatic || (notTime && _count != -1)) return false;
             var mySize = MyGrid.PositionComp.WorldAABB.Size.Volume;
@@ -712,9 +704,11 @@
                 }
                 else Session.Instance.FunctionalShields[this] = false;
             }
-            WasSuspended = DsState.State.Suspended;
 
-            return DsState.State.Suspended;
+            WasSuspended = DsState.State.Suspended;
+            ControlBlockWorking = IsWorking && IsFunctional;
+
+            return WasSuspended || !ControlBlockWorking;
         }
 
         private void InitSuspend(bool cleanEnts = false)

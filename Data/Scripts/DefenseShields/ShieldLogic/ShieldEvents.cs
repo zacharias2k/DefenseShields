@@ -74,6 +74,11 @@
         {
             IsWorking = myCubeBlock.IsWorking;
             IsFunctional = myCubeBlock.IsFunctional;
+            if (!IsWorking)
+            {
+                _power = 0.001f;
+                _sink.Update();
+            }
         }
 
         private void OwnerChanged(MyCubeGrid myCubeGrid)
