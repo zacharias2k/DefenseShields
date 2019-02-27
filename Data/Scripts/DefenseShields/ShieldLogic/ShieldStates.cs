@@ -8,6 +8,8 @@
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRageMath;
+    using VRage.Game.Components;
+
     public partial class DefenseShields
     {
         public enum PlayerNotice
@@ -21,7 +23,7 @@
             NoLos
         }
 
-        internal void UpdateSettings(ControllerSettingsValues newSettings)
+        internal void UpdateSettings(ProtoControllerSettings newSettings)
         {
             var newShape = newSettings.ExtendFit != DsSet.Settings.ExtendFit || newSettings.FortifyShield != DsSet.Settings.FortifyShield || newSettings.SphereFit != DsSet.Settings.SphereFit;
             DsSet.Settings = newSettings;
@@ -29,7 +31,7 @@
             if (newShape) FitChanged = true;
         }
 
-        internal void UpdateState(ControllerStateValues newState)
+        internal void UpdateState(ProtoControllerState newState)
         {
             if (!_isServer)
             {
@@ -95,6 +97,7 @@
             if (!Warming) WarmUpSequence();
 
             if (_subUpdate && _tick >= _subTick) HierarchyUpdate();
+            if (_blockEvent && _tick >= _funcTick) BlockChanged(true);
             if (_mpActive)
             {
                 if (_isServer)
@@ -139,7 +142,6 @@
 
                 if (ClientUiUpdate || SettingsUpdated) UpdateSettings();
 
-                if (_tick >= LosCheckTick) LosCheck();
                 if (ShieldComp.EmitterEvent) EmitterEventDetected();
 
                 if (ShieldFailing(powerState))
@@ -177,6 +179,7 @@
         {
             if (_blockChanged) BlockMonitor();
 
+            if (_tick >= LosCheckTick) LosCheck();
             if (Suspend() || ShieldSleeping() || ShieldLowered())
             {
                 ControlBlockWorking = false;
@@ -614,8 +617,10 @@
                 DsState.State.Sleeping = false;
                 if (!_isDedicated) ShellVisibility();
                 _blockChanged = true;
+                _functionalChanged = true;
                 UpdateSubGrids();
                 BlockMonitor();
+                BlockChanged(false);
                 if (GridIsMobile) _updateMobileShape = true;
                 else UpdateDimensions = true;
 
@@ -637,7 +642,7 @@
             var myEntityId = MyGrid.EntityId;
             foreach (var grid in ShieldComp.LinkedGrids.Keys)
             {
-                if (grid == MyGrid) continue;   
+                if (grid == MyGrid) continue;
                 ShieldGridComponent shieldComponent;
                 grid.Components.TryGet(out shieldComponent);
                 var ds = shieldComponent?.DefenseShields;
@@ -743,7 +748,7 @@
             var controlToGridRelataion = MyCube.GetUserRelationToOwner(_gridOwnerId);
             DsState.State.InFaction = controlToGridRelataion == MyRelationsBetweenPlayerAndBlock.FactionShare;
             DsState.State.IsOwner = controlToGridRelataion == MyRelationsBetweenPlayerAndBlock.Owner;
-            
+
             if (controlToGridRelataion != MyRelationsBetweenPlayerAndBlock.Owner && controlToGridRelataion != MyRelationsBetweenPlayerAndBlock.FactionShare)
             {
                 if (DsState.State.ControllerGridAccess)
@@ -771,6 +776,7 @@
             ShieldComp.LinkedGrids.Clear();
             ShieldComp.SubGrids.Clear();
             _blockChanged = true;
+            _functionalChanged = true;
             ResetShape(false, true);
             ResetShape(false);
             SetShieldType(false);
@@ -857,7 +863,7 @@
                     pair = new MySoundPair("Arc_insufficientpower");
                     break;
             }
-           if (soundEmitter.Entity != null && pair != null) soundEmitter.PlaySingleSound(pair, true);
+            if (soundEmitter.Entity != null && pair != null) soundEmitter.PlaySingleSound(pair, true);
         }
 
         private void BroadcastMessage(bool forceNoPower = false)

@@ -14,22 +14,13 @@
         {
             if (DsState.State.Online && !DsState.State.Lowered)
             {
-                lock (DirtyCubeBlocks)
+                lock (SubLock)
                 {
-                    var remove = false;
-                    foreach (var keyPair in DirtyCubeBlocks)
+                    foreach (var funcBlock in _functionalBlocks)
                     {
-                        var dirtyBlock = keyPair.Key;
-                        var lastHitTick = keyPair.Value;
-                        if (_tick >= lastHitTick + 10)
-                        {
-                            dirtyBlock.SetDamageEffect(false);
-                            DirtyCubeBlocks.Remove(dirtyBlock);
-                            remove = true;
-                        }
+                        if (funcBlock == null) continue;
+                        if (funcBlock.IsFunctional) funcBlock.SetDamageEffect(false);
                     }
-                    if (remove) DirtyCubeBlocks.ApplyRemovals();
-                    if (DirtyCubeBlocks.Keys.Count == 0) EffectsDirty = false;
                 }
             }
         }
@@ -115,60 +106,132 @@
         {
             if (_blockChanged)
             {
+                _blockEvent = true;
                 _shapeEvent = true;
                 LosCheckTick = _tick + 1800;
                 if (_blockAdded) _shapeTick = _tick + 300;
                 else _shapeTick = _tick + 1800;
             }
+            if (_functionalChanged) _functionalEvent = true;
+
+            _functionalAdded = false;
+            _functionalRemoved = false;
+            _functionalChanged = false;
+
             _blockChanged = false;
+            _blockRemoved = false;
             _blockAdded = false;
+        }
+
+        private void BlockChanged(bool backGround)
+        {
+            if (_blockEvent)
+            {
+                var notReady = !FuncTask.IsComplete || DsState.State.Sleeping || DsState.State.Suspended;
+                if (notReady) return;
+                if (Session.Enforced.Debug == 3) Log.Line($"BlockChanged: functional:{_functionalEvent} - funcComplete:{FuncTask.IsComplete} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ShieldId [{Shield.EntityId}]");
+                if (_functionalEvent) FunctionalChanged(backGround);
+                _blockEvent = false;
+                _funcTick = _tick + 60;
+            }
+        }
+
+        private void FunctionalChanged(bool backGround)
+        {
+            if (backGround) FuncTask = MyAPIGateway.Parallel.StartBackground(BackGroundChecks);
+            else BackGroundChecks();
+            _functionalEvent = false;
+        }
+
+        private void BackGroundChecks()
+        {
+            var gridDistNeedUpdate = _updateGridDistributor || MyResourceDist?.SourcesEnabled == MyMultipleEnabledEnum.NoObjects;
+            _updateGridDistributor = false;
+            lock (SubLock)
+            {
+                _powerSources.Clear();
+                _functionalBlocks.Clear();
+                _batteryBlocks.Clear();
+
+                foreach (var grid in ShieldComp.LinkedGrids.Keys)
+                {
+                    var mechanical = ShieldComp.SubGrids.Contains(grid);
+                    foreach (var block in grid.GetFatBlocks())
+                    {
+                        if (mechanical)
+                        {
+                            if (gridDistNeedUpdate)
+                            {
+                                var controller = block as MyShipController;
+                                if (controller != null)
+                                {
+                                    var distributor = controller.GridResourceDistributor;
+                                    if (distributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects)
+                                    {
+                                        if (Session.Enforced.Debug == 3) Log.Line($"Found MyGridDistributor from type:{block.BlockDefinition} - ShieldId [{Shield.EntityId}]");
+                                        MyResourceDist = controller.GridResourceDistributor;
+                                        gridDistNeedUpdate = false;
+                                    }
+                                }
+                            }
+                        }
+
+                        _functionalBlocks.Add(block);
+                        var battery = block as IMyBatteryBlock;
+                        if (battery != null) _batteryBlocks.Add(battery);
+
+                        var source = block.Components.Get<MyResourceSourceComponent>();
+                        if (source == null) continue;
+
+                        foreach (var type in source.ResourceTypes)
+                        {
+                            if (type != MyResourceDistributorComponent.ElectricityId) continue;
+                            _powerSources.Add(source);
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         #region Checks
         private void HierarchyUpdate()
         {
-            var checkGroups = IsWorking && IsFunctional && (DsState.State.Online || DsState.State.NoPower || DsState.State.Sleeping || DsState.State.Waking);
+            var checkGroups = MyCube.IsWorking && MyCube.IsFunctional && (DsState.State.Online || DsState.State.NoPower || DsState.State.Sleeping || DsState.State.Waking);
+            if (Session.Enforced.Debug == 3) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Online:{DsState.State.Online} - Power:{!DsState.State.NoPower} - Sleep:{DsState.State.Sleeping} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
             if (checkGroups)
             {
-                _subTick = uint.MinValue;
-                _subUpdate = false;
+                _subTick = _tick + 10;
                 UpdateSubGrids();
+                if (Session.Enforced.Debug == 3) Log.Line($"HierarchyWasDelayed: this:{_tick} - delayedTick: {_subTick} - ShieldId [{Shield.EntityId}]");
             }
         }
 
         private void UpdateSubGrids(bool force = false)
         {
-            if (Session.Enforced.Debug == 3) Log.Line($"UpdateSubGrids: Su:{DsState.State.Suspended}({WasSuspended}) - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Online:{DsState.State.Online} - Power:{!DsState.State.NoPower} - Sleep:{DsState.State.Sleeping} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
-            var newLinkGrop = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
-            var newLinkGropCnt = newLinkGrop.Count;
-            lock (SubUpdateLock)
-            {
-                ShieldComp.RemSubs.Clear();
-                foreach (var sub in ShieldComp.LinkedGrids.Keys) ShieldComp.RemSubs.Add(sub);
-            }
+            _subUpdate = false;
+
+            var gotGroups = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
+            if (gotGroups.Count == ShieldComp.LinkedGrids.Count && !force) return;
+            if (Session.Enforced.Debug == 3 && ShieldComp.LinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.LinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.LinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
 
             lock (SubLock)
             {
-                if (newLinkGropCnt == ShieldComp.LinkedGrids.Count && !force) return;
+                ShieldComp.RemSubs.Clear();
+                foreach (var sub in ShieldComp.SubGrids) ShieldComp.RemSubs.Add(sub);
+
                 ShieldComp.SubGrids.Clear();
                 ShieldComp.LinkedGrids.Clear();
-                for (int i = 0; i < newLinkGropCnt; i++)
+                for (int i = 0; i < gotGroups.Count; i++)
                 {
-                    var sub = (MyCubeGrid)newLinkGrop[i];
-                    var mechSub = false;
-                    if (MyAPIGateway.GridGroups.HasConnection(MyGrid, sub, GridLinkTypeEnum.Mechanical))
-                    {
-                        mechSub = true;
-                        ShieldComp.SubGrids.Add(sub);
-                    }
-                    ShieldComp.LinkedGrids[sub] = new SubGridInfo(sub, sub == MyGrid, mechSub);
+                    var sub = gotGroups[i];
+                    if (sub == null) continue;
+                    if (MyAPIGateway.GridGroups.HasConnection(MyGrid, sub, GridLinkTypeEnum.Mechanical)) ShieldComp.SubGrids.Add((MyCubeGrid)sub);
+                    ShieldComp.LinkedGrids.Add(sub as MyCubeGrid, new SubGridInfo(sub as MyCubeGrid, sub == MyGrid, false));
                 }
-            }
 
-            lock (SubUpdateLock)
-            {
                 ShieldComp.AddSubs.Clear();
-                foreach (var sub in ShieldComp.LinkedGrids.Keys)
+                foreach (var sub in ShieldComp.SubGrids)
                 {
                     ShieldComp.AddSubs.Add(sub);
                     ShieldComp.NewTmp1.Add(sub);
@@ -178,117 +241,13 @@
                 ShieldComp.RemSubs.ExceptWith(ShieldComp.AddSubs);
                 ShieldComp.AddSubs.ExceptWith(ShieldComp.NewTmp1);
                 ShieldComp.NewTmp1.Clear();
-                if (ShieldComp.AddSubs.Count != 0 || ShieldComp.RemSubs.Count != 0) MyAPIGateway.Parallel.StartBackground(SubChangePreEvents, SubChangeCallback);
-                else SetSubFlags();
             }
+            //Log.Line($"[1] NewSubs:{ShieldComp.SubGrids.Count} - addSubs:{ShieldComp.AddSubs.Count} - RemSubs:{ShieldComp.RemSubs.Count}");
+            _blockChanged = true;
+            _functionalChanged = true;
+            _updateGridDistributor = true;
         }
         #endregion
-
-        private void SubChangePreEvents()
-        {
-            lock (SubUpdateLock)
-            {
-                foreach (var addSub in ShieldComp.AddSubs)
-                {
-                    RegisterGridEvents(true, addSub);
-                    var gridIntegrity = GridIntegrity(addSub);
-                    AddSubGridInfo.Enqueue(new SubGridComputedInfo(addSub, gridIntegrity));
-                    BlockSets.TryAdd(addSub, new BlockSets());
-                    bool mechSub;
-                    lock (SubLock) mechSub = ShieldComp.SubGrids.Contains(addSub);
-                    UpdateSubBlockCollections(addSub, mechSub);
-                    if (Session.Enforced.Debug == 3) Log.Line($"SubAdd: Integrity:{gridIntegrity} - newTotal:{DsState.State.GridIntegrity}");
-                }
-                ShieldComp.AddSubs.Clear();
-
-                foreach (var remSub in ShieldComp.RemSubs)
-                {
-                    RegisterGridEvents(false, remSub);
-                    GridIntegrity(remSub, true);
-                    if (Session.Enforced.Debug == 3) Log.Line($"SubRemove: newTotal:{DsState.State.GridIntegrity}");
-                }
-                ShieldComp.RemSubs.Clear();
-            }
-        }
-
-        private void UpdateSubBlockCollections(MyCubeGrid sub, bool mechSub, bool remove = false)
-        {
-
-            if (remove)
-            {
-                BlockSets value;
-                BlockSets.TryRemove(sub, out value);
-                return;
-            }
-
-            foreach (var block in sub.GetFatBlocks())
-            {
-                if (mechSub)
-                {
-                    var controller = block as MyShipController;
-                    if (controller != null) BlockSets[sub].ShipControllers.Add(controller);
-                }
-
-                var source = block.Components.Get<MyResourceSourceComponent>();
-                if (source != null)
-                {
-                    if (source.ResourceTypes[0] != GId) continue;
-
-                    var battery = block as IMyBatteryBlock;
-                    if (battery != null)
-                    {
-                        BlockSets[sub].Batteries.Add(new BatteryInfo(source));
-                    }
-                    BlockSets[sub].Sources.Add(source);
-                }
-            }
-        }
-
-        private void SubChangeCallback()
-        {
-            lock (SubLock)
-            {
-                SubGridComputedInfo info;
-                while (AddSubGridInfo.TryDequeue(out info))
-                {
-                    ShieldComp.LinkedGrids[info.Grid].Integrity = info.Integrity;
-                }
-            }
-
-            if (MyResourceDist == null || MyResourceDist.SourcesEnabled == MyMultipleEnabledEnum.NoObjects) _checkForDistributor = true;
-
-            SetSubFlags();
-        }
-
-        private bool GetDistributor()
-        {
-            var gotDistributor = false;
-            foreach (var set in BlockSets.Values)
-            {
-                foreach (var controller in set.ShipControllers)
-                {
-                    var distributor = controller.GridResourceDistributor;
-                    if (distributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects)
-                    {
-                        if (Session.Enforced.Debug == 2) Log.Line($"Found MyResourceDist from type - ShieldId [{Shield.EntityId}]");
-                        MyResourceDist = controller.GridResourceDistributor;
-                        gotDistributor = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!gotDistributor) MyResourceDist = null;
-
-            _checkForDistributor = false;
-            return gotDistributor;
-        }
-
-        private void SetSubFlags()
-        {
-            _blockChanged = true;
-            _subTick = _tick + 10;
-        }
 
         private void CleanAll()
         {

@@ -12,6 +12,7 @@
     using VRage.Collections;
     using VRageMath;
     using System;
+    using ParallelTasks;
 
     public partial class DefenseShields 
     {
@@ -92,6 +93,9 @@
         private const string ModelOrange = "\\Models\\Cubes\\ShieldPassive04.mwm";
         private const string ModelCyan = "\\Models\\Cubes\\ShieldPassive03.mwm";
 
+        private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
+        private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
+        private readonly List<IMyBatteryBlock> _batteryBlocks = new List<IMyBatteryBlock>();
         private readonly List<KeyValuePair<MyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<MyEntity, EntIntersectInfo>>();
         private readonly List<KeyValuePair<MyEntity, ProtectCache>> _porotectEntsTmp = new List<KeyValuePair<MyEntity, ProtectCache>>();
         private readonly RunningAverage _dpsAvg = new RunningAverage(2);
@@ -105,6 +109,7 @@
         private uint _tick;
         private uint _shieldEntRendId;
         private uint _subTick;
+        private uint _funcTick;
         private uint _fatTick;
         private uint _shapeTick;
         private uint _heatVentingTick = uint.MaxValue;
@@ -175,14 +180,21 @@
         private bool _requestedEnforcement;
         private bool _slaveLink;
         private bool _subUpdate;
+        private bool _updateGridDistributor;
         private bool _hideShield;
         private bool _hideColor;
         private bool _supressedColor;
         private bool _shapeChanged;
         private bool _entityChanged;
         private bool _updateRender;
+		private bool _functionalAdded;
+        private bool _functionalRemoved;
+        private bool _functionalChanged;
+        private bool _functionalEvent;
         private bool _blockAdded;
+		private bool _blockRemoved;
         private bool _blockChanged;
+		private bool _blockEvent;
         private bool _shapeEvent;
         private bool _updateMobileShape;
         private bool _clientNotReady;
@@ -259,6 +271,7 @@
         internal uint UnsuspendTick { get; set; }
         internal uint LosCheckTick { get; set; }
         internal uint TicksWithNoActivity { get; set; }
+        internal uint EffectsCleanTick { get; set; }
 
         internal float ShieldMaxCharge { get; set; }
         internal float GridMaxPower { get; set; }
@@ -302,6 +315,7 @@
 
         internal MatrixD OffsetEmitterWMatrix { get; set; }
 
+        internal Task FuncTask { get; set; }
         internal float ImpactSize { get; set; } = 9f;
         internal float Absorb { get; set; }
 

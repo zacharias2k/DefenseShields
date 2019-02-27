@@ -4,10 +4,10 @@
     using System.Text;
     using Support;
     using Sandbox.Common.ObjectBuilders;
-    using Sandbox.Game.EntityComponents;
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
     using Sandbox.ModAPI.Weapons;
+    using VRage;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
 
@@ -23,8 +23,6 @@
                     MyEntities.OnEntityAdd += OnEntityAdd;
                     MyEntities.OnEntityRemove += OnEntityRemove;
                 }
-
-                OnShieldDetectedEvent += OnShieldDetected;
 
                 ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
                 RegisterGridEvents();
@@ -42,8 +40,6 @@
                     MyEntities.OnEntityAdd -= OnEntityAdd;
                     MyEntities.OnEntityRemove -= OnEntityRemove;
                 }
-
-                OnShieldDetectedEvent -= OnShieldDetected;
 
                 ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated -= HierarchyChanged;
                 RegisterGridEvents(false);
@@ -94,15 +90,16 @@
         {
             try
             {
-                if (myEntity?.Physics == null || myEntity is MyVoxelBase || myEntity is MyFloatingObject || myEntity is IMyCharacter || myEntity is IMyEngineerToolBase || !myEntity.InScene || myEntity.MarkedForClose || myEntity.IsPreview) return;
                 if (DsState.State.ReInforce) return;
+                if (myEntity?.Physics == null || !myEntity.InScene || myEntity.MarkedForClose || myEntity is MyFloatingObject || myEntity is IMyEngineerToolBase) return;
                 var isMissile = myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile);
                 if (!isMissile && !(myEntity is MyCubeGrid)) return;
 
                 var aabb = myEntity.PositionComp.WorldAABB;
                 if (!ShieldBox3K.Intersects(ref aabb)) return;
+
                 Asleep = false;
-                if (isMissile) Missiles.Add(myEntity);
+                if (_isServer && isMissile) Missiles.Add(myEntity);
             }
             catch (Exception ex) { Log.Line($"Exception in Controller OnEntityAdd: {ex}"); }
         }
@@ -111,9 +108,7 @@
         {
             try
             {
-                if (myEntity?.Physics == null || myEntity is MyVoxelBase || myEntity is MyFloatingObject || myEntity is IMyCharacter || myEntity is IMyEngineerToolBase || !myEntity.InScene || myEntity.MarkedForClose || myEntity.IsPreview) return;
-
-                if (DsState.State.ReInforce) return;
+                if (myEntity == null || !_isServer || DsState.State.ReInforce) return;
 
                 if (!(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))) return;
 
@@ -130,7 +125,11 @@
 
         private void HierarchyChanged(MyCubeGrid myCubeGrid = null)
         {
-            _subUpdate = true;
+            try
+            {
+                _subUpdate = true;
+            }
+            catch (Exception ex) { Log.Line($"Exception in Controller HierarchyChanged: {ex}"); }
         }
 
         private void BlockAdded(IMySlimBlock mySlimBlock)
@@ -148,6 +147,7 @@
         {
             try
             {
+                _blockRemoved = true;
                 _blockChanged = true;
                 if (_isServer) DsState.State.GridIntegrity -= mySlimBlock.MaxIntegrity;
             }
@@ -158,27 +158,13 @@
         {
             try
             {
-                var controller = myCubeBlock as MyShipController;
-                if (controller != null)
+                _functionalAdded = true;
+                _functionalChanged = true;
+                if (MyResourceDist == null)
                 {
-                    BlockSets[myCubeBlock.CubeGrid].ShipControllers.Add(controller);
-                    _checkForDistributor = true;
-                    return;
-                }
-
-                var source = myCubeBlock.Components.Get<MyResourceSourceComponent>();
-                if (source != null)
-                {
-                    if (source.ResourceTypes[0] != GId) return;
-
-                    var battery = myCubeBlock as IMyBatteryBlock;
-                    if (battery != null)
-                    {
-                        BlockSets[myCubeBlock.CubeGrid].Batteries.Add(new BatteryInfo(source));
-                    }
-
-                    BlockSets[myCubeBlock.CubeGrid].Sources.Add(source);
-                    _updatePowerSources = true;
+                    var controller = myCubeBlock as MyShipController;
+                    if (controller != null)
+                        if (controller.GridResourceDistributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects) _updateGridDistributor = true;
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in Controller FatBlockAdded: {ex}"); }
@@ -188,35 +174,10 @@
         {
             try
             {
-                var controller = myCubeBlock as MyShipController;
-
-                if (controller != null)
-                {
-                    BlockSets[myCubeBlock.CubeGrid].ShipControllers.Remove(controller);
-                    _checkForDistributor = true;
-                    return;
-                }
-                var source = myCubeBlock.Components.Get<MyResourceSourceComponent>();
-                if (source != null)
-                {
-                    if (source.ResourceTypes[0] != GId) return;
-
-                    var battery = myCubeBlock as IMyBatteryBlock;
-                    if (battery != null)
-                    {
-                        BlockSets[myCubeBlock.CubeGrid].Batteries.Remove(new BatteryInfo(source));
-                    }
-
-                    BlockSets[myCubeBlock.CubeGrid].Sources.Remove(source);
-                    _updatePowerSources = true;
-                }
+                _functionalRemoved = true;
+                _functionalChanged = true;
             }
             catch (Exception ex) { Log.Line($"Exception in Controller FatBlockRemoved: {ex}"); }
-        }
-
-        private void OnShieldDetected(DefenseShields detector, DefenseShields detected) 
-        {
-            Log.Line($"Detector is:{detector.MyGrid.DebugName} - detected is:{detected.MyGrid.DebugName}");
         }
 
         private string GetShieldStatus()
@@ -254,6 +215,7 @@
                 var powerUsage = shieldPowerNeeds;
                 var otherPower = _otherPower;
                 var gridMaxPower = GridMaxPower;
+
                 var status = GetShieldStatus();
                 if (status == "[Shield Up]" || status == "[Shield Down]" || status == "[Shield Offline]")
                 {
