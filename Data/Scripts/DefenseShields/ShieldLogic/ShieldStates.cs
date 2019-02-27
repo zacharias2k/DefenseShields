@@ -8,7 +8,6 @@
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRageMath;
-    using VRage.Game.Components;
 
     public partial class DefenseShields
     {
@@ -31,7 +30,7 @@
             if (newShape) FitChanged = true;
         }
 
-        internal void UpdateState(ProtoControllerState newState)
+        internal void UpdateState(ControllerStateValues newState)
         {
             if (!_isServer)
             {
