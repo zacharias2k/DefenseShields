@@ -8,8 +8,6 @@
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRageMath;
-    using VRage.Game.Components;
-
     public partial class DefenseShields
     {
         public enum PlayerNotice
@@ -141,6 +139,7 @@
 
                 if (ClientUiUpdate || SettingsUpdated) UpdateSettings();
 
+                if (_tick >= LosCheckTick) LosCheck();
                 if (ShieldComp.EmitterEvent) EmitterEventDetected();
 
                 if (ShieldFailing(powerState))
@@ -178,7 +177,6 @@
         {
             if (_blockChanged) BlockMonitor();
 
-            if (_tick >= LosCheckTick) LosCheck();
             if (Suspend() || ShieldSleeping() || ShieldLowered())
             {
                 ControlBlockWorking = false;
