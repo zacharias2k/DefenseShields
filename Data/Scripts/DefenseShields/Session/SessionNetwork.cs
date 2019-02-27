@@ -4,9 +4,16 @@
     using Support;
     using Sandbox.ModAPI;
     using VRageMath;
+    using System.ComponentModel;
 
     public partial class Session
     {
+        [DefaultValue("API:IntersectShield")]
+        public Vector3D? IntersectShield(float damage)
+        {
+            return Vector3D.Zero;
+        }
+
         #region Network sync
         internal void PacketizeToClientsInRange(IMyFunctionalBlock block, PacketBase packet)
         {

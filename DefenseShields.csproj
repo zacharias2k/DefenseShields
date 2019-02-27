@@ -192,6 +192,11 @@
     <None Include="tools\Monitor SE Log.ps1" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Data\Scripts\DefenseShields\API\api.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>api.tt</DependentUpon>
+    </Compile>
     <Compile Include="Data\Scripts\DefenseShields\Config\EmitterData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\PlanetShieldData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\O2GeneratorData.cs" />
@@ -267,6 +272,15 @@
     <Folder Include="Audio\" />
     <Folder Include="Models\" />
     <Folder Include="Textures\GUI\Icons\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Data\Scripts\DefenseShields\API\api.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>api.cs</LastGenOutput>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSHARP.Targets" />
   <ProjectExtensions>
