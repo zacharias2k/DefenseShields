@@ -596,7 +596,6 @@
                     if (!_isDedicated) ShellVisibility(true);
                     DsState.State.Sleeping = true;
                     Shield.RefreshCustomInfo();
-                    DsState.SaveState();
                     if (Session.Enforced.Debug == 4) Log.Line($"Sleep: controller detected sleeping emitter, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.Sleeping = true;
