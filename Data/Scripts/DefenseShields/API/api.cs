@@ -1,7 +1,12 @@
-﻿using System;
+﻿ 
+ 
+
+
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Sandbox.ModAPI;
+using VRageMath;
 
 namespace DefenseShields
 {
@@ -13,9 +18,13 @@ namespace DefenseShields
 
 		static ApiServer()
 		{
-			_endpoints = new Dictionary<string, Delegate>
-			{
-			};
+            _endpoints = new Dictionary<string, Delegate>
+            {
+                {"IntersectShield1", (Action)Session.Instance.IntersectShield1},
+                {"IntersectShield2", (Func<Vector3D?>)Session.Instance.IntersectShield2},
+                {"IntersectShield3", (Action<float>)Session.Instance.IntersectShield3},
+                {"IntersectShield4", (Func<float, Vector3D?>)Session.Instance.IntersectShield4},
+            };
 		}
 
 		/// <summary>
