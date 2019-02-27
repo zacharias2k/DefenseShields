@@ -140,17 +140,6 @@
                             }
                             if (isDeformationDmg && trueAttacker != null) protectors.IgnoreAttackerId = attackerId;
 
-                            var fatBlock = block.FatBlock as MyCubeBlock;
-                            if (fatBlock != null)
-                            {
-                                lock (shield.DirtyCubeBlocks)
-                                {
-                                    shield.EffectsDirty = true;
-                                    shield.DirtyCubeBlocks[fatBlock] = Tick;
-                                    shield.DirtyCubeBlocks.ApplyAdditionsAndModifications();
-                                }
-                            }
-
                             shield.Absorb += info.Amount;
                             info.Amount = 0f;
                             return;
