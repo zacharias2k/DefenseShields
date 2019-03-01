@@ -192,11 +192,8 @@
     <None Include="tools\Monitor SE Log.ps1" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Data\Scripts\DefenseShields\API\api.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>api.tt</DependentUpon>
-    </Compile>
+    <Compile Include="Data\Scripts\DefenseShields\API\ApiClient.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\API\ApiServer.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\EmitterData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\PlanetShieldData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\O2GeneratorData.cs" />
@@ -206,6 +203,20 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\PsUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionSupport.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionSupWeaps.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\BoundingEllipsoid.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\Collision.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\CollisionExtensions.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\CollisionResult.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\Edge.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\EllipsoidTriangleCollision.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\MathExtensions.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\OrientedBoundingEllipsoid.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\OrientedCollision.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\SphereEdgeCollision.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\SpherePointCollision.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\SphereTriangleCollision.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\SphereTrianglesResponse.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\Triangle.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\ShieldDtree.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\PlanetShield.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionControls.cs" />
@@ -272,12 +283,6 @@
     <Folder Include="Audio\" />
     <Folder Include="Models\" />
     <Folder Include="Textures\GUI\Icons\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Data\Scripts\DefenseShields\API\api.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>api.cs</LastGenOutput>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />

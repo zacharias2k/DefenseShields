@@ -8,7 +8,6 @@
     using VRage.Game.Components;
     using VRage.ModAPI;
     using VRage.ObjectBuilders;
-    using VRage.Game.Entity;
 
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DSControlLarge", "DSControlSmall", "DSControlTable")]
     public partial class DefenseShields : MyGameLogicComponent

@@ -297,6 +297,7 @@
 
                         var block = accel.Block;
                         var point = CustomCollision.BlockIntersect(block, accel.CubeExists, bQuaternion, DetectMatrixOutside, DetectMatrixOutsideInv, ref blockPoints);
+                        CustomCollision.IntersectBoundingEllipsoid(DetectMatrixOutside, new BoundingSphereD(Vector3D.Zero, 1), _sQuaternion, block);
                         if (point == null) continue;
                         collisionAvg += (Vector3D)point;
                         hits++;

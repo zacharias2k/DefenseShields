@@ -17,7 +17,7 @@
         void Execute();
     }
 
-    public struct ShieldVsShieldThreadEvent : IThreadEvent
+    public class ShieldVsShieldThreadEvent : IThreadEvent
     {
         public readonly DefenseShields Shield;
         public readonly float Damage;
@@ -49,7 +49,7 @@
         }
     }
 
-    public struct MissileThreadEvent : IThreadEvent
+    public class MissileThreadEvent : IThreadEvent
     {
         public readonly MyEntity Entity;
         public readonly DefenseShields Shield;
@@ -94,7 +94,7 @@
         }
     }
 
-    public struct FloaterThreadEvent : IThreadEvent
+    public class FloaterThreadEvent : IThreadEvent
     {
         public readonly MyEntity Entity;
         public readonly DefenseShields Shield;
@@ -133,7 +133,7 @@
             Shield.Absorb += 1;
         }
     }
-    public struct CollisionDataThreadEvent : IThreadEvent
+    public class CollisionDataThreadEvent : IThreadEvent
     {
         public readonly MyCollisionPhysicsData CollisionData;
         public readonly DefenseShields Shield;
@@ -189,7 +189,7 @@
         }
     }
 
-    public struct StationCollisionDataThreadEvent : IThreadEvent
+    public class StationCollisionDataThreadEvent : IThreadEvent
     {
         public readonly MyCollisionPhysicsData CollisionData;
         public readonly DefenseShields Shield;
@@ -229,7 +229,7 @@
         }
     }
 
-    public struct ManyBlocksThreadEvent : IThreadEvent
+    public class ManyBlocksThreadEvent : IThreadEvent
     {
         public readonly DefenseShields Shield;
         public readonly HashSet<CubeAccel> AccelSet;
@@ -288,7 +288,7 @@
         }
     }
 
-    public struct VoxelCollisionDmgThreadEvent : IThreadEvent
+    public class VoxelCollisionDmgThreadEvent : IThreadEvent
     {
         public readonly MyEntity Entity;
         public readonly DefenseShields Shield;
@@ -320,7 +320,7 @@
         }
     }
 
-    public struct VoxelCollisionPhysicsThreadEvent : IThreadEvent
+    public class VoxelCollisionPhysicsThreadEvent : IThreadEvent
     {
         public readonly MyCollisionPhysicsData CollisionData;
         public readonly DefenseShields Shield;
@@ -340,7 +340,7 @@
         }
     }
 
-    public struct CharacterEffectThreadEvent : IThreadEvent
+    public class CharacterEffectThreadEvent : IThreadEvent
     {
         public readonly IMyCharacter Character;
         public readonly DefenseShields Shield;
@@ -374,7 +374,7 @@
         }
     }
 
-    public struct VoxelDmgThreadEvent : IThreadEvent
+    public class VoxelDmgThreadEvent : IThreadEvent
     {
         public readonly MyVoxelBase VoxelBase;
         public readonly DefenseShields Shield;
@@ -392,7 +392,7 @@
         }
     }
 
-    public struct MeteorDmgThreadEvent : IThreadEvent
+    public class MeteorDmgThreadEvent : IThreadEvent
     {
         public readonly IMyMeteor Meteor;
         public readonly DefenseShields Shield;
@@ -423,7 +423,7 @@
         }
     }
 
-    public struct ForceDataThreadEvent : IThreadEvent
+    public class ForceDataThreadEvent : IThreadEvent
     {
         public readonly MyForceData ForceData;
         public readonly DefenseShields Shield;
@@ -441,7 +441,7 @@
         }
     }
 
-    public struct ImpulseDataThreadEvent : IThreadEvent
+    public class ImpulseDataThreadEvent : IThreadEvent
     {
         public readonly MyImpulseData ImpulseData;
         public readonly DefenseShields Shield;
