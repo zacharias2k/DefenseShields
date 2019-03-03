@@ -249,6 +249,7 @@
                 ShieldEnt.PositionComp.LocalMatrix = Matrix.Zero;
                 ShieldEnt.PositionComp.LocalMatrix = ShieldShapeMatrix;
                 ShieldEnt.PositionComp.LocalAABB = ShieldAabbScaled;
+                ShieldEnt.PositionComp.WorldVolume.Intersects(MyGrid.PositionComp.WorldVolume);
             }
             ShieldEnt.PositionComp.SetPosition(DetectionCenter);
         }

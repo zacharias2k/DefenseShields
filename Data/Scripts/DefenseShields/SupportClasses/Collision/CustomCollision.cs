@@ -72,33 +72,6 @@ namespace DefenseShields.Support
             return leaving;
         }
 
-        public static void IntersectBoundingEllipsoid(MatrixD detectionMatrix, BoundingSphereD shieldSphere, Quaternion sOri, IMySlimBlock block)
-        {
-            Vector3 halfExt;
-            Vector3D center;
-            block.ComputeScaledHalfExtents(out halfExt);
-            var blockBox = new BoundingBoxD(-halfExt, halfExt);
-            block.ComputeWorldCenter(out center);
-            var corners = blockBox.GetCorners();
-            var bEllipsoid = new BoundingEllipsoid(shieldSphere);
-            bEllipsoid.Transform(detectionMatrix);
-            Log.Line($"bEllipsoid:{bEllipsoid.Radius.Max()}");
-            var oBEllipsoid = new OrientedBoundingEllipsoid(shieldSphere) {Orientation = sOri};
-            Log.Line($"oBEllipsoid:{oBEllipsoid.Radius.Max()}");
-            var tri1 = new Triangle(corners[0], corners[1], corners[2]);
-            var tri2 = new Triangle(corners[3], corners[4], corners[5]);
-            var tri3 = new Triangle(corners[5], corners[6], corners[7]);
-
-            var tArray = new Triangle[3];
-            tArray[0] = tri1;
-            tArray[1] = tri2;
-            tArray[2] = tri3;
-
-            var test = OrientedCollision.CollideAndSlide(oBEllipsoid, Vector3D.One, tArray);
-            Log.Line($"what?:{test}");
-
-        }
-
         public static float? IntersectEllipsoid(MatrixD ellipsoidMatrixInv, MatrixD ellipsoidMatrix, RayD ray)
         {
             var _normSphere = new BoundingSphereD(Vector3.Zero, 1f);
@@ -115,63 +88,6 @@ namespace DefenseShields.Support
             var hitPos = krayPos + (krayDir * -nullDist.Value);
             var worldHitPos = Vector3D.Transform(hitPos, ellipsoidMatrix);
             return Vector3.Distance(worldHitPos, ray.Position);
-        }
-
-        public static void IntersectEllipsoidObb(MatrixD ellipsoidMatrixInv, MatrixD ellipsoidMatrix, Vector3D[] obbCorners)
-        {
-            // 4 + 5 + 6 + 7 = Front
-            // 0 + 1 + 2 + 3 = Back
-            // 1 + 2 + 5 + 6 = Top
-            // 0 + 3 + 4 + 7 = Bottom
-            var p0 = Vector3D.Transform(obbCorners[0], ellipsoidMatrixInv);
-            var p1 = Vector3D.Transform(obbCorners[1], ellipsoidMatrixInv);
-            var p2 = Vector3D.Transform(obbCorners[2], ellipsoidMatrixInv);
-            var p3 = Vector3D.Transform(obbCorners[3], ellipsoidMatrixInv);
-            var p4 = Vector3D.Transform(obbCorners[4], ellipsoidMatrixInv);
-            var p5 = Vector3D.Transform(obbCorners[5], ellipsoidMatrixInv);
-            var p6 = Vector3D.Transform(obbCorners[6], ellipsoidMatrixInv);
-            var p7 = Vector3D.Transform(obbCorners[7], ellipsoidMatrixInv);
-
-            var frontPlane = new PlaneD(p4, p5, p6);
-            var backPlane = new PlaneD(p0, p1, p2);
-            var topPlane = new PlaneD(p1, p2, p5);
-            var bottomPlane = new PlaneD(p0, p3, p4);
-
-            var normSphere = new BoundingSphereD(Vector3.Zero, 1f);
-            var test1 = frontPlane.Intersects(normSphere) == PlaneIntersectionType.Intersecting;
-            var test2 = backPlane.Intersects(normSphere) == PlaneIntersectionType.Intersecting;
-            var test3 = topPlane.Intersects(normSphere) == PlaneIntersectionType.Intersecting;
-            var test4 = bottomPlane.Intersects(normSphere) == PlaneIntersectionType.Intersecting;
-            var sphereCenter = normSphere.Center;
-            Vector3D t1Out = Vector3D.Zero;
-            Vector3D t2Out = Vector3D.Zero;
-            Vector3D t3Out = Vector3D.Zero;
-            Vector3D t4Out = Vector3D.Zero;
-            if (test1)
-            {
-                ClosestPointPlanePoint(ref frontPlane, ref sphereCenter, out t1Out);
-                Log.Line($"Test1: {frontPlane.Intersects(normSphere)} {t1Out.LengthSquared()} - {Vector3D.DistanceSquared(sphereCenter, p4)} - {Vector3D.DistanceSquared(sphereCenter, p5)} - {Vector3D.DistanceSquared(sphereCenter, p6)} - {Vector3D.DistanceSquared(sphereCenter, p7)}");
-            }
-
-            if (test2)
-            {
-                ClosestPointPlanePoint(ref backPlane, ref sphereCenter, out t2Out);
-                Log.Line($"Test2: {backPlane.Intersects(normSphere)} {t2Out.LengthSquared()} - {Vector3D.DistanceSquared(sphereCenter, p0)} - {Vector3D.DistanceSquared(sphereCenter, p1)} - {Vector3D.DistanceSquared(sphereCenter, p2)} - {Vector3D.DistanceSquared(sphereCenter, p3)}");
-            }
-
-            if (test3)
-            {
-                ClosestPointPlanePoint(ref topPlane, ref sphereCenter, out t3Out);
-                Log.Line($"Test3: {topPlane.Intersects(normSphere)} {t3Out.LengthSquared()} - {Vector3D.DistanceSquared(sphereCenter, p1)} - {Vector3D.DistanceSquared(sphereCenter, p2)} - {Vector3D.DistanceSquared(sphereCenter, p5)} - {Vector3D.DistanceSquared(sphereCenter, p6)}");
-
-            }
-
-            if (test4)
-            {
-                ClosestPointPlanePoint(ref bottomPlane, ref sphereCenter, out t4Out);
-                Log.Line($"Test4: {bottomPlane.Intersects(normSphere)} {t4Out.LengthSquared()} - {Vector3D.DistanceSquared(sphereCenter, p0)} - {Vector3D.DistanceSquared(sphereCenter, p3)} - {Vector3D.DistanceSquared(sphereCenter, p4)} - {Vector3D.DistanceSquared(sphereCenter, p7)}");
-            }
-            //Log.Line($"test1:{test1}({t1Out}) - test2:{test2}({t2Out}) - test3:{test3}({t3Out}) - test4:{test4}({t4Out})");
         }
 
         public static void ClosestPointPlanePoint(ref PlaneD plane, ref Vector3D point, out Vector3D result)

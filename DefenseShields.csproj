@@ -203,6 +203,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\PsUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionSupport.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionSupWeaps.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Misc.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\BoundingEllipsoid.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\Collision.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\CollisionExtensions.cs" />
@@ -217,6 +218,7 @@
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\SphereTriangleCollision.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\SphereTrianglesResponse.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\Triangle.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\PhysicsCatch\CatchEntities.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\ShieldDtree.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\PlanetShield.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionControls.cs" />
