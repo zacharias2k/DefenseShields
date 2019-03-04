@@ -143,9 +143,9 @@
 
                 if (_tick >= LosCheckTick) LosCheck();
                 if (ShieldComp.EmitterEvent) EmitterEventDetected();
-
                 if (ShieldFailing(powerState))
                 {
+                    ShieldComp.CheckEmitters = true;
                     _prevShieldActive = false;
                     return false;
                 }
@@ -193,6 +193,8 @@
         private void EmitterEventDetected()
         {
             ShieldComp.EmitterEvent = false;
+            DsState.State.ActiveEmitterId = ShieldComp.ActiveEmitterId;
+
             if (Session.Enforced.Debug == 2) Log.Line($"EmitterEvent: ShieldMode:{ShieldMode} - Los:{ShieldComp.EmitterLos} - Warmed:{WarmedUp} - SavedEId:{DsState.State.ActiveEmitterId} - NewEId:{ShieldComp.ActiveEmitterId} - ShieldId [{Shield.EntityId}]");
             if (!GridIsMobile)
             {
@@ -209,14 +211,12 @@
                     LosCheckTick = Session.Instance.Tick + 1800;
                     return;
                 }
-                DsState.State.ActiveEmitterId = 0;
                 //DsState.State.EmitterWorking = false;
                 if (GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los) DsState.State.Message = true;
                 else if (!GridIsMobile && ShieldComp.StationEmitter != null && !ShieldComp.StationEmitter.EmiState.State.Los) DsState.State.Message = true;
                 if (Session.Enforced.Debug == 2) Log.Line($"EmitterEvent: no emitter is working, shield mode: {ShieldMode} - WarmedUp:{WarmedUp} - MaxPower:{GridMaxPower} - ControlWorking:{ControlBlockWorking} - Radius:{ShieldSphere.Radius} - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
                 return;
             }
-            DsState.State.ActiveEmitterId = ShieldComp.ActiveEmitterId;
             //DsState.State.EmitterWorking = true;
         }
 
@@ -672,7 +672,15 @@
         {
             var primeMode = ShieldMode == ShieldType.Station && IsStatic && ShieldComp.StationEmitter == null;
             var betaMode = ShieldMode != ShieldType.Station && !IsStatic && ShieldComp.ShipEmitter == null;
-            if (ShieldMode != ShieldType.Station && IsStatic) InitSuspend();
+            if (!IsFunctional)
+            {
+                if (ShieldComp.DefenseShields == this)
+                {
+                    DsState.State.Suspended = true;
+                    ShieldComp.DefenseShields = null;
+                }
+            }
+            else if (ShieldMode != ShieldType.Station && IsStatic) InitSuspend();
             else if (ShieldMode == ShieldType.Station && !IsStatic) InitSuspend();
             else if (ShieldMode == ShieldType.Unknown) InitSuspend();
             else if (ShieldComp.DefenseShields != this || primeMode || betaMode) InitSuspend(true);
@@ -693,6 +701,7 @@
                     UpdateEntity();
                     GetEnhancernInfo();
                     GetModulationInfo();
+                    Session.Instance.BlockTagActive(Shield);
                     if (Session.Enforced.Debug == 3) Log.Line($"Unsuspended: CM:{ShieldMode} - EW:{DsState.State.ActiveEmitterId != 0} - ES:{ShieldComp.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.Suspended = false;
@@ -704,9 +713,14 @@
                 if (DsState.State.Suspended)
                 {
                     bool value;
+                    Session.Instance.BlockTagBackup(Shield);
                     Session.Instance.FunctionalShields.TryRemove(this, out value);
                 }
-                else Session.Instance.FunctionalShields[this] = false;
+                else
+                {
+                    Session.Instance.BlockTagActive(Shield);
+                    Session.Instance.FunctionalShields[this] = false;
+                }
             }
 
             WasSuspended = DsState.State.Suspended;
@@ -722,6 +736,7 @@
             {
                 if (cleanEnts) InitEntities(false);
                 DsState.State.Suspended = true;
+                Session.Instance.BlockTagBackup(Shield);
                 FailShield();
                 if (Session.Enforced.Debug == 3) Log.Line($"Suspended: controller mode is: {ShieldMode} - EW:{DsState.State.ActiveEmitterId != 0} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
             }

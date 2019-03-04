@@ -286,6 +286,38 @@
             }
         }
 
+        public void BlockTagActive(IMyTerminalBlock tBlock)
+        {
+            var customName = tBlock.CustomName;
+            if (customName.StartsWith("[A] ")) return;
+            if (customName.StartsWith("[B] "))
+            {
+                customName = customName.Remove(0, 4);
+                customName = "[A] " + customName;
+            }
+            else
+            {
+                customName = "[A] " + customName;
+            }
+            tBlock.CustomName = customName;
+        }
+
+        public void BlockTagBackup(IMyTerminalBlock tBlock)
+        {
+            var customName = tBlock.CustomName;
+            if (customName.StartsWith("[B] ")) return;
+            if (customName.StartsWith("[A] "))
+            {
+                customName = customName.Remove(0, 4);
+                customName = "[B] " + customName;
+            }
+            else
+            {
+                customName = "[B] " + customName;
+            }
+            tBlock.CustomName = customName;
+        }
+
         private bool WarheadGetter(IMyTerminalBlock tBlock)
         {
             return tBlock.CustomData.Contains("@EMP");

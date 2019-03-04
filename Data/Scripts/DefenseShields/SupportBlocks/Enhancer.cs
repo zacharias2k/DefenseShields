@@ -257,11 +257,13 @@
             {
                 if (ShieldComp.Enhancer == null)
                 {
+                    Session.Instance.BlockTagActive(Enhancer);
                     ShieldComp.Enhancer = this;
                     EnhState.State.Backup = false;
                 }
                 else if (ShieldComp.Enhancer != this)
                 {
+                    if (!EnhState.State.Backup) Session.Instance.BlockTagBackup(Enhancer);
                     EnhState.State.Backup = true;
                     EnhState.State.Online = false;
                 }

@@ -378,6 +378,7 @@
             if (ModulatorComp.Modulator == null) ModulatorComp.Modulator = this;
             else if (ModulatorComp.Modulator != this)
             {
+                if (!ModState.State.Backup) Session.Instance.BlockTagBackup(Modulator);
                 ModState.State.Backup = true;
                 ModState.State.Online = false;
                 return false;
@@ -398,7 +399,11 @@
 
             if (ShieldComp?.Modulator != this)
             {
-                if (ShieldComp.Modulator != this) ShieldComp.Modulator = this;
+                if (ShieldComp.Modulator != this)
+                {
+                    ShieldComp.Modulator = this;
+                    Session.Instance.BlockTagActive(Modulator);
+                }
                 ModState.State.Link = true;
             }
 

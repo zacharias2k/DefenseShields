@@ -131,6 +131,7 @@ namespace DefenseShields
             var iStopped = !working && myComp && modes;
             if (mySlotOpen)
             {
+                Session.Instance.BlockTagActive(Emitter);
                 if (stationMode)
                 {
                     EmiState.State.Backup = false;
@@ -191,6 +192,7 @@ namespace DefenseShields
             {
                 if (!EmiState.State.Backup)
                 {
+                    Session.Instance.BlockTagBackup(Emitter);
                     EmiState.State.Backup = true;
                     if (Session.Enforced.Debug == 2) Log.Line($"!myShield - !otherMode: {Definition.Name} - isStatic:{IsStatic} - myShield:{myShield} - myMode {myMode} - Mode:{EmitterMode} - CompMode: {ShieldComp.EmitterMode} - ELos:{ShieldComp.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - EmitterId [{Emitter.EntityId}]");
                 }
@@ -215,7 +217,6 @@ namespace DefenseShields
         {
             //EmiState.State.Online = true;
             EmiState.State.ActiveEmitterId = MyCube.EntityId;
-            ShieldComp.ActiveEmitterId = EmiState.State.ActiveEmitterId;
 
             if (ShieldComp.EmitterMode != (int)EmitterMode) ShieldComp.EmitterMode = (int)EmitterMode;
             if (ShieldComp.EmittersSuspended) SuspendCollisionDetected();
@@ -224,9 +225,15 @@ namespace DefenseShields
 
             //ShieldComp.EmittersWorking = EmiState.State.Los && EmiState.State.Online;
             ShieldComp.EmitterLos = EmiState.State.Los;
+            ShieldComp.ActiveEmitterId = ShieldComp.EmitterLos ? EmiState.State.ActiveEmitterId : 0;
 
-            if (!EmiState.State.Los || ShieldComp.DefenseShields == null || !ShieldComp.DefenseShields.DsState.State.Online || !(_tick >= ShieldComp.DefenseShields.UnsuspendTick))
+            var comp = ShieldComp;
+            var ds = comp.DefenseShields;
+            var dsNull = ds == null;
+
+            if (!EmiState.State.Los || dsNull || !ds.DsState.State.Online || !(_tick >= ds.UnsuspendTick))
             {
+                if (!dsNull && ds.DsState.State.ActiveEmitterId != comp.ActiveEmitterId) comp.EmitterEvent = true;
                 BlockReset();
                 return false;
             }

@@ -1,4 +1,6 @@
-﻿namespace DefenseShields
+﻿using VRage.Game.ModAPI;
+
+namespace DefenseShields
 {
     using System;
     using Support;
@@ -78,6 +80,15 @@
                 {
                     if (NotFailed) OfflineShield();
                     else if (DsState.State.Message) ShieldChangeState();
+
+                    if (!_isDedicated && _tick60)
+                    {
+                        if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == Shield.EntityId)
+                        {
+                            Shield.RefreshCustomInfo();
+                            MyCube.UpdateTerminal();
+                        }
+                    }
                     return;
                 }
                 if (DsState.State.Online)

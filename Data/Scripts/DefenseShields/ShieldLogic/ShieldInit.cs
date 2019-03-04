@@ -109,7 +109,7 @@ namespace DefenseShields
         {
             try
             {
-                if (_isServer && (ShieldComp.EmitterMode < 0 || (ShieldComp.EmitterMode == 0 && ShieldComp.StationEmitter == null ) || ShieldComp.EmittersSuspended || !IsFunctional))
+                if (_isServer && (ShieldComp.EmitterMode < 0 || ShieldComp.EmitterMode == 0 && ShieldComp.StationEmitter == null || ShieldComp.EmitterMode != 0 && ShieldComp.ShipEmitter == null || ShieldComp.EmittersSuspended || !IsFunctional))
                 {
                     if (_tick600)
                     {
@@ -122,6 +122,7 @@ namespace DefenseShields
                 MyEntity emitterEnt = null;
                 if (RequestEnforcement() || _clientNotReady || (!_isServer && (DsState.State.Mode < 0 || !MyEntities.TryGetEntityById(DsState.State.ActiveEmitterId, out emitterEnt) || !(emitterEnt is IMyUpgradeModule))))
                 {
+                    if (Session.Enforced.Debug == 3) Log.Line($"ClientPostInit: {emitterEnt == null} - {emitterEnt is IMyUpgradeModule} - {DsState.State.Mode} - {DsState.State.ActiveEmitterId}");
                     return false;
                 }
 
@@ -182,7 +183,6 @@ namespace DefenseShields
             
             _oldGridHalfExtents = DsState.State.GridHalfExtents;
             _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
-
             _updateRender = true;
             Warming = true;
         }
