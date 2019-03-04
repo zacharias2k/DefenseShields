@@ -1,4 +1,7 @@
-﻿namespace DefenseShields
+﻿using Sandbox.Game.Entities;
+using Sandbox.ModAPI;
+
+namespace DefenseShields
 {
     using System;
     using Support;
@@ -10,7 +13,7 @@
         #region Shield Shape
         public void ResetShape(bool background, bool newShape = false)
         {
-            if (Session.Enforced.Debug == 3) Log.Line($"ResetShape: Mobile:{GridIsMobile} - Mode:{ShieldMode}/{DsState.State.Mode} - newShape:{newShape} - Offline:{!DsState.State.Online} - offCnt:{_offlineCnt} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - EWorking:{ShieldComp.EmittersWorking} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"ResetShape: Mobile:{GridIsMobile} - Mode:{ShieldMode}/{DsState.State.Mode} - newShape:{newShape} - Offline:{!DsState.State.Online} - offCnt:{_offlineCnt} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ELos:{ShieldComp.EmitterLos} - ShieldId [{Shield.EntityId}]");
 
             if (newShape)
             {
@@ -161,7 +164,16 @@
             }
             else
             {
-                var emitter = ShieldComp.StationEmitter.Emitter;
+                IMyUpgradeModule emitter;
+                if (_isServer) emitter = ShieldComp.StationEmitter.Emitter;
+                else emitter = (IMyUpgradeModule)MyEntities.GetEntityById(DsState.State.ActiveEmitterId, true);
+
+                if (emitter == null)
+                {
+                    UpdateDimensions = true;
+                    return;
+                }
+
                 var width = DsSet.Settings.Width;
                 var height = DsSet.Settings.Height;
                 var depth = DsSet.Settings.Depth;

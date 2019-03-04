@@ -193,29 +193,31 @@
         private void EmitterEventDetected()
         {
             ShieldComp.EmitterEvent = false;
-
+            if (Session.Enforced.Debug == 2) Log.Line($"EmitterEvent: ShieldMode:{ShieldMode} - Los:{ShieldComp.EmitterLos} - Warmed:{WarmedUp} - SavedEId:{DsState.State.ActiveEmitterId} - NewEId:{ShieldComp.ActiveEmitterId} - ShieldId [{Shield.EntityId}]");
             if (!GridIsMobile)
             {
                 UpdateDimensions = true;
                 if (UpdateDimensions) RefreshDimensions();
             }
 
-            if (!ShieldComp.EmittersWorking)
+            if (!ShieldComp.EmitterLos)
             {
                 if (!WarmedUp)
                 {
                     MyGrid.Physics.ForceActivate();
-                    if (Session.Enforced.Debug == 2) Log.Line($"EmitterStartupFailure: Asleep:{Asleep} - MaxPower:{GridMaxPower} - {ShieldSphere.Radius} - ControlWork:{ControlBlockWorking}");
+                    if (Session.Enforced.Debug == 2) Log.Line($"EmitterStartupFailure: Asleep:{Asleep} - MaxPower:{GridMaxPower} - {ShieldSphere.Radius} - ControlWork:{ControlBlockWorking} - ShieldId [{Shield.EntityId}]");
                     LosCheckTick = Session.Instance.Tick + 1800;
                     return;
                 }
-                DsState.State.EmitterWorking = false;
+                DsState.State.ActiveEmitterId = 0;
+                //DsState.State.EmitterWorking = false;
                 if (GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los) DsState.State.Message = true;
                 else if (!GridIsMobile && ShieldComp.StationEmitter != null && !ShieldComp.StationEmitter.EmiState.State.Los) DsState.State.Message = true;
                 if (Session.Enforced.Debug == 2) Log.Line($"EmitterEvent: no emitter is working, shield mode: {ShieldMode} - WarmedUp:{WarmedUp} - MaxPower:{GridMaxPower} - ControlWorking:{ControlBlockWorking} - Radius:{ShieldSphere.Radius} - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
                 return;
             }
-            DsState.State.EmitterWorking = true;
+            DsState.State.ActiveEmitterId = ShieldComp.ActiveEmitterId;
+            //DsState.State.EmitterWorking = true;
         }
 
         private void ComingOnlineSetup()
@@ -276,8 +278,10 @@
 
         private bool ShieldFailing(bool powerState = true)
         {
-            if ((!ControlBlockWorking || !powerState || !ShieldComp.EmittersWorking) && _genericDownLoop == -1)
+
+            if ((!ControlBlockWorking || !powerState || DsState.State.ActiveEmitterId == 0) && _genericDownLoop == -1)
             {
+                if (!WarmedUp) return true;
                 _genericDownLoop = 0;
             }
 
@@ -291,7 +295,7 @@
 
         private void FailureConditions()
         {
-            if ((!WarmedUp || DsState.State.Lowered || DsState.State.Sleeping) && _genericDownLoop != -1)
+            if ((DsState.State.Lowered || DsState.State.Sleeping) && _genericDownLoop != -1)
             {
                 _genericDownLoop++;
                 if (_genericDownLoop == GenericDownCount) _genericDownLoop = -1;
@@ -340,14 +344,15 @@
                 _genericDownLoop++;
                 if (_genericDownLoop == GenericDownCount)
                 {
-                    if (!ShieldComp.EmittersWorking)
+                    //DsState.State.ActiveEmitterId = 0;
+                    if (DsState.State.ActiveEmitterId == 0)
                     {
-                        DsState.State.EmitterWorking = false;
+                        //DsState.State.EmitterWorking = false;
                         _genericDownLoop = 0;
                     }
                     else
                     {
-                        DsState.State.EmitterWorking = true;
+                        //DsState.State.EmitterWorking = true;
                         _genericDownLoop = -1;
                     }
                 }
@@ -359,7 +364,7 @@
                 if (_overLoadLoop == ShieldDownCount - 1) ShieldComp.CheckEmitters = true;
                 if (_overLoadLoop == ShieldDownCount)
                 {
-                    if (!ShieldComp.EmittersWorking)
+                    if (DsState.State.ActiveEmitterId == 0)
                     {
                         DsState.State.Overload = false;
                         _overLoadLoop = -1;
@@ -380,7 +385,7 @@
                 if (_empOverLoadLoop == EmpDownCount - 1) ShieldComp.CheckEmitters = true;
                 if (_empOverLoadLoop == EmpDownCount)
                 {
-                    if (!ShieldComp.EmittersWorking)
+                    if (DsState.State.ActiveEmitterId == 0)
                     {
                         DsState.State.EmpOverLoad = false;
                         _empOverLoadLoop = -1;
@@ -534,7 +539,7 @@
                 }
                 PowerOnline();
                 if (ShieldComp.EmitterEvent) EmitterEventDetected();
-                if (!IsWorking || !ShieldComp.EmittersWorking)
+                if (!IsWorking || DsState.State.ActiveEmitterId == 0)
                 {
                     if (_genericDownLoop == -1) _genericDownLoop = 0;
                     return false;
@@ -688,7 +693,7 @@
                     UpdateEntity();
                     GetEnhancernInfo();
                     GetModulationInfo();
-                    if (Session.Enforced.Debug == 3) Log.Line($"Unsuspended: CM:{ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug == 3) Log.Line($"Unsuspended: CM:{ShieldMode} - EW:{DsState.State.ActiveEmitterId != 0} - ES:{ShieldComp.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.Suspended = false;
             }
@@ -718,7 +723,7 @@
                 if (cleanEnts) InitEntities(false);
                 DsState.State.Suspended = true;
                 FailShield();
-                if (Session.Enforced.Debug == 3) Log.Line($"Suspended: controller mode is: {ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"Suspended: controller mode is: {ShieldMode} - EW:{DsState.State.ActiveEmitterId != 0} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
             }
             if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
             DsState.State.Suspended = true;
@@ -773,7 +778,7 @@
             ResetShape(false);
             SetShieldType(false);
             if (!_isDedicated) ShellVisibility(true);
-            if (Session.Enforced.Debug == 2) Log.Line($"UpdateEntity: sEnt:{ShieldEnt == null} - sPassive:{_shellPassive == null} - controller mode is: {ShieldMode} - EW:{ShieldComp.EmittersWorking} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 2) Log.Line($"UpdateEntity: sEnt:{ShieldEnt == null} - sPassive:{_shellPassive == null} - controller mode is: {ShieldMode} - EW:{DsState.State.ActiveEmitterId != 0} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
             Icosphere.ShellActive = null;
             _updateRender = true;
         }
@@ -862,12 +867,8 @@
         {
             if (Session.Enforced.Debug == 3) Log.Line($"Broadcasting message to local playerId{Session.Instance.Players.Count} - Server:{_isServer} - Dedicated:{_isDedicated} - Id:{MyAPIGateway.Multiplayer.MyId}");
 
-            var checkMobLos = GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los;
-            if (!DsState.State.EmitterWorking && (!DsState.State.Waking || (checkMobLos && _genericDownLoop > -1) || (checkMobLos && !_isServer)))
-            {
-                if (checkMobLos) PlayerMessages(PlayerNotice.NoLos);
-                else if (!GridIsMobile && ShieldComp.StationEmitter != null && !ShieldComp.StationEmitter.EmiState.State.Los) PlayerMessages(PlayerNotice.NoLos);
-            }
+            //if (!DsState.State.EmitterWorking && (!DsState.State.Waking || (checkMobLos && _genericDownLoop > -1) || (checkMobLos && !_isServer)))
+            if (DsState.State.ActiveEmitterId == 0 && GridIsMobile && !DsState.State.Waking) PlayerMessages(PlayerNotice.NoLos);
             else if (DsState.State.NoPower || forceNoPower) PlayerMessages(PlayerNotice.NoPower);
             else if (DsState.State.Overload) PlayerMessages(PlayerNotice.OverLoad);
             else if (DsState.State.EmpOverLoad) PlayerMessages(PlayerNotice.EmpOverLoad);
@@ -892,8 +893,10 @@
                 _prevShieldActive = false;
             }
 
+            //var offline = DsState.State.Suspended || !DsState.State.Online || DsState.State.Sleeping || !DsState.State.ControllerGridAccess
+            //              || !DsState.State.EmitterWorking || DsState.State.Remodulate || DsState.State.Waking || DsState.State.Overload;
             var offline = DsState.State.Suspended || !DsState.State.Online || DsState.State.Sleeping || !DsState.State.ControllerGridAccess
-                          || !DsState.State.EmitterWorking || DsState.State.Remodulate || DsState.State.Waking || DsState.State.Overload;
+                          || DsState.State.ActiveEmitterId == 0 || DsState.State.Remodulate || DsState.State.Waking || DsState.State.Overload;
             if (offline)
             {
                 if (_clientOn)

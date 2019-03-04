@@ -144,7 +144,7 @@
                           $"Np:{DsState.State.NoPower} - Lo:{DsState.State.Lowered} - Sl:{DsState.State.Sleeping}\n" +
                           $"PSys:{MyResourceDist?.SourcesEnabled} - PNull:{MyResourceDist == null}\n" +
                           $"MaxPower:{GridMaxPower} - AvailPower:{GridAvailablePower}\n" +
-                          $"Access:{DsState.State.ControllerGridAccess} - EmitterWorking:{DsState.State.EmitterWorking}\n" +
+                          $"Access:{DsState.State.ControllerGridAccess} - ActiveEmitterId:{DsState.State.ActiveEmitterId}\n" +
                           $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)}\n" +
                           $"ShieldMode:{ShieldMode} - pFail:{_powerFail}\n" +
                           $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{GridMaxPower}\n" +

@@ -1,4 +1,6 @@
-﻿namespace DefenseShields
+﻿using Sandbox.Game.Entities;
+
+namespace DefenseShields
 {
     using System;
     using System.Collections.Generic;
@@ -107,7 +109,7 @@
         {
             try
             {
-                if (_isServer && (ShieldComp.EmitterMode < 0 || (ShieldComp.EmitterMode == 0 && ShieldComp.StationEmitter == null) || ShieldComp.EmittersSuspended || !IsFunctional))
+                if (_isServer && (ShieldComp.EmitterMode < 0 || (ShieldComp.EmitterMode == 0 && ShieldComp.StationEmitter == null ) || ShieldComp.EmittersSuspended || !IsFunctional))
                 {
                     if (_tick600)
                     {
@@ -117,7 +119,8 @@
                     return false;
                 }
 
-                if (RequestEnforcement() || _clientNotReady || (!_isServer && (DsState.State.Mode < 0 || (DsState.State.Mode == 0 && ShieldComp.StationEmitter == null))))
+                MyEntity emitterEnt = null;
+                if (RequestEnforcement() || _clientNotReady || (!_isServer && (DsState.State.Mode < 0 || !MyEntities.TryGetEntityById(DsState.State.ActiveEmitterId, out emitterEnt) || !(emitterEnt is IMyUpgradeModule))))
                 {
                     return false;
                 }
@@ -172,6 +175,7 @@
             }
 
             _blockChanged = true;
+            _functionalChanged = true;
 
             ResetShape(false);
             ResetShape(false, true);
@@ -206,6 +210,10 @@
                     DsState.State.NoPower = false;
                     DsState.State.Remodulate = false;
                     DsState.State.Suspended = false;
+                    DsState.State.Waking = false;
+                    DsState.State.ActiveEmitterId = 0;
+                    DsState.State.FieldBlocked = false;
+                    //DsState.State.Sleeping = false;
                     DsState.State.Heat = 0;
                 }
             }

@@ -59,8 +59,10 @@
                             }
                             else trueAttacker = grid;
 
+                            protectors.LastAttackerWasInside = true;
                             Vector3D originHit;
                             block.ComputeWorldCenter(out originHit);
+
                             var line = new LineD(trueAttacker.PositionComp.WorldAABB.Center, originHit);
                             var testDir = Vector3D.Normalize(line.From - line.To);
                             var ray = new RayD(line.From, -testDir);
@@ -74,6 +76,7 @@
                                 var intersect = ellipsoid > 0 && line.Length > ellipsoid;
                                 if (intersect && ellipsoid <= hitDist)
                                 {
+                                    protectors.LastAttackerWasInside = false;
                                     hitDist = ellipsoid;
                                     shieldHitPos = line.From + (testDir * -ellipsoid);
                                     protectors.BlockingShield = shield;
@@ -81,13 +84,14 @@
                                 }
                             }
                         }
-                        else if (Tick - protectors.BlockingTick > 10) protectors.BlockingShield = null;
+
+                        if (Tick - protectors.BlockingTick > 10 && protectors.LastAttackerWasInside) protectors.BlockingShield = null;
                     }
                     catch (Exception ex) { Log.Line($"Exception in DamageFindShield {_previousEnt == null}: {ex}"); }
 
                     try
                     {
-                        var activeProtector = protectors.BlockingShield != null && protectors.BlockingShield.DsState.State.Online && !protectors.BlockingShield.DsState.State.Lowered && protectors.Shields.Contains(protectors.BlockingShield);
+                        var activeProtector = protectors.BlockingShield != null && protectors.BlockingShield.DsState.State.Online && !protectors.BlockingShield.DsState.State.Lowered;
                         if (activeProtector)
                         {
                             var shield = protectors.BlockingShield;
@@ -98,7 +102,7 @@
                             }
                             var isExplosionDmg = damageType == MyDamageType.Explosion;
                             var isDeformationDmg = damageType == MyDamageType.Deformation;
-                            if (trueAttacker is MyVoxelBase || (trueAttacker is MyCubeGrid && isDeformationDmg && shield.ModulateGrids))
+                            if (trueAttacker is MyVoxelBase)
                             {
                                 shield.DeformEnabled = true;
                                 return;
@@ -106,11 +110,6 @@
                             if (damageType == Bypass)
                             {
                                 shield.DeformEnabled = true;
-                                return;
-                            }
-                            if (damageType == DSdamage || damageType == DSheal || damageType == DSbypass)
-                            {
-                                info.Amount = 0f;
                                 return;
                             }
 

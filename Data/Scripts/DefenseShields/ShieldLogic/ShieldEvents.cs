@@ -194,7 +194,8 @@
             if (DsState.State.Waking) return "[Coming Online]";
             if (DsState.State.Suspended || DsState.State.Mode == 4) return "[Controller Standby]";
             if (DsState.State.Lowered) return "[Shield Down]";
-            if (!DsState.State.EmitterWorking) return "[Emitter Failure]";
+            //if (!DsState.State.EmitterWorking) return "[Emitter Failure]";
+            if (DsState.State.ActiveEmitterId == 0) return "[Emitter Failure]";
             if (DsState.State.Sleeping) return "[Suspended]";
             if (!DsState.State.Online) return "[Shield Offline]";
             return "[Shield Up]";
@@ -244,7 +245,8 @@
                                          "\n[Other Power]: " + otherPower.ToString("0.0") + " Mw" +
                                          "\n[HP Stored]: " + (DsState.State.Charge * ConvToHp).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
                                          "\n[Needed Power]: " + shieldPowerNeeds.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw" +
-                                         "\n[Emitter Working]: " + DsState.State.EmitterWorking +
+                                         //"\n[Emitter Working]: " + DsState.State.EmitterWorking +
+                                         "\n[Emitter Working]: " + (DsState.State.ActiveEmitterId != 0) +
                                          "\n[Ship Emitter]: " + (ShieldComp?.ShipEmitter != null) +
                                          "\n[Station Emitter]: " + (ShieldComp?.StationEmitter != null) +
                                          "\n[Grid Owns Controller]: " + DsState.State.IsOwner +

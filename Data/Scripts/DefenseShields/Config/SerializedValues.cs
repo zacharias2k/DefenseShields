@@ -58,7 +58,7 @@
         [ProtoMember(20), DefaultValue(-1)] public double EllipsoidAdjust = Math.Sqrt(2);
         [ProtoMember(21)] public Vector3D GridHalfExtents;
         [ProtoMember(22), DefaultValue(-1)] public int Mode = -1;
-        [ProtoMember(23)] public bool EmitterWorking = false;
+        [ProtoMember(23)] public bool UnusedWasEmitterWorking;
         [ProtoMember(24)] public float ShieldFudge;
         [ProtoMember(25)] public bool Message;
         [ProtoMember(26)] public int Heat;
@@ -67,6 +67,7 @@
         [ProtoMember(29)] public bool EmpProtection = false;
         [ProtoMember(30)] public float GridIntegrity;
         [ProtoMember(31)] public bool ReInforce = false;
+        [ProtoMember(32)] public long ActiveEmitterId;
 
         public override string ToString()
         {
@@ -99,6 +100,26 @@
         public override string ToString()
         {
             return "";
+        }
+    }
+
+    [ProtoContract]
+    public class EmitterStateValues
+    {
+        [ProtoMember(1)] public bool UnusedWasOnline;
+        [ProtoMember(2), DefaultValue(true)] public bool Los = true;
+        [ProtoMember(3)] public bool Link;
+        [ProtoMember(4)] public bool Suspend;
+        [ProtoMember(5)] public bool Backup;
+        [ProtoMember(6)] public bool Compatible;
+        [ProtoMember(7), DefaultValue(-1)] public int Mode;
+        [ProtoMember(8), DefaultValue(-1)] public double BoundingRange;
+        [ProtoMember(9)] public bool UnusedWasCompact;
+        [ProtoMember(10)] public long ActiveEmitterId;
+
+        public override string ToString()
+        {
+            return $"";
         }
     }
 
@@ -207,25 +228,6 @@
         [ProtoMember(2), DefaultValue(true)] public bool ModulateVoxels = true;
         [ProtoMember(3)] public bool ModulateGrids = false;
         [ProtoMember(4), DefaultValue(-1)] public int ModulateDamage = 100;
-
-        public override string ToString()
-        {
-            return $"";
-        }
-    }
-
-    [ProtoContract]
-    public class EmitterStateValues
-    {
-        [ProtoMember(1)] public bool Online;
-        [ProtoMember(2), DefaultValue(true)] public bool Los = true;
-        [ProtoMember(3)] public bool Link;
-        [ProtoMember(4)] public bool Suspend;
-        [ProtoMember(5)] public bool Backup;
-        [ProtoMember(6)] public bool Compatible;
-        [ProtoMember(7), DefaultValue(-1)] public int Mode;
-        [ProtoMember(8), DefaultValue(-1)] public double BoundingRange;
-        [ProtoMember(9)] public bool Compact;
 
         public override string ToString()
         {

@@ -430,6 +430,7 @@
         public int RefreshSlot;
         public uint CreationTick;
         public uint BlockingTick;
+        public bool LastAttackerWasInside;
         public DefenseShields BlockingShield;
         public DefenseShields IntegrityShield;
         public long IgnoreAttackerId = -1;

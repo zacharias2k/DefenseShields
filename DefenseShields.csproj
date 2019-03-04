@@ -201,6 +201,11 @@
     <Compile Include="Data\Scripts\DefenseShields\Config\SerializedValues.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\O2Ui.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\PsUi.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmitterDraw.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmitterFields.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmitterLos.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmitterMisc.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmitterState.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionSupport.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionSupWeaps.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Misc.cs" />
@@ -255,7 +260,7 @@
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\GridComps\ShieldGridComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldIntersect.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\Modulators.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\Emitters.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmittersRun.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\ControllerData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldFields.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldInit.cs" />

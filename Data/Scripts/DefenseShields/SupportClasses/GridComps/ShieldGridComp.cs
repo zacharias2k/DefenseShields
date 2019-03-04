@@ -72,6 +72,8 @@ namespace DefenseShields
         public Modulators Modulator { get; set; }
 
         public int EmitterMode { get; set; } = -1;
+        public long ActiveEmitterId { get; set; }
+
         public Emitters StationEmitter { get; set; }
         public Emitters ShipEmitter { get; set; }
 
@@ -79,7 +81,7 @@ namespace DefenseShields
 
         public string ModulationPassword { get; set; }
 
-        public bool EmittersWorking { get; set; }
+        public bool EmitterLos { get; set; }
 
         public bool EmittersSuspended { get; set; }
 
