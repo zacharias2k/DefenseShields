@@ -106,7 +106,7 @@
                         if (!s.PlayerByShield && !s.MoverByShield && !s.NewEntByShield)
                         {
                             if (s.TicksWithNoActivity++ % EntCleanCycle == 0) s.EntCleanUpTime = true;
-                            if (tick > 1200 && !s.WasPaused)
+                            if (shieldActive && !s.WasPaused && tick > 1200)
                             {
                                 if (Enforced.Debug >= 2) Log.Line($"Logic Paused by monitor");
                                 lock (ActiveShields) ActiveShields.Remove(s);

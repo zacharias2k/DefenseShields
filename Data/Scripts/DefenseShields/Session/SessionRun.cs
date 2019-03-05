@@ -123,7 +123,6 @@
                 for (int i = 0; i < compCount; i++)
                 {
                     var s = Controllers[i];
-                    //var drawSuspended = s.WasPaused || s.DsState.State.Suspended || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterWorking || !s.WarmedUp;
                     var drawSuspended = s.WasPaused || s.DsState.State.Suspended || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterLos || !s.WarmedUp;
 
                     if (drawSuspended) continue;

@@ -79,8 +79,7 @@ namespace DefenseShields
                 if (!ShieldOn())
                 {
                     if (NotFailed) OfflineShield();
-                    else if (DsState.State.Message || _tick1800) ShieldChangeState();
-
+                    else if (DsState.State.Message) ShieldChangeState();
                     if (!_isDedicated && _tick60 && InControlPanel && InThisTerminal) TerminalRefresh();
                     return;
                 }
