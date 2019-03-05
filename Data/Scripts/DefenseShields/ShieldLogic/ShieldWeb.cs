@@ -1,19 +1,37 @@
-﻿namespace DefenseShields
+﻿using System.Linq;
+using System;
+using System.Collections.Generic;
+using DefenseShields.Support;
+using Sandbox.Game.Entities;
+using Sandbox.ModAPI;
+using Sandbox.ModAPI.Weapons;
+using VRage.Game;
+using VRage.Game.Entity;
+using VRage.Game.ModAPI;
+using VRageMath;
+namespace DefenseShields
 {
-    using System;
-    using System.Collections.Generic;
-    using Support;
-    using Sandbox.Game.Entities;
-    using Sandbox.ModAPI;
-    using Sandbox.ModAPI.Weapons;
-    using VRage.Game;
-    using VRage.Game.Entity;
-    using VRage.Game.ModAPI;
-    using VRageMath;
-
     public partial class DefenseShields
     {
         #region Web Entities
+        public void CleanWebEnts()
+        {
+            AuthenticatedCache.Clear();
+            IgnoreCache.Clear();
+
+            _porotectEntsTmp.Clear();
+            _porotectEntsTmp.AddRange(ProtectedEntCache.Where(info => _tick - info.Value.LastTick > 180));
+            foreach (var protectedEnt in _porotectEntsTmp) ProtectedEntCache.Remove(protectedEnt.Key);
+
+            _webEntsTmp.Clear();
+            _webEntsTmp.AddRange(WebEnts.Where(info => _tick - info.Value.LastTick > 180));
+            foreach (var webent in _webEntsTmp)
+            {
+                EntIntersectInfo removedEnt;
+                WebEnts.TryRemove(webent.Key, out removedEnt);
+                EnemyShields.Remove(webent.Key);
+            }
+        }
 
         public void ProtectSubs(uint tick)
         {

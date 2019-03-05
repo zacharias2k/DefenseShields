@@ -62,10 +62,7 @@ namespace DefenseShields
             {
                 if (ShieldComp == null) return false;
 
-                //if (EmiState.State.Mode == 0 && EmiState.State.Link && ShieldComp.StationEmitter == null) ShieldComp.StationEmitter = this;
-                //else if (EmiState.State.Mode != 0 && EmiState.State.Link && ShieldComp.ShipEmitter == null) ShieldComp.ShipEmitter = this;
-
-                if (ShieldComp.DefenseShields == null || ShieldComp.DefenseShields.DsState.State.ActiveEmitterId != MyCube.EntityId || !IsFunctional)
+                if (ShieldComp.DefenseShields == null || !IsFunctional)
                     return false;
 
                 if (!_compact && SubpartRotor == null)
@@ -74,7 +71,6 @@ namespace DefenseShields
                     if (SubpartRotor == null) return false;
                 }
 
-                //if (EmiState.State.Online && !EmiState.State.Los) LosLogic();
                 if (!EmiState.State.Los) LosLogic();
 
 
@@ -84,7 +80,6 @@ namespace DefenseShields
                     _updateLosState = false;
                     LosScaledCloud.Clear();
                 }
-                //if (!EmiState.State.Link || !EmiState.State.Online) return false;
                 if (!EmiState.State.Link) return false;
             }
             return true;
@@ -92,7 +87,6 @@ namespace DefenseShields
 
         private bool Suspend()
         {
-            //EmiState.State.Online = false;
             EmiState.State.ActiveEmitterId = 0;
             var functional = IsFunctional;
             if (!functional)
@@ -215,7 +209,6 @@ namespace DefenseShields
 
         private bool BlockWorking()
         {
-            //EmiState.State.Online = true;
             EmiState.State.ActiveEmitterId = MyCube.EntityId;
 
             if (ShieldComp.EmitterMode != (int)EmitterMode) ShieldComp.EmitterMode = (int)EmitterMode;
@@ -223,17 +216,17 @@ namespace DefenseShields
 
             LosLogic();
 
-            //ShieldComp.EmittersWorking = EmiState.State.Los && EmiState.State.Online;
             ShieldComp.EmitterLos = EmiState.State.Los;
-            ShieldComp.ActiveEmitterId = ShieldComp.EmitterLos ? EmiState.State.ActiveEmitterId : 0;
+            ShieldComp.ActiveEmitterId = EmiState.State.ActiveEmitterId;
 
             var comp = ShieldComp;
             var ds = comp.DefenseShields;
             var dsNull = ds == null;
+            var shieldWaiting = !dsNull && ds.DsState.State.EmitterLos != EmiState.State.Los;
+            if (shieldWaiting) comp.EmitterEvent = true;
 
-            if (!EmiState.State.Los || dsNull || !ds.DsState.State.Online || !(_tick >= ds.UnsuspendTick))
+            if (!EmiState.State.Los || dsNull || shieldWaiting || !ds.DsState.State.Online || !(_tick >= ds.UnsuspendTick))
             {
-                if (!dsNull && ds.DsState.State.ActiveEmitterId != comp.ActiveEmitterId) comp.EmitterEvent = true;
                 BlockReset();
                 return false;
             }

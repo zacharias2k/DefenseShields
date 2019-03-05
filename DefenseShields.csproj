@@ -208,6 +208,8 @@
     <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmitterState.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionSupport.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionSupWeaps.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldAlerts.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldChecks.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Misc.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\BoundingEllipsoid.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\Collision.cs" />
@@ -283,7 +285,7 @@
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\TheadEvents.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Utils.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Render.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldTimings.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldHealth.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\CSupport\Triangle3.cs" />
   </ItemGroup>
   <ItemGroup>

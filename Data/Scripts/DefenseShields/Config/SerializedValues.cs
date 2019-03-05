@@ -58,7 +58,7 @@
         [ProtoMember(20), DefaultValue(-1)] public double EllipsoidAdjust = Math.Sqrt(2);
         [ProtoMember(21)] public Vector3D GridHalfExtents;
         [ProtoMember(22), DefaultValue(-1)] public int Mode = -1;
-        [ProtoMember(23)] public bool UnusedWasEmitterWorking;
+        [ProtoMember(23)] public bool EmitterLos;
         [ProtoMember(24)] public float ShieldFudge;
         [ProtoMember(25)] public bool Message;
         [ProtoMember(26)] public int Heat;

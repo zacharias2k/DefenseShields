@@ -7,7 +7,7 @@
         <SubtypeId>DefenseShieldsLS</SubtypeId>
       </Id>
       <Category>BLOCK</Category>
-      <MaxDistance>30</MaxDistance>
+      <MaxDistance>1000</MaxDistance>
       <Volume>1</Volume>
 	  <Loopable>true</Loopable>
       <SoundLimit>4</SoundLimit>
@@ -23,7 +23,7 @@
       <SubtypeId>DefenseShieldsSS</SubtypeId>
     </Id>
     <Category>BLOCK</Category>
-    <MaxDistance>30</MaxDistance>
+    <MaxDistance>1000</MaxDistance>
     <Volume>1</Volume>
     <Loopable>true</Loopable>
       <SoundLimit>4</SoundLimit>
@@ -39,7 +39,7 @@
       <SubtypeId>DefenseShieldsST</SubtypeId>
     </Id>
     <Category>BLOCK</Category>
-    <MaxDistance>30</MaxDistance>
+    <MaxDistance>1000</MaxDistance>
     <Volume>1</Volume>
     <Loopable>true</Loopable>
       <SoundLimit>4</SoundLimit>
@@ -57,9 +57,9 @@
         <SubtypeId>ShieldStartLoopEnd</SubtypeId>
       </Id>
       <Category>BLOCK</Category>
-      <MaxDistance>75</MaxDistance>
+      <MaxDistance>1000</MaxDistance>
       <Loopable>true</Loopable>
-      <Volume>0.5</Volume>
+      <Volume>1</Volume>
       <SoundLimit>4</SoundLimit>
       <Waves>
         <Wave Type="D2"> <!-- Stereo -->
@@ -82,7 +82,8 @@
         <SubtypeId>Arc_reinitializing</SubtypeId>
       </Id>
       <Category>Sb</Category>
-      <MaxDistance>100</MaxDistance>
+      <MaxDistance>1000</MaxDistance>
+      <Volume>1</Volume>
       <Waves>
         <Wave Type="D3">
           <Start>Audio\SB\Arc_reinitializing.wav</Start>
@@ -96,7 +97,8 @@
         <SubtypeId>Arc_solidbody</SubtypeId>
       </Id>
       <Category>Sb</Category>
-      <MaxDistance>100</MaxDistance>
+      <MaxDistance>1000</MaxDistance>
+      <Volume>1</Volume>
       <Waves>
         <Wave Type="D3">
           <Start>Audio\SB\Arc_solidbody.wav</Start>
@@ -110,7 +112,8 @@
         <SubtypeId>Arc_overloaded</SubtypeId>
       </Id>
       <Category>Sb</Category>
-      <MaxDistance>100</MaxDistance>
+      <MaxDistance>1000</MaxDistance>
+      <Volume>1</Volume>
       <Waves>
         <Wave Type="D3">
           <Start>Audio\SB\Arc_overloaded.wav</Start>
@@ -124,7 +127,8 @@
         <SubtypeId>Arc_EMP</SubtypeId>
       </Id>
       <Category>Sb</Category>
-      <MaxDistance>100</MaxDistance>
+      <MaxDistance>1000</MaxDistance>
+      <Volume>1</Volume>
       <Waves>
         <Wave Type="D3">
           <Start>Audio\SB\Arc_EMP.wav</Start>
@@ -138,7 +142,8 @@
         <SubtypeId>Arc_remodulating</SubtypeId>
       </Id>
       <Category>Sb</Category>
-      <MaxDistance>100</MaxDistance>
+      <MaxDistance>1000</MaxDistance>
+      <Volume>1</Volume>
       <Waves>
         <Wave Type="D3">
           <Start>Audio\SB\Arc_remodulating.wav</Start>
@@ -152,7 +157,8 @@
         <SubtypeId>Arc_noLOS</SubtypeId>
       </Id>
       <Category>Sb</Category>
-      <MaxDistance>100</MaxDistance>
+      <MaxDistance>1000</MaxDistance>
+      <Volume>1</Volume>
       <Waves>
         <Wave Type="D3">
           <Start>Audio\SB\Arc_noLOS.wav</Start>
@@ -166,7 +172,8 @@
         <SubtypeId>Arc_insufficientpower</SubtypeId>
       </Id>
       <Category>Sb</Category>
-      <MaxDistance>100</MaxDistance>
+      <MaxDistance>1000</MaxDistance>
+      <Volume>1</Volume>
       <Waves>
         <Wave Type="D3">
           <Start>Audio\SB\Arc_insufficientpower.wav</Start>

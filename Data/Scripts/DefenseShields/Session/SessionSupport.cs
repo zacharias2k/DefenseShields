@@ -1,4 +1,5 @@
-﻿namespace DefenseShields
+﻿
+namespace DefenseShields
 {
     using Support;
     using Sandbox.ModAPI;
@@ -6,6 +7,7 @@
     using System;
     using VRage.Game.Entity;
     using VRage.Game;
+    using Sandbox.Game.Entities;
 
     public partial class Session
     {
@@ -13,6 +15,17 @@
         {
             var modPath = ModContext.ModPath;
             return modPath;
+        }
+
+        public MyEntity3DSoundEmitter AudioReady(MyEntity entity)
+        {
+            if (Tick - SoundTick < 600 && Tick > 600) return null;
+            SoundTick = Tick;
+
+            SoundEmitter.StopSound(false);
+            SoundEmitter.Entity = entity;
+            SoundEmitter.CustomVolume = MyAPIGateway.Session.Config.GameVolume * 0.75f;
+            return SoundEmitter;
         }
 
         private void PlayerConnected(long id)

@@ -23,6 +23,47 @@ namespace DefenseShields
             MonitorSlot = LogicSlot - 1 < 0 ? Session.Instance.EntSlotScaler - 1 : LogicSlot - 1;
         }
 
+        private void UnPauseLogic()
+        {
+            if (Session.Enforced.Debug >= 2) Log.Line($"[Logic Resumed] Player:{PlayerByShield} - Mover:{MoverByShield} - NewEnt:{NewEntByShield} - Lost:{LostPings > 59} - LastWoken:{LastWokenTick} - ASleep:{Asleep} - TicksNoActivity:{TicksWithNoActivity}");
+            TicksWithNoActivity = 0;
+            LastWokenTick = _tick;
+            Asleep = false;
+            PlayerByShield = true;
+            lock (Session.Instance.ActiveShields) Session.Instance.ActiveShields.Add(this);
+            WasPaused = false;
+        }
+
+        private void EmitterEventDetected()
+        {
+            ShieldComp.EmitterEvent = false;
+            DsState.State.ActiveEmitterId = ShieldComp.ActiveEmitterId;
+            DsState.State.EmitterLos = ShieldComp.EmitterLos;
+            if (Session.Enforced.Debug == 2) Log.Line($"EmitterEvent: ShieldMode:{ShieldMode} - Los:{ShieldComp.EmitterLos} - Warmed:{WarmedUp} - SavedEId:{DsState.State.EmitterLos} - NewEId:{ShieldComp.ActiveEmitterId} - ShieldId [{Shield.EntityId}]");
+            if (!GridIsMobile)
+            {
+                UpdateDimensions = true;
+                if (UpdateDimensions) RefreshDimensions();
+            }
+
+            if (!ShieldComp.EmitterLos)
+            {
+                if (!WarmedUp)
+                {
+                    MyGrid.Physics.ForceActivate();
+                    if (Session.Enforced.Debug == 2) Log.Line($"EmitterStartupFailure: Asleep:{Asleep} - MaxPower:{GridMaxPower} - {ShieldSphere.Radius} - ControlWork:{ControlBlockWorking} - ShieldId [{Shield.EntityId}]");
+                    LosCheckTick = Session.Instance.Tick + 1800;
+                    ShieldChangeState();
+                    return;
+                }
+                //DsState.State.EmitterWorking = false;
+                if (GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los) DsState.State.Message = true;
+                else if (!GridIsMobile && ShieldComp.StationEmitter != null && !ShieldComp.StationEmitter.EmiState.State.Los) DsState.State.Message = true;
+                if (Session.Enforced.Debug == 2) Log.Line($"EmitterEvent: no emitter is working, shield mode: {ShieldMode} - WarmedUp:{WarmedUp} - MaxPower:{GridMaxPower} - ControlWorking:{ControlBlockWorking} - Radius:{ShieldSphere.Radius} - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
+                return;
+            }
+            //DsState.State.EmitterWorking = true;
+        }
 
         internal void SelectPassiveShell()
         {
@@ -113,7 +154,7 @@ namespace DefenseShields
                 {
                     if (_tick600)
                     {
-                        if (Session.Enforced.Debug == 3) Log.Line($"PostInit: Server Not Ready - GridComp:{MyGrid.Components.Has<ShieldGridComponent>()} - InvalidMode:{ShieldComp.EmitterMode < 0} - Functional:{IsFunctional} - EmitterSus:{ShieldComp.EmittersSuspended} - StationEmitterNull:{ShieldComp.StationEmitter == null } - EmitterNull:{ShieldComp.StationEmitter?.Emitter == null} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug == 3 && _tick600) Log.Line($"PostInit: Server Not Ready - GridComp:{MyGrid.Components.Has<ShieldGridComponent>()} - InvalidMode:{ShieldComp.EmitterMode < 0} - Functional:{IsFunctional} - EmitterSus:{ShieldComp.EmittersSuspended} - StationEmitterNull:{ShieldComp.StationEmitter == null } - EmitterNull:{ShieldComp.StationEmitter?.Emitter == null} - ShieldId [{Shield.EntityId}]");
                         Shield.RefreshCustomInfo();
                     }
                     return false;
@@ -122,7 +163,7 @@ namespace DefenseShields
                 MyEntity emitterEnt = null;
                 if (RequestEnforcement() || _clientNotReady || (!_isServer && (DsState.State.Mode < 0 || !MyEntities.TryGetEntityById(DsState.State.ActiveEmitterId, out emitterEnt) || !(emitterEnt is IMyUpgradeModule))))
                 {
-                    if (Session.Enforced.Debug == 3) Log.Line($"ClientPostInit: {emitterEnt == null} - {emitterEnt is IMyUpgradeModule} - {DsState.State.Mode} - {DsState.State.ActiveEmitterId}");
+                    if (Session.Enforced.Debug == 3 && _tick600) Log.Line($"ClientPostInit: {Session.Enforced.Version} - {_clientNotReady} - {emitterEnt == null} - {emitterEnt is IMyUpgradeModule} - {DsState.State.Mode} - {DsState.State.ActiveEmitterId}");
                     return false;
                 }
 
@@ -144,6 +185,21 @@ namespace DefenseShields
             }
             catch (Exception ex) { Log.Line($"Exception in Controller PostInit: {ex}"); }
             return true;
+        }
+
+        private void UpdateEntity()
+        {
+            ShieldComp.LinkedGrids.Clear();
+            ShieldComp.SubGrids.Clear();
+            _blockChanged = true;
+            _functionalChanged = true;
+            ResetShape(false, true);
+            ResetShape(false);
+            SetShieldType(false);
+            if (!_isDedicated) ShellVisibility(true);
+            if (Session.Enforced.Debug == 2) Log.Line($"UpdateEntity: sEnt:{ShieldEnt == null} - sPassive:{_shellPassive == null} - controller mode is: {ShieldMode} - EW:{DsState.State.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
+            Icosphere.ShellActive = null;
+            _updateRender = true;
         }
 
         private void ResetEntity()
@@ -211,7 +267,7 @@ namespace DefenseShields
                     DsState.State.Remodulate = false;
                     DsState.State.Suspended = false;
                     DsState.State.Waking = false;
-                    DsState.State.ActiveEmitterId = 0;
+                    //DsState.State.ActiveEmitterId = 0;
                     DsState.State.FieldBlocked = false;
                     //DsState.State.Sleeping = false;
                     DsState.State.Heat = 0;

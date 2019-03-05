@@ -130,18 +130,17 @@
         {
             if (_tick60 || Session.Instance.HudIconReset) HudCheck();
 
-            var viewCheck = _count == 0 || _count == 19 || _count == 39;
-            if (viewCheck) _viewInShield = CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation - (VelAtPoint * Session.OneStep), DetectMatrixOutsideInv);
+            if (_tick20) _viewInShield = CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation - (VelAtPoint * Session.OneStep), DetectMatrixOutsideInv);
             if (reInforce)
                 _hideShield = false;
-            else if (viewCheck && _hideColor && !_supressedColor && _viewInShield)
+            else if (_tick20 && _hideColor && !_supressedColor && _viewInShield)
             {
                 _modelPassive = ModelLowReflective;
                 UpdatePassiveModel();
                 _supressedColor = true;
                 _hideShield = false;
             }
-            else if (viewCheck && _supressedColor && _hideColor && !_viewInShield)
+            else if (_tick20 && _supressedColor && _hideColor && !_viewInShield)
             {
                 SelectPassiveShell();
                 UpdatePassiveModel();
@@ -329,10 +328,10 @@
 
             var icon1 = GetHudIcon1FromFloat(percent);
             var icon2 = GetHudIcon2FromFloat(icon2FSelect);
-            var icon3 = GetHudIcon3FromInt(heat, _lCount % 2 == 0);
+            var icon3 = GetHudIcon3FromInt(heat, _tick180);
             var showIcon2 = DsState.State.Online;
             Color color;
-            if (percent > 0 && percent < 10 && _lCount % 2 == 0) color = Color.Red;
+            if (percent > 0 && percent < 10 && _tick180) color = Color.Red;
             else color = Color.White;
             MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.LDR); 
             if (showIcon2 && icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.LDR);

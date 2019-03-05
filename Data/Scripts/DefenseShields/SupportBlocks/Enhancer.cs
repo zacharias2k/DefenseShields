@@ -29,7 +29,7 @@
 
         private uint _tick;
         private int _count = -1;
-        private int _lCount;
+        private bool _firstLoop = true;
         private bool _tick60;
         private bool _powered;
         private bool _isServer;
@@ -201,12 +201,7 @@
 
         private void Timing()
         {
-            if (_count++ == 59)
-            {
-                _count = 0;
-                _lCount++;
-                if (_lCount == 10) _lCount = 0;
-            }
+            if (_count++ == 59) _count = 0;
 
             if (!_isDedicated && _count == 29 && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == Enhancer.EntityId)
             {
@@ -235,6 +230,7 @@
 
                 if (!EnhState.State.Online) return false;
             }
+
             return BlockMoveAnimationReset();
         }
 
@@ -263,12 +259,12 @@
                 }
                 else if (ShieldComp.Enhancer != this)
                 {
-                    if (!EnhState.State.Backup) Session.Instance.BlockTagBackup(Enhancer);
+                    if (!EnhState.State.Backup || _firstLoop) Session.Instance.BlockTagBackup(Enhancer);
                     EnhState.State.Backup = true;
                     EnhState.State.Online = false;
                 }
             }
-
+            _firstLoop = false;
             if (!EnhState.State.Backup && ShieldComp.Enhancer == this && ShieldComp.DefenseShields.NotFailed)
             {
                 NeedUpdate(EnhState.State.Online, true);
@@ -276,6 +272,7 @@
             }
 
             NeedUpdate(EnhState.State.Online, false);
+
             return false;
         }
 
@@ -349,6 +346,7 @@
         private bool BlockMoveAnimationReset()
         {
             if (!IsFunctional) return false;
+
             if (_subpartRotor == null)
             {
                 return Entity.TryGetSubpart("Rotor", out _subpartRotor);

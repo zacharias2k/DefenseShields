@@ -79,16 +79,9 @@ namespace DefenseShields
                 if (!ShieldOn())
                 {
                     if (NotFailed) OfflineShield();
-                    else if (DsState.State.Message) ShieldChangeState();
+                    else if (DsState.State.Message || _tick1800) ShieldChangeState();
 
-                    if (!_isDedicated && _tick60)
-                    {
-                        if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == Shield.EntityId)
-                        {
-                            Shield.RefreshCustomInfo();
-                            MyCube.UpdateTerminal();
-                        }
-                    }
+                    if (!_isDedicated && _tick60 && InControlPanel && InThisTerminal) TerminalRefresh();
                     return;
                 }
                 if (DsState.State.Online)
@@ -105,7 +98,7 @@ namespace DefenseShields
                                 _oldPercentColor = newPercentColor;
                                 _forceBufferSync = false;
                             }
-                            else if (_lCount == 7 && _eCount == 7) ShieldChangeState();
+                            else if (_tick1800) ShieldChangeState();
                         }
                         if (Session.Instance.EmpWork.EventRunning) AbsorbEmp();
                     }

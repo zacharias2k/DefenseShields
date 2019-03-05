@@ -64,6 +64,27 @@
         }
         #endregion
 
+        internal void TerminalRefresh(bool update = true)
+        {
+            Shield.RefreshCustomInfo();
+            if (update) MyCube.UpdateTerminal();
+        }
+
+        public void ResetDamageEffects()
+        {
+            if (DsState.State.Online && !DsState.State.Lowered)
+            {
+                lock (SubLock)
+                {
+                    foreach (var funcBlock in _functionalBlocks)
+                    {
+                        if (funcBlock == null) continue;
+                        if (funcBlock.IsFunctional) funcBlock.SetDamageEffect(false);
+                    }
+                }
+            }
+        }
+
         internal void AddShieldHit(long attackerId, float amount, MyStringHash damageType, IMySlimBlock block, bool reset, Vector3D? hitPos = null)
         {
             lock (ShieldHit)
@@ -144,7 +165,7 @@
                           $"Np:{DsState.State.NoPower} - Lo:{DsState.State.Lowered} - Sl:{DsState.State.Sleeping}\n" +
                           $"PSys:{MyResourceDist?.SourcesEnabled} - PNull:{MyResourceDist == null}\n" +
                           $"MaxPower:{GridMaxPower} - AvailPower:{GridAvailablePower}\n" +
-                          $"Access:{DsState.State.ControllerGridAccess} - ActiveEmitterId:{DsState.State.ActiveEmitterId}\n" +
+                          $"Access:{DsState.State.ControllerGridAccess} - EmitterLos:{DsState.State.EmitterLos}\n" +
                           $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)}\n" +
                           $"ShieldMode:{ShieldMode} - pFail:{_powerFail}\n" +
                           $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{GridMaxPower}\n" +

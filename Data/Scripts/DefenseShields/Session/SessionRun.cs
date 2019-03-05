@@ -98,8 +98,7 @@
                         if (s.EnergyCoolDown == 9) s.EnergyCoolDown = -1;
                     }
 
-                    //if (!s.WarmedUp || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterWorking) continue;
-                    if (!s.WarmedUp || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || s.DsState.State.ActiveEmitterId == 0) continue;
+                    if (!s.WarmedUp || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterLos) continue;
 
                     if (s.GridIsMobile) s.VelAtPoint = s.MyGrid.Physics.GetVelocityAtPoint(s.MyGrid.PositionComp.WorldAABB.Center);
                     else s.VelAtPoint = Vector3D.Zero;
@@ -125,7 +124,7 @@
                 {
                     var s = Controllers[i];
                     //var drawSuspended = s.WasPaused || s.DsState.State.Suspended || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterWorking || !s.WarmedUp;
-                    var drawSuspended = s.WasPaused || s.DsState.State.Suspended || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || s.DsState.State.ActiveEmitterId == 0 || !s.WarmedUp;
+                    var drawSuspended = s.WasPaused || s.DsState.State.Suspended || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterLos || !s.WarmedUp;
 
                     if (drawSuspended) continue;
 

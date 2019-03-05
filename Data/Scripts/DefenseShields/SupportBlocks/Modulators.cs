@@ -41,15 +41,17 @@
         private bool _wasLink;
         private bool _wasBackup;
         private bool _firstRun = true;
-
-        private int _wasModulateDamage;
-        private int _count = -1;
+        private bool _firstLoop = true;
         private bool _tock33;
         private bool _tock34;
         private bool _tock60;
+        private bool _subDelayed;
+
+        private int _wasModulateDamage;
+        private int _count = -1;
+
         private float _wasModulateEnergy;
         private float _wasModulateKinetic;
-        private bool _subDelayed;
 
         internal int RotationTime { get; set; }
         internal bool MainInit { get; set; }
@@ -378,9 +380,10 @@
             if (ModulatorComp.Modulator == null) ModulatorComp.Modulator = this;
             else if (ModulatorComp.Modulator != this)
             {
-                if (!ModState.State.Backup) Session.Instance.BlockTagBackup(Modulator);
+                if (!ModState.State.Backup || _firstLoop) Session.Instance.BlockTagBackup(Modulator);
                 ModState.State.Backup = true;
                 ModState.State.Online = false;
+                _firstLoop = false;
                 return false;
             }
 
@@ -388,6 +391,7 @@
 
             if (_tock60 || _firstRun) ServerCheckForCompLink();
             ModState.State.Online = true;
+            _firstLoop = false;
             return true;
         }
 

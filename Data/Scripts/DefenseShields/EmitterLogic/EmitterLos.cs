@@ -19,8 +19,7 @@ namespace DefenseShields
 
             var controller = ShieldComp.DefenseShields;
             var controllerReady = controller != null && controller.Warming && controller.IsWorking && controller.IsFunctional && !controller.DsState.State.Suspended && controller.DsState.State.ControllerGridAccess;
-            //var controllerLinked = EmiState.State.Online && controllerReady;
-            var emitterActive = ShieldComp.ActiveEmitterId == MyCube.EntityId;
+            var emitterActive = EmiState.State.ActiveEmitterId == MyCube.EntityId;
             var controllerLinked = emitterActive && controllerReady;
             if (!controllerLinked) return;
 
@@ -28,7 +27,6 @@ namespace DefenseShields
             {
                 if (!_updateLosState && (EmiState.State.Los != _wasLosState || controller.LosCheckTick == _tick + 1799 || controller.LosCheckTick == _tick + 1800)) _updateLosState = true;
                 _wasLosState = EmiState.State.Los;
-
                 if (!_isServer)
                 {
                     DrawHelper();
@@ -97,7 +95,6 @@ namespace DefenseShields
             if (Vector3D.DistanceSquared(MyAPIGateway.Session.Player.Character.PositionComp.WorldAABB.Center, Emitter.PositionComp.WorldAABB.Center) < 2250000)
             {
                 var controller = ShieldComp.DefenseShields;
-                //controller.MobileUpdate();
 
                 var needsUpdate = controller.GridIsMobile && (ShieldComp.GridIsMoving || _updateLosState);
 
@@ -137,12 +134,8 @@ namespace DefenseShields
             }
         }
 
-        private void UpdateUnitSphere(bool updateShape = false)
+        private void UpdateUnitSphere()
         {
-            if (updateShape)
-            {
-                //if (ShieldComp.DefenseShields.GridIsMobile) ShieldComp.DefenseShields.MobileUpdate();
-            }
             var losPointSphere = Session.Instance.LosPointSphere;
             LosScaledCloud.Clear();
             UtilsStatic.UnitSphereTranslateScaleList(_unitSpherePoints, ref losPointSphere, ref LosScaledCloud, ShieldComp.DefenseShields.ShieldEnt, false, MyGrid);

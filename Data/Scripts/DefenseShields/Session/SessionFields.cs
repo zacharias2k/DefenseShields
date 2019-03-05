@@ -198,6 +198,11 @@
         private DsPulseEvent _autoResetEvent = new DsPulseEvent();
         private MyParticleEffect _effect = new MyParticleEffect();
 
+        private MyEntity3DSoundEmitter SoundEmitter { get; set; } = new MyEntity3DSoundEmitter(null)
+        {
+            CustomMaxDistance = float.MaxValue,
+        };
+
         private int _count = -1;
         private int _lCount;
         private int _eCount;
@@ -214,6 +219,8 @@
         internal static bool EnforceInit { get; set; }
 
         internal uint Tick { get; set; }
+        internal uint SoundTick { get; set; }
+
         internal int OnCount { get; set; }
         internal int RefreshCycle { get; set; }
         internal int EntSlotScaler { get; set; } = 9;
@@ -254,11 +261,6 @@
 
         internal DefenseShields HudComp { get; set; }
         internal DSUtils Dsutil1 { get; set; } = new DSUtils();
-        internal MyEntity3DSoundEmitter SoundEmitter { get; set; } = new MyEntity3DSoundEmitter(null)
-        {
-            CustomMaxDistance = float.MaxValue,
-            VolumeMultiplier = 2
-        };
 
         internal IMyTerminalControlSlider WidthSlider { get; set; }
         internal IMyTerminalControlSlider HeightSlider { get; set; }

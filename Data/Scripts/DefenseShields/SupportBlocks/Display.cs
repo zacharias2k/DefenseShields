@@ -1,16 +1,16 @@
-﻿namespace DefenseShields
-{
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using global::DefenseShields.Support;
-    using Sandbox.Common.ObjectBuilders;
-    using Sandbox.ModAPI;
-    using Sandbox.ModAPI.Interfaces.Terminal;
-    using VRage.Game.Components;
-    using VRage.ModAPI;
-    using VRage.ObjectBuilders;
+﻿using DefenseShields.Support;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Sandbox.Common.ObjectBuilders;
+using Sandbox.ModAPI;
+using Sandbox.ModAPI.Interfaces.Terminal;
+using VRage.Game.Components;
+using VRage.ModAPI;
+using VRage.ObjectBuilders;
 
+namespace DefenseShields
+{
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_TextPanel), false, "DSControlLCD")]
     public class Displays : MyGameLogicComponent
     {

@@ -1,4 +1,6 @@
-﻿namespace DefenseShields
+﻿using VRage.Game.ModAPI;
+
+namespace DefenseShields
 {
     using System.Collections.Concurrent;
     using System.Collections.Generic;
@@ -65,6 +67,9 @@
         internal BoundingBox ShieldAabbScaled = new BoundingBox(Vector3D.One, -Vector3D.One);
         internal BoundingSphereD ShieldSphere3K = new BoundingSphereD(Vector3D.Zero, 1f);
         internal BoundingSphereD WebSphere = new BoundingSphereD(Vector3D.Zero, 1f);
+
+        internal bool InControlPanel => MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel;
+        internal bool InThisTerminal => Session.Instance.LastTerminalId == Shield.EntityId;
 
         private const int ReModulationCount = 300;
         private const int ShieldDownCount = 1200;
@@ -140,8 +145,6 @@
         private double _sizeScaler;
 
         private int _count = -1;
-        private int _lCount;
-        private int _eCount;
         private int _powerNoticeLoop;
         private int _offlineCnt = -1;
         private int _overLoadLoop = -1;
@@ -160,12 +163,14 @@
         private long _gridOwnerId = -1;
         private long _controllerOwnerId = -1;
 
+        private bool _firstLoop = true;
         private bool _enablePhysics = true;
         private bool _needPhysics;
         private bool _allInited;
         private bool _containerInited;
         private bool _forceBufferSync;
         private bool _comingOnline;
+        private bool _tick20;
         private bool _tick60;
         private bool _tick180;
         private bool _tick600;
@@ -249,6 +254,17 @@
             LargeGrid,
             SmallGrid,
             Unknown
+        }
+
+        public enum PlayerNotice
+        {
+            EmitterInit,
+            FieldBlocked,
+            OverLoad,
+            EmpOverLoad,
+            Remodulate,
+            NoPower,
+            NoLos
         }
 
         public int KineticCoolDown { get; internal set; } = -1;
