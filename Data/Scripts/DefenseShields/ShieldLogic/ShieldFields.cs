@@ -76,6 +76,8 @@ namespace DefenseShields
         private const int EmpDownCount = 3600;
         private const int GenericDownCount = 60;
         private const int PowerNoticeCount = 600;
+        private const int CapacitorDrainCount = 60;
+        private const int CapacitorStableCount = 600;
         private const int OverHeat = 600;
         private const int HeatingStep = 600;
         private const int CoolingStep = 1200;
@@ -117,6 +119,7 @@ namespace DefenseShields
         private uint _funcTick;
         private uint _fatTick;
         private uint _shapeTick;
+        private uint _capacitorTick;
         private uint _heatVentingTick = uint.MaxValue;
         private uint _lastSendDamageTick = uint.MaxValue;
 
@@ -146,6 +149,7 @@ namespace DefenseShields
 
         private int _count = -1;
         private int _powerNoticeLoop;
+        private int _capacitorLoop;
         private int _offlineCnt = -1;
         private int _overLoadLoop = -1;
         private int _empOverLoadLoop = -1;
