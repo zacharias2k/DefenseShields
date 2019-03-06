@@ -109,6 +109,7 @@
             "DS-M_ModulateEmpProt_Toggle"
         };
 
+        /*
         internal readonly Color White1 = new Color(255, 255, 255);
         internal readonly Color White2 = new Color(90, 118, 255);
         internal readonly Color White3 = new Color(47, 86, 255);
@@ -119,6 +120,18 @@
         internal readonly Color Red1 = new Color(87, 0, 66);
         internal readonly Color Red2 = new Color(121, 0, 13);
         internal readonly Color Red3 = new Color(255, 0, 0);
+        */
+
+        internal readonly Color Color90 = new Color(255, 255, 255, 255 );
+        internal readonly Color Color80 = new Color(255, 255, 255, 0);
+        internal readonly Color Color70 = new Color(127, 255, 255, 255);
+        internal readonly Color Color60 = new Color(64, 255, 255, 255);
+        internal readonly Color Color50 = new Color(0, 255, 255, 255);
+        internal readonly Color Color40 = new Color(0, 255, 0, 255);
+        internal readonly Color Color30 = new Color(255, 255, 0, 255);
+        internal readonly Color Color20 = new Color(255, 18, 0, 255);
+        internal readonly Color Color10 = new Color(255, 0, 0, 255);
+        internal readonly Color Color00 = new Color(0.05f, 0, 0, 255);
 
         internal readonly MyStringId HudIconOffline = MyStringId.GetOrCompute("DS_ShieldOffline");
         internal readonly MyStringId HudIconHealth10 = MyStringId.GetOrCompute("DS_ShieldHealth10");

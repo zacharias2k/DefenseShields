@@ -348,16 +348,16 @@ namespace DefenseShields.Support
 
         public static Color GetShieldColorFromFloat(float percent)
         {
-            if (percent > 90) return Session.Instance.White1;
-            if (percent > 80) return Session.Instance.White2;
-            if (percent > 70) return Session.Instance.White3;
-            if (percent > 60) return Session.Instance.Blue1;
-            if (percent > 50) return Session.Instance.Blue2;
-            if (percent > 40) return Session.Instance.Blue3;
-            if (percent > 30) return Session.Instance.Blue4;
-            if (percent > 20) return Session.Instance.Red1;
-            if (percent > 10) return Session.Instance.Red2;
-            return Session.Instance.Red3;
+            if (percent > 90) return Session.Instance.Color90;
+            if (percent > 80) return Session.Instance.Color80;
+            if (percent > 70) return Session.Instance.Color70;
+            if (percent > 60) return Session.Instance.Color60;
+            if (percent > 50) return Session.Instance.Color50;
+            if (percent > 40) return Session.Instance.Color40;
+            if (percent > 30) return Session.Instance.Color30;
+            if (percent > 20) return Session.Instance.Color20;
+            if (percent > 10) return Session.Instance.Color10;
+            return Session.Instance.Color00;
         }
 
         public static Color GetAirEmissiveColorFromDouble(double percent)

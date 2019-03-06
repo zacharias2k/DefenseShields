@@ -156,6 +156,7 @@
             private bool _impact;
             private bool _refresh;
             private bool _active;
+            private bool _flash;
 
             private MyStringId _faceMaterial;
 
@@ -234,12 +235,15 @@
             {
                 if (ShellActive == null) ComputeSides(shellActive);
 
+                _flash = shieldPercent <= 10;
+                if (_flash && _mainLoop < 30) shieldPercent += 10;
+
                 var newActiveColor = UtilsStatic.GetShieldColorFromFloat(shieldPercent);
                 _activeColor = newActiveColor;
 
                 _matrix = matrix;
                 ImpactPosState = impactPos;
-                _active = activeVisible;
+                _active = activeVisible && _activeColor != Session.Instance.Color90;
 
                 if (prevLod != _lod)
                 {
@@ -293,6 +297,8 @@
                 }
 
                 if (ImpactPosState != Vector3D.NegativeInfinity) ComputeImpacts();
+                else if (_flash && _mainLoop == 0 || _mainLoop == 30) for (int i = 0; i < _hitFaces.Count; i++) UpdateColor(_sidePartArray[_hitFaces[i]]);
+
 
                 if (_impact)
                 {
@@ -453,12 +459,16 @@
             private void UpdateImpactState()
             {
                 //Log.Line($"{_impactCnt[0]} - {_impactCnt[1]} - {_impactCnt[2]} - {_impactCnt[3]} - {_impactCnt[4]} - {_impactCnt[5]}");
+
+                var lengthMulti = 1;
+                if (_flash) lengthMulti = 3;
+
                 for (int i = 0; i < _sideLoops.Length; i++)
                 {
                     if (_sideLoops[i] != 0) _sideLoops[i]++;
                     else continue;
 
-                    if (_sideLoops[i] == SideSteps + 1)
+                    if (_sideLoops[i] >= (SideSteps * lengthMulti) + 1)
                     {
                         _sidePartArray[i].Render.UpdateRenderObject(false);
                         _sideLoops[i] = 0;
@@ -470,7 +480,7 @@
                     {
                         _impactCnt[i]++;
                     }
-                    if (_impactCnt[i] == ImpactSteps + 1)
+                    if (_impactCnt[i] >= (ImpactSteps * lengthMulti)+ 1)
                     {
                         _impactCnt[i] = 0;
                         _impactPos[i] = Vector3D.NegativeInfinity;
