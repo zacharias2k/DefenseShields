@@ -203,7 +203,7 @@
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="1" z="1" />
       <ModelOffset x="0" y="0" z="0" />
-      <Model>Models\DS_Control.mwm</Model>
+      <Model>Models\DS\DS_Control.mwm</Model>
       <Components>
         <Component Subtype="InteriorPlate" Count="1" />
         <Component Subtype="Construction" Count="4" />
@@ -215,9 +215,9 @@
 		<MountPoint Side="Bottom" StartX="0.20" StartY="0.06" EndX="0.80" EndY="0.94" />
 	</MountPoints>
     <BuildProgressModels>
-		<Model BuildPercentUpperBound="0.33" File="Models\DS_Control_Constr1.mwm" />
-		<Model BuildPercentUpperBound="0.67" File="Models\DS_Control_Constr2.mwm" />
-		<Model BuildPercentUpperBound="1.00" File="Models\DS_Control_Constr3.mwm" />
+		<Model BuildPercentUpperBound="0.33" File="Models\DS\DS_Control_Constr1.mwm" />
+		<Model BuildPercentUpperBound="0.67" File="Models\DS\DS_Control_Constr2.mwm" />
+		<Model BuildPercentUpperBound="1.00" File="Models\DS\DS_Control_Constr3.mwm" />
 	</BuildProgressModels>
       <VoxelPlacement>
         <!--Possible settings Both,InVoxel,OutsideVoxel,Volumetric. If volumetric set than MaxAllowed and MinAllowed will be used.-->
@@ -257,7 +257,7 @@
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="1" z="1" />
       <ModelOffset x="0" y="0" z="0" />
-      <Model>Models\DS_Control_Block.mwm</Model>
+      <Model>Models\DS\DS_Control_Block.mwm</Model>
       <Components>
         <Component Subtype="InteriorPlate" Count="10" />
         <Component Subtype="Construction" Count="12" />
@@ -274,9 +274,9 @@
 		<MountPoint Side="Top" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
 	</MountPoints>
 	    <BuildProgressModels>
-		<Model BuildPercentUpperBound="0.33" File="Models\DS_Control_Block_Constr1.mwm" />
-		<Model BuildPercentUpperBound="0.67" File="Models\DS_Control_Block_Constr2.mwm" />
-		<Model BuildPercentUpperBound="1.00" File="Models\DS_Control_Block_Constr3.mwm" />
+		<Model BuildPercentUpperBound="0.33" File="Models\DS\DS_Control_Block_Constr1.mwm" />
+		<Model BuildPercentUpperBound="0.67" File="Models\DS\DS_Control_Block_Constr2.mwm" />
+		<Model BuildPercentUpperBound="1.00" File="Models\DS\DS_Control_Block_Constr3.mwm" />
 	</BuildProgressModels>
       <VoxelPlacement>
         <!--Possible settings Both,InVoxel,OutsideVoxel,Volumetric. If volumetric set than MaxAllowed and MinAllowed will be used.-->
@@ -317,7 +317,7 @@
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="1" z="2" />
       <ModelOffset x="0" y="0" z="0" />
-      <Model>Models\DS_Control_small.mwm</Model>
+      <Model>Models\DS\DS_Control_small.mwm</Model>
       <Components>
         <Component Subtype="InteriorPlate" Count="1" />
         <Component Subtype="Construction" Count="4" />
@@ -332,9 +332,9 @@
 		<MountPoint Side="Top" StartX="0.00" StartY="0.00" EndX="1.00" EndY="2.00" />
 	</MountPoints>
       <BuildProgressModels>
-		<Model BuildPercentUpperBound="0.33" File="Models\DS_Control_small_Constr1.mwm" />
-		<Model BuildPercentUpperBound="0.67" File="Models\DS_Control_small_Constr2.mwm" />
-		<Model BuildPercentUpperBound="1.00" File="Models\DS_Control_small_Constr3.mwm" />
+		<Model BuildPercentUpperBound="0.33" File="Models\DS\DS_Control_small_Constr1.mwm" />
+		<Model BuildPercentUpperBound="0.67" File="Models\DS\DS_Control_small_Constr2.mwm" />
+		<Model BuildPercentUpperBound="1.00" File="Models\DS\DS_Control_small_Constr3.mwm" />
 	</BuildProgressModels>
       <VoxelPlacement>
         <!--Possible settings Both,InVoxel,OutsideVoxel,Volumetric. If volumetric set than MaxAllowed and MinAllowed will be used.-->
@@ -374,7 +374,7 @@
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="1" z="1" />
       <ModelOffset x="0" y="0" z="0" />
-      <Model>Models\DS_Control_LCD.mwm</Model>
+      <Model>Models\DS\DS_Control_LCD.mwm</Model>
       <Components>
         <Component Subtype="InteriorPlate" Count="1" />
         <Component Subtype="Construction" Count="4" />
@@ -386,9 +386,9 @@
 		<MountPoint Side="Bottom" StartX="0.00" StartY="0.29" EndX="1.00" EndY="1.00" />
 	</MountPoints>
       <BuildProgressModels>
-		<Model BuildPercentUpperBound="0.33" File="Models\DS_Control_LCD_Constr1.mwm" />
-		<Model BuildPercentUpperBound="0.67" File="Models\DS_Control_LCD_Constr2.mwm" />
-		<Model BuildPercentUpperBound="1.00" File="Models\DS_Control_LCD_Constr3.mwm" />
+		<Model BuildPercentUpperBound="0.33" File="Models\DS\DS_Control_LCD_Constr1.mwm" />
+		<Model BuildPercentUpperBound="0.67" File="Models\DS\DS_Control_LCD_Constr2.mwm" />
+		<Model BuildPercentUpperBound="1.00" File="Models\DS\DS_Control_LCD_Constr3.mwm" />
 	</BuildProgressModels>
       <VoxelPlacement>
         <!--Possible settings Both,InVoxel,OutsideVoxel,Volumetric. If volumetric set than MaxAllowed and MinAllowed will be used.-->
@@ -427,7 +427,7 @@
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="5" y="4" z="8" />
       <ModelOffset x="0" y="0" z="0" />
-      <Model>Models\DS_Supergen.mwm</Model>
+      <Model>Models\DS\DS_Supergen.mwm</Model>
       <Components>
         <Component Subtype="SteelPlate" Count="1100" />
         <Component Subtype="Construction" Count="120" />
@@ -451,9 +451,9 @@
 		<MountPoint Side="Top" StartX="0.00" StartY="0.00" EndX="5.00" EndY="8.00" />
 	</MountPoints>
       <BuildProgressModels>
-        <Model BuildPercentUpperBound="0.33" File="Models\DS_Supergen_Constr1.mwm" />
-        <Model BuildPercentUpperBound="0.66" File="Models\DS_Supergen_Constr2.mwm" />
-        <Model BuildPercentUpperBound="1" File="Models\DS_Supergen_Constr3.mwm" />
+        <Model BuildPercentUpperBound="0.33" File="Models\DS\DS_Supergen_Constr1.mwm" />
+        <Model BuildPercentUpperBound="0.66" File="Models\DS\DS_Supergen_Constr2.mwm" />
+        <Model BuildPercentUpperBound="1" File="Models\DS\DS_Supergen_Constr3.mwm" />
        
       </BuildProgressModels>
       <EdgeType>Light</EdgeType>

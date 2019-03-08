@@ -51,11 +51,10 @@
                             s.Asleep = false;
                             return;
                         }
+
                         bool shieldActive;
-                        lock (ActiveShields)
-                        {
-                            shieldActive = ActiveShields.Contains(s);
-                        }
+                        lock (ActiveShields) shieldActive = ActiveShields.Contains(s);
+
                         if (s.LostPings > 59)
                         {
                             if (shieldActive)
@@ -212,36 +211,41 @@
                     var foundNewEnt = false;
                     var disableVoxels = Enforced.DisableVoxelSupport == 1 || s.ShieldComp.Modulator == null || s.ShieldComp.Modulator.ModSet.Settings.ModulateVoxels;
                     MyGamePruningStructure.GetTopmostEntitiesInBox(ref s.WebBox, monitorList);
-                    foreach (var ent in monitorList)
+                    if (!s.WasPaused)
                     {
-                        var voxel = ent as MyVoxelBase;
-                        if (ent == null || ent.MarkedForClose || (voxel == null && (ent.Physics == null || ent.DefinitionId == null)) || (!s.GridIsMobile && voxel != null) || (disableVoxels && voxel != null) || (voxel != null && voxel != voxel.RootVoxel))
+                        foreach (var ent in monitorList)
                         {
-                            continue;
-                        }
-
-                        if (ent is IMyFloatingObject || ent is IMyEngineerToolBase || !s.WebSphere.Intersects(ent.PositionComp.WorldVolume)) continue;
-
-                        // var halfExtents = ent.PositionComp.LocalAABB.HalfExtents;
-                        // if (halfExtents.X < 1) halfExtents.X = 10;
-                        // if (halfExtents.Y < 1) halfExtents.Y = 10;
-                        // if (halfExtents.Z < 1) halfExtents.Z = 10;
-                        // var shape2 = new Box(-halfExtents, halfExtents).Transformed(ent.WorldMatrix);
-                        // var test = Gjk.Intersects(ref shape1, ref shape2);
-                        // Log.Line($"{ent.DebugName} - {test}");
-                        if (CustomCollision.NewObbPointsInShield(ent, s.DetectMatrixOutsideInv) > 0)
-                        {
-                            if (!s.WasPaused && !_globalEntTmp.ContainsKey(ent))
+                            var voxel = ent as MyVoxelBase;
+                            if (ent == null || ent.MarkedForClose || (voxel == null && (ent.Physics == null || ent.DefinitionId == null)) || (!s.GridIsMobile && voxel != null) || (disableVoxels && voxel != null) || (voxel != null && voxel != voxel.RootVoxel))
                             {
-                                foundNewEnt = true;
-                                s.Asleep = false;
-                                //if (Enforced.Debug >= 2) Log.Line($"New entity");
+                                continue;
                             }
 
-                            if (!s.WasPaused) _globalEntTmp[ent] = _workData.Tick;
+                            if (ent is IMyFloatingObject || ent is IMyEngineerToolBase || !s.WebSphere.Intersects(ent.PositionComp.WorldVolume)) continue;
+
+                            // var halfExtents = ent.PositionComp.LocalAABB.HalfExtents;
+                            // if (halfExtents.X < 1) halfExtents.X = 10;
+                            // if (halfExtents.Y < 1) halfExtents.Y = 10;
+                            // if (halfExtents.Z < 1) halfExtents.Z = 10;
+                            // var shape2 = new Box(-halfExtents, halfExtents).Transformed(ent.WorldMatrix);
+                            // var test = Gjk.Intersects(ref shape1, ref shape2);
+                            // Log.Line($"{ent.DebugName} - {test}");
+                            if (CustomCollision.NewObbPointsInShield(ent, s.DetectMatrixOutsideInv) > 0)
+                            {
+                                if (!_globalEntTmp.ContainsKey(ent))
+                                {
+                                    foundNewEnt = true;
+                                    s.Asleep = false;
+                                    //if (Enforced.Debug >= 2) Log.Line($"New entity");
+                                }
+
+                                _globalEntTmp[ent] = _workData.Tick;
+                            }
+                            s.NewEntByShield = foundNewEnt;
                         }
-                        s.NewEntByShield = foundNewEnt;
                     }
+                    else s.NewEntByShield = false;
+
                     if (!s.NewEntByShield)
                     {
                         var foundPlayer = false;
@@ -282,22 +286,29 @@
                             }
 
                             if (!(ent.Physics == null || ent is MyCubeGrid || ent is IMyCharacter)) continue;
-                            var entPos = ent.PositionComp.WorldMatrix.Translation;
+                            var entPos = ent.PositionComp.WorldAABB.Center;
 
                             var keyFound = s.EntsByMe.ContainsKey(ent);
                             if (keyFound)
                             {
                                 if (!s.EntsByMe[ent].Pos.Equals(entPos, 1e-3))
                                 {
-                                    //if (Enforced.Debug >= 2) Log.Line($"[Moved] Ent:{ent.DebugName}");
                                     MoverInfo moverInfo;
                                     s.EntsByMe.TryRemove(ent, out moverInfo);
                                     s.EntsByMe.TryAdd(ent, new MoverInfo(entPos, _workData.Tick));
-                                    newMover = true;
+                                    if (moverInfo.CreationTick == _workData.Tick - 1)
+                                    {
+                                        if (Enforced.Debug >= 2 && s.WasPaused) Log.Line($"[Moved] Ent:{ent.DebugName} - howMuch:{Vector3D.Distance(entPos, s.EntsByMe[ent].Pos)} - ShieldId [{s.Shield.EntityId}]");
+                                        newMover = true;
+                                    }
                                     break;
                                 }
                             }
-                            else s.EntsByMe.TryAdd(ent, new MoverInfo(entPos, _workData.Tick));
+                            else
+                            {
+                                if (Enforced.Debug >= 2) Log.Line($"[NewMover] Ent:{ent.DebugName} - ShieldId [{s.Shield.EntityId}]");
+                                s.EntsByMe.TryAdd(ent, new MoverInfo(entPos, _workData.Tick));
+                            }
                         }
                         s.MoverByShield = newMover;
                     }
@@ -489,7 +500,7 @@
                 }
                 else entsUpdated++;
             }
-            if (Tick1800 && Enforced.Debug >= 1)
+            if (Tick1800 && Enforced.Debug >= 3)
             {
                 for (int i = 0; i < SlotCnt.Length; i++) SlotCnt[i] = 0;
                 foreach (var pair in GlobalProtect) SlotCnt[pair.Value.RefreshSlot]++;

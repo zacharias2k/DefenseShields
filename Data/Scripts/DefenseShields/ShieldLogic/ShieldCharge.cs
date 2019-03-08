@@ -319,12 +319,12 @@ namespace DefenseShields
                 _capacitorLoop++;
                 if (_capacitorLoop > CapacitorDrainCount)
                 {
-                    if (Session.Enforced.Debug == 2 && _tick60) Log.Line($"CapcitorDrained");
+                    if (Session.Enforced.Debug >= 3 && _tick60) Log.Line($"CapcitorDrained");
                     if (!DsState.State.NoPower)
                     {
                         DsState.State.NoPower = true;
                         DsState.State.Message = true;
-                        if (Session.Enforced.Debug == 2) Log.Line($"StateUpdate: NoPower - forShield:{powerForShield} - rounded:{GridMaxPower} - max:{GridMaxPower} - avail{GridAvailablePower} - sCurr:{ShieldCurrentPower} - count:{_powerSources.Count} - DistEna:{MyResourceDist?.SourcesEnabled} - State:{MyResourceDist?.ResourceState} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug >= 3) Log.Line($"StateUpdate: NoPower - forShield:{powerForShield} - rounded:{GridMaxPower} - max:{GridMaxPower} - avail{GridAvailablePower} - sCurr:{ShieldCurrentPower} - count:{_powerSources.Count} - DistEna:{MyResourceDist?.SourcesEnabled} - State:{MyResourceDist?.ResourceState} - ShieldId [{Shield.EntityId}]");
                         ShieldChangeState();
                     }
 
@@ -349,7 +349,7 @@ namespace DefenseShields
                 {
                     DsState.State.NoPower = false;
                     _powerNoticeLoop = 0;
-                    if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: PowerRestored - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug >= 3) Log.Line($"StateUpdate: PowerRestored - ShieldId [{Shield.EntityId}]");
                     ShieldChangeState();
                 }
             }

@@ -39,7 +39,7 @@ namespace DefenseShields
             ShieldComp.EmitterEvent = false;
             DsState.State.ActiveEmitterId = ShieldComp.ActiveEmitterId;
             DsState.State.EmitterLos = ShieldComp.EmitterLos;
-            if (Session.Enforced.Debug == 2) Log.Line($"EmitterEvent: ShieldMode:{ShieldMode} - Los:{ShieldComp.EmitterLos} - Warmed:{WarmedUp} - SavedEId:{DsState.State.EmitterLos} - NewEId:{ShieldComp.ActiveEmitterId} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug >= 3) Log.Line($"EmitterEvent: ShieldMode:{ShieldMode} - Los:{ShieldComp.EmitterLos} - Warmed:{WarmedUp} - SavedEId:{DsState.State.EmitterLos} - NewEId:{ShieldComp.ActiveEmitterId} - ShieldId [{Shield.EntityId}]");
             if (!GridIsMobile)
             {
                 UpdateDimensions = true;
@@ -51,7 +51,7 @@ namespace DefenseShields
                 if (!WarmedUp)
                 {
                     MyGrid.Physics.ForceActivate();
-                    if (Session.Enforced.Debug == 2) Log.Line($"EmitterStartupFailure: Asleep:{Asleep} - MaxPower:{GridMaxPower} - {ShieldSphere.Radius} - ControlWork:{ControlBlockWorking} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug >= 3) Log.Line($"EmitterStartupFailure: Asleep:{Asleep} - MaxPower:{GridMaxPower} - {ShieldSphere.Radius} - ControlWork:{ControlBlockWorking} - ShieldId [{Shield.EntityId}]");
                     LosCheckTick = Session.Instance.Tick + 1800;
                     ShieldChangeState();
                     return;
@@ -59,7 +59,7 @@ namespace DefenseShields
                 //DsState.State.EmitterWorking = false;
                 if (GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los) DsState.State.Message = true;
                 else if (!GridIsMobile && ShieldComp.StationEmitter != null && !ShieldComp.StationEmitter.EmiState.State.Los) DsState.State.Message = true;
-                if (Session.Enforced.Debug == 2) Log.Line($"EmitterEvent: no emitter is working, shield mode: {ShieldMode} - WarmedUp:{WarmedUp} - MaxPower:{GridMaxPower} - ControlWorking:{ControlBlockWorking} - Radius:{ShieldSphere.Radius} - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 3) Log.Line($"EmitterEvent: no emitter is working, shield mode: {ShieldMode} - WarmedUp:{WarmedUp} - MaxPower:{GridMaxPower} - ControlWorking:{ControlBlockWorking} - Radius:{ShieldSphere.Radius} - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
                 return;
             }
             //DsState.State.EmitterWorking = true;
@@ -161,9 +161,9 @@ namespace DefenseShields
                 }
 
                 MyEntity emitterEnt = null;
-                if (RequestEnforcement() || _clientNotReady || (!_isServer && (DsState.State.Mode < 0 || !MyEntities.TryGetEntityById(DsState.State.ActiveEmitterId, out emitterEnt) || !(emitterEnt is IMyUpgradeModule))))
+                if (!_isServer && (_clientNotReady || Session.Enforced.Version <= 0 || DsState.State.ActiveEmitterId != 0 && !MyEntities.TryGetEntityById(DsState.State.ActiveEmitterId, out emitterEnt) || !(emitterEnt is IMyUpgradeModule)))
                 {
-                    if (Session.Enforced.Debug == 3 && _tick600) Log.Line($"ClientPostInit: {Session.Enforced.Version} - {_clientNotReady} - {emitterEnt == null} - {emitterEnt is IMyUpgradeModule} - {DsState.State.Mode} - {DsState.State.ActiveEmitterId}");
+                    //Log.Line($"ClientPostInit: {Session.Enforced.Version} - {_clientNotReady} - {emitterEnt == null} - {emitterEnt is IMyUpgradeModule} - {DsState.State.Mode} - {DsState.State.ActiveEmitterId}");
                     return false;
                 }
 
@@ -317,24 +317,6 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 3) Log.Line($"PowerInit: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
-        }
-
-        private bool RequestEnforcement()
-        {
-            if (Session.Enforced.Version <= 0)
-            {
-                if (!_isServer)
-                {
-                    var enforcement = Enforcements.LoadEnforcement(Shield);
-                    if (enforcement != null) Session.Enforced = enforcement;
-                    else if (!_requestedEnforcement)
-                    {
-                        Enforcements.EnforcementRequest(Shield.EntityId);
-                        _requestedEnforcement = true;
-                    }
-                }
-            }
-            return Session.Enforced.Version <= 0;
         }
 
         private void SetShieldType(bool quickCheck)

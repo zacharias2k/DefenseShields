@@ -377,17 +377,15 @@
         {
             if (!isServer)
             {
-                var logic = Entity?.GameLogic?.GetAs<DefenseShields>();
-                if (logic == null) return false;
-                Log.Line($"Saving Enforcement");
-                Enforcements.SaveEnforcement(logic.Shield, State);
+                Session.Enforced = State;
                 Session.EnforceInit = true;
+                if (State.Debug >= 2) Log.Line($"Saving Enforcement version: {State.Version}");
                 return false;
             }
-            Log.Line($"Sending Enforcement");
-            var data = new DataEnforce(EntityId, State);
+            if (State.Debug >= 2) Log.Line($"Sending Enforcement version: {Session.Enforced.Version}");
+            var data = new DataEnforce(0, Session.Enforced);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
-            MyAPIGateway.Multiplayer.SendMessageTo(Session.PACKET_ID, bytes, SenderId);
+            MyAPIGateway.Multiplayer.SendMessageTo(Session.PACKET_ID, bytes, State.SenderId);
             return false;
         }
     }

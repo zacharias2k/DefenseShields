@@ -63,6 +63,8 @@
                     if (Enforced.Debug >= 2) Log.Line($"SyncDistSqr:{SyncDistSqr} - SyncBufferedDistSqr:{SyncBufferedDistSqr} - DistNorm:{SyncDist}");
                 }
                 MyAPIGateway.Parallel.StartBackground(WebMonitor);
+
+                if (!IsServer) RequestEnforcement(MyAPIGateway.Multiplayer.MyId);
             }
             catch (Exception ex) { Log.Line($"Exception in BeforeStart: {ex}"); }
         }
