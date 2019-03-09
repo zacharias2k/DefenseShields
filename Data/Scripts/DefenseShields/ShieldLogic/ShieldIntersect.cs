@@ -346,13 +346,15 @@
             var bMassRelation = bMass / sMass;
             var bRelationClamp = MathHelper.Clamp(bMassRelation, 0, 1);
             var bCollisionCorrection = Vector3D.Lerp(bCom, collisionAvg, bRelationClamp);
-            var bVelAtPoint = e1Physics.GetVelocityAtPoint(bCollisionCorrection);
+            Vector3 bVelAtPoint;
+            e1Physics.GetVelocityAtPointLocal(ref bCollisionCorrection, out bVelAtPoint);
 
             var sCom = e2IsStatic ? DetectionCenter : e2Physics.CenterOfMassWorld;
             var sMassRelation = sMass / bMass;
             var sRelationClamp = MathHelper.Clamp(sMassRelation, 0, 1);
             var sCollisionCorrection = Vector3D.Lerp(sCom, collisionAvg, sRelationClamp);
-            var sVelAtPoint = e2Physics.GetVelocityAtPoint(sCollisionCorrection);
+            Vector3 sVelAtPoint;
+            e2Physics.GetVelocityAtPointLocal(ref sCollisionCorrection, out sVelAtPoint);
 
             var momentum = (bMass * bVelAtPoint) + (sMass * sVelAtPoint);
             var resultVelocity = momentum / (bMass + sMass);
@@ -397,7 +399,9 @@
                 var normalMat = MatrixD.Transpose(transformInv);
                 var localNormal = Vector3D.Transform(collisionAvg, transformInv);
                 var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
-                var bSurfaceDir = -Vector3D.Dot(e1Physics.GetVelocityAtPoint(collisionAvg), surfaceNormal) * surfaceNormal;
+                Vector3 velAtPoint;
+                e1Physics.GetVelocityAtPointLocal(ref collisionAvg, out velAtPoint);
+                var bSurfaceDir = -Vector3D.Dot(velAtPoint, surfaceNormal) * surfaceNormal;
                 var collisionData = new MyCollisionPhysicsData
                 {
                     Entity1 = entity1,
@@ -428,7 +432,8 @@
             var bMassRelation = bMass / sMass;
             var bRelationClamp = MathHelper.Clamp(bMassRelation, 0, 1);
             var bCollisionCorrection = Vector3D.Lerp(bCom, collisionAvg, bRelationClamp);
-            var bVelAtPoint = e2Physics.GetVelocityAtPoint(bCollisionCorrection);
+            Vector3 bVelAtPoint;
+            e2Physics.GetVelocityAtPointLocal(ref bCollisionCorrection, out bVelAtPoint);
 
             var momentum = (bMass * bVelAtPoint) + (sMass * 0);
             var resultVelocity = momentum / (bMass + sMass);

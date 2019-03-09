@@ -102,7 +102,13 @@
 
                     if (!s.WarmedUp || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterLos) continue;
 
-                    if (s.GridIsMobile) s.VelAtPoint = s.MyGrid.Physics.GetVelocityAtPoint(s.MyGrid.PositionComp.WorldAABB.Center);
+                    if (s.GridIsMobile)
+                    {
+                        var gridCenter = s.MyGrid.PositionComp.WorldAABB.Center;
+                        Vector3 pointVel;
+                        s.MyGrid.Physics.GetVelocityAtPointLocal(ref gridCenter, out pointVel);
+                        s.VelAtPoint = pointVel;
+                    }
                     else s.VelAtPoint = Vector3D.Zero;
 
                     var sp = new BoundingSphereD(s.DetectionCenter + s.VelAtPoint * OneStep, s.BoundingRange);

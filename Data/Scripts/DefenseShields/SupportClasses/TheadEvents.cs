@@ -333,7 +333,9 @@
 
         public void Execute()
         {
-                var velAtPoint = CollisionData.Entity2.Physics.GetVelocityAtPoint(CollisionData.CollisionCorrection2);
+                Vector3 velAtPoint;
+                var point = CollisionData.CollisionCorrection2;
+                CollisionData.Entity2.Physics.GetVelocityAtPointLocal(ref point, out velAtPoint);
                 var speed = MathHelper.Clamp(velAtPoint.Length(), 2f, 20f);
                 var forceMulti = (CollisionData.Mass2 * 10) * speed;
                 CollisionData.Entity2.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceMulti * CollisionData.Force2, null, null, speed, CollisionData.Immediate);
