@@ -1,4 +1,5 @@
-﻿using DefenseShields.Support;
+﻿using System;
+using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using System.Collections.Generic;
@@ -130,7 +131,7 @@ namespace DefenseShields
             foreach (var grid in _warHeadGridHits)
             {
                 var invSqrDist = UtilsStatic.InverseSqrDist(epiCenter, grid.PositionComp.WorldAABB.Center, rangeCap);
-                var damage = (uint)(dirYield * invSqrDist);
+                var damage = (uint)(dirYield * invSqrDist) * 5;
                 var gridAabb = grid.PositionComp.WorldAABB;
                 var sphere = CustomCollision.NewObbClosestTriCorners(grid, epiCenter);
 
@@ -170,7 +171,7 @@ namespace DefenseShields
             if (radius < 7) scale = radius;
 
             var matrix = MatrixD.CreateTranslation(epiCenter);
-            MyParticlesManager.TryCreateParticleEffect(6666, out _effect, ref matrix, ref epiCenter, 0, true); // 15, 16, 24, 25, 28, (31, 32) 211 215 53
+            MyParticlesManager.TryCreateParticleEffect(6666, out _effect, ref matrix, ref epiCenter, UInt32.MaxValue, true); // 15, 16, 24, 25, 28, (31, 32) 211 215 53
             if (_effect == null)
             {
                 EmpWork.EmpDrawComplete();

@@ -42,8 +42,8 @@
                     if (attackerId == _previousEntId) hostileEnt = _previousEnt;
                     else UpdatedHostileEnt(attackerId, out hostileEnt);
 
-                    var shieldHitPos = Vector3D.NegativeInfinity;
                     MyEntity trueAttacker = null;
+                    var isVoxelBase = false;
 
                     try
                     {
@@ -56,6 +56,7 @@
                             {
                                 var hostileCube = hostileEnt.Parent as MyCubeBlock;
                                 trueAttacker = (hostileCube ?? (hostileEnt as IMyGunBaseUser)?.Owner) ?? hostileEnt;
+                                if (trueAttacker is MyVoxelBase) isVoxelBase = true;
                             }
                             else trueAttacker = grid;
 
@@ -64,27 +65,34 @@
                             block.ComputeWorldCenter(out originHit);
 
                             var line = new LineD(trueAttacker.PositionComp.WorldAABB.Center, originHit);
+                            var lineLength = (float)line.Length;
                             var testDir = Vector3D.Normalize(line.From - line.To);
                             var ray = new RayD(line.From, -testDir);
                             var hitDist = double.MaxValue;
                             foreach (var shield in protectors.Shields)
                             {
+                                shield.Asleep = false;
+                                shield.LastWokenTick = Tick;
+
                                 var shieldActive = shield.DsState.State.Online && !shield.DsState.State.Lowered;
                                 if (!shieldActive) continue;
                                 var intersectDist = CustomCollision.IntersectEllipsoid(shield.DetectMatrixOutsideInv, shield.DetectionMatrix, ray);
+
                                 var ellipsoid = intersectDist ?? 0;
-                                var intersect = ellipsoid > 0 && line.Length > ellipsoid;
+
+                                var notContained = isVoxelBase || ellipsoid <= 0 && !CustomCollision.PointInShield(trueAttacker.PositionComp.WorldAABB.Center, MatrixD.Invert(shield.ShieldShapeMatrix * shield.MyGrid.WorldMatrix));
+                                if (notContained) ellipsoid = lineLength;
+
+                                var intersect = ellipsoid > 0 && lineLength + 1 >= ellipsoid;
                                 if (intersect && ellipsoid <= hitDist)
                                 {
                                     protectors.LastAttackerWasInside = false;
                                     hitDist = ellipsoid;
-                                    shieldHitPos = line.From + (testDir * -ellipsoid);
                                     protectors.BlockingShield = shield;
                                     protectors.BlockingTick = Tick;
                                 }
                             }
                         }
-
                         if (Tick - protectors.BlockingTick > 10 && protectors.LastAttackerWasInside) protectors.BlockingShield = null;
                     }
                     catch (Exception ex) { Log.Line($"Exception in DamageFindShield {_previousEnt == null}: {ex}"); }
@@ -102,7 +110,8 @@
                             }
                             var isExplosionDmg = damageType == MyDamageType.Explosion;
                             var isDeformationDmg = damageType == MyDamageType.Deformation;
-                            if (trueAttacker is MyVoxelBase)
+
+                            if (isVoxelBase)
                             {
                                 shield.DeformEnabled = true;
                                 return;
@@ -115,9 +124,12 @@
 
                             if (!isDeformationDmg && !isExplosionDmg)
                             {
-                                shield.ExplosionEnabled = false;
                                 shield.DeformEnabled = false;
                                 protectors.IgnoreAttackerId = -1;
+                            }
+                            else if (shield.DeformEnabled && trueAttacker == null)
+                            {
+                                return;
                             }
                             else if (!shield.DeformEnabled && trueAttacker == null)
                             {
@@ -129,22 +141,29 @@
                             if (bullet || isDeformationDmg) info.Amount = info.Amount * shield.DsState.State.ModulateEnergy;
                             else info.Amount = info.Amount * shield.DsState.State.ModulateKinetic;
 
-                            var noHits = !DedicatedServer && shield.Absorb < 1 && shield.WorldImpactPosition == Vector3D.NegativeInfinity;
+                            var noHits = !DedicatedServer && shield.Absorb < 1;
                             var hitSlotAvailable = noHits & (bullet && shield.KineticCoolDown == -1) || (!bullet && shield.EnergyCoolDown == -1);
                             if (hitSlotAvailable)
                             {
-                                shield.WorldImpactPosition = shieldHitPos;
-                                shield.ImpactSize = info.Amount;
-                                if (!bullet) shield.EnergyHit = true;
+                                lock (shield.HandlerImpact)
+                                {
+                                    if (trueAttacker != null && block != null)
+                                    {
+                                        shield.HandlerImpact.Attacker = trueAttacker;
+                                        shield.HandlerImpact.HitBlock = block;
+                                        shield.ImpactSize = info.Amount;
+                                        shield.HandlerImpact.Active = true;
+                                        if (!bullet) shield.EnergyHit = true;
+                                    }
+                                }
                             }
                             if (isDeformationDmg && trueAttacker != null) protectors.IgnoreAttackerId = attackerId;
-
                             shield.Absorb += info.Amount;
                             info.Amount = 0f;
                             return;
                         }
                     }
-                    catch (Exception ex) { Log.Line($"Exception in DamageHandlerActive {_previousEnt == null}: {ex}"); }
+                    catch (Exception ex) { Log.Line($"Exception in DamageHandlerActive: {ex}"); }
 
                     var iShield = protectors.IntegrityShield;
                     if (iShield != null && iShield.DsState.State.Online && !iShield.DsState.State.Lowered)
@@ -180,8 +199,7 @@
                         return;
                     }
                     protectors.IgnoreAttackerId = -1;
-
-                    if (Enforced.Debug >= 2) Log.Line($"[Uncaught Damage] Type:{damageType} - Amount:{info.Amount} - nullHostileEnt:{trueAttacker == null} - nullShield:{protectors.BlockingShield == null} - iShell:{protectors.IntegrityShield != null} - protectorShields:{protectors.Shields.Count} - attackerId:{info.AttackerId}");
+                    if (Enforced.Debug >= 2) Log.Line($"[Uncaught Damage] Type:{damageType} - Amount:{info.Amount} - nullTrue:{trueAttacker == null} - nullHostile:{hostileEnt == null} - nullShield:{protectors.BlockingShield == null} - iShell:{protectors.IntegrityShield != null} - protectorShields:{protectors.Shields.Count} - attackerId:{info.AttackerId}");
                 }
                 else if (target is IMyCharacter) CharacterProtection(target, info);
             }

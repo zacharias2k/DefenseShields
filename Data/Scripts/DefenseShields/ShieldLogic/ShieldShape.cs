@@ -61,6 +61,7 @@ namespace DefenseShields
             _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
             _oldShieldFudge = DsState.State.ShieldFudge;
             if (_entityChanged || BoundingRange <= 0) CreateShieldShape();
+            if (_tick300) CreateHalfExtents();
         }
 
         public void RefreshDimensions()
@@ -139,19 +140,8 @@ namespace DefenseShields
             CreateHalfExtents();
         }
 
-        private void CreateShieldShape()
+        internal void CreateShieldShape()
         {
-            /*
-               Basically find the point on the surface of the ellipsoid given a normal vector.
-               Equation for ellipsoid is x^2/a^2 + y^2/b^2 ... = 1
-               So given a normal vector x hat, y hat, z hat find the values for x y z that are parallel and satisfy that equation.
-               So x = dist*x normVec, y = dist * y normVec
-               a,b,c are the radii if the ellipsoid in X Y Z
-               So signed distance from surface is distance(point, origin) - distance(support(norm(point-origin)), origin)
-               support gives you the point on the surface in the given direction.
-            */
-            Asleep = false;
-
             if (GridIsMobile)
             {
                 _updateMobileShape = false;

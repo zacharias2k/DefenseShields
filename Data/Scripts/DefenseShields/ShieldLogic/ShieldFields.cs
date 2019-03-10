@@ -178,6 +178,7 @@ namespace DefenseShields
         private bool _tick20;
         private bool _tick60;
         private bool _tick180;
+        private bool _tick300;
         private bool _tick600;
         private bool _tick1800;
         private bool _resetEntity;
@@ -186,6 +187,7 @@ namespace DefenseShields
         private bool _mpActive;
         private bool _isServer;
         private bool _hadPowerBefore;
+        private bool _gridPowered;
         private bool _prevShieldActive;
         private bool _requestedEnforcement;
         private bool _slaveLink;
@@ -282,6 +284,7 @@ namespace DefenseShields
         internal MyCubeGrid MyGrid { get; set; }
         internal MyCubeBlock MyCube { get; set; }
         internal MyEntity ShieldEnt { get; set; }
+
         internal MyResourceDistributorComponent MyResourceDist { get; set; }
 
         internal ControllerSettings DsSet { get; set; }
@@ -305,7 +308,6 @@ namespace DefenseShields
 
         internal bool NotFailed { get; set; }
         internal bool DeformEnabled { get; set; }
-        internal bool ExplosionEnabled { get; set; }
         internal bool WarmedUp { get; set; }
         internal bool Warming { get; set; }
         internal bool UpdateDimensions { get; set; }
@@ -339,6 +341,7 @@ namespace DefenseShields
         internal float ImpactSize { get; set; } = 9f;
         internal float Absorb { get; set; }
 
+        internal DamageHandlerHit HandlerImpact { get; set; } = new DamageHandlerHit();
         internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         internal Vector3D ShieldSize { get; set; }
 

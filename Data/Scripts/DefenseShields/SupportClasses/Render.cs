@@ -100,7 +100,7 @@
             private const int SideSteps = 60;
             private const int ImpactSteps = 60;
             private const int RefreshSteps = 30;
-            private const int SmallImpact = ImpactSteps / 3;
+            private const int SmallImpact = ImpactSteps / 5;
             private const float WaveMultiplier = Pi / ImpactSteps;
             private static readonly Random Random = new Random();
 

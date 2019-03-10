@@ -190,6 +190,7 @@
             if (!DsState.State.Online && (!MyCube.IsWorking || !MyCube.IsFunctional)) return "[Controller Failure]";
             if (!DsState.State.Online && DsState.State.NoPower) return "[Insufficient Power]";
             if (!DsState.State.Online && DsState.State.Overload) return "[Overloaded]";
+            if (!DsState.State.Online && DsState.State.EmpOverLoad) return "[Emp Overload]";
             if (!DsState.State.ControllerGridAccess) return "[Invalid Owner]";
             if (DsState.State.Waking) return "[Coming Online]";
             if (DsState.State.Suspended || DsState.State.Mode == 4) return "[Controller Standby]";

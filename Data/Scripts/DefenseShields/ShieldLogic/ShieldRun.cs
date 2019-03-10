@@ -131,7 +131,7 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 3) Log.Line($"OnRemovedFromScene: {ShieldMode} - GridId:{Shield.CubeGrid.EntityId} - ShieldId [{Shield.EntityId}]");
                 if (ShieldComp?.DefenseShields == this)
                 {
-                    DsState.State.Online = false;
+                    FailShield(true);
                     DsState.State.Suspended = true;
                     Shield.RefreshCustomInfo();
                     ShieldComp.DefenseShields = null;

@@ -520,13 +520,6 @@
                     foreach (var s in ActiveShields)
                     {
                         if (s.Asleep) continue;
-
-                        if (s.GridIsMobile)
-                        {
-                            s.MobileUpdate();
-                            if (Tick300) s.CreateHalfExtents();
-                        }
-
                         if (s.DsState.State.ReInforce)
                         {
                             s.DeformEnabled = true;
@@ -534,9 +527,8 @@
                             continue;
                         }
 
-                        if (Tick20 && s.EffectsDirty) s.ResetDamageEffects();
+                        if (!DedicatedServer && Tick20 && s.EffectsDirty) s.ResetDamageEffects();
                         if (Tick600) s.CleanWebEnts();
-
                         s.WebEntities();
                     }
                 }

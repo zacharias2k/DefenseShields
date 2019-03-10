@@ -20,11 +20,11 @@
             var reInforce = DsState.State.ReInforce;
             var hitAnim = !reInforce && DsSet.Settings.HitWaveAnimation;
             var refreshAnim = !reInforce && DsSet.Settings.RefreshAnimation;
-            var futureSteps = WebDamage ? Session.TwoStep : Session.OneStep;
-            
             var activeVisible = DetermineVisualState(reInforce);
 
-            var impactPos = WorldImpactPosition;
+            Vector3D impactPos;
+            lock (HandlerImpact) impactPos = HandlerImpact.Active ? ComputeHandlerImpact() : WorldImpactPosition;
+
             var kineticHit = !EnergyHit;
 
             WorldImpactPosition = Vector3D.NegativeInfinity;
@@ -32,7 +32,13 @@
 
             if (impactPos != Vector3D.NegativeInfinity && (kineticHit && KineticCoolDown < 0 || EnergyHit && EnergyCoolDown < 0))
             {
-                impactPos += VelAtPoint * futureSteps;
+                if (_isServer && WebDamage && GridIsMobile)
+                {
+                    Vector3 pointVel;
+                    var gridCenter = MyGrid.PositionComp.WorldAABB.Center;
+                    MyGrid.Physics.GetVelocityAtPointLocal(ref gridCenter, out pointVel);
+                    impactPos += (Vector3D)pointVel * Session.TwoStep;
+                }
 
                 if (kineticHit) KineticCoolDown = 0;
                 else if (EnergyHit) EnergyCoolDown = 0;
@@ -87,6 +93,24 @@
             _effect = null;
         }
 
+        private Vector3D ComputeHandlerImpact()
+        {
+            WebDamage = false;
+            HandlerImpact.Active = false;
+            if (HandlerImpact.HitBlock == null || HandlerImpact.Attacker == null) return MyGrid.PositionComp.WorldAABB.Center;
+
+            Vector3D originHit;
+            HandlerImpact.HitBlock.ComputeWorldCenter(out originHit);
+            var line = new LineD(HandlerImpact.Attacker.PositionComp.WorldAABB.Center, originHit);
+            var testDir = Vector3D.Normalize(line.From - line.To);
+            var ray = new RayD(line.From, -testDir);
+            var matrix = ShieldShapeMatrix * MyGrid.WorldMatrix;
+            var intersectDist = CustomCollision.IntersectEllipsoid(MatrixD.Invert(matrix), matrix, ray);
+            var ellipsoid = intersectDist ?? line.Length;
+            var shieldHitPos = line.From + (testDir * -ellipsoid);
+            return shieldHitPos;
+        }
+
         private static MyStringId GetHudIcon1FromFloat(float percent)
         {
             if (percent >= 99) return Session.Instance.HudIconHealth100;
@@ -130,7 +154,7 @@
         {
             if (_tick60 || Session.Instance.HudIconReset) HudCheck();
 
-            if (_tick20) _viewInShield = CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation - (VelAtPoint * Session.OneStep), DetectMatrixOutsideInv);
+            if (_tick20) _viewInShield = CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation, DetectMatrixOutsideInv);
             if (reInforce)
                 _hideShield = false;
             else if (_tick20 && _hideColor && !_supressedColor && _viewInShield)
@@ -277,7 +301,7 @@
                 return;
             }
 
-            if (!CustomCollision.PointInShield(playerEnt.PositionComp.WorldAABB.Center - (VelAtPoint * Session.OneStep), DetectMatrixOutsideInv))
+            if (!CustomCollision.PointInShield(playerEnt.PositionComp.WorldAABB.Center, DetectMatrixOutsideInv))
             {
                 if (Session.Instance.HudComp != this)
                 {

@@ -57,9 +57,6 @@ namespace DefenseShields
             return true;
         }
 
-        public HashSet<MyCubeGrid> NewTmp1 { get; set; } = new HashSet<MyCubeGrid>();
-        public HashSet<MyCubeGrid> AddSubs { get; set; } = new HashSet<MyCubeGrid>();
-        public HashSet<MyCubeGrid> RemSubs { get; set; } = new HashSet<MyCubeGrid>();
         public HashSet<MyCubeGrid> SubGrids { get; set; } = new HashSet<MyCubeGrid>();
         public Dictionary<MyCubeGrid, SubGridInfo> LinkedGrids { get; set; } = new Dictionary<MyCubeGrid, SubGridInfo>();
 

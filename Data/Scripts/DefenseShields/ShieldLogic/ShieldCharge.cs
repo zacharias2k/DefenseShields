@@ -12,7 +12,9 @@ namespace DefenseShields
         #region Block Power Logic
         private bool PowerOnline()
         {
-            if (!UpdateGridPower()) return false;
+            UpdateGridPower();
+            if (!_gridPowered) return false;
+
             CalculatePowerCharge();
 
             if (!WarmedUp) return true;
@@ -46,7 +48,7 @@ namespace DefenseShields
             return true;
         }
 
-        private bool UpdateGridPower()
+        private void UpdateGridPower()
         {
             GridAvailablePower = 0;
             GridMaxPower = 0;
@@ -81,8 +83,7 @@ namespace DefenseShields
                 GridCurrentPower += _batteryCurrentInput;
                 GridAvailablePower -= _batteryCurrentInput;
             }
-
-            return GridMaxPower > 0;
+            _gridPowered = GridMaxPower > 0;
         }
 
         private void FallBackPowerCalc(bool reportOnly = false)

@@ -70,6 +70,7 @@
             _tick20 = Session.Instance.Tick20;
             _tick60 = Session.Instance.Tick60;
             _tick180 = Session.Instance.Tick180;
+            _tick300 = Session.Instance.Tick300;
             _tick600 = Session.Instance.Tick600;
             _tick1800 = Session.Instance.Tick1800;
             if (_count++ == 59) _count = 0;
@@ -114,10 +115,8 @@
                 if (!ControllerFunctional() || ShieldWaking())
                 {
                     if (ShieldFailing()) return false;
-                    _prevShieldActive = false;
                     return false;
                 }
-                var powerState = PowerOnline();
 
                 if (_tick60)
                 {
@@ -129,22 +128,13 @@
 
                 if (_tick >= LosCheckTick) LosCheck();
                 if (ShieldComp.EmitterEvent) EmitterEventDetected();
-                if (ShieldFailing(powerState))
-                {
-                    _prevShieldActive = false;
-                    return false;
-                }
-                SetShieldServerStatus(powerState);
 
                 if (_shapeEvent || FitChanged) CheckExtents();
                 if (_adjustShape) AdjustShape(true);
 
-                StepDamageState();
-                if (!DsState.State.Online || _comingOnline && GridIsMobile && FieldShapeBlocked())
+                if (!ShieldServerStatusUp() || _comingOnline && GridIsMobile && FieldShapeBlocked())
                 {
-                    _prevShieldActive = false;
-                    if (_genericDownLoop == -1) _genericDownLoop = 0;
-                    ShieldFailing();
+                    ShieldFailing(true);
                     return false;
                 }
             }
@@ -156,7 +146,6 @@
                 if (ClientOfflineStates() || ClientShieldLowered()) return false;
                 if (UpdateDimensions) RefreshDimensions();
                 PowerOnline();
-
                 StepDamageState();
 
                 _clientOn = true;
@@ -177,13 +166,14 @@
             }
 
             if (UpdateDimensions) RefreshDimensions();
-
             return true;
         }
 
-        private void SetShieldServerStatus(bool powerState)
+        private bool ShieldServerStatusUp()
         {
-            DsState.State.Online = ControlBlockWorking && powerState;
+            var notFailing = _overLoadLoop == -1 && _empOverLoadLoop == -1 && _reModulationLoop == -1 && _genericDownLoop == -1;
+            var subSystemsOk = ControlBlockWorking && DsState.State.EmitterLos && PowerOnline() && notFailing;
+            if (subSystemsOk) DsState.State.Online = true;
             _comingOnline = !_prevShieldActive && DsState.State.Online;
 
             _prevShieldActive = DsState.State.Online;
@@ -193,6 +183,9 @@
                 _ellipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
                 ShieldComp.O2Updated = false;
             }
+
+            StepDamageState();
+            return subSystemsOk;
         }
 
         private void SetShieldClientStatus()
@@ -213,6 +206,7 @@
             _updateRender = true;
             _comingOnline = false;
             _firstLoop = false;
+            _shapeEvent = true;
             LastWokenTick = _tick;
             NotFailed = true;
             WasActive = true;
@@ -221,7 +215,6 @@
             if (_isServer)
             {
                 CleanWebEnts();
-                ResetDamageEffects();
                 _offlineCnt = -1;
                 ShieldChangeState();
                 if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
@@ -232,13 +225,13 @@
                 Shield.RefreshCustomInfo();
                 if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
             }
+            if (!_isDedicated) ResetDamageEffects();
             lock (Session.Instance.ActiveShields) Session.Instance.ActiveShields.Add(this);
         }
 
-        private bool ShieldFailing(bool powerState = true)
+        private bool ShieldFailing(bool force = false)
         {
-
-            if ((!ControlBlockWorking || !powerState || !DsState.State.EmitterLos) && _genericDownLoop == -1)
+            if ((force || !ControlBlockWorking || !DsState.State.EmitterLos) && _genericDownLoop == -1)
             {
                 if (!WarmedUp) return true;
                 _genericDownLoop = 0;
@@ -281,7 +274,7 @@
             if (Session.Enforced.Debug == 4) Log.Line($"StateUpdate: ShieldOff - ShieldId [{Shield.EntityId}]");
         }
 
-        private void FailShield()
+        private void FailShield(bool softFail = false)
         {
             _offlineCnt++;
             if (_offlineCnt == 0)
@@ -289,26 +282,32 @@
                 _power = 0.001f;
                 _sink.Update();
                 ShieldCurrentPower = _sink.CurrentInputByType(GId);
-                ResetShape(true, true);
-                CleanWebEnts();
+                if (!softFail)
+                {
+                    ResetShape(true, true);
+                    CleanWebEnts();
+                    if (!_isDedicated)
+                    {
+                        ShellVisibility(true);
+                    }
+                }
 
                 _currentHeatStep = 0;
                 _accumulatedHeat = 0;
                 _heatCycle = -1;
+                _prevShieldActive = false;
+                _shapeEvent = true;
+
                 Absorb = 0f;
+
                 DsState.State.Charge = 0f;
                 DsState.State.ShieldPercent = 0f;
                 DsState.State.IncreaseO2ByFPercent = 0f;
-
                 DsState.State.Heat = 0;
-
-                if (!_isDedicated) ShellVisibility(true);
+                DsState.State.Online = false;
             }
 
-            _prevShieldActive = false;
-            DsState.State.Online = false;
-
-            if (!_isDedicated)
+            if (!_isDedicated && !softFail)
             {
                 Shield.RefreshCustomInfo();
                 ((MyCubeBlock)Shield).UpdateTerminal();
@@ -534,7 +533,7 @@
                 if (cleanEnts) InitEntities(false);
                 DsState.State.Suspended = true;
                 Session.Instance.BlockTagBackup(Shield);
-                FailShield();
+                ShieldFailing(true);
             }
             if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
             DsState.State.Suspended = true;

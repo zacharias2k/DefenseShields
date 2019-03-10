@@ -102,16 +102,7 @@
 
                     if (!s.WarmedUp || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterLos) continue;
 
-                    if (s.GridIsMobile)
-                    {
-                        var gridCenter = s.MyGrid.PositionComp.WorldAABB.Center;
-                        Vector3 pointVel;
-                        s.MyGrid.Physics.GetVelocityAtPointLocal(ref gridCenter, out pointVel);
-                        s.VelAtPoint = pointVel;
-                    }
-                    else s.VelAtPoint = Vector3D.Zero;
-
-                    var sp = new BoundingSphereD(s.DetectionCenter + s.VelAtPoint * OneStep, s.BoundingRange);
+                    var sp = new BoundingSphereD(s.DetectionCenter, s.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {
                         SphereOnCamera[i] = false;
@@ -185,6 +176,9 @@
 
         public override void UpdateAfterSimulation()
         {
+            lock (ActiveShields)
+                foreach (var s in ActiveShields)
+                    if (s.GridIsMobile && !s.Asleep) s.MobileUpdate();
             _autoResetEvent.Set();
         }
         #endregion

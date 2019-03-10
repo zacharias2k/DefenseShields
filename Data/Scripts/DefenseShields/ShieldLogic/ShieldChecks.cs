@@ -51,9 +51,6 @@ namespace DefenseShields
 
             lock (SubLock)
             {
-                ShieldComp.RemSubs.Clear();
-                foreach (var sub in ShieldComp.SubGrids) ShieldComp.RemSubs.Add(sub);
-
                 ShieldComp.SubGrids.Clear();
                 ShieldComp.LinkedGrids.Clear();
                 for (int i = 0; i < gotGroups.Count; i++)
@@ -63,18 +60,6 @@ namespace DefenseShields
                     if (MyAPIGateway.GridGroups.HasConnection(MyGrid, sub, GridLinkTypeEnum.Mechanical)) ShieldComp.SubGrids.Add((MyCubeGrid)sub);
                     ShieldComp.LinkedGrids.Add(sub as MyCubeGrid, new SubGridInfo(sub as MyCubeGrid, sub == MyGrid, false));
                 }
-
-                ShieldComp.AddSubs.Clear();
-                foreach (var sub in ShieldComp.SubGrids)
-                {
-                    ShieldComp.AddSubs.Add(sub);
-                    ShieldComp.NewTmp1.Add(sub);
-                }
-
-                ShieldComp.NewTmp1.IntersectWith(ShieldComp.RemSubs);
-                ShieldComp.RemSubs.ExceptWith(ShieldComp.AddSubs);
-                ShieldComp.AddSubs.ExceptWith(ShieldComp.NewTmp1);
-                ShieldComp.NewTmp1.Clear();
             }
             _blockChanged = true;
             _functionalChanged = true;
@@ -156,7 +141,7 @@ namespace DefenseShields
                             }
                         }
 
-                        _functionalBlocks.Add(block);
+                        if (!_isServer) _functionalBlocks.Add(block);
                         var battery = block as IMyBatteryBlock;
                         if (battery != null) _batteryBlocks.Add(battery);
 
@@ -275,13 +260,10 @@ namespace DefenseShields
                 if (_genericDownLoop == GenericDownCount) _genericDownLoop = -1;
                 return;
             }
-
             if (_overLoadLoop == 0 || _empOverLoadLoop == 0 || _reModulationLoop == 0 || _genericDownLoop == 0)
             {
-                _prevShieldActive = false;
-                if (DsState.State.Online)
+                if (DsState.State.Online || !WarmedUp)
                 {
-                    DsState.State.Online = false;
                     if (_overLoadLoop != -1)
                     {
                         DsState.State.Overload = true;
@@ -359,6 +341,7 @@ namespace DefenseShields
                     {
                         DsState.State.EmpOverLoad = false;
                         _empOverLoadLoop = -1;
+                        _empOverLoad = false;
                         var recharged = _shieldChargeRate * EmpDownCount / 60;
                         DsState.State.Charge = MathHelper.Clamp(recharged, ShieldMaxCharge * 0.25f, ShieldMaxCharge * 0.62f);
                     }

@@ -234,7 +234,6 @@ namespace DefenseShields
             }
             if (!_enablePhysics)
             {
-                if (_isServer) Asleep = true;
                 return;
             }
 

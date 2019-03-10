@@ -423,6 +423,13 @@
         }
     }
 
+    public class DamageHandlerHit
+    {
+        public bool Active = false;
+        public MyEntity Attacker = null;
+        public IMySlimBlock HitBlock = null;
+    }
+
     public class MyProtectors
     {
         public readonly CachingHashSet<DefenseShields> Shields = new CachingHashSet<DefenseShields>();

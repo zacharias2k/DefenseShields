@@ -275,7 +275,11 @@
 
                 var targetDamage = (float)(((empDirYield * damageScaler) * energyResistenceRatio) * empResistenceRatio);
 
-                if (targetDamage >= DsState.State.Charge * ConvToHp) _empOverLoad = true;
+                if (targetDamage >= DsState.State.Charge * ConvToHp)
+                {
+                    Log.Line("empOverload");
+                    _empOverLoad = true;
+                }
                 //if (Session.Enforced.Debug >= 2) Log.Line($"-----------------------] epiDist:{Vector3D.Distance(epiCenter, impactPos)} - iSqrDist:{invSqrDist} - RangeCap:{rangeCap} - SurfaceA:{hitFaceSurfaceArea}({_ellipsoidSurfaceArea * 0.5}) - dirYield:{empDirYield} - damageScaler:{damageScaler} - Damage:{targetDamage}(toOver:{(targetDamage / (DsState.State.Charge * ConvToHp))})");
 
                 if (_isServer && _mpActive)
