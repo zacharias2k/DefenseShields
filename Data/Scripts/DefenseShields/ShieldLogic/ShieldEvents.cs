@@ -195,8 +195,8 @@
             if (DsState.State.Waking) return "[Coming Online]";
             if (DsState.State.Suspended || DsState.State.Mode == 4) return "[Controller Standby]";
             if (DsState.State.Lowered) return "[Shield Down]";
-            if (!DsState.State.EmitterLos || DsState.State.ActiveEmitterId == 0) return "[Emitter Failure]";
             if (DsState.State.Sleeping) return "[Suspended]";
+            if (!DsState.State.EmitterLos || DsState.State.ActiveEmitterId == 0) return "[Emitter Failure]";
             if (!DsState.State.Online) return "[Shield Offline]";
             return "[Shield Up]";
         }

@@ -1,6 +1,5 @@
 ﻿using DefenseShields.Support;
 using Sandbox.Game.Entities;
-using Sandbox.Game.Lights;
 using Sandbox.ModAPI;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
@@ -29,7 +28,6 @@ namespace DefenseShields
                 targetPlayer = player;
                 break;
             }
-
             if (sendMessage && !DsSet.Settings.NoWarningSounds) BroadcastSound(targetPlayer.Character, notice);
 
             switch (notice)
@@ -56,6 +54,7 @@ namespace DefenseShields
                     if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- Insufficient Power, shield is failing!", 5000, "Red");
                     break;
             }
+            if (Session.Enforced.Debug == 2) Log.Line($"[PlayerMessages] Sending:{sendMessage} - rangeToClinetPlayer:{Vector3D.Distance(sphere.Center, MyAPIGateway.Session.Player.Character.WorldVolume.Center)}");
         }
 
         private static void BroadcastSound(IMyCharacter character, PlayerNotice notice)
@@ -93,9 +92,8 @@ namespace DefenseShields
 
         private void BroadcastMessage(bool forceNoPower = false)
         {
-            if (Session.Enforced.Debug == 3) Log.Line($"Broadcasting message to local playerId{Session.Instance.Players.Count} - Server:{_isServer} - Dedicated:{_isDedicated} - Id:{MyAPIGateway.Multiplayer.MyId}");
+            if (Session.Enforced.Debug == 2) Log.Line($"Broadcasting message to local playerId{Session.Instance.Players.Count} - Server:{_isServer} - Dedicated:{_isDedicated} - Id:{MyAPIGateway.Multiplayer.MyId}");
 
-            //if (!DsState.State.EmitterWorking && (!DsState.State.Waking || (checkMobLos && _genericDownLoop > -1) || (checkMobLos && !_isServer)))
             if (!DsState.State.EmitterLos && GridIsMobile && !DsState.State.Waking) PlayerMessages(PlayerNotice.NoLos);
             else if (DsState.State.NoPower || forceNoPower) PlayerMessages(PlayerNotice.NoPower);
             else if (DsState.State.Overload) PlayerMessages(PlayerNotice.OverLoad);
@@ -103,7 +101,7 @@ namespace DefenseShields
             else if (DsState.State.FieldBlocked) PlayerMessages(PlayerNotice.FieldBlocked);
             else if (DsState.State.Waking) PlayerMessages(PlayerNotice.EmitterInit);
             else if (DsState.State.Remodulate) PlayerMessages(PlayerNotice.Remodulate);
-
+            TerminalRefresh();
             DsState.State.Message = false;
         }
     }

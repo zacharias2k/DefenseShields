@@ -1,4 +1,7 @@
-﻿namespace DefenseShields
+﻿using System.Linq;
+using Sandbox.ModAPI;
+
+namespace DefenseShields
 {
     using System;
     using System.Collections.Generic;
@@ -41,6 +44,13 @@
                     var attackerId = info.AttackerId;
                     if (attackerId == _previousEntId) hostileEnt = _previousEnt;
                     else UpdatedHostileEnt(attackerId, out hostileEnt);
+                    if (!IsServer && attackerId != 0 && hostileEnt == null)
+                    {
+                        var shield = protectors.BlockingShield ?? protectors.Shields.FirstOrDefault();
+                        if (shield != null) NullClientAttackerBug(protectors.BlockingShield, block, info);
+                        info.Amount = 0;
+                        return;
+                    }
 
                     MyEntity trueAttacker = null;
                     var isVoxelBase = false;
@@ -281,6 +291,29 @@
             }
             ent = null;
             _previousEntId = -1;
+        }
+
+
+        private void NullClientAttackerBug(DefenseShields shield, IMySlimBlock block, MyDamageInformation info)
+        {
+            var noHits = !DedicatedServer && shield.Absorb < 1;
+            var bullet = info.Type == MyDamageType.Bullet;
+            var hitSlotAvailable = noHits & (bullet && shield.KineticCoolDown == -1) || (!bullet && shield.EnergyCoolDown == -1);
+            if (hitSlotAvailable)
+            {
+                lock (shield.HandlerImpact)
+                {
+                    if (block != null)
+                    {
+                        shield.HandlerImpact.Attacker = null;
+                        shield.HandlerImpact.HitBlock = block;
+                        shield.ImpactSize = info.Amount;
+                        shield.HandlerImpact.Active = true;
+                        if (!bullet) shield.EnergyHit = true;
+                    }
+                }
+            }
+            shield.Absorb += info.Amount;
         }
         #endregion
     }

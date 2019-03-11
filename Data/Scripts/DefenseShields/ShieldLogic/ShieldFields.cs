@@ -121,6 +121,7 @@ namespace DefenseShields
         private uint _fatTick;
         private uint _shapeTick;
         private uint _capacitorTick;
+        private uint _messageTick;
         private uint _heatVentingTick = uint.MaxValue;
         private uint _lastSendDamageTick = uint.MaxValue;
 

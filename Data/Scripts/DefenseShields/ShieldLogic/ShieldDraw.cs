@@ -97,10 +97,12 @@
         {
             WebDamage = false;
             HandlerImpact.Active = false;
-            if (HandlerImpact.HitBlock == null || HandlerImpact.Attacker == null) return MyGrid.PositionComp.WorldAABB.Center;
+            if (HandlerImpact.HitBlock == null) return MyGrid.PositionComp.WorldAABB.Center;
 
             Vector3D originHit;
             HandlerImpact.HitBlock.ComputeWorldCenter(out originHit);
+            if (HandlerImpact.Attacker == null) return originHit;
+
             var line = new LineD(HandlerImpact.Attacker.PositionComp.WorldAABB.Center, originHit);
             var testDir = Vector3D.Normalize(line.From - line.To);
             var ray = new RayD(line.From, -testDir);

@@ -1,7 +1,6 @@
 ﻿namespace DefenseShields
 {
     using Support;
-    using Sandbox.Game.Entities;
     using VRageMath;
 
     public partial class DefenseShields
@@ -19,12 +18,13 @@
         {
             if (!_isServer)
             {
-                if (Session.Enforced.Debug == 3) Log.Line($"{MyGrid.DebugName} received state packet: old:{DsState.State.ActiveEmitterId} - new:{newState.ActiveEmitterId}");
+                if (Session.Enforced.Debug == 3) Log.Line($"[Shield Update]: On:{newState.Online} - Suspend:{newState.Suspended} - Sleep:{newState.Sleeping} - ClientOn:{_clientOn} - SId:{MyCube.EntityId} - Name:{MyGrid.DebugName}");
                 if (!newState.EllipsoidAdjust.Equals(DsState.State.EllipsoidAdjust) || !newState.ShieldFudge.Equals(DsState.State.ShieldFudge) ||
                     !newState.GridHalfExtents.Equals(DsState.State.GridHalfExtents))
                 {
                     _updateMobileShape = true;
                 }
+                if (DsState.State.Message) BroadcastMessage();
             }
             DsState.State = newState;
             _clientNotReady = false;
@@ -173,9 +173,10 @@
         {
             var notFailing = _overLoadLoop == -1 && _empOverLoadLoop == -1 && _reModulationLoop == -1 && _genericDownLoop == -1;
             var subSystemsOk = ControlBlockWorking && DsState.State.EmitterLos && PowerOnline() && notFailing;
-            if (subSystemsOk) DsState.State.Online = true;
-            _comingOnline = !_prevShieldActive && DsState.State.Online;
+            DsState.State.Online = subSystemsOk;
+            if (!subSystemsOk) return false;
 
+            _comingOnline = !_prevShieldActive && DsState.State.Online;
             _prevShieldActive = DsState.State.Online;
 
             if (!GridIsMobile && (_comingOnline || ShieldComp.O2Updated))
@@ -185,7 +186,7 @@
             }
 
             StepDamageState();
-            return subSystemsOk;
+            return true;
         }
 
         private void SetShieldClientStatus()
@@ -253,6 +254,7 @@
             EnergyHit = false;
             _power = 0.001f;
             _sink.Update();
+            _prevShieldActive = false;
 
             ShieldEnt.Render.Visible = false;
             if (_isServer)
@@ -267,7 +269,7 @@
             else
             {
                 UpdateSubGrids(true);
-                Shield.RefreshCustomInfo();
+                TerminalRefresh();
             }
             lock (Session.Instance.ActiveShields) Session.Instance.ActiveShields.Remove(this);
 
@@ -305,12 +307,12 @@
                 DsState.State.IncreaseO2ByFPercent = 0f;
                 DsState.State.Heat = 0;
                 DsState.State.Online = false;
+                TerminalRefresh(false);
             }
 
-            if (!_isDedicated && !softFail)
+            if (!_isDedicated && _tick60 && InControlPanel && InThisTerminal && !softFail)
             {
-                Shield.RefreshCustomInfo();
-                ((MyCubeBlock)Shield).UpdateTerminal();
+                TerminalRefresh();
             }
             if (Session.Enforced.Debug == 3) Log.Line($"ShieldDown: Count: {_offlineCnt} - ShieldPower: {ShieldCurrentPower} - gridMax: {GridMaxPower} - currentPower: {GridCurrentPower} - maint: {_shieldMaintaintPower} - ShieldId [{Shield.EntityId}]");
         }
@@ -424,7 +426,7 @@
                     DsState.State.IncreaseO2ByFPercent = 0f;
                     if (!_isDedicated) ShellVisibility(true);
                     DsState.State.Sleeping = true;
-                    Shield.RefreshCustomInfo();
+                    TerminalRefresh(false);
                     if (Session.Enforced.Debug == 4) Log.Line($"Sleep: controller detected sleeping emitter, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
                 }
                 DsState.State.Sleeping = true;
@@ -434,7 +436,7 @@
             if (DsState.State.Sleeping)
             {
                 DsState.State.Sleeping = false;
-                if (!_isDedicated) ShellVisibility();
+                //if (!_isDedicated) ShellVisibility();
                 _blockChanged = true;
                 _functionalChanged = true;
                 UpdateSubGrids();
@@ -444,7 +446,7 @@
                 else UpdateDimensions = true;
 
                 DsState.State.Sleeping = false;
-                Shield.RefreshCustomInfo();
+                if (!_isDedicated && _tick60 && InControlPanel && InThisTerminal) TerminalRefresh();
                 if (Session.Enforced.Debug == 4) Log.Line($"Sleep: Controller was sleeping but is now waking, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
 
@@ -533,17 +535,18 @@
                 if (cleanEnts) InitEntities(false);
                 DsState.State.Suspended = true;
                 Session.Instance.BlockTagBackup(Shield);
-                ShieldFailing(true);
+                FailShield();
             }
-            if (ShieldComp.DefenseShields == null) ShieldComp.DefenseShields = this;
+            if (ShieldComp.DefenseShields == null)
+            {
+                ShieldComp.DefenseShields = this;
+                FailShield();
+            }
             DsState.State.Suspended = true;
         }
 
         private bool ClientOfflineStates()
         {
-            var message = DsState.State.Message;
-            if (message) BroadcastMessage();
-
             if (ShieldComp.DefenseShields != this && DsState.State.Online && !DsState.State.Suspended)
             {
                 ShieldComp.DefenseShields = this;
@@ -556,11 +559,11 @@
             {
                 if (_clientOn)
                 {
-                    if (!message && GridMaxPower <= 0) BroadcastMessage(true);
+                    if (GridMaxPower <= 0) BroadcastMessage(true);
                     if (!GridIsMobile) _ellipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
                     ShellVisibility(true);
                     _clientOn = false;
-                    Shield.RefreshCustomInfo();
+                    TerminalRefresh();
                 }
                 _prevShieldActive = false;
                 return true;
@@ -569,7 +572,7 @@
             if (!_clientOn)
             {
                 ShellVisibility();
-                Shield.RefreshCustomInfo();
+                TerminalRefresh();
             }
             return false;
         }

@@ -265,11 +265,14 @@ namespace DefenseShields
                     DsState.State.Overload = false;
                     DsState.State.NoPower = false;
                     DsState.State.Remodulate = false;
-                    DsState.State.Suspended = false;
+                    if (DsState.State.Suspended)
+                    {
+                        DsState.State.Suspended = false;
+                        DsState.State.Online = false;
+                        DsState.State.Sleeping = false;
+                    }
                     DsState.State.Waking = false;
-                    //DsState.State.ActiveEmitterId = 0;
                     DsState.State.FieldBlocked = false;
-                    //DsState.State.Sleeping = false;
                     DsState.State.Heat = 0;
                 }
             }
