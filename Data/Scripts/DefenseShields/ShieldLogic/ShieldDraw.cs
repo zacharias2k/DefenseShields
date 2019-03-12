@@ -21,6 +21,9 @@
             var hitAnim = !reInforce && DsSet.Settings.HitWaveAnimation;
             var refreshAnim = !reInforce && DsSet.Settings.RefreshAnimation;
             var activeVisible = DetermineVisualState(reInforce);
+            var lcdUpdate = _viewInShield && _count == 29 || !_viewInShield && _tick600;
+
+            if (lcdUpdate) UpdateLcds();
 
             Vector3D impactPos;
             lock (HandlerImpact) impactPos = HandlerImpact.Active ? ComputeHandlerImpact() : WorldImpactPosition;
@@ -91,6 +94,20 @@
             _effect.Stop();
             _effect.Close(false, true);
             _effect = null;
+        }
+
+        private void UpdateLcds()
+        {
+            lock (SubLock)
+            {
+                for (int i = 0; i < _displayBlocks.Count; i++)
+                {
+                    var display = _displayBlocks[i];
+                    if (!display.ShowText) continue;
+                    var data = display.CustomData;
+                    if (data.Length != 0 && data.StartsWith("@DS")) display.WritePublicText(Shield.CustomInfo);
+                }
+            }
         }
 
         private Vector3D ComputeHandlerImpact()
@@ -357,7 +374,7 @@
             var icon3 = GetHudIcon3FromInt(heat, _tick180);
             var showIcon2 = DsState.State.Online;
             Color color;
-            if (percent > 0 && percent < 10 && _tick180) color = Color.Red;
+            if (percent > 0 && percent < 10 && _count < 30) color = Color.Red;
             else color = Color.White;
             MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.LDR); 
             if (showIcon2 && icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.LDR);

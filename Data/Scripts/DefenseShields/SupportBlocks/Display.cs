@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
@@ -24,8 +25,11 @@ namespace DefenseShields
             try
             {
                 base.Init(objectBuilder);
-                if (!MyAPIGateway.Utilities.IsDedicated) NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                if (!MyAPIGateway.Utilities.IsDedicated) NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
+                if (!MyAPIGateway.Utilities.IsDedicated)
+                {
+                    NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                    NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -38,6 +42,10 @@ namespace DefenseShields
                 RemoveControls();
                 Session.Instance.Displays.Add(this);
                 Display.ShowPublicTextOnScreen();
+                Display.FontSize = 1.35f;
+                Display.AppendingCustomInfo += AppendingCustomInfo;
+                Display.RefreshCustomInfo();
+                Display.AppendingCustomInfo -= AppendingCustomInfo;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
@@ -106,6 +114,11 @@ namespace DefenseShields
         private static bool HideControls(IMyTerminalBlock block)
         {
             return block.BlockDefinition.SubtypeId != "DSControlLCD";
+        }
+
+        private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
+        {
+            stringBuilder.Append("\nAdd @DS to any LCD's Custom Data\nto report shield stats!");
         }
 
         public static void RemoveControls()

@@ -223,6 +223,18 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 3) Log.Line($"ResetEntity: ShieldId [{Shield.EntityId}]");
         }
 
+        private void ResetComp()
+        {
+            ShieldGridComponent comp;
+            Shield.CubeGrid.Components.TryGet(out comp);
+            if (comp == null)
+            {
+                ShieldComp = new ShieldGridComponent(this);
+                Shield.CubeGrid.Components.Add(ShieldComp);
+            }
+            else Shield.CubeGrid.Components.TryGet(out ShieldComp);
+        }
+
         private void WarmUpSequence()
         {
             if (_isServer)

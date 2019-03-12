@@ -117,6 +117,7 @@ namespace DefenseShields
                 _powerSources.Clear();
                 _functionalBlocks.Clear();
                 _batteryBlocks.Clear();
+                _displayBlocks.Clear();
 
                 foreach (var grid in ShieldComp.LinkedGrids.Keys)
                 {
@@ -141,7 +142,13 @@ namespace DefenseShields
                             }
                         }
 
-                        if (!_isServer) _functionalBlocks.Add(block);
+                        if (!_isDedicated)
+                        {
+                            _functionalBlocks.Add(block);
+                            var display = block as IMyTextPanel;
+                            if (display != null) _displayBlocks.Add(display);
+                        }
+
                         var battery = block as IMyBatteryBlock;
                         if (battery != null) _batteryBlocks.Add(battery);
 
@@ -260,6 +267,7 @@ namespace DefenseShields
                 if (_genericDownLoop == GenericDownCount) _genericDownLoop = -1;
                 return;
             }
+
             if (_overLoadLoop == 0 || _empOverLoadLoop == 0 || _reModulationLoop == 0 || _genericDownLoop == 0)
             {
                 if (DsState.State.Online || !WarmedUp)
