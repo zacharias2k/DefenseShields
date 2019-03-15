@@ -271,6 +271,7 @@
         internal bool DsAction { get; set; }
         internal bool PsAction { get; set; }
         internal bool ModAction { get; set; }
+        internal bool CreativeWarn { get; set; }
 
         internal DefenseShields HudComp { get; set; }
         internal DSUtils Dsutil1 { get; set; } = new DSUtils();

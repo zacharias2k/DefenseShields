@@ -22,11 +22,22 @@ namespace DefenseShields
 
         private void Debug()
         {
-            if (Shield.CustomName == "DEBUG")
+            var name = Shield.CustomName;
+            if (name.Length == 5 && name == "DEBUG")
             {
                 if (_tick <= 1800) Shield.CustomName = "DEBUGAUTODISABLED";
                 else UserDebug();
             }
+        }
+
+        private static void CreativeModeWarning()
+        {
+            if (Session.Instance.CreativeWarn || Session.Instance.Tick < 600) return;
+            Session.Instance.CreativeWarn = true;
+            const string message = "Due to technical reasons DefenseShields\n" +
+                                   "is not supported in Creative Mode and it\n" +
+                                   "will not operate properly nor as designed.\n";
+            MyAPIGateway.Utilities.ShowNotification(message, 6720);
         }
 
         private void HierarchyUpdate()

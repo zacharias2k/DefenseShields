@@ -88,7 +88,7 @@
                         else
                         {
                             var predictedHit = CustomCollision.FutureIntersect(this, webent, DetectionMatrix, DetectMatrixOutsideInv);
-                            if (predictedHit != null) Session.Instance.ThreadEvents.Enqueue(new MissileThreadEvent(webent, this));
+                            if (predictedHit) Session.Instance.ThreadEvents.Enqueue(new MissileThreadEvent(webent, this));
                         }
                         return;
                     }

@@ -48,15 +48,15 @@
 
                 HitParticleStart(impactPos);
 
-                kineticHit = false;
-                EnergyHit = false;
-
                 var cubeBlockLocalMatrix = MyGrid.PositionComp.LocalMatrix;
                 var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
                 var worldDirection = impactPos - referenceWorldPosition;
                 var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(cubeBlockLocalMatrix));
                 _localImpactPosition = localPosition;
             }
+
+            kineticHit = false;
+            EnergyHit = false;
 
             if (IsWorking)
             {
@@ -118,9 +118,9 @@
 
             Vector3D originHit;
             HandlerImpact.HitBlock.ComputeWorldCenter(out originHit);
-            if (HandlerImpact.Attacker == null) return originHit;
 
             var line = new LineD(HandlerImpact.Attacker.PositionComp.WorldAABB.Center, originHit);
+
             var testDir = Vector3D.Normalize(line.From - line.To);
             var ray = new RayD(line.From, -testDir);
             var matrix = ShieldShapeMatrix * MyGrid.WorldMatrix;

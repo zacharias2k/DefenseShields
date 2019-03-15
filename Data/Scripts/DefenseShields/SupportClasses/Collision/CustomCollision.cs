@@ -1,12 +1,9 @@
-﻿using CollisionDetection;
-
-namespace DefenseShields.Support
+﻿namespace DefenseShields.Support
 {
     using System;
     using System.Collections.Generic;
     using Sandbox.Game.Entities;
     using VRage.Game;
-    using VRage.Game.Components;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
     using VRage.Voxels;
@@ -14,16 +11,16 @@ namespace DefenseShields.Support
 
     internal class CustomCollision
     {
-        public static Vector3D? FutureIntersect(DefenseShields ds, MyEntity ent, MatrixD detectMatrix, MatrixD detectMatrixInv)
+        public static bool FutureIntersect(DefenseShields ds, MyEntity ent, MatrixD detectMatrix, MatrixD detectMatrixInv)
         {
             var entVel = ent.Physics.LinearVelocity;
             var entCenter = ent.PositionComp.WorldVolume.Center;
-            var velStepSize = entVel * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 2;
+            var velStepSize = entVel * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 1;
             var futureCenter = entCenter + velStepSize;
             var testDir = Vector3D.Normalize(entCenter - futureCenter);
-            var ellipsoid = IntersectEllipsoid(ds.DetectMatrixOutsideInv, ds.DetectionMatrix, new RayD(futureCenter, -testDir));
-            if (ellipsoid == null || ellipsoid > 0) return null;
-            return futureCenter; 
+            var ellipsoid = IntersectEllipsoid(ds.DetectMatrixOutsideInv, ds.DetectionMatrix, new RayD(entCenter, -testDir));
+            var intersect = ellipsoid == null && PointInShield(entCenter, detectMatrixInv) || ellipsoid <= velStepSize.Length();
+            return intersect;
         }
 
         public static Vector3D PastCenter(DefenseShields ds, MyEntity ent, MatrixD detectMatrix, MatrixD detectMatrixInv, int steps)
@@ -446,7 +443,7 @@ namespace DefenseShields.Support
 
         public static bool Intersecting(IMyCubeGrid breaching, IMyCubeGrid shield, Vector3D[] physicsVerts, Vector3D breachingPos)
         {
-            var shieldPos = ClosestVert(physicsVerts, breachingPos);
+            var shieldPos = ClosestVertArray(physicsVerts, breachingPos);
             var gridVel = breaching.Physics.LinearVelocity;
             var gridCenter = breaching.PositionComp.WorldVolume.Center;
             var shieldVel = shield.Physics.LinearVelocity;
@@ -723,12 +720,31 @@ namespace DefenseShields.Support
             }
         }
 
-        public static Vector3D ClosestVert(Vector3D[] physicsVerts, Vector3D pos)
+        public static Vector3D ClosestVertArray(Vector3D[] physicsVerts, Vector3D pos, int limit = -1)
         {
+            if (limit == -1) limit = physicsVerts.Length;
             var minValue1 = double.MaxValue;
             var closestVert = Vector3D.NegativeInfinity;
+            for (int p = 0; p < limit; p++)
+            {
+                var vert = physicsVerts[p];
+                var range = vert - pos;
+                var test = (range.X * range.X) + (range.Y * range.Y) + (range.Z * range.Z);
+                if (test < minValue1)
+                {
+                    minValue1 = test;
+                    closestVert = vert;
+                }
+            }
+            return closestVert;
+        }
 
-            for (int p = 0; p < physicsVerts.Length; p++)
+        public static Vector3D ClosestVertList(List<Vector3D> physicsVerts, Vector3D pos, int limit = -1)
+        {
+            if (limit == -1) limit = physicsVerts.Count;
+            var minValue1 = double.MaxValue;
+            var closestVert = Vector3D.NegativeInfinity;
+            for (int p = 0; p < limit; p++)
             {
                 var vert = physicsVerts[p];
                 var range = vert - pos;

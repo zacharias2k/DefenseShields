@@ -158,20 +158,23 @@
 
         private void UserDebug()
         {
+            var active = false;
+            lock (Session.Instance.ActiveShields) active = Session.Instance.ActiveShields.Contains(this);
             var message = $"User({MyAPIGateway.Multiplayer.Players.TryGetSteamId(Shield.OwnerId)}) Debugging\n" +
-                          $"On:{DsState.State.Online} - Suspend:{DsState.State.Suspended}\n" +
-                          $"Web:{Asleep} - Tick/LWoke:{_tick}/{LastWokenTick}\n" +
-                          $"Mo:{DsState.State.Mode} - Su:{DsState.State.Suspended} - Wa:{DsState.State.Waking}\n" +
-                          $"Np:{DsState.State.NoPower} - Lo:{DsState.State.Lowered} - Sl:{DsState.State.Sleeping}\n" +
-                          $"PSys:{MyResourceDist?.SourcesEnabled} - PNull:{MyResourceDist == null}\n" +
-                          $"MaxPower:{GridMaxPower} - AvailPower:{GridAvailablePower}\n" +
+                          $"On:{DsState.State.Online} - Sus:{DsState.State.Suspended} - Act:{active}\n" +
+                          $"Sleep:{Asleep} - Tick/Woke:{_tick}/{LastWokenTick}\n" +
+                          $"Mode:{DsState.State.Mode} - Waking:{DsState.State.Waking}\n" +
+                          $"Low:{DsState.State.Lowered} - Sl:{DsState.State.Sleeping}\n" +
+                          $"Failed:{!NotFailed} - PNull:{MyResourceDist == null}\n" +
+                          $"NoP:{DsState.State.NoPower} - PSys:{MyResourceDist?.SourcesEnabled}\n" +
                           $"Access:{DsState.State.ControllerGridAccess} - EmitterLos:{DsState.State.EmitterLos}\n" +
                           $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)}\n" +
                           $"ShieldMode:{ShieldMode} - pFail:{_powerFail}\n" +
                           $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{GridMaxPower}\n" +
+                          $"AvailPoW:{GridAvailablePower} - MTPoW:{_shieldMaintaintPower}\n" +
                           $"Pow:{_power} HP:{DsState.State.Charge}: {ShieldMaxCharge}";
 
-            if (!_isDedicated) MyAPIGateway.Utilities.ShowMessage(string.Empty, message);
+            if (!_isDedicated) MyAPIGateway.Utilities.ShowNotification(message, 28800);
             else Log.Line(message);
         }
 
@@ -275,11 +278,7 @@
 
                 var targetDamage = (float)(((empDirYield * damageScaler) * energyResistenceRatio) * empResistenceRatio);
 
-                if (targetDamage >= DsState.State.Charge * ConvToHp)
-                {
-                    Log.Line("empOverload");
-                    _empOverLoad = true;
-                }
+                if (targetDamage >= DsState.State.Charge * ConvToHp) _empOverLoad = true;
                 //if (Session.Enforced.Debug >= 2) Log.Line($"-----------------------] epiDist:{Vector3D.Distance(epiCenter, impactPos)} - iSqrDist:{invSqrDist} - RangeCap:{rangeCap} - SurfaceA:{hitFaceSurfaceArea}({_ellipsoidSurfaceArea * 0.5}) - dirYield:{empDirYield} - damageScaler:{damageScaler} - Damage:{targetDamage}(toOver:{(targetDamage / (DsState.State.Charge * ConvToHp))})");
 
                 if (_isServer && _mpActive)

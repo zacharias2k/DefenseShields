@@ -10,6 +10,16 @@ namespace DefenseShields.Support
         private readonly List<MyEntity> _entityList = new List<MyEntity>();
         private int _counter = 0;
 
+        public PhantomSphere()
+        {
+            Closing();
+        }
+
+        protected sealed override void Closing()
+        {
+            base.Closing();
+        }
+
         public List<MyEntity> ReturnEntitySet()
         {
             var isEqual = true;
@@ -40,11 +50,6 @@ namespace DefenseShields.Support
                 _entityList.Add(MyEntities.GetEntityById(id));
             }
             return _entityList;
-        }
-
-        public void RemoveBillboards()
-        {
-            Closing();
         }
     }
 }

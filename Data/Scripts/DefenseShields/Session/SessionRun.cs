@@ -31,7 +31,7 @@
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID, ReceivedPacket);
 
-                if (!MpActive) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
+                if (!DedicatedServer && IsServer) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
                 MyEntities.OnEntityRemove += OnEntityRemove;
 
                 MyVisualScriptLogicProvider.PlayerDisconnected += PlayerDisconnected;

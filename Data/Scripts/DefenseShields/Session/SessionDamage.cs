@@ -1,17 +1,14 @@
-﻿using System.Linq;
-using Sandbox.ModAPI;
-
+﻿using Sandbox.ModAPI;
+using System;
+using System.Collections.Generic;
+using DefenseShields.Support;
+using Sandbox.Game.Entities;
+using VRage.Game;
+using VRage.Game.Entity;
+using VRage.Game.ModAPI;
+using VRageMath;
 namespace DefenseShields
 {
-    using System;
-    using System.Collections.Generic;
-    using Support;
-    using Sandbox.Game.Entities;
-    using VRage.Game;
-    using VRage.Game.Entity;
-    using VRage.Game.ModAPI;
-    using VRageMath;
-
     public partial class Session
     {
         #region DamageHandler
@@ -44,13 +41,8 @@ namespace DefenseShields
                     var attackerId = info.AttackerId;
                     if (attackerId == _previousEntId) hostileEnt = _previousEnt;
                     else UpdatedHostileEnt(attackerId, out hostileEnt);
-                    if (!IsServer && attackerId != 0 && hostileEnt == null)
-                    {
-                        var shield = protectors.BlockingShield ?? protectors.Shields.FirstOrDefault();
-                        if (shield != null) NullClientAttackerBug(protectors.BlockingShield, block, info);
-                        info.Amount = 0;
-                        return;
-                    }
+
+                    if (!IsServer && attackerId != 0 && hostileEnt == null) ForceEntity(out hostileEnt);
 
                     MyEntity trueAttacker = null;
                     var isVoxelBase = false;
@@ -90,7 +82,7 @@ namespace DefenseShields
 
                                 var ellipsoid = intersectDist ?? 0;
 
-                                var notContained = isVoxelBase || ellipsoid <= 0 && !CustomCollision.PointInShield(trueAttacker.PositionComp.WorldAABB.Center, MatrixD.Invert(shield.ShieldShapeMatrix * shield.MyGrid.WorldMatrix));
+                                var notContained = isVoxelBase || ellipsoid <= 0 && shield.GridIsMobile && !CustomCollision.PointInShield(trueAttacker.PositionComp.WorldAABB.Center, MatrixD.Invert(shield.ShieldShapeMatrix * shield.MyGrid.WorldMatrix));
                                 if (notContained) ellipsoid = lineLength;
 
                                 var intersect = ellipsoid > 0 && lineLength + 1 >= ellipsoid;
@@ -293,27 +285,11 @@ namespace DefenseShields
             _previousEntId = -1;
         }
 
-
-        private void NullClientAttackerBug(DefenseShields shield, IMySlimBlock block, MyDamageInformation info)
+        private static void ForceEntity(out MyEntity hostileEnt)
         {
-            var noHits = !DedicatedServer && shield.Absorb < 1;
-            var bullet = info.Type == MyDamageType.Bullet;
-            var hitSlotAvailable = noHits & (bullet && shield.KineticCoolDown == -1) || (!bullet && shield.EnergyCoolDown == -1);
-            if (hitSlotAvailable)
-            {
-                lock (shield.HandlerImpact)
-                {
-                    if (block != null)
-                    {
-                        shield.HandlerImpact.Attacker = null;
-                        shield.HandlerImpact.HitBlock = block;
-                        shield.ImpactSize = info.Amount;
-                        shield.HandlerImpact.Active = true;
-                        if (!bullet) shield.EnergyHit = true;
-                    }
-                }
-            }
-            shield.Absorb += info.Amount;
+            hostileEnt = MyAPIGateway.Session.ControlledObject?.Entity as MyEntity;
+            if (hostileEnt?.Parent != null) hostileEnt = hostileEnt.Parent;
+            if (hostileEnt == null) hostileEnt = MyAPIGateway.Session.Player.Character as MyEntity;
         }
         #endregion
     }

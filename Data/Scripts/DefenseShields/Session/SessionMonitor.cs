@@ -66,7 +66,7 @@
                             s.Asleep = false;
                             return;
                         }
-                        //if (Enforced.Debug >= 2 && s.LostPings > 0) Log.Line($"Lost Logic Pings:{s.LostPings}");
+                        if (Enforced.Debug >= 2 && s.LostPings > 0) Log.Line($"Lost Logic Pings:{s.LostPings}");
                         if (shieldActive) s.LostPings++;
 
                         if (s.Asleep && EmpStore.Count != 0 && Vector3D.DistanceSquared(s.DetectionCenter, EmpWork.EpiCenter) <= SyncDistSqr)
@@ -107,7 +107,7 @@
                             if (s.TicksWithNoActivity++ % EntCleanCycle == 0) s.EntCleanUpTime = true;
                             if (shieldActive && !s.WasPaused && tick > 1200)
                             {
-                                if (Enforced.Debug >= 2) Log.Line($"Logic Paused by monitor");
+                                if (Enforced.Debug >= 3) Log.Line($"Logic Paused by monitor");
                                 lock (ActiveShields) ActiveShields.Remove(s);
                                 s.WasPaused = true;
                                 s.Asleep = false;
@@ -236,7 +236,6 @@
                                 {
                                     foundNewEnt = true;
                                     s.Asleep = false;
-                                    //if (Enforced.Debug >= 2) Log.Line($"New entity");
                                 }
 
                                 _globalEntTmp[ent] = _workData.Tick;
@@ -298,7 +297,7 @@
                                     s.EntsByMe.TryAdd(ent, new MoverInfo(entPos, _workData.Tick));
                                     if (moverInfo.CreationTick == _workData.Tick - 1)
                                     {
-                                        if (Enforced.Debug >= 2 && s.WasPaused) Log.Line($"[Moved] Ent:{ent.DebugName} - howMuch:{Vector3D.Distance(entPos, s.EntsByMe[ent].Pos)} - ShieldId [{s.Shield.EntityId}]");
+                                        if (Enforced.Debug >= 3 && s.WasPaused) Log.Line($"[Moved] Ent:{ent.DebugName} - howMuch:{Vector3D.Distance(entPos, s.EntsByMe[ent].Pos)} - ShieldId [{s.Shield.EntityId}]");
                                         newMover = true;
                                     }
                                     break;
@@ -306,7 +305,7 @@
                             }
                             else
                             {
-                                if (Enforced.Debug >= 2) Log.Line($"[NewMover] Ent:{ent.DebugName} - ShieldId [{s.Shield.EntityId}]");
+                                if (Enforced.Debug >= 3) Log.Line($"[NewMover] Ent:{ent.DebugName} - ShieldId [{s.Shield.EntityId}]");
                                 s.EntsByMe.TryAdd(ent, new MoverInfo(entPos, _workData.Tick));
                             }
                         }

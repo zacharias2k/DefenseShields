@@ -1,6 +1,4 @@
-﻿using VRage.Game.ModAPI;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
     using System;
     using Support;
@@ -66,6 +64,7 @@ namespace DefenseShields
                 else Session.Instance.FunctionalShields[this] = false;
 
                 Session.Instance.Controllers.Add(this);
+                if (MyAPIGateway.Session.CreativeMode) CreativeModeWarning();
                 if (Session.Enforced.Debug == 3) Log.Line($"UpdateOnceBeforeFrame: ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in Controller UpdateOnceBeforeFrame: {ex}"); }

@@ -54,7 +54,7 @@ namespace DefenseShields
                     if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- Insufficient Power, shield is failing!", 5000, "Red");
                     break;
             }
-            if (Session.Enforced.Debug == 2) Log.Line($"[PlayerMessages] Sending:{sendMessage} - rangeToClinetPlayer:{Vector3D.Distance(sphere.Center, MyAPIGateway.Session.Player.Character.WorldVolume.Center)}");
+            if (Session.Enforced.Debug == 3) Log.Line($"[PlayerMessages] Sending:{sendMessage} - rangeToClinetPlayer:{Vector3D.Distance(sphere.Center, MyAPIGateway.Session.Player.Character.WorldVolume.Center)}");
         }
 
         private static void BroadcastSound(IMyCharacter character, PlayerNotice notice)
@@ -92,7 +92,7 @@ namespace DefenseShields
 
         private void BroadcastMessage(bool forceNoPower = false)
         {
-            if (Session.Enforced.Debug == 2) Log.Line($"Broadcasting message to local playerId{Session.Instance.Players.Count} - Server:{_isServer} - Dedicated:{_isDedicated} - Id:{MyAPIGateway.Multiplayer.MyId}");
+            if (Session.Enforced.Debug >= 3) Log.Line($"Broadcasting message to local playerId{Session.Instance.Players.Count} - Server:{_isServer} - Dedicated:{_isDedicated} - Id:{MyAPIGateway.Multiplayer.MyId}");
 
             if (!DsState.State.EmitterLos && GridIsMobile && !DsState.State.Waking) PlayerMessages(PlayerNotice.NoLos);
             else if (DsState.State.NoPower || forceNoPower) PlayerMessages(PlayerNotice.NoPower);

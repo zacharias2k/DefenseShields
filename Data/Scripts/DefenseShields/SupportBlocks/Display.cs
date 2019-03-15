@@ -25,11 +25,8 @@ namespace DefenseShields
             try
             {
                 base.Init(objectBuilder);
-                if (!MyAPIGateway.Utilities.IsDedicated)
-                {
-                    NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                    NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
-                }
+                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                if (!MyAPIGateway.Utilities.IsDedicated) NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
             }
             catch (Exception ex) { Log.Line($"Exception in EntityInit: {ex}"); }
         }
@@ -39,13 +36,16 @@ namespace DefenseShields
             base.UpdateOnceBeforeFrame();
             try
             {
-                RemoveControls();
-                Session.Instance.Displays.Add(this);
-                Display.ShowPublicTextOnScreen();
-                Display.FontSize = 1.35f;
-                Display.AppendingCustomInfo += AppendingCustomInfo;
-                Display.RefreshCustomInfo();
-                Display.AppendingCustomInfo -= AppendingCustomInfo;
+                if (Display.FontSize <= 1) Display.FontSize = 1.30f;
+                if (!MyAPIGateway.Utilities.IsDedicated)
+                {
+                    RemoveControls();
+                    Session.Instance.Displays.Add(this);
+                    Display.ShowPublicTextOnScreen();
+                    Display.AppendingCustomInfo += AppendingCustomInfo;
+                    Display.RefreshCustomInfo();
+                    Display.AppendingCustomInfo -= AppendingCustomInfo;
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
@@ -146,8 +146,6 @@ namespace DefenseShields
             showTextPanel.Visible = HideControls;
             var showTextOnScreen = controls.First((x) => x.Id.ToString() == "ShowTextOnScreen");
             showTextOnScreen.Visible = HideControls;
-            var fontSize = controls.First((x) => x.Id.ToString() == "FontSize");
-            fontSize.Visible = HideControls;
             var backgroundColor = controls.First((x) => x.Id.ToString() == "BackgroundColor");
             backgroundColor.Visible = HideControls;
             var imageList = controls.First((x) => x.Id.ToString() == "ImageList");
