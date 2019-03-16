@@ -87,14 +87,6 @@ namespace DefenseShields
             if (!enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.Instance.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible) UpdateIcon();
         }
 
-        public void HitParticleStop()
-        {
-            if (_effect == null) return;
-            _effect.Stop();
-            _effect.Close(false, true);
-            _effect = null;
-        }
-
         private void UpdateLcds()
         {
             lock (SubLock)
@@ -309,7 +301,7 @@ namespace DefenseShields
         private void HitParticleStart(Vector3D pos)
         {
             var matrix = MatrixD.CreateTranslation(pos);
-            MyParticlesManager.TryCreateParticleEffect(6667, out _effect, ref matrix, ref pos, _shieldEntRendId, true); 
+            MyParticlesManager.TryCreateParticleEffect(6667, out _effect, ref matrix, ref pos, _shieldEntRendId, true);
             if (_effect == null) return;
             var scale = 0.0075;
             var logOfPlayerDist = Math.Log(Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos));
@@ -322,7 +314,7 @@ namespace DefenseShields
                 if (_viewInShield && DsSet.Settings.DimShieldHits) scaler = 3;
 
                 radius = (int)(logOfPlayerDist * scaler);
-                _effect.UserColorMultiplier = new Vector4(255, 10, 0, 1);
+                _effect.UserColorMultiplier = new Vector4(255, 10, 0, 1f);
             }
             else
             {
@@ -332,9 +324,11 @@ namespace DefenseShields
                 radius = (int)(logOfPlayerDist * scaler);
                 _effect.UserColorMultiplier = new Vector4(255, 255, 255, 1);
             }
+            var vel = MyGrid.Physics.LinearVelocity;
+
             _effect.UserRadiusMultiplier = radius;
             _effect.UserEmitterScale = (float)scale;
-            _effect.Velocity = MyGrid.Physics.LinearVelocity;
+            _effect.Velocity = vel;
             _effect.Play();
         }
 
@@ -350,32 +344,28 @@ namespace DefenseShields
                 return;
             }
 
-            if (!CustomCollision.PointInShield(playerEnt.PositionComp.WorldAABB.Center, DetectMatrixOutsideInv))
+            var playerPos = playerEnt.PositionComp.WorldAABB.Center;
+            var lastOwner = Session.Instance.HudComp;
+
+            if (!CustomCollision.PointInShield(playerPos, DetectMatrixOutsideInv))
             {
-                if (Session.Instance.HudComp != this)
-                {
-                    Session.Instance.HudIconReset = false;
-                    return;
-                }
+                if (Session.Instance.HudComp != this) return;
+
                 Session.Instance.HudIconReset = true;
                 Session.Instance.HudComp = null;
                 Session.Instance.HudShieldDist = double.MaxValue;
                 return;
             }
 
-            if (!Asleep)
-            {
-                ProtectCache protectedEnt;
-                ProtectedEntCache.TryGetValue(playerEnt, out protectedEnt);
-                if (protectedEnt != null && protectedEnt.Relation != Ent.Protected) return;
-            }
+            var distFromShield = Vector3D.DistanceSquared(playerPos, DetectionCenter);
 
-            var distFromShield = Vector3D.DistanceSquared(playerEnt.PositionComp.WorldVolume.Center - Session.OneStep, DetectionCenter);
-            if (Session.Instance.HudComp != this && distFromShield <= Session.Instance.HudShieldDist)
+            var takeOverHud = lastOwner == null || lastOwner != this && distFromShield <= Session.Instance.HudShieldDist;
+            var lastIsStale = !takeOverHud && lastOwner != this && !CustomCollision.PointInShield(playerPos, lastOwner.DetectMatrixOutsideInv);
+            if (takeOverHud || lastIsStale)
             {
                 Session.Instance.HudShieldDist = distFromShield;
                 Session.Instance.HudComp = this;
-                Session.Instance.HudIconReset = false;
+                Session.Instance.HudIconReset = true;
             }
         }
 

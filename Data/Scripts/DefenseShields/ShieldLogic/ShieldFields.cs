@@ -67,7 +67,6 @@ namespace DefenseShields
         internal BoundingBox ShieldAabbScaled = new BoundingBox(Vector3D.One, -Vector3D.One);
         internal BoundingSphereD ShieldSphere3K = new BoundingSphereD(Vector3D.Zero, 1f);
         internal BoundingSphereD WebSphere = new BoundingSphereD(Vector3D.Zero, 1f);
-        internal Vector3D VelAtPoint;
 
         internal bool InControlPanel => MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel;
         internal bool InThisTerminal => Session.Instance.LastTerminalId == Shield.EntityId;
@@ -191,7 +190,6 @@ namespace DefenseShields
         private bool _hadPowerBefore;
         private bool _gridPowered;
         private bool _prevShieldActive;
-        private bool _requestedEnforcement;
         private bool _slaveLink;
         private bool _subUpdate;
         private bool _updateGridDistributor;
@@ -238,8 +236,6 @@ namespace DefenseShields
         private MyParticleEffect _effect = new MyParticleEffect();
 
         private DSUtils Dsutil1 { get; set; } = new DSUtils();
-        private event Action<DefenseShields, DefenseShields> OnShieldDetectedEvent;
-
         #endregion
 
         public enum Ent
