@@ -22,9 +22,7 @@
             var relation = entInfo.Relation;
 
             var tick = Session.Instance.Tick;
-            var tick25 = tick % 25 == 0;
             var entCenter = webent.PositionComp.WorldVolume.Center;
-            
             if (entInfo.LastTick != tick) return;
             if (entInfo.RefreshNow && (relation == Ent.NobodyGrid || relation == Ent.EnemyGrid))
             {
@@ -41,13 +39,18 @@
             {
                 case Ent.EnemyPlayer:
                     {
-                        if (tick25 && CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
-                        {
-                            if (Session.Enforced.Debug == 3) Log.Line($"Ent EnemyPlayer: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
-                            PlayerIntersect(webent);
-                        }
+                        PlayerIntersect(webent);
                         return;
                     }
+                case Ent.EnemyInside:
+                {
+                    if (!CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
+                    {
+                        entInfo.RefreshNow = true;
+                        entInfo.EnemySafeInside = false;
+                    }
+                    return;
+                }
                 case Ent.NobodyGrid:
                     {
                         if (Session.Enforced.Debug == 3) Log.Line($"Ent NobodyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
@@ -94,7 +97,6 @@
                     }
 
                 default:
-                    if (Session.Enforced.Debug == 3) Log.Line($"Ent default: {webent.DebugName} - relation:{entInfo.Relation} - ShieldId [{Shield.EntityId}]");
                     return;
             }
         }
@@ -214,7 +216,7 @@
         private void PlayerIntersect(MyEntity ent)
         {
             var character = ent as IMyCharacter;
-            if (character == null) return;
+            if (character == null || character.MarkedForClose || character.IsDead) return;
 
             var npcname = character.ToString();
             if (npcname.Equals(SpaceWolf))
@@ -222,29 +224,20 @@
                 if (_isServer) Session.Instance.ThreadEvents.Enqueue(new CharacterEffectThreadEvent(character, this));
                 return;
             }
-
             var player = MyAPIGateway.Multiplayer.Players.GetPlayerControllingEntity(ent);
             if (player == null || player.PromoteLevel == MyPromoteLevel.Owner || player.PromoteLevel == MyPromoteLevel.Admin) return;
-
-            if (!_isServer)
+            var obb = new MyOrientedBoundingBoxD(ent.PositionComp.WorldAABB.Center, ent.PositionComp.LocalAABB.HalfExtents, Quaternion.CreateFromRotationMatrix(ent.WorldMatrix));
+            var playerIntersect = CustomCollision.ObbIntersect(obb, DetectMatrixOutside, DetectMatrixOutsideInv);
+            if (playerIntersect != null)
             {
-                if (character.EnabledDamping) character.SwitchDamping();
-                return;
+                var collisionData = new MyCollisionPhysicsData
+                {
+                    Entity1 = ent,
+                    Force1 = -Vector3.Normalize(ShieldEnt.PositionComp.WorldAABB.Center - (Vector3D)playerIntersect),
+                    CollisionAvg = (Vector3D)playerIntersect
+                };
+                if (_isServer) Session.Instance.ThreadEvents.Enqueue(new PlayerCollisionThreadEvent(collisionData, this));
             }
-
-            if (character.EnabledDamping) character.SwitchDamping();
-            if (!character.EnabledThrusts) return;
-
-            var playerInfo = WebEnts[ent];
-            var insideTime = (int)playerInfo.LastTick - (int)playerInfo.FirstTick;
-            if (insideTime < 3000) return;
-            EntIntersectInfo playerRemoved;
-            WebEnts.TryRemove(ent, out playerRemoved);
-
-            var hydrogenId = MyCharacterOxygenComponent.HydrogenId;
-            var playerGasLevel = character.GetSuitGasFillLevel(hydrogenId);
-            if (!(playerGasLevel > 0.01f)) return;
-            Session.Instance.ThreadEvents.Enqueue(new CharacterEffectThreadEvent(character, this));
         }
 
         private void BlockIntersect(MyCubeGrid breaching, MyOrientedBoundingBoxD bOriBBoxD, ref EntIntersectInfo entInfo)

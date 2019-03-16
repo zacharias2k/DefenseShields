@@ -1,4 +1,6 @@
-﻿namespace DefenseShields.Support
+﻿using VRage.Game;
+
+namespace DefenseShields.Support
 {
     using System;
     using Sandbox.Game;
@@ -229,6 +231,57 @@
         }
     }
 
+    public class PlayerCollisionThreadEvent : IThreadEvent
+    {
+        public readonly MyCollisionPhysicsData CollisionData;
+        public readonly DefenseShields Shield;
+
+        public PlayerCollisionThreadEvent(MyCollisionPhysicsData collisionPhysicsData, DefenseShields shield)
+        {
+            CollisionData = collisionPhysicsData;
+            Shield = shield;
+        }
+
+        public void Execute()
+        {
+            const int forceMulti = 200000;
+            CollisionData.Entity1.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceMulti * CollisionData.Force1, null, null, null, CollisionData.Immediate);
+            var character = CollisionData.Entity1 as IMyCharacter;
+            if (Session.Instance.MpActive)
+            {
+                Shield.AddShieldHit(CollisionData.Entity1.EntityId, 1, Session.Instance.MPKinetic, null, false, CollisionData.CollisionAvg);
+                character?.DoDamage(1f, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
+            }
+            else
+            {
+                Shield.ImpactSize = 1;
+                Shield.WorldImpactPosition = CollisionData.CollisionAvg;
+                character?.DoDamage(1f, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
+            }
+        }
+    }
+
+    public class CharacterEffectThreadEvent : IThreadEvent
+    {
+        public readonly IMyCharacter Character;
+        public readonly DefenseShields Shield;
+
+        public CharacterEffectThreadEvent(IMyCharacter character, DefenseShields shield)
+        {
+            Character = character;
+            Shield = shield;
+        }
+
+        public void Execute()
+        {
+            var npcname = Character.ToString();
+            if (npcname.Equals("Space_Wolf"))
+            {
+                Character.Delete();
+            }
+        }
+    }
+
     public class ManyBlocksThreadEvent : IThreadEvent
     {
         public readonly DefenseShields Shield;
@@ -339,40 +392,6 @@
                 var speed = MathHelper.Clamp(velAtPoint.Length(), 2f, 20f);
                 var forceMulti = (CollisionData.Mass2 * 10) * speed;
                 CollisionData.Entity2.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceMulti * CollisionData.Force2, null, null, speed, CollisionData.Immediate);
-        }
-    }
-
-    public class CharacterEffectThreadEvent : IThreadEvent
-    {
-        public readonly IMyCharacter Character;
-        public readonly DefenseShields Shield;
-
-        public CharacterEffectThreadEvent(IMyCharacter character, DefenseShields shield)
-        {
-            Character = character;
-            Shield = shield;
-        }
-
-        public void Execute()
-        {
-            var npcname = Character.ToString();
-            if (npcname.Equals("Space_Wolf"))
-            {
-                Character.Delete();
-                return;
-            }
-            var hId = MyCharacterOxygenComponent.HydrogenId;
-            var playerGasLevel = Character.GetSuitGasFillLevel(hId);
-            Character.Components.Get<MyCharacterOxygenComponent>().UpdateStoredGasLevel(ref hId, (playerGasLevel * -0.0001f) + .002f);
-            MyVisualScriptLogicProvider.CreateExplosion(Character.GetPosition(), 0, 0);
-            Character.DoDamage(50f, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
-            var vel = Character.Physics.LinearVelocity;
-            if (vel == new Vector3D(0, 0, 0)) vel = MyUtils.GetRandomVector3Normalized();
-            var speedDir = Vector3D.Normalize(vel);
-            var rnd = new Random();
-            var randomSpeed = rnd.Next(10, 20);
-            var additionalSpeed = vel + (speedDir * randomSpeed);
-            Character.Physics.LinearVelocity = additionalSpeed;
         }
     }
 

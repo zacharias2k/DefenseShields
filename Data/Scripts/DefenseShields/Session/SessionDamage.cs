@@ -211,7 +211,6 @@ namespace DefenseShields
         private void CharacterProtection(object target, MyDamageInformation info)
         {
             if (info.Type == MpIgnoreDamage || info.Type == MyDamageType.LowPressure) return;
-
             var myEntity = target as MyEntity;
             if (myEntity == null) return;
 

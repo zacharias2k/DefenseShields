@@ -21,6 +21,7 @@
         internal const double TickTimeDiv = 0.0625;
         internal const double OneStep = MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS * 1;
         internal const double TwoStep = MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS * 2;
+
         internal static readonly MyConcurrentPool<MyProtectors> ProtSets = new MyConcurrentPool<MyProtectors>(150, null, 1000);
 
         internal readonly int[] SlotCnt = new int[9];
@@ -272,6 +273,7 @@
         internal bool PsAction { get; set; }
         internal bool ModAction { get; set; }
         internal bool CreativeWarn { get; set; }
+        internal bool ThyaImages { get; set; }
 
         internal DefenseShields HudComp { get; set; }
         internal DSUtils Dsutil1 { get; set; } = new DSUtils();
@@ -340,5 +342,7 @@
             new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.8f),
             new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.9f)
         };
+
+        internal readonly string[] Thya = { "THYA-ShieldC", "THYA-ShieldH", "THYA-ShieldV" };
     }
 }

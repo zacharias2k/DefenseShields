@@ -1,14 +1,14 @@
-﻿namespace DefenseShields
+﻿using VRage.ModAPI;
+using System;
+using DefenseShields.Support;
+using Sandbox.ModAPI;
+using VRage.Game;
+using VRage.Game.Entity;
+using VRage.Utils;
+using VRageMath;
+using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
+namespace DefenseShields
 {
-    using System;
-    using Support;
-    using Sandbox.ModAPI;
-    using VRage.Game;
-    using VRage.Game.Entity;
-    using VRage.Utils;
-    using VRageMath;
-    using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
-
     public partial class DefenseShields
     {
         public void Draw(int onCount, bool sphereOnCamera)
@@ -29,7 +29,6 @@
             lock (HandlerImpact) impactPos = HandlerImpact.Active ? ComputeHandlerImpact() : WorldImpactPosition;
 
             var kineticHit = !EnergyHit;
-
             WorldImpactPosition = Vector3D.NegativeInfinity;
             _localImpactPosition = Vector3D.NegativeInfinity;
 
@@ -103,9 +102,40 @@
                 for (int i = 0; i < _displayBlocks.Count; i++)
                 {
                     var display = _displayBlocks[i];
-                    if (!display.ShowText) continue;
                     var data = display.CustomData;
-                    if (data.Length != 0 && data.StartsWith("@DS")) display.WritePublicText(Shield.CustomInfo);
+                    var dataLen = data.Length;
+                    if (dataLen != 0)
+                    {
+                        var match = data.IndexOf("@DS", StringComparison.Ordinal);
+                        if (match >= 0 && Session.Instance.ThyaImages && !display.ShowText)
+                        {
+                            var mode = 0;
+                            if (dataLen >= 4)
+                            {
+                                switch (data[match + 3].ToString())
+                                {
+                                    case "A":
+                                        mode = 0;
+                                        break;
+                                    case "H":
+                                        mode = 1;
+                                        break;
+                                    case "V":
+                                        mode = 2;
+                                        break;
+                                }
+                            }
+                            var image = UtilsStatic.GetShieldThyaFromFloat(DsState.State.ShieldPercent, mode);
+                            var oldImage = display.CurrentlyShownImage;
+                            if (oldImage != image)
+                            {
+                                display.RemoveImageFromSelection(oldImage, true);
+                                display.AddImageToSelection(image);
+                                display.NeedsUpdate = MyEntityUpdateEnum.EACH_100TH_FRAME;
+                            }
+                        }
+                        else if (match >= 0) display.WritePublicText(Shield.CustomInfo);
+                    }
                 }
             }
         }

@@ -65,6 +65,9 @@
                 MyAPIGateway.Parallel.StartBackground(WebMonitor);
 
                 if (!IsServer) RequestEnforcement(MyAPIGateway.Multiplayer.MyId);
+
+                foreach (var mod in MyAPIGateway.Session.Mods)
+                    if (mod.PublishedFileId == 540003236) ThyaImages = true;
             }
             catch (Exception ex) { Log.Line($"Exception in BeforeStart: {ex}"); }
         }

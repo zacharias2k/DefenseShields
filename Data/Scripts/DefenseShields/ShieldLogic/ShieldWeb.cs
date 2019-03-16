@@ -19,9 +19,9 @@ namespace DefenseShields
             AuthenticatedCache.Clear();
             IgnoreCache.Clear();
 
-            _porotectEntsTmp.Clear();
-            _porotectEntsTmp.AddRange(ProtectedEntCache.Where(info => _tick - info.Value.LastTick > 180));
-            foreach (var protectedEnt in _porotectEntsTmp) ProtectedEntCache.Remove(protectedEnt.Key);
+            _protectEntsTmp.Clear();
+            _protectEntsTmp.AddRange(ProtectedEntCache.Where(info => _tick - info.Value.LastTick > 180));
+            foreach (var protectedEnt in _protectEntsTmp) ProtectedEntCache.Remove(protectedEnt.Key);
 
             _webEntsTmp.Clear();
             _webEntsTmp.AddRange(WebEnts.Where(info => _tick - info.Value.LastTick > 180));
@@ -227,6 +227,7 @@ namespace DefenseShields
                         }
                         entChanged = true;
                         _enablePhysics = true;
+                        ProtectedEntCache.Remove(ent);
                         WebEnts.TryAdd(ent, new EntIntersectInfo(false, ent.PositionComp.LocalAABB, tick, tick, tick, relation));
                     }
                 }
@@ -281,13 +282,16 @@ namespace DefenseShields
                 if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner || playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare)
                 {
                     var playerInShield = CustomCollision.PointInShield(ent.PositionComp.WorldAABB.Center, DetectMatrixOutsideInv);
-                    if (playerInShield)
-                    {
-                        return Ent.Protected;
-                    }
-                    return Ent.Friendly;
+                    return playerInShield ? Ent.Protected : Ent.Friendly;
                 }
-                return character.IsDead ? Ent.Ignore : Ent.EnemyPlayer;
+
+                if (character.IsDead) return Ent.Ignore;
+
+                if (CustomCollision.NewObbPointsInShield(ent, DetectMatrixOutsideInv, _obbPoints) == 9)
+                {
+                    return Ent.EnemyInside;
+                }
+                return Ent.EnemyPlayer;
             }
             var grid = ent as MyCubeGrid;
             if (grid != null)

@@ -187,7 +187,8 @@
 
         private string GetShieldStatus()
         {
-            if (!DsState.State.Online && (!MyCube.IsWorking || !MyCube.IsFunctional)) return "[Controller Failure]";
+            if (!DsState.State.Online && !MyCube.IsFunctional) return "[Controller Damaged]";
+            if (!DsState.State.Online && !MyCube.IsWorking) return "[Controller Offline]";
             if (!DsState.State.Online && DsState.State.NoPower) return "[Insufficient Power]";
             if (!DsState.State.Online && DsState.State.Overload) return "[Overloaded]";
             if (!DsState.State.Online && DsState.State.EmpOverLoad) return "[Emp Overload]";

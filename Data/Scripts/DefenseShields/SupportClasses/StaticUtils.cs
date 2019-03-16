@@ -360,6 +360,28 @@ namespace DefenseShields.Support
             return Session.Instance.Color00;
         }
 
+        public static string GetShieldThyaFromFloat(float percent, int mode)
+        {
+            var pad = 0;
+            var padString = "";
+            var iPercent = (int)percent;
+
+            if (iPercent < 10) pad = 2;
+            else if (iPercent < 100) pad = 1;
+
+            switch (pad)
+            {
+                case 1:
+                    padString = "0";
+                    break;
+                case 2:
+                    padString = "00";
+                    break;
+            }
+            var imageString = Session.Instance.Thya[mode] + padString + iPercent.ToString();
+            return imageString;
+        }
+
         public static Color GetAirEmissiveColorFromDouble(double percent)
         {
             if (percent >= 80) return Color.Green;

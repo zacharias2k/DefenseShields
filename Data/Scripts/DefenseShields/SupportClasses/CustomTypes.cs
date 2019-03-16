@@ -295,6 +295,7 @@
         public DefenseShields.Ent Relation;
         public List<CubeAccel> CacheBlockList = new List<CubeAccel>();
         public bool RefreshNow;
+        public bool EnemySafeInside;
         public volatile bool Touched;
         public volatile uint LastCollision;
         public volatile int ConsecutiveCollisions;
@@ -308,6 +309,7 @@
             RefreshTick = refreshTick;
             Relation = relation;
             RefreshNow = true;
+            if (relation == DefenseShields.Ent.EnemyInside) EnemySafeInside = true;
         }
     }
 
