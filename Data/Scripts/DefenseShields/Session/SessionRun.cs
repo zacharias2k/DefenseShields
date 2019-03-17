@@ -89,7 +89,7 @@
                 for (int i = 0; i < compCount; i++)
                 {
                     var s = Controllers[i];
-                    if (s.WasPaused || s.DsState.State.Suspended) continue;
+                    if (s.DsState.State.Suspended) continue;
 
                     if (s.KineticCoolDown > -1)
                     {
@@ -125,7 +125,7 @@
                 for (int i = 0; i < compCount; i++)
                 {
                     var s = Controllers[i];
-                    var drawSuspended = s.WasPaused || s.DsState.State.Suspended || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterLos || !s.WarmedUp;
+                    var drawSuspended = s.DsState.State.Suspended || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterLos || !s.WarmedUp;
 
                     if (drawSuspended) continue;
 
@@ -142,7 +142,7 @@
                         }
                         else s.Icosphere.StepEffects();
                     }
-                    else if (s.IsWorking && SphereOnCamera[i]) s.DrawShieldDownIcon();
+                    else if (s.WarmedUp && SphereOnCamera[i]) s.DrawShieldDownIcon();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }

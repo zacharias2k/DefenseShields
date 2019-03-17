@@ -42,7 +42,9 @@ namespace DefenseShields
 
         private void HierarchyUpdate()
         {
-            var checkGroups = MyCube.IsWorking && MyCube.IsFunctional && (DsState.State.Online || DsState.State.NoPower || DsState.State.Sleeping || DsState.State.Waking);
+            var serverRequired = MyCube.IsWorking && MyCube.IsFunctional && _isServer;
+            var validStates = (DsState.State.Online || DsState.State.NoPower || DsState.State.Sleeping || DsState.State.Waking);
+            var checkGroups = validStates && !_isServer || validStates && serverRequired;
             if (Session.Enforced.Debug == 3) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Online:{DsState.State.Online} - Power:{!DsState.State.NoPower} - Sleep:{DsState.State.Sleeping} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
             if (checkGroups)
             {

@@ -22,10 +22,14 @@ namespace DefenseShields
         {
             try
             {
+                if (IsServer)
+                {
+                    info.Amount = 0;
+                    return;
+                }
                 var block = target as IMySlimBlock;
                 if (block != null)
                 {
-
                     var damageType = info.Type;
                     if (damageType == MpIgnoreDamage || damageType == MyDamageType.Drill || damageType == MyDamageType.Grind) return;
 

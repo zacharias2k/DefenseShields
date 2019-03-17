@@ -126,7 +126,7 @@
                 if (!_isDedicated && UtilsStatic.DistanceCheck(Enhancer, 1000, 1))
                 {
                     var blockCam = MyCube.PositionComp.WorldVolume;
-                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && IsWorking) BlockMoveAnimation();
+                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && EnhState.State.Online) BlockMoveAnimation();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }

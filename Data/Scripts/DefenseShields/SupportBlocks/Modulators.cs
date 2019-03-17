@@ -168,7 +168,7 @@
                 if (!_isDedicated && UtilsStatic.DistanceCheck(Modulator, 1000, 1))
                 {
                     var blockCam = MyCube.PositionComp.WorldVolume;
-                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && IsWorking) BlockMoveAnimation();
+                    if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam) && ModState.State.Online) BlockMoveAnimation();
                 }
 
                 if (_isServer) UpdateStates();

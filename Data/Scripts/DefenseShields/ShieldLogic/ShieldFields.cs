@@ -49,7 +49,6 @@ namespace DefenseShields
         internal volatile int LogicSlot;
         internal volatile int MonitorSlot;
         internal volatile int LostPings;
-        internal volatile bool WasActive;
         internal volatile bool MoverByShield;
         internal volatile bool PlayerByShield;
         internal volatile bool NewEntByShield;
@@ -189,7 +188,6 @@ namespace DefenseShields
         private bool _isServer;
         private bool _hadPowerBefore;
         private bool _gridPowered;
-        private bool _prevShieldActive;
         private bool _slaveLink;
         private bool _subUpdate;
         private bool _updateGridDistributor;

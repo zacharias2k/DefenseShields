@@ -1,6 +1,7 @@
 ﻿using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
+using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRageMath;
@@ -20,10 +21,13 @@ namespace DefenseShields
             var sphere = new BoundingSphereD(center, radius);
             var sendMessage = false;
             IMyPlayer targetPlayer = null;
+
             foreach (var player in Session.Instance.Players.Values)
             {
                 if (player.IdentityId != MyAPIGateway.Session.Player.IdentityId) continue;
                 if (!sphere.Intersects(player.Character.WorldVolume)) continue;
+                var relation = MyAPIGateway.Session.Player.GetRelationTo(MyCube.OwnerId);
+                if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) continue;
                 sendMessage = true;
                 targetPlayer = player;
                 break;

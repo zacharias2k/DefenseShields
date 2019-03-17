@@ -81,10 +81,14 @@
             else
             {
                 if (_blockChanged) BlockMonitor();
-                SetShieldClientStatus();
                 if (ClientUiUpdate || SettingsUpdated) UpdateSettings();
                 if (ClientOfflineStates() || ClientShieldLowered()) return false;
+
                 if (UpdateDimensions) RefreshDimensions();
+
+                if (!GridIsMobile && !DsState.State.IncreaseO2ByFPercent.Equals(_ellipsoidOxyProvider.O2Level))
+                    _ellipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
+
                 PowerOnline();
                 StepDamageState();
 
@@ -114,10 +118,12 @@
             var notFailing = _overLoadLoop == -1 && _empOverLoadLoop == -1 && _reModulationLoop == -1 && _genericDownLoop == -1;
             var subSystemsOk = ControlBlockWorking && DsState.State.EmitterLos && notFailing && PowerOnline();
             if (!subSystemsOk) return false;
-            DsState.State.Online = true;
+            var prevOnline = DsState.State.Online;
+            if (!prevOnline && GridIsMobile && FieldShapeBlocked()) return false;
 
-            _comingOnline = !_prevShieldActive && DsState.State.Online;
-            _prevShieldActive = DsState.State.Online;
+            _comingOnline = !prevOnline || _firstLoop;
+
+            DsState.State.Online = true;
 
             if (!GridIsMobile && (_comingOnline || ShieldComp.O2Updated))
             {
@@ -126,9 +132,6 @@
             }
 
             StepDamageState();
-
-            if (_comingOnline && GridIsMobile && FieldShapeBlocked()) return false;
-
             return true;
         }
 
@@ -142,7 +145,6 @@
             _shapeEvent = true;
             LastWokenTick = _tick;
             NotFailed = true;
-            WasActive = true;
             WarmedUp = true;
 
             if (_isServer)
@@ -155,7 +157,7 @@
             else
             {
                 UpdateSubGrids(true);
-                Shield.RefreshCustomInfo();
+                TerminalRefresh();
                 if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
             }
             if (!_isDedicated) ResetDamageEffects();
@@ -196,7 +198,6 @@
                 _currentHeatStep = 0;
                 _accumulatedHeat = 0;
                 _heatCycle = -1;
-                _prevShieldActive = false;
                 _shapeEvent = true;
 
                 Absorb = 0f;
@@ -218,15 +219,14 @@
 
         private void OfflineShield()
         {
-            WorldImpactPosition = Vector3D.NegativeInfinity;
             NotFailed = false;
-            WasActive = false;
             EnergyHit = false;
+            ShieldEnt.Render.Visible = false;
+            WorldImpactPosition = Vector3D.NegativeInfinity;
+
             _power = 0.001f;
             _sink.Update();
-            _prevShieldActive = false;
 
-            ShieldEnt.Render.Visible = false;
             if (_isServer)
             {
                 if (!DsState.State.Lowered && !DsState.State.Sleeping)
@@ -436,23 +436,11 @@
             DsState.State.Suspended = true;
         }
 
-        private void SetShieldClientStatus()
-        {
-            _comingOnline = !_prevShieldActive && DsState.State.Online;
-
-            _prevShieldActive = DsState.State.Online;
-            if (!GridIsMobile && (_comingOnline || !DsState.State.IncreaseO2ByFPercent.Equals(_ellipsoidOxyProvider.O2Level)))
-            {
-                _ellipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
-            }
-        }
-
         private bool ClientOfflineStates()
         {
             if (ShieldComp.DefenseShields != this && DsState.State.Online && !DsState.State.Suspended)
             {
                 ShieldComp.DefenseShields = this;
-                _prevShieldActive = false;
             }
 
             var offline = DsState.State.Suspended || !DsState.State.Online || DsState.State.Sleeping || !DsState.State.ControllerGridAccess
@@ -467,15 +455,10 @@
                     _clientOn = false;
                     TerminalRefresh();
                 }
-                _prevShieldActive = false;
                 return true;
             }
 
-            if (!_clientOn)
-            {
-                ShellVisibility();
-                TerminalRefresh();
-            }
+            if (!_clientOn) ComingOnlineSetup();
             return false;
         }
 
@@ -497,11 +480,7 @@
                 return true;
             }
 
-            if (_clientLowered)
-            {
-                ShellVisibility();
-                _prevShieldActive = false;
-            }
+            if (_clientLowered) ShellVisibility();
             return false;
         }
 

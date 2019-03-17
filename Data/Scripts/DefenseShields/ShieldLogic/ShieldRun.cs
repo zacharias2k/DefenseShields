@@ -82,25 +82,22 @@
                     if (!_isDedicated && _tick60 && InControlPanel && InThisTerminal) TerminalRefresh();
                     return;
                 }
-                if (DsState.State.Online)
+
+                if (!_isServer || !DsState.State.Online) return;
+
+                if (_comingOnline) ComingOnlineSetup();
+                if (_mpActive && (_forceBufferSync || _count == 29))
                 {
-                    if (_comingOnline) ComingOnlineSetup();
-                    if (_isServer)
+                    var newPercentColor = UtilsStatic.GetShieldColorFromFloat(DsState.State.ShieldPercent);
+                    if (_forceBufferSync || newPercentColor != _oldPercentColor)
                     {
-                        if (_mpActive && (_forceBufferSync || _count == 29))
-                        {
-                            var newPercentColor = UtilsStatic.GetShieldColorFromFloat(DsState.State.ShieldPercent);
-                            if (_forceBufferSync || newPercentColor != _oldPercentColor)
-                            {
-                                ShieldChangeState();
-                                _oldPercentColor = newPercentColor;
-                                _forceBufferSync = false;
-                            }
-                            else if (_tick1800) ShieldChangeState();
-                        }
-                        if (Session.Instance.EmpWork.EventRunning) AbsorbEmp();
+                        ShieldChangeState();
+                        _oldPercentColor = newPercentColor;
+                        _forceBufferSync = false;
                     }
+                    else if (_tick1800) ShieldChangeState();
                 }
+                if (Session.Instance.EmpWork.EventRunning) AbsorbEmp();
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
@@ -165,7 +162,6 @@
                 bool value1;
                 if (Session.Instance.FunctionalShields.ContainsKey(this)) Session.Instance.FunctionalShields.TryRemove(this, out value1);
                 lock (Session.Instance.ActiveShields) Session.Instance.ActiveShields.Remove(this);
-                WasActive = false;
                 Icosphere = null;
                 InitEntities(false);
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(_ellipsoidOxyProvider);

@@ -20,16 +20,18 @@ namespace DefenseShields
             var reInforce = DsState.State.ReInforce;
             var hitAnim = !reInforce && DsSet.Settings.HitWaveAnimation;
             var refreshAnim = !reInforce && DsSet.Settings.RefreshAnimation;
-            var activeVisible = DetermineVisualState(reInforce);
-            var lcdUpdate = _viewInShield && _count == 29 || !_viewInShield && _tick600;
-
-            if (lcdUpdate) UpdateLcds();
 
             Vector3D impactPos;
             lock (HandlerImpact) impactPos = HandlerImpact.Active ? ComputeHandlerImpact() : WorldImpactPosition;
 
-            var kineticHit = !EnergyHit;
+            WorldImpactPosition = impactPos;
+            var activeVisible = DetermineVisualState(reInforce);
             WorldImpactPosition = Vector3D.NegativeInfinity;
+
+            var lcdUpdate = _viewInShield && _count == 29 || !_viewInShield && _tick600;
+            if (lcdUpdate) UpdateLcds();
+
+            var kineticHit = !EnergyHit;
             _localImpactPosition = Vector3D.NegativeInfinity;
 
             if (impactPos != Vector3D.NegativeInfinity && (kineticHit && KineticCoolDown < 0 || EnergyHit && EnergyCoolDown < 0))
@@ -57,7 +59,7 @@ namespace DefenseShields
             kineticHit = false;
             EnergyHit = false;
 
-            if (IsWorking)
+            if (DsState.State.Online)
             {
                 var prevlod = _prevLod;
                 var lod = CalculateLod(_onCount);
@@ -73,7 +75,7 @@ namespace DefenseShields
             }
             else if (_shapeChanged) _updateRender = true;
 
-            if (hitAnim && sphereOnCamera && IsWorking) Icosphere.Draw(renderId);
+            if (hitAnim && sphereOnCamera && DsState.State.Online) Icosphere.Draw(renderId);
         }
 
         public void DrawShieldDownIcon()
@@ -226,6 +228,7 @@ namespace DefenseShields
             var activeVisible = !reInforce && ((!activeInvisible && clearView) || enemy);
 
             var visible = !reInforce ? DsSet.Settings.Visible : 1;
+
             CalcualteVisibility(visible, activeVisible);
 
             return activeVisible;

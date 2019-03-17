@@ -60,9 +60,7 @@ namespace DefenseShields
             }
             else
             {
-                if (ShieldComp == null) return false;
-
-                if (ShieldComp.DefenseShields == null || !IsFunctional)
+                if (ShieldComp?.DefenseShields == null || !IsFunctional)
                     return false;
 
                 if (!_compact && SubpartRotor == null)

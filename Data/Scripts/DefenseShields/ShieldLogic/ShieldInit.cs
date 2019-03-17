@@ -175,7 +175,7 @@ namespace DefenseShields
                     Session.Instance.DsAction = true;
                 }
 
-                if (!IsFunctional) return false;
+                if (_isServer && !IsFunctional) return false;
 
                 if (_mpActive && _isServer) DsState.NetworkUpdate();
 
@@ -209,7 +209,6 @@ namespace DefenseShields
             WarmedUp = false;
 
             _resetEntity = false;
-            _prevShieldActive = false;
             _hadPowerBefore = false;
             ControlBlockWorking = false;
 
