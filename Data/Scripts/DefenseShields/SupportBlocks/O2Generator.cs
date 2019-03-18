@@ -27,14 +27,15 @@
         private const double ForgottenMagicConst = 10.3316326531d;
 
         internal readonly Dictionary<IMyDoor, DoorStatus> Doors = new Dictionary<IMyDoor, DoorStatus>();
-
+        internal bool InControlPanel => MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel;
+        internal bool InThisTerminal => Session.Instance.LastTerminalId == O2Generator.EntityId;
         private int _airIPercent = -1;
         private int _count = -1;
         private int _lCount = -1;
 
         private double _shieldVolFilled;
         private double _oldShieldVol;
-
+        private bool _firstSync;
 
         private bool _isServer;
         private bool _isDedicated;
@@ -248,16 +249,22 @@
 
         internal void UpdateState(O2GeneratorStateValues newState)
         {
-            O2State.State = newState;
-            if (!_isDedicated) UpdateVisuals();
-            if (Session.Enforced.Debug == 3) Log.Line($"UpdateState - O2GenId [{O2Generator.EntityId}]:\n{newState}");
+            if (newState.MId > O2State.State.MId)
+            {
+                O2State.State = newState;
+                if (!_isDedicated) UpdateVisuals();
+                if (Session.Enforced.Debug == 3) Log.Line($"UpdateState - O2GenId [{O2Generator.EntityId}]:\n{newState}");
+            }
         }
 
         internal void UpdateSettings(O2GeneratorSettingsValues newSettings)
         {
-            if (Session.Enforced.Debug == 3) Log.Line($"UpdateSettings for O2Generator - Fix:{newSettings.FixRoomPressure} - O2GenId [{O2Generator.EntityId}]");
-            SettingsUpdated = true;
-            O2Set.Settings = newSettings;
+            if (newSettings.MId > O2Set.Settings.MId)
+            {
+                if (Session.Enforced.Debug == 3) Log.Line($"UpdateSettings for O2Generator - Fix:{newSettings.FixRoomPressure} - O2GenId [{O2Generator.EntityId}]");
+                SettingsUpdated = true;
+                O2Set.Settings = newSettings;
+            }
         }
 
         private void SettingsUpdate()

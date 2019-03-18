@@ -77,7 +77,7 @@
                 if (!EntityAlive()) return;
                 if (!ShieldOn())
                 {
-                    if (NotFailed) OfflineShield();
+                    if (NotFailed) OfflineShield(false, false);
                     else if (DsState.State.Message) ShieldChangeState();
                     if (!_isDedicated && _tick60 && InControlPanel && InThisTerminal) TerminalRefresh();
                     return;
@@ -124,14 +124,15 @@
         {
             try
             {
-                if (Session.Enforced.Debug == 3) Log.Line($"OnRemovedFromScene: {ShieldMode} - GridId:{Shield.CubeGrid.EntityId} - ShieldId [{Shield.EntityId}]");
+                if (!_allInited) return;
+                if (Session.Enforced.Debug >= 3) Log.Line($"OnRemovedFromScene: {ShieldMode} - GridId:{Shield.CubeGrid.EntityId} - ShieldId [{Shield.EntityId}]");
+
                 if (ShieldComp?.DefenseShields == this)
                 {
-                    FailShield(true);
-                    DsState.State.Suspended = true;
-                    Shield.RefreshCustomInfo();
+                    OfflineShield(true, true);
                     ShieldComp.DefenseShields = null;
                 }
+
                 RegisterEvents(false);
                 InitEntities(false);
                 IsWorking = false;
@@ -157,18 +158,23 @@
             try
             {
                 base.Close();
-                if (Session.Enforced.Debug == 3) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                if (!_allInited) return;
+                if (Session.Enforced.Debug >= 3) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+
+                if (ShieldComp?.DefenseShields == this)
+                {
+                    OfflineShield(true, true);
+                    ShieldComp.DefenseShields = null;
+                }
+
                 if (Session.Instance.Controllers.Contains(this)) Session.Instance.Controllers.Remove(this);
                 bool value1;
+
                 if (Session.Instance.FunctionalShields.ContainsKey(this)) Session.Instance.FunctionalShields.TryRemove(this, out value1);
-                lock (Session.Instance.ActiveShields) Session.Instance.ActiveShields.Remove(this);
+
                 Icosphere = null;
                 InitEntities(false);
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(_ellipsoidOxyProvider);
-
-                _power = 0.0001f;
-                if (_allInited) _sink.Update();
-                if (ShieldComp?.DefenseShields == this) ShieldComp.DefenseShields = null;
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
         }

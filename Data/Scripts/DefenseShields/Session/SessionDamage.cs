@@ -22,11 +22,6 @@ namespace DefenseShields
         {
             try
             {
-                if (IsServer)
-                {
-                    info.Amount = 0;
-                    return;
-                }
                 var block = target as IMySlimBlock;
                 if (block != null)
                 {
@@ -101,7 +96,7 @@ namespace DefenseShields
                         }
                         if (Tick - protectors.BlockingTick > 10 && protectors.LastAttackerWasInside) protectors.BlockingShield = null;
                     }
-                    catch (Exception ex) { Log.Line($"Exception in DamageFindShield {_previousEnt == null}: {ex}"); }
+                    catch (Exception ex) { Log.Line($"Exception in DamageFindShield: {ex}"); }
 
                     try
                     {

@@ -24,21 +24,28 @@
         internal MyResourceSinkInfo ResourceInfo;
 
         private const float Power = 0.01f;
+        private const int SyncCount = 60;
 
         private readonly MyDefinitionId _gId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
-
         private uint _tick;
         private int _count = -1;
+        private int _bCount;
+        private int _bTime;
         private bool _firstLoop = true;
+        private bool _readyToSync;
+        private bool _firstSync;
         private bool _tick60;
-        private bool _powered;
         private bool _isServer;
         private bool _isDedicated;
+        private bool _bInit;
 
         private MyEntitySubpart _subpartRotor;
 
         internal EnhancerState EnhState { get; set; }
         internal MyResourceSinkComponent Sink { get; set; }
+
+        internal bool InControlPanel => MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel;
+        internal bool InThisTerminal => Session.Instance.LastTerminalId == Enhancer.EntityId;
 
         internal int RotationTime { get; set; }
         internal bool ContainerInited { get; set; }
@@ -78,15 +85,30 @@
             base.UpdateOnceBeforeFrame();
             try
             {
-                if (Enhancer.CubeGrid.Physics == null) return;
-                Session.Instance.Enhancers.Add(this);
-                PowerInit();
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                _isServer = Session.Instance.IsServer;
-                _isDedicated = Session.Instance.DedicatedServer;
-                Enhancer.RefreshCustomInfo();
+                if (!_bInit) BeforeInit();
+                else if (_bCount < SyncCount * _bTime)
+                {
+                    NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                    if (ShieldComp?.DefenseShields?.MyGrid == MyGrid) _bCount++;
+                }
+                else _readyToSync = true;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
+        }
+
+        private void BeforeInit()
+        {
+            if (Enhancer.CubeGrid.Physics == null) return;
+            Session.Instance.Enhancers.Add(this);
+            PowerInit();
+            Entity.TryGetSubpart("Rotor", out _subpartRotor);
+            _isServer = Session.Instance.IsServer;
+            _isDedicated = Session.Instance.DedicatedServer;
+            Enhancer.RefreshCustomInfo();
+            IsWorking = MyCube.IsWorking;
+            NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+            _bTime = _isDedicated ? 10 : 1;
+            _bInit = true;
         }
 
         public override bool IsSerialized()
@@ -195,17 +217,29 @@
 
         internal void UpdateState(EnhancerStateValues newState)
         {
-            EnhState.State = newState;
-            if (Session.Enforced.Debug == 3) Log.Line($"UpdateState: EnhancerId [{Enhancer.EntityId}]");
+            if (newState.MId > EnhState.State.MId)
+            {
+                EnhState.State = newState;
+                if (Session.Enforced.Debug >= 3) Log.Line($"UpdateState: EnhancerId [{Enhancer.EntityId}]");
+            }
+        }
+
+        private void SaveAndSendAll()
+        {
+            _firstSync = true;
+            if (!_isServer) return;
+            EnhState.SaveState();
+            EnhState.NetworkUpdate();
+            if (Session.Enforced.Debug >= 3) Log.Line($"SaveAndSendAll: EnhancerId [{Enhancer.EntityId}]");
         }
 
         private void Timing()
         {
             if (_count++ == 59) _count = 0;
 
-            if (!_isDedicated && _count == 29 && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == Enhancer.EntityId)
+            if (_count == 29 && !_isDedicated)
             {
-                Enhancer.RefreshCustomInfo();
+                TerminalRefresh(true);
             }
         }
 
@@ -220,6 +254,8 @@
             if (ShieldComp?.DefenseShields?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
             if (_isServer)
             {
+                if (!_firstSync && _readyToSync) SaveAndSendAll();
+
                 if (!BlockWorking()) return false;
             }
             else
@@ -236,14 +272,7 @@
 
         private bool BlockWorking()
         {
-            if (_count <= 0) _powered = Sink.IsPowerAvailable(_gId, 0.01f);
-            if (!IsWorking || !_powered)
-            {
-                NeedUpdate(EnhState.State.Online, false);
-                return false;
-            }
-
-            if (ShieldComp?.DefenseShields == null)
+            if (!IsWorking || ShieldComp?.DefenseShields == null)
             {
                 NeedUpdate(EnhState.State.Online, false);
                 return false;
@@ -299,6 +328,11 @@
             if (EnhState == null) EnhState = new EnhancerState(Enhancer);
             EnhState.StorageInit();
             EnhState.LoadState();
+            if (MyAPIGateway.Multiplayer.IsServer)
+            {
+                EnhState.State.Backup = false;
+                EnhState.State.Online = false;
+            }
         }
 
         private void PowerPreInit()
@@ -337,7 +371,6 @@
                 }
 
                 Sink.Update();
-                IsWorking = MyCube.IsWorking;
                 if (Session.Enforced.Debug == 3) Log.Line($"PowerInit: EnhancerId [{Enhancer.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
@@ -364,6 +397,15 @@
             RotationTime -= 1;
             var rotationMatrix = MatrixD.CreateRotationY(0.05f * RotationTime);
             _subpartRotor.PositionComp.LocalMatrix = rotationMatrix;
+        }
+
+        internal void TerminalRefresh(bool update = true)
+        {
+            Enhancer.RefreshCustomInfo();
+            if (update && InControlPanel && InThisTerminal)
+            {
+                MyCube.UpdateTerminal();
+            }
         }
 
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)

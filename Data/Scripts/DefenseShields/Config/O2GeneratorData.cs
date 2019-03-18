@@ -64,6 +64,7 @@
 
             if (Session.Instance.IsServer)
             {
+                State.MId++;
                 Session.Instance.PacketizeToClientsInRange(O2Generator, new DataO2GeneratorState(O2Generator.EntityId, State)); // update clients with server's settings
             }
         }
@@ -117,7 +118,7 @@
 
         public void NetworkUpdate()
         {
-
+            Settings.MId++;
             if (Session.Instance.IsServer)
             {
                 Session.Instance.PacketizeToClientsInRange(O2Generator, new DataO2GeneratorSettings(O2Generator.EntityId, Settings)); // update clients with server's settings

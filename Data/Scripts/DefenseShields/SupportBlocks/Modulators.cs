@@ -23,8 +23,11 @@
         internal ModulatorGridComponent ModulatorComp;
         internal ShieldGridComponent ShieldComp;
         internal MyResourceSinkInfo ResourceInfo;
-
+        internal bool InControlPanel => MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel;
+        internal bool InThisTerminal => Session.Instance.LastTerminalId == Modulator.EntityId;
         private readonly MyDefinitionId _gId = new MyDefinitionId(typeof(MyObjectBuilder_GasProperties), "Electricity");
+
+        private const int SyncCount = 60;
 
         private MyEntitySubpart _subpartRotor;
 
@@ -42,13 +45,18 @@
         private bool _wasBackup;
         private bool _firstRun = true;
         private bool _firstLoop = true;
+        private bool _readyToSync;
+        private bool _firstSync;
         private bool _tock33;
         private bool _tock34;
         private bool _tock60;
         private bool _subDelayed;
+        private bool _bInit;
 
         private int _wasModulateDamage;
         private int _count = -1;
+        private int _bCount;
+        private int _bTime;
 
         private float _wasModulateEnergy;
         private float _wasModulateKinetic;
@@ -112,30 +120,45 @@
             base.UpdateOnceBeforeFrame();
             try
             {
-                if (Modulator.CubeGrid.Physics == null) return;
-
-                _isServer = Session.Instance.IsServer;
-                _isDedicated = Session.Instance.DedicatedServer;
-
-                ResetComp();
-
-                Session.Instance.Modulators.Add(this);
-
-                CreateUi();
-                ModUi.ComputeDamage(this, ModUi.GetDamage(Modulator));
-
-                Entity.TryGetSubpart("Rotor", out _subpartRotor);
-                PowerInit();
-                Modulator.RefreshCustomInfo();
-                StateChange(true);
-                if (!Session.Instance.ModAction)
+                if (!_bInit) BeforeInit();
+                else if (_bCount < SyncCount * _bTime)
                 {
-                    Session.Instance.ModAction = true;
-                    Session.AppendConditionToAction<IMyUpgradeModule>((a) => Session.Instance.ModActions.Contains(a.Id), (a, b) => b.GameLogic.GetAs<Modulators>() != null && Session.Instance.ModActions.Contains(a.Id));
+                    NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                    if (ShieldComp?.DefenseShields?.MyGrid == MyGrid) _bCount++;
                 }
-                MainInit = true;
+                else _readyToSync = true;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
+        }
+
+        private void BeforeInit()
+        {
+            if (Modulator.CubeGrid.Physics == null) return;
+
+            _isServer = Session.Instance.IsServer;
+            _isDedicated = Session.Instance.DedicatedServer;
+
+            ResetComp();
+
+            Session.Instance.Modulators.Add(this);
+
+            CreateUi();
+            ModUi.ComputeDamage(this, ModUi.GetDamage(Modulator));
+
+            Entity.TryGetSubpart("Rotor", out _subpartRotor);
+            PowerInit();
+            Modulator.RefreshCustomInfo();
+            StateChange(true);
+            if (!Session.Instance.ModAction)
+            {
+                Session.Instance.ModAction = true;
+                Session.AppendConditionToAction<IMyUpgradeModule>((a) => Session.Instance.ModActions.Contains(a.Id), (a, b) => b.GameLogic.GetAs<Modulators>() != null && Session.Instance.ModActions.Contains(a.Id));
+            }
+            MainInit = true;
+            IsWorking = MyCube.IsWorking;
+            NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+            _bTime = _isDedicated ? 10 : 1;
+            _bInit = true;
         }
 
         public override void UpdateBeforeSimulation()
@@ -282,15 +305,21 @@
 
         internal void UpdateSettings(ModulatorSettingsValues newSettings)
         {
-            SettingsUpdated = true;
-            ModSet.Settings = newSettings;
-            if (Session.Enforced.Debug == 3) Log.Line("UpdateSettings for modulator");
+            if (newSettings.MId > ModSet.Settings.MId)
+            {
+                SettingsUpdated = true;
+                ModSet.Settings = newSettings;
+                if (Session.Enforced.Debug == 3) Log.Line("UpdateSettings for modulator");
+            }
         }
 
         internal void UpdateState(ModulatorStateValues newState)
         {
-            ModState.State = newState;
-            if (Session.Enforced.Debug == 3) Log.Line($"UpdateState - ModulatorId [{Modulator.EntityId}]:\n{ModState.State}");
+            if (newState.MId > ModState.State.MId)
+            {
+                ModState.State = newState;
+                if (Session.Enforced.Debug == 3) Log.Line($"UpdateState - ModulatorId [{Modulator.EntityId}]:\n{ModState.State}");
+            }
         }
 
         private void UpdateStates()
@@ -351,6 +380,8 @@
 
             if (_isServer)
             {
+                if (!_firstSync && _readyToSync) SaveAndSendAll();
+
                 if (!BlockWorking())
                 {
                     ModState.State.Online = false;
@@ -442,10 +473,9 @@
 
         private void Timing()
         {
-            if (_tock60 && !_isDedicated && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == Modulator.EntityId)
+            if (_tock60 && !_isDedicated)
             {
-                Modulator.RefreshCustomInfo();
-                MyCube.UpdateTerminal();
+                TerminalRefresh();
             }
 
             if (_tock33)
@@ -474,6 +504,27 @@
                 if (Session.Enforced.Debug == 3) Log.Line($"Delayed tick: {_tick} - hierarchytick: {_subTick}");
                 _subDelayed = false;
                 HierarchyChanged();
+            }
+        }
+
+        private void SaveAndSendAll()
+        {
+            _firstSync = true;
+            if (!_isServer) return;
+            ModSet.SaveSettings();
+            ModState.SaveState();
+            ModSet.NetworkUpdate();
+            ModState.NetworkUpdate();
+            if (Session.Enforced.Debug >= 3) Log.Line($"SaveAndSendAll: ModualtorId [{Modulator.EntityId}]");
+
+        }
+
+        internal void TerminalRefresh(bool update = true)
+        {
+            Modulator.RefreshCustomInfo();
+            if (update && InControlPanel && InThisTerminal)
+            {
+                MyCube.UpdateTerminal();
             }
         }
 
@@ -546,7 +597,6 @@
                     Modulator.Enabled = true;
                 }
                 Sink.Update();
-                IsWorking = MyCube.IsWorking;
                 if (Session.Enforced.Debug == 3) Log.Line($"PowerInit: ModulatorId [{Modulator.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
@@ -560,6 +610,12 @@
 
             ModSet.LoadSettings();
             ModState.LoadState();
+            if (MyAPIGateway.Multiplayer.IsServer)
+            {
+                ModState.State.Backup = false;
+                ModState.State.Online = false;
+                ModState.State.Link = false;
+            }
         }
 
         private void HierarchyChanged(MyCubeGrid myCubeGrid = null)

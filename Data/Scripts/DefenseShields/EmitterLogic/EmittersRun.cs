@@ -64,14 +64,13 @@
             base.UpdateOnceBeforeFrame();
             try
             {
-                if (Emitter.CubeGrid.Physics == null) return;
-                Session.Instance.Emitters.Add(this);
-                PowerInit();
-                _isServer = Session.Instance.IsServer;
-                _isDedicated = Session.Instance.DedicatedServer;
-                IsStatic = Emitter.CubeGrid.IsStatic;
-                StateChange(true);
-                _disableLos = Session.Enforced.DisableLineOfSight == 1;
+                if (!_bInit) BeforeInit();
+                else if (_bCount < SyncCount * _bTime)
+                {
+                    NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                    if (ShieldComp?.DefenseShields?.MyGrid == MyGrid) _bCount++;
+                }
+                else _readyToSync = true;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
@@ -89,7 +88,6 @@
 
                 IsStatic = MyGrid.IsStatic;
                 Timing();
-
                 if (!ControllerLink()) return;
 
                 if (!_isDedicated && UtilsStatic.DistanceCheck(Emitter, 1000, EmiState.State.BoundingRange))

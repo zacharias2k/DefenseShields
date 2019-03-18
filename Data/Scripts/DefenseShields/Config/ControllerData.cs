@@ -54,6 +54,7 @@
 
         internal void NetworkUpdate()
         {
+            State.MId++;
             Session.Instance.PacketizeToClientsInRange(Shield, new DataControllerState(Shield.EntityId, State)); // update clients with server's state
         }
     }
@@ -112,6 +113,7 @@
 
         internal void NetworkUpdate()
         {
+            Settings.MId++;
             if (Session.Instance.IsServer)
             {
                 Session.Instance.PacketizeToClientsInRange(Shield, new DataControllerSettings(Shield.EntityId, Settings)); 

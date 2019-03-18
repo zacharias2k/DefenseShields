@@ -60,6 +60,7 @@
 
             if (Session.Instance.IsServer)
             {
+                State.MId++;
                 Session.Instance.PacketizeToClientsInRange(Modulator, new DataModulatorState(Modulator.EntityId, State)); // update clients with server's state
             }
         }
@@ -110,7 +111,7 @@
         #region Network
         public void NetworkUpdate()
         {
-
+            Settings.MId++;
             if (Session.Instance.IsServer)
             {
                 Session.Instance.PacketizeToClientsInRange(Modulator, new DataModulatorSettings(Modulator.EntityId, Settings)); // update clients with server's settings

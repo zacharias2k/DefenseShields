@@ -58,9 +58,9 @@
         #region Network
         public void NetworkUpdate()
         {
-
             if (Session.Instance.IsServer)
             {
+                State.MId++;
                 Session.Instance.PacketizeToClientsInRange(Emitter, new DataEmitterState(Emitter.EntityId, State)); // update clients with server's settings
             }
         }

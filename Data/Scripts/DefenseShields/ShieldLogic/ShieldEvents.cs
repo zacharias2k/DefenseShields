@@ -74,11 +74,7 @@
         {
             IsWorking = myCubeBlock.IsWorking;
             IsFunctional = myCubeBlock.IsFunctional;
-            if (!IsWorking)
-            {
-                _power = 0.001f;
-                _sink.Update();
-            }
+            if (!IsWorking && WarmedUp && _isServer) OfflineShield(true, false);
         }
 
         private void OwnerChanged(MyCubeGrid myCubeGrid)

@@ -68,6 +68,7 @@
         [ProtoMember(30)] public float GridIntegrity;
         [ProtoMember(31)] public bool ReInforce = false;
         [ProtoMember(32)] public long ActiveEmitterId;
+        [ProtoMember(33)] public uint MId;
 
         public override string ToString()
         {
@@ -96,6 +97,7 @@
         [ProtoMember(16), DefaultValue(true)] public bool HitWaveAnimation = true;
         [ProtoMember(17)] public long Visible = 0;
         [ProtoMember(18)] public Vector3I ShieldOffset = Vector3I.Zero;
+        [ProtoMember(19)] public uint MId;
 
         public override string ToString()
         {
@@ -116,6 +118,8 @@
         [ProtoMember(8), DefaultValue(-1)] public double BoundingRange;
         [ProtoMember(9)] public bool UnusedWasCompact;
         [ProtoMember(10)] public long ActiveEmitterId;
+        [ProtoMember(11)] public uint MId;
+
 
         public override string ToString()
         {
@@ -132,6 +136,8 @@
         [ProtoMember(4), DefaultValue(100)] public int ModulateDamage = 100;
         [ProtoMember(5)] public bool Backup;
         [ProtoMember(6)] public bool Link;
+        [ProtoMember(7)] public uint MId;
+
 
         public override string ToString()
         {
@@ -147,6 +153,7 @@
         [ProtoMember(3)] public bool ModulateGrids = false;
         [ProtoMember(4), DefaultValue(-1)] public int ModulateDamage = 100;
         [ProtoMember(5)] public bool ReInforceEnabled = false;
+        [ProtoMember(6)] public uint MId;
 
         public override string ToString()
         {
@@ -159,6 +166,7 @@
     {
         [ProtoMember(1)] public bool Online;
         [ProtoMember(2)] public bool Backup;
+        [ProtoMember(3)] public uint MId;
 
         public override string ToString()
         {
@@ -171,6 +179,7 @@
     {
         [ProtoMember(1)] public bool ShieldActive = false;
         [ProtoMember(2)] public long ShieldShell = 0;
+        [ProtoMember(3)] public uint MId;
 
         public override string ToString()
         {
@@ -187,6 +196,7 @@
         [ProtoMember(4), DefaultValue(-1)] public double VolFilled = 0;
         [ProtoMember(5), DefaultValue(-1)] public double O2Level = 0;
         [ProtoMember(6)] public bool Backup = false;
+        [ProtoMember(7)] public uint MId;
 
         public override string ToString()
         {
@@ -202,6 +212,7 @@
         [ProtoMember(2), DefaultValue(true)] public bool Unused2 = true;
         [ProtoMember(3)] public bool Unused3 = false;
         [ProtoMember(4), DefaultValue(-1)] public int Unused4 = 100;
+        [ProtoMember(5)] public uint MId;
 
         public override string ToString()
         {
@@ -214,6 +225,7 @@
     {
         [ProtoMember(1)] public bool Online;
         [ProtoMember(2)] public bool Backup;
+        [ProtoMember(3)] public uint MId;
 
         public override string ToString()
         {
@@ -228,6 +240,7 @@
         [ProtoMember(2), DefaultValue(true)] public bool ModulateVoxels = true;
         [ProtoMember(3)] public bool ModulateGrids = false;
         [ProtoMember(4), DefaultValue(-1)] public int ModulateDamage = 100;
+        [ProtoMember(5)] public uint MId;
 
         public override string ToString()
         {

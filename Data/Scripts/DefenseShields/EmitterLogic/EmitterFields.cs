@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
@@ -11,6 +7,7 @@ using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
+using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
@@ -22,9 +19,10 @@ namespace DefenseShields
         internal MyResourceSinkInfo ResourceInfo;
         internal List<Vector3D> LosScaledCloud = new List<Vector3D>(2000);
         internal MyEntitySubpart SubpartRotor;
-
+        internal bool InControlPanel => MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel;
+        internal bool InThisTerminal => Session.Instance.LastTerminalId == Emitter.EntityId;
         private const string PlasmaEmissive = "PlasmaEmissive";
-
+        private const int SyncCount = 60;
 
         private readonly List<int> _vertsSighted = new List<int>();
         private readonly ConcurrentDictionary<int, bool> _blocksLos = new ConcurrentDictionary<int, bool>();
@@ -35,7 +33,11 @@ namespace DefenseShields
         private uint _tick;
         private int _count = -1;
         private int _lCount;
+        private int _bCount;
+        private int _bTime;
         private int _wasMode;
+        private bool _readyToSync;
+        private bool _firstSync;
         private int _unitSpherePoints = 2000;
         private bool _updateLosState = true;
 
@@ -45,14 +47,9 @@ namespace DefenseShields
         private bool _isDedicated;
         private bool _compact;
         private bool _wasLink;
-        private bool _wasBackup;
-        private bool _wasSuspend;
-        private bool _wasLos;
         private bool _wasLosState;
         private bool _disableLos;
-        private bool _wasCompatible;
-        private double _wasBoundingRange;
-        private long _wasActiveEmitterId;
+        private bool _bInit;
 
         public enum EmitterType
         {

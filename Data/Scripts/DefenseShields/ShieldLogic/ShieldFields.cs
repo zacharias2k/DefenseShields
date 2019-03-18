@@ -151,7 +151,6 @@ namespace DefenseShields
         private int _count = -1;
         private int _powerNoticeLoop;
         private int _capacitorLoop;
-        private int _offlineCnt = -1;
         private int _overLoadLoop = -1;
         private int _empOverLoadLoop = -1;
         private int _genericDownLoop = -1;

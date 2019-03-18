@@ -34,9 +34,9 @@ namespace DefenseShields
         {
             if (Session.Instance.CreativeWarn || Session.Instance.Tick < 600) return;
             Session.Instance.CreativeWarn = true;
-            const string message = "Due to technical reasons DefenseShields\n" +
-                                   "is not supported in Creative Mode and it\n" +
-                                   "will not operate properly nor as designed.\n";
+            const string message = "DefenseShields is not fully supported in\n" +
+                                   "Creative Mode, due to unlimited power and \n" +
+                                   "it will not operate as designed.\n";
             MyAPIGateway.Utilities.ShowNotification(message, 6720);
         }
 
@@ -302,7 +302,7 @@ namespace DefenseShields
                         DsState.State.Remodulate = true;
                         DsState.State.Message = true;
                     }
-                    FailShield();
+                    //OfflineShield(false, false);
                 }
             }
 

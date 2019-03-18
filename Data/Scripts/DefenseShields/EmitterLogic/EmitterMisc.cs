@@ -5,6 +5,7 @@ using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRage.Utils;
 
 namespace DefenseShields
@@ -12,11 +13,42 @@ namespace DefenseShields
     public partial class Emitters
     {
         #region Init/Misc
+
+        private void BeforeInit()
+        {
+            if (Emitter.CubeGrid.Physics == null) return;
+            Session.Instance.Emitters.Add(this);
+            PowerInit();
+            _isServer = Session.Instance.IsServer;
+            _isDedicated = Session.Instance.DedicatedServer;
+            IsStatic = Emitter.CubeGrid.IsStatic;
+            _disableLos = Session.Enforced.DisableLineOfSight == 1;
+            IsWorking = MyCube.IsWorking;
+            NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+            _bTime = _isDedicated ? 10 : 1;
+            _bInit = true;
+        }
+
+
         private void StorageSetup()
         {
             if (EmiState == null) EmiState = new EmitterState(Emitter);
             EmiState.StorageInit();
             EmiState.LoadState();
+
+            if (MyAPIGateway.Multiplayer.IsServer)
+            {
+                EmiState.State.ActiveEmitterId = 0;
+                EmiState.State.Backup = false;
+                EmiState.State.Los = true;
+                if (EmiState.State.Suspend)
+                {
+                    EmiState.State.Suspend = false;
+                    EmiState.State.Link = false;
+                    EmiState.State.Mode = -1;
+                    EmiState.State.BoundingRange = -1;
+                }
+            }
         }
 
         private void PowerPreInit()
@@ -52,7 +84,6 @@ namespace DefenseShields
                     Emitter.Enabled = true;
                 }
                 Sink.Update();
-                IsWorking = MyCube.IsWorking;
                 if (Session.Enforced.Debug == 3) Log.Line($"PowerInit: EmitterId [{Emitter.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
@@ -118,6 +149,24 @@ namespace DefenseShields
             }
         }
 
+        internal void TerminalRefresh(bool update = true)
+        {
+            Emitter.RefreshCustomInfo();
+            if (update && InControlPanel && InThisTerminal)
+            {
+                MyCube.UpdateTerminal();
+            }
+        }
+
+        private void SaveAndSendAll()
+        {
+            _firstSync = true;
+            EmiState.SaveState();
+            EmiState.NetworkUpdate();
+            if (Session.Enforced.Debug >= 3) Log.Line($"SaveAndSendAll: EmitterId [{Emitter.EntityId}]");
+
+        }
+
         private void Timing()
         {
             if (_count++ == 59)
@@ -126,9 +175,10 @@ namespace DefenseShields
                 _lCount++;
                 if (_lCount == 10) _lCount = 0;
             }
-            if (_count == 29 && !_isDedicated && MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == Emitter.EntityId)
+
+            if (_count == 29 && !_isDedicated)
             {
-                Emitter.RefreshCustomInfo();
+                TerminalRefresh(true);
             }
         }
         #endregion

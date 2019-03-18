@@ -10,76 +10,75 @@ namespace DefenseShields
         #region Block Status
         private bool ControllerLink()
         {
+            if (ShieldComp?.DefenseShields?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
+
+            if (!_isServer)
+            { 
+                var link = ClientEmitterReady();
+                return link;
+            }
+
+            if (!_firstSync && _readyToSync) SaveAndSendAll();
+
+            var linkWas = EmiState.State.Link;
+            var losWas = EmiState.State.Los;
+            var idWas = EmiState.State.ActiveEmitterId;
             if (!EmitterReady())
             {
-                if (_isServer) EmiState.State.Link = false;
+                EmiState.State.Link = false;
 
-                if (StateChange())
-                {
-                    if (_isServer)
-                    {
-                        BlockReset(true);
-                        NeedUpdate();
-                        StateChange(true);
-                    }
-                    else
-                    {
-                        BlockReset(true);
-                        StateChange(true);
-                    }
-                }
-                return false;
-            }
-            if (_isServer)
-            {
-                EmiState.State.Link = true;
-                if (StateChange())
+                if (linkWas || losWas != EmiState.State.Los || idWas != EmiState.State.ActiveEmitterId)
                 {
                     NeedUpdate();
-                    StateChange(true);
-                }
-            }
-            else if (!EmiState.State.Link)
-            {
-                if (StateChange())
-                {
-                    BlockReset(true);
-                    StateChange(true);
                 }
                 return false;
             }
+
+            EmiState.State.Link = true;
+
+            if (!linkWas || losWas != EmiState.State.Los || idWas != EmiState.State.ActiveEmitterId) NeedUpdate();
+
             return true;
         }
 
         private bool EmitterReady()
         {
-            if (ShieldComp?.DefenseShields?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
-            if (_isServer)
+            if (Suspend() || !BlockWorking())
+                return false;
+
+            return true;
+        }
+
+        private bool ClientEmitterReady()
+        {
+            if (ShieldComp?.DefenseShields == null) return false;
+
+            if (!_compact)
             {
-                if (Suspend() || !BlockWorking()) return false;
+                if (IsFunctional) Entity.TryGetSubpart("Rotor", out SubpartRotor);
+                if (SubpartRotor == null) return false;
             }
-            else
+
+            if (!EmiState.State.Los) LosLogic();
+
+            if (EmiState.State.Los && !_wasLosState)
             {
-                if (ShieldComp?.DefenseShields == null || !IsFunctional)
-                    return false;
-
-                if (!_compact && SubpartRotor == null)
-                {
-                    Entity.TryGetSubpart("Rotor", out SubpartRotor);
-                    if (SubpartRotor == null) return false;
-                }
-
-                if (!EmiState.State.Los) LosLogic();
-
-
-                if (EmiState.State.Los && !_wasLosState)
-                {
-                    _wasLosState = EmiState.State.Los;
-                    _updateLosState = false;
-                    LosScaledCloud.Clear();
-                }
-                if (!EmiState.State.Link) return false;
+                _wasLosState = EmiState.State.Los;
+                _updateLosState = false;
+                LosScaledCloud.Clear();
             }
+
+            if (!EmiState.State.Link)
+            {
+                if (_wasLink)
+                {
+                    if (Session.Enforced.Debug >= 3) Log.Line($"WasLinked: Los:{EmiState.State.Los} - Id:{EmiState.State.ActiveEmitterId} - Backup:{EmiState.State.Backup} - Sus:{EmiState.State.Suspend} - Mode:{EmiState.State.Mode}");
+                    BlockReset(true);
+                }
+                _wasLink = false;
+                return false;
+            }
+            _wasLink = true;
             return true;
         }
 
@@ -157,7 +156,7 @@ namespace DefenseShields
                     }
                     else EmiState.State.Suspend = true;
                 }
-                if (Session.Enforced.Debug == 3) Log.Line($"mySlotOpen: {Definition.Name} - myMode:{myMode} - MyShield:{myShield} - Mode:{EmitterMode} - Static:{IsStatic} - ELos:{ShieldComp.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - ModeM:{(int)EmitterMode == ShieldComp.EmitterMode} - S:{EmiState.State.Suspend} - EmitterId [{Emitter.EntityId}]");
+                if (Session.Enforced.Debug >= 3) Log.Line($"mySlotOpen: {Definition.Name} - myMode:{myMode} - MyShield:{myShield} - Mode:{EmitterMode} - Static:{IsStatic} - ELos:{ShieldComp.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - ModeM:{(int)EmitterMode == ShieldComp.EmitterMode} - S:{EmiState.State.Suspend} - EmitterId [{Emitter.EntityId}]");
             }
             else if (!myMode)
             {
@@ -167,11 +166,11 @@ namespace DefenseShields
                     ShieldComp.EmittersSuspended = true;
                     ShieldComp.EmitterLos = false;
                     ShieldComp.EmitterEvent = true;
-                    if (Session.Enforced.Debug == 2) Log.Line($"!myMode: {Definition.Name} suspending - Match:{(int)EmitterMode == ShieldComp.EmitterMode} - ELos:{ShieldComp.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{EmiState.State.Suspend} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
+                    if (Session.Enforced.Debug >= 3) Log.Line($"!myMode: {Definition.Name} suspending - Match:{(int)EmitterMode == ShieldComp.EmitterMode} - ELos:{ShieldComp.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{EmiState.State.Suspend} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
                 }
                 else if (!EmiState.State.Suspend)
                 {
-                    if (Session.Enforced.Debug == 2) Log.Line($"!myMode: {Definition.Name} suspending - Match:{(int)EmitterMode == ShieldComp.EmitterMode} - ELos:{ShieldComp.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{EmiState.State.Suspend} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
+                    if (Session.Enforced.Debug >= 3) Log.Line($"!myMode: {Definition.Name} suspending - Match:{(int)EmitterMode == ShieldComp.EmitterMode} - ELos:{ShieldComp.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{EmiState.State.Suspend} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
                 }
                 EmiState.State.Suspend = true;
             }
@@ -186,7 +185,7 @@ namespace DefenseShields
                 {
                     Session.Instance.BlockTagBackup(Emitter);
                     EmiState.State.Backup = true;
-                    if (Session.Enforced.Debug == 2) Log.Line($"!myShield - !otherMode: {Definition.Name} - isStatic:{IsStatic} - myShield:{myShield} - myMode {myMode} - Mode:{EmitterMode} - CompMode: {ShieldComp.EmitterMode} - ELos:{ShieldComp.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - EmitterId [{Emitter.EntityId}]");
+                    if (Session.Enforced.Debug >= 3) Log.Line($"!myShield - !otherMode: {Definition.Name} - isStatic:{IsStatic} - myShield:{myShield} - myMode {myMode} - Mode:{EmitterMode} - CompMode: {ShieldComp.EmitterMode} - ELos:{ShieldComp.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - EmitterId [{Emitter.EntityId}]");
                 }
                 EmiState.State.Suspend = true;
             }
@@ -197,7 +196,7 @@ namespace DefenseShields
                 ShieldComp.EmitterEvent = true;
                 EmiState.State.Backup = false;
                 EmiState.State.Suspend = false;
-                if (Session.Enforced.Debug == 2) Log.Line($"Unsuspend - !otherMode: {Definition.Name} - isStatic:{IsStatic} - myShield:{myShield} - myMode {myMode} - Mode:{EmitterMode} - CompMode: {ShieldComp.EmitterMode} - ELos:{ShieldComp.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - EmitterId [{Emitter.EntityId}]");
+                if (Session.Enforced.Debug >= 3) Log.Line($"Unsuspend - !otherMode: {Definition.Name} - isStatic:{IsStatic} - myShield:{myShield} - myMode {myMode} - Mode:{EmitterMode} - CompMode: {ShieldComp.EmitterMode} - ELos:{ShieldComp.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - EmitterId [{Emitter.EntityId}]");
             }
             else if (EmiState.State.Suspend) return true;
 
@@ -243,35 +242,11 @@ namespace DefenseShields
         #region Block States
         internal void UpdateState(EmitterStateValues newState)
         {
-            EmiState.State = newState;
-            if (Session.Enforced.Debug <= 3) Log.Line($"UpdateState - EmitterId [{Emitter.EntityId}]:\n{EmiState.State}");
-        }
-
-        private bool StateChange(bool update = false)
-        {
-            if (update)
+            if (newState.MId > EmiState.State.MId)
             {
-                //_emitterFailed = EmiState.State.Online;
-                _wasActiveEmitterId = EmiState.State.ActiveEmitterId;
-                _wasLink = EmiState.State.Link;
-                _wasBackup = EmiState.State.Backup;
-                _wasSuspend = EmiState.State.Suspend;
-                _wasLos = EmiState.State.Los;
-                //_wasCompact = EmiState.State.Compact;
-                _wasCompatible = EmiState.State.Compatible;
-                _wasMode = EmiState.State.Mode;
-                _wasBoundingRange = EmiState.State.BoundingRange;
-                Emitter.RefreshCustomInfo(); // temp
-                return true;
+                if (Session.Enforced.Debug >= 3) Log.Line($"UpdateState - NewLink:{newState.Link} - OldLink:{EmiState.State.Link} - EmitterId [{Emitter.EntityId}]:\n{EmiState.State}");
+                EmiState.State = newState;
             }
-
-            //return _emitterFailed != EmiState.State.Online || _wasLink != EmiState.State.Link ||
-            return _wasActiveEmitterId != EmiState.State.ActiveEmitterId || _wasLink != EmiState.State.Link ||
-
-                   _wasBackup != EmiState.State.Backup || _wasSuspend != EmiState.State.Suspend ||
-                   //_wasLos != EmiState.State.Los || _wasCompact != EmiState.State.Compact ||
-                   _wasCompatible != EmiState.State.Compatible || _wasMode != EmiState.State.Mode ||
-                   _wasLos != EmiState.State.Los || !_wasBoundingRange.Equals(EmiState.State.BoundingRange);
         }
 
         private void NeedUpdate()

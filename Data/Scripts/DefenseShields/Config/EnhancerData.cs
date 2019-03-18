@@ -60,6 +60,7 @@
 
             if (Session.Instance.IsServer)
             {
+                State.MId++;
                 Session.Instance.PacketizeToClientsInRange(Enhancer, new DataEnhancerState(Enhancer.EntityId, State)); // update clients with server's settings
             }
         }

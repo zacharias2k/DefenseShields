@@ -199,7 +199,12 @@ namespace DefenseShields
             if (!_isDedicated) ShellVisibility(true);
             if (Session.Enforced.Debug == 2) Log.Line($"UpdateEntity: sEnt:{ShieldEnt == null} - sPassive:{_shellPassive == null} - controller mode is: {ShieldMode} - EW:{DsState.State.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
             Icosphere.ShellActive = null;
+            DsState.State.Heat = 0;
+
             _updateRender = true;
+            _currentHeatStep = 0;
+            _accumulatedHeat = 0;
+            _heatCycle = -1;
         }
 
         private void ResetEntity()
@@ -440,7 +445,7 @@ namespace DefenseShields
             ShieldEnt.Render.CastShadows = false;
             ShieldEnt.Render.RemoveRenderObjects();
             ShieldEnt.Render.UpdateRenderObject(true);
-            ShieldEnt.Render.Visible = true;
+            ShieldEnt.Render.Visible = false;
             ShieldEnt.Save = false;
             _shieldEntRendId = ShieldEnt.Render.GetRenderObjectID();
             _updateRender = true;
