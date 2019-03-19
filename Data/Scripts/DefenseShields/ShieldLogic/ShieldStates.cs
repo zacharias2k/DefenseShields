@@ -75,7 +75,7 @@
                     return false;
                 }
 
-                ShieldLowered();
+                ShieldAlteredStates();
             }
             else
             {
@@ -231,9 +231,9 @@
             lock (Session.Instance.ActiveShields) Session.Instance.ActiveShields.Remove(this);
         }
 
-        private void ShieldLowered()
+        private void ShieldAlteredStates()
         {
-            if (!DsSet.Settings.RaiseShield && WarmedUp && DsState.State.Online)
+            if (!DsSet.Settings.RaiseShield)
             {
                 if (!DsState.State.Lowered)
                 {
@@ -242,6 +242,7 @@
                     DsState.State.IncreaseO2ByFPercent = 0f;
                     if (!_isDedicated) ShellVisibility(true);
                     DsState.State.Lowered = true;
+                    ShieldChangeState();
                 }
                 return;
             }
@@ -254,6 +255,7 @@
                 }
                 DsState.State.Lowered = false;
                 if (!_isDedicated) ShellVisibility();
+                ShieldChangeState();
             }
         }
 
