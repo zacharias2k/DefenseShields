@@ -25,6 +25,7 @@
             if (MyGrid?.Physics == null) return false;
 
             if (_resetEntity) ResetEntity();
+            if (!_firstSync && _readyToSync) SaveAndSendAll();
 
             if (wait || (!_allInited && !PostInit())) return false;
 
@@ -53,11 +54,7 @@
         {
             if (_isServer)
             {
-                if (!ControllerFunctional() || ShieldWaking())
-                {
-                    //ShieldFailing();
-                    return false;
-                }
+                if (!ControllerFunctional() || ShieldWaking()) return false;
 
                 if (_tick60)
                 {
@@ -77,12 +74,15 @@
                     ShieldFailing();
                     return false;
                 }
+
+                ShieldLowered();
             }
             else
             {
                 if (_blockChanged) BlockMonitor();
                 if (ClientUiUpdate || SettingsUpdated) UpdateSettings();
-                if (ClientOfflineStates() || ClientShieldLowered()) return false;
+                if (ClientOfflineStates()) return false;
+                _clientOn = true;
 
                 if (UpdateDimensions) RefreshDimensions();
 
@@ -92,8 +92,7 @@
                 PowerOnline();
                 StepDamageState();
 
-                _clientOn = true;
-                _clientLowered = false;
+                ClientShieldAlteredStates();
             }
 
             return true;
@@ -103,12 +102,12 @@
         {
             if (_blockChanged) BlockMonitor();
 
-            if (Suspended() || ShieldSleeping() || ShieldLowered())
+            if (Suspended() || ShieldSleeping())
             {
                 ControlBlockWorking = false;
                 return false;
             }
-
+                
             if (UpdateDimensions) RefreshDimensions();
             return true;
         }
@@ -116,8 +115,8 @@
         private bool ShieldServerStatusUp()
         {
             var notFailing = _overLoadLoop == -1 && _empOverLoadLoop == -1 && _reModulationLoop == -1 && _genericDownLoop == -1;
-            var subSystemsOk = ControlBlockWorking && DsState.State.EmitterLos && notFailing && PowerOnline();
-            if (!subSystemsOk) return false;
+            SubSystemsOk = ControlBlockWorking && DsState.State.EmitterLos && notFailing && PowerOnline();
+            if (!SubSystemsOk) return false;
             var prevOnline = DsState.State.Online;
             if (!prevOnline && GridIsMobile && FieldShapeBlocked()) return false;
 
@@ -179,8 +178,8 @@
 
         private void OfflineShield(bool hardReset, bool forceDefault)
         {
-            if (Session.Enforced.Debug >= 3) Log.Line($"OfflineShield: On:{DsState.State.Online} - Suspend:{DsState.State.Suspended} - Default:{NotFailed || forceDefault} - NotFailed:{NotFailed} - HardReset:{hardReset} - ShellOff:{!_isDedicated}");
-            if (NotFailed || forceDefault) DefaultShieldState(hardReset);
+            if (Session.Enforced.Debug >= 3) Log.Line($"OfflineShield: On:{DsState.State.Online} - SubSystemsOk:{SubSystemsOk} - CBlockWorking:{ControlBlockWorking} - Working:{MyCube.IsWorking}) - Suspend:{DsState.State.Suspended} - Default:{NotFailed || forceDefault} - NotFailed:{NotFailed} - HardReset:{hardReset} - ShellOff:{!_isDedicated}");
+            if (NotFailed || forceDefault) DefaultShieldState(hardReset || !SubSystemsOk || !ControlBlockWorking);
 
             if (_isServer)
             {
@@ -192,14 +191,7 @@
                 TerminalRefresh();
             }
 
-            if (!_isDedicated)
-            {
-                ShellVisibility(true);
-                if (_tick60 && InControlPanel && InThisTerminal)
-                {
-                    TerminalRefresh();
-                }
-            }
+            if (!_isDedicated) ShellVisibility(true);
 
             if (Session.Enforced.Debug == 4) Log.Line($"StateUpdate: ShieldOff - ShieldId [{Shield.EntityId}]");
         }
@@ -239,15 +231,10 @@
             lock (Session.Instance.ActiveShields) Session.Instance.ActiveShields.Remove(this);
         }
 
-        private bool ShieldLowered()
+        private void ShieldLowered()
         {
             if (!DsSet.Settings.RaiseShield && WarmedUp && DsState.State.Online)
             {
-                if (_shapeEvent || FitChanged) CheckExtents();
-                if (_adjustShape) AdjustShape(true);
-
-                StepDamageState();
-
                 if (!DsState.State.Lowered)
                 {
                     if (!GridIsMobile) _ellipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
@@ -256,31 +243,18 @@
                     if (!_isDedicated) ShellVisibility(true);
                     DsState.State.Lowered = true;
                 }
-                PowerOnline();
-                if (ShieldComp.EmitterEvent) EmitterEventDetected();
-                if (!IsWorking || !DsState.State.EmitterLos)
-                {
-                    if (_genericDownLoop == -1) _genericDownLoop = 0;
-                    return false;
-                }
-
-                if (_tick600)
-                {
-                    if (GridIsMobile)_updateMobileShape = true;
-                    else RefreshDimensions();
-                }
-
-                return true;
+                return;
             }
             if (DsState.State.Lowered && DsState.State.Online && IsWorking)
             {
-                if (!_isDedicated) ShellVisibility();
-                if (GridIsMobile) _updateMobileShape = true;
-                else UpdateDimensions = true;
-
+                if (!GridIsMobile)
+                {
+                    _ellipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
+                    ShieldComp.O2Updated = false;
+                }
                 DsState.State.Lowered = false;
+                if (!_isDedicated) ShellVisibility();
             }
-            return false;
         }
 
         private bool ShieldSleeping()
@@ -431,26 +405,24 @@
             return false;
         }
 
-        private bool ClientShieldLowered()
+        private void ClientShieldAlteredStates()
         {
-            if (WarmedUp && DsState.State.Lowered)
+            if (WarmedUp && DsState.State.Lowered || DsState.State.ReInforce)
             {
-                StepDamageState();
-                if (!_clientLowered)
+                if (!_clientAltered)
                 {
                     if (!GridIsMobile) _ellipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
                     ShellVisibility(true);
-                    _clientLowered = true;
-                    if (Session.Enforced.Debug == 3) Log.Line($"Lowered: shield lowered - ShieldId [{Shield.EntityId}]");
+                    _clientAltered = true;
                 }
-                PowerOnline();
-
-                if (_tick600) RefreshDimensions();
-                return true;
+                return;
             }
 
-            if (_clientLowered) ShellVisibility();
-            return false;
+            if (_clientAltered)
+            {
+                ShellVisibility();
+                _clientAltered = false;
+            }
         }
 
         internal void UpdateSettings(ControllerSettingsValues newSettings)

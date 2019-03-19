@@ -52,20 +52,13 @@
             base.UpdateOnceBeforeFrame();
             try
             {
-                if (Shield.CubeGrid.Physics == null) return;
-                _isServer = Session.Instance.IsServer;
-                _isDedicated = Session.Instance.DedicatedServer;
-                _mpActive = Session.Instance.MpActive;
-
-                PowerInit();
-                MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(_ellipsoidOxyProvider);
-
-                if (_isServer) Enforcements.SaveEnforcement(Shield, Session.Enforced, true);
-                else Session.Instance.FunctionalShields[this] = false;
-
-                Session.Instance.Controllers.Add(this);
-                if (MyAPIGateway.Session.CreativeMode) CreativeModeWarning();
-                if (Session.Enforced.Debug == 3) Log.Line($"UpdateOnceBeforeFrame: ShieldId [{Shield.EntityId}]");
+                if (!_bInit) BeforeInit();
+                else if (_bCount < SyncCount * _bTime)
+                {
+                    NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                    if (ShieldComp?.DefenseShields != null && ShieldComp.DefenseShields.Warming) _bCount++;
+                }
+                else _readyToSync = true;
             }
             catch (Exception ex) { Log.Line($"Exception in Controller UpdateOnceBeforeFrame: {ex}"); }
         }

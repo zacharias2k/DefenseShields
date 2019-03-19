@@ -86,6 +86,7 @@ namespace DefenseShields
         private const float ConvToWatts = 0.01f;
         private const double MagicRatio = 2.40063050674088;
         private const float ChargeRatio = 1.25f;
+        private const int SyncCount = 60;
 
         private const string SpaceWolf = "Space_Wolf";
         private const string ModelMediumReflective = "\\Models\\Cubes\\ShieldPassive11.mwm";
@@ -163,6 +164,9 @@ namespace DefenseShields
         private int _onCount;
         private int _shieldRatio = 1;
         private int _expChargeReduction;
+        private int _bCount;
+        private int _bTime;
+        private bool _bInit;
 
         private long _gridOwnerId = -1;
         private long _controllerOwnerId = -1;
@@ -207,13 +211,16 @@ namespace DefenseShields
         private bool _shapeEvent;
         private bool _updateMobileShape;
         private bool _clientNotReady;
-        private bool _clientLowered;
+        private bool _clientAltered;
         private bool _clientOn;
         private bool _viewInShield;
         private bool _powerFail;
         private bool _halfExtentsChanged;
         private bool _checkForDistributor;
         private bool _updatePowerSources;
+        private bool _readyToSync;
+        private bool _firstSync;
+        private bool _adjustShape;
 
         private string _modelActive = "\\Models\\Cubes\\ShieldActiveBase.mwm";
         private string _modelPassive = string.Empty;
@@ -321,7 +328,7 @@ namespace DefenseShields
         internal bool WasSuspended { get; set; } = true;
         internal bool EnergyHit { get; set; }
         internal bool EffectsDirty { get; set; }
-        private bool _adjustShape;
+        internal bool SubSystemsOk { get; set; }
 
         internal Vector3D MyGridCenter { get; set; }
         internal Vector3D DetectionCenter { get; set; }

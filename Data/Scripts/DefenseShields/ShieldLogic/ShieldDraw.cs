@@ -304,13 +304,13 @@ namespace DefenseShields
         private void HitParticleStart(Vector3D pos)
         {
             var matrix = MatrixD.CreateTranslation(pos);
-            MyParticlesManager.TryCreateParticleEffect(1657, out _effect, ref matrix, ref pos, _shieldEntRendId, true);
+            MyParticlesManager.TryCreateParticleEffect(6667, out _effect, ref matrix, ref pos, _shieldEntRendId, true);
             if (_effect == null) return;
-            var directedMatrix = _effect.WorldMatrix;
-            var shieldCenter = ShieldEnt.PositionComp.WorldAABB.Center;
-            directedMatrix.Forward = Vector3D.Normalize(MyAPIGateway.Session.Camera.Position - shieldCenter);
-            directedMatrix.Left = Vector3D.CalculatePerpendicularVector(directedMatrix.Forward);
-            directedMatrix.Up = Vector3D.Cross(directedMatrix.Forward, directedMatrix.Left);
+            //var directedMatrix = _effect.WorldMatrix;
+            //var shieldCenter = ShieldEnt.PositionComp.WorldAABB.Center;
+            //directedMatrix.Forward = Vector3D.Normalize(MyAPIGateway.Session.Camera.Position - shieldCenter);
+            //directedMatrix.Left = Vector3D.CalculatePerpendicularVector(directedMatrix.Forward);
+            //directedMatrix.Up = Vector3D.Cross(directedMatrix.Forward, directedMatrix.Left);
 
             var scale = 0.0075;
             var logOfPlayerDist = Math.Log(Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos));
@@ -338,7 +338,7 @@ namespace DefenseShields
             _effect.UserRadiusMultiplier = radius;
             _effect.UserEmitterScale = (float)scale;
             _effect.Velocity = vel;
-            _effect.WorldMatrix = directedMatrix;
+            //_effect.WorldMatrix = directedMatrix;
             _effect.Play();
         }
 

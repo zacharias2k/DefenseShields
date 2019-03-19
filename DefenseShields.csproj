@@ -206,10 +206,14 @@
     <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmitterLos.cs" />
     <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmitterMisc.cs" />
     <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmitterState.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\EnhancerLogic\EnhancerFields.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\EnhancerLogic\EnhancerOther.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionSupport.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionSupWeaps.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldAlerts.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldChecks.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ModulatorLogic\ModulatorFields.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ModulatorLogic\ModulatorOther.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Misc.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\BoundingEllipsoid.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\Collision.cs" />
@@ -246,7 +250,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\DsUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\TerminalHelpers.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\Display.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\Enhancer.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\EnhancerLogic\EnhancerRun.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\Box.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\ConvexHull.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\ConvexTransform.cs" />
@@ -261,7 +265,7 @@
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\GridComps\ModulatorGridComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\GridComps\ShieldGridComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldIntersect.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\Modulators.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ModulatorLogic\ModulatorRun.cs" />
     <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmittersRun.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\ControllerData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldFields.cs" />

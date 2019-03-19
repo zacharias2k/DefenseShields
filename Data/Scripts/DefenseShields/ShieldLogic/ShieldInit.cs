@@ -1,4 +1,5 @@
 ﻿using Sandbox.Game.Entities;
+using VRage.ModAPI;
 
 namespace DefenseShields
 {
@@ -56,13 +57,10 @@ namespace DefenseShields
                     ShieldChangeState();
                     return;
                 }
-                //DsState.State.EmitterWorking = false;
                 if (GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los) DsState.State.Message = true;
                 else if (!GridIsMobile && ShieldComp.StationEmitter != null && !ShieldComp.StationEmitter.EmiState.State.Los) DsState.State.Message = true;
                 if (Session.Enforced.Debug >= 3) Log.Line($"EmitterEvent: no emitter is working, shield mode: {ShieldMode} - WarmedUp:{WarmedUp} - MaxPower:{GridMaxPower} - ControlWorking:{ControlBlockWorking} - Radius:{ShieldSphere.Radius} - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
-                return;
             }
-            //DsState.State.EmitterWorking = true;
         }
 
         internal void SelectPassiveShell()
@@ -144,6 +142,41 @@ namespace DefenseShields
                 if (Session.Enforced.Debug == 3) Log.Line($"UpdatePassiveModel: modelString:{_modelPassive} - ShellNumber:{DsSet.Settings.ShieldShell} - ShieldId [{Shield.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in UpdatePassiveModel: {ex}"); }
+        }
+
+        private void SaveAndSendAll()
+        {
+            _firstSync = true;
+            if (!_isServer) return;
+            DsSet.SaveSettings();
+            DsSet.NetworkUpdate();
+            DsState.SaveState();
+            DsState.NetworkUpdate();
+            if (Session.Enforced.Debug >= 3) Log.Line($"SaveAndSendAll: ShieldId [{Shield.EntityId}]");
+        }
+
+        private void BeforeInit()
+        {
+            if (Shield.CubeGrid.Physics == null) return;
+            _isServer = Session.Instance.IsServer;
+            _isDedicated = Session.Instance.DedicatedServer;
+            _mpActive = Session.Instance.MpActive;
+
+            PowerInit();
+            MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(_ellipsoidOxyProvider);
+
+            if (_isServer) Enforcements.SaveEnforcement(Shield, Session.Enforced, true);
+            else Session.Instance.FunctionalShields[this] = false;
+
+            Session.Instance.Controllers.Add(this);
+            if (MyAPIGateway.Session.CreativeMode) CreativeModeWarning();
+            IsWorking = MyCube.IsWorking;
+            IsFunctional = MyCube.IsFunctional;
+            NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+            _bTime = 1;
+            _bInit = true;
+            if (Session.Enforced.Debug == 3) Log.Line($"UpdateOnceBeforeFrame: ShieldId [{Shield.EntityId}]");
+
         }
 
         private bool PostInit()

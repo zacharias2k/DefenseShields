@@ -788,19 +788,19 @@
                     <Keys>
                       <Key>
                         <Time>0.005</Time>
-                        <ValueFloat>0.1</ValueFloat>
+                        <ValueFloat>1</ValueFloat>
                       </Key>
                       <Key>
                         <Time>0.01</Time>
-                        <ValueFloat>0.1</ValueFloat>
+                        <ValueFloat>1</ValueFloat>
                       </Key>
                       <Key>
                         <Time>0.05</Time>
-                        <ValueFloat>0.1</ValueFloat>
+                        <ValueFloat>1</ValueFloat>
                       </Key>
                       <Key>
                         <Time>0.9</Time>
-                        <ValueFloat>0.1</ValueFloat>
+                        <ValueFloat>1</ValueFloat>
                       </Key>
                     </Keys>
                   </Value2D>
@@ -811,19 +811,19 @@
                     <Keys>
                       <Key>
                         <Time>0.005</Time>
-                        <ValueFloat>20.4</ValueFloat>
+                        <ValueFloat>1</ValueFloat>
                       </Key>
                       <Key>
                         <Time>0.01</Time>
-                        <ValueFloat>20.4</ValueFloat>
+                        <ValueFloat>1</ValueFloat>
                       </Key>
                       <Key>
                         <Time>0.05</Time>
-                        <ValueFloat>20.4</ValueFloat>
+                        <ValueFloat>1</ValueFloat>
                       </Key>
                       <Key>
                         <Time>0.9</Time>
-                        <ValueFloat>20.4</ValueFloat>
+                        <ValueFloat>1</ValueFloat>
                       </Key>
                     </Keys>
                   </Value2D>
@@ -1421,11 +1421,11 @@
                 </Key>
                 <Key>
                   <Time>0.12111</Time>
-                  <ValueFloat>2000</ValueFloat>
+                  <ValueFloat>50000</ValueFloat>
                 </Key>
                 <Key>
                   <Time>0.20161</Time>
-                  <ValueFloat>2000</ValueFloat>
+                  <ValueFloat>10000</ValueFloat>
                 </Key>
                 <Key>
                   <Time>0.237388</Time>
