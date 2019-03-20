@@ -1,4 +1,6 @@
-﻿namespace DefenseShields
+﻿using VRage.Game.ModAPI.Interfaces;
+
+namespace DefenseShields
 {
     using Support;
     using Sandbox.Game.Entities;
@@ -196,8 +198,7 @@
                     UtilsStatic.CreateFakeSmallExplosion(WorldImpactPosition);
                     if (hit.Attacker != null)
                     {
-                        hit.Attacker.Close();
-                        hit.Attacker.InScene = false;
+                        ((IMyDestroyableObject) hit.Attacker).DoDamage(1, Session.Instance.MPKinetic, false, null, ShieldEnt.EntityId);
                     }
                     continue;
                 }

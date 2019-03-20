@@ -26,6 +26,7 @@
 
             if (_resetEntity) ResetEntity();
             if (!_firstSync && _readyToSync) SaveAndSendAll();
+            if (!_isDedicated && _tick60 && InControlPanel && InThisTerminal) TerminalRefresh();
 
             if (wait || (!_allInited && !PostInit())) return false;
 
@@ -156,6 +157,7 @@
             }
             else
             {
+                CheckBlocksAndNewShape(false);
                 TerminalRefresh();
                 if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
             }
@@ -386,12 +388,7 @@
                 return true;
             }
 
-            if (!_clientOn)
-            {
-                _power = 0.001f;
-                _sink.Update();
-                ComingOnlineSetup();
-            };
+            if (!_clientOn) ComingOnlineSetup();
             return false;
         }
 

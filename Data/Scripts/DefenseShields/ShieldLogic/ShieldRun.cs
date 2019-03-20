@@ -72,7 +72,6 @@
                 {
                     if (NotFailed) OfflineShield(false, false);
                     else if (DsState.State.Message) ShieldChangeState();
-                    if (!_isDedicated && _tick60 && InControlPanel && InThisTerminal) TerminalRefresh();
                     return;
                 }
 

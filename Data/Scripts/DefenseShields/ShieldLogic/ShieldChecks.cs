@@ -50,7 +50,7 @@ namespace DefenseShields
             {
                 _subTick = _tick + 10;
                 UpdateSubGrids();
-                if (Session.Enforced.Debug == 3) Log.Line($"HierarchyWasDelayed: this:{_tick} - delayedTick: {_subTick} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 3) Log.Line($"HierarchyWasDelayed: this:{_tick} - delayedTick: {_subTick} - ShieldId [{Shield.EntityId}]");
             }
         }
 
@@ -60,7 +60,7 @@ namespace DefenseShields
 
             var gotGroups = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
             if (gotGroups.Count == ShieldComp.LinkedGrids.Count && !force) return;
-            if (Session.Enforced.Debug >= 2 && ShieldComp.LinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.LinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.LinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug >= 3 && ShieldComp.LinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.LinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.LinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
             lock (SubLock)
             {
                 ShieldComp.SubGrids.Clear();

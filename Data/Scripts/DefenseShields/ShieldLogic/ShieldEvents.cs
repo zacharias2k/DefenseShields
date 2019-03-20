@@ -183,7 +183,7 @@
 
         private string GetShieldStatus()
         {
-            if (!DsState.State.Online && !MyCube.IsFunctional) return "[Controller Damaged]";
+            if (!DsState.State.Online && !MyCube.IsFunctional) return "[Controller Incomplete]";
             if (!DsState.State.Online && !MyCube.IsWorking) return "[Controller Offline]";
             if (!DsState.State.Online && DsState.State.NoPower) return "[Insufficient Power]";
             if (!DsState.State.Online && DsState.State.Overload) return "[Overloaded]";
@@ -216,8 +216,12 @@
 
                 var shieldPowerNeeds = _powerNeeded;
                 var powerUsage = shieldPowerNeeds;
-                var otherPower = _otherPower;
                 var gridMaxPower = GridMaxPower;
+                var initStage = 1;
+                var validEmitterId = DsState.State.ActiveEmitterId != 0;
+                if (WarmedUp) initStage = 4;
+                else if (Warming) initStage = 3;
+                else if (_allInited) initStage = 2;
 
                 var status = GetShieldStatus();
                 if (status == "[Shield Up]" || status == "[Shield Down]" || status == "[Shield Offline]")
@@ -236,15 +240,17 @@
                 }
                 else
                 {
+
+
                     stringBuilder.Append("Shield Status " + status +
                                          "\n" +
-                                         "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
-                                         "\n[Other Power]: " + otherPower.ToString("0.0") + " Mw" +
+                                         "\n[Init Stage]: " + initStage + " of 4" +
+                                         "\n[Emitter Ok]: " + validEmitterId +
                                          "\n[HP Stored]: " + (DsState.State.Charge * ConvToHp).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
-                                         "\n[Needed Power]: " + shieldPowerNeeds.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ") Mw" +
+                                         "\n[Shield Mode]: " + ShieldMode +
                                          "\n[Emitter LoS]: " + (DsState.State.EmitterLos) +
-                                         "\n[Ship Emitter]: " + (ShieldComp?.ShipEmitter != null) +
-                                         "\n[Station Emitter]: " + (ShieldComp?.StationEmitter != null) +
+                                         "\n[Last Woken]: " + LastWokenTick + "/" + _tick +
+                                         "\n[Waking Up]: " + DsState.State.Waking +
                                          "\n[Grid Owns Controller]: " + DsState.State.IsOwner +
                                          "\n[In Grid's Faction]: " + DsState.State.InFaction);
                 }
