@@ -27,7 +27,7 @@ namespace DefenseShields
             _power = _shieldMaxChargeRate > 0 ? _shieldConsumptionRate + _shieldMaintaintPower : 0f;
             if (_power < ShieldCurrentPower && (_power - _shieldMaxChargeRate) >= 0.0001f) //overpower
                 _sink.Update();
-            else if (_count == 28 && Math.Abs(_power - ShieldCurrentPower) >= 0.0001f)
+            else if (_count == 28 && (ShieldCurrentPower <= 0 || Math.Abs(_power - ShieldCurrentPower) >= 0.0001f))
                 _sink.Update();
 
             if (Absorb > 0)
@@ -277,6 +277,7 @@ namespace DefenseShields
             _otherPower = GridMaxPower - cleanPower;
             var powerForShield = ((cleanPower * chargePercent) - _shieldMaintaintPower) * powerScaler;
             var rawMaxChargeRate = powerForShield > 0 ? powerForShield : 0f;
+            //if (ShieldMode == ShieldType.SmallGrid)Log.Line($"GridAvail:{GridAvailablePower} - Current:{ShieldCurrentPower} - Clean:{cleanPower} - Other:{_otherPower} - powerFor:{powerForShield} - rawCharge:{rawMaxChargeRate}");
             _shieldMaxChargeRate = rawMaxChargeRate;
             _shieldPeakRate = _shieldMaxChargeRate * hpsEfficiency / (float)_sizeScaler;
 

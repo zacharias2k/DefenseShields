@@ -43,8 +43,8 @@ namespace DefenseShields
         private void HierarchyUpdate()
         {
             var serverRequired = MyCube.IsWorking && MyCube.IsFunctional && _isServer;
-            var validStates = (DsState.State.Online || DsState.State.NoPower || DsState.State.Sleeping || DsState.State.Waking);
-            var checkGroups = validStates && !_isServer || validStates && serverRequired;
+            var invalidStates = DsState.State.Suspended;
+            var checkGroups = !invalidStates && !_isServer || !invalidStates && serverRequired;
             if (Session.Enforced.Debug == 3) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Online:{DsState.State.Online} - Power:{!DsState.State.NoPower} - Sleep:{DsState.State.Sleeping} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
             if (checkGroups)
             {
@@ -60,8 +60,7 @@ namespace DefenseShields
 
             var gotGroups = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
             if (gotGroups.Count == ShieldComp.LinkedGrids.Count && !force) return;
-            if (Session.Enforced.Debug == 3 && ShieldComp.LinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.LinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.LinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
-
+            if (Session.Enforced.Debug >= 2 && ShieldComp.LinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.LinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.LinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
             lock (SubLock)
             {
                 ShieldComp.SubGrids.Clear();
@@ -78,7 +77,6 @@ namespace DefenseShields
             _functionalChanged = true;
             _updateGridDistributor = true;
         }
-
 
         private void BlockMonitor()
         {
@@ -230,7 +228,7 @@ namespace DefenseShields
                 ShieldGridComponent shieldComponent;
                 grid.Components.TryGet(out shieldComponent);
                 var ds = shieldComponent?.DefenseShields;
-                if (ds?.ShieldComp != null && ds.NotFailed && ds.IsWorking)
+                if (ds?.ShieldComp != null && ds.DsState.State.Online && ds.IsWorking)
                 {
                     var otherSize = ds.MyGrid.PositionComp.WorldAABB.Size.Volume;
                     var otherEntityId = ds.MyGrid.EntityId;
@@ -302,7 +300,6 @@ namespace DefenseShields
                         DsState.State.Remodulate = true;
                         DsState.State.Message = true;
                     }
-                    //OfflineShield(false, false);
                 }
             }
 

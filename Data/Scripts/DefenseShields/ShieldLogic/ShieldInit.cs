@@ -280,16 +280,21 @@ namespace DefenseShields
                 ControlBlockWorking = _allInited && IsWorking && IsFunctional;
             }
 
-            _blockChanged = true;
-            _functionalChanged = true;
+            CheckBlocksAndNewShape(false);
 
-            ResetShape(false);
-            ResetShape(false, true);
-            
             _oldGridHalfExtents = DsState.State.GridHalfExtents;
             _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
-            _updateRender = true;
             Warming = true;
+        }
+
+        private void CheckBlocksAndNewShape(bool refreshBlocks)
+        {
+            _blockChanged = true;
+            _functionalChanged = true;
+            ResetShape(false);
+            ResetShape(false, true);
+            if (refreshBlocks) BlockChanged(false);
+            _updateRender = true;
         }
 
         private void StorageSetup()
@@ -318,8 +323,8 @@ namespace DefenseShields
                     {
                         DsState.State.Suspended = false;
                         DsState.State.Online = false;
-                        DsState.State.Sleeping = false;
                     }
+                    DsState.State.Sleeping = false;
                     DsState.State.Waking = false;
                     DsState.State.FieldBlocked = false;
                     DsState.State.Heat = 0;
@@ -355,7 +360,6 @@ namespace DefenseShields
         {
             try
             {
-                ShieldCurrentPower = _power;
                 _sink.Update();
                 Shield.RefreshCustomInfo();
 

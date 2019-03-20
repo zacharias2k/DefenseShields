@@ -17,7 +17,7 @@ namespace DefenseShields
 
             if (newShape)
             {
-                UpdateSubGrids();
+                UpdateSubGrids(true);
                 BlockMonitor();
                 if (_shapeEvent) CheckExtents();
                 if (GridIsMobile) _updateMobileShape = true;
