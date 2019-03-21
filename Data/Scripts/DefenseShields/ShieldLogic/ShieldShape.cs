@@ -223,7 +223,21 @@ namespace DefenseShields
                     ShieldComp.ShieldVolume = DetectMatrixOutside.Scale.Volume;
                 }
             }
-            if (!DsState.State.Lowered) SetShieldShape();
+
+            if (_shapeChanged)
+            {
+                if (!_isDedicated)
+                {
+                    _shellPassive.PositionComp.LocalMatrix = Matrix.Zero;  // Bug - Cannot just change X coord, so I reset first.
+                    _shellActive.PositionComp.LocalMatrix = Matrix.Zero;
+                    _shellPassive.PositionComp.LocalMatrix = ShieldShapeMatrix;
+                    _shellActive.PositionComp.LocalMatrix = ShieldShapeMatrix;
+                }
+                ShieldEnt.PositionComp.LocalMatrix = Matrix.Zero;
+                ShieldEnt.PositionComp.LocalMatrix = ShieldShapeMatrix;
+                ShieldEnt.PositionComp.LocalAABB = ShieldAabbScaled;
+            }
+            ShieldEnt.PositionComp.SetPosition(DetectionCenter);
 
             BoundingBoxD.CreateFromSphere(ref WebSphere, out WebBox);
             BoundingBoxD.CreateFromSphere(ref ShieldSphere3K, out ShieldBox3K);
@@ -235,25 +249,6 @@ namespace DefenseShields
             var mobileMatrix = MatrixD.Rescale(MatrixD.Identity, ShieldSize);
             mobileMatrix.Translation = MyGrid.PositionComp.LocalVolume.Center;
             ShieldShapeMatrix = mobileMatrix;
-        }
-
-        private void SetShieldShape()
-        {
-            if (_shapeChanged)
-            {
-                if (!_isDedicated) 
-                {
-                    _shellPassive.PositionComp.LocalMatrix = Matrix.Zero;  // Bug - Cannot just change X coord, so I reset first.
-                    _shellActive.PositionComp.LocalMatrix = Matrix.Zero;
-                    _shellPassive.PositionComp.LocalMatrix = ShieldShapeMatrix;
-                    _shellActive.PositionComp.LocalMatrix = ShieldShapeMatrix;
-                } 
-                ShieldEnt.PositionComp.LocalMatrix = Matrix.Zero;
-                ShieldEnt.PositionComp.LocalMatrix = ShieldShapeMatrix;
-                ShieldEnt.PositionComp.LocalAABB = ShieldAabbScaled;
-                ShieldEnt.PositionComp.WorldVolume.Intersects(MyGrid.PositionComp.WorldVolume);
-            }
-            ShieldEnt.PositionComp.SetPosition(DetectionCenter);
         }
         #endregion
     }

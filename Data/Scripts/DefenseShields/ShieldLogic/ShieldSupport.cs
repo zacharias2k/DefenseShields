@@ -158,28 +158,6 @@ namespace DefenseShields
             ShieldHits.Add(new ShieldHit(MyEntities.GetEntityById(ShieldHit.AttackerId), ShieldHit.Amount, MyStringHash.GetOrCompute(ShieldHit.DamageType), ShieldHit.HitPos));
         }
 
-        private void UserDebug()
-        {
-            var active = false;
-            lock (Session.Instance.ActiveShields) active = Session.Instance.ActiveShields.Contains(this);
-            var message = $"User({MyAPIGateway.Multiplayer.Players.TryGetSteamId(Shield.OwnerId)}) Debugging\n" +
-                          $"On:{DsState.State.Online} - Sus:{DsState.State.Suspended} - Act:{active}\n" +
-                          $"Sleep:{Asleep} - Tick/Woke:{_tick}/{LastWokenTick}\n" +
-                          $"Mode:{DsState.State.Mode} - Waking:{DsState.State.Waking}\n" +
-                          $"Low:{DsState.State.Lowered} - Sl:{DsState.State.Sleeping}\n" +
-                          $"Failed:{!NotFailed} - PNull:{MyResourceDist == null}\n" +
-                          $"NoP:{DsState.State.NoPower} - PSys:{MyResourceDist?.SourcesEnabled}\n" +
-                          $"Access:{DsState.State.ControllerGridAccess} - EmitterLos:{DsState.State.EmitterLos}\n" +
-                          $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)}\n" +
-                          $"ShieldMode:{ShieldMode} - pFail:{_powerFail}\n" +
-                          $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{GridMaxPower}\n" +
-                          $"AvailPoW:{GridAvailablePower} - MTPoW:{_shieldMaintaintPower}\n" +
-                          $"Pow:{_power} HP:{DsState.State.Charge}: {ShieldMaxCharge}";
-
-            if (!_isDedicated) MyAPIGateway.Utilities.ShowNotification(message, 28800);
-            else Log.Line(message);
-        }
-
         private void AbsorbClientShieldHits()
         {
             for (int i = 0; i < ShieldHits.Count; i++)

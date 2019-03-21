@@ -154,7 +154,6 @@ namespace DefenseShields
         private int _capacitorLoop;
         private int _overLoadLoop = -1;
         private int _empOverLoadLoop = -1;
-        private int _genericDownLoop = -1;
         private int _reModulationLoop = -1;
         private int _heatCycle = -1;
         private int _fallbackCycle;
@@ -189,7 +188,6 @@ namespace DefenseShields
         private bool _isDedicated;
         private bool _mpActive;
         private bool _isServer;
-        private bool _hadPowerBefore;
         private bool _gridPowered;
         private bool _slaveLink;
         private bool _subUpdate;
@@ -258,6 +256,16 @@ namespace DefenseShields
             Floater
         }
 
+        internal enum State
+        {
+            Active,
+            Failure,
+            Init,
+            Lowered,
+            Sleep,
+            Wake
+        }
+
         internal enum ShieldType
         {
             Station,
@@ -322,13 +330,11 @@ namespace DefenseShields
         internal bool WebDamage { get; set; }
         internal bool IsFunctional { get; set; }
         internal bool IsWorking { get; set; }
-        internal bool ControlBlockWorking { get; set; }
         internal bool EntCleanUpTime { get; set; }
         internal bool ModulateGrids { get; set; }
-        internal bool WasSuspended { get; set; } = true;
         internal bool EnergyHit { get; set; }
         internal bool EffectsDirty { get; set; }
-        internal bool SubSystemsOk { get; set; }
+        internal bool ShieldActive { get; set; }
 
         internal Vector3D MyGridCenter { get; set; }
         internal Vector3D DetectionCenter { get; set; }

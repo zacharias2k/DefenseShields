@@ -68,9 +68,17 @@
             try
             {
                 if (!EntityAlive()) return;
-                if (!ShieldOn())
+                var shield = ShieldOn();
+                if (shield != State.Active)
                 {
-                    if (NotFailed) OfflineShield(false, false);
+                    if (NotFailed)
+                    {
+                        if (Session.Enforced.Debug >= 2) Log.Line($"FailState: {shield} - ShieldId [{Shield.EntityId}]");
+                        var up = shield != State.Lowered;
+                        var awake = shield != State.Sleep;
+                        var clear = up && awake;
+                        OfflineShield(clear, up);
+                    }
                     else if (DsState.State.Message) ShieldChangeState();
                     return;
                 }
@@ -121,7 +129,7 @@
 
                 if (ShieldComp?.DefenseShields == this)
                 {
-                    OfflineShield(true, true);
+                    OfflineShield(true, false);
                     ShieldComp.DefenseShields = null;
                 }
 
@@ -155,7 +163,7 @@
 
                 if (ShieldComp?.DefenseShields == this)
                 {
-                    OfflineShield(true, true);
+                    OfflineShield(true, false);
                     ShieldComp.DefenseShields = null;
                 }
 

@@ -18,9 +18,8 @@ namespace DefenseShields
             CalculatePowerCharge();
 
             if (!WarmedUp) return true;
-            if (_isServer && _hadPowerBefore && _shieldConsumptionRate.Equals(0f) && DsState.State.Charge.Equals(0.01f) && _genericDownLoop == -1)
+            if (_isServer && _shieldConsumptionRate.Equals(0f) && DsState.State.Charge.Equals(0.01f))
             {
-                _genericDownLoop = 0;
                 return false;
             }
 

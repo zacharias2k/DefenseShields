@@ -30,6 +30,28 @@ namespace DefenseShields
             }
         }
 
+        private void UserDebug()
+        {
+            var active = false;
+            lock (Session.Instance.ActiveShields) active = Session.Instance.ActiveShields.Contains(this);
+            var message = $"User({MyAPIGateway.Multiplayer.Players.TryGetSteamId(Shield.OwnerId)}) Debugging\n" +
+                          $"On:{DsState.State.Online} - Sus:{DsState.State.Suspended} - Act:{active}\n" +
+                          $"Sleep:{Asleep} - Tick/Woke:{_tick}/{LastWokenTick}\n" +
+                          $"Mode:{DsState.State.Mode} - Waking:{DsState.State.Waking}\n" +
+                          $"Low:{DsState.State.Lowered} - Sl:{DsState.State.Sleeping}\n" +
+                          $"Failed:{!NotFailed} - PNull:{MyResourceDist == null}\n" +
+                          $"NoP:{DsState.State.NoPower} - PSys:{MyResourceDist?.SourcesEnabled}\n" +
+                          $"Access:{DsState.State.ControllerGridAccess} - EmitterLos:{DsState.State.EmitterLos}\n" +
+                          $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)}\n" +
+                          $"ShieldMode:{ShieldMode} - pFail:{_powerFail}\n" +
+                          $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{GridMaxPower}\n" +
+                          $"AvailPoW:{GridAvailablePower} - MTPoW:{_shieldMaintaintPower}\n" +
+                          $"Pow:{_power} HP:{DsState.State.Charge}: {ShieldMaxCharge}";
+
+            if (!_isDedicated) MyAPIGateway.Utilities.ShowNotification(message, 28800);
+            else Log.Line(message);
+        }
+
         private static void CreativeModeWarning()
         {
             if (Session.Instance.CreativeWarn || Session.Instance.Tick < 600) return;
@@ -270,16 +292,9 @@ namespace DefenseShields
             return false;
         }
 
-        private void FailureConditions()
+        private void FailureDurations()
         {
-            if ((DsState.State.Lowered || DsState.State.Sleeping) && _genericDownLoop != -1)
-            {
-                _genericDownLoop++;
-                if (_genericDownLoop == GenericDownCount) _genericDownLoop = -1;
-                return;
-            }
-
-            if (_overLoadLoop == 0 || _empOverLoadLoop == 0 || _reModulationLoop == 0 || _genericDownLoop == 0)
+            if (_overLoadLoop == 0 || _empOverLoadLoop == 0 || _reModulationLoop == 0)
             {
                 if (DsState.State.Online || !WarmedUp)
                 {
@@ -310,16 +325,6 @@ namespace DefenseShields
                 {
                     DsState.State.Remodulate = false;
                     _reModulationLoop = -1;
-                }
-            }
-
-            if (_genericDownLoop > -1)
-            {
-                _genericDownLoop++;
-                if (_genericDownLoop == GenericDownCount)
-                {
-                    if (!DsState.State.EmitterLos) _genericDownLoop = 0;
-                    else _genericDownLoop = -1;
                 }
             }
 

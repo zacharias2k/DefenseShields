@@ -52,14 +52,14 @@ namespace DefenseShields
                 if (!WarmedUp)
                 {
                     MyGrid.Physics.ForceActivate();
-                    if (Session.Enforced.Debug >= 3) Log.Line($"EmitterStartupFailure: Asleep:{Asleep} - MaxPower:{GridMaxPower} - {ShieldSphere.Radius} - ControlWork:{ControlBlockWorking} - ShieldId [{Shield.EntityId}]");
+                    if (Session.Enforced.Debug >= 3) Log.Line($"EmitterStartupFailure: Asleep:{Asleep} - MaxPower:{GridMaxPower} - {ShieldSphere.Radius} - ShieldId [{Shield.EntityId}]");
                     LosCheckTick = Session.Instance.Tick + 1800;
                     ShieldChangeState();
                     return;
                 }
                 if (GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los) DsState.State.Message = true;
                 else if (!GridIsMobile && ShieldComp.StationEmitter != null && !ShieldComp.StationEmitter.EmiState.State.Los) DsState.State.Message = true;
-                if (Session.Enforced.Debug >= 3) Log.Line($"EmitterEvent: no emitter is working, shield mode: {ShieldMode} - WarmedUp:{WarmedUp} - MaxPower:{GridMaxPower} - ControlWorking:{ControlBlockWorking} - Radius:{ShieldSphere.Radius} - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 3) Log.Line($"EmitterEvent: no emitter is working, shield mode: {ShieldMode} - WarmedUp:{WarmedUp} - MaxPower:{GridMaxPower} - Radius:{ShieldSphere.Radius} - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
             }
         }
 
@@ -248,8 +248,6 @@ namespace DefenseShields
             WarmedUp = false;
 
             _resetEntity = false;
-            _hadPowerBefore = false;
-            ControlBlockWorking = false;
 
             ResetComp();
 
@@ -275,12 +273,6 @@ namespace DefenseShields
 
         private void WarmUpSequence()
         {
-            if (_isServer)
-            {
-                _hadPowerBefore = true;
-                ControlBlockWorking = _allInited && IsWorking && IsFunctional;
-            }
-
             CheckBlocksAndNewShape(false);
 
             _oldGridHalfExtents = DsState.State.GridHalfExtents;
