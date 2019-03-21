@@ -29,6 +29,7 @@ namespace DefenseShields
 
                 if (linkWas || losWas != EmiState.State.Los || idWas != EmiState.State.ActiveEmitterId)
                 {
+                    BlockReset(true);
                     NeedUpdate();
                 }
                 return false;

@@ -273,11 +273,13 @@ namespace DefenseShields
             var wrongOwner = !DsState.State.ControllerGridAccess;
             var nullShield = ShieldComp.DefenseShields == null;
             var myShield = ShieldComp.DefenseShields == this;
+            var wrongRole = notStation || notShip || unKnown;
 
-            if (!nullShield && !myShield || !IsFunctional || notStation || notShip || unKnown || wrongOwner || primeMode || betaMode)
+            if (!nullShield && !myShield || !IsFunctional || primeMode || betaMode || wrongOwner || wrongRole)
             {
                 if (!DsState.State.Suspended) Suspend();
                 if (myShield) ShieldComp.DefenseShields = null;
+                if (wrongRole) SetShieldType(true);
                 return true;
             }
 
