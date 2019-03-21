@@ -289,7 +289,7 @@ namespace DefenseShields
                 return true;
             }
 
-            return false;
+            return !IsWorking;
         }
 
         private void Suspend()
