@@ -6,12 +6,7 @@ namespace DefenseShields
     public partial class Emitters
     {
         #region Block Animation
-        private void BlockReset(bool force = false)
-        {
-            if ((!_isDedicated && !EmissiveIntensity.Equals(0)) || (!_isDedicated && force)) BlockMoveAnimationReset(true);
-        }
-
-        private void BlockMoveAnimationReset(bool clearAnimation)
+        private void BlockReset(bool clearAnimation)
         {
             if (!IsFunctional) return;
 
@@ -28,6 +23,7 @@ namespace DefenseShields
 
             if (clearAnimation)
             {
+                _blockReset = true;
                 RotationTime = 0;
                 TranslationTime = 0;
                 AnimationLoop = 0;
@@ -48,6 +44,7 @@ namespace DefenseShields
 
         private void BlockMoveAnimation()
         {
+            _blockReset = false;
             var percent = ShieldComp.DefenseShields.DsState.State.ShieldPercent;
             if (_compact)
             {
@@ -58,7 +55,7 @@ namespace DefenseShields
                 return;
             }
 
-            if (SubpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(false);
+            if (SubpartRotor.Closed) BlockReset(false);
             RotationTime -= 1;
             if (AnimationLoop == 0) TranslationTime = 0;
             if (AnimationLoop < 299) TranslationTime += 1;

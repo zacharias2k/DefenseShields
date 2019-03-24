@@ -181,7 +181,7 @@
                 var comp = block?.GameLogic?.GetAs<Displays>();
                 DisSep1 = TerminalHelpers.Separator(comp?.Display, "DS-D_sep1");
                 DisplayReport = TerminalHelpers.AddCombobox(comp?.Display, "DS-D_Report", "Display Shield Report", "Off, Stats or Graphics", DisUi.GetReport, DisUi.SetReport, DisUi.ListReport);
-                DisSep2 = TerminalHelpers.Separator(comp?.Display, "DS-D_sep2");
+                //DisSep2 = TerminalHelpers.Separator(comp?.Display, "DS-D_sep2");
                 DisControl = true;
             }
             catch (Exception ex) { Log.Line($"Exception in CreateO2GeneratorUi: {ex}"); }
@@ -235,12 +235,6 @@
             try
             {
                 LastTerminalId = tBlock.EntityId;
-                if (tBlock is IMyTextPanel)
-                {
-                    OrderShieldButton(myTerminalControls);
-                    return;
-                }
-
                 switch (tBlock.BlockDefinition.SubtypeId)
                 {
                     case "LargeShieldModulator":
@@ -256,12 +250,16 @@
                     case "SmallWarhead":
                         if (!WarheadButtonAdd) AddEmpButton(tBlock);
                         break;
+                    case "DSControlLCD":
+                    case "DSControlLCDWide":
+                        OrderShieldButton(myTerminalControls);
+                        break;
                     default:
                         if (!CustomDataReset) ResetCustomData(myTerminalControls);
                         break;
                 }
             }
-            catch (Exception ex) { Log.Line($"Exception in CustomDataToPassword: {ex}"); }
+            catch (Exception ex) { Log.Line($"Exception in CustomControls: {ex}"); }
         }
 
         private void AddEmpButton(IMyTerminalBlock tBlock)
@@ -285,7 +283,7 @@
         {
             var startIndex = -1;
             var sep1 = -1;
-            var sep2 = -1;
+            //var sep2 = -1;
             var shield = -1;
             for (int i = 0; i < controls.Count; i++)
             {
@@ -294,17 +292,35 @@
                 {
                     case "CustomData":
                         startIndex = i;
+                        c.Visible = ShowDisplayControl;
                         break;
                     case "DS-D_Report":
                         sep1 = i - 1;
                         shield = i;
-                        sep2 = i + 1;
+                        //sep2 = i + 1;
+                        break;
+                    case "ImageList":
+                    case "SelectTextures":
+                    case "SelectedImageList":
+                    case "ShowTextPanel":
+                    case "ShowTextOnScreen":
+                    case "BackgroundColor":
+                    case "Title":
+                    case "ChangeIntervalSlider":
+                    case "RemoveSelectedTextures":
+                        c.Visible = ShowDisplayControl;
                         break;
                 }
             }
             controls.Move(sep1, startIndex + 1);
             controls.Move(shield, startIndex + 2);
-            controls.Move(sep2, startIndex + 3);
+            //controls.Move(sep2, startIndex + 3);
+        }
+
+        internal static bool ShowDisplayControl(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<Displays>();
+            return comp == null;
         }
 
         private void WarheadSetter(IMyTerminalBlock tBlock, bool isSet)

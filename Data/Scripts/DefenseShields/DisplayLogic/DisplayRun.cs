@@ -10,7 +10,7 @@ using VRageMath;
 
 namespace DefenseShields
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_TextPanel), false)]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_TextPanel), false, "DSControlLCD", "DSControlLCDWide")]
     public partial class Displays : MyGameLogicComponent
     {
         public override void OnAddedToContainer()
@@ -112,21 +112,21 @@ namespace DefenseShields
             {
                 if (State.Value.ClientOwner == playerId)
                 {
-                    if (Session.Enforced.Debug >= 2) Log.Line($"[Abandon]:{_myDisplay} - Tick:{Tick} - Client:{clientId} - Owner:{owner}");
+                    if (Session.Enforced.Debug >= 2) Log.Line($"[Abandon]:{_myDisplay} - Tick:{Tick} - Client:{clientId} - PlayerId:{playerId} - Owner:{owner}");
                     Session.Instance.ClaimDisplay(clientId, playerId, _mId++, Display.EntityId, true);
                 }
                 return;
             }
 
             _myDisplay = _isServer && !_isDedicated || owner == playerId;
-            if (Session.Enforced.Debug >= 2) Log.Line($"MyDisplay:{_myDisplay} - Tick:{Tick} - Client:{clientId} - Owner:{owner}");
+            //if (Session.Enforced.Debug >= 2) Log.Line($"MyDisplay:{_myDisplay} - Tick:{Tick} - Client:{clientId} - PlayerId:{playerId} - Owner:{owner}");
             if (!_myDisplay)
             {
                 if (State.Value.Release)
                 {
                     if (State.Value.ClientOwner == 0 || _waitCount++ >= 1)
                     {
-                        if (Session.Enforced.Debug >= 2) Log.Line($"[NotActiveRequest]: Tick:{Tick} - Client:{clientId} - Owner:{owner}");
+                        if (Session.Enforced.Debug >= 2) Log.Line($"[NotActiveRequest]: Tick:{Tick} - Client:{clientId} - PlayerId:{playerId} - Owner:{owner}");
                         Session.Instance.ClaimDisplay(clientId, playerId, _mId++, Display.EntityId,false);
                         _waitCount = 0;
                     }

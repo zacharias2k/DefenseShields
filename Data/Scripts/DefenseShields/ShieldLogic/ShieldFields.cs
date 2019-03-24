@@ -72,7 +72,6 @@ namespace DefenseShields
         private const int ReModulationCount = 300;
         private const int ShieldDownCount = 1200;
         private const int EmpDownCount = 3600;
-        private const int GenericDownCount = 60;
         private const int PowerNoticeCount = 600;
         private const int CapacitorDrainCount = 60;
         private const int CapacitorStableCount = 600;
@@ -234,7 +233,8 @@ namespace DefenseShields
 
         private MyEntity _shellPassive;
         private MyEntity _shellActive;
-        private MyParticleEffect _effect = new MyParticleEffect();
+        private MyParticleEffect _effect1 = new MyParticleEffect();
+        private MyParticleEffect _effect2 = new MyParticleEffect();
 
         private DSUtils Dsutil1 { get; set; } = new DSUtils();
         #endregion

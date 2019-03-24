@@ -379,14 +379,10 @@
 
         public override bool Received(bool isServer)
         {
-            if (!isServer)
-            {
-                if (Entity?.GameLogic == null) return false;
-                var logic = Entity.GameLogic.GetAs<Displays>();
-                logic?.UpdateSettings(Settings);
-                return false;
-            }
-            return true;
+            if (Entity?.GameLogic == null) return false;
+            var logic = Entity.GameLogic.GetAs<Displays>();
+            logic?.UpdateSettings(Settings);
+            return isServer;
         }
     }
 
@@ -415,11 +411,9 @@
                 return false;
             }
 
-            var newClient = d.State.Value.ClientOwner != Claim.PlayerId;
-            var acceptClient = newClient && d.State.Value.Release;
-            if (Session.Enforced.Debug >= 2 && !acceptClient) Log.Line($"[ClaimRejected] NewClient:{newClient} - Client:{Claim.PlayerId} - Tick:{Session.Instance.Tick}");
+            if (Session.Enforced.Debug >= 2 && !d.State.Value.Release) Log.Line($"[ClaimRejected] Release:{d.State.Value.Release} - MyPlayerId:{Claim.PlayerId} - CurrentPlayerId:{d.State.Value.ClientOwner} - Tick:{Session.Instance.Tick}");
 
-            if (acceptClient) d.ClaimDisplay(Claim.PlayerId);
+            if (d.State.Value.Release) d.ClaimDisplay(Claim.PlayerId);
             return false;
         }
     }

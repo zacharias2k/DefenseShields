@@ -35,18 +35,17 @@ namespace DefenseShields
         private int _lCount;
         private int _bCount;
         private int _bTime;
-        private int _wasMode;
+        private int _unitSpherePoints = 2000;
+        private float _power = 0.01f;
+
         private bool _readyToSync;
         private bool _firstSync;
-        private int _unitSpherePoints = 2000;
         private bool _updateLosState = true;
-
-        private float _power = 0.01f;
+        private bool _blockReset;
         private bool _tick60;
         private bool _isServer;
         private bool _isDedicated;
         private bool _compact;
-        private bool _wasLink;
         private bool _wasLosState;
         private bool _disableLos;
         private bool _bInit;

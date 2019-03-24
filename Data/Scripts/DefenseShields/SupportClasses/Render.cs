@@ -274,7 +274,7 @@
                     if (_lCount == 10)
                     {
                         _lCount = 0;
-                        if ((_longerLoop == 0 && Random.Next(0, 3) == 1) || _longerLoop == 3)
+                        if ((_longerLoop == 2 && Random.Next(0, 3) == 2))
                         {
                             if (ShellActive != null)
                             {

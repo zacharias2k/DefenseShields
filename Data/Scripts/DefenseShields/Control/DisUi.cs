@@ -14,7 +14,7 @@
             Session.Instance.DisplayReport.Enabled = block => true;
             Session.Instance.DisplayReport.Visible = ShowControl;
             Session.Instance.DisSep1.Visible = ShowControl;
-            Session.Instance.DisSep2.Visible = ShowControl;
+            //Session.Instance.DisSep2.Visible = ShowControl;
         }
 
         private static readonly List<MyTerminalControlComboBoxItem> ReportList = new List<MyTerminalControlComboBoxItem>()

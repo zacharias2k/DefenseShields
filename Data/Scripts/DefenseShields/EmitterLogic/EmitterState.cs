@@ -13,8 +13,10 @@ namespace DefenseShields
             if (ShieldComp?.DefenseShields?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
 
             if (!_isServer)
-            { 
+            {
                 var link = ClientEmitterReady();
+                if (!link && !_blockReset) BlockReset(true);
+
                 return link;
             }
 
@@ -29,7 +31,7 @@ namespace DefenseShields
 
                 if (linkWas || losWas != EmiState.State.Los || idWas != EmiState.State.ActiveEmitterId)
                 {
-                    BlockReset(true);
+                    if (!_isDedicated && !_blockReset) BlockReset(true);
                     NeedUpdate();
                 }
                 return false;
@@ -68,19 +70,7 @@ namespace DefenseShields
                 _updateLosState = false;
                 LosScaledCloud.Clear();
             }
-
-            if (!EmiState.State.Link)
-            {
-                if (_wasLink)
-                {
-                    if (Session.Enforced.Debug >= 3) Log.Line($"WasLinked: Los:{EmiState.State.Los} - Id:{EmiState.State.ActiveEmitterId} - Backup:{EmiState.State.Backup} - Sus:{EmiState.State.Suspend} - Mode:{EmiState.State.Mode}");
-                    BlockReset(true);
-                }
-                _wasLink = false;
-                return false;
-            }
-            _wasLink = true;
-            return true;
+            return EmiState.State.Link;
         }
 
         private bool Suspend()
@@ -225,7 +215,7 @@ namespace DefenseShields
 
             if (!EmiState.State.Los || dsNull || shieldWaiting || !ds.DsState.State.Online || !(_tick >= ds.UnsuspendTick))
             {
-                BlockReset();
+                if (!_isDedicated && !_blockReset) BlockReset(true);
                 return false;
             }
             return true;

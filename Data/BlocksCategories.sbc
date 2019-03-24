@@ -177,7 +177,7 @@
         
 		<string>SmallShieldModulator</string>
 		<string>LargeShieldModulator</string>
-		<string>DSControlLCD</string>
+    <string>DSControlLCD</string>
     <string>DSControlLCDWide</string>
 		<string>DSControlTable</string>
 		<string>DSControlSmall</string>

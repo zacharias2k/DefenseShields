@@ -43,7 +43,7 @@ namespace DefenseShields
 
         private void CheckShieldLineOfSight()
         {
-            if (!_compact && SubpartRotor.Closed.Equals(true)) BlockMoveAnimationReset(false);
+            if (!_compact && SubpartRotor.Closed) BlockReset(false);
             TookControl = false;
 
             ShieldComp.DefenseShields.ResetShape(false);

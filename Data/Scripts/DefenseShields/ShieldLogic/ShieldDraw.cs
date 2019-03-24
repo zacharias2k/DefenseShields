@@ -253,29 +253,22 @@ namespace DefenseShields
             return lod;
         }
 
-        private void HitParticleStart(Vector3D pos)
+        private void HitParticleStart(Vector3D pos, bool multiple = false)
         {
-            var matrix = MatrixD.CreateTranslation(pos);
-            MyParticlesManager.TryCreateParticleEffect(6667, out _effect, ref matrix, ref pos, _shieldEntRendId, true);
-            if (_effect == null) return;
-            //var directedMatrix = _effect.WorldMatrix;
-            //var shieldCenter = ShieldEnt.PositionComp.WorldAABB.Center;
-            //directedMatrix.Forward = Vector3D.Normalize(MyAPIGateway.Session.Camera.Position - shieldCenter);
-            //directedMatrix.Left = Vector3D.CalculatePerpendicularVector(directedMatrix.Forward);
-            //directedMatrix.Up = Vector3D.Cross(directedMatrix.Forward, directedMatrix.Left);
-
             var scale = 0.0075;
             var logOfPlayerDist = Math.Log(Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos));
             int radius;
             var baseScaler = ImpactSize / 30;
             scale = scale * Math.Max(Math.Log(baseScaler), 1);
+            Vector4 color;
             if (EnergyHit)
             {
-                var scaler = 15;
+                multiple = true;
+                var scaler = 3;
                 if (_viewInShield && DsSet.Settings.DimShieldHits) scaler = 3;
 
                 radius = (int)(logOfPlayerDist * scaler);
-                _effect.UserColorMultiplier = new Vector4(255, 10, 0, 1f);
+                color = new Vector4(255, 10, 0, 1f);
             }
             else
             {
@@ -283,15 +276,35 @@ namespace DefenseShields
                 if (_viewInShield && DsSet.Settings.DimShieldHits) scaler = 3;
 
                 radius = (int)(logOfPlayerDist * scaler);
-                _effect.UserColorMultiplier = new Vector4(255, 255, 255, 1);
+                color = new Vector4(255, 255, 255, 1);
             }
             var vel = MyGrid.Physics.LinearVelocity;
 
-            _effect.UserRadiusMultiplier = radius;
-            _effect.UserEmitterScale = (float)scale;
-            _effect.Velocity = vel;
-            //_effect.WorldMatrix = directedMatrix;
-            _effect.Play();
+            var matrix = MatrixD.CreateTranslation(pos);
+            MyParticlesManager.TryCreateParticleEffect(6667, out _effect1, ref matrix, ref pos, _shieldEntRendId, true);
+            if (_effect1 == null) return;
+            _effect1.UserColorMultiplier = color;
+            _effect1.UserRadiusMultiplier = radius;
+            _effect1.UserEmitterScale = (float)scale;
+            _effect1.Velocity = vel;
+            _effect1.Play();
+
+            if (multiple)
+            {
+                MyParticlesManager.TryCreateParticleEffect(1657, out _effect2, ref matrix, ref pos, _shieldEntRendId, true);
+                if (_effect2 == null) return;
+                var directedMatrix = _effect1.WorldMatrix;
+                var shieldCenter = ShieldEnt.PositionComp.WorldAABB.Center;
+                directedMatrix.Forward = Vector3D.Normalize(MyAPIGateway.Session.Camera.Position - shieldCenter);
+                directedMatrix.Left = Vector3D.CalculatePerpendicularVector(directedMatrix.Forward);
+                directedMatrix.Up = Vector3D.Cross(directedMatrix.Forward, directedMatrix.Left);
+                _effect2.UserColorMultiplier = color;
+                _effect2.UserRadiusMultiplier = 1f;
+                _effect2.UserEmitterScale = 3.5f;
+                _effect2.Velocity = vel;
+                _effect2.WorldMatrix = directedMatrix;
+                _effect2.Play();
+            }
         }
 
         public void HudCheck()
