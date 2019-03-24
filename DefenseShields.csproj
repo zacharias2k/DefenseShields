@@ -195,12 +195,16 @@
     <Compile Include="Data\Scripts\DefenseShields\API\ApiClient.cs" />
     <Compile Include="Data\Scripts\DefenseShields\API\ApiServer.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\EmitterData.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Config\DisplayData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\PlanetShieldData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\O2GeneratorData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\EnhancerData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\SerializedValues.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\Control\DisUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\O2Ui.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\PsUi.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DisplayLogic\DisplayFields.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DisplayLogic\DisplayRun.cs" />
     <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmitterDraw.cs" />
     <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmitterFields.cs" />
     <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmitterLos.cs" />
@@ -249,7 +253,7 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\ModUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\DsUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\TerminalHelpers.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\Display.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DisplayLogic\DisplayOther.cs" />
     <Compile Include="Data\Scripts\DefenseShields\EnhancerLogic\EnhancerRun.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\Box.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\ConvexHull.cs" />

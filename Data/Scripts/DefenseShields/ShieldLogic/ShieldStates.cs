@@ -274,7 +274,6 @@ namespace DefenseShields
             var nullShield = ShieldComp.DefenseShields == null;
             var myShield = ShieldComp.DefenseShields == this;
             var wrongRole = notStation || notShip || unKnown;
-
             if (!nullShield && !myShield || !IsFunctional || primeMode || betaMode || wrongOwner || wrongRole)
             {
                 if (!DsState.State.Suspended) Suspend();
@@ -283,7 +282,7 @@ namespace DefenseShields
                 return true;
             }
 
-            if (DsState.State.Suspended)
+            if (DsState.State.Suspended || nullShield)
             {
                 UnSuspend();
                 return true;
@@ -306,7 +305,6 @@ namespace DefenseShields
         {
             DsState.State.Suspended = false;
             ShieldComp.DefenseShields = this;
-
             Session.Instance.BlockTagActive(Shield);
             Session.Instance.FunctionalShields[this] = false;
             UpdateEntity();
@@ -333,6 +331,7 @@ namespace DefenseShields
                 ResetShape(false);
                 _updateRender = true;
                 UnsuspendTick = uint.MinValue;
+
                 if (Session.Enforced.Debug >= 2) Log.Line($"Woke: ShieldId [{Shield.EntityId}]");
             }
             else if (_shapeTick != uint.MinValue && _tick >= _shapeTick)
@@ -454,6 +453,7 @@ namespace DefenseShields
                 DsState.NetworkUpdate();
                 if (_isServer) TerminalRefresh(false);
             }
+
             if (!_isDedicated && DsState.State.Message) BroadcastMessage();
 
             DsState.State.Message = false;

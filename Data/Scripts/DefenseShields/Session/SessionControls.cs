@@ -173,6 +173,20 @@
             catch (Exception ex) { Log.Line($"Exception in CreateO2GeneratorUi: {ex}"); }
         }
 
+        public void CreateDisplayUi(IMyTerminalBlock block)
+        {
+            try
+            {
+                if (DisControl) return;
+                var comp = block?.GameLogic?.GetAs<Displays>();
+                DisSep1 = TerminalHelpers.Separator(comp?.Display, "DS-D_sep1");
+                DisplayReport = TerminalHelpers.AddCombobox(comp?.Display, "DS-D_Report", "Display Shield Report", "Off, Stats or Graphics", DisUi.GetReport, DisUi.SetReport, DisUi.ListReport);
+                DisSep2 = TerminalHelpers.Separator(comp?.Display, "DS-D_sep2");
+                DisControl = true;
+            }
+            catch (Exception ex) { Log.Line($"Exception in CreateO2GeneratorUi: {ex}"); }
+        }
+
         public void CreateAction<T>(IMyTerminalControlOnOffSwitch c)
         {
             try
@@ -221,6 +235,12 @@
             try
             {
                 LastTerminalId = tBlock.EntityId;
+                if (tBlock is IMyTextPanel)
+                {
+                    OrderShieldButton(myTerminalControls);
+                    return;
+                }
+
                 switch (tBlock.BlockDefinition.SubtypeId)
                 {
                     case "LargeShieldModulator":
@@ -259,6 +279,32 @@
 
             WarTerminalReset.ShowInTerminal = false;
             GameLoaded = false;
+        }
+
+        private static void OrderShieldButton(List<IMyTerminalControl> controls)
+        {
+            var startIndex = -1;
+            var sep1 = -1;
+            var sep2 = -1;
+            var shield = -1;
+            for (int i = 0; i < controls.Count; i++)
+            {
+                var c = controls[i];
+                switch (c.Id)
+                {
+                    case "CustomData":
+                        startIndex = i;
+                        break;
+                    case "DS-D_Report":
+                        sep1 = i - 1;
+                        shield = i;
+                        sep2 = i + 1;
+                        break;
+                }
+            }
+            controls.Move(sep1, startIndex + 1);
+            controls.Move(shield, startIndex + 2);
+            controls.Move(sep2, startIndex + 3);
         }
 
         private void WarheadSetter(IMyTerminalBlock tBlock, bool isSet)

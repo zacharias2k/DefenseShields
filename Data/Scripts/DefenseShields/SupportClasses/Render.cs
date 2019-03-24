@@ -219,15 +219,8 @@
             {
                 for (var i = 0; i < physicsArray.Length; i++)
                 {
-                    var num1 = (_backing.VertexBuffer[i].X * matrix.M11) + (_backing.VertexBuffer[i].Y * matrix.M21) + (_backing.VertexBuffer[i].Z * matrix.M31) + matrix.M41;
-                    var num2 = ((_backing.VertexBuffer[i].X * matrix.M12) + (_backing.VertexBuffer[i].Y * matrix.M22) + (_backing.VertexBuffer[i].Z * matrix.M32)) + matrix.M42;
-                    var num3 = ((_backing.VertexBuffer[i].X * matrix.M13) + (_backing.VertexBuffer[i].Y * matrix.M23) + (_backing.VertexBuffer[i].Z * matrix.M33)) + matrix.M43;
-                    var num4 = 1 / ((((_backing.VertexBuffer[i].X * matrix.M14) + (_backing.VertexBuffer[i].Y * matrix.M24)) + (_backing.VertexBuffer[i].Z * matrix.M34)) + matrix.M44);
-                    Vector3D vector3;
-                    vector3.X = num1 * num4;
-                    vector3.Y = num2 * num4;
-                    vector3.Z = num3 * num4;
-                    physicsArray[i] = vector3;
+                    Vector3D tmp = _backing.VertexBuffer[i];
+                    Vector3D.TransformNoProjection(ref tmp, ref matrix, out physicsArray[i]);
                 }
             }
 

@@ -25,12 +25,6 @@
         [ProtoMember(15), DefaultValue(-1)] public float MaintenanceCost = -1f;
         [ProtoMember(16), DefaultValue(-1)] public int DisableBlockDamage = -1;
         [ProtoMember(17), DefaultValue(-1)] public int DisableLineOfSight = -1;
-
-        public override string ToString()
-        {
-            return "";
-        }
-
     }
 
     [ProtoContract]
@@ -69,11 +63,6 @@
         [ProtoMember(31)] public bool ReInforce = false;
         [ProtoMember(32)] public long ActiveEmitterId;
         [ProtoMember(33)] public uint MId;
-
-        public override string ToString()
-        {
-            return $"";
-        }
     }
 
     [ProtoContract]
@@ -98,11 +87,6 @@
         [ProtoMember(17)] public long Visible = 0;
         [ProtoMember(18)] public Vector3I ShieldOffset = Vector3I.Zero;
         [ProtoMember(19)] public uint MId;
-
-        public override string ToString()
-        {
-            return "";
-        }
     }
 
     [ProtoContract]
@@ -119,12 +103,6 @@
         [ProtoMember(9)] public bool UnusedWasCompact;
         [ProtoMember(10)] public long ActiveEmitterId;
         [ProtoMember(11)] public uint MId;
-
-
-        public override string ToString()
-        {
-            return $"";
-        }
     }
 
     [ProtoContract]
@@ -137,12 +115,6 @@
         [ProtoMember(5)] public bool Backup;
         [ProtoMember(6)] public bool Link;
         [ProtoMember(7)] public uint MId;
-
-
-        public override string ToString()
-        {
-            return $"";
-        }
     }
 
     [ProtoContract]
@@ -154,11 +126,6 @@
         [ProtoMember(4), DefaultValue(-1)] public int ModulateDamage = 100;
         [ProtoMember(5)] public bool ReInforceEnabled = false;
         [ProtoMember(6)] public uint MId;
-
-        public override string ToString()
-        {
-            return "";
-        }
     }
 
     [ProtoContract]
@@ -167,11 +134,6 @@
         [ProtoMember(1)] public bool Online;
         [ProtoMember(2)] public bool Backup;
         [ProtoMember(3)] public uint MId;
-
-        public override string ToString()
-        {
-            return $"";
-        }
     }
 
     [ProtoContract]
@@ -180,11 +142,6 @@
         [ProtoMember(1)] public bool ShieldActive = false;
         [ProtoMember(2)] public long ShieldShell = 0;
         [ProtoMember(3)] public uint MId;
-
-        public override string ToString()
-        {
-            return "";
-        }
     }
 
     [ProtoContract]
@@ -197,12 +154,6 @@
         [ProtoMember(5), DefaultValue(-1)] public double O2Level = 0;
         [ProtoMember(6)] public bool Backup = false;
         [ProtoMember(7)] public uint MId;
-
-        public override string ToString()
-        {
-            return $"";
-
-        }
     }
 
     [ProtoContract]
@@ -213,11 +164,6 @@
         [ProtoMember(3)] public bool Unused3 = false;
         [ProtoMember(4), DefaultValue(-1)] public int Unused4 = 100;
         [ProtoMember(5)] public uint MId;
-
-        public override string ToString()
-        {
-            return $"";
-        }
     }
 
     [ProtoContract]
@@ -226,11 +172,6 @@
         [ProtoMember(1)] public bool Online;
         [ProtoMember(2)] public bool Backup;
         [ProtoMember(3)] public uint MId;
-
-        public override string ToString()
-        {
-            return $"";
-        }
     }
 
     [ProtoContract]
@@ -241,11 +182,28 @@
         [ProtoMember(3)] public bool ModulateGrids = false;
         [ProtoMember(4), DefaultValue(-1)] public int ModulateDamage = 100;
         [ProtoMember(5)] public uint MId;
+    }
 
-        public override string ToString()
-        {
-            return $"";
-        }
+    [ProtoContract]
+    public class DisplayStateValues
+    {
+        [ProtoMember(1)] public uint MId;
+        [ProtoMember(2), DefaultValue(-1)] public long ClientOwner;
+        [ProtoMember(3), DefaultValue(true)] public bool Release = true;
+    }
+
+    [ProtoContract]
+    public class DisplaySettingsValues
+    {
+        [ProtoMember(1)] public uint MId;
+        [ProtoMember(2)] public long Report; // 0 = off, 1 = stats, 2 = graphics
+    }
+
+    [ProtoContract]
+    public class DisplayClaimValues
+    {
+        [ProtoMember(1), DefaultValue(-1)] public long PlayerId;
+        [ProtoMember(2)] public bool Abandon;
     }
 
     [ProtoContract]
@@ -255,10 +213,5 @@
         [ProtoMember(2)] public float Amount;
         [ProtoMember(3)] public string DamageType;
         [ProtoMember(4)] public Vector3D HitPos;
-
-        public override string ToString()
-        {
-            return $"";
-        }
     }
 }

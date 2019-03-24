@@ -48,6 +48,7 @@ namespace DefenseShields
             {
                 IMyPlayer removedPlayer;
                 Players.TryRemove(l, out removedPlayer);
+                PlayerEventId++;
                 if (Enforced.Debug >= 3) Log.Line($"Removed player, new playerCount:{Players.Count}");
             }
             catch (Exception ex) { Log.Line($"Exception in PlayerDisconnected: {ex}"); }
@@ -58,6 +59,7 @@ namespace DefenseShields
             if (player.IdentityId == id)
             {
                 Players[id] = player;
+                PlayerEventId++;
                 if (Enforced.Debug >= 3) Log.Line($"Added player: {player.DisplayName}, new playerCount:{Players.Count}");
             }
             return false;

@@ -105,7 +105,6 @@ namespace DefenseShields
             else if (DsState.State.FieldBlocked) PlayerMessages(PlayerNotice.FieldBlocked);
             else if (DsState.State.Waking) PlayerMessages(PlayerNotice.EmitterInit);
             else if (DsState.State.Remodulate) PlayerMessages(PlayerNotice.Remodulate);
-            TerminalRefresh();
             DsState.State.Message = false;
         }
     }

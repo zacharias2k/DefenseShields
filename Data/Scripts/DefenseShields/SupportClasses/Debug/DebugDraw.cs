@@ -79,77 +79,6 @@ namespace DefenseShields.Support
             //DrawLineToNum(_physicsOutside, rootVerts[2], bWorldCenter, Color.Gold);
         }
 
-        public static bool[] GetZonesContaingNum(Vector3D[] physicsVerts, Vector3D[] rootVerts, int[][] rZone, int[][] sZone, int[][] mZone, Color[] zColors, int locateVertNum, int size, bool draw = false)
-        {
-            // 1 = p3SmallZones, 2 = p3MediumZones, 3 = p3LargeZones, 4 = p3LargestZones
-            var root = rZone;
-            var small = sZone;
-            var medium = mZone;
-            var zone = size == 1 ? small : medium;
-            if (size == 0) zone = root;
-            var zMatch = new bool[12];
-
-            for (int i = 0; i < zone.Length; i++)
-            {
-                foreach (var vertNum in zone[i])
-                {
-                    if (vertNum == locateVertNum) zMatch[i] = true;
-                }
-            }
-            if (draw)
-            {
-                var c = 0;
-                var j = 0;
-                foreach (var z in zMatch)
-                {
-                    if (z)
-                    {
-                        DrawNums(physicsVerts, rootVerts, zColors, zone[c]);
-                    }
-                    c++;
-                }
-            }
-
-            return zMatch;
-        }
-
-        public static int[] FindClosestZoneToVec(Vector3D[] physicsVerts, int[][] rZone, int[][] sZone, int[][] mZone, Vector3D locateVec, int size)
-        {
-            // 1 = p3SmallZones, 2 = p3MediumZones, 3 = p3LargeZones, 4 = p3LargestZones
-            var root = rZone;
-            var small = sZone;
-            var medium = mZone;
-            var zone = size == 1 ? small : medium;
-            if (size == 0) zone = root;
-
-            var zoneNum = -1;
-            var tempNum = -1;
-            var tempVec = Vector3D.Zero;
-            double pNumDistance = 9999999999999999999;
-
-            for (int i = 0; i < physicsVerts.Length; i++)
-            {
-                var v = physicsVerts[i];
-                if (v != locateVec) continue;
-                tempVec = v;
-                tempNum = i;
-            }
-            var c = 0;
-            foreach (int[] numArray in zone)
-            {
-                foreach (var vertNum in numArray)
-                {
-                    if (vertNum != tempNum) continue;
-                    var distCheck = Vector3D.DistanceSquared(locateVec, tempVec);
-                    if (!(distCheck < pNumDistance)) continue;
-                    pNumDistance = distCheck;
-                    zoneNum = c;
-                }
-                c++;
-            }
-            return zone[zoneNum];
-        }
-
         public static void DrawTriNumArray(Vector3D[] physicsVerts, int[] array)
         {
             var lineId = MyStringId.GetOrCompute("Square");
@@ -186,16 +115,6 @@ namespace DefenseShields.Support
                 MySimpleObjectDraw.DrawLine(v0, v2, lineId, ref c, 0.25f);
                 MySimpleObjectDraw.DrawLine(v1, v2, lineId, ref c, 0.25f);
 
-            }
-        }
-
-        public static void DrawVertArray(Vector3D[] array)
-        {
-            for (int i = 0; i < array.Length; i++)
-            {
-                var c = Color.Red;
-                DrawVertCollection(array[i], 1, c, 20);
-                i++;
             }
         }
 
@@ -292,49 +211,11 @@ namespace DefenseShields.Support
             MySimpleObjectDraw.DrawLine(start, end, LineId, ref c, width);
         }
 
-        public static void DrawRootVerts(Vector3D[] rootVerts, Color[] zoneColors)
-        {
-            var i = 0;
-            foreach (var root in rootVerts)
-            {
-                var rootColor = zoneColors[i];
-                DrawVertCollection(root, 5, rootColor, 20);
-                i++;
-            }
-        }
-
-        private static void DrawVerts(Vector3D[] list, Vector3D[] rootVerts, Color[] zoneColors, Color color = default(Color))
-        {
-            var i = 0;
-            foreach (var vec in list)
-            {
-                var rootColor = zoneColors[i];
-                if (vec == rootVerts[i]) color = rootColor;
-                DrawVertCollection(vec, 5, color, 8);
-                i++;
-            }
-        }
-
-        private static void DrawNums(Vector3D[] physicsVerts, Vector3D[] rootVerts, Color[] zoneColors, int[] list, Color color = default(Color))
-        {
-            foreach (var num in list)
-            {
-                var i = 0;
-                foreach (var root in rootVerts)
-                {
-                    var rootColor = zoneColors[i];
-                    if (physicsVerts[num] == root) color = rootColor;
-                    i++;
-                }
-                DrawVertCollection(physicsVerts[num], 5, color, 8);
-            }
-        }
-
         public static void DrawSingleNum(Vector3D[] physicsVerts, int num)
         {
             //Log.Line($"magic: {magic}");
             var c = Color.Black;
-            DrawVertCollection(physicsVerts[num], 7, c, 20);
+            DrawScaledPoint(physicsVerts[num], 7, c, 20);
         }
 
         public static void DrawBox(MyOrientedBoundingBoxD obb, Color color)
@@ -372,15 +253,25 @@ namespace DefenseShields.Support
 
         public static void DrawSingleVec(Vector3D vec, float size, Color color)
         {
-            DrawVertCollection(vec, size, color, 20);
+            DrawScaledPoint(vec, size, color, 20);
         }
 
-        public static void DrawVertCollection(Vector3D collision, double radius, Color color, int lineWidth = 1)
+        public static void DrawVertArray(Vector3D[] array)
         {
-            var posMatCenterScaled = MatrixD.CreateTranslation(collision);
+            for (int i = 0; i < array.Length; i++)
+            {
+                var c = Color.Red;
+                DrawScaledPoint(array[i], 1, c, 20);
+                i++;
+            }
+        }
+
+        public static void DrawScaledPoint(Vector3D pos, double radius, Color color, int lineWidth = 1)
+        {
+            var posMatCenterScaled = MatrixD.CreateTranslation(pos);
             var posMatScaler = MatrixD.Rescale(posMatCenterScaled, radius);
-            var rangeGridResourceId = MyStringId.GetOrCompute("Build new");
-            MySimpleObjectDraw.DrawTransparentSphere(ref posMatScaler, 1f, ref color, MySimpleObjectRasterizer.Solid, lineWidth, null, rangeGridResourceId, -1, -1);
+            var material = MyStringId.GetOrCompute("square");
+            MySimpleObjectDraw.DrawTransparentSphere(ref posMatScaler, 1f, ref color, MySimpleObjectRasterizer.Solid, lineWidth, null, material, -1, -1);
         }
 
         public static void DrawSphere(BoundingSphereD sphere, Color color)

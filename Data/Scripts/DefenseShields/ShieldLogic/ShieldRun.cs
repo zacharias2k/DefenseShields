@@ -84,7 +84,6 @@
                 }
 
                 if (!_isServer || !DsState.State.Online) return;
-
                 if (_comingOnline) ComingOnlineSetup();
                 if (_mpActive && (_forceBufferSync || _count == 29))
                 {

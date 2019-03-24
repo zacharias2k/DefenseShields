@@ -171,7 +171,7 @@ namespace DefenseShields
             if (radius < 7) scale = radius;
 
             var matrix = MatrixD.CreateTranslation(epiCenter);
-            MyParticlesManager.TryCreateParticleEffect(6666, out _effect, ref matrix, ref epiCenter, UInt32.MaxValue, true); // 15, 16, 24, 25, 28, (31, 32) 211 215 53
+            MyParticlesManager.TryCreateParticleEffect(6666, out _effect, ref matrix, ref epiCenter, uint.MaxValue, true); // 15, 16, 24, 25, 28, (31, 32) 211 215 53
             if (_effect == null)
             {
                 EmpWork.EmpDrawComplete();

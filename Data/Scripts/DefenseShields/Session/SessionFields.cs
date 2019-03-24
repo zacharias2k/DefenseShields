@@ -53,6 +53,7 @@
         internal readonly Guid ControllerEnforceGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811511");
         internal readonly Guid PlanetShieldSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811512");
         internal readonly Guid PlanetShieldStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811513");
+        internal readonly Guid DisplayStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811514");
 
         internal readonly Type MissileObj = typeof(MyObjectBuilder_Missile);
 
@@ -239,7 +240,7 @@
         internal int RefreshCycle { get; set; }
         internal int EntSlotScaler { get; set; } = 9;
         internal int MinScaler { get; set; } = 1;
-
+        internal int PlayerEventId { get; set; }
         internal long LastTerminalId { get; set; }
 
         internal float MaxEntitySpeed { get; set; } = 210;
@@ -266,6 +267,7 @@
         internal bool PsControl { get; set; }
         internal bool ModControl { get; set; }
         internal bool O2Control { get; set; }
+        internal bool DisControl { get; set; }
         internal bool MpActive { get; set; }
         internal bool IsServer { get; set; }
         internal bool DedicatedServer { get; set; }
@@ -318,7 +320,12 @@
         internal IMyTerminalControlCheckbox PsSendToHudCheckBox { get; set; }
         internal IMyTerminalControlOnOffSwitch PsToggleShield { get; set; }
 
+        internal IMyTerminalControlSeparator DisSep1 { get; set; }
+        internal IMyTerminalControlCombobox DisplayReport { get; set; }
+        internal IMyTerminalControlSeparator DisSep2 { get; set; }
+
         internal IMyTerminalBlock WarTerminalReset { get; set; }
+
         internal GetFitSeq[] FitSeq = new GetFitSeq[]
         {
             new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 1f),

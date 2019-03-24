@@ -200,7 +200,6 @@
             Enforced = null;
             _autoResetEvent.Set();
             _autoResetEvent = null;
-
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PACKET_ID, ReceivedPacket);
 
             MyVisualScriptLogicProvider.PlayerDisconnected -= PlayerDisconnected;

@@ -1,7 +1,7 @@
-﻿using VRage.Game.ModAPI;
-
+﻿
 namespace DefenseShields
 {
+    using VRage.Game.ModAPI;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using Support;
@@ -13,7 +13,6 @@ namespace DefenseShields
     using VRage.Game.Entity;
     using VRage.Collections;
     using VRageMath;
-    using System;
     using ParallelTasks;
 
     public partial class DefenseShields 
