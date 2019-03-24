@@ -258,15 +258,21 @@ namespace DefenseShields
             var scale = 0.0075;
             var logOfPlayerDist = Math.Log(Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos));
             int radius;
-            var baseScaler = ImpactSize / 30;
+            var size = ImpactSize <= 7500 ? ImpactSize : 7500;
+            var baseScaler = size / 30;
             scale = scale * Math.Max(Math.Log(baseScaler), 1);
             Vector4 color;
+            int mainParticle = 6667;
+            float mainAdjust = 1;
             if (EnergyHit)
             {
-                multiple = true;
-                var scaler = 3;
+                var scaler = 8;
                 if (_viewInShield && DsSet.Settings.DimShieldHits) scaler = 3;
-
+                else
+                {
+                    multiple = true;
+                    mainAdjust = 0.25f;
+                }
                 radius = (int)(logOfPlayerDist * scaler);
                 color = new Vector4(255, 10, 0, 1f);
             }
@@ -274,21 +280,22 @@ namespace DefenseShields
             {
                 var scaler = 8;
                 if (_viewInShield && DsSet.Settings.DimShieldHits) scaler = 3;
-
+                mainParticle = 1657;
                 radius = (int)(logOfPlayerDist * scaler);
                 color = new Vector4(255, 255, 255, 1);
             }
             var vel = MyGrid.Physics.LinearVelocity;
 
             var matrix = MatrixD.CreateTranslation(pos);
-            MyParticlesManager.TryCreateParticleEffect(6667, out _effect1, ref matrix, ref pos, _shieldEntRendId, true);
+            MyParticlesManager.TryCreateParticleEffect(mainParticle, out _effect1, ref matrix, ref pos, _shieldEntRendId, true);
             if (_effect1 == null) return;
             _effect1.UserColorMultiplier = color;
-            _effect1.UserRadiusMultiplier = radius;
+            _effect1.UserRadiusMultiplier = radius * mainAdjust;
             _effect1.UserEmitterScale = (float)scale;
             _effect1.Velocity = vel;
             _effect1.Play();
 
+            var magic = ((radius * 0.1f) - 2.5f);
             if (multiple)
             {
                 MyParticlesManager.TryCreateParticleEffect(1657, out _effect2, ref matrix, ref pos, _shieldEntRendId, true);
@@ -299,8 +306,8 @@ namespace DefenseShields
                 directedMatrix.Left = Vector3D.CalculatePerpendicularVector(directedMatrix.Forward);
                 directedMatrix.Up = Vector3D.Cross(directedMatrix.Forward, directedMatrix.Left);
                 _effect2.UserColorMultiplier = color;
-                _effect2.UserRadiusMultiplier = 1f;
-                _effect2.UserEmitterScale = 3.5f;
+                _effect2.UserRadiusMultiplier = 2f + magic;
+                _effect2.UserEmitterScale = 1f;
                 _effect2.Velocity = vel;
                 _effect2.WorldMatrix = directedMatrix;
                 _effect2.Play();

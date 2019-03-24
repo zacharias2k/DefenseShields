@@ -87,7 +87,7 @@ namespace DefenseShields.Support
                 Shield.EnergyHit = true;
                 Shield.WorldImpactPosition = hitPos;
                 Shield.ImpactSize = damage;
-                //UtilsStatic.CreateFakeSmallExplosion(hitPos);
+                UtilsStatic.CreateFakeSmallExplosion(hitPos);
                 Entity.Close();
                 Entity.InScene = false;
             }

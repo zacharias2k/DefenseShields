@@ -1713,7 +1713,7 @@
     <Length>12</Length>
     <DurationMin>12</DurationMin>
     <DurationMax>12</DurationMax>
-    <DistanceMax>500</DistanceMax>
+    <DistanceMax>5000</DistanceMax>
     <Loop>true</Loop>
     <ParticleGenerations>
 
