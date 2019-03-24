@@ -54,11 +54,7 @@ namespace DefenseShields
             {
                 Display.CubeGrid.Components.TryGet(out ShieldComp);
             }
-            if (ShieldComp?.DefenseShields?.Shield == null || !ShieldComp.DefenseShields.Warming || !ShieldComp.DefenseShields.IsWorking)
-            {
-                return false;
-            }
-            return true;
+            return ShieldComp?.DefenseShields?.Shield != null;
         }
 
         private void UpdateDisplay()
