@@ -1,6 +1,4 @@
-﻿using System.Runtime.Remoting.Messaging;
-
-namespace DefenseShields
+﻿namespace DefenseShields
 {
     using Support;
     using VRageMath;
@@ -135,7 +133,6 @@ namespace DefenseShields
             NotFailed = true;
             WarmedUp = true;
             
-
             if (_isServer)
             {
                 CleanWebEnts();

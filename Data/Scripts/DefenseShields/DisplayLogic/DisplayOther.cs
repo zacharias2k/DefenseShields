@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using DefenseShields.Support;
-using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces.Terminal;
+﻿using DefenseShields.Support;
 using VRage.ModAPI;
 
 namespace DefenseShields
@@ -107,7 +103,6 @@ namespace DefenseShields
         {
             if (SettingsUpdated)
             {
-                Log.Line($"save settings: {_isServer}");
                 SettingsUpdated = false;
                 Set.SaveSettings();
             }
