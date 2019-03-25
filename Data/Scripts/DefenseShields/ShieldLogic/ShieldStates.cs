@@ -153,19 +153,19 @@ namespace DefenseShields
             UpdateSubGrids(true);
         }
 
-        private void OfflineShield(bool clear, bool resetShape)
+        private void OfflineShield(bool clear, bool resetShape, bool keepCharge = false)
         {
-            DefaultShieldState(clear, resetShape);
+            DefaultShieldState(clear, keepCharge, resetShape);
 
             if (_isServer) ShieldChangeState();
             else TerminalRefresh();
 
             if (!_isDedicated) ShellVisibility(true);
 
-            if (Session.Enforced.Debug >= 3) Log.Line($"StateUpdate: ShieldOff - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug >= 2) Log.Line($"[ShieldOff] clear:{clear} - resetShape:{resetShape} - keepCharge:{keepCharge} - ShieldId [{Shield.EntityId}]");
         }
 
-        private void DefaultShieldState(bool clear, bool resetShape = true)
+        private void DefaultShieldState(bool clear, bool keepCharge, bool resetShape = true)
         {
             NotFailed = false;
             if (clear)
@@ -173,7 +173,7 @@ namespace DefenseShields
                 _power = 0.001f;
                 _sink.Update();
 
-                if (_isServer)
+                if (_isServer && !keepCharge)
                 {
                     DsState.State.Charge = 0f;
                     DsState.State.ShieldPercent = 0f;
@@ -295,7 +295,7 @@ namespace DefenseShields
         {
             SetShieldType(false);
             DsState.State.Suspended = true;
-            OfflineShield(true, true);
+            OfflineShield(true, true, true);
             bool value;
             Session.Instance.BlockTagBackup(Shield);
             Session.Instance.FunctionalShields.TryRemove(this, out value);
@@ -310,13 +310,12 @@ namespace DefenseShields
             UpdateEntity();
             GetEnhancernInfo();
             GetModulationInfo();
-            UnsuspendTick = _tick + 1800;
             if (Session.Enforced.Debug == 3) Log.Line($"Unsuspended: CM:{ShieldMode} - EW:{DsState.State.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
         }
 
         private bool ShieldWaking()
         {
-            if (_tick < UnsuspendTick)
+            if (_tick < ResetEntityTick)
             {
                 if (!DsState.State.Waking)
                 {
@@ -326,11 +325,11 @@ namespace DefenseShields
                 }
                 return true;
             }
-            if (UnsuspendTick != uint.MinValue && _tick >= UnsuspendTick)
+            if (ResetEntityTick != uint.MinValue && _tick >= ResetEntityTick)
             {
                 ResetShape(false);
                 _updateRender = true;
-                UnsuspendTick = uint.MinValue;
+                ResetEntityTick = uint.MinValue;
 
                 if (Session.Enforced.Debug >= 2) Log.Line($"Woke: ShieldId [{Shield.EntityId}]");
             }

@@ -302,7 +302,7 @@ namespace DefenseShields
         internal ShieldHitValues ShieldHit { get; set; } = new ShieldHitValues();
         internal Icosphere.Instance Icosphere { get; set; }
 
-        internal uint UnsuspendTick { get; set; }
+        internal uint ResetEntityTick { get; set; }
         internal uint LosCheckTick { get; set; }
         internal uint TicksWithNoActivity { get; set; }
         internal uint EffectsCleanTick { get; set; }

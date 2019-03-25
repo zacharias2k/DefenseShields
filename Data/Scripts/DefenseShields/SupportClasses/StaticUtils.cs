@@ -708,7 +708,7 @@ namespace DefenseShields.Support
                 ExplosionType = MyExplosionTypeEnum.WARHEAD_EXPLOSION_02,
                 ExplosionSphere = new BoundingSphereD(position, 0d),
                 LifespanMiliseconds = 0,
-                ParticleScale = 0.75f,
+                ParticleScale = 1f,
                 Direction = Vector3.Down,
                 VoxelExplosionCenter = position,
                 ExplosionFlags = MyExplosionFlags.CREATE_PARTICLE_EFFECT,

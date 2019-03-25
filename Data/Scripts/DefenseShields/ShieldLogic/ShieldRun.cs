@@ -128,7 +128,7 @@
 
                 if (ShieldComp?.DefenseShields == this)
                 {
-                    OfflineShield(true, false);
+                    OfflineShield(true, false, true);
                     ShieldComp.DefenseShields = null;
                 }
 
@@ -162,7 +162,7 @@
 
                 if (ShieldComp?.DefenseShields == this)
                 {
-                    OfflineShield(true, false);
+                    OfflineShield(true, false, true);
                     ShieldComp.DefenseShields = null;
                 }
 

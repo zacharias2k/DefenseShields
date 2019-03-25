@@ -213,7 +213,7 @@ namespace DefenseShields
             var shieldWaiting = !dsNull && ds.DsState.State.EmitterLos != EmiState.State.Los;
             if (shieldWaiting) comp.EmitterEvent = true;
 
-            if (!EmiState.State.Los || dsNull || shieldWaiting || !ds.DsState.State.Online || !(_tick >= ds.UnsuspendTick))
+            if (!EmiState.State.Los || dsNull || shieldWaiting || !ds.DsState.State.Online || !(_tick >= ds.ResetEntityTick))
             {
                 if (!_isDedicated && !_blockReset) BlockReset(true);
                 return false;

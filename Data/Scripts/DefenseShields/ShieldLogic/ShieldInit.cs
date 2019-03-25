@@ -243,10 +243,10 @@ namespace DefenseShields
 
         private void ResetEntity()
         {
+            if (_allInited) ResetEntityTick = _tick + 1800;
             _allInited = false;
             Warming = false;
             WarmedUp = false;
-
             _resetEntity = false;
 
             ResetComp();

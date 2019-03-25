@@ -1,5 +1,4 @@
-﻿using VRage.ModAPI;
-using System;
+﻿using System;
 using DefenseShields.Support;
 using Sandbox.ModAPI;
 using VRage.Game;
@@ -23,6 +22,7 @@ namespace DefenseShields
 
             Vector3D impactPos;
             lock (HandlerImpact) impactPos = HandlerImpact.Active ? ComputeHandlerImpact() : WorldImpactPosition;
+            var collision = WorldImpactPosition != Vector3D.NegativeInfinity && impactPos != Vector3D.Zero;
 
             WorldImpactPosition = impactPos;
             var activeVisible = DetermineVisualState(reInforce);
@@ -44,7 +44,7 @@ namespace DefenseShields
                 if (kineticHit) KineticCoolDown = 0;
                 else if (EnergyHit) EnergyCoolDown = 0;
 
-                HitParticleStart(impactPos);
+                HitParticleStart(impactPos, collision);
 
                 var cubeBlockLocalMatrix = MyGrid.PositionComp.LocalMatrix;
                 var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
@@ -253,7 +253,7 @@ namespace DefenseShields
             return lod;
         }
 
-        private void HitParticleStart(Vector3D pos, bool multiple = false)
+        private void HitParticleStart(Vector3D pos, bool collision)
         {
             var scale = 0.0075;
             var logOfPlayerDist = Math.Log(Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos));
@@ -262,8 +262,9 @@ namespace DefenseShields
             var baseScaler = size / 30;
             scale = scale * Math.Max(Math.Log(baseScaler), 1);
             Vector4 color;
-            int mainParticle = 6667;
+            var mainParticle = 6667;
             float mainAdjust = 1;
+            var multiple = false;
             if (EnergyHit)
             {
                 var scaler = 8;
@@ -280,19 +281,27 @@ namespace DefenseShields
             {
                 var scaler = 8;
                 if (_viewInShield && DsSet.Settings.DimShieldHits) scaler = 3;
-                mainParticle = 1657;
+                if (!collision) mainParticle = 1657;
+                else mainAdjust = 0.25f;
                 radius = (int)(logOfPlayerDist * scaler);
-                color = new Vector4(255, 255, 255, 1);
+                color = new Vector4(255, 255, 255, 0.01f);
             }
             var vel = MyGrid.Physics.LinearVelocity;
 
             var matrix = MatrixD.CreateTranslation(pos);
             MyParticlesManager.TryCreateParticleEffect(mainParticle, out _effect1, ref matrix, ref pos, _shieldEntRendId, true);
             if (_effect1 == null) return;
+            var directedMatrix = _effect1.WorldMatrix;
+            var shieldCenter = ShieldEnt.PositionComp.WorldAABB.Center;
+            directedMatrix.Forward = Vector3D.Normalize(MyAPIGateway.Session.Camera.Position - shieldCenter);
+            directedMatrix.Left = Vector3D.CalculatePerpendicularVector(directedMatrix.Forward);
+            directedMatrix.Up = Vector3D.Cross(directedMatrix.Forward, directedMatrix.Left);
+
             _effect1.UserColorMultiplier = color;
             _effect1.UserRadiusMultiplier = radius * mainAdjust;
             _effect1.UserEmitterScale = (float)scale;
             _effect1.Velocity = vel;
+            if (!EnergyHit) _effect1.WorldMatrix = directedMatrix;
             _effect1.Play();
 
             var magic = ((radius * 0.1f) - 2.5f);
@@ -300,11 +309,6 @@ namespace DefenseShields
             {
                 MyParticlesManager.TryCreateParticleEffect(1657, out _effect2, ref matrix, ref pos, _shieldEntRendId, true);
                 if (_effect2 == null) return;
-                var directedMatrix = _effect1.WorldMatrix;
-                var shieldCenter = ShieldEnt.PositionComp.WorldAABB.Center;
-                directedMatrix.Forward = Vector3D.Normalize(MyAPIGateway.Session.Camera.Position - shieldCenter);
-                directedMatrix.Left = Vector3D.CalculatePerpendicularVector(directedMatrix.Forward);
-                directedMatrix.Up = Vector3D.Cross(directedMatrix.Forward, directedMatrix.Left);
                 _effect2.UserColorMultiplier = color;
                 _effect2.UserRadiusMultiplier = 2f + magic;
                 _effect2.UserEmitterScale = 1f;
