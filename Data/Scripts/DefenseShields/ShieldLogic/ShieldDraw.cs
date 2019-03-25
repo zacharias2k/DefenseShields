@@ -262,7 +262,7 @@ namespace DefenseShields
             var baseScaler = size / 30;
             scale = scale * Math.Max(Math.Log(baseScaler), 1);
             Vector4 color;
-            var mainParticle = 6667;
+            var mainParticle = 1812;
             float mainAdjust = 1;
             var multiple = false;
             if (EnergyHit)
@@ -281,7 +281,7 @@ namespace DefenseShields
             {
                 var scaler = 8;
                 if (_viewInShield && DsSet.Settings.DimShieldHits) scaler = 3;
-                if (!collision) mainParticle = 1657;
+                if (!collision) mainParticle = 1812;
                 else mainAdjust = 0.25f;
                 radius = (int)(logOfPlayerDist * scaler);
                 color = new Vector4(255, 255, 255, 0.01f);

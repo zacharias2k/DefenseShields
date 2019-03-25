@@ -1521,8 +1521,11 @@
                 <Z>0</Z>
               </ValueVector3>
             </Property>
+            <Property Name="Rotation velocity" Type="Float" AnimationType="Const">
+              <ValueFloat>120</ValueFloat>
+            </Property>
             <Property Name="Rotation velocity var" Type="Float" AnimationType="Const"> <!-- sets variation of rotation speed, float so can be 0.1 -->
-              <ValueFloat>2</ValueFloat>
+              <ValueFloat>0</ValueFloat>
             </Property>
             <Property Name="Hue var" Type="Float" AnimationType="Const"> <!-- hue variation -->
               <ValueFloat>0</ValueFloat>
@@ -1531,13 +1534,13 @@
               <ValueBool>true</ValueBool>
             </Property>
             <Property Name="Motion inheritance" Type="Float" AnimationType="Const"> <!-- Inherits motion of empty or object attached to, time controlled -->
-              <ValueFloat>1</ValueFloat>
+              <ValueFloat>0</ValueFloat>
             </Property>
             <Property Name="Life var" Type="Float" AnimationType="Const"> <!-- variable life of particle -->
               <ValueFloat>0</ValueFloat>
             </Property>
             <Property Name="Streaks" Type="Bool" AnimationType="Const"> <!-- persistant trials -->
-              <ValueBool>false</ValueBool>
+              <ValueBool>true</ValueBool>
             </Property>
             <Property Name="Rotation reference" Type="Enum" AnimationType="Const">
               <ValueInt>1</ValueInt>
@@ -1650,7 +1653,7 @@
               <ValueFloat>0</ValueFloat>
             </Property>
             <Property Name="Radius var" Type="Float" AnimationType="Const"> <!-- radius variation of particle -->
-              <ValueFloat>0.01</ValueFloat>
+              <ValueFloat>0</ValueFloat>
             </Property>
             <Property Name="Rotation velocity collision multiplier" Type="Float" AnimationType="Const"> <!-- determines how much particle rotates after collision -->
               <ValueFloat>1</ValueFloat>
