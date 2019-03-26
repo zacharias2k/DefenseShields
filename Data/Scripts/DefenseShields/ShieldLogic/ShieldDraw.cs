@@ -22,7 +22,7 @@ namespace DefenseShields
 
             Vector3D impactPos;
             lock (HandlerImpact) impactPos = HandlerImpact.Active ? ComputeHandlerImpact() : WorldImpactPosition;
-            var collision = WorldImpactPosition != Vector3D.NegativeInfinity && impactPos != Vector3D.Zero;
+            var intersected = WorldImpactPosition != Vector3D.NegativeInfinity && impactPos != Vector3D.Zero;
 
             WorldImpactPosition = impactPos;
             var activeVisible = DetermineVisualState(reInforce);
@@ -44,7 +44,7 @@ namespace DefenseShields
                 if (kineticHit) KineticCoolDown = 0;
                 else if (EnergyHit) EnergyCoolDown = 0;
 
-                HitParticleStart(impactPos, collision);
+                HitParticleStart(impactPos, intersected);
 
                 var cubeBlockLocalMatrix = MyGrid.PositionComp.LocalMatrix;
                 var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
@@ -253,7 +253,7 @@ namespace DefenseShields
             return lod;
         }
 
-        private void HitParticleStart(Vector3D pos, bool collision)
+        private void HitParticleStart(Vector3D pos, bool intersected)
         {
             var scale = 0.0075;
             var logOfPlayerDist = Math.Log(Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos));
@@ -261,33 +261,35 @@ namespace DefenseShields
             var size = ImpactSize <= 7500 ? ImpactSize : 7500;
             var baseScaler = size / 30;
             scale = scale * Math.Max(Math.Log(baseScaler), 1);
+
+            var mainParticle = !intersected ? 1657 : 6667;
+            var multiple = EnergyHit;
+
             Vector4 color;
-            var mainParticle = 1812;
             float mainAdjust = 1;
-            var multiple = false;
             if (EnergyHit)
             {
                 var scaler = 8;
-                if (_viewInShield && DsSet.Settings.DimShieldHits) scaler = 3;
-                else
+                if (_viewInShield && DsSet.Settings.DimShieldHits)
                 {
-                    multiple = true;
-                    mainAdjust = 0.25f;
+                    multiple = false;
+                    scaler = 3;
                 }
+                else mainAdjust = 0.4f;
                 radius = (int)(logOfPlayerDist * scaler);
                 color = new Vector4(255, 10, 0, 1f);
             }
             else
             {
                 var scaler = 8;
-                if (_viewInShield && DsSet.Settings.DimShieldHits) scaler = 3;
-                if (!collision) mainParticle = 1812;
-                else mainAdjust = 0.25f;
+                if (_viewInShield && DsSet.Settings.DimShieldHits)
+                {
+                    scaler = 3;
+                }
                 radius = (int)(logOfPlayerDist * scaler);
                 color = new Vector4(255, 255, 255, 0.01f);
             }
             var vel = MyGrid.Physics.LinearVelocity;
-
             var matrix = MatrixD.CreateTranslation(pos);
             MyParticlesManager.TryCreateParticleEffect(mainParticle, out _effect1, ref matrix, ref pos, _shieldEntRendId, true);
             if (_effect1 == null) return;
