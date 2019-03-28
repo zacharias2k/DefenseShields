@@ -234,7 +234,7 @@ namespace DefenseShields
                 catch (Exception ex) { Log.Line($"Exception in WebEntities entInfo: {ex}"); }
             }
 
-            if (Session.Instance.LogStats) Perf.WebEnts(WebEnts.Count);
+            if (Session.Instance.LogStats) Session.Instance.Perf.WebEnts(WebEnts.Count);
 
             if (!_enablePhysics)
             {
@@ -256,8 +256,8 @@ namespace DefenseShields
 
             if (Session.Instance.LogStats)
             {
-                Perf.WebPhysics();
-                if (entChanged) Perf.EntChanged();
+                Session.Instance.Perf.WebPhysics();
+                if (entChanged) Session.Instance.Perf.EntChanged();
             }
 
             if (iMoving || entChanged)

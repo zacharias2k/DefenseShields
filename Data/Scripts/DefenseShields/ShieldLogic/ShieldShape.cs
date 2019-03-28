@@ -65,8 +65,8 @@ namespace DefenseShields
 
             if (Session.Instance.LogStats)
             {
-                if (ShieldComp.GridIsMoving) Perf.Moving();
-                if (_shapeChanged) Perf.ShapeChanged();
+                if (ShieldComp.GridIsMoving) Session.Instance.Perf.Moving();
+                if (_shapeChanged) Session.Instance.Perf.ShapeChanged();
             }
         }
 

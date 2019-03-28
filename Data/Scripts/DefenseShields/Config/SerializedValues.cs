@@ -214,4 +214,11 @@
         [ProtoMember(3)] public string DamageType;
         [ProtoMember(4)] public Vector3D HitPos;
     }
+
+    [ProtoContract]
+    public class ReportValues
+    {
+        [ProtoMember(1)] public string[] Report;
+    }
+
 }

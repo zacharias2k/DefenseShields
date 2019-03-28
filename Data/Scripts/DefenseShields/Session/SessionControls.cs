@@ -230,7 +230,7 @@
             catch (Exception ex) { Log.Line($"Exception in CreateAction: {ex}"); }
         }
 
-        private void CustomControls(IMyTerminalBlock tBlock, List<IMyTerminalControl> myTerminalControls)
+        internal void CustomControls(IMyTerminalBlock tBlock, List<IMyTerminalControl> myTerminalControls)
         {
             try
             {

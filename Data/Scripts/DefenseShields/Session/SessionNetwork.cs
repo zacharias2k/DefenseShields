@@ -38,7 +38,7 @@
                 var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataEnforce(0, Enforced));
                 MyAPIGateway.Multiplayer.SendMessageToServer(PACKET_ID, bytes, true);
             }
-            catch (Exception ex) { Log.Line($"Exception in PacketizeEnforcementToServer: {ex}"); }
+            catch (Exception ex) { Log.Line($"Exception in RequestEnforcement: {ex}"); }
         }
 
         internal void ClaimDisplay(ulong requestorId, long playerId, uint mId, long displayId, bool abandon)

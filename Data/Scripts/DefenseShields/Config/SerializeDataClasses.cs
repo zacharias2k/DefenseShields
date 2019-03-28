@@ -23,6 +23,7 @@
     [ProtoInclude(16, typeof(DataDisplayState))]
     [ProtoInclude(17, typeof(DataDisplayClaim))]
     [ProtoInclude(18, typeof(DataDisplaySettings))]
+    [ProtoInclude(19, typeof(DataReport))]
 
     [ProtoContract]
     public abstract class PacketBase
@@ -471,6 +472,33 @@
             var data = new DataEnforce(0, Session.Enforced);
             var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
             MyAPIGateway.Multiplayer.SendMessageTo(Session.PACKET_ID, bytes, State.SenderId);
+            return false;
+        }
+    }
+
+    [ProtoContract]
+    public class DataReport : PacketBase
+    {
+        public DataReport()
+        {
+        } // Empty constructor required for deserialization
+
+        [ProtoMember(1)] public ReportValues Report = null;
+
+        public DataReport(long entityId, ReportValues report) : base(entityId)
+        {
+            Report = report;
+        }
+
+        public override bool Received(bool isServer)
+        {
+            if (!isServer)
+            {
+                Log.Line("received report packet");
+                Session.Instance.NetworkReport = Report;
+                Session.Instance.ReceiveReport();
+                return false;
+            }
             return false;
         }
     }

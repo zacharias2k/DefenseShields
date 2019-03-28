@@ -1,20 +1,23 @@
-﻿using System.Collections;
+﻿using System.Collections.Generic;
+
 namespace DefenseShields.Support
 {
-    internal static class Perf
+    internal class Perf
     {
-        internal static int Counter = -1;
-        internal static bool Alive;
-        internal static Stats[] Storage = new Stats[60];
+        internal int Counter = -1;
+        internal bool Alive;
 
-        internal static void Ticker(uint tick)
+        internal void Ticker(uint tick, int resetTime, bool fullReport, int column = 0)
         {
-            if (tick % 600 == 0)
+            if (resetTime <= 0)
+            {
+                return;
+            }
+            if (tick % resetTime == 0)
             {
                 Alive = true;
             }
             else if (Alive == false) return;
-
             switch (Counter++)
             {
                 case -1:
@@ -23,170 +26,228 @@ namespace DefenseShields.Support
                 case 0:
                     Reset();
                     break;
-                case 60:
+                case 59:
                 {
-                    Counter = 0;
+                    Log.Line("Counter59");
+                        Counter = 0;
                     Alive = false;
-                    for (int i = 0; i < 60; i++)
-                    {
-                        var s = Storage[i];
-                         Log.Line($"Counter{i}");
-                         Log.Chars($"{s.Active}\n" +
-                                   $"{s.Asleep}\n" +
-                                   $"{s.Awake} \n" +
-                                   $"{s.Paused}\n" +
-                                   $"{s.Emitters}\n" +
-                                   $"{s.Enhancers}\n" +
-                                   $"{s.Modulators}\n" +
-                                   $"{s.Displays}\n" +
-                                   $"{s.O2Generators}\n" +
-                                   $"{s.EntChanged}\n" +
-                                   $"{s.ShapeChanged}\n" +
-                                   $"{s.Moving}\n" +
-                                   $"{s.ThreadEvents}\n" +
-                                   $"{s.WebEnts}\n" +
-                                   $"{s.WebPhysics}\n" +
-                                   $"{s.Protected}");
-                    }
+                    ProcessData(fullReport, column);
                     break;
                 }
             }
         }
 
-        internal static void Init()
+        internal void Init()
         {
-            for (int i = 0; i < 60; i++) Storage[i] = new Stats();
             Counter = 0;
         }
 
-        internal static void Reset()
+        internal void Reset()
         {
-            for (int i = 0; i < 60; i++)
+            for (int i = 0; i < 16; i++)
             {
-                var s = Storage[i];
-                s.WebPhysics = 0;
-                s.WebEnts = 0;
-                s.EntChanged = 0;
-                s.ThreadEvents = 0;
-                s.Asleep = 0;
-                s.Awake = 0;
-                s.Active = 0;
-                s.Paused = 0;
-                s.Moving = 0;
-                s.ShapeChanged = 0;
-                s.Protected = 0;
-                s.Emitters = 0;
-                s.Modulators = 0;
-                s.Displays = 0;
-                s.O2Generators = 0;
-                s.Enhancers = 0;
+                for (int j = 0; j < 60; j++) Storage[i][j] = 0;
             }
         }
 
-        internal static void WebPhysics()
+        internal void ProcessData(bool fullReport, int column)
         {
-            if (Alive) Storage[Counter].WebPhysics++;
+            var eventLog = Session.Instance.EventLog;
+            if (fullReport)
+            {
+                for (int i = 0; i < 16; i++)
+                {
+                    var s = Storage[i];
+                    var name = $"\n{Names[i]}: ";
+                    var logString = string.Empty;
+
+                    for (int j = 0; j < 60; j++) logString += $" {s[j]}";
+
+                    eventLog[i] = name + logString;
+                }
+            }
+            else
+            {
+                var name = $"\n{Names[column]}: ";
+                var logString = string.Empty;
+
+                for (int j = 0; j < 60; j++) logString += $" {Storage[column][j]}";
+
+                eventLog[column] = name + logString;
+            }
+            Log.Line("GenerateReport");
+            Session.Instance.GenerateReport();
         }
 
-        internal static void WebEnts(int value)
+        internal readonly Dictionary<int, string> Names = new Dictionary<int, string>
         {
-            if (Alive) Storage[Counter].WebEnts += value;
-        }
-
-        internal static void EntChanged()
-        {
-            if (Alive) Storage[Counter].EntChanged++;
-        }
-
-        internal static void ThreadEvents(int value)
-        {
-            if (Alive) Storage[Counter].ThreadEvents = value;
-        }
-
-        internal static void Asleep()
-        {
-            if (Alive) Storage[Counter].Asleep++;
-        }
-
-        internal static void Awake()
-        {
-            if (Alive) Storage[Counter].Awake++;
-        }
-
-        internal static void Active(int value)
-        {
-            if (Alive) Storage[Counter].Active = value;
-        }
-
-        internal static void Paused(int value)
-        {
-            if (Alive) Storage[Counter].Paused = value - Storage[Counter].Active;
-        }
-
-        internal static void Moving()
-        {
-            if (Alive) Storage[Counter].Moving++;
-        }
-
-        internal static void ShapeChanged()
-        {
-            if (Alive) Storage[Counter].ShapeChanged++;
-        }
-
-        internal static void Protected(int value)
-        {
-            if (Alive) Storage[Counter].Protected = value;
-        }
-
-        internal static void Emitters(int value)
-        {
-            if (Alive) Storage[Counter].Emitters = value;
-        }
-
-        internal static void Modulators(int value)
-        {
-            if (Alive) Storage[Counter].Modulators = value;
-        }
-
-        internal static void Displays(int value)
-        {
-            if (Alive) Storage[Counter].Displays = value;
-        }
-
-        internal static void O2Generators(int value)
-        {
-            if (Alive) Storage[Counter].O2Generators = value;
-        }
-
-        internal static void Enhancers(int value)
-        {
-            if (Alive) Storage[Counter].Enhancers = value;
-        }
-    }
-
-    internal class Stats
-    {
-        internal string[] Name = {
-            "WebPhysics", "WebEnts", "EntChanged", "ThreadEvents", "Asleep", "Awake", "Active", "Paused", "Moving",
-            "ShapeChanged", "Protected", "Emitters", "Modulators", "Displays", "O2Generators", "Enhancers"
+            {0, "WebPhysics"}, {1, "WebEnts"}, {2, "EntChanged"}, {3, "ThreadEvents"}, {4, "Asleep"}, {5, "Awake"},
+            {6, "Active"}, {7, "Paused"}, {8, "Moving"}, {9, "ShapeChanged"}, {10, "Protected"}, {11, "Emitters"},
+            {12, "Modulators"}, {13, "Displays"}, {14, "O2Generators"}, {15, "Enhancers"}
         };
 
-        private int _position;
-        internal int WebPhysics;
-        internal int WebEnts;
-        internal int EntChanged;
-        internal int ThreadEvents;
-        internal int Asleep;
-        internal int Awake;
-        internal int Active;
-        internal int Paused;
-        internal int Moving;
-        internal int ShapeChanged;
-        internal int Protected;
-        internal int Emitters;
-        internal int Modulators;
-        internal int Displays;
-        internal int O2Generators;
-        internal int Enhancers;
+        internal void WebPhysics()
+        {
+            if (Alive) Storage[0][Counter]++;
+        }
+
+        internal void WebEnts(int value)
+        {
+            if (Alive) Storage[1][Counter] += value;
+        }
+
+        internal void EntChanged()
+        {
+            if (Alive) Storage[2][Counter]++;
+        }
+
+        internal void ThreadEvents(int value)
+        {
+            if (Alive) Storage[3][Counter] = value;
+        }
+
+        internal void Asleep()
+        {
+            if (Alive) Storage[4][Counter]++;
+        }
+
+        internal void Awake()
+        {
+            if (Alive) Storage[5][Counter]++;
+        }
+
+        internal void Active(int value)
+        {
+            if (Alive) Storage[6][Counter] = value;
+        }
+
+        internal void Paused(int value)
+        {
+            if (Alive) Storage[7][Counter] = value;
+        }
+
+        internal void Moving()
+        {
+            if (Alive) Storage[8][Counter]++;
+        }
+
+        internal void ShapeChanged()
+        {
+            if (Alive) Storage[9][Counter]++;
+        }
+
+        internal void Protected(int value)
+        {
+            if (Alive) Storage[10][Counter] = value;
+        }
+
+        internal void Emitters(int value)
+        {
+            if (Alive) Storage[11][Counter] = value;
+        }
+
+        internal void Modulators(int value)
+        {
+            if (Alive) Storage[12][Counter] = value;
+        }
+
+        internal void Displays(int value)
+        {
+            if (Alive) Storage[13][Counter] = value;
+        }
+
+        internal void O2Generators(int value)
+        {
+            if (Alive) Storage[14][Counter] = value;
+        }
+
+        internal void Enhancers(int value)
+        {
+            if (Alive) Storage[15][Counter] = value;
+        }
+
+        internal int[][] Storage = new int[16][]
+        {
+            new int[60] //0 WebPhysics
+            {
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            },
+            new int[60] //1 WebEnts
+            {
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            },
+            new int[60] //2 EntChanged
+            {
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            },
+            new int[60] //3 ThreadEvents
+            {
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            },
+            new int[60] //4 Asleep
+            {
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            },
+            new int[60] //5 Awake
+            {
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            },
+            new int[60] //6 Active
+            {
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            },
+            new int[60] //7 Paused
+            {
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            },
+            new int[60] //8 Moving
+            {
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            },
+            new int[60] //9 ShapeChanged
+            {
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            },
+            new int[60] //10 Protected
+            {
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            },
+            new int[60] //11 Emitters
+            {
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            },
+            new int[60] //12 Modulators
+            {
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            },
+            new int[60] //13 Displays
+            {
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            },
+            new int[60] //14 O2Generators
+            {
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            },
+            new int[60] //15 Enhancers
+            {
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            },
+        };
     }
 }

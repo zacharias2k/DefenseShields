@@ -448,9 +448,9 @@
 
         private void TerminalRefresh()
         {
-            if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == O2Generator.EntityId)
+            O2Generator.RefreshCustomInfo();
+            if (InControlPanel && InThisTerminal)
             {
-                O2Generator.RefreshCustomInfo();
                 MyCube.UpdateTerminal();
             }
         }

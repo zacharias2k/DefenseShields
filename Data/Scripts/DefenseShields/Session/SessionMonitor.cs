@@ -350,7 +350,8 @@
             Tick600 = Tick % 600 == 0;
             Tick1800 = Tick % 1800 == 0;
 
-            if (LogStats) Perf.Ticker(Tick);
+            Log.Line($"LogStats:{LogStats}");
+            if (LogStats) Perf.Ticker(Tick, LogTime, LogFullReport, LogColumn);
 
             if (_count++ == 59)
             {
@@ -521,7 +522,7 @@
                     if (LogStats)
                     {
                         Perf.Active(ActiveShields.Count);
-                        Perf.Paused(FunctionalShields.Count);
+                        Perf.Paused(Controllers.Count - FunctionalShields.Count);
                         Perf.Emitters(Emitters.Count);
                         Perf.Modulators(Modulators.Count);
                         Perf.Displays(Displays.Count);

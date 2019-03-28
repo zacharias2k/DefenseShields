@@ -209,7 +209,7 @@
         private readonly ConcurrentQueue<MyEntity> _entRefreshQueue = new ConcurrentQueue<MyEntity>();
         private readonly ConcurrentDictionary<MyEntity, uint> _globalEntTmp = new ConcurrentDictionary<MyEntity, uint>();
         private readonly ConcurrentDictionary<long, BlockState> _warEffectCubes = new ConcurrentDictionary<long, BlockState>();
-
+        
         private DsPulseEvent _autoResetEvent = new DsPulseEvent();
         private MyParticleEffect _effect = new MyParticleEffect();
 
@@ -233,6 +233,9 @@
         internal static Session Instance { get; private set; }
         internal static bool EnforceInit { get; set; }
 
+        internal string[] EventLog { get; set; } = new string[16];
+        internal ReportValues NetworkReport { get; set; }
+
         internal uint Tick { get; set; }
         internal uint SoundTick { get; set; }
 
@@ -241,7 +244,12 @@
         internal int EntSlotScaler { get; set; } = 9;
         internal int MinScaler { get; set; } = 1;
         internal int PlayerEventId { get; set; }
+        internal int LogColumn { get; set; }
+        internal int LogTime { get; set; }
+
         internal long LastTerminalId { get; set; }
+
+        internal ulong LogSteamId { get; set; }
 
         internal float MaxEntitySpeed { get; set; } = 210;
 
@@ -276,10 +284,13 @@
         internal bool ModAction { get; set; }
         internal bool CreativeWarn { get; set; }
         internal bool ThyaImages { get; set; }
-        internal bool LogStats { get; set; } = true;
+        internal bool LogStats { get; set; }
+        internal bool LogServer { get; set; }
+        internal bool LogFullReport { get; set; }
 
         internal DefenseShields HudComp { get; set; }
         internal DSUtils Dsutil1 { get; set; } = new DSUtils();
+        internal Perf Perf { get; set; } = new Perf();
 
         internal IMyTerminalControlSlider WidthSlider { get; set; }
         internal IMyTerminalControlSlider HeightSlider { get; set; }

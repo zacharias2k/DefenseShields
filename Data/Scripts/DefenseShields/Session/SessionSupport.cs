@@ -17,6 +17,30 @@ namespace DefenseShields
             return modPath;
         }
 
+        public void GenerateReport()
+        {
+            if (LogServer && !MpActive || !LogServer && MpActive)
+            {
+                Log.Line($"Local:");
+                if (LogFullReport) Log.CleanLine($"{EventLog[0]} {EventLog[1]} {EventLog[2]} {EventLog[3]} {EventLog[4]} {EventLog[5]} {EventLog[6]} {EventLog[7]} {EventLog[8]} {EventLog[9]} {EventLog[10]} {EventLog[11]} {EventLog[12]} {EventLog[13]} {EventLog[14]} {EventLog[15]}");
+                else Log.CleanLine(EventLog[LogColumn]);
+            }
+            else if (LogServer && DedicatedServer)
+            {
+                Log.Line($"Sending Report Packet: Steamid: {LogSteamId}");
+                var data = new DataReport(0, NetworkReport);
+                var bytes = MyAPIGateway.Utilities.SerializeToBinary(data);
+                MyAPIGateway.Multiplayer.SendMessageTo(PACKET_ID, bytes, LogSteamId);
+            }
+        }
+
+        public void ReceiveReport()
+        {
+            Log.Line($"Remote:");
+            if (LogFullReport) Log.CleanLine($"{NetworkReport.Report[0]} {NetworkReport.Report[1]} {NetworkReport.Report[2]} {NetworkReport.Report[3]} {NetworkReport.Report[4]} {NetworkReport.Report[5]} {NetworkReport.Report[6]} {NetworkReport.Report[7]} {NetworkReport.Report[8]} {NetworkReport.Report[9]} {NetworkReport.Report[10]} {NetworkReport.Report[11]} {NetworkReport.Report[12]} {NetworkReport.Report[13]} {NetworkReport.Report[14]} {NetworkReport.Report[15]}");
+            else Log.CleanLine(NetworkReport.Report[LogColumn]);
+        }
+
         public MyEntity3DSoundEmitter AudioReady(MyEntity entity)
         {
             if (Tick - SoundTick < 600 && Tick > 600) return null;

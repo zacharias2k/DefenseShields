@@ -26,12 +26,6 @@
 
             if (_count == 29)
             {
-                if (!_isDedicated)
-                {
-                    Shield.RefreshCustomInfo();
-                    if (MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel && Session.Instance.LastTerminalId == Shield.EntityId)
-                        MyCube.UpdateTerminal();
-                }
                 _runningDamage = _dpsAvg.Add((int)_damageReadOut);
                 _runningHeal = _hpsAvg.Add((int)(_shieldChargeRate * ConvToHp));
                 _damageReadOut = 0;

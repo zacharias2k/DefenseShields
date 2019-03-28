@@ -26,7 +26,7 @@
 
             if (_resetEntity) ResetEntity();
             if (!_firstSync && _readyToSync) SaveAndSendAll();
-            if (!_isDedicated && _tick60 && InControlPanel && InThisTerminal) TerminalRefresh();
+            if (!_isDedicated && _count == 29) TerminalRefresh();
 
             if (wait || (!_allInited && !PostInit())) return false;
 
@@ -252,7 +252,7 @@
             if (DsState.State.Sleeping)
             {
                 DsState.State.Sleeping = false;
-                if (!_isDedicated && _tick60 && InControlPanel && InThisTerminal) TerminalRefresh();
+                if (!_isDedicated && _tick60) TerminalRefresh();
                 if (Session.Enforced.Debug >= 3) Log.Line($"Sleep: Controller was sleeping but is now waking, shield mode: {ShieldMode} - ShieldId [{Shield.EntityId}]");
             }
 
