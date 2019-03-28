@@ -1,8 +1,8 @@
-﻿namespace DefenseShields.Support
-{
-    using System.Threading;
-    using VRage;
+﻿using System.Threading;
+using VRage;
 
+namespace DefenseShields.Support
+{
     internal class DsAutoResetEvent
     {
         private readonly FastResourceLock _lock = new FastResourceLock();

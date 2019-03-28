@@ -1,15 +1,14 @@
 ﻿using VRage.Collections;
 using VRage.Library.Threading;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
+using Sandbox.Game.Entities;
+using VRageMath;
 
 namespace DefenseShields.Support
 {
-    using System;
-    using System.Collections.Concurrent;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using Sandbox.Game.Entities;
-    using VRageMath;
-
     internal static class ConcurrentQueueExtensions
     {
         public static void Clear<T>(this ConcurrentQueue<T> queue)

@@ -350,6 +350,8 @@
             Tick600 = Tick % 600 == 0;
             Tick1800 = Tick % 1800 == 0;
 
+            if (LogStats) Perf.Ticker(Tick);
+
             if (_count++ == 59)
             {
                 _count = 0;
@@ -516,9 +518,26 @@
             {
                 lock (ActiveShields)
                 {
+                    if (LogStats)
+                    {
+                        Perf.Active(ActiveShields.Count);
+                        Perf.Paused(FunctionalShields.Count);
+                        Perf.Emitters(Emitters.Count);
+                        Perf.Modulators(Modulators.Count);
+                        Perf.Displays(Displays.Count);
+                        Perf.Enhancers(Enhancers.Count);
+                        Perf.O2Generators(O2Generators.Count);
+                        Perf.Protected(GlobalProtect.Count);
+                    }
+
                     foreach (var s in ActiveShields)
                     {
-                        if (s.Asleep) continue;
+                        if (s.Asleep)
+                        {
+                            if (LogStats) Perf.Asleep();
+                            continue;
+                        }
+                        if (LogStats) Perf.Awake();
                         if (s.DsState.State.ReInforce)
                         {
                             s.DeformEnabled = true;

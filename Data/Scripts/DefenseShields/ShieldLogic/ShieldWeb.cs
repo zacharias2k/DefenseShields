@@ -233,6 +233,9 @@ namespace DefenseShields
                 }
                 catch (Exception ex) { Log.Line($"Exception in WebEntities entInfo: {ex}"); }
             }
+
+            if (Session.Instance.LogStats) Perf.WebEnts(WebEnts.Count);
+
             if (!_enablePhysics)
             {
                 return;
@@ -249,6 +252,12 @@ namespace DefenseShields
                 }
                 else _needPhysics = true;
                 if (voxelFound) Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
+            }
+
+            if (Session.Instance.LogStats)
+            {
+                Perf.WebPhysics();
+                if (entChanged) Perf.EntChanged();
             }
 
             if (iMoving || entChanged)

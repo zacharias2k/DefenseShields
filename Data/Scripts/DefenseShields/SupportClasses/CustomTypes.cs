@@ -1,18 +1,18 @@
-﻿namespace DefenseShields.Support
-{
-    using System;
-    using System.Collections.Generic;
-    using Sandbox.Game.EntityComponents;
-    using Sandbox.Game.Entities;
-    using Sandbox.ModAPI;
-    using VRage.Collections;
-    using VRage.Game.Entity;
-    using VRage.Game.ModAPI;
-    using VRage.ModAPI;
-    using VRage.Utils;
-    using VRage.Voxels;
-    using VRageMath;
+﻿using System;
+using System.Collections.Generic;
+using Sandbox.Game.EntityComponents;
+using Sandbox.Game.Entities;
+using Sandbox.ModAPI;
+using VRage.Collections;
+using VRage.Game.Entity;
+using VRage.Game.ModAPI;
+using VRage.ModAPI;
+using VRage.Utils;
+using VRage.Voxels;
+using VRageMath;
 
+namespace DefenseShields.Support
+{
     public struct WarHeadBlast
     {
         public readonly int WarSize;

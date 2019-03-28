@@ -1,18 +1,13 @@
-﻿using VRage.Game;
+﻿using Sandbox.Game.Entities;
+using Sandbox.ModAPI;
+using System.Collections.Generic;
+using VRage.Game.Components;
+using VRage.Game.Entity;
+using VRage.Game.ModAPI;
+using VRageMath;
 
 namespace DefenseShields.Support
 {
-    using System;
-    using Sandbox.Game;
-    using Sandbox.Game.Entities;
-    using Sandbox.Game.Entities.Character.Components;
-    using Sandbox.ModAPI;
-    using System.Collections.Generic;
-    using VRage.Game.Components;
-    using VRage.Game.Entity;
-    using VRage.Game.ModAPI;
-    using VRage.Utils;
-    using VRageMath;
 
     public interface IThreadEvent
     {

@@ -276,6 +276,7 @@
         internal bool ModAction { get; set; }
         internal bool CreativeWarn { get; set; }
         internal bool ThyaImages { get; set; }
+        internal bool LogStats { get; set; } = true;
 
         internal DefenseShields HudComp { get; set; }
         internal DSUtils Dsutil1 { get; set; } = new DSUtils();

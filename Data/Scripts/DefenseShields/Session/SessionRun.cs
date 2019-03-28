@@ -158,6 +158,7 @@
 
                 if (!ThreadEvents.IsEmpty)
                 {
+                    if (LogStats) Perf.ThreadEvents(ThreadEvents.Count);
                     IThreadEvent tEvent;
                     while (ThreadEvents.TryDequeue(out tEvent)) tEvent.Execute();
                 }

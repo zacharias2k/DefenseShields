@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Globalization;
 using System.IO;
 using Sandbox.ModAPI;
-
 namespace DefenseShields.Support
 {
     public class Log

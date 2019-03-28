@@ -1,5 +1,4 @@
-﻿using System;
-using DefenseShields.Support;
+﻿using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using System.Collections.Generic;
@@ -13,7 +12,6 @@ namespace DefenseShields
 {
     public partial class Session
     {
-
         #region EMP
         private void PrepEmpBlast()
         {

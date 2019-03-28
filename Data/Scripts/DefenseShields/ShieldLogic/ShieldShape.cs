@@ -62,6 +62,12 @@ namespace DefenseShields
             _oldShieldFudge = DsState.State.ShieldFudge;
             if (_entityChanged || BoundingRange <= 0) CreateShieldShape();
             if (_tick300) CreateHalfExtents();
+
+            if (Session.Instance.LogStats)
+            {
+                if (ShieldComp.GridIsMoving) Perf.Moving();
+                if (_shapeChanged) Perf.ShapeChanged();
+            }
         }
 
         public void RefreshDimensions()
