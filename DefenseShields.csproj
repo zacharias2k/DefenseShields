@@ -42,7 +42,6 @@
     <None Include="Data\ParticleEffects.sbc" />
     <None Include="Data\EntityComponents.sbc" />
     <None Include="Data\TransparentMaterials.sbc" />
-    <None Include="packages.config" />
     <None Include="tools\Monitor DS.ps1" />
     <None Include="tools\Monitor SE Error Log.ps1" />
     <None Include="tools\Monitor SE Log.ps1" />
