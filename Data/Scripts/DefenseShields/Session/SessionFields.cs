@@ -71,7 +71,9 @@
 
         internal readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         internal readonly Dictionary<MyEntity, MyProtectors> GlobalProtect = new Dictionary<MyEntity, MyProtectors>();
+        internal Dictionary<MyCubeGrid, BlockRegen> GridsToLogics = new Dictionary<MyCubeGrid, BlockRegen>();
 
+        internal HashSet<BlockRegen> RegenLogics = new HashSet<BlockRegen>();
         internal readonly HashSet<DefenseShields> ActiveShields = new HashSet<DefenseShields>();
         internal readonly ConcurrentDictionary<DefenseShields, bool> FunctionalShields = new ConcurrentDictionary<DefenseShields, bool>();
 
@@ -234,7 +236,7 @@
         internal static bool EnforceInit { get; set; }
 
         internal string[] EventLog { get; set; } = new string[16];
-        internal ReportValues NetworkReport { get; set; }
+        internal ReportValues NetworkReport { get; set; } = new ReportValues();
 
         internal uint Tick { get; set; }
         internal uint SoundTick { get; set; }
@@ -248,8 +250,9 @@
         internal int LogTime { get; set; }
 
         internal long LastTerminalId { get; set; }
+        internal long AuthorPlayerId { get; set; }
 
-        internal ulong LogSteamId { get; set; }
+        internal ulong AuthorSteamId { get; set; } = 76561197969691953;
 
         internal float MaxEntitySpeed { get; set; } = 210;
 

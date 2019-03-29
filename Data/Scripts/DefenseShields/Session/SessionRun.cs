@@ -29,9 +29,12 @@
                 Log.Line($"Logging Started: Server:{IsServer} - Dedicated:{DedicatedServer} - MpActive:{MpActive}");
 
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
+                MyAPIGateway.Session.DamageSystem.RegisterAfterDamageHandler(int.MaxValue, AfterDamage);
+
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID, ReceivedPacket);
 
-                if (!DedicatedServer && IsServer) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
+                //if (!DedicatedServer && IsServer) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
+                if (!DedicatedServer && IsServer) PlayerConnected(MyAPIGateway.Session.Player.IdentityId);
                 MyEntities.OnEntityRemove += OnEntityRemove;
 
                 MyVisualScriptLogicProvider.PlayerDisconnected += PlayerDisconnected;

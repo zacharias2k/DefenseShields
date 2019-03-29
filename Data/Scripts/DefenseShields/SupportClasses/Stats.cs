@@ -18,32 +18,19 @@ namespace DefenseShields.Support
                 Alive = true;
             }
             else if (Alive == false) return;
-            switch (Counter++)
+            switch (++Counter)
             {
-                case -1:
-                    Init();
-                    break;
-                case 0:
+                case 60:
+                    ProcessData(fullReport, column);
                     Reset();
                     break;
-                case 59:
-                {
-                    Log.Line("Counter59");
-                        Counter = 0;
-                    Alive = false;
-                    ProcessData(fullReport, column);
-                    break;
-                }
             }
-        }
-
-        internal void Init()
-        {
-            Counter = 0;
         }
 
         internal void Reset()
         {
+            Counter = -1;
+            Alive = false;
             for (int i = 0; i < 16; i++)
             {
                 for (int j = 0; j < 60; j++) Storage[i][j] = 0;
@@ -52,6 +39,7 @@ namespace DefenseShields.Support
 
         internal void ProcessData(bool fullReport, int column)
         {
+            if (Session.Enforced.Debug >= 2) Log.Line("Processing Report Data");
             var eventLog = Session.Instance.EventLog;
             if (fullReport)
             {
@@ -75,7 +63,6 @@ namespace DefenseShields.Support
 
                 eventLog[column] = name + logString;
             }
-            Log.Line("GenerateReport");
             Session.Instance.GenerateReport();
         }
 

@@ -207,6 +207,26 @@ namespace DefenseShields
             catch (Exception ex) { Log.Line($"Exception in SessionDamageHandler {_previousEnt == null}: {ex}"); }
         }
 
+        public void AfterDamage(object target, MyDamageInformation info)
+        {
+            try
+            {
+                var block = target as IMySlimBlock;
+                var grid = block?.CubeGrid as MyCubeGrid;
+                if (grid != null)
+                {
+                    BlockRegen logic;
+                    var blockRegen = GridsToLogics.TryGetValue(grid, out logic);
+                    if (blockRegen)
+                    {
+                        logic.QueuedBlocks.Enqueue(block);
+                        logic.Regening = true;
+                    }
+                }
+            }
+            catch (Exception ex) { Log.Line($"Exception in CheckDamage: {ex}"); }
+        }
+
         private void CharacterProtection(object target, MyDamageInformation info)
         {
             if (info.Type == MpIgnoreDamage || info.Type == MyDamageType.LowPressure) return;

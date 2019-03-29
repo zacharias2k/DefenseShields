@@ -107,7 +107,7 @@
                             if (s.TicksWithNoActivity++ % EntCleanCycle == 0) s.EntCleanUpTime = true;
                             if (shieldActive && !s.WasPaused && tick > 1200)
                             {
-                                if (Enforced.Debug >= 3) Log.Line($"Logic Paused by monitor");
+                                if (Enforced.Debug >= 2) Log.Line($"Logic Paused by monitor");
                                 lock (ActiveShields) ActiveShields.Remove(s);
                                 s.WasPaused = true;
                                 s.Asleep = false;
@@ -275,7 +275,7 @@
                             var meteor = ent as IMyMeteor;
                             if (meteor != null)
                             {
-                                if (CustomCollision.FutureIntersect(s, ent, s.DetectMatrixOutside, s.DetectMatrixOutsideInv) != null)
+                                if (CustomCollision.FutureIntersect(s, ent, s.DetectMatrixOutside, s.DetectMatrixOutsideInv))
                                 {
                                     if (Enforced.Debug >= 2) Log.Line($"[Future Intersecting Meteor] distance from shieldCenter: {Vector3D.Distance(s.DetectionCenter, ent.WorldMatrix.Translation)} - waking:");
                                     newMover = true;
@@ -349,10 +349,11 @@
             Tick300 = Tick % 300 == 0;
             Tick600 = Tick % 600 == 0;
             Tick1800 = Tick % 1800 == 0;
-
-            Log.Line($"LogStats:{LogStats}");
-            if (LogStats) Perf.Ticker(Tick, LogTime, LogFullReport, LogColumn);
-
+            if (Tick1800 && AuthorPlayerId != 0) AuthorDebug();
+            if (LogStats && (IsServer && LogServer || !IsServer && !LogServer))
+            {
+                Perf.Ticker(Tick, LogTime, LogFullReport, LogColumn);
+            }
             if (_count++ == 59)
             {
                 _count = 0;
@@ -381,7 +382,7 @@
                 {
                     MiscLoaded = true;
                     UtilsStatic.GetDefinitons();
-                    if (!IsServer) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
+                    if (!IsServer) PlayerConnected(MyAPIGateway.Session.Player.IdentityId);
                 }
                 GameLoaded = true;
             }

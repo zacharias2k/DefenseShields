@@ -262,7 +262,9 @@ namespace DefenseShields
             Init,
             Lowered,
             Sleep,
-            Wake
+            Wake,
+            Suspend,
+            Other
         }
 
         internal enum ShieldType

@@ -150,7 +150,7 @@
             UpdateSubGrids(true);
         }
 
-        private void OfflineShield(bool clear, bool resetShape, bool keepCharge = false)
+        private void OfflineShield(bool clear, bool resetShape, State reason, bool keepCharge = false)
         {
             DefaultShieldState(clear, keepCharge, resetShape);
 
@@ -159,7 +159,7 @@
 
             if (!_isDedicated) ShellVisibility(true);
 
-            if (Session.Enforced.Debug >= 2) Log.Line($"[ShieldOff] clear:{clear} - resetShape:{resetShape} - keepCharge:{keepCharge} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug >= 2) Log.Line($"[ShieldOff] reason:{reason} - clear:{clear} - resetShape:{resetShape} - keepCharge:{keepCharge} - ShieldId [{Shield.EntityId}]");
         }
 
         private void DefaultShieldState(bool clear, bool keepCharge, bool resetShape = true)
@@ -292,7 +292,7 @@
         {
             SetShieldType(false);
             DsState.State.Suspended = true;
-            OfflineShield(true, true, true);
+            OfflineShield(true, true, State.Suspend, true);
             bool value;
             Session.Instance.BlockTagBackup(Shield);
             Session.Instance.FunctionalShields.TryRemove(this, out value);

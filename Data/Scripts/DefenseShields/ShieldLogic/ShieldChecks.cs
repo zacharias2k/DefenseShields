@@ -24,21 +24,11 @@ namespace DefenseShields
         {
             var name = Shield.CustomName;
             var nameLen = name.Length;
-            if (nameLen == 5 && name == "DEBUG" || nameLen == 2 && name == "DS" && Shield.CustomData.Length > 3)
+            if (nameLen == 5 && name == "DEBUG")
             {
                 if (_tick <= 1800) Shield.CustomName = "DEBUGAUTODISABLED";
-                else
-                    switch (nameLen)
-                    {
-                        case 5:
-                            UserDebug();
-                            break;
-                        case 2:
-                            OwnerDebug();
-                            break;
-                    }
+                else UserDebug();
             }
-            else Session.Instance.LogStats = false;
         }
 
         private void UserDebug()
@@ -61,40 +51,6 @@ namespace DefenseShields
 
             if (!_isDedicated) MyAPIGateway.Utilities.ShowNotification(message, 28800);
             else Log.Line(message);
-        }
-
-        private void OwnerDebug()
-        {
-            // server[1] + fullReport[1] + c1 & c2 + resetTime
-            int serverSide;
-            int fullReport;
-            int resetTime;
-            int col1;
-            int col2;
-
-            var server = int.TryParse(Shield.CustomData[0].ToString(), out serverSide);
-            var report = int.TryParse(Shield.CustomData[1].ToString(), out fullReport);
-            var c1 = int.TryParse(Shield.CustomData[2].ToString(), out col1);
-            var c2 = int.TryParse(Shield.CustomData[3].ToString(), out col2);
-            var reset = int.TryParse(Shield.CustomData.Substring(4), out resetTime);
-
-            if (server && report && c1 && c2 && reset)
-            {
-                int column;
-                if (col1 == 0) column = col2;
-                else column = 10 + col2;
-
-                Session.Instance.LogStats = true;
-                Session.Instance.LogColumn = column;
-                Session.Instance.LogServer = serverSide == 1;
-                Session.Instance.LogFullReport = fullReport == 1;
-                Session.Instance.LogTime = resetTime;
-                if (Session.Instance.LogSteamId == 0)
-                {
-                    Session.Instance.LogSteamId = MyAPIGateway.Multiplayer.Players.TryGetSteamId(Shield.OwnerId);
-                }
-            }
-            Log.Line($"OwnerDebug: Id:{Session.Instance.LogSteamId} - {Session.Instance.LogStats} - {Session.Instance.LogColumn} - {Session.Instance.LogServer} - {Session.Instance.LogFullReport} - {Session.Instance.LogTime}");
         }
 
         private static void CreativeModeWarning()

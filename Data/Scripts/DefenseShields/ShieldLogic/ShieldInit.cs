@@ -166,9 +166,10 @@ namespace DefenseShields
             MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(_ellipsoidOxyProvider);
 
             if (_isServer) Enforcements.SaveEnforcement(Shield, Session.Enforced, true);
-            else Session.Instance.FunctionalShields[this] = false;
 
+            Session.Instance.FunctionalShields[this] = false;
             Session.Instance.Controllers.Add(this);
+
             if (MyAPIGateway.Session.CreativeMode) CreativeModeWarning();
             IsWorking = MyCube.IsWorking;
             IsFunctional = MyCube.IsFunctional;

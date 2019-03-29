@@ -77,7 +77,7 @@
                         var up = shield != State.Lowered;
                         var awake = shield != State.Sleep;
                         var clear = up && awake;
-                        OfflineShield(clear, up);
+                        OfflineShield(clear, up, shield);
                     }
                     else if (DsState.State.Message) ShieldChangeState();
                     return;
@@ -128,7 +128,7 @@
 
                 if (ShieldComp?.DefenseShields == this)
                 {
-                    OfflineShield(true, false, true);
+                    OfflineShield(true, false, State.Other, true);
                     ShieldComp.DefenseShields = null;
                 }
 
@@ -162,7 +162,7 @@
 
                 if (ShieldComp?.DefenseShields == this)
                 {
-                    OfflineShield(true, false, true);
+                    OfflineShield(true, false, State.Other, true);
                     ShieldComp.DefenseShields = null;
                 }
 

@@ -1,4 +1,6 @@
 ﻿using DefenseShields.Support;
+using VRage.ModAPI;
+
 namespace DefenseShields
 {
     public partial class Displays
@@ -56,24 +58,25 @@ namespace DefenseShields
             var ds = ShieldComp.DefenseShields;
             if (_imagesDetected && Set.Settings.Report == 2)
             {
-                if (Display.GetText() != string.Empty) Display.WriteText(string.Empty);
+                if (Display.ShowText) Display.ShowTextureOnScreen();
                 var image = UtilsStatic.GetShieldThyaFromFloat(ds.DsState.State.ShieldPercent, 0);
                 var oldImage = Display.CurrentlyShownImage;
+
                 if (oldImage != image)
                 {
                     Display.RemoveImageFromSelection(oldImage, true);
                     Display.AddImageToSelection(image);
+                    Display.NeedsUpdate &= ~MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
                 }
             }
             else
             {
-                if (Display.CurrentlyShownImage != null)
+                if (!Display.ShowText)
                 {
-                    Display.TextPadding = 4;
-                    Display.FontSize = 1.2f;
-                    Display.ClearImagesFromSelection();
+                    Display.ShowPublicTextOnScreen();
+                    if (Display.FontSize <= 1) Display.FontSize = 1.30f;
                 }
-                Display.WriteText(ds.Shield.CustomInfo);
+                Display.WritePublicText(ds.Shield.CustomInfo);
             }
         }
 

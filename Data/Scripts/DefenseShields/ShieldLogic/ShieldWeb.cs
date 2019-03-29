@@ -262,7 +262,6 @@ namespace DefenseShields
 
             if (iMoving || entChanged)
             {
-                Asleep = false;
                 LastWokenTick = tick;
                 Session.Instance.WebWrapper.Enqueue(this);
                 Session.Instance.WebWrapperOn = true;
