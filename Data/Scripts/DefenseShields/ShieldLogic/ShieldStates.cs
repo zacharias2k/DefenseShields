@@ -300,6 +300,7 @@
 
         private void UnSuspend()
         {
+			if (_tick > ResetEntityTick && DsState.State.Suspended) ResetEntityTick = _tick + 1800;
             DsState.State.Suspended = false;
             ShieldComp.DefenseShields = this;
             Session.Instance.BlockTagActive(Shield);

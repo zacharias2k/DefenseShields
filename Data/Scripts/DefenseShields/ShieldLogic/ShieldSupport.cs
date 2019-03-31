@@ -1,4 +1,6 @@
-﻿namespace DefenseShields
+﻿using VRage.Game.ModAPI.Interfaces;
+
+namespace DefenseShields
 {
     using Support;
     using Sandbox.Game.Entities;
@@ -6,7 +8,6 @@
     using VRage.Game.ModAPI;
     using VRage.Utils;
     using VRageMath;
-    using VRage.Game.ModAPI.Interfaces;
     using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
     public partial class DefenseShields

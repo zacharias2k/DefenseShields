@@ -107,7 +107,7 @@
                             if (s.TicksWithNoActivity++ % EntCleanCycle == 0) s.EntCleanUpTime = true;
                             if (shieldActive && !s.WasPaused && tick > 1200)
                             {
-                                if (Enforced.Debug >= 3) Log.Line($"Logic Paused by monitor");
+                                if (Enforced.Debug >= 2) Log.Line($"Logic Paused by monitor");
                                 lock (ActiveShields) ActiveShields.Remove(s);
                                 s.WasPaused = true;
                                 s.Asleep = false;

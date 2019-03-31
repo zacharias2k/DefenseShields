@@ -166,9 +166,10 @@ namespace DefenseShields
             MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(_ellipsoidOxyProvider);
 
             if (_isServer) Enforcements.SaveEnforcement(Shield, Session.Enforced, true);
-            else Session.Instance.FunctionalShields[this] = false;
-
+            
+			Session.Instance.FunctionalShields[this] = false;
             Session.Instance.Controllers.Add(this);
+			
             if (MyAPIGateway.Session.CreativeMode) CreativeModeWarning();
             IsWorking = MyCube.IsWorking;
             IsFunctional = MyCube.IsFunctional;
@@ -265,7 +266,7 @@ namespace DefenseShields
             Shield.CubeGrid.Components.TryGet(out comp);
             if (comp == null)
             {
-                ShieldComp = new ShieldGridComponent(this);
+                ShieldComp = new ShieldGridComponent(null);
                 Shield.CubeGrid.Components.Add(ShieldComp);
             }
             else Shield.CubeGrid.Components.TryGet(out ShieldComp);
