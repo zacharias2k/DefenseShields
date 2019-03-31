@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Text;
-using DefenseShields.Support;
+using DefenseSystems.Support;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
@@ -8,7 +8,7 @@ using VRage.Game.Components;
 using VRage.Utils;
 using VRageMath;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     public partial class Enhancers 
     {
@@ -49,7 +49,7 @@ namespace DefenseShields
             if (_subpartRotor == null) return false;
         }
 
-        if (ShieldComp?.DefenseShields?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
+        if (ShieldComp?.DefenseSystems?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
         if (_isServer)
         {
             if (!_firstSync && _readyToSync) SaveAndSendAll();
@@ -58,7 +58,7 @@ namespace DefenseShields
         }
         else
         {
-            if (ShieldComp?.DefenseShields == null) return false;
+            if (ShieldComp?.DefenseSystems == null) return false;
 
             if (!EnhState.State.Backup && ShieldComp.Enhancer != this) ShieldComp.Enhancer = this;
 
@@ -70,7 +70,7 @@ namespace DefenseShields
 
     private bool BlockWorking()
     {
-        if (!IsWorking || ShieldComp?.DefenseShields == null)
+        if (!IsWorking || ShieldComp?.DefenseSystems == null)
         {
             NeedUpdate(EnhState.State.Online, false);
             return false;
@@ -93,7 +93,7 @@ namespace DefenseShields
         }
 
         _firstLoop = false;
-        if (!EnhState.State.Backup && ShieldComp.Enhancer == this && ShieldComp.DefenseShields.NotFailed)
+        if (!EnhState.State.Backup && ShieldComp.Enhancer == this && ShieldComp.DefenseSystems.NotFailed)
         {
             NeedUpdate(EnhState.State.Online, true);
             return true;
@@ -215,12 +215,12 @@ namespace DefenseShields
 
     private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
     {
-        if (ShieldComp?.DefenseShields == null)
+        if (ShieldComp?.DefenseSystems == null)
         {
             stringBuilder.Append("[Controller Link]: False");
         }
-        else if (!EnhState.State.Backup && ShieldComp.DefenseShields.ShieldMode ==
-                 global::DefenseShields.DefenseShields.ShieldType.Station)
+        else if (!EnhState.State.Backup && ShieldComp.DefenseSystems.ShieldMode ==
+                 global::DefenseSystems.DefenseSystems.ShieldType.Station)
         {
             stringBuilder.Append("[Online]: " + EnhState.State.Online +
                                  "\n" +

@@ -2,7 +2,7 @@
 using Sandbox.Game.Entities;
 using VRage.Game.Entity;
 
-namespace DefenseShields.Support
+namespace DefenseSystems.Support
 {
     public class PhantomSphere : MySafeZone
     {

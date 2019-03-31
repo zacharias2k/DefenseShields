@@ -1,8 +1,8 @@
-﻿using DefenseShields.Support;
+﻿using DefenseSystems.Support;
 using Sandbox.ModAPI;
 using VRageMath;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     public partial class Emitters
     {
@@ -17,7 +17,7 @@ namespace DefenseShields
                 return;
             }
 
-            var controller = ShieldComp.DefenseShields;
+            var controller = ShieldComp.DefenseSystems;
             var controllerReady = controller != null && controller.Warming && controller.IsWorking && controller.IsFunctional && !controller.DsState.State.Suspended && controller.DsState.State.ControllerGridAccess;
             var emitterActive = EmiState.State.ActiveEmitterId == MyCube.EntityId;
             var controllerLinked = emitterActive && controllerReady;
@@ -46,7 +46,7 @@ namespace DefenseShields
             if (!_compact && SubpartRotor.Closed) BlockReset(false);
             TookControl = false;
 
-            ShieldComp.DefenseShields.ResetShape(false);
+            ShieldComp.DefenseSystems.ResetShape(false);
             if (EmitterMode == EmitterType.Station)
             {
                 EmiState.State.Los = true;
@@ -94,7 +94,7 @@ namespace DefenseShields
         {
             if (Vector3D.DistanceSquared(MyAPIGateway.Session.Player.Character.PositionComp.WorldAABB.Center, Emitter.PositionComp.WorldAABB.Center) < 2250000)
             {
-                var controller = ShieldComp.DefenseShields;
+                var controller = ShieldComp.DefenseSystems;
 
                 var needsUpdate = controller.GridIsMobile && (ShieldComp.GridIsMoving || _updateLosState);
 
@@ -138,10 +138,10 @@ namespace DefenseShields
         {
             var losPointSphere = Session.Instance.LosPointSphere;
             LosScaledCloud.Clear();
-            UtilsStatic.UnitSphereTranslateScaleList(_unitSpherePoints, ref losPointSphere, ref LosScaledCloud, ShieldComp.DefenseShields.ShieldEnt, false, MyGrid);
+            UtilsStatic.UnitSphereTranslateScaleList(_unitSpherePoints, ref losPointSphere, ref LosScaledCloud, ShieldComp.DefenseSystems.ShieldEnt, false, MyGrid);
         }
 
-        private void BroadCastLosMessage(int blocked, int needed, DefenseShields controller)
+        private void BroadCastLosMessage(int blocked, int needed, DefenseSystems controller)
         {
             var sphere = new BoundingSphereD(Emitter.PositionComp.WorldAABB.Center, 1500);
             var sendMessage = false;

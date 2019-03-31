@@ -1,4 +1,4 @@
-﻿namespace DefenseShields
+﻿namespace DefenseSystems
 {
     using System;
     using System.Collections.Concurrent;
@@ -63,7 +63,7 @@
 
         internal readonly ConcurrentDictionary<long, IMyPlayer> Players = new ConcurrentDictionary<long, IMyPlayer>();
 
-        internal readonly ConcurrentQueue<DefenseShields> WebWrapper = new ConcurrentQueue<DefenseShields>();
+        internal readonly ConcurrentQueue<DefenseSystems> WebWrapper = new ConcurrentQueue<DefenseSystems>();
 
         internal readonly ConcurrentQueue<IThreadEvent> ThreadEvents = new ConcurrentQueue<IThreadEvent>();
 
@@ -74,8 +74,8 @@
         internal Dictionary<MyCubeGrid, BlockRegen> GridsToLogics = new Dictionary<MyCubeGrid, BlockRegen>();
 
         internal HashSet<BlockRegen> RegenLogics = new HashSet<BlockRegen>();
-        internal readonly HashSet<DefenseShields> ActiveShields = new HashSet<DefenseShields>();
-        internal readonly ConcurrentDictionary<DefenseShields, bool> FunctionalShields = new ConcurrentDictionary<DefenseShields, bool>();
+        internal readonly HashSet<DefenseSystems> ActiveShields = new HashSet<DefenseSystems>();
+        internal readonly ConcurrentDictionary<DefenseSystems, bool> FunctionalShields = new ConcurrentDictionary<DefenseSystems, bool>();
 
         internal readonly List<PlanetShields> PlanetShields = new List<PlanetShields>();
         internal readonly List<Emitters> Emitters = new List<Emitters>();
@@ -83,7 +83,7 @@
         internal readonly List<Enhancers> Enhancers = new List<Enhancers>();
         internal readonly List<O2Generators> O2Generators = new List<O2Generators>();
         internal readonly List<Modulators> Modulators = new List<Modulators>();
-        internal readonly List<DefenseShields> Controllers = new List<DefenseShields>();
+        internal readonly List<DefenseSystems> Controllers = new List<DefenseSystems>();
 
         internal readonly HashSet<string> DsActions = new HashSet<string>()
         {
@@ -231,7 +231,7 @@
             UtilsStatic.UnitSphereRandomOnly(ref LosPointSphere);
         }
 
-        internal static DefenseShieldsEnforcement Enforced { get; set; } = new DefenseShieldsEnforcement();
+        internal static DefenseSystemsEnforcement Enforced { get; set; } = new DefenseSystemsEnforcement();
         internal static Session Instance { get; private set; }
         internal static bool EnforceInit { get; set; }
 
@@ -291,7 +291,7 @@
         internal bool LogServer { get; set; }
         internal bool LogFullReport { get; set; }
 
-        internal DefenseShields HudComp { get; set; }
+        internal DefenseSystems HudComp { get; set; }
         internal DSUtils Dsutil1 { get; set; } = new DSUtils();
         internal Perf Perf { get; set; } = new Perf();
 

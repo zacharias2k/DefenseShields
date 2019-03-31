@@ -1,4 +1,4 @@
-﻿namespace DefenseShields
+﻿namespace DefenseSystems
 {
     using System;
     using Support;
@@ -68,7 +68,7 @@
                 else if (_bCount < SyncCount * _bTime)
                 {
                     NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                    if (ShieldComp?.DefenseShields?.MyGrid == MyGrid) _bCount++;
+                    if (ShieldComp?.DefenseSystems?.MyGrid == MyGrid) _bCount++;
                 }
                 else _readyToSync = true;
             }

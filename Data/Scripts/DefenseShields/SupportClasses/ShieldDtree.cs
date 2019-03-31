@@ -3,14 +3,14 @@ using VRage.Game;
 using VRage.Game.Entity;
 using VRageMath;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     class ShieldTree
     {
         private MyDynamicAABBTreeD _aabbTree = new MyDynamicAABBTreeD(MyConstants.GAME_PRUNING_STRUCTURE_AABB_EXTENSION, 1.0);
         private Stack<int> _stack = new Stack<int>();
 
-        public void AddShield(DefenseShields shield)
+        public void AddShield(DefenseSystems shield)
         {
             if (shield.DtreeProxyId != -1)
                 return;
@@ -18,7 +18,7 @@ namespace DefenseShields
             shield.DtreeProxyId = _aabbTree.AddProxy(ref worldAabb, shield, 0U, true);
         }
 
-        public void RemoveShield(DefenseShields shield)
+        public void RemoveShield(DefenseSystems shield)
         {
             if (shield.DtreeProxyId == -1)
                 return;
@@ -26,7 +26,7 @@ namespace DefenseShields
             shield.DtreeProxyId = -1;
         }
 
-        public void MoveShield(DefenseShields shield)
+        public void MoveShield(DefenseSystems shield)
         {
             if (shield.DtreeProxyId == -1)
                 return;
@@ -39,17 +39,17 @@ namespace DefenseShields
             _aabbTree.Clear();
         }
 
-        public void GetAllShieldsInSphere(BoundingSphereD sphere, List<DefenseShields> result)
+        public void GetAllShieldsInSphere(BoundingSphereD sphere, List<DefenseSystems> result)
         {
             _aabbTree.OverlapAllBoundingSphere(ref sphere, result, false);
         }
 
-        public void GetAllShieldsInBox(BoundingBoxD box, List<DefenseShields> result)
+        public void GetAllShieldsInBox(BoundingBoxD box, List<DefenseSystems> result)
         {
             _aabbTree.OverlapAllBoundingBox(ref box, result, 0U, false);
         }
 
-        public void GetShieldsChangesInBox(int callerId, BoundingBoxD box, HashSet<DefenseShields> foundShields, HashSet<DefenseShields> lostShields, Dictionary<MyEntity, DefenseShields> compare)
+        public void GetShieldsChangesInBox(int callerId, BoundingBoxD box, HashSet<DefenseSystems> foundShields, HashSet<DefenseSystems> lostShields, Dictionary<MyEntity, DefenseSystems> compare)
         {
             var root = _aabbTree.GetRoot();
             var noneFound = true;
@@ -77,7 +77,7 @@ namespace DefenseShields
                     if (id == callerId) continue;
                     noneFound = false;
 
-                    var ds = _aabbTree.GetUserData<DefenseShields>(id);
+                    var ds = _aabbTree.GetUserData<DefenseSystems>(id);
                     if (!compare.ContainsKey(ds.MyGrid)) foundShields.Add(ds);
                     else lostShields.Add(ds);
                 }
@@ -101,7 +101,7 @@ namespace DefenseShields
             }
         }
 
-        public void GetAllShieldsInBoxDict(int callerId, BoundingBoxD box, Dictionary<MyEntity, DefenseShields> results)
+        public void GetAllShieldsInBoxDict(int callerId, BoundingBoxD box, Dictionary<MyEntity, DefenseSystems> results)
         {
             var root = _aabbTree.GetRoot();
 
@@ -127,7 +127,7 @@ namespace DefenseShields
                 {
                     if (id == callerId) continue;
 
-                    var ds = _aabbTree.GetUserData<DefenseShields>(id);
+                    var ds = _aabbTree.GetUserData<DefenseSystems>(id);
                     results.Add(ds.MyGrid, ds);
                 }
                 else
@@ -188,7 +188,7 @@ namespace DefenseShields
             return aabb;
         }
 
-        public void GetAllShields(List<DefenseShields> result)
+        public void GetAllShields(List<DefenseSystems> result)
         {
             _aabbTree.GetAll(result, false, null);
         }

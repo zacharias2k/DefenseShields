@@ -1,13 +1,13 @@
 ﻿using VRageMath;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     using System;
     using Support;
     using Sandbox.ModAPI;
     using VRage;
 
-    public partial class DefenseShields
+    public partial class DefenseSystems
     {
         #region Block Power Logic
         private bool PowerOnline()

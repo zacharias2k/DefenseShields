@@ -23,7 +23,7 @@ using System.Collections.Generic;
 
 #endregion
 
-namespace DefenseShields.Support
+namespace DefenseSystems.Support
 {
 
     /// <summary>

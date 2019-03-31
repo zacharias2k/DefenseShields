@@ -1,4 +1,4 @@
-﻿namespace DefenseShields
+﻿namespace DefenseSystems
 {
     using System;
     using Support;
@@ -10,7 +10,7 @@
     using VRage.ObjectBuilders;
 
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DSControlLarge", "DSControlSmall", "DSControlTable")]
-    public partial class DefenseShields : MyGameLogicComponent
+    public partial class DefenseSystems : MyGameLogicComponent
     {
         #region Simulation
         public override void OnAddedToContainer()
@@ -56,7 +56,7 @@
                 else if (_bCount < SyncCount * _bTime)
                 {
                     NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                    if (ShieldComp?.DefenseShields != null && ShieldComp.DefenseShields.Warming) _bCount++;
+                    if (ShieldComp?.DefenseSystems != null && ShieldComp.DefenseSystems.Warming) _bCount++;
                 }
                 else _readyToSync = true;
             }
@@ -126,10 +126,10 @@
                 if (!_allInited) return;
                 if (Session.Enforced.Debug >= 3) Log.Line($"OnRemovedFromScene: {ShieldMode} - GridId:{Shield.CubeGrid.EntityId} - ShieldId [{Shield.EntityId}]");
 
-                if (ShieldComp?.DefenseShields == this)
+                if (ShieldComp?.DefenseSystems == this)
                 {
                     OfflineShield(true, false, State.Other, true);
-                    ShieldComp.DefenseShields = null;
+                    ShieldComp.DefenseSystems = null;
                 }
 
                 RegisterEvents(false);
@@ -160,10 +160,10 @@
                 if (!_allInited) return;
                 if (Session.Enforced.Debug >= 3) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
 
-                if (ShieldComp?.DefenseShields == this)
+                if (ShieldComp?.DefenseSystems == this)
                 {
                     OfflineShield(true, false, State.Other, true);
-                    ShieldComp.DefenseShields = null;
+                    ShieldComp.DefenseSystems = null;
                 }
 
                 if (Session.Instance.Controllers.Contains(this)) Session.Instance.Controllers.Remove(this);

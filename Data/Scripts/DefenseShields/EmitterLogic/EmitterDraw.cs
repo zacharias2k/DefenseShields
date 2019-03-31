@@ -1,7 +1,7 @@
-﻿using DefenseShields.Support;
+﻿using DefenseSystems.Support;
 using VRageMath;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     public partial class Emitters
     {
@@ -45,7 +45,7 @@ namespace DefenseShields
         private void BlockMoveAnimation()
         {
             _blockReset = false;
-            var percent = ShieldComp.DefenseShields.DsState.State.ShieldPercent;
+            var percent = ShieldComp.DefenseSystems.DsState.State.ShieldPercent;
             if (_compact)
             {
                 if (_count == 0) EmissiveIntensity = 2;

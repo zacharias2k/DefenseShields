@@ -1,13 +1,13 @@
 ﻿using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     public partial class Displays
     {
         internal DisplayState State { get; set; }
         internal DisplaySettings Set { get; set; }
-        internal ShieldGridComponent ShieldComp;
+        internal DefenseBus ShieldComp;
         internal IMyTextPanel Display { get; set; }
         internal MyCubeGrid MyGrid { get; set; }
         internal MyCubeBlock MyCube { get; set; }

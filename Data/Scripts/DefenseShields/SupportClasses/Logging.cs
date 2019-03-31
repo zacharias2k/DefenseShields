@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using Sandbox.ModAPI;
-namespace DefenseShields.Support
+namespace DefenseSystems.Support
 {
     public class Log
     {

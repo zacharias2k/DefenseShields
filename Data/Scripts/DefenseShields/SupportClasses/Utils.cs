@@ -7,7 +7,7 @@ using System.Diagnostics;
 using Sandbox.Game.Entities;
 using VRageMath;
 
-namespace DefenseShields.Support
+namespace DefenseSystems.Support
 {
     internal static class ConcurrentQueueExtensions
     {
@@ -20,12 +20,12 @@ namespace DefenseShields.Support
 
     internal class MonitorWork
     {
-        internal List<DefenseShields> ShieldList;
+        internal List<DefenseSystems> ShieldList;
         internal uint Tick;
         internal int ShieldCnt;
         internal int MinScaler;
 
-        internal void DoIt(List<DefenseShields> s, uint t)
+        internal void DoIt(List<DefenseSystems> s, uint t)
         {
             ShieldList = s;
             Tick = t;

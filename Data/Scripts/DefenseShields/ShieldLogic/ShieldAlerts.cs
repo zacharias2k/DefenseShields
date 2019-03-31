@@ -1,4 +1,4 @@
-﻿using DefenseShields.Support;
+﻿using DefenseSystems.Support;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game;
@@ -6,9 +6,9 @@ using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRageMath;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
-    public partial class DefenseShields
+    public partial class DefenseSystems
     {
 
         private void PlayerMessages(PlayerNotice notice)

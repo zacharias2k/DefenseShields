@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Text;
-using DefenseShields.Support;
+using DefenseSystems.Support;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
@@ -10,7 +10,7 @@ using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     public partial class Modulators 
     {
@@ -138,9 +138,9 @@ namespace DefenseShields
 
         private void ServerCheckForCompLink()
         {
-            if (ShieldComp?.DefenseShields?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
+            if (ShieldComp?.DefenseSystems?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
 
-            if (ShieldComp?.DefenseShields == null) return;
+            if (ShieldComp?.DefenseSystems == null) return;
 
             if (ShieldComp?.Modulator != this)
             {
@@ -156,7 +156,7 @@ namespace DefenseShields
             if (ModState.State.Link && ShieldComp.Enhancer != null && ShieldComp.Enhancer.IsWorking)
             {
                 EnhancerLink = true;
-                if (ShieldComp.DefenseShields.IsStatic) ModSet.Settings.EmpEnabled = true;
+                if (ShieldComp.DefenseSystems.IsStatic) ModSet.Settings.EmpEnabled = true;
             }
             else EnhancerLink = false;
 
@@ -165,20 +165,20 @@ namespace DefenseShields
                 ModSet.Settings.ReInforceEnabled = false;
                 ModSet.Settings.EmpEnabled = false;
             }
-            else if (ModState.State.Link && ShieldComp.DefenseShields.IsStatic) ModSet.Settings.ReInforceEnabled = false;
+            else if (ModState.State.Link && ShieldComp.DefenseSystems.IsStatic) ModSet.Settings.ReInforceEnabled = false;
         }
 
         private void ClientCheckForCompLink()
         {
-            if (ShieldComp?.DefenseShields?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
+            if (ShieldComp?.DefenseSystems?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
 
-            if (ShieldComp?.DefenseShields == null) return;
+            if (ShieldComp?.DefenseSystems == null) return;
 
             if (ModState.State.Link && ShieldComp?.Modulator != this)
             {
                 if (ShieldComp.Modulator != this) ShieldComp.Modulator = this;
             }
-            EnhancerLink = ShieldComp.DefenseShields.DsState.State.Enhancer;
+            EnhancerLink = ShieldComp.DefenseSystems.DsState.State.Enhancer;
         }
 
         private void Timing()
@@ -337,7 +337,7 @@ namespace DefenseShields
         {
             try
             {
-                if (ModulatorComp == null || ModState.State.Backup || ShieldComp?.DefenseShields != null || (!_isDedicated && _tick == _subTick)) return;
+                if (ModulatorComp == null || ModState.State.Backup || ShieldComp?.DefenseSystems != null || (!_isDedicated && _tick == _subTick)) return;
                 if (!_isDedicated && _subTick > _tick - 9)
                 {
                     _subDelayed = true;

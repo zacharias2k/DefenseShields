@@ -1,4 +1,4 @@
-﻿namespace DefenseShields
+﻿namespace DefenseSystems
 {
     using Sandbox.ModAPI;
 

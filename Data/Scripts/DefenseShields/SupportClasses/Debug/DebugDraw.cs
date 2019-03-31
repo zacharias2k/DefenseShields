@@ -4,7 +4,7 @@ using VRage.Utils;
 using VRageMath;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
-namespace DefenseShields.Support
+namespace DefenseSystems.Support
 {
     public static class DsDebugDraw
     {

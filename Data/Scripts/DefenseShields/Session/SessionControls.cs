@@ -1,4 +1,4 @@
-﻿namespace DefenseShields
+﻿namespace DefenseSystems
 {
     using System;
     using System.Collections.Generic;
@@ -36,7 +36,7 @@
             try
             {
                 if (DsControl) return;
-                var comp = block?.GameLogic?.GetAs<DefenseShields>();
+                var comp = block?.GameLogic?.GetAs<DefenseSystems>();
                 TerminalHelpers.Separator(comp?.Shield, "DS-C_sep0");
                 ToggleShield = TerminalHelpers.AddOnOff(comp?.Shield, "DS-C_ToggleShield", "Shield Status", "Raise or Lower Shields", "Up", "Down", DsUi.GetRaiseShield, DsUi.SetRaiseShield);
                 TerminalHelpers.Separator(comp?.Shield, "DS-C_sep1");

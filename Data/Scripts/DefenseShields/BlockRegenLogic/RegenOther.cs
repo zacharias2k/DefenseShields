@@ -2,7 +2,7 @@
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     public partial class BlockRegen
     {

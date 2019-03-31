@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using VRage;
 
-namespace DefenseShields.Support
+namespace DefenseSystems.Support
 {
     internal class DsAutoResetEvent
     {

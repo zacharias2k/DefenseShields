@@ -1,6 +1,6 @@
 ﻿using VRage.Game.ObjectBuilders.Definitions.SessionComponents;
 
-namespace DefenseShields.Support
+namespace DefenseSystems.Support
 {
     using System;
     using System.Collections.Generic;
@@ -13,7 +13,7 @@ namespace DefenseShields.Support
 
     internal class CustomCollision
     {
-        public static bool FutureIntersect(DefenseShields ds, MyEntity ent, MatrixD detectMatrix, MatrixD detectMatrixInv)
+        public static bool FutureIntersect(DefenseSystems ds, MyEntity ent, MatrixD detectMatrix, MatrixD detectMatrixInv)
         {
             var entVel = ent.Physics.LinearVelocity;
             var entCenter = ent.PositionComp.WorldVolume.Center;
@@ -25,7 +25,7 @@ namespace DefenseShields.Support
             return intersect;
         }
 
-        public static Vector3D PastCenter(DefenseShields ds, MyEntity ent, MatrixD detectMatrix, MatrixD detectMatrixInv, int steps)
+        public static Vector3D PastCenter(DefenseSystems ds, MyEntity ent, MatrixD detectMatrix, MatrixD detectMatrixInv, int steps)
         {
             var entVel = -ent.Physics.LinearVelocity;
             var entCenter = ent.PositionComp.WorldVolume.Center;
@@ -35,7 +35,7 @@ namespace DefenseShields.Support
         }
 
         /*
-        public static Vector3D? MissileIntersect(DefenseShields ds, MyEntity missile, MatrixD detectMatrix, MatrixD detectMatrixInv)
+        public static Vector3D? MissileIntersect(DefenseSystems ds, MyEntity missile, MatrixD detectMatrix, MatrixD detectMatrixInv)
         {
             var missileVel = missile.Physics.LinearVelocity;
             var velStepSize = missileVel * (MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 2);

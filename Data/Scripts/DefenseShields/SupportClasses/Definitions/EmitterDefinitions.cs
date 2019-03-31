@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace DefenseShields.Support
+namespace DefenseSystems.Support
 {
     public static class DefinitionManager
     {

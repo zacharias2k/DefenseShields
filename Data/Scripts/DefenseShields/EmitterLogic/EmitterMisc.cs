@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Text;
-using DefenseShields.Support;
+using DefenseSystems.Support;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game.Components;
@@ -8,7 +8,7 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     public partial class Emitters
     {
@@ -102,7 +102,7 @@ namespace DefenseShields
                                          "\n[Emitter Type]: " + mode +
                                          "\n[Grid Compatible]: " + EmiState.State.Compatible +
                                          "\n[Controller Link]: " + EmiState.State.Link +
-                                         "\n[Controller Bus]: " + (ShieldComp?.DefenseShields != null) +
+                                         "\n[Controller Bus]: " + (ShieldComp?.DefenseSystems != null) +
                                          "\n[Line of Sight]: " + EmiState.State.Los +
                                          "\n[Is Suspended]: " + EmiState.State.Suspend +
                                          "\n[Is a Backup]: " + EmiState.State.Backup);

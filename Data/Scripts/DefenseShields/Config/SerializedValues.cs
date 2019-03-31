@@ -1,4 +1,4 @@
-﻿namespace DefenseShields
+﻿namespace DefenseSystems
 {
     using System;
     using System.ComponentModel;
@@ -6,7 +6,7 @@
     using VRageMath;
 
     [ProtoContract]
-    public class DefenseShieldsEnforcement
+    public class DefenseSystemsEnforcement
     {
         [ProtoMember(1), DefaultValue(-1)] public float HeatScaler = -1f;
         [ProtoMember(2), DefaultValue(-1)] public int BaseScaler = -1;

@@ -1,6 +1,6 @@
 ﻿using VRageMath;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     static class SphereEdgeCollision
     {

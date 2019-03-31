@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using VRageMath;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     public class Triangle
     {

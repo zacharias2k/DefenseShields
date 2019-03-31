@@ -22,7 +22,7 @@ using System;
 using VRageMath;
 #endregion
 
-namespace DefenseShields.Support
+namespace DefenseSystems.Support
 {
     /// <summary>
     /// Contains some math operations used within Jitter.

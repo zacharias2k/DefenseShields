@@ -1,9 +1,9 @@
-﻿namespace DefenseShields
+﻿namespace DefenseSystems
 {
     using Support;
     using VRageMath;
 
-    public partial class DefenseShields
+    public partial class DefenseSystems
     {
         private bool EntityAlive()
         {
@@ -268,13 +268,13 @@
             var notShip = ShieldMode == ShieldType.Station && !IsStatic;
             var unKnown = ShieldMode == ShieldType.Unknown;
             var wrongOwner = !DsState.State.ControllerGridAccess;
-            var nullShield = ShieldComp.DefenseShields == null;
-            var myShield = ShieldComp.DefenseShields == this;
+            var nullShield = ShieldComp.DefenseSystems == null;
+            var myShield = ShieldComp.DefenseSystems == this;
             var wrongRole = notStation || notShip || unKnown;
             if (!nullShield && !myShield || !IsFunctional || primeMode || betaMode || wrongOwner || wrongRole)
             {
                 if (!DsState.State.Suspended) Suspend();
-                if (myShield) ShieldComp.DefenseShields = null;
+                if (myShield) ShieldComp.DefenseSystems = null;
                 if (wrongRole) SetShieldType(true);
                 return true;
             }
@@ -301,7 +301,7 @@
         private void UnSuspend()
         {
             DsState.State.Suspended = false;
-            ShieldComp.DefenseShields = this;
+            ShieldComp.DefenseSystems = this;
             Session.Instance.BlockTagActive(Shield);
             Session.Instance.FunctionalShields[this] = false;
             UpdateEntity();
@@ -342,9 +342,9 @@
         private bool ClientOfflineStates()
         {
             var shieldUp = DsState.State.Online && !DsState.State.Suspended && !DsState.State.Sleeping;
-            if (ShieldComp.DefenseShields != this && shieldUp)
+            if (ShieldComp.DefenseSystems != this && shieldUp)
             {
-                ShieldComp.DefenseShields = this;
+                ShieldComp.DefenseSystems = this;
             }
 
             if (!shieldUp)

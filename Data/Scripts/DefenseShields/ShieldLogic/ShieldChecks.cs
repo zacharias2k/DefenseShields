@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using DefenseShields.Support;
+using DefenseSystems.Support;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
@@ -8,9 +8,9 @@ using VRage.Game;
 using VRage.Game.ModAPI;
 using VRageMath;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
-    public partial class DefenseShields
+    public partial class DefenseSystems
     {
         private void LosCheck()
         {
@@ -57,7 +57,7 @@ namespace DefenseShields
         {
             if (Session.Instance.CreativeWarn || Session.Instance.Tick < 600) return;
             Session.Instance.CreativeWarn = true;
-            const string message = "DefenseShields is not fully supported in\n" +
+            const string message = "DefenseSystems is not fully supported in\n" +
                                    "Creative Mode, due to unlimited power and \n" +
                                    "it will not operate as designed.\n";
             MyAPIGateway.Utilities.ShowNotification(message, 6720);
@@ -248,9 +248,9 @@ namespace DefenseShields
             foreach (var grid in ShieldComp.LinkedGrids.Keys)
             {
                 if (grid == MyGrid) continue;
-                ShieldGridComponent shieldComponent;
-                grid.Components.TryGet(out shieldComponent);
-                var ds = shieldComponent?.DefenseShields;
+                DefenseBus defenseBus;
+                grid.Components.TryGet(out defenseBus);
+                var ds = defenseBus?.DefenseSystems;
                 if (ds?.ShieldComp != null && ds.DsState.State.Online && ds.IsWorking)
                 {
                     var otherSize = ds.MyGrid.PositionComp.WorldAABB.Size.Volume;

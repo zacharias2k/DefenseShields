@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
-using DefenseShields.Support;
+using DefenseSystems.Support;
 using Sandbox.Game.Entities;
 using VRage.Game.ModAPI;
 
-namespace DefenseShields
+namespace DefenseSystems
 { 
     public partial class BlockRegen
     {

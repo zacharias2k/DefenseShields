@@ -1,4 +1,4 @@
-﻿namespace DefenseShields
+﻿namespace DefenseSystems
 {
     using System;
     using System.Collections.Generic;
@@ -10,7 +10,7 @@
     using VRage.Game.ModAPI;
     using VRageMath;
 
-    public partial class DefenseShields
+    public partial class DefenseSystems
     {
         #region Intersect
         internal void EntIntersectSelector(KeyValuePair<MyEntity, EntIntersectInfo> pair)
@@ -141,11 +141,11 @@
             var grid = ent as MyCubeGrid;
             if (grid == null) return;
             if (EntInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB))) return;
-            ShieldGridComponent shieldComponent;
+            DefenseBus shieldComponent;
             grid.Components.TryGet(out shieldComponent);
-            if (shieldComponent?.DefenseShields == null) return;
+            if (shieldComponent?.DefenseSystems == null) return;
 
-            var ds = shieldComponent.DefenseShields;
+            var ds = shieldComponent.DefenseSystems;
             if (!ds.NotFailed)
             {
                 EntIntersectInfo entInfo;

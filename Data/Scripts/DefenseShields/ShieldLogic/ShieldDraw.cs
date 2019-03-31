@@ -1,14 +1,14 @@
 ﻿using System;
-using DefenseShields.Support;
+using DefenseSystems.Support;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Utils;
 using VRageMath;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
-namespace DefenseShields
+namespace DefenseSystems
 {
-    public partial class DefenseShields
+    public partial class DefenseSystems
     {
         public void Draw(int onCount, bool sphereOnCamera)
         {

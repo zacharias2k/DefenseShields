@@ -1,5 +1,5 @@
 ﻿using System;
-using DefenseShields.Support;
+using DefenseSystems.Support;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -8,7 +8,7 @@ using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRageMath;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_TextPanel), false, "DSControlLCD", "DSControlLCDWide")]
     public partial class Displays : MyGameLogicComponent
@@ -68,7 +68,7 @@ namespace DefenseShields
                 else if (_bCount < SyncCount * _bTime)
                 {
                     NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                    if (ShieldComp?.DefenseShields?.MyGrid == MyGrid) _bCount++;
+                    if (ShieldComp?.DefenseSystems?.MyGrid == MyGrid) _bCount++;
                 }
                 else _readyToSync = true;
             }

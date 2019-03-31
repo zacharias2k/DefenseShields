@@ -17,7 +17,7 @@ using Color = VRageMath.Color;
 using Quaternion = VRageMath.Quaternion;
 using Vector3 = VRageMath.Vector3;
 
-namespace DefenseShields.Support
+namespace DefenseSystems.Support
 {
     internal static class UtilsStatic
     {
@@ -40,11 +40,11 @@ namespace DefenseShields.Support
             const int DisableBlockDamage = 0;
             const int DisableLineOfSight = 0;
 
-            var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg");
+            var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseSystems.cfg");
             if (dsCfgExists)
             {
-                var unPackCfg = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShields.cfg");
-                var unPackedData = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsEnforcement>(unPackCfg.ReadToEnd());
+                var unPackCfg = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseSystems.cfg");
+                var unPackedData = MyAPIGateway.Utilities.SerializeFromXML<DefenseSystemsEnforcement>(unPackCfg.ReadToEnd());
 
                 var invalidValue = unPackedData.HpsEfficiency <= 0 || unPackedData.BaseScaler < 1 || unPackedData.MaintenanceCost <= 0;
                 if (invalidValue)
@@ -106,20 +106,20 @@ namespace DefenseShields.Support
 
                 WriteNewConfigFile();
 
-                Log.Line($"wrote new config file - file exists: {MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg")}");
+                Log.Line($"wrote new config file - file exists: {MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseSystems.cfg")}");
             }
         }
 
         public static void ReadConfigFile()
         {
-            var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg");
+            var dsCfgExists = MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseSystems.cfg");
 
             if (Session.Enforced.Debug == 3) Log.Line($"Reading config, file exists? {dsCfgExists}");
 
             if (!dsCfgExists) return;
 
-            var cfg = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseShields.cfg");
-            var data = MyAPIGateway.Utilities.SerializeFromXML<DefenseShieldsEnforcement>(cfg.ReadToEnd());
+            var cfg = MyAPIGateway.Utilities.ReadFileInGlobalStorage("DefenseSystems.cfg");
+            var data = MyAPIGateway.Utilities.SerializeFromXML<DefenseSystemsEnforcement>(cfg.ReadToEnd());
             Session.Enforced = data;
 
             if (Session.Enforced.Debug == 3) Log.Line($"Writing settings to mod:\n{data}");
@@ -721,18 +721,18 @@ namespace DefenseShields.Support
         {
             unPackCfg.Close();
             unPackCfg.Dispose();
-            MyAPIGateway.Utilities.DeleteFileInGlobalStorage("DefenseShields.cfg");
-            var newCfg = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShields.cfg");
+            MyAPIGateway.Utilities.DeleteFileInGlobalStorage("DefenseSystems.cfg");
+            var newCfg = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseSystems.cfg");
             var newData = MyAPIGateway.Utilities.SerializeToXML(Session.Enforced);
             newCfg.Write(newData);
             newCfg.Flush();
             newCfg.Close();
-            Log.Line($"wrote modified config file - file exists: {MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseShields.cfg")}");
+            Log.Line($"wrote modified config file - file exists: {MyAPIGateway.Utilities.FileExistsInGlobalStorage("DefenseSystems.cfg")}");
         }
 
         private static void WriteNewConfigFile()
         {
-            var cfg = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseShields.cfg");
+            var cfg = MyAPIGateway.Utilities.WriteFileInGlobalStorage("DefenseSystems.cfg");
             var data = MyAPIGateway.Utilities.SerializeToXML(Session.Enforced);
             cfg.Write(data);
             cfg.Flush();

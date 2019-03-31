@@ -1,4 +1,4 @@
-﻿namespace DefenseShields
+﻿namespace DefenseSystems
 {
     using Support;
     using ProtoBuf;
@@ -79,7 +79,7 @@
             if (!isServer)
             {
                 if (Entity?.GameLogic == null) return false;
-                var logic = Entity.GameLogic.GetAs<DefenseShields>();
+                var logic = Entity.GameLogic.GetAs<DefenseSystems>();
                 logic?.UpdateState(State);
                 return false;
             }
@@ -104,7 +104,7 @@
         public override bool Received(bool isServer)
         {
             if (Entity?.GameLogic == null) return false;
-            var logic = Entity.GameLogic.GetAs<DefenseShields>();
+            var logic = Entity.GameLogic.GetAs<DefenseSystems>();
             logic?.UpdateSettings(Settings);
             return isServer;
         }
@@ -436,7 +436,7 @@
         public override bool Received(bool isServer)
         {
             if (isServer || Entity?.GameLogic == null) return false;
-            var shield = Entity.GameLogic.GetAs<DefenseShields>();
+            var shield = Entity.GameLogic.GetAs<DefenseSystems>();
             if (shield == null) return false;
 
             var attacker = MyEntities.GetEntityById(State.AttackerId);
@@ -452,9 +452,9 @@
         {
         } // Empty constructor required for deserialization
 
-        [ProtoMember(1)] public DefenseShieldsEnforcement State = null;
+        [ProtoMember(1)] public DefenseSystemsEnforcement State = null;
 
-        public DataEnforce(long entityId, DefenseShieldsEnforcement state) : base(entityId)
+        public DataEnforce(long entityId, DefenseSystemsEnforcement state) : base(entityId)
         {
             State = state;
         }

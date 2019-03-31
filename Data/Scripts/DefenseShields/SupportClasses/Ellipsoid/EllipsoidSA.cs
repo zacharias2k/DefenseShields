@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DefenseShields.Support
+namespace DefenseSystems.Support
 {
     public class EllipsoidSA
     {

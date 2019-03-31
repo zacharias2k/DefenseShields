@@ -1,7 +1,7 @@
 ﻿using CollisionDetection;
 using VRageMath;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     class OrientedCollision
     {

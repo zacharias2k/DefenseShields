@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System;
 using System.Collections.Generic;
-using DefenseShields.Support;
+using DefenseSystems.Support;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Weapons;
@@ -9,9 +9,9 @@ using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRageMath;
-namespace DefenseShields
+namespace DefenseSystems
 {
-    public partial class DefenseShields
+    public partial class DefenseSystems
     {
         #region Web Entities
         public void CleanWebEnts()
@@ -309,7 +309,7 @@ namespace DefenseShields
                 grid.Components.TryGet(out modComp);
                 if (!string.IsNullOrEmpty(modComp?.ModulationPassword) && modComp.ModulationPassword == Shield.CustomData)
                 {
-                    var collection = modComp.Modulator?.ShieldComp?.DefenseShields != null ? modComp.Modulator.ShieldComp.DefenseShields.ShieldComp.SubGrids : modComp.SubGrids;
+                    var collection = modComp.Modulator?.ShieldComp?.DefenseSystems != null ? modComp.Modulator.ShieldComp.DefenseSystems.ShieldComp.SubGrids : modComp.SubGrids;
                     foreach (var subGrid in collection)
                     {
                         if (ShieldEnt.PositionComp.WorldVolume.Intersects(grid.PositionComp.WorldVolume))
@@ -333,11 +333,11 @@ namespace DefenseShields
                     return pointsInShield > 0 ? Ent.Protected : Ent.Friendly;
                 }
 
-                ShieldGridComponent shieldComponent;
+                DefenseBus shieldComponent;
                 grid.Components.TryGet(out shieldComponent);
-                if (shieldComponent?.DefenseShields?.ShieldComp != null && shieldComponent.DefenseShields.NotFailed)
+                if (shieldComponent?.DefenseSystems?.ShieldComp != null && shieldComponent.DefenseSystems.NotFailed)
                 {
-                    var dsComp = shieldComponent.DefenseShields;
+                    var dsComp = shieldComponent.DefenseSystems;
                     var shieldEntity = MyCube.Parent;
                     dsComp.EnemyShields.Add(shieldEntity);
                     return Ent.Shielded;    

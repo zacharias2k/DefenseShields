@@ -1,5 +1,5 @@
 ﻿
-namespace DefenseShields
+namespace DefenseSystems
 {
     using VRage.Game.ModAPI;
     using System.Collections.Concurrent;
@@ -15,7 +15,7 @@ namespace DefenseShields
     using VRageMath;
     using ParallelTasks;
 
-    public partial class DefenseShields 
+    public partial class DefenseSystems 
     {
         #region Setup
         internal readonly MyDefinitionId GId = MyResourceDistributorComponent.ElectricityId;
@@ -58,7 +58,7 @@ namespace DefenseShields
 
         internal BoundingBoxD WebBox = new BoundingBoxD();
         internal MatrixD OldShieldMatrix;
-        internal ShieldGridComponent ShieldComp;
+        internal DefenseBus ShieldComp;
         internal BoundingBoxD ShieldBox3K = new BoundingBoxD();
         internal MyOrientedBoundingBoxD SOriBBoxD = new MyOrientedBoundingBoxD();
         internal BoundingSphereD ShieldSphere = new BoundingSphereD(Vector3D.Zero, 1);

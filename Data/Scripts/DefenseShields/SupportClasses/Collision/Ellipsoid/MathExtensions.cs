@@ -1,7 +1,7 @@
 ﻿using System;
 using VRageMath;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     public static class MathExtensions
     {

@@ -1,4 +1,4 @@
-﻿namespace DefenseShields
+﻿namespace DefenseSystems
 {
     using Support;
     using Sandbox.Game.Entities;
@@ -9,7 +9,7 @@
     using VRage.Game.ModAPI.Interfaces;
     using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
-    public partial class DefenseShields
+    public partial class DefenseSystems
     {
         #region Shield Support Blocks
         public void GetModulationInfo()

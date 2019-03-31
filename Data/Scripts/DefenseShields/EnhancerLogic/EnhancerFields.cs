@@ -7,11 +7,11 @@ using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.Definitions;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     public partial class Enhancers
     {
-        internal ShieldGridComponent ShieldComp;
+        internal DefenseBus ShieldComp;
         internal MyResourceSinkInfo ResourceInfo;
 
         private const float Power = 0.01f;

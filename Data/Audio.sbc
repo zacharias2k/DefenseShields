@@ -4,7 +4,7 @@
     <Sound>
       <Id>
         <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
-        <SubtypeId>DefenseShieldsLS</SubtypeId>
+        <SubtypeId>DefenseSystemsLS</SubtypeId>
       </Id>
       <Category>BLOCK</Category>
       <MaxDistance>1000</MaxDistance>
@@ -20,7 +20,7 @@
   <Sound>
     <Id>
       <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
-      <SubtypeId>DefenseShieldsSS</SubtypeId>
+      <SubtypeId>DefenseSystemsSS</SubtypeId>
     </Id>
     <Category>BLOCK</Category>
     <MaxDistance>1000</MaxDistance>
@@ -36,7 +36,7 @@
   <Sound>
     <Id>
       <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
-      <SubtypeId>DefenseShieldsST</SubtypeId>
+      <SubtypeId>DefenseSystemsST</SubtypeId>
     </Id>
     <Category>BLOCK</Category>
     <MaxDistance>1000</MaxDistance>

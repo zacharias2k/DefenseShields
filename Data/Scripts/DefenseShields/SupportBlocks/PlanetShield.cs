@@ -1,6 +1,6 @@
-﻿namespace DefenseShields
+﻿namespace DefenseSystems
 {
-    using global::DefenseShields.Support;
+    using global::DefenseSystems.Support;
     using Sandbox.Common.ObjectBuilders;
     using Sandbox.Game.Entities;
     using Sandbox.Game.EntityComponents;

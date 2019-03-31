@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using VRageMath;
 
-namespace DefenseShields.Support
+namespace DefenseSystems.Support
 {
 
     public static class MathUtil

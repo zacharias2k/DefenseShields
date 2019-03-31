@@ -1,14 +1,14 @@
 ﻿using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     using System;
     using Support;
     using VRage.Game;
     using VRageMath;
 
-    public partial class DefenseShields
+    public partial class DefenseSystems
     {
         #region Shield Shape
         public void ResetShape(bool background, bool newShape = false)

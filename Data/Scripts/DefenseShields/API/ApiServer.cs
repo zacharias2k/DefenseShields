@@ -1,6 +1,6 @@
-﻿namespace DefenseShields.API
+﻿namespace DefenseSystems.API
 {
-    namespace DefenseShields
+    namespace DefenseSystems
     {
         using System;
         using System.Collections.Generic;

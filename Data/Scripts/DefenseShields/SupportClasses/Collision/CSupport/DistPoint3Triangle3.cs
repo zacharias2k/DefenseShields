@@ -1,7 +1,7 @@
 ﻿using System;
 using VRageMath;
 
-namespace DefenseShields.Support
+namespace DefenseSystems.Support
 {
     // ported from WildMagic 5 
     // https://www.geometrictools.com/Downloads/Downloads.html

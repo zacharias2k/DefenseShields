@@ -7,12 +7,12 @@ using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.Definitions;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     public partial class Modulators
     {
         internal ModulatorGridComponent ModulatorComp;
-        internal ShieldGridComponent ShieldComp;
+        internal DefenseBus ShieldComp;
         internal MyResourceSinkInfo ResourceInfo;
         internal bool InControlPanel => MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel;
         internal bool InThisTerminal => Session.Instance.LastTerminalId == Modulator.EntityId;

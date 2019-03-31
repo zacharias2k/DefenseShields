@@ -11,7 +11,7 @@ using VRage.Utils;
 using VRage.Voxels;
 using VRageMath;
 
-namespace DefenseShields.Support
+namespace DefenseSystems.Support
 {
     public struct WarHeadBlast
     {
@@ -273,10 +273,10 @@ namespace DefenseShields.Support
         public uint LastTick;
         public uint RefreshTick;
         public readonly uint FirstTick;
-        public DefenseShields.Ent Relation;
-        public DefenseShields.Ent PreviousRelation;
+        public DefenseSystems.Ent Relation;
+        public DefenseSystems.Ent PreviousRelation;
 
-        public ProtectCache(uint firstTick, uint lastTick, uint refreshTick, DefenseShields.Ent relation, DefenseShields.Ent previousRelation)
+        public ProtectCache(uint firstTick, uint lastTick, uint refreshTick, DefenseSystems.Ent relation, DefenseSystems.Ent previousRelation)
         {
             FirstTick = firstTick;
             LastTick = lastTick;
@@ -292,7 +292,7 @@ namespace DefenseShields.Support
         public uint LastTick;
         public uint RefreshTick;
         public readonly uint FirstTick;
-        public DefenseShields.Ent Relation;
+        public DefenseSystems.Ent Relation;
         public List<CubeAccel> CacheBlockList = new List<CubeAccel>();
         public bool RefreshNow;
         public bool EnemySafeInside;
@@ -300,7 +300,7 @@ namespace DefenseShields.Support
         public volatile uint LastCollision;
         public volatile int ConsecutiveCollisions;
 
-        public EntIntersectInfo(bool touched, BoundingBox box, uint firstTick, uint lastTick, uint refreshTick, DefenseShields.Ent relation)
+        public EntIntersectInfo(bool touched, BoundingBox box, uint firstTick, uint lastTick, uint refreshTick, DefenseSystems.Ent relation)
         {
             Touched = touched;
             Box = box;
@@ -309,7 +309,7 @@ namespace DefenseShields.Support
             RefreshTick = refreshTick;
             Relation = relation;
             RefreshNow = true;
-            if (relation == DefenseShields.Ent.EnemyInside) EnemySafeInside = true;
+            if (relation == DefenseSystems.Ent.EnemyInside) EnemySafeInside = true;
         }
     }
 
@@ -434,13 +434,13 @@ namespace DefenseShields.Support
 
     public class MyProtectors
     {
-        public readonly CachingHashSet<DefenseShields> Shields = new CachingHashSet<DefenseShields>();
+        public readonly CachingHashSet<DefenseSystems> Shields = new CachingHashSet<DefenseSystems>();
         public int RefreshSlot;
         public uint CreationTick;
         public uint BlockingTick;
         public bool LastAttackerWasInside;
-        public DefenseShields BlockingShield;
-        public DefenseShields IntegrityShield;
+        public DefenseSystems BlockingShield;
+        public DefenseSystems IntegrityShield;
         public long IgnoreAttackerId = -1;
 
         public void Init(int refreshSlot, uint creationTick)

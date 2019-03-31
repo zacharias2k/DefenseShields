@@ -1,20 +1,20 @@
 ﻿using System.Collections.Generic;
-using DefenseShields.Support;
+using DefenseSystems.Support;
 using Sandbox.Game.Entities;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRageMath;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
-    public class ShieldGridComponent : MyEntityComponentBase
+    public class DefenseBus : MyEntityComponentBase
     {
-        private static List<ShieldGridComponent> gridShield = new List<ShieldGridComponent>();
-        public DefenseShields DefenseShields;
+        private static List<DefenseBus> gridShield = new List<DefenseBus>();
+        public DefenseSystems DefenseSystems;
 
-        public ShieldGridComponent(DefenseShields defenseShields)
+        public DefenseBus(DefenseSystems DefenseSystems)
         {
-            DefenseShields = defenseShields;
+            DefenseSystems = DefenseSystems;
         }
 
         public override void OnAddedToContainer()

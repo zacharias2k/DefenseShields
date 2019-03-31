@@ -1,4 +1,4 @@
-﻿using DefenseShields.Support;
+﻿using DefenseSystems.Support;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using System.Collections.Generic;
@@ -8,7 +8,7 @@ using VRage.Game.ModAPI;
 using VRageMath;
 using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     public partial class Session
     {
@@ -51,9 +51,9 @@ namespace DefenseShields
                 var grid = ent as MyCubeGrid;
                 if (grid != null)
                 {
-                    ShieldGridComponent sComp;
+                    DefenseBus sComp;
                     grid.Components.TryGet(out sComp);
-                    if (sComp?.DefenseShields != null && sComp.DefenseShields.NotFailed) continue;
+                    if (sComp?.DefenseSystems != null && sComp.DefenseSystems.NotFailed) continue;
 
                     var gridCenter = grid.PositionComp.WorldVolume.Center;
                     var testDir = Vector3D.Normalize(gridCenter - epiCenter);

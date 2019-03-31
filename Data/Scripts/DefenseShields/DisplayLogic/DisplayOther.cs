@@ -1,7 +1,7 @@
-﻿using DefenseShields.Support;
+﻿using DefenseSystems.Support;
 using VRage.ModAPI;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     public partial class Displays
     {
@@ -46,16 +46,16 @@ namespace DefenseShields
 
         private bool ActiveDisplay()
         {
-            if (ShieldComp?.DefenseShields?.MyGrid != Display.CubeGrid)
+            if (ShieldComp?.DefenseSystems?.MyGrid != Display.CubeGrid)
             {
                 Display.CubeGrid.Components.TryGet(out ShieldComp);
             }
-            return ShieldComp?.DefenseShields?.Shield != null;
+            return ShieldComp?.DefenseSystems?.Shield != null;
         }
 
         private void UpdateDisplay()
         {
-            var ds = ShieldComp.DefenseShields;
+            var ds = ShieldComp.DefenseSystems;
             if (_imagesDetected && Set.Settings.Report == 2)
             {
                 if (Display.ShowText) Display.ShowTextureOnScreen();

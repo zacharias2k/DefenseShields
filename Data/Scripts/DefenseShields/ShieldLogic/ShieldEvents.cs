@@ -1,4 +1,4 @@
-﻿namespace DefenseShields
+﻿namespace DefenseSystems
 {
     using System;
     using System.Text;
@@ -11,7 +11,7 @@
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
 
-    public partial class DefenseShields
+    public partial class DefenseSystems
     {
         private void RegisterEvents(bool register = true)
         {

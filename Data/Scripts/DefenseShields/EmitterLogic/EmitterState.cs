@@ -1,16 +1,16 @@
 ﻿using System;
-using DefenseShields.Support;
+using DefenseSystems.Support;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     public partial class Emitters
     {
         #region Block Status
         private bool ControllerLink()
         {
-            if (ShieldComp?.DefenseShields?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
+            if (ShieldComp?.DefenseSystems?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
 
             if (!_isServer)
             {
@@ -54,7 +54,7 @@ namespace DefenseShields
 
         private bool ClientEmitterReady()
         {
-            if (ShieldComp?.DefenseShields == null) return false;
+            if (ShieldComp?.DefenseSystems == null) return false;
 
             if (!_compact)
             {
@@ -208,7 +208,7 @@ namespace DefenseShields
             ShieldComp.ActiveEmitterId = EmiState.State.ActiveEmitterId;
 
             var comp = ShieldComp;
-            var ds = comp.DefenseShields;
+            var ds = comp.DefenseSystems;
             var dsNull = ds == null;
             var shieldWaiting = !dsNull && ds.DsState.State.EmitterLos != EmiState.State.Los;
             if (shieldWaiting) comp.EmitterEvent = true;
@@ -243,7 +243,7 @@ namespace DefenseShields
         private void NeedUpdate()
         {
             EmiState.State.Mode = (int)EmitterMode;
-            EmiState.State.BoundingRange = ShieldComp?.DefenseShields?.BoundingRange ?? 0f;
+            EmiState.State.BoundingRange = ShieldComp?.DefenseSystems?.BoundingRange ?? 0f;
             EmiState.State.Compatible = (IsStatic && EmitterMode == EmitterType.Station) || (!IsStatic && EmitterMode != EmitterType.Station);
             EmiState.SaveState();
             if (Session.Instance.MpActive) EmiState.NetworkUpdate();

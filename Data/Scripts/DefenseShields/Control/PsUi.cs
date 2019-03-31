@@ -1,4 +1,4 @@
-﻿namespace DefenseShields
+﻿namespace DefenseSystems
 {
     using Sandbox.ModAPI;
 
@@ -32,13 +32,13 @@
 
         internal static bool GetBatteries(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
             return comp?.DsSet.Settings.UseBatteries ?? false;
         }
 
         internal static void SetBatteries(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
             if (comp == null) return;
             comp.DsSet.Settings.UseBatteries = newValue;
             comp.SettingsUpdated = true;
@@ -47,13 +47,13 @@
 
         internal static bool GetHideActive(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
             return comp?.DsSet.Settings.ActiveInvisible ?? false;
         }
 
         internal static void SetHideActive(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
             if (comp == null) return;
             comp.DsSet.Settings.ActiveInvisible = newValue;
             comp.SettingsUpdated = true;
@@ -62,13 +62,13 @@
 
         internal static bool GetRefreshAnimation(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
             return comp?.DsSet.Settings.RefreshAnimation ?? false;
         }
 
         internal static void SetRefreshAnimation(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
             if (comp == null) return;
             comp.DsSet.Settings.RefreshAnimation = newValue;
             comp.SettingsUpdated = true;
@@ -77,13 +77,13 @@
 
         internal static bool GetHitWaveAnimation(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
             return comp?.DsSet.Settings.HitWaveAnimation ?? false;
         }
 
         internal static void SetHitWaveAnimation(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
             if (comp == null) return;
             comp.DsSet.Settings.HitWaveAnimation = newValue;
             comp.SettingsUpdated = true;
@@ -92,13 +92,13 @@
 
         internal static bool GetSendToHud(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
             return comp?.DsSet.Settings.SendToHud ?? false;
         }
 
         internal static void SetSendToHud(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
             if (comp == null) return;
             comp.DsSet.Settings.SendToHud = newValue;
             comp.SettingsUpdated = true;
@@ -107,13 +107,13 @@
 
         internal static bool GetRaiseShield(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
             return comp?.DsSet.Settings.RaiseShield ?? false;
         }
 
         internal static void SetRaiseShield(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseShields>();
+            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
             if (comp == null) return;
             comp.DsSet.Settings.RaiseShield = newValue;
             comp.SettingsUpdated = true;

@@ -1,4 +1,4 @@
-﻿namespace DefenseShields
+﻿namespace DefenseSystems
 {
     using System;
     using System.Collections.Generic;
@@ -23,7 +23,7 @@
                     _autoResetEvent.WaitOne();
                     if (!Monitor) break;
                     _newFrame = false;
-                    _workData.DoIt(new List<DefenseShields>(FunctionalShields.Keys), Tick);
+                    _workData.DoIt(new List<DefenseSystems>(FunctionalShields.Keys), Tick);
                     MinScaler = _workData.MinScaler;
                     MyAPIGateway.Parallel.For(0, _workData.ShieldCnt, x =>
                     {
@@ -456,7 +456,7 @@
 
                 var entShields = myProtector.Shields;
                 var refreshCount = 0;
-                DefenseShields iShield = null;
+                DefenseSystems iShield = null;
                 var removeIShield = false;
                 foreach (var s in entShields)
                 {
@@ -563,7 +563,7 @@
 
         private void WebDispatch()
         {
-            DefenseShields shield;
+            DefenseSystems shield;
             while (WebWrapper.TryDequeue(out shield))
             {
                 if (shield == null || shield.MarkedForClose) continue;

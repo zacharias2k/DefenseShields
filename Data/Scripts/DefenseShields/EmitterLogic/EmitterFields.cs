@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
-using DefenseShields.Support;
+using DefenseSystems.Support;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
@@ -11,11 +11,11 @@ using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     public partial class Emitters
     {
-        internal ShieldGridComponent ShieldComp;
+        internal DefenseBus ShieldComp;
         internal MyResourceSinkInfo ResourceInfo;
         internal List<Vector3D> LosScaledCloud = new List<Vector3D>(2000);
         internal MyEntitySubpart SubpartRotor;

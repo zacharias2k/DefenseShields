@@ -1,7 +1,7 @@
 ﻿using Sandbox.Game.Entities;
 using VRage.ModAPI;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     using System;
     using System.Collections.Generic;
@@ -15,7 +15,7 @@ namespace DefenseShields
     using VRage.Utils;
     using VRageMath;
 
-    public partial class DefenseShields
+    public partial class DefenseSystems
     {
         #region Startup Logic
         internal void AssignSlots()
@@ -189,7 +189,7 @@ namespace DefenseShields
                     /*
                     if (_tick600)
                     {
-                        if (Session.Enforced.Debug == 3 && _tick600) Log.Line($"PostInit: Server Not Ready - GridComp:{MyGrid.Components.Has<ShieldGridComponent>()} - InvalidMode:{ShieldComp.EmitterMode < 0} - Functional:{IsFunctional} - EmitterSus:{ShieldComp.EmittersSuspended} - StationEmitterNull:{ShieldComp.StationEmitter == null } - EmitterNull:{ShieldComp.StationEmitter?.Emitter == null} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug == 3 && _tick600) Log.Line($"PostInit: Server Not Ready - GridComp:{MyGrid.Components.Has<DefenseBus>()} - InvalidMode:{ShieldComp.EmitterMode < 0} - Functional:{IsFunctional} - EmitterSus:{ShieldComp.EmittersSuspended} - StationEmitterNull:{ShieldComp.StationEmitter == null } - EmitterNull:{ShieldComp.StationEmitter?.Emitter == null} - ShieldId [{Shield.EntityId}]");
                     }
                     */
                     return false;
@@ -206,7 +206,7 @@ namespace DefenseShields
                 SetShieldType(false);
                 if (!Session.Instance.DsAction)
                 {
-                    Session.AppendConditionToAction<IMyUpgradeModule>((a) => Session.Instance.DsActions.Contains(a.Id), (a, b) => b.GameLogic.GetAs<DefenseShields>() != null && Session.Instance.DsActions.Contains(a.Id));
+                    Session.AppendConditionToAction<IMyUpgradeModule>((a) => Session.Instance.DsActions.Contains(a.Id), (a, b) => b.GameLogic.GetAs<DefenseSystems>() != null && Session.Instance.DsActions.Contains(a.Id));
                     Session.Instance.DsAction = true;
                 }
 
@@ -262,11 +262,11 @@ namespace DefenseShields
 
         private void ResetComp()
         {
-            ShieldGridComponent comp;
+            DefenseBus comp;
             Shield.CubeGrid.Components.TryGet(out comp);
             if (comp == null)
             {
-                ShieldComp = new ShieldGridComponent(this);
+                ShieldComp = new DefenseBus(this);
                 Shield.CubeGrid.Components.Add(ShieldComp);
             }
             else Shield.CubeGrid.Components.TryGet(out ShieldComp);

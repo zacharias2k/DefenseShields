@@ -1,10 +1,10 @@
-﻿namespace DefenseShields
+﻿namespace DefenseSystems
 {
     using Support;
     using Sandbox.ModAPI;
     using VRage.Game.ModAPI;
 
-    public partial class DefenseShields
+    public partial class DefenseSystems
     {
 
         private void UpdateHeatRate()

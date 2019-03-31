@@ -1,13 +1,13 @@
 ﻿using Sandbox.ModAPI;
 using System;
 using System.Collections.Generic;
-using DefenseShields.Support;
+using DefenseSystems.Support;
 using Sandbox.Game.Entities;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRageMath;
-namespace DefenseShields
+namespace DefenseSystems
 {
     public partial class Session
     {
@@ -254,12 +254,12 @@ namespace DefenseShields
                 if (nullAttacker)
                 {
                     shield.ProtectedEntCache.TryGetValue(myEntity, out protectedEnt);
-                    if (protectedEnt != null && protectedEnt.Relation == DefenseShields.Ent.Protected) playerProtected = true;
+                    if (protectedEnt != null && protectedEnt.Relation == DefenseSystems.Ent.Protected) playerProtected = true;
                 }
                 else
                 {
                     shield.ProtectedEntCache.TryGetValue(hostileEnt, out protectedEnt);
-                    if (protectedEnt != null && protectedEnt.Relation != DefenseShields.Ent.Protected) playerProtected = true;
+                    if (protectedEnt != null && protectedEnt.Relation != DefenseSystems.Ent.Protected) playerProtected = true;
                 }
 
                 if (!playerProtected) continue;

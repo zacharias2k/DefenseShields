@@ -1,4 +1,4 @@
-﻿namespace DefenseShields.Support
+﻿namespace DefenseSystems.Support
 {
     using System;
     using System.Collections.Generic;

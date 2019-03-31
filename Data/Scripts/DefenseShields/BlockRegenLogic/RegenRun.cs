@@ -1,12 +1,12 @@
 ﻿using System;
-using DefenseShields.Support;
+using DefenseSystems.Support;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.ModAPI;
 
-namespace DefenseShields
+namespace DefenseSystems
 {
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_TerminalBlock), false, "K_WS_TC_NaniteCore")]
     public partial class BlockRegen : MyGameLogicComponent

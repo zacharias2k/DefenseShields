@@ -1,4 +1,4 @@
-﻿namespace DefenseShields
+﻿namespace DefenseSystems
 {
     using System;
     using System.Collections.Generic;
@@ -46,7 +46,7 @@
 
         private IMyInventory _inventory;
 
-        internal ShieldGridComponent ShieldComp;
+        internal DefenseBus ShieldComp;
 
         internal int RotationTime { get; set; }
         internal int AnimationLoop { get; set; }
@@ -299,14 +299,14 @@
             var sendMessage = false;
             if (MyAPIGateway.Session?.Player?.Character?.WorldVolume != null)
             {
-                if (ShieldComp.DefenseShields.ShieldSphere.Intersects(MyAPIGateway.Session.Player.Character.WorldVolume)) sendMessage = true;
+                if (ShieldComp.DefenseSystems.ShieldSphere.Intersects(MyAPIGateway.Session.Player.Character.WorldVolume)) sendMessage = true;
             }
 
             /*
             foreach (var player in Session.Instance.Players.Values)
             {
                 if (player.IdentityId != MyAPIGateway.Session.Player.IdentityId) continue;
-                if (!ShieldComp.DefenseShields.ShieldSphere.Intersects(player.Character.WorldVolume)) continue;
+                if (!ShieldComp.DefenseSystems.ShieldSphere.Intersects(player.Character.WorldVolume)) continue;
                 sendMessage = true;
                 break;
             }
@@ -329,7 +329,7 @@
             if (!_doorsStage1)
             {
                 Doors.Clear();
-                foreach (var grid in ShieldComp.DefenseShields.ProtectedEntCache.Keys)
+                foreach (var grid in ShieldComp.DefenseSystems.ProtectedEntCache.Keys)
                 {
                     if (!(grid is MyCubeGrid)) continue;
                     foreach (var myCube in ((MyCubeGrid)grid).GetFatBlocks())
@@ -403,7 +403,7 @@
         {
             var sc = ShieldComp;
             var shieldFullVol = sc.ShieldVolume;
-            var startingO2Fpercent = sc.DefaultO2 + sc.DefenseShields.DsState.State.IncreaseO2ByFPercent;
+            var startingO2Fpercent = sc.DefaultO2 + sc.DefenseSystems.DsState.State.IncreaseO2ByFPercent;
 
             if (shieldFullVol < _oldShieldVol)
             {
@@ -441,9 +441,9 @@
             var shieldVolPercentFull = _shieldVolFilled * 100.0;
             var fPercentToAddToDefaultO2Level = (shieldVolPercentFull / shieldFullVol * 0.01) - sc.DefaultO2;
 
-            sc.DefenseShields.DsState.State.IncreaseO2ByFPercent = fPercentToAddToDefaultO2Level;
+            sc.DefenseSystems.DsState.State.IncreaseO2ByFPercent = fPercentToAddToDefaultO2Level;
             sc.O2Updated = true;
-            if (Session.Enforced.Debug == 3) Log.Line($"default:{ShieldComp.DefaultO2} - Filled/(Max):{O2State.State.VolFilled}/({shieldFullVol}) - ShieldO2Level:{sc.DefenseShields.DsState.State.IncreaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(MyAPIGateway.Session.Player.GetPosition())}");
+            if (Session.Enforced.Debug == 3) Log.Line($"default:{ShieldComp.DefaultO2} - Filled/(Max):{O2State.State.VolFilled}/({shieldFullVol}) - ShieldO2Level:{sc.DefenseSystems.DsState.State.IncreaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(MyAPIGateway.Session.Player.GetPosition())}");
         }
 
         private void TerminalRefresh()
@@ -461,18 +461,18 @@
             {
                 if (_isServer)
                 {
-                    if (ShieldComp?.DefenseShields?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
+                    if (ShieldComp?.DefenseSystems?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
 
-                    if (ShieldComp?.DefenseShields == null || ShieldComp?.ActiveO2Generator != null || !ShieldComp.DefenseShields.Warming || ShieldComp.ShieldVolume <= 0) return false;
+                    if (ShieldComp?.DefenseSystems == null || ShieldComp?.ActiveO2Generator != null || !ShieldComp.DefenseSystems.Warming || ShieldComp.ShieldVolume <= 0) return false;
                     ShieldComp.ActiveO2Generator = this;
                     _oldShieldVol = ShieldComp.ShieldVolume;
                     _inventory = MyCube.GetInventory();
                 }
                 else
                 {
-                    if (ShieldComp?.DefenseShields?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
+                    if (ShieldComp?.DefenseSystems?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
 
-                    if (ShieldComp?.DefenseShields == null) return false;
+                    if (ShieldComp?.DefenseSystems == null) return false;
                     if (ShieldComp.ActiveO2Generator == null) ShieldComp.ActiveO2Generator = this;
                 }
 
@@ -490,7 +490,7 @@
 
         private bool O2GeneratorReady()
         {
-            if (ShieldComp?.DefenseShields?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
+            if (ShieldComp?.DefenseSystems?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
             if (_isServer)
             {
                 if ((!AllInited && !InitO2Generator()) || !BlockWorking()) return false;
@@ -498,7 +498,7 @@
             else
             {
                 if (!AllInited && !InitO2Generator()) return false;
-                if (ShieldComp?.DefenseShields == null) return false;
+                if (ShieldComp?.DefenseSystems == null) return false;
 
                 if (!O2State.State.Backup && ShieldComp.ActiveO2Generator != this) ShieldComp.ActiveO2Generator = this;
 
@@ -518,7 +518,7 @@
                 return false;
             }
 
-            if (ShieldComp?.DefenseShields == null)
+            if (ShieldComp?.DefenseSystems == null)
             {
                 NeedUpdate(O2State.State.Pressurized, false);
                 return false;
@@ -555,7 +555,7 @@
         private void NeedUpdate(bool onState, bool turnOn)
         {
             var o2State = O2State.State;
-            if (ShieldComp?.DefenseShields == null)
+            if (ShieldComp?.DefenseSystems == null)
             {
                 if (O2State.State.Pressurized)
                 {
@@ -570,7 +570,7 @@
                 return;
             }
 
-            var conState = ShieldComp.DefenseShields.DsState.State;
+            var conState = ShieldComp.DefenseSystems.DsState.State;
             var o2Level = conState.IncreaseO2ByFPercent + ShieldComp.DefaultO2;
             var o2Change = !o2State.VolFilled.Equals(_shieldVolFilled) || !o2State.DefaultO2.Equals(ShieldComp.DefaultO2) || !o2State.ShieldVolume.Equals(ShieldComp.ShieldVolume) || !o2State.O2Level.Equals(o2Level);
             if (!onState && turnOn)

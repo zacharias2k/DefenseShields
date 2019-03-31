@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using VRageMath;
 
-namespace DefenseShields.Support
+namespace DefenseSystems.Support
 {
     public class EmitterDefinition
     {
