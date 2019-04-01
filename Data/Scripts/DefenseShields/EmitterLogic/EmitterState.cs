@@ -10,7 +10,7 @@ namespace DefenseSystems
         #region Block Status
         private bool ControllerLink()
         {
-            if (ShieldComp?.DefenseSystems?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
+            if (DefenseBus?.DefenseSystems?.MasterGrid != MyGrid) MyGrid.Components.TryGet(out DefenseBus);
 
             if (!_isServer)
             {
@@ -54,7 +54,7 @@ namespace DefenseSystems
 
         private bool ClientEmitterReady()
         {
-            if (ShieldComp?.DefenseSystems == null) return false;
+            if (DefenseBus?.DefenseSystems == null) return false;
 
             if (!_compact)
             {
@@ -80,8 +80,8 @@ namespace DefenseSystems
             if (!functional)
             {
                 EmiState.State.Suspend = true;
-                if (ShieldComp?.StationEmitter == this) ShieldComp.StationEmitter = null;
-                else if (ShieldComp?.ShipEmitter == this) ShieldComp.ShipEmitter = null;
+                if (DefenseBus?.StationEmitter == this) DefenseBus.StationEmitter = null;
+                else if (DefenseBus?.ShipEmitter == this) DefenseBus.ShipEmitter = null;
                 return true;
             }
             if (!_compact && SubpartRotor == null)
@@ -94,7 +94,7 @@ namespace DefenseSystems
                 }
             }
 
-            if (ShieldComp == null)
+            if (DefenseBus == null)
             {
                 EmiState.State.Suspend = true;
                 return true;
@@ -104,8 +104,8 @@ namespace DefenseSystems
             var stationMode = EmitterMode == EmitterType.Station;
             var shipMode = EmitterMode != EmitterType.Station;
             var modes = (IsStatic && stationMode) || (!IsStatic && shipMode);
-            var mySlotNull = (stationMode && ShieldComp.StationEmitter == null) || (shipMode && ShieldComp.ShipEmitter == null);
-            var myComp = (stationMode && ShieldComp.StationEmitter == this) || (shipMode && ShieldComp.ShipEmitter == this);
+            var mySlotNull = (stationMode && DefenseBus.StationEmitter == null) || (shipMode && DefenseBus.ShipEmitter == null);
+            var myComp = (stationMode && DefenseBus.StationEmitter == this) || (shipMode && DefenseBus.ShipEmitter == this);
 
             var myMode = working && modes;
             var mySlotOpen = working && mySlotNull;
@@ -117,13 +117,13 @@ namespace DefenseSystems
                 if (stationMode)
                 {
                     EmiState.State.Backup = false;
-                    ShieldComp.StationEmitter = this;
+                    DefenseBus.StationEmitter = this;
                     if (myMode)
                     {
                         TookControl = true;
-                        ShieldComp.EmitterMode = (int)EmitterMode;
-                        ShieldComp.EmitterEvent = true;
-                        ShieldComp.EmittersSuspended = false;
+                        DefenseBus.EmitterMode = (int)EmitterMode;
+                        DefenseBus.EmitterEvent = true;
+                        DefenseBus.EmittersSuspended = false;
                         EmiState.State.Suspend = false;
                         myShield = true;
                         EmiState.State.Backup = false;
@@ -133,35 +133,35 @@ namespace DefenseSystems
                 else
                 {
                     EmiState.State.Backup = false;
-                    ShieldComp.ShipEmitter = this;
+                    DefenseBus.ShipEmitter = this;
 
                     if (myMode)
                     {
                         TookControl = true;
-                        ShieldComp.EmitterMode = (int)EmitterMode;
-                        ShieldComp.EmitterEvent = true;
-                        ShieldComp.EmittersSuspended = false;
+                        DefenseBus.EmitterMode = (int)EmitterMode;
+                        DefenseBus.EmitterEvent = true;
+                        DefenseBus.EmittersSuspended = false;
                         EmiState.State.Suspend = false;
                         myShield = true;
                         EmiState.State.Backup = false;
                     }
                     else EmiState.State.Suspend = true;
                 }
-                if (Session.Enforced.Debug >= 3) Log.Line($"mySlotOpen: {Definition.Name} - myMode:{myMode} - MyShield:{myShield} - Mode:{EmitterMode} - Static:{IsStatic} - ELos:{ShieldComp.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - ModeM:{(int)EmitterMode == ShieldComp.EmitterMode} - S:{EmiState.State.Suspend} - EmitterId [{Emitter.EntityId}]");
+                if (Session.Enforced.Debug >= 3) Log.Line($"mySlotOpen: {Definition.Name} - myMode:{myMode} - MyShield:{myShield} - Mode:{EmitterMode} - Static:{IsStatic} - ELos:{DefenseBus.EmitterLos} - ES:{DefenseBus.EmittersSuspended} - ModeM:{(int)EmitterMode == DefenseBus.EmitterMode} - S:{EmiState.State.Suspend} - EmitterId [{Emitter.EntityId}]");
             }
             else if (!myMode)
             {
-                var compMode = ShieldComp.EmitterMode;
+                var compMode = DefenseBus.EmitterMode;
                 if ((!EmiState.State.Suspend && ((compMode == 0 && !IsStatic) || (compMode != 0 && IsStatic))) || (!EmiState.State.Suspend && iStopped))
                 {
-                    ShieldComp.EmittersSuspended = true;
-                    ShieldComp.EmitterLos = false;
-                    ShieldComp.EmitterEvent = true;
-                    if (Session.Enforced.Debug >= 3) Log.Line($"!myMode: {Definition.Name} suspending - Match:{(int)EmitterMode == ShieldComp.EmitterMode} - ELos:{ShieldComp.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{EmiState.State.Suspend} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
+                    DefenseBus.EmittersSuspended = true;
+                    DefenseBus.EmitterLos = false;
+                    DefenseBus.EmitterEvent = true;
+                    if (Session.Enforced.Debug >= 3) Log.Line($"!myMode: {Definition.Name} suspending - Match:{(int)EmitterMode == DefenseBus.EmitterMode} - ELos:{DefenseBus.EmitterLos} - ES:{DefenseBus.EmittersSuspended} - ModeEq:{(int)EmitterMode == DefenseBus?.EmitterMode} - S:{EmiState.State.Suspend} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
                 }
                 else if (!EmiState.State.Suspend)
                 {
-                    if (Session.Enforced.Debug >= 3) Log.Line($"!myMode: {Definition.Name} suspending - Match:{(int)EmitterMode == ShieldComp.EmitterMode} - ELos:{ShieldComp.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - ModeEq:{(int)EmitterMode == ShieldComp?.EmitterMode} - S:{EmiState.State.Suspend} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
+                    if (Session.Enforced.Debug >= 3) Log.Line($"!myMode: {Definition.Name} suspending - Match:{(int)EmitterMode == DefenseBus.EmitterMode} - ELos:{DefenseBus.EmitterLos} - ES:{DefenseBus.EmittersSuspended} - ModeEq:{(int)EmitterMode == DefenseBus?.EmitterMode} - S:{EmiState.State.Suspend} - Static:{IsStatic} - EmitterId [{Emitter.EntityId}]");
                 }
                 EmiState.State.Suspend = true;
             }
@@ -176,18 +176,18 @@ namespace DefenseSystems
                 {
                     Session.Instance.BlockTagBackup(Emitter);
                     EmiState.State.Backup = true;
-                    if (Session.Enforced.Debug >= 3) Log.Line($"!myShield - !otherMode: {Definition.Name} - isStatic:{IsStatic} - myShield:{myShield} - myMode {myMode} - Mode:{EmitterMode} - CompMode: {ShieldComp.EmitterMode} - ELos:{ShieldComp.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - EmitterId [{Emitter.EntityId}]");
+                    if (Session.Enforced.Debug >= 3) Log.Line($"!myShield - !otherMode: {Definition.Name} - isStatic:{IsStatic} - myShield:{myShield} - myMode {myMode} - Mode:{EmitterMode} - CompMode: {DefenseBus.EmitterMode} - ELos:{DefenseBus.EmitterLos} - ES:{DefenseBus.EmittersSuspended} - EmitterId [{Emitter.EntityId}]");
                 }
                 EmiState.State.Suspend = true;
             }
 
             if (myShield && EmiState.State.Suspend)
             {
-                ShieldComp.EmittersSuspended = false;
-                ShieldComp.EmitterEvent = true;
+                DefenseBus.EmittersSuspended = false;
+                DefenseBus.EmitterEvent = true;
                 EmiState.State.Backup = false;
                 EmiState.State.Suspend = false;
-                if (Session.Enforced.Debug >= 3) Log.Line($"Unsuspend - !otherMode: {Definition.Name} - isStatic:{IsStatic} - myShield:{myShield} - myMode {myMode} - Mode:{EmitterMode} - CompMode: {ShieldComp.EmitterMode} - ELos:{ShieldComp.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - EmitterId [{Emitter.EntityId}]");
+                if (Session.Enforced.Debug >= 3) Log.Line($"Unsuspend - !otherMode: {Definition.Name} - isStatic:{IsStatic} - myShield:{myShield} - myMode {myMode} - Mode:{EmitterMode} - CompMode: {DefenseBus.EmitterMode} - ELos:{DefenseBus.EmitterLos} - ES:{DefenseBus.EmittersSuspended} - EmitterId [{Emitter.EntityId}]");
             }
             else if (EmiState.State.Suspend) return true;
 
@@ -199,15 +199,15 @@ namespace DefenseSystems
         {
             EmiState.State.ActiveEmitterId = MyCube.EntityId;
 
-            if (ShieldComp.EmitterMode != (int)EmitterMode) ShieldComp.EmitterMode = (int)EmitterMode;
-            if (ShieldComp.EmittersSuspended) SuspendCollisionDetected();
+            if (DefenseBus.EmitterMode != (int)EmitterMode) DefenseBus.EmitterMode = (int)EmitterMode;
+            if (DefenseBus.EmittersSuspended) SuspendCollisionDetected();
 
             LosLogic();
 
-            ShieldComp.EmitterLos = EmiState.State.Los;
-            ShieldComp.ActiveEmitterId = EmiState.State.ActiveEmitterId;
+            DefenseBus.EmitterLos = EmiState.State.Los;
+            DefenseBus.ActiveEmitterId = EmiState.State.ActiveEmitterId;
 
-            var comp = ShieldComp;
+            var comp = DefenseBus;
             var ds = comp.DefenseSystems;
             var dsNull = ds == null;
             var shieldWaiting = !dsNull && ds.DsState.State.EmitterLos != EmiState.State.Los;
@@ -223,9 +223,9 @@ namespace DefenseSystems
 
         private void SuspendCollisionDetected()
         {
-            ShieldComp.EmitterMode = (int)EmitterMode;
-            ShieldComp.EmittersSuspended = false;
-            ShieldComp.EmitterEvent = true;
+            DefenseBus.EmitterMode = (int)EmitterMode;
+            DefenseBus.EmittersSuspended = false;
+            DefenseBus.EmitterEvent = true;
             TookControl = true;
         }
         #endregion
@@ -243,7 +243,7 @@ namespace DefenseSystems
         private void NeedUpdate()
         {
             EmiState.State.Mode = (int)EmitterMode;
-            EmiState.State.BoundingRange = ShieldComp?.DefenseSystems?.BoundingRange ?? 0f;
+            EmiState.State.BoundingRange = DefenseBus?.DefenseSystems?.BoundingRange ?? 0f;
             EmiState.State.Compatible = (IsStatic && EmitterMode == EmitterType.Station) || (!IsStatic && EmitterMode != EmitterType.Station);
             EmiState.SaveState();
             if (Session.Instance.MpActive) EmiState.NetworkUpdate();
@@ -253,7 +253,7 @@ namespace DefenseSystems
         {
             try
             {
-                if (myTerminalBlock.IsWorking && ShieldComp != null) ShieldComp.CheckEmitters = true;
+                if (myTerminalBlock.IsWorking && DefenseBus != null) DefenseBus.CheckEmitters = true;
             }
             catch (Exception ex) { Log.Line($"Exception in CheckEmitter: {ex}"); }
         }

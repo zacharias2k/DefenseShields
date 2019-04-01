@@ -46,16 +46,16 @@ namespace DefenseSystems
 
         private bool ActiveDisplay()
         {
-            if (ShieldComp?.DefenseSystems?.MyGrid != Display.CubeGrid)
+            if (DefenseBus?.DefenseSystems?.MasterGrid != Display.CubeGrid)
             {
-                Display.CubeGrid.Components.TryGet(out ShieldComp);
+                Display.CubeGrid.Components.TryGet(out DefenseBus);
             }
-            return ShieldComp?.DefenseSystems?.Shield != null;
+            return DefenseBus?.DefenseSystems?.Shield != null;
         }
 
         private void UpdateDisplay()
         {
-            var ds = ShieldComp.DefenseSystems;
+            var ds = DefenseBus.DefenseSystems;
             if (_imagesDetected && Set.Settings.Report == 2)
             {
                 if (Display.ShowText) Display.ShowTextureOnScreen();

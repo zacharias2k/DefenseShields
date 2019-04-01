@@ -102,7 +102,7 @@ namespace DefenseSystems
                                          "\n[Emitter Type]: " + mode +
                                          "\n[Grid Compatible]: " + EmiState.State.Compatible +
                                          "\n[Controller Link]: " + EmiState.State.Link +
-                                         "\n[Controller Bus]: " + (ShieldComp?.DefenseSystems != null) +
+                                         "\n[Controller Bus]: " + (DefenseBus?.DefenseSystems != null) +
                                          "\n[Line of Sight]: " + EmiState.State.Los +
                                          "\n[Is Suspended]: " + EmiState.State.Suspend +
                                          "\n[Is a Backup]: " + EmiState.State.Backup);

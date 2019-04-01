@@ -58,7 +58,7 @@ namespace DefenseSystems
 
         internal BoundingBoxD WebBox = new BoundingBoxD();
         internal MatrixD OldShieldMatrix;
-        internal DefenseBus ShieldComp;
+        internal DefenseBus DefenseBus;
         internal BoundingBoxD ShieldBox3K = new BoundingBoxD();
         internal MyOrientedBoundingBoxD SOriBBoxD = new MyOrientedBoundingBoxD();
         internal BoundingSphereD ShieldSphere = new BoundingSphereD(Vector3D.Zero, 1);
@@ -293,7 +293,8 @@ namespace DefenseSystems
 
         internal IMyUpgradeModule Shield { get; set; }
         internal ShieldType ShieldMode { get; set; }
-        internal MyCubeGrid MyGrid { get; set; }
+        internal MyCubeGrid LocalGrid { get; set; }
+        internal MyCubeGrid MasterGrid { get; set; }
         internal MyCubeBlock MyCube { get; set; }
         internal MyEntity ShieldEnt { get; set; }
 

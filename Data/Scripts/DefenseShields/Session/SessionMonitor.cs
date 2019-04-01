@@ -35,7 +35,7 @@
                         {
                             if (reInforce != s.ReInforcedShield)
                             {
-                                lock (s.SubLock) foreach (var sub in s.ShieldComp.SubGrids) _entRefreshQueue.Enqueue(sub);
+                                lock (s.SubLock) foreach (var sub in s.DefenseBus.SubGrids) _entRefreshQueue.Enqueue(sub);
                                 s.ReInforcedShield = reInforce;
                             }
 
@@ -95,7 +95,7 @@
                             return;
                         }
 
-                        if (s.GridIsMobile && s.MyGrid.Physics.IsMoving)
+                        if (s.GridIsMobile && s.MasterGrid.Physics.IsMoving)
                         {
                             s.LastWokenTick = tick;
                             s.Asleep = false;
@@ -169,7 +169,7 @@
             if (reInforce)
             {
                 HashSet<MyCubeGrid> subs;
-                lock (s.SubLock) subs = new HashSet<MyCubeGrid>(s.ShieldComp.SubGrids);
+                lock (s.SubLock) subs = new HashSet<MyCubeGrid>(s.DefenseBus.SubGrids);
                 var newMode = !s.ReInforcedShield;
                 if (!newMode) return;
                 foreach (var sub in subs)
@@ -190,7 +190,7 @@
                 if (s.ReInforcedShield)
                 {
                     HashSet<MyCubeGrid> subs;
-                    lock (s.SubLock) subs = new HashSet<MyCubeGrid>(s.ShieldComp.SubGrids); 
+                    lock (s.SubLock) subs = new HashSet<MyCubeGrid>(s.DefenseBus.SubGrids); 
                     foreach (var sub in subs)
                     {
                         _entRefreshQueue.Enqueue(sub);
@@ -209,7 +209,7 @@
                     // var testMat = s.DetectMatrixOutside;
                     // var shape1 = new Sphere(Vector3D.Zero, 1.0).Transformed(testMat);
                     var foundNewEnt = false;
-                    var disableVoxels = Enforced.DisableVoxelSupport == 1 || s.ShieldComp.Modulator == null || s.ShieldComp.Modulator.ModSet.Settings.ModulateVoxels;
+                    var disableVoxels = Enforced.DisableVoxelSupport == 1 || s.DefenseBus.Modulator == null || s.DefenseBus.Modulator.ModSet.Settings.ModulateVoxels;
                     MyGamePruningStructure.GetTopmostEntitiesInBox(ref s.WebBox, monitorList);
                     if (!s.WasPaused)
                     {
@@ -461,7 +461,7 @@
                 foreach (var s in entShields)
                 {
                     if (s.WasPaused) continue;
-                    if (s.DsState.State.ReInforce && s.ShieldComp.SubGrids.Contains(ent))
+                    if (s.DsState.State.ReInforce && s.DefenseBus.SubGrids.Contains(ent))
                     {
                         iShield = s;
                         refreshCount++;

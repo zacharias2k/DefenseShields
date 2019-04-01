@@ -125,7 +125,7 @@
     <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\O2Generator.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldWeb.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\GridComps\ModulatorGridComp.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\GridComps\ShieldGridComp.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\GridComps\DefenseBus.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldIntersect.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ModulatorLogic\ModulatorRun.cs" />
     <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmittersRun.cs" />

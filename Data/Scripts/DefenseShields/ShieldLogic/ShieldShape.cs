@@ -13,7 +13,7 @@ namespace DefenseSystems
         #region Shield Shape
         public void ResetShape(bool background, bool newShape = false)
         {
-            if (Session.Enforced.Debug == 3) Log.Line($"ResetShape: Mobile:{GridIsMobile} - Mode:{ShieldMode}/{DsState.State.Mode} - newShape:{newShape} - Offline:{!DsState.State.Online} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ELos:{ShieldComp.EmitterLos} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"ResetShape: Mobile:{GridIsMobile} - Mode:{ShieldMode}/{DsState.State.Mode} - newShape:{newShape} - Offline:{!DsState.State.Online} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ELos:{DefenseBus.EmitterLos} - ShieldId [{Shield.EntityId}]");
 
             if (newShape)
             {
@@ -34,20 +34,20 @@ namespace DefenseSystems
 
         public void MobileUpdate()
         {
-            var checkForNewCenter = MyGrid.PositionComp.WorldVolume.Center;
+            var checkForNewCenter = MasterGrid.PositionComp.WorldVolume.Center;
             if (!checkForNewCenter.Equals(MyGridCenter, 1e-4))
             {
-                ShieldComp.GridIsMoving = true;
+                DefenseBus.GridIsMoving = true;
                 MyGridCenter = checkForNewCenter;
             }
             else
             {
-                ShieldComp.GridIsMoving = false;
+                DefenseBus.GridIsMoving = false;
             }
 
-            if (ShieldComp.GridIsMoving || _comingOnline)
+            if (DefenseBus.GridIsMoving || _comingOnline)
             {
-                if (DsSet.Settings.FortifyShield && MyGrid.Physics.LinearVelocity.Length() > 15)
+                if (DsSet.Settings.FortifyShield && MasterGrid.Physics.LinearVelocity.Length() > 15)
                 {
                     FitChanged = true;
                     DsSet.Settings.FortifyShield = false;
@@ -55,7 +55,7 @@ namespace DefenseSystems
             }
 
             _shapeChanged = _halfExtentsChanged || !DsState.State.EllipsoidAdjust.Equals(_oldEllipsoidAdjust) || !DsState.State.ShieldFudge.Equals(_oldShieldFudge) || _updateMobileShape;
-            _entityChanged = ShieldComp.GridIsMoving || _comingOnline || _shapeChanged;
+            _entityChanged = DefenseBus.GridIsMoving || _comingOnline || _shapeChanged;
 
             _halfExtentsChanged = false;
             _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
@@ -65,7 +65,7 @@ namespace DefenseSystems
 
             if (Session.Instance.LogStats)
             {
-                if (ShieldComp.GridIsMoving) Session.Instance.Perf.Moving();
+                if (DefenseBus.GridIsMoving) Session.Instance.Perf.Moving();
                 if (_shapeChanged) Session.Instance.Perf.ShapeChanged();
             }
         }
@@ -80,12 +80,12 @@ namespace DefenseSystems
         public void CreateHalfExtents()
         {
             _oldGridHalfExtents = DsState.State.GridHalfExtents;
-            var myAabb = MyGrid.PositionComp.LocalAABB;
-            var shieldGrid = MyGrid;
+            var myAabb = MasterGrid.PositionComp.LocalAABB;
+            var shieldGrid = MasterGrid;
             var expandedAabb = myAabb;
-            if (ShieldComp.SubGrids.Count > 1)
+            if (DefenseBus.SubGrids.Count > 1)
             {
-                foreach (var grid in ShieldComp.SubGrids)
+                foreach (var grid in DefenseBus.SubGrids)
                 {
                     if (grid == shieldGrid) continue;
                     var shieldMatrix = shieldGrid.PositionComp.WorldMatrixNormalizedInv;
@@ -111,7 +111,7 @@ namespace DefenseSystems
             }
             else
             {
-                var blockHalfSize = MyGrid.GridSize * 0.5;
+                var blockHalfSize = MasterGrid.GridSize * 0.5;
                 DsState.State.ShieldFudge = 0f;
                 var extentsDiff = DsState.State.GridHalfExtents.LengthSquared() - expandedAabb.HalfExtents.LengthSquared();
                 var overThreshold = extentsDiff < -blockHalfSize || extentsDiff > blockHalfSize;
@@ -152,16 +152,16 @@ namespace DefenseSystems
             {
                 _updateMobileShape = false;
                 if (_shapeChanged) CreateMobileShape();
-                DetectionMatrix = ShieldShapeMatrix * MyGrid.WorldMatrix;
+                DetectionMatrix = ShieldShapeMatrix * MasterGrid.WorldMatrix;
                 DetectionCenter = MyGridCenter;
-                _sQuaternion = Quaternion.CreateFromRotationMatrix(MyGrid.WorldMatrix);
+                _sQuaternion = Quaternion.CreateFromRotationMatrix(MasterGrid.WorldMatrix);
                 ShieldSphere.Center = DetectionCenter;
                 ShieldSphere.Radius = ShieldSize.AbsMax();
             }
             else
             {
                 IMyUpgradeModule emitter;
-                if (_isServer) emitter = ShieldComp.StationEmitter.Emitter;
+                if (_isServer) emitter = DefenseBus.StationEmitter.Emitter;
                 else emitter = (IMyUpgradeModule)MyEntities.GetEntityById(DsState.State.ActiveEmitterId, true);
 
                 if (emitter == null)
@@ -178,16 +178,16 @@ namespace DefenseSystems
                 var hOffset = DsSet.Settings.ShieldOffset.Y;
                 var dOffset = DsSet.Settings.ShieldOffset.Z;
 
-                var blockGridPosMeters = new Vector3D(emitter.Position) * MyGrid.GridSize;
-                var localOffsetMeters = new Vector3D(wOffset, hOffset, dOffset) * MyGrid.GridSize; 
+                var blockGridPosMeters = new Vector3D(emitter.Position) * LocalGrid.GridSize;
+                var localOffsetMeters = new Vector3D(wOffset, hOffset, dOffset) * LocalGrid.GridSize; 
                 var localOffsetPosMeters = localOffsetMeters + blockGridPosMeters; 
                 var emitterCenter = emitter.PositionComp.GetPosition();
                 var offsetLMatrix = Matrix.CreateWorld(localOffsetPosMeters, Vector3D.Forward, Vector3D.Up);
 
-                var worldOffset = Vector3D.TransformNormal(localOffsetMeters, MyGrid.WorldMatrix); 
+                var worldOffset = Vector3D.TransformNormal(localOffsetMeters, LocalGrid.WorldMatrix); 
                 var translationInWorldSpace = emitterCenter + worldOffset;
 
-                OffsetEmitterWMatrix = MatrixD.CreateWorld(translationInWorldSpace, MyGrid.WorldMatrix.Forward, MyGrid.WorldMatrix.Up);
+                OffsetEmitterWMatrix = MatrixD.CreateWorld(translationInWorldSpace, LocalGrid.WorldMatrix.Forward, LocalGrid.WorldMatrix.Up);
 
                 DetectionCenter = OffsetEmitterWMatrix.Translation;
 
@@ -226,7 +226,7 @@ namespace DefenseSystems
                 if (_isServer)
                 {
                     ShieldChangeState();
-                    ShieldComp.ShieldVolume = DetectMatrixOutside.Scale.Volume;
+                    DefenseBus.ShieldVolume = DetectMatrixOutside.Scale.Volume;
                 }
             }
 
@@ -253,7 +253,7 @@ namespace DefenseSystems
         {
             ShieldSize = (DsState.State.GridHalfExtents * DsState.State.EllipsoidAdjust) + DsState.State.ShieldFudge;
             var mobileMatrix = MatrixD.Rescale(MatrixD.Identity, ShieldSize);
-            mobileMatrix.Translation = MyGrid.PositionComp.LocalVolume.Center;
+            mobileMatrix.Translation = MasterGrid.PositionComp.LocalVolume.Center;
             ShieldShapeMatrix = mobileMatrix;
         }
         #endregion

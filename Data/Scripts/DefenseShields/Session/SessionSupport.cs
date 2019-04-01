@@ -74,6 +74,55 @@ namespace DefenseSystems
             else Log.CleanLine(NetworkReport.Report[LogColumn]);
         }
 
+
+        internal DefenseBus FindBus(MyCubeGrid grid)
+        {
+            foreach (var node in MyAPIGateway.GridGroups.GetGroup(grid, GridLinkTypeEnum.Mechanical))
+            {
+                DefenseBus defenseBus;
+                if (node.Components.TryGet(out defenseBus)) return defenseBus; 
+            }
+
+            return null;
+        }
+
+        internal MyCubeGrid FindMasterGridOld(MyCubeBlock myBlock)
+        {
+            var myGrid = myBlock.CubeGrid;
+            var gridNet = MyAPIGateway.GridGroups.GetGroup(myGrid, GridLinkTypeEnum.Mechanical);
+
+            double largestSize = long.MinValue;
+            long largestId = long.MinValue;
+            MyCubeGrid largestGrid = null;
+            foreach (var node in gridNet)
+            {
+                var grid = (MyCubeGrid)node;
+                DefenseBus defenseBus;
+                if (grid.Components.TryGet(out defenseBus) && defenseBus.MasterGrid != null && gridNet.Contains(defenseBus.MasterGrid))
+                {
+                    //Log.Line($"existing bus: IMaster:{defenseBus.MasterGrid == grid}");
+                    largestGrid = defenseBus.MasterGrid;
+                    break;
+                }
+                var mySize = grid.PositionComp.WorldAABB.Size.Volume;
+                if (mySize > largestSize || largestGrid == null)
+                {
+                    Log.Line($"largest On Bus: {grid.DebugName} - null:{largestGrid == null} - blockCount:{grid.BlocksCount}");
+                    largestSize = mySize;
+                    largestGrid = grid;
+                }
+                else if (mySize.Equals(largestSize) && grid.EntityId > largestId)
+                {
+                    Log.Line($"LargerId On Bus: {grid.DebugName} - blockCount:{grid.BlocksCount}");
+                    largestSize = mySize;
+                    largestGrid = grid;
+                    largestId = grid.EntityId;
+                }
+            }
+
+            return largestGrid;
+        }
+
         public MyEntity3DSoundEmitter AudioReady(MyEntity entity)
         {
             if (Tick - SoundTick < 600 && Tick > 600) return null;

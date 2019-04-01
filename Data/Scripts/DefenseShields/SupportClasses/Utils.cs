@@ -84,6 +84,34 @@ namespace DefenseSystems.Support
         }
     }
 
+    public class BlockPriority : IComparer<DefenseSystems>
+    {
+        public int Compare(DefenseSystems x, DefenseSystems y)
+        {
+            var compareVolume = x.LocalGrid.PositionComp.WorldAABB.Volume.CompareTo(y.LocalGrid.PositionComp.WorldAABB.Volume);
+            if (compareVolume != 0) return compareVolume;
+
+            var compareBlocks = x.LocalGrid.BlocksCount.CompareTo(y.LocalGrid.BlocksCount);
+            if (compareBlocks != 0) return compareBlocks;
+
+            return x.MyCube.EntityId.CompareTo(y.MyCube.EntityId);
+        }
+    }
+
+    public class GridPriority : IComparer<MyCubeGrid>
+    {
+        public int Compare(MyCubeGrid x, MyCubeGrid y)
+        {
+            var compareVolume = x.PositionComp.WorldAABB.Volume.CompareTo(y.PositionComp.WorldAABB.Volume);
+            if (compareVolume != 0) return compareVolume;
+
+            var compareBlocks = x.BlocksCount.CompareTo(y.BlocksCount);
+            if (compareBlocks != 0) return compareBlocks;
+
+            return x.EntityId.CompareTo(y.EntityId);
+        }
+    }
+
     class FiniteFifoQueueSet<T1, T2>
     {
         private readonly T1[] _nodes;

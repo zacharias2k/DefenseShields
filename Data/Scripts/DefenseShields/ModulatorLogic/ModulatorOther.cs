@@ -138,25 +138,25 @@ namespace DefenseSystems
 
         private void ServerCheckForCompLink()
         {
-            if (ShieldComp?.DefenseSystems?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
+            if (DefenseBus?.DefenseSystems?.MasterGrid != MyGrid) MyGrid.Components.TryGet(out DefenseBus);
 
-            if (ShieldComp?.DefenseSystems == null) return;
+            if (DefenseBus?.DefenseSystems == null) return;
 
-            if (ShieldComp?.Modulator != this)
+            if (DefenseBus?.Modulator != this)
             {
-                if (ShieldComp.Modulator != this)
+                if (DefenseBus.Modulator != this)
                 {
-                    ShieldComp.Modulator = this;
+                    DefenseBus.Modulator = this;
                     Session.Instance.BlockTagActive(Modulator);
                 }
                 ModState.State.Link = true;
             }
 
             var wasLink = EnhancerLink;
-            if (ModState.State.Link && ShieldComp.Enhancer != null && ShieldComp.Enhancer.IsWorking)
+            if (ModState.State.Link && DefenseBus.Enhancer != null && DefenseBus.Enhancer.IsWorking)
             {
                 EnhancerLink = true;
-                if (ShieldComp.DefenseSystems.IsStatic) ModSet.Settings.EmpEnabled = true;
+                if (DefenseBus.DefenseSystems.IsStatic) ModSet.Settings.EmpEnabled = true;
             }
             else EnhancerLink = false;
 
@@ -165,20 +165,20 @@ namespace DefenseSystems
                 ModSet.Settings.ReInforceEnabled = false;
                 ModSet.Settings.EmpEnabled = false;
             }
-            else if (ModState.State.Link && ShieldComp.DefenseSystems.IsStatic) ModSet.Settings.ReInforceEnabled = false;
+            else if (ModState.State.Link && DefenseBus.DefenseSystems.IsStatic) ModSet.Settings.ReInforceEnabled = false;
         }
 
         private void ClientCheckForCompLink()
         {
-            if (ShieldComp?.DefenseSystems?.MyGrid != MyGrid) MyGrid.Components.TryGet(out ShieldComp);
+            if (DefenseBus?.DefenseSystems?.MasterGrid != MyGrid) MyGrid.Components.TryGet(out DefenseBus);
 
-            if (ShieldComp?.DefenseSystems == null) return;
+            if (DefenseBus?.DefenseSystems == null) return;
 
-            if (ModState.State.Link && ShieldComp?.Modulator != this)
+            if (ModState.State.Link && DefenseBus?.Modulator != this)
             {
-                if (ShieldComp.Modulator != this) ShieldComp.Modulator = this;
+                if (DefenseBus.Modulator != this) DefenseBus.Modulator = this;
             }
-            EnhancerLink = ShieldComp.DefenseSystems.DsState.State.Enhancer;
+            EnhancerLink = DefenseBus.DefenseSystems.DsState.State.Enhancer;
         }
 
         private void Timing()
@@ -337,7 +337,7 @@ namespace DefenseSystems
         {
             try
             {
-                if (ModulatorComp == null || ModState.State.Backup || ShieldComp?.DefenseSystems != null || (!_isDedicated && _tick == _subTick)) return;
+                if (ModulatorComp == null || ModState.State.Backup || DefenseBus?.DefenseSystems != null || (!_isDedicated && _tick == _subTick)) return;
                 if (!_isDedicated && _subTick > _tick - 9)
                 {
                     _subDelayed = true;

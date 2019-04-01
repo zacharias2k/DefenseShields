@@ -72,7 +72,7 @@
         internal static bool ShowVoxels(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<Modulators>();
-            if (comp?.ShieldComp?.DefenseSystems == null || comp.ShieldComp.DefenseSystems.IsStatic) return false;
+            if (comp?.DefenseBus?.DefenseSystems == null || comp.DefenseBus.DefenseSystems.IsStatic) return false;
 
             return comp.ModState.State.Link;
         }
@@ -110,7 +110,7 @@
         internal static bool ShowEMP(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<Modulators>();
-            if (comp?.ShieldComp?.DefenseSystems == null || comp.ShieldComp.DefenseSystems.IsStatic) return false;
+            if (comp?.DefenseBus?.DefenseSystems == null || comp.DefenseBus.DefenseSystems.IsStatic) return false;
 
             return comp.EnhancerLink;
         }
@@ -133,7 +133,7 @@
         internal static bool ShowReInforce(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<Modulators>();
-            if (comp?.ShieldComp?.DefenseSystems == null || comp.ShieldComp.DefenseSystems.IsStatic)
+            if (comp?.DefenseBus?.DefenseSystems == null || comp.DefenseBus.DefenseSystems.IsStatic)
                 return false;
 
             return comp.EnhancerLink;

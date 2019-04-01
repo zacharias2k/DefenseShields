@@ -62,7 +62,7 @@ namespace DefenseSystems
                     var noObjects = MyResourceDist.SourcesEnabled == MyMultipleEnabledEnum.NoObjects;
                     if (noObjects)
                     {
-                        if (Session.Enforced.Debug >= 2) Log.Line($"NoObjects: {MyGrid?.DebugName} - Max:{MyResourceDist?.MaxAvailableResourceByType(GId)} - Status:{MyResourceDist?.SourcesEnabled} - Sources:{_powerSources.Count}");
+                        if (Session.Enforced.Debug >= 2) Log.Line($"NoObjects: {MasterGrid?.DebugName} - Max:{MyResourceDist?.MaxAvailableResourceByType(GId)} - Status:{MyResourceDist?.SourcesEnabled} - Sources:{_powerSources.Count}");
                         FallBackPowerCalc();
                         FunctionalChanged(true);
                     }

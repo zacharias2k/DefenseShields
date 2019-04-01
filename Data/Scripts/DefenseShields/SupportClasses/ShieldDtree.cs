@@ -78,7 +78,7 @@ namespace DefenseSystems
                     noneFound = false;
 
                     var ds = _aabbTree.GetUserData<DefenseSystems>(id);
-                    if (!compare.ContainsKey(ds.MyGrid)) foundShields.Add(ds);
+                    if (!compare.ContainsKey(ds.MasterGrid)) foundShields.Add(ds);
                     else lostShields.Add(ds);
                 }
                 else
@@ -128,7 +128,7 @@ namespace DefenseSystems
                     if (id == callerId) continue;
 
                     var ds = _aabbTree.GetUserData<DefenseSystems>(id);
-                    results.Add(ds.MyGrid, ds);
+                    results.Add(ds.MasterGrid, ds);
                 }
                 else
                 {

@@ -21,10 +21,11 @@
 
             var wait = _isServer && !_tick60 && DsState.State.Suspended;
 
-            MyGrid = MyCube.CubeGrid;
-            if (MyGrid?.Physics == null) return false;
-
+            LocalGrid = MyCube.CubeGrid;
+            if (LocalGrid?.Physics == null) return false;
             if (_resetEntity) ResetEntity();
+            MasterGrid = DefenseBus.MasterGrid;
+
             if (!_firstSync && _readyToSync) SaveAndSendAll();
             if (!_isDedicated && _count == 29) TerminalRefresh();
 
@@ -32,7 +33,7 @@
 
             if (_tick1800 && Session.Enforced.Debug > 0) Debug();
 
-            IsStatic = MyGrid.IsStatic;
+            IsStatic = MasterGrid.IsStatic;
 
             if (!Warming) WarmUpSequence();
 
@@ -71,7 +72,7 @@
                 }
 
                 if (_tick >= LosCheckTick) LosCheck();
-                if (ShieldComp.EmitterEvent) EmitterEventDetected();
+                if (DefenseBus.EmitterEvent) EmitterEventDetected();
                 if (_shapeEvent || FitChanged) CheckExtents();
                 if (_adjustShape) AdjustShape(true);
                 if (!ShieldServerStatusUp())
@@ -111,10 +112,10 @@
 
             DsState.State.Online = true;
 
-            if (!GridIsMobile && (_comingOnline || ShieldComp.O2Updated))
+            if (!GridIsMobile && (_comingOnline || DefenseBus.O2Updated))
             {
                 _ellipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
-                ShieldComp.O2Updated = false;
+                DefenseBus.O2Updated = false;
             }
 
             StepDamageState();
@@ -222,7 +223,7 @@
                 if (!GridIsMobile)
                 {
                     _ellipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
-                    ShieldComp.O2Updated = false;
+                    DefenseBus.O2Updated = false;
                 }
                 DsState.State.Lowered = false;
                 if (!_isDedicated) ShellVisibility();
@@ -234,7 +235,7 @@
 
         private bool ShieldSleeping()
         {
-            if (ShieldComp.EmittersSuspended || SlaveControllerLink())
+            if (DefenseBus.EmittersSuspended || SlaveControllerLink())
             {
                 if (!DsState.State.Sleeping)
                 {
@@ -262,24 +263,23 @@
 
         private bool Suspended()
         {
-            var primeMode = ShieldMode == ShieldType.Station && IsStatic && ShieldComp.StationEmitter == null;
-            var betaMode = ShieldMode != ShieldType.Station && !IsStatic && ShieldComp.ShipEmitter == null;
+            var primeMode = ShieldMode == ShieldType.Station && IsStatic && DefenseBus.StationEmitter == null;
+            var betaMode = ShieldMode != ShieldType.Station && !IsStatic && DefenseBus.ShipEmitter == null;
             var notStation = ShieldMode != ShieldType.Station && IsStatic;
             var notShip = ShieldMode == ShieldType.Station && !IsStatic;
             var unKnown = ShieldMode == ShieldType.Unknown;
             var wrongOwner = !DsState.State.ControllerGridAccess;
-            var nullShield = ShieldComp.DefenseSystems == null;
-            var myShield = ShieldComp.DefenseSystems == this;
+            var myShield = DefenseBus.DefenseSystems == this;
             var wrongRole = notStation || notShip || unKnown;
-            if (!nullShield && !myShield || !IsFunctional || primeMode || betaMode || wrongOwner || wrongRole)
+            if (!myShield || !IsFunctional || primeMode || betaMode || wrongOwner || wrongRole)
             {
                 if (!DsState.State.Suspended) Suspend();
-                if (myShield) ShieldComp.DefenseSystems = null;
+                if (myShield) DefenseBus.DefenseSystems = null;
                 if (wrongRole) SetShieldType(true);
                 return true;
             }
 
-            if (DsState.State.Suspended || nullShield)
+            if (DsState.State.Suspended)
             {
                 UnSuspend();
                 return true;
@@ -301,13 +301,13 @@
         private void UnSuspend()
         {
             DsState.State.Suspended = false;
-            ShieldComp.DefenseSystems = this;
+            DefenseBus.DefenseSystems = this;
             Session.Instance.BlockTagActive(Shield);
             Session.Instance.FunctionalShields[this] = false;
             UpdateEntity();
             GetEnhancernInfo();
             GetModulationInfo();
-            if (Session.Enforced.Debug == 3) Log.Line($"Unsuspended: CM:{ShieldMode} - EW:{DsState.State.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"Unsuspended: CM:{ShieldMode} - EW:{DsState.State.EmitterLos} - ES:{DefenseBus.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
         }
 
         private bool ShieldWaking()
@@ -342,9 +342,9 @@
         private bool ClientOfflineStates()
         {
             var shieldUp = DsState.State.Online && !DsState.State.Suspended && !DsState.State.Sleeping;
-            if (ShieldComp.DefenseSystems != this && shieldUp)
+            if (DefenseBus.DefenseSystems != this && shieldUp)
             {
-                ShieldComp.DefenseSystems = this;
+                DefenseBus.DefenseSystems = this;
             }
 
             if (!shieldUp)
@@ -394,7 +394,6 @@
         {
             if (newSettings.MId > DsSet.Settings.MId)
             {
-                if (!_isServer && MyGrid != null && Session.Enforced.Debug == 3) Log.Line($"{MyGrid.DebugName} received settings packet");
                 var newShape = newSettings.ExtendFit != DsSet.Settings.ExtendFit || newSettings.FortifyShield != DsSet.Settings.FortifyShield || newSettings.SphereFit != DsSet.Settings.SphereFit;
                 DsSet.Settings = newSettings;
                 SettingsUpdated = true;
@@ -408,7 +407,6 @@
             {
                 if (!_isServer)
                 {
-                    if (Session.Enforced.Debug == 3) Log.Line($"[Shield Update]: On:{newState.Online} - Suspend:{newState.Suspended} - Sleep:{newState.Sleeping} - ClientOn:{_clientOn} - SId:{MyCube.EntityId} - Name:{MyGrid.DebugName}");
                     if (!newState.EllipsoidAdjust.Equals(DsState.State.EllipsoidAdjust) || !newState.ShieldFudge.Equals(DsState.State.ShieldFudge) ||
                         !newState.GridHalfExtents.Equals(DsState.State.GridHalfExtents))
                     {

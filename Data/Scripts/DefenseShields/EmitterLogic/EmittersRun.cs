@@ -68,7 +68,7 @@
                 else if (_bCount < SyncCount * _bTime)
                 {
                     NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                    if (ShieldComp?.DefenseSystems?.MyGrid == MyGrid) _bCount++;
+                    if (DefenseBus?.DefenseSystems?.MasterGrid == MyGrid) _bCount++;
                 }
                 else _readyToSync = true;
             }
@@ -120,8 +120,8 @@
             try
             {
                 if (Session.Enforced.Debug == 3) Log.Line($"OnRemovedFromScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
-                if (ShieldComp?.StationEmitter == this) ShieldComp.StationEmitter = null;
-                if (ShieldComp?.ShipEmitter == this) ShieldComp.ShipEmitter = null;
+                if (DefenseBus?.StationEmitter == this) DefenseBus.StationEmitter = null;
+                if (DefenseBus?.ShipEmitter == this) DefenseBus.ShipEmitter = null;
                 RegisterEvents(false);
                 IsWorking = false;
                 IsFunctional = false;
@@ -141,23 +141,23 @@
                 base.Close();
                 if (Session.Enforced.Debug == 3) Log.Line($"Close: {EmitterMode} - EmitterId [{Entity.EntityId}]");
                 if (Session.Instance.Emitters.Contains(this)) Session.Instance.Emitters.Remove(this);
-                if (ShieldComp?.StationEmitter == this)
+                if (DefenseBus?.StationEmitter == this)
                 {
-                    if ((int)EmitterMode == ShieldComp.EmitterMode)
+                    if ((int)EmitterMode == DefenseBus.EmitterMode)
                     {
-                        ShieldComp.EmitterLos = false;
-                        ShieldComp.EmitterEvent = true;
+                        DefenseBus.EmitterLos = false;
+                        DefenseBus.EmitterEvent = true;
                     }
-                    ShieldComp.StationEmitter = null;
+                    DefenseBus.StationEmitter = null;
                 }
-                else if (ShieldComp?.ShipEmitter == this)
+                else if (DefenseBus?.ShipEmitter == this)
                 {
-                    if ((int)EmitterMode == ShieldComp.EmitterMode)
+                    if ((int)EmitterMode == DefenseBus.EmitterMode)
                     {
-                        ShieldComp.EmitterLos = false;
-                        ShieldComp.EmitterEvent = true;
+                        DefenseBus.EmitterLos = false;
+                        DefenseBus.EmitterEvent = true;
                     }
-                    ShieldComp.ShipEmitter = null;
+                    DefenseBus.ShipEmitter = null;
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }

@@ -13,19 +13,16 @@
 
     public partial class DefenseSystems
     {
-        private void RegisterEvents(bool register = true)
+        internal void RegisterEvents(MyCubeGrid grid, bool register = true)
         {
             if (register)
             {
                 if (MyAPIGateway.Multiplayer.IsServer)
                 {
-                    ((MyCubeGrid)Shield.CubeGrid).OnBlockOwnershipChanged += OwnerChanged;
                     MyEntities.OnEntityAdd += OnEntityAdd;
                     MyEntities.OnEntityRemove += OnEntityRemove;
                 }
 
-                ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated += HierarchyChanged;
-                RegisterGridEvents();
                 Shield.AppendingCustomInfo += AppendingCustomInfo;
                 _sink.CurrentInputChanged += CurrentInputChanged;
                 MyCube.IsWorkingChanged += IsWorkingChanged;
@@ -36,24 +33,23 @@
             {
                 if (MyAPIGateway.Multiplayer.IsServer)
                 {
-                    ((MyCubeGrid)Shield.CubeGrid).OnBlockOwnershipChanged -= OwnerChanged;
                     MyEntities.OnEntityAdd -= OnEntityAdd;
                     MyEntities.OnEntityRemove -= OnEntityRemove;
                 }
 
-                ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated -= HierarchyChanged;
-                RegisterGridEvents(false);
                 Shield.AppendingCustomInfo -= AppendingCustomInfo;
                 _sink.CurrentInputChanged -= CurrentInputChanged;
                 MyCube.IsWorkingChanged -= IsWorkingChanged;
             }
         }
 
-        private void RegisterGridEvents(bool register = true, MyCubeGrid grid = null)
+        internal void RegisterGridEvents(MyCubeGrid grid, bool register = true)
         {
-            if (grid == null) grid = MyGrid;
+            if (grid == null) grid = LocalGrid;
             if (register)
             {
+                if (_isServer) grid.OnBlockOwnershipChanged += OwnerChanged;
+                grid.OnHierarchyUpdated += HierarchyChanged;
                 grid.OnBlockAdded += BlockAdded;
                 grid.OnBlockRemoved += BlockRemoved;
                 grid.OnFatBlockAdded += FatBlockAdded;
@@ -62,6 +58,8 @@
             }
             else
             {
+                if (_isServer) grid.OnBlockOwnershipChanged -= OwnerChanged;
+                grid.OnHierarchyUpdated -= HierarchyChanged;
                 grid.OnBlockAdded -= BlockAdded;
                 grid.OnBlockRemoved -= BlockRemoved;
                 grid.OnFatBlockAdded -= FatBlockAdded;
@@ -80,7 +78,7 @@
         {
             try
             {
-                if (MyCube == null || MyGrid == null || MyCube.OwnerId == _controllerOwnerId && MyGrid.BigOwners.Count != 0 && MyGrid.BigOwners[0] == _gridOwnerId) return;
+                if (MyCube == null || LocalGrid == null || MasterGrid == null || MyCube.OwnerId == _controllerOwnerId && LocalGrid.BigOwners.Count != 0 && LocalGrid.BigOwners[0] == _gridOwnerId) return;
                 GridOwnsController();
             }
             catch (Exception ex) { Log.Line($"Exception in Controller OwnerChanged: {ex}"); }

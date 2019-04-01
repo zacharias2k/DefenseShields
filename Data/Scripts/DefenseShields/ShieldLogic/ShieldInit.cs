@@ -37,28 +37,28 @@ namespace DefenseSystems
 
         private void EmitterEventDetected()
         {
-            ShieldComp.EmitterEvent = false;
-            DsState.State.ActiveEmitterId = ShieldComp.ActiveEmitterId;
-            DsState.State.EmitterLos = ShieldComp.EmitterLos;
-            if (Session.Enforced.Debug >= 3) Log.Line($"EmitterEvent: ShieldMode:{ShieldMode} - Los:{ShieldComp.EmitterLos} - Warmed:{WarmedUp} - SavedEId:{DsState.State.EmitterLos} - NewEId:{ShieldComp.ActiveEmitterId} - ShieldId [{Shield.EntityId}]");
+            DefenseBus.EmitterEvent = false;
+            DsState.State.ActiveEmitterId = DefenseBus.ActiveEmitterId;
+            DsState.State.EmitterLos = DefenseBus.EmitterLos;
+            if (Session.Enforced.Debug >= 3) Log.Line($"EmitterEvent: ShieldMode:{ShieldMode} - Los:{DefenseBus.EmitterLos} - Warmed:{WarmedUp} - SavedEId:{DsState.State.EmitterLos} - NewEId:{DefenseBus.ActiveEmitterId} - ShieldId [{Shield.EntityId}]");
             if (!GridIsMobile)
             {
                 UpdateDimensions = true;
                 if (UpdateDimensions) RefreshDimensions();
             }
 
-            if (!ShieldComp.EmitterLos)
+            if (!DefenseBus.EmitterLos)
             {
                 if (!WarmedUp)
                 {
-                    MyGrid.Physics.ForceActivate();
+                    MasterGrid.Physics.ForceActivate();
                     if (Session.Enforced.Debug >= 3) Log.Line($"EmitterStartupFailure: Asleep:{Asleep} - MaxPower:{GridMaxPower} - {ShieldSphere.Radius} - ShieldId [{Shield.EntityId}]");
                     LosCheckTick = Session.Instance.Tick + 1800;
                     ShieldChangeState();
                     return;
                 }
-                if (GridIsMobile && ShieldComp.ShipEmitter != null && !ShieldComp.ShipEmitter.EmiState.State.Los) DsState.State.Message = true;
-                else if (!GridIsMobile && ShieldComp.StationEmitter != null && !ShieldComp.StationEmitter.EmiState.State.Los) DsState.State.Message = true;
+                if (GridIsMobile && DefenseBus.ShipEmitter != null && !DefenseBus.ShipEmitter.EmiState.State.Los) DsState.State.Message = true;
+                else if (!GridIsMobile && DefenseBus.StationEmitter != null && !DefenseBus.StationEmitter.EmiState.State.Los) DsState.State.Message = true;
                 if (Session.Enforced.Debug >= 3) Log.Line($"EmitterEvent: no emitter is working, shield mode: {ShieldMode} - WarmedUp:{WarmedUp} - MaxPower:{GridMaxPower} - Radius:{ShieldSphere.Radius} - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
             }
         }
@@ -169,10 +169,8 @@ namespace DefenseSystems
 
             Session.Instance.FunctionalShields[this] = false;
             Session.Instance.Controllers.Add(this);
-
+            RegisterWithBus();
             if (MyAPIGateway.Session.CreativeMode) CreativeModeWarning();
-            IsWorking = MyCube.IsWorking;
-            IsFunctional = MyCube.IsFunctional;
             NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             _bTime = 1;
             _bInit = true;
@@ -184,12 +182,12 @@ namespace DefenseSystems
         {
             try
             {
-                if (_isServer && (ShieldComp.EmitterMode < 0 || ShieldComp.EmitterMode == 0 && ShieldComp.StationEmitter == null || ShieldComp.EmitterMode != 0 && ShieldComp.ShipEmitter == null || ShieldComp.EmittersSuspended || !IsFunctional))
+                if (_isServer && (DefenseBus.EmitterMode < 0 || DefenseBus.EmitterMode == 0 && DefenseBus.StationEmitter == null || DefenseBus.EmitterMode != 0 && DefenseBus.ShipEmitter == null || DefenseBus.EmittersSuspended || !IsFunctional))
                 {
                     /*
                     if (_tick600)
                     {
-                        if (Session.Enforced.Debug == 3 && _tick600) Log.Line($"PostInit: Server Not Ready - GridComp:{MyGrid.Components.Has<DefenseBus>()} - InvalidMode:{ShieldComp.EmitterMode < 0} - Functional:{IsFunctional} - EmitterSus:{ShieldComp.EmittersSuspended} - StationEmitterNull:{ShieldComp.StationEmitter == null } - EmitterNull:{ShieldComp.StationEmitter?.Emitter == null} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug == 3 && _tick600) Log.Line($"PostInit: Server Not Ready - GridComp:{MyGrid.Components.Has<DefenseBus>()} - InvalidMode:{DefenseBus.EmitterMode < 0} - Functional:{IsFunctional} - EmitterSus:{DefenseBus.EmittersSuspended} - StationEmitterNull:{DefenseBus.StationEmitter == null } - EmitterNull:{DefenseBus.StationEmitter?.Emitter == null} - ShieldId [{Shield.EntityId}]");
                     }
                     */
                     return false;
@@ -224,15 +222,15 @@ namespace DefenseSystems
 
         private void UpdateEntity()
         {
-            ShieldComp.LinkedGrids.Clear();
-            ShieldComp.SubGrids.Clear();
+            DefenseBus.LinkedGrids.Clear();
+            DefenseBus.SubGrids.Clear();
             _blockChanged = true;
             _functionalChanged = true;
             ResetShape(false, true);
             ResetShape(false);
             SetShieldType(false);
             if (!_isDedicated) ShellVisibility(true);
-            if (Session.Enforced.Debug == 2) Log.Line($"UpdateEntity: sEnt:{ShieldEnt == null} - sPassive:{_shellPassive == null} - controller mode is: {ShieldMode} - EW:{DsState.State.EmitterLos} - ES:{ShieldComp.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 2) Log.Line($"UpdateEntity: sEnt:{ShieldEnt == null} - sPassive:{_shellPassive == null} - controller mode is: {ShieldMode} - EW:{DsState.State.EmitterLos} - ES:{DefenseBus.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
             Icosphere.ShellActive = null;
             DsState.State.Heat = 0;
 
@@ -250,7 +248,7 @@ namespace DefenseSystems
             WarmedUp = false;
             _resetEntity = false;
 
-            ResetComp();
+            RegisterWithBus();
 
             if (_isServer)
             {
@@ -260,16 +258,23 @@ namespace DefenseSystems
             if (Session.Enforced.Debug == 3) Log.Line($"ResetEntity: ShieldId [{Shield.EntityId}]");
         }
 
-        private void ResetComp()
+        private void RegisterWithBus(bool register = true)
         {
-            DefenseBus comp;
-            Shield.CubeGrid.Components.TryGet(out comp);
-            if (comp == null)
+            LocalGrid = MyCube.CubeGrid;
+            if (register)
             {
-                ShieldComp = new DefenseBus(this);
-                Shield.CubeGrid.Components.Add(ShieldComp);
+                DefenseBus = Session.Instance.FindBus(LocalGrid) ?? new DefenseBus();
+
+                DefenseBus.AddSortedControllers(this);
+                DefenseBus.SubGridDetect(LocalGrid, true);
+                DefenseBus.SetMasterGrid();
+
             }
-            else Shield.CubeGrid.Components.TryGet(out ShieldComp);
+            else
+            {
+                DefenseBus.SubGridDetect(LocalGrid, true);
+                DefenseBus.RemoveController(this);
+            }
         }
 
         private void WarmUpSequence()
@@ -375,7 +380,7 @@ namespace DefenseSystems
             var oldMode = ShieldMode;
             if (_isServer)
             {
-                switch (ShieldComp.EmitterMode)
+                switch (DefenseBus.EmitterMode)
                 {
                     case 0:
                         ShieldMode = ShieldType.Station;
@@ -447,7 +452,7 @@ namespace DefenseSystems
             }
 
             SelectPassiveShell();
-            var parent = (MyEntity)MyGrid;
+            var parent = (MyEntity)MasterGrid;
             if (!_isDedicated)
             {
                 _shellPassive = Spawn.EmptyEntity("dShellPassive", $"{Session.Instance.ModPath()}{_modelPassive}", parent, true);
@@ -493,7 +498,7 @@ namespace DefenseSystems
                 DsState.State.GridIntegrity = 0;
                 grid = Shield.CubeGrid;
             }
-            else if (grid == MyGrid) mainSub = true;
+            else if (grid == MasterGrid) mainSub = true;
 
             var integrityAdjustment = 0f;
 

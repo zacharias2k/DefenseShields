@@ -15,7 +15,7 @@ namespace DefenseSystems
         private void LosCheck()
         {
             LosCheckTick = uint.MaxValue;
-            ShieldComp.CheckEmitters = true;
+            DefenseBus.CheckEmitters = true;
             FitChanged = true;
             _adjustShape = true;
         }
@@ -43,7 +43,7 @@ namespace DefenseSystems
                           $"Failed:{!NotFailed} - PNull:{MyResourceDist == null}\n" +
                           $"NoP:{DsState.State.NoPower} - PSys:{MyResourceDist?.SourcesEnabled}\n" +
                           $"Access:{DsState.State.ControllerGridAccess} - EmitterLos:{DsState.State.EmitterLos}\n" +
-                          $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)}\n" +
+                          $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(MasterGrid)}\n" +
                           $"ShieldMode:{ShieldMode} - pFail:{_powerFail}\n" +
                           $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{GridMaxPower}\n" +
                           $"AvailPoW:{GridAvailablePower} - MTPoW:{_shieldMaintaintPower}\n" +
@@ -81,21 +81,31 @@ namespace DefenseSystems
         {
             _subUpdate = false;
 
-            var gotGroups = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
-            if (gotGroups.Count == ShieldComp.LinkedGrids.Count && !force) return;
-            if (Session.Enforced.Debug >= 3 && ShieldComp.LinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.LinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.LinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
+            DefenseBus.SubGridDetect(MasterGrid, force);
+            
+            /*
+            var gotGroups = MyAPIGateway.GridGroups.GetGroup(MasterGrid, GridLinkTypeEnum.Physical);
+            if (gotGroups.Count == DefenseBus.LinkedGrids.Count && !force) return;
+            if (Session.Enforced.Debug >= 3 && DefenseBus.LinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{DefenseBus.LinkedGrids.Count != gotGroups.Count} - old:{DefenseBus.LinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
             lock (SubLock)
             {
-                ShieldComp.SubGrids.Clear();
-                ShieldComp.LinkedGrids.Clear();
+                DefenseBus.SubGrids.Clear();
+                DefenseBus.LinkedGrids.Clear();
                 for (int i = 0; i < gotGroups.Count; i++)
                 {
                     var sub = gotGroups[i];
                     if (sub == null) continue;
-                    if (MyAPIGateway.GridGroups.HasConnection(MyGrid, sub, GridLinkTypeEnum.Mechanical)) ShieldComp.SubGrids.Add((MyCubeGrid)sub);
-                    ShieldComp.LinkedGrids.Add(sub as MyCubeGrid, new SubGridInfo(sub as MyCubeGrid, sub == MyGrid, false));
+                    if (MyAPIGateway.GridGroups.HasConnection(MasterGrid, sub, GridLinkTypeEnum.Mechanical)) DefenseBus.SubGrids.Add((MyCubeGrid)sub);
+                    DefenseBus.LinkedGrids.Add(sub as MyCubeGrid, new SubGridInfo(sub as MyCubeGrid, sub == MasterGrid, false));
                 }
             }
+            */
+
+        }
+
+        internal void SetSubFlags()
+        {
+            Log.Line("set flags");
             _blockChanged = true;
             _functionalChanged = true;
             _updateGridDistributor = true;
@@ -153,9 +163,9 @@ namespace DefenseSystems
                 _batteryBlocks.Clear();
                 _displayBlocks.Clear();
 
-                foreach (var grid in ShieldComp.LinkedGrids.Keys)
+                foreach (var grid in DefenseBus.LinkedGrids.Keys)
                 {
-                    var mechanical = ShieldComp.SubGrids.Contains(grid);
+                    var mechanical = DefenseBus.SubGrids.Contains(grid);
                     foreach (var block in grid.GetFatBlocks())
                     {
                         if (mechanical)
@@ -202,13 +212,13 @@ namespace DefenseSystems
 
         private void GridOwnsController()
         {
-            if (MyGrid.BigOwners.Count == 0)
+            if (MasterGrid.BigOwners.Count == 0)
             {
                 DsState.State.ControllerGridAccess = false;
                 return;
             }
 
-            _gridOwnerId = MyGrid.BigOwners[0];
+            _gridOwnerId = MasterGrid.BigOwners[0];
             _controllerOwnerId = MyCube.OwnerId;
 
             if (_controllerOwnerId == 0) MyCube.ChangeOwner(_gridOwnerId, MyOwnershipShareModeEnum.Faction);
@@ -243,18 +253,18 @@ namespace DefenseSystems
             var notTime = _tick % 120 != 0 && _subTick < _tick + 10;
             if (notTime && _slaveLink) return true;
             if (IsStatic || (notTime && !_firstLoop)) return false;
-            var mySize = MyGrid.PositionComp.WorldAABB.Size.Volume;
-            var myEntityId = MyGrid.EntityId;
-            foreach (var grid in ShieldComp.LinkedGrids.Keys)
+            var mySize = MasterGrid.PositionComp.WorldAABB.Size.Volume;
+            var myEntityId = MasterGrid.EntityId;
+            foreach (var grid in DefenseBus.LinkedGrids.Keys)
             {
-                if (grid == MyGrid) continue;
+                if (grid == MasterGrid) continue;
                 DefenseBus defenseBus;
                 grid.Components.TryGet(out defenseBus);
                 var ds = defenseBus?.DefenseSystems;
-                if (ds?.ShieldComp != null && ds.DsState.State.Online && ds.IsWorking)
+                if (ds?.DefenseBus != null && ds.DsState.State.Online && ds.IsWorking)
                 {
-                    var otherSize = ds.MyGrid.PositionComp.WorldAABB.Size.Volume;
-                    var otherEntityId = ds.MyGrid.EntityId;
+                    var otherSize = ds.MasterGrid.PositionComp.WorldAABB.Size.Volume;
+                    var otherEntityId = ds.MasterGrid.EntityId;
                     if ((!IsStatic && ds.IsStatic) || mySize < otherSize || (mySize.Equals(otherEntityId) && myEntityId < otherEntityId))
                     {
                         _slaveLink = true;
@@ -268,20 +278,18 @@ namespace DefenseSystems
 
         private bool FieldShapeBlocked()
         {
-            ModulatorGridComponent modComp;
-            MyGrid.Components.TryGet(out modComp);
-            if (ShieldComp.Modulator == null || ShieldComp.Modulator.ModSet.Settings.ModulateVoxels || Session.Enforced.DisableVoxelSupport == 1) return false;
+            if (DefenseBus.Modulator == null || DefenseBus.Modulator.ModSet.Settings.ModulateVoxels || Session.Enforced.DisableVoxelSupport == 1) return false;
 
             var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange);
             var pruneList = new List<MyVoxelBase>();
             MyGamePruningStructure.GetAllVoxelMapsInSphere(ref pruneSphere, pruneList);
 
             if (pruneList.Count == 0) return false;
-            Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, ShieldComp.PhysicsOutsideLow);
+            Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, DefenseBus.PhysicsOutsideLow);
             foreach (var voxel in pruneList)
             {
                 if (voxel.RootVoxel == null || voxel != voxel.RootVoxel) continue;
-                if (!CustomCollision.VoxelContact(ShieldComp.PhysicsOutsideLow, voxel)) continue;
+                if (!CustomCollision.VoxelContact(DefenseBus.PhysicsOutsideLow, voxel)) continue;
 
                 Shield.Enabled = false;
                 DsState.State.FieldBlocked = true;
@@ -332,7 +340,7 @@ namespace DefenseSystems
             if (_overLoadLoop > -1)
             {
                 _overLoadLoop++;
-                if (_overLoadLoop == ShieldDownCount - 1) ShieldComp.CheckEmitters = true;
+                if (_overLoadLoop == ShieldDownCount - 1) DefenseBus.CheckEmitters = true;
                 if (_overLoadLoop == ShieldDownCount)
                 {
                     if (!DsState.State.EmitterLos)
@@ -353,7 +361,7 @@ namespace DefenseSystems
             if (_empOverLoadLoop > -1)
             {
                 _empOverLoadLoop++;
-                if (_empOverLoadLoop == EmpDownCount - 1) ShieldComp.CheckEmitters = true;
+                if (_empOverLoadLoop == EmpDownCount - 1) DefenseBus.CheckEmitters = true;
                 if (_empOverLoadLoop == EmpDownCount)
                 {
                     if (!DsState.State.EmitterLos)

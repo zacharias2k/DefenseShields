@@ -15,7 +15,7 @@ namespace DefenseSystems
 {
     public partial class Emitters
     {
-        internal DefenseBus ShieldComp;
+        internal DefenseBus DefenseBus;
         internal MyResourceSinkInfo ResourceInfo;
         internal List<Vector3D> LosScaledCloud = new List<Vector3D>(2000);
         internal MyEntitySubpart SubpartRotor;

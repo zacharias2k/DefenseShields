@@ -11,7 +11,7 @@ namespace DefenseSystems
 {
     public partial class Enhancers
     {
-        internal DefenseBus ShieldComp;
+        internal DefenseBus DefenseBus;
         internal MyResourceSinkInfo ResourceInfo;
 
         private const float Power = 0.01f;

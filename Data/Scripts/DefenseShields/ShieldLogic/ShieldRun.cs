@@ -38,9 +38,8 @@
             try
             {
                 if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: GridId:{Shield.CubeGrid.EntityId} - ShieldId [{Shield.EntityId}]");
-                MyGrid = (MyCubeGrid)Shield.CubeGrid;
+                LocalGrid = (MyCubeGrid)Shield.CubeGrid;
                 MyCube = Shield as MyCubeBlock;
-                RegisterEvents();
                 AssignSlots();
                 _resetEntity = true;
             }
@@ -56,7 +55,7 @@
                 else if (_bCount < SyncCount * _bTime)
                 {
                     NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                    if (ShieldComp?.DefenseSystems != null && ShieldComp.DefenseSystems.Warming) _bCount++;
+                    if (DefenseBus?.DefenseSystems != null && DefenseBus.DefenseSystems.Warming) _bCount++;
                 }
                 else _readyToSync = true;
             }
@@ -126,13 +125,12 @@
                 if (!_allInited) return;
                 if (Session.Enforced.Debug >= 3) Log.Line($"OnRemovedFromScene: {ShieldMode} - GridId:{Shield.CubeGrid.EntityId} - ShieldId [{Shield.EntityId}]");
 
-                if (ShieldComp?.DefenseSystems == this)
+                if (DefenseBus?.DefenseSystems == this)
                 {
                     OfflineShield(true, false, State.Other, true);
-                    ShieldComp.DefenseSystems = null;
+                    RegisterWithBus(false);
                 }
 
-                RegisterEvents(false);
                 InitEntities(false);
                 IsWorking = false;
                 IsFunctional = false;
@@ -160,10 +158,10 @@
                 if (!_allInited) return;
                 if (Session.Enforced.Debug >= 3) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
 
-                if (ShieldComp?.DefenseSystems == this)
+                if (DefenseBus?.DefenseSystems == this)
                 {
                     OfflineShield(true, false, State.Other, true);
-                    ShieldComp.DefenseSystems = null;
+                    RegisterWithBus(false);
                 }
 
                 if (Session.Instance.Controllers.Contains(this)) Session.Instance.Controllers.Remove(this);
