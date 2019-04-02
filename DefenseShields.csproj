@@ -61,6 +61,11 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\DisUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\O2Ui.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\PsUi.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusBlocks.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusEvents.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusGridReg.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusGrids.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusFields.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DisplayLogic\DisplayFields.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DisplayLogic\DisplayRun.cs" />
     <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmitterDraw.cs" />
@@ -90,6 +95,7 @@
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\SphereTriangleCollision.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\SphereTrianglesResponse.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\Triangle.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Registry.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Stats.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\PhysicsCatch\CatchEntities.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\ShieldDtree.cs" />
@@ -125,7 +131,7 @@
     <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\O2Generator.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldWeb.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\GridComps\ModulatorGridComp.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\GridComps\DefenseBus.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusRun.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldIntersect.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ModulatorLogic\ModulatorRun.cs" />
     <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmittersRun.cs" />

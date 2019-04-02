@@ -82,7 +82,7 @@
             if (DedicatedServer) return;
             try
             {
-                var compCount = Controllers.Count;
+                var compCount = AllControllers.Count;
                 if (compCount == 0) return;
 
                 if (SphereOnCamera.Length != compCount) Array.Resize(ref SphereOnCamera, compCount);
@@ -91,7 +91,7 @@
                 var onCount = 0;
                 for (int i = 0; i < compCount; i++)
                 {
-                    var s = Controllers[i];
+                    var s = AllControllers[i];
                     if (s.DsState.State.Suspended) continue;
 
                     if (s.KineticCoolDown > -1)
@@ -127,7 +127,7 @@
 
                 for (int i = 0; i < compCount; i++)
                 {
-                    var s = Controllers[i];
+                    var s = AllControllers[i];
                     var drawSuspended = !s.WarmedUp || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterLos;
 
                     if (drawSuspended) continue;

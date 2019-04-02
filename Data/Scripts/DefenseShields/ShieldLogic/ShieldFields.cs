@@ -15,14 +15,13 @@ namespace DefenseSystems
     using VRageMath;
     using ParallelTasks;
 
-    public partial class DefenseSystems 
+    public partial class Controllers
     {
         #region Setup
         internal readonly MyDefinitionId GId = MyResourceDistributorComponent.ElectricityId;
 
-        internal readonly object SubLock = new object();
-        internal readonly object SubUpdateLock = new object();
-
+        //internal readonly object SubLock = new object();
+        //internal readonly object SubUpdateLock = new object();
         internal readonly int[] ExpChargeReductions = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024 };
 
         internal readonly List<MyEntity> PruneList = new List<MyEntity>();
@@ -56,9 +55,9 @@ namespace DefenseSystems
         internal volatile uint LastWokenTick;
         internal volatile bool ReInforcedShield;
 
+        internal DefenseBus DefenseBus;
         internal BoundingBoxD WebBox = new BoundingBoxD();
         internal MatrixD OldShieldMatrix;
-        internal DefenseBus DefenseBus;
         internal BoundingBoxD ShieldBox3K = new BoundingBoxD();
         internal MyOrientedBoundingBoxD SOriBBoxD = new MyOrientedBoundingBoxD();
         internal BoundingSphereD ShieldSphere = new BoundingSphereD(Vector3D.Zero, 1);
@@ -181,28 +180,28 @@ namespace DefenseSystems
         private bool _tick300;
         private bool _tick600;
         private bool _tick1800;
-        private bool _resetEntity;
+        internal bool MarkForReset { get; set; }
         private bool _empOverLoad;
         private bool _isDedicated;
         private bool _mpActive;
         private bool _isServer;
         private bool _gridPowered;
         private bool _slaveLink;
-        private bool _subUpdate;
-        private bool _updateGridDistributor;
+        //private bool _subUpdate;
+        //private bool _updateGridDistributor;
         private bool _hideShield;
         private bool _hideColor;
         private bool _supressedColor;
         private bool _shapeChanged;
         private bool _entityChanged;
         private bool _updateRender;
-		private bool _functionalAdded;
-        private bool _functionalRemoved;
-        private bool _functionalChanged;
+		//private bool _functionalAdded;
+        //private bool _functionalRemoved;
+        //private bool _functionalChanged;
         private bool _functionalEvent;
-        private bool _blockAdded;
-		private bool _blockRemoved;
-        private bool _blockChanged;
+        //private bool _blockAdded;
+		//private bool _blockRemoved;
+        //private bool _blockChanged;
 		private bool _blockEvent;
         private bool _shapeEvent;
         private bool _updateMobileShape;
@@ -212,7 +211,7 @@ namespace DefenseSystems
         private bool _viewInShield;
         private bool _powerFail;
         private bool _halfExtentsChanged;
-        private bool _checkForDistributor;
+        //private bool _checkForDistributor;
         private bool _updatePowerSources;
         private bool _readyToSync;
         private bool _firstSync;
@@ -294,17 +293,17 @@ namespace DefenseSystems
         internal IMyUpgradeModule Shield { get; set; }
         internal ShieldType ShieldMode { get; set; }
         internal MyCubeGrid LocalGrid { get; set; }
-        internal MyCubeGrid MasterGrid { get; set; }
         internal MyCubeBlock MyCube { get; set; }
         internal MyEntity ShieldEnt { get; set; }
 
-        internal MyResourceDistributorComponent MyResourceDist { get; set; }
-
+        //internal MyResourceDistributorComponent MyResourceDist { get; set; }
+        internal DamageHandlerHit HandlerImpact { get; set; } = new DamageHandlerHit();
         internal ControllerSettings DsSet { get; set; }
         internal ControllerState DsState { get; set; }
         internal ShieldHitValues ShieldHit { get; set; } = new ShieldHitValues();
         internal Icosphere.Instance Icosphere { get; set; }
-
+        internal BusEvents BusEvents { get; set; } = new BusEvents();
+        internal Registry Registry { get; set; } = new Registry();
         internal uint ResetEntityTick { get; set; }
         internal uint LosCheckTick { get; set; }
         internal uint TicksWithNoActivity { get; set; }
@@ -352,7 +351,6 @@ namespace DefenseSystems
         internal float ImpactSize { get; set; } = 9f;
         internal float Absorb { get; set; }
 
-        internal DamageHandlerHit HandlerImpact { get; set; } = new DamageHandlerHit();
         internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         internal Vector3D ShieldSize { get; set; }
 

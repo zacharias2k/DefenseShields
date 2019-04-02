@@ -10,7 +10,7 @@ namespace DefenseSystems
         #region Block Status
         private bool ControllerLink()
         {
-            if (DefenseBus?.DefenseSystems?.MasterGrid != MyGrid) MyGrid.Components.TryGet(out DefenseBus);
+            //if (DefenseBus?.MasterGrid != LocalGrid) LocalGrid.Components.TryGet(out DefenseBus);
 
             if (!_isServer)
             {
@@ -54,7 +54,7 @@ namespace DefenseSystems
 
         private bool ClientEmitterReady()
         {
-            if (DefenseBus?.DefenseSystems == null) return false;
+            if (DefenseBus?.ActiveController == null) return false;
 
             if (!_compact)
             {
@@ -73,6 +73,17 @@ namespace DefenseSystems
             return EmiState.State.Link;
         }
 
+        private bool Suspend()
+        {
+            if (DefenseBus?.ActiveEmitter != this)
+            {
+                if (!_isDedicated && !_blockReset) BlockReset(true);
+                return true;
+            }
+            return false;
+        }
+
+        /*
         private bool Suspend()
         {
             EmiState.State.ActiveEmitterId = 0;
@@ -194,7 +205,7 @@ namespace DefenseSystems
             EmiState.State.Suspend = false;
             return false;
         }
-
+        */
         private bool BlockWorking()
         {
             EmiState.State.ActiveEmitterId = MyCube.EntityId;
@@ -207,13 +218,13 @@ namespace DefenseSystems
             DefenseBus.EmitterLos = EmiState.State.Los;
             DefenseBus.ActiveEmitterId = EmiState.State.ActiveEmitterId;
 
-            var comp = DefenseBus;
-            var ds = comp.DefenseSystems;
-            var dsNull = ds == null;
-            var shieldWaiting = !dsNull && ds.DsState.State.EmitterLos != EmiState.State.Los;
-            if (shieldWaiting) comp.EmitterEvent = true;
+            var bus = DefenseBus;
+            var controller = bus.ActiveController;
+            var nullController = controller == null;
+            var shieldWaiting = !nullController && controller.DsState.State.EmitterLos != EmiState.State.Los;
+            if (shieldWaiting) bus.EmitterEvent = true;
 
-            if (!EmiState.State.Los || dsNull || shieldWaiting || !ds.DsState.State.Online || !(_tick >= ds.ResetEntityTick))
+            if (!EmiState.State.Los || nullController || shieldWaiting || !controller.DsState.State.Online || !(_tick >= controller.ResetEntityTick))
             {
                 if (!_isDedicated && !_blockReset) BlockReset(true);
                 return false;
@@ -243,7 +254,7 @@ namespace DefenseSystems
         private void NeedUpdate()
         {
             EmiState.State.Mode = (int)EmitterMode;
-            EmiState.State.BoundingRange = DefenseBus?.DefenseSystems?.BoundingRange ?? 0f;
+            EmiState.State.BoundingRange = DefenseBus?.ActiveController?.BoundingRange ?? 0f;
             EmiState.State.Compatible = (IsStatic && EmitterMode == EmitterType.Station) || (!IsStatic && EmitterMode != EmitterType.Station);
             EmiState.SaveState();
             if (Session.Instance.MpActive) EmiState.NetworkUpdate();

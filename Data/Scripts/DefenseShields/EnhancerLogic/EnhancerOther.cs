@@ -49,7 +49,7 @@ namespace DefenseSystems
             if (_subpartRotor == null) return false;
         }
 
-        if (DefenseBus?.DefenseSystems?.MasterGrid != MyGrid) MyGrid.Components.TryGet(out DefenseBus);
+        if (DefenseBus?.MasterGrid != MyGrid) MyGrid.Components.TryGet(out DefenseBus);
         if (_isServer)
         {
             if (!_firstSync && _readyToSync) SaveAndSendAll();
@@ -58,9 +58,9 @@ namespace DefenseSystems
         }
         else
         {
-            if (DefenseBus?.DefenseSystems == null) return false;
+            if (DefenseBus?.ActiveController == null) return false;
 
-            if (!EnhState.State.Backup && DefenseBus.Enhancer != this) DefenseBus.Enhancer = this;
+            if (!EnhState.State.Backup && DefenseBus.ActiveEnhancer != this) DefenseBus.ActiveEnhancer = this;
 
             if (!EnhState.State.Online) return false;
         }
@@ -70,21 +70,21 @@ namespace DefenseSystems
 
     private bool BlockWorking()
     {
-        if (!IsWorking || DefenseBus?.DefenseSystems == null)
+        if (!IsWorking || DefenseBus?.ActiveController == null)
         {
             NeedUpdate(EnhState.State.Online, false);
             return false;
         }
 
-        if (DefenseBus.Enhancer != this)
+        if (DefenseBus.ActiveEnhancer != this)
         {
-            if (DefenseBus.Enhancer == null)
+            if (DefenseBus.ActiveEnhancer == null)
             {
                 Session.Instance.BlockTagActive(Enhancer);
-                DefenseBus.Enhancer = this;
+                DefenseBus.ActiveEnhancer = this;
                 EnhState.State.Backup = false;
             }
-            else if (DefenseBus.Enhancer != this)
+            else if (DefenseBus.ActiveEnhancer != this)
             {
                 if (!EnhState.State.Backup || _firstLoop) Session.Instance.BlockTagBackup(Enhancer);
                 EnhState.State.Backup = true;
@@ -93,7 +93,7 @@ namespace DefenseSystems
         }
 
         _firstLoop = false;
-        if (!EnhState.State.Backup && DefenseBus.Enhancer == this && DefenseBus.DefenseSystems.NotFailed)
+        if (!EnhState.State.Backup && DefenseBus.ActiveEnhancer == this && DefenseBus.ActiveController.NotFailed)
         {
             NeedUpdate(EnhState.State.Online, true);
             return true;
@@ -215,12 +215,11 @@ namespace DefenseSystems
 
     private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
     {
-        if (DefenseBus?.DefenseSystems == null)
+        if (DefenseBus?.ActiveController == null)
         {
             stringBuilder.Append("[Controller Link]: False");
         }
-        else if (!EnhState.State.Backup && DefenseBus.DefenseSystems.ShieldMode ==
-                 global::DefenseSystems.DefenseSystems.ShieldType.Station)
+        else if (!EnhState.State.Backup && DefenseBus.ActiveController.ShieldMode == Controllers.ShieldType.Station)
         {
             stringBuilder.Append("[Online]: " + EnhState.State.Online +
                                  "\n" +

@@ -59,10 +59,12 @@ namespace DefenseSystems
 
         internal Definition Definition { get; set; }
         internal EmitterState EmiState { get; set; }
+        internal Registry Registry { get; set; } = new Registry();
+        internal BusEvents BusEvents { get; set; } = new BusEvents();
 
         internal IMyUpgradeModule Emitter { get; set; }
         internal EmitterType EmitterMode { get; set; }
-        internal MyCubeGrid MyGrid { get; set; }
+        internal MyCubeGrid LocalGrid { get; set; }
         internal MyCubeBlock MyCube { get; set; }
 
         internal MyResourceSinkComponent Sink { get; set; }

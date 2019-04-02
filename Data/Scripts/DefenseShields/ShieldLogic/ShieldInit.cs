@@ -15,7 +15,7 @@ namespace DefenseSystems
     using VRage.Utils;
     using VRageMath;
 
-    public partial class DefenseSystems
+    public partial class Controllers
     {
         #region Startup Logic
         internal void AssignSlots()
@@ -35,6 +35,131 @@ namespace DefenseSystems
             WasPaused = false;
         }
 
+        private void BeforeInit()
+        {
+            if (Shield.CubeGrid.Physics == null) return;
+            _isServer = Session.Instance.IsServer;
+            _isDedicated = Session.Instance.DedicatedServer;
+            _mpActive = Session.Instance.MpActive;
+
+            PowerInit();
+            MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(_ellipsoidOxyProvider);
+
+            if (_isServer) Enforcements.SaveEnforcement(Shield, Session.Enforced, true);
+
+            Session.Instance.FunctionalShields[this] = false;
+            Session.Instance.AllControllers.Add(this);
+            Registry.RegisterWithBus(this, LocalGrid, true, DefenseBus, out DefenseBus);
+            if (MyAPIGateway.Session.CreativeMode) CreativeModeWarning();
+            NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+            _bTime = 1;
+            _bInit = true;
+            if (Session.Enforced.Debug == 3) Log.Line($"UpdateOnceBeforeFrame: ShieldId [{Shield.EntityId}]");
+
+        }
+
+        private bool PostInit()
+        {
+            try
+            {
+                if (_isServer && (DefenseBus.EmitterMode < 0 || DefenseBus.EmitterMode == 0 && DefenseBus.ActiveEmitter == null || DefenseBus.EmitterMode != 0 && DefenseBus.ActiveEmitter == null || DefenseBus.EmittersSuspended || !IsFunctional))
+                {
+                    return false;
+                }
+
+                MyEntity emitterEnt = null;
+                if (!_isServer && (_clientNotReady || Session.Enforced.Version <= 0 || DsState.State.ActiveEmitterId != 0 && !MyEntities.TryGetEntityById(DsState.State.ActiveEmitterId, out emitterEnt) || !(emitterEnt is IMyUpgradeModule)))
+                {
+                    return false;
+                }
+
+                Session.Instance.CreateControllerElements(Shield);
+                SetShieldType(false);
+                if (!Session.Instance.DsAction)
+                {
+                    Session.AppendConditionToAction<IMyUpgradeModule>((a) => Session.Instance.DsActions.Contains(a.Id), (a, b) => b.GameLogic.GetAs<Controllers>() != null && Session.Instance.DsActions.Contains(a.Id));
+                    Session.Instance.DsAction = true;
+                }
+
+                if (_isServer && !IsFunctional) return false;
+
+                if (_mpActive && _isServer) DsState.NetworkUpdate();
+
+                _allInited = true;
+
+                if (Session.Enforced.Debug == 3) Log.Line($"AllInited: ShieldId [{Shield.EntityId}]");
+            }
+            catch (Exception ex) { Log.Line($"Exception in Controller PostInit: {ex}"); }
+            return true;
+        }
+
+        private void UpdateEntity()
+        {
+            DefenseBus.LinkedGrids.Clear();
+            DefenseBus.SubGrids.Clear();
+            DefenseBus.BlockChanged = true;
+            DefenseBus.FunctionalChanged = true;
+            ResetShape(false, true);
+            ResetShape(false);
+            SetShieldType(false);
+            if (!_isDedicated) ShellVisibility(true);
+            if (Session.Enforced.Debug == 2) Log.Line($"UpdateEntity: sEnt:{ShieldEnt == null} - sPassive:{_shellPassive == null} - controller mode is: {ShieldMode} - EW:{DsState.State.EmitterLos} - ES:{DefenseBus.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
+            Icosphere.ShellActive = null;
+            DsState.State.Heat = 0;
+
+            _updateRender = true;
+            _currentHeatStep = 0;
+            _accumulatedHeat = 0;
+            _heatCycle = -1;
+        }
+
+        private void ResetEntity()
+        {
+            if (_allInited) ResetEntityTick = _tick + 1800;
+            _allInited = false;
+            Warming = false;
+            WarmedUp = false;
+            MarkForReset = false;
+
+            Registry.RegisterWithBus(this, LocalGrid, true, DefenseBus, out DefenseBus);
+
+            if (_isServer)
+            {
+                GridIntegrity();
+                ShieldChangeState();
+            }
+            if (Session.Enforced.Debug == 3) Log.Line($"ResetEntity: ShieldId [{Shield.EntityId}]");
+        }
+        /*
+        private void RegisterWithBus(bool register = true)
+        {
+            LocalGrid = MyCube.CubeGrid;
+            if (register)
+            {
+                DefenseBus = Session.Instance.FindBus(LocalGrid) ?? new DefenseBus();
+
+                DefenseBus.SortAndAddBlock(this);
+                DefenseBus.SubGridDetect(LocalGrid, true);
+                DefenseBus.SetMasterGrid();
+
+            }
+            else
+            {
+                DefenseBus.SubGridDetect(LocalGrid, true);
+                DefenseBus.RemoveBlock(this);
+            }
+        }
+        */
+        private void WarmUpSequence()
+        {
+            CheckBlocksAndNewShape(false);
+
+            _oldGridHalfExtents = DsState.State.GridHalfExtents;
+            _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
+            Warming = true;
+        }
+
+
         private void EmitterEventDetected()
         {
             DefenseBus.EmitterEvent = false;
@@ -51,14 +176,14 @@ namespace DefenseSystems
             {
                 if (!WarmedUp)
                 {
-                    MasterGrid.Physics.ForceActivate();
+                    DefenseBus.MasterGrid.Physics.ForceActivate();
                     if (Session.Enforced.Debug >= 3) Log.Line($"EmitterStartupFailure: Asleep:{Asleep} - MaxPower:{GridMaxPower} - {ShieldSphere.Radius} - ShieldId [{Shield.EntityId}]");
                     LosCheckTick = Session.Instance.Tick + 1800;
                     ShieldChangeState();
                     return;
                 }
-                if (GridIsMobile && DefenseBus.ShipEmitter != null && !DefenseBus.ShipEmitter.EmiState.State.Los) DsState.State.Message = true;
-                else if (!GridIsMobile && DefenseBus.StationEmitter != null && !DefenseBus.StationEmitter.EmiState.State.Los) DsState.State.Message = true;
+                if (GridIsMobile && DefenseBus.ActiveEmitter != null && !DefenseBus.ActiveEmitter.EmiState.State.Los) DsState.State.Message = true;
+                else if (!GridIsMobile && DefenseBus.ActiveEmitter != null && !DefenseBus.ActiveEmitter.EmiState.State.Los) DsState.State.Message = true;
                 if (Session.Enforced.Debug >= 3) Log.Line($"EmitterEvent: no emitter is working, shield mode: {ShieldMode} - WarmedUp:{WarmedUp} - MaxPower:{GridMaxPower} - Radius:{ShieldSphere.Radius} - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
             }
         }
@@ -155,141 +280,10 @@ namespace DefenseSystems
             if (Session.Enforced.Debug >= 3) Log.Line($"SaveAndSendAll: ShieldId [{Shield.EntityId}]");
         }
 
-        private void BeforeInit()
-        {
-            if (Shield.CubeGrid.Physics == null) return;
-            _isServer = Session.Instance.IsServer;
-            _isDedicated = Session.Instance.DedicatedServer;
-            _mpActive = Session.Instance.MpActive;
-
-            PowerInit();
-            MyAPIGateway.Session.OxygenProviderSystem.AddOxygenGenerator(_ellipsoidOxyProvider);
-
-            if (_isServer) Enforcements.SaveEnforcement(Shield, Session.Enforced, true);
-
-            Session.Instance.FunctionalShields[this] = false;
-            Session.Instance.Controllers.Add(this);
-            RegisterWithBus();
-            if (MyAPIGateway.Session.CreativeMode) CreativeModeWarning();
-            NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-            _bTime = 1;
-            _bInit = true;
-            if (Session.Enforced.Debug == 3) Log.Line($"UpdateOnceBeforeFrame: ShieldId [{Shield.EntityId}]");
-
-        }
-
-        private bool PostInit()
-        {
-            try
-            {
-                if (_isServer && (DefenseBus.EmitterMode < 0 || DefenseBus.EmitterMode == 0 && DefenseBus.StationEmitter == null || DefenseBus.EmitterMode != 0 && DefenseBus.ShipEmitter == null || DefenseBus.EmittersSuspended || !IsFunctional))
-                {
-                    /*
-                    if (_tick600)
-                    {
-                        if (Session.Enforced.Debug == 3 && _tick600) Log.Line($"PostInit: Server Not Ready - GridComp:{MyGrid.Components.Has<DefenseBus>()} - InvalidMode:{DefenseBus.EmitterMode < 0} - Functional:{IsFunctional} - EmitterSus:{DefenseBus.EmittersSuspended} - StationEmitterNull:{DefenseBus.StationEmitter == null } - EmitterNull:{DefenseBus.StationEmitter?.Emitter == null} - ShieldId [{Shield.EntityId}]");
-                    }
-                    */
-                    return false;
-                }
-
-                MyEntity emitterEnt = null;
-                if (!_isServer && (_clientNotReady || Session.Enforced.Version <= 0 || DsState.State.ActiveEmitterId != 0 && !MyEntities.TryGetEntityById(DsState.State.ActiveEmitterId, out emitterEnt) || !(emitterEnt is IMyUpgradeModule)))
-                {
-                    //Log.Line($"ClientPostInit: {Session.Enforced.Version} - {_clientNotReady} - {emitterEnt == null} - {emitterEnt is IMyUpgradeModule} - {DsState.State.Mode} - {DsState.State.ActiveEmitterId}");
-                    return false;
-                }
-
-                Session.Instance.CreateControllerElements(Shield);
-                SetShieldType(false);
-                if (!Session.Instance.DsAction)
-                {
-                    Session.AppendConditionToAction<IMyUpgradeModule>((a) => Session.Instance.DsActions.Contains(a.Id), (a, b) => b.GameLogic.GetAs<DefenseSystems>() != null && Session.Instance.DsActions.Contains(a.Id));
-                    Session.Instance.DsAction = true;
-                }
-
-                if (_isServer && !IsFunctional) return false;
-
-                if (_mpActive && _isServer) DsState.NetworkUpdate();
-
-                _allInited = true;
-
-                if (Session.Enforced.Debug == 3) Log.Line($"AllInited: ShieldId [{Shield.EntityId}]");
-            }
-            catch (Exception ex) { Log.Line($"Exception in Controller PostInit: {ex}"); }
-            return true;
-        }
-
-        private void UpdateEntity()
-        {
-            DefenseBus.LinkedGrids.Clear();
-            DefenseBus.SubGrids.Clear();
-            _blockChanged = true;
-            _functionalChanged = true;
-            ResetShape(false, true);
-            ResetShape(false);
-            SetShieldType(false);
-            if (!_isDedicated) ShellVisibility(true);
-            if (Session.Enforced.Debug == 2) Log.Line($"UpdateEntity: sEnt:{ShieldEnt == null} - sPassive:{_shellPassive == null} - controller mode is: {ShieldMode} - EW:{DsState.State.EmitterLos} - ES:{DefenseBus.EmittersSuspended} - ShieldId [{Shield.EntityId}]");
-            Icosphere.ShellActive = null;
-            DsState.State.Heat = 0;
-
-            _updateRender = true;
-            _currentHeatStep = 0;
-            _accumulatedHeat = 0;
-            _heatCycle = -1;
-        }
-
-        private void ResetEntity()
-        {
-            if (_allInited) ResetEntityTick = _tick + 1800;
-            _allInited = false;
-            Warming = false;
-            WarmedUp = false;
-            _resetEntity = false;
-
-            RegisterWithBus();
-
-            if (_isServer)
-            {
-                GridIntegrity();
-                ShieldChangeState();
-            }
-            if (Session.Enforced.Debug == 3) Log.Line($"ResetEntity: ShieldId [{Shield.EntityId}]");
-        }
-
-        private void RegisterWithBus(bool register = true)
-        {
-            LocalGrid = MyCube.CubeGrid;
-            if (register)
-            {
-                DefenseBus = Session.Instance.FindBus(LocalGrid) ?? new DefenseBus();
-
-                DefenseBus.AddSortedControllers(this);
-                DefenseBus.SubGridDetect(LocalGrid, true);
-                DefenseBus.SetMasterGrid();
-
-            }
-            else
-            {
-                DefenseBus.SubGridDetect(LocalGrid, true);
-                DefenseBus.RemoveController(this);
-            }
-        }
-
-        private void WarmUpSequence()
-        {
-            CheckBlocksAndNewShape(false);
-
-            _oldGridHalfExtents = DsState.State.GridHalfExtents;
-            _oldEllipsoidAdjust = DsState.State.EllipsoidAdjust;
-            Warming = true;
-        }
-
         private void CheckBlocksAndNewShape(bool refreshBlocks)
         {
-            _blockChanged = true;
-            _functionalChanged = true;
+            DefenseBus.BlockChanged = true;
+            DefenseBus.FunctionalChanged = true;
             ResetShape(false);
             ResetShape(false, true);
             if (refreshBlocks) BlockChanged(false);
@@ -452,7 +446,7 @@ namespace DefenseSystems
             }
 
             SelectPassiveShell();
-            var parent = (MyEntity)MasterGrid;
+            var parent = (MyEntity)DefenseBus.MasterGrid;
             if (!_isDedicated)
             {
                 _shellPassive = Spawn.EmptyEntity("dShellPassive", $"{Session.Instance.ModPath()}{_modelPassive}", parent, true);
@@ -498,7 +492,7 @@ namespace DefenseSystems
                 DsState.State.GridIntegrity = 0;
                 grid = Shield.CubeGrid;
             }
-            else if (grid == MasterGrid) mainSub = true;
+            else if (grid == DefenseBus.MasterGrid) mainSub = true;
 
             var integrityAdjustment = 0f;
 

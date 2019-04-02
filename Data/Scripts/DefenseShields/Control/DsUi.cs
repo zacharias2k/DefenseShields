@@ -48,20 +48,20 @@
 
         internal static bool ShowSizeSlider(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             var station = comp != null && comp.Shield.CubeGrid.IsStatic;
             return station;
         }
 
         internal static float GetRate(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.Rate ?? 0f;
         }
 
         internal static void SetRate(IMyTerminalBlock block, float newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
             comp.DsSet.Settings.Rate = newValue;
             comp.SettingsUpdated = true;
@@ -70,13 +70,13 @@
 
         internal static bool GetExtend(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.ExtendFit ?? false;
         }
 
         internal static void SetExtend(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
             comp.DsSet.Settings.ExtendFit = newValue;
             comp.FitChanged = true;
@@ -86,13 +86,13 @@
 
         internal static bool GetSphereFit(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.SphereFit ?? false;
         }
 
         internal static void SetSphereFit(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
             comp.DsSet.Settings.SphereFit = newValue;
             comp.FitChanged = true;
@@ -102,13 +102,13 @@
 
         internal static bool GetFortify(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.FortifyShield ?? false;
         }
 
         internal static void SetFortify(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
             comp.DsSet.Settings.FortifyShield = newValue;
             comp.FitChanged = true;
@@ -118,13 +118,13 @@
 
         internal static float GetWidth(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.Width ?? 0f;
         }
 
         internal static void SetWidth(IMyTerminalBlock block, float newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
             comp.DsSet.Settings.Width = newValue;
             comp.UpdateDimensions = true;
@@ -135,13 +135,13 @@
 
         internal static float GetHeight(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.Height ?? 0f;
         }
 
         internal static void SetHeight(IMyTerminalBlock block, float newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
             comp.DsSet.Settings.Height = newValue;
             comp.UpdateDimensions = true;
@@ -152,13 +152,13 @@
 
         internal static float GetDepth(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.Depth ?? 0f;
         }
 
         internal static void SetDepth(IMyTerminalBlock block, float newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
             comp.DsSet.Settings.Depth = newValue;
             comp.UpdateDimensions = true;
@@ -169,13 +169,13 @@
 
         internal static float GetOffsetWidth(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.ShieldOffset.X ?? 0;
         }
 
         internal static void SetOffsetWidth(IMyTerminalBlock block, float newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
 
             comp.DsSet.Settings.ShieldOffset.X = (int)newValue;
@@ -188,13 +188,13 @@
 
         internal static float GetOffsetHeight(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.ShieldOffset.Y ?? 0;
         }
 
         internal static void SetOffsetHeight(IMyTerminalBlock block, float newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
 
             comp.DsSet.Settings.ShieldOffset.Y = (int)newValue;
@@ -207,13 +207,13 @@
 
         internal static float GetOffsetDepth(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.ShieldOffset.Z ?? 0;
         }
 
         internal static void SetOffsetDepth(IMyTerminalBlock block, float newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
 
             comp.DsSet.Settings.ShieldOffset.Z = (int)newValue;
@@ -226,13 +226,13 @@
 
         internal static bool GetBatteries(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.UseBatteries ?? false;
         }
 
         internal static void SetBatteries(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
             comp.DsSet.Settings.UseBatteries = newValue;
             comp.SettingsUpdated = true;
@@ -241,13 +241,13 @@
 
         internal static bool GetHideActive(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.ActiveInvisible ?? false;
         }
 
         internal static void SetHideActive(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
             comp.DsSet.Settings.ActiveInvisible = newValue;
             comp.SettingsUpdated = true;
@@ -256,13 +256,13 @@
 
         internal static bool GetRefreshAnimation(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.RefreshAnimation ?? false;
         }
 
         internal static void SetRefreshAnimation(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
             comp.DsSet.Settings.RefreshAnimation = newValue;
             comp.SettingsUpdated = true;
@@ -271,13 +271,13 @@
 
         internal static bool GetHitWaveAnimation(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.HitWaveAnimation ?? false;
         }
 
         internal static void SetHitWaveAnimation(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
             comp.DsSet.Settings.HitWaveAnimation = newValue;
             comp.SettingsUpdated = true;
@@ -286,13 +286,13 @@
 
         internal static bool GetNoWarningSounds(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.NoWarningSounds ?? false;
         }
 
         internal static void SetDimShieldHits(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
             comp.DsSet.Settings.DimShieldHits = newValue;
             comp.SettingsUpdated = true;
@@ -301,13 +301,13 @@
 
         internal static bool GetDimShieldHits(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.DimShieldHits ?? false;
         }
 
         internal static void SetNoWarningSounds(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
             comp.DsSet.Settings.NoWarningSounds = newValue;
             comp.SettingsUpdated = true;
@@ -316,13 +316,13 @@
 
         internal static bool GetSendToHud(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.SendToHud ?? false;
         }
 
         internal static void SetSendToHud(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
             comp.DsSet.Settings.SendToHud = newValue;
             comp.SettingsUpdated = true;
@@ -331,13 +331,13 @@
 
         internal static bool GetRaiseShield(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.RaiseShield ?? false;
         }
 
         internal static void SetRaiseShield(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
             comp.DsSet.Settings.RaiseShield = newValue;
             comp.SettingsUpdated = true;
@@ -346,13 +346,13 @@
 
         internal static long GetShell(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.ShieldShell ?? 0;
         }
 
         internal static void SetShell(IMyTerminalBlock block, long newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
             comp.DsSet.Settings.ShieldShell = newValue;
             comp.SelectPassiveShell();
@@ -363,13 +363,13 @@
 
         internal static long GetVisible(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             return comp?.DsSet.Settings.Visible ?? 0;
         }
 
         internal static void SetVisible(IMyTerminalBlock block, long newValue)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return;
             comp.DsSet.Settings.Visible = newValue;
             comp.SettingsUpdated = true;
@@ -387,7 +387,7 @@
 
         private static bool ShowReSizeCheckBoxs(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+            var comp = block?.GameLogic?.GetAs<Controllers>();
             var notStation = comp != null && !comp.Shield.CubeGrid.IsStatic;
             return notStation;
         }

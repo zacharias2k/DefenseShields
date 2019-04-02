@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using DefenseSystems.Support;
+using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game.Components;
@@ -25,6 +26,7 @@ namespace DefenseSystems
             _disableLos = Session.Enforced.DisableLineOfSight == 1;
             IsWorking = MyCube.IsWorking;
             IsFunctional = MyCube.IsFunctional;
+            Registry.RegisterWithBus(this, LocalGrid, true, DefenseBus, out DefenseBus);
             NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             _bTime = _isDedicated ? 10 : 1;
             _bInit = true;
@@ -102,7 +104,7 @@ namespace DefenseSystems
                                          "\n[Emitter Type]: " + mode +
                                          "\n[Grid Compatible]: " + EmiState.State.Compatible +
                                          "\n[Controller Link]: " + EmiState.State.Link +
-                                         "\n[Controller Bus]: " + (DefenseBus?.DefenseSystems != null) +
+                                         "\n[Controller Bus]: " + (DefenseBus?.ActiveController != null) +
                                          "\n[Line of Sight]: " + EmiState.State.Los +
                                          "\n[Is Suspended]: " + EmiState.State.Suspend +
                                          "\n[Is a Backup]: " + EmiState.State.Backup);
@@ -134,7 +136,7 @@ namespace DefenseSystems
             catch (Exception ex) { Log.Line($"Exception in AppendingCustomInfo: {ex}"); }
         }
 
-        private void RegisterEvents(bool register = true)
+        internal void RegisterEvents(MyCubeGrid grid, bool register = true)
         {
             if (register)
             {

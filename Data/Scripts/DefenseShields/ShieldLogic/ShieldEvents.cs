@@ -7,11 +7,9 @@
     using Sandbox.Game.Entities;
     using Sandbox.ModAPI;
     using Sandbox.ModAPI.Weapons;
-    using VRage;
     using VRage.Game.Entity;
-    using VRage.Game.ModAPI;
 
-    public partial class DefenseSystems
+    public partial class Controllers
     {
         internal void RegisterEvents(MyCubeGrid grid, bool register = true)
         {
@@ -36,35 +34,11 @@
                     MyEntities.OnEntityAdd -= OnEntityAdd;
                     MyEntities.OnEntityRemove -= OnEntityRemove;
                 }
-
+                BusEvents.OnCheckBus -= DefenseBus.NodeChange;
+                BusEvents.OnBusSplit -= DefenseBus.BusSplit;
                 Shield.AppendingCustomInfo -= AppendingCustomInfo;
                 _sink.CurrentInputChanged -= CurrentInputChanged;
                 MyCube.IsWorkingChanged -= IsWorkingChanged;
-            }
-        }
-
-        internal void RegisterGridEvents(MyCubeGrid grid, bool register = true)
-        {
-            if (grid == null) grid = LocalGrid;
-            if (register)
-            {
-                if (_isServer) grid.OnBlockOwnershipChanged += OwnerChanged;
-                grid.OnHierarchyUpdated += HierarchyChanged;
-                grid.OnBlockAdded += BlockAdded;
-                grid.OnBlockRemoved += BlockRemoved;
-                grid.OnFatBlockAdded += FatBlockAdded;
-                grid.OnFatBlockRemoved += FatBlockRemoved;
-                grid.OnGridSplit += GridSplit;
-            }
-            else
-            {
-                if (_isServer) grid.OnBlockOwnershipChanged -= OwnerChanged;
-                grid.OnHierarchyUpdated -= HierarchyChanged;
-                grid.OnBlockAdded -= BlockAdded;
-                grid.OnBlockRemoved -= BlockRemoved;
-                grid.OnFatBlockAdded -= FatBlockAdded;
-                grid.OnFatBlockRemoved -= FatBlockRemoved;
-                grid.OnGridSplit -= GridSplit;
             }
         }
 
@@ -72,16 +46,6 @@
         {
             IsWorking = myCubeBlock.IsWorking;
             IsFunctional = myCubeBlock.IsFunctional;
-        }
-
-        private void OwnerChanged(MyCubeGrid myCubeGrid)
-        {
-            try
-            {
-                if (MyCube == null || LocalGrid == null || MasterGrid == null || MyCube.OwnerId == _controllerOwnerId && LocalGrid.BigOwners.Count != 0 && LocalGrid.BigOwners[0] == _gridOwnerId) return;
-                GridOwnsController();
-            }
-            catch (Exception ex) { Log.Line($"Exception in Controller OwnerChanged: {ex}"); }
         }
 
         private void OnEntityAdd(MyEntity myEntity)
@@ -114,68 +78,6 @@
                 FriendlyMissileCache.Remove(myEntity);
             }
             catch (Exception ex) { Log.Line($"Exception in Controller OnEntityRemove: {ex}"); }
-        }
-
-        private void GridSplit(MyCubeGrid oldGrid, MyCubeGrid newGrid)
-        {
-            newGrid.RecalculateOwners();
-        }
-
-        private void HierarchyChanged(MyCubeGrid myCubeGrid = null)
-        {
-            try
-            {
-                _subUpdate = true;
-            }
-            catch (Exception ex) { Log.Line($"Exception in Controller HierarchyChanged: {ex}"); }
-        }
-
-        private void BlockAdded(IMySlimBlock mySlimBlock)
-        {
-            try
-            {
-                _blockAdded = true;
-                _blockChanged = true;
-                if (_isServer) DsState.State.GridIntegrity += mySlimBlock.MaxIntegrity;
-            }
-            catch (Exception ex) { Log.Line($"Exception in Controller BlockAdded: {ex}"); }
-        }
-
-        private void BlockRemoved(IMySlimBlock mySlimBlock)
-        {
-            try
-            {
-                _blockRemoved = true;
-                _blockChanged = true;
-                if (_isServer) DsState.State.GridIntegrity -= mySlimBlock.MaxIntegrity;
-            }
-            catch (Exception ex) { Log.Line($"Exception in Controller BlockRemoved: {ex}"); }
-        }
-
-        private void FatBlockAdded(MyCubeBlock myCubeBlock)
-        {
-            try
-            {
-                _functionalAdded = true;
-                _functionalChanged = true;
-                if (MyResourceDist == null)
-                {
-                    var controller = myCubeBlock as MyShipController;
-                    if (controller != null)
-                        if (controller.GridResourceDistributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects) _updateGridDistributor = true;
-                }
-            }
-            catch (Exception ex) { Log.Line($"Exception in Controller FatBlockAdded: {ex}"); }
-        }
-
-        private void FatBlockRemoved(MyCubeBlock myCubeBlock)
-        {
-            try
-            {
-                _functionalRemoved = true;
-                _functionalChanged = true;
-            }
-            catch (Exception ex) { Log.Line($"Exception in Controller FatBlockRemoved: {ex}"); }
         }
 
         private string GetShieldStatus()

@@ -4,6 +4,7 @@
 
     internal static class PsUi
     {
+        /*
         #region Create UI
         internal static void CreateUi(IMyTerminalBlock planetShield)
         {
@@ -120,5 +121,6 @@
             comp.ClientUiUpdate = true;
         }
         #endregion
+        */
     }
 }

@@ -273,10 +273,10 @@ namespace DefenseSystems.Support
         public uint LastTick;
         public uint RefreshTick;
         public readonly uint FirstTick;
-        public DefenseSystems.Ent Relation;
-        public DefenseSystems.Ent PreviousRelation;
+        public Controllers.Ent Relation;
+        public Controllers.Ent PreviousRelation;
 
-        public ProtectCache(uint firstTick, uint lastTick, uint refreshTick, DefenseSystems.Ent relation, DefenseSystems.Ent previousRelation)
+        public ProtectCache(uint firstTick, uint lastTick, uint refreshTick, Controllers.Ent relation, Controllers.Ent previousRelation)
         {
             FirstTick = firstTick;
             LastTick = lastTick;
@@ -292,7 +292,7 @@ namespace DefenseSystems.Support
         public uint LastTick;
         public uint RefreshTick;
         public readonly uint FirstTick;
-        public DefenseSystems.Ent Relation;
+        public Controllers.Ent Relation;
         public List<CubeAccel> CacheBlockList = new List<CubeAccel>();
         public bool RefreshNow;
         public bool EnemySafeInside;
@@ -300,7 +300,7 @@ namespace DefenseSystems.Support
         public volatile uint LastCollision;
         public volatile int ConsecutiveCollisions;
 
-        public EntIntersectInfo(bool touched, BoundingBox box, uint firstTick, uint lastTick, uint refreshTick, DefenseSystems.Ent relation)
+        public EntIntersectInfo(bool touched, BoundingBox box, uint firstTick, uint lastTick, uint refreshTick, Controllers.Ent relation)
         {
             Touched = touched;
             Box = box;
@@ -309,7 +309,7 @@ namespace DefenseSystems.Support
             RefreshTick = refreshTick;
             Relation = relation;
             RefreshNow = true;
-            if (relation == DefenseSystems.Ent.EnemyInside) EnemySafeInside = true;
+            if (relation == Controllers.Ent.EnemyInside) EnemySafeInside = true;
         }
     }
 
@@ -434,13 +434,13 @@ namespace DefenseSystems.Support
 
     public class MyProtectors
     {
-        public readonly CachingHashSet<DefenseSystems> Shields = new CachingHashSet<DefenseSystems>();
+        public readonly CachingHashSet<Controllers> Shields = new CachingHashSet<Controllers>();
         public int RefreshSlot;
         public uint CreationTick;
         public uint BlockingTick;
         public bool LastAttackerWasInside;
-        public DefenseSystems BlockingShield;
-        public DefenseSystems IntegrityShield;
+        public Controllers BlockingShield;
+        public Controllers IntegrityShield;
         public long IgnoreAttackerId = -1;
 
         public void Init(int refreshSlot, uint creationTick)

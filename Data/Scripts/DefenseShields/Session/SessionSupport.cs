@@ -82,7 +82,7 @@ namespace DefenseSystems
                 DefenseBus defenseBus;
                 if (node.Components.TryGet(out defenseBus)) return defenseBus; 
             }
-
+            Log.Line("Creating new bus");
             return null;
         }
 

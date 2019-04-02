@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Sandbox.Game.Entities;
+using Sandbox.ModAPI;
 using VRageMath;
 
 namespace DefenseSystems.Support
@@ -20,12 +21,12 @@ namespace DefenseSystems.Support
 
     internal class MonitorWork
     {
-        internal List<DefenseSystems> ShieldList;
+        internal List<Controllers> ShieldList;
         internal uint Tick;
         internal int ShieldCnt;
         internal int MinScaler;
 
-        internal void DoIt(List<DefenseSystems> s, uint t)
+        internal void DoIt(List<Controllers> s, uint t)
         {
             ShieldList = s;
             Tick = t;
@@ -81,34 +82,6 @@ namespace DefenseSystems.Support
             Stored = false;
             EventRunning = false;
             if (Session.Enforced.Debug >= 2) Log.Line($"====================================================================== [WarHead EventComplete]");
-        }
-    }
-
-    public class BlockPriority : IComparer<DefenseSystems>
-    {
-        public int Compare(DefenseSystems x, DefenseSystems y)
-        {
-            var compareVolume = x.LocalGrid.PositionComp.WorldAABB.Volume.CompareTo(y.LocalGrid.PositionComp.WorldAABB.Volume);
-            if (compareVolume != 0) return compareVolume;
-
-            var compareBlocks = x.LocalGrid.BlocksCount.CompareTo(y.LocalGrid.BlocksCount);
-            if (compareBlocks != 0) return compareBlocks;
-
-            return x.MyCube.EntityId.CompareTo(y.MyCube.EntityId);
-        }
-    }
-
-    public class GridPriority : IComparer<MyCubeGrid>
-    {
-        public int Compare(MyCubeGrid x, MyCubeGrid y)
-        {
-            var compareVolume = x.PositionComp.WorldAABB.Volume.CompareTo(y.PositionComp.WorldAABB.Volume);
-            if (compareVolume != 0) return compareVolume;
-
-            var compareBlocks = x.BlocksCount.CompareTo(y.BlocksCount);
-            if (compareBlocks != 0) return compareBlocks;
-
-            return x.EntityId.CompareTo(y.EntityId);
         }
     }
 

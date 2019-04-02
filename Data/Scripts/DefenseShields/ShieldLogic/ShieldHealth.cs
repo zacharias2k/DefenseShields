@@ -4,7 +4,7 @@
     using Sandbox.ModAPI;
     using VRage.Game.ModAPI;
 
-    public partial class DefenseSystems
+    public partial class Controllers
     {
 
         private void UpdateHeatRate()

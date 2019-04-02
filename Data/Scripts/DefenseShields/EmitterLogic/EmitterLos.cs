@@ -17,7 +17,7 @@ namespace DefenseSystems
                 return;
             }
 
-            var controller = DefenseBus.DefenseSystems;
+            var controller = DefenseBus.ActiveController;
             var controllerReady = controller != null && controller.Warming && controller.IsWorking && controller.IsFunctional && !controller.DsState.State.Suspended && controller.DsState.State.ControllerGridAccess;
             var emitterActive = EmiState.State.ActiveEmitterId == MyCube.EntityId;
             var controllerLinked = emitterActive && controllerReady;
@@ -46,7 +46,7 @@ namespace DefenseSystems
             if (!_compact && SubpartRotor.Closed) BlockReset(false);
             TookControl = false;
 
-            DefenseBus.DefenseSystems.ResetShape(false);
+            DefenseBus.ActiveController.ResetShape(false);
             if (EmitterMode == EmitterType.Station)
             {
                 EmiState.State.Los = true;
@@ -80,7 +80,7 @@ namespace DefenseSystems
                 testDir.Normalize();
                 var testPos = MyCube.PositionComp.WorldAABB.Center + (testDir * testDist);
 
-                var hit = MyGrid.RayCastBlocks(testPos, LosScaledCloud[i]);
+                var hit = LocalGrid.RayCastBlocks(testPos, LosScaledCloud[i]);
 
                 if (hit.HasValue)
                 {
@@ -94,7 +94,7 @@ namespace DefenseSystems
         {
             if (Vector3D.DistanceSquared(MyAPIGateway.Session.Player.Character.PositionComp.WorldAABB.Center, Emitter.PositionComp.WorldAABB.Center) < 2250000)
             {
-                var controller = DefenseBus.DefenseSystems;
+                var controller = DefenseBus.ActiveController;
 
                 var needsUpdate = controller.GridIsMobile && (DefenseBus.GridIsMoving || _updateLosState);
 
@@ -117,14 +117,14 @@ namespace DefenseSystems
                         foreach (var blocking in _blocksLos.Keys)
                         {
                             var blockedPos = LosScaledCloud[blocking];
-                            DsDebugDraw.DrawLosBlocked(blockedPos, MyGrid.PositionComp.LocalMatrix, blockCam.Radius / 25);
+                            DsDebugDraw.DrawLosBlocked(blockedPos, LocalGrid.PositionComp.LocalMatrix, blockCam.Radius / 25);
                         }
                     }
 
                     foreach (var clear in _vertsSighted)
                     {
                         var blockedPos = LosScaledCloud[clear];
-                        DsDebugDraw.DrawLosClear(blockedPos, MyGrid.PositionComp.LocalMatrix, blockCam.Radius / 25);
+                        DsDebugDraw.DrawLosClear(blockedPos, LocalGrid.PositionComp.LocalMatrix, blockCam.Radius / 25);
                     }
 
                     var blocked = _blocksLos.Count;
@@ -138,10 +138,10 @@ namespace DefenseSystems
         {
             var losPointSphere = Session.Instance.LosPointSphere;
             LosScaledCloud.Clear();
-            UtilsStatic.UnitSphereTranslateScaleList(_unitSpherePoints, ref losPointSphere, ref LosScaledCloud, DefenseBus.DefenseSystems.ShieldEnt, false, MyGrid);
+            UtilsStatic.UnitSphereTranslateScaleList(_unitSpherePoints, ref losPointSphere, ref LosScaledCloud, DefenseBus.ActiveController.ShieldEnt, false, LocalGrid);
         }
 
-        private void BroadCastLosMessage(int blocked, int needed, DefenseSystems controller)
+        private void BroadCastLosMessage(int blocked, int needed, Controllers controller)
         {
             var sphere = new BoundingSphereD(Emitter.PositionComp.WorldAABB.Center, 1500);
             var sendMessage = false;

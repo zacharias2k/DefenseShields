@@ -8,13 +8,13 @@ using VRageMath;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 namespace DefenseSystems
 {
-    public partial class DefenseSystems
+    public partial class Controllers
     {
         public void Draw(int onCount, bool sphereOnCamera)
         {
             _onCount = onCount;
 
-            var renderId = MasterGrid.Render.GetRenderObjectID();
+            var renderId = DefenseBus.MasterGrid.Render.GetRenderObjectID();
             var percent = DsState.State.ShieldPercent;
             var reInforce = DsState.State.ReInforce;
             var hitAnim = !reInforce && DsSet.Settings.HitWaveAnimation;
@@ -36,8 +36,8 @@ namespace DefenseSystems
                 if (_isServer && WebDamage && GridIsMobile)
                 {
                     Vector3 pointVel;
-                    var gridCenter = MasterGrid.PositionComp.WorldAABB.Center;
-                    MasterGrid.Physics.GetVelocityAtPointLocal(ref gridCenter, out pointVel);
+                    var gridCenter = DefenseBus.MasterGrid.PositionComp.WorldAABB.Center;
+                    DefenseBus.MasterGrid.Physics.GetVelocityAtPointLocal(ref gridCenter, out pointVel);
                     impactPos += (Vector3D)pointVel * Session.TwoStep;
                 }
 
@@ -46,7 +46,7 @@ namespace DefenseSystems
 
                 HitParticleStart(impactPos, intersected);
 
-                var cubeBlockLocalMatrix = MasterGrid.PositionComp.LocalMatrix;
+                var cubeBlockLocalMatrix = DefenseBus.MasterGrid.PositionComp.LocalMatrix;
                 var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
                 var worldDirection = impactPos - referenceWorldPosition;
                 var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(cubeBlockLocalMatrix));
@@ -90,7 +90,7 @@ namespace DefenseSystems
         {
             WebDamage = false;
             HandlerImpact.Active = false;
-            if (HandlerImpact.HitBlock == null) return MasterGrid.PositionComp.WorldAABB.Center;
+            if (HandlerImpact.HitBlock == null) return DefenseBus.MasterGrid.PositionComp.WorldAABB.Center;
 
             Vector3D originHit;
             HandlerImpact.HitBlock.ComputeWorldCenter(out originHit);
@@ -99,7 +99,7 @@ namespace DefenseSystems
 
             var testDir = Vector3D.Normalize(line.From - line.To);
             var ray = new RayD(line.From, -testDir);
-            var matrix = ShieldShapeMatrix * MasterGrid.WorldMatrix;
+            var matrix = ShieldShapeMatrix * DefenseBus.MasterGrid.WorldMatrix;
             var intersectDist = CustomCollision.IntersectEllipsoid(MatrixD.Invert(matrix), matrix, ray);
             var ellipsoid = intersectDist ?? line.Length;
             var shieldHitPos = line.From + (testDir * -ellipsoid);
@@ -289,7 +289,7 @@ namespace DefenseSystems
                 radius = (int)(logOfPlayerDist * scaler);
                 color = new Vector4(255, 255, 255, 0.01f);
             }
-            var vel = MasterGrid.Physics.LinearVelocity;
+            var vel = DefenseBus.MasterGrid.Physics.LinearVelocity;
             var matrix = MatrixD.CreateTranslation(pos);
             MyParticlesManager.TryCreateParticleEffect(mainParticle, out _effect1, ref matrix, ref pos, _shieldEntRendId, true);
             if (_effect1 == null) return;

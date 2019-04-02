@@ -9,23 +9,23 @@
     using VRage.Game.ModAPI.Interfaces;
     using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
 
-    public partial class DefenseSystems
+    public partial class Controllers
     {
         #region Shield Support Blocks
         public void GetModulationInfo()
         {
             var update = false;
-            if (DefenseBus.Modulator != null && DefenseBus.Modulator.ModState.State.Online)
+            if (DefenseBus.ActiveModulator != null && DefenseBus.ActiveModulator.ModState.State.Online)
             {
-                var modEnergyRatio = DefenseBus.Modulator.ModState.State.ModulateEnergy * 0.01f;
-                var modKineticRatio = DefenseBus.Modulator.ModState.State.ModulateKinetic * 0.01f;
-                if (!DsState.State.ModulateEnergy.Equals(modEnergyRatio) || !DsState.State.ModulateKinetic.Equals(modKineticRatio) || !DsState.State.EmpProtection.Equals(DefenseBus.Modulator.ModSet.Settings.EmpEnabled) || !DsState.State.ReInforce.Equals(DefenseBus.Modulator.ModSet.Settings.ReInforceEnabled)) update = true;
+                var modEnergyRatio = DefenseBus.ActiveModulator.ModState.State.ModulateEnergy * 0.01f;
+                var modKineticRatio = DefenseBus.ActiveModulator.ModState.State.ModulateKinetic * 0.01f;
+                if (!DsState.State.ModulateEnergy.Equals(modEnergyRatio) || !DsState.State.ModulateKinetic.Equals(modKineticRatio) || !DsState.State.EmpProtection.Equals(DefenseBus.ActiveModulator.ModSet.Settings.EmpEnabled) || !DsState.State.ReInforce.Equals(DefenseBus.ActiveModulator.ModSet.Settings.ReInforceEnabled)) update = true;
                 DsState.State.ModulateEnergy = modEnergyRatio;
                 DsState.State.ModulateKinetic = modKineticRatio;
                 if (DsState.State.Enhancer)
                 {
-                    DsState.State.EmpProtection = DefenseBus.Modulator.ModSet.Settings.EmpEnabled;
-                    DsState.State.ReInforce = DefenseBus.Modulator.ModSet.Settings.ReInforceEnabled;
+                    DsState.State.EmpProtection = DefenseBus.ActiveModulator.ModSet.Settings.EmpEnabled;
+                    DsState.State.ReInforce = DefenseBus.ActiveModulator.ModSet.Settings.ReInforceEnabled;
                 }
 
                 if (update) ShieldChangeState();
@@ -45,7 +45,7 @@
         public void GetEnhancernInfo()
         {
             var update = false;
-            if (DefenseBus.Enhancer != null && DefenseBus.Enhancer.EnhState.State.Online)
+            if (DefenseBus.ActiveEnhancer != null && DefenseBus.ActiveEnhancer.EnhState.State.Online)
             {
                 if (!DsState.State.EnhancerPowerMulti.Equals(2) || !DsState.State.EnhancerProtMulti.Equals(1000) || !DsState.State.Enhancer) update = true;
                 DsState.State.EnhancerPowerMulti = 2;
@@ -83,7 +83,7 @@
         {
             if (DsState.State.Online && !DsState.State.Lowered)
             {
-                lock (SubLock)
+                lock (DefenseBus.SubLock)
                 {
                     foreach (var funcBlock in _functionalBlocks)
                     {
@@ -249,7 +249,7 @@
                     //if (Session.Enforced.Debug >= 2) Log.Line($"[EmpBlastShield - occluded] ShieldOwner:{MyGrid.DebugName} - by {((MyEntity)hitInfo.HitEntity).DebugName}");
                     return;
                 }
-                var gridLocalMatrix = MasterGrid.PositionComp.LocalMatrix;
+                var gridLocalMatrix = DefenseBus.MasterGrid.PositionComp.LocalMatrix;
                 var worldDirection = impactPos - gridLocalMatrix.Translation;
                 var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(gridLocalMatrix));
                 var hitFaceSurfaceArea = UtilsStatic.GetIntersectingSurfaceArea(ShieldShapeMatrix, localPosition);

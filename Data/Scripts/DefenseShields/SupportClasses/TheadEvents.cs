@@ -16,12 +16,12 @@ namespace DefenseSystems.Support
 
     public class ShieldVsShieldThreadEvent : IThreadEvent
     {
-        public readonly DefenseSystems Shield;
+        public readonly Controllers Shield;
         public readonly float Damage;
         public readonly Vector3D CollisionAvg;
         public readonly long AttackerId;
 
-        public ShieldVsShieldThreadEvent(DefenseSystems shield, float damage, Vector3D collisionAvg, long attackerId)
+        public ShieldVsShieldThreadEvent(Controllers shield, float damage, Vector3D collisionAvg, long attackerId)
         {
             Shield = shield;
             Damage = damage;
@@ -49,9 +49,9 @@ namespace DefenseSystems.Support
     public class MissileThreadEvent : IThreadEvent
     {
         public readonly MyEntity Entity;
-        public readonly DefenseSystems Shield;
+        public readonly Controllers Shield;
 
-        public MissileThreadEvent(MyEntity entity, DefenseSystems shield)
+        public MissileThreadEvent(MyEntity entity, Controllers shield)
         {
             Entity = entity;
             Shield = shield;
@@ -94,9 +94,9 @@ namespace DefenseSystems.Support
     public class FloaterThreadEvent : IThreadEvent
     {
         public readonly MyEntity Entity;
-        public readonly DefenseSystems Shield;
+        public readonly Controllers Shield;
 
-        public FloaterThreadEvent(MyEntity entity, DefenseSystems shield)
+        public FloaterThreadEvent(MyEntity entity, Controllers shield)
         {
             Entity = entity;
             Shield = shield;
@@ -107,7 +107,7 @@ namespace DefenseSystems.Support
             if (Entity == null || Entity.MarkedForClose) return;
             var floater = (IMyFloatingObject)Entity;
             var entVel = Entity.Physics.LinearVelocity;
-            var movingVel = entVel != Vector3.Zero ? entVel : -Shield.MasterGrid.Physics.LinearVelocity;
+            var movingVel = entVel != Vector3.Zero ? entVel : -Shield.DefenseBus.MasterGrid.Physics.LinearVelocity;
 
             var rayDir = Vector3D.Normalize(movingVel);
             var ray = new RayD(Entity.PositionComp.WorldVolume.Center, rayDir);
@@ -133,9 +133,9 @@ namespace DefenseSystems.Support
     public class CollisionDataThreadEvent : IThreadEvent
     {
         public readonly MyCollisionPhysicsData CollisionData;
-        public readonly DefenseSystems Shield;
+        public readonly Controllers Shield;
 
-        public CollisionDataThreadEvent(MyCollisionPhysicsData collisionPhysicsData, DefenseSystems shield)
+        public CollisionDataThreadEvent(MyCollisionPhysicsData collisionPhysicsData, Controllers shield)
         {
             CollisionData = collisionPhysicsData;
             Shield = shield;
@@ -189,9 +189,9 @@ namespace DefenseSystems.Support
     public class StationCollisionDataThreadEvent : IThreadEvent
     {
         public readonly MyCollisionPhysicsData CollisionData;
-        public readonly DefenseSystems Shield;
+        public readonly Controllers Shield;
 
-        public StationCollisionDataThreadEvent(MyCollisionPhysicsData collisionPhysicsData, DefenseSystems shield)
+        public StationCollisionDataThreadEvent(MyCollisionPhysicsData collisionPhysicsData, Controllers shield)
         {
             CollisionData = collisionPhysicsData;
             Shield = shield;
@@ -229,9 +229,9 @@ namespace DefenseSystems.Support
     public class PlayerCollisionThreadEvent : IThreadEvent
     {
         public readonly MyCollisionPhysicsData CollisionData;
-        public readonly DefenseSystems Shield;
+        public readonly Controllers Shield;
 
-        public PlayerCollisionThreadEvent(MyCollisionPhysicsData collisionPhysicsData, DefenseSystems shield)
+        public PlayerCollisionThreadEvent(MyCollisionPhysicsData collisionPhysicsData, Controllers shield)
         {
             CollisionData = collisionPhysicsData;
             Shield = shield;
@@ -259,9 +259,9 @@ namespace DefenseSystems.Support
     public class CharacterEffectThreadEvent : IThreadEvent
     {
         public readonly IMyCharacter Character;
-        public readonly DefenseSystems Shield;
+        public readonly Controllers Shield;
 
-        public CharacterEffectThreadEvent(IMyCharacter character, DefenseSystems shield)
+        public CharacterEffectThreadEvent(IMyCharacter character, Controllers shield)
         {
             Character = character;
             Shield = shield;
@@ -279,13 +279,13 @@ namespace DefenseSystems.Support
 
     public class ManyBlocksThreadEvent : IThreadEvent
     {
-        public readonly DefenseSystems Shield;
+        public readonly Controllers Shield;
         public readonly HashSet<CubeAccel> AccelSet;
         public readonly float Damage;
         public readonly Vector3D CollisionAvg;
         public readonly long AttackerId;
 
-        public ManyBlocksThreadEvent(HashSet<CubeAccel> accelSet, DefenseSystems shield, float damage, Vector3D collisionAvg, long attackerId)
+        public ManyBlocksThreadEvent(HashSet<CubeAccel> accelSet, Controllers shield, float damage, Vector3D collisionAvg, long attackerId)
         {
             AccelSet = accelSet;
             Shield = shield;
@@ -339,11 +339,11 @@ namespace DefenseSystems.Support
     public class VoxelCollisionDmgThreadEvent : IThreadEvent
     {
         public readonly MyEntity Entity;
-        public readonly DefenseSystems Shield;
+        public readonly Controllers Shield;
         public readonly float Damage;
         public readonly Vector3D CollisionAvg;
 
-        public VoxelCollisionDmgThreadEvent(MyEntity entity, DefenseSystems shield, float damage, Vector3D collisionAvg)
+        public VoxelCollisionDmgThreadEvent(MyEntity entity, Controllers shield, float damage, Vector3D collisionAvg)
         {
             Entity = entity;
             Shield = shield;
@@ -371,9 +371,9 @@ namespace DefenseSystems.Support
     public class VoxelCollisionPhysicsThreadEvent : IThreadEvent
     {
         public readonly MyCollisionPhysicsData CollisionData;
-        public readonly DefenseSystems Shield;
+        public readonly Controllers Shield;
 
-        public VoxelCollisionPhysicsThreadEvent(MyCollisionPhysicsData collisionPhysicsData, DefenseSystems shield)
+        public VoxelCollisionPhysicsThreadEvent(MyCollisionPhysicsData collisionPhysicsData, Controllers shield)
         {
             CollisionData = collisionPhysicsData;
             Shield = shield;
@@ -393,9 +393,9 @@ namespace DefenseSystems.Support
     public class VoxelDmgThreadEvent : IThreadEvent
     {
         public readonly MyVoxelBase VoxelBase;
-        public readonly DefenseSystems Shield;
+        public readonly Controllers Shield;
 
-        public VoxelDmgThreadEvent(MyVoxelBase voxelBase, DefenseSystems shield)
+        public VoxelDmgThreadEvent(MyVoxelBase voxelBase, Controllers shield)
         {
             VoxelBase = voxelBase;
             Shield = shield;
@@ -411,9 +411,9 @@ namespace DefenseSystems.Support
     public class MeteorDmgThreadEvent : IThreadEvent
     {
         public readonly IMyMeteor Meteor;
-        public readonly DefenseSystems Shield;
+        public readonly Controllers Shield;
 
-        public MeteorDmgThreadEvent(IMyMeteor meteor, DefenseSystems shield)
+        public MeteorDmgThreadEvent(IMyMeteor meteor, Controllers shield)
         {
             Meteor = meteor;
             Shield = shield;
@@ -442,9 +442,9 @@ namespace DefenseSystems.Support
     public class ForceDataThreadEvent : IThreadEvent
     {
         public readonly MyForceData ForceData;
-        public readonly DefenseSystems Shield;
+        public readonly Controllers Shield;
 
-        public ForceDataThreadEvent(MyForceData forceData, DefenseSystems shield)
+        public ForceDataThreadEvent(MyForceData forceData, Controllers shield)
         {
             ForceData = forceData;
             Shield = shield;
@@ -460,9 +460,9 @@ namespace DefenseSystems.Support
     public class ImpulseDataThreadEvent : IThreadEvent
     {
         public readonly MyImpulseData ImpulseData;
-        public readonly DefenseSystems Shield;
+        public readonly Controllers Shield;
 
-        public ImpulseDataThreadEvent(MyImpulseData impulseData, DefenseSystems shield)
+        public ImpulseDataThreadEvent(MyImpulseData impulseData, Controllers shield)
         {
             ImpulseData = impulseData;
             Shield = shield;

@@ -50,10 +50,10 @@
         {
             try
             {
-                MyGrid = (MyCubeGrid)Emitter.CubeGrid;
+                LocalGrid = (MyCubeGrid)Emitter.CubeGrid;
                 MyCube = Emitter as MyCubeBlock;
                 SetEmitterType();
-                RegisterEvents();
+                //RegisterEvents();
                 if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
@@ -68,7 +68,7 @@
                 else if (_bCount < SyncCount * _bTime)
                 {
                     NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                    if (DefenseBus?.DefenseSystems?.MasterGrid == MyGrid) _bCount++;
+                    if (DefenseBus?.MasterGrid == LocalGrid) _bCount++;
                 }
                 else _readyToSync = true;
             }
@@ -83,10 +83,10 @@
                 _tick60 = _tick % 60 == 0;
                 var wait = _isServer && !_tick60 && EmiState.State.Backup;
 
-                MyGrid = MyCube.CubeGrid;
-                if (wait || MyGrid?.Physics == null) return;
+                LocalGrid = MyCube.CubeGrid;
+                if (wait || LocalGrid?.Physics == null) return;
 
-                IsStatic = MyGrid.IsStatic;
+                IsStatic = LocalGrid.IsStatic;
                 Timing();
                 if (!ControllerLink()) return;
 
@@ -106,9 +106,9 @@
                 if (_count++ == 5) _count = 0;
                 var wait = _isServer && _count != 0 && EmiState.State.Backup;
 
-                MyGrid = MyCube.CubeGrid;
-                if (wait || MyGrid?.Physics == null) return;
-                IsStatic = MyGrid.IsStatic;
+                LocalGrid = MyCube.CubeGrid;
+                if (wait || LocalGrid?.Physics == null) return;
+                IsStatic = LocalGrid.IsStatic;
 
                 ControllerLink();
             }
@@ -120,9 +120,9 @@
             try
             {
                 if (Session.Enforced.Debug == 3) Log.Line($"OnRemovedFromScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
-                if (DefenseBus?.StationEmitter == this) DefenseBus.StationEmitter = null;
-                if (DefenseBus?.ShipEmitter == this) DefenseBus.ShipEmitter = null;
-                RegisterEvents(false);
+                //if (DefenseBus?.ActiveEmitter == this) DefenseBus.ActiveEmitter = null;
+                //if (DefenseBus?.ShipEmitter == this) DefenseBus.ShipEmitter = null;
+                Registry.RegisterWithBus(this, LocalGrid, false, DefenseBus, out DefenseBus);
                 IsWorking = false;
                 IsFunctional = false;
             }
@@ -141,15 +141,20 @@
                 base.Close();
                 if (Session.Enforced.Debug == 3) Log.Line($"Close: {EmitterMode} - EmitterId [{Entity.EntityId}]");
                 if (Session.Instance.Emitters.Contains(this)) Session.Instance.Emitters.Remove(this);
-                if (DefenseBus?.StationEmitter == this)
+                Registry.RegisterWithBus(this, LocalGrid, false, DefenseBus, out DefenseBus);
+
+                /*
+                if (DefenseBus?.ActiveEmitter == this)
                 {
                     if ((int)EmitterMode == DefenseBus.EmitterMode)
                     {
                         DefenseBus.EmitterLos = false;
                         DefenseBus.EmitterEvent = true;
                     }
-                    DefenseBus.StationEmitter = null;
+                    DefenseBus.ActiveEmitter = null;
                 }
+                */
+                /*
                 else if (DefenseBus?.ShipEmitter == this)
                 {
                     if ((int)EmitterMode == DefenseBus.EmitterMode)
@@ -159,6 +164,7 @@
                     }
                     DefenseBus.ShipEmitter = null;
                 }
+                */
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
         }

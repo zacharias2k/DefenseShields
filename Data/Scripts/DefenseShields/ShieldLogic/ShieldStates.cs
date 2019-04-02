@@ -3,7 +3,7 @@
     using Support;
     using VRageMath;
 
-    public partial class DefenseSystems
+    public partial class Controllers
     {
         private bool EntityAlive()
         {
@@ -23,9 +23,7 @@
 
             LocalGrid = MyCube.CubeGrid;
             if (LocalGrid?.Physics == null) return false;
-            if (_resetEntity) ResetEntity();
-            MasterGrid = DefenseBus.MasterGrid;
-
+            if (MarkForReset) ResetEntity();
             if (!_firstSync && _readyToSync) SaveAndSendAll();
             if (!_isDedicated && _count == 29) TerminalRefresh();
 
@@ -33,13 +31,13 @@
 
             if (_tick1800 && Session.Enforced.Debug > 0) Debug();
 
-            IsStatic = MasterGrid.IsStatic;
+            IsStatic = DefenseBus.MasterGrid.IsStatic;
 
             if (!Warming) WarmUpSequence();
 
-            if (_subUpdate && _tick >= _subTick) HierarchyUpdate();
+            if (DefenseBus.SubUpdate && _tick >= _subTick) HierarchyUpdate();
             if (_blockEvent && _tick >= _funcTick) BlockChanged(true);
-            if (_blockChanged) BlockMonitor();
+            if (DefenseBus.BlockChanged) BlockMonitor();
             if (ClientUiUpdate || SettingsUpdated) UpdateSettings();
 
             if (_mpActive)
@@ -263,22 +261,26 @@
 
         private bool Suspended()
         {
-            var primeMode = ShieldMode == ShieldType.Station && IsStatic && DefenseBus.StationEmitter == null;
-            var betaMode = ShieldMode != ShieldType.Station && !IsStatic && DefenseBus.ShipEmitter == null;
+            var primeMode = ShieldMode == ShieldType.Station && IsStatic && DefenseBus.ActiveEmitter == null;
+            var betaMode = ShieldMode != ShieldType.Station && !IsStatic && DefenseBus.ActiveEmitter == null;
             var notStation = ShieldMode != ShieldType.Station && IsStatic;
             var notShip = ShieldMode == ShieldType.Station && !IsStatic;
             var unKnown = ShieldMode == ShieldType.Unknown;
             var wrongOwner = !DsState.State.ControllerGridAccess;
-            var myShield = DefenseBus.DefenseSystems == this;
+            var myShield = DefenseBus.ActiveController == this;
             var wrongRole = notStation || notShip || unKnown;
             if (!myShield || !IsFunctional || primeMode || betaMode || wrongOwner || wrongRole)
             {
                 if (!DsState.State.Suspended) Suspend();
-                if (myShield) DefenseBus.DefenseSystems = null;
+                if (myShield) DefenseBus.ActiveController = null;
                 if (wrongRole) SetShieldType(true);
                 return true;
             }
 
+            if (_tick600)
+            {
+                Log.Line($"BusNull:{DefenseBus == null} || MasterisLocal:{DefenseBus.MasterGrid == LocalGrid} - MasterisThis:{DefenseBus.MasterGrid == MyCube.CubeGrid} - ActiveIsThis:{DefenseBus.ActiveController == this} - ActiveIsNull:{DefenseBus.ActiveEmitter == null} - ActiveGrid:{DefenseBus.MasterGrid.DebugName}");
+            }
             if (DsState.State.Suspended)
             {
                 UnSuspend();
@@ -301,7 +303,7 @@
         private void UnSuspend()
         {
             DsState.State.Suspended = false;
-            DefenseBus.DefenseSystems = this;
+            DefenseBus.ActiveController = this;
             Session.Instance.BlockTagActive(Shield);
             Session.Instance.FunctionalShields[this] = false;
             UpdateEntity();
@@ -342,9 +344,9 @@
         private bool ClientOfflineStates()
         {
             var shieldUp = DsState.State.Online && !DsState.State.Suspended && !DsState.State.Sleeping;
-            if (DefenseBus.DefenseSystems != this && shieldUp)
+            if (DefenseBus.ActiveController != this && shieldUp)
             {
-                DefenseBus.DefenseSystems = this;
+                DefenseBus.ActiveController = this;
             }
 
             if (!shieldUp)

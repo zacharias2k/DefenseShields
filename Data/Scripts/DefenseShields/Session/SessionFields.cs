@@ -63,7 +63,7 @@
 
         internal readonly ConcurrentDictionary<long, IMyPlayer> Players = new ConcurrentDictionary<long, IMyPlayer>();
 
-        internal readonly ConcurrentQueue<DefenseSystems> WebWrapper = new ConcurrentQueue<DefenseSystems>();
+        internal readonly ConcurrentQueue<Controllers> WebWrapper = new ConcurrentQueue<Controllers>();
 
         internal readonly ConcurrentQueue<IThreadEvent> ThreadEvents = new ConcurrentQueue<IThreadEvent>();
 
@@ -74,8 +74,8 @@
         internal Dictionary<MyCubeGrid, BlockRegen> GridsToLogics = new Dictionary<MyCubeGrid, BlockRegen>();
 
         internal HashSet<BlockRegen> RegenLogics = new HashSet<BlockRegen>();
-        internal readonly HashSet<DefenseSystems> ActiveShields = new HashSet<DefenseSystems>();
-        internal readonly ConcurrentDictionary<DefenseSystems, bool> FunctionalShields = new ConcurrentDictionary<DefenseSystems, bool>();
+        internal readonly HashSet<Controllers> ActiveShields = new HashSet<Controllers>();
+        internal readonly ConcurrentDictionary<Controllers, bool> FunctionalShields = new ConcurrentDictionary<Controllers, bool>();
 
         internal readonly List<PlanetShields> PlanetShields = new List<PlanetShields>();
         internal readonly List<Emitters> Emitters = new List<Emitters>();
@@ -83,7 +83,7 @@
         internal readonly List<Enhancers> Enhancers = new List<Enhancers>();
         internal readonly List<O2Generators> O2Generators = new List<O2Generators>();
         internal readonly List<Modulators> Modulators = new List<Modulators>();
-        internal readonly List<DefenseSystems> Controllers = new List<DefenseSystems>();
+        internal readonly List<Controllers> AllControllers = new List<Controllers>();
 
         internal readonly HashSet<string> DsActions = new HashSet<string>()
         {
@@ -291,7 +291,7 @@
         internal bool LogServer { get; set; }
         internal bool LogFullReport { get; set; }
 
-        internal DefenseSystems HudComp { get; set; }
+        internal Controllers HudComp { get; set; }
         internal DSUtils Dsutil1 { get; set; } = new DSUtils();
         internal Perf Perf { get; set; } = new Perf();
 

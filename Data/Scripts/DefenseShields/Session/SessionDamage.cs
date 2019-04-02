@@ -254,12 +254,12 @@ namespace DefenseSystems
                 if (nullAttacker)
                 {
                     shield.ProtectedEntCache.TryGetValue(myEntity, out protectedEnt);
-                    if (protectedEnt != null && protectedEnt.Relation == DefenseSystems.Ent.Protected) playerProtected = true;
+                    if (protectedEnt != null && protectedEnt.Relation == Controllers.Ent.Protected) playerProtected = true;
                 }
                 else
                 {
                     shield.ProtectedEntCache.TryGetValue(hostileEnt, out protectedEnt);
-                    if (protectedEnt != null && protectedEnt.Relation != DefenseSystems.Ent.Protected) playerProtected = true;
+                    if (protectedEnt != null && protectedEnt.Relation != Controllers.Ent.Protected) playerProtected = true;
                 }
 
                 if (!playerProtected) continue;

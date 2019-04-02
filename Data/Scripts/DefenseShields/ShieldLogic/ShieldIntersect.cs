@@ -9,7 +9,7 @@
     using VRage.Game.ModAPI;
     using VRageMath;
 
-    public partial class DefenseSystems
+    public partial class Controllers
     {
         #region Intersect
         internal void EntIntersectSelector(KeyValuePair<MyEntity, EntIntersectInfo> pair)
@@ -140,21 +140,21 @@
             var grid = ent as MyCubeGrid;
             if (grid == null) return;
             if (EntInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB))) return;
-            DefenseBus DefenseBusonent;
-            grid.Components.TryGet(out DefenseBusonent);
-            if (DefenseBusonent?.DefenseSystems == null) return;
+            DefenseBus otherBus;
+            grid.Components.TryGet(out otherBus);
+            if (otherBus?.ActiveController == null) return;
 
-            var ds = DefenseBusonent.DefenseSystems;
-            if (!ds.NotFailed)
+            var otherController = otherBus.ActiveController;
+            if (!otherController.NotFailed)
             {
                 EntIntersectInfo entInfo;
                 WebEnts.TryRemove(ent, out entInfo);
             }
-            var dsVerts = ds.DefenseBus.PhysicsOutside;
-            var dsMatrixInv = ds.DetectMatrixOutsideInv;
+            var otherPhysicsOutside = otherBus.PhysicsOutside;
+            var otherMatrixInv = otherController.DetectMatrixOutsideInv;
 
             var insidePoints = new List<Vector3D>();
-            CustomCollision.ShieldX2PointsInside(dsVerts, dsMatrixInv, DefenseBus.PhysicsOutside, DetectMatrixOutsideInv, insidePoints);
+            CustomCollision.ShieldX2PointsInside(otherPhysicsOutside, otherMatrixInv, DefenseBus.PhysicsOutside, DetectMatrixOutsideInv, insidePoints);
 
             var collisionAvg = Vector3D.Zero;
             var numOfPointsInside = insidePoints.Count;
@@ -163,10 +163,10 @@
             if (numOfPointsInside > 0) collisionAvg /= numOfPointsInside;
             if (collisionAvg == Vector3D.Zero) return;
 
-            if (MasterGrid.EntityId > grid.EntityId) ComputeCollisionPhysics(grid, MasterGrid, collisionAvg);
+            if (DefenseBus.MasterGrid.EntityId > grid.EntityId) ComputeCollisionPhysics(grid, DefenseBus.MasterGrid, collisionAvg);
             else if (!_isServer) return;
 
-            var damage = ((ds._shieldMaxChargeRate * ConvToHp) * DsState.State.ModulateKinetic) * 0.01666666666f;
+            var damage = ((otherController._shieldMaxChargeRate * ConvToHp) * DsState.State.ModulateKinetic) * 0.01666666666f;
             Session.Instance.ThreadEvents.Enqueue(new ShieldVsShieldThreadEvent(this, damage, collisionAvg, grid.EntityId));
         }
 
@@ -193,15 +193,15 @@
                     continue;
                 }
 
-                var collision = CustomCollision.VoxelEllipsoidCheck(MasterGrid, DefenseBus.PhysicsOutsideLow, voxelBase);
+                var collision = CustomCollision.VoxelEllipsoidCheck(DefenseBus.MasterGrid, DefenseBus.PhysicsOutsideLow, voxelBase);
                 if (collision.HasValue)
                 {
-                    ComputeVoxelPhysics(voxelBase, MasterGrid, collision.Value);
+                    ComputeVoxelPhysics(voxelBase, DefenseBus.MasterGrid, collision.Value);
 
                     VoxelsToIntersect[voxelBase]++;
                     if (_isServer)
                     {
-                        var mass = MasterGrid.GetCurrentMass();
+                        var mass = DefenseBus.MasterGrid.GetCurrentMass();
                         var sPhysics = Shield.CubeGrid.Physics;
                         var momentum = mass * sPhysics.GetVelocityAtPoint(collision.Value);
                         var damage = (momentum.Length() / 500) * DsState.State.ModulateEnergy;
@@ -306,7 +306,7 @@
                     if (collisionAvg != Vector3D.Zero)
                     {
                         collisionAvg /= hits;
-                        ComputeCollisionPhysics(breaching, MasterGrid, collisionAvg);
+                        ComputeCollisionPhysics(breaching, DefenseBus.MasterGrid, collisionAvg);
                         entInfo.Touched = true;
                     }
                     else return;

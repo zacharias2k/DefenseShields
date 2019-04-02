@@ -11,7 +11,7 @@ using VRage.Game.ModAPI;
 using VRageMath;
 namespace DefenseSystems
 {
-    public partial class DefenseSystems
+    public partial class Controllers
     {
         #region Web Entities
         public void CleanWebEnts()
@@ -86,7 +86,7 @@ namespace DefenseSystems
             var shieldsStartIndex = PruneList.Count;
             foreach (var eShield in EnemyShields) PruneList.Add(eShield);
 
-            var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || DefenseBus.Modulator == null || DefenseBus.Modulator.ModSet.Settings.ModulateVoxels;
+            var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || DefenseBus.ActiveModulator == null || DefenseBus.ActiveModulator.ModSet.Settings.ModulateVoxels;
             var voxelFound = false;
             var shieldFound = false;
             var entChanged = false;
@@ -279,7 +279,7 @@ namespace DefenseSystems
             }
 
             var voxel = ent as MyVoxelBase;
-            if (voxel != null && (Session.Enforced.DisableVoxelSupport == 1 || DefenseBus.Modulator == null || DefenseBus.Modulator.ModSet.Settings.ModulateVoxels || !GridIsMobile)) return Ent.Ignore;
+            if (voxel != null && (Session.Enforced.DisableVoxelSupport == 1 || DefenseBus.ActiveModulator == null || DefenseBus.ActiveModulator.ModSet.Settings.ModulateVoxels || !GridIsMobile)) return Ent.Ignore;
 
             var character = ent as IMyCharacter;
             if (character != null)
@@ -304,12 +304,12 @@ namespace DefenseSystems
             var grid = ent as MyCubeGrid;
             if (grid != null)
             {
-                ModulateGrids = (DefenseBus.Modulator != null && DefenseBus.Modulator.ModSet.Settings.ModulateGrids) || Session.Enforced.DisableEntityBarrier == 1;
+                ModulateGrids = (DefenseBus.ActiveModulator != null && DefenseBus.ActiveModulator.ModSet.Settings.ModulateGrids) || Session.Enforced.DisableEntityBarrier == 1;
                 ModulatorGridComponent modComp;
                 grid.Components.TryGet(out modComp);
                 if (!string.IsNullOrEmpty(modComp?.ModulationPassword) && modComp.ModulationPassword == Shield.CustomData)
                 {
-                    var collection = modComp.Modulator?.DefenseBus?.DefenseSystems != null ? modComp.Modulator.DefenseBus.DefenseSystems.DefenseBus.SubGrids : modComp.SubGrids;
+                    var collection = modComp.Modulator?.DefenseBus?.ActiveController != null ? modComp.Modulator.DefenseBus.ActiveController.DefenseBus.SubGrids : modComp.SubGrids;
                     foreach (var subGrid in collection)
                     {
                         if (ShieldEnt.PositionComp.WorldVolume.Intersects(grid.PositionComp.WorldVolume))
@@ -333,13 +333,13 @@ namespace DefenseSystems
                     return pointsInShield > 0 ? Ent.Protected : Ent.Friendly;
                 }
 
-                DefenseBus DefenseBusonent;
-                grid.Components.TryGet(out DefenseBusonent);
-                if (DefenseBusonent?.DefenseSystems?.DefenseBus != null && DefenseBusonent.DefenseSystems.NotFailed)
+                DefenseBus otherBus;
+                grid.Components.TryGet(out otherBus);
+                if (otherBus?.ActiveController != null && otherBus.ActiveController.NotFailed)
                 {
-                    var dsComp = DefenseBusonent.DefenseSystems;
+                    var otherController = otherBus.ActiveController;
                     var shieldEntity = MyCube.Parent;
-                    dsComp.EnemyShields.Add(shieldEntity);
+                    otherController.EnemyShields.Add(shieldEntity);
                     return Ent.Shielded;    
                 }
                 return Ent.EnemyGrid;

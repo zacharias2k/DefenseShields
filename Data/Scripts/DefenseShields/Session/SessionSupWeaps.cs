@@ -51,9 +51,9 @@ namespace DefenseSystems
                 var grid = ent as MyCubeGrid;
                 if (grid != null)
                 {
-                    DefenseBus sComp;
-                    grid.Components.TryGet(out sComp);
-                    if (sComp?.DefenseSystems != null && sComp.DefenseSystems.NotFailed) continue;
+                    DefenseBus defenseBus;
+                    grid.Components.TryGet(out defenseBus);
+                    if (defenseBus?.ActiveController != null && defenseBus.ActiveController.NotFailed) continue;
 
                     var gridCenter = grid.PositionComp.WorldVolume.Center;
                     var testDir = Vector3D.Normalize(gridCenter - epiCenter);

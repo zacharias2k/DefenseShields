@@ -10,7 +10,7 @@ using VRageMath;
 
 namespace DefenseSystems
 {
-    public partial class DefenseSystems
+    public partial class Controllers
     {
         private void LosCheck()
         {
@@ -40,10 +40,10 @@ namespace DefenseSystems
                           $"Sleep:{Asleep} - Tick/Woke:{_tick}/{LastWokenTick}\n" +
                           $"Mode:{DsState.State.Mode} - Waking:{DsState.State.Waking}\n" +
                           $"Low:{DsState.State.Lowered} - Sl:{DsState.State.Sleeping}\n" +
-                          $"Failed:{!NotFailed} - PNull:{MyResourceDist == null}\n" +
-                          $"NoP:{DsState.State.NoPower} - PSys:{MyResourceDist?.SourcesEnabled}\n" +
+                          $"Failed:{!NotFailed} - PNull:{DefenseBus.MyResourceDist == null}\n" +
+                          $"NoP:{DsState.State.NoPower} - PSys:{DefenseBus.MyResourceDist?.SourcesEnabled}\n" +
                           $"Access:{DsState.State.ControllerGridAccess} - EmitterLos:{DsState.State.EmitterLos}\n" +
-                          $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(MasterGrid)}\n" +
+                          $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(DefenseBus.MasterGrid)}\n" +
                           $"ShieldMode:{ShieldMode} - pFail:{_powerFail}\n" +
                           $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{GridMaxPower}\n" +
                           $"AvailPoW:{GridAvailablePower} - MTPoW:{_shieldMaintaintPower}\n" +
@@ -79,9 +79,9 @@ namespace DefenseSystems
 
         private void UpdateSubGrids(bool force = false)
         {
-            _subUpdate = false;
+            DefenseBus.SubUpdate = false;
 
-            DefenseBus.SubGridDetect(MasterGrid, force);
+            DefenseBus.SubGridDetect(DefenseBus.MasterGrid, force);
             
             /*
             var gotGroups = MyAPIGateway.GridGroups.GetGroup(MasterGrid, GridLinkTypeEnum.Physical);
@@ -103,33 +103,25 @@ namespace DefenseSystems
 
         }
 
-        internal void SetSubFlags()
-        {
-            Log.Line("set flags");
-            _blockChanged = true;
-            _functionalChanged = true;
-            _updateGridDistributor = true;
-        }
-
         private void BlockMonitor()
         {
-            if (_blockChanged)
+            if (DefenseBus.BlockChanged)
             {
                 _blockEvent = true;
                 _shapeEvent = true;
                 LosCheckTick = _tick + 1800;
-                if (_blockAdded) _shapeTick = _tick + 300;
+                if (DefenseBus.BlockAdded) _shapeTick = _tick + 300;
                 else _shapeTick = _tick + 1800;
             }
-            if (_functionalChanged) _functionalEvent = true;
+            if (DefenseBus.FunctionalChanged) _functionalEvent = true;
 
-            _functionalAdded = false;
-            _functionalRemoved = false;
-            _functionalChanged = false;
+            DefenseBus.FunctionalAdded = false;
+            DefenseBus.FunctionalRemoved = false;
+            DefenseBus.FunctionalChanged = false;
 
-            _blockChanged = false;
-            _blockRemoved = false;
-            _blockAdded = false;
+            DefenseBus.BlockChanged = false;
+            DefenseBus.BlockRemoved = false;
+            DefenseBus.BlockAdded = false;
         }
 
         private void BlockChanged(bool backGround)
@@ -154,9 +146,9 @@ namespace DefenseSystems
 
         private void BackGroundChecks()
         {
-            var gridDistNeedUpdate = _updateGridDistributor || MyResourceDist?.SourcesEnabled == MyMultipleEnabledEnum.NoObjects;
-            _updateGridDistributor = false;
-            lock (SubLock)
+            var gridDistNeedUpdate = DefenseBus.UpdateGridDistributor || DefenseBus.MyResourceDist?.SourcesEnabled == MyMultipleEnabledEnum.NoObjects;
+            DefenseBus.UpdateGridDistributor = false;
+            lock (DefenseBus.SubLock)
             {
                 _powerSources.Clear();
                 _functionalBlocks.Clear();
@@ -179,7 +171,7 @@ namespace DefenseSystems
                                     if (distributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects)
                                     {
                                         if (Session.Enforced.Debug == 3) Log.Line($"Found MyGridDistributor from type:{block.BlockDefinition} - ShieldId [{Shield.EntityId}]");
-                                        MyResourceDist = controller.GridResourceDistributor;
+                                        DefenseBus.MyResourceDist = controller.GridResourceDistributor;
                                         gridDistNeedUpdate = false;
                                     }
                                 }
@@ -212,13 +204,13 @@ namespace DefenseSystems
 
         private void GridOwnsController()
         {
-            if (MasterGrid.BigOwners.Count == 0)
+            if (DefenseBus.MasterGrid.BigOwners.Count == 0)
             {
                 DsState.State.ControllerGridAccess = false;
                 return;
             }
 
-            _gridOwnerId = MasterGrid.BigOwners[0];
+            _gridOwnerId = DefenseBus.MasterGrid.BigOwners[0];
             _controllerOwnerId = MyCube.OwnerId;
 
             if (_controllerOwnerId == 0) MyCube.ChangeOwner(_gridOwnerId, MyOwnershipShareModeEnum.Faction);
@@ -253,19 +245,19 @@ namespace DefenseSystems
             var notTime = _tick % 120 != 0 && _subTick < _tick + 10;
             if (notTime && _slaveLink) return true;
             if (IsStatic || (notTime && !_firstLoop)) return false;
-            var mySize = MasterGrid.PositionComp.WorldAABB.Size.Volume;
-            var myEntityId = MasterGrid.EntityId;
+            var mySize = DefenseBus.MasterGrid.PositionComp.WorldAABB.Size.Volume;
+            var myEntityId = DefenseBus.MasterGrid.EntityId;
             foreach (var grid in DefenseBus.LinkedGrids.Keys)
             {
-                if (grid == MasterGrid) continue;
+                if (grid == DefenseBus.MasterGrid) continue;
                 DefenseBus defenseBus;
                 grid.Components.TryGet(out defenseBus);
-                var ds = defenseBus?.DefenseSystems;
-                if (ds?.DefenseBus != null && ds.DsState.State.Online && ds.IsWorking)
+                var controller = defenseBus?.ActiveController;
+                if (controller?.DefenseBus != null && controller.DsState.State.Online && controller.IsWorking)
                 {
-                    var otherSize = ds.MasterGrid.PositionComp.WorldAABB.Size.Volume;
-                    var otherEntityId = ds.MasterGrid.EntityId;
-                    if ((!IsStatic && ds.IsStatic) || mySize < otherSize || (mySize.Equals(otherEntityId) && myEntityId < otherEntityId))
+                    var otherSize = controller.DefenseBus.MasterGrid.PositionComp.WorldAABB.Size.Volume;
+                    var otherEntityId = controller.DefenseBus.MasterGrid.EntityId;
+                    if ((!IsStatic && controller.IsStatic) || mySize < otherSize || (mySize.Equals(otherEntityId) && myEntityId < otherEntityId))
                     {
                         _slaveLink = true;
                         return true;
@@ -278,7 +270,7 @@ namespace DefenseSystems
 
         private bool FieldShapeBlocked()
         {
-            if (DefenseBus.Modulator == null || DefenseBus.Modulator.ModSet.Settings.ModulateVoxels || Session.Enforced.DisableVoxelSupport == 1) return false;
+            if (DefenseBus.ActiveModulator == null || DefenseBus.ActiveModulator.ModSet.Settings.ModulateVoxels || Session.Enforced.DisableVoxelSupport == 1) return false;
 
             var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange);
             var pruneList = new List<MyVoxelBase>();

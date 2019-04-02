@@ -158,9 +158,9 @@
             try
             {
                 if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
-                if (DefenseBus?.Modulator == this)
+                if (DefenseBus?.ActiveModulator == this)
                 {
-                    DefenseBus.Modulator = null;
+                    DefenseBus.ActiveModulator = null;
                 }
 
                 if (ModulatorComp?.Modulator == this)
@@ -185,9 +185,9 @@
             try
             {
                 if (Session.Instance.Modulators.Contains(this)) Session.Instance.Modulators.Remove(this);
-                if (DefenseBus?.Modulator == this)
+                if (DefenseBus?.ActiveModulator == this)
                 {
-                    DefenseBus.Modulator = null;
+                    DefenseBus.ActiveModulator = null;
                 }
 
                 if (ModulatorComp?.Modulator == this)

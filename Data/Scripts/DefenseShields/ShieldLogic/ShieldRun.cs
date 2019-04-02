@@ -10,7 +10,7 @@
     using VRage.ObjectBuilders;
 
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DSControlLarge", "DSControlSmall", "DSControlTable")]
-    public partial class DefenseSystems : MyGameLogicComponent
+    public partial class Controllers : MyGameLogicComponent
     {
         #region Simulation
         public override void OnAddedToContainer()
@@ -41,7 +41,7 @@
                 LocalGrid = (MyCubeGrid)Shield.CubeGrid;
                 MyCube = Shield as MyCubeBlock;
                 AssignSlots();
-                _resetEntity = true;
+                MarkForReset = true;
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
@@ -55,7 +55,7 @@
                 else if (_bCount < SyncCount * _bTime)
                 {
                     NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                    if (DefenseBus?.DefenseSystems != null && DefenseBus.DefenseSystems.Warming) _bCount++;
+                    if (DefenseBus?.ActiveController != null && DefenseBus.ActiveController.Warming) _bCount++;
                 }
                 else _readyToSync = true;
             }
@@ -125,10 +125,10 @@
                 if (!_allInited) return;
                 if (Session.Enforced.Debug >= 3) Log.Line($"OnRemovedFromScene: {ShieldMode} - GridId:{Shield.CubeGrid.EntityId} - ShieldId [{Shield.EntityId}]");
 
-                if (DefenseBus?.DefenseSystems == this)
+                if (DefenseBus?.ActiveController == this)
                 {
                     OfflineShield(true, false, State.Other, true);
-                    RegisterWithBus(false);
+                    Registry.RegisterWithBus(this, LocalGrid, false, DefenseBus, out DefenseBus);
                 }
 
                 InitEntities(false);
@@ -158,13 +158,13 @@
                 if (!_allInited) return;
                 if (Session.Enforced.Debug >= 3) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
 
-                if (DefenseBus?.DefenseSystems == this)
+                if (DefenseBus?.ActiveController == this)
                 {
                     OfflineShield(true, false, State.Other, true);
-                    RegisterWithBus(false);
+                    Registry.RegisterWithBus(this, LocalGrid, false, DefenseBus, out DefenseBus);
                 }
 
-                if (Session.Instance.Controllers.Contains(this)) Session.Instance.Controllers.Remove(this);
+                if (Session.Instance.AllControllers.Contains(this)) Session.Instance.AllControllers.Remove(this);
                 bool value1;
 
                 if (Session.Instance.FunctionalShields.ContainsKey(this)) Session.Instance.FunctionalShields.TryRemove(this, out value1);

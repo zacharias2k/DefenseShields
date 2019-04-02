@@ -23,7 +23,7 @@
                     _autoResetEvent.WaitOne();
                     if (!Monitor) break;
                     _newFrame = false;
-                    _workData.DoIt(new List<DefenseSystems>(FunctionalShields.Keys), Tick);
+                    _workData.DoIt(new List<Controllers>(FunctionalShields.Keys), Tick);
                     MinScaler = _workData.MinScaler;
                     MyAPIGateway.Parallel.For(0, _workData.ShieldCnt, x =>
                     {
@@ -35,7 +35,7 @@
                         {
                             if (reInforce != s.ReInforcedShield)
                             {
-                                lock (s.SubLock) foreach (var sub in s.DefenseBus.SubGrids) _entRefreshQueue.Enqueue(sub);
+                                lock (s.DefenseBus.SubLock) foreach (var sub in s.DefenseBus.SubGrids) _entRefreshQueue.Enqueue(sub);
                                 s.ReInforcedShield = reInforce;
                             }
 
@@ -95,7 +95,7 @@
                             return;
                         }
 
-                        if (s.GridIsMobile && s.MasterGrid.Physics.IsMoving)
+                        if (s.GridIsMobile && s.DefenseBus.MasterGrid.Physics.IsMoving)
                         {
                             s.LastWokenTick = tick;
                             s.Asleep = false;
@@ -169,7 +169,7 @@
             if (reInforce)
             {
                 HashSet<MyCubeGrid> subs;
-                lock (s.SubLock) subs = new HashSet<MyCubeGrid>(s.DefenseBus.SubGrids);
+                lock (s.DefenseBus.SubLock) subs = new HashSet<MyCubeGrid>(s.DefenseBus.SubGrids);
                 var newMode = !s.ReInforcedShield;
                 if (!newMode) return;
                 foreach (var sub in subs)
@@ -190,7 +190,7 @@
                 if (s.ReInforcedShield)
                 {
                     HashSet<MyCubeGrid> subs;
-                    lock (s.SubLock) subs = new HashSet<MyCubeGrid>(s.DefenseBus.SubGrids); 
+                    lock (s.DefenseBus.SubLock) subs = new HashSet<MyCubeGrid>(s.DefenseBus.SubGrids); 
                     foreach (var sub in subs)
                     {
                         _entRefreshQueue.Enqueue(sub);
@@ -209,7 +209,7 @@
                     // var testMat = s.DetectMatrixOutside;
                     // var shape1 = new Sphere(Vector3D.Zero, 1.0).Transformed(testMat);
                     var foundNewEnt = false;
-                    var disableVoxels = Enforced.DisableVoxelSupport == 1 || s.DefenseBus.Modulator == null || s.DefenseBus.Modulator.ModSet.Settings.ModulateVoxels;
+                    var disableVoxels = Enforced.DisableVoxelSupport == 1 || s.DefenseBus.ActiveModulator == null || s.DefenseBus.ActiveModulator.ModSet.Settings.ModulateVoxels;
                     MyGamePruningStructure.GetTopmostEntitiesInBox(ref s.WebBox, monitorList);
                     if (!s.WasPaused)
                     {
@@ -429,7 +429,7 @@
                     s.AssignSlots();
                     s.Asleep = false;
                 }
-                foreach (var c in Controllers)
+                foreach (var c in AllControllers)
                 {
                     if (FunctionalShields.ContainsKey(c)) continue;
                     c.AssignSlots();
@@ -442,10 +442,6 @@
 
         private void LoadBalancer()
         {
-            var shieldsWaking = 0;
-            var entsUpdated = 0;
-            var entsremoved = 0;
-            var entsLostShield = 0;
 
             if (++RefreshCycle >= EntSlotScaler) RefreshCycle = 0;
             MyEntity ent;
@@ -456,7 +452,7 @@
 
                 var entShields = myProtector.Shields;
                 var refreshCount = 0;
-                DefenseSystems iShield = null;
+                Controllers iShield = null;
                 var removeIShield = false;
                 foreach (var s in entShields)
                 {
@@ -469,7 +465,6 @@
                     else if (!ent.InScene || !s.ResetEnts(ent, Tick))
                     {
                         myProtector.Shields.Remove(s);
-                        entsLostShield++;
                     }
                     else refreshCount++;
 
@@ -483,7 +478,6 @@
                     if (ScalerChanged || detectedStates)
                     {
                         s.Asleep = false;
-                        shieldsWaking++;
                     }
                 }
 
@@ -499,16 +493,7 @@
                 {
                     GlobalProtect.Remove(ent);
                     ProtSets.Return(myProtector);
-                    entsremoved++;
                 }
-                else entsUpdated++;
-            }
-            if (Tick1800 && Enforced.Debug >= 3)
-            {
-                for (int i = 0; i < SlotCnt.Length; i++) SlotCnt[i] = 0;
-                foreach (var pair in GlobalProtect) SlotCnt[pair.Value.RefreshSlot]++;
-                Log.Line($"[NewRefresh] SlotScaler:{EntSlotScaler} - EntsUpdated:{entsUpdated} - ShieldsWaking:{shieldsWaking} - EntsRemoved: {entsremoved} - EntsLostShield:{entsLostShield} - EntInRefreshSlots:({SlotCnt[0]} - {SlotCnt[1]} - {SlotCnt[2]} - {SlotCnt[3]} - {SlotCnt[4]} - {SlotCnt[5]} - {SlotCnt[6]} - {SlotCnt[7]} - {SlotCnt[8]}) \n" +
-                         $"                                     ProtectedEnts:{GlobalProtect.Count} - FunctionalShields:{FunctionalShields.Count} - AllControllerBlocks:{Controllers.Count}");
             }
         }
         #endregion
@@ -523,7 +508,7 @@
                     if (LogStats)
                     {
                         Perf.Active(ActiveShields.Count);
-                        Perf.Paused(Controllers.Count - FunctionalShields.Count);
+                        Perf.Paused(AllControllers.Count - FunctionalShields.Count);
                         Perf.Emitters(Emitters.Count);
                         Perf.Modulators(Modulators.Count);
                         Perf.Displays(Displays.Count);
@@ -563,12 +548,12 @@
 
         private void WebDispatch()
         {
-            DefenseSystems shield;
-            while (WebWrapper.TryDequeue(out shield))
+            Controllers controller;
+            while (WebWrapper.TryDequeue(out controller))
             {
-                if (shield == null || shield.MarkedForClose) continue;
-                if (!shield.VoxelsToIntersect.IsEmpty) MyAPIGateway.Parallel.Start(shield.VoxelIntersect);
-                if (!shield.WebEnts.IsEmpty) MyAPIGateway.Parallel.ForEach(shield.WebEnts, shield.EntIntersectSelector);
+                if (controller == null || controller.MarkedForClose) continue;
+                if (!controller.VoxelsToIntersect.IsEmpty) MyAPIGateway.Parallel.Start(controller.VoxelIntersect);
+                if (!controller.WebEnts.IsEmpty) MyAPIGateway.Parallel.ForEach(controller.WebEnts, controller.EntIntersectSelector);
             }
         }
 

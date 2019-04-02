@@ -36,7 +36,7 @@
             try
             {
                 if (DsControl) return;
-                var comp = block?.GameLogic?.GetAs<DefenseSystems>();
+                var comp = block?.GameLogic?.GetAs<Controllers>();
                 TerminalHelpers.Separator(comp?.Shield, "DS-C_sep0");
                 ToggleShield = TerminalHelpers.AddOnOff(comp?.Shield, "DS-C_ToggleShield", "Shield Status", "Raise or Lower Shields", "Up", "Down", DsUi.GetRaiseShield, DsUi.SetRaiseShield);
                 TerminalHelpers.Separator(comp?.Shield, "DS-C_sep1");
@@ -104,6 +104,7 @@
             catch (Exception ex) { Log.Line($"Exception in CreateControlerUi: {ex}"); }
         }
 
+        /*
         public void CreatePlanetShieldElements(IMyTerminalBlock block)
         {
             try
@@ -134,6 +135,7 @@
             }
             catch (Exception ex) { Log.Line($"Exception in CreateControlerUi: {ex}"); }
         }
+        */
 
         public void CreateModulatorUi(IMyTerminalBlock block)
         {

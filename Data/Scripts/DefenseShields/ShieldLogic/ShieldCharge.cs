@@ -7,7 +7,7 @@ namespace DefenseSystems
     using Sandbox.ModAPI;
     using VRage;
 
-    public partial class DefenseSystems
+    public partial class Controllers
     {
         #region Block Power Logic
         private bool PowerOnline()
@@ -55,21 +55,21 @@ namespace DefenseSystems
             _batteryMaxPower = 0;
             _batteryCurrentOutput = 0;
             _batteryCurrentInput = 0;
-            lock (SubLock)
+            lock (DefenseBus.SubLock)
             {
-                if (MyResourceDist != null && FuncTask.IsComplete && !_functionalEvent)
+                if (DefenseBus.MyResourceDist != null && FuncTask.IsComplete && !_functionalEvent)
                 {
-                    var noObjects = MyResourceDist.SourcesEnabled == MyMultipleEnabledEnum.NoObjects;
+                    var noObjects = DefenseBus.MyResourceDist.SourcesEnabled == MyMultipleEnabledEnum.NoObjects;
                     if (noObjects)
                     {
-                        if (Session.Enforced.Debug >= 2) Log.Line($"NoObjects: {MasterGrid?.DebugName} - Max:{MyResourceDist?.MaxAvailableResourceByType(GId)} - Status:{MyResourceDist?.SourcesEnabled} - Sources:{_powerSources.Count}");
+                        if (Session.Enforced.Debug >= 2) Log.Line($"NoObjects: {DefenseBus.MasterGrid?.DebugName} - Max:{DefenseBus.MyResourceDist?.MaxAvailableResourceByType(GId)} - Status:{DefenseBus.MyResourceDist?.SourcesEnabled} - Sources:{_powerSources.Count}");
                         FallBackPowerCalc();
                         FunctionalChanged(true);
                     }
                     else
                     {
-                        GridMaxPower = MyResourceDist.MaxAvailableResourceByType(GId);
-                        GridCurrentPower = MyResourceDist.TotalRequiredInputByType(GId);
+                        GridMaxPower = DefenseBus.MyResourceDist.MaxAvailableResourceByType(GId);
+                        GridCurrentPower = DefenseBus.MyResourceDist.TotalRequiredInputByType(GId);
                         if (!DsSet.Settings.UseBatteries && _batteryBlocks.Count != 0) CalculateBatteryInput();
                     }
                 }
@@ -325,7 +325,7 @@ namespace DefenseSystems
                     {
                         DsState.State.NoPower = true;
                         DsState.State.Message = true;
-                        if (Session.Enforced.Debug >= 3) Log.Line($"StateUpdate: NoPower - forShield:{powerForShield} - rounded:{GridMaxPower} - max:{GridMaxPower} - avail{GridAvailablePower} - sCurr:{ShieldCurrentPower} - count:{_powerSources.Count} - DistEna:{MyResourceDist?.SourcesEnabled} - State:{MyResourceDist?.ResourceState} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug >= 3) Log.Line($"StateUpdate: NoPower - forShield:{powerForShield} - rounded:{GridMaxPower} - max:{GridMaxPower} - avail{GridAvailablePower} - sCurr:{ShieldCurrentPower} - count:{_powerSources.Count} - DistEna:{DefenseBus.MyResourceDist?.SourcesEnabled} - State:{DefenseBus.MyResourceDist?.ResourceState} - ShieldId [{Shield.EntityId}]");
                         ShieldChangeState();
                     }
 
