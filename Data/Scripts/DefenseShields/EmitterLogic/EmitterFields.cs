@@ -9,13 +9,14 @@ using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.Definitions;
+using VRage.ModAPI;
 using VRageMath;
 
 namespace DefenseSystems
 {
     public partial class Emitters
     {
-        internal DefenseBus DefenseBus;
+        internal Bus Bus;
         internal MyResourceSinkInfo ResourceInfo;
         internal List<Vector3D> LosScaledCloud = new List<Vector3D>(2000);
         internal MyEntitySubpart SubpartRotor;
@@ -49,6 +50,7 @@ namespace DefenseSystems
         private bool _wasLosState;
         private bool _disableLos;
         private bool _bInit;
+        private bool _aInit;
 
         public enum EmitterType
         {
@@ -57,10 +59,23 @@ namespace DefenseSystems
             Small,
         }
 
+        internal bool IsAfterInited
+        {
+            get { return _aInit; }
+            set
+            {
+                if (_aInit != value)
+                {
+                    _aInit = value;
+                    NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                }
+            }
+        }
+
         internal Definition Definition { get; set; }
         internal EmitterState EmiState { get; set; }
         internal Registry Registry { get; set; } = new Registry();
-        internal BusEvents BusEvents { get; set; } = new BusEvents();
+        //internal BusEvents BusEvents { get; set; } = new BusEvents();
 
         internal IMyUpgradeModule Emitter { get; set; }
         internal EmitterType EmitterMode { get; set; }

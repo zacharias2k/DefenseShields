@@ -78,7 +78,7 @@ namespace DefenseSystems
                     noneFound = false;
 
                     var ds = _aabbTree.GetUserData<Controllers>(id);
-                    if (!compare.ContainsKey(ds.DefenseBus.MasterGrid)) foundShields.Add(ds);
+                    if (!compare.ContainsKey(ds.Bus.Spine)) foundShields.Add(ds);
                     else lostShields.Add(ds);
                 }
                 else
@@ -128,7 +128,7 @@ namespace DefenseSystems
                     if (id == callerId) continue;
 
                     var ds = _aabbTree.GetUserData<Controllers>(id);
-                    results.Add(ds.DefenseBus.MasterGrid, ds);
+                    results.Add(ds.Bus.Spine, ds);
                 }
                 else
                 {

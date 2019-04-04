@@ -17,7 +17,7 @@ namespace DefenseSystems
             if (notice == PlayerNotice.EmpOverLoad || notice == PlayerNotice.OverLoad) radius = 500;
             else radius = ShieldSphere.Radius * 2;
 
-            var center = GridIsMobile ? DefenseBus.MasterGrid.PositionComp.WorldVolume.Center : OffsetEmitterWMatrix.Translation;
+            var center = GridIsMobile ? Bus.Spine.PositionComp.WorldVolume.Center : OffsetEmitterWMatrix.Translation;
             var sphere = new BoundingSphereD(center, radius);
             var sendMessage = false;
             IMyPlayer targetPlayer = null;
@@ -37,25 +37,25 @@ namespace DefenseSystems
             switch (notice)
             {
                 case PlayerNotice.EmitterInit:
-                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + DefenseBus.MasterGrid.DisplayName + " ]" + " -- shield is reinitializing and checking LOS, attempting startup in 30 seconds!", 4816);
+                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + Bus.Spine.DisplayName + " ]" + " -- shield is reinitializing and checking LOS, attempting startup in 30 seconds!", 4816);
                     break;
                 case PlayerNotice.FieldBlocked:
-                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + DefenseBus.MasterGrid.DisplayName + " ]" + "-- the shield's field cannot form when in contact with a solid body", 6720, "Blue");
+                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + Bus.Spine.DisplayName + " ]" + "-- the shield's field cannot form when in contact with a solid body", 6720, "Blue");
                     break;
                 case PlayerNotice.OverLoad:
-                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + DefenseBus.MasterGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 8000, "Red");
+                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + Bus.Spine.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 8000, "Red");
                     break;
                 case PlayerNotice.EmpOverLoad:
-                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + DefenseBus.MasterGrid.DisplayName + " ]" + " -- shield was EMPed, restarting in 60 seconds!!", 8000, "Red");
+                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + Bus.Spine.DisplayName + " ]" + " -- shield was EMPed, restarting in 60 seconds!!", 8000, "Red");
                     break;
                 case PlayerNotice.Remodulate:
-                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + DefenseBus.MasterGrid.DisplayName + " ]" + " -- shield remodulating, restarting in 5 seconds.", 4800);
+                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + Bus.Spine.DisplayName + " ]" + " -- shield remodulating, restarting in 5 seconds.", 4800);
                     break;
                 case PlayerNotice.NoLos:
-                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + DefenseBus.MasterGrid.DisplayName + " ]" + " -- Emitter does not have line of sight, shield offline", 8000, "Red");
+                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + Bus.Spine.DisplayName + " ]" + " -- Emitter does not have line of sight, shield offline", 8000, "Red");
                     break;
                 case PlayerNotice.NoPower:
-                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + DefenseBus.MasterGrid.DisplayName + " ]" + " -- Insufficient Power, shield is failing!", 5000, "Red");
+                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + Bus.Spine.DisplayName + " ]" + " -- Insufficient Power, shield is failing!", 5000, "Red");
                     break;
             }
             if (Session.Enforced.Debug == 3) Log.Line($"[PlayerMessages] Sending:{sendMessage} - rangeToClinetPlayer:{Vector3D.Distance(sphere.Center, MyAPIGateway.Session.Player.Character.WorldVolume.Center)}");

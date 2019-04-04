@@ -4,95 +4,30 @@ using Sandbox.Game.Entities;
 
 namespace DefenseSystems
 {
-    public partial class DefenseBus
+    public partial class Bus
     {
-        public void RemoveBlock<T>(T block)
-        {
-            var controller = block as Controllers;
-            if (controller != null)
-            {
-                if (!SortedControllers.Remove(controller)) return;
-
-                controller.RegisterEvents(controller.LocalGrid, false);
-                SetMasterController(true, controller);
-                Log.Line("Remove controller");
-                controller.BusEvents.OnCheckBus -= NodeChange;
-                controller.BusEvents.OnBusSplit -= BusSplit;
-                return;
-            }
-            var emitter = block as Emitters;
-            if (emitter != null)
-            {
-                if (!SortedEmitters.Remove(emitter)) return;
-
-                emitter.RegisterEvents(emitter.LocalGrid, false);
-                SetMasterEmitter(true, emitter);
-                Log.Line("Remove emitter");
-                emitter.BusEvents.OnCheckBus -= NodeChange;
-                emitter.BusEvents.OnBusSplit -= BusSplit;
-                return;
-            }
-        }
-
         public void SortAndAddBlock<T>(T block)
         {
             var controller = block as Controllers;
-            if (controller != null)
-            {
-                SortAndAddControllers(controller);
-                return;
-            }
             var emitter = block as Emitters;
-            if (emitter != null)
-            {
-                SortAndAddEmitters(emitter);
-                return;
-            }
+
+            if (controller != null && !SortedControllers.Add(controller)) return;
+            if (emitter != null && !SortedEmitters.Add(emitter)) return;
+
+            UpdateLogicState(block, LogicState.Join);
         }
 
-        public void SortAndAddControllers(Controllers controller)
+        public void RemoveBlock<T>(T block)
         {
-            if (!SortedControllers.Add(controller)) return;
-            Log.Line("add controller");
-            controller.BusEvents.OnCheckBus += NodeChange;
-            controller.BusEvents.OnBusSplit += BusSplit;
-            controller.RegisterEvents(controller.LocalGrid, true);
-            ActiveController = SortedControllers.Max;
+            var controller = block as Controllers;
+            var emitter = block as Emitters;
+
+            if (controller != null && !SortedControllers.Remove(controller)) return;
+            if (emitter != null && !SortedEmitters.Remove(emitter)) return;
+            UpdateLogicState(block, LogicState.Leave);
         }
 
-        public void SortAndAddEmitters(Emitters emitter)
-        {
-            if (!SortedEmitters.Add(emitter)) return;
-            Log.Line("add emitter");
-            emitter.BusEvents.OnCheckBus += NodeChange;
-            emitter.BusEvents.OnBusSplit += BusSplit;
-            emitter.RegisterEvents(emitter.LocalGrid, true);
-            ActiveEmitter = SortedEmitters.Max;
-        }
-
-        public void SetMasterController(bool check, Controllers controller = null)
-        {
-            var keepMaster = check && !(ActiveController == null || ActiveController.MyCube.MarkedForClose || !ActiveController.MyCube.InScene || ActiveController == controller);
-            if (keepMaster) return;
-
-            var master = SortedControllers.Max;
-            if (ActiveController == master) return;
-            ActiveController = master;
-        }
-
-        public void SetMasterEmitter(bool check, Emitters emitter = null)
-        {
-            var keepMaster = check && !(ActiveEmitter == null || ActiveEmitter.MyCube.MarkedForClose || !ActiveEmitter.MyCube.InScene || ActiveEmitter == emitter);
-            if (keepMaster) return;
-
-            var master = SortedEmitters.Max;
-            if (ActiveEmitter == master) return;
-            EmitterLos = false;
-            EmitterEvent = true;
-            ActiveEmitter = master;
-        }
-
-        public void RemoveGridsBlocks<T>(SortedSet<T> list, MyCubeGrid grid)
+        public void RemoveSubBlocks<T>(SortedSet<T> list, MyCubeGrid grid)
         {
             var tmpArray = new T[list.Count];
             list.CopyTo(tmpArray);
@@ -101,17 +36,17 @@ namespace DefenseSystems
                 var controller = b as Controllers;
                 if (controller != null && controller.MyCube.CubeGrid == grid)
                 {
-                    Log.Line($"controller left Master: {MasterGrid.DebugName}");
+                    Log.Line($"[ControllerSubSplit] - cId:{controller.MyCube.EntityId} - left BusId:{Spine.EntityId} - iMaster:{controller == ActiveController}");
                     SortedControllers.Remove(controller);
-                    controller.BusEvents.Check(controller.MyCube, LogicState.Leave);
+                    UpdateNetworks(controller.MyCube, LogicState.Leave);
                 }
 
                 var emitter = b as Emitters;
                 if (emitter != null && emitter.MyCube.CubeGrid == grid)
                 {
-                    Log.Line($"emitter left Master: {MasterGrid.DebugName}");
+                    Log.Line($"[EmitterSubSplit] - cId:{emitter.MyCube.EntityId} - left BusId:{Spine.EntityId} - iMaster:{emitter == ActiveEmitter}");
                     SortedEmitters.Remove(emitter);
-                    emitter.BusEvents.Check(emitter.MyCube, LogicState.Leave);
+                    UpdateNetworks(emitter.MyCube, LogicState.Leave);
                 }
                 /*
                 var enhancer = b as Enhancers;
@@ -126,23 +61,136 @@ namespace DefenseSystems
             }
         }
 
-    //public List<DefenseSystems> SortedControllers = new List<DefenseSystems>();
-
-    /*
-    public void AddSortedControllers(DefenseSystems ds)
-    {
-        if (!SortedControllers.Contains(ds)) SortedControllers.Add(ds);
-        else return;
-        SortedControllers.Sort((a, b) =>
+        private void UpdateLogicState<T>(T type, LogicState state)
         {
-            var compareVolume = a.LocalGrid.PositionComp.WorldAABB.Volume.CompareTo(b.LocalGrid.PositionComp.WorldAABB.Volume);
-            if (compareVolume != 0) return compareVolume;
+            var controller = type as Controllers;
+            if (controller != null)
+            {
+                switch (state)
+                {
+                    case LogicState.Join:
+                        Log.Line($"[ControllerJoin-] - cId:{controller.MyCube.EntityId} - gMaster:{Spine != null} - iMaster:{controller == ActiveController}");
+                        controller.RegisterEvents(controller.MyCube.CubeGrid, this, true);
+                        controller.IsAfterInited = false;
+                        break;
+                    case LogicState.Leave:
+                        Log.Line($"[ControllerLeave] - cId:{controller.MyCube.EntityId} - gMaster:{Spine != null} - iMaster:{controller == ActiveController}");
+                        controller.RegisterEvents(controller.MyCube.CubeGrid, this,false);
+                        break;
+                }
+            }
+            var emitter = type as Emitters;
+            if (emitter != null)
+            {
+                switch (state)
+                {
+                    case LogicState.Join:
+                        Log.Line($"[EmitterJoin----] - cId:{emitter.MyCube.EntityId} - gMaster:{Spine != null} - iMaster:{emitter == ActiveEmitter}");
 
-            return -a.MyCube.EntityId.CompareTo(b.MyCube.EntityId);
-        });
-        var index = SortedControllers.IndexOf(ds);
-        Log.Line($"{index} - {SortedControllers.Count}");
+                        emitter.RegisterEvents(emitter.MyCube.CubeGrid, this, true);
+                        emitter.IsAfterInited = false;
+                        break;
+                    case LogicState.Leave:
+                        Log.Line($"[EmitterLeave---] - cId:{emitter.MyCube.EntityId} - gMaster:{Spine != null} - iMaster:{emitter == ActiveEmitter}");
+                        emitter.RegisterEvents(emitter.MyCube.CubeGrid, this, false);
+                        break;
+                }
+            }
+
+            if (Inited) UpdateLogicMasters(type, state);
+        }
+
+        internal void UpdateLogicMasters<T>(T type, LogicState state)
+        {
+            var controller = type as Controllers;
+            var emitter = type as Emitters;
+            if (controller != null)
+            {
+                Controllers newMaster;
+                switch (state)
+                {
+                    case LogicState.Join:
+                        newMaster = SortedControllers.Max;
+                        if (ActiveController == newMaster) return;
+                        Log.Line($"[J-ControllerElect] - [iMaster {newMaster == controller}] - state:{state} - myId:{controller.MyCube.EntityId}");
+                        ActiveController = newMaster;
+                        break;
+                    case LogicState.Leave:
+                        var keepMaster = !(ActiveController == null || ActiveController.MyCube.Closed || !ActiveController.MyCube.InScene || ActiveController == controller);
+                        if (keepMaster) return;
+
+                        newMaster = SortedControllers.Max;
+                        if (ActiveController == newMaster) return;
+                        Log.Line($"[L-ControllerElect] - [iMaster {newMaster == controller}] - state:{state} - myId:{controller.MyCube.EntityId}");
+
+                        ActiveController = newMaster;
+                        break;
+                }
+            }
+            else if (emitter != null)
+            {
+                Emitters newMaster;
+                switch (state)
+                {
+                    case LogicState.Join:
+                        newMaster = SortedEmitters.Max;
+                        if (ActiveEmitter == newMaster) return;
+                        Log.Line($"[J-Emitter Elect] - [iMaster {newMaster == emitter}] - state:{state} - myId:{emitter.MyCube.EntityId}");
+                        ActiveEmitter = newMaster;
+                        break;
+                    case LogicState.Leave:
+                        var keepMaster = !(ActiveEmitter == null || ActiveEmitter.MyCube.Closed || !ActiveEmitter.MyCube.InScene || ActiveEmitter == emitter);
+                        if (keepMaster) return;
+
+                        newMaster = SortedEmitters.Max;
+                        if (ActiveEmitter == newMaster) return;
+                        Log.Line($"[L-Emitter Elect] - [iMaster {newMaster == emitter}] - state:{state} - myId:{emitter.MyCube.EntityId}");
+                        ActiveEmitter = newMaster;
+                        break;
+                }
+                EmitterEvent = true;
+                ActiveEmitterId = ActiveEmitter?.MyCube?.EntityId ?? 0;
+            }
+        }
+
+        private void UpdateNetworks<T>(T type, LogicState state)
+        {
+            var cube = type as MyCubeBlock;
+            var controller = cube?.GameLogic as Controllers;
+            var emitter = cube?.GameLogic as Emitters;
+            var newSplit = false;
+
+            if (controller != null)
+            {
+                if (state == LogicState.Leave)
+                {
+                    if (ActiveController == controller)
+                    {
+                        Log.Line($"[DeRegistering] - from spine [sId:{Spine.EntityId}] as active controller [cId:{controller.MyCube.EntityId}]");
+                        newSplit = true;
+                        ActiveController = null;
+                        UpdateLogicMasters(type, state);
+                    }
+                    Log.Line($"[Join New Bus] - cId:{controller.MyCube.EntityId}]");
+                    controller.Registry.RegisterWithBus(controller, controller.MyCube.CubeGrid, true, controller.Bus, out controller.Bus);
+                }
+            }
+            else if (emitter != null)
+            {
+                if (state == LogicState.Leave)
+                {
+                    if (ActiveEmitter == emitter)
+                    {
+                        Log.Line($"[DeRegistering] - from spine [sId:{Spine.EntityId}] as active controller [eId:{emitter.MyCube.EntityId}]");
+                        newSplit = true;
+                        ActiveEmitter = null;
+                        UpdateLogicMasters(type, state);
+                    }
+                    Log.Line($"[Join New Bus] - eId:{emitter.MyCube.EntityId}]");
+                    emitter.Registry.RegisterWithBus(emitter, emitter.MyCube.CubeGrid, true, emitter.Bus, out emitter.Bus);
+                }
+            }
+            if (!BusIsSplit && newSplit) Events.Split(cube.CubeGrid, state);
+        }
     }
-    */
-}
 }

@@ -11,10 +11,11 @@
 
     public partial class Controllers
     {
-        internal void RegisterEvents(MyCubeGrid grid, bool register = true)
+        internal void RegisterEvents(MyCubeGrid grid, Bus bus, bool register = true)
         {
             if (register)
             {
+                bus.Events.OnBusSplit += OnBusSplit;
                 if (MyAPIGateway.Multiplayer.IsServer)
                 {
                     MyEntities.OnEntityAdd += OnEntityAdd;
@@ -29,16 +30,31 @@
             }
             else
             {
+                bus.Events.OnBusSplit -= OnBusSplit;
                 if (MyAPIGateway.Multiplayer.IsServer)
                 {
                     MyEntities.OnEntityAdd -= OnEntityAdd;
                     MyEntities.OnEntityRemove -= OnEntityRemove;
                 }
-                BusEvents.OnCheckBus -= DefenseBus.NodeChange;
-                BusEvents.OnBusSplit -= DefenseBus.BusSplit;
                 Shield.AppendingCustomInfo -= AppendingCustomInfo;
                 _sink.CurrentInputChanged -= CurrentInputChanged;
                 MyCube.IsWorkingChanged -= IsWorkingChanged;
+            }
+        }
+
+        private void OnBusSplit<T>(T type, Bus.LogicState state)
+        {
+            var grid = type as MyCubeGrid;
+            if (grid == null) return;
+            if (state == Bus.LogicState.Leave)
+            {
+                var onMyBus = Bus.SubGrids.Contains(grid);
+                if (!onMyBus && Bus.ActiveController == null)
+                {
+                    IsAfterInited = false;
+                    Bus.Inited = false;
+                }
+                Log.Line($"[cId:{MyCube.EntityId}] [Splitter - gId:{grid.EntityId} - bCnt:{grid.BlocksCount}] - [Receiver - gId:{MyCube.CubeGrid.EntityId} - OnMyBus:{onMyBus} - iMaster:{MyCube.CubeGrid == Bus.Spine} - mSize:{Bus.Spine.BlocksCount}]");
             }
         }
 
@@ -80,7 +96,7 @@
             catch (Exception ex) { Log.Line($"Exception in Controller OnEntityRemove: {ex}"); }
         }
 
-        private string GetShieldStatus()
+        internal string GetShieldStatus()
         {
             if (!DsState.State.Online && !MyCube.IsFunctional) return "[Controller Faulty]";
             if (!DsState.State.Online && !MyCube.IsWorking) return "[Controller Offline]";
@@ -123,7 +139,7 @@
                 else if (_allInited) initStage = 2;
 
                 var status = GetShieldStatus();
-                if (status == "[Shield Up]" || status == "[Shield Down]" || status == "[Shield Offline]")
+                if (status == "[Shield Up]" || status == "[Shield Down]" || status == "[Shield Offline]" || status == "[Insufficient Power]")
                 {
                     stringBuilder.Append(status + " MaxHP: " + (ShieldMaxCharge * ConvToHp).ToString("N0") +
                                          "\n" +
@@ -135,7 +151,7 @@
                                          "\n[Over Heated]: " + DsState.State.Heat.ToString("0") + "%" +
                                          "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
                                          "\n[Power Usage]: " + powerUsage.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ")Mw" +
-                                         "\n[Shield Power]: " + _sink.CurrentInputByType(GId).ToString("0.0") + " Mw");
+                                         "\n[Shield Power]: " + ShieldCurrentPower.ToString("0.0") + " Mw");
                 }
                 else
                 {

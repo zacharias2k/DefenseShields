@@ -7,7 +7,7 @@ namespace DefenseSystems
     {
         internal DisplayState State { get; set; }
         internal DisplaySettings Set { get; set; }
-        internal DefenseBus DefenseBus;
+        internal Bus Bus;
         internal IMyTextPanel Display { get; set; }
         internal MyCubeGrid MyGrid { get; set; }
         internal MyCubeBlock MyCube { get; set; }

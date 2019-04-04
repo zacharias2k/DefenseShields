@@ -68,7 +68,7 @@ namespace DefenseSystems
                 else if (_bCount < SyncCount * _bTime)
                 {
                     NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                    if (DefenseBus?.MasterGrid == MyGrid) _bCount++;
+                    if (Bus?.Spine == MyGrid) _bCount++;
                 }
                 else _readyToSync = true;
             }

@@ -46,7 +46,7 @@
 
         private IMyInventory _inventory;
 
-        internal DefenseBus DefenseBus;
+        internal Bus Bus;
 
         internal int RotationTime { get; set; }
         internal int AnimationLoop { get; set; }
@@ -179,7 +179,7 @@
                     return;
                 }
                 if (Session.Instance.O2Generators.Contains(this)) Session.Instance.O2Generators.Remove(this);
-                if (DefenseBus?.ActiveO2Generator == this) DefenseBus.ActiveO2Generator = null;
+                if (Bus?.ActiveO2Generator == this) Bus.ActiveO2Generator = null;
                 RegisterEvents(false);
                 IsWorking = false;
                 IsFunctional = false;
@@ -299,14 +299,14 @@
             var sendMessage = false;
             if (MyAPIGateway.Session?.Player?.Character?.WorldVolume != null)
             {
-                if (DefenseBus.ActiveController.ShieldSphere.Intersects(MyAPIGateway.Session.Player.Character.WorldVolume)) sendMessage = true;
+                if (Bus.ActiveController.ShieldSphere.Intersects(MyAPIGateway.Session.Player.Character.WorldVolume)) sendMessage = true;
             }
 
             /*
             foreach (var player in Session.Instance.Players.Values)
             {
                 if (player.IdentityId != MyAPIGateway.Session.Player.IdentityId) continue;
-                if (!DefenseBus.DefenseSystems.ShieldSphere.Intersects(player.Character.WorldVolume)) continue;
+                if (!Bus.DefenseSystems.ShieldSphere.Intersects(player.Character.WorldVolume)) continue;
                 sendMessage = true;
                 break;
             }
@@ -329,7 +329,7 @@
             if (!_doorsStage1)
             {
                 Doors.Clear();
-                foreach (var grid in DefenseBus.ActiveController.ProtectedEntCache.Keys)
+                foreach (var grid in Bus.ActiveController.ProtectedEntCache.Keys)
                 {
                     if (!(grid is MyCubeGrid)) continue;
                     foreach (var myCube in ((MyCubeGrid)grid).GetFatBlocks())
@@ -401,7 +401,7 @@
 
         private void Pressurize()
         {
-            var bus = DefenseBus;
+            var bus = Bus;
             var shieldFullVol = bus.ShieldVolume;
             var startingO2Fpercent = bus.DefaultO2 + bus.ActiveController.DsState.State.IncreaseO2ByFPercent;
 
@@ -443,7 +443,7 @@
 
             bus.ActiveController.DsState.State.IncreaseO2ByFPercent = fPercentToAddToDefaultO2Level;
             bus.O2Updated = true;
-            if (Session.Enforced.Debug == 3) Log.Line($"default:{DefenseBus.DefaultO2} - Filled/(Max):{O2State.State.VolFilled}/({shieldFullVol}) - ShieldO2Level:{bus.ActiveController.DsState.State.IncreaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(MyAPIGateway.Session.Player.GetPosition())}");
+            if (Session.Enforced.Debug == 3) Log.Line($"default:{Bus.DefaultO2} - Filled/(Max):{O2State.State.VolFilled}/({shieldFullVol}) - ShieldO2Level:{bus.ActiveController.DsState.State.IncreaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(MyAPIGateway.Session.Player.GetPosition())}");
         }
 
         private void TerminalRefresh()
@@ -461,19 +461,19 @@
             {
                 if (_isServer)
                 {
-                    if (DefenseBus?.ActiveController?.DefenseBus.MasterGrid != MyGrid) MyGrid.Components.TryGet(out DefenseBus);
+                    if (Bus?.ActiveController?.Bus.Spine != MyGrid) MyGrid.Components.TryGet(out Bus);
 
-                    if (DefenseBus?.ActiveController == null || DefenseBus?.ActiveO2Generator != null || !DefenseBus.ActiveController.Warming || DefenseBus.ShieldVolume <= 0) return false;
-                    DefenseBus.ActiveO2Generator = this;
-                    _oldShieldVol = DefenseBus.ShieldVolume;
+                    if (Bus?.ActiveController == null || Bus?.ActiveO2Generator != null || !Bus.ActiveController.Warming || Bus.ShieldVolume <= 0) return false;
+                    Bus.ActiveO2Generator = this;
+                    _oldShieldVol = Bus.ShieldVolume;
                     _inventory = MyCube.GetInventory();
                 }
                 else
                 {
-                    if (DefenseBus?.ActiveController?.DefenseBus.MasterGrid != MyGrid) MyGrid.Components.TryGet(out DefenseBus);
+                    if (Bus?.ActiveController?.Bus.Spine != MyGrid) MyGrid.Components.TryGet(out Bus);
 
-                    if (DefenseBus?.ActiveController == null) return false;
-                    if (DefenseBus.ActiveO2Generator == null) DefenseBus.ActiveO2Generator = this;
+                    if (Bus?.ActiveController == null) return false;
+                    if (Bus.ActiveO2Generator == null) Bus.ActiveO2Generator = this;
                 }
 
                 Source.Enabled = false;
@@ -490,7 +490,7 @@
 
         private bool O2GeneratorReady()
         {
-            if (DefenseBus?.ActiveController?.DefenseBus.MasterGrid != MyGrid) MyGrid.Components.TryGet(out DefenseBus);
+            if (Bus?.ActiveController?.Bus.Spine != MyGrid) MyGrid.Components.TryGet(out Bus);
             if (_isServer)
             {
                 if ((!AllInited && !InitO2Generator()) || !BlockWorking()) return false;
@@ -498,9 +498,9 @@
             else
             {
                 if (!AllInited && !InitO2Generator()) return false;
-                if (DefenseBus?.ActiveController == null) return false;
+                if (Bus?.ActiveController == null) return false;
 
-                if (!O2State.State.Backup && DefenseBus.ActiveO2Generator != this) DefenseBus.ActiveO2Generator = this;
+                if (!O2State.State.Backup && Bus.ActiveO2Generator != this) Bus.ActiveO2Generator = this;
 
                 if (!O2State.State.Pressurized) return false;
             }
@@ -518,27 +518,27 @@
                 return false;
             }
 
-            if (DefenseBus?.ActiveController == null)
+            if (Bus?.ActiveController == null)
             {
                 NeedUpdate(O2State.State.Pressurized, false);
                 return false;
             }
 
-            if (DefenseBus.ActiveO2Generator != this)
+            if (Bus.ActiveO2Generator != this)
             {
-                if (DefenseBus.ActiveO2Generator == null)
+                if (Bus.ActiveO2Generator == null)
                 {
-                    DefenseBus.ActiveO2Generator = this;
+                    Bus.ActiveO2Generator = this;
                     O2State.State.Backup = false;
                 }
-                else if (DefenseBus.ActiveO2Generator != this)
+                else if (Bus.ActiveO2Generator != this)
                 {
                     O2State.State.Backup = true;
                     O2State.State.Pressurized = false;
                 }
             }
 
-            if (!O2State.State.Backup && DefenseBus.ActiveO2Generator == this)
+            if (!O2State.State.Backup && Bus.ActiveO2Generator == this)
             {
                 NeedUpdate(O2State.State.Pressurized, true);
                 return true;
@@ -555,7 +555,7 @@
         private void NeedUpdate(bool onState, bool turnOn)
         {
             var o2State = O2State.State;
-            if (DefenseBus?.ActiveController == null)
+            if (Bus?.ActiveController == null)
             {
                 if (O2State.State.Pressurized)
                 {
@@ -570,16 +570,16 @@
                 return;
             }
 
-            var conState = DefenseBus.ActiveController.DsState.State;
-            var o2Level = conState.IncreaseO2ByFPercent + DefenseBus.DefaultO2;
-            var o2Change = !o2State.VolFilled.Equals(_shieldVolFilled) || !o2State.DefaultO2.Equals(DefenseBus.DefaultO2) || !o2State.ShieldVolume.Equals(DefenseBus.ShieldVolume) || !o2State.O2Level.Equals(o2Level);
+            var conState = Bus.ActiveController.DsState.State;
+            var o2Level = conState.IncreaseO2ByFPercent + Bus.DefaultO2;
+            var o2Change = !o2State.VolFilled.Equals(_shieldVolFilled) || !o2State.DefaultO2.Equals(Bus.DefaultO2) || !o2State.ShieldVolume.Equals(Bus.ShieldVolume) || !o2State.O2Level.Equals(o2Level);
             if (!onState && turnOn)
             {
                 o2State.Pressurized = true;
                 o2State.VolFilled = _shieldVolFilled;
-                o2State.DefaultO2 = DefenseBus.DefaultO2;
+                o2State.DefaultO2 = Bus.DefaultO2;
                 o2State.O2Level = o2Level;
-                o2State.ShieldVolume = DefenseBus.ShieldVolume;
+                o2State.ShieldVolume = Bus.ShieldVolume;
                 O2State.SaveState();
                 O2State.NetworkUpdate();
             }
@@ -587,18 +587,18 @@
             {
                 o2State.Pressurized = false;
                 o2State.VolFilled = _shieldVolFilled;
-                o2State.DefaultO2 = DefenseBus.DefaultO2;
+                o2State.DefaultO2 = Bus.DefaultO2;
                 o2State.O2Level = o2Level;
-                o2State.ShieldVolume = DefenseBus.ShieldVolume;
+                o2State.ShieldVolume = Bus.ShieldVolume;
                 O2State.SaveState();
                 O2State.NetworkUpdate();
             }
             else if (o2Change)
             {
                 o2State.VolFilled = _shieldVolFilled;
-                o2State.DefaultO2 = DefenseBus.DefaultO2;
+                o2State.DefaultO2 = Bus.DefaultO2;
                 o2State.O2Level = o2Level;
-                o2State.ShieldVolume = DefenseBus.ShieldVolume;
+                o2State.ShieldVolume = Bus.ShieldVolume;
                 O2State.SaveState();
                 O2State.NetworkUpdate();
             }

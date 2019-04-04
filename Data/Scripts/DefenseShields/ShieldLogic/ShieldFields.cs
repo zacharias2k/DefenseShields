@@ -1,4 +1,6 @@
 ﻿
+using VRage.ModAPI;
+
 namespace DefenseSystems
 {
     using VRage.Game.ModAPI;
@@ -44,6 +46,10 @@ namespace DefenseSystems
 
         internal readonly ConcurrentQueue<SubGridComputedInfo> AddSubGridInfo = new ConcurrentQueue<SubGridComputedInfo>();
 
+        internal const int ConvToHp = 100;
+        internal const float ConvToDec = 0.01f;
+        internal const float ConvToWatts = 0.01f;
+
         internal volatile int LogicSlot;
         internal volatile int MonitorSlot;
         internal volatile int LostPings;
@@ -55,7 +61,7 @@ namespace DefenseSystems
         internal volatile uint LastWokenTick;
         internal volatile bool ReInforcedShield;
 
-        internal DefenseBus DefenseBus;
+        internal Bus Bus;
         internal BoundingBoxD WebBox = new BoundingBoxD();
         internal MatrixD OldShieldMatrix;
         internal BoundingBoxD ShieldBox3K = new BoundingBoxD();
@@ -78,9 +84,7 @@ namespace DefenseSystems
         private const int HeatingStep = 600;
         private const int CoolingStep = 1200;
         private const int FallBackStep = 10;
-        private const int ConvToHp = 100;
-        private const float ConvToDec = 0.01f;
-        private const float ConvToWatts = 0.01f;
+
         private const double MagicRatio = 2.40063050674088;
         private const float ChargeRatio = 1.25f;
         private const int SyncCount = 60;
@@ -162,11 +166,12 @@ namespace DefenseSystems
         private int _expChargeReduction;
         private int _bCount;
         private int _bTime;
-        private bool _bInit;
 
         private long _gridOwnerId = -1;
         private long _controllerOwnerId = -1;
 
+        private bool _bInit;
+        private bool _aInit;
         private bool _firstLoop = true;
         private bool _enablePhysics = true;
         private bool _needPhysics;
@@ -180,7 +185,6 @@ namespace DefenseSystems
         private bool _tick300;
         private bool _tick600;
         private bool _tick1800;
-        internal bool MarkForReset { get; set; }
         private bool _empOverLoad;
         private bool _isDedicated;
         private bool _mpActive;
@@ -285,6 +289,19 @@ namespace DefenseSystems
             NoLos
         }
 
+        internal bool IsAfterInited
+        {
+            get { return _aInit; }
+            set
+            {
+                if (_aInit != value)
+                {
+                    _aInit = value;
+                    NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                }
+            }
+        }
+
         public int KineticCoolDown { get; internal set; } = -1;
         public int EnergyCoolDown { get; internal set; } = -1;
         public int HitCoolDown { get; private set; } = -11;
@@ -296,13 +313,16 @@ namespace DefenseSystems
         internal MyCubeBlock MyCube { get; set; }
         internal MyEntity ShieldEnt { get; set; }
 
+        internal Vector3D? ShieldHitPosProperty { get; set; }
+        internal Vector3D? PosInShieldProperty { get; set; }
+
         //internal MyResourceDistributorComponent MyResourceDist { get; set; }
         internal DamageHandlerHit HandlerImpact { get; set; } = new DamageHandlerHit();
         internal ControllerSettings DsSet { get; set; }
         internal ControllerState DsState { get; set; }
         internal ShieldHitValues ShieldHit { get; set; } = new ShieldHitValues();
         internal Icosphere.Instance Icosphere { get; set; }
-        internal BusEvents BusEvents { get; set; } = new BusEvents();
+        //internal BusEvents BusEvents { get; set; } = new BusEvents();
         internal Registry Registry { get; set; } = new Registry();
         internal uint ResetEntityTick { get; set; }
         internal uint LosCheckTick { get; set; }

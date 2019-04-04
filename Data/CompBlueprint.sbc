@@ -6,7 +6,7 @@
 	<Blueprint>
       <Id>
         <TypeId>BlueprintDefinition</TypeId>
-        <SubtypeId>DefenseBusonentBP</SubtypeId>
+        <SubtypeId>ShieldComponentBP</SubtypeId>
       </Id>
       <DisplayName>Field Emitter</DisplayName>
       <Icon>Textures\Icons\Shield_Comp1.dds</Icon>
@@ -17,7 +17,7 @@
 		<Item Amount="20" TypeId="Ingot" SubtypeId="Silicon" />
 		<Item Amount="15" TypeId="Ingot" SubtypeId="Gold" />
       </Prerequisites>
-      <Result Amount="1" TypeId="Component" SubtypeId="DefenseBusonent" />
+      <Result Amount="1" TypeId="Component" SubtypeId="ShieldComponent" />
       <BaseProductionTimeInSeconds>7</BaseProductionTimeInSeconds>
     </Blueprint>
   </Blueprints>
@@ -27,7 +27,7 @@
     <Component>
       <Id>
         <TypeId>Component</TypeId>
-        <SubtypeId>DefenseBusonent</SubtypeId>
+        <SubtypeId>ShieldComponent</SubtypeId>
       </Id>
       <DisplayName>Field Emitter</DisplayName>
       <Icon>Textures\Icons\Shield_Comp1.dds</Icon>
@@ -50,6 +50,6 @@
   
  <!-- Location of Blueprint in Assembler menu -->
   <BlueprintClassEntries>
-	<Entry Class="Components" BlueprintSubtypeId="DefenseBusonentBP" />
+	<Entry Class="Components" BlueprintSubtypeId="ShieldComponentBP" />
   </BlueprintClassEntries>
 </Definitions>

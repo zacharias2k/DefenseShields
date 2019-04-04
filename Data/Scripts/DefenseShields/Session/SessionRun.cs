@@ -49,6 +49,7 @@
                     Log.Line("LoadConf - Session: This is a server");
                     UtilsStatic.PrepConfigFile();
                     UtilsStatic.ReadConfigFile();
+                    BTapi.Init();
                 }
 
                 if (MpActive)
@@ -68,7 +69,6 @@
                 MyAPIGateway.Parallel.StartBackground(WebMonitor);
 
                 if (!IsServer) RequestEnforcement(MyAPIGateway.Multiplayer.MyId);
-
                 foreach (var mod in MyAPIGateway.Session.Mods)
                     if (mod.PublishedFileId == 540003236) ThyaImages = true;
             }

@@ -5,7 +5,7 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game.Components;
-using VRage.Game.ModAPI;
+using VRage.Game.Entity;
 using VRage.ModAPI;
 using VRage.Utils;
 
@@ -14,6 +14,18 @@ namespace DefenseSystems
     public partial class Emitters
     {
         #region Init/Misc
+        private bool ResetEntity()
+        {
+            LocalGrid = (MyCubeGrid)Emitter.CubeGrid;
+            MyCube = Emitter as MyCubeBlock;
+            if (LocalGrid.Physics == null) return false;
+
+            NeedsUpdate = MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+            SetEmitterType();
+            _aInit = false;
+            _bInit = false;
+            return true;
+        }
 
         private void BeforeInit()
         {
@@ -26,12 +38,20 @@ namespace DefenseSystems
             _disableLos = Session.Enforced.DisableLineOfSight == 1;
             IsWorking = MyCube.IsWorking;
             IsFunctional = MyCube.IsFunctional;
-            Registry.RegisterWithBus(this, LocalGrid, true, DefenseBus, out DefenseBus);
-            NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+            NeedsUpdate = MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+            Registry.RegisterWithBus(this, LocalGrid, true, Bus, out Bus);
             _bTime = _isDedicated ? 10 : 1;
             _bInit = true;
         }
 
+        private void AfterInit()
+        {
+            Bus.Init();
+            if (!MyAPIGateway.Utilities.IsDedicated) NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+            else NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
+            NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+            _aInit = true;
+        }
 
         private void StorageSetup()
         {
@@ -104,7 +124,7 @@ namespace DefenseSystems
                                          "\n[Emitter Type]: " + mode +
                                          "\n[Grid Compatible]: " + EmiState.State.Compatible +
                                          "\n[Controller Link]: " + EmiState.State.Link +
-                                         "\n[Controller Bus]: " + (DefenseBus?.ActiveController != null) +
+                                         "\n[Controller Bus]: " + (Bus?.ActiveController != null) +
                                          "\n[Line of Sight]: " + EmiState.State.Los +
                                          "\n[Is Suspended]: " + EmiState.State.Suspend +
                                          "\n[Is a Backup]: " + EmiState.State.Backup);
@@ -136,19 +156,37 @@ namespace DefenseSystems
             catch (Exception ex) { Log.Line($"Exception in AppendingCustomInfo: {ex}"); }
         }
 
-        internal void RegisterEvents(MyCubeGrid grid, bool register = true)
+        internal void RegisterEvents(MyCubeGrid grid, Bus bus, bool register = true)
         {
             if (register)
             {
+                bus.Events.OnBusSplit += OnBusSplit;
                 Emitter.EnabledChanged += CheckEmitter;
                 MyCube.IsWorkingChanged += IsWorkingChanged;
                 IsWorkingChanged(MyCube);
             }
             else
             {
+                bus.Events.OnBusSplit -= OnBusSplit;
                 Emitter.AppendingCustomInfo -= AppendingCustomInfo;
                 Emitter.EnabledChanged -= CheckEmitter;
                 MyCube.IsWorkingChanged -= IsWorkingChanged;
+            }
+        }
+
+        private void OnBusSplit<T>(T type, Bus.LogicState state)
+        {
+            var grid = type as MyCubeGrid;
+            if (grid == null) return;
+            if (state == Bus.LogicState.Leave)
+            {
+                var onMyBus = Bus.SubGrids.Contains(grid);
+                if (!onMyBus && Bus.ActiveEmitter == null)
+                {
+                    IsAfterInited = false;
+                    Bus.Inited = false;
+                }
+                Log.Line($"[eId:{MyCube.EntityId}] [Splitter - gId:{grid.EntityId} - bCnt:{grid.BlocksCount}] - [Receiver - gId:{MyCube.CubeGrid.EntityId} - OnMyBus:{onMyBus} - iMaster:{MyCube.CubeGrid == Bus.Spine} - mSize:{Bus.Spine.BlocksCount}]");
             }
         }
 

@@ -294,6 +294,7 @@
         internal Controllers HudComp { get; set; }
         internal DSUtils Dsutil1 { get; set; } = new DSUtils();
         internal Perf Perf { get; set; } = new Perf();
+        internal TapiBackend BTapi { get; set; } = new TapiBackend();
 
         internal IMyTerminalControlSlider WidthSlider { get; set; }
         internal IMyTerminalControlSlider HeightSlider { get; set; }

@@ -35,7 +35,7 @@ namespace DefenseSystems
 
         public void ProtectSubs(uint tick)
         {
-            foreach (var sub in DefenseBus.SubGrids)
+            foreach (var sub in Bus.SubGrids)
             {
                 MyProtectors protectors;
                 Session.Instance.GlobalProtect.TryGetValue(sub, out protectors);
@@ -86,11 +86,11 @@ namespace DefenseSystems
             var shieldsStartIndex = PruneList.Count;
             foreach (var eShield in EnemyShields) PruneList.Add(eShield);
 
-            var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || DefenseBus.ActiveModulator == null || DefenseBus.ActiveModulator.ModSet.Settings.ModulateVoxels;
+            var disableVoxels = Session.Enforced.DisableVoxelSupport == 1 || Bus.ActiveModulator == null || Bus.ActiveModulator.ModSet.Settings.ModulateVoxels;
             var voxelFound = false;
             var shieldFound = false;
             var entChanged = false;
-            var iMoving = DefenseBus.GridIsMoving;
+            var iMoving = Bus.GridIsMoving;
             var tick = Session.Instance.Tick;
 
             _enablePhysics = false;
@@ -248,10 +248,10 @@ namespace DefenseSystems
                 if (shieldFound)
                 {
                     _needPhysics = false;
-                    Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, DefenseBus.PhysicsOutside);
+                    Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, Bus.PhysicsOutside);
                 }
                 else _needPhysics = true;
-                if (voxelFound) Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, DefenseBus.PhysicsOutsideLow);
+                if (voxelFound) Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, Bus.PhysicsOutsideLow);
             }
 
             if (Session.Instance.LogStats)
@@ -279,7 +279,7 @@ namespace DefenseSystems
             }
 
             var voxel = ent as MyVoxelBase;
-            if (voxel != null && (Session.Enforced.DisableVoxelSupport == 1 || DefenseBus.ActiveModulator == null || DefenseBus.ActiveModulator.ModSet.Settings.ModulateVoxels || !GridIsMobile)) return Ent.Ignore;
+            if (voxel != null && (Session.Enforced.DisableVoxelSupport == 1 || Bus.ActiveModulator == null || Bus.ActiveModulator.ModSet.Settings.ModulateVoxels || !GridIsMobile)) return Ent.Ignore;
 
             var character = ent as IMyCharacter;
             if (character != null)
@@ -304,12 +304,12 @@ namespace DefenseSystems
             var grid = ent as MyCubeGrid;
             if (grid != null)
             {
-                ModulateGrids = (DefenseBus.ActiveModulator != null && DefenseBus.ActiveModulator.ModSet.Settings.ModulateGrids) || Session.Enforced.DisableEntityBarrier == 1;
+                ModulateGrids = (Bus.ActiveModulator != null && Bus.ActiveModulator.ModSet.Settings.ModulateGrids) || Session.Enforced.DisableEntityBarrier == 1;
                 ModulatorGridComponent modComp;
                 grid.Components.TryGet(out modComp);
                 if (!string.IsNullOrEmpty(modComp?.ModulationPassword) && modComp.ModulationPassword == Shield.CustomData)
                 {
-                    var collection = modComp.Modulator?.DefenseBus?.ActiveController != null ? modComp.Modulator.DefenseBus.ActiveController.DefenseBus.SubGrids : modComp.SubGrids;
+                    var collection = modComp.Modulator?.Bus?.ActiveController != null ? modComp.Modulator.Bus.ActiveController.Bus.SubGrids : modComp.SubGrids;
                     foreach (var subGrid in collection)
                     {
                         if (ShieldEnt.PositionComp.WorldVolume.Intersects(grid.PositionComp.WorldVolume))
@@ -328,12 +328,12 @@ namespace DefenseSystems
                 var enemy = !ModulateGrids && GridEnemy(grid, bigOwners);
                 if (!enemy)
                 {
-                    if (DefenseBus.SubGrids.Contains(grid)) return Ent.Protected;
+                    if (Bus.SubGrids.Contains(grid)) return Ent.Protected;
                     var pointsInShield = CustomCollision.NewObbPointsInShield(grid, DetectMatrixOutsideInv, _obbPoints);
                     return pointsInShield > 0 ? Ent.Protected : Ent.Friendly;
                 }
 
-                DefenseBus otherBus;
+                Bus otherBus;
                 grid.Components.TryGet(out otherBus);
                 if (otherBus?.ActiveController != null && otherBus.ActiveController.NotFailed)
                 {

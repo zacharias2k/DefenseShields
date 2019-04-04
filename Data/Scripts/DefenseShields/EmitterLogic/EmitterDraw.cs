@@ -45,7 +45,7 @@ namespace DefenseSystems
         private void BlockMoveAnimation()
         {
             _blockReset = false;
-            var percent = DefenseBus.ActiveController.DsState.State.ShieldPercent;
+            var percent = Bus.ActiveController.DsState.State.ShieldPercent;
             if (_compact)
             {
                 if (_count == 0) EmissiveIntensity = 2;

@@ -1,4 +1,6 @@
-﻿namespace DefenseSystems
+﻿using VRageMath;
+
+namespace DefenseSystems
 {
     using System;
     using Support;
@@ -18,8 +20,6 @@
             if (!_containerInited)
             {
                 PowerPreInit();
-                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
                 Shield = (IMyUpgradeModule)Entity;
                 _containerInited = true;
             }
@@ -37,11 +37,8 @@
         {
             try
             {
+                if (!ResetEntity()) return;
                 if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: GridId:{Shield.CubeGrid.EntityId} - ShieldId [{Shield.EntityId}]");
-                LocalGrid = (MyCubeGrid)Shield.CubeGrid;
-                MyCube = Shield as MyCubeBlock;
-                AssignSlots();
-                MarkForReset = true;
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
@@ -52,12 +49,14 @@
             try
             {
                 if (!_bInit) BeforeInit();
+                else if (!_aInit) AfterInit();
                 else if (_bCount < SyncCount * _bTime)
                 {
                     NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                    if (DefenseBus?.ActiveController != null && DefenseBus.ActiveController.Warming) _bCount++;
+                    if (Bus.ActiveController != null && Bus.ActiveController.Warming) _bCount++;
                 }
                 else _readyToSync = true;
+
             }
             catch (Exception ex) { Log.Line($"Exception in Controller UpdateOnceBeforeFrame: {ex}"); }
         }
@@ -84,6 +83,8 @@
 
                 if (!_isServer || !DsState.State.Online) return;
                 if (_comingOnline) ComingOnlineSetup();
+                var fTapi = new TapiFrontend(Shield);
+                fTapi.PointAttackShield(MyAPIGateway.Session.Player.Character.GetPosition(), Shield.EntityId, 1, true);
                 if (_mpActive && (_forceBufferSync || _count == 29))
                 {
                     var newPercentColor = UtilsStatic.GetShieldColorFromFloat(DsState.State.ShieldPercent);
@@ -125,10 +126,10 @@
                 if (!_allInited) return;
                 if (Session.Enforced.Debug >= 3) Log.Line($"OnRemovedFromScene: {ShieldMode} - GridId:{Shield.CubeGrid.EntityId} - ShieldId [{Shield.EntityId}]");
 
-                if (DefenseBus?.ActiveController == this)
+                if (Bus != null && Bus.SubGrids.Contains(LocalGrid))
                 {
-                    OfflineShield(true, false, State.Other, true);
-                    Registry.RegisterWithBus(this, LocalGrid, false, DefenseBus, out DefenseBus);
+                    if (Bus.ActiveController == this) OfflineShield(true, false, State.Other, true);
+                    Registry.RegisterWithBus(this, LocalGrid, false, Bus, out Bus);
                 }
 
                 InitEntities(false);
@@ -158,10 +159,10 @@
                 if (!_allInited) return;
                 if (Session.Enforced.Debug >= 3) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
 
-                if (DefenseBus?.ActiveController == this)
+                if (Bus != null && Bus.SubGrids.Contains(LocalGrid))
                 {
-                    OfflineShield(true, false, State.Other, true);
-                    Registry.RegisterWithBus(this, LocalGrid, false, DefenseBus, out DefenseBus);
+                    if (Bus.ActiveController == this) OfflineShield(true, false, State.Other, true);
+                    Registry.RegisterWithBus(this, LocalGrid, false, Bus, out Bus);
                 }
 
                 if (Session.Instance.AllControllers.Contains(this)) Session.Instance.AllControllers.Remove(this);

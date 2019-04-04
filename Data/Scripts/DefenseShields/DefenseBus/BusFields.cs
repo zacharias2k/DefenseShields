@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using DefenseSystems.Support;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
-using VRage.Game.Entity;
 using VRageMath;
 
 namespace DefenseSystems
 {
-    public partial class DefenseBus 
+    public partial class Bus 
     {
         public enum LogicState
         {
@@ -18,7 +16,8 @@ namespace DefenseSystems
             Offline,
             Online,
             Active,
-            Suspend
+            Suspend,
+            Init
         }
 
         internal readonly object SubLock = new object();
@@ -32,12 +31,14 @@ namespace DefenseSystems
         internal HashSet<MyCubeGrid> RemSubs { get; set; } = new HashSet<MyCubeGrid>();
         internal HashSet<MyCubeGrid> SubGrids { get; set; } = new HashSet<MyCubeGrid>();
         internal Dictionary<MyCubeGrid, SubGridInfo> LinkedGrids { get; set; } = new Dictionary<MyCubeGrid, SubGridInfo>();
-
+        internal BusEvents Events { get; set; } = new BusEvents();
         internal MyResourceDistributorComponent MyResourceDist { get; set; }
-        internal MyCubeGrid MasterGrid;
+        internal MyCubeGrid Spine;
 
         internal float GridIntegrity { get; set; }
 
+        internal bool BusIsSplit { get; set; }
+        internal bool Inited { get; set; }
         internal bool SubUpdate { get; set; }
         internal bool FunctionalAdded { get; set; }
         internal bool FunctionalRemoved { get; set; }
@@ -57,7 +58,6 @@ namespace DefenseSystems
         internal Enhancers ActiveEnhancer { get; set; }
 
         internal Modulators ActiveModulator { get; set; }
-
         internal int EmitterMode { get; set; } = -1;
         internal long ActiveEmitterId { get; set; }
 
@@ -68,8 +68,6 @@ namespace DefenseSystems
         internal string ModulationPassword { get; set; }
 
         internal bool EmitterLos { get; set; }
-
-        internal bool EmittersSuspended { get; set; }
 
         internal bool O2Updated { get; set; }
 

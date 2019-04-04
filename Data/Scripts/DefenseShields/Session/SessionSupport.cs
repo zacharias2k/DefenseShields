@@ -75,18 +75,18 @@ namespace DefenseSystems
         }
 
 
-        internal DefenseBus FindBus(MyCubeGrid grid)
+        internal Bus FindBus(MyCubeGrid grid)
         {
             foreach (var node in MyAPIGateway.GridGroups.GetGroup(grid, GridLinkTypeEnum.Mechanical))
             {
-                DefenseBus defenseBus;
-                if (node.Components.TryGet(out defenseBus)) return defenseBus; 
+                Bus bus;
+                if (node.Components.TryGet(out bus)) return bus; 
             }
-            Log.Line("Creating new bus");
+            Log.Line("[Created New Bus]");
             return null;
         }
 
-        internal MyCubeGrid FindMasterGridOld(MyCubeBlock myBlock)
+        internal MyCubeGrid FindSpineOld(MyCubeBlock myBlock)
         {
             var myGrid = myBlock.CubeGrid;
             var gridNet = MyAPIGateway.GridGroups.GetGroup(myGrid, GridLinkTypeEnum.Mechanical);
@@ -97,11 +97,11 @@ namespace DefenseSystems
             foreach (var node in gridNet)
             {
                 var grid = (MyCubeGrid)node;
-                DefenseBus defenseBus;
-                if (grid.Components.TryGet(out defenseBus) && defenseBus.MasterGrid != null && gridNet.Contains(defenseBus.MasterGrid))
+                Bus Bus;
+                if (grid.Components.TryGet(out Bus) && Bus.Spine != null && gridNet.Contains(Bus.Spine))
                 {
-                    //Log.Line($"existing bus: IMaster:{defenseBus.MasterGrid == grid}");
-                    largestGrid = defenseBus.MasterGrid;
+                    //Log.Line($"existing bus: IMaster:{Bus.Spine == grid}");
+                    largestGrid = Bus.Spine;
                     break;
                 }
                 var mySize = grid.PositionComp.WorldAABB.Size.Volume;

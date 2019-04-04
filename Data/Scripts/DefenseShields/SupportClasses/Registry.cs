@@ -4,14 +4,14 @@ namespace DefenseSystems.Support
 {
     public class Registry
     {
-        public bool RegisterWithBus<T>(T logic, MyCubeGrid localGrid, bool register, DefenseBus oldBus, out DefenseBus bus)
+        public bool RegisterWithBus<T>(T logic, MyCubeGrid localGrid, bool register, Bus oldBus, out Bus bus)
         {
             if (register)
             {
-                var newBus = Session.Instance.FindBus(localGrid) ?? new DefenseBus();
+                var newBus = Session.Instance.FindBus(localGrid) ?? new Bus();
                 newBus.SortAndAddBlock(logic);
                 newBus.SubGridDetect(localGrid, true);
-                newBus.SetMasterGrid(false);
+                newBus.SetSpine(false);
                 bus = newBus;
                 return true;
             }

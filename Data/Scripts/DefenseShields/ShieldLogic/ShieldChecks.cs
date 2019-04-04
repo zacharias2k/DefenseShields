@@ -15,7 +15,7 @@ namespace DefenseSystems
         private void LosCheck()
         {
             LosCheckTick = uint.MaxValue;
-            DefenseBus.CheckEmitters = true;
+            Bus.CheckEmitters = true;
             FitChanged = true;
             _adjustShape = true;
         }
@@ -40,10 +40,10 @@ namespace DefenseSystems
                           $"Sleep:{Asleep} - Tick/Woke:{_tick}/{LastWokenTick}\n" +
                           $"Mode:{DsState.State.Mode} - Waking:{DsState.State.Waking}\n" +
                           $"Low:{DsState.State.Lowered} - Sl:{DsState.State.Sleeping}\n" +
-                          $"Failed:{!NotFailed} - PNull:{DefenseBus.MyResourceDist == null}\n" +
-                          $"NoP:{DsState.State.NoPower} - PSys:{DefenseBus.MyResourceDist?.SourcesEnabled}\n" +
+                          $"Failed:{!NotFailed} - PNull:{Bus.MyResourceDist == null}\n" +
+                          $"NoP:{DsState.State.NoPower} - PSys:{Bus.MyResourceDist?.SourcesEnabled}\n" +
                           $"Access:{DsState.State.ControllerGridAccess} - EmitterLos:{DsState.State.EmitterLos}\n" +
-                          $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(DefenseBus.MasterGrid)}\n" +
+                          $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(Bus.Spine)}\n" +
                           $"ShieldMode:{ShieldMode} - pFail:{_powerFail}\n" +
                           $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{GridMaxPower}\n" +
                           $"AvailPoW:{GridAvailablePower} - MTPoW:{_shieldMaintaintPower}\n" +
@@ -79,24 +79,24 @@ namespace DefenseSystems
 
         private void UpdateSubGrids(bool force = false)
         {
-            DefenseBus.SubUpdate = false;
+            Bus.SubUpdate = false;
 
-            DefenseBus.SubGridDetect(DefenseBus.MasterGrid, force);
+            Bus.SubGridDetect(Bus.Spine, force);
             
             /*
-            var gotGroups = MyAPIGateway.GridGroups.GetGroup(MasterGrid, GridLinkTypeEnum.Physical);
-            if (gotGroups.Count == DefenseBus.LinkedGrids.Count && !force) return;
-            if (Session.Enforced.Debug >= 3 && DefenseBus.LinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{DefenseBus.LinkedGrids.Count != gotGroups.Count} - old:{DefenseBus.LinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
+            var gotGroups = MyAPIGateway.GridGroups.GetGroup(Spine, GridLinkTypeEnum.Physical);
+            if (gotGroups.Count == Bus.LinkedGrids.Count && !force) return;
+            if (Session.Enforced.Debug >= 3 && Bus.LinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{Bus.LinkedGrids.Count != gotGroups.Count} - old:{Bus.LinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
             lock (SubLock)
             {
-                DefenseBus.SubGrids.Clear();
-                DefenseBus.LinkedGrids.Clear();
+                Bus.SubGrids.Clear();
+                Bus.LinkedGrids.Clear();
                 for (int i = 0; i < gotGroups.Count; i++)
                 {
                     var sub = gotGroups[i];
                     if (sub == null) continue;
-                    if (MyAPIGateway.GridGroups.HasConnection(MasterGrid, sub, GridLinkTypeEnum.Mechanical)) DefenseBus.SubGrids.Add((MyCubeGrid)sub);
-                    DefenseBus.LinkedGrids.Add(sub as MyCubeGrid, new SubGridInfo(sub as MyCubeGrid, sub == MasterGrid, false));
+                    if (MyAPIGateway.GridGroups.HasConnection(Spine, sub, GridLinkTypeEnum.Mechanical)) Bus.SubGrids.Add((MyCubeGrid)sub);
+                    Bus.LinkedGrids.Add(sub as MyCubeGrid, new SubGridInfo(sub as MyCubeGrid, sub == Spine, false));
                 }
             }
             */
@@ -105,23 +105,23 @@ namespace DefenseSystems
 
         private void BlockMonitor()
         {
-            if (DefenseBus.BlockChanged)
+            if (Bus.BlockChanged)
             {
                 _blockEvent = true;
                 _shapeEvent = true;
                 LosCheckTick = _tick + 1800;
-                if (DefenseBus.BlockAdded) _shapeTick = _tick + 300;
+                if (Bus.BlockAdded) _shapeTick = _tick + 300;
                 else _shapeTick = _tick + 1800;
             }
-            if (DefenseBus.FunctionalChanged) _functionalEvent = true;
+            if (Bus.FunctionalChanged) _functionalEvent = true;
 
-            DefenseBus.FunctionalAdded = false;
-            DefenseBus.FunctionalRemoved = false;
-            DefenseBus.FunctionalChanged = false;
+            Bus.FunctionalAdded = false;
+            Bus.FunctionalRemoved = false;
+            Bus.FunctionalChanged = false;
 
-            DefenseBus.BlockChanged = false;
-            DefenseBus.BlockRemoved = false;
-            DefenseBus.BlockAdded = false;
+            Bus.BlockChanged = false;
+            Bus.BlockRemoved = false;
+            Bus.BlockAdded = false;
         }
 
         private void BlockChanged(bool backGround)
@@ -146,18 +146,18 @@ namespace DefenseSystems
 
         private void BackGroundChecks()
         {
-            var gridDistNeedUpdate = DefenseBus.UpdateGridDistributor || DefenseBus.MyResourceDist?.SourcesEnabled == MyMultipleEnabledEnum.NoObjects;
-            DefenseBus.UpdateGridDistributor = false;
-            lock (DefenseBus.SubLock)
+            var gridDistNeedUpdate = Bus.UpdateGridDistributor || Bus.MyResourceDist?.SourcesEnabled == MyMultipleEnabledEnum.NoObjects;
+            Bus.UpdateGridDistributor = false;
+            lock (Bus.SubLock)
             {
                 _powerSources.Clear();
                 _functionalBlocks.Clear();
                 _batteryBlocks.Clear();
                 _displayBlocks.Clear();
 
-                foreach (var grid in DefenseBus.LinkedGrids.Keys)
+                foreach (var grid in Bus.LinkedGrids.Keys)
                 {
-                    var mechanical = DefenseBus.SubGrids.Contains(grid);
+                    var mechanical = Bus.SubGrids.Contains(grid);
                     foreach (var block in grid.GetFatBlocks())
                     {
                         if (mechanical)
@@ -171,7 +171,7 @@ namespace DefenseSystems
                                     if (distributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects)
                                     {
                                         if (Session.Enforced.Debug == 3) Log.Line($"Found MyGridDistributor from type:{block.BlockDefinition} - ShieldId [{Shield.EntityId}]");
-                                        DefenseBus.MyResourceDist = controller.GridResourceDistributor;
+                                        Bus.MyResourceDist = controller.GridResourceDistributor;
                                         gridDistNeedUpdate = false;
                                     }
                                 }
@@ -204,13 +204,13 @@ namespace DefenseSystems
 
         private void GridOwnsController()
         {
-            if (DefenseBus.MasterGrid.BigOwners.Count == 0)
+            if (Bus.Spine.BigOwners.Count == 0)
             {
                 DsState.State.ControllerGridAccess = false;
                 return;
             }
 
-            _gridOwnerId = DefenseBus.MasterGrid.BigOwners[0];
+            _gridOwnerId = Bus.Spine.BigOwners[0];
             _controllerOwnerId = MyCube.OwnerId;
 
             if (_controllerOwnerId == 0) MyCube.ChangeOwner(_gridOwnerId, MyOwnershipShareModeEnum.Faction);
@@ -245,18 +245,18 @@ namespace DefenseSystems
             var notTime = _tick % 120 != 0 && _subTick < _tick + 10;
             if (notTime && _slaveLink) return true;
             if (IsStatic || (notTime && !_firstLoop)) return false;
-            var mySize = DefenseBus.MasterGrid.PositionComp.WorldAABB.Size.Volume;
-            var myEntityId = DefenseBus.MasterGrid.EntityId;
-            foreach (var grid in DefenseBus.LinkedGrids.Keys)
+            var mySize = Bus.Spine.PositionComp.WorldAABB.Size.Volume;
+            var myEntityId = Bus.Spine.EntityId;
+            foreach (var grid in Bus.LinkedGrids.Keys)
             {
-                if (grid == DefenseBus.MasterGrid) continue;
-                DefenseBus defenseBus;
-                grid.Components.TryGet(out defenseBus);
-                var controller = defenseBus?.ActiveController;
-                if (controller?.DefenseBus != null && controller.DsState.State.Online && controller.IsWorking)
+                if (grid == Bus.Spine) continue;
+                Bus otherBus;
+                grid.Components.TryGet(out otherBus);
+                var controller = Bus?.ActiveController;
+                if (controller != null && controller.DsState.State.Online && controller.IsWorking)
                 {
-                    var otherSize = controller.DefenseBus.MasterGrid.PositionComp.WorldAABB.Size.Volume;
-                    var otherEntityId = controller.DefenseBus.MasterGrid.EntityId;
+                    var otherSize = controller.Bus.Spine.PositionComp.WorldAABB.Size.Volume;
+                    var otherEntityId = controller.Bus.Spine.EntityId;
                     if ((!IsStatic && controller.IsStatic) || mySize < otherSize || (mySize.Equals(otherEntityId) && myEntityId < otherEntityId))
                     {
                         _slaveLink = true;
@@ -270,18 +270,18 @@ namespace DefenseSystems
 
         private bool FieldShapeBlocked()
         {
-            if (DefenseBus.ActiveModulator == null || DefenseBus.ActiveModulator.ModSet.Settings.ModulateVoxels || Session.Enforced.DisableVoxelSupport == 1) return false;
+            if (Bus.ActiveModulator == null || Bus.ActiveModulator.ModSet.Settings.ModulateVoxels || Session.Enforced.DisableVoxelSupport == 1) return false;
 
             var pruneSphere = new BoundingSphereD(DetectionCenter, BoundingRange);
             var pruneList = new List<MyVoxelBase>();
             MyGamePruningStructure.GetAllVoxelMapsInSphere(ref pruneSphere, pruneList);
 
             if (pruneList.Count == 0) return false;
-            Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, DefenseBus.PhysicsOutsideLow);
+            Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, Bus.PhysicsOutsideLow);
             foreach (var voxel in pruneList)
             {
                 if (voxel.RootVoxel == null || voxel != voxel.RootVoxel) continue;
-                if (!CustomCollision.VoxelContact(DefenseBus.PhysicsOutsideLow, voxel)) continue;
+                if (!CustomCollision.VoxelContact(Bus.PhysicsOutsideLow, voxel)) continue;
 
                 Shield.Enabled = false;
                 DsState.State.FieldBlocked = true;
@@ -332,7 +332,7 @@ namespace DefenseSystems
             if (_overLoadLoop > -1)
             {
                 _overLoadLoop++;
-                if (_overLoadLoop == ShieldDownCount - 1) DefenseBus.CheckEmitters = true;
+                if (_overLoadLoop == ShieldDownCount - 1) Bus.CheckEmitters = true;
                 if (_overLoadLoop == ShieldDownCount)
                 {
                     if (!DsState.State.EmitterLos)
@@ -353,7 +353,7 @@ namespace DefenseSystems
             if (_empOverLoadLoop > -1)
             {
                 _empOverLoadLoop++;
-                if (_empOverLoadLoop == EmpDownCount - 1) DefenseBus.CheckEmitters = true;
+                if (_empOverLoadLoop == EmpDownCount - 1) Bus.CheckEmitters = true;
                 if (_empOverLoadLoop == EmpDownCount)
                 {
                     if (!DsState.State.EmitterLos)

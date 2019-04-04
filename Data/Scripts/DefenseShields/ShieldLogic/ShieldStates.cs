@@ -23,7 +23,6 @@
 
             LocalGrid = MyCube.CubeGrid;
             if (LocalGrid?.Physics == null) return false;
-            if (MarkForReset) ResetEntity();
             if (!_firstSync && _readyToSync) SaveAndSendAll();
             if (!_isDedicated && _count == 29) TerminalRefresh();
 
@@ -31,13 +30,13 @@
 
             if (_tick1800 && Session.Enforced.Debug > 0) Debug();
 
-            IsStatic = DefenseBus.MasterGrid.IsStatic;
+            IsStatic = Bus.Spine.IsStatic;
 
             if (!Warming) WarmUpSequence();
 
-            if (DefenseBus.SubUpdate && _tick >= _subTick) HierarchyUpdate();
+            if (Bus.SubUpdate && _tick >= _subTick) HierarchyUpdate();
             if (_blockEvent && _tick >= _funcTick) BlockChanged(true);
-            if (DefenseBus.BlockChanged) BlockMonitor();
+            if (Bus.BlockChanged) BlockMonitor();
             if (ClientUiUpdate || SettingsUpdated) UpdateSettings();
 
             if (_mpActive)
@@ -70,7 +69,7 @@
                 }
 
                 if (_tick >= LosCheckTick) LosCheck();
-                if (DefenseBus.EmitterEvent) EmitterEventDetected();
+                if (Bus.EmitterEvent) EmitterEventDetected();
                 if (_shapeEvent || FitChanged) CheckExtents();
                 if (_adjustShape) AdjustShape(true);
                 if (!ShieldServerStatusUp())
@@ -110,10 +109,10 @@
 
             DsState.State.Online = true;
 
-            if (!GridIsMobile && (_comingOnline || DefenseBus.O2Updated))
+            if (!GridIsMobile && (_comingOnline || Bus.O2Updated))
             {
                 _ellipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
-                DefenseBus.O2Updated = false;
+                Bus.O2Updated = false;
             }
 
             StepDamageState();
@@ -221,7 +220,7 @@
                 if (!GridIsMobile)
                 {
                     _ellipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
-                    DefenseBus.O2Updated = false;
+                    Bus.O2Updated = false;
                 }
                 DsState.State.Lowered = false;
                 if (!_isDedicated) ShellVisibility();
@@ -233,7 +232,7 @@
 
         private bool ShieldSleeping()
         {
-            if (DefenseBus.EmittersSuspended || SlaveControllerLink())
+            if (SlaveControllerLink())
             {
                 if (!DsState.State.Sleeping)
                 {
@@ -261,26 +260,25 @@
 
         private bool Suspended()
         {
-            var primeMode = ShieldMode == ShieldType.Station && IsStatic && DefenseBus.ActiveEmitter == null;
-            var betaMode = ShieldMode != ShieldType.Station && !IsStatic && DefenseBus.ActiveEmitter == null;
             var notStation = ShieldMode != ShieldType.Station && IsStatic;
             var notShip = ShieldMode == ShieldType.Station && !IsStatic;
             var unKnown = ShieldMode == ShieldType.Unknown;
             var wrongOwner = !DsState.State.ControllerGridAccess;
-            var myShield = DefenseBus.ActiveController == this;
+            var myShield = Bus.ActiveController == this;
             var wrongRole = notStation || notShip || unKnown;
-            if (!myShield || !IsFunctional || primeMode || betaMode || wrongOwner || wrongRole)
+            if (_tick180 && Bus == null) Log.Line("no active controller");
+            if (_tick180 && Bus.ActiveController == null) Log.Line("no active controller");
+            if (_tick180 && Bus.ActiveEmitter == null) Log.Line("no active emitter");
+            if (_tick180 && Bus.Spine == null) Log.Line("no master grid");
+            if (_tick180 && !Bus.SubGrids.Contains(MyCube.CubeGrid)) Log.Line("I am on wrong bus");
+
+            if (!myShield || !IsFunctional || Bus.ActiveEmitter == null || wrongOwner || wrongRole)
             {
                 if (!DsState.State.Suspended) Suspend();
-                if (myShield) DefenseBus.ActiveController = null;
                 if (wrongRole) SetShieldType(true);
                 return true;
             }
 
-            if (_tick600)
-            {
-                Log.Line($"BusNull:{DefenseBus == null} || MasterisLocal:{DefenseBus.MasterGrid == LocalGrid} - MasterisThis:{DefenseBus.MasterGrid == MyCube.CubeGrid} - ActiveIsThis:{DefenseBus.ActiveController == this} - ActiveIsNull:{DefenseBus.ActiveEmitter == null} - ActiveGrid:{DefenseBus.MasterGrid.DebugName}");
-            }
             if (DsState.State.Suspended)
             {
                 UnSuspend();
@@ -294,6 +292,7 @@
         {
             SetShieldType(false);
             DsState.State.Suspended = true;
+            if (Bus.ActiveController ==  this && Bus.EmitterEvent) EmitterEventDetected();
             OfflineShield(true, true, State.Suspend, true);
             bool value;
             Session.Instance.BlockTagBackup(Shield);
@@ -303,13 +302,12 @@
         private void UnSuspend()
         {
             DsState.State.Suspended = false;
-            DefenseBus.ActiveController = this;
             Session.Instance.BlockTagActive(Shield);
             Session.Instance.FunctionalShields[this] = false;
             UpdateEntity();
             GetEnhancernInfo();
             GetModulationInfo();
-            if (Session.Enforced.Debug == 3) Log.Line($"Unsuspended: CM:{ShieldMode} - EW:{DsState.State.EmitterLos} - ES:{DefenseBus.EmittersSuspended} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"Unsuspended: CM:{ShieldMode} - EW:{DsState.State.EmitterLos} - Range:{BoundingRange} - ShieldId [{Shield.EntityId}]");
         }
 
         private bool ShieldWaking()
@@ -344,10 +342,6 @@
         private bool ClientOfflineStates()
         {
             var shieldUp = DsState.State.Online && !DsState.State.Suspended && !DsState.State.Sleeping;
-            if (DefenseBus.ActiveController != this && shieldUp)
-            {
-                DefenseBus.ActiveController = this;
-            }
 
             if (!shieldUp)
             {

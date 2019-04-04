@@ -17,9 +17,7 @@
             if (!ContainerInited)
             {
                 PowerPreInit();
-                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                if (!MyAPIGateway.Utilities.IsDedicated) NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-                else NeedsUpdate |= MyEntityUpdateEnum.EACH_10TH_FRAME;
+
                 Emitter = (IMyUpgradeModule)Entity;
                 ContainerInited = true;
                 if (Session.Enforced.Debug == 3) Log.Line($"ContainerInited: EmitterId [{Emitter.EntityId}]");
@@ -50,10 +48,8 @@
         {
             try
             {
-                LocalGrid = (MyCubeGrid)Emitter.CubeGrid;
-                MyCube = Emitter as MyCubeBlock;
-                SetEmitterType();
-                //RegisterEvents();
+                if (!ResetEntity()) return;
+
                 if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
@@ -65,12 +61,14 @@
             try
             {
                 if (!_bInit) BeforeInit();
+                else if (!_aInit) AfterInit();
                 else if (_bCount < SyncCount * _bTime)
                 {
                     NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                    if (DefenseBus?.MasterGrid == LocalGrid) _bCount++;
+                    if (Bus.Spine == LocalGrid) _bCount++;
                 }
                 else _readyToSync = true;
+
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
@@ -120,9 +118,11 @@
             try
             {
                 if (Session.Enforced.Debug == 3) Log.Line($"OnRemovedFromScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
-                //if (DefenseBus?.ActiveEmitter == this) DefenseBus.ActiveEmitter = null;
-                //if (DefenseBus?.ShipEmitter == this) DefenseBus.ShipEmitter = null;
-                Registry.RegisterWithBus(this, LocalGrid, false, DefenseBus, out DefenseBus);
+                if (Bus != null && Bus.SubGrids.Contains(LocalGrid))
+                {
+                    Log.Line("emitter removed from scene");
+                    Registry.RegisterWithBus(this, LocalGrid, false, Bus, out Bus);
+                }
                 IsWorking = false;
                 IsFunctional = false;
             }
@@ -141,30 +141,10 @@
                 base.Close();
                 if (Session.Enforced.Debug == 3) Log.Line($"Close: {EmitterMode} - EmitterId [{Entity.EntityId}]");
                 if (Session.Instance.Emitters.Contains(this)) Session.Instance.Emitters.Remove(this);
-                Registry.RegisterWithBus(this, LocalGrid, false, DefenseBus, out DefenseBus);
-
-                /*
-                if (DefenseBus?.ActiveEmitter == this)
+                if (Bus != null && Bus.SubGrids.Contains(LocalGrid))
                 {
-                    if ((int)EmitterMode == DefenseBus.EmitterMode)
-                    {
-                        DefenseBus.EmitterLos = false;
-                        DefenseBus.EmitterEvent = true;
-                    }
-                    DefenseBus.ActiveEmitter = null;
+                    Registry.RegisterWithBus(this, LocalGrid, false, Bus, out Bus);
                 }
-                */
-                /*
-                else if (DefenseBus?.ShipEmitter == this)
-                {
-                    if ((int)EmitterMode == DefenseBus.EmitterMode)
-                    {
-                        DefenseBus.EmitterLos = false;
-                        DefenseBus.EmitterEvent = true;
-                    }
-                    DefenseBus.ShipEmitter = null;
-                }
-                */
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
         }

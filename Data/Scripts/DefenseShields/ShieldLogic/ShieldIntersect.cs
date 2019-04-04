@@ -140,7 +140,7 @@
             var grid = ent as MyCubeGrid;
             if (grid == null) return;
             if (EntInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB))) return;
-            DefenseBus otherBus;
+            Bus otherBus;
             grid.Components.TryGet(out otherBus);
             if (otherBus?.ActiveController == null) return;
 
@@ -154,7 +154,7 @@
             var otherMatrixInv = otherController.DetectMatrixOutsideInv;
 
             var insidePoints = new List<Vector3D>();
-            CustomCollision.ShieldX2PointsInside(otherPhysicsOutside, otherMatrixInv, DefenseBus.PhysicsOutside, DetectMatrixOutsideInv, insidePoints);
+            CustomCollision.ShieldX2PointsInside(otherPhysicsOutside, otherMatrixInv, Bus.PhysicsOutside, DetectMatrixOutsideInv, insidePoints);
 
             var collisionAvg = Vector3D.Zero;
             var numOfPointsInside = insidePoints.Count;
@@ -163,7 +163,7 @@
             if (numOfPointsInside > 0) collisionAvg /= numOfPointsInside;
             if (collisionAvg == Vector3D.Zero) return;
 
-            if (DefenseBus.MasterGrid.EntityId > grid.EntityId) ComputeCollisionPhysics(grid, DefenseBus.MasterGrid, collisionAvg);
+            if (Bus.Spine.EntityId > grid.EntityId) ComputeCollisionPhysics(grid, Bus.Spine, collisionAvg);
             else if (!_isServer) return;
 
             var damage = ((otherController._shieldMaxChargeRate * ConvToHp) * DsState.State.ModulateKinetic) * 0.01666666666f;
@@ -193,15 +193,15 @@
                     continue;
                 }
 
-                var collision = CustomCollision.VoxelEllipsoidCheck(DefenseBus.MasterGrid, DefenseBus.PhysicsOutsideLow, voxelBase);
+                var collision = CustomCollision.VoxelEllipsoidCheck(Bus.Spine, Bus.PhysicsOutsideLow, voxelBase);
                 if (collision.HasValue)
                 {
-                    ComputeVoxelPhysics(voxelBase, DefenseBus.MasterGrid, collision.Value);
+                    ComputeVoxelPhysics(voxelBase, Bus.Spine, collision.Value);
 
                     VoxelsToIntersect[voxelBase]++;
                     if (_isServer)
                     {
-                        var mass = DefenseBus.MasterGrid.GetCurrentMass();
+                        var mass = Bus.Spine.GetCurrentMass();
                         var sPhysics = Shield.CubeGrid.Physics;
                         var momentum = mass * sPhysics.GetVelocityAtPoint(collision.Value);
                         var damage = (momentum.Length() / 500) * DsState.State.ModulateEnergy;
@@ -306,7 +306,7 @@
                     if (collisionAvg != Vector3D.Zero)
                     {
                         collisionAvg /= hits;
-                        ComputeCollisionPhysics(breaching, DefenseBus.MasterGrid, collisionAvg);
+                        ComputeCollisionPhysics(breaching, Bus.Spine, collisionAvg);
                         entInfo.Touched = true;
                     }
                     else return;

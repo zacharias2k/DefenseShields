@@ -6,7 +6,7 @@ using VRage.Game.ModAPI;
 
 namespace DefenseSystems
 {
-    public partial class DefenseBus
+    public partial class Bus
     {
         public void RegisterGridEvents(MyCubeGrid grid, bool register = true)
         {
@@ -36,7 +36,7 @@ namespace DefenseSystems
         {
             try
             {
-                //if (MyCube == null || LocalGrid == null || MasterGrid == null || MyCube.OwnerId == _controllerOwnerId && LocalGrid.BigOwners.Count != 0 && LocalGrid.BigOwners[0] == _gridOwnerId) return;
+                //if (MyCube == null || LocalGrid == null || Spine == null || MyCube.OwnerId == _controllerOwnerId && LocalGrid.BigOwners.Count != 0 && LocalGrid.BigOwners[0] == _gridOwnerId) return;
                 //GridOwnsController();
             }
             catch (Exception ex) { Log.Line($"Exception in Controller OwnerChanged: {ex}"); }

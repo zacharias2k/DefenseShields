@@ -12,7 +12,7 @@ namespace DefenseSystems
     public partial class Modulators
     {
         internal ModulatorGridComponent ModulatorComp;
-        internal DefenseBus DefenseBus;
+        internal Bus Bus;
         internal MyResourceSinkInfo ResourceInfo;
         internal bool InControlPanel => MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel;
         internal bool InThisTerminal => Session.Instance.LastTerminalId == Modulator.EntityId;

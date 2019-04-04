@@ -13,11 +13,11 @@ namespace DefenseSystems
             {
                 if (!_isServer) return;
                 EmiState.State.Los = true;
-                DefenseBus.CheckEmitters = false;
+                Bus.CheckEmitters = false;
                 return;
             }
 
-            var controller = DefenseBus.ActiveController;
+            var controller = Bus.ActiveController;
             var controllerReady = controller != null && controller.Warming && controller.IsWorking && controller.IsFunctional && !controller.DsState.State.Suspended && controller.DsState.State.ControllerGridAccess;
             var emitterActive = EmiState.State.ActiveEmitterId == MyCube.EntityId;
             var controllerLinked = emitterActive && controllerReady;
@@ -35,7 +35,7 @@ namespace DefenseSystems
 
                 if (!EmiState.State.Los) DrawHelper();
             }
-            if ((DefenseBus.CheckEmitters || TookControl))
+            if ((Bus.CheckEmitters || TookControl))
             {
                 CheckShieldLineOfSight();
             }
@@ -46,21 +46,21 @@ namespace DefenseSystems
             if (!_compact && SubpartRotor.Closed) BlockReset(false);
             TookControl = false;
 
-            DefenseBus.ActiveController.ResetShape(false);
+            Bus.ActiveController.ResetShape(false);
             if (EmitterMode == EmitterType.Station)
             {
                 EmiState.State.Los = true;
-                DefenseBus.CheckEmitters = false;
+                Bus.CheckEmitters = false;
             }
             else
             {
                 UpdateLosState();
                 EmiState.State.Los = _blocksLos.Count <= 1500;
 
-                if (!EmiState.State.Los) DefenseBus.EmitterEvent = true;
+                if (!EmiState.State.Los) Bus.EmitterEvent = true;
                 else LosScaledCloud.Clear();
 
-                DefenseBus.CheckEmitters = false;
+                Bus.CheckEmitters = false;
             }
             if (Session.Enforced.Debug >= 3 && !EmiState.State.Los) Log.Line($"LOS: Mode: {EmitterMode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {EmiState.State.Los.ToString()} - EmitterId [{Emitter.EntityId}]");
         }
@@ -94,9 +94,9 @@ namespace DefenseSystems
         {
             if (Vector3D.DistanceSquared(MyAPIGateway.Session.Player.Character.PositionComp.WorldAABB.Center, Emitter.PositionComp.WorldAABB.Center) < 2250000)
             {
-                var controller = DefenseBus.ActiveController;
+                var controller = Bus.ActiveController;
 
-                var needsUpdate = controller.GridIsMobile && (DefenseBus.GridIsMoving || _updateLosState);
+                var needsUpdate = controller.GridIsMobile && (Bus.GridIsMoving || _updateLosState);
 
                 var blockCam = controller.ShieldEnt.PositionComp.WorldVolume;
                 if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam))
@@ -138,7 +138,7 @@ namespace DefenseSystems
         {
             var losPointSphere = Session.Instance.LosPointSphere;
             LosScaledCloud.Clear();
-            UtilsStatic.UnitSphereTranslateScaleList(_unitSpherePoints, ref losPointSphere, ref LosScaledCloud, DefenseBus.ActiveController.ShieldEnt, false, LocalGrid);
+            UtilsStatic.UnitSphereTranslateScaleList(_unitSpherePoints, ref losPointSphere, ref LosScaledCloud, Bus.ActiveController.ShieldEnt, false, LocalGrid);
         }
 
         private void BroadCastLosMessage(int blocked, int needed, Controllers controller)

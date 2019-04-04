@@ -596,7 +596,7 @@
         <Component Subtype="SteelPlate" Count="300" />
         <Component Subtype="SmallTube" Count="40" />
         <Component Subtype="Construction" Count="20" />
-        <Component Subtype="DefenseBusonent" Count="400" />
+        <Component Subtype="ShieldComponent" Count="400" />
         <Component Subtype="Construction" Count="20" />
         <Component Subtype="MetalGrid" Count="60" />
         <Component Subtype="Superconductor" Count="200" />
@@ -661,7 +661,7 @@
         <Component Subtype="MetalGrid" Count="5000" />
         <Component Subtype="RadioCommunication" Count="2000" />
         <Component Subtype="GravityGenerator" Count="1500" />
-        <Component Subtype="DefenseBusonent" Count="9000" />
+        <Component Subtype="ShieldComponent" Count="9000" />
         <Component Subtype="Computer" Count="5000" />
         <Component Subtype="Construction" Count="200" />
         <Component Subtype="SteelPlate" Count="3200" />
@@ -699,7 +699,7 @@
         <Component Subtype="SteelPlate" Count="30000" />
         <Component Subtype="SmallTube" Count="4000" />
         <Component Subtype="Construction" Count="2000" />
-        <Component Subtype="DefenseBusonent" Count="2000" />
+        <Component Subtype="ShieldComponent" Count="2000" />
         <Component Subtype="Construction" Count="2000" />
         <Component Subtype="MetalGrid" Count="600" />
         <Component Subtype="Superconductor" Count="9800" />
@@ -748,7 +748,7 @@
         <Component Subtype="SteelPlate" Count="2" />
         <Component Subtype="SmallTube" Count="2" />
         <Component Subtype="Construction" Count="2" />
-        <Component Subtype="DefenseBusonent" Count="50" />
+        <Component Subtype="ShieldComponent" Count="50" />
         <Component Subtype="Construction" Count="2" />
         <Component Subtype="MetalGrid" Count="2" />
         <Component Subtype="Superconductor" Count="2" />
@@ -796,7 +796,7 @@
         <Component Subtype="SteelPlate" Count="3000" />
         <Component Subtype="SmallTube" Count="400" />
         <Component Subtype="Construction" Count="20" />
-		    <Component Subtype="DefenseBusonent" Count="850" />
+		    <Component Subtype="ShieldComponent" Count="850" />
         <Component Subtype="Construction" Count="20" />
         <Component Subtype="MetalGrid" Count="60" />
         <Component Subtype="Superconductor" Count="980" />
@@ -1021,7 +1021,7 @@
         <Component Subtype="SteelPlate" Count="300" />
         <Component Subtype="SmallTube" Count="40" />
         <Component Subtype="Construction" Count="20" />
-        <Component Subtype="DefenseBusonent" Count="400" />
+        <Component Subtype="ShieldComponent" Count="400" />
         <Component Subtype="Construction" Count="20" />
         <Component Subtype="MetalGrid" Count="60" />
         <Component Subtype="Superconductor" Count="200" />
@@ -1071,7 +1071,7 @@
         <Component Subtype="SteelPlate" Count="2" />
         <Component Subtype="SmallTube" Count="2" />
         <Component Subtype="Construction" Count="2" />
-		<Component Subtype="DefenseBusonent" Count="50" />
+		<Component Subtype="ShieldComponent" Count="50" />
         <Component Subtype="Construction" Count="2" />
         <Component Subtype="MetalGrid" Count="2" />
         <Component Subtype="Superconductor" Count="2" />

@@ -1,5 +1,7 @@
 ﻿namespace DefenseSystems
 {
+    using VRage;
+    using VRageMath;
     using System.Collections.Generic;
     using Support;
     using Sandbox.Game.Entities;
@@ -391,7 +393,6 @@
             var notStation = comp != null && !comp.Shield.CubeGrid.IsStatic;
             return notStation;
         }
-
         #endregion
     }
 }

@@ -1,5 +1,8 @@
-﻿namespace DefenseSystems
+﻿
+namespace DefenseSystems
 {
+    using VRage;
+    using VRageMath;
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -99,43 +102,11 @@
                 CreateAction<IMyUpgradeModule>(HitWaveAnimationCheckBox);
                 CreateAction<IMyUpgradeModule>(SendToHudCheckBox);
                 CreateAction<IMyUpgradeModule>(BatteryBoostCheckBox);
+
                 DsControl = true;
             }
             catch (Exception ex) { Log.Line($"Exception in CreateControlerUi: {ex}"); }
         }
-
-        /*
-        public void CreatePlanetShieldElements(IMyTerminalBlock block)
-        {
-            try
-            {
-                if (PsControl) return;
-                var comp = block?.GameLogic?.GetAs<PlanetShields>();
-                TerminalHelpers.Separator(comp?.PlanetShield, "DS-P_sep0");
-                PsToggleShield = TerminalHelpers.AddOnOff(comp?.PlanetShield, "DS-P_ToggleShield", "Shield Status", "Raise or Lower Shields", "Up", "Down", PsUi.GetRaiseShield, PsUi.SetRaiseShield);
-                TerminalHelpers.Separator(comp?.PlanetShield, "DS-P_sep1");
-
-                PsBatteryBoostCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_UseBatteries", "Batteries Contribute To Shields", "Batteries May Contribute To Shield Strength", PsUi.GetBatteries, PsUi.SetBatteries);
-                PsSendToHudCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_HideIcon", "Broadcast Shield Status To Hud", "Broadcast Shield Status To Nearby Friendly Huds", PsUi.GetSendToHud, PsUi.SetSendToHud);
-                TerminalHelpers.Separator(comp?.PlanetShield, "DS-P_sep2");
-
-                PsHideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_HideActive", "Hide Shield Health On Hit  ", "Hide Shield Health Grid On Hit", PsUi.GetHideActive, PsUi.SetHideActive);
-
-                PsRefreshAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_RefreshAnimation", "Show Refresh Animation  ", "Show Random Refresh Animation", PsUi.GetRefreshAnimation, PsUi.SetRefreshAnimation);
-                PsHitWaveAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.PlanetShield, "DS-P_HitWaveAnimation", "Show Hit Wave Animation", "Show Wave Effect On Shield Damage", PsUi.GetHitWaveAnimation, PsUi.SetHitWaveAnimation);
-
-                CreateAction<IMyUpgradeModule>(PsToggleShield);
-
-                CreateAction<IMyUpgradeModule>(PsHideActiveCheckBox);
-                CreateAction<IMyUpgradeModule>(PsRefreshAnimationCheckBox);
-                CreateAction<IMyUpgradeModule>(PsHitWaveAnimationCheckBox);
-                CreateAction<IMyUpgradeModule>(PsSendToHudCheckBox);
-                CreateAction<IMyUpgradeModule>(PsBatteryBoostCheckBox);
-                PsControl = true;
-            }
-            catch (Exception ex) { Log.Line($"Exception in CreateControlerUi: {ex}"); }
-        }
-        */
 
         public void CreateModulatorUi(IMyTerminalBlock block)
         {

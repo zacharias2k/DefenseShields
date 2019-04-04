@@ -6,19 +6,12 @@ namespace DefenseSystems
 {
     public class BusEvents
     {
-        public event Action<MyEntity, DefenseBus.LogicState> OnCheckBus;
-        public event Action<MyEntity, MyEntity> OnBusSplit;
+        public event Action<MyEntity, Bus.LogicState> OnBusSplit;
 
-        public void Split(MyEntity e1, MyEntity e2)
+        public void Split(MyEntity type, Bus.LogicState state)
         {
-            Log.Line("splitInvoke");
-            OnBusSplit?.Invoke(e1, e2);
-        }
-
-        public void Check(MyEntity e1, DefenseBus.LogicState e2)
-        {
-            Log.Line("checkInvoke");
-            OnCheckBus?.Invoke(e1, e2);
+            Log.Line("[Bus Has Split--]");
+            OnBusSplit?.Invoke(type, state);
         }
     }
 }

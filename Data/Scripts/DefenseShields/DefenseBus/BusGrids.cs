@@ -5,30 +5,29 @@ using VRage.Game.ModAPI;
 
 namespace DefenseSystems
 {
-    public partial class DefenseBus
+    public partial class Bus
     {
 
-        public void SetMasterGrid(bool check, MyCubeGrid grid = null)
+        public void SetSpine(bool check, MyCubeGrid grid = null)
         {
-            var keepMaster = check && !(MasterGrid == null || MasterGrid.MarkedForClose || !MasterGrid.InScene || MasterGrid == grid);
-            if (keepMaster)
+            var keepSpine = check && !(Spine == null || Spine.MarkedForClose || !Spine.InScene || Spine == grid);
+            if (keepSpine)
             {
-                Log.Line($"KeepingMasterGrid: Null:{MasterGrid == null} - Marked:{MasterGrid.MarkedForClose} - !InScene:{!MasterGrid.InScene} - gridMatch:{MasterGrid == grid}");
+                Log.Line($"[SpineFine-] - Null:{Spine == null} - Marked:{Spine.MarkedForClose} - !InScene:{!Spine.InScene} - gridMatch:{Spine == grid}");
                 return;
             }
-            var master = SortedGrids.Max;
-            if (MasterGrid == master) return;
-            Log.Line("new master not equal old master");
-            if (MasterGrid != null && MasterGrid.Components.Has<DefenseBus>())
+            var newSpine = SortedGrids.Max;
+            if (Spine == newSpine) return;
+            if (Spine != null && Spine.Components.Has<Bus>())
             {
-                Log.Line("ReSetMasterGrid");
-                MasterGrid.Components.Remove<DefenseBus>();
+                Log.Line($"[SpineReset] - as:{Spine.DebugName} - Is:{newSpine.DebugName}");
+                Spine.Components.Remove<Bus>();
             }
-            Log.Line("SettingMasterGrid");
-            SetSubFlags();
+            Log.Line($"[NewSpine--] - Is:{newSpine.DebugName}");
+            SetSubFlags(check ? grid : newSpine);
 
-            MasterGrid = master;
-            MasterGrid.Components.Add(this);
+            Spine = newSpine;
+            Spine.Components.Add(this);
         }
 
         public void AddSortedGrids(MyCubeGrid grid)
@@ -45,7 +44,7 @@ namespace DefenseSystems
 
             SortedGrids.Remove(grid);
             RegisterGridEvents(grid, false);
-            SetMasterGrid(true, grid);
+            SetSpine(true, grid);
         }
 
         public bool SubGridDetect(MyCubeGrid grid, bool force = false)
@@ -101,21 +100,26 @@ namespace DefenseSystems
                 foreach (var sub in AddSubs) AddSortedGrids(sub);
                 foreach (var sub in RemSubs) RemoveGrid(sub);
             }
-
-            if (change && ActiveController != null && MasterGrid != null)
+            if (change)
             {
-                SetSubFlags();
+                SetSubFlags(grid);
             }
             return change;
         }
 
-
-        internal void SetSubFlags()
+        internal void SetSubFlags(MyCubeGrid grid)
         {
-            Log.Line("set flags");
+            Log.Line($"[IsSubFlagEvent-] - trigged by gId:{grid.EntityId}");
             BlockChanged = true;
             FunctionalChanged = true;
             UpdateGridDistributor = true;
+        }
+
+        public void GridLeaving(MyCubeGrid grid)
+        {
+            Log.Line($"[GridLeaveEvent] - trigged by gId:{grid.EntityId}");
+            RemoveSubBlocks(SortedControllers, grid);
+            RemoveSubBlocks(SortedEmitters, grid);
         }
     }
 }

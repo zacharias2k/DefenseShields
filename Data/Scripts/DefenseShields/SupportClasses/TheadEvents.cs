@@ -107,7 +107,7 @@ namespace DefenseSystems.Support
             if (Entity == null || Entity.MarkedForClose) return;
             var floater = (IMyFloatingObject)Entity;
             var entVel = Entity.Physics.LinearVelocity;
-            var movingVel = entVel != Vector3.Zero ? entVel : -Shield.DefenseBus.MasterGrid.Physics.LinearVelocity;
+            var movingVel = entVel != Vector3.Zero ? entVel : -Shield.Bus.Spine.Physics.LinearVelocity;
 
             var rayDir = Vector3D.Normalize(movingVel);
             var ray = new RayD(Entity.PositionComp.WorldVolume.Center, rayDir);

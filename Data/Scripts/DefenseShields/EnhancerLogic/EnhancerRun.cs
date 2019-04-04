@@ -47,7 +47,7 @@
                 else if (_bCount < SyncCount * _bTime)
                 {
                     NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                    if (DefenseBus?.MasterGrid == MyGrid) _bCount++;
+                    if (Bus?.Spine == MyGrid) _bCount++;
                 }
                 else _readyToSync = true;
             }
@@ -134,9 +134,9 @@
             try
             {
                 if (Session.Instance.Enhancers.Contains(this)) Session.Instance.Enhancers.Remove(this);
-                if (DefenseBus?.ActiveEnhancer == this)
+                if (Bus?.ActiveEnhancer == this)
                 {
-                    DefenseBus.ActiveEnhancer = null;
+                    Bus.ActiveEnhancer = null;
                 }
                 RegisterEvents(false);
 
@@ -152,9 +152,9 @@
             {
                 base.Close();
                 if (Session.Instance.Enhancers.Contains(this)) Session.Instance.Enhancers.Remove(this);
-                if (DefenseBus?.ActiveEnhancer == this)
+                if (Bus?.ActiveEnhancer == this)
                 {
-                    DefenseBus.ActiveEnhancer = null;
+                    Bus.ActiveEnhancer = null;
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
