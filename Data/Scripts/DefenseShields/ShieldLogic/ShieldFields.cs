@@ -45,6 +45,10 @@ namespace DefenseShields
 
         internal readonly ConcurrentQueue<SubGridComputedInfo> AddSubGridInfo = new ConcurrentQueue<SubGridComputedInfo>();
 
+        internal const int ConvToHp = 100;
+        internal const float ConvToDec = 0.01f;
+        internal const float ConvToWatts = 0.01f;
+
         internal volatile int LogicSlot;
         internal volatile int MonitorSlot;
         internal volatile int LostPings;
@@ -79,9 +83,6 @@ namespace DefenseShields
         private const int HeatingStep = 600;
         private const int CoolingStep = 1200;
         private const int FallBackStep = 10;
-        private const int ConvToHp = 100;
-        private const float ConvToDec = 0.01f;
-        private const float ConvToWatts = 0.01f;
         private const double MagicRatio = 2.40063050674088;
         private const float ChargeRatio = 1.25f;
         private const int SyncCount = 60;

@@ -199,7 +199,7 @@
         private volatile bool _newFrame;
 
         private readonly MonitorWork _workData = new MonitorWork();
-
+        private readonly TapiBackend _bTapi = new TapiBackend();
         private readonly List<MyCubeBlock> _warHeadCubeHits = new List<MyCubeBlock>();
         private readonly List<MyCubeGrid> _warHeadGridHits = new List<MyCubeGrid>();
         private readonly List<MyEntity> _pruneWarGrids = new List<MyEntity>();

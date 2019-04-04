@@ -180,7 +180,7 @@
             catch (Exception ex) { Log.Line($"Exception in Controller FatBlockRemoved: {ex}"); }
         }
 
-        private string GetShieldStatus()
+        internal string GetShieldStatus()
         {
             if (!DsState.State.Online && !MyCube.IsFunctional) return "[Controller Faulty]";
             if (!DsState.State.Online && !MyCube.IsWorking) return "[Controller Offline]";
