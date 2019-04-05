@@ -10,7 +10,7 @@ namespace DefenseShields
 {
     internal class TapiFrontend
     {
-        private readonly IMyTerminalBlock _block;
+        private IMyTerminalBlock _block;
 
         private readonly Func<IMyTerminalBlock, RayD, long, float, bool, Vector3D?> _rayAttackShield;
         private readonly Func<IMyTerminalBlock, Vector3D, long, float, bool, bool> _pointAttackShield;
@@ -30,10 +30,15 @@ namespace DefenseShields
         private readonly Func<IMyTerminalBlock, float> _getMaxHpCap;
         private readonly Func<IMyTerminalBlock, bool> _isShieldUp;
         private readonly Func<IMyTerminalBlock, string> _shieldStatus;
-        private readonly Func<IMyCubeGrid, bool> _gridHasShield;
-        private readonly Func<IMyCubeGrid, bool> _gridShieldOnline;
-        private readonly Func<IMyEntity, bool> _protectedByShield;
+        /// <summary>
+        /// Fields below do not require SetActiveShield to be defined first;
+        /// </summary>
+        private readonly Func<IMyCubeGrid, bool> _gridHasShield; 
+        private readonly Func<IMyCubeGrid, bool> _gridShieldOnline; 
+        private readonly Func<IMyEntity, bool> _protectedByShield; 
         private readonly Func<IMyEntity, IMyTerminalBlock> _getShieldBlock;
+
+        public void SetActiveShield(IMyTerminalBlock block) => _block = block;
 
         public TapiFrontend(IMyTerminalBlock block)
         {
@@ -59,10 +64,10 @@ namespace DefenseShields
             _getMaxHpCap = (Func<IMyTerminalBlock, float>)delegates["GetMaxHpCap"];
             _isShieldUp = (Func<IMyTerminalBlock, bool>)delegates["IsShieldUp"];
             _shieldStatus = (Func<IMyTerminalBlock, string>)delegates["ShieldStatus"];
-            _gridHasShield = (Func<IMyCubeGrid, bool>)delegates["GridHasShield"];
-            _gridShieldOnline = (Func<IMyCubeGrid, bool>)delegates["GridShieldOnline"];
-            _protectedByShield = (Func<IMyEntity, bool>)delegates["ProtectedByShield"];
-            _getShieldBlock = (Func<IMyEntity, IMyTerminalBlock>)delegates["GetShieldBlock"];
+            _gridHasShield = (Func<IMyCubeGrid, bool>)delegates["GridHasShield"]; 
+            _gridShieldOnline = (Func<IMyCubeGrid, bool>)delegates["GridShieldOnline"]; 
+            _protectedByShield = (Func<IMyEntity, bool>)delegates["ProtectedByShield"]; 
+            _getShieldBlock = (Func<IMyEntity, IMyTerminalBlock>)delegates["GetShieldBlock"]; 
         }
 
         public Vector3D? RayAttackShield(RayD ray, long attackerId, float damage, bool energy = false) =>
