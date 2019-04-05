@@ -32,11 +32,11 @@ namespace DefenseShields
             ["GetMaxHpCap"] = new Func<IMyTerminalBlock, float>(TAPI_GetMaxHpCap),
             ["IsShieldUp"] = new Func<IMyTerminalBlock, bool>(TAPI_IsShieldUp),
             ["ShieldStatus"] = new Func<IMyTerminalBlock, string>(TAPI_ShieldStatus),
-
             ["GridHasShield"] = new Func<IMyCubeGrid, bool>(TAPI_GridHasShield),
             ["GridShieldOnline"] = new Func<IMyCubeGrid, bool>(TAPI_GridShieldOnline),
             ["ProtectedByShield"] = new Func<IMyEntity, bool>(TAPI_ProtectedByShield),
             ["GetShieldBlock"] = new Func<IMyEntity, IMyTerminalBlock>(TAPI_GetShieldBlock),
+            ["IsShieldBlock"] = new Func<IMyTerminalBlock, bool>(TAPI_IsShieldBlock),
         };
 
         internal void Init()
@@ -230,11 +230,12 @@ namespace DefenseShields
         private static bool TAPI_GridHasShield(IMyCubeGrid grid)
         {
             MyProtectors protectors;
-            if (Session.Instance.GlobalProtect.TryGetValue((MyEntity)grid, out protectors))
+            var myGrid = (MyCubeGrid)grid;
+            if (Session.Instance.GlobalProtect.TryGetValue(myGrid, out protectors))
             {
                 foreach (var s in protectors.Shields)
                 {
-                    if (s.MyCube.CubeGrid == grid) return true;
+                    if (s.ShieldComp.SubGrids.Contains(myGrid)) return true;
                 }
             }
             return false;
@@ -243,11 +244,12 @@ namespace DefenseShields
         private static bool TAPI_GridShieldOnline(IMyCubeGrid grid)
         {
             MyProtectors protectors;
-            if (Session.Instance.GlobalProtect.TryGetValue((MyEntity) grid, out protectors))
+            var myGrid = (MyCubeGrid)grid;
+            if (Session.Instance.GlobalProtect.TryGetValue(myGrid, out protectors))
             {
                 foreach (var s in protectors.Shields)
                 {
-                    if (s.MyCube.CubeGrid == grid && s.DsState.State.Online) return true;
+                    if (s.ShieldComp.SubGrids.Contains(myGrid) && s.DsState.State.Online) return true;
                 }
             }
             return false;
@@ -283,6 +285,12 @@ namespace DefenseShields
                 if (firstShield != null) return firstShield.MyCube as IMyTerminalBlock;
             }
             return null;
+        }
+
+        private static bool TAPI_IsShieldBlock(IMyTerminalBlock block)
+        {
+            var logic = block?.GameLogic?.GetAs<DefenseShields>();
+            return logic != null;
         }
     }
 }

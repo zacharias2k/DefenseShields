@@ -12,8 +12,8 @@ namespace DefenseShields
     {
         private IMyTerminalBlock _block;
 
-        private readonly Func<IMyTerminalBlock, RayD, long, float, bool, Vector3D?> _rayAttackShield;
-        private readonly Func<IMyTerminalBlock, Vector3D, long, float, bool, bool> _pointAttackShield;
+        private readonly Func<IMyTerminalBlock, RayD, long, float, bool, Vector3D?> _rayAttackShield; // negative damage values heal
+        private readonly Func<IMyTerminalBlock, Vector3D, long, float, bool, bool> _pointAttackShield; // negative damage values heal
         private readonly Func<IMyTerminalBlock, RayD, Vector3D?> _rayIntersectShield;
         private readonly Func<IMyTerminalBlock, Vector3D, bool> _pointInShield;
         private readonly Func<IMyTerminalBlock, float> _getShieldPercent;
@@ -31,14 +31,15 @@ namespace DefenseShields
         private readonly Func<IMyTerminalBlock, bool> _isShieldUp;
         private readonly Func<IMyTerminalBlock, string> _shieldStatus;
         /// <summary>
-        /// Fields below do not require SetActiveShield to be defined first;
+        /// Fields below do not require SetActiveShield to be defined first.
         /// </summary>
         private readonly Func<IMyCubeGrid, bool> _gridHasShield; 
         private readonly Func<IMyCubeGrid, bool> _gridShieldOnline; 
         private readonly Func<IMyEntity, bool> _protectedByShield; 
         private readonly Func<IMyEntity, IMyTerminalBlock> _getShieldBlock;
+        private readonly Func<IMyTerminalBlock, bool> _isShieldBlock;
 
-        public void SetActiveShield(IMyTerminalBlock block) => _block = block;
+        public void SetActiveShield(IMyTerminalBlock block) => _block = block; // AutoSet to TapiFrontend(block) if shield exists.
 
         public TapiFrontend(IMyTerminalBlock block)
         {
@@ -67,7 +68,9 @@ namespace DefenseShields
             _gridHasShield = (Func<IMyCubeGrid, bool>)delegates["GridHasShield"]; 
             _gridShieldOnline = (Func<IMyCubeGrid, bool>)delegates["GridShieldOnline"]; 
             _protectedByShield = (Func<IMyEntity, bool>)delegates["ProtectedByShield"]; 
-            _getShieldBlock = (Func<IMyEntity, IMyTerminalBlock>)delegates["GetShieldBlock"]; 
+            _getShieldBlock = (Func<IMyEntity, IMyTerminalBlock>)delegates["GetShieldBlock"];
+            _isShieldBlock = (Func<IMyTerminalBlock, bool>)delegates["IsShieldBlock"];
+            if (!IsShieldBlock()) _block = GetShieldBlock(_block) ?? _block;
         }
 
         public Vector3D? RayAttackShield(RayD ray, long attackerId, float damage, bool energy = false) =>
@@ -77,7 +80,7 @@ namespace DefenseShields
         public Vector3D? RayIntersectShield(RayD ray) => _rayIntersectShield?.Invoke(_block, ray) ?? null;
         public bool PointInShield(Vector3D pos) => _pointInShield?.Invoke(_block, pos) ?? false;
         public float GetShieldPercent() => _getShieldPercent?.Invoke(_block) ?? -1;
-        public float GetShieldHeat() => _getShieldHeat?.Invoke(_block) ?? -1;
+        public int GetShieldHeat() => _getShieldHeat?.Invoke(_block) ?? -1;
         public void SetShieldHeat(int value) => _setShieldHeat?.Invoke(_block, value);
         public void OverLoadShield() => _overLoad?.Invoke(_block);
         public float GetChargeRate() => _getChargeRate?.Invoke(_block) ?? -1;
@@ -94,5 +97,6 @@ namespace DefenseShields
         public bool GridShieldOnline(IMyCubeGrid grid) => _gridShieldOnline?.Invoke(grid) ?? false;
         public bool ProtectedByShield(IMyEntity entity) => _protectedByShield?.Invoke(entity) ?? false;
         public IMyTerminalBlock GetShieldBlock(IMyEntity entity) => _getShieldBlock?.Invoke(entity) ?? null;
+        public bool IsShieldBlock() => _isShieldBlock?.Invoke(_block) ?? false;
     }
 }
