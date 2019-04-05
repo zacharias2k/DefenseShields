@@ -85,8 +85,6 @@
 
                 if (!_isServer || !DsState.State.Online) return;
                 if (_comingOnline) ComingOnlineSetup();
-                var fTapi = new TapiFrontend(Shield);
-                fTapi.PointAttackShield(MyAPIGateway.Session.Player.Character.GetPosition(), MyAPIGateway.Session.Player.Character.EntityId, 1, true);
                 if (_mpActive && (_forceBufferSync || _count == 29))
                 {
                     var newPercentColor = UtilsStatic.GetShieldColorFromFloat(DsState.State.ShieldPercent);
