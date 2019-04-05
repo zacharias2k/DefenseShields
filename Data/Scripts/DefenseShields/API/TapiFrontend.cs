@@ -70,7 +70,7 @@ namespace DefenseShields
             _protectedByShield = (Func<IMyEntity, bool>)delegates["ProtectedByShield"]; 
             _getShieldBlock = (Func<IMyEntity, IMyTerminalBlock>)delegates["GetShieldBlock"];
             _isShieldBlock = (Func<IMyTerminalBlock, bool>)delegates["IsShieldBlock"];
-            if (!IsShieldBlock()) _block = GetShieldBlock(_block) ?? _block;
+            if (!IsShieldBlock()) _block = GetShieldBlock(_block.CubeGrid) ?? _block;
         }
 
         public Vector3D? RayAttackShield(RayD ray, long attackerId, float damage, bool energy = false) =>
