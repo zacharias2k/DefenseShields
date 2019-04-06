@@ -1,12 +1,11 @@
 ﻿using VRageMath;
+using System;
+using DefenseShields.Support;
+using Sandbox.ModAPI;
+using VRage;
 
 namespace DefenseShields
 {
-    using System;
-    using Support;
-    using Sandbox.ModAPI;
-    using VRage;
-
     public partial class DefenseShields
     {
         #region Block Power Logic
@@ -270,8 +269,7 @@ namespace DefenseShields
         private float PowerNeeded(float chargePercent, float hpsEfficiency)
         {
             var powerScaler = 1f;
-            if (_hpScaler < 0.5) powerScaler = _hpScaler + _hpScaler;
-
+            if (_hpScaler < 1) powerScaler = _hpScaler;
             var cleanPower = GridAvailablePower + ShieldCurrentPower;
             _otherPower = GridMaxPower - cleanPower;
             var powerForShield = ((cleanPower * chargePercent) - _shieldMaintaintPower) * powerScaler;
