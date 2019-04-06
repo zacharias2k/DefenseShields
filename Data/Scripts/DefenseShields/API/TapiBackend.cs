@@ -12,15 +12,35 @@ namespace DefenseShields
 {
     internal class TapiBackend
     {
-        private readonly Dictionary<string, Delegate> _terminalApiMethods = new Dictionary<string, Delegate>()
+        private readonly Dictionary<string, Delegate> _terminalModApiMethods = new Dictionary<string, Delegate>()
         {
-            // ModApi only methods below
-            ["RayAttackShield"] = new Func<IMyTerminalBlock, IMySession, RayD, long, float, bool, Vector3D?>(TAPI_RayAttackShield),
-            ["PointAttackShield"] = new Func<IMyTerminalBlock, IMySession, Vector3D, long, float, bool, bool>(TAPI_PointAttackShield),
-            ["SetShieldHeat"] = new Action<IMyTerminalBlock, IMySession, int>(TAPI_SetShieldHeat),
-            ["OverLoadShield"] = new Action<IMyTerminalBlock, IMySession>(TAPI_OverLoadShield),
-            ["SetCharge"] = new Action<IMyTerminalBlock, IMySession, float>(TAPI_SetCharge),
-            // ModApi and PB methods below.
+            ["RayAttackShield"] = new Func<IMyTerminalBlock, RayD, long, float, bool, Vector3D?>(TAPI_RayAttackShield),
+            ["PointAttackShield"] = new Func<IMyTerminalBlock, Vector3D, long, float, bool, bool>(TAPI_PointAttackShield),
+            ["SetShieldHeat"] = new Action<IMyTerminalBlock, int>(TAPI_SetShieldHeat),
+            ["OverLoadShield"] = new Action<IMyTerminalBlock>(TAPI_OverLoadShield),
+            ["SetCharge"] = new Action<IMyTerminalBlock, float>(TAPI_SetCharge),
+            ["RayIntersectShield"] = new Func<IMyTerminalBlock, RayD, Vector3D?>(TAPI_RayIntersectShield),
+            ["PointInShield"] = new Func<IMyTerminalBlock, Vector3D, bool>(TAPI_PointInShield),
+            ["GetShieldPercent"] = new Func<IMyTerminalBlock, float>(TAPI_GetShieldPercent),
+            ["GetShieldHeat"] = new Func<IMyTerminalBlock, int>(TAPI_GetShieldHeatLevel),
+            ["GetChargeRate"] = new Func<IMyTerminalBlock, float>(TAPI_GetChargeRate),
+            ["HpToChargeRatio"] = new Func<IMyTerminalBlock, int>(TAPI_HpToChargeRatio),
+            ["GetMaxCharge"] = new Func<IMyTerminalBlock, float>(TAPI_GetMaxCharge),
+            ["GetCharge"] = new Func<IMyTerminalBlock, float>(TAPI_GetCharge),
+            ["GetPowerUsed"] = new Func<IMyTerminalBlock, float>(TAPI_GetPowerUsed),
+            ["GetPowerCap"] = new Func<IMyTerminalBlock, float>(TAPI_GetPowerCap),
+            ["GetMaxHpCap"] = new Func<IMyTerminalBlock, float>(TAPI_GetMaxHpCap),
+            ["IsShieldUp"] = new Func<IMyTerminalBlock, bool>(TAPI_IsShieldUp),
+            ["ShieldStatus"] = new Func<IMyTerminalBlock, string>(TAPI_ShieldStatus),
+            ["GridHasShield"] = new Func<IMyCubeGrid, bool>(TAPI_GridHasShield),
+            ["GridShieldOnline"] = new Func<IMyCubeGrid, bool>(TAPI_GridShieldOnline),
+            ["ProtectedByShield"] = new Func<IMyEntity, bool>(TAPI_ProtectedByShield),
+            ["GetShieldBlock"] = new Func<IMyEntity, IMyTerminalBlock>(TAPI_GetShieldBlock),
+            ["IsShieldBlock"] = new Func<IMyTerminalBlock, bool>(TAPI_IsShieldBlock),
+        };
+
+        private readonly Dictionary<string, Delegate> _terminalPbApiMethods = new Dictionary<string, Delegate>()
+        {
             ["RayIntersectShield"] = new Func<IMyTerminalBlock, RayD, Vector3D?>(TAPI_RayIntersectShield),
             ["PointInShield"] = new Func<IMyTerminalBlock, Vector3D, bool>(TAPI_PointInShield),
             ["GetShieldPercent"] = new Func<IMyTerminalBlock, float>(TAPI_GetShieldPercent),
@@ -43,16 +63,20 @@ namespace DefenseShields
 
         internal void Init()
         {
-            var c = MyAPIGateway.TerminalControls.CreateProperty<Dictionary<string, Delegate>, IMyTerminalBlock>("DefenseSystemsAPI");
-            c.Getter = (b) => _terminalApiMethods;
-            MyAPIGateway.TerminalControls.AddControl<IMyTerminalBlock>(c);
+            var mod = MyAPIGateway.TerminalControls.CreateProperty<Dictionary<string, Delegate>, IMyTerminalBlock>("DefenseSystemsAPI");
+            mod.Getter = (b) => _terminalModApiMethods;
+            MyAPIGateway.TerminalControls.AddControl<IMyTerminalBlock>(mod);
+
+            var pb = MyAPIGateway.TerminalControls.CreateProperty<Dictionary<string, Delegate>, IMyProgrammableBlock>("DefenseSystemsPbAPI");
+            pb.Getter = (b) => _terminalPbApiMethods;
+            MyAPIGateway.TerminalControls.AddControl<IMyProgrammableBlock>(pb);
         }
 
         // ModApi only methods below
-        private static Vector3D? TAPI_RayAttackShield(IMyTerminalBlock block, IMySession modCheck, RayD ray, long attackerId, float damage, bool energy = false)
+        private static Vector3D? TAPI_RayAttackShield(IMyTerminalBlock block, RayD ray, long attackerId, float damage, bool energy = false)
         {
             var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
-            if (logic == null || modCheck == null) return null;
+            if (logic == null) return null;
 
             var intersectDist = CustomCollision.IntersectEllipsoid(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, ray);
             if (!intersectDist.HasValue) return null;
@@ -78,10 +102,10 @@ namespace DefenseShields
             return hitPos;
         }
 
-        private static bool TAPI_PointAttackShield(IMyTerminalBlock block, IMySession modCheck, Vector3D pos, long attackerId, float damage, bool energy = false)
+        private static bool TAPI_PointAttackShield(IMyTerminalBlock block, Vector3D pos, long attackerId, float damage, bool energy = false)
         {
             var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
-            if (logic == null || modCheck == null) return false;
+            if (logic == null) return false;
             var hit = CustomCollision.PointInShield(pos, logic.DetectMatrixOutsideInv);
             if (!hit) return false;
 
@@ -106,27 +130,27 @@ namespace DefenseShields
             return true;
         }
 
-        private static void TAPI_SetShieldHeat(IMyTerminalBlock block, IMySession modCheck, int value)
+        private static void TAPI_SetShieldHeat(IMyTerminalBlock block, int value)
         {
             var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
-            if (logic == null || modCheck == null) return;
+            if (logic == null) return;
 
             logic.DsState.State.Heat = value;
         }
 
-        private static void TAPI_OverLoadShield(IMyTerminalBlock block, IMySession modCheck)
+        private static void TAPI_OverLoadShield(IMyTerminalBlock block)
         {
             var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
-            if (logic == null || modCheck == null) return;
+            if (logic == null) return;
 
             logic.DsState.State.Charge = -(logic.ShieldMaxCharge * 2);
         }
 
 
-        private static void TAPI_SetCharge(IMyTerminalBlock block, IMySession modCheck, float value)
+        private static void TAPI_SetCharge(IMyTerminalBlock block, float value)
         {
             var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
-            if (logic == null || modCheck == null) return;
+            if (logic == null) return;
 
             logic.DsState.State.Charge = value;
         }
