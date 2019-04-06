@@ -8,7 +8,7 @@ using VRageMath;
 
 namespace DefenseShields
 {
-    internal class PgApiFrontend
+    internal class PbApiWrapper
     {
         private IMyTerminalBlock _block;
 
@@ -34,7 +34,7 @@ namespace DefenseShields
 
         public void SetActiveShield(IMyTerminalBlock block) => _block = block; // AutoSet to TapiFrontend(block) if shield exists on grid.
 
-        public PgApiFrontend(IMyTerminalBlock block)
+        public PbApiWrapper(IMyTerminalBlock block)
         {
             _block = block;
             var delegates = _block.GetProperty("DefenseSystemsPbAPI")?.As<Dictionary<string, Delegate>>().GetValue(_block);

@@ -8,18 +8,15 @@ using VRageMath;
 
 namespace DefenseShields
 {
-    internal class ModApiFrontend
+    internal class ModApiWrapper
     {
         private IMyTerminalBlock _block;
 
-        // ModApi only methods below
-        private readonly IMySession _fullApi = MyAPIGateway.Session; // ModAPI only, unlocks all methods
-        private readonly Func<IMyTerminalBlock, IMySession, RayD, long, float, bool, Vector3D?> _rayAttackShield; // negative damage values heal
-        private readonly Func<IMyTerminalBlock, IMySession, Vector3D, long, float, bool, bool> _pointAttackShield; // negative damage values heal
-        private readonly Action<IMyTerminalBlock, IMySession, int> _setShieldHeat;
-        private readonly Action<IMyTerminalBlock, IMySession> _overLoad;
-        private readonly Action<IMyTerminalBlock, IMySession, float> _setCharge;
-        // ModApi and PB methods below.
+        private readonly Func<IMyTerminalBlock, RayD, long, float, bool, Vector3D?> _rayAttackShield; // negative damage values heal
+        private readonly Func<IMyTerminalBlock, Vector3D, long, float, bool, bool> _pointAttackShield; // negative damage values heal
+        private readonly Action<IMyTerminalBlock, int> _setShieldHeat;
+        private readonly Action<IMyTerminalBlock> _overLoad;
+        private readonly Action<IMyTerminalBlock, float> _setCharge;
         private readonly Func<IMyTerminalBlock, RayD, Vector3D?> _rayIntersectShield;
         private readonly Func<IMyTerminalBlock, Vector3D, bool> _pointInShield;
         private readonly Func<IMyTerminalBlock, float> _getShieldPercent;
@@ -42,19 +39,17 @@ namespace DefenseShields
 
         public void SetActiveShield(IMyTerminalBlock block) => _block = block; // AutoSet to TapiFrontend(block) if shield exists on grid.
 
-        public ModApiFrontend(IMyTerminalBlock block)
+        public ModApiWrapper(IMyTerminalBlock block)
         {
             _block = block;
             var delegates = _block.GetProperty("DefenseSystemsAPI")?.As<Dictionary<string, Delegate>>().GetValue(_block);
             if (delegates == null) return;
 
-            // ModApi only methods below
-            _rayAttackShield = (Func<IMyTerminalBlock, IMySession, RayD, long, float, bool, Vector3D?>)delegates["RayAttackShield"];
-            _pointAttackShield = (Func<IMyTerminalBlock, IMySession, Vector3D, long, float, bool, bool>)delegates["PointAttackShield"];
-            _setShieldHeat = (Action<IMyTerminalBlock, IMySession, int>)delegates["SetShieldHeat"];
-            _overLoad = (Action<IMyTerminalBlock, IMySession>)delegates["OverLoadShield"];
-            _setCharge = (Action<IMyTerminalBlock, IMySession, float>)delegates["SetCharge"];
-            // PB & ModApi methods below
+            _rayAttackShield = (Func<IMyTerminalBlock, RayD, long, float, bool, Vector3D?>)delegates["RayAttackShield"];
+            _pointAttackShield = (Func<IMyTerminalBlock, Vector3D, long, float, bool, bool>)delegates["PointAttackShield"];
+            _setShieldHeat = (Action<IMyTerminalBlock, int>)delegates["SetShieldHeat"];
+            _overLoad = (Action<IMyTerminalBlock>)delegates["OverLoadShield"];
+            _setCharge = (Action<IMyTerminalBlock, float>)delegates["SetCharge"];
             _rayIntersectShield = (Func<IMyTerminalBlock, RayD, Vector3D?>)delegates["RayIntersectShield"];
             _pointInShield = (Func<IMyTerminalBlock, Vector3D, bool>)delegates["PointInShield"];
             _getShieldPercent = (Func<IMyTerminalBlock, float>)delegates["GetShieldPercent"];
@@ -75,15 +70,13 @@ namespace DefenseShields
             _isShieldBlock = (Func<IMyTerminalBlock, bool>)delegates["IsShieldBlock"];
             if (!IsShieldBlock()) _block = GetShieldBlock(_block.CubeGrid) ?? _block;
         }
-        // ModApi only methods below.
         public Vector3D? RayAttackShield(RayD ray, long attackerId, float damage, bool energy = false) =>
-            _rayAttackShield?.Invoke(_block, _fullApi, ray, attackerId, damage, energy) ?? null;
+            _rayAttackShield?.Invoke(_block, ray, attackerId, damage, energy) ?? null;
         public bool PointAttackShield(Vector3D pos, long attackerId, float damage, bool energy = false) =>
-            _pointAttackShield?.Invoke(_block, _fullApi, pos, attackerId, damage, energy) ?? false;
-        public void SetShieldHeat(int value) => _setShieldHeat?.Invoke(_block, _fullApi, value);
-        public void OverLoadShield() => _overLoad?.Invoke(_block, _fullApi);
-        public void SetCharge(float value) => _setCharge.Invoke(_block, _fullApi, value);
-        // PB and Modapi methods below.
+            _pointAttackShield?.Invoke(_block, pos, attackerId, damage, energy) ?? false;
+        public void SetShieldHeat(int value) => _setShieldHeat?.Invoke(_block, value);
+        public void OverLoadShield() => _overLoad?.Invoke(_block);
+        public void SetCharge(float value) => _setCharge.Invoke(_block, value);
         public Vector3D? RayIntersectShield(RayD ray) => _rayIntersectShield?.Invoke(_block, ray) ?? null;
         public bool PointInShield(Vector3D pos) => _pointInShield?.Invoke(_block, pos) ?? false;
         public float GetShieldPercent() => _getShieldPercent?.Invoke(_block) ?? -1;

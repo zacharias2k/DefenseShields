@@ -195,8 +195,8 @@
     <Compile Include="Data\Scripts\DefenseShields\API\ApiClient.cs" />
     <Compile Include="Data\Scripts\DefenseShields\API\ApiServer.cs" />
     <Compile Include="Data\Scripts\DefenseShields\API\TapiBackend.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\API\PbApiFrontend.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\API\ModApiFrontend.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\API\PbApiWrapper.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\API\ModApiWrapper.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\EmitterData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\DisplayData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\PlanetShieldData.cs" />
