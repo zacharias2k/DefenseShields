@@ -38,6 +38,8 @@ namespace DefenseShields
         private readonly Func<IMyEntity, IMyTerminalBlock> _getShieldBlock;
         private readonly Func<IMyTerminalBlock, bool> _isShieldBlock;
         private readonly Func<Vector3D, IMyTerminalBlock> _getClosestShield;
+        private readonly Func<IMyTerminalBlock, Vector3D, double> _getDistanceToShield;
+        private readonly Func<IMyTerminalBlock, Vector3D, Vector3D?> _getClosestShieldPoint;
 
         public void SetActiveShield(IMyTerminalBlock block) => _block = block; // AutoSet to TapiFrontend(block) if shield exists on grid.
 
@@ -72,6 +74,8 @@ namespace DefenseShields
             _getShieldBlock = (Func<IMyEntity, IMyTerminalBlock>)delegates["GetShieldBlock"];
             _isShieldBlock = (Func<IMyTerminalBlock, bool>)delegates["IsShieldBlock"];
             _getClosestShield = (Func<Vector3D, IMyTerminalBlock>)delegates["GetClosestShield"];
+            _getDistanceToShield = (Func<IMyTerminalBlock, Vector3D, double>)delegates["GetDistanceToShield"];
+            _getClosestShieldPoint = (Func<IMyTerminalBlock, Vector3D, Vector3D?>)delegates["GetClosestShieldPoint"];
 
             if (!IsShieldBlock()) _block = GetShieldBlock(_block.CubeGrid) ?? _block;
         }
@@ -102,5 +106,8 @@ namespace DefenseShields
         public IMyTerminalBlock GetShieldBlock(IMyEntity entity) => _getShieldBlock?.Invoke(entity) ?? null;
         public bool IsShieldBlock() => _isShieldBlock?.Invoke(_block) ?? false;
         public IMyTerminalBlock GetClosestShield(Vector3D pos) => _getClosestShield?.Invoke(pos) ?? null;
+        public double GetDistanceToShield(Vector3D pos) => _getDistanceToShield?.Invoke(_block, pos) ?? -1;
+        public Vector3D? GetClosestShieldPoint(Vector3D pos) => _getClosestShieldPoint?.Invoke(_block, pos) ?? null;
+
     }
 }
