@@ -25,12 +25,14 @@ namespace DefenseShields
         private readonly Func<IMyTerminalBlock, float> _getMaxHpCap;
         private readonly Func<IMyTerminalBlock, bool> _isShieldUp;
         private readonly Func<IMyTerminalBlock, string> _shieldStatus;
+        private readonly Func<IMyTerminalBlock, IMyEntity, bool, bool> _entityBypass;
         // Fields below do not require SetActiveShield to be defined first.
         private readonly Func<IMyCubeGrid, bool> _gridHasShield;
         private readonly Func<IMyCubeGrid, bool> _gridShieldOnline;
         private readonly Func<IMyEntity, bool> _protectedByShield;
         private readonly Func<IMyEntity, IMyTerminalBlock> _getShieldBlock;
         private readonly Func<IMyTerminalBlock, bool> _isShieldBlock;
+        private readonly Func<Vector3D, IMyTerminalBlock> _getClosestShield;
 
         public void SetActiveShield(IMyTerminalBlock block) => _block = block; // AutoSet to TapiFrontend(block) if shield exists on grid.
 
@@ -53,11 +55,13 @@ namespace DefenseShields
             _getMaxHpCap = (Func<IMyTerminalBlock, float>)delegates["GetMaxHpCap"];
             _isShieldUp = (Func<IMyTerminalBlock, bool>)delegates["IsShieldUp"];
             _shieldStatus = (Func<IMyTerminalBlock, string>)delegates["ShieldStatus"];
+            _entityBypass = (Func<IMyTerminalBlock, IMyEntity, bool, bool>)delegates["EntityBypass"];
             _gridHasShield = (Func<IMyCubeGrid, bool>)delegates["GridHasShield"];
             _gridShieldOnline = (Func<IMyCubeGrid, bool>)delegates["GridShieldOnline"];
             _protectedByShield = (Func<IMyEntity, bool>)delegates["ProtectedByShield"];
             _getShieldBlock = (Func<IMyEntity, IMyTerminalBlock>)delegates["GetShieldBlock"];
             _isShieldBlock = (Func<IMyTerminalBlock, bool>)delegates["IsShieldBlock"];
+            _getClosestShield = (Func<Vector3D, IMyTerminalBlock>)delegates["GetClosestShield"];
             if (!IsShieldBlock()) _block = GetShieldBlock(_block.CubeGrid) ?? _block;
         }
         public Vector3D? RayIntersectShield(RayD ray) => _rayIntersectShield?.Invoke(_block, ray) ?? null;
@@ -73,10 +77,12 @@ namespace DefenseShields
         public float GetMaxHpCap() => _getMaxHpCap?.Invoke(_block) ?? -1;
         public bool IsShieldUp() => _isShieldUp?.Invoke(_block) ?? false;
         public string ShieldStatus() => _shieldStatus?.Invoke(_block) ?? string.Empty;
+        public bool EntityBypass(IMyEntity entity, bool remove = false) => _entityBypass?.Invoke(_block, entity, remove) ?? false;
         public bool GridHasShield(IMyCubeGrid grid) => _gridHasShield?.Invoke(grid) ?? false;
         public bool GridShieldOnline(IMyCubeGrid grid) => _gridShieldOnline?.Invoke(grid) ?? false;
         public bool ProtectedByShield(IMyEntity entity) => _protectedByShield?.Invoke(entity) ?? false;
         public IMyTerminalBlock GetShieldBlock(IMyEntity entity) => _getShieldBlock?.Invoke(entity) ?? null;
         public bool IsShieldBlock() => _isShieldBlock?.Invoke(_block) ?? false;
+        public IMyTerminalBlock GetClosestShield(Vector3D pos) => _getClosestShield?.Invoke(pos) ?? null;
     }
 }

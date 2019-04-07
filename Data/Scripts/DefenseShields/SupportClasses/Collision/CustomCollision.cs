@@ -73,20 +73,68 @@ namespace DefenseShields.Support
 
         public static float? IntersectEllipsoid(MatrixD ellipsoidMatrixInv, MatrixD ellipsoidMatrix, RayD ray)
         {
-            var _normSphere = new BoundingSphereD(Vector3.Zero, 1f);
-            var _kRay = new RayD(Vector3D.Zero, Vector3D.Forward);
+            var normSphere = new BoundingSphereD(Vector3.Zero, 1f);
+            var kRay = new RayD(Vector3D.Zero, Vector3D.Forward);
 
             var krayPos = Vector3D.Transform(ray.Position, ellipsoidMatrixInv);
             var krayDir = Vector3D.Normalize(Vector3D.TransformNormal(ray.Direction, ellipsoidMatrixInv));
 
-            _kRay.Direction = krayDir;
-            _kRay.Position = krayPos;
-            var nullDist = _normSphere.Intersects(_kRay);
+            kRay.Direction = krayDir;
+            kRay.Position = krayPos;
+            var nullDist = normSphere.Intersects(kRay);
             if (!nullDist.HasValue) return null;
 
             var hitPos = krayPos + (krayDir * -nullDist.Value);
             var worldHitPos = Vector3D.Transform(hitPos, ellipsoidMatrix);
             return Vector3.Distance(worldHitPos, ray.Position);
+        }
+
+
+        public static Vector3D ClosestObbPointToPos(MyOrientedBoundingBoxD obb, Vector3D point)
+        {
+            var center = obb.Center;
+            var directionVector = point - center;
+            var halfExtents = obb.HalfExtent;
+            var m = MatrixD.CreateFromQuaternion(obb.Orientation);
+            m.Translation = obb.Center;
+            var xAxis = m.GetDirectionVector(Base6Directions.Direction.Right);
+            var yAxis = m.GetDirectionVector(Base6Directions.Direction.Up);
+            var zAxis = m.GetDirectionVector(Base6Directions.Direction.Forward);
+
+            var distanceX = Vector3D.Dot(directionVector, xAxis);
+            if (distanceX > halfExtents.X) distanceX = halfExtents.X;
+            else if (distanceX < -halfExtents.X) distanceX = -halfExtents.X;
+
+            var distanceY = Vector3D.Dot(directionVector, yAxis);
+            if (distanceY > halfExtents.Y) distanceY = halfExtents.Y;
+            else if (distanceY < -halfExtents.Y) distanceY = -halfExtents.Y;
+
+            var distanceZ = Vector3D.Dot(directionVector, zAxis);
+            if (distanceZ > halfExtents.Z) distanceZ = halfExtents.Z;
+            else if (distanceZ < -halfExtents.Z) distanceZ = -halfExtents.Z;
+
+            return center + distanceX * xAxis + distanceY * yAxis + distanceZ * zAxis;
+        }
+
+        public static Vector3D ClosestEllipsoidPointToPos(MatrixD ellipsoidMatrixInv, MatrixD ellipsoidMatrix, Vector3D point)
+        {
+            var ePos = Vector3D.Transform(point, ellipsoidMatrixInv);
+            var closestLPos = Vector3D.Normalize(ePos);
+            var closestWPos = Vector3D.Transform(closestLPos, ellipsoidMatrix);
+
+            return closestWPos;
+        }
+
+        public static double EllipsoidDistanceToPos(MatrixD ellipsoidMatrixInv, MatrixD ellipsoidMatrix, Vector3D point)
+        {
+            var ePos = Vector3D.Transform(point, ellipsoidMatrixInv);
+            var closestLPos = Vector3D.Normalize(ePos);
+            var closestWPos = Vector3D.Transform(closestLPos, ellipsoidMatrix);
+
+            var distToPoint = Vector3D.Distance(closestWPos, point);
+            if (ePos.LengthSquared() < 1) distToPoint *= -1;
+
+            return distToPoint;
         }
 
         public static void ClosestPointPlanePoint(ref PlaneD plane, ref Vector3D point, out Vector3D result)
@@ -297,193 +345,6 @@ namespace DefenseShields.Support
             if (Vector3.Transform(point8, matrixInv).LengthSquared() <= 1) return point8;
 
             var blockSize = (float)blockBox.HalfExtents.AbsMax() * 2;
-            var testDir = Vector3D.Normalize(point0 - point1);
-            var ray = new RayD(point0, -testDir);
-            var intersect = IntersectEllipsoid(matrixInv, matrix, ray);
-            if (intersect != null)
-            {
-                var point = ray.Position + (testDir * (float)-intersect);
-                if (intersect <= blockSize && Vector3D.DistanceSquared(point0, point1) >= Vector3D.DistanceSquared(point1, point))
-                {
-                    //Log.Line($"ray0: {intersect} - {Vector3D.Distance(point1, point)} - {Vector3D.Distance(point, center)}");
-                    return point;
-                }
-            }
-
-            testDir = Vector3D.Normalize(point0 - point3);
-            ray = new RayD(point0, -testDir);
-            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
-            if (intersect != null)
-            {
-                var point = ray.Position + (testDir * (float)-intersect);
-                if (intersect <= blockSize && Vector3D.DistanceSquared(point0, point3) >= Vector3D.DistanceSquared(point3, point))
-                {
-                    //Log.Line($"ray1: {intersect} - {Vector3D.Distance(point3, point)} - {Vector3D.Distance(point, center)}");
-                    return point;
-                }
-            }
-
-            testDir = Vector3D.Normalize(point0 - point4);
-            ray = new RayD(point0, -testDir);
-            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
-            if (intersect != null)
-            {
-                var point = ray.Position + (testDir * (float)-intersect);
-                if (intersect <= blockSize && Vector3D.DistanceSquared(point0, point4) >= Vector3D.DistanceSquared(point4, point))
-                {
-                    //Log.Line($"ray2: {intersect} - {Vector3D.Distance(point4, point)} - {Vector3D.Distance(point, center)}");
-                    return point;
-                }
-            }
-
-            testDir = Vector3D.Normalize(point1 - point2);
-            ray = new RayD(point1, -testDir);
-            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
-            if (intersect != null)
-            {
-                var point = ray.Position + (testDir * (float)-intersect);
-                if (intersect <= blockSize && Vector3D.DistanceSquared(point1, point2) >= Vector3D.DistanceSquared(point2, point))
-                {
-                    //Log.Line($"ray3: {intersect} - {Vector3D.Distance(point2, point)} - {Vector3D.Distance(point, center)}");
-                    return point;
-                }
-            }
-
-            testDir = Vector3D.Normalize(point1 - point5);
-            ray = new RayD(point1, -testDir);
-            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
-            if (intersect != null)
-            {
-                var point = ray.Position + (testDir * (float)-intersect);
-                if (intersect <= blockSize && Vector3D.DistanceSquared(point1, point5) >= Vector3D.DistanceSquared(point5, point))
-                {
-                    //Log.Line($"ray4: {intersect} - {Vector3D.Distance(point5, point)} - {Vector3D.Distance(point, center)}");
-                    return point;
-                }
-            }
-
-            testDir = Vector3D.Normalize(point2 - point3);
-            ray = new RayD(point2, -testDir);
-            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
-            if (intersect != null)
-            {
-                var point = ray.Position + (testDir * (float)-intersect);
-                if (intersect <= blockSize && Vector3D.DistanceSquared(point2, point3) >= Vector3D.DistanceSquared(point3, point))
-                {
-                    //Log.Line($"ray5: {intersect} - {Vector3D.Distance(point3, point)} - {Vector3D.Distance(point, center)}");
-                    return point;
-                }
-            }
-
-            testDir = Vector3D.Normalize(point2 - point6);
-            ray = new RayD(point2, -testDir);
-            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
-            if (intersect != null)
-            {
-                var point = ray.Position + (testDir * (float)-intersect);
-                if (intersect <= blockSize && Vector3D.DistanceSquared(point2, point6) >= Vector3D.DistanceSquared(point6, point))
-                {
-                    //Log.Line($"ray6: {intersect} - {Vector3D.Distance(point6, point)} - {Vector3D.Distance(point, center)}");
-                    return point;
-                }
-            }
-
-            testDir = Vector3D.Normalize(point3 - point7);
-            ray = new RayD(point3, -testDir);
-            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
-            if (intersect != null)
-            {
-                var point = ray.Position + (testDir * (float)-intersect);
-                if (intersect <= blockSize && Vector3D.DistanceSquared(point3, point7) >= Vector3D.DistanceSquared(point7, point))
-                {
-                    //Log.Line($"ray7: {intersect} - {Vector3D.Distance(point7, point)} - {Vector3D.Distance(point, center)}");
-                    return point;
-                }
-            }
-
-            testDir = Vector3D.Normalize(point4 - point5);
-            ray = new RayD(point4, -testDir);
-            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
-            if (intersect != null)
-            {
-                var point = ray.Position + (testDir * (float)-intersect);
-                if (intersect <= blockSize && Vector3D.DistanceSquared(point4, point5) >= Vector3D.DistanceSquared(point5, point))
-                {
-                    //Log.Line($"ray8: {intersect} - {Vector3D.Distance(point5, point)} - {Vector3D.Distance(point, center)}");
-                    return point;
-                }
-            }
-
-            testDir = Vector3D.Normalize(point4 - point7);
-            ray = new RayD(point4, -testDir);
-            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
-            if (intersect != null)
-            {
-                var point = ray.Position + (testDir * (float)-intersect);
-                if (intersect <= blockSize && Vector3D.DistanceSquared(point4, point7) >= Vector3D.DistanceSquared(point7, point))
-                {
-                    //Log.Line($"ray9: {intersect} - {Vector3D.Distance(point7, point)} - {Vector3D.Distance(point, center)}");
-                    return point;
-                }
-            }
-
-            testDir = Vector3D.Normalize(point5 - point6);
-            ray = new RayD(point5, -testDir);
-            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
-            if (intersect != null)
-            {
-                var point = ray.Position + (testDir * (float)-intersect);
-                if (intersect <= blockSize && Vector3D.DistanceSquared(point5, point6) >= Vector3D.DistanceSquared(point6, point))
-                {
-                    //Log.Line($"ray10: {intersect} - {Vector3D.Distance(point6, point)} - {Vector3D.Distance(point, center)}");
-                    return point;
-                }
-            }
-
-            testDir = Vector3D.Normalize(point6 - point7);
-            ray = new RayD(point6, -testDir);
-            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
-            if (intersect != null)
-            {
-                var point = ray.Position + (testDir * (float)-intersect);
-                if (intersect <= blockSize && Vector3D.DistanceSquared(point6, point7) >= Vector3D.DistanceSquared(point7, point))
-                {
-                    //Log.Line($"ray11: {intersect} - {Vector3D.Distance(point7, point)} - {Vector3D.Distance(point, center)}");
-                    return point;
-                }
-            }
-            return null;
-        }
-
-        public static Vector3D? ObbIntersect(MyOrientedBoundingBoxD obb, MatrixD matrix, MatrixD matrixInv)
-        {
-            var corners = new Vector3D[9];
-            // 4 + 5 + 6 + 7 = Front
-            // 0 + 1 + 2 + 3 = Back
-            // 1 + 2 + 5 + 6 = Top
-            // 0 + 3 + 4 + 7 = Bottom
-            obb.GetCorners(corners, 0);
-            corners[8] = obb.Center;
-            var point0 = corners[0];
-            if (Vector3.Transform(point0, matrixInv).LengthSquared() <= 1) return point0;
-            var point1 = corners[1];
-            if (Vector3.Transform(point1, matrixInv).LengthSquared() <= 1) return point1;
-            var point2 = corners[2];
-            if (Vector3.Transform(point2, matrixInv).LengthSquared() <= 1) return point2;
-            var point3 = corners[3];
-            if (Vector3.Transform(point3, matrixInv).LengthSquared() <= 1) return point3;
-            var point4 = corners[4];
-            if (Vector3.Transform(point4, matrixInv).LengthSquared() <= 1) return point4;
-            var point5 = corners[5];
-            if (Vector3.Transform(point5, matrixInv).LengthSquared() <= 1) return point5;
-            var point6 = corners[6];
-            if (Vector3.Transform(point6, matrixInv).LengthSquared() <= 1) return point6;
-            var point7 = corners[7];
-            if (Vector3.Transform(point7, matrixInv).LengthSquared() <= 1) return point7;
-            var point8 = corners[8];
-            if (Vector3.Transform(point8, matrixInv).LengthSquared() <= 1) return point8;
-
-            var blockSize = (float)obb.HalfExtent.AbsMax() * 2;
             var testDir = Vector3D.Normalize(point0 - point1);
             var ray = new RayD(point0, -testDir);
             var intersect = IntersectEllipsoid(matrixInv, matrix, ray);
@@ -1000,6 +861,193 @@ namespace DefenseShields.Support
                 }
             }
             return triNum;
+        }
+
+        public static Vector3D? ObbIntersect(MyOrientedBoundingBoxD obb, MatrixD matrix, MatrixD matrixInv)
+        {
+            var corners = new Vector3D[9];
+            // 4 + 5 + 6 + 7 = Front
+            // 0 + 1 + 2 + 3 = Back
+            // 1 + 2 + 5 + 6 = Top
+            // 0 + 3 + 4 + 7 = Bottom
+            obb.GetCorners(corners, 0);
+            corners[8] = obb.Center;
+            var point0 = corners[0];
+            if (Vector3.Transform(point0, matrixInv).LengthSquared() <= 1) return point0;
+            var point1 = corners[1];
+            if (Vector3.Transform(point1, matrixInv).LengthSquared() <= 1) return point1;
+            var point2 = corners[2];
+            if (Vector3.Transform(point2, matrixInv).LengthSquared() <= 1) return point2;
+            var point3 = corners[3];
+            if (Vector3.Transform(point3, matrixInv).LengthSquared() <= 1) return point3;
+            var point4 = corners[4];
+            if (Vector3.Transform(point4, matrixInv).LengthSquared() <= 1) return point4;
+            var point5 = corners[5];
+            if (Vector3.Transform(point5, matrixInv).LengthSquared() <= 1) return point5;
+            var point6 = corners[6];
+            if (Vector3.Transform(point6, matrixInv).LengthSquared() <= 1) return point6;
+            var point7 = corners[7];
+            if (Vector3.Transform(point7, matrixInv).LengthSquared() <= 1) return point7;
+            var point8 = corners[8];
+            if (Vector3.Transform(point8, matrixInv).LengthSquared() <= 1) return point8;
+
+            var blockSize = (float)obb.HalfExtent.AbsMax() * 2;
+            var testDir = Vector3D.Normalize(point0 - point1);
+            var ray = new RayD(point0, -testDir);
+            var intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point0, point1) >= Vector3D.DistanceSquared(point1, point))
+                {
+                    //Log.Line($"ray0: {intersect} - {Vector3D.Distance(point1, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point0 - point3);
+            ray = new RayD(point0, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point0, point3) >= Vector3D.DistanceSquared(point3, point))
+                {
+                    //Log.Line($"ray1: {intersect} - {Vector3D.Distance(point3, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point0 - point4);
+            ray = new RayD(point0, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point0, point4) >= Vector3D.DistanceSquared(point4, point))
+                {
+                    //Log.Line($"ray2: {intersect} - {Vector3D.Distance(point4, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point1 - point2);
+            ray = new RayD(point1, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point1, point2) >= Vector3D.DistanceSquared(point2, point))
+                {
+                    //Log.Line($"ray3: {intersect} - {Vector3D.Distance(point2, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point1 - point5);
+            ray = new RayD(point1, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point1, point5) >= Vector3D.DistanceSquared(point5, point))
+                {
+                    //Log.Line($"ray4: {intersect} - {Vector3D.Distance(point5, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point2 - point3);
+            ray = new RayD(point2, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point2, point3) >= Vector3D.DistanceSquared(point3, point))
+                {
+                    //Log.Line($"ray5: {intersect} - {Vector3D.Distance(point3, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point2 - point6);
+            ray = new RayD(point2, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point2, point6) >= Vector3D.DistanceSquared(point6, point))
+                {
+                    //Log.Line($"ray6: {intersect} - {Vector3D.Distance(point6, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point3 - point7);
+            ray = new RayD(point3, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point3, point7) >= Vector3D.DistanceSquared(point7, point))
+                {
+                    //Log.Line($"ray7: {intersect} - {Vector3D.Distance(point7, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point4 - point5);
+            ray = new RayD(point4, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point4, point5) >= Vector3D.DistanceSquared(point5, point))
+                {
+                    //Log.Line($"ray8: {intersect} - {Vector3D.Distance(point5, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point4 - point7);
+            ray = new RayD(point4, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point4, point7) >= Vector3D.DistanceSquared(point7, point))
+                {
+                    //Log.Line($"ray9: {intersect} - {Vector3D.Distance(point7, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point5 - point6);
+            ray = new RayD(point5, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point5, point6) >= Vector3D.DistanceSquared(point6, point))
+                {
+                    //Log.Line($"ray10: {intersect} - {Vector3D.Distance(point6, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+
+            testDir = Vector3D.Normalize(point6 - point7);
+            ray = new RayD(point6, -testDir);
+            intersect = IntersectEllipsoid(matrixInv, matrix, ray);
+            if (intersect != null)
+            {
+                var point = ray.Position + (testDir * (float)-intersect);
+                if (intersect <= blockSize && Vector3D.DistanceSquared(point6, point7) >= Vector3D.DistanceSquared(point7, point))
+                {
+                    //Log.Line($"ray11: {intersect} - {Vector3D.Distance(point7, point)} - {Vector3D.Distance(point, center)}");
+                    return point;
+                }
+            }
+            return null;
         }
     }
 }

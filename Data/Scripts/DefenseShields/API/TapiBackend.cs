@@ -32,11 +32,16 @@ namespace DefenseShields
             ["GetMaxHpCap"] = new Func<IMyTerminalBlock, float>(TAPI_GetMaxHpCap),
             ["IsShieldUp"] = new Func<IMyTerminalBlock, bool>(TAPI_IsShieldUp),
             ["ShieldStatus"] = new Func<IMyTerminalBlock, string>(TAPI_ShieldStatus),
+            ["EntityBypass"] = new Func<IMyTerminalBlock, IMyEntity, bool, bool>(TAPI_EntityBypass),
             ["GridHasShield"] = new Func<IMyCubeGrid, bool>(TAPI_GridHasShield),
             ["GridShieldOnline"] = new Func<IMyCubeGrid, bool>(TAPI_GridShieldOnline),
             ["ProtectedByShield"] = new Func<IMyEntity, bool>(TAPI_ProtectedByShield),
             ["GetShieldBlock"] = new Func<IMyEntity, IMyTerminalBlock>(TAPI_GetShieldBlock),
             ["IsShieldBlock"] = new Func<IMyTerminalBlock, bool>(TAPI_IsShieldBlock),
+            ["GetClosestShield"] = new Func<Vector3D, IMyTerminalBlock>(TAPI_GetClosestShield),
+            ["GetDistanceToShield"] = new Func<IMyTerminalBlock, Vector3D, double>(TAPI_GetDistanceToShield),
+            ["GetClosestShieldPoint"] = new Func<IMyTerminalBlock, Vector3D, Vector3D?>(TAPI_GetClosestShieldPoint),
+
         };
 
         private readonly Dictionary<string, Delegate> _terminalPbApiMethods = new Dictionary<string, Delegate>()
@@ -54,13 +59,16 @@ namespace DefenseShields
             ["GetMaxHpCap"] = new Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, float>(TAPI_GetMaxHpCap),
             ["IsShieldUp"] = new Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, bool>(TAPI_IsShieldUp),
             ["ShieldStatus"] = new Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, string>(TAPI_ShieldStatus),
+            ["EntityBypass"] = new Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, VRage.Game.ModAPI.Ingame.IMyEntity, bool, bool>(TAPI_EntityBypass),
             ["GridHasShield"] = new Func<VRage.Game.ModAPI.Ingame.IMyCubeGrid, bool>(TAPI_GridHasShield),
             ["GridShieldOnline"] = new Func<VRage.Game.ModAPI.Ingame.IMyCubeGrid, bool>(TAPI_GridShieldOnline),
             ["ProtectedByShield"] = new Func<VRage.Game.ModAPI.Ingame.IMyEntity, bool>(TAPI_ProtectedByShield),
             ["GetShieldBlock"] = new Func<VRage.Game.ModAPI.Ingame.IMyEntity, Sandbox.ModAPI.Ingame.IMyTerminalBlock>(TAPI_GetShieldBlock),
             ["IsShieldBlock"] = new Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, bool>(TAPI_IsShieldBlock),
+            ["GetClosestShield"] = new Func<Vector3D, Sandbox.ModAPI.Ingame.IMyTerminalBlock>(TAPI_GetClosestShield),
+            ["GetDistanceToShield"] = new Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, Vector3D, double>(TAPI_GetDistanceToShield),
+            ["GetClosestShieldPoint"] = new Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, Vector3D, Vector3D?>(TAPI_GetClosestShieldPoint),
         };
-
 
         internal void Init()
         {
@@ -201,7 +209,7 @@ namespace DefenseShields
             var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
             if (logic == null) return -1;
 
-            return logic.DsSet.Settings.Rate * DefenseShields.ConvToDec;
+            return logic.ShieldChargeRate * DefenseShields.ConvToDec;
         }
 
         private static float TAPI_GetMaxCharge(IMyTerminalBlock block)
@@ -257,10 +265,24 @@ namespace DefenseShields
             return logic.GetShieldStatus();
         }
 
+        private static bool TAPI_EntityBypass(IMyTerminalBlock block, IMyEntity entity, bool remove)
+        {
+            var ent = (MyEntity)entity;
+            var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
+            if (logic == null || ent == null) return false;
+
+            var success = remove ? logic.EntityBypass.Remove(ent) : logic.EntityBypass.Add(ent);
+
+            return success;
+        }
+
         private static bool TAPI_GridHasShield(IMyCubeGrid grid)
         {
+            if (grid == null) return false;
+
             MyProtectors protectors;
             var myGrid = (MyCubeGrid)grid;
+
             if (Session.Instance.GlobalProtect.TryGetValue(myGrid, out protectors))
             {
                 foreach (var s in protectors.Shields)
@@ -273,6 +295,8 @@ namespace DefenseShields
 
         private static bool TAPI_GridShieldOnline(IMyCubeGrid grid)
         {
+            if (grid == null) return false;
+
             MyProtectors protectors;
             var myGrid = (MyCubeGrid)grid;
             if (Session.Instance.GlobalProtect.TryGetValue(myGrid, out protectors))
@@ -287,6 +311,8 @@ namespace DefenseShields
 
         private static bool TAPI_ProtectedByShield(IMyEntity entity)
         {
+            if (entity == null) return false;
+
             MyProtectors protectors;
             var ent = (MyEntity)entity;
             if (Session.Instance.GlobalProtect.TryGetValue(ent, out protectors))
@@ -301,6 +327,8 @@ namespace DefenseShields
 
         private static IMyTerminalBlock TAPI_GetShieldBlock(IMyEntity entity)
         {
+            if (entity == null) return null;
+
             MyProtectors protectors;
             var ent = (MyEntity) entity;
             var grid = ent as MyCubeGrid;
@@ -323,6 +351,43 @@ namespace DefenseShields
             return logic != null;
         }
 
+        private static IMyTerminalBlock TAPI_GetClosestShield(Vector3D pos)
+        {
+            MyCubeBlock cloestSBlock = null;
+            var closestDist = double.MaxValue;
+            lock (Session.Instance.ActiveShields)
+            {
+                foreach (var s in Session.Instance.ActiveShields)
+                {
+                    if (Vector3D.DistanceSquared(s.DetectionCenter, pos) > Session.Instance.SyncDistSqr) continue;
+
+                    var sDist = CustomCollision.EllipsoidDistanceToPos(s.DetectMatrixOutsideInv, s.DetectMatrixOutside, pos);
+                    if (sDist > 0 && sDist < closestDist)
+                    {
+                        cloestSBlock = s.MyCube;
+                        closestDist = sDist;
+                    }
+                }
+            }
+            return cloestSBlock as IMyTerminalBlock;
+        }
+
+        private static double TAPI_GetDistanceToShield(IMyTerminalBlock block, Vector3D pos)
+        {
+            var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
+            if (logic == null) return -1;
+
+            return CustomCollision.EllipsoidDistanceToPos(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, pos);
+        }
+
+        private static Vector3D? TAPI_GetClosestShieldPoint(IMyTerminalBlock block, Vector3D pos)
+        {
+            var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
+            if (logic == null) return null;
+
+            return CustomCollision.ClosestEllipsoidPointToPos(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, pos);
+        }
+
         // PB overloads
         private static Vector3D? TAPI_RayIntersectShield(Sandbox.ModAPI.Ingame.IMyTerminalBlock arg1, RayD arg2) => TAPI_RayIntersectShield(arg1 as IMyTerminalBlock, arg2);
         private static bool TAPI_PointInShield(Sandbox.ModAPI.Ingame.IMyTerminalBlock arg1, Vector3D arg2) => TAPI_PointInShield(arg1 as IMyTerminalBlock, arg2);
@@ -337,10 +402,14 @@ namespace DefenseShields
         private static bool TAPI_IsShieldBlock(Sandbox.ModAPI.Ingame.IMyTerminalBlock arg) => TAPI_IsShieldBlock(arg as IMyTerminalBlock);
         private static float TAPI_GetMaxHpCap(Sandbox.ModAPI.Ingame.IMyTerminalBlock arg) => TAPI_GetMaxHpCap(arg as IMyTerminalBlock);
         private static string TAPI_ShieldStatus(Sandbox.ModAPI.Ingame.IMyTerminalBlock arg) => TAPI_ShieldStatus(arg as IMyTerminalBlock);
+        private static bool TAPI_EntityBypass(Sandbox.ModAPI.Ingame.IMyTerminalBlock arg1, VRage.Game.ModAPI.Ingame.IMyEntity arg2, bool arg3) =>TAPI_EntityBypass(arg1 as IMyTerminalBlock, arg2 as IMyEntity, arg3);
         private static bool TAPI_GridHasShield(VRage.Game.ModAPI.Ingame.IMyCubeGrid arg) => TAPI_GridHasShield(arg as IMyCubeGrid);
         private static bool TAPI_GridShieldOnline(VRage.Game.ModAPI.Ingame.IMyCubeGrid arg) => TAPI_GridShieldOnline(arg as IMyCubeGrid);
         private static bool TAPI_ProtectedByShield(VRage.Game.ModAPI.Ingame.IMyEntity arg) => TAPI_ProtectedByShield(arg as IMyEntity);
-        private static Sandbox.ModAPI.Ingame.IMyTerminalBlock TAPI_GetShieldBlock(VRage.Game.ModAPI.Ingame.IMyEntity arg) => TAPI_GetShieldBlock(arg as IMyEntity);
         private static bool TAPI_IsShieldUp(Sandbox.ModAPI.Ingame.IMyTerminalBlock arg) => TAPI_IsShieldUp(arg as IMyTerminalBlock);
+        private static Sandbox.ModAPI.Ingame.IMyTerminalBlock TAPI_GetShieldBlock(VRage.Game.ModAPI.Ingame.IMyEntity arg) => TAPI_GetShieldBlock(arg as IMyEntity);
+        private static double TAPI_GetDistanceToShield(Sandbox.ModAPI.Ingame.IMyTerminalBlock arg1, Vector3D arg2) => TAPI_GetDistanceToShield(arg1 as IMyTerminalBlock, arg2);
+        private static Vector3D? TAPI_GetClosestShieldPoint(Sandbox.ModAPI.Ingame.IMyTerminalBlock arg1, Vector3D arg2) => TAPI_GetClosestShieldPoint(arg1 as IMyTerminalBlock, arg2);
+
     }
 }

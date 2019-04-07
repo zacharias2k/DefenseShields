@@ -254,10 +254,10 @@ namespace DefenseShields
             if (DsState.State.Heat != 0) UpdateHeatRate();
             else _expChargeReduction = 0;
 
-            if (_count == 29 && DsState.State.Charge < ShieldMaxCharge) DsState.State.Charge += _shieldChargeRate;
+            if (_count == 29 && DsState.State.Charge < ShieldMaxCharge) DsState.State.Charge += ShieldChargeRate;
             else if (DsState.State.Charge.Equals(ShieldMaxCharge))
             {
-                _shieldChargeRate = 0f;
+                ShieldChargeRate = 0f;
                 _shieldConsumptionRate = 0f;
             }
 
@@ -280,7 +280,7 @@ namespace DefenseShields
 
             if (DsState.State.Charge + _shieldPeakRate < ShieldMaxCharge)
             {
-                _shieldChargeRate = _shieldPeakRate;
+                ShieldChargeRate = _shieldPeakRate;
                 _shieldConsumptionRate = _shieldMaxChargeRate;
             }
             else
@@ -290,12 +290,12 @@ namespace DefenseShields
                     var remaining = MathHelper.Clamp(ShieldMaxCharge - DsState.State.Charge, 0, ShieldMaxCharge);
                     var remainingScaled = remaining / _shieldPeakRate;
                     _shieldConsumptionRate = remainingScaled * _shieldMaxChargeRate;
-                    _shieldChargeRate = _shieldPeakRate * remainingScaled;
+                    ShieldChargeRate = _shieldPeakRate * remainingScaled;
                 }
                 else
                 {
                     _shieldConsumptionRate = 0;
-                    _shieldChargeRate = 0;
+                    ShieldChargeRate = 0;
                 }
             }
             _powerNeeded = _shieldMaintaintPower + _shieldConsumptionRate + _otherPower;
@@ -309,7 +309,7 @@ namespace DefenseShields
                 if (!DsState.State.Online)
                 {
                     DsState.State.Charge = 0.01f;
-                    _shieldChargeRate = 0f;
+                    ShieldChargeRate = 0f;
                     _shieldConsumptionRate = 0f;
                     return true;
                 }
@@ -335,7 +335,7 @@ namespace DefenseShields
                     else if (DsState.State.Charge < ShieldMaxCharge * 0.1) DsState.State.ShieldPercent = 0f;
                     else DsState.State.ShieldPercent = 100f;
 
-                    _shieldChargeRate = 0f;
+                    ShieldChargeRate = 0f;
                     _shieldConsumptionRate = 0f;
                     return true;
                 }

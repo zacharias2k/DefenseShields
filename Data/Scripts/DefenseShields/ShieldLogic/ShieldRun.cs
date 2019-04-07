@@ -1,4 +1,6 @@
-﻿namespace DefenseShields
+﻿using VRageMath;
+
+namespace DefenseShields
 {
     using System;
     using Support;
@@ -85,6 +87,11 @@
 
                 if (!_isServer || !DsState.State.Online) return;
                 if (_comingOnline) ComingOnlineSetup();
+                var test =  CustomCollision.ClosestObbPointToPos(SOriBBoxD, MyAPIGateway.Session.Player.Character.GetPosition());
+                var test2 = CustomCollision.ClosestEllipsoidPointToPos(DetectMatrixOutsideInv, DetectMatrixOutside, MyAPIGateway.Session.Player.Character.GetPosition());
+                CustomCollision.EllipsoidDistanceToPos(DetectMatrixOutsideInv, DetectMatrixOutside, MyAPIGateway.Session.Player.Character.GetPosition());
+                DsDebugDraw.DrawSingleVec(test2, 1, Color.Red);
+                //DsDebugDraw.DrawOBB(SOriBBoxD, Color.Blue);
                 if (_mpActive && (_forceBufferSync || _count == 29))
                 {
                     var newPercentColor = UtilsStatic.GetShieldColorFromFloat(DsState.State.ShieldPercent);

@@ -205,10 +205,10 @@
                 var shieldPercent = !DsState.State.Online ? 0f : 100f;
 
                 if (DsState.State.Charge < ShieldMaxCharge) shieldPercent = DsState.State.Charge / ShieldMaxCharge * 100;
-                if (_shieldChargeRate > 0)
+                if (ShieldChargeRate > 0)
                 {
                     var toMax = ShieldMaxCharge - DsState.State.Charge;
-                    var secs = toMax / _shieldChargeRate;
+                    var secs = toMax / ShieldChargeRate;
                     if (secs.Equals(1)) secToFull = 0;
                     else secToFull = (int)secs;
                 }
@@ -228,9 +228,9 @@
                     stringBuilder.Append(status + " MaxHP: " + (ShieldMaxCharge * ConvToHp).ToString("N0") +
                                          "\n" +
                                          "\n[Shield HP__]: " + (DsState.State.Charge * ConvToHp).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
-                                         "\n[HP Per Sec_]: " + (_shieldChargeRate * ConvToHp).ToString("N0") +
+                                         "\n[HP Per Sec_]: " + (ShieldChargeRate * ConvToHp).ToString("N0") +
                                          "\n[Damage In__]: " + _damageReadOut.ToString("N0") +
-                                         "\n[Charge Rate]: " + _shieldChargeRate.ToString("0.0") + " Mw" +
+                                         "\n[Charge Rate]: " + ShieldChargeRate.ToString("0.0") + " Mw" +
                                          "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
                                          "\n[Over Heated]: " + DsState.State.Heat.ToString("0") + "%" +
                                          "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +

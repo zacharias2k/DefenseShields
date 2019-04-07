@@ -31,6 +31,7 @@ namespace DefenseShields
 
         internal readonly HashSet<MyEntity> AuthenticatedCache = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> IgnoreCache = new HashSet<MyEntity>();
+        internal readonly HashSet<MyEntity> EntityBypass = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> EnemyShields = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> Missiles = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> FriendlyMissileCache = new HashSet<MyEntity>();
@@ -132,7 +133,6 @@ namespace DefenseShields
         private float _batteryCurrentInput;
         private float _shieldPeakRate;
         private float _shieldMaxChargeRate;
-        private float _shieldChargeRate;
         private float _damageReadOut;
         private float _accumulatedHeat;
         private float _shieldMaintaintPower;
@@ -308,6 +308,7 @@ namespace DefenseShields
         internal uint TicksWithNoActivity { get; set; }
         internal uint EffectsCleanTick { get; set; }
 
+        internal float ShieldChargeRate { get; set; }
         internal float ShieldMaxCharge { get; set; }
         internal float GridMaxPower { get; set; }
         internal float GridCurrentPower { get; set; }
