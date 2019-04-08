@@ -87,6 +87,8 @@
         [ProtoMember(17)] public long Visible = 0;
         [ProtoMember(18)] public Vector3I ShieldOffset = Vector3I.Zero;
         [ProtoMember(19)] public uint MId;
+        [ProtoMember(20)] public long PowerScale = 0;
+        [ProtoMember(21), DefaultValue(-1)] public int PowerWatts = 999;
     }
 
     [ProtoContract]

@@ -44,8 +44,8 @@ namespace DefenseShields
                           $"Access:{DsState.State.ControllerGridAccess} - EmitterLos:{DsState.State.EmitterLos}\n" +
                           $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)}\n" +
                           $"ShieldMode:{ShieldMode} - pFail:{_powerFail}\n" +
-                          $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{GridMaxPower}\n" +
-                          $"AvailPoW:{GridAvailablePower} - MTPoW:{_shieldMaintaintPower}\n" +
+                          $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{ShieldMaxPower}\n" +
+                          $"AvailPoW:{ShieldAvailablePower} - MTPoW:{_shieldMaintaintPower}\n" +
                           $"Pow:{_power} HP:{DsState.State.Charge}: {ShieldMaxCharge}";
 
             if (!_isDedicated) MyAPIGateway.Utilities.ShowNotification(message, 28800);

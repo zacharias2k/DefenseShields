@@ -42,7 +42,9 @@
                 TerminalHelpers.Separator(comp?.Shield, "DS-C_sep1");
                 ChargeSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_ChargeRate", "Shield Charge Rate", "Percentage Of Power The Shield May Consume", DsUi.GetRate, DsUi.SetRate);
                 ChargeSlider.SetLimits(20, 95);
-
+                PowerScaleSelect = TerminalHelpers.AddCombobox(comp?.Shield, "DS-C_PowerScale", "Select Power Scale", "Select the power scale to use", DsUi.GetPowerScale, DsUi.SetPowerScale, DsUi.ListPowerScale);
+                PowerWatts = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_PowerWatts", "Power To Use", "Select the maximum scaled power the shield can use", DsUi.GetPowerWatts, DsUi.SetPowerWatts,  DsUi.EnablePowerWatts);
+                PowerWatts.SetLimits(1, 999);
                 if (comp != null && comp.GridIsMobile)
                 {
                     TerminalHelpers.Separator(comp.Shield, "DS-C_sep2");

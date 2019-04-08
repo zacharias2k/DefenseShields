@@ -367,20 +367,28 @@
             }
             if (!GameLoaded && Tick > 100)
             {
-                if (!WarHeadLoaded && WarTerminalReset != null)
+                if (Tick > 100)
                 {
-                    WarTerminalReset.ShowInTerminal = true;
-                    WarTerminalReset = null;
-                    WarHeadLoaded = true;
-                }
+                    if (!WarHeadLoaded && WarTerminalReset != null)
+                    {
+                        WarTerminalReset.ShowInTerminal = true;
+                        WarTerminalReset = null;
+                        WarHeadLoaded = true;
+                    }
 
-                if (!MiscLoaded)
-                {
-                    MiscLoaded = true;
-                    UtilsStatic.GetDefinitons();
-                    if (!IsServer) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
+                    if (!MiscLoaded)
+                    {
+                        MiscLoaded = true;
+                        UtilsStatic.GetDefinitons();
+                        if (!IsServer) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
+                    }
+                    GameLoaded = true;
                 }
-                GameLoaded = true;
+                else if (!FirstLoop)
+                {
+                    FirstLoop = true;
+                    _bTapi.Init();
+                }
             }
 
             if (EmpWork.EventRunning && EmpWork.Computed) EmpWork.EventComplete();

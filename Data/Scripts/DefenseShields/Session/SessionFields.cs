@@ -276,7 +276,7 @@
         internal bool ModAction { get; set; }
         internal bool CreativeWarn { get; set; }
         internal bool ThyaImages { get; set; }
-
+        internal bool FirstLoop { get; set; }
         internal DefenseShields HudComp { get; set; }
         internal DSUtils Dsutil1 { get; set; } = new DSUtils();
 
@@ -301,6 +301,8 @@
         internal IMyTerminalControlOnOffSwitch ToggleShield { get; set; }
         internal IMyTerminalControlCombobox ShellSelect { get; set; }
         internal IMyTerminalControlCombobox ShellVisibility { get; set; }
+        internal IMyTerminalControlCombobox PowerScaleSelect { get; set; }
+        internal IMyTerminalControlSlider PowerWatts { get; set; }
 
         internal IMyTerminalControlSlider ModDamage { get; set; }
         internal IMyTerminalControlCheckbox ModVoxels { get; set; }

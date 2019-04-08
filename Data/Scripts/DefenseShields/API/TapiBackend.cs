@@ -246,7 +246,7 @@ namespace DefenseShields
             var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
             if (logic == null) return -1;
 
-            return logic.DsState.State.GridIntegrity * DefenseShields.ConvToDec;
+            return logic.ShieldHpBase * DefenseShields.ConvToDec;
         }
 
         private static bool TAPI_IsShieldUp(IMyTerminalBlock block)

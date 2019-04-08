@@ -69,7 +69,10 @@ namespace DefenseShields
         internal void TerminalRefresh(bool update = true)
         {
             Shield.RefreshCustomInfo();
-            if (update) MyCube.UpdateTerminal();
+            if (update && InControlPanel && InThisTerminal)
+            {
+                MyCube.UpdateTerminal();
+            }
         }
 
         public void ResetDamageEffects()

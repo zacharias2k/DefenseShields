@@ -46,7 +46,6 @@
                     Log.Line("LoadConf - Session: This is a server");
                     UtilsStatic.PrepConfigFile();
                     UtilsStatic.ReadConfigFile();
-                    _bTapi.Init();
                 }
 
                 if (MpActive)

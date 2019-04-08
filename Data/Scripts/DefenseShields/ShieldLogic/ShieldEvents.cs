@@ -215,17 +215,19 @@
 
                 var shieldPowerNeeds = _powerNeeded;
                 var powerUsage = shieldPowerNeeds;
-                var gridMaxPower = GridMaxPower;
                 var initStage = 1;
                 var validEmitterId = DsState.State.ActiveEmitterId != 0;
                 if (WarmedUp) initStage = 4;
                 else if (Warming) initStage = 3;
                 else if (_allInited) initStage = 2;
+                const string maxString = " MaxHp: ";
+                var hpValue = (ShieldMaxCharge * ConvToHp);
+
 
                 var status = GetShieldStatus();
                 if (status == "[Shield Up]" || status == "[Shield Down]" || status == "[Shield Offline]")
                 {
-                    stringBuilder.Append(status + " MaxHP: " + (ShieldMaxCharge * ConvToHp).ToString("N0") +
+                    stringBuilder.Append(status + maxString + hpValue.ToString("N0") +
                                          "\n" +
                                          "\n[Shield HP__]: " + (DsState.State.Charge * ConvToHp).ToString("N0") + " (" + shieldPercent.ToString("0") + "%)" +
                                          "\n[HP Per Sec_]: " + (ShieldChargeRate * ConvToHp).ToString("N0") +
@@ -234,8 +236,9 @@
                                          "\n[Full Charge_]: " + secToFull.ToString("N0") + "s" +
                                          "\n[Over Heated]: " + DsState.State.Heat.ToString("0") + "%" +
                                          "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
-                                         "\n[Power Usage]: " + powerUsage.ToString("0.0") + " (" + gridMaxPower.ToString("0.0") + ")Mw" +
-                                         "\n[Shield Power]: " + _sink.CurrentInputByType(GId).ToString("0.0") + " Mw");
+                                         "\n[Shield Power]: " + ShieldCurrentPower.ToString("0.0") + " Mw" +
+                                         "\n[Power Use]: " + powerUsage.ToString("0.0") + " (" + GridMaxPower.ToString("0.0") + ")Mw");
+
                 }
                 else
                 {
