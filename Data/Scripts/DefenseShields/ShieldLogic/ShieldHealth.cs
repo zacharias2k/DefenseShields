@@ -12,11 +12,11 @@
             var heat = DsState.State.Heat;
             heat = heat / 10;
 
-            if (heat >= 10) _shieldChargeRate = 0;
+            if (heat >= 10) ShieldChargeRate = 0;
             else
             {
                 _expChargeReduction = ExpChargeReductions[heat];
-                _shieldChargeRate = _shieldChargeRate / _expChargeReduction;
+                ShieldChargeRate = ShieldChargeRate / _expChargeReduction;
             }
         }
 
@@ -27,7 +27,7 @@
             if (_count == 29)
             {
                 _runningDamage = _dpsAvg.Add((int)_damageReadOut);
-                _runningHeal = _hpsAvg.Add((int)(_shieldChargeRate * ConvToHp));
+                _runningHeal = _hpsAvg.Add((int)(ShieldChargeRate * ConvToHp));
                 _damageReadOut = 0;
             }
 

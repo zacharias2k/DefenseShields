@@ -344,7 +344,7 @@ namespace DefenseSystems
                     {
                         DsState.State.Overload = false;
                         _overLoadLoop = -1;
-                        var recharged = _shieldChargeRate * ShieldDownCount / 60;
+                        var recharged = ShieldChargeRate * ShieldDownCount / 60;
                         DsState.State.Charge = MathHelper.Clamp(recharged, ShieldMaxCharge * 0.10f, ShieldMaxCharge * 0.25f);
                     }
                 }
@@ -366,7 +366,7 @@ namespace DefenseSystems
                         DsState.State.EmpOverLoad = false;
                         _empOverLoadLoop = -1;
                         _empOverLoad = false;
-                        var recharged = _shieldChargeRate * EmpDownCount / 60;
+                        var recharged = ShieldChargeRate * EmpDownCount / 60;
                         DsState.State.Charge = MathHelper.Clamp(recharged, ShieldMaxCharge * 0.25f, ShieldMaxCharge * 0.62f);
                     }
                 }

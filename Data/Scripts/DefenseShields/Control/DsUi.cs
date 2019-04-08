@@ -33,6 +33,14 @@
             new MyTerminalControlComboBoxItem() { Key = 2, Value = MyStringId.GetOrCompute("Visible On Hit") }
         };
 
+        private static readonly List<MyTerminalControlComboBoxItem> ReserveList = new List<MyTerminalControlComboBoxItem>()
+        {
+            new MyTerminalControlComboBoxItem() { Key = 0, Value = MyStringId.GetOrCompute("Disabled") },
+            new MyTerminalControlComboBoxItem() { Key = 1, Value = MyStringId.GetOrCompute("KiloWatt") },
+            new MyTerminalControlComboBoxItem() { Key = 2, Value = MyStringId.GetOrCompute("MegaWatt") },
+            new MyTerminalControlComboBoxItem() { Key = 3, Value = MyStringId.GetOrCompute("GigaWatt") },
+            new MyTerminalControlComboBoxItem() { Key = 4, Value = MyStringId.GetOrCompute("TeraWatt") },
+        };																														   
         internal static void CreateUi(IMyTerminalBlock shield)
         {
             Session.Instance.WidthSlider.Visible = ShowSizeSlider;
@@ -392,6 +400,47 @@
             var comp = block?.GameLogic?.GetAs<Controllers>();
             var notStation = comp != null && !comp.Shield.CubeGrid.IsStatic;
             return notStation;
+        }
+        internal static void ListPowerScale(List<MyTerminalControlComboBoxItem> reserveList)
+        {
+            foreach (var shell in ReserveList) reserveList.Add(shell);
+        }
+
+        internal static long GetPowerScale(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<Controllers>();
+            return comp?.DsSet.Settings.PowerScale ?? 0;
+        }
+
+        internal static void SetPowerScale(IMyTerminalBlock block, long newValue)
+        {
+            var comp = block?.GameLogic?.GetAs<Controllers>();
+            if (comp == null) return;
+            comp.DsSet.Settings.PowerScale = newValue;
+            comp.SettingsUpdated = true;
+            comp.ClientUiUpdate = true;
+        }
+
+        internal static float GetPowerWatts(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<Controllers>();
+            return comp?.DsSet.Settings.PowerWatts ?? 0;
+        }
+
+        internal static void SetPowerWatts(IMyTerminalBlock block, float newValue)
+        {
+            var comp = block?.GameLogic?.GetAs<Controllers>();
+            if (comp == null) return;
+            comp.DsSet.Settings.PowerWatts = (int)newValue;
+            comp.SettingsUpdated = true;
+            comp.ClientUiUpdate = true;
+        }
+
+        internal static bool EnablePowerWatts(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<Controllers>();
+            if (comp == null) return false;
+            return comp.DsSet.Settings.PowerScale != 0;
         }
         #endregion
     }

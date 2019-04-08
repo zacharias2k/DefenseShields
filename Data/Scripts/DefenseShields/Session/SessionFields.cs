@@ -201,7 +201,7 @@
         private volatile bool _newFrame;
 
         private readonly MonitorWork _workData = new MonitorWork();
-
+        private readonly TapiBackend _bTapi = new TapiBackend();
         private readonly List<MyCubeBlock> _warHeadCubeHits = new List<MyCubeBlock>();
         private readonly List<MyCubeGrid> _warHeadGridHits = new List<MyCubeGrid>();
         private readonly List<MyEntity> _pruneWarGrids = new List<MyEntity>();
@@ -290,7 +290,7 @@
         internal bool LogStats { get; set; }
         internal bool LogServer { get; set; }
         internal bool LogFullReport { get; set; }
-
+        internal bool FirstLoop { get; set; }
         internal Controllers HudComp { get; set; }
         internal DSUtils Dsutil1 { get; set; } = new DSUtils();
         internal Perf Perf { get; set; } = new Perf();
@@ -317,6 +317,8 @@
         internal IMyTerminalControlOnOffSwitch ToggleShield { get; set; }
         internal IMyTerminalControlCombobox ShellSelect { get; set; }
         internal IMyTerminalControlCombobox ShellVisibility { get; set; }
+        internal IMyTerminalControlCombobox PowerScaleSelect { get; set; }
+        internal IMyTerminalControlSlider PowerWatts { get; set; }																		  
 
         internal IMyTerminalControlSlider ModDamage { get; set; }
         internal IMyTerminalControlCheckbox ModVoxels { get; set; }

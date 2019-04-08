@@ -280,6 +280,7 @@ namespace DefenseSystems
 
             var voxel = ent as MyVoxelBase;
             if (voxel != null && (Session.Enforced.DisableVoxelSupport == 1 || Bus.ActiveModulator == null || Bus.ActiveModulator.ModSet.Settings.ModulateVoxels || !GridIsMobile)) return Ent.Ignore;
+            if (EntityBypass.Contains(ent)) return Ent.Ignore;															  
 
             var character = ent as IMyCharacter;
             if (character != null)

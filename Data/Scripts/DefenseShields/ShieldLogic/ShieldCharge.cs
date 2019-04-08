@@ -13,7 +13,7 @@ namespace DefenseSystems
         private bool PowerOnline()
         {
             UpdateGridPower();
-            if (!_gridPowered) return false;
+            if (!_shieldPowered) return false;
 
             CalculatePowerCharge();
 
@@ -82,7 +82,12 @@ namespace DefenseSystems
                 GridCurrentPower += _batteryCurrentInput;
                 GridAvailablePower -= _batteryCurrentInput;
             }
-            _gridPowered = GridMaxPower > 0;
+            var reserveScaler = ReserveScaler[DsSet.Settings.PowerScale];
+            var userPowerCap = DsSet.Settings.PowerWatts * reserveScaler;
+            var shieldMax = GridMaxPower > userPowerCap ? userPowerCap : GridMaxPower;
+            ShieldMaxPower = shieldMax;
+            ShieldAvailablePower = ShieldMaxPower - GridCurrentPower;
+            _shieldPowered = ShieldMaxPower > 0;										
         }
 
         private void FallBackPowerCalc(bool reportOnly = false)
@@ -214,26 +219,26 @@ namespace DefenseSystems
             }
             else bufferScaler = 100 / percent * baseScaler / (float)_sizeScaler * _shieldRatio;
 
-            var hpBase = GridMaxPower * bufferScaler;
+            ShieldHpBase = ShieldMaxPower * bufferScaler;
 
             var gridIntegrity = DsState.State.GridIntegrity * ConvToDec;
             if (capScaler > 0) gridIntegrity *= capScaler;
 
-            if (hpBase > gridIntegrity) _hpScaler = gridIntegrity / hpBase;
-            else _hpScaler = 1f;
+            if (ShieldHpBase > gridIntegrity) HpScaler = gridIntegrity / ShieldHpBase;
+            else HpScaler = 1f;
 
             shieldMaintainPercent = shieldMaintainPercent * DsState.State.EnhancerPowerMulti * (DsState.State.ShieldPercent * ConvToDec);
             if (DsState.State.Lowered) shieldMaintainPercent = shieldMaintainPercent * 0.25f;
-            _shieldMaintaintPower = GridMaxPower * _hpScaler * shieldMaintainPercent;
+            _shieldMaintaintPower = ShieldMaxPower * HpScaler * shieldMaintainPercent;
 
-            ShieldMaxCharge = hpBase * _hpScaler;
+            ShieldMaxCharge = ShieldHpBase * HpScaler;
             var powerForShield = PowerNeeded(chargePercent, hpsEfficiency);
             if (!WarmedUp) return;
 
             if (DsState.State.Charge > ShieldMaxCharge) DsState.State.Charge = ShieldMaxCharge;
             if (_isServer)
             {
-                var powerLost = powerForShield <= 0 || _powerNeeded > GridMaxPower || (GridMaxPower - _powerNeeded) / Math.Abs(_powerNeeded) * 100 < 0.001;
+                var powerLost = powerForShield <= 0 || _powerNeeded > ShieldMaxPower || (ShieldMaxPower - _powerNeeded) / Math.Abs(_powerNeeded) * 100 < 0.001;
                 var serverNoPower = DsState.State.NoPower;
                 if (powerLost || serverNoPower)
                 {
@@ -255,10 +260,10 @@ namespace DefenseSystems
             if (DsState.State.Heat != 0) UpdateHeatRate();
             else _expChargeReduction = 0;
 
-            if (_count == 29 && DsState.State.Charge < ShieldMaxCharge) DsState.State.Charge += _shieldChargeRate;
+            if (_count == 29 && DsState.State.Charge < ShieldMaxCharge) DsState.State.Charge += ShieldChargeRate;
             else if (DsState.State.Charge.Equals(ShieldMaxCharge))
             {
-                _shieldChargeRate = 0f;
+                ShieldChargeRate = 0f;
                 _shieldConsumptionRate = 0f;
             }
 
@@ -270,10 +275,10 @@ namespace DefenseSystems
         private float PowerNeeded(float chargePercent, float hpsEfficiency)
         {
             var powerScaler = 1f;
-            if (_hpScaler < 0.5) powerScaler = _hpScaler + _hpScaler;
+            if (HpScaler < 1) powerScaler = HpScaler;
 
-            var cleanPower = GridAvailablePower + ShieldCurrentPower;
-            _otherPower = GridMaxPower - cleanPower;
+            var cleanPower = ShieldAvailablePower + ShieldCurrentPower;
+            _otherPower = ShieldMaxPower - cleanPower;
             var powerForShield = ((cleanPower * chargePercent) - _shieldMaintaintPower) * powerScaler;
             var rawMaxChargeRate = powerForShield > 0 ? powerForShield : 0f;
             //if (ShieldMode == ShieldType.SmallGrid)Log.Line($"GridAvail:{GridAvailablePower} - Current:{ShieldCurrentPower} - Clean:{cleanPower} - Other:{_otherPower} - powerFor:{powerForShield} - rawCharge:{rawMaxChargeRate}");
@@ -282,7 +287,7 @@ namespace DefenseSystems
 
             if (DsState.State.Charge + _shieldPeakRate < ShieldMaxCharge)
             {
-                _shieldChargeRate = _shieldPeakRate;
+                ShieldChargeRate = _shieldPeakRate;
                 _shieldConsumptionRate = _shieldMaxChargeRate;
             }
             else
@@ -292,12 +297,12 @@ namespace DefenseSystems
                     var remaining = MathHelper.Clamp(ShieldMaxCharge - DsState.State.Charge, 0, ShieldMaxCharge);
                     var remainingScaled = remaining / _shieldPeakRate;
                     _shieldConsumptionRate = remainingScaled * _shieldMaxChargeRate;
-                    _shieldChargeRate = _shieldPeakRate * remainingScaled;
+                    ShieldChargeRate = _shieldPeakRate * remainingScaled;
                 }
                 else
                 {
                     _shieldConsumptionRate = 0;
-                    _shieldChargeRate = 0;
+                    ShieldChargeRate = 0;
                 }
             }
             _powerNeeded = _shieldMaintaintPower + _shieldConsumptionRate + _otherPower;
@@ -311,7 +316,7 @@ namespace DefenseSystems
                 if (!DsState.State.Online)
                 {
                     DsState.State.Charge = 0.01f;
-                    _shieldChargeRate = 0f;
+                    ShieldChargeRate = 0f;
                     _shieldConsumptionRate = 0f;
                     return true;
                 }
@@ -325,7 +330,7 @@ namespace DefenseSystems
                     {
                         DsState.State.NoPower = true;
                         DsState.State.Message = true;
-                        if (Session.Enforced.Debug >= 3) Log.Line($"StateUpdate: NoPower - forShield:{powerForShield} - rounded:{GridMaxPower} - max:{GridMaxPower} - avail{GridAvailablePower} - sCurr:{ShieldCurrentPower} - count:{_powerSources.Count} - DistEna:{Bus.MyResourceDist?.SourcesEnabled} - State:{Bus.MyResourceDist?.ResourceState} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug >= 3) Log.Line($"StateUpdate: NoPower - forShield:{powerForShield} - max:{ShieldMaxPower} - avail{ShieldAvailablePower} - sCurr:{ShieldCurrentPower} - count:{_powerSources.Count} - DistEna:{Bus.MyResourceDist?.SourcesEnabled} - State:{Bus.MyResourceDist?.ResourceState} - ShieldId [{Shield.EntityId}]");
                         ShieldChangeState();
                     }
 
@@ -337,7 +342,7 @@ namespace DefenseSystems
                     else if (DsState.State.Charge < ShieldMaxCharge * 0.1) DsState.State.ShieldPercent = 0f;
                     else DsState.State.ShieldPercent = 100f;
 
-                    _shieldChargeRate = 0f;
+                    ShieldChargeRate = 0f;
                     _shieldConsumptionRate = 0f;
                     return true;
                 }

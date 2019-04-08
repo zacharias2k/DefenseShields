@@ -47,8 +47,9 @@
     <None Include="tools\Monitor SE Log.ps1" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Data\Scripts\DefenseShields\API\ApiClient.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\API\ApiServer.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\API\ModApiWrapper.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\API\PbApiWrapper.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\API\TapiBackend.cs" />
     <Compile Include="Data\Scripts\DefenseShields\BlockRegenLogic\RegenOther.cs" />
     <Compile Include="Data\Scripts\DefenseShields\BlockRegenLogic\RegenFields.cs" />
     <Compile Include="Data\Scripts\DefenseShields\BlockRegenLogic\RegenRun.cs" />
@@ -61,7 +62,6 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\DisUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\O2Ui.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\PsUi.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\API\ShieldPropertyApi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusBlocks.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusEvents.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusGridReg.cs" />

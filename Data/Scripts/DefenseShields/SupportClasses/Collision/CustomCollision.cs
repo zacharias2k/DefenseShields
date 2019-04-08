@@ -73,20 +73,68 @@ namespace DefenseSystems.Support
 
         public static float? IntersectEllipsoid(MatrixD ellipsoidMatrixInv, MatrixD ellipsoidMatrix, RayD ray)
         {
-            var _normSphere = new BoundingSphereD(Vector3.Zero, 1f);
-            var _kRay = new RayD(Vector3D.Zero, Vector3D.Forward);
+            var normSphere = new BoundingSphereD(Vector3.Zero, 1f);
+            var kRay = new RayD(Vector3D.Zero, Vector3D.Forward);
 
             var krayPos = Vector3D.Transform(ray.Position, ellipsoidMatrixInv);
             var krayDir = Vector3D.Normalize(Vector3D.TransformNormal(ray.Direction, ellipsoidMatrixInv));
 
-            _kRay.Direction = krayDir;
-            _kRay.Position = krayPos;
-            var nullDist = _normSphere.Intersects(_kRay);
+            kRay.Direction = krayDir;
+            kRay.Position = krayPos;
+            var nullDist = normSphere.Intersects(kRay);
             if (!nullDist.HasValue) return null;
 
             var hitPos = krayPos + (krayDir * -nullDist.Value);
             var worldHitPos = Vector3D.Transform(hitPos, ellipsoidMatrix);
             return Vector3.Distance(worldHitPos, ray.Position);
+        }
+
+
+        public static Vector3D ClosestObbPointToPos(MyOrientedBoundingBoxD obb, Vector3D point)
+        {
+            var center = obb.Center;
+            var directionVector = point - center;
+            var halfExtents = obb.HalfExtent;
+            var m = MatrixD.CreateFromQuaternion(obb.Orientation);
+            m.Translation = obb.Center;
+            var xAxis = m.GetDirectionVector(Base6Directions.Direction.Right);
+            var yAxis = m.GetDirectionVector(Base6Directions.Direction.Up);
+            var zAxis = m.GetDirectionVector(Base6Directions.Direction.Forward);
+
+            var distanceX = Vector3D.Dot(directionVector, xAxis);
+            if (distanceX > halfExtents.X) distanceX = halfExtents.X;
+            else if (distanceX < -halfExtents.X) distanceX = -halfExtents.X;
+
+            var distanceY = Vector3D.Dot(directionVector, yAxis);
+            if (distanceY > halfExtents.Y) distanceY = halfExtents.Y;
+            else if (distanceY < -halfExtents.Y) distanceY = -halfExtents.Y;
+
+            var distanceZ = Vector3D.Dot(directionVector, zAxis);
+            if (distanceZ > halfExtents.Z) distanceZ = halfExtents.Z;
+            else if (distanceZ < -halfExtents.Z) distanceZ = -halfExtents.Z;
+
+            return center + distanceX * xAxis + distanceY * yAxis + distanceZ * zAxis;
+        }
+
+        public static Vector3D ClosestEllipsoidPointToPos(MatrixD ellipsoidMatrixInv, MatrixD ellipsoidMatrix, Vector3D point)
+        {
+            var ePos = Vector3D.Transform(point, ellipsoidMatrixInv);
+            var closestLPos = Vector3D.Normalize(ePos);
+            var closestWPos = Vector3D.Transform(closestLPos, ellipsoidMatrix);
+
+            return closestWPos;
+        }
+
+        public static double EllipsoidDistanceToPos(MatrixD ellipsoidMatrixInv, MatrixD ellipsoidMatrix, Vector3D point)
+        {
+            var ePos = Vector3D.Transform(point, ellipsoidMatrixInv);
+            var closestLPos = Vector3D.Normalize(ePos);
+            var closestWPos = Vector3D.Transform(closestLPos, ellipsoidMatrix);
+
+            var distToPoint = Vector3D.Distance(closestWPos, point);
+            if (ePos.LengthSquared() < 1) distToPoint *= -1;
+
+            return distToPoint;
         }
 
         public static void ClosestPointPlanePoint(ref PlaneD plane, ref Vector3D point, out Vector3D result)

@@ -25,6 +25,7 @@ namespace DefenseSystems
         //internal readonly object SubLock = new object();
         //internal readonly object SubUpdateLock = new object();
         internal readonly int[] ExpChargeReductions = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024 };
+        internal readonly float[] ReserveScaler = { float.MaxValue * 0.001f, 0.001f, 1, 1000, 1000000 };																										
 
         internal readonly List<MyEntity> PruneList = new List<MyEntity>();
         internal readonly List<ShieldHit> ShieldHits = new List<ShieldHit>();
@@ -32,6 +33,7 @@ namespace DefenseSystems
 
         internal readonly HashSet<MyEntity> AuthenticatedCache = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> IgnoreCache = new HashSet<MyEntity>();
+        internal readonly HashSet<MyEntity> EntityBypass = new HashSet<MyEntity>();																				   
         internal readonly HashSet<MyEntity> EnemyShields = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> Missiles = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> FriendlyMissileCache = new HashSet<MyEntity>();
@@ -134,7 +136,7 @@ namespace DefenseSystems
         private float _batteryCurrentInput;
         private float _shieldPeakRate;
         private float _shieldMaxChargeRate;
-        private float _shieldChargeRate;
+//        private float _shieldChargeRate;
         private float _damageReadOut;
         private float _accumulatedHeat;
         private float _shieldMaintaintPower;
@@ -143,7 +145,7 @@ namespace DefenseSystems
         private float _empScaleHp = 1f;
         private float _runningDamage;
         private float _runningHeal;
-        private float _hpScaler = 1f;
+//        private float _hpScaler = 1f;
 
         private double _oldEllipsoidAdjust;
         private double _ellipsoidSurfaceArea;
@@ -189,7 +191,7 @@ namespace DefenseSystems
         private bool _isDedicated;
         private bool _mpActive;
         private bool _isServer;
-        private bool _gridPowered;
+        private bool _shieldPowered;
         private bool _slaveLink;
         //private bool _subUpdate;
         //private bool _updateGridDistributor;
@@ -313,8 +315,6 @@ namespace DefenseSystems
         internal MyCubeBlock MyCube { get; set; }
         internal MyEntity ShieldEnt { get; set; }
 
-        internal Vector3D? ShieldHitPosProperty { get; set; }
-        internal Vector3D? PosInShieldProperty { get; set; }
 
         //internal MyResourceDistributorComponent MyResourceDist { get; set; }
         internal DamageHandlerHit HandlerImpact { get; set; } = new DamageHandlerHit();
@@ -329,11 +329,18 @@ namespace DefenseSystems
         internal uint TicksWithNoActivity { get; set; }
         internal uint EffectsCleanTick { get; set; }
 
+        internal int ReserveScale { get; set; }
+
+        internal float ShieldChargeRate { get; set; }											   
         internal float ShieldMaxCharge { get; set; }
         internal float GridMaxPower { get; set; }
         internal float GridCurrentPower { get; set; }
         internal float GridAvailablePower { get; set; }
         internal float ShieldCurrentPower { get; set; }
+        internal float ShieldAvailablePower { get; set; }
+        internal float ShieldMaxPower { get; set; }
+        internal float ShieldHpBase { get; set; }
+        internal float HpScaler { get; set; } = 1f;														 
 
         internal double BoundingRange { get; set; }
         internal double EllipsoidVolume { get; set; }
