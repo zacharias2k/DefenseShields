@@ -1,15 +1,14 @@
 ﻿using VRageMath;
-
+using System;
+using DefenseSystems.Support;
+using Sandbox.Common.ObjectBuilders;
+using Sandbox.ModAPI;
+using VRage.Game.Components;
+using VRage.ModAPI;
+using VRage.ObjectBuilders;
 namespace DefenseSystems
 {
-    using System;
-    using Support;
-    using Sandbox.Common.ObjectBuilders;
-    using Sandbox.Game.Entities;
-    using Sandbox.ModAPI;
-    using VRage.Game.Components;
-    using VRage.ModAPI;
-    using VRage.ObjectBuilders;
+
 
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DSControlLarge", "DSControlSmall", "DSControlTable")]
     public partial class Controllers : MyGameLogicComponent
@@ -65,6 +64,7 @@ namespace DefenseSystems
         {
             try
             {
+                Log.Line($"{_shieldMaintaintPower} - {ShieldCurrentPower} - {_sink.CurrentInputByType(GId)}");
                 if (!EntityAlive()) return;
                 var shield = ShieldOn();
                 if (shield != State.Active)

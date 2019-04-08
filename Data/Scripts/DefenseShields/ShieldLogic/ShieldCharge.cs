@@ -1,12 +1,11 @@
 ﻿using VRageMath;
+using System;
+using DefenseSystems.Support;
+using Sandbox.ModAPI;
+using VRage;
 
 namespace DefenseSystems
 {
-    using System;
-    using Support;
-    using Sandbox.ModAPI;
-    using VRage;
-
     public partial class Controllers
     {
         #region Block Power Logic

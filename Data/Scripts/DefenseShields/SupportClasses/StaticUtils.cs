@@ -1,25 +1,25 @@
-﻿using VRage.ModAPI;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using Sandbox.Common.ObjectBuilders;
-using Sandbox.Definitions;
-using Sandbox.Game;
-using Sandbox.Game.Entities;
-using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI;
-using VRage.Game;
-using VRage.Game.Entity;
-using VRage.Game.ModAPI;
-using VRageMath;
-using Color = VRageMath.Color;
-using Quaternion = VRageMath.Quaternion;
-using Vector3 = VRageMath.Vector3;
-
-namespace DefenseSystems.Support
+﻿namespace DefenseSystems.Support
 {
+    using VRage.ModAPI;
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using Sandbox.Common.ObjectBuilders;
+    using Sandbox.Definitions;
+    using Sandbox.Game;
+    using Sandbox.Game.Entities;
+    using Sandbox.Game.EntityComponents;
+    using Sandbox.ModAPI;
+    using VRage.Game;
+    using VRage.Game.Entity;
+    using VRage.Game.ModAPI;
+    using VRageMath;
+    using Color = VRageMath.Color;
+    using Quaternion = VRageMath.Quaternion;
+    using Vector3 = VRageMath.Vector3;
+
     internal static class UtilsStatic
     {
         public static void PrepConfigFile()
@@ -82,7 +82,6 @@ namespace DefenseSystems.Support
                     Session.Enforced.HeatScaler = 0.0065f;
                     Session.Enforced.BaseScaler = 10;
                 }												 
-                }
                 Session.Enforced.Version = Version;
                 UpdateConfigFile(unPackCfg);
             }

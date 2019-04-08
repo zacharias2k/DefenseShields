@@ -1,12 +1,9 @@
 ﻿namespace DefenseSystems
 {
     using Support;
-    using Sandbox.ModAPI;
-    using VRage.Game.ModAPI;
 
     public partial class Controllers
     {
-
         private void UpdateHeatRate()
         {
             var heat = DsState.State.Heat;
