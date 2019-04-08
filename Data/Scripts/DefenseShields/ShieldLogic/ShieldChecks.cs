@@ -44,8 +44,8 @@ namespace DefenseShields
                           $"Access:{DsState.State.ControllerGridAccess} - EmitterLos:{DsState.State.EmitterLos}\n" +
                           $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(MyGrid)}\n" +
                           $"ShieldMode:{ShieldMode} - pFail:{_powerFail}\n" +
-                          $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{GridMaxPower}\n" +
-                          $"AvailPoW:{GridAvailablePower} - MTPoW:{_shieldMaintaintPower}\n" +
+                          $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{ShieldMaxPower}\n" +
+                          $"AvailPoW:{ShieldAvailablePower} - MTPoW:{_shieldMaintaintPower}\n" +
                           $"Pow:{_power} HP:{DsState.State.Charge}: {ShieldMaxCharge}";
 
             if (!_isDedicated) MyAPIGateway.Utilities.ShowNotification(message, 28800);
@@ -343,7 +343,7 @@ namespace DefenseShields
                     {
                         DsState.State.Overload = false;
                         _overLoadLoop = -1;
-                        var recharged = _shieldChargeRate * ShieldDownCount / 60;
+                        var recharged = ShieldChargeRate * ShieldDownCount / 60;
                         DsState.State.Charge = MathHelper.Clamp(recharged, ShieldMaxCharge * 0.10f, ShieldMaxCharge * 0.25f);
                     }
                 }
@@ -365,7 +365,7 @@ namespace DefenseShields
                         DsState.State.EmpOverLoad = false;
                         _empOverLoadLoop = -1;
                         _empOverLoad = false;
-                        var recharged = _shieldChargeRate * EmpDownCount / 60;
+                        var recharged = ShieldChargeRate * EmpDownCount / 60;
                         DsState.State.Charge = MathHelper.Clamp(recharged, ShieldMaxCharge * 0.25f, ShieldMaxCharge * 0.62f);
                     }
                 }

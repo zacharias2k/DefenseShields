@@ -26,7 +26,7 @@
 
             if (_resetEntity) ResetEntity();
             if (!_firstSync && _readyToSync) SaveAndSendAll();
-            if (!_isDedicated && _tick60 && InControlPanel && InThisTerminal) TerminalRefresh();
+            if (!_isDedicated && _count == 29 && InControlPanel && InThisTerminal) TerminalRefresh();
 
             if (wait || (!_allInited && !PostInit())) return false;
 
@@ -352,7 +352,7 @@
             {
                 if (_clientOn)
                 {
-                    if (GridMaxPower <= 0) BroadcastMessage(true);
+                    if (ShieldMaxPower <= 0) BroadcastMessage(true);
                     if (!GridIsMobile) _ellipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
                     ShellVisibility(true);
                     _clientOn = false;

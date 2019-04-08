@@ -1,4 +1,6 @@
-﻿namespace DefenseShields
+﻿using VRageMath;
+
+namespace DefenseShields
 {
     using System;
     using Support;
