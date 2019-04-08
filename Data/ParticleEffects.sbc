@@ -1675,7 +1675,7 @@
         <SubtypeId>PlanetShield</SubtypeId> <!-- used by weapons or block damage effect to display or attached by script -->
       </Id>
       <Version>1</Version> <!-- doesn't really matter -->
-      <ParticleId>1881</ParticleId> <!-- Must be unique if custom effect -->
+      <ParticleId>1657</ParticleId> <!-- Must be unique if custom effect -->
       <Length>1000</Length> <!-- Length of the effect in time-->
       <DurationMin>0</DurationMin> <!-- minimum duration of effect -->
       <DurationMax>1000</DurationMax> <!-- maximum duration of effect -->
