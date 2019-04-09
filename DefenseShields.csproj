@@ -221,7 +221,6 @@
     <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldChecks.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ModulatorLogic\ModulatorFields.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ModulatorLogic\ModulatorOther.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Misc.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\BoundingEllipsoid.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\Collision.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\CollisionExtensions.cs" />
