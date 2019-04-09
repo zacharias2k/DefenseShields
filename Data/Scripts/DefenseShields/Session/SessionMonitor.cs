@@ -95,7 +95,7 @@
                             return;
                         }
 
-                        if (s.GridIsMobile && s.Bus.Spine.Physics.IsMoving)
+                        if (s.ShieldIsMobile && s.Bus.Spine.Physics.IsMoving)
                         {
                             s.LastWokenTick = tick;
                             s.Asleep = false;
@@ -216,7 +216,7 @@
                         foreach (var ent in monitorList)
                         {
                             var voxel = ent as MyVoxelBase;
-                            if (ent == null || ent.MarkedForClose || (voxel == null && (ent.Physics == null || ent.DefinitionId == null)) || (!s.GridIsMobile && voxel != null) || (disableVoxels && voxel != null) || (voxel != null && voxel != voxel.RootVoxel))
+                            if (ent == null || ent.MarkedForClose || (voxel == null && (ent.Physics == null || ent.DefinitionId == null)) || (!s.ShieldIsMobile && voxel != null) || (disableVoxels && voxel != null) || (voxel != null && voxel != voxel.RootVoxel))
                             {
                                 continue;
                             }
@@ -539,7 +539,7 @@
                             continue;
                         }
 
-                        if (!DedicatedServer && Tick20 && s.EffectsDirty) s.ResetDamageEffects();
+                        if (!DedicatedServer && Tick20 && s.Bus.EffectsDirty) s.Bus.ResetDamageEffects();
                         if (Tick600) s.CleanWebEnts();
                         s.WebEntities();
                     }

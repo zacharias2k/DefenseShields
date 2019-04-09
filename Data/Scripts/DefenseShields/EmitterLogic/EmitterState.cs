@@ -144,8 +144,8 @@ namespace DefenseSystems
         private void NeedUpdate()
         {
             EmiState.State.Mode = (int)EmitterMode;
-            EmiState.State.BoundingRange = Bus?.ActiveController?.BoundingRange ?? 0f;
-            EmiState.State.Compatible = (IsStatic && EmitterMode == EmitterType.Station) || (!IsStatic && EmitterMode != EmitterType.Station);
+            EmiState.State.BoundingRange = Bus.ActiveController?.BoundingRange ?? 0f;
+            EmiState.State.Compatible = (Bus.IsStatic && EmitterMode == EmitterType.Station) || (!Bus.IsStatic && EmitterMode != EmitterType.Station);
             EmiState.SaveState();
             if (Session.Instance.MpActive) EmiState.NetworkUpdate();
         }

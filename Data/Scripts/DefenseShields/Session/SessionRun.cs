@@ -184,7 +184,7 @@
         {
             lock (ActiveShields)
                 foreach (var s in ActiveShields)
-                    if (s.GridIsMobile && !s.Asleep) s.MobileUpdate();
+                    if (s.ShieldIsMobile && !s.Asleep) s.MobileUpdate();
             _autoResetEvent.Set();
         }
         #endregion

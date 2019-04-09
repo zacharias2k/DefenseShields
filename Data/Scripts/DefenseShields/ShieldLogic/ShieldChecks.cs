@@ -1,25 +1,14 @@
 ﻿using System.Collections.Generic;
 using DefenseSystems.Support;
 using Sandbox.Game.Entities;
-using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
-using VRage;
 using VRage.Game;
-using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace DefenseSystems
 {
     public partial class Controllers
     {
-        private void LosCheck()
-        {
-            LosCheckTick = uint.MaxValue;
-            Bus.CheckEmitters = true;
-            FitChanged = true;
-            _adjustShape = true;
-        }
-
         private void Debug()
         {
             var name = Shield.CustomName;
@@ -45,8 +34,8 @@ namespace DefenseSystems
                           $"Access:{DsState.State.ControllerGridAccess} - EmitterLos:{DsState.State.EmitterLos}\n" +
                           $"ProtectedEnts:{ProtectedEntCache.Count} - ProtectMyGrid:{Session.Instance.GlobalProtect.ContainsKey(Bus.Spine)}\n" +
                           $"ShieldMode:{ShieldMode} - pFail:{_powerFail}\n" +
-                          $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{GridMaxPower}\n" +
-                          $"AvailPoW:{GridAvailablePower} - MTPoW:{_shieldMaintaintPower}\n" +
+                          $"Sink:{_sink.CurrentInputByType(GId)} - PFS:{_powerNeeded}/{Bus.ShieldMaxPower}\n" +
+                          $"AvailPoW:{Bus.ShieldAvailablePower} - MTPoW:{_shieldMaintaintPower}\n" +
                           $"Pow:{_power} HP:{DsState.State.Charge}: {ShieldMaxCharge}";
 
             if (!_isDedicated) MyAPIGateway.Utilities.ShowNotification(message, 28800);
@@ -61,145 +50,6 @@ namespace DefenseSystems
                                    "Creative Mode, due to unlimited power and \n" +
                                    "it will not operate as designed.\n";
             MyAPIGateway.Utilities.ShowNotification(message, 6720);
-        }
-
-        private void HierarchyUpdate()
-        {
-            var serverRequired = MyCube.IsWorking && MyCube.IsFunctional && _isServer;
-            var invalidStates = DsState.State.Suspended;
-            var checkGroups = !invalidStates && !_isServer || !invalidStates && serverRequired;
-            if (Session.Enforced.Debug == 3) Log.Line($"SubCheckGroups: check:{checkGroups} - SW:{Shield.IsWorking} - SF:{Shield.IsFunctional} - Online:{DsState.State.Online} - Power:{!DsState.State.NoPower} - Sleep:{DsState.State.Sleeping} - Wake:{DsState.State.Waking} - ShieldId [{Shield.EntityId}]");
-            if (checkGroups)
-            {
-                _subTick = _tick + 10;
-                UpdateSubGrids();
-                if (Session.Enforced.Debug >= 3) Log.Line($"HierarchyWasDelayed: this:{_tick} - delayedTick: {_subTick} - ShieldId [{Shield.EntityId}]");
-            }
-        }
-
-        private void UpdateSubGrids(bool force = false)
-        {
-            Bus.SubUpdate = false;
-
-            Bus.SubGridDetect(Bus.Spine, force);
-            
-            /*
-            var gotGroups = MyAPIGateway.GridGroups.GetGroup(Spine, GridLinkTypeEnum.Physical);
-            if (gotGroups.Count == Bus.LinkedGrids.Count && !force) return;
-            if (Session.Enforced.Debug >= 3 && Bus.LinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{Bus.LinkedGrids.Count != gotGroups.Count} - old:{Bus.LinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
-            lock (SubLock)
-            {
-                Bus.SubGrids.Clear();
-                Bus.LinkedGrids.Clear();
-                for (int i = 0; i < gotGroups.Count; i++)
-                {
-                    var sub = gotGroups[i];
-                    if (sub == null) continue;
-                    if (MyAPIGateway.GridGroups.HasConnection(Spine, sub, GridLinkTypeEnum.Mechanical)) Bus.SubGrids.Add((MyCubeGrid)sub);
-                    Bus.LinkedGrids.Add(sub as MyCubeGrid, new SubGridInfo(sub as MyCubeGrid, sub == Spine, false));
-                }
-            }
-            */
-
-        }
-
-        private void BlockMonitor()
-        {
-            if (Bus.BlockChanged)
-            {
-                _blockEvent = true;
-                _shapeEvent = true;
-                LosCheckTick = _tick + 1800;
-                if (Bus.BlockAdded) _shapeTick = _tick + 300;
-                else _shapeTick = _tick + 1800;
-            }
-            if (Bus.FunctionalChanged) _functionalEvent = true;
-
-            Bus.FunctionalAdded = false;
-            Bus.FunctionalRemoved = false;
-            Bus.FunctionalChanged = false;
-
-            Bus.BlockChanged = false;
-            Bus.BlockRemoved = false;
-            Bus.BlockAdded = false;
-        }
-
-        private void BlockChanged(bool backGround)
-        {
-            if (_blockEvent)
-            {
-                var notReady = !FuncTask.IsComplete || DsState.State.Sleeping || DsState.State.Suspended;
-                if (notReady) return;
-                if (Session.Enforced.Debug == 3) Log.Line($"BlockChanged: functional:{_functionalEvent} - funcComplete:{FuncTask.IsComplete} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ShieldId [{Shield.EntityId}]");
-                if (_functionalEvent) FunctionalChanged(backGround);
-                _blockEvent = false;
-                _funcTick = _tick + 60;
-            }
-        }
-
-        private void FunctionalChanged(bool backGround)
-        {
-            if (backGround) FuncTask = MyAPIGateway.Parallel.StartBackground(BackGroundChecks);
-            else BackGroundChecks();
-            _functionalEvent = false;
-        }
-
-        private void BackGroundChecks()
-        {
-            var gridDistNeedUpdate = Bus.UpdateGridDistributor || Bus.MyResourceDist?.SourcesEnabled == MyMultipleEnabledEnum.NoObjects;
-            Bus.UpdateGridDistributor = false;
-            lock (Bus.SubLock)
-            {
-                _powerSources.Clear();
-                _functionalBlocks.Clear();
-                _batteryBlocks.Clear();
-                _displayBlocks.Clear();
-
-                foreach (var grid in Bus.LinkedGrids.Keys)
-                {
-                    var mechanical = Bus.SubGrids.Contains(grid);
-                    foreach (var block in grid.GetFatBlocks())
-                    {
-                        if (mechanical)
-                        {
-                            if (gridDistNeedUpdate)
-                            {
-                                var controller = block as MyShipController;
-                                if (controller != null)
-                                {
-                                    var distributor = controller.GridResourceDistributor;
-                                    if (distributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects)
-                                    {
-                                        if (Session.Enforced.Debug == 3) Log.Line($"Found MyGridDistributor from type:{block.BlockDefinition} - ShieldId [{Shield.EntityId}]");
-                                        Bus.MyResourceDist = controller.GridResourceDistributor;
-                                        gridDistNeedUpdate = false;
-                                    }
-                                }
-                            }
-                        }
-
-                        if (!_isDedicated)
-                        {
-                            _functionalBlocks.Add(block);
-                            var display = block as IMyTextPanel;
-                            if (display != null) _displayBlocks.Add(display);
-                        }
-
-                        var battery = block as IMyBatteryBlock;
-                        if (battery != null) _batteryBlocks.Add(battery);
-
-                        var source = block.Components.Get<MyResourceSourceComponent>();
-                        if (source == null) continue;
-
-                        foreach (var type in source.ResourceTypes)
-                        {
-                            if (type != MyResourceDistributorComponent.ElectricityId) continue;
-                            _powerSources.Add(source);
-                            break;
-                        }
-                    }
-                }
-            }
         }
 
         private void GridOwnsController()
@@ -240,33 +90,6 @@ namespace DefenseSystems
             DsState.State.ControllerGridAccess = true;
         }
 
-        private bool SlaveControllerLink()
-        {
-            var notTime = _tick % 120 != 0 && _subTick < _tick + 10;
-            if (notTime && _slaveLink) return true;
-            if (IsStatic || (notTime && !_firstLoop)) return false;
-            var mySize = Bus.Spine.PositionComp.WorldAABB.Size.Volume;
-            var myEntityId = Bus.Spine.EntityId;
-            foreach (var grid in Bus.LinkedGrids.Keys)
-            {
-                if (grid == Bus.Spine) continue;
-                Bus otherBus;
-                grid.Components.TryGet(out otherBus);
-                var controller = Bus?.ActiveController;
-                if (controller != null && controller.DsState.State.Online && controller.IsWorking)
-                {
-                    var otherSize = controller.Bus.Spine.PositionComp.WorldAABB.Size.Volume;
-                    var otherEntityId = controller.Bus.Spine.EntityId;
-                    if ((!IsStatic && controller.IsStatic) || mySize < otherSize || (mySize.Equals(otherEntityId) && myEntityId < otherEntityId))
-                    {
-                        _slaveLink = true;
-                        return true;
-                    }
-                }
-            }
-            _slaveLink = false;
-            return false;
-        }
 
         private bool FieldShapeBlocked()
         {

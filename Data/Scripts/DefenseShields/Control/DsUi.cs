@@ -59,7 +59,7 @@
         internal static bool ShowSizeSlider(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<Controllers>();
-            var station = comp != null && comp.Shield.CubeGrid.IsStatic;
+            var station = comp != null && comp.Bus.IsStatic;
             return station;
         }
 
@@ -140,7 +140,7 @@
             comp.UpdateDimensions = true;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
-            comp.LosCheckTick = Session.Instance.Tick + 1800;
+            comp.Bus.LosCheckTick = Session.Instance.Tick + 1800;
         }
 
         internal static float GetHeight(IMyTerminalBlock block)
@@ -157,7 +157,7 @@
             comp.UpdateDimensions = true;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
-            comp.LosCheckTick = Session.Instance.Tick + 1800;
+            comp.Bus.LosCheckTick = Session.Instance.Tick + 1800;
         }
 
         internal static float GetDepth(IMyTerminalBlock block)
@@ -174,7 +174,7 @@
             comp.UpdateDimensions = true;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
-            comp.LosCheckTick = Session.Instance.Tick + 1800;
+            comp.Bus.LosCheckTick = Session.Instance.Tick + 1800;
         }
 
         internal static float GetOffsetWidth(IMyTerminalBlock block)
@@ -192,7 +192,7 @@
             comp.UpdateDimensions = true;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
-            comp.LosCheckTick = Session.Instance.Tick + 1800;
+            comp.Bus.LosCheckTick = Session.Instance.Tick + 1800;
             ((MyCubeBlock)block).UpdateTerminal();
         }
 
@@ -211,7 +211,7 @@
             comp.UpdateDimensions = true;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
-            comp.LosCheckTick = Session.Instance.Tick + 1800;
+            comp.Bus.LosCheckTick = Session.Instance.Tick + 1800;
             ((MyCubeBlock)block).UpdateTerminal();
         }
 
@@ -230,7 +230,7 @@
             comp.UpdateDimensions = true;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;
-            comp.LosCheckTick = Session.Instance.Tick + 1800;
+            comp.Bus.LosCheckTick = Session.Instance.Tick + 1800;
             ((MyCubeBlock)block).UpdateTerminal();
         }
 
@@ -398,7 +398,7 @@
         private static bool ShowReSizeCheckBoxs(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<Controllers>();
-            var notStation = comp != null && !comp.Shield.CubeGrid.IsStatic;
+            var notStation = comp != null && !comp.Bus.IsStatic;
             return notStation;
         }
         internal static void ListPowerScale(List<MyTerminalControlComboBoxItem> reserveList)

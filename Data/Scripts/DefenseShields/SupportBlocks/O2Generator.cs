@@ -59,7 +59,6 @@
         internal bool IsWorking { get; set; }
         internal bool AllInited { get; set; }
         internal bool Suspended { get; set; }
-        internal bool IsStatic { get; set; }
         internal bool BlockIsWorking { get; set; }
         internal bool BlockWasWorking { get; set; }
         internal bool ContainerInited { get; set; }
@@ -509,9 +508,9 @@
 
         private bool BlockWorking()
         {
-            if (_count <= 0) IsStatic = MyGrid.Physics.IsStatic;
+            if (_count <= 0) Bus.IsStatic = MyGrid.Physics.IsStatic;
 
-            if (!O2Generator.Enabled || !IsFunctional || !IsStatic || !IsWorking)
+            if (!O2Generator.Enabled || !IsFunctional || !Bus.IsStatic || !IsWorking)
             {
                 if (O2State.State.Pressurized) UpdateAirEmissives(0f);
                 NeedUpdate(O2State.State.Pressurized, false);

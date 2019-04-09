@@ -34,7 +34,6 @@ namespace DefenseSystems
             PowerInit();
             _isServer = Session.Instance.IsServer;
             _isDedicated = Session.Instance.DedicatedServer;
-            IsStatic = Emitter.CubeGrid.IsStatic;
             _disableLos = Session.Enforced.DisableLineOfSight == 1;
             IsWorking = MyCube.IsWorking;
             IsFunctional = MyCube.IsFunctional;

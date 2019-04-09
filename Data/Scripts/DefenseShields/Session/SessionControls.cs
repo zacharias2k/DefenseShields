@@ -48,7 +48,7 @@ namespace DefenseSystems
                 PowerScaleSelect = TerminalHelpers.AddCombobox(comp?.Shield, "DS-C_PowerScale", "Select Power Scale", "Select the power scale to use", DsUi.GetPowerScale, DsUi.SetPowerScale, DsUi.ListPowerScale);
                 PowerWatts = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_PowerWatts", "Power To Use", "Select the maximum scaled power the shield can use", DsUi.GetPowerWatts, DsUi.SetPowerWatts,  DsUi.EnablePowerWatts);
                 PowerWatts.SetLimits(1, 999);
-                if (comp != null && comp.GridIsMobile)
+                if (comp != null && comp.ShieldIsMobile)
                 {
                     TerminalHelpers.Separator(comp.Shield, "DS-C_sep2");
                 }

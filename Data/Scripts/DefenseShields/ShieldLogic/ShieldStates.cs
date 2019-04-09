@@ -30,13 +30,11 @@
 
             if (_tick1800 && Session.Enforced.Debug > 0) Debug();
 
-            IsStatic = Bus.Spine.IsStatic;
-
             if (!Warming) WarmUpSequence();
 
-            if (Bus.SubUpdate && _tick >= _subTick) HierarchyUpdate();
-            if (_blockEvent && _tick >= _funcTick) BlockChanged(true);
-            if (Bus.BlockChanged) BlockMonitor();
+            if (Bus.SubUpdate && _tick >= Bus.SubTick) Bus.SubGridDetect(LocalGrid);
+            if (Bus.BlockEvent && _tick >= Bus.FuncTick) Bus.SomeBlockChanged(true);
+            if (Bus.BlockChanged) Bus.BlockMonitor();
             if (ClientUiUpdate || SettingsUpdated) UpdateSettings();
 
             if (_mpActive)
@@ -68,10 +66,10 @@
                     GetEnhancernInfo();
                 }
 
-                if (_tick >= LosCheckTick) LosCheck();
+                if (_tick >= Bus.LosCheckTick) Bus.LosCheck();
                 if (Bus.EmitterEvent) EmitterEventDetected();
-                if (_shapeEvent || FitChanged) CheckExtents();
-                if (_adjustShape) AdjustShape(true);
+                if (ShapeEvent || FitChanged) CheckExtents();
+                if (AdjustShape) ReAdjustShape(true);
                 if (!ShieldServerStatusUp())
                 {
                     if (DsState.State.Lowered) return State.Lowered;
@@ -85,7 +83,7 @@
 
                 if (UpdateDimensions) RefreshDimensions();
 
-                if (!GridIsMobile && !DsState.State.IncreaseO2ByFPercent.Equals(_ellipsoidOxyProvider.O2Level))
+                if (!ShieldIsMobile && !DsState.State.IncreaseO2ByFPercent.Equals(_ellipsoidOxyProvider.O2Level))
                     _ellipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
 
                 PowerOnline();
@@ -103,13 +101,13 @@
             ShieldActive = ShieldRaised() && DsState.State.EmitterLos && notFailing && PowerOnline();
             if (!ShieldActive) return false;
             var prevOnline = DsState.State.Online;
-            if (!prevOnline && GridIsMobile && FieldShapeBlocked()) return false;
+            if (!prevOnline && ShieldIsMobile && FieldShapeBlocked()) return false;
 
             _comingOnline = !prevOnline || _firstLoop;
 
             DsState.State.Online = true;
 
-            if (!GridIsMobile && (_comingOnline || Bus.O2Updated))
+            if (!ShieldIsMobile && (_comingOnline || Bus.O2Updated))
             {
                 _ellipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
                 Bus.O2Updated = false;
@@ -126,7 +124,7 @@
             _updateRender = true;
             _comingOnline = false;
             _firstLoop = false;
-            _shapeEvent = true;
+            ShapeEvent = true;
             LastWokenTick = _tick;
             NotFailed = true;
             WarmedUp = true;
@@ -143,9 +141,9 @@
                 TerminalRefresh();
                 if (Session.Enforced.Debug == 3) Log.Line($"StateUpdate: ComingOnlineSetup - ShieldId [{Shield.EntityId}]");
             }
-            if (!_isDedicated) ResetDamageEffects();
+            if (!_isDedicated) Bus.ResetDamageEffects();
             lock (Session.Instance.ActiveShields) Session.Instance.ActiveShields.Add(this);
-            UpdateSubGrids(true);
+            Bus.SubGridDetect(LocalGrid, true);
         }
 
         private void OfflineShield(bool clear, bool resetShape, State reason, bool keepCharge = false)
@@ -176,7 +174,7 @@
                 if (resetShape)
                 {
                     ResetShape(true, true);
-                    _shapeEvent = true;
+                    ShapeEvent = true;
                 }
             }
             if (_isServer)
@@ -206,7 +204,7 @@
             {
                 if (!DsState.State.Lowered)
                 {
-                    if (!GridIsMobile) _ellipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
+                    if (!ShieldIsMobile) _ellipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
 
                     DsState.State.IncreaseO2ByFPercent = 0f;
                     if (!_isDedicated) ShellVisibility(true);
@@ -219,7 +217,7 @@
             }
             if (DsState.State.Lowered)
             {
-                if (!GridIsMobile)
+                if (!ShieldIsMobile)
                 {
                     _ellipsoidOxyProvider.UpdateOxygenProvider(DetectMatrixOutsideInv, DsState.State.IncreaseO2ByFPercent);
                     Bus.O2Updated = false;
@@ -234,11 +232,11 @@
 
         private bool ShieldSleeping()
         {
-            if (SlaveControllerLink())
+            if (Bus.SlaveControllerLink(_firstLoop))
             {
                 if (!DsState.State.Sleeping)
                 {
-                    if (!GridIsMobile) _ellipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
+                    if (!ShieldIsMobile) _ellipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
 
                     DsState.State.IncreaseO2ByFPercent = 0f;
                     if (!_isDedicated) ShellVisibility(true);
@@ -262,8 +260,8 @@
 
         private bool Suspended()
         {
-            var notStation = ShieldMode != ShieldType.Station && IsStatic;
-            var notShip = ShieldMode == ShieldType.Station && !IsStatic;
+            var notStation = ShieldMode != ShieldType.Station && Bus.IsStatic;
+            var notShip = ShieldMode == ShieldType.Station && !Bus.IsStatic;
             var unKnown = ShieldMode == ShieldType.Unknown;
             var wrongOwner = !DsState.State.ControllerGridAccess;
             var myShield = Bus.ActiveController == this;
@@ -332,10 +330,10 @@
 
                 if (Session.Enforced.Debug >= 2) Log.Line($"Woke: ShieldId [{Shield.EntityId}]");
             }
-            else if (_shapeTick != uint.MinValue && _tick >= _shapeTick)
+            else if (ShapeTick != uint.MinValue && _tick >= ShapeTick)
             {
-                _shapeEvent = true;
-                _shapeTick = uint.MinValue;
+                ShapeEvent = true;
+                ShapeTick = uint.MinValue;
             }
             DsState.State.Waking = false;
             return false;
@@ -349,8 +347,8 @@
             {
                 if (_clientOn)
                 {
-                    if (GridMaxPower <= 0) BroadcastMessage(true);
-                    if (!GridIsMobile) _ellipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
+                    if (Bus.ShieldMaxPower <= 0) BroadcastMessage(true);
+                    if (!ShieldIsMobile) _ellipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
                     ShellVisibility(true);
                     _clientOn = false;
                     TerminalRefresh();
@@ -372,7 +370,7 @@
             {
                 if (!_clientAltered)
                 {
-                    if (!GridIsMobile) _ellipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
+                    if (!ShieldIsMobile) _ellipsoidOxyProvider.UpdateOxygenProvider(MatrixD.Zero, 0);
                     ShellVisibility(true);
                     _clientAltered = true;
                 }

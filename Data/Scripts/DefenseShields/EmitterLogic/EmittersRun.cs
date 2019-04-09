@@ -84,7 +84,6 @@
                 LocalGrid = MyCube.CubeGrid;
                 if (wait || LocalGrid?.Physics == null) return;
 
-                IsStatic = LocalGrid.IsStatic;
                 Timing();
                 if (!ControllerLink()) return;
 
@@ -106,7 +105,6 @@
 
                 LocalGrid = MyCube.CubeGrid;
                 if (wait || LocalGrid?.Physics == null) return;
-                IsStatic = LocalGrid.IsStatic;
 
                 ControllerLink();
             }

@@ -102,7 +102,7 @@ namespace DefenseSystems
                 if (i < shieldsStartIndex)
                 {
                     var voxel = ent as MyVoxelBase;
-                    if (ent == null || (voxel == null && (entPhysics == null || ent.DefinitionId == null)) || (voxel != null && (!iMoving || !GridIsMobile || disableVoxels || voxel != voxel.RootVoxel))) continue;
+                    if (ent == null || (voxel == null && (entPhysics == null || ent.DefinitionId == null)) || (voxel != null && (!iMoving || !ShieldIsMobile || disableVoxels || voxel != voxel.RootVoxel))) continue;
 
                     bool quickReject;
                     if (_isServer) quickReject = ent is IMyEngineerToolBase || IgnoreCache.Contains(ent) || EnemyShields.Contains(ent) || FriendlyMissileCache.Contains(ent) || AuthenticatedCache.Contains(ent);
@@ -279,7 +279,7 @@ namespace DefenseSystems
             }
 
             var voxel = ent as MyVoxelBase;
-            if (voxel != null && (Session.Enforced.DisableVoxelSupport == 1 || Bus.ActiveModulator == null || Bus.ActiveModulator.ModSet.Settings.ModulateVoxels || !GridIsMobile)) return Ent.Ignore;
+            if (voxel != null && (Session.Enforced.DisableVoxelSupport == 1 || Bus.ActiveModulator == null || Bus.ActiveModulator.ModSet.Settings.ModulateVoxels || !ShieldIsMobile)) return Ent.Ignore;
             if (EntityBypass.Contains(ent)) return Ent.Ignore;															  
 
             var character = ent as IMyCharacter;
@@ -347,7 +347,7 @@ namespace DefenseSystems
             }
 
             if (ent is IMyMeteor || (ent.DefinitionId.HasValue && ent.DefinitionId.Value.TypeId == Session.Instance.MissileObj)) return Ent.Other;
-            if (voxel != null && GridIsMobile) return Ent.VoxelBase;
+            if (voxel != null && ShieldIsMobile) return Ent.VoxelBase;
             return 0;
         }
 

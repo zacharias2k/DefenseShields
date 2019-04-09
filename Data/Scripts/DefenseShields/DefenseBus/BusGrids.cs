@@ -7,7 +7,6 @@ namespace DefenseSystems
 {
     public partial class Bus
     {
-
         public void SetSpine(bool check, MyCubeGrid grid = null)
         {
             var keepSpine = check && !(Spine == null || Spine.MarkedForClose || !Spine.InScene || Spine == grid);
@@ -28,6 +27,7 @@ namespace DefenseSystems
 
             Spine = newSpine;
             Spine.Components.Add(this);
+            IsStatic = Spine.IsStatic;
         }
 
         public void AddSortedGrids(MyCubeGrid grid)
@@ -49,6 +49,9 @@ namespace DefenseSystems
 
         public bool SubGridDetect(MyCubeGrid grid, bool force = false)
         {
+            SubUpdate = false;
+            SubTick = Session.Instance.Tick + 10;
+
             var newLinkGrop = MyAPIGateway.GridGroups.GetGroup(grid, GridLinkTypeEnum.Physical);
             var newLinkGropCnt = newLinkGrop.Count;
             lock (SubUpdateLock)

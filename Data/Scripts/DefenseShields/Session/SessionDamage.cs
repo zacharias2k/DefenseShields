@@ -81,7 +81,7 @@ namespace DefenseSystems
 
                                 var ellipsoid = intersectDist ?? 0;
 
-                                var notContained = isVoxelBase || ellipsoid <= 0 && shield.GridIsMobile && !CustomCollision.PointInShield(trueAttacker.PositionComp.WorldAABB.Center, MatrixD.Invert(shield.ShieldShapeMatrix * shield.LocalGrid.WorldMatrix));
+                                var notContained = isVoxelBase || ellipsoid <= 0 && shield.ShieldIsMobile && !CustomCollision.PointInShield(trueAttacker.PositionComp.WorldAABB.Center, MatrixD.Invert(shield.ShieldShapeMatrix * shield.LocalGrid.WorldMatrix));
                                 if (notContained) ellipsoid = lineLength;
 
                                 var intersect = ellipsoid > 0 && lineLength + 1 >= ellipsoid;

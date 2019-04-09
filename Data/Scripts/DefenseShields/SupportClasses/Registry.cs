@@ -43,10 +43,10 @@ namespace DefenseSystems.Support
     {
         public int Compare(Emitters x, Emitters y)
         {
-            var xIsShip = x.EmitterMode != Emitters.EmitterType.Station && !x.IsStatic;
-            var xIsStation = x.EmitterMode == Emitters.EmitterType.Station && x.IsStatic;
-            var yIsShip = y.EmitterMode != Emitters.EmitterType.Station && !y.IsStatic;
-            var yIsStation = y.EmitterMode == Emitters.EmitterType.Station && y.IsStatic;
+            var xIsShip = x.EmitterMode != Emitters.EmitterType.Station && !x.MyCube.CubeGrid.IsStatic;
+            var xIsStation = x.EmitterMode == Emitters.EmitterType.Station && x.MyCube.CubeGrid.IsStatic;
+            var yIsShip = y.EmitterMode != Emitters.EmitterType.Station && !y.MyCube.CubeGrid.IsStatic;
+            var yIsStation = y.EmitterMode == Emitters.EmitterType.Station && y.MyCube.CubeGrid.IsStatic;
 
             var xIsvalid = xIsShip || xIsStation;
             var yIsvalid = yIsShip || yIsStation;

@@ -33,7 +33,7 @@ namespace DefenseSystems
 
             if (impactPos != Vector3D.NegativeInfinity && (kineticHit && KineticCoolDown < 0 || EnergyHit && EnergyCoolDown < 0))
             {
-                if (_isServer && WebDamage && GridIsMobile)
+                if (_isServer && WebDamage && ShieldIsMobile)
                 {
                     Vector3 pointVel;
                     var gridCenter = Bus.Spine.PositionComp.WorldAABB.Center;
@@ -66,7 +66,7 @@ namespace DefenseSystems
                     _shapeChanged = false;
 
                     Icosphere.CalculateTransform(ShieldShapeMatrix, lod);
-                    if (!GridIsMobile) Icosphere.ReturnPhysicsVerts(DetectionMatrix, Bus.PhysicsOutside);
+                    if (!ShieldIsMobile) Icosphere.ReturnPhysicsVerts(DetectionMatrix, Bus.PhysicsOutside);
                 }
                 Icosphere.ComputeEffects(ShieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, percent, activeVisible, refreshAnim);
             }
@@ -175,7 +175,7 @@ namespace DefenseSystems
             var drawIcon = !enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.Instance.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
             if (drawIcon) UpdateIcon();
 
-            var clearView = !GridIsMobile || !_viewInShield;
+            var clearView = !ShieldIsMobile || !_viewInShield;
             var activeInvisible = DsSet.Settings.ActiveInvisible;
             var activeVisible = !reInforce && ((!activeInvisible && clearView) || enemy);
 

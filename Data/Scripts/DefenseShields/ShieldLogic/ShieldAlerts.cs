@@ -17,7 +17,7 @@ namespace DefenseSystems
             if (notice == PlayerNotice.EmpOverLoad || notice == PlayerNotice.OverLoad) radius = 500;
             else radius = ShieldSphere.Radius * 2;
 
-            var center = GridIsMobile ? Bus.Spine.PositionComp.WorldVolume.Center : OffsetEmitterWMatrix.Translation;
+            var center = ShieldIsMobile ? Bus.Spine.PositionComp.WorldVolume.Center : OffsetEmitterWMatrix.Translation;
             var sphere = new BoundingSphereD(center, radius);
             var sendMessage = false;
             IMyPlayer targetPlayer = null;
@@ -98,7 +98,7 @@ namespace DefenseSystems
         {
             if (Session.Enforced.Debug >= 3) Log.Line($"Broadcasting message to local playerId{Session.Instance.Players.Count} - Server:{_isServer} - Dedicated:{_isDedicated} - Id:{MyAPIGateway.Multiplayer.MyId}");
 
-            if (!DsState.State.EmitterLos && GridIsMobile && !DsState.State.Waking) PlayerMessages(PlayerNotice.NoLos);
+            if (!DsState.State.EmitterLos && ShieldIsMobile && !DsState.State.Waking) PlayerMessages(PlayerNotice.NoLos);
             else if (DsState.State.NoPower || forceNoPower) PlayerMessages(PlayerNotice.NoPower);
             else if (DsState.State.Overload) PlayerMessages(PlayerNotice.OverLoad);
             else if (DsState.State.EmpOverLoad) PlayerMessages(PlayerNotice.EmpOverLoad);

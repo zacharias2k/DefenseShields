@@ -25,7 +25,7 @@ namespace DefenseSystems
 
             if (!_isDedicated)
             {
-                if (!_updateLosState && (EmiState.State.Los != _wasLosState || controller.LosCheckTick == _tick + 1799 || controller.LosCheckTick == _tick + 1800)) _updateLosState = true;
+                if (!_updateLosState && (EmiState.State.Los != _wasLosState || Bus.LosCheckTick == _tick + 1799 || Bus.LosCheckTick == _tick + 1800)) _updateLosState = true;
                 _wasLosState = EmiState.State.Los;
                 if (!_isServer)
                 {
@@ -96,7 +96,7 @@ namespace DefenseSystems
             {
                 var controller = Bus.ActiveController;
 
-                var needsUpdate = controller.GridIsMobile && (Bus.GridIsMoving || _updateLosState);
+                var needsUpdate = controller.ShieldIsMobile && (Bus.GridIsMoving || _updateLosState);
 
                 var blockCam = controller.ShieldEnt.PositionComp.WorldVolume;
                 if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam))
@@ -160,7 +160,7 @@ namespace DefenseSystems
 
                 MyAPIGateway.Utilities.ShowNotification("The shield emitter DOES NOT have a CLEAR ENOUGH LINE OF SIGHT to the shield, SHUTTING DOWN.", 960, "Red");
                 MyAPIGateway.Utilities.ShowNotification($"Green means clear line of sight, Flashing Orange means blocked | Blocked: {blocked} | Clear: {sighted} | Needed (Approximate): {needed}", 960, "Red");
-                if (needed == 0 && controller.LosCheckTick != uint.MaxValue) MyAPIGateway.Utilities.ShowNotification($"Needed is only an approximation, if shield does not start in 30 seconds or is unstable, then it is not clear.", 960, "White");
+                if (needed == 0 && Bus.LosCheckTick != uint.MaxValue) MyAPIGateway.Utilities.ShowNotification($"Needed is only an approximation, if shield does not start in 30 seconds or is unstable, then it is not clear.", 960, "White");
                 else if (needed == 0 && _lCount % 2 == 1) MyAPIGateway.Utilities.ShowNotification($"Shield is still not clear!", 960, "White");
             }
         }

@@ -4,14 +4,12 @@ using VRage.ModAPI;
 namespace DefenseSystems
 {
     using System;
-    using System.Collections.Generic;
     using Support;
     using Sandbox.Game.EntityComponents;
     using Sandbox.ModAPI;
     using VRage.Game;
     using VRage.Game.Components;
     using VRage.Game.Entity;
-    using VRage.Game.ModAPI;
     using VRage.Utils;
     using VRageMath;
 
@@ -85,7 +83,7 @@ namespace DefenseSystems
 
         private void AfterInit()
         {
-            GridIntegrity();
+            Bus.GetSpineIntegrity();
             Bus.Init();
             NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
@@ -163,7 +161,7 @@ namespace DefenseSystems
             DsState.State.ActiveEmitterId = Bus.ActiveEmitterId;
             DsState.State.EmitterLos = Bus.EmitterLos;
             if (Session.Enforced.Debug >= 3) Log.Line($"EmitterEvent: ShieldMode:{ShieldMode} - Los:{Bus.EmitterLos} - Warmed:{WarmedUp} - SavedEId:{DsState.State.EmitterLos} - NewEId:{Bus.ActiveEmitterId} - ShieldId [{Shield.EntityId}]");
-            if (!GridIsMobile)
+            if (!ShieldIsMobile)
             {
                 UpdateDimensions = true;
                 if (UpdateDimensions) RefreshDimensions();
@@ -174,14 +172,14 @@ namespace DefenseSystems
                 if (!WarmedUp)
                 {
                     Bus.Spine.Physics.ForceActivate();
-                    if (Session.Enforced.Debug >= 3) Log.Line($"EmitterStartupFailure: Asleep:{Asleep} - MaxPower:{GridMaxPower} - {ShieldSphere.Radius} - ShieldId [{Shield.EntityId}]");
-                    LosCheckTick = Session.Instance.Tick + 1800;
+                    if (Session.Enforced.Debug >= 3) Log.Line($"EmitterStartupFailure: Asleep:{Asleep} - MaxPower:{Bus.ShieldMaxPower} - {ShieldSphere.Radius} - ShieldId [{Shield.EntityId}]");
+                    Bus.LosCheckTick = Session.Instance.Tick + 1800;
                     ShieldChangeState();
                     return;
                 }
-                if (GridIsMobile && Bus.ActiveEmitter != null && !Bus.ActiveEmitter.EmiState.State.Los) DsState.State.Message = true;
-                else if (!GridIsMobile && Bus.ActiveEmitter != null && !Bus.ActiveEmitter.EmiState.State.Los) DsState.State.Message = true;
-                if (Session.Enforced.Debug >= 3) Log.Line($"EmitterEvent: no emitter is working, shield mode: {ShieldMode} - WarmedUp:{WarmedUp} - MaxPower:{GridMaxPower} - Radius:{ShieldSphere.Radius} - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
+                if (ShieldIsMobile && Bus.ActiveEmitter != null && !Bus.ActiveEmitter.EmiState.State.Los) DsState.State.Message = true;
+                else if (!ShieldIsMobile && Bus.ActiveEmitter != null && !Bus.ActiveEmitter.EmiState.State.Los) DsState.State.Message = true;
+                if (Session.Enforced.Debug >= 3) Log.Line($"EmitterEvent: no emitter is working, shield mode: {ShieldMode} - WarmedUp:{WarmedUp} - MaxPower:{Bus.ShieldMaxPower} - Radius:{ShieldSphere.Radius} - Broadcast:{DsState.State.Message} - ShieldId [{Shield.EntityId}]");
             }
         }
 
@@ -283,7 +281,7 @@ namespace DefenseSystems
             Bus.FunctionalChanged = true;
             ResetShape(false);
             ResetShape(false, true);
-            if (refreshBlocks) BlockChanged(false);
+            if (refreshBlocks) Bus.SomeBlockChanged(false);
             _updateRender = true;
         }
 
@@ -343,7 +341,7 @@ namespace DefenseSystems
 
         private void CurrentInputChanged(MyDefinitionId resourceTypeId, float oldInput, MyResourceSinkComponent sink)
         {
-            ShieldCurrentPower = sink.CurrentInputByType(GId);
+            if (Bus.ActiveController == this) ShieldCurrentPower = sink.CurrentInputByType(GId);
         }
 
         private void PowerInit()
@@ -425,7 +423,7 @@ namespace DefenseSystems
                     _updateMobileShape = true;
                     break;
             }
-            GridIsMobile = ShieldMode != ShieldType.Station;
+            ShieldIsMobile = ShieldMode != ShieldType.Station;
             DsUi.CreateUi(Shield);
             InitEntities(true);
         }
@@ -481,34 +479,6 @@ namespace DefenseSystems
             if (Session.Enforced.Debug == 3) Log.Line($"InitEntities: mode: {ShieldMode}, spawn complete - ShieldId [{Shield.EntityId}]");
         }
 
-        private float GridIntegrity(IMyCubeGrid grid = null, bool remove = false)
-        {
-            var mainSub = false;
-            if (grid == null)
-            {
-                DsState.State.GridIntegrity = 0;
-                grid = Shield.CubeGrid;
-            }
-            else if (grid == Bus.Spine) mainSub = true;
-
-            var integrityAdjustment = 0f;
-
-            var blockList = new List<IMySlimBlock>();
-            grid.GetBlocks(blockList);
-
-            for (int i = 0; i < blockList.Count; i++)
-            {
-                integrityAdjustment += blockList[i].MaxIntegrity;
-            }
-
-            if (!mainSub)
-            {
-                if (!remove) DsState.State.GridIntegrity += integrityAdjustment;
-                else DsState.State.GridIntegrity -= integrityAdjustment;
-            }
-
-            return integrityAdjustment;
-        }
         #endregion
     }
 }

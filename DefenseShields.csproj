@@ -63,10 +63,12 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\O2Ui.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\PsUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusBlocks.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusChecks.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusEvents.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusGridReg.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusGrids.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusFields.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusPower.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DisplayLogic\DisplayFields.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DisplayLogic\DisplayRun.cs" />
     <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmitterDraw.cs" />

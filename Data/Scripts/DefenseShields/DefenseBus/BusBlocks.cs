@@ -1,6 +1,9 @@
 ﻿using System.Collections.Generic;
 using DefenseSystems.Support;
 using Sandbox.Game.Entities;
+using Sandbox.Game.EntityComponents;
+using Sandbox.ModAPI;
+using VRage;
 
 namespace DefenseSystems
 {
@@ -192,5 +195,106 @@ namespace DefenseSystems
             }
             if (!BusIsSplit && newSplit) Events.Split(cube.CubeGrid, state);
         }
+
+
+        internal void BlockMonitor()
+        {
+            if (BlockChanged)
+            {
+                var tick = Session.Instance.Tick;
+                BlockEvent = true;
+                ActiveController.ShapeEvent = true;
+
+                LosCheckTick = tick + 1800;
+                if (BlockAdded) ActiveController.ShapeTick = tick + 300;
+                else ActiveController.ShapeTick = tick + 1800;
+            }
+            if (FunctionalChanged) FunctionalEvent = true;
+
+            FunctionalAdded = false;
+            FunctionalRemoved = false;
+            FunctionalChanged = false;
+
+            BlockChanged = false;
+            BlockRemoved = false;
+            BlockAdded = false;
+        }
+
+        internal void SomeBlockChanged(bool backGround)
+        {
+            if (BlockEvent)
+            {
+                var notReady = !FuncTask.IsComplete || ActiveController.DsState.State.Sleeping || ActiveController.DsState.State.Suspended;
+                if (notReady) return;
+                if (FunctionalEvent) FunctionalBlockChanged(backGround);
+                BlockEvent = false;
+                FuncTick = Session.Instance.Tick + 60;
+            }
+        }
+
+        private void FunctionalBlockChanged(bool backGround)
+        {
+            if (backGround) FuncTask = MyAPIGateway.Parallel.StartBackground(BackGroundChecks);
+            else BackGroundChecks();
+            FunctionalEvent = false;
+        }
+
+        private void BackGroundChecks()
+        {
+            var gridDistNeedUpdate = UpdateGridDistributor || MyResourceDist?.SourcesEnabled == MyMultipleEnabledEnum.NoObjects;
+            UpdateGridDistributor = false;
+            lock (SubLock)
+            {
+                _powerSources.Clear();
+                _functionalBlocks.Clear();
+                _batteryBlocks.Clear();
+                _displayBlocks.Clear();
+
+                foreach (var grid in LinkedGrids.Keys)
+                {
+                    var mechanical = SubGrids.Contains(grid);
+                    foreach (var block in grid.GetFatBlocks())
+                    {
+                        if (mechanical)
+                        {
+                            if (gridDistNeedUpdate)
+                            {
+                                var controller = block as MyShipController;
+                                if (controller != null)
+                                {
+                                    var distributor = controller.GridResourceDistributor;
+                                    if (distributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects)
+                                    {
+                                        MyResourceDist = controller.GridResourceDistributor;
+                                        gridDistNeedUpdate = false;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!Session.Instance.DedicatedServer)
+                        {
+                            _functionalBlocks.Add(block);
+                            var display = block as IMyTextPanel;
+                            if (display != null) _displayBlocks.Add(display);
+                        }
+
+                        var battery = block as IMyBatteryBlock;
+                        if (battery != null) _batteryBlocks.Add(battery);
+
+                        var source = block.Components.Get<MyResourceSourceComponent>();
+                        if (source == null) continue;
+
+                        foreach (var type in source.ResourceTypes)
+                        {
+                            if (type != MyResourceDistributorComponent.ElectricityId) continue;
+                            _powerSources.Add(source);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
     }
 }

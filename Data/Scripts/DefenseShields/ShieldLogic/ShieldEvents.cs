@@ -131,7 +131,6 @@
 
                 var shieldPowerNeeds = _powerNeeded;
                 var powerUsage = shieldPowerNeeds;
-                var gridMaxPower = GridMaxPower;
                 var initStage = 1;
                 var validEmitterId = DsState.State.ActiveEmitterId != 0;
                 if (WarmedUp) initStage = 4;
@@ -153,7 +152,7 @@
                                          "\n[Over Heated]: " + DsState.State.Heat.ToString("0") + "%" +
                                          "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
                                          "\n[Shield Power]: " + ShieldCurrentPower.ToString("0.0") + " Mw" +
-                                         "\n[Power Use]: " + powerUsage.ToString("0.0") + " (" + GridMaxPower.ToString("0.0") + ")Mw");
+                                         "\n[Power Use]: " + powerUsage.ToString("0.0") + " (" + Bus.GridMaxPower.ToString("0.0") + ")Mw");
                 }
                 else
                 {

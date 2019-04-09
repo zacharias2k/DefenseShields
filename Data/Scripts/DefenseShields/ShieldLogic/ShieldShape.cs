@@ -13,18 +13,18 @@ namespace DefenseSystems
         #region Shield Shape
         public void ResetShape(bool background, bool newShape = false)
         {
-            if (Session.Enforced.Debug == 3) Log.Line($"ResetShape: Mobile:{GridIsMobile} - Mode:{ShieldMode}/{DsState.State.Mode} - newShape:{newShape} - Offline:{!DsState.State.Online} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ELos:{Bus.EmitterLos} - ShieldId [{Shield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"ResetShape: Mobile:{ShieldIsMobile} - Mode:{ShieldMode}/{DsState.State.Mode} - newShape:{newShape} - Offline:{!DsState.State.Online} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ELos:{Bus.EmitterLos} - ShieldId [{Shield.EntityId}]");
 
             if (newShape)
             {
-                UpdateSubGrids(true);
-                BlockMonitor();
-                if (_shapeEvent) CheckExtents();
-                if (GridIsMobile) _updateMobileShape = true;
+                Bus.SubGridDetect(LocalGrid, true);
+                Bus.BlockMonitor();
+                if (ShapeEvent) CheckExtents();
+                if (ShieldIsMobile) _updateMobileShape = true;
                 return;
             }
 
-            if (GridIsMobile) MobileUpdate();
+            if (ShieldIsMobile) MobileUpdate();
             else
             {
                 UpdateDimensions = true;
@@ -120,15 +120,15 @@ namespace DefenseSystems
             _halfExtentsChanged = !DsState.State.GridHalfExtents.Equals(_oldGridHalfExtents);
             if (_halfExtentsChanged || SettingsUpdated)
             {
-                _adjustShape = true;
+                AdjustShape = true;
             }
         }
 
-        private void AdjustShape(bool backGround)
+        private void ReAdjustShape(bool backGround)
         {
             if (backGround) GetShapeAdjust();
             else GetShapeAdjust();
-            _adjustShape = false;
+            AdjustShape = false;
         }
 
         private void GetShapeAdjust()
@@ -141,14 +141,14 @@ namespace DefenseSystems
         private void CheckExtents()
         {
             FitChanged = false;
-            _shapeEvent = false;
-            if (!_isServer || !GridIsMobile) return;
+            ShapeEvent = false;
+            if (!_isServer || !ShieldIsMobile) return;
             CreateHalfExtents();
         }
 
         internal void CreateShieldShape()
         {
-            if (GridIsMobile)
+            if (ShieldIsMobile)
             {
                 _updateMobileShape = false;
                 if (_shapeChanged) CreateMobileShape();

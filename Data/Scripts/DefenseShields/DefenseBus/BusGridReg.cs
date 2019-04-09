@@ -48,11 +48,12 @@ namespace DefenseSystems
             newGrid.RecalculateOwners();
         }
 
-        private void HierarchyChangedEvent(MyCubeGrid myCubeGrid = null)
+        private void HierarchyChangedEvent(MyCubeGrid grid = null)
         {
             try
             {
                 SubUpdate = true;
+                if (grid != null && SubTick < Session.Instance.Tick + 10) SubGridDetect(grid);
             }
             catch (Exception ex) { Log.Line($"Exception in Controller HierarchyChanged: {ex}"); }
         }
@@ -63,7 +64,7 @@ namespace DefenseSystems
             {
                 BlockAdded = true;
                 BlockChanged = true;
-                if (Session.Instance.IsServer) GridIntegrity += mySlimBlock.MaxIntegrity;
+                if (Session.Instance.IsServer) SpineIntegrity += mySlimBlock.MaxIntegrity;
             }
             catch (Exception ex) { Log.Line($"Exception in Controller BlockAdded: {ex}"); }
         }
@@ -74,7 +75,7 @@ namespace DefenseSystems
             {
                 BlockRemoved = true;
                 BlockChanged = true;
-                if (Session.Instance.IsServer) GridIntegrity -= mySlimBlock.MaxIntegrity;
+                if (Session.Instance.IsServer) SpineIntegrity -= mySlimBlock.MaxIntegrity;
             }
             catch (Exception ex) { Log.Line($"Exception in Controller BlockRemoved: {ex}"); }
         }

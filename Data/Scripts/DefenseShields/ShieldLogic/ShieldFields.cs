@@ -20,12 +20,9 @@ namespace DefenseSystems
     public partial class Controllers
     {
         #region Setup
-        internal readonly MyDefinitionId GId = MyResourceDistributorComponent.ElectricityId;
 
-        //internal readonly object SubLock = new object();
-        //internal readonly object SubUpdateLock = new object();
         internal readonly int[] ExpChargeReductions = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024 };
-        internal readonly float[] ReserveScaler = { float.MaxValue * 0.001f, 0.001f, 1, 1000, 1000000 };																										
+        internal readonly MyDefinitionId GId = MyResourceDistributorComponent.ElectricityId;
 
         internal readonly List<MyEntity> PruneList = new List<MyEntity>();
         internal readonly List<ShieldHit> ShieldHits = new List<ShieldHit>();
@@ -103,10 +100,7 @@ namespace DefenseSystems
         private const string ModelOrange = "\\Models\\Cubes\\ShieldPassive04.mwm";
         private const string ModelCyan = "\\Models\\Cubes\\ShieldPassive03.mwm";
 
-        private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
-        private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
-        private readonly List<IMyBatteryBlock> _batteryBlocks = new List<IMyBatteryBlock>();
-        private readonly List<IMyTextPanel> _displayBlocks = new List<IMyTextPanel>();
+
         private readonly List<KeyValuePair<MyEntity, EntIntersectInfo>> _webEntsTmp = new List<KeyValuePair<MyEntity, EntIntersectInfo>>();
         private readonly List<KeyValuePair<MyEntity, ProtectCache>> _protectEntsTmp = new List<KeyValuePair<MyEntity, ProtectCache>>();
         private readonly RunningAverage _dpsAvg = new RunningAverage(2);
@@ -119,10 +113,7 @@ namespace DefenseSystems
 
         private uint _tick;
         private uint _shieldEntRendId;
-        private uint _subTick;
-        private uint _funcTick;
         private uint _fatTick;
-        private uint _shapeTick;
         private uint _capacitorTick;
         private uint _messageTick;
         private uint _heatVentingTick = uint.MaxValue;
@@ -131,12 +122,9 @@ namespace DefenseSystems
         private float _power = 0.001f;
         private float _powerNeeded;
         private float _otherPower;
-        private float _batteryMaxPower;
-        private float _batteryCurrentOutput;
-        private float _batteryCurrentInput;
+
         private float _shieldPeakRate;
         private float _shieldMaxChargeRate;
-//        private float _shieldChargeRate;
         private float _damageReadOut;
         private float _accumulatedHeat;
         private float _shieldMaintaintPower;
@@ -145,7 +133,6 @@ namespace DefenseSystems
         private float _empScaleHp = 1f;
         private float _runningDamage;
         private float _runningHeal;
-//        private float _hpScaler = 1f;
 
         private double _oldEllipsoidAdjust;
         private double _ellipsoidSurfaceArea;
@@ -191,25 +178,13 @@ namespace DefenseSystems
         private bool _isDedicated;
         private bool _mpActive;
         private bool _isServer;
-        private bool _shieldPowered;
-        private bool _slaveLink;
-        //private bool _subUpdate;
-        //private bool _updateGridDistributor;
+
         private bool _hideShield;
         private bool _hideColor;
         private bool _supressedColor;
         private bool _shapeChanged;
         private bool _entityChanged;
         private bool _updateRender;
-		//private bool _functionalAdded;
-        //private bool _functionalRemoved;
-        //private bool _functionalChanged;
-        private bool _functionalEvent;
-        //private bool _blockAdded;
-		//private bool _blockRemoved;
-        //private bool _blockChanged;
-		private bool _blockEvent;
-        private bool _shapeEvent;
         private bool _updateMobileShape;
         private bool _clientNotReady;
         private bool _clientAltered;
@@ -217,11 +192,8 @@ namespace DefenseSystems
         private bool _viewInShield;
         private bool _powerFail;
         private bool _halfExtentsChanged;
-        //private bool _checkForDistributor;
-        private bool _updatePowerSources;
         private bool _readyToSync;
         private bool _firstSync;
-        private bool _adjustShape;
 
         private string _modelActive = "\\Models\\Cubes\\ShieldActiveBase.mwm";
         private string _modelPassive = string.Empty;
@@ -325,23 +297,14 @@ namespace DefenseSystems
         //internal BusEvents BusEvents { get; set; } = new BusEvents();
         internal Registry Registry { get; set; } = new Registry();
         internal uint ResetEntityTick { get; set; }
-        internal uint LosCheckTick { get; set; }
         internal uint TicksWithNoActivity { get; set; }
-        internal uint EffectsCleanTick { get; set; }
+        internal uint ShapeTick { get; set; }
 
-        internal int ReserveScale { get; set; }
-
-        internal float ShieldChargeRate { get; set; }											   
-        internal float ShieldMaxCharge { get; set; }
-        internal float GridMaxPower { get; set; }
-        internal float GridCurrentPower { get; set; }
-        internal float GridAvailablePower { get; set; }
         internal float ShieldCurrentPower { get; set; }
-        internal float ShieldAvailablePower { get; set; }
-        internal float ShieldMaxPower { get; set; }
+        internal float ShieldChargeRate { get; set; }
+        internal float ShieldMaxCharge { get; set; }
         internal float ShieldHpBase { get; set; }
         internal float HpScaler { get; set; } = 1f;														 
-
         internal double BoundingRange { get; set; }
         internal double EllipsoidVolume { get; set; }
 
@@ -351,18 +314,18 @@ namespace DefenseSystems
         internal bool Warming { get; set; }
         internal bool UpdateDimensions { get; set; }
         internal bool FitChanged { get; set; }
-        internal bool GridIsMobile { get; set; }
+        internal bool ShieldIsMobile { get; set; }
         internal bool SettingsUpdated { get; set; }
         internal bool ClientUiUpdate { get; set; }
-        internal bool IsStatic { get; set; }
         internal bool WebDamage { get; set; }
         internal bool IsFunctional { get; set; }
         internal bool IsWorking { get; set; }
         internal bool EntCleanUpTime { get; set; }
         internal bool ModulateGrids { get; set; }
         internal bool EnergyHit { get; set; }
-        internal bool EffectsDirty { get; set; }
         internal bool ShieldActive { get; set; }
+        internal bool ShapeEvent { get; set; }
+        internal bool AdjustShape { get; set; }
 
         internal Vector3D MyGridCenter { get; set; }
         internal Vector3D DetectionCenter { get; set; }
@@ -374,7 +337,6 @@ namespace DefenseSystems
 
         internal MatrixD OffsetEmitterWMatrix { get; set; }
 
-        internal Task FuncTask { get; set; }
         internal float ImpactSize { get; set; } = 9f;
         internal float Absorb { get; set; }
 

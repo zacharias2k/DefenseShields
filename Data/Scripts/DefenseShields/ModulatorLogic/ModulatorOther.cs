@@ -156,7 +156,7 @@ namespace DefenseSystems
             if (ModState.State.Link && Bus.ActiveEnhancer != null && Bus.ActiveEnhancer.IsWorking)
             {
                 EnhancerLink = true;
-                if (Bus.ActiveController.IsStatic) ModSet.Settings.EmpEnabled = true;
+                if (Bus.IsStatic) ModSet.Settings.EmpEnabled = true;
             }
             else EnhancerLink = false;
 
@@ -165,7 +165,7 @@ namespace DefenseSystems
                 ModSet.Settings.ReInforceEnabled = false;
                 ModSet.Settings.EmpEnabled = false;
             }
-            else if (ModState.State.Link && Bus.ActiveController.IsStatic) ModSet.Settings.ReInforceEnabled = false;
+            else if (ModState.State.Link && Bus.IsStatic) ModSet.Settings.ReInforceEnabled = false;
         }
 
         private void ClientCheckForCompLink()
