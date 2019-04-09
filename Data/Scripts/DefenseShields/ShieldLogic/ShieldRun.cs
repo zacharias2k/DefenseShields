@@ -64,11 +64,11 @@ namespace DefenseSystems
         {
             try
             {
-                Log.Line($"{_shieldMaintaintPower} - {ShieldCurrentPower} - {_sink.CurrentInputByType(GId)}");
                 if (!EntityAlive()) return;
                 var shield = ShieldOn();
                 if (shield != State.Active)
                 {
+                    if (_tick1800 && Bus.ActiveController == this) Log.Line($"NotActive: {shield} - {Bus.MyResourceDist.SourcesEnabled} - {Bus.MyResourceDist.ResourceStateByType(GId)} - {Bus.MyResourceDist.MaxAvailableResourceByType(GId)} - {_shieldMaintaintPower} - {ShieldCurrentPower} - {_sink.CurrentInputByType(GId)}");
                     if (NotFailed)
                     {
                         if (Session.Enforced.Debug >= 2) Log.Line($"FailState: {shield} - ShieldId [{Shield.EntityId}]");

@@ -13,7 +13,6 @@ namespace DefenseSystems
         {
             UpdateGridPower();
             if (!_shieldPowered) return false;
-
             CalculatePowerCharge();
 
             if (!WarmedUp) return true;
@@ -199,7 +198,6 @@ namespace DefenseSystems
             var hpsEfficiency = Session.Enforced.HpsEfficiency;
             var baseScaler = Session.Enforced.BaseScaler;
             var maintenanceCost = Session.Enforced.MaintenanceCost;
-
             var percent = DsSet.Settings.Rate * ChargeRatio;
 
             var chargePercent = DsSet.Settings.Rate * ConvToDec;
@@ -225,7 +223,6 @@ namespace DefenseSystems
 
             if (ShieldHpBase > gridIntegrity) HpScaler = gridIntegrity / ShieldHpBase;
             else HpScaler = 1f;
-
             shieldMaintainPercent = shieldMaintainPercent * DsState.State.EnhancerPowerMulti * (DsState.State.ShieldPercent * ConvToDec);
             if (DsState.State.Lowered) shieldMaintainPercent = shieldMaintainPercent * 0.25f;
             _shieldMaintaintPower = ShieldMaxPower * HpScaler * shieldMaintainPercent;

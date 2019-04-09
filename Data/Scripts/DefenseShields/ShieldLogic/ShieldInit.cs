@@ -50,13 +50,13 @@ namespace DefenseSystems
             _allInited = false;
             Warming = false;
             WarmedUp = false;
-
+            /*
             if (_isServer)
             {
                 GridIntegrity();
                 ShieldChangeState();
             }
-            if (Session.Enforced.Debug == 3) Log.Line($"ResetEntity: ShieldId [{Shield.EntityId}]");
+            */
             return true;
         }
 
@@ -85,6 +85,7 @@ namespace DefenseSystems
 
         private void AfterInit()
         {
+            GridIntegrity();
             Bus.Init();
             NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;

@@ -213,6 +213,8 @@
                     DsState.State.Lowered = true;
                     ShieldChangeState();
                 }
+
+                PowerOnline();
                 return false;
             }
             if (DsState.State.Lowered)
