@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 using ParallelTasks;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -66,8 +67,8 @@ namespace DefenseSystems.Support
         internal Dictionary<MyEntity, TurretWeb> HitEntities = new Dictionary<MyEntity, TurretWeb>();
         internal readonly ConcurrentQueue<FiredTurret> FiredTurrets = new ConcurrentQueue<FiredTurret>();
         internal readonly ConcurrentQueue<ITurretThreadHits> TurretHits = new ConcurrentQueue<ITurretThreadHits>();
-        internal readonly Pool<List<LineD>> Beams = new Pool<List<LineD>>();
-        internal readonly Pool<Dictionary<long, CheckBeam>> CheckBeams = new Pool<Dictionary<long, CheckBeam>>();
+        internal readonly MyConcurrentPool<List<LineD>> Beams = new MyConcurrentPool<List<LineD>>();
+        internal readonly MyConcurrentPool<Dictionary<long, CheckBeam>> CheckBeams = new MyConcurrentPool<Dictionary<long, CheckBeam>>();
 
         internal void WebEnts()
         {
@@ -89,30 +90,30 @@ namespace DefenseSystems.Support
                         {
                             if (!HitEntities.ContainsKey(ent))
                             {
-                                HitEntities.Add(ent, new TurretWeb(TurretWeb.TargetType.Grid, grid, null, null, CheckBeams.Get(null)));
+                                HitEntities.Add(ent, new TurretWeb(TurretWeb.TargetType.Grid, grid, null, null, CheckBeams.Get()));
                             }
 
                             TurretWeb turretWeb;
                             if (HitEntities.TryGetValue(ent, out turretWeb))
-                                turretWeb.Turret.Add(_work.Turret.TurretId, new CheckBeam(TurretType.Pulse, Beams.Get(null)));
+                                turretWeb.Turret.Add(_work.Turret.TurretId, new CheckBeam(TurretType.Pulse, Beams.Get()));
                         }
                         else if (destroyable != null)
                         {
                             if (!HitEntities.ContainsKey(ent))
-                                HitEntities.Add(ent, new TurretWeb(TurretWeb.TargetType.Destroyable, null, destroyable, null, CheckBeams.Get(null)));
+                                HitEntities.Add(ent, new TurretWeb(TurretWeb.TargetType.Destroyable, null, destroyable, null, CheckBeams.Get()));
 
                             TurretWeb turretWeb;
                             if (HitEntities.TryGetValue(ent, out turretWeb))
-                                turretWeb.Turret.Add(_work.Turret.TurretId, new CheckBeam(TurretType.Pulse, Beams.Get(null)));
+                                turretWeb.Turret.Add(_work.Turret.TurretId, new CheckBeam(TurretType.Pulse, Beams.Get()));
                         }
                         else if (voxel != null)
                         {
                             if (!HitEntities.ContainsKey(ent))
-                                HitEntities.Add(ent, new TurretWeb(TurretWeb.TargetType.Voxel, null,null, voxel, CheckBeams.Get(null)));
+                                HitEntities.Add(ent, new TurretWeb(TurretWeb.TargetType.Voxel, null,null, voxel, CheckBeams.Get()));
 
                             TurretWeb turretWeb;
                             if (HitEntities.TryGetValue(ent, out turretWeb))
-                                turretWeb.Turret.Add(_work.Turret.TurretId, new CheckBeam(TurretType.Pulse, Beams.Get(null)));
+                                turretWeb.Turret.Add(_work.Turret.TurretId, new CheckBeam(TurretType.Pulse, Beams.Get()));
                         }
                     }
                 });
@@ -151,10 +152,12 @@ namespace DefenseSystems.Support
                                     hitBeams.Add(new LineD(from, newTo));
                                 }
                             }
+                            Beams.Return(beams);
                             if (hits > 0) TurretHits.Enqueue(new TurretGridEvent(hitBlock, damage * hits, turret.Key, hitBeams));
                         }
                     }
                 }
+                CheckBeams.Return(web.Turret);
             }
         }
 
