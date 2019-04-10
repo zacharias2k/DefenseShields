@@ -120,6 +120,7 @@ namespace DefenseSystems.Support
 
             foreach (var pair in HitEntities)
             {
+                var hitBeams = new List<LineD>();
                 var web = pair.Value;
                 if (web.Target == TurretWeb.TargetType.Grid)
                 {
@@ -144,9 +145,13 @@ namespace DefenseSystems.Support
                                 if (grid.GetLineIntersectionExactAll(ref beam, out distanceToHit, out hitBlock) != null)
                                 {
                                     hits++;
+                                    var from = beam.From;
+                                    var to = beam.To;
+                                    var newTo = Vector3D.Normalize(from - to) * distanceToHit;
+                                    hitBeams.Add(new LineD(from, newTo));
                                 }
                             }
-                            if (hits > 0) TurretHits.Enqueue(new TurretGridEvent(hitBlock, damage * hits, turret.Key, beams));
+                            if (hits > 0) TurretHits.Enqueue(new TurretGridEvent(hitBlock, damage * hits, turret.Key, hitBeams));
                         }
                     }
                 }
