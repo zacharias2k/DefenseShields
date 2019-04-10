@@ -36,7 +36,6 @@ namespace DefenseSystems
                 else FallBackPowerCalc();
             }
             SpineAvailablePower = SpineMaxPower - SpineCurrentPower;
-
             if (!ActiveController.DsSet.Settings.UseBatteries)
             {
                 SpineCurrentPower += _batteryCurrentInput;

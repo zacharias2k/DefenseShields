@@ -6,6 +6,7 @@ using Sandbox.ModAPI;
 using VRage.Collections;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
+using VRage.Game.ModAPI.Interfaces;
 using VRage.ModAPI;
 using VRage.Utils;
 using VRage.Voxels;

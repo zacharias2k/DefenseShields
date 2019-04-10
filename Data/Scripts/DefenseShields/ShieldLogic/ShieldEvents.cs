@@ -152,7 +152,7 @@
                                          "\n[Over Heated]: " + DsState.State.Heat.ToString("0") + "%" +
                                          "\n[Maintenance]: " + _shieldMaintaintPower.ToString("0.0") + " Mw" +
                                          "\n[Shield Power]: " + ShieldCurrentPower.ToString("0.0") + " Mw" +
-                                         "\n[Power Use]: " + powerUsage.ToString("0.0") + " (" + Bus.GridMaxPower.ToString("0.0") + ")Mw");
+                                         "\n[Power Use]: " + powerUsage.ToString("0.0") + " (" + Bus.SpineMaxPower.ToString("0.0") + ")Mw");
                 }
                 else
                 {

@@ -157,7 +157,8 @@
             try
             {
                 Timings();
-
+                var test = new PlayerEyeWeb();
+                test.EyeWeb();
                 if (!ThreadEvents.IsEmpty)
                 {
                     if (LogStats) Perf.ThreadEvents(ThreadEvents.Count);

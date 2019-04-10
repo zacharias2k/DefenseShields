@@ -59,10 +59,6 @@ namespace DefenseSystems
         internal float SpineAvailablePower { get; set; }
         internal float SpineMaxPower { get; set; }
         internal float SpineCurrentPower { get; set; }
-
-        internal float GridMaxPower { get; set; }
-        internal float GridCurrentPower { get; set; }
-        internal float GridAvailablePower { get; set; }
         internal float ShieldAvailablePower { get; set; }
         internal float ShieldMaxPower { get; set; }
 
