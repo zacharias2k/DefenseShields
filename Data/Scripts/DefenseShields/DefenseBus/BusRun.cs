@@ -1,5 +1,7 @@
 ﻿using DefenseSystems.Support;
 using VRage.Game.Components;
+using VRage.Game.Entity;
+
 namespace DefenseSystems
 {
     public partial class Bus : MyEntityComponentBase
@@ -17,6 +19,12 @@ namespace DefenseSystems
             else Log.Line($"[BusInitComplete] - Not fully populated");
             Inited = true;
             return;
+        }
+
+        public void Split(MyEntity type, Bus.LogicState state)
+        {
+            Log.Line("[Bus Has Split--]");
+            OnBusSplit?.Invoke(type, state);
         }
 
         public override void OnAddedToContainer()

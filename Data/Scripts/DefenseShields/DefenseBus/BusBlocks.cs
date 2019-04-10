@@ -193,7 +193,7 @@ namespace DefenseSystems
                     emitter.Registry.RegisterWithBus(emitter, emitter.MyCube.CubeGrid, true, emitter.Bus, out emitter.Bus);
                 }
             }
-            if (!BusIsSplit && newSplit) Events.Split(cube.CubeGrid, state);
+            if (!BusIsSplit && newSplit) Split(cube.CubeGrid, state);
         }
 
 

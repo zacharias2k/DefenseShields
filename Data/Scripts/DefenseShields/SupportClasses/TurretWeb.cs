@@ -1,7 +1,5 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Threading;
-using ParallelTasks;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Collections;
@@ -40,7 +38,6 @@ namespace DefenseSystems.Support
     {
         public void Execute()
         {
-            throw new System.NotImplementedException();
         }
     }
 
@@ -48,7 +45,6 @@ namespace DefenseSystems.Support
     {
         public void Execute()
         {
-            throw new System.NotImplementedException();
         }
     }
 

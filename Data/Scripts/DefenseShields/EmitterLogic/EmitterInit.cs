@@ -159,14 +159,14 @@ namespace DefenseSystems
         {
             if (register)
             {
-                bus.Events.OnBusSplit += OnBusSplit;
+                bus.OnBusSplit += OnBusSplit;
                 Emitter.EnabledChanged += CheckEmitter;
                 MyCube.IsWorkingChanged += IsWorkingChanged;
                 IsWorkingChanged(MyCube);
             }
             else
             {
-                bus.Events.OnBusSplit -= OnBusSplit;
+                bus.OnBusSplit -= OnBusSplit;
                 Emitter.AppendingCustomInfo -= AppendingCustomInfo;
                 Emitter.EnabledChanged -= CheckEmitter;
                 MyCube.IsWorkingChanged -= IsWorkingChanged;

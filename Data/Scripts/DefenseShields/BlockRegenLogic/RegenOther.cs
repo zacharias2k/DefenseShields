@@ -1,4 +1,7 @@
 ﻿using System.Collections.Generic;
+using DefenseSystems.Support;
+using Sandbox.Game.Entities;
+using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 
@@ -6,6 +9,45 @@ namespace DefenseSystems
 {
     public partial class BlockRegen
     {
+        private bool ResetEntity()
+        {
+            MyCube = (MyCubeBlock)Entity;
+            LocalGrid = MyCube.CubeGrid;
+            if (LocalGrid.Physics == null) return false;
+
+            AttachedGrid = LocalGrid;
+
+            NeedsUpdate = MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+            _aInit = false;
+            _bInit = false;
+            return true;
+        }
+
+        private void BeforeInit()
+        {
+            if (MyCube.CubeGrid.Physics == null) return;
+            Session.Instance.RegenLogics.Add(this);
+            Session.Instance.GridsToLogics.Add(LocalGrid, this);
+
+            //PowerInit();
+            _isServer = Session.Instance.IsServer;
+            _isDedicated = Session.Instance.DedicatedServer;
+            IsWorking = MyCube.IsWorking;
+            IsFunctional = MyCube.IsFunctional;
+            NeedsUpdate = MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+            Registry.RegisterWithBus(this, LocalGrid, true, Bus, out Bus);
+            _bTime = _isDedicated ? 10 : 1;
+            _bInit = true;
+        }
+
+        private void AfterInit()
+        {
+            Bus.Init();
+            NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+            NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
+            _aInit = true;
+        }
+
         private void AddBlock(IMySlimBlock block)
         {
             if (_damagedBlockIdx.ContainsKey(block))

@@ -83,8 +83,8 @@ namespace DefenseSystems
 
         private void AfterInit()
         {
-            Bus.GetSpineIntegrity();
             Bus.Init();
+            Bus.GetSpineIntegrity();
             NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             _aInit = true;

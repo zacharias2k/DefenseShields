@@ -1,16 +1,20 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using DefenseSystems.Support;
 using ParallelTasks;
 using Sandbox.Game.Entities;
 using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game;
+using VRage.Game.Entity;
 using VRageMath;
 
 namespace DefenseSystems
 {
     public partial class Bus 
     {
+        public event Action<MyEntity, LogicState> OnBusSplit;
+
         public enum LogicState
         {
             Join,

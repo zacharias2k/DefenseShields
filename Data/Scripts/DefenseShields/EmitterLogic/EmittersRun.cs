@@ -68,7 +68,6 @@
                     if (Bus.Spine == LocalGrid) _bCount++;
                 }
                 else _readyToSync = true;
-
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
@@ -91,6 +90,7 @@
                 {
                     var blockCam = MyCube.PositionComp.WorldVolume;
                     if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam)) BlockMoveAnimation();
+                    else BlockMoveSimulation();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }

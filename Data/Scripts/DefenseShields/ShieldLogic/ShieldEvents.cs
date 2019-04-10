@@ -15,7 +15,7 @@
         {
             if (register)
             {
-                bus.Events.OnBusSplit += OnBusSplit;
+                bus.OnBusSplit += OnBusSplit;
                 if (MyAPIGateway.Multiplayer.IsServer)
                 {
                     MyEntities.OnEntityAdd += OnEntityAdd;
@@ -30,7 +30,7 @@
             }
             else
             {
-                bus.Events.OnBusSplit -= OnBusSplit;
+                bus.OnBusSplit -= OnBusSplit;
                 if (MyAPIGateway.Multiplayer.IsServer)
                 {
                     MyEntities.OnEntityAdd -= OnEntityAdd;

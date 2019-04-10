@@ -72,6 +72,27 @@ namespace DefenseSystems
 
             if (AnimationLoop++ == 599) AnimationLoop = 0;
         }
+
+        private void BlockMoveSimulation()
+        {
+            _blockReset = false;
+            if (_compact)
+            {
+                if (_count == 0) EmissiveIntensity = 2;
+                if (_count < 30) EmissiveIntensity += 1;
+                else EmissiveIntensity -= 1;
+                return;
+            }
+
+            RotationTime -= 1;
+            if (AnimationLoop == 0) TranslationTime = 0;
+            if (AnimationLoop < 299) TranslationTime += 1;
+            else TranslationTime -= 1;
+            if (_count == 0) EmissiveIntensity = 2;
+            if (_count < 30) EmissiveIntensity += 1;
+            else EmissiveIntensity -= 1;
+            if (AnimationLoop++ == 599) AnimationLoop = 0;
+        }
         #endregion
 
     }

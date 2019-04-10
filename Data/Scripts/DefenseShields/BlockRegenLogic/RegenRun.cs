@@ -15,9 +15,7 @@ namespace DefenseSystems
         {
             if (!ContainerInited)
             {
-                NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                NeedsUpdate |= MyEntityUpdateEnum.EACH_100TH_FRAME;
-                MyCube = (MyCubeBlock)Entity;
+
                 ContainerInited = true;
             }
             if (Entity.InScene) OnAddedToScene();
@@ -27,10 +25,8 @@ namespace DefenseSystems
         {
             try
             {
-                MyGrid = MyCube.CubeGrid;
-                Session.Instance.GridsToLogics.Add(MyGrid, this);
-                Session.Instance.RegenLogics.Add(this);
-                AttachedGrid = MyGrid;
+                if (!ResetEntity()) return;
+
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
@@ -40,14 +36,21 @@ namespace DefenseSystems
             base.UpdateOnceBeforeFrame();
             try
             {
-
+                if (!_bInit) BeforeInit();
+                else if (!_aInit) AfterInit();
+                else if (_bCount < SyncCount * _bTime)
+                {
+                    NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+                    if (Bus.Spine == LocalGrid) _bCount++;
+                }
+                else _readyToSync = true;
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateOnceBeforeFrame: {ex}"); }
         }
 
         public override void UpdateBeforeSimulation100()
         {
-            AttachedGrid = MyGrid;
+            AttachedGrid = Bus.Spine;
             _100Tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
             if (Regening && !_blockUpdates && _100Tick > _lastTick + 10)
             {
@@ -80,7 +83,7 @@ namespace DefenseSystems
                     repair = Math.Min(block.MaxIntegrity - block.Integrity, repair);
                     if (block.OwnerId == 0)
                     {
-                        var gridOwnerList = MyGrid.BigOwners;
+                        var gridOwnerList = Bus.Spine.BigOwners;
                         var ownerCnt = gridOwnerList.Count;
                         var gridOwner = 0L;
 
