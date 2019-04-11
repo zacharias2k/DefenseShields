@@ -83,10 +83,15 @@ namespace DefenseSystems.Support
             Voxel,
         }
 
-        internal void WebEnts()
+        private void ResetWeb()
         {
             _hitEntities.Clear();
             _work.Reset(FiredTurrets.Count);
+        }
+
+        internal void WebEnts()
+        {
+            ResetWeb();
             while (FiredTurrets.TryDequeue(out _work.Turret))
             {
                 MyAPIGateway.Parallel.For(0, _work.Turret.Beams.Count, x =>
