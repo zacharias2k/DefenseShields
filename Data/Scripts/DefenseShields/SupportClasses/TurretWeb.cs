@@ -123,44 +123,43 @@ namespace DefenseSystems.Support
                 });
             }
 
-            foreach (var pair in _hitEntities)
+            foreach (var entPair in _hitEntities)
             {
-                var web = pair.Value;
-                if (web.Target == TargetType.Grid)
+                var entityHit = entPair.Value;
+                if (entityHit.Target == TargetType.Grid)
                 {
-                    var grid = web.Grid;
-                    for (int i = 0; i < web.Turret.Count; i++)
+                    var grid = entityHit.Grid;
+                    foreach (var turretPair in entityHit.Turret)
                     {
-                        foreach (var turret in web.Turret)
+                        var turretId = turretPair.Key;
+                        var checkBeams = turretPair.Value;
+                        var beams = checkBeams.Beams;
+                        var beamType = checkBeams.TurretType;
+                        var beamCnt = beams.Count;
+                        var damage = beamType == TurretType.Constant ? 100 : 1000;
+
+                        var hits = 0;
+                        IMySlimBlock hitBlock = null;
+
+                        for (int j = 0; j < beamCnt; j++)
                         {
-                            var beams = turret.Value.Beams;
-                            var beamCnt = beams.Count;
-                            var beamType = turret.Value.TurretType;
-                            var damage = beamType == TurretType.Constant ? 100 : 1000;
+                            var beam = beams[j];
+                            double distanceToHit;
 
-                            var hits = 0;
-                            IMySlimBlock hitBlock = null;
-
-                            for (int j = 0; j < beamCnt; j++)
+                            if (grid.GetLineIntersectionExactAll(ref beam, out distanceToHit, out hitBlock) != null)
                             {
-                                var beam = beams[j];
-                                double distanceToHit;
-
-                                if (grid.GetLineIntersectionExactAll(ref beam, out distanceToHit, out hitBlock) != null)
-                                {
-                                    hits++;
-                                    var from = beam.From;
-                                    var to = beam.To;
-                                    var newTo = Vector3D.Normalize(from - to) * distanceToHit;
-                                    UpdatedBeams.Enqueue(new UpdateBeams(turret.Key, new LineD(from, newTo)));
-                                }
+                                hits++;
+                                var from = beam.From;
+                                var to = beam.To;
+                                var newTo = Vector3D.Normalize(from - to) * distanceToHit;
+                                UpdatedBeams.Enqueue(new UpdateBeams(turretId, new LineD(from, newTo)));
                             }
-                            _beams.Return(beams);
-                            if (hits > 0) TurretHits.Enqueue(new TurretGridEvent(hitBlock, damage * hits, turret.Key));
                         }
+                        if (hits > 0) TurretHits.Enqueue(new TurretGridEvent(hitBlock, damage * hits, turretId));
+                        _beams.Return(beams);
                     }
                 }
-                _checkBeams.Return(web.Turret);
+                _checkBeams.Return(entityHit.Turret);
             }
         }
 
