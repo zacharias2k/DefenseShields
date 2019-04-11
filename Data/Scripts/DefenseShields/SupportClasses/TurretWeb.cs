@@ -10,48 +10,11 @@ using VRageMath;
 
 namespace DefenseSystems.Support
 {
-    internal interface ITurretThreadHits
-    {
-        void Execute();
-    }
-
-    internal class TurretGridEvent : ITurretThreadHits
-    {
-        public readonly IMySlimBlock Block;
-        public readonly float Damage;
-        public readonly long AttackerId;
-
-        public TurretGridEvent(IMySlimBlock block, float damage, long attackerId)
-        {
-            Block = block;
-            Damage = damage;
-            AttackerId = attackerId;
-        }
-
-        public void Execute()
-        {
-            // damage block, apply force, send lines for draw.
-        }
-    }
-
-    internal class TurretDestroyableEvent : ITurretThreadHits
-    {
-        public void Execute()
-        {
-        }
-    }
-
-    internal class TurretVoxelEvent : ITurretThreadHits
-    {
-        public void Execute()
-        {
-        }
-    }
 
     internal class Work
     {
         internal List<List<MyLineSegmentOverlapResult<MyEntity>>> Webbed = new List<List<MyLineSegmentOverlapResult<MyEntity>>>();
-        internal TurretThreading.FiredTurret Turret;
+        internal ModSession.FiredTurret Turret;
 
         internal void Reset(int turretCount)
         {
@@ -60,15 +23,20 @@ namespace DefenseSystems.Support
         }
     }
 
-    public class TurretThreading
+    internal class ModSession
     {
-        private readonly Work _work = new Work();
-        private readonly MyConcurrentPool<List<LineD>> _beams = new MyConcurrentPool<List<LineD>>();
-        private readonly MyConcurrentPool<Dictionary<long, CheckBeam>> _checkBeams = new MyConcurrentPool<Dictionary<long, CheckBeam>>();
-        private readonly ConcurrentDictionary<MyEntity, EntityHit> _hitEntities = new ConcurrentDictionary<MyEntity, EntityHit>();
         internal readonly ConcurrentQueue<FiredTurret> FiredTurrets = new ConcurrentQueue<FiredTurret>();
         internal readonly ConcurrentQueue<ITurretThreadHits> TurretHits = new ConcurrentQueue<ITurretThreadHits>();
         internal readonly ConcurrentQueue<UpdateBeams> UpdatedBeams = new ConcurrentQueue<UpdateBeams>();
+
+        internal volatile bool Dispatched;
+        internal bool WebWrapperOn { get; set; }
+
+        private readonly MyConcurrentPool<List<LineD>> _beams = new MyConcurrentPool<List<LineD>>();
+        private readonly MyConcurrentPool<Dictionary<long, CheckBeam>> _checkBeams = new MyConcurrentPool<Dictionary<long, CheckBeam>>();
+        private readonly ConcurrentDictionary<MyEntity, EntityHit> _hitEntities = new ConcurrentDictionary<MyEntity, EntityHit>();
+
+        private readonly Work _work = new Work();
 
         public enum TurretType
         {
@@ -81,6 +49,42 @@ namespace DefenseSystems.Support
             Grid,
             Destroyable,
             Voxel,
+        }
+
+        public void Draw()
+        {
+            UpdateBeams beam;
+            while (UpdatedBeams.TryDequeue(out beam))
+            {
+                var turret = _turrets[beam.TurretId];
+                DrawBeam(turret, beam.Beam);
+            }
+        }
+
+        public void UpdateBeforeSimulation()
+        {
+            // Session Timings();
+            if (!TurretHits.IsEmpty)
+            {
+                ITurretThreadHits tEvent;
+                while (TurretHits.TryDequeue(out tEvent)) tEvent.Execute();
+            }
+            // other stuff
+
+            // Update Turret GameLogics.
+
+            //Kick off thread to process gamelogic FiredTurrets
+            if (WebWrapperOn)
+            {
+                Dispatched = true;
+                MyAPIGateway.Parallel.Start(WebEnts, WebDispatchDone);
+                WebWrapperOn = false;
+            }
+        }
+
+        private void WebDispatchDone()
+        {
+            Dispatched = false;
         }
 
         private void ResetWeb()
@@ -222,6 +226,44 @@ namespace DefenseSystems.Support
                 TurretId = turretId;
                 Beam = beam;
             }
+        }
+    }
+
+    internal interface ITurretThreadHits
+    {
+        void Execute();
+    }
+
+    internal class TurretGridEvent : ITurretThreadHits
+    {
+        public readonly IMySlimBlock Block;
+        public readonly float Damage;
+        public readonly long AttackerId;
+
+        public TurretGridEvent(IMySlimBlock block, float damage, long attackerId)
+        {
+            Block = block;
+            Damage = damage;
+            AttackerId = attackerId;
+        }
+
+        public void Execute()
+        {
+            // damage block, apply force, send lines for draw.
+        }
+    }
+
+    internal class TurretDestroyableEvent : ITurretThreadHits
+    {
+        public void Execute()
+        {
+        }
+    }
+
+    internal class TurretVoxelEvent : ITurretThreadHits
+    {
+        public void Execute()
+        {
         }
     }
 }
