@@ -41,75 +41,83 @@ namespace DefenseSystems.Support
         }
     }
 
-    public class TurretGVoxelEvent : ITurretThreadHits
+    public class TurretVoxelEvent : ITurretThreadHits
     {
         public void Execute()
         {
         }
     }
 
+    internal class Work
+    {
+        internal List<List<MyLineSegmentOverlapResult<MyEntity>>> Webbed = new List<List<MyLineSegmentOverlapResult<MyEntity>>>();
+        internal TurretThreading.FiredTurret Turret;
+
+        internal void Reset(int turretCount)
+        {
+            Webbed.Clear();
+            Webbed.Capacity = turretCount;
+        }
+    }
+
     public class TurretThreading
     {
+        private readonly Work _work = new Work();
+        private readonly MyConcurrentPool<List<LineD>> _beams = new MyConcurrentPool<List<LineD>>();
+        private readonly MyConcurrentPool<Dictionary<long, CheckBeam>> _checkBeams = new MyConcurrentPool<Dictionary<long, CheckBeam>>();
+        private readonly ConcurrentDictionary<MyEntity, EntityHit> _hitEntities = new ConcurrentDictionary<MyEntity, EntityHit>();
+        internal readonly ConcurrentQueue<FiredTurret> FiredTurrets = new ConcurrentQueue<FiredTurret>();
+        internal readonly ConcurrentQueue<ITurretThreadHits> TurretHits = new ConcurrentQueue<ITurretThreadHits>();
+        internal readonly ConcurrentQueue<UpdateBeams> UpdatedBeams = new ConcurrentQueue<UpdateBeams>();
+
         public enum TurretType
         {
             Pulse,
             Constant
         }
 
-        private readonly List<MyLineSegmentOverlapResult<MyEntity>> _overlapResults = new List<MyLineSegmentOverlapResult<MyEntity>>();
-        private readonly Work _work = new Work();
-        private readonly Dictionary<MyEntity, TurretWeb> _hitEntities = new Dictionary<MyEntity, TurretWeb>();
-        private readonly MyConcurrentPool<List<LineD>> _beams = new MyConcurrentPool<List<LineD>>();
-        private readonly MyConcurrentPool<Dictionary<long, CheckBeam>> _checkBeams = new MyConcurrentPool<Dictionary<long, CheckBeam>>();
-
-        internal readonly ConcurrentQueue<FiredTurret> FiredTurrets = new ConcurrentQueue<FiredTurret>();
-        internal readonly ConcurrentQueue<ITurretThreadHits> TurretHits = new ConcurrentQueue<ITurretThreadHits>();
-        internal readonly ConcurrentQueue<UpdateBeams> UpdatedBeams = new ConcurrentQueue<UpdateBeams>();
+        public enum TargetType
+        {
+            Grid,
+            Destroyable,
+            Voxel,
+        }
 
         internal void WebEnts()
         {
+            _hitEntities.Clear();
+            _work.Reset(FiredTurrets.Count);
             while (FiredTurrets.TryDequeue(out _work.Turret))
             {
                 MyAPIGateway.Parallel.For(0, _work.Turret.Beams.Count, x =>
                 {
                     var beam = _work.Turret.Beams[x];
-                    _overlapResults.Clear();
-                    MyGamePruningStructure.GetTopmostEntitiesOverlappingRay(ref beam, _overlapResults);
-                    for (int i = 0; i < _overlapResults.Count; i++)
+                    MyGamePruningStructure.GetTopmostEntitiesOverlappingRay(ref beam, _work.Webbed[x]);
+                    for (int i = 0; i < _work.Webbed[x].Count; i++)
                     {
-                        var result = _overlapResults[i];
+                        var result = _work.Webbed[x][i];
                         var ent = result.Element;
                         var grid = ent as MyCubeGrid;
                         var voxel = ent as MyVoxelBase;
                         var destroyable = ent as IMyDestroyableObject;
                         if (grid != null)
                         {
-                            if (!_hitEntities.ContainsKey(ent))
-                            {
-                                _hitEntities.Add(ent, new TurretWeb(TurretWeb.TargetType.Grid, grid, null, null, _checkBeams.Get()));
-                            }
-
-                            TurretWeb turretWeb;
-                            if (_hitEntities.TryGetValue(ent, out turretWeb))
-                                turretWeb.Turret.Add(_work.Turret.TurretId, new CheckBeam(TurretType.Pulse, _beams.Get()));
+                            var turretWeb = new EntityHit(TargetType.Grid, grid, null, null, _checkBeams.Get());
+                            turretWeb.Turret.Add(_work.Turret.TurretId, new CheckBeam(TurretType.Pulse, _beams.Get()));
+                            _hitEntities.TryAdd(ent, turretWeb);
                         }
                         else if (destroyable != null)
                         {
-                            if (!_hitEntities.ContainsKey(ent))
-                                _hitEntities.Add(ent, new TurretWeb(TurretWeb.TargetType.Destroyable, null, destroyable, null, _checkBeams.Get()));
+                            var turretWeb = new EntityHit(TargetType.Destroyable, null, destroyable, null, _checkBeams.Get());
+                            turretWeb.Turret.Add(_work.Turret.TurretId, new CheckBeam(TurretType.Pulse, _beams.Get()));
+                            _hitEntities.TryAdd(ent, turretWeb);
 
-                            TurretWeb turretWeb;
-                            if (_hitEntities.TryGetValue(ent, out turretWeb))
-                                turretWeb.Turret.Add(_work.Turret.TurretId, new CheckBeam(TurretType.Pulse, _beams.Get()));
                         }
                         else if (voxel != null)
                         {
-                            if (!_hitEntities.ContainsKey(ent))
-                                _hitEntities.Add(ent, new TurretWeb(TurretWeb.TargetType.Voxel, null,null, voxel, _checkBeams.Get()));
-
-                            TurretWeb turretWeb;
-                            if (_hitEntities.TryGetValue(ent, out turretWeb))
-                                turretWeb.Turret.Add(_work.Turret.TurretId, new CheckBeam(TurretType.Pulse, _beams.Get()));
+                            var turretWeb = new EntityHit(TargetType.Voxel, null, null, voxel, _checkBeams.Get());
+                            turretWeb.Turret.Add(_work.Turret.TurretId, new CheckBeam(TurretType.Pulse, _beams.Get()));
+                            _hitEntities.TryAdd(ent, turretWeb);
                         }
                     }
                 });
@@ -118,7 +126,7 @@ namespace DefenseSystems.Support
             foreach (var pair in _hitEntities)
             {
                 var web = pair.Value;
-                if (web.Target == TurretWeb.TargetType.Grid)
+                if (web.Target == TargetType.Grid)
                 {
                     var grid = web.Grid;
                     for (int i = 0; i < web.Turret.Count; i++)
@@ -130,7 +138,7 @@ namespace DefenseSystems.Support
                             var beamType = turret.Value.TurretType;
                             var damage = beamType == TurretType.Constant ? 100 : 1000;
 
-                            int hits = 0;
+                            var hits = 0;
                             IMySlimBlock hitBlock = null;
 
                             for (int j = 0; j < beamCnt; j++)
@@ -156,27 +164,29 @@ namespace DefenseSystems.Support
             }
         }
 
-        internal class Work
+        public struct FiredTurret
         {
-            internal TurretThreading.FiredTurret Turret;
+            public readonly List<LineD> Beams;
+            public readonly long TurretId;
+            public readonly TurretType TurretType;
+
+            public FiredTurret(long turretId, TurretType turretType, List<LineD> beams)
+            {
+                TurretId = turretId;
+                TurretType = turretType;
+                Beams = beams;
+            }
         }
 
-        public struct TurretWeb
+        public struct EntityHit
         {
-            public enum TargetType
-            {
-                Grid,
-                Destroyable,
-                Voxel,
-            }
-
             public readonly TargetType Target;
             public readonly IMyCubeGrid Grid;
             public readonly IMyDestroyableObject Destroyable;
             public readonly MyVoxelBase Voxel;
             public readonly Dictionary<long, CheckBeam> Turret;
 
-            public TurretWeb(TargetType target, MyCubeGrid grid, IMyDestroyableObject destroyable, MyVoxelBase voxel, Dictionary<long, CheckBeam> turret)
+            public EntityHit(TargetType target, MyCubeGrid grid, IMyDestroyableObject destroyable, MyVoxelBase voxel, Dictionary<long, CheckBeam> turret)
             {
                 Target = target;
                 Grid = grid;
@@ -193,20 +203,6 @@ namespace DefenseSystems.Support
 
             public CheckBeam(TurretType turretType, List<LineD> beams)
             {
-                TurretType = turretType;
-                Beams = beams;
-            }
-        }
-
-        public struct FiredTurret
-        {
-            public readonly List<LineD> Beams;
-            public readonly long TurretId;
-            public readonly TurretType TurretType;
-
-            public FiredTurret(long turretId, TurretType turretType, List<LineD> beams)
-            {
-                TurretId = turretId;
                 TurretType = turretType;
                 Beams = beams;
             }
