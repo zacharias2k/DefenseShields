@@ -10,12 +10,12 @@ using VRageMath;
 
 namespace DefenseSystems.Support
 {
-    public interface ITurretThreadHits
+    internal interface ITurretThreadHits
     {
         void Execute();
     }
 
-    public class TurretGridEvent : ITurretThreadHits
+    internal class TurretGridEvent : ITurretThreadHits
     {
         public readonly IMySlimBlock Block;
         public readonly float Damage;
@@ -34,14 +34,14 @@ namespace DefenseSystems.Support
         }
     }
 
-    public class TurretDestroyableEvent : ITurretThreadHits
+    internal class TurretDestroyableEvent : ITurretThreadHits
     {
         public void Execute()
         {
         }
     }
 
-    public class TurretVoxelEvent : ITurretThreadHits
+    internal class TurretVoxelEvent : ITurretThreadHits
     {
         public void Execute()
         {
@@ -163,7 +163,7 @@ namespace DefenseSystems.Support
             }
         }
 
-        public struct FiredTurret
+        internal struct FiredTurret
         {
             public readonly List<LineD> Beams;
             public readonly long TurretId;
@@ -177,7 +177,7 @@ namespace DefenseSystems.Support
             }
         }
 
-        public struct EntityHit
+        internal struct EntityHit
         {
             public readonly TargetType Target;
             public readonly IMyCubeGrid Grid;
@@ -195,7 +195,7 @@ namespace DefenseSystems.Support
             }
         }
 
-        public struct CheckBeam
+        internal struct CheckBeam
         {
             public readonly TurretType TurretType;
             public readonly List<LineD> Beams;
@@ -207,7 +207,7 @@ namespace DefenseSystems.Support
             }
         }
 
-        public struct UpdateBeams
+        internal struct UpdateBeams
         {
             public readonly LineD Beam;
             public readonly long TurretId;
