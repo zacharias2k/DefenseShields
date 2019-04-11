@@ -50,9 +50,9 @@
     <Compile Include="Data\Scripts\DefenseShields\API\ModApiWrapper.cs" />
     <Compile Include="Data\Scripts\DefenseShields\API\PbApiWrapper.cs" />
     <Compile Include="Data\Scripts\DefenseShields\API\TapiBackend.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\BlockRegenLogic\RegenOther.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\BlockRegenLogic\RegenFields.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\BlockRegenLogic\RegenRun.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\RegenLogic\RegenOther.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\RegenLogic\RegenFields.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\RegenLogic\RegenRun.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\EmitterData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\DisplayData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\PlanetShieldData.cs" />
@@ -64,7 +64,6 @@
     <Compile Include="Data\Scripts\DefenseShields\Control\PsUi.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusBlocks.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusChecks.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusEvents.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusGridReg.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusGrids.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusFields.cs" />

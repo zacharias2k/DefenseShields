@@ -68,7 +68,7 @@
         {
             try
             {
-                if (DsState.State.ReInforce) return;
+                if (DsState.State.ProtectMode > 0) return;
                 if (myEntity?.Physics == null || !myEntity.InScene || myEntity.MarkedForClose || myEntity is MyFloatingObject || myEntity is IMyEngineerToolBase) return;
                 var isMissile = myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile);
                 if (!isMissile && !(myEntity is MyCubeGrid)) return;
@@ -86,7 +86,7 @@
         {
             try
             {
-                if (myEntity == null || !_isServer || DsState.State.ReInforce) return;
+                if (myEntity == null || !_isServer || DsState.State.ProtectMode > 0) return;
 
                 if (!(myEntity.DefinitionId.HasValue && myEntity.DefinitionId.Value.TypeId == typeof(MyObjectBuilder_Missile))) return;
 

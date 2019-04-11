@@ -12,10 +12,13 @@ namespace DefenseSystems
             SetSpine(false);
             ActiveEmitter = SortedEmitters.Max;
             ActiveController = SortedControllers.Max;
+            ActiveRegen = SortedRegens.Max;
+
             UpdateLogicMasters(ActiveEmitter, LogicState.Active);
             UpdateLogicMasters(ActiveController, LogicState.Active);
-            var busHealthy = Spine != null && ActiveEmitter != null && ActiveController != null;
-            if (busHealthy) Log.Line($"[BusInitComplete] - Bus:{Spine.DebugName} - ActiveController:{ActiveController.MyCube.EntityId} - ActiveEmitter:{ActiveEmitter.MyCube.EntityId}");
+            UpdateLogicMasters(ActiveRegen, LogicState.Active);
+            var busHealthy = Spine != null && ActiveController != null && (ActiveEmitter != null || ActiveRegen != null);
+            if (busHealthy) Log.Line($"[BusInitComplete] - Bus:{Spine.DebugName} - ActiveController:{ActiveController.MyCube.EntityId}");
             else Log.Line($"[BusInitComplete] - Not fully populated");
             Inited = true;
             return;

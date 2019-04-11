@@ -35,6 +35,7 @@ namespace DefenseSystems
             if (SortedGrids.Contains(grid)) return;
             SortedGrids.Add(grid);
             RegisterGridEvents(grid, true);
+            if (ActiveRegen != null) UpdateBlockCollection(grid, true);
         }
 
         public void RemoveGrid(MyCubeGrid grid)
@@ -45,8 +46,25 @@ namespace DefenseSystems
             SortedGrids.Remove(grid);
             RegisterGridEvents(grid, false);
             SetSpine(true, grid);
+            if (ActiveRegen != null) UpdateBlockCollection(grid, false);
         }
 
+        private void UpdateBlockCollection(IMyCubeGrid grid, bool add)
+        {
+            if (add)
+            {
+                grid.GetBlocks(null, (x) => { ActiveRegen.AddBlock(x);
+                    return false;
+                });
+            }
+            else
+            {
+                grid.GetBlocks(null, (x) => { ActiveRegen.RemoveBlock(x);
+                    return false;
+                });
+            }
+
+        }
         public bool SubGridDetect(MyCubeGrid grid, bool force = false)
         {
             SubUpdate = false;

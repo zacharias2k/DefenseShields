@@ -35,7 +35,6 @@ namespace DefenseSystems
                     MyProtectors protectors;
                     GlobalProtect.TryGetValue(myGrid, out protectors);
                     if (protectors == null) return;
-
                     MyEntity hostileEnt;
                     var attackerId = info.AttackerId;
                     if (attackerId == _previousEntId) hostileEnt = _previousEnt;
@@ -166,30 +165,38 @@ namespace DefenseSystems
                     }
                     catch (Exception ex) { Log.Line($"Exception in DamageHandlerActive: {ex}"); }
 
-                    var iShield = protectors.IntegrityShield;
-                    if (iShield != null && iShield.DsState.State.Online && !iShield.DsState.State.Lowered)
+                    var notBubble = protectors.NotBubble;
+                    if (notBubble != null && notBubble.DsState.State.Online && !notBubble.DsState.State.Lowered)
                     {
-                        var attackingVoxel = trueAttacker as MyVoxelBase;
-                        if (attackingVoxel != null || trueAttacker is MyCubeGrid) iShield.DeformEnabled = true;
-                        else if (trueAttacker != null) iShield.DeformEnabled = false;
-
-                        if (damageType == MyDamageType.Deformation && iShield.DeformEnabled)
+                        var mode = notBubble.DsState.State.ProtectMode;
+                        if (mode == 1)
                         {
-                            if (attackingVoxel != null)
+                            var attackingVoxel = trueAttacker as MyVoxelBase;
+                            if (attackingVoxel != null || trueAttacker is MyCubeGrid) notBubble.DeformEnabled = true;
+                            else if (trueAttacker != null) notBubble.DeformEnabled = false;
+
+                            if (damageType == MyDamageType.Deformation && notBubble.DeformEnabled)
                             {
-                                if (iShield.Absorb < 1 && iShield.WorldImpactPosition == Vector3D.NegativeInfinity && iShield.KineticCoolDown == -1)
+                                if (attackingVoxel != null)
                                 {
-                                    attackingVoxel.RootVoxel.RequestVoxelOperationElipsoid(Vector3.One, iShield.DetectMatrixOutside, 0, MyVoxelBase.OperationType.Cut);
+                                    if (notBubble.Absorb < 1 && notBubble.WorldImpactPosition == Vector3D.NegativeInfinity && notBubble.KineticCoolDown == -1)
+                                    {
+                                        attackingVoxel.RootVoxel.RequestVoxelOperationElipsoid(Vector3.One, notBubble.DetectMatrixOutside, 0, MyVoxelBase.OperationType.Cut);
+                                    }
                                 }
+                                var dmgAmount = info.Amount * 10;
+                                if (IsServer)
+                                {
+                                    notBubble.AddShieldHit(attackerId, dmgAmount, damageType, block, false);
+                                    notBubble.Absorb += dmgAmount;
+                                }
+                                info.Amount = 0;
+                                return;
                             }
-                            var dmgAmount = info.Amount * 10;
-                            if (IsServer)
-                            {
-                                iShield.AddShieldHit(attackerId, dmgAmount, damageType, block, false);
-                                iShield.Absorb += dmgAmount;
-                            }
-                            info.Amount = 0;
-                            return;
+                        }
+                        else if (mode == 2)
+                        {
+
                         }
                     }
 
@@ -200,7 +207,7 @@ namespace DefenseSystems
                         return;
                     }
                     protectors.IgnoreAttackerId = -1;
-                    if (Enforced.Debug >= 2) Log.Line($"[Uncaught Damage] Type:{damageType} - Amount:{info.Amount} - nullTrue:{trueAttacker == null} - nullHostile:{hostileEnt == null} - nullShield:{protectors.BlockingShield == null} - iShell:{protectors.IntegrityShield != null} - protectorShields:{protectors.Shields.Count} - attackerId:{info.AttackerId}");
+                    if (Enforced.Debug >= 2) Log.Line($"[Uncaught Damage] Type:{damageType} - Amount:{info.Amount} - nullTrue:{trueAttacker == null} - nullHostile:{hostileEnt == null} - nullShield:{protectors.BlockingShield == null} - notBubble:{protectors.NotBubble != null} - protectorShields:{protectors.Shields.Count} - attackerId:{info.AttackerId}");
                 }
                 else if (target is IMyCharacter) CharacterProtection(target, info);
             }
@@ -215,13 +222,15 @@ namespace DefenseSystems
                 var grid = block?.CubeGrid as MyCubeGrid;
                 if (grid != null)
                 {
-                    BlockRegen logic;
-                    var blockRegen = GridsToLogics.TryGetValue(grid, out logic);
-                    if (blockRegen)
-                    {
-                        logic.QueuedBlocks.Enqueue(block);
-                        logic.Regening = true;
-                    }
+                    MyProtectors protectors;
+                    GlobalProtect.TryGetValue(grid, out protectors);
+                    Log.Line($"after has protector");
+                    if (protectors?.NotBubble == null) Log.Line($"is bubble");
+                    if (protectors?.NotBubble == null || protectors.NotBubble.DsState.State.ProtectMode != 2) return;
+                    Log.Line("correct mode");
+                    var regen = protectors.NotBubble;
+                    regen.Bus.QueuedBlocks.Enqueue(block);
+                    regen.Bus.Regening = true;
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in CheckDamage: {ex}"); }

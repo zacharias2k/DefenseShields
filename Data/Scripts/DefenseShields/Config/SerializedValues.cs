@@ -59,8 +59,8 @@
         [ProtoMember(27), DefaultValue(-1)] public float ShieldPercent;
         [ProtoMember(28)] public bool EmpOverLoad = false;
         [ProtoMember(29)] public bool EmpProtection = false;
-        [ProtoMember(30)] public float GridIntegrity;
-        [ProtoMember(31)] public bool ReInforce = false;
+        [ProtoMember(30)] public float SpineIntegrity;
+        [ProtoMember(31)] public long ProtectMode;
         [ProtoMember(32)] public long ActiveEmitterId;
         [ProtoMember(33)] public uint MId;
     }
@@ -88,7 +88,9 @@
         [ProtoMember(18)] public Vector3I ShieldOffset = Vector3I.Zero;
         [ProtoMember(19)] public uint MId;
         [ProtoMember(20)] public long PowerScale = 0;
-        [ProtoMember(21), DefaultValue(-1)] public int PowerWatts = 999;													 
+        [ProtoMember(21), DefaultValue(-1)] public int PowerWatts = 999;
+        [ProtoMember(22)] public long ProtectMode;
+
     }
 
     [ProtoContract]
@@ -126,7 +128,7 @@
         [ProtoMember(2), DefaultValue(true)] public bool ModulateVoxels = true;
         [ProtoMember(3)] public bool ModulateGrids = false;
         [ProtoMember(4), DefaultValue(-1)] public int ModulateDamage = 100;
-        [ProtoMember(5)] public bool ReInforceEnabled = false;
+        [ProtoMember(5)] public bool Unused;
         [ProtoMember(6)] public uint MId;
     }
 

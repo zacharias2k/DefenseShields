@@ -80,8 +80,8 @@ namespace DefenseSystems
                     else if (DsState.State.Message) ShieldChangeState();
                     return;
                 }
-
                 if (!_isServer || !DsState.State.Online) return;
+                Log.Line($"{DsState.State.ProtectMode}");
                 if (_comingOnline) ComingOnlineSetup();
                 if (_mpActive && (_forceBufferSync || _count == 29))
                 {

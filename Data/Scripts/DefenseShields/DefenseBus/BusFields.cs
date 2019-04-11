@@ -7,6 +7,7 @@ using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Entity;
+using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace DefenseSystems
@@ -33,6 +34,12 @@ namespace DefenseSystems
         internal readonly object SubLock = new object();
         internal readonly object SubUpdateLock = new object();
 
+        internal readonly Dictionary<IMySlimBlock, int> DamagedBlockIdx = new Dictionary<IMySlimBlock, int>();
+
+        internal readonly UniqueQueue<IMySlimBlock> QueuedBlocks = new UniqueQueue<IMySlimBlock>();
+
+        internal readonly List<IMySlimBlock> DamagedBlocks = new List<IMySlimBlock>();
+
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
         private readonly List<IMyTextPanel> _displayBlocks = new List<IMyTextPanel>();
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
@@ -44,13 +51,13 @@ namespace DefenseSystems
         internal SortedSet<MyCubeGrid> SortedGrids = new SortedSet<MyCubeGrid>(new GridPriority());
         internal SortedSet<Controllers> SortedControllers = new SortedSet<Controllers>(new ControlPriority());
         internal SortedSet<Emitters> SortedEmitters = new SortedSet<Emitters>(new EmitterPriority());
+        internal SortedSet<BlockRegen> SortedRegens = new SortedSet<BlockRegen>(new RegenPriority());
 
         internal HashSet<MyCubeGrid> NewTmp1 { get; set; } = new HashSet<MyCubeGrid>();
         internal HashSet<MyCubeGrid> AddSubs { get; set; } = new HashSet<MyCubeGrid>();
         internal HashSet<MyCubeGrid> RemSubs { get; set; } = new HashSet<MyCubeGrid>();
         internal HashSet<MyCubeGrid> SubGrids { get; set; } = new HashSet<MyCubeGrid>();
         internal Dictionary<MyCubeGrid, SubGridInfo> LinkedGrids { get; set; } = new Dictionary<MyCubeGrid, SubGridInfo>();
-        internal BusEvents Events { get; set; } = new BusEvents();
         internal MyResourceDistributorComponent MyResourceDist { get; set; }
         internal MyCubeGrid Spine;
 
@@ -73,6 +80,7 @@ namespace DefenseSystems
         internal bool FunctionalRemoved { get; set; }
         internal bool FunctionalChanged { get; set; }
         internal bool FunctionalEvent { get; set; }
+        internal bool CheckIntegrity { get; set; }
         internal bool BlockAdded { get; set; }
         internal bool BlockRemoved { get; set; }
         internal bool BlockChanged { get; set; }
@@ -82,6 +90,7 @@ namespace DefenseSystems
         internal bool SlaveLink { get; set; }
         internal bool EffectsDirty { get; set; }
         internal bool IsStatic { get; set; }
+        internal bool Regening { get; set; }
 
         internal Vector3D[] PhysicsOutside { get; set; } = new Vector3D[642];
         internal Vector3D[] PhysicsOutsideLow { get; set; } = new Vector3D[162];
@@ -91,6 +100,7 @@ namespace DefenseSystems
         internal Modulators ActiveModulator { get; set; }
         internal Emitters ActiveEmitter { get; set; }
         internal O2Generators ActiveO2Generator { get; set; }
+        internal BlockRegen ActiveRegen { get; set; }
 
         internal int EmitterMode { get; set; } = -1;
         internal long ActiveEmitterId { get; set; }

@@ -421,9 +421,18 @@
             {
                 if (SettingsUpdated)
                 {
+
                     SettingsUpdated = false;
                     DsSet.SaveSettings();
                     ResetShape(false);
+                    if (_isServer)
+                    {
+                        if (DsSet.Settings.ProtectMode != DsState.State.ProtectMode)
+                        {
+                            DsState.State.ProtectMode = DsSet.Settings.ProtectMode;
+                            ShieldChangeState();
+                        }
+                    }
                 }
             }
             else if (_tick % 34 == 0)

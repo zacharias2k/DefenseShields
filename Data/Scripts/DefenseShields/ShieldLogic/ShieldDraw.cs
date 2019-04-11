@@ -16,7 +16,7 @@ namespace DefenseSystems
 
             var renderId = Bus.Spine.Render.GetRenderObjectID();
             var percent = DsState.State.ShieldPercent;
-            var reInforce = DsState.State.ReInforce;
+            var reInforce = DsState.State.ProtectMode == 1;
             var hitAnim = !reInforce && DsSet.Settings.HitWaveAnimation;
             var refreshAnim = !reInforce && DsSet.Settings.RefreshAnimation;
 
@@ -145,12 +145,12 @@ namespace DefenseSystems
             return MyStringId.NullOrEmpty;
         }
 
-        private bool DetermineVisualState(bool reInforce)
+        private bool DetermineVisualState(bool notBubble)
         {
             if (_tick60 || Session.Instance.HudIconReset) HudCheck();
 
             if (_tick20) _viewInShield = CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation, DetectMatrixOutsideInv);
-            if (reInforce)
+            if (notBubble)
                 _hideShield = false;
             else if (_tick20 && _hideColor && !_supressedColor && _viewInShield)
             {
@@ -177,9 +177,9 @@ namespace DefenseSystems
 
             var clearView = !ShieldIsMobile || !_viewInShield;
             var activeInvisible = DsSet.Settings.ActiveInvisible;
-            var activeVisible = !reInforce && ((!activeInvisible && clearView) || enemy);
+            var activeVisible = !notBubble && ((!activeInvisible && clearView) || enemy);
 
-            var visible = !reInforce ? DsSet.Settings.Visible : 1;
+            var visible = !notBubble ? DsSet.Settings.Visible : 1;
 
             CalcualteVisibility(visible, activeVisible);
 

@@ -19,24 +19,22 @@
             {
                 var modEnergyRatio = Bus.ActiveModulator.ModState.State.ModulateEnergy * 0.01f;
                 var modKineticRatio = Bus.ActiveModulator.ModState.State.ModulateKinetic * 0.01f;
-                if (!DsState.State.ModulateEnergy.Equals(modEnergyRatio) || !DsState.State.ModulateKinetic.Equals(modKineticRatio) || !DsState.State.EmpProtection.Equals(Bus.ActiveModulator.ModSet.Settings.EmpEnabled) || !DsState.State.ReInforce.Equals(Bus.ActiveModulator.ModSet.Settings.ReInforceEnabled)) update = true;
+                if (!DsState.State.ModulateEnergy.Equals(modEnergyRatio) || !DsState.State.ModulateKinetic.Equals(modKineticRatio) || !DsState.State.EmpProtection.Equals(Bus.ActiveModulator.ModSet.Settings.EmpEnabled)) update = true;
                 DsState.State.ModulateEnergy = modEnergyRatio;
                 DsState.State.ModulateKinetic = modKineticRatio;
                 if (DsState.State.Enhancer)
                 {
                     DsState.State.EmpProtection = Bus.ActiveModulator.ModSet.Settings.EmpEnabled;
-                    DsState.State.ReInforce = Bus.ActiveModulator.ModSet.Settings.ReInforceEnabled;
                 }
 
                 if (update) ShieldChangeState();
             }
             else
             {
-                if (!DsState.State.ModulateEnergy.Equals(1f) || !DsState.State.ModulateKinetic.Equals(1f) || DsState.State.EmpProtection || DsState.State.ReInforce) update = true;
+                if (!DsState.State.ModulateEnergy.Equals(1f) || !DsState.State.ModulateKinetic.Equals(1f) || DsState.State.EmpProtection) update = true;
                 DsState.State.ModulateEnergy = 1f;
                 DsState.State.ModulateKinetic = 1f;
                 DsState.State.EmpProtection = false;
-                DsState.State.ReInforce = false;
                 if (update) ShieldChangeState();
 
             }
@@ -59,7 +57,6 @@
                 DsState.State.EnhancerPowerMulti = 1;
                 DsState.State.EnhancerProtMulti = 1;
                 DsState.State.Enhancer = false;
-                if (!DsState.State.Overload) DsState.State.ReInforce = false;
                 if (update) ShieldChangeState();
             }
         }

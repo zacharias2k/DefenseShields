@@ -75,6 +75,18 @@
       </UnlockedByGroups>
     </ResearchBlock>
     <ResearchBlock xsi:type="ResearchBlock">
+      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="Emitter1x1LA" />
+      <UnlockedByGroups>
+        <GroupSubtype>ShieldControllers</GroupSubtype>
+      </UnlockedByGroups>
+    </ResearchBlock>
+    <ResearchBlock xsi:type="ResearchBlock">
+      <Id Type="MyObjectBuilder_UpgradeModule" Subtype="Emitter1x1SA" />
+      <UnlockedByGroups>
+        <GroupSubtype>ShieldControllers</GroupSubtype>
+      </UnlockedByGroups>
+    </ResearchBlock>
+    <ResearchBlock xsi:type="ResearchBlock">
       <Id Type="MyObjectBuilder_OxygenGenerator" Subtype="DSSupergen" />
       <UnlockedByGroups>
         <GroupSubtype>ShieldEmitters</GroupSubtype>
@@ -134,6 +146,13 @@
       <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="EmitterSA" />
 	 </Members>
 	</ResearchGroup>
+    <ResearchGroup>
+      <Id Type="MyObjectBuilder_ResearchGroupDefinition" Subtype="Regen" />
+      <Members>
+        <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="Emitter1x1LA" />
+        <BlockId Type="MyObjectBuilder_UpgradeModule" Subtype="Emitter1x1SA" />
+      </Members>
+    </ResearchGroup>
 	<ResearchGroup>
 	 <Id Type="MyObjectBuilder_ResearchGroupDefinition" Subtype="ShieldEnhancement" />
 	 <Members>
@@ -1055,12 +1074,13 @@
       <PhysicalMaterial>Metal</PhysicalMaterial>
       <EmissiveColorPreset>Default</EmissiveColorPreset>
     </Definition>
+
   <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
       <Id>
         <TypeId>UpgradeModule</TypeId>
-        <SubtypeId>EmitterSA</SubtypeId>
+        <SubtypeId>Emitter1x1SA</SubtypeId>
       </Id>
-      <DisplayName>Shield Compact Emitter</DisplayName>
+      <DisplayName>Small Regen</DisplayName>
       <Icon>Textures\GUI\Icons\Cubes\ArmoredEmitterIcon.dds</Icon>
       <CubeSize>Small</CubeSize>
       <BlockTopology>TriangleMesh</BlockTopology>
@@ -1105,6 +1125,112 @@
       <PhysicalMaterial>Metal</PhysicalMaterial>
       <EmissiveColorPreset>Default</EmissiveColorPreset>
     </Definition>
+
+
+    <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
+      <Id>
+        <TypeId>UpgradeModule</TypeId>
+        <SubtypeId>Emitter1x1LA</SubtypeId>
+      </Id>
+      <DisplayName>Large Regen</DisplayName>
+      <Icon>Textures\GUI\Icons\Cubes\ArmoredEmitterIcon.dds</Icon>
+      <CubeSize>Large</CubeSize>
+      <BlockTopology>TriangleMesh</BlockTopology>
+      <Size x="1" y="1" z="1" />
+      <ModelOffset x="0" y="0" z="0" />
+      <Model>Models\Cubes\Slim1x1Emitter.mwm</Model>
+      <Components>
+        <Component Subtype="SteelPlate" Count="300" />
+        <Component Subtype="SmallTube" Count="40" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="ShieldComponent" Count="400" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="MetalGrid" Count="60" />
+        <Component Subtype="Superconductor" Count="200" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="GravityGenerator" Count="40" />
+        <Component Subtype="Detector" Count="40" />
+        <Component Subtype="MetalGrid" Count="50" />
+        <Component Subtype="RadioCommunication" Count="20" />
+        <Component Subtype="Computer" Count="500" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="SteelPlate" Count="300" />
+      </Components>
+      <CriticalComponent Subtype="Computer" Index="0" />
+      <BuildProgressModels>
+        <Model BuildPercentUpperBound="0.50" File="Models\Cubes\Slim1x1Emitter_Constr1.mwm" />
+        <Model BuildPercentUpperBound="1.00" File="Models\Cubes\Slim1x1Emitter_Constr2.mwm" />
+      </BuildProgressModels>
+      <BlockPairName>CompactEmitter</BlockPairName>
+      <EdgeType>Light</EdgeType>
+      <BuildTimeSeconds>20</BuildTimeSeconds>
+      <MountPoints>
+        <MountPoint Side="Front" StartX="0.00" StartY="0.00" EndX="1.00" EndY="0.50" />
+        <MountPoint Side="Back" StartX="0.00" StartY="0.00" EndX="1.00" EndY="0.50" />
+        <MountPoint Side="Left" StartX="0.00" StartY="0.00" EndX="1.00" EndY="0.50" />
+        <MountPoint Side="Right" StartX="0.00" StartY="0.00" EndX="1.00" EndY="0.50" />
+        <MountPoint Side="Bottom" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+      </MountPoints>
+      <IsAirTight>false</IsAirTight>
+      <MirroringZ>Y</MirroringZ>
+      <MirroringY>Z</MirroringY>
+      <PhysicalMaterial>Metal</PhysicalMaterial>
+      <EmissiveColorPreset>Default</EmissiveColorPreset>
+    </Definition>
+
+
+
+    <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
+      <Id>
+        <TypeId>UpgradeModule</TypeId>
+        <SubtypeId>EmitterSA</SubtypeId>
+      </Id>
+      <DisplayName>Shield Compact Emitter</DisplayName>
+      <Icon>Textures\GUI\Icons\Cubes\ArmoredEmitterIcon.dds</Icon>
+      <CubeSize>Small</CubeSize>
+      <BlockTopology>TriangleMesh</BlockTopology>
+      <Size x="1" y="1" z="1" />
+      <ModelOffset x="0" y="0" z="0" />
+      <Model>Models\Cubes\Slim1x1Emitter.mwm</Model>
+      <Components>
+        <Component Subtype="SteelPlate" Count="1" />
+        <Component Subtype="SmallTube" Count="1" />
+        <Component Subtype="Construction" Count="1" />
+        <Component Subtype="ShieldComponent" Count="40" />
+        <Component Subtype="Construction" Count="2" />
+        <Component Subtype="MetalGrid" Count="1" />
+        <Component Subtype="Superconductor" Count="2" />
+        <Component Subtype="Construction" Count="2" />
+        <Component Subtype="GravityGenerator" Count="1" />
+        <Component Subtype="Detector" Count="2" />
+        <Component Subtype="MetalGrid" Count="2" />
+        <Component Subtype="RadioCommunication" Count="1" />
+        <Component Subtype="Computer" Count="5" />
+        <Component Subtype="Construction" Count="2" />
+        <Component Subtype="SteelPlate" Count="1" />
+      </Components>
+      <CriticalComponent Subtype="Computer" Index="0" />
+      <BuildProgressModels>
+        <Model BuildPercentUpperBound="0.50" File="Models\Cubes\Slim1x1EmitterSmall_Constr1.mwm" />
+        <Model BuildPercentUpperBound="1.00" File="Models\Cubes\Slim1x1EmitterSmall_Constr2.mwm" />
+      </BuildProgressModels>
+      <BlockPairName>Compact1x1Emitter</BlockPairName>
+      <EdgeType>Light</EdgeType>
+      <BuildTimeSeconds>20</BuildTimeSeconds>
+      <MountPoints>
+        <MountPoint Side="Front" StartX="0.00" StartY="0.00" EndX="1.00" EndY="0.50" />
+        <MountPoint Side="Back" StartX="0.00" StartY="0.00" EndX="1.00" EndY="0.50" />
+        <MountPoint Side="Left" StartX="0.00" StartY="0.00" EndX="1.00" EndY="0.50" />
+        <MountPoint Side="Right" StartX="0.00" StartY="0.00" EndX="1.00" EndY="0.50" />
+        <MountPoint Side="Bottom" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+      </MountPoints>
+      <IsAirTight>false</IsAirTight>
+      <MirroringZ>Y</MirroringZ>
+      <MirroringY>Z</MirroringY>
+      <PhysicalMaterial>Metal</PhysicalMaterial>
+      <EmissiveColorPreset>Default</EmissiveColorPreset>
+    </Definition>
+
 <!-- End Block Region -->
   </CubeBlocks> 
 </Definitions>

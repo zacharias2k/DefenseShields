@@ -71,9 +71,8 @@
 
         internal readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         internal readonly Dictionary<MyEntity, MyProtectors> GlobalProtect = new Dictionary<MyEntity, MyProtectors>();
-        internal Dictionary<MyCubeGrid, BlockRegen> GridsToLogics = new Dictionary<MyCubeGrid, BlockRegen>();
 
-        internal HashSet<BlockRegen> RegenLogics = new HashSet<BlockRegen>();
+        internal HashSet<BlockRegen> Regens = new HashSet<BlockRegen>();
         internal readonly HashSet<Controllers> ActiveShields = new HashSet<Controllers>();
         internal readonly ConcurrentDictionary<Controllers, bool> FunctionalShields = new ConcurrentDictionary<Controllers, bool>();
 
@@ -314,7 +313,8 @@
         internal IMyTerminalControlCheckbox DimShieldHitsCheckBox { get; set; }
 
         internal IMyTerminalControlCheckbox SendToHudCheckBox { get; set; }
-        internal IMyTerminalControlOnOffSwitch ToggleShield { get; set; }
+        internal IMyTerminalControlOnOffSwitch ToggleProtect { get; set; }
+        internal IMyTerminalControlCombobox ProtectMode { get; set; }
         internal IMyTerminalControlCombobox ShellSelect { get; set; }
         internal IMyTerminalControlCombobox ShellVisibility { get; set; }
         internal IMyTerminalControlCombobox PowerScaleSelect { get; set; }

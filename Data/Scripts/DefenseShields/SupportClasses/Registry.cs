@@ -64,6 +64,20 @@ namespace DefenseSystems.Support
         }
     }
 
+    public class RegenPriority : IComparer<BlockRegen>
+    {
+        public int Compare(BlockRegen x, BlockRegen y)
+        {
+            var compareVolume = x.LocalGrid.PositionComp.WorldAABB.Volume.CompareTo(y.LocalGrid.PositionComp.WorldAABB.Volume);
+            if (compareVolume != 0) return compareVolume;
+
+            var compareBlocks = x.LocalGrid.BlocksCount.CompareTo(y.LocalGrid.BlocksCount);
+            if (compareBlocks != 0) return compareBlocks;
+
+            return x.MyCube.EntityId.CompareTo(y.MyCube.EntityId);
+        }
+    }
+
     public class GridPriority : IComparer<MyCubeGrid>
     {
         public int Compare(MyCubeGrid x, MyCubeGrid y)

@@ -30,21 +30,21 @@
                         var s = _workData.ShieldList[x];
                         var tick = _workData.Tick;
                         if (_newFrame || s.MarkedForClose || !s.Warming) return;
-                        var reInforce = s.DsState.State.ReInforce;
+                        var notBubble = s.DsState.State.ProtectMode > 0;
                         if (!IsServer)
                         {
-                            if (reInforce != s.ReInforcedShield)
+                            if (notBubble != s.NotBubble)
                             {
                                 lock (s.Bus.SubLock) foreach (var sub in s.Bus.SubGrids) _entRefreshQueue.Enqueue(sub);
-                                s.ReInforcedShield = reInforce;
+                                s.NotBubble = notBubble;
                             }
 
                             if (EntSlotTick && RefreshCycle == s.MonitorSlot)
                             {
                                 List<MyEntity> monitorListClient = null;
                                 var newSubClient = false;
-                                if (!reInforce) monitorListClient = new List<MyEntity>();
-                                MonitorRefreshTasks(x, ref monitorListClient, reInforce, ref newSubClient);
+                                if (!notBubble) monitorListClient = new List<MyEntity>();
+                                MonitorRefreshTasks(x, ref monitorListClient, notBubble, ref newSubClient);
                             }
                             s.TicksWithNoActivity = 0;
                             s.LastWokenTick = tick;
@@ -85,10 +85,10 @@
 
                         List<MyEntity> monitorList = null;
                         var newSub = false;
-                        if (!reInforce) monitorList = new List<MyEntity>();
-                        if (EntSlotTick && RefreshCycle == s.MonitorSlot) MonitorRefreshTasks(x, ref monitorList, reInforce, ref newSub);
+                        if (!notBubble) monitorList = new List<MyEntity>();
+                        if (EntSlotTick && RefreshCycle == s.MonitorSlot) MonitorRefreshTasks(x, ref monitorList, notBubble, ref newSub);
 
-                        if (reInforce) return;
+                        if (notBubble) return;
                         if (tick < s.LastWokenTick + 400 || s.Missiles.Count > 0)
                         {
                             s.Asleep = false;
@@ -170,7 +170,7 @@
             {
                 HashSet<MyCubeGrid> subs;
                 lock (s.Bus.SubLock) subs = new HashSet<MyCubeGrid>(s.Bus.SubGrids);
-                var newMode = !s.ReInforcedShield;
+                var newMode = !s.NotBubble;
                 if (!newMode) return;
                 foreach (var sub in subs)
                 {
@@ -179,7 +179,7 @@
                     if (!s.WasPaused) _globalEntTmp[sub] = _workData.Tick;
                 }
 
-                s.ReInforcedShield = true;
+                s.NotBubble = true;
                 s.TicksWithNoActivity = 0;
                 s.LastWokenTick = _workData.Tick;
                 s.Asleep = false;
@@ -187,7 +187,7 @@
             else
             {
                 var newMode = false;
-                if (s.ReInforcedShield)
+                if (s.NotBubble)
                 {
                     HashSet<MyCubeGrid> subs;
                     lock (s.Bus.SubLock) subs = new HashSet<MyCubeGrid>(s.Bus.SubGrids); 
@@ -197,7 +197,7 @@
                         if (!s.WasPaused) _globalEntTmp[sub] = _workData.Tick;
                     }
                     //if (Enforced.Debug >= 2) Log.Line($"found Reinforce");
-                    s.ReInforcedShield = false;
+                    s.NotBubble = false;
                     s.TicksWithNoActivity = 0;
                     s.LastWokenTick = _workData.Tick;
                     s.Asleep = false;
@@ -459,14 +459,14 @@
 
                 var entShields = myProtector.Shields;
                 var refreshCount = 0;
-                Controllers iShield = null;
+                Controllers notBubble = null;
                 var removeIShield = false;
                 foreach (var s in entShields)
                 {
                     if (s.WasPaused) continue;
-                    if (s.DsState.State.ReInforce && s.Bus.SubGrids.Contains(ent))
+                    if (s.DsState.State.ProtectMode > 0 && s.Bus.SubGrids.Contains(ent))
                     {
-                        iShield = s;
+                        notBubble = s;
                         refreshCount++;
                     }
                     else if (!ent.InScene || !s.ResetEnts(ent, Tick))
@@ -475,23 +475,23 @@
                     }
                     else refreshCount++;
 
-                    if (iShield == null && myProtector.IntegrityShield == s)
+                    if (notBubble == null && myProtector.NotBubble == s)
                     {
                         removeIShield = true;
-                        myProtector.IntegrityShield = null;
+                        myProtector.NotBubble = null;
                     }
 
-                    var detectedStates = s.PlayerByShield || s.MoverByShield || Tick <= s.LastWokenTick + 580 || iShield != null || removeIShield;
+                    var detectedStates = s.PlayerByShield || s.MoverByShield || Tick <= s.LastWokenTick + 580 || notBubble != null || removeIShield;
                     if (ScalerChanged || detectedStates)
                     {
                         s.Asleep = false;
                     }
                 }
 
-                if (iShield != null)
+                if (notBubble != null)
                 {
-                    myProtector.Shields.Remove(iShield);
-                    myProtector.IntegrityShield = iShield;
+                    myProtector.Shields.Remove(notBubble);
+                    myProtector.NotBubble = notBubble;
                 }
 
                 myProtector.Shields.ApplyChanges();
@@ -532,9 +532,10 @@
                             continue;
                         }
                         if (LogStats) Perf.Awake();
-                        if (s.DsState.State.ReInforce)
+                        var protMode = s.DsState.State.ProtectMode;
+                        if (protMode > 0)
                         {
-                            s.DeformEnabled = true;
+                            if (protMode == 1) s.DeformEnabled = true;
                             s.ProtectSubs(Tick);
                             continue;
                         }

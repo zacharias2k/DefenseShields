@@ -49,7 +49,7 @@ namespace DefenseSystems
             var mainSub = false;
             if (grid == null)
             {
-                ActiveController.DsState.State.GridIntegrity = 0;
+                ActiveController.DsState.State.SpineIntegrity = 0;
                 grid = Spine;
             }
             else if (grid == Spine) mainSub = true;
@@ -66,8 +66,8 @@ namespace DefenseSystems
 
             if (!mainSub)
             {
-                if (!remove) ActiveController.DsState.State.GridIntegrity += integrityAdjustment;
-                else ActiveController.DsState.State.GridIntegrity -= integrityAdjustment;
+                if (!remove) ActiveController.DsState.State.SpineIntegrity += integrityAdjustment;
+                else ActiveController.DsState.State.SpineIntegrity -= integrityAdjustment;
             }
 
             return integrityAdjustment;

@@ -162,10 +162,8 @@ namespace DefenseSystems
 
             if (!EnhancerLink && EnhancerLink != wasLink)
             {
-                ModSet.Settings.ReInforceEnabled = false;
                 ModSet.Settings.EmpEnabled = false;
             }
-            else if (ModState.State.Link && Bus.IsStatic) ModSet.Settings.ReInforceEnabled = false;
         }
 
         private void ClientCheckForCompLink()

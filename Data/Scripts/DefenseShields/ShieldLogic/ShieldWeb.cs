@@ -45,7 +45,7 @@ namespace DefenseSystems
                     protectors = Session.Instance.GlobalProtect[sub] = Session.ProtSets.Get();
                     protectors.Init(LogicSlot, tick);
                 }
-                protectors.IntegrityShield = this;
+                protectors.NotBubble = this;
             }
         }
 

@@ -1,7 +1,5 @@
 ﻿namespace DefenseSystems
 {
-    using VRage;
-    using VRageMath;
     using System.Collections.Generic;
     using Support;
     using Sandbox.Game.Entities;
@@ -33,14 +31,22 @@
             new MyTerminalControlComboBoxItem() { Key = 2, Value = MyStringId.GetOrCompute("Visible On Hit") }
         };
 
-        private static readonly List<MyTerminalControlComboBoxItem> ReserveList = new List<MyTerminalControlComboBoxItem>()
+        private static readonly List<MyTerminalControlComboBoxItem> PowerScaleList = new List<MyTerminalControlComboBoxItem>()
         {
             new MyTerminalControlComboBoxItem() { Key = 0, Value = MyStringId.GetOrCompute("Disabled") },
             new MyTerminalControlComboBoxItem() { Key = 1, Value = MyStringId.GetOrCompute("KiloWatt") },
             new MyTerminalControlComboBoxItem() { Key = 2, Value = MyStringId.GetOrCompute("MegaWatt") },
             new MyTerminalControlComboBoxItem() { Key = 3, Value = MyStringId.GetOrCompute("GigaWatt") },
             new MyTerminalControlComboBoxItem() { Key = 4, Value = MyStringId.GetOrCompute("TeraWatt") },
-        };																														   
+        };
+
+        private static readonly List<MyTerminalControlComboBoxItem> ModeList = new List<MyTerminalControlComboBoxItem>()
+        {
+            new MyTerminalControlComboBoxItem() { Key = 0, Value = MyStringId.GetOrCompute("Boson Force Shield") },
+            new MyTerminalControlComboBoxItem() { Key = 1, Value = MyStringId.GetOrCompute("Structural Integrity Field") },
+            new MyTerminalControlComboBoxItem() { Key = 2, Value = MyStringId.GetOrCompute("Regenerative Ablative Armor") },
+        };
+
         internal static void CreateUi(IMyTerminalBlock shield)
         {
             Session.Instance.WidthSlider.Visible = ShowSizeSlider;
@@ -401,9 +407,10 @@
             var notStation = comp != null && !comp.Bus.IsStatic;
             return notStation;
         }
-        internal static void ListPowerScale(List<MyTerminalControlComboBoxItem> reserveList)
+
+        internal static void ListPowerScale(List<MyTerminalControlComboBoxItem> powerScaleList)
         {
-            foreach (var shell in ReserveList) reserveList.Add(shell);
+            foreach (var scale in PowerScaleList) powerScaleList.Add(scale);
         }
 
         internal static long GetPowerScale(IMyTerminalBlock block)
@@ -441,6 +448,26 @@
             var comp = block?.GameLogic?.GetAs<Controllers>();
             if (comp == null) return false;
             return comp.DsSet.Settings.PowerScale != 0;
+        }
+
+        internal static void ListModes(List<MyTerminalControlComboBoxItem> modeList)
+        {
+            foreach (var mode in ModeList) modeList.Add(mode);
+        }
+
+        internal static long GetModes(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<Controllers>();
+            return comp?.DsSet.Settings.ProtectMode ?? 0;
+        }
+
+        internal static void SetModes(IMyTerminalBlock block, long newValue)
+        {
+            var comp = block?.GameLogic?.GetAs<Controllers>();
+            if (comp == null) return;
+            comp.DsSet.Settings.ProtectMode = newValue;
+            comp.SettingsUpdated = true;
+            comp.ClientUiUpdate = true;
         }
         #endregion
     }

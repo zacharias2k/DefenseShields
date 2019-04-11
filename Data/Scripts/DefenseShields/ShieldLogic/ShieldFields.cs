@@ -58,7 +58,7 @@ namespace DefenseSystems
         internal volatile bool Asleep;
         internal volatile bool WasPaused;
         internal volatile uint LastWokenTick;
-        internal volatile bool ReInforcedShield;
+        internal volatile bool NotBubble;
 
         internal Bus Bus;
         internal BoundingBoxD WebBox = new BoundingBoxD();

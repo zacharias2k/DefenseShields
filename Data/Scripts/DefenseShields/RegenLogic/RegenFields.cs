@@ -23,7 +23,6 @@ namespace DefenseSystems
         private const int Spread = 10;
         private const int SyncCount = 60;
 
-        internal bool Regening;
         internal bool ContainerInited;
         internal bool IsFunctional { get; set; }
         internal bool IsWorking { get; set; }
@@ -34,20 +33,15 @@ namespace DefenseSystems
         private bool _firstSync;
         private bool _bInit;
         private bool _aInit;
-        private bool _blockUpdates;
         private uint _lastTick;
         private uint _100Tick;
         private bool _isServer;
         private bool _isDedicated;
-        private MyCubeGrid _attachedGrid;
+        //private MyCubeGrid _attachedGrid;
         internal MyCubeBlock MyCube;
         internal MyCubeGrid LocalGrid;
         internal DSUtils DsUtil1 = new DSUtils();
         internal Registry Registry { get; set; } = new Registry();
-
-        private readonly Dictionary<IMySlimBlock, int> _damagedBlockIdx = new Dictionary<IMySlimBlock, int>();
-        private readonly List<IMySlimBlock> _damagedBlocks = new List<IMySlimBlock>();
-        internal readonly UniqueQueue<IMySlimBlock> QueuedBlocks = new UniqueQueue<IMySlimBlock>();
 
         internal bool IsAfterInited
         {
@@ -61,7 +55,7 @@ namespace DefenseSystems
                 }
             }
         }
-
+        /*
         private MyCubeGrid AttachedGrid
         {
             get
@@ -82,8 +76,8 @@ namespace DefenseSystems
                     _attachedGrid.OnBlockRemoved -= BlockChanged;
                 }
 
-                _damagedBlockIdx.Clear();
-                _damagedBlocks.Clear();
+                Bus.DamagedBlockIdx.Clear();
+                Bus.DamagedBlocks.Clear();
                 _attachedGrid = value;
                 if (_attachedGrid != null)
                 {
@@ -98,6 +92,6 @@ namespace DefenseSystems
                 }
             }
         }
-
+        */
     }
 }

@@ -69,10 +69,10 @@ namespace DefenseSystems
 
             ShieldHpBase = Bus.ShieldMaxPower * bufferScaler;
 
-            var gridIntegrity = DsState.State.GridIntegrity * ConvToDec;
-            if (capScaler > 0) gridIntegrity *= capScaler;
+            var spineIntegrity = DsState.State.SpineIntegrity * ConvToDec;
+            if (capScaler > 0) spineIntegrity *= capScaler;
 
-            if (ShieldHpBase > gridIntegrity) HpScaler = gridIntegrity / ShieldHpBase;
+            if (ShieldHpBase > spineIntegrity) HpScaler = spineIntegrity / ShieldHpBase;
             else HpScaler = 1f;
             shieldMaintainPercent = shieldMaintainPercent * DsState.State.EnhancerPowerMulti * (DsState.State.ShieldPercent * ConvToDec);
             if (DsState.State.Lowered) shieldMaintainPercent = shieldMaintainPercent * 0.25f;

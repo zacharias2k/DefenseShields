@@ -18,6 +18,7 @@ namespace DefenseSystems
                 grid.OnBlockRemoved += BlockRemovedEvent;
                 grid.OnFatBlockAdded += FatBlockAddedEvent;
                 grid.OnFatBlockRemoved += FatBlockRemovedEvent;
+                grid.OnBlockIntegrityChanged += BlockIntegrityEvent;
                 grid.OnGridSplit += GridSplitEvent;
             }
             else
@@ -28,6 +29,7 @@ namespace DefenseSystems
                 grid.OnBlockRemoved -= BlockRemovedEvent;
                 grid.OnFatBlockAdded -= FatBlockAddedEvent;
                 grid.OnFatBlockRemoved -= FatBlockRemovedEvent;
+                grid.OnBlockIntegrityChanged += BlockIntegrityEvent;
                 grid.OnGridSplit -= GridSplitEvent;
             }
         }
@@ -58,24 +60,35 @@ namespace DefenseSystems
             catch (Exception ex) { Log.Line($"Exception in Controller HierarchyChanged: {ex}"); }
         }
 
-        private void BlockAddedEvent(IMySlimBlock mySlimBlock)
+        private void BlockAddedEvent(IMySlimBlock block)
         {
             try
             {
                 BlockAdded = true;
                 BlockChanged = true;
-                if (Session.Instance.IsServer) SpineIntegrity += mySlimBlock.MaxIntegrity;
+                if (Session.Instance.IsServer) SpineIntegrity += block.MaxIntegrity;
+                if (!CheckIntegrity) ActiveRegen?.BlockChanged(block);
             }
             catch (Exception ex) { Log.Line($"Exception in Controller BlockAdded: {ex}"); }
         }
 
-        private void BlockRemovedEvent(IMySlimBlock mySlimBlock)
+        private void BlockRemovedEvent(IMySlimBlock block)
         {
             try
             {
                 BlockRemoved = true;
                 BlockChanged = true;
-                if (Session.Instance.IsServer) SpineIntegrity -= mySlimBlock.MaxIntegrity;
+                if (Session.Instance.IsServer) SpineIntegrity -= block.MaxIntegrity;
+                if (!CheckIntegrity) ActiveRegen?.BlockChanged(block);
+            }
+            catch (Exception ex) { Log.Line($"Exception in Controller BlockRemoved: {ex}"); }
+        }
+
+        private void BlockIntegrityEvent(IMySlimBlock block)
+        {
+            try
+            {
+                if (!CheckIntegrity) ActiveRegen?.BlockChanged(block);
             }
             catch (Exception ex) { Log.Line($"Exception in Controller BlockRemoved: {ex}"); }
         }

@@ -41,7 +41,8 @@ namespace DefenseSystems
                 if (DsControl) return;
                 var comp = block?.GameLogic?.GetAs<Controllers>();
                 TerminalHelpers.Separator(comp?.Shield, "DS-C_sep0");
-                ToggleShield = TerminalHelpers.AddOnOff(comp?.Shield, "DS-C_ToggleShield", "Shield Status", "Raise or Lower Shields", "Up", "Down", DsUi.GetRaiseShield, DsUi.SetRaiseShield);
+                ToggleProtect = TerminalHelpers.AddOnOff(comp?.Shield, "DS-C_ToggleProtect", "Protection Status", "Enable/Disable Protection", "Up", "Down", DsUi.GetRaiseShield, DsUi.SetRaiseShield);
+                ProtectMode = TerminalHelpers.AddCombobox(comp?.Shield, "DS-C_ProtectMode", "Select Protetion Mode", "Select Protection Mode", DsUi.GetModes, DsUi.SetModes, DsUi.ListModes);
                 TerminalHelpers.Separator(comp?.Shield, "DS-C_sep1");
                 ChargeSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_ChargeRate", "Shield Charge Rate", "Percentage Of Power The Shield May Consume", DsUi.GetRate, DsUi.SetRate);
                 ChargeSlider.SetLimits(20, 95);
@@ -91,7 +92,7 @@ namespace DefenseSystems
                 HitWaveAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_HitWaveAnimation", "Show Hit Wave Animation", "Show Wave Effect On Shield Damage", DsUi.GetHitWaveAnimation, DsUi.SetHitWaveAnimation);
                 NoWarningSoundsCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_NoWarningSounds", "Disable audio warnings    ", "Supress shield audio warnings", DsUi.GetNoWarningSounds, DsUi.SetNoWarningSounds);
                 DimShieldHitsCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_DimShieldHits", "Dim Incoming Hit Effects ", "Supress brightness of incoming hit effects", DsUi.GetDimShieldHits, DsUi.SetDimShieldHits);
-                CreateAction<IMyUpgradeModule>(ToggleShield);
+                CreateAction<IMyUpgradeModule>(ToggleProtect);
 
                 CreateActionChargeRate<IMyUpgradeModule>(ChargeSlider);
 
@@ -120,7 +121,6 @@ namespace DefenseSystems
                 ModDamage = TerminalHelpers.AddSlider(comp?.Modulator, "DS-M_DamageModulation", "Balance Shield Protection", "Balance Shield Protection", ModUi.GetDamage, ModUi.SetDamage);
                 ModDamage.SetLimits(20, 180);
                 ModSep2 = TerminalHelpers.Separator(comp?.Modulator, "DS-M_sep2");
-                ModReInforce = TerminalHelpers.AddCheckbox(comp?.Modulator, "DS-M_ModulateReInforceProt", "Enhance structural integrity", "Enhance structural integrity, prevents damage from collisions", ModUi.GetReInforceProt, ModUi.SetReInforceProt);
                 ModVoxels = TerminalHelpers.AddCheckbox(comp?.Modulator, " DS-M_ModulateVoxels", "Terrain is ignored by shield", "Let voxels bypass shield", ModUi.GetVoxels, ModUi.SetVoxels);
                 ModGrids = TerminalHelpers.AddCheckbox(comp?.Modulator, "DS-M_ModulateGrids", "Entities may pass the shield", "Let grid bypass shield", ModUi.GetGrids, ModUi.SetGrids);
                 ModEmp = TerminalHelpers.AddCheckbox(comp?.Modulator, "DS-M_ModulateEmpProt", "Protects against EMPs", "But generates heat 10x faster", ModUi.GetEmpProt, ModUi.SetEmpProt);

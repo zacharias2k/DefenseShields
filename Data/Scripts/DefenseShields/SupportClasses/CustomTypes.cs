@@ -441,7 +441,7 @@ namespace DefenseSystems.Support
         public uint BlockingTick;
         public bool LastAttackerWasInside;
         public Controllers BlockingShield;
-        public Controllers IntegrityShield;
+        public Controllers NotBubble;
         public long IgnoreAttackerId = -1;
 
         public void Init(int refreshSlot, uint creationTick)

@@ -1,6 +1,6 @@
 ﻿using System;
 using DefenseSystems.Support;
-using Sandbox.Game.Entities;
+using Sandbox.Common.ObjectBuilders;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.Components;
@@ -8,7 +8,7 @@ using VRage.ModAPI;
 
 namespace DefenseSystems
 {
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_TerminalBlock), false, "K_WS_TC_NaniteCore")]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "Emitter1x1LA", "Emitter1x1SA")]
     public partial class BlockRegen : MyGameLogicComponent
     {
         public override void OnAddedToContainer()
@@ -50,30 +50,30 @@ namespace DefenseSystems
 
         public override void UpdateBeforeSimulation100()
         {
-            AttachedGrid = Bus.Spine;
-            _100Tick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
-            if (Regening && !_blockUpdates && _100Tick > _lastTick + 10)
+            //AttachedGrid = Bus.Spine;
+            _100Tick = Session.Instance.Tick;
+            if (Bus.Regening && !Bus.CheckIntegrity && _100Tick > _lastTick + 10)
             {
                 var i = 0;
-                while (i < QueuedBlocks.Count)
+                while (i < Bus.QueuedBlocks.Count)
                 {
-                    if (_damagedBlocks.Count >= MaxBlocksHealedPerCycle) break;
-                    BlockIntegrity(QueuedBlocks.Dequeue());
+                    if (Bus.DamagedBlocks.Count >= MaxBlocksHealedPerCycle) break;
+                    BlockIntegrity(Bus.QueuedBlocks.Dequeue());
                 }
                 UpdateGen();
-                Regening = false;
+                Bus.Regening = false;
             }
         }
 
         public override void UpdateAfterSimulation()
         {
-            _blockUpdates = true;
+            Bus.CheckIntegrity = true;
             _offset = (_offset + 1) % Spread;
             var i = _offset;
-            while (i < _damagedBlocks.Count)
+            while (i < Bus.DamagedBlocks.Count)
             {
                 //if (i == 0) Log.Line($"d:{_damagedBlocks.Count} - dId:{_damagedBlockIdx.Count} - qu:{QueuedBlocks.Count}");
-                var block = _damagedBlocks[i];
+                var block = Bus.DamagedBlocks[i];
                 var bIntegrity = block.Integrity;
                 var maxIntegrity = block.MaxIntegrity;
 
@@ -94,7 +94,7 @@ namespace DefenseSystems
                         else
                         {
                             RemoveBlockAt(i);
-                            _damagedBlockIdx.Remove(block);
+                            Bus.DamagedBlockIdx.Remove(block);
                         }
                     }
                     else block.IncreaseMountLevel(repair, block.OwnerId);
@@ -110,13 +110,13 @@ namespace DefenseSystems
                     {
                         //if (block.Integrity != block.MaxIntegrity || block.HasDeformation) Log.Line($"I:{block.Integrity} - M:{block.MaxIntegrity} - D:{block.HasDeformation}");
                         RemoveBlockAt(i);
-                        _damagedBlockIdx.Remove(block);
+                        Bus.DamagedBlockIdx.Remove(block);
                     }
                 }
                 else i += Spread;
             }
-            _blockUpdates = false;
-            if (_damagedBlocks.Count == 0)
+            Bus.CheckIntegrity = false;
+            if (Bus.DamagedBlocks.Count == 0)
             {
                 _lastTick = (uint)MyAPIGateway.Session.ElapsedPlayTime.TotalMilliseconds / MyEngineConstants.UPDATE_STEP_SIZE_IN_MILLISECONDS;
                 NeedsUpdate &= ~MyEntityUpdateEnum.EACH_FRAME;
@@ -126,7 +126,7 @@ namespace DefenseSystems
         public override void OnBeforeRemovedFromContainer()
         {
             base.OnBeforeRemovedFromContainer();
-            AttachedGrid = null;
+            //AttachedGrid = null;
         }
 
     }

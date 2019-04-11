@@ -13,9 +13,11 @@ namespace DefenseSystems
         {
             var controller = block as Controllers;
             var emitter = block as Emitters;
+            var regen = block as BlockRegen;
 
             if (controller != null && !SortedControllers.Add(controller)) return;
             if (emitter != null && !SortedEmitters.Add(emitter)) return;
+            if (regen != null && !SortedRegens.Add(regen)) return;
 
             UpdateLogicState(block, LogicState.Join);
         }
@@ -24,9 +26,12 @@ namespace DefenseSystems
         {
             var controller = block as Controllers;
             var emitter = block as Emitters;
+            var regen = block as BlockRegen;
 
             if (controller != null && !SortedControllers.Remove(controller)) return;
             if (emitter != null && !SortedEmitters.Remove(emitter)) return;
+            if (regen != null && !SortedRegens.Remove(regen)) return;
+
             UpdateLogicState(block, LogicState.Leave);
         }
 
@@ -50,6 +55,14 @@ namespace DefenseSystems
                     Log.Line($"[EmitterSubSplit] - cId:{emitter.MyCube.EntityId} - left BusId:{Spine.EntityId} - iMaster:{emitter == ActiveEmitter}");
                     SortedEmitters.Remove(emitter);
                     UpdateNetworks(emitter.MyCube, LogicState.Leave);
+                }
+
+                var regen = b as BlockRegen;
+                if (regen != null && regen.MyCube.CubeGrid == grid)
+                {
+                    Log.Line($"[EmitterSubSplit] - cId:{regen.MyCube.EntityId} - left BusId:{Spine.EntityId} - iMaster:{regen == ActiveRegen}");
+                    SortedRegens.Remove(regen);
+                    UpdateNetworks(regen.MyCube, LogicState.Leave);
                 }
                 /*
                 var enhancer = b as Enhancers;
@@ -88,18 +101,34 @@ namespace DefenseSystems
                 switch (state)
                 {
                     case LogicState.Join:
-                        Log.Line($"[EmitterJoin----] - cId:{emitter.MyCube.EntityId} - gMaster:{Spine != null} - iMaster:{emitter == ActiveEmitter}");
+                        Log.Line($"[EmitterJoin----] - eId:{emitter.MyCube.EntityId} - gMaster:{Spine != null} - iMaster:{emitter == ActiveEmitter}");
 
                         emitter.RegisterEvents(emitter.MyCube.CubeGrid, this, true);
                         emitter.IsAfterInited = false;
                         break;
                     case LogicState.Leave:
-                        Log.Line($"[EmitterLeave---] - cId:{emitter.MyCube.EntityId} - gMaster:{Spine != null} - iMaster:{emitter == ActiveEmitter}");
+                        Log.Line($"[EmitterLeave---] - eId:{emitter.MyCube.EntityId} - gMaster:{Spine != null} - iMaster:{emitter == ActiveEmitter}");
                         emitter.RegisterEvents(emitter.MyCube.CubeGrid, this, false);
                         break;
                 }
             }
+            var regen = type as BlockRegen;
+            if (regen != null)
+            {
+                switch (state)
+                {
+                    case LogicState.Join:
+                        Log.Line($"[RegenJoin------] - rId:{regen.MyCube.EntityId} - gMaster:{Spine != null} - iMaster:{regen == ActiveRegen}");
 
+                        regen.RegisterEvents(regen.MyCube.CubeGrid, this, true);
+                        regen.IsAfterInited = false;
+                        break;
+                    case LogicState.Leave:
+                        Log.Line($"[RegenLeave-----] - rId:{regen.MyCube.EntityId} - gMaster:{Spine != null} - iMaster:{regen == ActiveRegen}");
+                        regen.RegisterEvents(regen.MyCube.CubeGrid, this, false);
+                        break;
+                }
+            }
             if (Inited) UpdateLogicMasters(type, state);
         }
 
@@ -107,6 +136,8 @@ namespace DefenseSystems
         {
             var controller = type as Controllers;
             var emitter = type as Emitters;
+            var regen = type as BlockRegen;
+
             if (controller != null)
             {
                 Controllers newMaster;
@@ -154,6 +185,28 @@ namespace DefenseSystems
                 EmitterEvent = true;
                 ActiveEmitterId = ActiveEmitter?.MyCube?.EntityId ?? 0;
             }
+            else if (regen != null)
+            {
+                BlockRegen newMaster;
+                switch (state)
+                {
+                    case LogicState.Join:
+                        newMaster = SortedRegens.Max;
+                        if (ActiveRegen == newMaster) return;
+                        Log.Line($"[J-Regen Elect] - [iMaster {newMaster == regen}] - state:{state} - myId:{regen.MyCube.EntityId}");
+                        ActiveRegen = newMaster;
+                        break;
+                    case LogicState.Leave:
+                        var keepMaster = !(ActiveRegen == null || ActiveRegen.MyCube.Closed || !ActiveRegen.MyCube.InScene || ActiveRegen == regen);
+                        if (keepMaster) return;
+
+                        newMaster = SortedRegens.Max;
+                        if (ActiveRegen == newMaster) return;
+                        Log.Line($"[L-Regen Elect] - [iMaster {newMaster == regen}] - state:{state} - myId:{regen.MyCube.EntityId}");
+                        ActiveRegen = newMaster;
+                        break;
+                }
+            }
         }
 
         private void UpdateNetworks<T>(T type, LogicState state)
@@ -161,6 +214,8 @@ namespace DefenseSystems
             var cube = type as MyCubeBlock;
             var controller = cube?.GameLogic as Controllers;
             var emitter = cube?.GameLogic as Emitters;
+            var regen = cube?.GameLogic as BlockRegen;
+
             var newSplit = false;
 
             if (controller != null)
@@ -184,13 +239,28 @@ namespace DefenseSystems
                 {
                     if (ActiveEmitter == emitter)
                     {
-                        Log.Line($"[DeRegistering] - from spine [sId:{Spine.EntityId}] as active controller [eId:{emitter.MyCube.EntityId}]");
+                        Log.Line($"[DeRegistering] - from spine [sId:{Spine.EntityId}] as active emitter [eId:{emitter.MyCube.EntityId}]");
                         newSplit = true;
                         ActiveEmitter = null;
                         UpdateLogicMasters(type, state);
                     }
                     Log.Line($"[Join New Bus] - eId:{emitter.MyCube.EntityId}]");
                     emitter.Registry.RegisterWithBus(emitter, emitter.MyCube.CubeGrid, true, emitter.Bus, out emitter.Bus);
+                }
+            }
+            else if (regen != null)
+            {
+                if (state == LogicState.Leave)
+                {
+                    if (ActiveRegen == regen)
+                    {
+                        Log.Line($"[DeRegistering] - from spine [sId:{Spine.EntityId}] as active regen [eId:{regen.MyCube.EntityId}]");
+                        newSplit = true;
+                        ActiveRegen = null;
+                        UpdateLogicMasters(type, state);
+                    }
+                    Log.Line($"[Join New Bus] - rId:{regen.MyCube.EntityId}]");
+                    regen.Registry.RegisterWithBus(regen, regen.MyCube.CubeGrid, true, regen.Bus, out regen.Bus);
                 }
             }
             if (!BusIsSplit && newSplit) Split(cube.CubeGrid, state);
