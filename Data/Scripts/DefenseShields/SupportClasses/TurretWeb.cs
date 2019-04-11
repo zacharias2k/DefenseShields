@@ -102,22 +102,22 @@ namespace DefenseSystems.Support
                         var destroyable = ent as IMyDestroyableObject;
                         if (grid != null)
                         {
-                            var turretWeb = new EntityHit(TargetType.Grid, grid, null, null, _checkBeams.Get());
-                            turretWeb.Turret.Add(_work.Turret.TurretId, new CheckBeam(TurretType.Pulse, _beams.Get()));
-                            _hitEntities.TryAdd(ent, turretWeb);
+                            var entityHit = new EntityHit(TargetType.Grid, grid, null, null, _checkBeams.Get());
+                            entityHit.Turret.Add(_work.Turret.TurretId, new CheckBeam(TurretType.Pulse, _beams.Get()));
+                            _hitEntities.TryAdd(ent, entityHit);
                         }
                         else if (destroyable != null)
                         {
-                            var turretWeb = new EntityHit(TargetType.Destroyable, null, destroyable, null, _checkBeams.Get());
-                            turretWeb.Turret.Add(_work.Turret.TurretId, new CheckBeam(TurretType.Pulse, _beams.Get()));
-                            _hitEntities.TryAdd(ent, turretWeb);
+                            var entityHit = new EntityHit(TargetType.Destroyable, null, destroyable, null, _checkBeams.Get());
+                            entityHit.Turret.Add(_work.Turret.TurretId, new CheckBeam(TurretType.Pulse, _beams.Get()));
+                            _hitEntities.TryAdd(ent, entityHit);
 
                         }
                         else if (voxel != null)
                         {
-                            var turretWeb = new EntityHit(TargetType.Voxel, null, null, voxel, _checkBeams.Get());
-                            turretWeb.Turret.Add(_work.Turret.TurretId, new CheckBeam(TurretType.Pulse, _beams.Get()));
-                            _hitEntities.TryAdd(ent, turretWeb);
+                            var entityHit = new EntityHit(TargetType.Voxel, null, null, voxel, _checkBeams.Get());
+                            entityHit.Turret.Add(_work.Turret.TurretId, new CheckBeam(TurretType.Pulse, _beams.Get()));
+                            _hitEntities.TryAdd(ent, entityHit);
                         }
                     }
                 });
