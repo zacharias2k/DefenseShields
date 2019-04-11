@@ -53,11 +53,12 @@ namespace DefenseSystems.Support
 
         public void Draw()
         {
+            if (UpdatedBeams.IsEmpty) return;
             UpdateBeams beam;
             while (UpdatedBeams.TryDequeue(out beam))
             {
-                var turret = _turrets[beam.TurretId];
-                DrawBeam(turret, beam.Beam);
+                //var turret = _turrets[beam.TurretId];
+                //DrawBeam(turret, beam.Beam);
             }
         }
 
