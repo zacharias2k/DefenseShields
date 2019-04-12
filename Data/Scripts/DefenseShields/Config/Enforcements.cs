@@ -14,7 +14,7 @@ namespace DefenseSystems
 
             var binary = MyAPIGateway.Utilities.SerializeToBinary(enforce);
             shield.Storage[Session.Instance.ControllerEnforceGuid] = Convert.ToBase64String(binary);
-            if (Session.Enforced.Debug == 3) Log.Line($"Enforcement Saved - Version:{enforce.Version} - ShieldId [{shield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"Enforcement Saved - Version:{enforce.Version} - ControllerId [{shield.EntityId}]");
         }
 
         public static DefenseSystemsEnforcement LoadEnforcement(IMyFunctionalBlock shield)
@@ -28,7 +28,7 @@ namespace DefenseSystems
                 DefenseSystemsEnforcement loadedEnforce = null;
                 var base64 = Convert.FromBase64String(rawData);
                 loadedEnforce = MyAPIGateway.Utilities.SerializeFromBinary<DefenseSystemsEnforcement>(base64);
-                if (Session.Enforced.Debug == 3) Log.Line($"Enforcement Loaded {loadedEnforce != null} - Version:{loadedEnforce?.Version} - ShieldId [{shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"Enforcement Loaded {loadedEnforce != null} - Version:{loadedEnforce?.Version} - ControllerId [{shield.EntityId}]");
                 if (loadedEnforce != null) return loadedEnforce;
             }
             return null;

@@ -177,7 +177,7 @@ namespace DefenseSystems
                     {
                         DsState.State.NoPower = true;
                         DsState.State.Message = true;
-                        ShieldChangeState();
+                        ProtChangedState();
                     }
 
                     var shieldLoss = ShieldMaxCharge * 0.0016667f;
@@ -201,8 +201,8 @@ namespace DefenseSystems
                 {
                     DsState.State.NoPower = false;
                     _powerNoticeLoop = 0;
-                    if (Session.Enforced.Debug >= 3) Log.Line($"StateUpdate: PowerRestored - ShieldId [{Shield.EntityId}]");
-                    ShieldChangeState();
+                    if (Session.Enforced.Debug >= 3) Log.Line($"StateUpdate: PowerRestored - ControllerId [{Controller.EntityId}]");
+                    ProtChangedState();
                 }
             }
             return false;

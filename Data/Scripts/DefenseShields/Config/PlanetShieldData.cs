@@ -49,7 +49,7 @@
                     State = loadedState;
                     loadedSomething = true;
                 }
-                if (Session.Enforced.Debug == 3) Log.Line($"Loaded - PlanetShieldId [{PlanetShield.EntityId}]:\n{State.ToString()}");
+                if (Session.Enforced.Debug == 3) Log.Line($"Loaded - PlanetControllerId [{PlanetShield.EntityId}]:\n{State.ToString()}");
             }
             return loadedSomething;
         }
@@ -102,7 +102,7 @@
                     Settings = loadedSettings;
                     loadedSomething = true;
                 }
-                if (Session.Enforced.Debug == 3) Log.Line($"Loaded - PlanetShieldId [{PlanetShield.EntityId}]:\n{Settings.ToString()}");
+                if (Session.Enforced.Debug == 3) Log.Line($"Loaded - PlanetControllerId [{PlanetShield.EntityId}]:\n{Settings.ToString()}");
             }
             return loadedSomething;
         }

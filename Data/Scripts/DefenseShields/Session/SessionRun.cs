@@ -181,9 +181,9 @@
 
         public override void UpdateAfterSimulation()
         {
-            lock (ActiveShields)
-                foreach (var s in ActiveShields)
-                    if (s.ShieldIsMobile && !s.Asleep) s.MobileUpdate();
+            lock (ActiveProtection)
+                foreach (var s in ActiveProtection)
+                    if (s.ShieldIsMobile && !s.Asleep && s.DsState.State.ProtectMode != 2) s.MobileUpdate();
             _autoResetEvent.Set();
         }
         #endregion

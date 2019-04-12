@@ -22,7 +22,7 @@
                     MyEntities.OnEntityRemove += OnEntityRemove;
                 }
 
-                Shield.AppendingCustomInfo += AppendingCustomInfo;
+                Controller.AppendingCustomInfo += AppendingCustomInfo;
                 _sink.CurrentInputChanged += CurrentInputChanged;
                 MyCube.IsWorkingChanged += IsWorkingChanged;
                 IsWorkingChanged(MyCube);
@@ -36,7 +36,7 @@
                     MyEntities.OnEntityAdd -= OnEntityAdd;
                     MyEntities.OnEntityRemove -= OnEntityRemove;
                 }
-                Shield.AppendingCustomInfo -= AppendingCustomInfo;
+                Controller.AppendingCustomInfo -= AppendingCustomInfo;
                 _sink.CurrentInputChanged -= CurrentInputChanged;
                 MyCube.IsWorkingChanged -= IsWorkingChanged;
             }

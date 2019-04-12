@@ -40,7 +40,18 @@
             new MyTerminalControlComboBoxItem() { Key = 4, Value = MyStringId.GetOrCompute("TeraWatt") },
         };
 
-        private static readonly List<MyTerminalControlComboBoxItem> ModeList = new List<MyTerminalControlComboBoxItem>()
+        private static readonly List<MyTerminalControlComboBoxItem> ModeShieldList = new List<MyTerminalControlComboBoxItem>()
+        {
+            new MyTerminalControlComboBoxItem() { Key = 0, Value = MyStringId.GetOrCompute("Boson Force Shield") },
+            new MyTerminalControlComboBoxItem() { Key = 1, Value = MyStringId.GetOrCompute("Structural Integrity Field") },
+        };
+
+        private static readonly List<MyTerminalControlComboBoxItem> ModeArmorList = new List<MyTerminalControlComboBoxItem>()
+        {
+            new MyTerminalControlComboBoxItem() { Key = 0, Value = MyStringId.GetOrCompute("Regenerative Ablative Armor") },
+        };
+
+        private static readonly List<MyTerminalControlComboBoxItem> ModeAllList = new List<MyTerminalControlComboBoxItem>()
         {
             new MyTerminalControlComboBoxItem() { Key = 0, Value = MyStringId.GetOrCompute("Boson Force Shield") },
             new MyTerminalControlComboBoxItem() { Key = 1, Value = MyStringId.GetOrCompute("Structural Integrity Field") },
@@ -450,9 +461,43 @@
             return comp.DsSet.Settings.PowerScale != 0;
         }
 
-        internal static void ListModes(List<MyTerminalControlComboBoxItem> modeList)
+        internal static void ListArmor(List<MyTerminalControlComboBoxItem> modeList)
         {
-            foreach (var mode in ModeList) modeList.Add(mode);
+            foreach (var mode in ModeArmorList) modeList.Add(mode);
+        }
+
+        internal static bool VisibleArmor(IMyTerminalBlock block)
+        {
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic != null && logic.Bus.ActiveEmitter == null && logic.Bus.ActiveRegen != null;
+        }
+
+        internal static void ListShield(List<MyTerminalControlComboBoxItem> modeList)
+        {
+            foreach (var mode in ModeShieldList) modeList.Add(mode);
+        }
+
+        internal static bool VisibleShield(IMyTerminalBlock block)
+        {
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic != null && logic.Bus.ActiveRegen == null && logic.Bus.ActiveEmitter != null;
+        }
+
+        internal static void ListAll(List<MyTerminalControlComboBoxItem> modeList)
+        {
+            foreach (var mode in ModeAllList) modeList.Add(mode);
+        }
+
+        internal static bool VisibleAll(IMyTerminalBlock block)
+        {
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic != null && logic.Bus.ActiveRegen != null && logic.Bus.ActiveEmitter != null;
+        }
+
+        internal static bool EnableModes(IMyTerminalBlock block)
+        {
+            var comp = block?.GameLogic?.GetAs<Controllers>();
+            return comp != null;
         }
 
         internal static long GetModes(IMyTerminalBlock block)

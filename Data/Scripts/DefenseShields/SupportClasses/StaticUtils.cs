@@ -937,7 +937,7 @@
                 }
             }
             var shieldDistFromCenter = double.MinValue;
-            var shieldId = long.MinValue;
+            var ControllerId = long.MinValue;
             foreach (var s in shieldBlocks)
             {
                 if (s == null) continue;
@@ -946,11 +946,11 @@
                 if (dist > shieldDistFromCenter)
                 {
                     shieldDistFromCenter = dist;
-                    shieldId = s.EntityId;
+                    ControllerId = s.EntityId;
                 }
             }
-            if (Session.Enforced.Debug == 3) Log.Line($"ThereCanBeOnlyOne complete, found shield: {shieldId}");
-            return shieldId;
+            if (Session.Enforced.Debug == 3) Log.Line($"ThereCanBeOnlyOne complete, found shield: {ControllerId}");
+            return ControllerId;
         }
         */
     }

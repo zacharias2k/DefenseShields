@@ -11,11 +11,11 @@ namespace DefenseSystems
     {
         private void Debug()
         {
-            var name = Shield.CustomName;
+            var name = Controller.CustomName;
             var nameLen = name.Length;
             if (nameLen == 5 && name == "DEBUG")
             {
-                if (_tick <= 1800) Shield.CustomName = "DEBUGAUTODISABLED";
+                if (_tick <= 1800) Controller.CustomName = "DEBUGAUTODISABLED";
                 else UserDebug();
             }
         }
@@ -23,8 +23,8 @@ namespace DefenseSystems
         private void UserDebug()
         {
             bool active;
-            lock (Session.Instance.ActiveShields) active = Session.Instance.ActiveShields.Contains(this);
-            var message = $"User({MyAPIGateway.Multiplayer.Players.TryGetSteamId(Shield.OwnerId)}) Debugging\n" +
+            lock (Session.Instance.ActiveProtection) active = Session.Instance.ActiveProtection.Contains(this);
+            var message = $"User({MyAPIGateway.Multiplayer.Players.TryGetSteamId(Controller.OwnerId)}) Debugging\n" +
                           $"On:{DsState.State.Online} - Sus:{DsState.State.Suspended} - Act:{active}\n" +
                           $"Sleep:{Asleep} - Tick/Woke:{_tick}/{LastWokenTick}\n" +
                           $"Mode:{DsState.State.Mode} - Waking:{DsState.State.Waking}\n" +
@@ -74,8 +74,8 @@ namespace DefenseSystems
                 if (DsState.State.ControllerGridAccess)
                 {
                     DsState.State.ControllerGridAccess = false;
-                    Shield.RefreshCustomInfo();
-                    if (Session.Enforced.Debug == 4) Log.Line($"GridOwner: controller is not owned: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                    Controller.RefreshCustomInfo();
+                    if (Session.Enforced.Debug == 4) Log.Line($"GridOwner: controller is not owned: {ShieldMode} - ControllerId [{Controller.EntityId}]");
                 }
                 DsState.State.ControllerGridAccess = false;
                 return;
@@ -84,8 +84,8 @@ namespace DefenseSystems
             if (!DsState.State.ControllerGridAccess)
             {
                 DsState.State.ControllerGridAccess = true;
-                Shield.RefreshCustomInfo();
-                if (Session.Enforced.Debug == 4) Log.Line($"GridOwner: controller is owned: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                Controller.RefreshCustomInfo();
+                if (Session.Enforced.Debug == 4) Log.Line($"GridOwner: controller is owned: {ShieldMode} - ControllerId [{Controller.EntityId}]");
             }
             DsState.State.ControllerGridAccess = true;
         }
@@ -106,10 +106,10 @@ namespace DefenseSystems
                 if (voxel.RootVoxel == null || voxel != voxel.RootVoxel) continue;
                 if (!CustomCollision.VoxelContact(Bus.PhysicsOutsideLow, voxel)) continue;
 
-                Shield.Enabled = false;
+                Controller.Enabled = false;
                 DsState.State.FieldBlocked = true;
                 DsState.State.Message = true;
-                if (Session.Enforced.Debug == 3) Log.Line($"Field blocked: - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"Field blocked: - ControllerId [{Controller.EntityId}]");
                 return true;
             }
             DsState.State.FieldBlocked = false;

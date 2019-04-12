@@ -16,16 +16,16 @@ namespace DefenseSystems
 
             var renderId = Bus.Spine.Render.GetRenderObjectID();
             var percent = DsState.State.ShieldPercent;
-            var reInforce = DsState.State.ProtectMode == 1;
-            var hitAnim = !reInforce && DsSet.Settings.HitWaveAnimation;
-            var refreshAnim = !reInforce && DsSet.Settings.RefreshAnimation;
+            var notBubble = DsState.State.ProtectMode > 0;
+            var hitAnim = !notBubble && DsSet.Settings.HitWaveAnimation;
+            var refreshAnim = !notBubble && DsSet.Settings.RefreshAnimation;
 
             Vector3D impactPos;
             lock (HandlerImpact) impactPos = HandlerImpact.Active ? ComputeHandlerImpact() : WorldImpactPosition;
             var intersected = WorldImpactPosition != Vector3D.NegativeInfinity && impactPos != Vector3D.Zero;
 
             WorldImpactPosition = impactPos;
-            var activeVisible = DetermineVisualState(reInforce);
+            var activeVisible = DetermineVisualState(notBubble);
             WorldImpactPosition = Vector3D.NegativeInfinity;
 
             var kineticHit = !EnergyHit;

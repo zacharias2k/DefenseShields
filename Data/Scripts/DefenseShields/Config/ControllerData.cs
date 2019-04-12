@@ -47,7 +47,7 @@
                     State = loadedState;
                     loadedSomething = true;
                 }
-                if (Session.Enforced.Debug == 3) Log.Line($"Loaded - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"Loaded - ControllerId [{Shield.EntityId}]");
             }
             return loadedSomething;
         }
@@ -98,7 +98,7 @@
                 catch (Exception e)
                 {
                     loadedSettings = null;
-                    Log.Line($"Load - ShieldId [{Shield.EntityId}]: - Error loading settings!\n{e}");
+                    Log.Line($"Load - ControllerId [{Shield.EntityId}]: - Error loading settings!\n{e}");
                 }
 
                 if (loadedSettings != null)
@@ -106,7 +106,7 @@
                     Settings = loadedSettings;
                     loadedSomething = true;
                 }
-                if (Session.Enforced.Debug == 3) Log.Line($"Loaded - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"Loaded - ControllerId [{Shield.EntityId}]");
             }
             return loadedSomething;
         }

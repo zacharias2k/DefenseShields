@@ -186,7 +186,7 @@
     public void UpdateState(ProtoPlanetShieldState newState)
     {
         PlaState.State = newState;
-        if (Session.Enforced.Debug == 3) Log.Line($"UpdateState: PlanetShieldId [{PlanetShield.EntityId}]");
+        if (Session.Enforced.Debug == 3) Log.Line($"UpdateState: PlanetControllerId [{PlanetShield.EntityId}]");
     }
 
     public bool PostInit()
@@ -222,7 +222,7 @@
                 AllInited = true;
                 return true;
             }
-            if (Session.Enforced.Debug == 3) Log.Line($"AllInited: PlanetShieldId [{PlanetShield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"AllInited: PlanetControllerId [{PlanetShield.EntityId}]");
             return false;
         }
         catch (Exception ex) { Log.Line($"Exception in PlanetShield PostInit: {ex}"); }
@@ -333,7 +333,7 @@
 
         if (!fullInit)
         {
-            if (Session.Enforced.Debug == 3) Log.Line($"InitEntities: mode:, remove complete - ShieldId [{PlanetShield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"InitEntities: mode:, remove complete - ControllerId [{PlanetShield.EntityId}]");
             return;
         }
 
@@ -376,14 +376,14 @@
         _updateRender = true;
 
         if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
-        if (Session.Enforced.Debug == 3) Log.Line($"InitEntities: mode: , spawn complete - ShieldId [{PlanetShield.EntityId}]");
+        if (Session.Enforced.Debug == 3) Log.Line($"InitEntities: mode: , spawn complete - ControllerId [{PlanetShield.EntityId}]");
     }
 
     internal void UpdateSettings(ProtoPlanetShieldSettings newSettings)
     {
         PlaSet.Settings = newSettings;
         SettingsUpdated = true;
-        if (Session.Enforced.Debug == 4) Log.Line($"UpdateSettings - server:{Session.Instance.IsServer} - ShieldId [{PlanetShield.EntityId}]:\n{newSettings}");
+        if (Session.Enforced.Debug == 4) Log.Line($"UpdateSettings - server:{Session.Instance.IsServer} - ControllerId [{PlanetShield.EntityId}]:\n{newSettings}");
     }
 
     private void StorageSetup()
@@ -429,7 +429,7 @@
             NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
             NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
             ContainerInited = true;
-            if (Session.Enforced.Debug == 3) Log.Line($"ContainerInited:  PlanetShieldId [{PlanetShield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"ContainerInited:  PlanetControllerId [{PlanetShield.EntityId}]");
         }
         if (Entity.InScene) OnAddedToScene();
     }
@@ -504,7 +504,7 @@
                 PlanetShield.Enabled = true;
             }
             Sink.Update();
-            if (Session.Enforced.Debug == 3) Log.Line($"PowerInit: PlanetShieldId [{PlanetShield.EntityId}]");
+            if (Session.Enforced.Debug == 3) Log.Line($"PowerInit: PlanetControllerId [{PlanetShield.EntityId}]");
         }
         catch (Exception ex) { Log.Line($"Exception in AddResourceSourceComponent: {ex}"); }
     }

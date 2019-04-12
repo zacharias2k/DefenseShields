@@ -308,7 +308,7 @@ namespace DefenseSystems
                 ModulateGrids = (Bus.ActiveModulator != null && Bus.ActiveModulator.ModSet.Settings.ModulateGrids) || Session.Enforced.DisableEntityBarrier == 1;
                 ModulatorGridComponent modComp;
                 grid.Components.TryGet(out modComp);
-                if (!string.IsNullOrEmpty(modComp?.ModulationPassword) && modComp.ModulationPassword == Shield.CustomData)
+                if (!string.IsNullOrEmpty(modComp?.ModulationPassword) && modComp.ModulationPassword == Controller.CustomData)
                 {
                     var collection = modComp.Modulator?.Bus?.ActiveController != null ? modComp.Modulator.Bus.ActiveController.Bus.SubGrids : modComp.SubGrids;
                     foreach (var subGrid in collection)

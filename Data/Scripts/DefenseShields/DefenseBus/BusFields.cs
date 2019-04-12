@@ -41,7 +41,6 @@ namespace DefenseSystems
         internal readonly List<IMySlimBlock> DamagedBlocks = new List<IMySlimBlock>();
 
         private readonly List<MyCubeBlock> _functionalBlocks = new List<MyCubeBlock>();
-        private readonly List<IMyTextPanel> _displayBlocks = new List<IMyTextPanel>();
         private readonly List<MyResourceSourceComponent> _powerSources = new List<MyResourceSourceComponent>();
         private readonly List<IMyBatteryBlock> _batteryBlocks = new List<IMyBatteryBlock>();
         private float _batteryMaxPower;

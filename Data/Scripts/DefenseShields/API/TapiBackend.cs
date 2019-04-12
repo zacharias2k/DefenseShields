@@ -355,9 +355,9 @@ namespace DefenseSystems
         {
             MyCubeBlock cloestSBlock = null;
             var closestDist = double.MaxValue;
-            lock (Session.Instance.ActiveShields)
+            lock (Session.Instance.ActiveProtection)
             {
-                foreach (var s in Session.Instance.ActiveShields)
+                foreach (var s in Session.Instance.ActiveProtection)
                 {
                     if (Vector3D.DistanceSquared(s.DetectionCenter, pos) > Session.Instance.SyncDistSqr) continue;
 

@@ -318,7 +318,6 @@ namespace DefenseSystems
                 _powerSources.Clear();
                 _functionalBlocks.Clear();
                 _batteryBlocks.Clear();
-                _displayBlocks.Clear();
 
                 foreach (var grid in LinkedGrids.Keys)
                 {
@@ -342,12 +341,7 @@ namespace DefenseSystems
                             }
                         }
 
-                        if (!Session.Instance.DedicatedServer)
-                        {
-                            _functionalBlocks.Add(block);
-                            var display = block as IMyTextPanel;
-                            if (display != null) _displayBlocks.Add(display);
-                        }
+                        if (!Session.Instance.DedicatedServer) _functionalBlocks.Add(block);
 
                         var battery = block as IMyBatteryBlock;
                         if (battery != null) _batteryBlocks.Add(battery);
@@ -365,6 +359,5 @@ namespace DefenseSystems
                 }
             }
         }
-
     }
 }

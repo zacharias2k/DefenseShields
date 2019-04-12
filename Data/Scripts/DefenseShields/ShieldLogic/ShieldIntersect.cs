@@ -52,19 +52,19 @@
                 }
                 case Ent.NobodyGrid:
                     {
-                        if (Session.Enforced.Debug == 3) Log.Line($"Ent NobodyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug == 3) Log.Line($"Ent NobodyGrid: {webent.DebugName} - ControllerId [{Controller.EntityId}]");
                         GridIntersect(webent);
                         return;
                     }
                 case Ent.EnemyGrid:
                     {
-                        if (Session.Enforced.Debug == 3) Log.Line($"Ent LargeEnemyGrid: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug == 3) Log.Line($"Ent LargeEnemyGrid: {webent.DebugName} - ControllerId [{Controller.EntityId}]");
                         GridIntersect(webent);
                         return;
                     }
                 case Ent.Shielded:
                     {
-                        if (Session.Enforced.Debug == 3) Log.Line($"Ent Shielded: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug == 3) Log.Line($"Ent Shielded: {webent.DebugName} - ControllerId [{Controller.EntityId}]");
                         ShieldIntersect(webent);
                         return;
                     }
@@ -80,7 +80,7 @@
                 case Ent.Other:
                     {
                         if (!_isServer) return;
-                        if (Session.Enforced.Debug == 3) Log.Line($"Ent Other: {webent.DebugName} - ShieldId [{Shield.EntityId}]");
+                        if (Session.Enforced.Debug == 3) Log.Line($"Ent Other: {webent.DebugName} - ControllerId [{Controller.EntityId}]");
                         if (webent.MarkedForClose || !webent.InScene) return;
                         var meteor = webent as IMyMeteor;
                         if (meteor != null)
@@ -107,7 +107,7 @@
                 if (CustomCollision.ObbCornersInShield(bOriBBoxD, DetectMatrixOutsideInv, _obbCorners))
                 {
                     var bPhysics = entity.Physics;
-                    var sPhysics = Shield.CubeGrid.Physics;
+                    var sPhysics = Controller.CubeGrid.Physics;
                     var sLSpeed = sPhysics.LinearVelocity;
                     var sASpeed = sPhysics.AngularVelocity * 50;
                     var sLSpeedLen = sLSpeed.LengthSquared();
@@ -202,7 +202,7 @@
                     if (_isServer)
                     {
                         var mass = Bus.Spine.GetCurrentMass();
-                        var sPhysics = Shield.CubeGrid.Physics;
+                        var sPhysics = Controller.CubeGrid.Physics;
                         var momentum = mass * sPhysics.GetVelocityAtPoint(collision.Value);
                         var damage = (momentum.Length() / 500) * DsState.State.ModulateEnergy;
                         Session.Instance.ThreadEvents.Enqueue(new VoxelCollisionDmgThreadEvent(voxelBase, this, damage, collision.Value));

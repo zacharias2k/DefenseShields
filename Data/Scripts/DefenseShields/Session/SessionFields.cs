@@ -73,7 +73,7 @@
         internal readonly Dictionary<MyEntity, MyProtectors> GlobalProtect = new Dictionary<MyEntity, MyProtectors>();
 
         internal HashSet<BlockRegen> Regens = new HashSet<BlockRegen>();
-        internal readonly HashSet<Controllers> ActiveShields = new HashSet<Controllers>();
+        internal readonly HashSet<Controllers> ActiveProtection = new HashSet<Controllers>();
         internal readonly ConcurrentDictionary<Controllers, bool> FunctionalShields = new ConcurrentDictionary<Controllers, bool>();
 
         internal readonly List<PlanetShields> PlanetShields = new List<PlanetShields>();
@@ -314,7 +314,10 @@
 
         internal IMyTerminalControlCheckbox SendToHudCheckBox { get; set; }
         internal IMyTerminalControlOnOffSwitch ToggleProtect { get; set; }
-        internal IMyTerminalControlCombobox ProtectMode { get; set; }
+        internal IMyTerminalControlCombobox ProtectArmorMode { get; set; }
+        internal IMyTerminalControlCombobox ProtectShieldMode { get; set; }
+        internal IMyTerminalControlCombobox ProtectAllMode { get; set; }
+
         internal IMyTerminalControlCombobox ShellSelect { get; set; }
         internal IMyTerminalControlCombobox ShellVisibility { get; set; }
         internal IMyTerminalControlCombobox PowerScaleSelect { get; set; }

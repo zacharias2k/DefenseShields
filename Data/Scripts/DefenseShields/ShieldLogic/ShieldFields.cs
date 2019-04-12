@@ -71,7 +71,7 @@ namespace DefenseSystems
         internal BoundingSphereD WebSphere = new BoundingSphereD(Vector3D.Zero, 1f);
 
         internal bool InControlPanel => MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel;
-        internal bool InThisTerminal => Session.Instance.LastTerminalId == Shield.EntityId;
+        internal bool InThisTerminal => Session.Instance.LastTerminalId == Controller.EntityId;
 
         private const int ReModulationCount = 300;
         private const int ShieldDownCount = 1200;
@@ -241,7 +241,8 @@ namespace DefenseSystems
             Sleep,
             Wake,
             Suspend,
-            Other
+            Other,
+            NoArmor
         }
 
         internal enum ShieldType
@@ -281,7 +282,7 @@ namespace DefenseSystems
         public int HitCoolDown { get; private set; } = -11;
         public int DtreeProxyId { get; set; } = -1;
 
-        internal IMyUpgradeModule Shield { get; set; }
+        internal IMyUpgradeModule Controller { get; set; }
         internal ShieldType ShieldMode { get; set; }
         internal MyCubeGrid LocalGrid { get; set; }
         internal MyCubeBlock MyCube { get; set; }

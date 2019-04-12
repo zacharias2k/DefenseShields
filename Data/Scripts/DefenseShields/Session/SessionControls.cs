@@ -1,8 +1,6 @@
 ﻿
 namespace DefenseSystems
 {
-    using VRage;
-    using VRageMath;
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -39,59 +37,62 @@ namespace DefenseSystems
             try
             {
                 if (DsControl) return;
-                var comp = block?.GameLogic?.GetAs<Controllers>();
-                TerminalHelpers.Separator(comp?.Shield, "DS-C_sep0");
-                ToggleProtect = TerminalHelpers.AddOnOff(comp?.Shield, "DS-C_ToggleProtect", "Protection Status", "Enable/Disable Protection", "Up", "Down", DsUi.GetRaiseShield, DsUi.SetRaiseShield);
-                ProtectMode = TerminalHelpers.AddCombobox(comp?.Shield, "DS-C_ProtectMode", "Select Protetion Mode", "Select Protection Mode", DsUi.GetModes, DsUi.SetModes, DsUi.ListModes);
-                TerminalHelpers.Separator(comp?.Shield, "DS-C_sep1");
-                ChargeSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_ChargeRate", "Shield Charge Rate", "Percentage Of Power The Shield May Consume", DsUi.GetRate, DsUi.SetRate);
+                var logic = block?.GameLogic?.GetAs<Controllers>();
+                TerminalHelpers.Separator(logic?.Controller, "DS-C_sep0");
+                ToggleProtect = TerminalHelpers.AddOnOff(logic?.Controller, "DS-C_ToggleProtect", "Protection Status", "Enable/Disable Protection", "Up", "Down", DsUi.GetRaiseShield, DsUi.SetRaiseShield);
+                ProtectArmorMode = TerminalHelpers.AddCombobox(logic?.Controller, "DS-C_ProtectMode", "Select Protetion Mode", "Select Protection Mode", DsUi.GetModes, DsUi.SetModes, DsUi.ListArmor, DsUi.EnableModes, DsUi.VisibleArmor);
+                ProtectShieldMode = TerminalHelpers.AddCombobox(logic?.Controller, "DS-C_ProtectMode", "Select Protetion Mode", "Select Protection Mode", DsUi.GetModes, DsUi.SetModes, DsUi.ListShield, DsUi.EnableModes, DsUi.VisibleShield);
+                ProtectAllMode = TerminalHelpers.AddCombobox(logic?.Controller, "DS-C_ProtectMode", "Select Protetion Mode", "Select Protection Mode", DsUi.GetModes, DsUi.SetModes, DsUi.ListAll, DsUi.EnableModes, DsUi.VisibleAll);
+
+                TerminalHelpers.Separator(logic?.Controller, "DS-C_sep1");
+                ChargeSlider = TerminalHelpers.AddSlider(logic?.Controller, "DS-C_ChargeRate", "Shield Charge Rate", "Percentage Of Power The Shield May Consume", DsUi.GetRate, DsUi.SetRate);
                 ChargeSlider.SetLimits(20, 95);
-                PowerScaleSelect = TerminalHelpers.AddCombobox(comp?.Shield, "DS-C_PowerScale", "Select Power Scale", "Select the power scale to use", DsUi.GetPowerScale, DsUi.SetPowerScale, DsUi.ListPowerScale);
-                PowerWatts = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_PowerWatts", "Power To Use", "Select the maximum scaled power the shield can use", DsUi.GetPowerWatts, DsUi.SetPowerWatts,  DsUi.EnablePowerWatts);
+                PowerScaleSelect = TerminalHelpers.AddCombobox(logic?.Controller, "DS-C_PowerScale", "Select Power Scale", "Select the power scale to use", DsUi.GetPowerScale, DsUi.SetPowerScale, DsUi.ListPowerScale);
+                PowerWatts = TerminalHelpers.AddSlider(logic?.Controller, "DS-C_PowerWatts", "Power To Use", "Select the maximum scaled power the shield can use", DsUi.GetPowerWatts, DsUi.SetPowerWatts,  DsUi.EnablePowerWatts);
                 PowerWatts.SetLimits(1, 999);
-                if (comp != null && comp.ShieldIsMobile)
+                if (logic != null && logic.ShieldIsMobile)
                 {
-                    TerminalHelpers.Separator(comp.Shield, "DS-C_sep2");
+                    TerminalHelpers.Separator(logic.Controller, "DS-C_sep2");
                 }
 
-                ExtendFit = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_ExtendFit", "Extend Shield", "Extend Shield", DsUi.GetExtend, DsUi.SetExtend);
-                SphereFit = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_SphereFit", "Sphere Shield", "Sphere Shield", DsUi.GetSphereFit, DsUi.SetSphereFit);
-                FortifyShield = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_ShieldFortify", "Fortify Shield ", "Fortify Shield ", DsUi.GetFortify, DsUi.SetFortify);
-                TerminalHelpers.Separator(comp?.Shield, "DS-C_sep3");
+                ExtendFit = TerminalHelpers.AddCheckbox(logic?.Controller, "DS-C_ExtendFit", "Extend Shield", "Extend Shield", DsUi.GetExtend, DsUi.SetExtend);
+                SphereFit = TerminalHelpers.AddCheckbox(logic?.Controller, "DS-C_SphereFit", "Sphere Shield", "Sphere Shield", DsUi.GetSphereFit, DsUi.SetSphereFit);
+                FortifyShield = TerminalHelpers.AddCheckbox(logic?.Controller, "DS-C_ShieldFortify", "Fortify Shield ", "Fortify Shield ", DsUi.GetFortify, DsUi.SetFortify);
+                TerminalHelpers.Separator(logic?.Controller, "DS-C_sep3");
 
-                WidthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_WidthSlider", "Shield Size Width", "Shield Size Width", DsUi.GetWidth, DsUi.SetWidth);
+                WidthSlider = TerminalHelpers.AddSlider(logic?.Controller, "DS-C_WidthSlider", "Shield Size Width", "Shield Size Width", DsUi.GetWidth, DsUi.SetWidth);
                 WidthSlider.SetLimits(30, 600);
 
-                HeightSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_HeightSlider", "Shield Size Height", "Shield Size Height", DsUi.GetHeight, DsUi.SetHeight);
+                HeightSlider = TerminalHelpers.AddSlider(logic?.Controller, "DS-C_HeightSlider", "Shield Size Height", "Shield Size Height", DsUi.GetHeight, DsUi.SetHeight);
                 HeightSlider.SetLimits(30, 600);
 
-                DepthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_DepthSlider", "Shield Size Depth", "Shield Size Depth", DsUi.GetDepth, DsUi.SetDepth);
+                DepthSlider = TerminalHelpers.AddSlider(logic?.Controller, "DS-C_DepthSlider", "Shield Size Depth", "Shield Size Depth", DsUi.GetDepth, DsUi.SetDepth);
                 DepthSlider.SetLimits(30, 600);
 
-                OffsetWidthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_OffsetWidthSlider", "Width Offset", "Width Offset", DsUi.GetOffsetWidth, DsUi.SetOffsetWidth);
+                OffsetWidthSlider = TerminalHelpers.AddSlider(logic?.Controller, "DS-C_OffsetWidthSlider", "Width Offset", "Width Offset", DsUi.GetOffsetWidth, DsUi.SetOffsetWidth);
                 OffsetWidthSlider.SetLimits(-69, 69);
 
-                OffsetHeightSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_OffsetHeightSlider", "Height Offset", "Height Offset", DsUi.GetOffsetHeight, DsUi.SetOffsetHeight);
+                OffsetHeightSlider = TerminalHelpers.AddSlider(logic?.Controller, "DS-C_OffsetHeightSlider", "Height Offset", "Height Offset", DsUi.GetOffsetHeight, DsUi.SetOffsetHeight);
                 OffsetHeightSlider.SetLimits(-69, 69);
 
-                OffsetDepthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_OffsetDepthSlider", "Depth Offset", "Depth Offset", DsUi.GetOffsetDepth, DsUi.SetOffsetDepth);
+                OffsetDepthSlider = TerminalHelpers.AddSlider(logic?.Controller, "DS-C_OffsetDepthSlider", "Depth Offset", "Depth Offset", DsUi.GetOffsetDepth, DsUi.SetOffsetDepth);
                 OffsetDepthSlider.SetLimits(-69, 69);
 
-                TerminalHelpers.Separator(comp?.Shield, "DS-C_sep4");
+                TerminalHelpers.Separator(logic?.Controller, "DS-C_sep4");
 
-                BatteryBoostCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_UseBatteries", "Ignore battery input power ", "Allow shields to fight with batteries for power", DsUi.GetBatteries, DsUi.SetBatteries);
-                SendToHudCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_HideIcon", "Broadcast Shield Status To Hud", "Broadcast Shield Status To Nearby Friendly Huds", DsUi.GetSendToHud, DsUi.SetSendToHud);
-                TerminalHelpers.Separator(comp?.Shield, "DS-C_sep5");
-                ShellSelect = TerminalHelpers.AddCombobox(comp?.Shield, "DS-C_ShellSelect", "Select Shield Look", "Select shield's shell texture", DsUi.GetShell, DsUi.SetShell, DsUi.ListShell);
+                BatteryBoostCheckBox = TerminalHelpers.AddCheckbox(logic?.Controller, "DS-C_UseBatteries", "Ignore battery input power ", "Allow shields to fight with batteries for power", DsUi.GetBatteries, DsUi.SetBatteries);
+                SendToHudCheckBox = TerminalHelpers.AddCheckbox(logic?.Controller, "DS-C_HideIcon", "Broadcast Shield Status To Hud", "Broadcast Shield Status To Nearby Friendly Huds", DsUi.GetSendToHud, DsUi.SetSendToHud);
+                TerminalHelpers.Separator(logic?.Controller, "DS-C_sep5");
+                ShellSelect = TerminalHelpers.AddCombobox(logic?.Controller, "DS-C_ShellSelect", "Select Shield Look", "Select shield's shell texture", DsUi.GetShell, DsUi.SetShell, DsUi.ListShell);
 
-                ShellVisibility = TerminalHelpers.AddCombobox(comp?.Shield, "DS-C_ShellSelect", "Select Shield Visibility", "Determines when the shield is visible", DsUi.GetVisible, DsUi.SetVisible, DsUi.ListVisible);
+                ShellVisibility = TerminalHelpers.AddCombobox(logic?.Controller, "DS-C_ShellSelect", "Select Shield Visibility", "Determines when the shield is visible", DsUi.GetVisible, DsUi.SetVisible, DsUi.ListVisible);
 
-                HideActiveCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_HideActive", "Hide Shield Health On Hit  ", "Hide Shield Health Grid On Hit", DsUi.GetHideActive, DsUi.SetHideActive);
+                HideActiveCheckBox = TerminalHelpers.AddCheckbox(logic?.Controller, "DS-C_HideActive", "Hide Shield Health On Hit  ", "Hide Shield Health Grid On Hit", DsUi.GetHideActive, DsUi.SetHideActive);
 
-                RefreshAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_RefreshAnimation", "Show Refresh Animation  ", "Show Random Refresh Animation", DsUi.GetRefreshAnimation, DsUi.SetRefreshAnimation);
-                HitWaveAnimationCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_HitWaveAnimation", "Show Hit Wave Animation", "Show Wave Effect On Shield Damage", DsUi.GetHitWaveAnimation, DsUi.SetHitWaveAnimation);
-                NoWarningSoundsCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_NoWarningSounds", "Disable audio warnings    ", "Supress shield audio warnings", DsUi.GetNoWarningSounds, DsUi.SetNoWarningSounds);
-                DimShieldHitsCheckBox = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_DimShieldHits", "Dim Incoming Hit Effects ", "Supress brightness of incoming hit effects", DsUi.GetDimShieldHits, DsUi.SetDimShieldHits);
+                RefreshAnimationCheckBox = TerminalHelpers.AddCheckbox(logic?.Controller, "DS-C_RefreshAnimation", "Show Refresh Animation  ", "Show Random Refresh Animation", DsUi.GetRefreshAnimation, DsUi.SetRefreshAnimation);
+                HitWaveAnimationCheckBox = TerminalHelpers.AddCheckbox(logic?.Controller, "DS-C_HitWaveAnimation", "Show Hit Wave Animation", "Show Wave Effect On Shield Damage", DsUi.GetHitWaveAnimation, DsUi.SetHitWaveAnimation);
+                NoWarningSoundsCheckBox = TerminalHelpers.AddCheckbox(logic?.Controller, "DS-C_NoWarningSounds", "Disable audio warnings    ", "Supress shield audio warnings", DsUi.GetNoWarningSounds, DsUi.SetNoWarningSounds);
+                DimShieldHitsCheckBox = TerminalHelpers.AddCheckbox(logic?.Controller, "DS-C_DimShieldHits", "Dim Incoming Hit Effects ", "Supress brightness of incoming hit effects", DsUi.GetDimShieldHits, DsUi.SetDimShieldHits);
                 CreateAction<IMyUpgradeModule>(ToggleProtect);
 
                 CreateActionChargeRate<IMyUpgradeModule>(ChargeSlider);

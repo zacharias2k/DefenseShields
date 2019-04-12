@@ -17,7 +17,7 @@ namespace DefenseSystems
         */
         internal Bus Bus;
         private const int MaxBlocksHealedPerCycle = 50;
-        private const float MinSelfHeal = 0.4f;
+        private const float MinSelfHeal = 0.05f;
         private const float MaxSelfHeal = 1.0f;
         private const float HealRate = 0.1f;
         private const int Spread = 10;

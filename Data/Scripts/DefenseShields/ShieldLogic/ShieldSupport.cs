@@ -27,7 +27,7 @@
                     DsState.State.EmpProtection = Bus.ActiveModulator.ModSet.Settings.EmpEnabled;
                 }
 
-                if (update) ShieldChangeState();
+                if (update) ProtChangedState();
             }
             else
             {
@@ -35,7 +35,7 @@
                 DsState.State.ModulateEnergy = 1f;
                 DsState.State.ModulateKinetic = 1f;
                 DsState.State.EmpProtection = false;
-                if (update) ShieldChangeState();
+                if (update) ProtChangedState();
 
             }
         }
@@ -49,7 +49,7 @@
                 DsState.State.EnhancerPowerMulti = 2;
                 DsState.State.EnhancerProtMulti = 1000;
                 DsState.State.Enhancer = true;
-                if (update) ShieldChangeState();
+                if (update) ProtChangedState();
             }
             else
             {
@@ -57,14 +57,14 @@
                 DsState.State.EnhancerPowerMulti = 1;
                 DsState.State.EnhancerProtMulti = 1;
                 DsState.State.Enhancer = false;
-                if (update) ShieldChangeState();
+                if (update) ProtChangedState();
             }
         }
         #endregion
 
         internal void TerminalRefresh(bool update = true)
         {
-            Shield.RefreshCustomInfo();
+            Controller.RefreshCustomInfo();
             if (update && InControlPanel && InThisTerminal)
             {
                 var mousePos = MyAPIGateway.Input.GetMousePosition();
@@ -109,7 +109,7 @@
         internal void SendShieldHits()
         {
             while (ShieldHitsToSend.Count != 0)
-                Session.Instance.PacketizeToClientsInRange(Shield, new DataShieldHit(MyCube.EntityId, ShieldHitsToSend.Dequeue()));
+                Session.Instance.PacketizeToClientsInRange(Controller, new DataShieldHit(MyCube.EntityId, ShieldHitsToSend.Dequeue()));
         }
 
         private void ShieldHitReset(bool enQueue)

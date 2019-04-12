@@ -13,7 +13,9 @@ namespace DefenseSystems
         #region Shield Shape
         public void ResetShape(bool background, bool newShape = false)
         {
-            if (Session.Enforced.Debug == 3) Log.Line($"ResetShape: Mobile:{ShieldIsMobile} - Mode:{ShieldMode}/{DsState.State.Mode} - newShape:{newShape} - Offline:{!DsState.State.Online} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ELos:{Bus.EmitterLos} - ShieldId [{Shield.EntityId}]");
+            if (DsState.State.ProtectMode == 2) return;
+
+            if (Session.Enforced.Debug == 3) Log.Line($"ResetShape: Mobile:{ShieldIsMobile} - Mode:{ShieldMode}/{DsState.State.Mode} - newShape:{newShape} - Offline:{!DsState.State.Online} - Sleeping:{DsState.State.Sleeping} - Suspend:{DsState.State.Suspended} - ELos:{Bus.EmitterLos} - ControllerId [{Controller.EntityId}]");
 
             if (newShape)
             {
@@ -134,8 +136,8 @@ namespace DefenseSystems
         private void GetShapeAdjust()
         {
             if (DsSet.Settings.SphereFit || DsSet.Settings.FortifyShield) DsState.State.EllipsoidAdjust = 1f;
-            else if (!DsSet.Settings.ExtendFit) DsState.State.EllipsoidAdjust = UtilsStatic.CreateNormalFit(Shield, DsState.State.GridHalfExtents);
-            else DsState.State.EllipsoidAdjust = UtilsStatic.CreateExtendedFit(Shield, DsState.State.GridHalfExtents);
+            else if (!DsSet.Settings.ExtendFit) DsState.State.EllipsoidAdjust = UtilsStatic.CreateNormalFit(Controller, DsState.State.GridHalfExtents);
+            else DsState.State.EllipsoidAdjust = UtilsStatic.CreateExtendedFit(Controller, DsState.State.GridHalfExtents);
         }
 
         private void CheckExtents()
@@ -225,7 +227,7 @@ namespace DefenseSystems
                 _shieldVol = DetectMatrixOutside.Scale.Volume;
                 if (_isServer)
                 {
-                    ShieldChangeState();
+                    ProtChangedState();
                     Bus.ShieldVolume = DetectMatrixOutside.Scale.Volume;
                 }
             }

@@ -19,7 +19,7 @@ namespace DefenseSystems
             if (!_containerInited)
             {
                 PowerPreInit();
-                Shield = (IMyUpgradeModule)Entity;
+                Controller = (IMyUpgradeModule)Entity;
                 _containerInited = true;
             }
 
@@ -37,7 +37,7 @@ namespace DefenseSystems
             try
             {
                 if (!ResetEntity()) return;
-                if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: GridId:{Shield.CubeGrid.EntityId} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: GridId:{Controller.CubeGrid.EntityId} - ControllerId [{Controller.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
@@ -52,7 +52,11 @@ namespace DefenseSystems
                 else if (_bCount < SyncCount * _bTime)
                 {
                     NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
-                    if (Bus.ActiveController != null && Bus.ActiveController.Warming) _bCount++;
+                    if (Bus.ActiveEmitter != null || Bus.ActiveRegen != null)
+                    {
+                        NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
+                        if (Bus.ActiveController != null && Bus.ActiveController.Warming) _bCount++;
+                    }
                 }
                 else _readyToSync = true;
 
@@ -65,34 +69,44 @@ namespace DefenseSystems
             try
             {
                 if (!EntityAlive()) return;
-                var shield = ShieldOn();
-                if (shield != State.Active)
+                var fieldMode = DsState.State.ProtectMode != 2;
+
+                var protect = ProtectionOn(fieldMode);
+                if (protect != State.Active)
                 {
-                    if (_tick1800 && Bus.ActiveController == this) Log.Line($"NotActive: {shield} - {Bus.MyResourceDist.SourcesEnabled} - {Bus.MyResourceDist.ResourceStateByType(GId)} - {Bus.MyResourceDist.MaxAvailableResourceByType(GId)} - {_shieldMaintaintPower} - {ShieldCurrentPower} - {_sink.CurrentInputByType(GId)}");
+                    if (_tick1800 && Bus.ActiveController == this) Log.Line($"NotActive: {protect} - {Bus.MyResourceDist.SourcesEnabled} - {Bus.MyResourceDist.ResourceStateByType(GId)} - {Bus.MyResourceDist.MaxAvailableResourceByType(GId)} - {_shieldMaintaintPower} - {ShieldCurrentPower} - {_sink.CurrentInputByType(GId)}");
                     if (NotFailed)
                     {
-                        if (Session.Enforced.Debug >= 2) Log.Line($"FailState: {shield} - ShieldId [{Shield.EntityId}]");
-                        var up = shield != State.Lowered;
-                        var awake = shield != State.Sleep;
-                        var clear = up && awake;
-                        OfflineShield(clear, up, shield);
+                        if (Session.Enforced.Debug >= 2) Log.Line($"FailState: {protect} - ControllerId [{Controller.EntityId}]");
+                        if (fieldMode)
+                        {
+                            var up = protect != State.Lowered;
+                            var awake = protect != State.Sleep;
+                            var clear = up && awake;
+                            OfflineShield(clear, up, protect);
+                        }
+                        else
+                        {
+                            NotFailed = false;
+                            ProtChangedState();
+                            //other stuff
+                        }
                     }
-                    else if (DsState.State.Message) ShieldChangeState();
+                    else if (DsState.State.Message) ProtChangedState();
                     return;
                 }
                 if (!_isServer || !DsState.State.Online) return;
-                Log.Line($"{DsState.State.ProtectMode}");
-                if (_comingOnline) ComingOnlineSetup();
+                if (_comingOnline) ComingOnline();
                 if (_mpActive && (_forceBufferSync || _count == 29))
                 {
                     var newPercentColor = UtilsStatic.GetShieldColorFromFloat(DsState.State.ShieldPercent);
                     if (_forceBufferSync || newPercentColor != _oldPercentColor)
                     {
-                        ShieldChangeState();
+                        ProtChangedState();
                         _oldPercentColor = newPercentColor;
                         _forceBufferSync = false;
                     }
-                    else if (_tick1800) ShieldChangeState();
+                    else if (_tick1800) ProtChangedState();
                 }
                 if (Session.Instance.EmpWork.EventRunning) AbsorbEmp();
             }
@@ -103,7 +117,7 @@ namespace DefenseSystems
         {
             if (MyAPIGateway.Multiplayer.IsServer)
             {
-                if (Shield.Storage != null)
+                if (Controller.Storage != null)
                 {
                     DsState.SaveState();
                     DsSet.SaveSettings();
@@ -122,7 +136,7 @@ namespace DefenseSystems
             try
             {
                 if (!_allInited) return;
-                if (Session.Enforced.Debug >= 3) Log.Line($"OnRemovedFromScene: {ShieldMode} - GridId:{Shield.CubeGrid.EntityId} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 3) Log.Line($"OnRemovedFromScene: GridId:{Controller.CubeGrid.EntityId} - ControllerId [{Controller.EntityId}]");
 
                 if (Bus != null && Bus.SubGrids.Contains(LocalGrid))
                 {
@@ -155,7 +169,7 @@ namespace DefenseSystems
             {
                 base.Close();
                 if (!_allInited) return;
-                if (Session.Enforced.Debug >= 3) Log.Line($"Close: {ShieldMode} - ShieldId [{Shield.EntityId}]");
+                if (Session.Enforced.Debug >= 3) Log.Line($"Close: ControllerId [{Controller.EntityId}]");
 
                 if (Bus != null && Bus.SubGrids.Contains(LocalGrid))
                 {

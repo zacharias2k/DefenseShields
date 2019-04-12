@@ -50,7 +50,7 @@ namespace DefenseSystems
             {
                 Display.CubeGrid.Components.TryGet(out Bus);
             }
-            return Bus?.ActiveController?.Shield != null;
+            return Bus?.ActiveController?.Controller != null;
         }
 
         private void UpdateDisplay()
@@ -76,7 +76,7 @@ namespace DefenseSystems
                     Display.ShowPublicTextOnScreen();
                     if (Display.FontSize <= 1) Display.FontSize = 1.30f;
                 }
-                Display.WritePublicText(ds.Shield.CustomInfo);
+                Display.WritePublicText(ds.Controller.CustomInfo);
             }
         }
 

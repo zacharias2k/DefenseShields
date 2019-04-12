@@ -29,8 +29,10 @@
                     {
                         var s = _workData.ShieldList[x];
                         var tick = _workData.Tick;
-                        if (_newFrame || s.MarkedForClose || !s.Warming) return;
                         var notBubble = s.DsState.State.ProtectMode > 0;
+                        var notField = s.DsState.State.ProtectMode != 2;
+
+                        if (_newFrame || s.MarkedForClose || !notField && !s.Warming) return;
                         if (!IsServer)
                         {
                             if (notBubble != s.NotBubble)
@@ -53,14 +55,14 @@
                         }
 
                         bool shieldActive;
-                        lock (ActiveShields) shieldActive = ActiveShields.Contains(s);
+                        lock (ActiveProtection) shieldActive = ActiveProtection.Contains(s);
 
                         if (s.LostPings > 59)
                         {
                             if (shieldActive)
                             {
                                 if (Enforced.Debug >= 2) Log.Line("Logic Paused by lost pings");
-                                lock (ActiveShields) ActiveShields.Remove(s);
+                                lock (ActiveProtection) ActiveProtection.Remove(s);
                                 s.WasPaused = true;
                             }
                             s.Asleep = false;
@@ -108,7 +110,7 @@
                             if (shieldActive && !s.WasPaused && tick > 1200)
                             {
                                 if (Enforced.Debug >= 2) Log.Line($"Logic Paused by monitor");
-                                lock (ActiveShields) ActiveShields.Remove(s);
+                                lock (ActiveProtection) ActiveProtection.Remove(s);
                                 s.WasPaused = true;
                                 s.Asleep = false;
                                 s.TicksWithNoActivity = 0;
@@ -297,7 +299,7 @@
                                     s.EntsByMe.TryAdd(ent, new MoverInfo(entPos, _workData.Tick));
                                     if (moverInfo.CreationTick == _workData.Tick - 1)
                                     {
-                                        if (Enforced.Debug >= 3 && s.WasPaused) Log.Line($"[Moved] Ent:{ent.DebugName} - howMuch:{Vector3D.Distance(entPos, s.EntsByMe[ent].Pos)} - ShieldId [{s.Shield.EntityId}]");
+                                        if (Enforced.Debug >= 3 && s.WasPaused) Log.Line($"[Moved] Ent:{ent.DebugName} - howMuch:{Vector3D.Distance(entPos, s.EntsByMe[ent].Pos)} - ControllerId [{s.Controller.EntityId}]");
                                         newMover = true;
                                     }
                                     break;
@@ -305,7 +307,7 @@
                             }
                             else
                             {
-                                if (Enforced.Debug >= 3) Log.Line($"[NewMover] Ent:{ent.DebugName} - ShieldId [{s.Shield.EntityId}]");
+                                if (Enforced.Debug >= 3) Log.Line($"[NewMover] Ent:{ent.DebugName} - ControllerId [{s.Controller.EntityId}]");
                                 s.EntsByMe.TryAdd(ent, new MoverInfo(entPos, _workData.Tick));
                             }
                         }
@@ -510,11 +512,11 @@
         {
             if (!Dispatched)
             {
-                lock (ActiveShields)
+                lock (ActiveProtection)
                 {
                     if (LogStats)
                     {
-                        Perf.Active(ActiveShields.Count);
+                        Perf.Active(ActiveProtection.Count);
                         Perf.Paused(AllControllers.Count - FunctionalShields.Count);
                         Perf.Emitters(Emitters.Count);
                         Perf.Modulators(Modulators.Count);
@@ -524,7 +526,7 @@
                         Perf.Protected(GlobalProtect.Count);
                     }
 
-                    foreach (var s in ActiveShields)
+                    foreach (var s in ActiveProtection)
                     {
                         if (s.Asleep)
                         {
