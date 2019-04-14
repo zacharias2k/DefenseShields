@@ -18,7 +18,7 @@ namespace DefenseSystems
             }
 
             var controller = Bus.ActiveController;
-            var controllerReady = controller != null && controller.Bus.Field.Warming && controller.IsWorking && controller.IsFunctional && !controller.State.Value.Suspended && controller.State.Value.ControllerGridAccess;
+            var controllerReady = controller != null && controller.IsWorking && controller.IsFunctional && !controller.State.Value.Suspended && controller.State.Value.ControllerGridAccess;
             var emitterActive = EmiState.State.ActiveEmitterId == MyCube.EntityId;
             var controllerLinked = emitterActive && controllerReady;
             if (!controllerLinked) return;

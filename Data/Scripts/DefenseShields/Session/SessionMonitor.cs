@@ -18,24 +18,29 @@
         {
             try
             {
-                while (Monitor)
+                //while (Monitor)
                 {
-                    _autoResetEvent.WaitOne();
-                    if (!Monitor) break;
+                    //_autoResetEvent.WaitOne();
+                    //if (!Monitor) break;
                     _newFrame = false;
                     _workData.DoIt(new List<Controllers>(FunctionalShields.Keys), Tick);
                     MinScaler = _workData.MinScaler;
-                    MyAPIGateway.Parallel.For(0, _workData.ShieldCnt, x =>
+                    for (int x = 0; x < _workData.ShieldCnt; x++)
+                    //{
+                        
+                    //}
+                    //MyAPIGateway.Parallel.For(0, _workData.ShieldCnt, x =>
                     {
                         var c = _workData.ShieldList[x];
+                        if (c?.Bus == null) return;
                         var b = c.Bus;
                         var f = b.Field;
 
                         var tick = _workData.Tick;
+
                         var notBubble = c.State.Value.ProtectMode > 0;
                         var notField = c.State.Value.ProtectMode != 2;
-
-                        if (_newFrame || c.MarkedForClose || !notField && !f.Warming) return;
+                        if (_newFrame || c.MarkedForClose || !notField && !c.WarmedUp) return;
                         if (!IsServer)
                         {
                             if (notBubble != c.NotBubble)
@@ -43,7 +48,6 @@
                                 lock (b.SubLock) foreach (var sub in b.SubGrids) _entRefreshQueue.Enqueue(sub);
                                 c.NotBubble = notBubble;
                             }
-
                             if (EntSlotTick && RefreshCycle == c.MonitorSlot)
                             {
                                 List<MyEntity> monitorListClient = null;
@@ -148,7 +152,7 @@
                         c.TicksWithNoActivity = 0;
                         c.LastWokenTick = tick;
                         c.Asleep = false;
-                    });
+                    }//);
 
                     if (_workData.Tick % 180 == 0 && _workData.Tick > 1199)
                     {

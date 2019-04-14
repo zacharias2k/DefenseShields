@@ -54,6 +54,14 @@ namespace DefenseSystems
         {
             try
             {
+                if (Bus.ActiveController == null)
+                {
+                    _modelPassive = ModelMediumReflective;
+                    _hideColor = true;
+                    _supressedColor = false;
+                    return;
+                }
+
                 switch (Bus.ActiveController.Set.Value.ShieldShell)
                 {
                     case 0:
@@ -235,7 +243,6 @@ namespace DefenseSystems
 
             _oldGridHalfExtents = a.State.Value.GridHalfExtents;
             _oldEllipsoidAdjust = a.State.Value.EllipsoidAdjust;
-            Warming = true;
             return true;
         }
 

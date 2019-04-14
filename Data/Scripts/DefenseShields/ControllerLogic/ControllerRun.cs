@@ -55,7 +55,7 @@ namespace DefenseSystems
                     if (Bus.ActiveEmitter != null || Bus.ActiveRegen != null)
                     {
                         NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-                        if (Bus.ActiveController != null && Bus.Field.Warming) _bCount++;
+                        if (Bus.ActiveController != null && _allInited) _bCount++;
                     }
                 }
                 else _readyToSync = true;
@@ -138,12 +138,12 @@ namespace DefenseSystems
                 if (!_allInited) return;
                 if (Session.Enforced.Debug >= 3) Log.Line($"OnRemovedFromScene: GridId:{Controller.CubeGrid.EntityId} - ControllerId [{Controller.EntityId}]");
 
-                if (Bus != null && Bus.SubGrids.Contains(LocalGrid))
-                {
-                    if (Bus.ActiveController == this && Bus.Field != null) Bus.Field.OfflineShield(true, false, Status.Other, true);
-                    Registry.RegisterWithBus(this, LocalGrid, false, Bus, out Bus);
-                }
+                if (Bus?.ActiveController == this) Bus.Field?.OfflineShield(true, false, Status.Other, true);
+                Registry.RegisterWithBus(this, LocalGrid, false, Bus, out Bus);
+                if (Session.Instance.AllControllers.Contains(this)) Session.Instance.AllControllers.Remove(this);
+                bool value1;
 
+                if (Session.Instance.FunctionalShields.ContainsKey(this)) Session.Instance.FunctionalShields.TryRemove(this, out value1);
                 //InitEntities(false);
                 IsWorking = false;
                 IsFunctional = false;
@@ -171,15 +171,15 @@ namespace DefenseSystems
                 if (!_allInited) return;
                 if (Session.Enforced.Debug >= 3) Log.Line($"Close: ControllerId [{Controller.EntityId}]");
 
-                if (Bus != null && Bus.SubGrids.Contains(LocalGrid))
+                if (Bus != null)
                 {
-                    if (Bus.ActiveController == this && Bus.Field != null)
+                    if (Bus?.ActiveController == this && Bus.Field != null)
                     {
                         Bus.Field.OfflineShield(true, false, Status.Other, true);
                         Bus.Field.Run(false);
                     }
-                    Registry.RegisterWithBus(this, LocalGrid, false, Bus, out Bus);
                 }
+                Registry.RegisterWithBus(this, LocalGrid, false, Bus, out Bus);
 
                 if (Session.Instance.AllControllers.Contains(this)) Session.Instance.AllControllers.Remove(this);
                 bool value1;

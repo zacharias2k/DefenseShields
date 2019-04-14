@@ -175,7 +175,6 @@ namespace DefenseSystems
         internal bool EmitterEvent { get; set; }
         internal bool O2Updated { get; set; }
         internal bool CheckEmitters { get; set; }
-        internal bool Warming { get; set; }
         internal bool ForceBufferSync { get; set; }
         internal bool PowerFail { get; set; }
         internal bool Inited { get; set; }

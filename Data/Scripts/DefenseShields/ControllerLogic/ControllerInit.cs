@@ -37,13 +37,13 @@ namespace DefenseSystems
             if (LocalGrid.Physics == null) return false;
             NeedsUpdate = MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
 
-            if (_bInit) ResetEntityTick = Bus.Tick + 1800;
+            if (_bInit) ResetEntityTick = Session.Instance.Tick + 1800;
             AssignSlots();
 
+            _bCount = 0;
             _bInit = false;
             _aInit = false;
             _allInited = false;
-            //Warming = false;
             WarmedUp = false;
             /*
             if (_isServer)
@@ -58,6 +58,7 @@ namespace DefenseSystems
         private void BeforeInit()
         {
             if (Controller.CubeGrid.Physics == null) return;
+            Log.Line($"{_isServer} - {Session.Instance.FunctionalShields.ContainsKey(this)} - {Session.Instance.AllControllers.Contains(this)} - {Bus != null}");
             _isServer = Session.Instance.IsServer;
             _isDedicated = Session.Instance.DedicatedServer;
             _mpActive = Session.Instance.MpActive;

@@ -131,7 +131,7 @@ namespace DefenseSystems
                 CreateAction<IMyUpgradeModule>(ModVoxels);
                 CreateAction<IMyUpgradeModule>(ModGrids);
                 CreateAction<IMyUpgradeModule>(ModEmp);
-                CreateAction<IMyUpgradeModule>(ModReInforce);
+                //CreateAction<IMyUpgradeModule>(ModReInforce);
                 ModControl = true;
             }
             catch (Exception ex) { Log.Line($"Exception in CreateModulatorUi: {ex}"); }

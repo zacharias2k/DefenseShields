@@ -161,6 +161,7 @@ namespace DefenseSystems
                         break;
                     case LogicState.Init:
                         ActiveController = controller;
+                        Log.Line($"[L-ControllerInit] - state:{state} - myId:{controller.MyCube.EntityId}");
                         break;
                 }
             }
@@ -188,6 +189,7 @@ namespace DefenseSystems
                     case LogicState.Init:
                         ActiveEmitter = emitter;
                         Field.SetEmitterMode();
+                        Log.Line($"[L-Emitter Init] - state:{state} - myId:{emitter.MyCube.EntityId}");
                         break;
                 }
                 Field.EmitterEvent = true;
@@ -214,6 +216,7 @@ namespace DefenseSystems
                         ActiveRegen = newMaster;
                         break;
                     case LogicState.Init:
+                        Log.Line($"[L-Regen Init] - state:{state} - myId:{regen.MyCube.EntityId}");
                         ActiveRegen = regen;
                         break;
                 }

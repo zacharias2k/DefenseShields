@@ -35,8 +35,6 @@ namespace DefenseSystems
 
             if (wait || (!_allInited && !PostInit())) return false;
 
-            //if (!Bus.Warming) return false;
-
             if (Bus.SubUpdate && Bus.Tick >= Bus.SubTick) Bus.SubGridDetect(LocalGrid);
             if (Bus.BlockEvent && Bus.Tick >= Bus.FuncTick) Bus.SomeBlockChanged(true);
             if (Bus.BlockChanged) Bus.BlockMonitor();
@@ -124,12 +122,6 @@ namespace DefenseSystems
             var wrongOwner = !State.Value.ControllerGridAccess;
             var myShield = Bus.ActiveController == this;
             var wrongRole = notStation || notShip || unKnown;
-            if (Bus.Tick180 && Bus == null) Log.Line("no active controller");
-            if (Bus.Tick180 && Bus.ActiveController == null) Log.Line("no active controller");
-            if (Bus.Tick180 && Bus.ActiveEmitter == null) Log.Line("no active emitter");
-            if (Bus.Tick180 && Bus.Spine == null) Log.Line("no master grid");
-            if (Bus.Tick180 && !Bus.SubGrids.Contains(MyCube.CubeGrid)) Log.Line("I am on wrong bus");
-
             if (!myShield || !IsFunctional || Bus.ActiveEmitter == null || wrongOwner || wrongRole)
             {
                 if (!State.Value.Suspended) Suspend();
@@ -137,7 +129,6 @@ namespace DefenseSystems
             }
 
             State.Value.Mode = (int) Bus.EmitterMode;
-
             if (State.Value.Suspended)
             {
                 UnSuspend();

@@ -65,7 +65,7 @@
                     SyncBufferedDistSqr = SyncDistSqr + 250000;
                     if (Enforced.Debug >= 2) Log.Line($"SyncDistSqr:{SyncDistSqr} - SyncBufferedDistSqr:{SyncBufferedDistSqr} - DistNorm:{SyncDist}");
                 }
-                MyAPIGateway.Parallel.StartBackground(WebMonitor);
+                //MyAPIGateway.Parallel.StartBackground(WebMonitor);
 
                 if (!IsServer) RequestEnforcement(MyAPIGateway.Multiplayer.MyId);
                 foreach (var mod in MyAPIGateway.Session.Mods)
@@ -193,7 +193,8 @@
                     var f = b.Field;
                     if (f.ShieldIsMobile && !c.Asleep && c.State.Value.ProtectMode != 2) f.MobileUpdate();
                 }
-            _autoResetEvent.Set();
+            //_autoResetEvent.Set();
+            WebMonitor();
         }
         #endregion
 

@@ -461,7 +461,7 @@
                 {
                     if (Bus?.ActiveController?.Bus.Spine != MyGrid) MyGrid.Components.TryGet(out Bus);
 
-                    if (Bus?.ActiveController == null || Bus?.ActiveO2Generator != null || !Bus.Field.Warming || Bus.Field.ShieldVolume <= 0) return false;
+                    if (Bus?.ActiveController == null || Bus?.ActiveO2Generator != null || Bus.Field.ShieldVolume <= 0) return false;
                     Bus.ActiveO2Generator = this;
                     _oldShieldVol = Bus.Field.ShieldVolume;
                     _inventory = MyCube.GetInventory();

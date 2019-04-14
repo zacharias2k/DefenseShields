@@ -131,11 +131,14 @@
 
                 var shieldPowerNeeds = Bus.Field.PowerNeeds;
                 var powerUsage = shieldPowerNeeds;
-                var initStage = 1;
                 var validEmitterId = State.Value.ActiveEmitterId != 0;
-                if (WarmedUp) initStage = 4;
-                else if (Bus.Field.Warming) initStage = 3;
-                else if (_allInited) initStage = 2;
+
+                var initStage = 1;
+                var stage2 = _allInited;
+                var stage3 = State.Value.Mode >= 0;
+                if (WarmedUp && stage2 && stage3) initStage = 4;
+                else if (stage2 && stage3) initStage = 3;
+                else if (stage2) initStage = 2;
                 const string maxString = " MaxHp: ";
                 var hpValue = (Bus.Field.ShieldMaxCharge * Fields.ConvToHp);													
 
