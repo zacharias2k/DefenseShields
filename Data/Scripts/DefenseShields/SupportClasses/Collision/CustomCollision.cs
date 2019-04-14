@@ -13,14 +13,14 @@ namespace DefenseSystems.Support
 
     internal class CustomCollision
     {
-        public static bool FutureIntersect(Controllers controller, MyEntity ent, MatrixD detectMatrix, MatrixD detectMatrixInv)
+        public static bool FutureIntersect(Fields field, MyEntity ent, MatrixD detectMatrix, MatrixD detectMatrixInv)
         {
             var entVel = ent.Physics.LinearVelocity;
             var entCenter = ent.PositionComp.WorldVolume.Center;
             var velStepSize = entVel * MyEngineConstants.PHYSICS_STEP_SIZE_IN_SECONDS * 1;
             var futureCenter = entCenter + velStepSize;
             var testDir = Vector3D.Normalize(entCenter - futureCenter);
-            var ellipsoid = IntersectEllipsoid(controller.DetectMatrixOutsideInv, controller.DetectionMatrix, new RayD(entCenter, -testDir));
+            var ellipsoid = IntersectEllipsoid(field.DetectMatrixOutsideInv, field.DetectionMatrix, new RayD(entCenter, -testDir));
             var intersect = ellipsoid == null && PointInShield(entCenter, detectMatrixInv) || ellipsoid <= velStepSize.Length();
             return intersect;
         }

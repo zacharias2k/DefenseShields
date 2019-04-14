@@ -1,12 +1,10 @@
-﻿using System.Collections.Generic;
-using DefenseSystems.Support;
+﻿using DefenseSystems.Support;
 using Sandbox.Game.Entities;
-using VRage.Game.ModAPI;
 using VRage.ModAPI;
 
 namespace DefenseSystems
 { 
-    public partial class BlockRegen
+    public partial class Regen
     {
         /*
         private static readonly HashSet<MyDefinitionId> _blocksNotToRepair =
@@ -16,7 +14,7 @@ namespace DefenseSystems
             };
         */
         internal Bus Bus;
-        private const int MaxBlocksHealedPerCycle = 50;
+        private const int MaxBlocksHealedPerCycle = 15;
         private const float MinSelfHeal = 0.05f;
         private const float MaxSelfHeal = 1.0f;
         private const float HealRate = 0.1f;
@@ -37,6 +35,8 @@ namespace DefenseSystems
         private uint _100Tick;
         private bool _isServer;
         private bool _isDedicated;
+        private bool _everyFrame;
+
         //private MyCubeGrid _attachedGrid;
         internal MyCubeBlock MyCube;
         internal MyCubeGrid LocalGrid;
@@ -55,43 +55,5 @@ namespace DefenseSystems
                 }
             }
         }
-        /*
-        private MyCubeGrid AttachedGrid
-        {
-            get
-            {
-                return _attachedGrid;
-            }
-            set
-            {
-                if (_attachedGrid == value)
-                {
-                    return;
-                }
-
-                if (_attachedGrid != null)
-                {
-                    _attachedGrid.OnBlockIntegrityChanged -= BlockChanged;
-                    _attachedGrid.OnBlockAdded -= BlockChanged;
-                    _attachedGrid.OnBlockRemoved -= BlockChanged;
-                }
-
-                Bus.DamagedBlockIdx.Clear();
-                Bus.DamagedBlocks.Clear();
-                _attachedGrid = value;
-                if (_attachedGrid != null)
-                {
-                    ((IMyCubeGrid)_attachedGrid).GetBlocks(null, (x) =>
-                    {
-                        BlockChanged(x);
-                        return false;
-                    });
-                    _attachedGrid.OnBlockIntegrityChanged += BlockChanged;
-                    _attachedGrid.OnBlockAdded += BlockChanged;
-                    _attachedGrid.OnBlockRemoved += BlockChanged;
-                }
-            }
-        }
-        */
     }
 }

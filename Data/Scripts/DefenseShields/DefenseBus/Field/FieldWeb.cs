@@ -1,6 +1,6 @@
-﻿using System.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using DefenseSystems.Support;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -9,9 +9,10 @@ using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRageMath;
+
 namespace DefenseSystems
 {
-    public partial class Controllers
+    internal partial class Fields
     {
         #region Web Entities
         public void CleanWebEnts()
@@ -20,11 +21,11 @@ namespace DefenseSystems
             IgnoreCache.Clear();
 
             _protectEntsTmp.Clear();
-            _protectEntsTmp.AddRange(ProtectedEntCache.Where(info => _tick - info.Value.LastTick > 180));
+            _protectEntsTmp.AddRange(ProtectedEntCache.Where(info => Bus.Tick - info.Value.LastTick > 180));
             foreach (var protectedEnt in _protectEntsTmp) ProtectedEntCache.Remove(protectedEnt.Key);
 
             _webEntsTmp.Clear();
-            _webEntsTmp.AddRange(WebEnts.Where(info => _tick - info.Value.LastTick > 180));
+            _webEntsTmp.AddRange(WebEnts.Where(info => Bus.Tick - info.Value.LastTick > 180));
             foreach (var webent in _webEntsTmp)
             {
                 EntIntersectInfo removedEnt;
@@ -33,30 +34,16 @@ namespace DefenseSystems
             }
         }
 
-        public void ProtectSubs(uint tick)
-        {
-            foreach (var sub in Bus.SubGrids)
-            {
-                MyProtectors protectors;
-                Session.Instance.GlobalProtect.TryGetValue(sub, out protectors);
-
-                if (protectors == null) 
-                {
-                    protectors = Session.Instance.GlobalProtect[sub] = Session.ProtSets.Get();
-                    protectors.Init(LogicSlot, tick);
-                }
-                protectors.NotBubble = this;
-            }
-        }
 
         public bool ResetEnts(MyEntity ent, uint tick)
         {
+            var a = Bus.ActiveController;
             MyProtectors protectors;
             Session.Instance.GlobalProtect.TryGetValue(ent, out protectors);
             if (protectors == null)
             {
                 protectors = Session.Instance.GlobalProtect[ent] = Session.ProtSets.Get();
-                protectors.Init(LogicSlot, tick);
+                protectors.Init(a.LogicSlot, tick);
             }
 
             var grid = ent as MyCubeGrid;
@@ -64,17 +51,18 @@ namespace DefenseSystems
             {
                 if (CustomCollision.CornerOrCenterInShield(grid, DetectMatrixOutsideInv, _resetEntCorners, true) == 0) return false;
 
-                protectors.Shields.Add(this);
+                protectors.Controllers.Add(a);
                 return true;
             }
 
             if (!CustomCollision.PointInShield(ent.PositionComp.WorldAABB.Center, DetectMatrixOutsideInv)) return false;
-            protectors.Shields.Add(this);
+            protectors.Controllers.Add(a);
             return true;
         }
 
         public void WebEntities()
         {
+            var a = Bus.ActiveController;
             PruneList.Clear();
             MyGamePruningStructure.GetTopMostEntitiesInBox(ref WebBox, PruneList);
             if (Missiles.Count > 0)
@@ -90,7 +78,7 @@ namespace DefenseSystems
             var voxelFound = false;
             var shieldFound = false;
             var entChanged = false;
-            var iMoving = Bus.GridIsMoving;
+            var iMoving = Bus.SpineIsMoving;
             var tick = Session.Instance.Tick;
 
             _enablePhysics = false;
@@ -176,12 +164,12 @@ namespace DefenseSystems
                             if (protectors == null)
                             {
                                 protectors = Session.Instance.GlobalProtect[ent] = Session.ProtSets.Get();
-                                protectors.Init(LogicSlot, tick);
+                                protectors.Init(a.LogicSlot, tick);
                             }
-                            if (protectors.Shields.Contains(this)) continue;
+                            if (protectors.Controllers.Contains(a)) continue;
 
-                            protectors.Shields.Add(this);
-                            protectors.Shields.ApplyAdditions();
+                            protectors.Controllers.Add(a);
+                            protectors.Controllers.ApplyAdditions();
                             continue;
                         }
                         IgnoreCache.Add(ent);
@@ -205,7 +193,7 @@ namespace DefenseSystems
                         _enablePhysics = true;
                         if (refreshInfo)
                         {
-                            if ((relation == Ent.EnemyGrid || relation == Ent.NobodyGrid)  && entInfo.CacheBlockList.Count != (ent as MyCubeGrid).BlocksCount)
+                            if ((relation == Ent.EnemyGrid || relation == Ent.NobodyGrid) && entInfo.CacheBlockList.Count != (ent as MyCubeGrid).BlocksCount)
                             {
                                 entInfo.RefreshNow = true;
                             }
@@ -248,10 +236,10 @@ namespace DefenseSystems
                 if (shieldFound)
                 {
                     _needPhysics = false;
-                    Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, Bus.PhysicsOutside);
+                    Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, PhysicsOutside);
                 }
                 else _needPhysics = true;
-                if (voxelFound) Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, Bus.PhysicsOutsideLow);
+                if (voxelFound) Icosphere.ReturnPhysicsVerts(DetectMatrixOutside, PhysicsOutsideLow);
             }
 
             if (Session.Instance.LogStats)
@@ -262,7 +250,7 @@ namespace DefenseSystems
 
             if (iMoving || entChanged)
             {
-                LastWokenTick = tick;
+                a.LastWokenTick = tick;
                 Session.Instance.WebWrapper.Enqueue(this);
                 Session.Instance.WebWrapperOn = true;
             }
@@ -272,6 +260,7 @@ namespace DefenseSystems
         #region Gather Entity Information
         public Ent EntType(MyEntity ent)
         {
+            var a = Bus.ActiveController;
             if (ent is IMyFloatingObject)
             {
                 if (CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, DetectMatrixOutsideInv, _obbCorners)) return Ent.Ignore;
@@ -280,14 +269,14 @@ namespace DefenseSystems
 
             var voxel = ent as MyVoxelBase;
             if (voxel != null && (Session.Enforced.DisableVoxelSupport == 1 || Bus.ActiveModulator == null || Bus.ActiveModulator.ModSet.Settings.ModulateVoxels || !ShieldIsMobile)) return Ent.Ignore;
-            if (EntityBypass.Contains(ent)) return Ent.Ignore;															  
+            if (EntityBypass.Contains(ent)) return Ent.Ignore;
 
             var character = ent as IMyCharacter;
             if (character != null)
             {
                 var dude = MyAPIGateway.Players.GetPlayerControllingEntity(ent)?.IdentityId;
                 if (dude == null) return Ent.Ignore;
-                var playerrelationship = MyCube.GetUserRelationToOwner((long)dude);
+                var playerrelationship = a.MyCube.GetUserRelationToOwner((long)dude);
                 if (playerrelationship == MyRelationsBetweenPlayerAndBlock.Owner || playerrelationship == MyRelationsBetweenPlayerAndBlock.FactionShare)
                 {
                     var playerInShield = CustomCollision.PointInShield(ent.PositionComp.WorldAABB.Center, DetectMatrixOutsideInv);
@@ -308,7 +297,7 @@ namespace DefenseSystems
                 ModulateGrids = (Bus.ActiveModulator != null && Bus.ActiveModulator.ModSet.Settings.ModulateGrids) || Session.Enforced.DisableEntityBarrier == 1;
                 ModulatorGridComponent modComp;
                 grid.Components.TryGet(out modComp);
-                if (!string.IsNullOrEmpty(modComp?.ModulationPassword) && modComp.ModulationPassword == Controller.CustomData)
+                if (!string.IsNullOrEmpty(modComp?.ModulationPassword) && modComp.ModulationPassword == a.Controller.CustomData)
                 {
                     var collection = modComp.Modulator?.Bus?.ActiveController != null ? modComp.Modulator.Bus.ActiveController.Bus.SubGrids : modComp.SubGrids;
                     foreach (var subGrid in collection)
@@ -338,10 +327,10 @@ namespace DefenseSystems
                 grid.Components.TryGet(out otherBus);
                 if (otherBus?.ActiveController != null && otherBus.ActiveController.NotFailed)
                 {
-                    var otherController = otherBus.ActiveController;
-                    var shieldEntity = MyCube.Parent;
-                    otherController.EnemyShields.Add(shieldEntity);
-                    return Ent.Shielded;    
+                    var otherField = otherBus.ActiveController.Bus.Field;
+                    var shieldEntity = a.MyCube.Parent;
+                    otherField.EnemyShields.Add(shieldEntity);
+                    return Ent.Shielded;
                 }
                 return Ent.EnemyGrid;
             }
@@ -355,7 +344,7 @@ namespace DefenseSystems
         {
             if (owners == null) owners = grid.BigOwners;
             if (owners.Count == 0) return true;
-            var relationship = MyCube.GetUserRelationToOwner(owners[0]);
+            var relationship = Bus.ActiveController.MyCube.GetUserRelationToOwner(owners[0]);
             var enemy = relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare;
             return enemy;
         }

@@ -27,9 +27,9 @@
             const int BaseScaler = 10;
             const float HeatScaler = 0.0065f;
             const float Unused = 0f;
-            const int StationRatio = 1;
-            const int LargeShipRate = 1;
-            const int SmallShipRatio = 1;
+            const float StationRatio = 1;
+            const float LargeShipRate = 1;
+            const float SmallShipRatio = 1;
             const int DisableVoxel = 0;
             const int DisableEntityBarrier = 0;
             const int Debug = 1;
@@ -165,9 +165,9 @@
             }
             /*
             if (ammoInfo.KineticWeapon)
-                damage = ammoInfo.shieldDamage * DsState.State.ModulateEnergy; //kinetic weapon
+                damage = ammoInfo.shieldDamage * State.Value.ModulateEnergy; //kinetic weapon
             else
-                damage = ammoInfo.shieldDamage * DsState.State.ModulateKinetic; //energy weapon
+                damage = ammoInfo.shieldDamage * State.Value.ModulateKinetic; //energy weapon
             */
             return damage;
         }

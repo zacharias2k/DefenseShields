@@ -176,7 +176,7 @@ namespace DefenseSystems
             {
                 if (Bus.ActiveModulator != this) Bus.ActiveModulator = this;
             }
-            EnhancerLink = Bus.ActiveController.DsState.State.Enhancer;
+            EnhancerLink = Bus.ActiveController.State.Value.Enhancer;
         }
 
         private void Timing()

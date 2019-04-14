@@ -4,11 +4,14 @@ using VRage;
 
 namespace DefenseSystems
 {
-    public partial class Bus
+    internal partial class Bus
     {
-
-        internal bool UpdateSpinePower()
+        internal bool HasPower()
         {
+            var a = ActiveController;
+            var state = a.State;
+            var set = a.Set;
+
             SpineAvailablePower = 0;
             SpineMaxPower = 0;
             SpineCurrentPower = 0;
@@ -30,28 +33,57 @@ namespace DefenseSystems
                     {
                         SpineMaxPower = MyResourceDist.MaxAvailableResourceByType(GId);
                         SpineCurrentPower = MyResourceDist.TotalRequiredInputByType(GId);
-                        if (!ActiveController.DsSet.Settings.UseBatteries && _batteryBlocks.Count != 0) CalculateBatteryInput();
+                        if (!set.Value.UseBatteries && _batteryBlocks.Count != 0) CalculateBatteryInput();
                     }
                 }
                 else FallBackPowerCalc();
             }
             SpineAvailablePower = SpineMaxPower - SpineCurrentPower;
-            if (!ActiveController.DsSet.Settings.UseBatteries)
+            if (!set.Value.UseBatteries)
             {
                 SpineCurrentPower += _batteryCurrentInput;
                 SpineAvailablePower -= _batteryCurrentInput;
             }
-            var reserveScaler = ReserveScaler[ActiveController.DsSet.Settings.PowerScale];
-            var userPowerCap = ActiveController.DsSet.Settings.PowerWatts * reserveScaler;
-            var shieldMax = SpineMaxPower > userPowerCap ? userPowerCap : SpineMaxPower;
-            ShieldMaxPower = shieldMax;
-            ShieldAvailablePower = ShieldMaxPower - SpineCurrentPower;
-            return ShieldMaxPower > 0;
+            var reserveScaler = ReserveScaler[set.Value.PowerScale];
+            var userPowerCap = set.Value.PowerWatts * reserveScaler;
+
+            if (state.Value.ProtectMode != 2)
+            {
+                var fieldMax = SpineMaxPower > userPowerCap ? userPowerCap : SpineMaxPower;
+                Field.FieldMaxPower = fieldMax;
+                Field.FieldAvailablePower = Field.FieldMaxPower - SpineCurrentPower;
+                if (Field.FieldMaxPower > 0)
+                {
+                    Field.UpdateCharge();
+                    //if (!WarmedUp) return true;
+                    var consume = Field.ShieldConsumptionRate;
+                    var outOfPower = consume <= 0f && state.Value.Charge.Equals(0.01f);
+                    var powerFault = _isServer && outOfPower;
+
+                    if (powerFault)
+                        return false;
+
+                    Field.UpdateField();
+
+                    return true;
+                }
+                return false;
+            }
+            Field.FieldMaxPower = 0;
+            Field.FieldAvailablePower = 0;
+
+            if (SpineAvailablePower > 0)
+            {
+                PowerForUse = 0.01f;
+                if (!a.SinkCurrentPower.Equals(PowerForUse)) PowerUpdate = true;
+                return true;
+            }
+            return false;
         }
 
         private void FallBackPowerCalc()
         {
-            var batteries = !ActiveController.DsSet.Settings.UseBatteries;
+            var batteries = !ActiveController.Set.Value.UseBatteries;
             for (int i = 0; i < _powerSources.Count; i++)
             {
                 var source = _powerSources[i];

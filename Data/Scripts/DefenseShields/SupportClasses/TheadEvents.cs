@@ -14,16 +14,16 @@ namespace DefenseSystems.Support
         void Execute();
     }
 
-    public class ShieldVsShieldThreadEvent : IThreadEvent
+    internal class ShieldVsShieldThreadEvent : IThreadEvent
     {
-        public readonly Controllers Shield;
+        public readonly Fields Field;
         public readonly float Damage;
         public readonly Vector3D CollisionAvg;
         public readonly long AttackerId;
 
-        public ShieldVsShieldThreadEvent(Controllers shield, float damage, Vector3D collisionAvg, long attackerId)
+        public ShieldVsShieldThreadEvent(Fields field, float damage, Vector3D collisionAvg, long attackerId)
         {
-            Shield = shield;
+            Field = field;
             Damage = damage;
             CollisionAvg = collisionAvg;
             AttackerId = attackerId;
@@ -33,28 +33,28 @@ namespace DefenseSystems.Support
         {
             if (Session.Instance.MpActive)
             {
-                Shield.AddShieldHit(AttackerId, Damage, Session.Instance.MPEnergy, null, true, CollisionAvg);
+                Field.AddShieldHit(AttackerId, Damage, Session.Instance.MPEnergy, null, true, CollisionAvg);
             }
             else
             {
-                Shield.EnergyHit = true;
-                Shield.ImpactSize = Damage;
-                Shield.WorldImpactPosition = CollisionAvg;
+                Field.EnergyHit = true;
+                Field.ImpactSize = Damage;
+                Field.WorldImpactPosition = CollisionAvg;
             }
-            Shield.WebDamage = true;
-            Shield.Absorb += Damage;
+            Field.WebDamage = true;
+            Field.Absorb += Damage;
         }
     }
 
-    public class MissileThreadEvent : IThreadEvent
+    internal class MissileThreadEvent : IThreadEvent
     {
         public readonly MyEntity Entity;
-        public readonly Controllers Shield;
+        public readonly Fields Field;
 
-        public MissileThreadEvent(MyEntity entity, Controllers shield)
+        public MissileThreadEvent(MyEntity entity, Fields field)
         {
             Entity = entity;
-            Shield = shield;
+            Field = field;
         }
 
         public void Execute()
@@ -62,44 +62,44 @@ namespace DefenseSystems.Support
             if (Entity == null || !Entity.InScene || Entity.MarkedForClose) return;
             var computedDamage = UtilsStatic.ComputeAmmoDamage(Entity);
 
-            var damage = computedDamage * Shield.DsState.State.ModulateKinetic;
+            var damage = computedDamage * Field.Bus.ActiveController.State.Value.ModulateKinetic;
             if (computedDamage < 0) damage = computedDamage;
 
             var rayDir = Vector3D.Normalize(Entity.Physics.LinearVelocity);
             var ray = new RayD(Entity.PositionComp.WorldVolume.Center, rayDir);
-            var intersect = CustomCollision.IntersectEllipsoid(Shield.DetectMatrixOutsideInv, Shield.DetectionMatrix, ray);
+            var intersect = CustomCollision.IntersectEllipsoid(Field.DetectMatrixOutsideInv, Field.DetectionMatrix, ray);
             var hitDist = intersect ?? 0;
             var hitPos = ray.Position + (ray.Direction * -hitDist);
 
             if (Session.Instance.MpActive)
             {
-                Shield.AddShieldHit(Entity.EntityId, damage, Session.Instance.MPExplosion, null, true, hitPos);
+                Field.AddShieldHit(Entity.EntityId, damage, Session.Instance.MPExplosion, null, true, hitPos);
                 Entity.Close();
                 Entity.InScene = false;
             }
             else
             {
-                Shield.EnergyHit = true;
-                Shield.WorldImpactPosition = hitPos;
-                Shield.ImpactSize = damage;
+                Field.EnergyHit = true;
+                Field.WorldImpactPosition = hitPos;
+                Field.ImpactSize = damage;
                 UtilsStatic.CreateFakeSmallExplosion(hitPos);
                 Entity.Close();
                 Entity.InScene = false;
             }
-            Shield.WebDamage = true;
-            Shield.Absorb += damage;
+            Field.WebDamage = true;
+            Field.Absorb += damage;
         }
     }
 
-    public class FloaterThreadEvent : IThreadEvent
+    internal class FloaterThreadEvent : IThreadEvent
     {
         public readonly MyEntity Entity;
-        public readonly Controllers Shield;
+        public readonly Fields Field;
 
-        public FloaterThreadEvent(MyEntity entity, Controllers shield)
+        public FloaterThreadEvent(MyEntity entity, Fields field)
         {
             Entity = entity;
-            Shield = shield;
+            Field = field;
         }
 
         public void Execute()
@@ -107,38 +107,38 @@ namespace DefenseSystems.Support
             if (Entity == null || Entity.MarkedForClose) return;
             var floater = (IMyFloatingObject)Entity;
             var entVel = Entity.Physics.LinearVelocity;
-            var movingVel = entVel != Vector3.Zero ? entVel : -Shield.Bus.Spine.Physics.LinearVelocity;
+            var movingVel = entVel != Vector3.Zero ? entVel : -Field.Bus.Spine.Physics.LinearVelocity;
 
             var rayDir = Vector3D.Normalize(movingVel);
             var ray = new RayD(Entity.PositionComp.WorldVolume.Center, rayDir);
-            var intersect = CustomCollision.IntersectEllipsoid(Shield.DetectMatrixOutsideInv, Shield.DetectionMatrix, ray);
+            var intersect = CustomCollision.IntersectEllipsoid(Field.DetectMatrixOutsideInv, Field.DetectionMatrix, ray);
             var hitDist = intersect ?? 0;
             var hitPos = ray.Position + (ray.Direction * -hitDist);
 
             if (Session.Instance.MpActive)
             {
-                Shield.AddShieldHit(Entity.EntityId, 1, Session.Instance.MPKinetic, null, false, hitPos);
-                floater.DoDamage(9999999, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
+                Field.AddShieldHit(Entity.EntityId, 1, Session.Instance.MPKinetic, null, false, hitPos);
+                floater.DoDamage(9999999, Session.Instance.MpIgnoreDamage, true, null, Field.Bus.ActiveController.MyCube.EntityId);
             }
             else
             {
-                Shield.WorldImpactPosition = hitPos;
-                Shield.ImpactSize = 10;
-                floater.DoDamage(9999999, Session.Instance.MpIgnoreDamage, false, null, Shield.MyCube.EntityId);
+                Field.WorldImpactPosition = hitPos;
+                Field.ImpactSize = 10;
+                floater.DoDamage(9999999, Session.Instance.MpIgnoreDamage, false, null, Field.Bus.ActiveController.MyCube.EntityId);
             }
-            Shield.WebDamage = true;
-            Shield.Absorb += 1;
+            Field.WebDamage = true;
+            Field.Absorb += 1;
         }
     }
-    public class CollisionDataThreadEvent : IThreadEvent
+    internal class CollisionDataThreadEvent : IThreadEvent
     {
         public readonly MyCollisionPhysicsData CollisionData;
-        public readonly Controllers Shield;
+        public readonly Fields Field;
 
-        public CollisionDataThreadEvent(MyCollisionPhysicsData collisionPhysicsData, Controllers shield)
+        public CollisionDataThreadEvent(MyCollisionPhysicsData collisionPhysicsData, Fields field)
         {
             CollisionData = collisionPhysicsData;
-            Shield = shield;
+            Field = field;
         }
 
         public void Execute()
@@ -147,7 +147,7 @@ namespace DefenseSystems.Support
             var tick = Session.Instance.Tick;
             EntIntersectInfo entInfo;
 
-            var foundInfo = Shield.WebEnts.TryGetValue(CollisionData.Entity1, out entInfo);
+            var foundInfo = Field.WebEnts.TryGetValue(CollisionData.Entity1, out entInfo);
             if (!foundInfo || entInfo.LastCollision == tick) return;
 
             if (entInfo.LastCollision >= tick - 8) entInfo.ConsecutiveCollisions++;
@@ -186,15 +186,15 @@ namespace DefenseSystems.Support
         }
     }
 
-    public class StationCollisionDataThreadEvent : IThreadEvent
+    internal class StationCollisionDataThreadEvent : IThreadEvent
     {
         public readonly MyCollisionPhysicsData CollisionData;
-        public readonly Controllers Shield;
+        public readonly Fields Field;
 
-        public StationCollisionDataThreadEvent(MyCollisionPhysicsData collisionPhysicsData, Controllers shield)
+        public StationCollisionDataThreadEvent(MyCollisionPhysicsData collisionPhysicsData, Fields field)
         {
             CollisionData = collisionPhysicsData;
-            Shield = shield;
+            Field = field;
         }
 
         public void Execute()
@@ -203,7 +203,7 @@ namespace DefenseSystems.Support
             var tick = Session.Instance.Tick;
             EntIntersectInfo entInfo;
 
-            var foundInfo = Shield.WebEnts.TryGetValue(CollisionData.Entity1, out entInfo);
+            var foundInfo = Field.WebEnts.TryGetValue(CollisionData.Entity1, out entInfo);
             if (!foundInfo || entInfo.LastCollision == tick) return;
 
             if (entInfo.LastCollision >= tick - 8) entInfo.ConsecutiveCollisions++;
@@ -218,7 +218,7 @@ namespace DefenseSystems.Support
             if (CollisionData.Entity1.Physics.LinearVelocity.Length() <= (Session.Instance.MaxEntitySpeed * 0.75))
                 CollisionData.Entity1.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceMulti * CollisionData.Force1, null, null, null, CollisionData.Immediate);
 
-            var transformInv = Shield.DetectMatrixOutsideInv;
+            var transformInv = Field.DetectMatrixOutsideInv;
             var normalMat = MatrixD.Transpose(transformInv);
             var localNormal = Vector3D.Transform(CollisionData.CollisionAvg, transformInv);
             var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
@@ -226,15 +226,15 @@ namespace DefenseSystems.Support
         }
     }
 
-    public class PlayerCollisionThreadEvent : IThreadEvent
+    internal class PlayerCollisionThreadEvent : IThreadEvent
     {
         public readonly MyCollisionPhysicsData CollisionData;
-        public readonly Controllers Shield;
+        public readonly Fields Field;
 
-        public PlayerCollisionThreadEvent(MyCollisionPhysicsData collisionPhysicsData, Controllers shield)
+        public PlayerCollisionThreadEvent(MyCollisionPhysicsData collisionPhysicsData, Fields field)
         {
             CollisionData = collisionPhysicsData;
-            Shield = shield;
+            Field = field;
         }
 
         public void Execute()
@@ -244,27 +244,27 @@ namespace DefenseSystems.Support
             var character = CollisionData.Entity1 as IMyCharacter;
             if (Session.Instance.MpActive)
             {
-                Shield.AddShieldHit(CollisionData.Entity1.EntityId, 1, Session.Instance.MPKinetic, null, false, CollisionData.CollisionAvg);
-                character?.DoDamage(1f, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
+                Field.AddShieldHit(CollisionData.Entity1.EntityId, 1, Session.Instance.MPKinetic, null, false, CollisionData.CollisionAvg);
+                character?.DoDamage(1f, Session.Instance.MpIgnoreDamage, true, null, Field.Bus.ActiveController.MyCube.EntityId);
             }
             else
             {
-                Shield.ImpactSize = 1;
-                Shield.WorldImpactPosition = CollisionData.CollisionAvg;
-                character?.DoDamage(1f, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
+                Field.ImpactSize = 1;
+                Field.WorldImpactPosition = CollisionData.CollisionAvg;
+                character?.DoDamage(1f, Session.Instance.MpIgnoreDamage, true, null, Field.Bus.ActiveController.MyCube.EntityId);
             }
         }
     }
 
-    public class CharacterEffectThreadEvent : IThreadEvent
+    internal class CharacterEffectThreadEvent : IThreadEvent
     {
         public readonly IMyCharacter Character;
-        public readonly Controllers Shield;
+        public readonly Fields Field;
 
-        public CharacterEffectThreadEvent(IMyCharacter character, Controllers shield)
+        public CharacterEffectThreadEvent(IMyCharacter character, Fields field)
         {
             Character = character;
-            Shield = shield;
+            Field = field;
         }
 
         public void Execute()
@@ -277,18 +277,18 @@ namespace DefenseSystems.Support
         }
     }
 
-    public class ManyBlocksThreadEvent : IThreadEvent
+    internal class ManyBlocksThreadEvent : IThreadEvent
     {
-        public readonly Controllers Shield;
+        public readonly Fields Field;
         public readonly HashSet<CubeAccel> AccelSet;
         public readonly float Damage;
         public readonly Vector3D CollisionAvg;
         public readonly long AttackerId;
 
-        public ManyBlocksThreadEvent(HashSet<CubeAccel> accelSet, Controllers shield, float damage, Vector3D collisionAvg, long attackerId)
+        public ManyBlocksThreadEvent(HashSet<CubeAccel> accelSet, Fields field, float damage, Vector3D collisionAvg, long attackerId)
         {
             AccelSet = accelSet;
-            Shield = shield;
+            Field = field;
             Damage = damage;
             CollisionAvg = collisionAvg;
             AttackerId = attackerId;
@@ -301,7 +301,7 @@ namespace DefenseSystems.Support
                 EntIntersectInfo entInfo;
                 if (accel.Grid != accel.Block.CubeGrid)
                 {
-                    if (Shield.WebEnts.TryGetValue(accel.Grid, out entInfo))
+                    if (Field.WebEnts.TryGetValue(accel.Grid, out entInfo))
                     {
                         entInfo.RefreshNow = true;
                     }
@@ -310,43 +310,43 @@ namespace DefenseSystems.Support
 
                 if (accel.Block.IsDestroyed)
                 {
-                    if (Shield.WebEnts.TryGetValue(accel.Grid, out entInfo)) entInfo.RefreshNow = true;
+                    if (Field.WebEnts.TryGetValue(accel.Grid, out entInfo)) entInfo.RefreshNow = true;
                     return;
                 }
 
-                accel.Block.DoDamage(accel.Block.MaxIntegrity, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
+                accel.Block.DoDamage(accel.Block.MaxIntegrity, Session.Instance.MpIgnoreDamage, true, null, Field.Bus.ActiveController.MyCube.EntityId);
 
                 if (accel.Block.IsDestroyed)
                 {
-                    if (Shield.WebEnts.TryGetValue(accel.Grid, out entInfo)) entInfo.RefreshNow = true;
+                    if (Field.WebEnts.TryGetValue(accel.Grid, out entInfo)) entInfo.RefreshNow = true;
                 }
             }
 
             if (Session.Instance.MpActive)
             {
-                Shield.AddShieldHit(AttackerId, Damage, Session.Instance.MPKinetic, null, true, CollisionAvg);
+                Field.AddShieldHit(AttackerId, Damage, Session.Instance.MPKinetic, null, true, CollisionAvg);
             }
             else
             {
-                Shield.ImpactSize = Damage;
-                Shield.WorldImpactPosition = CollisionAvg;
+                Field.ImpactSize = Damage;
+                Field.WorldImpactPosition = CollisionAvg;
             }
-            Shield.WebDamage = true;
-            Shield.Absorb += Damage;
+            Field.WebDamage = true;
+            Field.Absorb += Damage;
         }
     }
 
-    public class VoxelCollisionDmgThreadEvent : IThreadEvent
+    internal class VoxelCollisionDmgThreadEvent : IThreadEvent
     {
         public readonly MyEntity Entity;
-        public readonly Controllers Shield;
+        public readonly Fields Field;
         public readonly float Damage;
         public readonly Vector3D CollisionAvg;
 
-        public VoxelCollisionDmgThreadEvent(MyEntity entity, Controllers shield, float damage, Vector3D collisionAvg)
+        public VoxelCollisionDmgThreadEvent(MyEntity entity, Fields field, float damage, Vector3D collisionAvg)
         {
             Entity = entity;
-            Shield = shield;
+            Field = field;
             Damage = damage;
             CollisionAvg = collisionAvg;
         }
@@ -356,27 +356,27 @@ namespace DefenseSystems.Support
             if (Entity == null || Entity.MarkedForClose) return;
             if (Session.Instance.MpActive)
             {
-                Shield.AddShieldHit(Entity.EntityId, Damage, Session.Instance.MPKinetic, null, false, CollisionAvg);
+                Field.AddShieldHit(Entity.EntityId, Damage, Session.Instance.MPKinetic, null, false, CollisionAvg);
             }
             else
             {
-                Shield.WorldImpactPosition = CollisionAvg;
-                Shield.ImpactSize = 12000;
+                Field.WorldImpactPosition = CollisionAvg;
+                Field.ImpactSize = 12000;
             }
-            Shield.WebDamage = true;
-            Shield.Absorb += Damage;
+            Field.WebDamage = true;
+            Field.Absorb += Damage;
         }
     }
 
-    public class VoxelCollisionPhysicsThreadEvent : IThreadEvent
+    internal class VoxelCollisionPhysicsThreadEvent : IThreadEvent
     {
         public readonly MyCollisionPhysicsData CollisionData;
-        public readonly Controllers Shield;
+        public readonly Fields Field;
 
-        public VoxelCollisionPhysicsThreadEvent(MyCollisionPhysicsData collisionPhysicsData, Controllers shield)
+        public VoxelCollisionPhysicsThreadEvent(MyCollisionPhysicsData collisionPhysicsData, Fields field)
         {
             CollisionData = collisionPhysicsData;
-            Shield = shield;
+            Field = field;
         }
 
         public void Execute()
@@ -390,64 +390,64 @@ namespace DefenseSystems.Support
         }
     }
 
-    public class VoxelDmgThreadEvent : IThreadEvent
+    internal class VoxelDmgThreadEvent : IThreadEvent
     {
         public readonly MyVoxelBase VoxelBase;
-        public readonly Controllers Shield;
+        public readonly Fields Field;
 
-        public VoxelDmgThreadEvent(MyVoxelBase voxelBase, Controllers shield)
+        public VoxelDmgThreadEvent(MyVoxelBase voxelBase, Fields field)
         {
             VoxelBase = voxelBase;
-            Shield = shield;
+            Field = field;
         }
 
         public void Execute()
         {
             if (VoxelBase == null || VoxelBase.RootVoxel.MarkedForClose || VoxelBase.RootVoxel.Closed) return;
-            VoxelBase.RootVoxel.RequestVoxelOperationElipsoid(Vector3.One * 1.0f, Shield.DetectMatrixOutside, 0, MyVoxelBase.OperationType.Cut);
+            VoxelBase.RootVoxel.RequestVoxelOperationElipsoid(Vector3.One * 1.0f, Field.DetectMatrixOutside, 0, MyVoxelBase.OperationType.Cut);
         }
     }
 
-    public class MeteorDmgThreadEvent : IThreadEvent
+    internal class MeteorDmgThreadEvent : IThreadEvent
     {
         public readonly IMyMeteor Meteor;
-        public readonly Controllers Shield;
+        public readonly Fields Field;
 
-        public MeteorDmgThreadEvent(IMyMeteor meteor, Controllers shield)
+        public MeteorDmgThreadEvent(IMyMeteor meteor, Fields field)
         {
             Meteor = meteor;
-            Shield = shield;
+            Field = field;
         }
 
         public void Execute()
         {
             if (Meteor == null || Meteor.MarkedForClose) return;
-            var damage = 5000 * Shield.DsState.State.ModulateEnergy;
+            var damage = 5000 * Field.Bus.ActiveController.State.Value.ModulateEnergy;
             if (Session.Instance.MpActive)
             {
-                Shield.AddShieldHit(Meteor.EntityId, damage, Session.Instance.MPKinetic, null, false, Meteor.PositionComp.WorldVolume.Center);
-                Meteor.DoDamage(10000f, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
+                Field.AddShieldHit(Meteor.EntityId, damage, Session.Instance.MPKinetic, null, false, Meteor.PositionComp.WorldVolume.Center);
+                Meteor.DoDamage(10000f, Session.Instance.MpIgnoreDamage, true, null, Field.Bus.ActiveController.MyCube.EntityId);
             }
             else
             {
-                Shield.WorldImpactPosition = Meteor.PositionComp.WorldVolume.Center;
-                Shield.ImpactSize = damage;
-                Meteor.DoDamage(10000f, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
+                Field.WorldImpactPosition = Meteor.PositionComp.WorldVolume.Center;
+                Field.ImpactSize = damage;
+                Meteor.DoDamage(10000f, Session.Instance.MpIgnoreDamage, true, null, Field.Bus.ActiveController.MyCube.EntityId);
             }
-            Shield.WebDamage = true;
-            Shield.Absorb += damage;
+            Field.WebDamage = true;
+            Field.Absorb += damage;
         }
     }
 
-    public class ForceDataThreadEvent : IThreadEvent
+    internal class ForceDataThreadEvent : IThreadEvent
     {
         public readonly MyForceData ForceData;
-        public readonly Controllers Shield;
+        public readonly Fields Field;
 
-        public ForceDataThreadEvent(MyForceData forceData, Controllers shield)
+        public ForceDataThreadEvent(MyForceData forceData, Fields field)
         {
             ForceData = forceData;
-            Shield = shield;
+            Field = field;
         }
 
         public void Execute()
@@ -457,15 +457,15 @@ namespace DefenseSystems.Support
         }
     }
 
-    public class ImpulseDataThreadEvent : IThreadEvent
+    internal class ImpulseDataThreadEvent : IThreadEvent
     {
         public readonly MyImpulseData ImpulseData;
-        public readonly Controllers Shield;
+        public readonly Fields Field;
 
-        public ImpulseDataThreadEvent(MyImpulseData impulseData, Controllers shield)
+        public ImpulseDataThreadEvent(MyImpulseData impulseData, Fields field)
         {
             ImpulseData = impulseData;
-            Shield = shield;
+            Field = field;
         }
 
         public void Execute()

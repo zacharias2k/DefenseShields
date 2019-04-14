@@ -1,19 +1,20 @@
-﻿namespace DefenseSystems
-{
-    using System;
-    using System.Collections.Generic;
-    using Support;
-    using Sandbox.Game.Entities;
-    using Sandbox.ModAPI;
-    using VRage.Game.Entity;
-    using VRage.Game.ModAPI;
-    using VRageMath;
+﻿using System;
+using System.Collections.Generic;
+using DefenseSystems.Support;
+using Sandbox.Game.Entities;
+using Sandbox.ModAPI;
+using VRage.Game.Entity;
+using VRage.Game.ModAPI;
+using VRageMath;
 
-    public partial class Controllers
+namespace DefenseSystems
+{
+    internal partial class Fields
     {
         #region Intersect
         internal void EntIntersectSelector(KeyValuePair<MyEntity, EntIntersectInfo> pair)
         {
+            var a = Bus.ActiveController;
             var entInfo = pair.Value;
             var webent = pair.Key;
 
@@ -42,29 +43,29 @@
                         return;
                     }
                 case Ent.EnemyInside:
-                {
-                    if (!CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
                     {
-                        entInfo.RefreshNow = true;
-                        entInfo.EnemySafeInside = false;
+                        if (!CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
+                        {
+                            entInfo.RefreshNow = true;
+                            entInfo.EnemySafeInside = false;
+                        }
+                        return;
                     }
-                    return;
-                }
                 case Ent.NobodyGrid:
                     {
-                        if (Session.Enforced.Debug == 3) Log.Line($"Ent NobodyGrid: {webent.DebugName} - ControllerId [{Controller.EntityId}]");
+                        if (Session.Enforced.Debug == 3) Log.Line($"Ent NobodyGrid: {webent.DebugName} - ControllerId [{a.Controller.EntityId}]");
                         GridIntersect(webent);
                         return;
                     }
                 case Ent.EnemyGrid:
                     {
-                        if (Session.Enforced.Debug == 3) Log.Line($"Ent LargeEnemyGrid: {webent.DebugName} - ControllerId [{Controller.EntityId}]");
+                        if (Session.Enforced.Debug == 3) Log.Line($"Ent LargeEnemyGrid: {webent.DebugName} - ControllerId [{a.Controller.EntityId}]");
                         GridIntersect(webent);
                         return;
                     }
                 case Ent.Shielded:
                     {
-                        if (Session.Enforced.Debug == 3) Log.Line($"Ent Shielded: {webent.DebugName} - ControllerId [{Controller.EntityId}]");
+                        if (Session.Enforced.Debug == 3) Log.Line($"Ent Shielded: {webent.DebugName} - ControllerId [{a.Controller.EntityId}]");
                         ShieldIntersect(webent);
                         return;
                     }
@@ -80,7 +81,7 @@
                 case Ent.Other:
                     {
                         if (!_isServer) return;
-                        if (Session.Enforced.Debug == 3) Log.Line($"Ent Other: {webent.DebugName} - ControllerId [{Controller.EntityId}]");
+                        if (Session.Enforced.Debug == 3) Log.Line($"Ent Other: {webent.DebugName} - ControllerId [{a.Controller.EntityId}]");
                         if (webent.MarkedForClose || !webent.InScene) return;
                         var meteor = webent as IMyMeteor;
                         if (meteor != null)
@@ -106,8 +107,9 @@
             {
                 if (CustomCollision.ObbCornersInShield(bOriBBoxD, DetectMatrixOutsideInv, _obbCorners))
                 {
+                    var a = Bus.ActiveController;
                     var bPhysics = entity.Physics;
-                    var sPhysics = Controller.CubeGrid.Physics;
+                    var sPhysics = ((IMyCubeGrid)Bus.Spine).Physics;
                     var sLSpeed = sPhysics.LinearVelocity;
                     var sASpeed = sPhysics.AngularVelocity * 50;
                     var sLSpeedLen = sLSpeed.LengthSquared();
@@ -137,6 +139,7 @@
 
         private void ShieldIntersect(MyEntity ent)
         {
+            var a = Bus.ActiveController;
             var grid = ent as MyCubeGrid;
             if (grid == null) return;
             if (EntInside(grid, MyOrientedBoundingBoxD.CreateFromBoundingBox(grid.PositionComp.WorldAABB))) return;
@@ -150,11 +153,11 @@
                 EntIntersectInfo entInfo;
                 WebEnts.TryRemove(ent, out entInfo);
             }
-            var otherPhysicsOutside = otherBus.PhysicsOutside;
-            var otherMatrixInv = otherController.DetectMatrixOutsideInv;
+            var otherPhysicsOutside = otherBus.Field.PhysicsOutside;
+            var otherMatrixInv = otherBus.Field.DetectMatrixOutsideInv;
 
             var insidePoints = new List<Vector3D>();
-            CustomCollision.ShieldX2PointsInside(otherPhysicsOutside, otherMatrixInv, Bus.PhysicsOutside, DetectMatrixOutsideInv, insidePoints);
+            CustomCollision.ShieldX2PointsInside(otherPhysicsOutside, otherMatrixInv, PhysicsOutside, DetectMatrixOutsideInv, insidePoints);
 
             var collisionAvg = Vector3D.Zero;
             var numOfPointsInside = insidePoints.Count;
@@ -166,12 +169,14 @@
             if (Bus.Spine.EntityId > grid.EntityId) ComputeCollisionPhysics(grid, Bus.Spine, collisionAvg);
             else if (!_isServer) return;
 
-            var damage = ((otherController._shieldMaxChargeRate * ConvToHp) * DsState.State.ModulateKinetic) * 0.01666666666f;
+            var damage = ((otherBus.Field.ShieldMaxChargeRate * ConvToHp) * a.State.Value.ModulateKinetic) * 0.01666666666f;
             Session.Instance.ThreadEvents.Enqueue(new ShieldVsShieldThreadEvent(this, damage, collisionAvg, grid.EntityId));
         }
 
         internal void VoxelIntersect()
         {
+            var a = Bus.ActiveController;
+            var state = a.State;
             foreach (var item in VoxelsToIntersect)
             {
                 var voxelBase = item.Key;
@@ -193,7 +198,7 @@
                     continue;
                 }
 
-                var collision = CustomCollision.VoxelEllipsoidCheck(Bus.Spine, Bus.PhysicsOutsideLow, voxelBase);
+                var collision = CustomCollision.VoxelEllipsoidCheck(Bus.Spine, PhysicsOutsideLow, voxelBase);
                 if (collision.HasValue)
                 {
                     ComputeVoxelPhysics(voxelBase, Bus.Spine, collision.Value);
@@ -202,9 +207,9 @@
                     if (_isServer)
                     {
                         var mass = Bus.Spine.GetCurrentMass();
-                        var sPhysics = Controller.CubeGrid.Physics;
+                        var sPhysics = ((IMyCubeGrid)Bus.Spine).Physics;
                         var momentum = mass * sPhysics.GetVelocityAtPoint(collision.Value);
-                        var damage = (momentum.Length() / 500) * DsState.State.ModulateEnergy;
+                        var damage = (momentum.Length() / 500) * state.Value.ModulateEnergy;
                         Session.Instance.ThreadEvents.Enqueue(new VoxelCollisionDmgThreadEvent(voxelBase, this, damage, collision.Value));
                     }
                 }
@@ -264,7 +269,7 @@
                     var hits = 0;
                     var blockPoints = new Vector3D[9];
 
-                    var cloneCacheList= new List<CubeAccel>(entInfo.CacheBlockList);
+                    var cloneCacheList = new List<CubeAccel>(entInfo.CacheBlockList);
                     var cubeHitSet = new HashSet<CubeAccel>();
 
                     for (int i = 0; i < cloneCacheList.Count; i++)
@@ -312,7 +317,7 @@
                     else return;
                     if (!_isServer) return;
 
-                    var damage = rawDamage * DsState.State.ModulateEnergy;
+                    var damage = rawDamage * Bus.ActiveController.State.Value.ModulateEnergy;
 
                     Session.Instance.ThreadEvents.Enqueue(new ManyBlocksThreadEvent(cubeHitSet, this, damage, collisionAvg, breaching.EntityId));
                 }
@@ -463,5 +468,6 @@
             Session.Instance.ThreadEvents.Enqueue(new VoxelCollisionPhysicsThreadEvent(collisionData, this));
         }
         #endregion
+
     }
 }

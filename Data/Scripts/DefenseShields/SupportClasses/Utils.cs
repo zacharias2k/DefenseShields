@@ -5,7 +5,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Sandbox.Game.Entities;
-using Sandbox.ModAPI;
 using VRageMath;
 
 namespace DefenseSystems.Support
@@ -296,6 +295,76 @@ namespace DefenseSystems.Support
         public List<T>.Enumerator GetEnumerator()
         {
             return _list.GetEnumerator();
+        }
+    }
+
+    public class ConcurrentUniqueQueue<T> : IEnumerable<T>
+    {
+        private readonly MyConcurrentHashSet<T> _hashSet;
+        private readonly ConcurrentQueue<T> _queue;
+        private SpinLockRef _lock = new SpinLockRef();
+
+        public ConcurrentUniqueQueue()
+        {
+            _hashSet = new MyConcurrentHashSet<T>();
+            _queue = new ConcurrentQueue<T>();
+        }
+
+
+        public int Count
+        {
+            get
+            {
+                return _hashSet.Count;
+            }
+        }
+
+        public void Clear()
+        {
+            _hashSet.Clear();
+            _queue.Clear();
+        }
+
+
+        public bool Contains(T item)
+        {
+            return _hashSet.Contains(item);
+        }
+
+
+        public void Enqueue(T item)
+        {
+            if (_hashSet.Add(item))
+            {
+                _queue.Enqueue(item);
+            }
+        }
+
+        public T Dequeue()
+        {
+            T item;
+            _queue.TryDequeue(out item);
+            _hashSet.Remove(item);
+            return item;
+        }
+
+
+        public T Peek()
+        {
+            T result;
+            _queue.TryPeek(out result);
+            return result;
+        }
+
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return _queue.GetEnumerator();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return _queue.GetEnumerator();
         }
     }
 

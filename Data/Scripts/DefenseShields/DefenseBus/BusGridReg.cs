@@ -6,7 +6,7 @@ using VRage.Game.ModAPI;
 
 namespace DefenseSystems
 {
-    public partial class Bus
+    internal partial class Bus
     {
         public void RegisterGridEvents(MyCubeGrid grid, bool register = true)
         {

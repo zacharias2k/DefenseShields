@@ -3,16 +3,8 @@ using VRage.Game.ModAPI;
 
 namespace DefenseSystems
 {
-    public partial class Bus
+    internal partial class Bus
     {
-        internal void LosCheck()
-        {
-            LosCheckTick = uint.MaxValue;
-            CheckEmitters = true;
-            ActiveController.FitChanged = true;
-            ActiveController.AdjustShape = true;
-        }
-
 
         internal bool SlaveControllerLink(bool firstLoop)
         {
@@ -28,7 +20,7 @@ namespace DefenseSystems
                 Bus otherBus;
                 grid.Components.TryGet(out otherBus);
                 var controller = ActiveController;
-                if (controller != null && controller.DsState.State.Online && controller.IsWorking)
+                if (controller != null && controller.State.Value.Online && controller.IsWorking)
                 {
                     var otherSize = controller.Bus.Spine.PositionComp.WorldAABB.Size.Volume;
                     var otherEntityId = controller.Bus.Spine.EntityId;
@@ -49,7 +41,7 @@ namespace DefenseSystems
             var mainSub = false;
             if (grid == null)
             {
-                ActiveController.DsState.State.SpineIntegrity = 0;
+                ActiveController.State.Value.SpineIntegrity = 0;
                 grid = Spine;
             }
             else if (grid == Spine) mainSub = true;
@@ -66,8 +58,8 @@ namespace DefenseSystems
 
             if (!mainSub)
             {
-                if (!remove) ActiveController.DsState.State.SpineIntegrity += integrityAdjustment;
-                else ActiveController.DsState.State.SpineIntegrity -= integrityAdjustment;
+                if (!remove) ActiveController.State.Value.SpineIntegrity += integrityAdjustment;
+                else ActiveController.State.Value.SpineIntegrity -= integrityAdjustment;
             }
 
             return integrityAdjustment;
@@ -75,7 +67,7 @@ namespace DefenseSystems
 
         public void ResetDamageEffects()
         {
-            if (ActiveController.DsState.State.Online && !ActiveController.DsState.State.Lowered)
+            if (ActiveController.State.Value.Online && !ActiveController.State.Value.Lowered)
             {
                 lock (SubLock)
                 {

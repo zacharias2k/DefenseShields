@@ -115,7 +115,7 @@ namespace DefenseSystems
         {
             try
             {
-                var mode = Enum.GetName(typeof(EmitterType), EmiState.State.Mode);
+                var mode = Enum.GetName(typeof(Bus.EmitterModes), EmiState.State.Mode);
                 if (!EmiState.State.Link)
                 {
                     stringBuilder.Append("[ No Valid Controller ]" +

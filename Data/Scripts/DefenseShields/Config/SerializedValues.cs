@@ -11,9 +11,9 @@
         [ProtoMember(1), DefaultValue(-1)] public float HeatScaler = -1f;
         [ProtoMember(2), DefaultValue(-1)] public int BaseScaler = -1;
         [ProtoMember(3), DefaultValue(-1)] public float Unused = -1f;
-        [ProtoMember(4), DefaultValue(-1)] public int StationRatio = -1;
-        [ProtoMember(5), DefaultValue(-1)] public int LargeShipRatio = -1;
-        [ProtoMember(6), DefaultValue(-1)] public int SmallShipRatio = -1;
+        [ProtoMember(4), DefaultValue(-1)] public float StationRatio = -1;
+        [ProtoMember(5), DefaultValue(-1)] public float LargeShipRatio = -1;
+        [ProtoMember(6), DefaultValue(-1)] public float SmallShipRatio = -1;
         [ProtoMember(7), DefaultValue(-1)] public int DisableVoxelSupport = -1;
         [ProtoMember(8), DefaultValue(-1)] public int DisableEntityBarrier = -1;
         [ProtoMember(9), DefaultValue(-1)] public int Debug = -1;

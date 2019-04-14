@@ -75,332 +75,332 @@
 
         internal static bool ShowSizeSlider(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            var station = comp != null && comp.Bus.IsStatic;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            var station = logic != null && logic.Bus.IsStatic;
             return station;
         }
 
         internal static float GetRate(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.Rate ?? 0f;
+            return comp?.Set.Value.Rate ?? 0f;
         }
 
         internal static void SetRate(IMyTerminalBlock block, float newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.Rate = newValue;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic == null) return;
+            logic.Set.Value.Rate = newValue;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
         }
 
         internal static bool GetExtend(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.ExtendFit ?? false;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.ExtendFit ?? false;
         }
 
         internal static void SetExtend(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.ExtendFit = newValue;
-            comp.FitChanged = true;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic?.Bus?.Field == null) return;
+            logic.Set.Value.ExtendFit = newValue;
+            logic.Bus.Field.FitChanged = true;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
         }
 
         internal static bool GetSphereFit(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.SphereFit ?? false;
+            return comp?.Set.Value.SphereFit ?? false;
         }
 
         internal static void SetSphereFit(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.SphereFit = newValue;
-            comp.FitChanged = true;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic?.Bus?.Field == null) return;
+            logic.Set.Value.SphereFit = newValue;
+            logic.Bus.Field.FitChanged = true;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
         }
 
         internal static bool GetFortify(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.FortifyShield ?? false;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.FortifyShield ?? false;
         }
 
         internal static void SetFortify(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.FortifyShield = newValue;
-            comp.FitChanged = true;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic?.Bus?.Field == null) return;
+            logic.Set.Value.FortifyShield = newValue;
+            logic.Bus.Field.FitChanged = true;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
         }
 
         internal static float GetWidth(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.Width ?? 0f;
+            return comp?.Set.Value.Width ?? 0f;
         }
 
         internal static void SetWidth(IMyTerminalBlock block, float newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.Width = newValue;
-            comp.UpdateDimensions = true;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
-            comp.Bus.LosCheckTick = Session.Instance.Tick + 1800;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic?.Bus?.Field == null) return;
+            logic.Set.Value.Width = newValue;
+            logic.Bus.Field.UpdateDimensions = true;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
+            logic.Bus.Field.LosCheckTick = Session.Instance.Tick + 1800;
         }
 
         internal static float GetHeight(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.Height ?? 0f;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.Height ?? 0f;
         }
 
         internal static void SetHeight(IMyTerminalBlock block, float newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.Height = newValue;
-            comp.UpdateDimensions = true;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
-            comp.Bus.LosCheckTick = Session.Instance.Tick + 1800;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic?.Bus?.Field == null) return;
+            logic.Set.Value.Height = newValue;
+            logic.Bus.Field.UpdateDimensions = true;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
+            logic.Bus.Field.LosCheckTick = Session.Instance.Tick + 1800;
         }
 
         internal static float GetDepth(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.Depth ?? 0f;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.Depth ?? 0f;
         }
 
         internal static void SetDepth(IMyTerminalBlock block, float newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.Depth = newValue;
-            comp.UpdateDimensions = true;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
-            comp.Bus.LosCheckTick = Session.Instance.Tick + 1800;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic?.Bus?.Field == null) return;
+            logic.Set.Value.Depth = newValue;
+            logic.Bus.Field.UpdateDimensions = true;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
+            logic.Bus.Field.LosCheckTick = Session.Instance.Tick + 1800;
         }
 
         internal static float GetOffsetWidth(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.ShieldOffset.X ?? 0;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.ShieldOffset.X ?? 0;
         }
 
         internal static void SetOffsetWidth(IMyTerminalBlock block, float newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic?.Bus?.Field == null) return;
 
-            comp.DsSet.Settings.ShieldOffset.X = (int)newValue;
-            comp.UpdateDimensions = true;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
-            comp.Bus.LosCheckTick = Session.Instance.Tick + 1800;
+            logic.Set.Value.ShieldOffset.X = (int)newValue;
+            logic.Bus.Field.UpdateDimensions = true;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
+            logic.Bus.Field.LosCheckTick = Session.Instance.Tick + 1800;
             ((MyCubeBlock)block).UpdateTerminal();
         }
 
         internal static float GetOffsetHeight(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.ShieldOffset.Y ?? 0;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.ShieldOffset.Y ?? 0;
         }
 
         internal static void SetOffsetHeight(IMyTerminalBlock block, float newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic?.Bus?.Field == null) return;
 
-            comp.DsSet.Settings.ShieldOffset.Y = (int)newValue;
-            comp.UpdateDimensions = true;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
-            comp.Bus.LosCheckTick = Session.Instance.Tick + 1800;
+            logic.Set.Value.ShieldOffset.Y = (int)newValue;
+            logic.Bus.Field.UpdateDimensions = true;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
+            logic.Bus.Field.LosCheckTick = Session.Instance.Tick + 1800;
             ((MyCubeBlock)block).UpdateTerminal();
         }
 
         internal static float GetOffsetDepth(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.ShieldOffset.Z ?? 0;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.ShieldOffset.Z ?? 0;
         }
 
         internal static void SetOffsetDepth(IMyTerminalBlock block, float newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic?.Bus?.Field == null) return;
 
-            comp.DsSet.Settings.ShieldOffset.Z = (int)newValue;
-            comp.UpdateDimensions = true;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
-            comp.Bus.LosCheckTick = Session.Instance.Tick + 1800;
+            logic.Set.Value.ShieldOffset.Z = (int)newValue;
+            logic.Bus.Field.UpdateDimensions = true;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
+            logic.Bus.Field.LosCheckTick = Session.Instance.Tick + 1800;
             ((MyCubeBlock)block).UpdateTerminal();
         }
 
         internal static bool GetBatteries(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.UseBatteries ?? false;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.UseBatteries ?? false;
         }
 
         internal static void SetBatteries(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.UseBatteries = newValue;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic == null) return;
+            logic.Set.Value.UseBatteries = newValue;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
         }
 
         internal static bool GetHideActive(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.ActiveInvisible ?? false;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.ActiveInvisible ?? false;
         }
 
         internal static void SetHideActive(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.ActiveInvisible = newValue;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic == null) return;
+            logic.Set.Value.ActiveInvisible = newValue;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
         }
 
         internal static bool GetRefreshAnimation(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.RefreshAnimation ?? false;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.RefreshAnimation ?? false;
         }
 
         internal static void SetRefreshAnimation(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.RefreshAnimation = newValue;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic == null) return;
+            logic.Set.Value.RefreshAnimation = newValue;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
         }
 
         internal static bool GetHitWaveAnimation(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.HitWaveAnimation ?? false;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.HitWaveAnimation ?? false;
         }
 
         internal static void SetHitWaveAnimation(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.HitWaveAnimation = newValue;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic == null) return;
+            logic.Set.Value.HitWaveAnimation = newValue;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
         }
 
         internal static bool GetNoWarningSounds(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.NoWarningSounds ?? false;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.NoWarningSounds ?? false;
         }
 
         internal static void SetDimShieldHits(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.DimShieldHits = newValue;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic == null) return;
+            logic.Set.Value.DimShieldHits = newValue;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
         }
 
         internal static bool GetDimShieldHits(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.DimShieldHits ?? false;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.DimShieldHits ?? false;
         }
 
         internal static void SetNoWarningSounds(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.NoWarningSounds = newValue;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic == null) return;
+            logic.Set.Value.NoWarningSounds = newValue;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
         }
 
         internal static bool GetSendToHud(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.SendToHud ?? false;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.SendToHud ?? false;
         }
 
         internal static void SetSendToHud(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.SendToHud = newValue;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic == null) return;
+            logic.Set.Value.SendToHud = newValue;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
         }
 
         internal static bool GetRaiseShield(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.RaiseShield ?? false;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.RaiseShield ?? false;
         }
 
         internal static void SetRaiseShield(IMyTerminalBlock block, bool newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.RaiseShield = newValue;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic == null) return;
+            logic.Set.Value.RaiseShield = newValue;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
         }
 
         internal static long GetShell(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.ShieldShell ?? 0;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.ShieldShell ?? 0;
         }
 
         internal static void SetShell(IMyTerminalBlock block, long newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.ShieldShell = newValue;
-            comp.SelectPassiveShell();
-            comp.UpdatePassiveModel();
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic?.Bus?.Field == null) return;
+            logic.Set.Value.ShieldShell = newValue;
+            logic.Bus.Field.SelectPassiveShell();
+            logic.Bus.Field.UpdatePassiveModel();
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
         }
 
         internal static long GetVisible(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.Visible ?? 0;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.Visible ?? 0;
         }
 
         internal static void SetVisible(IMyTerminalBlock block, long newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.Visible = newValue;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic == null) return;
+            logic.Set.Value.Visible = newValue;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
         }
         internal static void ListShell(List<MyTerminalControlComboBoxItem> shellList)
         {
@@ -414,8 +414,8 @@
 
         private static bool ShowReSizeCheckBoxs(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            var notStation = comp != null && !comp.Bus.IsStatic;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            var notStation = logic != null && !logic.Bus.IsStatic;
             return notStation;
         }
 
@@ -426,39 +426,39 @@
 
         internal static long GetPowerScale(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.PowerScale ?? 0;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.PowerScale ?? 0;
         }
 
         internal static void SetPowerScale(IMyTerminalBlock block, long newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.PowerScale = newValue;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic == null) return;
+            logic.Set.Value.PowerScale = newValue;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
         }
 
         internal static float GetPowerWatts(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.PowerWatts ?? 0;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.PowerWatts ?? 0;
         }
 
         internal static void SetPowerWatts(IMyTerminalBlock block, float newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.PowerWatts = (int)newValue;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic == null) return;
+            logic.Set.Value.PowerWatts = (int)newValue;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
         }
 
         internal static bool EnablePowerWatts(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return false;
-            return comp.DsSet.Settings.PowerScale != 0;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic == null) return false;
+            return logic.Set.Value.PowerScale != 0;
         }
 
         internal static void ListArmor(List<MyTerminalControlComboBoxItem> modeList)
@@ -496,23 +496,23 @@
 
         internal static bool EnableModes(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp != null;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic != null;
         }
 
         internal static long GetModes(IMyTerminalBlock block)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            return comp?.DsSet.Settings.ProtectMode ?? 0;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            return logic?.Set.Value.ProtectMode ?? 0;
         }
 
         internal static void SetModes(IMyTerminalBlock block, long newValue)
         {
-            var comp = block?.GameLogic?.GetAs<Controllers>();
-            if (comp == null) return;
-            comp.DsSet.Settings.ProtectMode = newValue;
-            comp.SettingsUpdated = true;
-            comp.ClientUiUpdate = true;
+            var logic = block?.GameLogic?.GetAs<Controllers>();
+            if (logic == null) return;
+            logic.Set.Value.ProtectMode = newValue;
+            logic.SettingsUpdated = true;
+            logic.ClientUiUpdate = true;
         }
         #endregion
     }

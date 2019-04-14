@@ -7,13 +7,13 @@ using VRage;
 
 namespace DefenseSystems
 {
-    public partial class Bus
+    internal partial class Bus
     {
         public void SortAndAddBlock<T>(T block)
         {
             var controller = block as Controllers;
             var emitter = block as Emitters;
-            var regen = block as BlockRegen;
+            var regen = block as Regen;
 
             if (controller != null && !SortedControllers.Add(controller)) return;
             if (emitter != null && !SortedEmitters.Add(emitter)) return;
@@ -26,7 +26,7 @@ namespace DefenseSystems
         {
             var controller = block as Controllers;
             var emitter = block as Emitters;
-            var regen = block as BlockRegen;
+            var regen = block as Regen;
 
             if (controller != null && !SortedControllers.Remove(controller)) return;
             if (emitter != null && !SortedEmitters.Remove(emitter)) return;
@@ -57,7 +57,7 @@ namespace DefenseSystems
                     UpdateNetworks(emitter.MyCube, LogicState.Leave);
                 }
 
-                var regen = b as BlockRegen;
+                var regen = b as Regen;
                 if (regen != null && regen.MyCube.CubeGrid == grid)
                 {
                     Log.Line($"[EmitterSubSplit] - cId:{regen.MyCube.EntityId} - left BusId:{Spine.EntityId} - iMaster:{regen == ActiveRegen}");
@@ -112,7 +112,7 @@ namespace DefenseSystems
                         break;
                 }
             }
-            var regen = type as BlockRegen;
+            var regen = type as Regen;
             if (regen != null)
             {
                 switch (state)
@@ -136,7 +136,7 @@ namespace DefenseSystems
         {
             var controller = type as Controllers;
             var emitter = type as Emitters;
-            var regen = type as BlockRegen;
+            var regen = type as Regen;
 
             if (controller != null)
             {
@@ -159,6 +159,9 @@ namespace DefenseSystems
 
                         ActiveController = newMaster;
                         break;
+                    case LogicState.Init:
+                        ActiveController = controller;
+                        break;
                 }
             }
             else if (emitter != null)
@@ -169,8 +172,9 @@ namespace DefenseSystems
                     case LogicState.Join:
                         newMaster = SortedEmitters.Max;
                         if (ActiveEmitter == newMaster) return;
-                        Log.Line($"[J-Emitter Elect] - [iMaster {newMaster == emitter}] - state:{state} - myId:{emitter.MyCube.EntityId}");
                         ActiveEmitter = newMaster;
+                        Log.Line($"[J-Emitter Elect] - [iMaster {newMaster == emitter}] - mode:{EmitterMode} - state:{state} - myId:{emitter.MyCube.EntityId}");
+
                         break;
                     case LogicState.Leave:
                         var keepMaster = !(ActiveEmitter == null || ActiveEmitter.MyCube.Closed || !ActiveEmitter.MyCube.InScene || ActiveEmitter == emitter);
@@ -181,13 +185,17 @@ namespace DefenseSystems
                         Log.Line($"[L-Emitter Elect] - [iMaster {newMaster == emitter}] - state:{state} - myId:{emitter.MyCube.EntityId}");
                         ActiveEmitter = newMaster;
                         break;
+                    case LogicState.Init:
+                        ActiveEmitter = emitter;
+                        Field.SetEmitterMode();
+                        break;
                 }
-                EmitterEvent = true;
+                Field.EmitterEvent = true;
                 ActiveEmitterId = ActiveEmitter?.MyCube?.EntityId ?? 0;
             }
             else if (regen != null)
             {
-                BlockRegen newMaster;
+                Regen newMaster;
                 switch (state)
                 {
                     case LogicState.Join:
@@ -205,6 +213,9 @@ namespace DefenseSystems
                         Log.Line($"[L-Regen Elect] - [iMaster {newMaster == regen}] - state:{state} - myId:{regen.MyCube.EntityId}");
                         ActiveRegen = newMaster;
                         break;
+                    case LogicState.Init:
+                        ActiveRegen = regen;
+                        break;
                 }
             }
         }
@@ -214,7 +225,7 @@ namespace DefenseSystems
             var cube = type as MyCubeBlock;
             var controller = cube?.GameLogic as Controllers;
             var emitter = cube?.GameLogic as Emitters;
-            var regen = cube?.GameLogic as BlockRegen;
+            var regen = cube?.GameLogic as Regen;
 
             var newSplit = false;
 
@@ -271,13 +282,8 @@ namespace DefenseSystems
         {
             if (BlockChanged)
             {
-                var tick = Session.Instance.Tick;
                 BlockEvent = true;
-                ActiveController.ShapeEvent = true;
-
-                LosCheckTick = tick + 1800;
-                if (BlockAdded) ActiveController.ShapeTick = tick + 300;
-                else ActiveController.ShapeTick = tick + 1800;
+                Field.ShapeCheck(BlockAdded);
             }
             if (FunctionalChanged) FunctionalEvent = true;
 
@@ -294,7 +300,7 @@ namespace DefenseSystems
         {
             if (BlockEvent)
             {
-                var notReady = !FuncTask.IsComplete || ActiveController.DsState.State.Sleeping || ActiveController.DsState.State.Suspended;
+                var notReady = !FuncTask.IsComplete || ActiveController.State.Value.Sleeping || ActiveController.State.Value.Suspended;
                 if (notReady) return;
                 if (FunctionalEvent) FunctionalBlockChanged(backGround);
                 BlockEvent = false;

@@ -6,7 +6,7 @@ using VRage.ModAPI;
 
 namespace DefenseSystems
 {
-    public partial class BlockRegen
+    public partial class Regen
     {
         private bool ResetEntity()
         {

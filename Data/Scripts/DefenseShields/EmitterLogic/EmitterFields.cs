@@ -52,13 +52,6 @@ namespace DefenseSystems
         private bool _bInit;
         private bool _aInit;
 
-        public enum EmitterType
-        {
-            Station,
-            Large,
-            Small,
-        }
-
         internal bool IsAfterInited
         {
             get { return _aInit; }
@@ -77,7 +70,6 @@ namespace DefenseSystems
         internal Registry Registry { get; set; } = new Registry();
 
         internal IMyUpgradeModule Emitter { get; set; }
-        internal EmitterType EmitterMode { get; set; }
         internal MyCubeGrid LocalGrid { get; set; }
         internal MyCubeBlock MyCube { get; set; }
 

@@ -29,7 +29,7 @@
                 Log.Line($"Logging Started: Server:{IsServer} - Dedicated:{DedicatedServer} - MpActive:{MpActive}");
 
                 MyAPIGateway.Session.DamageSystem.RegisterBeforeDamageHandler(0, CheckDamage);
-                MyAPIGateway.Session.DamageSystem.RegisterAfterDamageHandler(int.MaxValue, AfterDamage);
+                //MyAPIGateway.Session.DamageSystem.RegisterAfterDamageHandler(int.MaxValue, AfterDamage);
 
                 MyAPIGateway.Multiplayer.RegisterMessageHandler(PACKET_ID, ReceivedPacket);
 
@@ -90,31 +90,33 @@
                 var onCount = 0;
                 for (int i = 0; i < compCount; i++)
                 {
-                    var s = AllControllers[i];
-                    if (s.DsState.State.Suspended) continue;
+                    var c = AllControllers[i];
+                    if (c.State.Value.Suspended || c.Bus?.Field == null) continue;
+                    var b = c.Bus;
+                    var f = b.Field;
 
-                    if (s.KineticCoolDown > -1)
+                    if (f.KineticCoolDown > -1)
                     {
-                        s.KineticCoolDown++;
-                        if (s.KineticCoolDown == 6) s.KineticCoolDown = -1;
+                        f.KineticCoolDown++;
+                        if (f.KineticCoolDown == 6) f.KineticCoolDown = -1;
                     }
 
-                    if (s.EnergyCoolDown > -1)
+                    if (f.EnergyCoolDown > -1)
                     {
-                        s.EnergyCoolDown++;
-                        if (s.EnergyCoolDown == 9) s.EnergyCoolDown = -1;
+                        f.EnergyCoolDown++;
+                        if (f.EnergyCoolDown == 9) f.EnergyCoolDown = -1;
                     }
 
-                    if (!s.WarmedUp || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterLos) continue;
+                    if (!c.WarmedUp || c.State.Value.Lowered || c.State.Value.Sleeping || c.State.Value.Suspended || !c.State.Value.EmitterLos) continue;
 
-                    var sp = new BoundingSphereD(s.DetectionCenter, s.BoundingRange);
+                    var sp = new BoundingSphereD(f.DetectionCenter, f.BoundingRange);
                     if (!MyAPIGateway.Session.Camera.IsInFrustum(ref sp))
                     {
                         SphereOnCamera[i] = false;
                         continue;
                     }
                     SphereOnCamera[i] = true;
-                    if (!s.Icosphere.ImpactsFinished) onCount++;
+                    if (!f.Icosphere.ImpactsFinished) onCount++;
                 }
 
                 if (onCount >= OnCount)
@@ -126,25 +128,28 @@
 
                 for (int i = 0; i < compCount; i++)
                 {
-                    var s = AllControllers[i];
-                    var drawSuspended = !s.WarmedUp || s.DsState.State.Lowered || s.DsState.State.Sleeping || s.DsState.State.Suspended || !s.DsState.State.EmitterLos;
+                    var c = AllControllers[i];
+                    if (c.Bus?.Field == null) continue;
+                    var b = c.Bus;
+                    var f = b.Field;
+                    var drawSuspended = !c.WarmedUp || c.State.Value.Lowered || c.State.Value.Sleeping || c.State.Value.Suspended || !c.State.Value.EmitterLos;
 
                     if (drawSuspended) continue;
 
-                    if (s.DsState.State.Online)
+                    if (c.State.Value.Online)
                     {
-                        if (SphereOnCamera[i]) s.Draw(OnCount, SphereOnCamera[i]);
-                        else if (s.Icosphere.ImpactsFinished)
+                        if (SphereOnCamera[i]) f.Draw(OnCount, SphereOnCamera[i]);
+                        else if (f.Icosphere.ImpactsFinished)
                         {
-                            if (s.WorldImpactPosition != Vector3D.NegativeInfinity)
+                            if (f.WorldImpactPosition != Vector3D.NegativeInfinity)
                             {
-                                s.Draw(OnCount, true);
-                                s.Icosphere.ImpactPosState = Vector3D.NegativeInfinity;
+                                f.Draw(OnCount, true);
+                                f.Icosphere.ImpactPosState = Vector3D.NegativeInfinity;
                             }
                         }
-                        else s.Icosphere.StepEffects();
+                        else f.Icosphere.StepEffects();
                     }
-                    else if (s.WarmedUp && SphereOnCamera[i]) s.DrawShieldDownIcon();
+                    else if (c.WarmedUp && SphereOnCamera[i]) f.DrawShieldDownIcon();
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
@@ -182,8 +187,12 @@
         public override void UpdateAfterSimulation()
         {
             lock (ActiveProtection)
-                foreach (var s in ActiveProtection)
-                    if (s.ShieldIsMobile && !s.Asleep && s.DsState.State.ProtectMode != 2) s.MobileUpdate();
+                foreach (var c in ActiveProtection)
+                {
+                    var b = c.Bus;
+                    var f = b.Field;
+                    if (f.ShieldIsMobile && !c.Asleep && c.State.Value.ProtectMode != 2) f.MobileUpdate();
+                }
             _autoResetEvent.Set();
         }
         #endregion

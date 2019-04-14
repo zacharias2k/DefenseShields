@@ -55,7 +55,7 @@ namespace DefenseSystems
                     if (Bus.ActiveEmitter != null || Bus.ActiveRegen != null)
                     {
                         NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
-                        if (Bus.ActiveController != null && Bus.ActiveController.Warming) _bCount++;
+                        if (Bus.ActiveController != null && Bus.Field.Warming) _bCount++;
                     }
                 }
                 else _readyToSync = true;
@@ -69,21 +69,21 @@ namespace DefenseSystems
             try
             {
                 if (!EntityAlive()) return;
-                var fieldMode = DsState.State.ProtectMode != 2;
+                var fieldMode = State.Value.ProtectMode != 2;
 
                 var protect = ProtectionOn(fieldMode);
-                if (protect != State.Active)
+                if (protect != Status.Active)
                 {
-                    if (_tick1800 && Bus.ActiveController == this) Log.Line($"NotActive: {protect} - {Bus.MyResourceDist.SourcesEnabled} - {Bus.MyResourceDist.ResourceStateByType(GId)} - {Bus.MyResourceDist.MaxAvailableResourceByType(GId)} - {_shieldMaintaintPower} - {ShieldCurrentPower} - {_sink.CurrentInputByType(GId)}");
+                    if (Bus.Tick1800 && Bus.ActiveController == this) Log.Line($"NotActive: {protect} - {Bus.MyResourceDist.SourcesEnabled} - {Bus.MyResourceDist.ResourceStateByType(GId)} - {Bus.MyResourceDist.MaxAvailableResourceByType(GId)} - {SinkCurrentPower} - {Sink.CurrentInputByType(GId)}");
                     if (NotFailed)
                     {
                         if (Session.Enforced.Debug >= 2) Log.Line($"FailState: {protect} - ControllerId [{Controller.EntityId}]");
                         if (fieldMode)
                         {
-                            var up = protect != State.Lowered;
-                            var awake = protect != State.Sleep;
+                            var up = protect != Status.Lowered;
+                            var awake = protect != Status.Sleep;
                             var clear = up && awake;
-                            OfflineShield(clear, up, protect);
+                            Bus.Field.OfflineShield(clear, up, protect);
                         }
                         else
                         {
@@ -92,23 +92,23 @@ namespace DefenseSystems
                             //other stuff
                         }
                     }
-                    else if (DsState.State.Message) ProtChangedState();
+                    else if (State.Value.Message) ProtChangedState();
                     return;
                 }
-                if (!_isServer || !DsState.State.Online) return;
-                if (_comingOnline) ComingOnline();
-                if (_mpActive && (_forceBufferSync || _count == 29))
+                if (!_isServer || !State.Value.Online) return;
+                if (Bus.Starting) ComingOnline();
+                if (_mpActive && (Bus.Field.ForceBufferSync || Bus.Count == 29))
                 {
-                    var newPercentColor = UtilsStatic.GetShieldColorFromFloat(DsState.State.ShieldPercent);
-                    if (_forceBufferSync || newPercentColor != _oldPercentColor)
+                    var newPercentColor = UtilsStatic.GetShieldColorFromFloat(State.Value.ShieldPercent);
+                    if (Bus.Field.ForceBufferSync || newPercentColor != _oldPercentColor)
                     {
                         ProtChangedState();
                         _oldPercentColor = newPercentColor;
-                        _forceBufferSync = false;
+                        Bus.Field.ForceBufferSync = false;
                     }
-                    else if (_tick1800) ProtChangedState();
+                    else if (Bus.Tick1800) ProtChangedState();
                 }
-                if (Session.Instance.EmpWork.EventRunning) AbsorbEmp();
+                if (Session.Instance.EmpWork.EventRunning) Bus.Field.AbsorbEmp();
             }
             catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation: {ex}"); }
         }
@@ -119,8 +119,8 @@ namespace DefenseSystems
             {
                 if (Controller.Storage != null)
                 {
-                    DsState.SaveState();
-                    DsSet.SaveSettings();
+                    State.SaveState();
+                    Set.SaveSettings();
                 }
             }
             return false;
@@ -140,16 +140,16 @@ namespace DefenseSystems
 
                 if (Bus != null && Bus.SubGrids.Contains(LocalGrid))
                 {
-                    if (Bus.ActiveController == this) OfflineShield(true, false, State.Other, true);
+                    if (Bus.ActiveController == this && Bus.Field != null) Bus.Field.OfflineShield(true, false, Status.Other, true);
                     Registry.RegisterWithBus(this, LocalGrid, false, Bus, out Bus);
                 }
 
-                InitEntities(false);
+                //InitEntities(false);
                 IsWorking = false;
                 IsFunctional = false;
-                _shellPassive?.Render?.RemoveRenderObjects();
-                _shellActive?.Render?.RemoveRenderObjects();
-                ShieldEnt?.Render?.RemoveRenderObjects();
+                //Bus.ShellPassive?.Render?.RemoveRenderObjects();
+                //Bus.ShellActive?.Render?.RemoveRenderObjects();
+                //Bus.ShieldEnt?.Render?.RemoveRenderObjects();
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }
@@ -173,7 +173,11 @@ namespace DefenseSystems
 
                 if (Bus != null && Bus.SubGrids.Contains(LocalGrid))
                 {
-                    if (Bus.ActiveController == this) OfflineShield(true, false, State.Other, true);
+                    if (Bus.ActiveController == this && Bus.Field != null)
+                    {
+                        Bus.Field.OfflineShield(true, false, Status.Other, true);
+                        Bus.Field.Run(false);
+                    }
                     Registry.RegisterWithBus(this, LocalGrid, false, Bus, out Bus);
                 }
 
@@ -182,9 +186,8 @@ namespace DefenseSystems
 
                 if (Session.Instance.FunctionalShields.ContainsKey(this)) Session.Instance.FunctionalShields.TryRemove(this, out value1);
 
-                Icosphere = null;
-                InitEntities(false);
-                MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(_ellipsoidOxyProvider);
+                //Icosphere = null;
+                //InitEntities(false);
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
         }

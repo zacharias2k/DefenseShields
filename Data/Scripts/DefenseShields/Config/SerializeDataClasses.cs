@@ -436,11 +436,11 @@
         public override bool Received(bool isServer)
         {
             if (isServer || Entity?.GameLogic == null) return false;
-            var shield = Entity.GameLogic.GetAs<Controllers>();
-            if (shield == null) return false;
+            var bus = Entity.GameLogic.GetAs<Controllers>().Bus;
+            if (bus.Field == null) return false;
 
             var attacker = MyEntities.GetEntityById(State.AttackerId);
-            shield.ShieldHits.Add(new ShieldHit(attacker, State.Amount, MyStringHash.GetOrCompute(State.DamageType), State.HitPos));
+            bus.Field.ShieldHits.Add(new ShieldHit(attacker, State.Amount, MyStringHash.GetOrCompute(State.DamageType), State.HitPos));
             return false;
         }
     }

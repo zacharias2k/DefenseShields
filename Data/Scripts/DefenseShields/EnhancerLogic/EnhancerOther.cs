@@ -219,7 +219,7 @@ namespace DefenseSystems
         {
             stringBuilder.Append("[Controller Link]: False");
         }
-        else if (!EnhState.State.Backup && Bus.ActiveController.ShieldMode == Controllers.ShieldType.Station)
+        else if (!EnhState.State.Backup && Bus.EmitterMode == Bus.EmitterModes.Station)
         {
             stringBuilder.Append("[Online]: " + EnhState.State.Online +
                                  "\n" +

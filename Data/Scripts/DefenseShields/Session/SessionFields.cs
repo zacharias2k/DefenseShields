@@ -63,7 +63,7 @@
 
         internal readonly ConcurrentDictionary<long, IMyPlayer> Players = new ConcurrentDictionary<long, IMyPlayer>();
 
-        internal readonly ConcurrentQueue<Controllers> WebWrapper = new ConcurrentQueue<Controllers>();
+        internal readonly ConcurrentQueue<Fields> WebWrapper = new ConcurrentQueue<Fields>();
 
         internal readonly ConcurrentQueue<IThreadEvent> ThreadEvents = new ConcurrentQueue<IThreadEvent>();
 
@@ -72,7 +72,7 @@
         internal readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         internal readonly Dictionary<MyEntity, MyProtectors> GlobalProtect = new Dictionary<MyEntity, MyProtectors>();
 
-        internal HashSet<BlockRegen> Regens = new HashSet<BlockRegen>();
+        internal HashSet<Regen> Regens = new HashSet<Regen>();
         internal readonly HashSet<Controllers> ActiveProtection = new HashSet<Controllers>();
         internal readonly ConcurrentDictionary<Controllers, bool> FunctionalShields = new ConcurrentDictionary<Controllers, bool>();
 
@@ -290,7 +290,7 @@
         internal bool LogServer { get; set; }
         internal bool LogFullReport { get; set; }
         internal bool FirstLoop { get; set; }
-        internal Controllers HudComp { get; set; }
+        internal Fields HudComp { get; set; }
         internal DSUtils Dsutil1 { get; set; } = new DSUtils();
         internal Perf Perf { get; set; } = new Perf();
         internal TapiBackend BTapi { get; set; } = new TapiBackend();

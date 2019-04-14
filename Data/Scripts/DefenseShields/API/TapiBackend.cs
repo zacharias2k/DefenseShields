@@ -85,93 +85,106 @@ namespace DefenseSystems
         // ModApi only methods below
         private static Vector3D? TAPI_RayAttackShield(IMyTerminalBlock block, RayD ray, long attackerId, float damage, bool energy = false)
         {
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            if (logic == null) return null;
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null) return null;
+            var a = b.ActiveController;
+            var f = b.Field;
 
-            var intersectDist = CustomCollision.IntersectEllipsoid(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, ray);
+            var intersectDist = CustomCollision.IntersectEllipsoid(b.Field.DetectMatrixOutsideInv, b.Field.DetectMatrixOutside, ray);
             if (!intersectDist.HasValue) return null;
             var ellipsoid = intersectDist ?? 0;
             var hitPos = ray.Position + (ray.Direction * -ellipsoid);
 
-            if (energy) damage *= logic.DsState.State.ModulateKinetic;
-            else damage *= logic.DsState.State.ModulateEnergy;
+            if (energy) damage *= a.State.Value.ModulateKinetic;
+            else damage *= a.State.Value.ModulateEnergy;
 
             if (Session.Instance.MpActive)
             {
                 var damageType = energy ? Session.Instance.MPEnergy : Session.Instance.MPKinetic;
-                logic.AddShieldHit(attackerId, damage, damageType, null, true, hitPos);
+                f.AddShieldHit(attackerId, damage, damageType, null, true, hitPos);
             }
             else
             {
-                logic.ImpactSize = damage;
-                logic.WorldImpactPosition = hitPos;
+                b.Field.ImpactSize = damage;
+                f.WorldImpactPosition = hitPos;
             }
-            logic.WebDamage = true;
-            logic.Absorb += damage;
+            f.WebDamage = true;
+            f.Absorb += damage;
 
             return hitPos;
         }
 
         private static bool TAPI_PointAttackShield(IMyTerminalBlock block, Vector3D pos, long attackerId, float damage, bool energy = false)
         {
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            if (logic == null) return false;
-            var hit = CustomCollision.PointInShield(pos, logic.DetectMatrixOutsideInv);
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null) return false;
+            var a = b.ActiveController;
+            var f = b.Field;
+
+            var hit = CustomCollision.PointInShield(pos, f.DetectMatrixOutsideInv);
             if (!hit) return false;
 
-            if (energy) damage *= logic.DsState.State.ModulateKinetic;
-            else damage *= logic.DsState.State.ModulateEnergy;
+            if (energy) damage *= a.State.Value.ModulateKinetic;
+            else damage *= a.State.Value.ModulateEnergy;
 
             if (Session.Instance.MpActive)
             {
                 var damageType = energy ? Session.Instance.MPEnergy : Session.Instance.MPKinetic;
-                logic.AddShieldHit(attackerId, damage, damageType, null, true, pos);
+                f.AddShieldHit(attackerId, damage, damageType, null, true, pos);
             }
             else
             {
-                logic.ImpactSize = damage;
-                logic.WorldImpactPosition = pos;
+                f.ImpactSize = damage;
+                f.WorldImpactPosition = pos;
             }
 
-            logic.EnergyHit = energy;
-            logic.WebDamage = true;
-            logic.Absorb += damage;
+            f.EnergyHit = energy;
+            f.WebDamage = true;
+            f.Absorb += damage;
 
             return true;
         }
 
         private static void TAPI_SetShieldHeat(IMyTerminalBlock block, int value)
         {
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            if (logic == null) return;
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null) return;
+            var a = b.ActiveController;
+            var f = b.Field;
 
-            logic.DsState.State.Heat = value;
+            a.State.Value.Heat = value;
         }
 
         private static void TAPI_OverLoadShield(IMyTerminalBlock block)
         {
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            if (logic == null) return;
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null) return;
+            var a = b.ActiveController;
+            var f = b.Field;
 
-            logic.DsState.State.Charge = -(logic.ShieldMaxCharge * 2);
+            a.State.Value.Charge = -(f.ShieldMaxCharge * 2);
         }
 
 
         private static void TAPI_SetCharge(IMyTerminalBlock block, float value)
         {
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            if (logic == null) return;
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null) return;
+            var a = b.ActiveController;
+            var f = b.Field;
 
-            logic.DsState.State.Charge = value;
+            a.State.Value.Charge = value;
         }
 
         // ModApi and PB methods below.
         private static Vector3D? TAPI_RayIntersectShield(IMyTerminalBlock block, RayD ray)
         {
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            if (logic == null) return null;
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null) return null;
+            var a = b.ActiveController;
+            var f = b.Field;
 
-            var intersectDist = CustomCollision.IntersectEllipsoid(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, ray);
+            var intersectDist = CustomCollision.IntersectEllipsoid(f.DetectMatrixOutsideInv, f.DetectMatrixOutside, ray);
             if (!intersectDist.HasValue) return null;
             var ellipsoid = intersectDist ?? 0;
             return ray.Position + (ray.Direction * -ellipsoid);
@@ -179,61 +192,77 @@ namespace DefenseSystems
 
         private static bool TAPI_PointInShield(IMyTerminalBlock block, Vector3D pos)
         {
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            return logic != null && CustomCollision.PointInShield(pos, logic.DetectMatrixOutsideInv);
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null) return false;
+            var a = b.ActiveController;
+            var f = b.Field;
+
+            return CustomCollision.PointInShield(pos, f.DetectMatrixOutsideInv);
         }
 
         private static float TAPI_GetShieldPercent(IMyTerminalBlock block)
         {
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            if (logic == null) return -1;
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null) return -1;
+            var a = b.ActiveController;
+            var f = b.Field;
 
-            return logic.DsState.State.ShieldPercent;
+            return a.State.Value.ShieldPercent;
         }
 
         private static int TAPI_GetShieldHeatLevel(IMyTerminalBlock block)
         {
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            if (logic == null) return -1;
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null) return -1;
+            var a = b.ActiveController;
+            var f = b.Field;
 
-            return logic.DsState.State.Heat;
+            return a.State.Value.Heat;
         }
 
         private static int TAPI_HpToChargeRatio(IMyTerminalBlock block)
         {
-            return Controllers.ConvToHp;
+            return Fields.ConvToHp;
         }
 
         private static float TAPI_GetChargeRate(IMyTerminalBlock block)
         {
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            if (logic == null) return -1;
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null) return -1;
+            var a = b.ActiveController;
+            var f = b.Field;
 
-            return logic.ShieldChargeRate * Controllers.ConvToDec;
+            return f.ShieldChargeRate * Fields.ConvToDec;
         }
 
         private static float TAPI_GetMaxCharge(IMyTerminalBlock block)
         {
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            if (logic == null) return -1;
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null) return -1;
+            var a = b.ActiveController;
+            var f = b.Field;
 
-            return logic.ShieldMaxCharge;
+            return f.ShieldMaxCharge;
         }
 
         private static float TAPI_GetCharge(IMyTerminalBlock block)
         {
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            if (logic == null) return -1;
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null) return -1;
+            var a = b.ActiveController;
+            var f = b.Field;
 
-            return logic.DsState.State.Charge;
+            return a.State.Value.Charge;
         }
 
         private static float TAPI_GetPowerUsed(IMyTerminalBlock block)
         {
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            if (logic == null) return -1;
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null) return -1;
+            var a = b.ActiveController;
+            var f = b.Field;
 
-            return logic.ShieldCurrentPower;
+            return a.SinkPower;
         }
 
         private static float TAPI_GetPowerCap(IMyTerminalBlock block)
@@ -243,35 +272,43 @@ namespace DefenseSystems
 
         private static float TAPI_GetMaxHpCap(IMyTerminalBlock block)
         {
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            if (logic == null) return -1;
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null) return -1;
+            var a = b.ActiveController;
+            var f = b.Field;
 
-            return logic.ShieldHpBase * Controllers.ConvToDec;
+            return f.ShieldHpBase * Fields.ConvToDec;
         }
 
         private static bool TAPI_IsShieldUp(IMyTerminalBlock block)
         {
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            if (logic == null) return false;
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null) return false;
+            var a = b.ActiveController;
+            var f = b.Field;
 
-            return logic.DsState.State.Online;
+            return a.State.Value.Online;
         }
 
         private static string TAPI_ShieldStatus(IMyTerminalBlock block)
         {
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            if (logic == null) return string.Empty;
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null) return string.Empty;
+            var a = b.ActiveController;
+            var f = b.Field;
 
-            return logic.GetShieldStatus();
+            return a.GetShieldStatus();
         }
 
         private static bool TAPI_EntityBypass(IMyTerminalBlock block, IMyEntity entity, bool remove)
         {
             var ent = (MyEntity)entity;
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            if (logic == null || ent == null) return false;
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null || ent == null) return false;
+            var a = b.ActiveController;
+            var f = b.Field;
 
-            var success = remove ? logic.EntityBypass.Remove(ent) : logic.EntityBypass.Add(ent);
+            var success = remove ? f.EntityBypass.Remove(ent) : f.EntityBypass.Add(ent);
 
             return success;
         }
@@ -285,7 +322,7 @@ namespace DefenseSystems
 
             if (Session.Instance.GlobalProtect.TryGetValue(myGrid, out protectors))
             {
-                foreach (var s in protectors.Shields)
+                foreach (var s in protectors.Controllers)
                 {
                     if (s.Bus.SubGrids.Contains(myGrid)) return true;
                 }
@@ -301,9 +338,9 @@ namespace DefenseSystems
             var myGrid = (MyCubeGrid)grid;
             if (Session.Instance.GlobalProtect.TryGetValue(myGrid, out protectors))
             {
-                foreach (var s in protectors.Shields)
+                foreach (var s in protectors.Controllers)
                 {
-                    if (s.Bus.SubGrids.Contains(myGrid) && s.DsState.State.Online) return true;
+                    if (s.Bus.SubGrids.Contains(myGrid) && s.State.Value.Online) return true;
                 }
             }
             return false;
@@ -317,9 +354,9 @@ namespace DefenseSystems
             var ent = (MyEntity)entity;
             if (Session.Instance.GlobalProtect.TryGetValue(ent, out protectors))
             {
-                foreach (var s in protectors.Shields)
+                foreach (var s in protectors.Controllers)
                 {
-                    if (s.DsState.State.Online) return true;
+                    if (s.State.Value.Online) return true;
                 }
             }
             return false;
@@ -335,7 +372,7 @@ namespace DefenseSystems
             if (Session.Instance.GlobalProtect.TryGetValue(ent, out protectors))
             {
                 Controllers firstShield = null;
-                foreach (var s in protectors.Shields)
+                foreach (var s in protectors.Controllers)
                 {
                     if (firstShield == null) firstShield = s;
                     if (s.Bus.SubGrids.Contains(grid)) return s.MyCube as IMyTerminalBlock;
@@ -359,9 +396,10 @@ namespace DefenseSystems
             {
                 foreach (var s in Session.Instance.ActiveProtection)
                 {
-                    if (Vector3D.DistanceSquared(s.DetectionCenter, pos) > Session.Instance.SyncDistSqr) continue;
+                    if (s.Bus?.Field == null) continue;
+                    if (Vector3D.DistanceSquared(s.Bus.Field.DetectionCenter, pos) > Session.Instance.SyncDistSqr) continue;
 
-                    var sDist = CustomCollision.EllipsoidDistanceToPos(s.DetectMatrixOutsideInv, s.DetectMatrixOutside, pos);
+                    var sDist = CustomCollision.EllipsoidDistanceToPos(s.Bus.Field.DetectMatrixOutsideInv, s.Bus.Field.DetectMatrixOutside, pos);
                     if (sDist > 0 && sDist < closestDist)
                     {
                         cloestSBlock = s.MyCube;
@@ -374,18 +412,22 @@ namespace DefenseSystems
 
         private static double TAPI_GetDistanceToShield(IMyTerminalBlock block, Vector3D pos)
         {
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            if (logic == null) return -1;
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null) return -1;
+            var a = b.ActiveController;
+            var f = b.Field;
 
-            return CustomCollision.EllipsoidDistanceToPos(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, pos);
+            return CustomCollision.EllipsoidDistanceToPos(f.DetectMatrixOutsideInv, f.DetectMatrixOutside, pos);
         }
 
         private static Vector3D? TAPI_GetClosestShieldPoint(IMyTerminalBlock block, Vector3D pos)
         {
-            var logic = block?.GameLogic?.GetAs<Controllers>()?.Bus?.ActiveController;
-            if (logic == null) return null;
+            var b = block?.GameLogic?.GetAs<Controllers>()?.Bus;
+            if (b?.Field == null || b.ActiveController == null) return null;
+            var a = b.ActiveController;
+            var f = b.Field;
 
-            return CustomCollision.ClosestEllipsoidPointToPos(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, pos);
+            return CustomCollision.ClosestEllipsoidPointToPos(f.DetectMatrixOutsideInv, f.DetectMatrixOutside, pos);
         }
 
         // PB overloads

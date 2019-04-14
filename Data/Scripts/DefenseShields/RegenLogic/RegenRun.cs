@@ -9,7 +9,7 @@ using VRage.ModAPI;
 namespace DefenseSystems
 {
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "Emitter1x1LA", "Emitter1x1SA")]
-    public partial class BlockRegen : MyGameLogicComponent
+    public partial class Regen : MyGameLogicComponent
     {
         public override void OnAddedToContainer()
         {
@@ -54,14 +54,20 @@ namespace DefenseSystems
             _100Tick = Session.Instance.Tick;
             if (Bus.Regening && !Bus.CheckIntegrity && _100Tick > _lastTick + 10)
             {
+                Bus.HitBlocks.ApplyAdditions();
+                DsUtil1.Sw.Restart();
                 var i = 0;
-                while (i < Bus.QueuedBlocks.Count)
+                foreach (var hitBlock in Bus.HitBlocks)
                 {
-                    if (Bus.DamagedBlocks.Count >= MaxBlocksHealedPerCycle) break;
-                    BlockIntegrity(Bus.QueuedBlocks.Dequeue());
+                    if (i >= MaxBlocksHealedPerCycle) break;
+                    BlockIntegrity(hitBlock);
+                    Bus.HitBlocks.Remove(hitBlock);
+                    i++;
                 }
+                DsUtil1.StopWatchReport("test", -1);
+                Bus.HitBlocks.ApplyRemovals();
                 UpdateGen();
-                Bus.Regening = false;
+                if (Bus.HitBlocks.Count == 0) Bus.Regening = false;
             }
         }
 

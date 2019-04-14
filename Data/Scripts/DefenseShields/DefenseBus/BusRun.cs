@@ -4,7 +4,7 @@ using VRage.Game.Entity;
 
 namespace DefenseSystems
 {
-    public partial class Bus : MyEntityComponentBase
+    internal partial class Bus : MyEntityComponentBase
     {
         public void Init(bool reset = false)
         {
@@ -13,18 +13,20 @@ namespace DefenseSystems
             ActiveEmitter = SortedEmitters.Max;
             ActiveController = SortedControllers.Max;
             ActiveRegen = SortedRegens.Max;
-
-            UpdateLogicMasters(ActiveEmitter, LogicState.Active);
-            UpdateLogicMasters(ActiveController, LogicState.Active);
-            UpdateLogicMasters(ActiveRegen, LogicState.Active);
+            UpdateLogicMasters(ActiveEmitter, LogicState.Init);
+            UpdateLogicMasters(ActiveController, LogicState.Init);
+            UpdateLogicMasters(ActiveRegen, LogicState.Init);
             var busHealthy = Spine != null && ActiveController != null && (ActiveEmitter != null || ActiveRegen != null);
             if (busHealthy) Log.Line($"[BusInitComplete] - Bus:{Spine.DebugName} - ActiveController:{ActiveController.MyCube.EntityId}");
             else Log.Line($"[BusInitComplete] - Not fully populated");
+            _isServer = Session.Instance.IsServer;
+            _isDedicated = Session.Instance.DedicatedServer;
+            _mpActive = Session.Instance.MpActive;
             Inited = true;
             return;
         }
 
-        public void Split(MyEntity type, Bus.LogicState state)
+        internal void Split(MyEntity type, Bus.LogicState state)
         {
             Log.Line("[Bus Has Split--]");
             OnBusSplit?.Invoke(type, state);

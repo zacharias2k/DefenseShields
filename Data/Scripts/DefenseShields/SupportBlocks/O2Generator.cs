@@ -298,7 +298,7 @@
             var sendMessage = false;
             if (MyAPIGateway.Session?.Player?.Character?.WorldVolume != null)
             {
-                if (Bus.ActiveController.ShieldSphere.Intersects(MyAPIGateway.Session.Player.Character.WorldVolume)) sendMessage = true;
+                if (Bus.Field.ShieldSphere.Intersects(MyAPIGateway.Session.Player.Character.WorldVolume)) sendMessage = true;
             }
 
             /*
@@ -328,7 +328,7 @@
             if (!_doorsStage1)
             {
                 Doors.Clear();
-                foreach (var grid in Bus.ActiveController.ProtectedEntCache.Keys)
+                foreach (var grid in Bus.Field.ProtectedEntCache.Keys)
                 {
                     if (!(grid is MyCubeGrid)) continue;
                     foreach (var myCube in ((MyCubeGrid)grid).GetFatBlocks())
@@ -400,9 +400,8 @@
 
         private void Pressurize()
         {
-            var bus = Bus;
-            var shieldFullVol = bus.ShieldVolume;
-            var startingO2Fpercent = bus.DefaultO2 + bus.ActiveController.DsState.State.IncreaseO2ByFPercent;
+            var shieldFullVol = Bus.Field.ShieldVolume;
+            var startingO2Fpercent = Bus.Field.DefaultO2 + Bus.ActiveController.State.Value.IncreaseO2ByFPercent;
 
             if (shieldFullVol < _oldShieldVol)
             {
@@ -438,11 +437,11 @@
             if (_shieldVolFilled > shieldFullVol) _shieldVolFilled = shieldFullVol;
 
             var shieldVolPercentFull = _shieldVolFilled * 100.0;
-            var fPercentToAddToDefaultO2Level = (shieldVolPercentFull / shieldFullVol * 0.01) - bus.DefaultO2;
+            var fPercentToAddToDefaultO2Level = (shieldVolPercentFull / shieldFullVol * 0.01) - Bus.Field.DefaultO2;
 
-            bus.ActiveController.DsState.State.IncreaseO2ByFPercent = fPercentToAddToDefaultO2Level;
-            bus.O2Updated = true;
-            if (Session.Enforced.Debug == 3) Log.Line($"default:{Bus.DefaultO2} - Filled/(Max):{O2State.State.VolFilled}/({shieldFullVol}) - ShieldO2Level:{bus.ActiveController.DsState.State.IncreaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(MyAPIGateway.Session.Player.GetPosition())}");
+            Bus.ActiveController.State.Value.IncreaseO2ByFPercent = fPercentToAddToDefaultO2Level;
+            Bus.Field.O2Updated = true;
+            if (Session.Enforced.Debug == 3) Log.Line($"default:{Bus.Field.DefaultO2} - Filled/(Max):{O2State.State.VolFilled}/({shieldFullVol}) - ShieldO2Level:{Bus.ActiveController.State.Value.IncreaseO2ByFPercent} - O2Before:{MyAPIGateway.Session.OxygenProviderSystem.GetOxygenInPoint(MyAPIGateway.Session.Player.GetPosition())}");
         }
 
         private void TerminalRefresh()
@@ -462,9 +461,9 @@
                 {
                     if (Bus?.ActiveController?.Bus.Spine != MyGrid) MyGrid.Components.TryGet(out Bus);
 
-                    if (Bus?.ActiveController == null || Bus?.ActiveO2Generator != null || !Bus.ActiveController.Warming || Bus.ShieldVolume <= 0) return false;
+                    if (Bus?.ActiveController == null || Bus?.ActiveO2Generator != null || !Bus.Field.Warming || Bus.Field.ShieldVolume <= 0) return false;
                     Bus.ActiveO2Generator = this;
-                    _oldShieldVol = Bus.ShieldVolume;
+                    _oldShieldVol = Bus.Field.ShieldVolume;
                     _inventory = MyCube.GetInventory();
                 }
                 else
@@ -569,16 +568,16 @@
                 return;
             }
 
-            var conState = Bus.ActiveController.DsState.State;
-            var o2Level = conState.IncreaseO2ByFPercent + Bus.DefaultO2;
-            var o2Change = !o2State.VolFilled.Equals(_shieldVolFilled) || !o2State.DefaultO2.Equals(Bus.DefaultO2) || !o2State.ShieldVolume.Equals(Bus.ShieldVolume) || !o2State.O2Level.Equals(o2Level);
+            var conState = Bus.ActiveController.State.Value;
+            var o2Level = conState.IncreaseO2ByFPercent + Bus.Field.DefaultO2;
+            var o2Change = !o2State.VolFilled.Equals(_shieldVolFilled) || !o2State.DefaultO2.Equals(Bus.Field.DefaultO2) || !o2State.ShieldVolume.Equals(Bus.Field.ShieldVolume) || !o2State.O2Level.Equals(o2Level);
             if (!onState && turnOn)
             {
                 o2State.Pressurized = true;
                 o2State.VolFilled = _shieldVolFilled;
-                o2State.DefaultO2 = Bus.DefaultO2;
+                o2State.DefaultO2 = Bus.Field.DefaultO2;
                 o2State.O2Level = o2Level;
-                o2State.ShieldVolume = Bus.ShieldVolume;
+                o2State.ShieldVolume = Bus.Field.ShieldVolume;
                 O2State.SaveState();
                 O2State.NetworkUpdate();
             }
@@ -586,18 +585,18 @@
             {
                 o2State.Pressurized = false;
                 o2State.VolFilled = _shieldVolFilled;
-                o2State.DefaultO2 = Bus.DefaultO2;
+                o2State.DefaultO2 = Bus.Field.DefaultO2;
                 o2State.O2Level = o2Level;
-                o2State.ShieldVolume = Bus.ShieldVolume;
+                o2State.ShieldVolume = Bus.Field.ShieldVolume;
                 O2State.SaveState();
                 O2State.NetworkUpdate();
             }
             else if (o2Change)
             {
                 o2State.VolFilled = _shieldVolFilled;
-                o2State.DefaultO2 = Bus.DefaultO2;
+                o2State.DefaultO2 = Bus.Field.DefaultO2;
                 o2State.O2Level = o2Level;
-                o2State.ShieldVolume = Bus.ShieldVolume;
+                o2State.ShieldVolume = Bus.Field.ShieldVolume;
                 O2State.SaveState();
                 O2State.NetworkUpdate();
             }

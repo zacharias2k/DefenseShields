@@ -269,15 +269,15 @@ namespace DefenseSystems.Support
         }
     }
 
-    public class ProtectCache
+    internal class ProtectCache
     {
         public uint LastTick;
         public uint RefreshTick;
         public readonly uint FirstTick;
-        public Controllers.Ent Relation;
-        public Controllers.Ent PreviousRelation;
+        public Fields.Ent Relation;
+        public Fields.Ent PreviousRelation;
 
-        public ProtectCache(uint firstTick, uint lastTick, uint refreshTick, Controllers.Ent relation, Controllers.Ent previousRelation)
+        public ProtectCache(uint firstTick, uint lastTick, uint refreshTick, Fields.Ent relation, Fields.Ent previousRelation)
         {
             FirstTick = firstTick;
             LastTick = lastTick;
@@ -287,13 +287,13 @@ namespace DefenseSystems.Support
         }
     }
 
-    public class EntIntersectInfo
+    internal class EntIntersectInfo
     {
         public BoundingBox Box;
         public uint LastTick;
         public uint RefreshTick;
         public readonly uint FirstTick;
-        public Controllers.Ent Relation;
+        public Fields.Ent Relation;
         public List<CubeAccel> CacheBlockList = new List<CubeAccel>();
         public bool RefreshNow;
         public bool EnemySafeInside;
@@ -301,7 +301,7 @@ namespace DefenseSystems.Support
         public volatile uint LastCollision;
         public volatile int ConsecutiveCollisions;
 
-        public EntIntersectInfo(bool touched, BoundingBox box, uint firstTick, uint lastTick, uint refreshTick, Controllers.Ent relation)
+        public EntIntersectInfo(bool touched, BoundingBox box, uint firstTick, uint lastTick, uint refreshTick, Fields.Ent relation)
         {
             Touched = touched;
             Box = box;
@@ -310,7 +310,7 @@ namespace DefenseSystems.Support
             RefreshTick = refreshTick;
             Relation = relation;
             RefreshNow = true;
-            if (relation == Controllers.Ent.EnemyInside) EnemySafeInside = true;
+            if (relation == Fields.Ent.EnemyInside) EnemySafeInside = true;
         }
     }
 
@@ -435,12 +435,12 @@ namespace DefenseSystems.Support
 
     public class MyProtectors
     {
-        public readonly CachingHashSet<Controllers> Shields = new CachingHashSet<Controllers>();
+        public readonly CachingHashSet<Controllers> Controllers = new CachingHashSet<Controllers>();
         public int RefreshSlot;
         public uint CreationTick;
         public uint BlockingTick;
         public bool LastAttackerWasInside;
-        public Controllers BlockingShield;
+        public Controllers BlockingController;
         public Controllers NotBubble;
         public long IgnoreAttackerId = -1;
 

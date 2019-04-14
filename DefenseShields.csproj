@@ -50,6 +50,18 @@
     <Compile Include="Data\Scripts\DefenseShields\API\ModApiWrapper.cs" />
     <Compile Include="Data\Scripts\DefenseShields\API\PbApiWrapper.cs" />
     <Compile Include="Data\Scripts\DefenseShields\API\TapiBackend.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\Armor\ArmorRun.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusAlerts.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\Field\FieldCharge.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\Field\FieldDraw.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\Field\FieldFields.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\Field\FieldHealth.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\Field\FieldNet.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\Field\FieldInit.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\Field\FieldIntersect.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\Field\FieldRun.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\Field\FieldSupport.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\Field\FieldWeb.cs" />
     <Compile Include="Data\Scripts\DefenseShields\RegenLogic\RegenOther.cs" />
     <Compile Include="Data\Scripts\DefenseShields\RegenLogic\RegenFields.cs" />
     <Compile Include="Data\Scripts\DefenseShields\RegenLogic\RegenRun.cs" />
@@ -79,8 +91,7 @@
     <Compile Include="Data\Scripts\DefenseShields\EnhancerLogic\EnhancerOther.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionSupport.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionSupWeaps.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldAlerts.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldChecks.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ControllerLogic\ControllerChecks.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ModulatorLogic\ModulatorFields.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ModulatorLogic\ModulatorOther.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\BoundingEllipsoid.cs" />
@@ -97,6 +108,7 @@
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\SphereTriangleCollision.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\SphereTrianglesResponse.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\Triangle.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\DefenseBus\Field\FieldShape.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\TurretWeb.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Registry.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Stats.cs" />
@@ -108,13 +120,11 @@
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionFields.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionMonitor.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Session\SessionNetwork.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldDraw.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldCharge.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldSupport.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldRun.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldShape.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldEvents.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldStates.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ControllerLogic\ControllerCharge.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ControllerLogic\ControllerSupport.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ControllerLogic\ControllerRun.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ControllerLogic\ControllerEvents.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ControllerLogic\ControllerStates.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\Enforcements.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\ModulatorData.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Control\ModUi.cs" />
@@ -132,15 +142,13 @@
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\GJK\Sphere.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\DsAutoResetEvent.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportBlocks\O2Generator.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldWeb.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\GridComps\ModulatorGridComp.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseBus\BusRun.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldIntersect.cs" />
     <Compile Include="Data\Scripts\DefenseShields\ModulatorLogic\ModulatorRun.cs" />
     <Compile Include="Data\Scripts\DefenseShields\EmitterLogic\EmittersRun.cs" />
     <Compile Include="Data\Scripts\DefenseShields\Config\ControllerData.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldFields.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldInit.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ControllerLogic\ControllerFields.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\ControllerLogic\ControllerInit.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\CSupport\DistPoint3Triangle3.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Definitions\EmitterDirMappingDef.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Definitions\EmitterDefinitions.cs" />
@@ -160,7 +168,6 @@
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\TheadEvents.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Utils.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Render.cs" />
-    <Compile Include="Data\Scripts\DefenseShields\ShieldLogic\ShieldHealth.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\CSupport\Triangle3.cs" />
   </ItemGroup>
   <ItemGroup>

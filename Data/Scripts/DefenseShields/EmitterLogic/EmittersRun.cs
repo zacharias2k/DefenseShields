@@ -50,7 +50,7 @@
             {
                 if (!ResetEntity()) return;
 
-                if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: mode:{EmiState.State.Mode} - EmitterId [{Emitter.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
@@ -115,7 +115,7 @@
         {
             try
             {
-                if (Session.Enforced.Debug == 3) Log.Line($"OnRemovedFromScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"OnRemovedFromScene: Mode:{EmiState.State.Mode} - EmitterId [{Emitter.EntityId}]");
                 if (Bus != null && Bus.SubGrids.Contains(LocalGrid))
                 {
                     Log.Line("emitter removed from scene");
@@ -137,7 +137,7 @@
             try
             {
                 base.Close();
-                if (Session.Enforced.Debug == 3) Log.Line($"Close: {EmitterMode} - EmitterId [{Entity.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"Close: Mode:{EmiState.State.Mode} - EmitterId [{Entity.EntityId}]");
                 if (Session.Instance.Emitters.Contains(this)) Session.Instance.Emitters.Remove(this);
                 if (Bus != null && Bus.SubGrids.Contains(LocalGrid))
                 {
@@ -152,7 +152,7 @@
             try
             {
                 base.MarkForClose();
-                if (Session.Enforced.Debug == 3) Log.Line($"MarkForClose: {EmitterMode} - EmitterId [{Entity.EntityId}]");
+                if (Session.Enforced.Debug == 3) Log.Line($"MarkForClose: mode:{EmiState.State.Mode} - EmitterId [{Entity.EntityId}]");
             }
             catch (Exception ex) { Log.Line($"Exception in MarkForClose: {ex}"); }
         }

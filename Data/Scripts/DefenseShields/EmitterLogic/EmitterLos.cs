@@ -13,19 +13,19 @@ namespace DefenseSystems
             {
                 if (!_isServer) return;
                 EmiState.State.Los = true;
-                Bus.CheckEmitters = false;
+                Bus.Field.CheckEmitters = false;
                 return;
             }
 
             var controller = Bus.ActiveController;
-            var controllerReady = controller != null && controller.Warming && controller.IsWorking && controller.IsFunctional && !controller.DsState.State.Suspended && controller.DsState.State.ControllerGridAccess;
+            var controllerReady = controller != null && controller.Bus.Field.Warming && controller.IsWorking && controller.IsFunctional && !controller.State.Value.Suspended && controller.State.Value.ControllerGridAccess;
             var emitterActive = EmiState.State.ActiveEmitterId == MyCube.EntityId;
             var controllerLinked = emitterActive && controllerReady;
             if (!controllerLinked) return;
 
             if (!_isDedicated)
             {
-                if (!_updateLosState && (EmiState.State.Los != _wasLosState || Bus.LosCheckTick == _tick + 1799 || Bus.LosCheckTick == _tick + 1800)) _updateLosState = true;
+                if (!_updateLosState && (EmiState.State.Los != _wasLosState || Bus.Field.LosCheckTick == _tick + 1799 || Bus.Field.LosCheckTick == _tick + 1800)) _updateLosState = true;
                 _wasLosState = EmiState.State.Los;
                 if (!_isServer)
                 {
@@ -35,7 +35,7 @@ namespace DefenseSystems
 
                 if (!EmiState.State.Los) DrawHelper();
             }
-            if ((Bus.CheckEmitters || TookControl))
+            if ((Bus.Field.CheckEmitters || TookControl))
             {
                 CheckShieldLineOfSight();
             }
@@ -46,23 +46,23 @@ namespace DefenseSystems
             if (!_compact && SubpartRotor.Closed) BlockReset(false);
             TookControl = false;
 
-            Bus.ActiveController.ResetShape(false);
-            if (EmitterMode == EmitterType.Station)
+            Bus.Field.ResetShape(false);
+            if (EmiState.State.Mode == 0)
             {
                 EmiState.State.Los = true;
-                Bus.CheckEmitters = false;
+                Bus.Field.CheckEmitters = false;
             }
             else
             {
                 UpdateLosState();
                 EmiState.State.Los = _blocksLos.Count <= 1500;
 
-                if (!EmiState.State.Los) Bus.EmitterEvent = true;
+                if (!EmiState.State.Los) Bus.Field.EmitterEvent = true;
                 else LosScaledCloud.Clear();
 
-                Bus.CheckEmitters = false;
+                Bus.Field.CheckEmitters = false;
             }
-            if (Session.Enforced.Debug >= 3 && !EmiState.State.Los) Log.Line($"LOS: Mode: {EmitterMode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {EmiState.State.Los.ToString()} - EmitterId [{Emitter.EntityId}]");
+            if (Session.Enforced.Debug >= 3 && !EmiState.State.Los) Log.Line($"LOS: Mode: {EmiState.State.Mode} - blocked verts {_blocksLos.Count.ToString()} - visable verts: {_vertsSighted.Count.ToString()} - LoS: {EmiState.State.Los.ToString()} - EmitterId [{Emitter.EntityId}]");
         }
 
         private void UpdateLosState(bool updateTestSphere = true)
@@ -94,11 +94,10 @@ namespace DefenseSystems
         {
             if (Vector3D.DistanceSquared(MyAPIGateway.Session.Player.Character.PositionComp.WorldAABB.Center, Emitter.PositionComp.WorldAABB.Center) < 2250000)
             {
-                var controller = Bus.ActiveController;
 
-                var needsUpdate = controller.ShieldIsMobile && (Bus.GridIsMoving || _updateLosState);
+                var needsUpdate = Bus.Field.ShieldIsMobile && (Bus.SpineIsMoving || _updateLosState);
 
-                var blockCam = controller.ShieldEnt.PositionComp.WorldVolume;
+                var blockCam = Bus.Field.ShieldEnt.PositionComp.WorldVolume;
                 if (MyAPIGateway.Session.Camera.IsInFrustum(ref blockCam))
                 {
 
@@ -129,7 +128,7 @@ namespace DefenseSystems
 
                     var blocked = _blocksLos.Count;
                     var needed = -500 + _vertsSighted.Count;
-                    if (_count == 0) BroadCastLosMessage(blocked, needed, controller);
+                    if (_count == 0) BroadCastLosMessage(blocked, needed);
                 }
             }
         }
@@ -138,10 +137,10 @@ namespace DefenseSystems
         {
             var losPointSphere = Session.Instance.LosPointSphere;
             LosScaledCloud.Clear();
-            UtilsStatic.UnitSphereTranslateScaleList(_unitSpherePoints, ref losPointSphere, ref LosScaledCloud, Bus.ActiveController.ShieldEnt, false, LocalGrid);
+            UtilsStatic.UnitSphereTranslateScaleList(_unitSpherePoints, ref losPointSphere, ref LosScaledCloud, Bus.Field.ShieldEnt, false, LocalGrid);
         }
 
-        private void BroadCastLosMessage(int blocked, int needed, Controllers controller)
+        private void BroadCastLosMessage(int blocked, int needed)
         {
             var sphere = new BoundingSphereD(Emitter.PositionComp.WorldAABB.Center, 1500);
             var sendMessage = false;
@@ -160,7 +159,7 @@ namespace DefenseSystems
 
                 MyAPIGateway.Utilities.ShowNotification("The shield emitter DOES NOT have a CLEAR ENOUGH LINE OF SIGHT to the shield, SHUTTING DOWN.", 960, "Red");
                 MyAPIGateway.Utilities.ShowNotification($"Green means clear line of sight, Flashing Orange means blocked | Blocked: {blocked} | Clear: {sighted} | Needed (Approximate): {needed}", 960, "Red");
-                if (needed == 0 && Bus.LosCheckTick != uint.MaxValue) MyAPIGateway.Utilities.ShowNotification($"Needed is only an approximation, if shield does not start in 30 seconds or is unstable, then it is not clear.", 960, "White");
+                if (needed == 0 && Bus.Field.LosCheckTick != uint.MaxValue) MyAPIGateway.Utilities.ShowNotification($"Needed is only an approximation, if shield does not start in 30 seconds or is unstable, then it is not clear.", 960, "White");
                 else if (needed == 0 && _lCount % 2 == 1) MyAPIGateway.Utilities.ShowNotification($"Shield is still not clear!", 960, "White");
             }
         }

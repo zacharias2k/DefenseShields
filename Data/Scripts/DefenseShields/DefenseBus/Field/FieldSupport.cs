@@ -1,82 +1,17 @@
-﻿namespace DefenseSystems
+﻿using DefenseSystems.Support;
+using Sandbox.Engine.Physics;
+using Sandbox.Game.Entities;
+using Sandbox.ModAPI;
+using VRage.Game.ModAPI;
+using VRage.Game.ModAPI.Interfaces;
+using VRage.Utils;
+using VRageMath;
+using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
+
+namespace DefenseSystems
 {
-    using Support;
-    using Sandbox.Game.Entities;
-    using Sandbox.ModAPI;
-    using VRage.Game.ModAPI;
-    using VRage.Utils;
-    using VRageMath;
-    using VRage.Game.ModAPI.Interfaces;
-    using CollisionLayers = Sandbox.Engine.Physics.MyPhysics.CollisionLayers;
-
-    public partial class Controllers
+    internal partial class Fields
     {
-        #region Shield Support Blocks
-        public void GetModulationInfo()
-        {
-            var update = false;
-            if (Bus.ActiveModulator != null && Bus.ActiveModulator.ModState.State.Online)
-            {
-                var modEnergyRatio = Bus.ActiveModulator.ModState.State.ModulateEnergy * 0.01f;
-                var modKineticRatio = Bus.ActiveModulator.ModState.State.ModulateKinetic * 0.01f;
-                if (!DsState.State.ModulateEnergy.Equals(modEnergyRatio) || !DsState.State.ModulateKinetic.Equals(modKineticRatio) || !DsState.State.EmpProtection.Equals(Bus.ActiveModulator.ModSet.Settings.EmpEnabled)) update = true;
-                DsState.State.ModulateEnergy = modEnergyRatio;
-                DsState.State.ModulateKinetic = modKineticRatio;
-                if (DsState.State.Enhancer)
-                {
-                    DsState.State.EmpProtection = Bus.ActiveModulator.ModSet.Settings.EmpEnabled;
-                }
-
-                if (update) ProtChangedState();
-            }
-            else
-            {
-                if (!DsState.State.ModulateEnergy.Equals(1f) || !DsState.State.ModulateKinetic.Equals(1f) || DsState.State.EmpProtection) update = true;
-                DsState.State.ModulateEnergy = 1f;
-                DsState.State.ModulateKinetic = 1f;
-                DsState.State.EmpProtection = false;
-                if (update) ProtChangedState();
-
-            }
-        }
-
-        public void GetEnhancernInfo()
-        {
-            var update = false;
-            if (Bus.ActiveEnhancer != null && Bus.ActiveEnhancer.EnhState.State.Online)
-            {
-                if (!DsState.State.EnhancerPowerMulti.Equals(2) || !DsState.State.EnhancerProtMulti.Equals(1000) || !DsState.State.Enhancer) update = true;
-                DsState.State.EnhancerPowerMulti = 2;
-                DsState.State.EnhancerProtMulti = 1000;
-                DsState.State.Enhancer = true;
-                if (update) ProtChangedState();
-            }
-            else
-            {
-                if (!DsState.State.EnhancerPowerMulti.Equals(1) || !DsState.State.EnhancerProtMulti.Equals(1) || DsState.State.Enhancer) update = true;
-                DsState.State.EnhancerPowerMulti = 1;
-                DsState.State.EnhancerProtMulti = 1;
-                DsState.State.Enhancer = false;
-                if (update) ProtChangedState();
-            }
-        }
-        #endregion
-
-        internal void TerminalRefresh(bool update = true)
-        {
-            Controller.RefreshCustomInfo();
-            if (update && InControlPanel && InThisTerminal)
-            {
-                var mousePos = MyAPIGateway.Input.GetMousePosition();
-                var startPos = new Vector2(800, 700);
-                var endPos = new Vector2(1070, 750);
-                var match1 = mousePos.Between(ref startPos, ref endPos);
-                var match2 = mousePos.Y > 700 && mousePos.Y < 760 && mousePos.X > 810 && mousePos.X < 1070;
-                if (!(match1 && match2)) MyCube.UpdateTerminal();
-            }
-        }
-
-
         internal void AddShieldHit(long attackerId, float amount, MyStringHash damageType, IMySlimBlock block, bool reset, Vector3D? hitPos = null)
         {
             lock (ShieldHit)
@@ -92,7 +27,7 @@
                 else if (hitPos.HasValue) ShieldHit.HitPos = hitPos.Value;
 
                 if (attackerId != 0) ShieldHit.AttackerId = attackerId;
-                if (amount > 0) _lastSendDamageTick = _tick;
+                if (amount > 0) _lastSendDamageTick = Bus.Tick;
                 if (reset) ShieldHitReset(true);
             }
         }
@@ -103,13 +38,14 @@
             ShieldHit.DamageType = damageType.String;
             ShieldHit.HitPos = hitPos;
             ShieldHit.AttackerId = attackerId;
-            _lastSendDamageTick = _tick;
+            _lastSendDamageTick = Bus.Tick;
         }
 
         internal void SendShieldHits()
         {
+            var a = Bus.ActiveController;
             while (ShieldHitsToSend.Count != 0)
-                Session.Instance.PacketizeToClientsInRange(Controller, new DataShieldHit(MyCube.EntityId, ShieldHitsToSend.Dequeue()));
+                Session.Instance.PacketizeToClientsInRange(a.Controller, new DataShieldHit(a.MyCube.EntityId, ShieldHitsToSend.Dequeue()));
         }
 
         private void ShieldHitReset(bool enQueue)
@@ -123,7 +59,7 @@
                 }
             }
             _lastSendDamageTick = uint.MaxValue;
-            _forceBufferSync = true;
+            ForceBufferSync = true;
             ShieldHit.AttackerId = 0;
             ShieldHit.Amount = 0;
             ShieldHit.DamageType = string.Empty;
@@ -155,7 +91,7 @@
                 var hit = ShieldHits[i];
                 var damageType = hit.DamageType;
 
-                if (!NotFailed) continue;
+                if (!Bus.ActiveController.NotFailed) continue;
 
                 if (damageType == Session.Instance.MPExplosion)
                 {
@@ -166,7 +102,7 @@
                     UtilsStatic.CreateFakeSmallExplosion(WorldImpactPosition);
                     if (hit.Attacker != null)
                     {
-                        ((IMyDestroyableObject) hit.Attacker).DoDamage(1, Session.Instance.MPKinetic, false, null, ShieldEnt.EntityId);
+                        ((IMyDestroyableObject)hit.Attacker).DoDamage(1, Session.Instance.MPKinetic, false, null, ShieldEnt.EntityId);
                     }
                     continue;
                 }
@@ -202,14 +138,15 @@
         {
             if (Vector3D.DistanceSquared(DetectionCenter, Session.Instance.EmpWork.EpiCenter) <= Session.Instance.EmpWork.RangeCapSqr)
             {
+                var state = Bus.ActiveController.State;
                 var empResistenceRatio = 1f;
                 const long AttackerId = 0L;
-                var energyResistenceRatio = DsState.State.ModulateKinetic;
+                var energyResistenceRatio = state.Value.ModulateKinetic;
                 var epiCenter = Session.Instance.EmpWork.EpiCenter;
                 var rangeCap = Session.Instance.EmpWork.RangeCap;
                 var empDirYield = Session.Instance.EmpWork.DirYield;
 
-                if (DsState.State.EmpProtection)
+                if (state.Value.EmpProtection)
                 {
                     if (energyResistenceRatio < 0.4) energyResistenceRatio = 0.4f;
                     empResistenceRatio = 0.1f;
@@ -247,8 +184,8 @@
 
                 var targetDamage = (float)(((empDirYield * damageScaler) * energyResistenceRatio) * empResistenceRatio);
 
-                if (targetDamage >= DsState.State.Charge * ConvToHp) _empOverLoad = true;
-                //if (Session.Enforced.Debug >= 2) Log.Line($"-----------------------] epiDist:{Vector3D.Distance(epiCenter, impactPos)} - iSqrDist:{invSqrDist} - RangeCap:{rangeCap} - SurfaceA:{hitFaceSurfaceArea}({_ellipsoidSurfaceArea * 0.5}) - dirYield:{empDirYield} - damageScaler:{damageScaler} - Damage:{targetDamage}(toOver:{(targetDamage / (DsState.State.Charge * ConvToHp))})");
+                if (targetDamage >= state.Value.Charge * ConvToHp) _empOverLoad = true;
+                //if (Session.Enforced.Debug >= 2) Log.Line($"-----------------------] epiDist:{Vector3D.Distance(epiCenter, impactPos)} - iSqrDist:{invSqrDist} - RangeCap:{rangeCap} - SurfaceA:{hitFaceSurfaceArea}({_ellipsoidSurfaceArea * 0.5}) - dirYield:{empDirYield} - damageScaler:{damageScaler} - Damage:{targetDamage}(toOver:{(targetDamage / (State.Value.Charge * ConvToHp))})");
 
                 if (_isServer && _mpActive)
                     AddEmpBlastHit(AttackerId, targetDamage, Session.Instance.MPEMP, impactPos);

@@ -27,101 +27,104 @@
                     MinScaler = _workData.MinScaler;
                     MyAPIGateway.Parallel.For(0, _workData.ShieldCnt, x =>
                     {
-                        var s = _workData.ShieldList[x];
-                        var tick = _workData.Tick;
-                        var notBubble = s.DsState.State.ProtectMode > 0;
-                        var notField = s.DsState.State.ProtectMode != 2;
+                        var c = _workData.ShieldList[x];
+                        var b = c.Bus;
+                        var f = b.Field;
 
-                        if (_newFrame || s.MarkedForClose || !notField && !s.Warming) return;
+                        var tick = _workData.Tick;
+                        var notBubble = c.State.Value.ProtectMode > 0;
+                        var notField = c.State.Value.ProtectMode != 2;
+
+                        if (_newFrame || c.MarkedForClose || !notField && !f.Warming) return;
                         if (!IsServer)
                         {
-                            if (notBubble != s.NotBubble)
+                            if (notBubble != c.NotBubble)
                             {
-                                lock (s.Bus.SubLock) foreach (var sub in s.Bus.SubGrids) _entRefreshQueue.Enqueue(sub);
-                                s.NotBubble = notBubble;
+                                lock (b.SubLock) foreach (var sub in b.SubGrids) _entRefreshQueue.Enqueue(sub);
+                                c.NotBubble = notBubble;
                             }
 
-                            if (EntSlotTick && RefreshCycle == s.MonitorSlot)
+                            if (EntSlotTick && RefreshCycle == c.MonitorSlot)
                             {
                                 List<MyEntity> monitorListClient = null;
                                 var newSubClient = false;
                                 if (!notBubble) monitorListClient = new List<MyEntity>();
                                 MonitorRefreshTasks(x, ref monitorListClient, notBubble, ref newSubClient);
                             }
-                            s.TicksWithNoActivity = 0;
-                            s.LastWokenTick = tick;
-                            s.Asleep = false;
+                            c.TicksWithNoActivity = 0;
+                            c.LastWokenTick = tick;
+                            c.Asleep = false;
                             return;
                         }
 
                         bool shieldActive;
-                        lock (ActiveProtection) shieldActive = ActiveProtection.Contains(s);
+                        lock (ActiveProtection) shieldActive = ActiveProtection.Contains(c);
 
-                        if (s.LostPings > 59)
+                        if (c.LostPings > 59)
                         {
                             if (shieldActive)
                             {
                                 if (Enforced.Debug >= 2) Log.Line("Logic Paused by lost pings");
-                                lock (ActiveProtection) ActiveProtection.Remove(s);
-                                s.WasPaused = true;
+                                lock (ActiveProtection) ActiveProtection.Remove(c);
+                                c.WasPaused = true;
                             }
-                            s.Asleep = false;
+                            c.Asleep = false;
                             return;
                         }
-                        if (Enforced.Debug >= 2 && s.LostPings > 0) Log.Line($"Lost Logic Pings:{s.LostPings}");
-                        if (shieldActive) s.LostPings++;
+                        if (Enforced.Debug >= 2 && c.LostPings > 0) Log.Line($"Lost Logic Pings:{c.LostPings}");
+                        if (shieldActive) c.LostPings++;
 
-                        if (s.Asleep && EmpStore.Count != 0 && Vector3D.DistanceSquared(s.DetectionCenter, EmpWork.EpiCenter) <= SyncDistSqr)
+                        if (c.Asleep && EmpStore.Count != 0 && Vector3D.DistanceSquared(f.DetectionCenter, EmpWork.EpiCenter) <= SyncDistSqr)
                         {
-                            s.TicksWithNoActivity = 0;
-                            s.LastWokenTick = tick;
-                            s.Asleep = false;
+                            c.TicksWithNoActivity = 0;
+                            c.LastWokenTick = tick;
+                            c.Asleep = false;
                             return;
                         }
 
-                        if (!shieldActive && s.LostPings > 59)
+                        if (!shieldActive && c.LostPings > 59)
                         {
-                            s.Asleep = true;
+                            c.Asleep = true;
                             return;
                         }
 
                         List<MyEntity> monitorList = null;
                         var newSub = false;
                         if (!notBubble) monitorList = new List<MyEntity>();
-                        if (EntSlotTick && RefreshCycle == s.MonitorSlot) MonitorRefreshTasks(x, ref monitorList, notBubble, ref newSub);
+                        if (EntSlotTick && RefreshCycle == c.MonitorSlot) MonitorRefreshTasks(x, ref monitorList, notBubble, ref newSub);
 
                         if (notBubble) return;
-                        if (tick < s.LastWokenTick + 400 || s.Missiles.Count > 0)
+                        if (tick < c.LastWokenTick + 400 || f.Missiles.Count > 0)
                         {
-                            s.Asleep = false;
+                            c.Asleep = false;
                             return;
                         }
 
-                        if (s.ShieldIsMobile && s.Bus.Spine.Physics.IsMoving)
+                        if (f.ShieldIsMobile && b.Spine.Physics.IsMoving)
                         {
-                            s.LastWokenTick = tick;
-                            s.Asleep = false;
+                            c.LastWokenTick = tick;
+                            c.Asleep = false;
                             return;
                         }
 
-                        if (!s.PlayerByShield && !s.MoverByShield && !s.NewEntByShield)
+                        if (!c.PlayerByShield && !c.MoverByShield && !c.NewEntByShield)
                         {
-                            if (s.TicksWithNoActivity++ % EntCleanCycle == 0) s.EntCleanUpTime = true;
-                            if (shieldActive && !s.WasPaused && tick > 1200)
+                            if (c.TicksWithNoActivity++ % EntCleanCycle == 0) c.EntCleanUpTime = true;
+                            if (shieldActive && !c.WasPaused && tick > 1200)
                             {
                                 if (Enforced.Debug >= 2) Log.Line($"Logic Paused by monitor");
-                                lock (ActiveProtection) ActiveProtection.Remove(s);
-                                s.WasPaused = true;
-                                s.Asleep = false;
-                                s.TicksWithNoActivity = 0;
-                                s.LastWokenTick = tick;
+                                lock (ActiveProtection) ActiveProtection.Remove(c);
+                                c.WasPaused = true;
+                                c.Asleep = false;
+                                c.TicksWithNoActivity = 0;
+                                c.LastWokenTick = tick;
                             }
-                            else s.Asleep = true;
+                            else c.Asleep = true;
                             return;
                         }
 
                         var intersect = false;
-                        if (!(EntSlotTick && RefreshCycle == s.MonitorSlot)) MyGamePruningStructure.GetTopmostEntitiesInBox(ref s.WebBox, monitorList, MyEntityQueryType.Dynamic);
+                        if (!(EntSlotTick && RefreshCycle == c.MonitorSlot)) MyGamePruningStructure.GetTopmostEntitiesInBox(ref f.WebBox, monitorList, MyEntityQueryType.Dynamic);
                         for (int i = 0; i < monitorList.Count; i++)
                         {
                             var ent = monitorList[i];
@@ -129,7 +132,7 @@
                             if (ent.Physics == null || !(ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor)) continue;
                             if (ent.Physics.IsMoving)
                             {
-                                if (s.WebBox.Intersects(ent.PositionComp.WorldAABB))
+                                if (f.WebBox.Intersects(ent.PositionComp.WorldAABB))
                                 {
                                     intersect = true;
                                     break;
@@ -139,12 +142,12 @@
 
                         if (!intersect)
                         {
-                            s.Asleep = true;
+                            c.Asleep = true;
                             return;
                         }
-                        s.TicksWithNoActivity = 0;
-                        s.LastWokenTick = tick;
-                        s.Asleep = false;
+                        c.TicksWithNoActivity = 0;
+                        c.LastWokenTick = tick;
+                        c.Asleep = false;
                     });
 
                     if (_workData.Tick % 180 == 0 && _workData.Tick > 1199)
@@ -166,43 +169,45 @@
 
         internal void MonitorRefreshTasks(int x, ref List<MyEntity> monitorList, bool reInforce, ref bool newSub)
         {
-            var s = _workData.ShieldList[x];
+            var c = _workData.ShieldList[x];
+            var b = c.Bus;
+            var f = b.Field;
 
             if (reInforce)
             {
                 HashSet<MyCubeGrid> subs;
-                lock (s.Bus.SubLock) subs = new HashSet<MyCubeGrid>(s.Bus.SubGrids);
-                var newMode = !s.NotBubble;
+                lock (b.SubLock) subs = new HashSet<MyCubeGrid>(b.SubGrids);
+                var newMode = !c.NotBubble;
                 if (!newMode) return;
                 foreach (var sub in subs)
                 {
                     if (!_globalEntTmp.ContainsKey(sub)) newSub = true;
                     _entRefreshQueue.Enqueue(sub);
-                    if (!s.WasPaused) _globalEntTmp[sub] = _workData.Tick;
+                    if (!c.WasPaused) _globalEntTmp[sub] = _workData.Tick;
                 }
 
-                s.NotBubble = true;
-                s.TicksWithNoActivity = 0;
-                s.LastWokenTick = _workData.Tick;
-                s.Asleep = false;
+                c.NotBubble = true;
+                c.TicksWithNoActivity = 0;
+                c.LastWokenTick = _workData.Tick;
+                c.Asleep = false;
             }
             else
             {
                 var newMode = false;
-                if (s.NotBubble)
+                if (c.NotBubble)
                 {
                     HashSet<MyCubeGrid> subs;
-                    lock (s.Bus.SubLock) subs = new HashSet<MyCubeGrid>(s.Bus.SubGrids); 
+                    lock (b.SubLock) subs = new HashSet<MyCubeGrid>(b.SubGrids); 
                     foreach (var sub in subs)
                     {
                         _entRefreshQueue.Enqueue(sub);
-                        if (!s.WasPaused) _globalEntTmp[sub] = _workData.Tick;
+                        if (!c.WasPaused) _globalEntTmp[sub] = _workData.Tick;
                     }
                     //if (Enforced.Debug >= 2) Log.Line($"found Reinforce");
-                    s.NotBubble = false;
-                    s.TicksWithNoActivity = 0;
-                    s.LastWokenTick = _workData.Tick;
-                    s.Asleep = false;
+                    c.NotBubble = false;
+                    c.TicksWithNoActivity = 0;
+                    c.LastWokenTick = _workData.Tick;
+                    c.Asleep = false;
                     newMode = true;
                 }
 
@@ -211,19 +216,19 @@
                     // var testMat = s.DetectMatrixOutside;
                     // var shape1 = new Sphere(Vector3D.Zero, 1.0).Transformed(testMat);
                     var foundNewEnt = false;
-                    var disableVoxels = Enforced.DisableVoxelSupport == 1 || s.Bus.ActiveModulator == null || s.Bus.ActiveModulator.ModSet.Settings.ModulateVoxels;
-                    MyGamePruningStructure.GetTopmostEntitiesInBox(ref s.WebBox, monitorList);
-                    if (!s.WasPaused)
+                    var disableVoxels = Enforced.DisableVoxelSupport == 1 || b.ActiveModulator == null || b.ActiveModulator.ModSet.Settings.ModulateVoxels;
+                    MyGamePruningStructure.GetTopmostEntitiesInBox(ref f.WebBox, monitorList);
+                    if (!c.WasPaused)
                     {
                         foreach (var ent in monitorList)
                         {
                             var voxel = ent as MyVoxelBase;
-                            if (ent == null || ent.MarkedForClose || (voxel == null && (ent.Physics == null || ent.DefinitionId == null)) || (!s.ShieldIsMobile && voxel != null) || (disableVoxels && voxel != null) || (voxel != null && voxel != voxel.RootVoxel))
+                            if (ent == null || ent.MarkedForClose || (voxel == null && (ent.Physics == null || ent.DefinitionId == null)) || (!f.ShieldIsMobile && voxel != null) || (disableVoxels && voxel != null) || (voxel != null && voxel != voxel.RootVoxel))
                             {
                                 continue;
                             }
 
-                            if (ent is IMyFloatingObject || ent is IMyEngineerToolBase || !s.WebSphere.Intersects(ent.PositionComp.WorldVolume)) continue;
+                            if (ent is IMyFloatingObject || ent is IMyEngineerToolBase || !f.WebSphere.Intersects(ent.PositionComp.WorldVolume)) continue;
 
                             // var halfExtents = ent.PositionComp.LocalAABB.HalfExtents;
                             // if (halfExtents.X < 1) halfExtents.X = 10;
@@ -232,22 +237,22 @@
                             // var shape2 = new Box(-halfExtents, halfExtents).Transformed(ent.WorldMatrix);
                             // var test = Gjk.Intersects(ref shape1, ref shape2);
                             // Log.Line($"{ent.DebugName} - {test}");
-                            if (CustomCollision.NewObbPointsInShield(ent, s.DetectMatrixOutsideInv) > 0)
+                            if (CustomCollision.NewObbPointsInShield(ent, f.DetectMatrixOutsideInv) > 0)
                             {
                                 if (!_globalEntTmp.ContainsKey(ent))
                                 {
                                     foundNewEnt = true;
-                                    s.Asleep = false;
+                                    c.Asleep = false;
                                 }
 
                                 _globalEntTmp[ent] = _workData.Tick;
                             }
-                            s.NewEntByShield = foundNewEnt;
+                            c.NewEntByShield = foundNewEnt;
                         }
                     }
-                    else s.NewEntByShield = false;
+                    else c.NewEntByShield = false;
 
-                    if (!s.NewEntByShield)
+                    if (!c.NewEntByShield)
                     {
                         var foundPlayer = false;
                         foreach (var player in Players.Values)
@@ -255,21 +260,21 @@
                             var character = player.Character;
                             if (character == null) continue;
 
-                            if (Vector3D.DistanceSquared(character.PositionComp.WorldMatrix.Translation, s.DetectionCenter) < SyncDistSqr)
+                            if (Vector3D.DistanceSquared(character.PositionComp.WorldMatrix.Translation, f.DetectionCenter) < SyncDistSqr)
                             {
                                 foundPlayer = true;
                                 break;
                             }
                         }
-                        s.PlayerByShield = foundPlayer;
+                        c.PlayerByShield = foundPlayer;
                     }
-                    if (!s.PlayerByShield)
+                    if (!c.PlayerByShield)
                     {
-                        s.MoverByShield = false;
+                        c.MoverByShield = false;
                         var newMover = false;
                         var moverList = new List<MyEntity>();
 
-                        MyGamePruningStructure.GetTopMostEntitiesInBox(ref s.ShieldBox3K, moverList, MyEntityQueryType.Dynamic);
+                        MyGamePruningStructure.GetTopMostEntitiesInBox(ref f.ShieldBox3K, moverList, MyEntityQueryType.Dynamic);
                         for (int i = 0; i < moverList.Count; i++)
                         {
                             var ent = moverList[i];
@@ -277,9 +282,9 @@
                             var meteor = ent as IMyMeteor;
                             if (meteor != null)
                             {
-                                if (CustomCollision.FutureIntersect(s, ent, s.DetectMatrixOutside, s.DetectMatrixOutsideInv))
+                                if (CustomCollision.FutureIntersect(f, ent, f.DetectMatrixOutside, f.DetectMatrixOutsideInv))
                                 {
-                                    if (Enforced.Debug >= 2) Log.Line($"[Future Intersecting Meteor] distance from shieldCenter: {Vector3D.Distance(s.DetectionCenter, ent.WorldMatrix.Translation)} - waking:");
+                                    if (Enforced.Debug >= 2) Log.Line($"[Future Intersecting Meteor] distance from shieldCenter: {Vector3D.Distance((Vector3D) f.DetectionCenter, ent.WorldMatrix.Translation)} - waking:");
                                     newMover = true;
                                     break;
                                 }
@@ -289,17 +294,17 @@
                             if (!(ent.Physics == null || ent is MyCubeGrid || ent is IMyCharacter)) continue;
                             var entPos = ent.PositionComp.WorldAABB.Center;
 
-                            var keyFound = s.EntsByMe.ContainsKey(ent);
+                            var keyFound = c.EntsByMe.ContainsKey(ent);
                             if (keyFound)
                             {
-                                if (!s.EntsByMe[ent].Pos.Equals(entPos, 1e-3))
+                                if (!c.EntsByMe[ent].Pos.Equals(entPos, 1e-3))
                                 {
                                     MoverInfo moverInfo;
-                                    s.EntsByMe.TryRemove(ent, out moverInfo);
-                                    s.EntsByMe.TryAdd(ent, new MoverInfo(entPos, _workData.Tick));
+                                    c.EntsByMe.TryRemove(ent, out moverInfo);
+                                    c.EntsByMe.TryAdd(ent, new MoverInfo(entPos, _workData.Tick));
                                     if (moverInfo.CreationTick == _workData.Tick - 1)
                                     {
-                                        if (Enforced.Debug >= 3 && s.WasPaused) Log.Line($"[Moved] Ent:{ent.DebugName} - howMuch:{Vector3D.Distance(entPos, s.EntsByMe[ent].Pos)} - ControllerId [{s.Controller.EntityId}]");
+                                        if (Enforced.Debug >= 3 && c.WasPaused) Log.Line($"[Moved] Ent:{ent.DebugName} - howMuch:{Vector3D.Distance(entPos, c.EntsByMe[ent].Pos)} - ControllerId [{c.Controller.EntityId}]");
                                         newMover = true;
                                     }
                                     break;
@@ -307,31 +312,31 @@
                             }
                             else
                             {
-                                if (Enforced.Debug >= 3) Log.Line($"[NewMover] Ent:{ent.DebugName} - ControllerId [{s.Controller.EntityId}]");
-                                s.EntsByMe.TryAdd(ent, new MoverInfo(entPos, _workData.Tick));
+                                if (Enforced.Debug >= 3) Log.Line($"[NewMover] Ent:{ent.DebugName} - ControllerId [{c.Controller.EntityId}]");
+                                c.EntsByMe.TryAdd(ent, new MoverInfo(entPos, _workData.Tick));
                             }
                         }
-                        s.MoverByShield = newMover;
+                        c.MoverByShield = newMover;
                     }
 
-                    if (_workData.Tick < s.LastWokenTick + 400)
+                    if (_workData.Tick < c.LastWokenTick + 400)
                     {
-                        s.Asleep = false;
+                        c.Asleep = false;
                         return;
                     }
                 }
 
-                if (s.EntCleanUpTime)
+                if (c.EntCleanUpTime)
                 {
-                    s.EntCleanUpTime = false;
-                    if (!s.EntsByMe.IsEmpty)
+                    c.EntCleanUpTime = false;
+                    if (!c.EntsByMe.IsEmpty)
                     {
                         var entsByMeTmp = new List<KeyValuePair<MyEntity, MoverInfo>>();
-                        entsByMeTmp.AddRange(s.EntsByMe.Where(info => !info.Key.InScene || _workData.Tick - info.Value.CreationTick > EntMaxTickAge));
+                        entsByMeTmp.AddRange(c.EntsByMe.Where(info => !info.Key.InScene || _workData.Tick - info.Value.CreationTick > EntMaxTickAge));
                         for (int i = 0; i < entsByMeTmp.Count; i++)
                         {
                             MoverInfo mInfo;
-                            s.EntsByMe.TryRemove(entsByMeTmp[i].Key, out mInfo);
+                            c.EntsByMe.TryRemove(entsByMeTmp[i].Key, out mInfo);
                         }
                     }
                 }
@@ -459,44 +464,44 @@
                 MyProtectors myProtector;
                 if (!GlobalProtect.TryGetValue(ent, out myProtector)) continue;
 
-                var entShields = myProtector.Shields;
+                var entShields = myProtector.Controllers;
                 var refreshCount = 0;
                 Controllers notBubble = null;
                 var removeIShield = false;
-                foreach (var s in entShields)
+                foreach (var c in entShields)
                 {
-                    if (s.WasPaused) continue;
-                    if (s.DsState.State.ProtectMode > 0 && s.Bus.SubGrids.Contains(ent))
+                    if (c.WasPaused) continue;
+                    if (c.State.Value.ProtectMode > 0 && c.Bus.SubGrids.Contains(ent))
                     {
-                        notBubble = s;
+                        notBubble = c;
                         refreshCount++;
                     }
-                    else if (!ent.InScene || !s.ResetEnts(ent, Tick))
+                    else if (!ent.InScene || !c.Bus.Field.ResetEnts(ent, Tick))
                     {
-                        myProtector.Shields.Remove(s);
+                        myProtector.Controllers.Remove(c);
                     }
                     else refreshCount++;
 
-                    if (notBubble == null && myProtector.NotBubble == s)
+                    if (notBubble == null && myProtector.NotBubble == c)
                     {
                         removeIShield = true;
                         myProtector.NotBubble = null;
                     }
 
-                    var detectedStates = s.PlayerByShield || s.MoverByShield || Tick <= s.LastWokenTick + 580 || notBubble != null || removeIShield;
+                    var detectedStates = c.PlayerByShield || c.MoverByShield || Tick <= c.LastWokenTick + 580 || notBubble != null || removeIShield;
                     if (ScalerChanged || detectedStates)
                     {
-                        s.Asleep = false;
+                        c.Asleep = false;
                     }
                 }
 
                 if (notBubble != null)
                 {
-                    myProtector.Shields.Remove(notBubble);
+                    myProtector.Controllers.Remove(notBubble);
                     myProtector.NotBubble = notBubble;
                 }
 
-                myProtector.Shields.ApplyChanges();
+                myProtector.Controllers.ApplyChanges();
 
                 if (refreshCount == 0)
                 {
@@ -534,17 +539,17 @@
                             continue;
                         }
                         if (LogStats) Perf.Awake();
-                        var protMode = s.DsState.State.ProtectMode;
+                        var protMode = s.State.Value.ProtectMode;
                         if (protMode > 0)
                         {
-                            if (protMode == 1) s.DeformEnabled = true;
+                            if (protMode == 1) s.Bus.Field.DeformEnabled = true;
                             s.ProtectSubs(Tick);
                             continue;
                         }
 
                         if (!DedicatedServer && Tick20 && s.Bus.EffectsDirty) s.Bus.ResetDamageEffects();
-                        if (Tick600) s.CleanWebEnts();
-                        s.WebEntities();
+                        if (Tick600) s.Bus.Field.CleanWebEnts();
+                        s.Bus.Field.WebEntities();
                     }
                 }
                 if (WebWrapperOn)
@@ -558,12 +563,12 @@
 
         private void WebDispatch()
         {
-            Controllers controller;
-            while (WebWrapper.TryDequeue(out controller))
+            Fields field;
+            while (WebWrapper.TryDequeue(out field))
             {
-                if (controller == null || controller.MarkedForClose) continue;
-                if (!controller.VoxelsToIntersect.IsEmpty) MyAPIGateway.Parallel.Start(controller.VoxelIntersect);
-                if (!controller.WebEnts.IsEmpty) MyAPIGateway.Parallel.ForEach(controller.WebEnts, controller.EntIntersectSelector);
+                if (field == null) continue;
+                if (!field.VoxelsToIntersect.IsEmpty) MyAPIGateway.Parallel.Start(field.VoxelIntersect);
+                if (!field.WebEnts.IsEmpty) MyAPIGateway.Parallel.ForEach(field.WebEnts, field.EntIntersectSelector);
             }
         }
 

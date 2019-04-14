@@ -59,7 +59,7 @@ namespace DefenseSystems
             if (_imagesDetected && Set.Settings.Report == 2)
             {
                 if (Display.ShowText) Display.ShowTextureOnScreen();
-                var image = UtilsStatic.GetShieldThyaFromFloat(ds.DsState.State.ShieldPercent, 0);
+                var image = UtilsStatic.GetShieldThyaFromFloat(ds.State.Value.ShieldPercent, 0);
                 var oldImage = Display.CurrentlyShownImage;
 
                 if (oldImage != image)

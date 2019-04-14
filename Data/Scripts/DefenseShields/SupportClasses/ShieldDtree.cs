@@ -7,15 +7,16 @@ namespace DefenseSystems
 {
     class ShieldTree
     {
+        /*
         private MyDynamicAABBTreeD _aabbTree = new MyDynamicAABBTreeD(MyConstants.GAME_PRUNING_STRUCTURE_AABB_EXTENSION, 1.0);
         private Stack<int> _stack = new Stack<int>();
 
-        public void AddShield(Controllers shield)
+        public void AddShield(Controllers c)
         {
-            if (shield.DtreeProxyId != -1)
+            if (c.DtreeProxyId != -1)
                 return;
-            BoundingBoxD worldAabb = shield.WebBox;
-            shield.DtreeProxyId = _aabbTree.AddProxy(ref worldAabb, shield, 0U, true);
+            BoundingBoxD worldAabb = c.WebBox;
+            c.DtreeProxyId = _aabbTree.AddProxy(ref worldAabb, c, 0U, true);
         }
 
         public void RemoveShield(Controllers shield)
@@ -192,5 +193,6 @@ namespace DefenseSystems
         {
             _aabbTree.GetAll(result, false, null);
         }
+    */
     }
 }

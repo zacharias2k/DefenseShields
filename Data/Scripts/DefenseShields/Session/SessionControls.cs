@@ -50,7 +50,7 @@ namespace DefenseSystems
                 PowerScaleSelect = TerminalHelpers.AddCombobox(logic?.Controller, "DS-C_PowerScale", "Select Power Scale", "Select the power scale to use", DsUi.GetPowerScale, DsUi.SetPowerScale, DsUi.ListPowerScale);
                 PowerWatts = TerminalHelpers.AddSlider(logic?.Controller, "DS-C_PowerWatts", "Power To Use", "Select the maximum scaled power the shield can use", DsUi.GetPowerWatts, DsUi.SetPowerWatts,  DsUi.EnablePowerWatts);
                 PowerWatts.SetLimits(1, 999);
-                if (logic != null && logic.ShieldIsMobile)
+                if (logic?.Bus?.Field != null && logic.Bus.Field.ShieldIsMobile)
                 {
                     TerminalHelpers.Separator(logic.Controller, "DS-C_sep2");
                 }

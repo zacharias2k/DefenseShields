@@ -2,7 +2,7 @@
 using Sandbox.Game.Entities;
 namespace DefenseSystems.Support
 {
-    public class Registry
+    internal class Registry
     {
         public bool RegisterWithBus<T>(T logic, MyCubeGrid localGrid, bool register, Bus oldBus, out Bus bus)
         {
@@ -25,7 +25,7 @@ namespace DefenseSystems.Support
         }
     }
 
-    public class ControlPriority : IComparer<Controllers>
+    internal class ControlPriority : IComparer<Controllers>
     {
         public int Compare(Controllers x, Controllers y)
         {
@@ -39,14 +39,14 @@ namespace DefenseSystems.Support
         }
     }
 
-    public class EmitterPriority : IComparer<Emitters>
+    internal class EmitterPriority : IComparer<Emitters>
     {
         public int Compare(Emitters x, Emitters y)
         {
-            var xIsShip = x.EmitterMode != Emitters.EmitterType.Station && !x.MyCube.CubeGrid.IsStatic;
-            var xIsStation = x.EmitterMode == Emitters.EmitterType.Station && x.MyCube.CubeGrid.IsStatic;
-            var yIsShip = y.EmitterMode != Emitters.EmitterType.Station && !y.MyCube.CubeGrid.IsStatic;
-            var yIsStation = y.EmitterMode == Emitters.EmitterType.Station && y.MyCube.CubeGrid.IsStatic;
+            var xIsShip = x.EmiState.State.Mode != 0 && !x.MyCube.CubeGrid.IsStatic;
+            var xIsStation = x.EmiState.State.Mode == 0 && x.MyCube.CubeGrid.IsStatic;
+            var yIsShip = y.EmiState.State.Mode != 0 && !y.MyCube.CubeGrid.IsStatic;
+            var yIsStation = y.EmiState.State.Mode == 0 && y.MyCube.CubeGrid.IsStatic;
 
             var xIsvalid = xIsShip || xIsStation;
             var yIsvalid = yIsShip || yIsStation;
@@ -64,9 +64,9 @@ namespace DefenseSystems.Support
         }
     }
 
-    public class RegenPriority : IComparer<BlockRegen>
+    internal class RegenPriority : IComparer<Regen>
     {
-        public int Compare(BlockRegen x, BlockRegen y)
+        public int Compare(Regen x, Regen y)
         {
             var compareVolume = x.LocalGrid.PositionComp.WorldAABB.Volume.CompareTo(y.LocalGrid.PositionComp.WorldAABB.Volume);
             if (compareVolume != 0) return compareVolume;
@@ -78,7 +78,7 @@ namespace DefenseSystems.Support
         }
     }
 
-    public class GridPriority : IComparer<MyCubeGrid>
+    internal class GridPriority : IComparer<MyCubeGrid>
     {
         public int Compare(MyCubeGrid x, MyCubeGrid y)
         {

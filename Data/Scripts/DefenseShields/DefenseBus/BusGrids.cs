@@ -5,7 +5,7 @@ using VRage.Game.ModAPI;
 
 namespace DefenseSystems
 {
-    public partial class Bus
+    internal partial class Bus
     {
         public void SetSpine(bool check, MyCubeGrid grid = null)
         {

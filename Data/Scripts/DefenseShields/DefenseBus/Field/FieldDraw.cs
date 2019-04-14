@@ -5,20 +5,24 @@ using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Utils;
 using VRageMath;
+using VRageRender;
 using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
+
+
 namespace DefenseSystems
 {
-    public partial class Controllers
+    internal partial class Fields
     {
         public void Draw(int onCount, bool sphereOnCamera)
         {
             _onCount = onCount;
+            var a = Bus.ActiveController;
 
             var renderId = Bus.Spine.Render.GetRenderObjectID();
-            var percent = DsState.State.ShieldPercent;
-            var notBubble = DsState.State.ProtectMode > 0;
-            var hitAnim = !notBubble && DsSet.Settings.HitWaveAnimation;
-            var refreshAnim = !notBubble && DsSet.Settings.RefreshAnimation;
+            var percent = a.State.Value.ShieldPercent;
+            var notBubble = a.State.Value.ProtectMode > 0;
+            var hitAnim = !notBubble && a.Set.Value.HitWaveAnimation;
+            var refreshAnim = !notBubble && a.Set.Value.RefreshAnimation;
 
             Vector3D impactPos;
             lock (HandlerImpact) impactPos = HandlerImpact.Active ? ComputeHandlerImpact() : WorldImpactPosition;
@@ -56,34 +60,35 @@ namespace DefenseSystems
             kineticHit = false;
             EnergyHit = false;
 
-            if (DsState.State.Online)
+            if (a.State.Value.Online)
             {
                 var prevlod = _prevLod;
                 var lod = CalculateLod(_onCount);
-                if (_shapeChanged || _updateRender || lod != prevlod)
+                if (_shapeChanged || UpdateRender || lod != prevlod)
                 {
-                    _updateRender = false;
+                    UpdateRender = false;
                     _shapeChanged = false;
 
                     Icosphere.CalculateTransform(ShieldShapeMatrix, lod);
-                    if (!ShieldIsMobile) Icosphere.ReturnPhysicsVerts(DetectionMatrix, Bus.PhysicsOutside);
+                    if (!ShieldIsMobile) Icosphere.ReturnPhysicsVerts(DetectionMatrix, PhysicsOutside);
                 }
-                Icosphere.ComputeEffects(ShieldShapeMatrix, _localImpactPosition, _shellPassive, _shellActive, prevlod, percent, activeVisible, refreshAnim);
+                Icosphere.ComputeEffects(ShieldShapeMatrix, _localImpactPosition, ShellPassive, ShellActive, prevlod, percent, activeVisible, refreshAnim);
             }
-            else if (_shapeChanged) _updateRender = true;
+            else if (_shapeChanged) UpdateRender = true;
 
-            if (hitAnim && sphereOnCamera && DsState.State.Online) Icosphere.Draw(renderId);
+            if (hitAnim && sphereOnCamera && a.State.Value.Online) Icosphere.Draw(renderId);
         }
 
         public void DrawShieldDownIcon()
         {
-            if (_tick % 60 != 0) HudCheck();
+            var set = Bus.ActiveController.Set;
+            if (Bus.Tick % 60 != 0) HudCheck();
             var enemy = false;
-            var relation = MyAPIGateway.Session.Player.GetRelationTo(MyCube.OwnerId);
+            var relation = MyAPIGateway.Session.Player.GetRelationTo(Bus.Spine.EntityId);
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
 
             var config = MyAPIGateway.Session.Config;
-            if (!enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.Instance.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible) UpdateIcon();
+            if (!enemy && set.Value.SendToHud && !config.MinimalHud && Session.Instance.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible) UpdateIcon();
         }
 
         private Vector3D ComputeHandlerImpact()
@@ -147,19 +152,21 @@ namespace DefenseSystems
 
         private bool DetermineVisualState(bool notBubble)
         {
-            if (_tick60 || Session.Instance.HudIconReset) HudCheck();
+            var a = Bus.ActiveController;
+            var set = a.Set;
+            if (Bus.Tick60 || Session.Instance.HudIconReset) HudCheck();
 
-            if (_tick20) _viewInShield = CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation, DetectMatrixOutsideInv);
+            if (Bus.Tick20) _viewInShield = CustomCollision.PointInShield(MyAPIGateway.Session.Camera.WorldMatrix.Translation, DetectMatrixOutsideInv);
             if (notBubble)
                 _hideShield = false;
-            else if (_tick20 && _hideColor && !_supressedColor && _viewInShield)
+            else if (Bus.Tick20 && _hideColor && !_supressedColor && _viewInShield)
             {
                 _modelPassive = ModelLowReflective;
                 UpdatePassiveModel();
                 _supressedColor = true;
                 _hideShield = false;
             }
-            else if (_tick20 && _supressedColor && _hideColor && !_viewInShield)
+            else if (Bus.Tick20 && _supressedColor && _hideColor && !_viewInShield)
             {
                 SelectPassiveShell();
                 UpdatePassiveModel();
@@ -168,18 +175,18 @@ namespace DefenseSystems
             }
 
             var enemy = false;
-            var relation = MyAPIGateway.Session.Player.GetRelationTo(MyCube.OwnerId);
+            var relation = MyAPIGateway.Session.Player.GetRelationTo(a.MyCube.OwnerId);
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
 
             var config = MyAPIGateway.Session.Config;
-            var drawIcon = !enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.Instance.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
+            var drawIcon = !enemy && set.Value.SendToHud && !config.MinimalHud && Session.Instance.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
             if (drawIcon) UpdateIcon();
 
             var clearView = !ShieldIsMobile || !_viewInShield;
-            var activeInvisible = DsSet.Settings.ActiveInvisible;
+            var activeInvisible = set.Value.ActiveInvisible;
             var activeVisible = !notBubble && ((!activeInvisible && clearView) || enemy);
 
-            var visible = !notBubble ? DsSet.Settings.Visible : 1;
+            var visible = !notBubble ? set.Value.Visible : 1;
 
             CalcualteVisibility(visible, activeVisible);
 
@@ -220,25 +227,29 @@ namespace DefenseSystems
 
         private void ResetShellRender(bool fade, bool updates = true)
         {
-            _shellPassive.Render.UpdateRenderObject(false);
-            _shellPassive.Render.Transparency = fade ? (HitCoolDown + 1) * 0.0166666666667f : 0f;
-            if (updates) _shellPassive.Render.UpdateRenderObject(true);
+            ShellPassive.Render.UpdateRenderObject(false);
+            ShellPassive.Render.Transparency = fade ? (HitCoolDown + 1) * 0.0166666666667f : 0f;
+            if (updates) ShellPassive.Render.UpdateRenderObject(true);
         }
 
-        private void ShellVisibility(bool forceInvisible = false)
+        internal void ShellVisibility(bool forceInvisible = false)
         {
+            var a = Bus.ActiveController;
+            var set = a.Set;
+            var state = a.State;
+
             if (forceInvisible)
             {
-                _shellPassive.Render.UpdateRenderObject(false);
-                _shellActive.Render.UpdateRenderObject(false);
+                ShellPassive.Render.UpdateRenderObject(false);
+                ShellActive.Render.UpdateRenderObject(false);
                 return;
             }
 
-            if (DsState.State.Online && !DsState.State.Lowered && !DsState.State.Sleeping)
+            if (state.Value.Online && !state.Value.Lowered && !state.Value.Sleeping)
             {
-                if (DsSet.Settings.Visible == 0) _shellPassive.Render.UpdateRenderObject(true);
-                _shellActive.Render.UpdateRenderObject(true);
-                _shellActive.Render.UpdateRenderObject(false);
+                if (set.Value.Visible == 0) ShellPassive.Render.UpdateRenderObject(true);
+                ShellActive.Render.UpdateRenderObject(true);
+                ShellActive.Render.UpdateRenderObject(false);
             }
         }
 
@@ -255,6 +266,9 @@ namespace DefenseSystems
 
         private void HitParticleStart(Vector3D pos, bool intersected)
         {
+            var a = Bus.ActiveController;
+            var set = a.Set;
+
             var scale = 0.0075;
             var logOfPlayerDist = Math.Log(Vector3D.Distance(MyAPIGateway.Session.Camera.Position, pos));
             int radius;
@@ -270,7 +284,7 @@ namespace DefenseSystems
             if (EnergyHit)
             {
                 var scaler = 8;
-                if (_viewInShield && DsSet.Settings.DimShieldHits)
+                if (_viewInShield && set.Value.DimShieldHits)
                 {
                     multiple = false;
                     scaler = 3;
@@ -282,7 +296,7 @@ namespace DefenseSystems
             else
             {
                 var scaler = 8;
-                if (_viewInShield && DsSet.Settings.DimShieldHits)
+                if (_viewInShield && set.Value.DimShieldHits)
                 {
                     scaler = 3;
                 }
@@ -291,7 +305,7 @@ namespace DefenseSystems
             }
             var vel = Bus.Spine.Physics.LinearVelocity;
             var matrix = MatrixD.CreateTranslation(pos);
-            MyParticlesManager.TryCreateParticleEffect(mainParticle, out _effect1, ref matrix, ref pos, _shieldEntRendId, true);
+            MyParticlesManager.TryCreateParticleEffect(mainParticle, out _effect1, ref matrix, ref pos, ShieldEntRendId, true);
             if (_effect1 == null) return;
             var directedMatrix = _effect1.WorldMatrix;
             var shieldCenter = ShieldEnt.PositionComp.WorldAABB.Center;
@@ -309,7 +323,7 @@ namespace DefenseSystems
             var magic = ((radius * 0.1f) - 2.5f);
             if (multiple)
             {
-                MyParticlesManager.TryCreateParticleEffect(1657, out _effect2, ref matrix, ref pos, _shieldEntRendId, true);
+                MyParticlesManager.TryCreateParticleEffect(1657, out _effect2, ref matrix, ref pos, ShieldEntRendId, true);
                 if (_effect2 == null) return;
                 _effect2.UserColorMultiplier = color;
                 _effect2.UserRadiusMultiplier = 2f + magic;
@@ -359,6 +373,7 @@ namespace DefenseSystems
 
         private void UpdateIcon()
         {
+            var state = Bus.ActiveController.State;
             var position = new Vector3D(_shieldIconPos.X, _shieldIconPos.Y, 0);
             var fov = MyAPIGateway.Session.Camera.FovWithZoom;
             double aspectratio = MyAPIGateway.Session.Camera.ViewportSize.X / MyAPIGateway.Session.Camera.ViewportSize.Y;
@@ -373,30 +388,30 @@ namespace DefenseSystems
             var up = cameraWorldMatrix.Up;
             scale = 0.08 * scale;
 
-            var percent = DsState.State.ShieldPercent;
-            var icon2FSelect = percent < 99 ? GetIconMeterfloat() : 0;
-            var heat = DsState.State.Heat;
+            var percent = state.Value.ShieldPercent;
+            var icon2FSelect = percent < 99 ? GetIconMeterfloat(state) : 0;
+            var heat = state.Value.Heat;
 
             var icon1 = GetHudIcon1FromFloat(percent);
             var icon2 = GetHudIcon2FromFloat(icon2FSelect);
-            var icon3 = GetHudIcon3FromInt(heat, _tick180);
-            var showIcon2 = DsState.State.Online;
+            var icon3 = GetHudIcon3FromInt(heat, Bus.Tick180);
+            var showIcon2 = state.Value.Online;
             Color color;
-            if (percent > 0 && percent < 10 && _count < 30) color = Color.Red;
+            if (percent > 0 && percent < 10 && Bus.Count < 30) color = Color.Red;
             else color = Color.White;
-            MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.LDR); 
+            MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.LDR);
             if (showIcon2 && icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.LDR);
             if (icon3 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon3, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.LDR);
         }
 
-        private float GetIconMeterfloat()
+        private float GetIconMeterfloat(ControllerState state)
         {
             if (_shieldPeakRate <= 0) return 0;
             var dps = _runningDamage;
             var hps = _runningHeal;
             var reduction = _expChargeReduction > 0 ? _shieldPeakRate / _expChargeReduction : _shieldPeakRate;
             if (hps > 0 && dps <= 0) return reduction / _shieldPeakRate;
-            if (DsState.State.ShieldPercent > 99 || (hps <= 0 && dps <= 0)) return 0;
+            if (state.Value.ShieldPercent > 99 || (hps <= 0 && dps <= 0)) return 0;
             if (hps <= 0) return 0.0999f;
 
             if (hps > dps)

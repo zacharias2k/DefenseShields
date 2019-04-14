@@ -83,24 +83,17 @@ namespace DefenseSystems
                     EmiState.State.Backup = true;
                     EmiState.State.Suspend = true;
                     Session.Instance.BlockTagBackup(Emitter);
-                    if (Bus.ActiveEmitter == this)
-                    {
-                        Bus.EmitterMode = (int)EmitterMode;
-                        Bus.EmitterEvent = true;
-                    }
                 }
                 if (!_isDedicated && !_blockReset) BlockReset(true);
                 return true;
             }
 
-            var currentMode = (int)EmitterMode;
-            var busMode = Bus.EmitterMode;
-            if (currentMode != busMode || EmiState.State.Backup || EmiState.State.Suspend)
+            if (EmiState.State.Mode != (int)Bus.EmitterMode || EmiState.State.Backup || EmiState.State.Suspend)
             {
                 EmiState.State.Suspend = false;
                 EmiState.State.Backup = false;
-                Bus.EmitterMode = (int)EmitterMode;
-                Bus.EmitterEvent = true;
+                Bus.EmitterMode = (Bus.EmitterModes) EmiState.State.Mode;
+                Bus.Field.EmitterEvent = true;
                 Session.Instance.BlockTagActive(Emitter);
             }
             return false;
@@ -110,19 +103,16 @@ namespace DefenseSystems
         {
             EmiState.State.ActiveEmitterId = MyCube.EntityId;
 
-            if (Bus.EmitterMode != (int)EmitterMode) Bus.EmitterMode = (int)EmitterMode;
-
             LosLogic();
 
-            Bus.EmitterLos = EmiState.State.Los;
+            Bus.Field.EmitterLos = EmiState.State.Los;
 
-            var bus = Bus;
-            var controller = bus.ActiveController;
+            var controller = Bus.ActiveController;
             var nullController = controller == null;
-            var shieldWaiting = !nullController && controller.DsState.State.EmitterLos != EmiState.State.Los;
-            if (shieldWaiting) bus.EmitterEvent = true;
+            var shieldWaiting = !nullController && controller.State.Value.EmitterLos != EmiState.State.Los;
+            if (shieldWaiting) Bus.Field.EmitterEvent = true;
 
-            if (!EmiState.State.Los || nullController || shieldWaiting || !controller.DsState.State.Online || !(_tick >= controller.ResetEntityTick))
+            if (!EmiState.State.Los || nullController || shieldWaiting || !controller.State.Value.Online || !(_tick >= controller.ResetEntityTick))
             {
                 if (!_isDedicated && !_blockReset) BlockReset(true);
                 return false;
@@ -143,9 +133,9 @@ namespace DefenseSystems
 
         private void NeedUpdate()
         {
-            EmiState.State.Mode = (int)EmitterMode;
-            EmiState.State.BoundingRange = Bus.ActiveController?.BoundingRange ?? 0f;
-            EmiState.State.Compatible = (Bus.IsStatic && EmitterMode == EmitterType.Station) || (!Bus.IsStatic && EmitterMode != EmitterType.Station);
+            //EmiState.State.Mode = (int)EmitterMode;
+            EmiState.State.BoundingRange = Bus.Field?.BoundingRange ?? 0f;
+            EmiState.State.Compatible = (Bus.IsStatic && EmiState.State.Mode == 0) || (!Bus.IsStatic && EmiState.State.Mode != 0);
             EmiState.SaveState();
             if (Session.Instance.MpActive) EmiState.NetworkUpdate();
         }
@@ -154,7 +144,7 @@ namespace DefenseSystems
         {
             try
             {
-                if (myTerminalBlock.IsWorking && Bus != null) Bus.CheckEmitters = true;
+                if (myTerminalBlock.IsWorking && Bus != null) Bus.Field.CheckEmitters = true;
             }
             catch (Exception ex) { Log.Line($"Exception in CheckEmitter: {ex}"); }
         }
@@ -171,18 +161,18 @@ namespace DefenseSystems
             switch (Definition.Name)
             {
                 case "EmitterST":
-                    EmitterMode = EmitterType.Station;
+                    EmiState.State.Mode = 0;
                     Entity.TryGetSubpart("Rotor", out SubpartRotor);
                     break;
                 case "EmitterL":
                 case "EmitterLA":
-                    EmitterMode = EmitterType.Large;
+                    EmiState.State.Mode = 1;
                     if (Definition.Name == "EmitterLA") _compact = true;
                     else Entity.TryGetSubpart("Rotor", out SubpartRotor);
                     break;
                 case "EmitterS":
                 case "EmitterSA":
-                    EmitterMode = EmitterType.Small;
+                    EmiState.State.Mode = 2;
                     if (Definition.Name == "EmitterSA") _compact = true;
                     else Entity.TryGetSubpart("Rotor", out SubpartRotor);
                     break;
