@@ -23,10 +23,9 @@ namespace DefenseSystems
             _isDedicated = Session.Instance.DedicatedServer;
             _mpActive = Session.Instance.MpActive;
             Inited = true;
-            return;
         }
 
-        internal void Split(MyEntity type, Bus.LogicState state)
+        internal void Split(MyEntity type, LogicState state)
         {
             Log.Line("[Bus Has Split--]");
             OnBusSplit?.Invoke(type, state);

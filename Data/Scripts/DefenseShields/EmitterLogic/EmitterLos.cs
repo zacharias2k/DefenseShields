@@ -57,7 +57,11 @@ namespace DefenseSystems
                 UpdateLosState();
                 EmiState.State.Los = _blocksLos.Count <= 1500;
 
-                if (!EmiState.State.Los) Bus.Field.EmitterEvent = true;
+                if (!EmiState.State.Los)
+                {
+                    //Bus.Field.EmitterEvent = true;
+                    Bus.DelayEvents(Bus.Events.EmitterEvent);
+                }
                 else LosScaledCloud.Clear();
 
                 Bus.Field.CheckEmitters = false;

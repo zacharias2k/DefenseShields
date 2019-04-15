@@ -192,7 +192,8 @@ namespace DefenseSystems
                         Log.Line($"[L-Emitter Init] - state:{state} - myId:{emitter.MyCube.EntityId}");
                         break;
                 }
-                Field.EmitterEvent = true;
+                //Field.EmitterEvent = true;
+                DelayEvents(Events.EmitterEvent);
                 ActiveEmitterId = ActiveEmitter?.MyCube?.EntityId ?? 0;
             }
             else if (regen != null)
@@ -279,7 +280,6 @@ namespace DefenseSystems
             }
             if (!BusIsSplit && newSplit) Split(cube.CubeGrid, state);
         }
-
 
         internal void BlockMonitor()
         {

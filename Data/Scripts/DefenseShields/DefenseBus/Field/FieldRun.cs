@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using DefenseSystems.Support;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -8,8 +9,6 @@ namespace DefenseSystems
 {
     internal partial class Fields
     {
-
-
         internal Fields(Bus bus)
         {
             Bus = bus;
@@ -35,12 +34,12 @@ namespace DefenseSystems
 
         internal Controllers.Status Status()
         {
-            if (UpdateDimensions) RefreshDimensions();
+            //if (UpdateDimensions) RefreshDimensions();
 
-            if (Bus.Tick >= LosCheckTick) LosCheck();
-            if (EmitterEvent) EmitterEventDetected();
-            if (ShapeEvent || FitChanged)CheckExtents();
-            if (AdjustShape) ReAdjustShape(true);
+            //if (Bus.Tick >= LosCheckTick) LosCheck();
+            //if (EmitterEvent) EmitterEventDetected();
+            //if (ShapeEvent || FitChanged) CheckExtents();
+            //if (AdjustShape) ReAdjustShape(true);
 
             if (!ServerShieldUp())
             {
@@ -57,7 +56,7 @@ namespace DefenseSystems
         {
             var a = Bus.ActiveController;
             var state = a.State;
-            if (Bus.Field.UpdateDimensions) Bus.Field.RefreshDimensions();
+            //if (Bus.Field.UpdateDimensions) Bus.Field.RefreshDimensions();
 
             if (!Bus.Field.ShieldIsMobile && !state.Value.IncreaseO2ByFPercent.Equals(_ellipsoidOxyProvider.O2Level))
                 _ellipsoidOxyProvider.UpdateOxygenProvider(Bus.Field.DetectMatrixOutsideInv, state.Value.IncreaseO2ByFPercent);
@@ -76,7 +75,9 @@ namespace DefenseSystems
             ShieldEnt.Render.Visible = true;
             UpdateRender = true;
             UpdateMobileShape = true;
-            ShapeEvent = true;
+            //ShapeEvent = true;
+            Bus.DelayEvents(Bus.Events.ShapeEvent);
+
             if (_isServer)
             {
                 CleanWebEnts();
@@ -96,10 +97,12 @@ namespace DefenseSystems
 
         internal void Suspend(Controllers controller)
         {
+            /*
             if (Bus.ActiveController == controller && Bus.Field.EmitterEvent)
             {
                 Bus.Field.EmitterEventDetected();
             }
+            */
             Bus.Field.OfflineShield(true, true, Controllers.Status.Suspend, true);
         }
 
@@ -275,7 +278,8 @@ namespace DefenseSystems
                 if (resetShape)
                 {
                     ResetShape(true, true);
-                    ShapeEvent = true;
+                    //ShapeEvent = true;
+                    Bus.DelayEvents(Bus.Events.ShapeEvent);
                 }
             }
             if (_isServer)

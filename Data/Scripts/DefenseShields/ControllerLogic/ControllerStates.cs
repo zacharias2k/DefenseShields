@@ -181,7 +181,8 @@ namespace DefenseSystems
             }
             else if (Bus.Field.ShapeTick != uint.MinValue && Bus.Tick >= Bus.Field.ShapeTick)
             {
-                Bus.Field.ShapeEvent = true;
+                //Bus.Field.ShapeEvent = true;
+                Bus.DelayEvents(Bus.Events.ShapeEvent);
                 Bus.Field.ShapeTick = uint.MinValue;
             }
             State.Value.Waking = false;
@@ -244,7 +245,11 @@ namespace DefenseSystems
                 var newShape = newSettings.ExtendFit != Set.Value.ExtendFit || newSettings.FortifyShield != Set.Value.FortifyShield || newSettings.SphereFit != Set.Value.SphereFit;
                 Set.Value = newSettings;
                 SettingsUpdated = true;
-                if (newShape) Bus.Field.FitChanged = true;
+                if (newShape)
+                {
+                    //Bus.Field.FitChanged = true;
+                    Bus.DelayEvents(Bus.Events.FitChanged);
+                }
             }
         }
 

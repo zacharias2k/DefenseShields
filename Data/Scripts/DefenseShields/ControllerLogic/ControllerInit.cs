@@ -58,7 +58,6 @@ namespace DefenseSystems
         private void BeforeInit()
         {
             if (Controller.CubeGrid.Physics == null) return;
-            Log.Line($"{_isServer} - {Session.Instance.FunctionalShields.ContainsKey(this)} - {Session.Instance.AllControllers.Contains(this)} - {Bus != null}");
             _isServer = Session.Instance.IsServer;
             _isDedicated = Session.Instance.DedicatedServer;
             _mpActive = Session.Instance.MpActive;

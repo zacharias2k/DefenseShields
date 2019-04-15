@@ -161,6 +161,7 @@
         {
             try
             {
+                FutureEvents.Tick();
                 Timings();
                 if (!ThreadEvents.IsEmpty)
                 {

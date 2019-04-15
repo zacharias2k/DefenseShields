@@ -30,8 +30,7 @@ namespace DefenseSystems
             a.State.Value.EmitterLos = EmitterLos;
             if (!ShieldIsMobile)
             {
-                UpdateDimensions = true;
-                if (UpdateDimensions) RefreshDimensions();
+                RefreshDimensions();
             }
 
             if (!EmitterLos)
@@ -40,7 +39,8 @@ namespace DefenseSystems
                 {
                     b.Spine.Physics.ForceActivate();
                     if (Session.Enforced.Debug >= 3) Log.Line($"EmitterStartupFailure: - MaxPower:{FieldMaxPower} - {ShieldSphere.Radius} - ControllerId [{a.Controller.EntityId}]");
-                    LosCheckTick = Session.Instance.Tick + 1800;
+                    //LosCheckTick = Session.Instance.Tick + 1800;
+                    Bus.DelayEvents(Bus.Events.LosCheckTick);
                     a.ProtChangedState();
                     return;
                 }
@@ -160,7 +160,8 @@ namespace DefenseSystems
             {
                 case Bus.EmitterModes.Station:
                     _shapeChanged = false;
-                    UpdateDimensions = true;
+                    //UpdateDimensions = true;
+                    Bus.DelayEvents(Bus.Events.UpdateDimensions);
                     break;
                 case Bus.EmitterModes.LargeShip:
                     UpdateMobileShape = true;
@@ -250,8 +251,10 @@ namespace DefenseSystems
         {
             LosCheckTick = uint.MaxValue;
             CheckEmitters = true;
-            FitChanged = true;
-            AdjustShape = true;
+            //FitChanged = true;
+            Bus.DelayEvents(Bus.Events.FitChanged);
+            //AdjustShape = true;
+            Bus.DelayEvents(Bus.Events.AdjustShape);
         }
 
     }

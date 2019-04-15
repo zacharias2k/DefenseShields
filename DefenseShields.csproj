@@ -109,6 +109,7 @@
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\SphereTrianglesResponse.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Collision\Ellipsoid\Triangle.cs" />
     <Compile Include="Data\Scripts\DefenseShields\DefenseBus\Field\FieldShape.cs" />
+    <Compile Include="Data\Scripts\DefenseShields\SupportClasses\FutureEvents.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\TurretWeb.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Registry.cs" />
     <Compile Include="Data\Scripts\DefenseShields\SupportClasses\Stats.cs" />

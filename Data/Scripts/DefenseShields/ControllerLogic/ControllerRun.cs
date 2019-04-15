@@ -68,16 +68,18 @@ namespace DefenseSystems
         {
             try
             {
+                //if (Bus.MyResourceDist == null) Log.Line("no Dist");
+                //if (Bus?.ActiveController == null || Bus.Field == null) return;
                 if (!EntityAlive()) return;
                 var fieldMode = State.Value.ProtectMode != 2;
 
                 var protect = ProtectionOn(fieldMode);
                 if (protect != Status.Active)
                 {
-                    if (Bus.Tick1800 && Bus.ActiveController == this) Log.Line($"NotActive: {protect} - {Bus.MyResourceDist.SourcesEnabled} - {Bus.MyResourceDist.ResourceStateByType(GId)} - {Bus.MyResourceDist.MaxAvailableResourceByType(GId)} - {SinkCurrentPower} - {Sink.CurrentInputByType(GId)}");
+                    if (Session.Enforced.Debug >= 3 && Bus.Tick1800 && Bus.ActiveController == this) Log.Line($"NotActive: {protect} - {Bus.MyResourceDist.SourcesEnabled} - {Bus.MyResourceDist.ResourceStateByType(GId)} - {Bus.MyResourceDist.MaxAvailableResourceByType(GId)} - {SinkCurrentPower} - {Sink.CurrentInputByType(GId)}");
                     if (NotFailed)
                     {
-                        if (Session.Enforced.Debug >= 2) Log.Line($"FailState: {protect} - ControllerId [{Controller.EntityId}]");
+                        if (Session.Enforced.Debug >= 3) Log.Line($"FailState: {protect} - ControllerId [{Controller.EntityId}]");
                         if (fieldMode)
                         {
                             var up = protect != Status.Lowered;

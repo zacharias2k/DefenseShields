@@ -93,7 +93,8 @@ namespace DefenseSystems
                 EmiState.State.Suspend = false;
                 EmiState.State.Backup = false;
                 Bus.EmitterMode = (Bus.EmitterModes) EmiState.State.Mode;
-                Bus.Field.EmitterEvent = true;
+                Bus.DelayEvents(Bus.Events.EmitterEvent);
+                //Bus.Field.EmitterEvent = true;
                 Session.Instance.BlockTagActive(Emitter);
             }
             return false;
@@ -110,7 +111,11 @@ namespace DefenseSystems
             var controller = Bus.ActiveController;
             var nullController = controller == null;
             var shieldWaiting = !nullController && controller.State.Value.EmitterLos != EmiState.State.Los;
-            if (shieldWaiting) Bus.Field.EmitterEvent = true;
+            if (shieldWaiting)
+            {
+                //Bus.Field.EmitterEvent = true;
+                Bus.DelayEvents(Bus.Events.EmitterEvent);
+            }
 
             if (!EmiState.State.Los || nullController || shieldWaiting || !controller.State.Value.Online || !(_tick >= controller.ResetEntityTick))
             {

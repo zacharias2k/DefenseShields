@@ -14,9 +14,10 @@ namespace DefenseSystems
         public void ShapeCheck(bool blockAdded)
         {
             var tick = Session.Instance.Tick;
-            ShapeEvent = true;
-
-            LosCheckTick = tick + 1800;
+            //ShapeEvent = true;
+            Bus.DelayEvents(Bus.Events.ShapeEvent);
+            //LosCheckTick = tick + 1800;
+            Bus.DelayEvents(Bus.Events.LosCheckTick);
             if (blockAdded) ShapeTick = tick + 300;
             else ShapeTick = tick + 1800;
         }
@@ -38,8 +39,7 @@ namespace DefenseSystems
             if (ShieldIsMobile) MobileUpdate();
             else
             {
-                UpdateDimensions = true;
-                if (UpdateDimensions) RefreshDimensions();
+                RefreshDimensions();
             }
         }
 
@@ -61,7 +61,8 @@ namespace DefenseSystems
             {
                 if (a.Set.Value.FortifyShield && Bus.Spine.Physics.LinearVelocity.Length() > 15)
                 {
-                    FitChanged = true;
+                    //FitChanged = true;
+                    Bus.DelayEvents(Bus.Events.FitChanged);
                     a.Set.Value.FortifyShield = false;
                 }
             }
@@ -132,14 +133,19 @@ namespace DefenseSystems
             _halfExtentsChanged = !a.State.Value.GridHalfExtents.Equals(_oldGridHalfExtents);
             if (_halfExtentsChanged)
             {
-                AdjustShape = true;
+                //AdjustShape = true;
+                Bus.DelayEvents(Bus.Events.AdjustShape);
             }
         }
 
         internal void ReAdjustShape(bool backGround)
         {
-            if (backGround) GetShapeAdjust();
+            if (backGround) MyAPIGateway.Parallel.Start(GetShapeAdjust, AdjustedShapeCallBack);
             else GetShapeAdjust();
+        }
+
+        private void AdjustedShapeCallBack()
+        {
             AdjustShape = false;
         }
 
@@ -180,7 +186,8 @@ namespace DefenseSystems
 
                 if (emitter == null)
                 {
-                    UpdateDimensions = true;
+                    //UpdateDimensions = true;
+                    Bus.DelayEvents(Bus.Events.UpdateDimensions);
                     return;
                 }
 

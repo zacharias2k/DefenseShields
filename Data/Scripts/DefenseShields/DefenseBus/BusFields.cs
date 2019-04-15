@@ -38,6 +38,7 @@ namespace DefenseSystems
             Suspend,
             Init
         }
+
         internal readonly MyDefinitionId GId = MyResourceDistributorComponent.ElectricityId;
         internal Task FuncTask { get; set; }
         internal readonly float[] ReserveScaler = { float.MaxValue * 0.001f, 0.001f, 1, 1000, 1000000 };

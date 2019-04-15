@@ -106,7 +106,8 @@
             var logic = block?.GameLogic?.GetAs<Controllers>();
             if (logic?.Bus?.Field == null) return;
             logic.Set.Value.ExtendFit = newValue;
-            logic.Bus.Field.FitChanged = true;
+            //logic.Bus.Field.FitChanged = true;
+            logic.Bus.DelayEvents(Bus.Events.FitChanged);
             logic.SettingsUpdated = true;
             logic.ClientUiUpdate = true;
         }
@@ -122,7 +123,8 @@
             var logic = block?.GameLogic?.GetAs<Controllers>();
             if (logic?.Bus?.Field == null) return;
             logic.Set.Value.SphereFit = newValue;
-            logic.Bus.Field.FitChanged = true;
+            //logic.Bus.Field.FitChanged = true;
+            logic.Bus.DelayEvents(Bus.Events.FitChanged);
             logic.SettingsUpdated = true;
             logic.ClientUiUpdate = true;
         }
@@ -138,7 +140,8 @@
             var logic = block?.GameLogic?.GetAs<Controllers>();
             if (logic?.Bus?.Field == null) return;
             logic.Set.Value.FortifyShield = newValue;
-            logic.Bus.Field.FitChanged = true;
+            //logic.Bus.Field.FitChanged = true;
+            logic.Bus.DelayEvents(Bus.Events.FitChanged);
             logic.SettingsUpdated = true;
             logic.ClientUiUpdate = true;
         }
@@ -154,10 +157,12 @@
             var logic = block?.GameLogic?.GetAs<Controllers>();
             if (logic?.Bus?.Field == null) return;
             logic.Set.Value.Width = newValue;
-            logic.Bus.Field.UpdateDimensions = true;
+            //logic.Bus.Field.UpdateDimensions = true;
+            logic.Bus.DelayEvents(Bus.Events.UpdateDimensions);
             logic.SettingsUpdated = true;
             logic.ClientUiUpdate = true;
-            logic.Bus.Field.LosCheckTick = Session.Instance.Tick + 1800;
+            //logic.Bus.Field.LosCheckTick = Session.Instance.Tick + 1800;
+            logic.Bus.DelayEvents(Bus.Events.LosCheckTick);
         }
 
         internal static float GetHeight(IMyTerminalBlock block)
@@ -171,10 +176,12 @@
             var logic = block?.GameLogic?.GetAs<Controllers>();
             if (logic?.Bus?.Field == null) return;
             logic.Set.Value.Height = newValue;
-            logic.Bus.Field.UpdateDimensions = true;
+            //logic.Bus.Field.UpdateDimensions = true;
+            logic.Bus.DelayEvents(Bus.Events.UpdateDimensions);
             logic.SettingsUpdated = true;
             logic.ClientUiUpdate = true;
-            logic.Bus.Field.LosCheckTick = Session.Instance.Tick + 1800;
+            //logic.Bus.Field.LosCheckTick = Session.Instance.Tick + 1800;
+            logic.Bus.DelayEvents(Bus.Events.LosCheckTick);
         }
 
         internal static float GetDepth(IMyTerminalBlock block)
@@ -188,10 +195,12 @@
             var logic = block?.GameLogic?.GetAs<Controllers>();
             if (logic?.Bus?.Field == null) return;
             logic.Set.Value.Depth = newValue;
-            logic.Bus.Field.UpdateDimensions = true;
+            //logic.Bus.Field.UpdateDimensions = true;
+            logic.Bus.DelayEvents(Bus.Events.UpdateDimensions);
             logic.SettingsUpdated = true;
             logic.ClientUiUpdate = true;
-            logic.Bus.Field.LosCheckTick = Session.Instance.Tick + 1800;
+            //logic.Bus.Field.LosCheckTick = Session.Instance.Tick + 1800;
+            logic.Bus.DelayEvents(Bus.Events.LosCheckTick);
         }
 
         internal static float GetOffsetWidth(IMyTerminalBlock block)
@@ -206,10 +215,12 @@
             if (logic?.Bus?.Field == null) return;
 
             logic.Set.Value.ShieldOffset.X = (int)newValue;
-            logic.Bus.Field.UpdateDimensions = true;
+            //logic.Bus.Field.UpdateDimensions = true;
+            logic.Bus.DelayEvents(Bus.Events.UpdateDimensions);
             logic.SettingsUpdated = true;
             logic.ClientUiUpdate = true;
-            logic.Bus.Field.LosCheckTick = Session.Instance.Tick + 1800;
+            //logic.Bus.Field.LosCheckTick = Session.Instance.Tick + 1800;
+            logic.Bus.DelayEvents(Bus.Events.LosCheckTick);
             ((MyCubeBlock)block).UpdateTerminal();
         }
 
@@ -225,10 +236,12 @@
             if (logic?.Bus?.Field == null) return;
 
             logic.Set.Value.ShieldOffset.Y = (int)newValue;
-            logic.Bus.Field.UpdateDimensions = true;
+            //logic.Bus.Field.UpdateDimensions = true;
+            logic.Bus.DelayEvents(Bus.Events.UpdateDimensions);
             logic.SettingsUpdated = true;
             logic.ClientUiUpdate = true;
-            logic.Bus.Field.LosCheckTick = Session.Instance.Tick + 1800;
+            //logic.Bus.Field.LosCheckTick = Session.Instance.Tick + 1800;
+            logic.Bus.DelayEvents(Bus.Events.LosCheckTick);
             ((MyCubeBlock)block).UpdateTerminal();
         }
 
@@ -244,10 +257,12 @@
             if (logic?.Bus?.Field == null) return;
 
             logic.Set.Value.ShieldOffset.Z = (int)newValue;
-            logic.Bus.Field.UpdateDimensions = true;
+            //logic.Bus.Field.UpdateDimensions = true;
+            logic.Bus.DelayEvents(Bus.Events.UpdateDimensions);
             logic.SettingsUpdated = true;
             logic.ClientUiUpdate = true;
-            logic.Bus.Field.LosCheckTick = Session.Instance.Tick + 1800;
+            //logic.Bus.Field.LosCheckTick = Session.Instance.Tick + 1800;
+            logic.Bus.DelayEvents(Bus.Events.LosCheckTick);
             ((MyCubeBlock)block).UpdateTerminal();
         }
 
