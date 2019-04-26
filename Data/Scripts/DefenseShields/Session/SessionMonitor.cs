@@ -1,4 +1,9 @@
-﻿namespace DefenseShields
+﻿using Sandbox;
+using Sandbox.Engine.Multiplayer;
+using Sandbox.ModAPI.Interfaces;
+using Sandbox.ModAPI.Interfaces.Terminal;
+
+namespace DefenseShields
 {
     using System;
     using System.Collections.Generic;
@@ -275,7 +280,7 @@
                             var meteor = ent as IMyMeteor;
                             if (meteor != null)
                             {
-                                if (CustomCollision.FutureIntersect(s, ent, s.DetectMatrixOutside, s.DetectMatrixOutsideInv) != null)
+                                if (CustomCollision.FutureIntersect(s, ent, s.DetectMatrixOutside, s.DetectMatrixOutsideInv))
                                 {
                                     if (Enforced.Debug >= 2) Log.Line($"[Future Intersecting Meteor] distance from shieldCenter: {Vector3D.Distance(s.DetectionCenter, ent.WorldMatrix.Translation)} - waking:");
                                     newMover = true;
@@ -365,29 +370,26 @@
                     }
                 }
             }
-            if (!GameLoaded && Tick > 100)
+            if (!GameLoaded)
             {
-                if (Tick > 100)
+                if (!MiscLoaded)
                 {
-                    if (!WarHeadLoaded && WarTerminalReset != null)
+                    if (SessionReady && GlobalProtect.Count > 0 && (IsServer || !IsServer && ClientLoadCount++ > 60))
                     {
-                        WarTerminalReset.ShowInTerminal = true;
-                        WarTerminalReset = null;
-                        WarHeadLoaded = true;
-                    }
-
-                    if (!MiscLoaded)
-                    {
-                        MiscLoaded = true;
                         UtilsStatic.GetDefinitons();
                         if (!IsServer) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
+                        Api.Init();
+                        MiscLoaded = true;
+                        GameLoaded = true;
                     }
-                    GameLoaded = true;
                 }
-                else if (!FirstLoop)
+
+                if (MiscLoaded && !WarHeadLoaded && WarTerminalReset != null)
                 {
-                    FirstLoop = true;
-                    _bTapi.Init();
+                    WarTerminalReset.ShowInTerminal = true;
+                    WarTerminalReset = null;
+                    WarHeadLoaded = true;
+                    GameLoaded = true;
                 }
             }
 

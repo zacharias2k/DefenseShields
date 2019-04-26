@@ -71,6 +71,7 @@
 
         internal readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         internal readonly Dictionary<MyEntity, MyProtectors> GlobalProtect = new Dictionary<MyEntity, MyProtectors>();
+        internal readonly Dictionary<long, ShieldGridComponent> IdToBus = new Dictionary<long, ShieldGridComponent>();
 
         internal readonly HashSet<DefenseShields> ActiveShields = new HashSet<DefenseShields>();
         internal readonly ConcurrentDictionary<DefenseShields, bool> FunctionalShields = new ConcurrentDictionary<DefenseShields, bool>();
@@ -199,7 +200,7 @@
         private volatile bool _newFrame;
 
         private readonly MonitorWork _workData = new MonitorWork();
-        private readonly TapiBackend _bTapi = new TapiBackend();
+        internal readonly ApiBackend Api = new ApiBackend();
         private readonly List<MyCubeBlock> _warHeadCubeHits = new List<MyCubeBlock>();
         private readonly List<MyCubeGrid> _warHeadGridHits = new List<MyCubeGrid>();
         private readonly List<MyEntity> _pruneWarGrids = new List<MyEntity>();
@@ -242,6 +243,7 @@
         internal int MinScaler { get; set; } = 1;
         internal int PlayerEventId { get; set; }
         internal long LastTerminalId { get; set; }
+        internal int ClientLoadCount { get; set; }
 
         internal float MaxEntitySpeed { get; set; } = 210;
 
@@ -276,7 +278,8 @@
         internal bool ModAction { get; set; }
         internal bool CreativeWarn { get; set; }
         internal bool ThyaImages { get; set; }
-        internal bool FirstLoop { get; set; }
+        internal bool SessionReady { get; set; }
+
         internal DefenseShields HudComp { get; set; }
         internal DSUtils Dsutil1 { get; set; } = new DSUtils();
 

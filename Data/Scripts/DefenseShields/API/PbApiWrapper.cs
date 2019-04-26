@@ -13,6 +13,7 @@ namespace DefenseShields
         private IMyTerminalBlock _block;
 
         private readonly Func<IMyTerminalBlock, RayD, Vector3D?> _rayIntersectShield;
+        private readonly Func<IMyTerminalBlock, LineD, Vector3D?> _lineIntersectShield;
         private readonly Func<IMyTerminalBlock, Vector3D, bool> _pointInShield;
         private readonly Func<IMyTerminalBlock, float> _getShieldPercent;
         private readonly Func<IMyTerminalBlock, int> _getShieldHeat;
@@ -45,6 +46,7 @@ namespace DefenseShields
             if (delegates == null) return;
 
             _rayIntersectShield = (Func<IMyTerminalBlock, RayD, Vector3D?>)delegates["RayIntersectShield"];
+            _lineIntersectShield = (Func<IMyTerminalBlock, LineD, Vector3D?>)delegates["LineIntersectShield"];
             _pointInShield = (Func<IMyTerminalBlock, Vector3D, bool>)delegates["PointInShield"];
             _getShieldPercent = (Func<IMyTerminalBlock, float>)delegates["GetShieldPercent"];
             _getShieldHeat = (Func<IMyTerminalBlock, int>)delegates["GetShieldHeat"];
@@ -70,6 +72,7 @@ namespace DefenseShields
             if (!IsShieldBlock()) _block = GetShieldBlock(_block.CubeGrid) ?? _block;
         }
         public Vector3D? RayIntersectShield(RayD ray) => _rayIntersectShield?.Invoke(_block, ray) ?? null;
+        public Vector3D? LineIntersectShield(LineD line) => _lineIntersectShield?.Invoke(_block, line) ?? null;
         public bool PointInShield(Vector3D pos) => _pointInShield?.Invoke(_block, pos) ?? false;
         public float GetShieldPercent() => _getShieldPercent?.Invoke(_block) ?? -1;
         public int GetShieldHeat() => _getShieldHeat?.Invoke(_block) ?? -1;

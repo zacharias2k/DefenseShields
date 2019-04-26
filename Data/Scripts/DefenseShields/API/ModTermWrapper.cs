@@ -1,14 +1,17 @@
-﻿using VRage.Game.ModAPI;
+﻿using System;
+using System.Collections.Generic;
+using Sandbox.ModAPI;
+using Sandbox.ModAPI.Interfaces;
+using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
-using Sandbox.ModAPI;
-using System;
-using System.Collections.Generic;
+
 namespace DefenseShields
 {
-    internal class ShieldApi
+    internal class ShieldTApi
     {
-        private bool _apiInit;
+        internal IMyTerminalBlock InitBlock { get; set; }
+
         private Func<IMyTerminalBlock, RayD, long, float, bool, bool, Vector3D?> _rayAttackShield; // negative damage values heal
         private Func<IMyTerminalBlock, LineD, long, float, bool, bool, Vector3D?> _lineAttackShield; // negative damage values heal
         private Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, bool> _pointAttackShield; // negative damage values heal
@@ -40,47 +43,11 @@ namespace DefenseShields
         private Func<IMyTerminalBlock, Vector3D, double> _getDistanceToShield;
         private Func<IMyTerminalBlock, Vector3D, Vector3D?> _getClosestShieldPoint;
 
-        private const long Channel = 1365616918;
-
-        public bool IsReady { get; private set; }
-
-        private void HandleMessage(object o)
+        public bool ApiLoad()
         {
-            if (_apiInit) return;
-            var dict = o as IReadOnlyDictionary<string, Delegate>;
-            if (dict == null)
-                return;
-            ApiLoad(dict);
-            IsReady = true;
-        }
+            var delegates = InitBlock?.GetProperty("DefenseSystemsAPI")?.As<Dictionary<string, Delegate>>().GetValue(InitBlock);
+            if (delegates == null) return false;
 
-        private bool _isRegistered;
-
-        public bool Load()
-        {
-            if (!_isRegistered)
-            {
-                _isRegistered = true;
-                MyAPIGateway.Utilities.RegisterMessageHandler(Channel, HandleMessage);
-            }
-            if (!IsReady)
-                MyAPIGateway.Utilities.SendModMessage(Channel, "ApiEndpointRequest");
-            return IsReady;
-        }
-
-        public void Unload()
-        {
-            if (_isRegistered)
-            {
-                _isRegistered = false;
-                MyAPIGateway.Utilities.UnregisterMessageHandler(Channel, HandleMessage);
-            }
-            IsReady = false;
-        }
-
-        public void ApiLoad(IReadOnlyDictionary<string, Delegate> delegates)
-        {
-            _apiInit = true;
             _rayAttackShield = (Func<IMyTerminalBlock, RayD, long, float, bool, bool, Vector3D?>)delegates["RayAttackShield"];
             _lineAttackShield = (Func<IMyTerminalBlock, LineD, long, float, bool, bool, Vector3D?>)delegates["LineAttackShield"];
             _pointAttackShield = (Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, bool>)delegates["PointAttackShield"];
@@ -111,8 +78,8 @@ namespace DefenseShields
             _getClosestShield = (Func<Vector3D, IMyTerminalBlock>)delegates["GetClosestShield"];
             _getDistanceToShield = (Func<IMyTerminalBlock, Vector3D, double>)delegates["GetDistanceToShield"];
             _getClosestShieldPoint = (Func<IMyTerminalBlock, Vector3D, Vector3D?>)delegates["GetClosestShieldPoint"];
+            return true;
         }
-
         public Vector3D? RayAttackShield(IMyTerminalBlock block, RayD ray, long attackerId, float damage, bool energy, bool drawParticle) =>
             _rayAttackShield?.Invoke(block, ray, attackerId, damage, energy, drawParticle) ?? null;
         public Vector3D? LineAttackShield(IMyTerminalBlock block, LineD line, long attackerId, float damage, bool energy, bool drawParticle) =>

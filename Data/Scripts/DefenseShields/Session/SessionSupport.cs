@@ -80,6 +80,11 @@ namespace DefenseShields
                 }
             }
         }
+
+        private void OnSessionReady()
+        {
+            SessionReady = true;
+        }
         #endregion
     }
 }

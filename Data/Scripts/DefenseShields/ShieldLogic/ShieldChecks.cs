@@ -85,13 +85,18 @@ namespace DefenseShields
             if (Session.Enforced.Debug >= 3 && ShieldComp.LinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.LinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.LinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
             lock (SubLock)
             {
+                foreach (var s in ShieldComp.SubGrids) Session.Instance.IdToBus.Remove(s.EntityId);
                 ShieldComp.SubGrids.Clear();
                 ShieldComp.LinkedGrids.Clear();
                 for (int i = 0; i < gotGroups.Count; i++)
                 {
                     var sub = gotGroups[i];
                     if (sub == null) continue;
-                    if (MyAPIGateway.GridGroups.HasConnection(MyGrid, sub, GridLinkTypeEnum.Mechanical)) ShieldComp.SubGrids.Add((MyCubeGrid)sub);
+                    if (MyAPIGateway.GridGroups.HasConnection(MyGrid, sub, GridLinkTypeEnum.Mechanical))
+                    {
+                        ShieldComp.SubGrids.Add((MyCubeGrid)sub);
+                        Session.Instance.IdToBus[sub.EntityId] = ShieldComp;
+                    }
                     ShieldComp.LinkedGrids.Add(sub as MyCubeGrid, new SubGridInfo(sub as MyCubeGrid, sub == MyGrid, false));
                 }
             }

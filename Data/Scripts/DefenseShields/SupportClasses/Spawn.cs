@@ -1,4 +1,6 @@
-﻿namespace DefenseShields.Support
+﻿using Sandbox.Game.Entities;
+
+namespace DefenseShields.Support
 {
     using System;
     using System.Collections.Generic;
@@ -69,9 +71,9 @@
             {
                 var myParent = parented ? parent : null;
                 var ent = new MyEntity { NeedsWorldMatrix = true };
-                ent.Init(new StringBuilder(displayName), model, myParent, null);
+                ent.Init(new StringBuilder(displayName), model, myParent, null, null);
                 ent.Name = $"{parent.EntityId}";
-                MyAPIGateway.Entities.AddEntity(ent);
+                MyEntities.Add(ent);
                 return ent;
             }
             catch (Exception ex) { Log.Line($"Exception in EmptyEntity: {ex}"); return null; }

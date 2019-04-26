@@ -429,7 +429,11 @@ namespace DefenseShields
 
         private void InitEntities(bool fullInit)
         {
-            ShieldEnt?.Close();
+            if (ShieldEnt != null)
+            {
+                Session.Instance.IdToBus.Remove(ShieldEnt.EntityId);
+                ShieldEnt.Close();
+            }
             _shellActive?.Close();
             _shellPassive?.Close();
 
@@ -452,6 +456,7 @@ namespace DefenseShields
                 _shellPassive.Render.UpdateRenderObject(false);
                 _shellPassive.Save = false;
                 _shellPassive.SyncFlag = false;
+                _shellPassive.RemoveFromGamePruningStructure();
 
                 _shellActive = Spawn.EmptyEntity("dShellActive", $"{Session.Instance.ModPath()}{_modelActive}", parent, true);
                 _shellActive.Render.CastShadows = false;
@@ -463,6 +468,7 @@ namespace DefenseShields
                 _shellActive.Save = false;
                 _shellActive.SyncFlag = false;
                 _shellActive.SetEmissiveParts("ShieldEmissiveAlpha", Color.Transparent, 0f);
+                _shellActive.RemoveFromGamePruningStructure();
             }
 
             ShieldEnt = Spawn.EmptyEntity("dShield", null, parent);
@@ -473,6 +479,8 @@ namespace DefenseShields
             ShieldEnt.Save = false;
             _shieldEntRendId = ShieldEnt.Render.GetRenderObjectID();
             _updateRender = true;
+
+            if (ShieldEnt != null) Session.Instance.IdToBus[ShieldEnt.EntityId] = ShieldComp;
 
             if (Icosphere == null) Icosphere = new Icosphere.Instance(Session.Instance.Icosphere);
             if (Session.Enforced.Debug == 3) Log.Line($"InitEntities: mode: {ShieldMode}, spawn complete - ShieldId [{Shield.EntityId}]");

@@ -6,6 +6,7 @@ using Sandbox.Game.Entities;
 using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
+using VRage.Utils;
 using VRageMath;
 namespace DefenseShields
 {
@@ -14,6 +15,7 @@ namespace DefenseShields
         #region DamageHandler
         private readonly long[] _nodes = new long[1000];
         private readonly Dictionary<long, MyEntity> _backingDict = new Dictionary<long, MyEntity>(1001);
+        private readonly object _entLock = new object();
         private int _emptySpot;
         private MyEntity _previousEnt;
         private long _previousEntId = -1;
@@ -23,6 +25,7 @@ namespace DefenseShields
             try
             {
                 var block = target as IMySlimBlock;
+                var character = target as IMyCharacter;
                 if (block != null)
                 {
                     var damageType = info.Type;
@@ -202,20 +205,20 @@ namespace DefenseShields
                     protectors.IgnoreAttackerId = -1;
                     if (Enforced.Debug >= 2) Log.Line($"[Uncaught Damage] Type:{damageType} - Amount:{info.Amount} - nullTrue:{trueAttacker == null} - nullHostile:{hostileEnt == null} - nullShield:{protectors.BlockingShield == null} - iShell:{protectors.IntegrityShield != null} - protectorShields:{protectors.Shields.Count} - attackerId:{info.AttackerId}");
                 }
-                else if (target is IMyCharacter) CharacterProtection(target, info);
+                if (character != null && CharacterProtection(character, info.AttackerId, info.Type)) info.Amount = 0;
             }
             catch (Exception ex) { Log.Line($"Exception in SessionDamageHandler {_previousEnt == null}: {ex}"); }
         }
 
-        private void CharacterProtection(object target, MyDamageInformation info)
+        private bool CharacterProtection(IMyCharacter character, long attackerId, MyStringHash damageType)
         {
-            if (info.Type == MpIgnoreDamage || info.Type == MyDamageType.LowPressure) return;
-            var myEntity = target as MyEntity;
-            if (myEntity == null) return;
+            if (damageType == MpIgnoreDamage || damageType == MyDamageType.LowPressure) return false;
+            var myEntity = character as MyEntity;
+            if (myEntity == null) return false;
 
             MyProtectors protectors;
             GlobalProtect.TryGetValue(myEntity, out protectors);
-            if (protectors == null) return;
+            if (protectors == null) return false;
 
             foreach (var shield in protectors.Shields)
             {
@@ -223,64 +226,52 @@ namespace DefenseShields
                 if (!shieldActive) continue;
 
                 MyEntity hostileEnt;
-                var attackerId = info.AttackerId;
                 if (attackerId == _previousEntId) hostileEnt = _previousEnt;
                 else UpdatedHostileEnt(attackerId, out hostileEnt);
 
-                var nullAttacker = hostileEnt == null;
-                var playerProtected = false;
-
-                ProtectCache protectedEnt;
-                if (nullAttacker)
-                {
-                    shield.ProtectedEntCache.TryGetValue(myEntity, out protectedEnt);
-                    if (protectedEnt != null && protectedEnt.Relation == DefenseShields.Ent.Protected) playerProtected = true;
-                }
-                else
-                {
-                    shield.ProtectedEntCache.TryGetValue(hostileEnt, out protectedEnt);
-                    if (protectedEnt != null && protectedEnt.Relation != DefenseShields.Ent.Protected) playerProtected = true;
-                }
-
-                if (!playerProtected) continue;
-                info.Amount = 0f;
-                myEntity.Physics.SetSpeeds(Vector3.Zero, Vector3.Zero);
+                var playerInside = shield.ProtectedEntCache.ContainsKey(myEntity);
+                if (!playerInside || hostileEnt != null && shield.ProtectedEntCache.ContainsKey(hostileEnt)) continue;
+                return true;
             }
+            return false;
         }
 
         private void UpdatedHostileEnt(long attackerId, out MyEntity ent)
         {
-            if (attackerId == 0)
+            lock (_entLock)
             {
-                ent = null;
-                return;
-            }
-            MyEntity tmpPreviousEnt;
-            if (_backingDict.TryGetValue(attackerId, out tmpPreviousEnt))
-            {
-                if (!tmpPreviousEnt.MarkedForClose)
+                if (attackerId == 0)
                 {
-                    _previousEnt = tmpPreviousEnt;
-                    _previousEntId = attackerId;
-                    ent = tmpPreviousEnt;
+                    ent = null;
                     return;
                 }
-                _backingDict.Remove(attackerId);
-            }
-            if (MyEntities.TryGetEntityById(attackerId, out _previousEnt))
-            {
-                if (_emptySpot + 1 >= _nodes.Length) _backingDict.Remove(_nodes[0]);
-                _nodes[_emptySpot] = attackerId;
-                _backingDict.Add(attackerId, _previousEnt);
+                MyEntity tmpPreviousEnt;
+                if (_backingDict.TryGetValue(attackerId, out tmpPreviousEnt))
+                {
+                    if (!tmpPreviousEnt.MarkedForClose)
+                    {
+                        _previousEnt = tmpPreviousEnt;
+                        _previousEntId = attackerId;
+                        ent = tmpPreviousEnt;
+                        return;
+                    }
+                    _backingDict.Remove(attackerId);
+                }
+                if (MyEntities.TryGetEntityById(attackerId, out _previousEnt))
+                {
+                    if (_emptySpot + 1 >= _nodes.Length) _backingDict.Remove(_nodes[0]);
+                    _nodes[_emptySpot] = attackerId;
+                    _backingDict.Add(attackerId, _previousEnt);
 
-                if (_emptySpot++ >= _nodes.Length) _emptySpot = 0;
+                    if (_emptySpot++ >= _nodes.Length) _emptySpot = 0;
 
-                _previousEntId = attackerId;
-                ent = _previousEnt;
-                return;
+                    _previousEntId = attackerId;
+                    ent = _previousEnt;
+                    return;
+                }
+                ent = null;
+                _previousEntId = -1;
             }
-            ent = null;
-            _previousEntId = -1;
         }
 
         private static void ForceEntity(out MyEntity hostileEnt)

@@ -10,16 +10,18 @@ using VRageMath;
 
 namespace DefenseShields
 {
-    internal class TapiBackend
+    internal class ApiBackend
     {
-        private readonly Dictionary<string, Delegate> _terminalModApiMethods = new Dictionary<string, Delegate>()
+        internal readonly Dictionary<string, Delegate> ModApiMethods = new Dictionary<string, Delegate>()
         {
-            ["RayAttackShield"] = new Func<IMyTerminalBlock, RayD, long, float, bool, Vector3D?>(TAPI_RayAttackShield),
-            ["PointAttackShield"] = new Func<IMyTerminalBlock, Vector3D, long, float, bool, bool>(TAPI_PointAttackShield),
+            ["RayAttackShield"] = new Func<IMyTerminalBlock, RayD, long, float, bool, bool, Vector3D?>(TAPI_RayAttackShield),
+            ["LineAttackShield"] = new Func<IMyTerminalBlock, LineD, long, float, bool, bool, Vector3D?>(TAPI_LineAttackShield),
+            ["PointAttackShield"] = new Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, bool>(TAPI_PointAttackShield),
             ["SetShieldHeat"] = new Action<IMyTerminalBlock, int>(TAPI_SetShieldHeat),
             ["OverLoadShield"] = new Action<IMyTerminalBlock>(TAPI_OverLoadShield),
             ["SetCharge"] = new Action<IMyTerminalBlock, float>(TAPI_SetCharge),
             ["RayIntersectShield"] = new Func<IMyTerminalBlock, RayD, Vector3D?>(TAPI_RayIntersectShield),
+            ["LineIntersectShield"] = new Func<IMyTerminalBlock, LineD, Vector3D?>(TAPI_LineIntersectShield),
             ["PointInShield"] = new Func<IMyTerminalBlock, Vector3D, bool>(TAPI_PointInShield),
             ["GetShieldPercent"] = new Func<IMyTerminalBlock, float>(TAPI_GetShieldPercent),
             ["GetShieldHeat"] = new Func<IMyTerminalBlock, int>(TAPI_GetShieldHeatLevel),
@@ -37,16 +39,17 @@ namespace DefenseShields
             ["GridShieldOnline"] = new Func<IMyCubeGrid, bool>(TAPI_GridShieldOnline),
             ["ProtectedByShield"] = new Func<IMyEntity, bool>(TAPI_ProtectedByShield),
             ["GetShieldBlock"] = new Func<IMyEntity, IMyTerminalBlock>(TAPI_GetShieldBlock),
+            ["MatchEntToShieldFast"] = new Func<IMyEntity, bool, IMyTerminalBlock>(TAPI_MatchEntToShieldFast),
             ["IsShieldBlock"] = new Func<IMyTerminalBlock, bool>(TAPI_IsShieldBlock),
             ["GetClosestShield"] = new Func<Vector3D, IMyTerminalBlock>(TAPI_GetClosestShield),
             ["GetDistanceToShield"] = new Func<IMyTerminalBlock, Vector3D, double>(TAPI_GetDistanceToShield),
             ["GetClosestShieldPoint"] = new Func<IMyTerminalBlock, Vector3D, Vector3D?>(TAPI_GetClosestShieldPoint),
-
         };
 
         private readonly Dictionary<string, Delegate> _terminalPbApiMethods = new Dictionary<string, Delegate>()
         {
             ["RayIntersectShield"] = new Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, RayD, Vector3D?>(TAPI_RayIntersectShield),
+            ["LineIntersectShield"] = new Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, LineD, Vector3D?>(TAPI_LineIntersectShield),
             ["PointInShield"] = new Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, Vector3D, bool>(TAPI_PointInShield),
             ["GetShieldPercent"] = new Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, float>(TAPI_GetShieldPercent),
             ["GetShieldHeat"] = new Func<Sandbox.ModAPI.Ingame.IMyTerminalBlock, int>(TAPI_GetShieldHeatLevel),
@@ -73,9 +76,8 @@ namespace DefenseShields
         internal void Init()
         {
             var mod = MyAPIGateway.TerminalControls.CreateProperty<Dictionary<string, Delegate>, IMyTerminalBlock>("DefenseSystemsAPI");
-            mod.Getter = (b) => _terminalModApiMethods;
-            MyAPIGateway.TerminalControls.AddControl<IMyTerminalBlock>(mod);
-            MyAPIGateway.TerminalControls.RemoveControl<IMyProgrammableBlock>(mod);
+            mod.Getter = (b) => ModApiMethods;
+            MyAPIGateway.TerminalControls.AddControl<IMyUpgradeModule>(mod);
 
             var pb = MyAPIGateway.TerminalControls.CreateProperty<Dictionary<string, Delegate>, IMyTerminalBlock>("DefenseSystemsPbAPI");
             pb.Getter = (b) => _terminalPbApiMethods;
@@ -83,7 +85,7 @@ namespace DefenseShields
         }
 
         // ModApi only methods below
-        private static Vector3D? TAPI_RayAttackShield(IMyTerminalBlock block, RayD ray, long attackerId, float damage, bool energy = false)
+        private static Vector3D? TAPI_RayAttackShield(IMyTerminalBlock block, RayD ray, long attackerId, float damage, bool energy, bool drawParticle)
         {
             var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
             if (logic == null) return null;
@@ -91,10 +93,12 @@ namespace DefenseShields
             var intersectDist = CustomCollision.IntersectEllipsoid(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, ray);
             if (!intersectDist.HasValue) return null;
             var ellipsoid = intersectDist ?? 0;
-            var hitPos = ray.Position + (ray.Direction * -ellipsoid);
+            var hitPos = ray.Position + (ray.Direction * ellipsoid);
 
             if (energy) damage *= logic.DsState.State.ModulateKinetic;
             else damage *= logic.DsState.State.ModulateEnergy;
+
+            if (!drawParticle) hitPos = Vector3D.NegativeInfinity;
 
             if (Session.Instance.MpActive)
             {
@@ -103,6 +107,7 @@ namespace DefenseShields
             }
             else
             {
+                logic.EnergyHit = energy;
                 logic.ImpactSize = damage;
                 logic.WorldImpactPosition = hitPos;
             }
@@ -112,15 +117,52 @@ namespace DefenseShields
             return hitPos;
         }
 
-        private static bool TAPI_PointAttackShield(IMyTerminalBlock block, Vector3D pos, long attackerId, float damage, bool energy = false)
+        private static Vector3D? TAPI_LineAttackShield(IMyTerminalBlock block, LineD line, long attackerId, float damage, bool energy, bool drawParticle)
+        {
+            var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
+            if (logic == null) return null;
+
+            var ray = new RayD(line.From, line.Direction);
+            var intersectDist = CustomCollision.IntersectEllipsoid(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, ray);
+            if (!intersectDist.HasValue) return null;
+            var ellipsoid = intersectDist ?? 0;
+            if (ellipsoid > line.Length) return null;
+
+            var hitPos = ray.Position + (ray.Direction * ellipsoid);
+
+            if (energy) damage *= logic.DsState.State.ModulateKinetic;
+            else damage *= logic.DsState.State.ModulateEnergy;
+
+            if (!drawParticle) hitPos = Vector3D.NegativeInfinity;
+
+            if (Session.Instance.MpActive)
+            {
+                var damageType = energy ? Session.Instance.MPEnergy : Session.Instance.MPKinetic;
+                logic.AddShieldHit(attackerId, damage, damageType, null, true, hitPos);
+            }
+            else
+            {
+                logic.EnergyHit = energy;
+                logic.ImpactSize = damage;
+                logic.WorldImpactPosition = hitPos;
+            }
+            logic.WebDamage = true;
+            logic.Absorb += damage;
+
+            return hitPos;
+        }
+
+        private static bool TAPI_PointAttackShield(IMyTerminalBlock block, Vector3D pos, long attackerId, float damage, bool energy, bool drawParticle, bool posMustBeInside = false)
         {
             var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
             if (logic == null) return false;
             var hit = CustomCollision.PointInShield(pos, logic.DetectMatrixOutsideInv);
-            if (!hit) return false;
+            if (posMustBeInside && !hit) return false;
 
             if (energy) damage *= logic.DsState.State.ModulateKinetic;
             else damage *= logic.DsState.State.ModulateEnergy;
+
+            if (!drawParticle) pos = Vector3D.NegativeInfinity;
 
             if (Session.Instance.MpActive)
             {
@@ -174,7 +216,20 @@ namespace DefenseShields
             var intersectDist = CustomCollision.IntersectEllipsoid(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, ray);
             if (!intersectDist.HasValue) return null;
             var ellipsoid = intersectDist ?? 0;
-            return ray.Position + (ray.Direction * -ellipsoid);
+            return ray.Position + (ray.Direction * ellipsoid);
+        }
+
+        private static Vector3D? TAPI_LineIntersectShield(IMyTerminalBlock block, LineD line)
+        {
+            var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
+            if (logic == null) return null;
+            var ray = new RayD(line.From, line.Direction);
+
+            var intersectDist = CustomCollision.IntersectEllipsoid(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, ray);
+            if (!intersectDist.HasValue) return null;
+            var ellipsoid = intersectDist ?? 0;
+            if (ellipsoid > line.Length) return null;
+            return ray.Position + (ray.Direction * ellipsoid);
         }
 
         private static bool TAPI_PointInShield(IMyTerminalBlock block, Vector3D pos)
@@ -345,6 +400,19 @@ namespace DefenseShields
             return null;
         }
 
+        private static IMyTerminalBlock TAPI_MatchEntToShieldFast(IMyEntity entity, bool onlyIfOnline)
+        {
+            if (entity == null) return null;
+            ShieldGridComponent c;
+            if (Session.Instance.IdToBus.TryGetValue(entity.EntityId, out c) && c.DefenseShields != null)
+            {
+                if (onlyIfOnline && !c.DefenseShields.DsState.State.Online) return null;
+                return c.DefenseShields.Shield;
+            }
+
+            return null;
+        }
+
         private static bool TAPI_IsShieldBlock(IMyTerminalBlock block)
         {
             var logic = block?.GameLogic?.GetAs<DefenseShields>();
@@ -390,6 +458,7 @@ namespace DefenseShields
 
         // PB overloads
         private static Vector3D? TAPI_RayIntersectShield(Sandbox.ModAPI.Ingame.IMyTerminalBlock arg1, RayD arg2) => TAPI_RayIntersectShield(arg1 as IMyTerminalBlock, arg2);
+        private static Vector3D? TAPI_LineIntersectShield(Sandbox.ModAPI.Ingame.IMyTerminalBlock arg1, LineD arg2) => TAPI_LineIntersectShield(arg1 as IMyTerminalBlock, arg2);
         private static bool TAPI_PointInShield(Sandbox.ModAPI.Ingame.IMyTerminalBlock arg1, Vector3D arg2) => TAPI_PointInShield(arg1 as IMyTerminalBlock, arg2);
         private static float TAPI_GetShieldPercent(Sandbox.ModAPI.Ingame.IMyTerminalBlock arg) => TAPI_GetShieldPercent(arg as IMyTerminalBlock);
         private static int TAPI_GetShieldHeatLevel(Sandbox.ModAPI.Ingame.IMyTerminalBlock arg) => TAPI_GetShieldHeatLevel(arg as IMyTerminalBlock);

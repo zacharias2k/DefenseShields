@@ -33,7 +33,7 @@
 
                 if (!DedicatedServer && IsServer) Players.TryAdd(MyAPIGateway.Session.Player.IdentityId, MyAPIGateway.Session.Player);
                 MyEntities.OnEntityRemove += OnEntityRemove;
-
+                MyAPIGateway.Session.OnSessionReady += OnSessionReady;
                 MyVisualScriptLogicProvider.PlayerDisconnected += PlayerDisconnected;
                 MyVisualScriptLogicProvider.PlayerRespawnRequest += PlayerConnected;
                 if (!DedicatedServer)
@@ -68,6 +68,8 @@
 
                 foreach (var mod in MyAPIGateway.Session.Mods)
                     if (mod.PublishedFileId == 540003236) ThyaImages = true;
+
+                ApiServer.Load();
             }
             catch (Exception ex) { Log.Line($"Exception in BeforeStart: {ex}"); }
         }
@@ -194,6 +196,7 @@
 
         protected override void UnloadData()
         {
+            ApiServer.Unload();
             Monitor = false;
             Instance = null;
             HudComp = null;
@@ -206,6 +209,7 @@
             MyVisualScriptLogicProvider.PlayerRespawnRequest -= PlayerConnected;
 
             MyEntities.OnEntityRemove -= OnEntityRemove;
+            MyAPIGateway.Session.OnSessionReady -= OnSessionReady;
 
             if (!DedicatedServer) MyAPIGateway.TerminalControls.CustomControlGetter -= CustomControls;
 
