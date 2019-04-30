@@ -376,17 +376,16 @@ namespace DefenseShields
             var percent = DsState.State.ShieldPercent;
             var icon2FSelect = percent < 99 ? GetIconMeterfloat() : 0;
             var heat = DsState.State.Heat;
-
             var icon1 = GetHudIcon1FromFloat(percent);
             var icon2 = GetHudIcon2FromFloat(icon2FSelect);
-            var icon3 = GetHudIcon3FromInt(heat, _tick180);
+            var icon3 = GetHudIcon3FromInt(heat, _count < 30);
             var showIcon2 = DsState.State.Online;
             Color color;
             if (percent > 0 && percent < 10 && _count < 30) color = Color.Red;
             else color = Color.White;
-            MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.LDR); 
-            if (showIcon2 && icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.LDR);
-            if (icon3 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon3, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.LDR);
+            MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.PostPP); 
+            if (showIcon2 && icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.PostPP);
+            if (icon3 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon3, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.PostPP);
         }
 
         private float GetIconMeterfloat()

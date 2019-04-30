@@ -217,8 +217,11 @@ namespace DefenseShields
 
         private void UpdateEntity()
         {
-            ShieldComp.LinkedGrids.Clear();
-            ShieldComp.SubGrids.Clear();
+            lock (SubLock)
+            {
+                ShieldComp.LinkedGrids.Clear();
+                ShieldComp.SubGrids.Clear();
+            }
             _blockChanged = true;
             _functionalChanged = true;
             ResetShape(false, true);

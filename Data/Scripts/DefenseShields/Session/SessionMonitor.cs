@@ -467,17 +467,20 @@ namespace DefenseShields
                 foreach (var s in entShields)
                 {
                     if (s.WasPaused) continue;
-                    if (s.DsState.State.ReInforce && s.ShieldComp.SubGrids.Contains(ent))
+                    lock (s.SubLock)
                     {
-                        iShield = s;
-                        refreshCount++;
+                        if (s.DsState.State.ReInforce && s.ShieldComp.SubGrids.Contains(ent))
+                        {
+                            iShield = s;
+                            refreshCount++;
+                        }
+                        else if (!ent.InScene || !s.ResetEnts(ent, Tick))
+                        {
+                            myProtector.Shields.Remove(s);
+                            entsLostShield++;
+                        }
+                        else refreshCount++;
                     }
-                    else if (!ent.InScene || !s.ResetEnts(ent, Tick))
-                    {
-                        myProtector.Shields.Remove(s);
-                        entsLostShield++;
-                    }
-                    else refreshCount++;
 
                     if (iShield == null && myProtector.IntegrityShield == s)
                     {

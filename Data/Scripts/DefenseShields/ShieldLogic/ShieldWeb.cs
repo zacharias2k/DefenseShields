@@ -35,17 +35,20 @@ namespace DefenseShields
 
         public void ProtectSubs(uint tick)
         {
-            foreach (var sub in ShieldComp.SubGrids)
+            lock (SubLock)
             {
-                MyProtectors protectors;
-                Session.Instance.GlobalProtect.TryGetValue(sub, out protectors);
-
-                if (protectors == null) 
+                foreach (var sub in ShieldComp.SubGrids)
                 {
-                    protectors = Session.Instance.GlobalProtect[sub] = Session.ProtSets.Get();
-                    protectors.Init(LogicSlot, tick);
+                    MyProtectors protectors;
+                    Session.Instance.GlobalProtect.TryGetValue(sub, out protectors);
+
+                    if (protectors == null)
+                    {
+                        protectors = Session.Instance.GlobalProtect[sub] = Session.ProtSets.Get();
+                        protectors.Init(LogicSlot, tick);
+                    }
+                    protectors.IntegrityShield = this;
                 }
-                protectors.IntegrityShield = this;
             }
         }
 
@@ -303,8 +306,24 @@ namespace DefenseShields
                 grid.Components.TryGet(out modComp);
                 if (!string.IsNullOrEmpty(modComp?.ModulationPassword) && modComp.ModulationPassword == Shield.CustomData)
                 {
-                    var collection = modComp.Modulator?.ShieldComp?.DefenseShields != null ? modComp.Modulator.ShieldComp.DefenseShields.ShieldComp.SubGrids : modComp.SubGrids;
-                    foreach (var subGrid in collection)
+                    var modShield = modComp.Modulator?.ShieldComp?.DefenseShields;
+                    if (modShield != null)
+                    {
+                        lock (modShield.SubLock)
+                        {
+                            foreach (var subGrid in modShield.ShieldComp.SubGrids)
+                            {
+                                if (ShieldEnt.PositionComp.WorldVolume.Intersects(grid.PositionComp.WorldVolume))
+                                {
+                                    if (CustomCollision.CornerOrCenterInShield(grid, DetectMatrixOutsideInv, _resetEntCorners) > 0) return Ent.Protected;
+                                    AuthenticatedCache.Add(subGrid);
+                                }
+                                else AuthenticatedCache.Add(subGrid);
+                            }
+                        }
+                        return Ent.Authenticated;
+                    }
+                    foreach (var subGrid in modComp.SubGrids)
                     {
                         if (ShieldEnt.PositionComp.WorldVolume.Intersects(grid.PositionComp.WorldVolume))
                         {
@@ -313,7 +332,6 @@ namespace DefenseShields
                         }
                         else AuthenticatedCache.Add(subGrid);
                     }
-                    return Ent.Authenticated;
                 }
                 var bigOwners = grid.BigOwners;
                 var bigOwnersCnt = bigOwners.Count;
@@ -322,7 +340,7 @@ namespace DefenseShields
                 var enemy = !ModulateGrids && GridEnemy(grid, bigOwners);
                 if (!enemy)
                 {
-                    if (ShieldComp.SubGrids.Contains(grid)) return Ent.Protected;
+                    lock (SubLock) if (ShieldComp.SubGrids.Contains(grid)) return Ent.Protected;
                     var pointsInShield = CustomCollision.NewObbPointsInShield(grid, DetectMatrixOutsideInv, _obbPoints);
                     return pointsInShield > 0 ? Ent.Protected : Ent.Friendly;
                 }

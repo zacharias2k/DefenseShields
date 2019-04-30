@@ -81,10 +81,10 @@ namespace DefenseShields
             _subUpdate = false;
 
             var gotGroups = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
-            if (gotGroups.Count == ShieldComp.LinkedGrids.Count && !force) return;
-            if (Session.Enforced.Debug >= 3 && ShieldComp.LinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.LinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.LinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
             lock (SubLock)
             {
+                if (gotGroups.Count == ShieldComp.LinkedGrids.Count && !force) return;
+                if (Session.Enforced.Debug >= 3 && ShieldComp.LinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.LinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.LinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
                 foreach (var s in ShieldComp.SubGrids) Session.Instance.IdToBus.Remove(s.EntityId);
                 ShieldComp.SubGrids.Clear();
                 ShieldComp.LinkedGrids.Clear();
@@ -249,20 +249,23 @@ namespace DefenseShields
             if (IsStatic || (notTime && !_firstLoop)) return false;
             var mySize = MyGrid.PositionComp.WorldAABB.Size.Volume;
             var myEntityId = MyGrid.EntityId;
-            foreach (var grid in ShieldComp.LinkedGrids.Keys)
+            lock (SubLock)
             {
-                if (grid == MyGrid) continue;
-                ShieldGridComponent shieldComponent;
-                grid.Components.TryGet(out shieldComponent);
-                var ds = shieldComponent?.DefenseShields;
-                if (ds?.ShieldComp != null && ds.DsState.State.Online && ds.IsWorking)
+                foreach (var grid in ShieldComp.LinkedGrids.Keys)
                 {
-                    var otherSize = ds.MyGrid.PositionComp.WorldAABB.Size.Volume;
-                    var otherEntityId = ds.MyGrid.EntityId;
-                    if ((!IsStatic && ds.IsStatic) || mySize < otherSize || (mySize.Equals(otherEntityId) && myEntityId < otherEntityId))
+                    if (grid == MyGrid) continue;
+                    ShieldGridComponent shieldComponent;
+                    grid.Components.TryGet(out shieldComponent);
+                    var ds = shieldComponent?.DefenseShields;
+                    if (ds?.ShieldComp != null && ds.DsState.State.Online && ds.IsWorking)
                     {
-                        _slaveLink = true;
-                        return true;
+                        var otherSize = ds.MyGrid.PositionComp.WorldAABB.Size.Volume;
+                        var otherEntityId = ds.MyGrid.EntityId;
+                        if ((!IsStatic && ds.IsStatic) || mySize < otherSize || (mySize.Equals(otherEntityId) && myEntityId < otherEntityId))
+                        {
+                            _slaveLink = true;
+                            return true;
+                        }
                     }
                 }
             }

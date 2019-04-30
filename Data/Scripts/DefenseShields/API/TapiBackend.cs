@@ -342,7 +342,7 @@ namespace DefenseShields
             {
                 foreach (var s in protectors.Shields)
                 {
-                    if (s.ShieldComp.SubGrids.Contains(myGrid)) return true;
+                    lock (s.SubLock) if (s.ShieldComp.SubGrids.Contains(myGrid)) return true;
                 }
             }
             return false;
@@ -358,7 +358,7 @@ namespace DefenseShields
             {
                 foreach (var s in protectors.Shields)
                 {
-                    if (s.ShieldComp.SubGrids.Contains(myGrid) && s.DsState.State.Online) return true;
+                    lock (s.SubLock) if (s.ShieldComp.SubGrids.Contains(myGrid) && s.DsState.State.Online) return true;
                 }
             }
             return false;
@@ -393,7 +393,7 @@ namespace DefenseShields
                 foreach (var s in protectors.Shields)
                 {
                     if (firstShield == null) firstShield = s;
-                    if (s.ShieldComp.SubGrids.Contains(grid)) return s.MyCube as IMyTerminalBlock;
+                    lock (s.SubLock) if (s.ShieldComp.SubGrids.Contains(grid)) return s.MyCube as IMyTerminalBlock;
                 }
                 if (firstShield != null) return firstShield.MyCube as IMyTerminalBlock;
             }

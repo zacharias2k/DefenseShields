@@ -4,7 +4,6 @@
     using System.Collections.Generic;
     using Support;
     using Sandbox.Game.Entities;
-    using Sandbox.Game.Entities.Character.Components;
     using Sandbox.ModAPI;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
