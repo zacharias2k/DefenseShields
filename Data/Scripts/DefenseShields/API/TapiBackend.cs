@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
+using VRage;
+using VRage.Collections;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
@@ -12,6 +14,7 @@ namespace DefenseShields
 {
     internal class ApiBackend
     {
+        private static readonly MyConcurrentPool<List<MyLineSegmentOverlapResult<MyEntity>>> SegmentPool = new MyConcurrentPool<List<MyLineSegmentOverlapResult<MyEntity>>>(10);
         internal readonly Dictionary<string, Delegate> ModApiMethods = new Dictionary<string, Delegate>()
         {
             ["RayAttackShield"] = new Func<IMyTerminalBlock, RayD, long, float, bool, bool, Vector3D?>(TAPI_RayAttackShield),
@@ -40,6 +43,7 @@ namespace DefenseShields
             ["ProtectedByShield"] = new Func<IMyEntity, bool>(TAPI_ProtectedByShield),
             ["GetShieldBlock"] = new Func<IMyEntity, IMyTerminalBlock>(TAPI_GetShieldBlock),
             ["MatchEntToShieldFast"] = new Func<IMyEntity, bool, IMyTerminalBlock>(TAPI_MatchEntToShieldFast),
+            ["ClosestShieldInLine"] = new Func<LineD, bool, MyTuple<float?, IMyTerminalBlock>>(TAPI_ClosestShieldInLine),
             ["IsShieldBlock"] = new Func<IMyTerminalBlock, bool>(TAPI_IsShieldBlock),
             ["GetClosestShield"] = new Func<Vector3D, IMyTerminalBlock>(TAPI_GetClosestShield),
             ["GetDistanceToShield"] = new Func<IMyTerminalBlock, Vector3D, double>(TAPI_GetDistanceToShield),
@@ -411,6 +415,45 @@ namespace DefenseShields
             }
 
             return null;
+        }
+
+        private static MyTuple<float?, IMyTerminalBlock> TAPI_ClosestShieldInLine(LineD line, bool onlyIfOnline)
+        {
+            var segment = SegmentPool.Get();
+            MyGamePruningStructure.GetTopmostEntitiesOverlappingRay(ref line, segment, MyEntityQueryType.Static);
+            var ray = new RayD(line.From, line.Direction);
+
+            var closest = float.MaxValue;
+            IMyTerminalBlock closestShield = null;
+            for (int i = 0; i < segment.Count; i++)
+            {
+                var ent = segment[i].Element;
+                if (ent == null || ent.Physics != null) continue;
+                ShieldGridComponent c;
+                if (Session.Instance.IdToBus.TryGetValue(ent.EntityId, out c) && c.DefenseShields != null)
+                {
+                    if (onlyIfOnline && !c.DefenseShields.DsState.State.Online) continue;
+                    var s = c.DefenseShields;
+                    var intersectDist = CustomCollision.IntersectEllipsoid(s.DetectMatrixOutsideInv, s.DetectMatrixOutside, ray);
+                    if (!intersectDist.HasValue) continue;
+                    var ellipsoid = intersectDist ?? 0;
+                    if (ellipsoid > line.Length || ellipsoid > closest) continue;
+                    closest = ellipsoid;
+                    closestShield = s.Shield;
+                }
+            }
+            segment.Clear();
+            SegmentPool.Return(segment);
+            var response = new MyTuple<float?, IMyTerminalBlock>();
+            if (closestShield == null)
+            {
+                response.Item1 = null;
+                response.Item2 = null;
+                return response;
+            }
+            response.Item1 = closest;
+            response.Item2 = closestShield;
+            return response;
         }
 
         private static bool TAPI_IsShieldBlock(IMyTerminalBlock block)

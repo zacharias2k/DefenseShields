@@ -200,7 +200,7 @@ namespace DefenseShields
             var hpsEfficiency = Session.Enforced.HpsEfficiency;
             var baseScaler = Session.Enforced.BaseScaler;
             var maintenanceCost = Session.Enforced.MaintenanceCost;
-
+            var fortify = DsSet.Settings.FortifyShield;
             var percent = DsSet.Settings.Rate * ChargeRatio;
 
             var chargePercent = DsSet.Settings.Rate * ConvToDec;
@@ -213,7 +213,7 @@ namespace DefenseShields
                 if (DsState.State.Enhancer) bufferScaler = 100 / percent * baseScaler * _shieldRatio;
                 else bufferScaler = 100 / percent * baseScaler / (float)_sizeScaler * _shieldRatio;
             }
-            else if (_sizeScaler > 1 && DsSet.Settings.FortifyShield)
+            else if (_sizeScaler > 1 && fortify)
             {
                 bufferScaler = 100 / percent * baseScaler * _shieldRatio;
             }
@@ -222,7 +222,12 @@ namespace DefenseShields
             ShieldHpBase = ShieldMaxPower * bufferScaler;
 
             var gridIntegrity = DsState.State.GridIntegrity * ConvToDec;
-            if (capScaler > 0) gridIntegrity *= capScaler;
+            if (capScaler > 0)
+            {
+                if (fortify) capScaler *= 1.5f;
+                else if (ShieldMode == ShieldType.Station) capScaler *= 2f;
+                gridIntegrity *= capScaler;
+            }
 
             if (ShieldHpBase > gridIntegrity) HpScaler = gridIntegrity / ShieldHpBase;
             else HpScaler = 1f;

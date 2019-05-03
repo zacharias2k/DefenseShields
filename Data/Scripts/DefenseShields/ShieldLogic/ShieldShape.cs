@@ -239,9 +239,9 @@ namespace DefenseShields
                 ShieldEnt.PositionComp.LocalMatrix = Matrix.Zero;
                 ShieldEnt.PositionComp.LocalMatrix = ShieldShapeMatrix;
                 ShieldEnt.PositionComp.LocalAABB = ShieldAabbScaled;
+                ShieldEnt.PositionComp.WorldMatrix *= MyGrid.PositionComp.WorldMatrix.GetOrientation();
             }
             ShieldEnt.PositionComp.SetPosition(DetectionCenter);
-
             BoundingBoxD.CreateFromSphere(ref WebSphere, out WebBox);
             BoundingBoxD.CreateFromSphere(ref ShieldSphere3K, out ShieldBox3K);
         }

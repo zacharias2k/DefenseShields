@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces;
+using VRage;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
@@ -38,6 +39,7 @@ namespace DefenseShields
         private Func<IMyEntity, bool> _protectedByShield;
         private Func<IMyEntity, IMyTerminalBlock> _getShieldBlock;
         private Func<IMyEntity, bool, IMyTerminalBlock> _matchEntToShieldFast;
+        private Func<LineD, bool, MyTuple<float?, IMyTerminalBlock>> _closestShieldInLine;
         private Func<IMyTerminalBlock, bool> _isShieldBlock;
         private Func<Vector3D, IMyTerminalBlock> _getClosestShield;
         private Func<IMyTerminalBlock, Vector3D, double> _getDistanceToShield;
@@ -74,6 +76,7 @@ namespace DefenseShields
             _protectedByShield = (Func<IMyEntity, bool>)delegates["ProtectedByShield"];
             _getShieldBlock = (Func<IMyEntity, IMyTerminalBlock>)delegates["GetShieldBlock"];
             _matchEntToShieldFast = (Func<IMyEntity, bool, IMyTerminalBlock>)delegates["MatchEntToShieldFast"];
+            _closestShieldInLine = (Func<LineD, bool, MyTuple<float?, IMyTerminalBlock>>)delegates["ClosestShieldInLine"];
             _isShieldBlock = (Func<IMyTerminalBlock, bool>)delegates["IsShieldBlock"];
             _getClosestShield = (Func<Vector3D, IMyTerminalBlock>)delegates["GetClosestShield"];
             _getDistanceToShield = (Func<IMyTerminalBlock, Vector3D, double>)delegates["GetDistanceToShield"];
@@ -109,6 +112,7 @@ namespace DefenseShields
         public bool ProtectedByShield(IMyEntity entity) => _protectedByShield?.Invoke(entity) ?? false;
         public IMyTerminalBlock GetShieldBlock(IMyEntity entity) => _getShieldBlock?.Invoke(entity) ?? null;
         public IMyTerminalBlock MatchEntToShieldFast(IMyEntity entity, bool onlyIfOnline) => _matchEntToShieldFast?.Invoke(entity, onlyIfOnline) ?? null;
+        public MyTuple<float?, IMyTerminalBlock> ClosestShieldInLine(LineD line, bool onlyIfOnline) => _closestShieldInLine?.Invoke(line, onlyIfOnline) ?? new MyTuple<float?, IMyTerminalBlock>();
         public bool IsShieldBlock(IMyTerminalBlock block) => _isShieldBlock?.Invoke(block) ?? false;
         public IMyTerminalBlock GetClosestShield(Vector3D pos) => _getClosestShield?.Invoke(pos) ?? null;
         public double GetDistanceToShield(IMyTerminalBlock block, Vector3D pos) => _getDistanceToShield?.Invoke(block, pos) ?? -1;
