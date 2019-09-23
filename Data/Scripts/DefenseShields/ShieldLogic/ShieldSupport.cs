@@ -31,7 +31,7 @@ namespace DefenseShields
 
                 if (update) ShieldChangeState();
             }
-            else
+            else if (_tick - InitTick > 30)
             {
                 if (!DsState.State.ModulateEnergy.Equals(1f) || !DsState.State.ModulateKinetic.Equals(1f) || DsState.State.EmpProtection || DsState.State.ReInforce) update = true;
                 DsState.State.ModulateEnergy = 1f;
@@ -53,9 +53,11 @@ namespace DefenseShields
                 DsState.State.EnhancerProtMulti = 1000;
                 DsState.State.Enhancer = true;
                 if (update) ShieldChangeState();
+                Log.Line("enhancer true");
             }
-            else
+            else if (_tick - InitTick > 30)
             {
+                Log.Line("enhancer false");
                 if (!DsState.State.EnhancerPowerMulti.Equals(1) || !DsState.State.EnhancerProtMulti.Equals(1) || DsState.State.Enhancer) update = true;
                 DsState.State.EnhancerPowerMulti = 1;
                 DsState.State.EnhancerProtMulti = 1;

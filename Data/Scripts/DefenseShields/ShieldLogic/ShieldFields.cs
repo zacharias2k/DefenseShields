@@ -307,6 +307,7 @@ namespace DefenseShields
         internal uint LosCheckTick { get; set; }
         internal uint TicksWithNoActivity { get; set; }
         internal uint EffectsCleanTick { get; set; }
+        internal uint InitTick { get; set; }
 
         internal int ReserveScale { get; set; }
 

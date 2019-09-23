@@ -77,66 +77,70 @@ namespace DefenseShields
 
         public override void UpdateBeforeSimulation100()
         {
-            Tick = Session.Instance.Tick;
-            if (ClientUiUpdate || SettingsUpdated) NewSettings();
-            if (Set.Settings.Report == 0)
+            try
             {
-                if (ShieldEnabled)
+                Tick = Session.Instance.Tick;
+                if (ClientUiUpdate || SettingsUpdated) NewSettings();
+                if (Set.Settings.Report == 0)
                 {
-                    ShieldEnabled = false;
-                    Display.ClearImagesFromSelection();
-                    Display.WritePublicText(string.Empty);
-                }
-                return;
-            }
-            ShieldEnabled = true;
-
-            var pEventId = Session.Instance.PlayerEventId;
-            var pEvent = pEventId != _pEventIdWas;
-            var owner = State.Value.ClientOwner;
-
-            if (_isDedicated)
-            {
-                if (!State.Value.Release && (owner == 0 || pEvent && !Session.Instance.Players.ContainsKey(owner)))
-                {
-                    AbandonDisplay(true);
-                }
-                _pEventIdWas = pEventId;
-                return;
-            }
-
-            var clientId = MyAPIGateway.Multiplayer.MyId;
-            var playerId = MyAPIGateway.Session.Player.IdentityId;
-
-            if (Vector3D.DistanceSquared(MyAPIGateway.Session.Camera.Position, Display.WorldAABB.Center) > 40000)
-            {
-                if (State.Value.ClientOwner == playerId)
-                {
-                    if (Session.Enforced.Debug >= 2) Log.Line($"[Abandon]:{_myDisplay} - Tick:{Tick} - Client:{clientId} - PlayerId:{playerId} - Owner:{owner}");
-                    Session.Instance.ClaimDisplay(clientId, playerId, _mId++, Display.EntityId, true);
-                }
-                return;
-            }
-
-            _myDisplay = _isServer && !_isDedicated || owner == playerId;
-            //if (Session.Enforced.Debug >= 2) Log.Line($"MyDisplay:{_myDisplay} - Tick:{Tick} - Client:{clientId} - PlayerId:{playerId} - Owner:{owner}");
-            if (!_myDisplay)
-            {
-                if (State.Value.Release)
-                {
-                    if (State.Value.ClientOwner == 0 || _waitCount++ >= 1)
+                    if (ShieldEnabled)
                     {
-                        if (Session.Enforced.Debug >= 2) Log.Line($"[NotActiveRequest]: Tick:{Tick} - Client:{clientId} - PlayerId:{playerId} - Owner:{owner}");
-                        Session.Instance.ClaimDisplay(clientId, playerId, _mId++, Display.EntityId,false);
-                        _waitCount = 0;
+                        ShieldEnabled = false;
+                        Display.ClearImagesFromSelection();
+                        Display.WritePublicText(string.Empty);
                     }
+                    return;
                 }
-                else _waitCount = 0;
-                return;
-            }
+                ShieldEnabled = true;
 
-            if (!ActiveDisplay()) return;
-            UpdateDisplay();
+                var pEventId = Session.Instance.PlayerEventId;
+                var pEvent = pEventId != _pEventIdWas;
+                var owner = State.Value.ClientOwner;
+
+                if (_isDedicated)
+                {
+                    if (!State.Value.Release && (owner == 0 || pEvent && !Session.Instance.Players.ContainsKey(owner)))
+                    {
+                        AbandonDisplay(true);
+                    }
+                    _pEventIdWas = pEventId;
+                    return;
+                }
+
+                var clientId = MyAPIGateway.Multiplayer.MyId;
+                var playerId = MyAPIGateway.Session.Player.IdentityId;
+
+                if (Vector3D.DistanceSquared(MyAPIGateway.Session.Camera.Position, Display.WorldAABB.Center) > 40000)
+                {
+                    if (State.Value.ClientOwner == playerId)
+                    {
+                        if (Session.Enforced.Debug >= 2) Log.Line($"[Abandon]:{_myDisplay} - Tick:{Tick} - Client:{clientId} - PlayerId:{playerId} - Owner:{owner}");
+                        Session.Instance.ClaimDisplay(clientId, playerId, _mId++, Display.EntityId, true);
+                    }
+                    return;
+                }
+
+                _myDisplay = _isServer && !_isDedicated || owner == playerId;
+                //if (Session.Enforced.Debug >= 2) Log.Line($"MyDisplay:{_myDisplay} - Tick:{Tick} - Client:{clientId} - PlayerId:{playerId} - Owner:{owner}");
+                if (!_myDisplay)
+                {
+                    if (State.Value.Release)
+                    {
+                        if (State.Value.ClientOwner == 0 || _waitCount++ >= 1)
+                        {
+                            if (Session.Enforced.Debug >= 2) Log.Line($"[NotActiveRequest]: Tick:{Tick} - Client:{clientId} - PlayerId:{playerId} - Owner:{owner}");
+                            Session.Instance.ClaimDisplay(clientId, playerId, _mId++, Display.EntityId, false);
+                            _waitCount = 0;
+                        }
+                    }
+                    else _waitCount = 0;
+                    return;
+                }
+
+                if (!ActiveDisplay()) return;
+                UpdateDisplay();
+            }
+            catch (Exception ex) { Log.Line($"Exception in UpdateBeforeSimulation100: {ex}"); }
         }
 
         public override void OnRemovedFromScene()

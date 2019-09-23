@@ -197,10 +197,12 @@
             return "[Shield Up]";
         }
 
+        internal uint LastCustomInfoUpdate;
         private void AppendingCustomInfo(IMyTerminalBlock block, StringBuilder stringBuilder)
         {
             try
             {
+                LastCustomInfoUpdate = _tick;
                 var secToFull = 0;
                 var shieldPercent = !DsState.State.Online ? 0f : 100f;
 

@@ -174,6 +174,7 @@ namespace DefenseShields
             IsWorking = MyCube.IsWorking;
             IsFunctional = MyCube.IsFunctional;
             NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
+            InitTick = Session.Instance.Tick;
             _bTime = 1;
             _bInit = true;
             if (Session.Enforced.Debug == 3) Log.Line($"UpdateOnceBeforeFrame: ShieldId [{Shield.EntityId}]");

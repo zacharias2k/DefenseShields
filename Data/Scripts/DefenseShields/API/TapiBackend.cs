@@ -437,7 +437,7 @@ namespace DefenseShields
                     var intersectDist = CustomCollision.IntersectEllipsoid(s.DetectMatrixOutsideInv, s.DetectMatrixOutside, ray);
                     if (!intersectDist.HasValue) continue;
                     var ellipsoid = intersectDist ?? 0;
-                    if (ellipsoid > line.Length || ellipsoid > closest) continue;
+                    if (ellipsoid > line.Length || ellipsoid > closest || CustomCollision.PointInShield(ray.Position, s.DetectMatrixOutsideInv)) continue;
                     closest = ellipsoid;
                     closestShield = s.Shield;
                 }

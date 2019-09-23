@@ -76,6 +76,7 @@ namespace DefenseShields
                     Display.ShowPublicTextOnScreen();
                     if (Display.FontSize <= 1) Display.FontSize = 1.30f;
                 }
+                if (Tick - ds.LastCustomInfoUpdate >= 99) ds.Shield.RefreshCustomInfo();
                 Display.WritePublicText(ds.Shield.CustomInfo);
             }
         }
