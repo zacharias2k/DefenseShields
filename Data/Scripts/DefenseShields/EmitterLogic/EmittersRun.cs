@@ -1,4 +1,6 @@
-﻿namespace DefenseShields
+﻿using VRage.Utils;
+
+namespace DefenseShields
 {
     using System;
     using Support;
@@ -141,6 +143,7 @@
                 base.Close();
                 if (Session.Enforced.Debug == 3) Log.Line($"Close: {EmitterMode} - EmitterId [{Entity.EntityId}]");
                 if (Session.Instance.Emitters.Contains(this)) Session.Instance.Emitters.Remove(this);
+
                 if (ShieldComp?.StationEmitter == this)
                 {
                     if ((int)EmitterMode == ShieldComp.EmitterMode)
@@ -158,6 +161,18 @@
                         ShieldComp.EmitterEvent = true;
                     }
                     ShieldComp.ShipEmitter = null;
+                }
+                ShieldComp = null;
+                if (Sink != null)
+                {
+                    ResourceInfo = new MyResourceSinkInfo
+                    {
+                        ResourceTypeId = _gId,
+                        MaxRequiredInput = 0f,
+                        RequiredInputFunc = null
+                    };
+                    Sink.Init(MyStringHash.GetOrCompute("Utility"), ResourceInfo);
+                    Sink = null;
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }

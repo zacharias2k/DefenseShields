@@ -1,4 +1,6 @@
-﻿namespace DefenseShields
+﻿using VRage.Utils;
+
+namespace DefenseShields
 {
     using System;
     using Support;
@@ -189,11 +191,24 @@
                 {
                     ShieldComp.Modulator = null;
                 }
+                ShieldComp = null;
 
                 if (ModulatorComp?.Modulator == this)
                 {
                     ModulatorComp.Modulator = null;
-                    ModulatorComp = null;
+                }
+                ModulatorComp = null;
+
+                if (Sink != null)
+                {
+                    ResourceInfo = new MyResourceSinkInfo
+                    {
+                        ResourceTypeId = _gId,
+                        MaxRequiredInput = 0f,
+                        RequiredInputFunc = null
+                    };
+                    Sink.Init(MyStringHash.GetOrCompute("Utility"), ResourceInfo);
+                    Sink = null;
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }

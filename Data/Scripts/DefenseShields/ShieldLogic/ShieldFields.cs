@@ -46,6 +46,7 @@ namespace DefenseShields
         internal readonly ConcurrentDictionary<MyVoxelBase, int> VoxelsToIntersect = new ConcurrentDictionary<MyVoxelBase, int>();
 
         internal readonly ConcurrentQueue<SubGridComputedInfo> AddSubGridInfo = new ConcurrentQueue<SubGridComputedInfo>();
+        internal readonly object MatrixLock = new object();
 
         internal const int ConvToHp = 100;
         internal const float ConvToDec = 0.01f;
@@ -371,8 +372,11 @@ namespace DefenseShields
 
             set
             {
-                DetectMatrixOutside = value;
-                DetectMatrixOutsideInv = MatrixD.Invert(value);
+                lock (MatrixLock)
+                {
+                    DetectMatrixOutside = value;
+                    DetectMatrixOutsideInv = MatrixD.Invert(value);
+                }
             }
         }
     }

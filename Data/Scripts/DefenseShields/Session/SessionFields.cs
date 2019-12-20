@@ -70,8 +70,8 @@
         internal readonly Queue<WarHeadBlast> EmpStore = new Queue<WarHeadBlast>();
 
         internal readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
-        internal readonly Dictionary<MyEntity, MyProtectors> GlobalProtect = new Dictionary<MyEntity, MyProtectors>();
-        internal readonly Dictionary<long, ShieldGridComponent> IdToBus = new Dictionary<long, ShieldGridComponent>();
+        internal readonly ConcurrentDictionary<MyEntity, MyProtectors> GlobalProtect = new ConcurrentDictionary<MyEntity, MyProtectors>();
+        internal readonly ConcurrentDictionary<long, ShieldGridComponent> IdToBus = new ConcurrentDictionary<long, ShieldGridComponent>();
 
         internal readonly HashSet<DefenseShields> ActiveShields = new HashSet<DefenseShields>();
         internal readonly ConcurrentDictionary<DefenseShields, bool> FunctionalShields = new ConcurrentDictionary<DefenseShields, bool>();

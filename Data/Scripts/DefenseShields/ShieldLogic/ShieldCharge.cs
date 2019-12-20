@@ -34,7 +34,7 @@ namespace DefenseShields
                 EffectsCleanTick = _tick;
                 DsState.State.Charge -= Absorb * ConvToWatts;
             }
-            else if (Absorb < 0) DsState.State.Charge += Absorb * ConvToWatts;
+            else if (Absorb < 0) DsState.State.Charge += (Absorb * - 1) * ConvToWatts;
 
             if (_isServer && DsState.State.Charge < 0)
             {

@@ -1,4 +1,5 @@
-﻿using VRageMath;
+﻿using VRage.Utils;
+using VRageMath;
 
 namespace DefenseShields
 {
@@ -176,6 +177,19 @@ namespace DefenseShields
                 Icosphere = null;
                 InitEntities(false);
                 MyAPIGateway.Session.OxygenProviderSystem.RemoveOxygenGenerator(_ellipsoidOxyProvider);
+                if (_sink != null)
+                {
+                    _resourceInfo = new MyResourceSinkInfo
+                    {
+                        ResourceTypeId = GId,
+                        MaxRequiredInput = 0f,
+                        RequiredInputFunc = null
+                    };
+                    _sink.Init(MyStringHash.GetOrCompute("Defense"), _resourceInfo);
+                    _sink = null;
+                }
+
+                ShieldComp = null;
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
         }

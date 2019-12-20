@@ -20,6 +20,7 @@ namespace DefenseShields
             ["RayAttackShield"] = new Func<IMyTerminalBlock, RayD, long, float, bool, bool, Vector3D?>(TAPI_RayAttackShield),
             ["LineAttackShield"] = new Func<IMyTerminalBlock, LineD, long, float, bool, bool, Vector3D?>(TAPI_LineAttackShield),
             ["PointAttackShield"] = new Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, bool>(TAPI_PointAttackShield),
+            ["PointAttackShieldExt"] = new Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, float?>(TAPI_PointAttackShieldExt),
             ["SetShieldHeat"] = new Action<IMyTerminalBlock, int>(TAPI_SetShieldHeat),
             ["OverLoadShield"] = new Action<IMyTerminalBlock>(TAPI_OverLoadShield),
             ["SetCharge"] = new Action<IMyTerminalBlock, float>(TAPI_SetCharge),
@@ -43,11 +44,13 @@ namespace DefenseShields
             ["ProtectedByShield"] = new Func<IMyEntity, bool>(TAPI_ProtectedByShield),
             ["GetShieldBlock"] = new Func<IMyEntity, IMyTerminalBlock>(TAPI_GetShieldBlock),
             ["MatchEntToShieldFast"] = new Func<IMyEntity, bool, IMyTerminalBlock>(TAPI_MatchEntToShieldFast),
+            ["MatchEntToShieldFastExt"] = new Func<MyEntity, bool, MyTuple<IMyTerminalBlock, MyTuple<bool, bool, float, float, float, int>, MyTuple<MatrixD, MatrixD>>?>(TAPI_MatchEntToShieldFastExt),
             ["ClosestShieldInLine"] = new Func<LineD, bool, MyTuple<float?, IMyTerminalBlock>>(TAPI_ClosestShieldInLine),
             ["IsShieldBlock"] = new Func<IMyTerminalBlock, bool>(TAPI_IsShieldBlock),
             ["GetClosestShield"] = new Func<Vector3D, IMyTerminalBlock>(TAPI_GetClosestShield),
             ["GetDistanceToShield"] = new Func<IMyTerminalBlock, Vector3D, double>(TAPI_GetDistanceToShield),
             ["GetClosestShieldPoint"] = new Func<IMyTerminalBlock, Vector3D, Vector3D?>(TAPI_GetClosestShieldPoint),
+            ["GetShieldInfo"] = new Func<MyEntity, MyTuple<bool, bool, float, float, float, int>>(TAPI_GetShieldInfo),
         };
 
         private readonly Dictionary<string, Delegate> _terminalPbApiMethods = new Dictionary<string, Delegate>()
@@ -94,7 +97,10 @@ namespace DefenseShields
             var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
             if (logic == null) return null;
 
-            var intersectDist = CustomCollision.IntersectEllipsoid(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, ray);
+            float? intersectDist;
+            lock (logic.MatrixLock)
+                intersectDist = CustomCollision.IntersectEllipsoid(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, ray);
+
             if (!intersectDist.HasValue) return null;
             var ellipsoid = intersectDist ?? 0;
             var hitPos = ray.Position + (ray.Direction * ellipsoid);
@@ -127,7 +133,10 @@ namespace DefenseShields
             if (logic == null) return null;
 
             var ray = new RayD(line.From, line.Direction);
-            var intersectDist = CustomCollision.IntersectEllipsoid(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, ray);
+            float? intersectDist;
+            lock (logic.MatrixLock)
+                intersectDist = CustomCollision.IntersectEllipsoid(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, ray);
+
             if (!intersectDist.HasValue) return null;
             var ellipsoid = intersectDist ?? 0;
             if (ellipsoid > line.Length) return null;
@@ -160,8 +169,8 @@ namespace DefenseShields
         {
             var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
             if (logic == null) return false;
-            var hit = CustomCollision.PointInShield(pos, logic.DetectMatrixOutsideInv);
-            if (posMustBeInside && !hit) return false;
+            if (posMustBeInside)
+                lock (logic.MatrixLock) if (!CustomCollision.PointInShield(pos, logic.DetectMatrixOutsideInv)) return false;
 
             if (energy) damage *= logic.DsState.State.ModulateKinetic;
             else damage *= logic.DsState.State.ModulateEnergy;
@@ -184,6 +193,47 @@ namespace DefenseShields
             logic.Absorb += damage;
 
             return true;
+        }
+
+        private static float? TAPI_PointAttackShieldExt(IMyTerminalBlock block, Vector3D pos, long attackerId, float damage, bool energy, bool drawParticle, bool posMustBeInside = false)
+        {
+            var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
+            if (logic == null) return null;
+            if (posMustBeInside)
+                lock (logic.MatrixLock) if (!CustomCollision.PointInShield(pos, logic.DetectMatrixOutsideInv)) return null;
+
+            float hpRemaining;
+            if (energy)
+            {
+                damage *= logic.DsState.State.ModulateKinetic;
+                hpRemaining = ((logic.DsState.State.Charge * DefenseShields.ConvToHp) - damage);
+                if (hpRemaining < 0) hpRemaining /= logic.DsState.State.ModulateEnergy;
+            }
+            else
+            {
+                damage *= logic.DsState.State.ModulateEnergy;
+                hpRemaining = ((logic.DsState.State.Charge * DefenseShields.ConvToHp) - damage);
+                if (hpRemaining < 0) hpRemaining /= logic.DsState.State.ModulateEnergy;
+            }
+
+            if (!drawParticle) pos = Vector3D.NegativeInfinity;
+
+            if (Session.Instance.MpActive)
+            {
+                var damageType = energy ? Session.Instance.MPEnergy : Session.Instance.MPKinetic;
+                logic.AddShieldHit(attackerId, damage, damageType, null, true, pos);
+            }
+            else
+            {
+                logic.ImpactSize = damage;
+                logic.WorldImpactPosition = pos;
+            }
+
+            logic.EnergyHit = energy;
+            logic.WebDamage = true;
+            logic.Absorb += damage;
+
+            return hpRemaining;
         }
 
         private static void TAPI_SetShieldHeat(IMyTerminalBlock block, int value)
@@ -217,7 +267,10 @@ namespace DefenseShields
             var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
             if (logic == null) return null;
 
-            var intersectDist = CustomCollision.IntersectEllipsoid(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, ray);
+            float? intersectDist;
+            lock (logic.MatrixLock)
+                intersectDist = CustomCollision.IntersectEllipsoid(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, ray);
+
             if (!intersectDist.HasValue) return null;
             var ellipsoid = intersectDist ?? 0;
             return ray.Position + (ray.Direction * ellipsoid);
@@ -229,7 +282,10 @@ namespace DefenseShields
             if (logic == null) return null;
             var ray = new RayD(line.From, line.Direction);
 
-            var intersectDist = CustomCollision.IntersectEllipsoid(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, ray);
+            float? intersectDist;
+            lock (logic.MatrixLock)
+                intersectDist = CustomCollision.IntersectEllipsoid(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, ray);
+
             if (!intersectDist.HasValue) return null;
             var ellipsoid = intersectDist ?? 0;
             if (ellipsoid > line.Length) return null;
@@ -239,7 +295,11 @@ namespace DefenseShields
         private static bool TAPI_PointInShield(IMyTerminalBlock block, Vector3D pos)
         {
             var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
-            return logic != null && CustomCollision.PointInShield(pos, logic.DetectMatrixOutsideInv);
+            if (logic == null) return false;
+
+            bool pointInShield;
+            lock (logic.MatrixLock) pointInShield = CustomCollision.PointInShield(pos, logic.DetectMatrixOutsideInv);
+            return pointInShield;
         }
 
         private static float TAPI_GetShieldPercent(IMyTerminalBlock block)
@@ -376,8 +436,11 @@ namespace DefenseShields
             var ent = (MyEntity)entity;
             if (Session.Instance.GlobalProtect.TryGetValue(ent, out protectors))
             {
+                if (protectors?.Shields == null) return false;
+
                 foreach (var s in protectors.Shields)
                 {
+                    if (s?.DsState?.State == null) continue;
                     if (s.DsState.State.Online) return true;
                 }
             }
@@ -386,18 +449,20 @@ namespace DefenseShields
 
         private static IMyTerminalBlock TAPI_GetShieldBlock(IMyEntity entity)
         {
-            if (entity == null) return null;
+            var ent = entity as MyEntity;
+            if (ent == null) return null;
 
             MyProtectors protectors;
-            var ent = (MyEntity) entity;
-            var grid = ent as MyCubeGrid;
             if (Session.Instance.GlobalProtect.TryGetValue(ent, out protectors))
             {
                 DefenseShields firstShield = null;
+                var grid = ent as MyCubeGrid;
                 foreach (var s in protectors.Shields)
                 {
+                    if (s == null) continue;
+
                     if (firstShield == null) firstShield = s;
-                    lock (s.SubLock) if (s.ShieldComp.SubGrids.Contains(grid)) return s.MyCube as IMyTerminalBlock;
+                    lock (s.SubLock) if (grid != null && s.ShieldComp?.SubGrids != null && s.ShieldComp.SubGrids.Contains(grid)) return s.MyCube as IMyTerminalBlock;
                 }
                 if (firstShield != null) return firstShield.MyCube as IMyTerminalBlock;
             }
@@ -408,12 +473,66 @@ namespace DefenseShields
         {
             if (entity == null) return null;
             ShieldGridComponent c;
-            if (Session.Instance.IdToBus.TryGetValue(entity.EntityId, out c) && c.DefenseShields != null)
+            if (Session.Instance.IdToBus.TryGetValue(entity.EntityId, out c) && c?.DefenseShields != null)
             {
                 if (onlyIfOnline && !c.DefenseShields.DsState.State.Online) return null;
                 return c.DefenseShields.Shield;
             }
 
+            return null;
+        }
+
+        private static MyTuple<bool, bool, float, float, float, int> TAPI_GetShieldInfo(MyEntity entity)
+        {
+            var info = new MyTuple<bool, bool, float, float, float, int>();
+
+            if (entity == null) return info;
+            ShieldGridComponent c;
+            if (Session.Instance.IdToBus.TryGetValue(entity.EntityId, out c) && c?.DefenseShields != null)
+            {
+                var s = c.DefenseShields;
+                info.Item1 = true;
+                var state = s.DsState.State;
+                if (state.Online)
+                {
+                    info.Item2 = true;
+                    info.Item3 = state.Charge;
+                    info.Item4 = s.ShieldMaxCharge;
+                    info.Item5 = state.ShieldPercent;
+                    info.Item6 = state.Heat;
+                }
+            }
+
+            return info;
+        }
+
+        private static MyTuple<IMyTerminalBlock, MyTuple<bool, bool, float, float, float, int>, MyTuple<MatrixD, MatrixD>>? TAPI_MatchEntToShieldFastExt(MyEntity entity, bool onlyIfOnline)
+        {
+            if (entity == null) return null;
+            ShieldGridComponent c;
+            if (Session.Instance.IdToBus.TryGetValue(entity.EntityId, out c) && c?.DefenseShields != null)
+            {
+                if (onlyIfOnline && !c.DefenseShields.DsState.State.Online) return null;
+                var s = c.DefenseShields;
+                var state = s.DsState.State;
+                lock (s.MatrixLock)
+                {
+                    var info = new MyTuple<IMyTerminalBlock, MyTuple<bool, bool, float, float, float, int>, MyTuple<MatrixD, MatrixD>>
+                    {
+                        Item1 = s.Shield,
+                        Item2 =
+                        {
+                            Item1 = true,
+                            Item3 = state.Charge,
+                            Item4 = s.ShieldMaxCharge,
+                            Item5 = state.ShieldPercent,
+                            Item6 = state.Heat
+                        },
+                        Item3 = { Item1 = s.DetectMatrixOutsideInv, Item2 = s.DetectMatrixOutside }
+                    };
+                    return info;
+                }
+            }
             return null;
         }
 
@@ -496,7 +615,11 @@ namespace DefenseShields
             var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
             if (logic == null) return null;
 
-            return CustomCollision.ClosestEllipsoidPointToPos(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, pos);
+            Vector3D? closestShieldPoint;
+            lock (logic.MatrixLock)
+                closestShieldPoint = CustomCollision.ClosestEllipsoidPointToPos(logic.DetectMatrixOutsideInv, logic.DetectMatrixOutside, pos);
+
+            return closestShieldPoint;
         }
 
         // PB overloads

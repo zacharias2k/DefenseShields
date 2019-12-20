@@ -53,11 +53,9 @@ namespace DefenseShields
                 DsState.State.EnhancerProtMulti = 1000;
                 DsState.State.Enhancer = true;
                 if (update) ShieldChangeState();
-                Log.Line("enhancer true");
             }
             else if (_tick - InitTick > 30)
             {
-                Log.Line("enhancer false");
                 if (!DsState.State.EnhancerPowerMulti.Equals(1) || !DsState.State.EnhancerProtMulti.Equals(1) || DsState.State.Enhancer) update = true;
                 DsState.State.EnhancerPowerMulti = 1;
                 DsState.State.EnhancerProtMulti = 1;

@@ -97,7 +97,7 @@ namespace DefenseShields
                         ShieldComp.SubGrids.Add((MyCubeGrid)sub);
                         Session.Instance.IdToBus[sub.EntityId] = ShieldComp;
                     }
-                    ShieldComp.LinkedGrids.Add(sub as MyCubeGrid, new SubGridInfo(sub as MyCubeGrid, sub == MyGrid, false));
+                    ShieldComp.LinkedGrids.Add((MyCubeGrid)sub, new SubGridInfo(sub as MyCubeGrid, sub == MyGrid, false));
                 }
             }
             _blockChanged = true;

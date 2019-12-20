@@ -157,6 +157,7 @@ namespace DefenseShields
             try
             {
                 //if (Session.Instance.Displays.Contains(this)) Session.Instance.Displays.Remove(this);
+
             }
             catch (Exception ex) { Log.Line($"Exception in Close: {ex}"); }
         }
