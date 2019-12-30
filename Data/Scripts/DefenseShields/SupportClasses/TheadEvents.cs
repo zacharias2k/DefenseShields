@@ -164,13 +164,13 @@ namespace DefenseShields.Support
                 if (entInfo.ConsecutiveCollisions == 0) CollisionData.Entity1.Physics.ApplyImpulse(CollisionData.ImpDirection1, CollisionData.CollisionCorrection1);
                 if (CollisionData.E2IsHeavier)
                 {
-                    var accelCap = CollisionData.E1IsStatic ? 10 : 50;
+                    var accelCap = CollisionData.E1IsStatic ? 10 : 25;
                     var accelClamp = MathHelper.Clamp(CollisionData.Mass2 / CollisionData.Mass1, 1, accelCap);
                     var collisions = entInfo.ConsecutiveCollisions + 1;
                     var sizeAccel = accelClamp > collisions ? accelClamp : collisions;
                     var forceMulti = (CollisionData.Mass1 * (collisions * sizeAccel));
-                    if (CollisionData.Entity1.Physics.LinearVelocity.Length() <= (Session.Instance.MaxEntitySpeed * 0.75))
-                        CollisionData.Entity1.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceMulti * CollisionData.Force1, null, null, null, CollisionData.Immediate);
+                    var currentSpeed = CollisionData.Entity1.Physics.LinearVelocity.Length();
+                    CollisionData.Entity1.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceMulti * CollisionData.Force1, null, null, currentSpeed + 1.666f, CollisionData.Immediate);
                 }
             }
 
@@ -310,16 +310,21 @@ namespace DefenseShields.Support
                     {
                         entInfo.RefreshNow = true;
                     }
+                    AccelSet.Clear();
+                    Session.Instance.SetCubeAccelPool.Return(AccelSet);
                     return;
                 }
 
                 if (accel.Block.IsDestroyed)
                 {
                     if (Shield.WebEnts.TryGetValue(accel.Grid, out entInfo)) entInfo.RefreshNow = true;
+                    AccelSet.Clear();
+                    Session.Instance.SetCubeAccelPool.Return(AccelSet);
                     return;
                 }
 
-                accel.Block.DoDamage(accel.Block.MaxIntegrity, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
+                var blockDamage = Shield.ShieldMode == DefenseShields.ShieldType.Station ? accel.Block.MaxIntegrity : accel.Block.MaxIntegrity / 5;
+                accel.Block.DoDamage(blockDamage, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
 
                 if (accel.Block.IsDestroyed)
                 {
@@ -338,6 +343,8 @@ namespace DefenseShields.Support
             }
             Shield.WebDamage = true;
             Shield.Absorb += Damage;
+            AccelSet.Clear();
+            Session.Instance.SetCubeAccelPool.Return(AccelSet);
         }
     }
 

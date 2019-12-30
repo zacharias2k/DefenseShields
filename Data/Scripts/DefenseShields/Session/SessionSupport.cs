@@ -1,4 +1,6 @@
 ﻿
+using ParallelTasks;
+
 namespace DefenseShields
 {
     using Support;
@@ -26,6 +28,21 @@ namespace DefenseShields
             SoundEmitter.Entity = entity;
             SoundEmitter.CustomVolume = MyAPIGateway.Session.Config.GameVolume * 0.75f;
             return SoundEmitter;
+        }
+
+        public bool TaskHasErrors(ref Task task, string taskName)
+        {
+            if (task.Exceptions != null && task.Exceptions.Length > 0)
+            {
+                foreach (var e in task.Exceptions)
+                {
+                    Log.Line($"{taskName} thread!\n{e}");
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         private void PlayerConnected(long id)

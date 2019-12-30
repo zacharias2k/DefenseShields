@@ -26,11 +26,12 @@
             if (entInfo.RefreshNow && (relation == Ent.NobodyGrid || relation == Ent.EnemyGrid))
             {
                 entInfo.CacheBlockList.Clear();
-                (webent as IMyCubeGrid)?.GetBlocks(null, block =>
+                var grid = webent as MyCubeGrid;
+                if (grid != null)
                 {
-                    entInfo.CacheBlockList.Add(new CubeAccel(block));
-                    return false;
-                });
+                    foreach (IMySlimBlock block in grid.GetBlocks())
+                        entInfo.CacheBlockList.Add(new CubeAccel(block));
+                }
             }
             entInfo.RefreshNow = false;
 
@@ -264,8 +265,9 @@
                     var hits = 0;
                     var blockPoints = new Vector3D[9];
 
-                    var cloneCacheList= new List<CubeAccel>(entInfo.CacheBlockList);
-                    var cubeHitSet = new HashSet<CubeAccel>();
+                    var cloneCacheList = Session.Instance.ListCubeAccelPool.Get();
+                    cloneCacheList.AddRange(entInfo.CacheBlockList);
+                    var cubeHitSet = Session.Instance.SetCubeAccelPool.Get();
 
                     for (int i = 0; i < cloneCacheList.Count; i++)
                     {
@@ -302,6 +304,8 @@
                             cubeHitSet.Add(accel);
                         }
                     }
+                    cloneCacheList.Clear();
+                    Session.Instance.ListCubeAccelPool.Return(cloneCacheList);
 
                     if (collisionAvg != Vector3D.Zero)
                     {

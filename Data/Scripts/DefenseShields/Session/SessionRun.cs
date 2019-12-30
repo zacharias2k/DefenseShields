@@ -75,6 +75,54 @@
         }
         #endregion
 
+        #region Simulation
+        public override void UpdateBeforeSimulation()
+        {
+            try
+            {
+                if (!MonitorTask.IsComplete)
+                    MonitorTask.Wait();
+
+                if (MonitorTask.IsComplete && MonitorTask.valid && MonitorTask.Exceptions != null)
+                    TaskHasErrors(ref MonitorTask, "PTask");
+
+                Timings();
+
+                if (!ThreadEvents.IsEmpty)
+                {
+                    IThreadEvent tEvent;
+                    while (ThreadEvents.TryDequeue(out tEvent)) tEvent.Execute();
+                }
+
+                LogicUpdates();
+
+                if (EmpStore.Count != 0 && !EmpDispatched)
+                {
+                    EmpDispatched = true;   
+                    PrepEmpBlast();
+                    if (EmpWork.EventRunning) MyAPIGateway.Parallel.Start(ComputeEmpBlast, EmpCallBack);
+                    else EmpDispatched = false;
+                }
+
+                if (_warEffect && Tick20) WarEffect();
+            }
+            catch (Exception ex) { Log.Line($"Exception in SessionBeforeSim: {ex}"); }
+        }
+
+        public override void UpdateAfterSimulation()
+        {
+            lock (ActiveShields)
+            {
+                foreach (var s in ActiveShields)
+                    if (s.GridIsMobile && !s.Asleep) s.MobileUpdate();
+            }
+
+            MonitorTask = MyAPIGateway.Parallel.StartBackground(WebMonitor);
+
+        }
+        #endregion
+
+
         #region Draw
         public override void Draw()
         {
@@ -150,44 +198,6 @@
             catch (Exception ex) { Log.Line($"Exception in SessionDraw: {ex}"); }
         }
         #endregion
-
-        #region Simulation
-        public override void UpdateBeforeSimulation()
-        {
-            try
-            {
-                Timings();
-
-                if (!ThreadEvents.IsEmpty)
-                {
-                    IThreadEvent tEvent;
-                    while (ThreadEvents.TryDequeue(out tEvent)) tEvent.Execute();
-                }
-
-                LogicUpdates();
-
-                if (EmpStore.Count != 0 && !EmpDispatched)
-                {
-                    EmpDispatched = true;   
-                    PrepEmpBlast();
-                    if (EmpWork.EventRunning) MyAPIGateway.Parallel.Start(ComputeEmpBlast, EmpCallBack);
-                    else EmpDispatched = false;
-                }
-
-                if (_warEffect && Tick20) WarEffect();
-            }
-            catch (Exception ex) { Log.Line($"Exception in SessionBeforeSim: {ex}"); }
-        }
-
-        public override void UpdateAfterSimulation()
-        {
-            lock (ActiveShields)
-                foreach (var s in ActiveShields)
-                    if (s.GridIsMobile && !s.Asleep) s.MobileUpdate();
-            _autoResetEvent.Set();
-        }
-        #endregion
-
         #region Data
         public override void LoadData()
         {
@@ -197,12 +207,9 @@
         protected override void UnloadData()
         {
             ApiServer.Unload();
-            Monitor = false;
             Instance = null;
             HudComp = null;
             Enforced = null;
-            _autoResetEvent.Set();
-            _autoResetEvent = null;
             MyAPIGateway.Multiplayer.UnregisterMessageHandler(PACKET_ID, ReceivedPacket);
 
             MyVisualScriptLogicProvider.PlayerDisconnected -= PlayerDisconnected;

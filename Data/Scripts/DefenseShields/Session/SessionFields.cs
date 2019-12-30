@@ -1,4 +1,6 @@
-﻿namespace DefenseShields
+﻿using ParallelTasks;
+
+namespace DefenseShields
 {
     using System;
     using System.Collections.Concurrent;
@@ -72,9 +74,9 @@
         internal readonly Dictionary<string, AmmoInfo> AmmoCollection = new Dictionary<string, AmmoInfo>();
         internal readonly ConcurrentDictionary<MyEntity, MyProtectors> GlobalProtect = new ConcurrentDictionary<MyEntity, MyProtectors>();
         internal readonly ConcurrentDictionary<long, ShieldGridComponent> IdToBus = new ConcurrentDictionary<long, ShieldGridComponent>();
+        internal readonly ConcurrentDictionary<DefenseShields, bool> FunctionalShields = new ConcurrentDictionary<DefenseShields, bool>();
 
         internal readonly HashSet<DefenseShields> ActiveShields = new HashSet<DefenseShields>();
-        internal readonly ConcurrentDictionary<DefenseShields, bool> FunctionalShields = new ConcurrentDictionary<DefenseShields, bool>();
 
         internal readonly List<PlanetShields> PlanetShields = new List<PlanetShields>();
         internal readonly List<Emitters> Emitters = new List<Emitters>();
@@ -83,6 +85,12 @@
         internal readonly List<O2Generators> O2Generators = new List<O2Generators>();
         internal readonly List<Modulators> Modulators = new List<Modulators>();
         internal readonly List<DefenseShields> Controllers = new List<DefenseShields>();
+        internal readonly MyConcurrentPool<List<MyEntity>> ListMyEntityPool = new MyConcurrentPool<List<MyEntity>>(100);
+        internal readonly MyConcurrentPool<List<DefenseShields>> ListShieldPool = new MyConcurrentPool<List<DefenseShields>>(100);
+        internal readonly MyConcurrentPool<HashSet<MyCubeGrid>> SetMyCubeGridPool = new MyConcurrentPool<HashSet<MyCubeGrid>>(100);
+
+        internal readonly MyConcurrentPool<HashSet<CubeAccel>> SetCubeAccelPool = new MyConcurrentPool<HashSet<CubeAccel>>(100);
+        internal readonly MyConcurrentPool<List<CubeAccel>> ListCubeAccelPool = new MyConcurrentPool<List<CubeAccel>>(100);
 
         internal readonly HashSet<string> DsActions = new HashSet<string>()
         {
@@ -187,7 +195,6 @@
         internal bool[] SphereOnCamera = Array.Empty<bool>();
         internal bool CustomDataReset = true;
 
-        internal volatile bool Monitor = true;
         internal volatile bool EntSlotTick;
         internal volatile bool Dispatched;
         internal volatile bool EmpDispatched;
@@ -197,7 +204,6 @@
         private const int EntMaxTickAge = 36000;
 
         private static volatile int _entSlotAssigner;
-        private volatile bool _newFrame;
 
         private readonly MonitorWork _workData = new MonitorWork();
         internal readonly ApiBackend Api = new ApiBackend();
@@ -211,7 +217,10 @@
         private readonly ConcurrentDictionary<MyEntity, uint> _globalEntTmp = new ConcurrentDictionary<MyEntity, uint>();
         private readonly ConcurrentDictionary<long, BlockState> _warEffectCubes = new ConcurrentDictionary<long, BlockState>();
 
-        private DsPulseEvent _autoResetEvent = new DsPulseEvent();
+
+
+        internal Task MonitorTask = new Task();
+
         private MyParticleEffect _effect = new MyParticleEffect();
 
         private MyEntity3DSoundEmitter SoundEmitter { get; set; } = new MyEntity3DSoundEmitter(null)

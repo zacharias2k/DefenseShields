@@ -44,7 +44,7 @@
                 ((MyCubeGrid)Shield.CubeGrid).OnHierarchyUpdated -= HierarchyChanged;
                 RegisterGridEvents(false);
                 Shield.AppendingCustomInfo -= AppendingCustomInfo;
-                _sink.CurrentInputChanged -= CurrentInputChanged;
+                if (_sink != null)_sink.CurrentInputChanged -= CurrentInputChanged;
                 MyCube.IsWorkingChanged -= IsWorkingChanged;
             }
         }

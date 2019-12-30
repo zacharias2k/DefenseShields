@@ -19,150 +19,182 @@ namespace DefenseShields
     public partial class Session
     {
         #region WebMonitor
+        internal class MonitorWork
+        {
+            internal List<DefenseShields> ShieldList;
+            internal Session Session;
+            internal uint Tick;
+            internal int ShieldCnt;
+            internal int MinScaler;
+
+            internal void DoIt(Session session)
+            {
+                Session = session;
+                ShieldList = Session.ListShieldPool.Get();
+                MinScaler = Session.MinScaler;
+                ShieldList.AddRange(Session.FunctionalShields.Keys);
+                Tick = Session.Tick;
+                ShieldCnt = ShieldList.Count;
+                var preMinScaler = ShieldCnt / 30;
+                if (preMinScaler <= 0) preMinScaler = 1;
+                MinScaler = preMinScaler > 6 ? 9 : preMinScaler;
+            }
+
+            internal void Clean()
+            {
+                ShieldList.Clear();
+                Session.ListShieldPool.Return(ShieldList);
+                Session = null;
+                ShieldList = null;
+            }
+        }
+
         internal void WebMonitor()
         {
             try
             {
-                while (Monitor)
+                _workData.DoIt(this);
+                MyAPIGateway.Parallel.For(0, _workData.ShieldCnt, x =>
                 {
-                    _autoResetEvent.WaitOne();
-                    if (!Monitor) break;
-                    _newFrame = false;
-                    _workData.DoIt(new List<DefenseShields>(FunctionalShields.Keys), Tick);
-                    MinScaler = _workData.MinScaler;
-                    MyAPIGateway.Parallel.For(0, _workData.ShieldCnt, x =>
+                    var s = _workData.ShieldList[x];
+                    var tick = _workData.Tick;
+                    if (s.MarkedForClose || !s.Warming) return;
+                    var reInforce = s.DsState.State.ReInforce;
+                    if (!IsServer)
                     {
-                        var s = _workData.ShieldList[x];
-                        var tick = _workData.Tick;
-                        if (_newFrame || s.MarkedForClose || !s.Warming) return;
-                        var reInforce = s.DsState.State.ReInforce;
-                        if (!IsServer)
+                        if (reInforce != s.ReInforcedShield)
                         {
-                            if (reInforce != s.ReInforcedShield)
-                            {
-                                lock (s.SubLock) foreach (var sub in s.ShieldComp.SubGrids) _entRefreshQueue.Enqueue(sub);
-                                s.ReInforcedShield = reInforce;
-                            }
-
-                            if (EntSlotTick && RefreshCycle == s.MonitorSlot)
-                            {
-                                List<MyEntity> monitorListClient = null;
-                                var newSubClient = false;
-                                if (!reInforce) monitorListClient = new List<MyEntity>();
-                                MonitorRefreshTasks(x, ref monitorListClient, reInforce, ref newSubClient);
-                            }
-                            s.TicksWithNoActivity = 0;
-                            s.LastWokenTick = tick;
-                            s.Asleep = false;
-                            return;
+                            lock (s.SubLock) foreach (var sub in s.ShieldComp.SubGrids) _entRefreshQueue.Enqueue(sub);
+                            s.ReInforcedShield = reInforce;
                         }
 
-                        bool shieldActive;
-                        lock (ActiveShields) shieldActive = ActiveShields.Contains(s);
-
-                        if (s.LostPings > 59)
+                        if (EntSlotTick && RefreshCycle == s.MonitorSlot)
                         {
-                            if (shieldActive)
-                            {
-                                if (Enforced.Debug >= 2) Log.Line("Logic Paused by lost pings");
-                                lock (ActiveShields) ActiveShields.Remove(s);
-                                s.WasPaused = true;
-                            }
-                            s.Asleep = false;
-                            return;
-                        }
-                        if (Enforced.Debug >= 2 && s.LostPings > 0) Log.Line($"Lost Logic Pings:{s.LostPings}");
-                        if (shieldActive) s.LostPings++;
+                            var newSubClient = false;
+                            
+                            var monitorListClient = ListMyEntityPool.Get();
+                            
+                            MonitorRefreshTasks(x, ref monitorListClient, reInforce, ref newSubClient);
+                            
+                            monitorListClient.Clear();
+                            ListMyEntityPool.Return(monitorListClient);
 
-                        if (s.Asleep && EmpStore.Count != 0 && Vector3D.DistanceSquared(s.DetectionCenter, EmpWork.EpiCenter) <= SyncDistSqr)
-                        {
-                            s.TicksWithNoActivity = 0;
-                            s.LastWokenTick = tick;
-                            s.Asleep = false;
-                            return;
-                        }
-
-                        if (!shieldActive && s.LostPings > 59)
-                        {
-                            s.Asleep = true;
-                            return;
-                        }
-
-                        List<MyEntity> monitorList = null;
-                        var newSub = false;
-                        if (!reInforce) monitorList = new List<MyEntity>();
-                        if (EntSlotTick && RefreshCycle == s.MonitorSlot) MonitorRefreshTasks(x, ref monitorList, reInforce, ref newSub);
-
-                        if (reInforce) return;
-                        if (tick < s.LastWokenTick + 400 || s.Missiles.Count > 0)
-                        {
-                            s.Asleep = false;
-                            return;
-                        }
-
-                        if (s.GridIsMobile && s.MyGrid.Physics.IsMoving)
-                        {
-                            s.LastWokenTick = tick;
-                            s.Asleep = false;
-                            return;
-                        }
-
-                        if (!s.PlayerByShield && !s.MoverByShield && !s.NewEntByShield)
-                        {
-                            if (s.TicksWithNoActivity++ % EntCleanCycle == 0) s.EntCleanUpTime = true;
-                            if (shieldActive && !s.WasPaused && tick > 1200)
-                            {
-                                if (Enforced.Debug >= 2) Log.Line($"Logic Paused by monitor");
-                                lock (ActiveShields) ActiveShields.Remove(s);
-                                s.WasPaused = true;
-                                s.Asleep = false;
-                                s.TicksWithNoActivity = 0;
-                                s.LastWokenTick = tick;
-                            }
-                            else s.Asleep = true;
-                            return;
-                        }
-
-                        var intersect = false;
-                        if (!(EntSlotTick && RefreshCycle == s.MonitorSlot)) MyGamePruningStructure.GetTopmostEntitiesInBox(ref s.WebBox, monitorList, MyEntityQueryType.Dynamic);
-                        for (int i = 0; i < monitorList.Count; i++)
-                        {
-                            var ent = monitorList[i];
-
-                            if (ent.Physics == null || !(ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor)) continue;
-                            if (ent.Physics.IsMoving)
-                            {
-                                if (s.WebBox.Intersects(ent.PositionComp.WorldAABB))
-                                {
-                                    intersect = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (!intersect)
-                        {
-                            s.Asleep = true;
-                            return;
                         }
                         s.TicksWithNoActivity = 0;
                         s.LastWokenTick = tick;
                         s.Asleep = false;
-                    });
+                        return;
+                    }
 
-                    if (_workData.Tick % 180 == 0 && _workData.Tick > 1199)
+                    bool shieldActive;
+                    lock (ActiveShields) shieldActive = ActiveShields.Contains(s);
+
+                    if (s.LostPings > 59)
                     {
-                        _entRefreshTmpList.Clear();
-                        _entRefreshTmpList.AddRange(_globalEntTmp.Where(info => _workData.Tick - 540 > info.Value));
-                        foreach (var dict in _entRefreshTmpList)
+                        if (shieldActive)
                         {
-                            var ent = dict.Key;
-                            _entRefreshQueue.Enqueue(ent);
-                            uint value;
-                            _globalEntTmp.TryRemove(ent, out value);
+                            if (Enforced.Debug >= 2) Log.Line("Logic Paused by lost pings");
+                            lock (ActiveShields) ActiveShields.Remove(s);
+                            s.WasPaused = true;
+                        }
+                        s.Asleep = false;
+                        return;
+                    }
+                    if (Enforced.Debug >= 2 && s.LostPings > 0) Log.Line($"Lost Logic Pings:{s.LostPings}");
+                    if (shieldActive) s.LostPings++;
+
+                    if (s.Asleep && EmpStore.Count != 0 && Vector3D.DistanceSquared(s.DetectionCenter, EmpWork.EpiCenter) <= SyncDistSqr)
+                    {
+                        s.TicksWithNoActivity = 0;
+                        s.LastWokenTick = tick;
+                        s.Asleep = false;
+                        return;
+                    }
+
+                    if (!shieldActive && s.LostPings > 59)
+                    {
+                        s.Asleep = true;
+                        return;
+                    }
+
+                    var newSub = false;
+                    
+                    var monitorList = ListMyEntityPool.Get();
+                    if (EntSlotTick && RefreshCycle == s.MonitorSlot) MonitorRefreshTasks(x, ref monitorList, reInforce, ref newSub);
+
+                    if (reInforce) return;
+                    if (tick < s.LastWokenTick + 400 || s.Missiles.Count > 0)
+                    {
+                        s.Asleep = false;
+                        return;
+                    }
+
+                    if (s.GridIsMobile && s.MyGrid.Physics.IsMoving)
+                    {
+                        s.LastWokenTick = tick;
+                        s.Asleep = false;
+                        return;
+                    }
+
+                    if (!s.PlayerByShield && !s.MoverByShield && !s.NewEntByShield)
+                    {
+                        if (s.TicksWithNoActivity++ % EntCleanCycle == 0) s.EntCleanUpTime = true;
+                        if (shieldActive && !s.WasPaused && tick > 1200)
+                        {
+                            if (Enforced.Debug >= 2) Log.Line($"Logic Paused by monitor");
+                            lock (ActiveShields) ActiveShields.Remove(s);
+                            s.WasPaused = true;
+                            s.Asleep = false;
+                            s.TicksWithNoActivity = 0;
+                            s.LastWokenTick = tick;
+                        }
+                        else s.Asleep = true;
+                        return;
+                    }
+
+                    var intersect = false;
+                    if (!(EntSlotTick && RefreshCycle == s.MonitorSlot)) MyGamePruningStructure.GetTopmostEntitiesInBox(ref s.WebBox, monitorList, MyEntityQueryType.Dynamic);
+                    for (int i = 0; i < monitorList.Count; i++)
+                    {
+                        var ent = monitorList[i];
+
+                        if (ent.Physics == null || !(ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor)) continue;
+                        if (ent.Physics.IsMoving)
+                        {
+                            if (s.WebBox.Intersects(ent.PositionComp.WorldAABB))
+                            {
+                                intersect = true;
+                                break;
+                            }
                         }
                     }
+
+                    monitorList.Clear();
+                    ListMyEntityPool.Return(monitorList);
+
+                    if (!intersect)
+                    {
+                        s.Asleep = true;
+                        return;
+                    }
+                    s.TicksWithNoActivity = 0;
+                    s.LastWokenTick = tick;
+                    s.Asleep = false;
+                });
+
+                if (_workData.Tick % 180 == 0 && _workData.Tick > 1199)
+                {
+                    _entRefreshTmpList.Clear();
+                    _entRefreshTmpList.AddRange(_globalEntTmp.Where(info => _workData.Tick - 540 > info.Value));
+                    foreach (var dict in _entRefreshTmpList)
+                    {
+                        var ent = dict.Key;
+                        _entRefreshQueue.Enqueue(ent);
+                        uint value;
+                        _globalEntTmp.TryRemove(ent, out value);
+                    }
                 }
+                _workData.Clean();
             }
             catch (Exception ex) { Log.Line($"Exception in WebMonitor: {ex}"); }
         }
@@ -173,16 +205,23 @@ namespace DefenseShields
 
             if (reInforce)
             {
-                HashSet<MyCubeGrid> subs;
-                lock (s.SubLock) subs = new HashSet<MyCubeGrid>(s.ShieldComp.SubGrids);
                 var newMode = !s.ReInforcedShield;
                 if (!newMode) return;
+
+                HashSet<MyCubeGrid> subs;
+                lock (s.SubLock)
+                {
+                    subs = SetMyCubeGridPool.Get();
+                    subs.UnionWith(s.ShieldComp.SubGrids);
+                }
                 foreach (var sub in subs)
                 {
                     if (!_globalEntTmp.ContainsKey(sub)) newSub = true;
                     _entRefreshQueue.Enqueue(sub);
                     if (!s.WasPaused) _globalEntTmp[sub] = _workData.Tick;
                 }
+                subs.Clear();
+                SetMyCubeGridPool.Return(subs);
 
                 s.ReInforcedShield = true;
                 s.TicksWithNoActivity = 0;
@@ -195,12 +234,19 @@ namespace DefenseShields
                 if (s.ReInforcedShield)
                 {
                     HashSet<MyCubeGrid> subs;
-                    lock (s.SubLock) subs = new HashSet<MyCubeGrid>(s.ShieldComp.SubGrids); 
+                    lock (s.SubLock)
+                    {
+                        subs = SetMyCubeGridPool.Get();
+                        subs.UnionWith(s.ShieldComp.SubGrids);
+                    } 
                     foreach (var sub in subs)
                     {
                         _entRefreshQueue.Enqueue(sub);
                         if (!s.WasPaused) _globalEntTmp[sub] = _workData.Tick;
                     }
+                    subs.Clear();
+                    SetMyCubeGridPool.Return(subs);
+
                     //if (Enforced.Debug >= 2) Log.Line($"found Reinforce");
                     s.ReInforcedShield = false;
                     s.TicksWithNoActivity = 0;
@@ -270,8 +316,8 @@ namespace DefenseShields
                     {
                         s.MoverByShield = false;
                         var newMover = false;
-                        var moverList = new List<MyEntity>();
-
+                        
+                        var moverList = ListMyEntityPool.Get();
                         MyGamePruningStructure.GetTopMostEntitiesInBox(ref s.ShieldBox3K, moverList, MyEntityQueryType.Dynamic);
                         for (int i = 0; i < moverList.Count; i++)
                         {
@@ -314,6 +360,9 @@ namespace DefenseShields
                                 s.EntsByMe.TryAdd(ent, new MoverInfo(entPos, _workData.Tick));
                             }
                         }
+                        moverList.Clear();
+                        ListMyEntityPool.Return(moverList);
+
                         s.MoverByShield = newMover;
                     }
 
@@ -345,7 +394,6 @@ namespace DefenseShields
         #region Timings / LoadBalancer
         private void Timings()
         {
-            _newFrame = true;
             Tick = (uint)(Session.ElapsedPlayTime.TotalMilliseconds * TickTimeDiv);
             Tick20 = Tick % 20 == 0;
             Tick60 = Tick % 60 == 0;
