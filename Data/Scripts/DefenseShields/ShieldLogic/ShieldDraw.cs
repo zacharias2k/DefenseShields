@@ -83,7 +83,7 @@ namespace DefenseShields
             if (relation == MyRelationsBetweenPlayerAndBlock.Neutral || relation == MyRelationsBetweenPlayerAndBlock.Enemies) enemy = true;
 
             var config = MyAPIGateway.Session.Config;
-            if (!enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.Instance.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible) UpdateIcon();
+            if (!enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.Instance.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible) UpdateIcon(false);
         }
 
         private Vector3D ComputeHandlerImpact()
@@ -173,7 +173,7 @@ namespace DefenseShields
 
             var config = MyAPIGateway.Session.Config;
             var drawIcon = !enemy && DsSet.Settings.SendToHud && !config.MinimalHud && Session.Instance.HudComp == this && !MyAPIGateway.Gui.IsCursorVisible;
-            if (drawIcon) UpdateIcon();
+            if (drawIcon) UpdateIcon(reInforce);
 
             var clearView = !GridIsMobile || !_viewInShield;
             var activeInvisible = DsSet.Settings.ActiveInvisible;
@@ -357,7 +357,7 @@ namespace DefenseShields
             }
         }
 
-        private void UpdateIcon()
+        private void UpdateIcon(bool reInforce)
         {
             var position = new Vector3D(_shieldIconPos.X, _shieldIconPos.Y, 0);
             var fov = MyAPIGateway.Session.Camera.FovWithZoom;
@@ -381,8 +381,12 @@ namespace DefenseShields
             var icon3 = GetHudIcon3FromInt(heat, _count < 30);
             var showIcon2 = DsState.State.Online;
             Color color;
-            if (percent > 0 && percent < 10 && _count < 30) color = Color.Red;
+            var flashRed = (percent > 0 && percent < 10 & !reInforce)  && _count < 30;
+            
+            if (flashRed) color = Color.Red;
+            else if (reInforce) color = Color.LightSkyBlue;
             else color = Color.White;
+
             MyTransparentGeometry.AddBillboardOriented(icon1, color, origin, left, up, (float)scale, BlendTypeEnum.PostPP); 
             if (showIcon2 && icon2 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon2, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.PostPP);
             if (icon3 != MyStringId.NullOrEmpty) MyTransparentGeometry.AddBillboardOriented(icon3, Color.White, origin, left, up, (float)scale * 1.11f, BlendTypeEnum.PostPP);

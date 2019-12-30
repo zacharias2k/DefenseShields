@@ -475,7 +475,7 @@ namespace DefenseShields
             ShieldGridComponent c;
             if (Session.Instance.IdToBus.TryGetValue(entity.EntityId, out c) && c?.DefenseShields != null)
             {
-                if (onlyIfOnline && !c.DefenseShields.DsState.State.Online) return null;
+                if (onlyIfOnline && !c.DefenseShields.DsState.State.Online || c.DefenseShields.ReInforcedShield) return null;
                 return c.DefenseShields.Shield;
             }
 
@@ -512,7 +512,7 @@ namespace DefenseShields
             ShieldGridComponent c;
             if (Session.Instance.IdToBus.TryGetValue(entity.EntityId, out c) && c?.DefenseShields != null)
             {
-                if (onlyIfOnline && !c.DefenseShields.DsState.State.Online) return null;
+                if (onlyIfOnline && !c.DefenseShields.DsState.State.Online || c.DefenseShields.ReInforcedShield) return null;
                 var s = c.DefenseShields;
                 var state = s.DsState.State;
                 lock (s.MatrixLock)

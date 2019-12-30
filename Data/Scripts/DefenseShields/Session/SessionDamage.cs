@@ -173,7 +173,8 @@ namespace DefenseShields
                     if (iShield != null && iShield.DsState.State.Online && !iShield.DsState.State.Lowered)
                     {
                         var attackingVoxel = trueAttacker as MyVoxelBase;
-                        if (attackingVoxel != null || trueAttacker is MyCubeGrid) iShield.DeformEnabled = true;
+                        if (attackingVoxel != null || (trueAttacker is MyCubeGrid) && !(damageType == MPEnergy || damageType == MPKinetic || damageType == MPExplosion)) 
+                            iShield.DeformEnabled = true;
                         else if (trueAttacker != null) iShield.DeformEnabled = false;
 
                         if (damageType == MyDamageType.Deformation && iShield.DeformEnabled)
