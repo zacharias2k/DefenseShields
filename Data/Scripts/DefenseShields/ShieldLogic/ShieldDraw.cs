@@ -28,10 +28,10 @@ namespace DefenseShields
             var activeVisible = DetermineVisualState(reInforce);
             WorldImpactPosition = Vector3D.NegativeInfinity;
 
-            var kineticHit = !EnergyHit;
+            var kineticHit = EnergyHit == HitType.Kinetic;
             _localImpactPosition = Vector3D.NegativeInfinity;
 
-            if (impactPos != Vector3D.NegativeInfinity && (kineticHit && KineticCoolDown < 0 || EnergyHit && EnergyCoolDown < 0))
+            if (impactPos != Vector3D.NegativeInfinity && (kineticHit && KineticCoolDown < 0 || EnergyHit == HitType.Energy && EnergyCoolDown < 0))
             {
                 if (_isServer && WebDamage && GridIsMobile)
                 {
@@ -42,9 +42,9 @@ namespace DefenseShields
                 }
 
                 if (kineticHit) KineticCoolDown = 0;
-                else if (EnergyHit) EnergyCoolDown = 0;
+                else if (EnergyHit == HitType.Energy) EnergyCoolDown = 0;
 
-                HitParticleStart(impactPos, intersected);
+                if (EnergyHit != HitType.Other) HitParticleStart(impactPos, intersected);
 
                 var cubeBlockLocalMatrix = MyGrid.PositionComp.LocalMatrix;
                 var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
@@ -53,8 +53,7 @@ namespace DefenseShields
                 _localImpactPosition = localPosition;
             }
 
-            kineticHit = false;
-            EnergyHit = false;
+            EnergyHit = HitType.Kinetic;
 
             if (DsState.State.Online)
             {
@@ -200,7 +199,8 @@ namespace DefenseShields
             // ifChecks: #1 FadeReset - #2 PassiveFade - #3 PassiveSet - #4 PassiveReset
             if (visible == 2 && !(visible != 0 && HitCoolDown > -1) && HitCoolDown != -11)
             {
-                ResetShellRender(false);
+                if (_shellPassive.Render.Transparency > 0 || _hideShield)
+                    ResetShellRender(false);
             }
             else if (visible != 0 && HitCoolDown > -1)
             {
@@ -263,11 +263,11 @@ namespace DefenseShields
             scale = scale * Math.Max(Math.Log(baseScaler), 1);
 
             var mainParticle = !intersected ? 1657 : 6667;
-            var multiple = EnergyHit;
+            var multiple = EnergyHit== HitType.Energy;
 
             Vector4 color;
             float mainAdjust = 1;
-            if (EnergyHit)
+            if (EnergyHit == HitType.Energy)
             {
                 var scaler = 8;
                 if (_viewInShield && DsSet.Settings.DimShieldHits)
@@ -303,7 +303,7 @@ namespace DefenseShields
             _effect1.UserRadiusMultiplier = radius * mainAdjust;
             _effect1.UserEmitterScale = (float)scale;
             _effect1.Velocity = vel;
-            if (!EnergyHit) _effect1.WorldMatrix = directedMatrix;
+            if (EnergyHit == HitType.Kinetic) _effect1.WorldMatrix = directedMatrix;
             _effect1.Play();
 
             var magic = ((radius * 0.1f) - 2.5f);

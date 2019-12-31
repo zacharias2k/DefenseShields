@@ -341,7 +341,7 @@ namespace DefenseShields
         internal bool IsWorking { get; set; }
         internal bool EntCleanUpTime { get; set; }
         internal bool ModulateGrids { get; set; }
-        internal bool EnergyHit { get; set; }
+        internal HitType EnergyHit { get; set; }
         internal bool EffectsDirty { get; set; }
         internal bool ShieldActive { get; set; }
 
@@ -362,6 +362,13 @@ namespace DefenseShields
         internal DamageHandlerHit HandlerImpact { get; set; } = new DamageHandlerHit();
         internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
         internal Vector3D ShieldSize { get; set; }
+
+        internal enum HitType
+        {
+            Energy,
+            Kinetic,
+            Other,
+        }
 
         internal MatrixD DetectionMatrix
         {

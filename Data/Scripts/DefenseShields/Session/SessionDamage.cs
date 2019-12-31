@@ -157,7 +157,7 @@ namespace DefenseShields
                                         shield.HandlerImpact.HitBlock = block;
                                         shield.ImpactSize = info.Amount;
                                         shield.HandlerImpact.Active = true;
-                                        if (!bullet) shield.EnergyHit = true;
+                                        if (!bullet) shield.EnergyHit = DefenseShields.HitType.Energy;
                                     }
                                 }
                             }

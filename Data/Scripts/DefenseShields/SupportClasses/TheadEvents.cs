@@ -42,7 +42,7 @@ namespace DefenseShields.Support
             }
             else
             {
-                Shield.EnergyHit = true;
+                Shield.EnergyHit = DefenseShields.HitType.Energy;
                 Shield.ImpactSize = Damage;
                 Shield.WorldImpactPosition = CollisionAvg;
             }
@@ -84,7 +84,7 @@ namespace DefenseShields.Support
             }
             else
             {
-                Shield.EnergyHit = true;
+                Shield.EnergyHit = DefenseShields.HitType.Energy;
                 Shield.WorldImpactPosition = hitPos;
                 Shield.ImpactSize = damage;
                 UtilsStatic.CreateFakeSmallExplosion(hitPos);

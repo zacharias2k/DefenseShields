@@ -174,7 +174,7 @@ namespace DefenseShields
                 {
                     ImpactSize = hit.Amount;
                     WorldImpactPosition = hit.HitPos;
-                    EnergyHit = true;
+                    EnergyHit = HitType.Energy;
                     Absorb += hit.Amount * ConvToWatts;
                     UtilsStatic.CreateFakeSmallExplosion(WorldImpactPosition);
                     if (hit.Attacker != null)
@@ -187,7 +187,7 @@ namespace DefenseShields
                 {
                     ImpactSize = hit.Amount;
                     WorldImpactPosition = hit.HitPos;
-                    EnergyHit = false;
+                    EnergyHit = HitType.Kinetic;
                     Absorb += hit.Amount * ConvToWatts;
                     continue;
                 }
@@ -195,7 +195,7 @@ namespace DefenseShields
                 {
                     ImpactSize = hit.Amount;
                     WorldImpactPosition = hit.HitPos;
-                    EnergyHit = true;
+                    EnergyHit = HitType.Energy;
                     Absorb += hit.Amount * ConvToWatts;
                     continue;
                 }
@@ -203,7 +203,7 @@ namespace DefenseShields
                 {
                     ImpactSize = hit.Amount;
                     WorldImpactPosition = hit.HitPos;
-                    EnergyHit = true;
+                    EnergyHit = HitType.Energy;
                     Absorb += hit.Amount * ConvToWatts;
                     continue;
                 }
@@ -266,7 +266,7 @@ namespace DefenseShields
                 if (_isServer && _mpActive)
                     AddEmpBlastHit(AttackerId, targetDamage, Session.Instance.MPEMP, impactPos);
 
-                EnergyHit = true;
+                EnergyHit = HitType.Energy;
                 WorldImpactPosition = epiCenter;
                 Absorb += targetDamage;
             }

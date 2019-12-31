@@ -108,8 +108,6 @@ namespace DefenseShields
             if (energy) damage *= logic.DsState.State.ModulateKinetic;
             else damage *= logic.DsState.State.ModulateEnergy;
 
-            if (!drawParticle) hitPos = Vector3D.NegativeInfinity;
-
             if (Session.Instance.MpActive)
             {
                 var damageType = energy ? Session.Instance.MPEnergy : Session.Instance.MPKinetic;
@@ -117,7 +115,10 @@ namespace DefenseShields
             }
             else
             {
-                logic.EnergyHit = energy;
+                if (!drawParticle) logic.EnergyHit = DefenseShields.HitType.Other;
+                else if (energy) logic.EnergyHit = DefenseShields.HitType.Energy;
+                else logic.EnergyHit = DefenseShields.HitType.Kinetic;
+
                 logic.ImpactSize = damage;
                 logic.WorldImpactPosition = hitPos;
             }
@@ -146,8 +147,6 @@ namespace DefenseShields
             if (energy) damage *= logic.DsState.State.ModulateKinetic;
             else damage *= logic.DsState.State.ModulateEnergy;
 
-            if (!drawParticle) hitPos = Vector3D.NegativeInfinity;
-
             if (Session.Instance.MpActive)
             {
                 var damageType = energy ? Session.Instance.MPEnergy : Session.Instance.MPKinetic;
@@ -155,7 +154,10 @@ namespace DefenseShields
             }
             else
             {
-                logic.EnergyHit = energy;
+                if (!drawParticle) logic.EnergyHit = DefenseShields.HitType.Other;
+                else if (energy) logic.EnergyHit = DefenseShields.HitType.Energy;
+                else logic.EnergyHit = DefenseShields.HitType.Kinetic;
+
                 logic.ImpactSize = damage;
                 logic.WorldImpactPosition = hitPos;
             }
@@ -175,8 +177,6 @@ namespace DefenseShields
             if (energy) damage *= logic.DsState.State.ModulateKinetic;
             else damage *= logic.DsState.State.ModulateEnergy;
 
-            if (!drawParticle) pos = Vector3D.NegativeInfinity;
-
             if (Session.Instance.MpActive)
             {
                 var damageType = energy ? Session.Instance.MPEnergy : Session.Instance.MPKinetic;
@@ -188,7 +188,10 @@ namespace DefenseShields
                 logic.WorldImpactPosition = pos;
             }
 
-            logic.EnergyHit = energy;
+            if (!drawParticle) logic.EnergyHit = DefenseShields.HitType.Other;
+            else if (energy) logic.EnergyHit = DefenseShields.HitType.Energy;
+            else logic.EnergyHit = DefenseShields.HitType.Kinetic;
+
             logic.WebDamage = true;
             logic.Absorb += damage;
 
@@ -216,8 +219,6 @@ namespace DefenseShields
                 if (hpRemaining < 0) hpRemaining /= logic.DsState.State.ModulateEnergy;
             }
 
-            if (!drawParticle) pos = Vector3D.NegativeInfinity;
-
             if (Session.Instance.MpActive)
             {
                 var damageType = energy ? Session.Instance.MPEnergy : Session.Instance.MPKinetic;
@@ -229,7 +230,10 @@ namespace DefenseShields
                 logic.WorldImpactPosition = pos;
             }
 
-            logic.EnergyHit = energy;
+            if (!drawParticle) logic.EnergyHit = DefenseShields.HitType.Other;
+            else if (energy) logic.EnergyHit = DefenseShields.HitType.Energy;
+            else logic.EnergyHit = DefenseShields.HitType.Kinetic;
+
             logic.WebDamage = true;
             logic.Absorb += damage;
 

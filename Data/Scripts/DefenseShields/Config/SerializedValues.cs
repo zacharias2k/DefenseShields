@@ -82,7 +82,7 @@
         [ProtoMember(12), DefaultValue(true)] public bool UseBatteries = true;
         [ProtoMember(13), DefaultValue(true)] public bool DimShieldHits = true;
         [ProtoMember(14), DefaultValue(true)] public bool RaiseShield = true;
-        [ProtoMember(15)] public long ShieldShell = 0;
+        [ProtoMember(15)] public long ShieldShell = 2;
         [ProtoMember(16), DefaultValue(false)] public bool HitWaveAnimation = false;
         [ProtoMember(17)] public long Visible = 2;
         [ProtoMember(18)] public Vector3I ShieldOffset = Vector3I.Zero;

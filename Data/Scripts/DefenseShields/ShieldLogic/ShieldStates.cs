@@ -193,7 +193,7 @@
             _heatCycle = -1;
 
             Absorb = 0f;
-            EnergyHit = false;
+            EnergyHit = HitType.Kinetic;
             WorldImpactPosition = Vector3D.NegativeInfinity;
             ShieldEnt.Render.Visible = false;
 
