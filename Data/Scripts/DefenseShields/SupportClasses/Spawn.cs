@@ -1,4 +1,7 @@
-﻿using Sandbox.Game.Entities;
+﻿using Sandbox.Engine.Physics;
+using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Debris;
+using VRage.Game.Components;
 
 namespace DefenseShields.Support
 {
@@ -70,7 +73,7 @@ namespace DefenseShields.Support
             try
             {
                 var myParent = parented ? parent : null;
-                var ent = new MyEntity { NeedsWorldMatrix = true };
+                var ent = new MyEntity { NeedsWorldMatrix = true, Physics = !parented ? new MyHandToolBase.MyBlockingBody(new MyHandToolBase(), parent) { IsPhantom = true } : null };
                 ent.Init(new StringBuilder(displayName), model, myParent, null, null);
                 ent.Name = $"{parent.EntityId}";
                 MyEntities.Add(ent);

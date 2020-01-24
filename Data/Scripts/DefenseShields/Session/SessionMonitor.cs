@@ -158,7 +158,7 @@ namespace DefenseShields
                     {
                         var ent = monitorList[i];
 
-                        if (ent.Physics == null || !(ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor)) continue;
+                        if (ent.Physics == null || ent.Physics.IsPhantom || !(ent is MyCubeGrid || ent is IMyCharacter || ent is IMyMeteor)) continue;
                         if (ent.Physics.IsMoving)
                         {
                             if (s.WebBox.Intersects(ent.PositionComp.WorldAABB))
@@ -267,7 +267,7 @@ namespace DefenseShields
                         foreach (var ent in monitorList)
                         {
                             var voxel = ent as MyVoxelBase;
-                            if (ent == null || ent.MarkedForClose || (voxel == null && (ent.Physics == null || ent.DefinitionId == null)) || (!s.GridIsMobile && voxel != null) || (disableVoxels && voxel != null) || (voxel != null && voxel != voxel.RootVoxel))
+                            if (ent == null || ent.MarkedForClose || (voxel == null && (ent.Physics == null || ent.Physics.IsPhantom || ent.DefinitionId == null)) || (!s.GridIsMobile && voxel != null) || (disableVoxels && voxel != null) || (voxel != null && voxel != voxel.RootVoxel))
                             {
                                 continue;
                             }
@@ -335,7 +335,7 @@ namespace DefenseShields
                                 continue;
                             }
 
-                            if (!(ent.Physics == null || ent is MyCubeGrid || ent is IMyCharacter)) continue;
+                            if (!(ent.Physics == null || ent.Physics.IsPhantom || ent is MyCubeGrid || ent is IMyCharacter)) continue;
                             var entPos = ent.PositionComp.WorldAABB.Center;
 
                             var keyFound = s.EntsByMe.ContainsKey(ent);

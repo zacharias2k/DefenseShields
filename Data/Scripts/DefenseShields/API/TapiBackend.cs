@@ -551,7 +551,7 @@ namespace DefenseShields
             for (int i = 0; i < segment.Count; i++)
             {
                 var ent = segment[i].Element;
-                if (ent == null || ent.Physics != null) continue;
+                if (ent == null || ent.Physics != null && !ent.Physics.IsPhantom) continue;
                 ShieldGridComponent c;
                 if (Session.Instance.IdToBus.TryGetValue(ent.EntityId, out c) && c.DefenseShields != null)
                 {

@@ -105,7 +105,7 @@ namespace DefenseShields
                 if (i < shieldsStartIndex)
                 {
                     var voxel = ent as MyVoxelBase;
-                    if (ent == null || (voxel == null && (entPhysics == null || ent.DefinitionId == null)) || (voxel != null && (!iMoving || !GridIsMobile || disableVoxels || voxel != voxel.RootVoxel))) continue;
+                    if (ent == null || (voxel == null && (entPhysics == null || entPhysics.IsPhantom || ent.DefinitionId == null)) || (voxel != null && (!iMoving || !GridIsMobile || disableVoxels || voxel != voxel.RootVoxel))) continue;
 
                     bool quickReject;
                     if (_isServer) quickReject = ent is IMyEngineerToolBase || IgnoreCache.Contains(ent) || EnemyShields.Contains(ent) || FriendlyMissileCache.Contains(ent) || AuthenticatedCache.Contains(ent);
