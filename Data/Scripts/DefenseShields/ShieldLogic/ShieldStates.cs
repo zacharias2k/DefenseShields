@@ -396,8 +396,16 @@
         {
             if (newSettings.MId > DsSet.Settings.MId)
             {
-                if (!_isServer && MyGrid != null && Session.Enforced.Debug == 3) Log.Line($"{MyGrid.DebugName} received settings packet");
+                if (!_isServer)
+                {
+                    if (MyGrid != null && Session.Enforced.Debug == 3) 
+                        Log.Line($"{MyGrid.DebugName} received settings packet");
+
+                    if (newSettings.Visible != DsSet.Settings.Visible) 
+                        _clientAltered = true;
+                }
                 var newShape = newSettings.ExtendFit != DsSet.Settings.ExtendFit || newSettings.FortifyShield != DsSet.Settings.FortifyShield || newSettings.SphereFit != DsSet.Settings.SphereFit;
+                
                 DsSet.Settings = newSettings;
                 SettingsUpdated = true;
                 if (newShape) FitChanged = true;

@@ -170,7 +170,7 @@ namespace DefenseShields
 			Session.Instance.FunctionalShields[this] = false;
             Session.Instance.Controllers.Add(this);
 			
-            if (MyAPIGateway.Session.CreativeMode) CreativeModeWarning();
+            //if (MyAPIGateway.Session.CreativeMode) CreativeModeWarning();
             IsWorking = MyCube.IsWorking;
             IsFunctional = MyCube.IsFunctional;
             NeedsUpdate |= MyEntityUpdateEnum.BEFORE_NEXT_FRAME;

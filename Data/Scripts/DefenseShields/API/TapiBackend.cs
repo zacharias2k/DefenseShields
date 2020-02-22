@@ -543,7 +543,7 @@ namespace DefenseShields
         private static MyTuple<float?, IMyTerminalBlock> TAPI_ClosestShieldInLine(LineD line, bool onlyIfOnline)
         {
             var segment = SegmentPool.Get();
-            MyGamePruningStructure.GetTopmostEntitiesOverlappingRay(ref line, segment, MyEntityQueryType.Static);
+            MyGamePruningStructure.GetTopmostEntitiesOverlappingRay(ref line, segment, MyEntityQueryType.Dynamic);
             var ray = new RayD(line.From, line.Direction);
 
             var closest = float.MaxValue;

@@ -24,7 +24,7 @@ namespace DefenseShields
         internal readonly object SubUpdateLock = new object();
 
         internal readonly int[] ExpChargeReductions = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
-        internal readonly float[] ReserveScaler = { float.MaxValue * 0.001f, 0.001f, 1, 1000, 1000000 };
+        internal readonly float[] ReserveScaler = { -1f, 0.001f, 1, 1000, 1000000 };
 
         internal readonly List<MyEntity> PruneList = new List<MyEntity>();
         internal readonly List<ShieldHit> ShieldHits = new List<ShieldHit>();

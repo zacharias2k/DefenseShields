@@ -1,5 +1,6 @@
 ﻿using DefenseShields.Support;
 using Sandbox.ModAPI;
+using VRage.Utils;
 using VRageMath;
 
 namespace DefenseShields
@@ -71,21 +72,29 @@ namespace DefenseShields
             _vertsSighted.Clear();
 
             if (updateTestSphere) UpdateUnitSphere();
+            var testDist = Definition.FieldDist;
 
+            Vector3D testDir;
+            if (!_compact) testDir = SubpartRotor.PositionComp.WorldVolume.Center - MyCube.PositionComp.WorldVolume.Center;
+            else testDir = MyCube.PositionComp.WorldMatrix.Up;
+
+            testDir.Normalize();
+            var testCenter = MyCube.PositionComp.WorldAABB.Center;
+            var testPos = testCenter + (testDir * testDist);
+            var valid = !MyUtils.IsZero(testCenter) && !MyUtils.IsZero(testDir) && !MyUtils.IsZero(testDist);
+            if (!valid) Log.Line($"invalid Los Init check");
             MyAPIGateway.Parallel.For(0, _unitSpherePoints, i =>
             {
-                var testDist = Definition.FieldDist;
-                var testDir = MyCube.PositionComp.WorldMatrix.Up;
-                if (!_compact) testDir = SubpartRotor.PositionComp.WorldVolume.Center - MyCube.PositionComp.WorldVolume.Center;
-                testDir.Normalize();
-                var testPos = MyCube.PositionComp.WorldAABB.Center + (testDir * testDist);
-
-                var hit = MyGrid.RayCastBlocks(testPos, LosScaledCloud[i]);
-
-                if (hit.HasValue)
+                if (valid)
                 {
-                    _blocksLos[i] = false;
+                    var hit = MyGrid.RayCastBlocks(testPos, LosScaledCloud[i]);
+
+                    if (hit.HasValue)
+                        _blocksLos[i] = false;
                 }
+                else
+                    _blocksLos[i] = true;
+
             });
             for (int i = 0; i < _unitSpherePoints; i++) if (!_blocksLos.ContainsKey(i)) _vertsSighted.Add(i);
         }

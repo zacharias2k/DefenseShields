@@ -84,7 +84,7 @@ namespace DefenseShields
 
             var reserveScaler = ReserveScaler[DsSet.Settings.PowerScale];
             var userPowerCap = DsSet.Settings.PowerWatts * reserveScaler;
-            var shieldMax = GridMaxPower > userPowerCap ? userPowerCap : GridMaxPower;
+            var shieldMax = GridMaxPower > userPowerCap && reserveScaler > 0 ? userPowerCap : GridMaxPower;
             ShieldMaxPower = shieldMax;
             ShieldAvailablePower = ShieldMaxPower - GridCurrentPower;
             _shieldPowered = ShieldMaxPower > 0;
