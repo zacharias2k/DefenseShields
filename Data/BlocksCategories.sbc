@@ -161,7 +161,53 @@
   </ResearchGroups>
 
 
+<!--Block Groups -->
+    <BlockVariantGroups>
 
+        <!-- Reactors -->
+
+        <BlockVariantGroup>
+            <Id Type="MyObjectBuilder_BlockVariantGroup" Subtype="ShieldEmitterGroup" />
+            <Icon>Textures\GUI\Icons\Cubes\ShipShield_Icon.dds</Icon>
+            <DisplayName>DisplayName_BlockGroup_ShieldEmitters</DisplayName>
+            <Description>Shield Emitters for stations and ships.</Description>
+            <Blocks>
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="EmitterL" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="EmitterS" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="EmitterST" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="EmitterLA" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="EmitterSA" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="SmallEnhancer" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="LargeEnhancer" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="SmallShieldModulator" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="LargeShieldModulator" />
+            </Blocks>
+        </BlockVariantGroup>
+		
+        <BlockVariantGroup>
+            <Id Type="MyObjectBuilder_BlockVariantGroup" Subtype="ShieldControlGroup" />
+            <Icon>Textures\GUI\Icons\DS_Control_Block.dds</Icon>
+            <DisplayName>DisplayName_BlockGroup_ControlGroup</DisplayName>
+            <Description>Shield Controllers, Enhancer, and Modulator.</Description>
+            <Blocks>
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="DSControlLarge" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="DSControlTable" />
+                <Block Type="MyObjectBuilder_UpgradeModule" Subtype="DSControlSmall" />
+                <Block Type="MyObjectBuilder_TextPanel" Subtype="DSControlLCD" />
+                <Block Type="MyObjectBuilder_TextPanel" Subtype="DSControlLCDWide" />
+            </Blocks>
+        </BlockVariantGroup>
+        
+        <BlockVariantGroup>
+            <Id Type="MyObjectBuilder_BlockVariantGroup" Subtype="ShieldPressurizerGroup" />
+            <Icon>Textures\GUI\Icons\DS_Supergen.dds</Icon>
+            <DisplayName>DisplayName_BlockGroup_Pressurizer</DisplayName>
+            <Description>Shield Air Pressurizer.</Description>
+            <Blocks>
+                <Block Type="MyObjectBuilder_OxygenGenerator" Subtype="DSSupergen" />
+            </Blocks>
+        </BlockVariantGroup>
+  </BlockVariantGroups>
 
  
 <!-- What category they show in on g-menu, eg. DarkStar -->
@@ -1070,7 +1116,7 @@
         <Component Subtype="SteelPlate" Count="2" />
         <Component Subtype="SmallTube" Count="2" />
         <Component Subtype="Construction" Count="2" />
-		<Component Subtype="ShieldComponent" Count="50" />
+		<Component Subtype="ShieldComponent" Count="5" />
         <Component Subtype="Construction" Count="2" />
         <Component Subtype="MetalGrid" Count="2" />
         <Component Subtype="Superconductor" Count="2" />
