@@ -6,6 +6,7 @@ using Sandbox.ModAPI;
 using VRage;
 using VRage.Game;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRageMath;
 
 namespace DefenseShields
@@ -92,12 +93,14 @@ namespace DefenseShields
                 {
                     var sub = gotGroups[i];
                     if (sub == null) continue;
-                    if (MyAPIGateway.GridGroups.HasConnection(MyGrid, sub, GridLinkTypeEnum.Mechanical))
+                    var grid = (MyCubeGrid) sub;
+                    grid.Flags |= (EntityFlags) (1 << 31);
+                    if (MyAPIGateway.GridGroups.HasConnection(MyGrid, grid, GridLinkTypeEnum.Mechanical))
                     {
-                        ShieldComp.SubGrids.Add((MyCubeGrid)sub);
-                        Session.Instance.IdToBus[sub.EntityId] = ShieldComp;
+                        ShieldComp.SubGrids.Add(grid);
+                        Session.Instance.IdToBus[grid.EntityId] = ShieldComp;
                     }
-                    ShieldComp.LinkedGrids.Add((MyCubeGrid)sub, new SubGridInfo(sub as MyCubeGrid, sub == MyGrid, false));
+                    ShieldComp.LinkedGrids.Add(grid, new SubGridInfo(grid, grid == MyGrid, false));
                 }
             }
             _blockChanged = true;
