@@ -93,14 +93,13 @@ namespace DefenseShields
                 {
                     var sub = gotGroups[i];
                     if (sub == null) continue;
-                    var grid = (MyCubeGrid) sub;
-                    grid.Flags |= (EntityFlags) (1 << 31);
-                    if (MyAPIGateway.GridGroups.HasConnection(MyGrid, grid, GridLinkTypeEnum.Mechanical))
+                    sub.Flags |= (EntityFlags)(1 << 31);
+                    if (MyAPIGateway.GridGroups.HasConnection(MyGrid, sub, GridLinkTypeEnum.Mechanical))
                     {
-                        ShieldComp.SubGrids.Add(grid);
-                        Session.Instance.IdToBus[grid.EntityId] = ShieldComp;
+                        ShieldComp.SubGrids.Add((MyCubeGrid)sub);
+                        Session.Instance.IdToBus[sub.EntityId] = ShieldComp;
                     }
-                    ShieldComp.LinkedGrids.Add(grid, new SubGridInfo(grid, grid == MyGrid, false));
+                    ShieldComp.LinkedGrids.Add((MyCubeGrid)sub, new SubGridInfo(sub as MyCubeGrid, sub == MyGrid, false));
                 }
             }
             _blockChanged = true;
