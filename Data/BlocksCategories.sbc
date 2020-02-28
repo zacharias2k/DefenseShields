@@ -186,7 +186,7 @@
 		
         <BlockVariantGroup>
             <Id Type="MyObjectBuilder_BlockVariantGroup" Subtype="ShieldControlGroup" />
-            <Icon>Textures\GUI\Icons\DS_Control_Block.dds</Icon>
+            <Icon>Textures\Icons\DS_Control_Block.dds</Icon>
             <DisplayName>DisplayName_BlockGroup_ControlGroup</DisplayName>
             <Description>Shield Controllers, Enhancer, and Modulator.</Description>
             <Blocks>
@@ -200,7 +200,7 @@
         
         <BlockVariantGroup>
             <Id Type="MyObjectBuilder_BlockVariantGroup" Subtype="ShieldPressurizerGroup" />
-            <Icon>Textures\GUI\Icons\DS_Supergen.dds</Icon>
+            <Icon>Textures\Icons\DS_Supergen.dds</Icon>
             <DisplayName>DisplayName_BlockGroup_Pressurizer</DisplayName>
             <Description>Shield Air Pressurizer.</Description>
             <Blocks>
