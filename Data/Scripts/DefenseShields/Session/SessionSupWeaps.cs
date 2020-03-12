@@ -181,8 +181,9 @@ namespace DefenseShields
             if (Enforced.Debug >= 2) Log.Line($"[EmpDraw] scale:{scale} - radius:{radius} - rangeCap:{rangeCap}");
 
             _effect.UserRadiusMultiplier = radius;
+            _effect.UserScale = scale;
+
             //TODO fix if keens add support again
-            //_effect.UserEmitterScale = scale;
             //_effect.UserColorMultiplier = new Vector4(255, 255, 255, 10);
             _effect.Play();
             EmpWork.EmpDrawComplete();
