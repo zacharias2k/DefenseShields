@@ -164,7 +164,7 @@
 <!--Block Groups -->
     <BlockVariantGroups>
 
-        <!-- Reactors -->
+        <!-- Shields -->
 
         <BlockVariantGroup>
             <Id Type="MyObjectBuilder_BlockVariantGroup" Subtype="ShieldEmitterGroup" />
@@ -553,6 +553,7 @@
       <Icon>Textures\GUI\Icons\NPCControl.dds</Icon>
       <CubeSize>Large</CubeSize>
       <GuiVisible>false</GuiVisible>
+	  <Public>false</Public>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="1" z="1" />
       <ModelOffset x="0" y="0" z="0" />
@@ -612,6 +613,7 @@
       <Icon>Textures\GUI\Icons\NPCControl.dds</Icon>
       <CubeSize>Small</CubeSize>
       <GuiVisible>false</GuiVisible>
+	  <Public>false</Public>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="1" z="1" />
       <ModelOffset x="0" y="0" z="0" />
@@ -671,6 +673,7 @@
       <Icon>Textures\GUI\Icons\NPCEmitter.dds</Icon>
       <CubeSize>Large</CubeSize>
       <GuiVisible>false</GuiVisible>
+	  <Public>false</Public>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="1" z="1" />
       <ModelOffset x="0" y="0" z="0" />
@@ -726,6 +729,7 @@
       <Icon>Textures\GUI\Icons\NPCEmitter.dds</Icon>
       <CubeSize>Small</CubeSize>
       <GuiVisible>false</GuiVisible>
+	  <Public>false</Public>
       <BlockTopology>TriangleMesh</BlockTopology>
       <Size x="1" y="1" z="1" />
       <ModelOffset x="0" y="0" z="0" />
