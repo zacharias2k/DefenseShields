@@ -382,8 +382,8 @@ namespace DefenseShields
         {
             if (!BlockMoveAnimationReset()) return;
             RotationTime -= 1;
-            var rotationMatrix = MatrixD.CreateRotationY(0.00625f * RotationTime);
-            _subpartRotor.PositionComp.LocalMatrix = rotationMatrix;
+            var rotationMatrix = Matrix.CreateRotationY(0.00625f * RotationTime);
+            _subpartRotor.PositionComp.SetLocalMatrix(ref rotationMatrix, null, true);
         }
 
         internal void UpdateSettings(ModulatorSettingsValues newSettings)
