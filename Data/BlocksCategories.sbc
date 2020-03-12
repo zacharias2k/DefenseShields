@@ -541,6 +541,238 @@
       <IsAirTight>false</IsAirTight>
     </Definition>
 
+
+<!-- Meridius_IX / Lucas NPC Shield Blocks -->
+
+	<Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
+      <Id>
+        <TypeId>UpgradeModule</TypeId>
+        <SubtypeId>NPCControlLB</SubtypeId>
+      </Id>
+      <DisplayName>NPC Shield Controller</DisplayName>
+      <Icon>Textures\GUI\Icons\NPCControl.dds</Icon>
+      <CubeSize>Large</CubeSize>
+      <GuiVisible>false</GuiVisible>
+      <BlockTopology>TriangleMesh</BlockTopology>
+      <Size x="1" y="1" z="1" />
+      <ModelOffset x="0" y="0" z="0" />
+      <Model>Models\Cubes\NPCshieldControllerLB.mwm</Model>
+      <Components>
+        <Component Subtype="InteriorPlate" Count="10" />
+        <Component Subtype="Construction" Count="12" />
+        <Component Subtype="Computer" Count="18" />
+        <Component Subtype="Display" Count="6" />
+      </Components>
+      <CriticalComponent Subtype="Computer" Index="0" />
+	<MountPoints>
+		<MountPoint Side="Front" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Back" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Left" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Right" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Bottom" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Top" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+	</MountPoints>
+	    <BuildProgressModels>
+		<Model BuildPercentUpperBound="0.33" File="Models\DS\DS_Control_Block_Constr1.mwm" />
+		<Model BuildPercentUpperBound="0.67" File="Models\DS\DS_Control_Block_Constr2.mwm" />
+		<Model BuildPercentUpperBound="1.00" File="Models\DS\DS_Control_Block_Constr3.mwm" />
+	</BuildProgressModels>
+      <VoxelPlacement>
+        <!--Possible settings Both,InVoxel,OutsideVoxel,Volumetric. If volumetric set than MaxAllowed and MinAllowed will be used.-->
+        <StaticMode>
+          <PlacementMode>OutsideVoxel</PlacementMode>
+          <MaxAllowed>0.4</MaxAllowed>
+          <MinAllowed>0</MinAllowed>
+        </StaticMode>
+        <DynamicMode>
+          <PlacementMode>OutsideVoxel</PlacementMode>
+          <MaxAllowed>0.4</MaxAllowed>
+          <MinAllowed>0.01</MinAllowed>
+        </DynamicMode>
+      </VoxelPlacement>
+      <BlockPairName>NPC_Control</BlockPairName>
+      <MirroringZ>Y</MirroringZ>
+      <EdgeType>Light</EdgeType>
+      <BuildTimeSeconds>3</BuildTimeSeconds>
+      <DamageEffectName>Damage_Electrical_Damaged</DamageEffectName>
+      <DamagedSound>ParticleElectrical</DamagedSound>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
+      <RequiredPowerInput>0.00002</RequiredPowerInput>
+      <DestroyEffect>BlockDestroyedExplosion_Small</DestroyEffect>
+      <DestroySound>WepSmallWarheadExpl</DestroySound>
+	    <Upgrades></Upgrades>
+    </Definition>
+	
+	<Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
+      <Id>
+        <TypeId>UpgradeModule</TypeId>
+        <SubtypeId>NPCControlSB</SubtypeId>
+      </Id>
+      <DisplayName>NPC Shield Controller</DisplayName>
+      <Icon>Textures\GUI\Icons\NPCControl.dds</Icon>
+      <CubeSize>Small</CubeSize>
+      <GuiVisible>false</GuiVisible>
+      <BlockTopology>TriangleMesh</BlockTopology>
+      <Size x="1" y="1" z="1" />
+      <ModelOffset x="0" y="0" z="0" />
+      <Model>Models\Cubes\NPCshieldControllerSB.mwm</Model>
+      <Components>
+        <Component Subtype="InteriorPlate" Count="1" />
+        <Component Subtype="Construction" Count="1" />
+        <Component Subtype="Computer" Count="1" />
+        <Component Subtype="Display" Count="6" />
+      </Components>
+      <CriticalComponent Subtype="Computer" Index="0" />
+	<MountPoints>
+		<MountPoint Side="Front" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Back" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Left" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Right" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Bottom" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Top" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+	</MountPoints>
+	    <BuildProgressModels>
+		<Model BuildPercentUpperBound="0.33" File="Models\DS\DS_Control_Block_Constr1.mwm" />
+		<Model BuildPercentUpperBound="0.67" File="Models\DS\DS_Control_Block_Constr2.mwm" />
+		<Model BuildPercentUpperBound="1.00" File="Models\DS\DS_Control_Block_Constr3.mwm" />
+	</BuildProgressModels>
+      <VoxelPlacement>
+        <!--Possible settings Both,InVoxel,OutsideVoxel,Volumetric. If volumetric set than MaxAllowed and MinAllowed will be used.-->
+        <StaticMode>
+          <PlacementMode>OutsideVoxel</PlacementMode>
+          <MaxAllowed>0.4</MaxAllowed>
+          <MinAllowed>0</MinAllowed>
+        </StaticMode>
+        <DynamicMode>
+          <PlacementMode>OutsideVoxel</PlacementMode>
+          <MaxAllowed>0.4</MaxAllowed>
+          <MinAllowed>0.01</MinAllowed>
+        </DynamicMode>
+      </VoxelPlacement>
+      <BlockPairName>NPC_Control</BlockPairName>
+      <MirroringZ>Y</MirroringZ>
+      <EdgeType>Light</EdgeType>
+      <BuildTimeSeconds>3</BuildTimeSeconds>
+      <DamageEffectName>Damage_Electrical_Damaged</DamageEffectName>
+      <DamagedSound>ParticleElectrical</DamagedSound>
+      <ResourceSinkGroup>Utility</ResourceSinkGroup>
+      <RequiredPowerInput>0.00002</RequiredPowerInput>
+      <DestroyEffect>BlockDestroyedExplosion_Small</DestroyEffect>
+      <DestroySound>WepSmallWarheadExpl</DestroySound>
+	    <Upgrades></Upgrades>
+    </Definition>
+
+    <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
+      <Id>
+        <TypeId>UpgradeModule</TypeId>
+        <SubtypeId>NPCEmitterLB</SubtypeId>
+      </Id>
+      <DisplayName>NPC Shield Emitter</DisplayName>
+      <Icon>Textures\GUI\Icons\NPCEmitter.dds</Icon>
+      <CubeSize>Large</CubeSize>
+      <GuiVisible>false</GuiVisible>
+      <BlockTopology>TriangleMesh</BlockTopology>
+      <Size x="1" y="1" z="1" />
+      <ModelOffset x="0" y="0" z="0" />
+      <Model>Models\Cubes\NPCshieldEmitterLB.mwm</Model>
+      <Components>
+        <Component Subtype="SteelPlate" Count="300" />
+        <Component Subtype="SmallTube" Count="40" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="ShieldComponent" Count="400" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="MetalGrid" Count="60" />
+        <Component Subtype="Superconductor" Count="200" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="GravityGenerator" Count="40" />
+        <Component Subtype="Detector" Count="40" />
+        <Component Subtype="MetalGrid" Count="50" />
+        <Component Subtype="RadioCommunication" Count="20" />
+        <Component Subtype="Computer" Count="500" />
+        <Component Subtype="Construction" Count="20" />
+        <Component Subtype="SteelPlate" Count="300" />
+      </Components>
+      <CriticalComponent Subtype="Computer" Index="0" />
+      <MountPoints>
+		<MountPoint Side="Front" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Back" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Left" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Right" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Bottom" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Top" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+      </MountPoints>
+      <BuildProgressModels>
+        <Model BuildPercentUpperBound="1.00" File="Models\Cubes\large\DefenseShieldBase_Large_Constr1.mwm" />
+      </BuildProgressModels>
+      <BlockPairName>NPC_Emitter</BlockPairName>
+      <Description>An emitter for ships. Must be in the open to function and have a control block to work.</Description>
+      <EdgeType>Light</EdgeType>
+      <MirroringY>Z</MirroringY>
+      <MirroringZ>Y</MirroringZ>
+      <Sound>ShieldStartLoopEnd</Sound>
+      <BuildTimeSeconds>90</BuildTimeSeconds>
+      <RequiredPowerInput>500</RequiredPowerInput>
+      <DamageEffectId>214</DamageEffectId>
+      <DamagedSound>ParticleElectrical</DamagedSound>
+      <Upgrades></Upgrades>
+    </Definition>	
+	
+    <Definition xsi:type="MyObjectBuilder_UpgradeModuleDefinition">
+      <Id>
+        <TypeId>UpgradeModule</TypeId>
+        <SubtypeId>NPCEmitterSB</SubtypeId>
+      </Id>
+      <DisplayName>NPC Shield Emitter</DisplayName>
+      <Icon>Textures\GUI\Icons\NPCEmitter.dds</Icon>
+      <CubeSize>Small</CubeSize>
+      <GuiVisible>false</GuiVisible>
+      <BlockTopology>TriangleMesh</BlockTopology>
+      <Size x="1" y="1" z="1" />
+      <ModelOffset x="0" y="0" z="0" />
+      <Model>Models\Cubes\NPCshieldEmitterSB.mwm</Model>
+      <Components>
+        <Component Subtype="SteelPlate" Count="1" />
+        <Component Subtype="SmallTube" Count="1" />
+        <Component Subtype="Construction" Count="1" />
+        <Component Subtype="ShieldComponent" Count="1" />
+        <Component Subtype="Construction" Count="1" />
+        <Component Subtype="MetalGrid" Count="1" />
+        <Component Subtype="Superconductor" Count="1" />
+        <Component Subtype="Construction" Count="1" />
+        <Component Subtype="GravityGenerator" Count="1" />
+        <Component Subtype="Detector" Count="1" />
+        <Component Subtype="MetalGrid" Count="1" />
+        <Component Subtype="RadioCommunication" Count="1" />
+        <Component Subtype="Computer" Count="1" />
+        <Component Subtype="Construction" Count="1" />
+        <Component Subtype="SteelPlate" Count="1" />
+      </Components>
+      <CriticalComponent Subtype="Computer" Index="0" />
+      <MountPoints>
+		<MountPoint Side="Front" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Back" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Left" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Right" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Bottom" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+		<MountPoint Side="Top" StartX="0.00" StartY="0.00" EndX="1.00" EndY="1.00" />
+      </MountPoints>
+      <BuildProgressModels>
+        <Model BuildPercentUpperBound="1.00" File="Models\Cubes\large\DefenseShieldBase_Large_Constr1.mwm" />
+      </BuildProgressModels>
+      <BlockPairName>NPC_Emitter</BlockPairName>
+      <Description>An emitter for ships. Must be in the open to function and have a control block to work.</Description>
+      <EdgeType>Light</EdgeType>
+      <MirroringY>Z</MirroringY>
+      <MirroringZ>Y</MirroringZ>
+      <Sound>ShieldStartLoopEnd</Sound>
+      <BuildTimeSeconds>90</BuildTimeSeconds>
+      <RequiredPowerInput>500</RequiredPowerInput>
+      <DamageEffectId>214</DamageEffectId>
+      <DamagedSound>ParticleElectrical</DamagedSound>
+      <Upgrades></Upgrades>
+    </Definition>	
+<!-- End Meridius_IX / Lucas NPC Shield Blocks -->	
+
 	<Definition xsi:type="MyObjectBuilder_OxygenGeneratorDefinition">
       <Id>
         <TypeId>OxygenGenerator</TypeId>
