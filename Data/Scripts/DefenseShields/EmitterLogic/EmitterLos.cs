@@ -56,7 +56,7 @@ namespace DefenseShields
             else
             {
                 UpdateLosState();
-                EmiState.State.Los = _blocksLos.Count <= 1500;
+                EmiState.State.Los = _blocksLos.Count <= 1700;
 
                 if (!EmiState.State.Los) ShieldComp.EmitterEvent = true;
                 else LosScaledCloud.Clear();

@@ -56,13 +56,13 @@
                 TerminalHelpers.Separator(comp?.Shield, "DS-C_sep3");
 
                 WidthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_WidthSlider", "Shield Size Width", "Shield Size Width", DsUi.GetWidth, DsUi.SetWidth);
-                WidthSlider.SetLimits(30, 600);
+                WidthSlider.SetLimits(30, 1000);
 
                 HeightSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_HeightSlider", "Shield Size Height", "Shield Size Height", DsUi.GetHeight, DsUi.SetHeight);
-                HeightSlider.SetLimits(30, 600);
+                HeightSlider.SetLimits(30, 1000);
 
                 DepthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_DepthSlider", "Shield Size Depth", "Shield Size Depth", DsUi.GetDepth, DsUi.SetDepth);
-                DepthSlider.SetLimits(30, 600);
+                DepthSlider.SetLimits(30, 1000);
 
                 OffsetWidthSlider = TerminalHelpers.AddSlider(comp?.Shield, "DS-C_OffsetWidthSlider", "Width Offset", "Width Offset", DsUi.GetOffsetWidth, DsUi.SetOffsetWidth);
                 OffsetWidthSlider.SetLimits(-69, 69);

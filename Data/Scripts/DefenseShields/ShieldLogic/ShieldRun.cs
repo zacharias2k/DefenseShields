@@ -97,7 +97,7 @@ namespace DefenseShields
                         _oldPercentColor = newPercentColor;
                         _forceBufferSync = false;
                     }
-                    else if (_tick1800) ShieldChangeState();
+                    else if (_tick180) ShieldChangeState();
                 }
                 if (Session.Instance.EmpWork.EventRunning) AbsorbEmp();
             }
