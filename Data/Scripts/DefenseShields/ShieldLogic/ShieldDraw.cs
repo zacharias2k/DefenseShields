@@ -298,10 +298,11 @@ namespace DefenseShields
             directedMatrix.Forward = Vector3D.Normalize(MyAPIGateway.Session.Camera.Position - shieldCenter);
             directedMatrix.Left = Vector3D.CalculatePerpendicularVector(directedMatrix.Forward);
             directedMatrix.Up = Vector3D.Cross(directedMatrix.Forward, directedMatrix.Left);
+            
 
-            _effect1.UserColorMultiplier = color;
+            //_effect1.UserColorMultiplier = color; 
             _effect1.UserRadiusMultiplier = radius * mainAdjust;
-            _effect1.UserEmitterScale = (float)scale;
+            _effect1.UserScale = (float)scale;
             _effect1.Velocity = vel;
             if (EnergyHit == HitType.Kinetic) _effect1.WorldMatrix = directedMatrix;
             _effect1.Play();
@@ -311,9 +312,9 @@ namespace DefenseShields
             {
                 MyParticlesManager.TryCreateParticleEffect(1657, out _effect2, ref matrix, ref pos, _shieldEntRendId, true);
                 if (_effect2 == null) return;
-                _effect2.UserColorMultiplier = color;
+                //_effect2.UserColorMultiplier = color;
                 _effect2.UserRadiusMultiplier = 2f + magic;
-                _effect2.UserEmitterScale = 1f;
+                _effect2.UserScale = 1f;
                 _effect2.Velocity = vel;
                 _effect2.WorldMatrix = directedMatrix;
                 _effect2.Play();

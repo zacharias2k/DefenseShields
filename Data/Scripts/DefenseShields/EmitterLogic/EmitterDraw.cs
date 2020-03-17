@@ -31,9 +31,9 @@ namespace DefenseShields
 
                 if (!_compact)
                 {
-                    var rotationMatrix = MatrixD.CreateRotationY(0);
-                    var matrix = rotationMatrix * MatrixD.CreateTranslation(0, 0, 0);
-                    SubpartRotor.PositionComp.LocalMatrix = matrix;
+                    var rotationMatrix = Matrix.CreateRotationY(0);
+                    var matrix = rotationMatrix * Matrix.CreateTranslation(0, 0, 0);
+                    SubpartRotor.PositionComp.SetLocalMatrix(ref matrix, null, true);
                     SubpartRotor.SetEmissiveParts(PlasmaEmissive, Color.Transparent, 0);
                 }
                 else MyCube.SetEmissiveParts(PlasmaEmissive, Color.Transparent, 0);
@@ -64,10 +64,10 @@ namespace DefenseShields
             if (_count < 30) EmissiveIntensity += 1;
             else EmissiveIntensity -= 1;
 
-            var rotationMatrix = MatrixD.CreateRotationY(0.025f * RotationTime);
-            var matrix = rotationMatrix * MatrixD.CreateTranslation(0, Definition.BlockMoveTranslation * TranslationTime, 0);
+            var rotationMatrix = Matrix.CreateRotationY(0.025f * RotationTime);
+            var matrix = rotationMatrix * Matrix.CreateTranslation(0, Definition.BlockMoveTranslation * TranslationTime, 0);
 
-            SubpartRotor.PositionComp.LocalMatrix = matrix;
+            SubpartRotor.PositionComp.SetLocalMatrix(ref matrix, null, true);
             SubpartRotor.SetEmissiveParts(PlasmaEmissive, UtilsStatic.GetShieldColorFromFloat(percent), 0.1f * EmissiveIntensity);
 
             if (AnimationLoop++ == 599) AnimationLoop = 0;

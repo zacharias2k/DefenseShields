@@ -229,15 +229,17 @@ namespace DefenseShields
 
             if (_shapeChanged)
             {
+                var zeroMatrix = Matrix.Zero;
+                var shieldMatrix = (Matrix)ShieldShapeMatrix;
                 if (!_isDedicated)
-                {
-                    _shellPassive.PositionComp.LocalMatrix = Matrix.Zero;  // Bug - Cannot just change X coord, so I reset first.
-                    _shellActive.PositionComp.LocalMatrix = Matrix.Zero;
-                    _shellPassive.PositionComp.LocalMatrix = ShieldShapeMatrix;
-                    _shellActive.PositionComp.LocalMatrix = ShieldShapeMatrix;
+                {                    
+                    _shellPassive.PositionComp.SetLocalMatrix(ref zeroMatrix, null, true);  // Bug - Cannot just change X coord, so I reset first.
+                    _shellActive.PositionComp.SetLocalMatrix(ref zeroMatrix, null, true);
+                    _shellPassive.PositionComp.SetLocalMatrix(ref shieldMatrix, null, true);
+                    _shellActive.PositionComp.SetLocalMatrix(ref shieldMatrix, null, true);
                 }
-                ShieldEnt.PositionComp.LocalMatrix = Matrix.Zero;
-                ShieldEnt.PositionComp.LocalMatrix = ShieldShapeMatrix;
+                ShieldEnt.PositionComp.SetLocalMatrix(ref zeroMatrix, null, true);
+                ShieldEnt.PositionComp.SetLocalMatrix(ref shieldMatrix, null, true);
                 ShieldEnt.PositionComp.LocalAABB = BoundingBox.CreateFromHalfExtent(Vector3.Zero, (float) ShieldSize.AbsMax());
                 ShieldEnt.PositionComp.WorldMatrix *= MyGrid.PositionComp.WorldMatrix.GetOrientation();
             }
