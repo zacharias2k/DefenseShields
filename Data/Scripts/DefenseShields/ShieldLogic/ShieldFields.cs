@@ -360,7 +360,7 @@ namespace DefenseShields
         internal float Absorb { get; set; }
 
         internal DamageHandlerHit HandlerImpact { get; set; } = new DamageHandlerHit();
-        internal Vector3D WorldImpactPosition { get; set; } = new Vector3D(Vector3D.NegativeInfinity);
+        internal Vector3D WorldImpactPosition { get; set; } = Vector3D.NegativeInfinity;
         internal Vector3D ShieldSize { get; set; }
 
         internal enum HitType
