@@ -206,16 +206,17 @@ namespace DefenseShields
                 lock (logic.MatrixLock) if (!CustomCollision.PointInShield(pos, logic.DetectMatrixOutsideInv)) return null;
 
             float hpRemaining;
+            var pendingDamage = logic.Absorb > 0 ? logic.Absorb : 0;
             if (energy)
             {
                 damage *= logic.DsState.State.ModulateKinetic;
-                hpRemaining = ((logic.DsState.State.Charge * DefenseShields.ConvToHp) - damage);
+                hpRemaining = (((logic.DsState.State.Charge * DefenseShields.ConvToHp) - pendingDamage) - damage);
                 if (hpRemaining < 0) hpRemaining /= logic.DsState.State.ModulateEnergy;
             }
             else
             {
                 damage *= logic.DsState.State.ModulateEnergy;
-                hpRemaining = ((logic.DsState.State.Charge * DefenseShields.ConvToHp) - damage);
+                hpRemaining = (((logic.DsState.State.Charge * DefenseShields.ConvToHp) - pendingDamage) - damage);
                 if (hpRemaining < 0) hpRemaining /= logic.DsState.State.ModulateEnergy;
             }
 
