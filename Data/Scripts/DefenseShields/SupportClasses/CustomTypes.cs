@@ -412,17 +412,10 @@
 
     public struct CubeAccel
     {
-        public readonly IMySlimBlock Block;
-        public readonly MyCubeGrid Grid;
-        public readonly Vector3I BlockPos;
-        public readonly bool CubeExists; 
-        public CubeAccel(IMySlimBlock block)
-        {
-            Block = block;
-            Grid = block.CubeGrid as MyCubeGrid;
-            BlockPos = block.Position;
-            CubeExists = block.FatBlock != null;
-        }
+        public IMySlimBlock Block;
+        public MyCubeGrid Grid;
+        public Vector3I BlockPos;
+        public bool CubeExists; 
     }
 
     public class DamageHandlerHit

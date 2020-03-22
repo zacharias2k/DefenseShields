@@ -29,8 +29,7 @@
                 var grid = webent as MyCubeGrid;
                 if (grid != null)
                 {
-                    foreach (IMySlimBlock block in grid.GetBlocks())
-                        entInfo.CacheBlockList.Add(new CubeAccel(block));
+                    GetBlocksInsideSphereFast(grid, ref WebSphere, true, entInfo.CacheBlockList);
                 }
             }
             entInfo.RefreshNow = false;
@@ -322,6 +321,47 @@
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in BlockIntersect: {ex}"); }
+        }
+
+        public static void GetBlocksInsideSphereFast(MyCubeGrid grid, ref BoundingSphereD sphere, bool checkDestroyed, List<CubeAccel> blocks)
+        {
+            var radius = sphere.Radius;
+            radius *= grid.GridSizeR;
+            var center = grid.WorldToGridInteger(sphere.Center);
+            var gridMin = grid.Min;
+            var gridMax = grid.Max;
+            double radiusSq = radius * radius;
+            int radiusCeil = (int)Math.Ceiling(radius);
+            int i, j, k;
+            Vector3I max2 = Vector3I.Min(Vector3I.One * radiusCeil, gridMax - center);
+            Vector3I min2 = Vector3I.Max(Vector3I.One * -radiusCeil, gridMin - center);
+            for (i = min2.X; i <= max2.X; ++i)
+            {
+                for (j = min2.Y; j <= max2.Y; ++j)
+                {
+                    for (k = min2.Z; k <= max2.Z; ++k)
+                    {
+                        if (i * i + j * j + k * k < radiusSq)
+                        {
+                            MyCube cube;
+                            var vector3I = center + new Vector3I(i, j, k);
+
+                            if (grid.TryGetCube(vector3I, out cube))
+                            {
+                                var slim = (IMySlimBlock)cube.CubeBlock;
+                                if (slim.Position == vector3I)
+                                {
+                                    if (checkDestroyed && slim.IsDestroyed)
+                                        continue;
+
+                                    blocks.Add(new CubeAccel {Block = slim, BlockPos = slim.Position, CubeExists = slim.FatBlock != null, Grid = (MyCubeGrid)slim.CubeGrid});
+
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private void ComputeCollisionPhysics(MyCubeGrid entity1, MyCubeGrid entity2, Vector3D collisionAvg)
