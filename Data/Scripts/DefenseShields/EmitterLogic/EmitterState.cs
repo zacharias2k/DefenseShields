@@ -275,14 +275,15 @@ namespace DefenseShields
                     break;
                 case "EmitterL":
                 case "EmitterLA":
+                case "NPCEmitterLB":
                     EmitterMode = EmitterType.Large;
-                    if (Definition.Name == "EmitterLA") _compact = true;
+                    if (Definition.Name == "EmitterLA" || Definition.Name == "NPCEmitterLB") _compact = true;
                     else Entity.TryGetSubpart("Rotor", out SubpartRotor);
                     break;
                 case "EmitterS":
                 case "EmitterSA":
                     EmitterMode = EmitterType.Small;
-                    if (Definition.Name == "EmitterSA") _compact = true;
+                    if (Definition.Name == "EmitterSA" || Definition.Name == "NPCEmitterSB") _compact = true;
                     else Entity.TryGetSubpart("Rotor", out SubpartRotor);
                     break;
             }
