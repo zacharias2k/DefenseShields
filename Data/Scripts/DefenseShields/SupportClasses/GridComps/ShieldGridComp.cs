@@ -79,7 +79,7 @@ namespace DefenseShields
         public string ModulationPassword { get; set; }
 
         public bool EmitterLos { get; set; }
-
+        public bool SkipLos { get; set; }
         public bool EmittersSuspended { get; set; }
 
         public bool O2Updated { get; set; }

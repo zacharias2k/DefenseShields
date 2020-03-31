@@ -29,7 +29,9 @@
                 var grid = webent as MyCubeGrid;
                 if (grid != null)
                 {
-                    GetBlocksInsideSphereFast(grid, ref WebSphere, true, entInfo.CacheBlockList);
+                    var checkSphere = WebSphere;
+                    checkSphere.Radius += 7.5;
+                    GetBlocksInsideSphereFast(grid, ref checkSphere, true, entInfo.CacheBlockList);
                 }
             }
             entInfo.RefreshNow = false;

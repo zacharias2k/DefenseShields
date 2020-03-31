@@ -12,7 +12,7 @@ namespace DefenseShields
     using VRage.ModAPI;
     using VRage.ObjectBuilders;
 
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DSControlLarge", "DSControlSmall", "DSControlTable")]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DSControlLarge", "DSControlSmall", "DSControlTable", "NPCControlSB", "NPCControlLB")]
     public partial class DefenseShields : MyGameLogicComponent
     {
         #region Simulation

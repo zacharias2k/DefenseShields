@@ -19,6 +19,7 @@ namespace DefenseShields
         private Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, bool> _pointAttackShield; // negative damage values heal
         private Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, float?> _pointAttackShieldExt; // negative damage values heal
         private Action<IMyTerminalBlock, int> _setShieldHeat;
+        private Action<IMyTerminalBlock> _setSkipLos;
         private Action<IMyTerminalBlock> _overLoad;
         private Action<IMyTerminalBlock, float> _setCharge;
         private Func<IMyTerminalBlock, RayD, Vector3D?> _rayIntersectShield;
@@ -59,6 +60,7 @@ namespace DefenseShields
             _pointAttackShield = (Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, bool>)delegates["PointAttackShield"];
             _pointAttackShieldExt = (Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, float?>)delegates["PointAttackShieldExt"];
             _setShieldHeat = (Action<IMyTerminalBlock, int>)delegates["SetShieldHeat"];
+            _setSkipLos = (Action<IMyTerminalBlock>)delegates["SetSkipLos"];
             _overLoad = (Action<IMyTerminalBlock>)delegates["OverLoadShield"];
             _setCharge = (Action<IMyTerminalBlock, float>)delegates["SetCharge"];
             _rayIntersectShield = (Func<IMyTerminalBlock, RayD, Vector3D?>)delegates["RayIntersectShield"];
@@ -100,6 +102,7 @@ namespace DefenseShields
         public float? PointAttackShieldExt(IMyTerminalBlock block, Vector3D pos, long attackerId, float damage, bool energy, bool drawParticle, bool posMustBeInside = false) =>
             _pointAttackShieldExt?.Invoke(block, pos, attackerId, damage, energy, drawParticle, posMustBeInside) ?? null;
         public void SetShieldHeat(IMyTerminalBlock block, int value) => _setShieldHeat?.Invoke(block, value);
+        public void SetSkipLos(IMyTerminalBlock block) => _setSkipLos?.Invoke(block);
         public void OverLoadShield(IMyTerminalBlock block) => _overLoad?.Invoke(block);
         public void SetCharge(IMyTerminalBlock block, float value) => _setCharge.Invoke(block, value);
         public Vector3D? RayIntersectShield(IMyTerminalBlock block, RayD ray) => _rayIntersectShield?.Invoke(block, ray) ?? null;

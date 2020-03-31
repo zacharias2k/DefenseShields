@@ -48,7 +48,7 @@ namespace DefenseShields
             TookControl = false;
 
             ShieldComp.DefenseShields.ResetShape(false);
-            if (EmitterMode == EmitterType.Station)
+            if (EmitterMode == EmitterType.Station || ShieldComp.SkipLos)
             {
                 EmiState.State.Los = true;
                 ShieldComp.CheckEmitters = false;
@@ -137,7 +137,7 @@ namespace DefenseShields
                     }
 
                     var blocked = _blocksLos.Count;
-                    var needed = -500 + _vertsSighted.Count;
+                    var needed = -300 + _vertsSighted.Count;
                     if (_count == 0) BroadCastLosMessage(blocked, needed, controller);
                 }
             }

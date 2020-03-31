@@ -22,6 +22,7 @@ namespace DefenseShields
             ["PointAttackShield"] = new Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, bool>(TAPI_PointAttackShield),
             ["PointAttackShieldExt"] = new Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, float?>(TAPI_PointAttackShieldExt),
             ["SetShieldHeat"] = new Action<IMyTerminalBlock, int>(TAPI_SetShieldHeat),
+            ["SetSkipLos"] = new Action<IMyTerminalBlock>(TAPI_SetSkipLos),
             ["OverLoadShield"] = new Action<IMyTerminalBlock>(TAPI_OverLoadShield),
             ["SetCharge"] = new Action<IMyTerminalBlock, float>(TAPI_SetCharge),
             ["RayIntersectShield"] = new Func<IMyTerminalBlock, RayD, Vector3D?>(TAPI_RayIntersectShield),
@@ -239,6 +240,14 @@ namespace DefenseShields
             logic.Absorb += damage;
 
             return hpRemaining;
+        }
+
+        private static void TAPI_SetSkipLos(IMyTerminalBlock block)
+        {
+            var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
+            if (logic?.ShieldComp == null) return;
+
+            logic.ShieldComp.SkipLos = true;
         }
 
         private static void TAPI_SetShieldHeat(IMyTerminalBlock block, int value)

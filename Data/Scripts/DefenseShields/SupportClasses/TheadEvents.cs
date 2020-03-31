@@ -179,7 +179,7 @@ namespace DefenseShields.Support
                 if (entInfo.ConsecutiveCollisions == 0) CollisionData.Entity2.Physics.ApplyImpulse(CollisionData.ImpDirection2, CollisionData.CollisionCorrection2);
                 if (CollisionData.E1IsHeavier)
                 {
-                    var accelCap = CollisionData.E1IsStatic ? 10 : 40;
+                    var accelCap = CollisionData.E1IsStatic ? 10 : 50;
                     var accelClamp = MathHelper.Clamp(CollisionData.Mass1 / CollisionData.Mass2, 1, accelCap);
                     var collisions = entInfo.ConsecutiveCollisions + 1;
                     var sizeAccel = accelClamp > collisions ? accelClamp : collisions;

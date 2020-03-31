@@ -11,7 +11,7 @@ namespace DefenseShields
     using VRage.ModAPI;
     using VRage.ObjectBuilders;
 
-    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "EmitterL", "EmitterS", "EmitterST", "EmitterLA", "EmitterSA")]
+    [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "EmitterL", "EmitterS", "EmitterST", "EmitterLA", "EmitterSA", "NPCEmitterSB", "NPCEmitterLB")]
     public partial class Emitters : MyGameLogicComponent
     {
         public override void OnAddedToContainer()
