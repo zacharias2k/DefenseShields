@@ -248,6 +248,7 @@ namespace DefenseShields
             if (logic?.ShieldComp == null) return;
 
             logic.ShieldComp.SkipLos = true;
+            logic.ShieldComp.CheckEmitters = true;
         }
 
         private static void TAPI_SetShieldHeat(IMyTerminalBlock block, int value)
