@@ -282,6 +282,7 @@ namespace DefenseShields
                     break;
                 case "EmitterS":
                 case "EmitterSA":
+                case "NPCEmitterSB":
                     EmitterMode = EmitterType.Small;
                     if (Definition.Name == "EmitterSA" || Definition.Name == "NPCEmitterSB") _compact = true;
                     else Entity.TryGetSubpart("Rotor", out SubpartRotor);
