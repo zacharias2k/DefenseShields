@@ -388,7 +388,7 @@ namespace DefenseShields
             var logic = block?.GameLogic?.GetAs<DefenseShields>()?.ShieldComp?.DefenseShields;
             if (logic == null) return false;
 
-            return logic.DsState.State.Online;
+            return logic.DsState.State.Online && !logic.DsState.State.Lowered;
         }
 
         private static string TAPI_ShieldStatus(IMyTerminalBlock block)
@@ -437,7 +437,7 @@ namespace DefenseShields
             {
                 foreach (var s in protectors.Shields)
                 {
-                    lock (s.SubLock) if (s.ShieldComp.SubGrids.Contains(myGrid) && s.DsState.State.Online) return true;
+                    lock (s.SubLock) if (s.ShieldComp.SubGrids.Contains(myGrid) && s.DsState.State.Online && !s.DsState.State.Lowered) return true;
                 }
             }
             return false;
@@ -456,7 +456,7 @@ namespace DefenseShields
                 foreach (var s in protectors.Shields)
                 {
                     if (s?.DsState?.State == null) continue;
-                    if (s.DsState.State.Online) return true;
+                    if (s.DsState.State.Online && !s.DsState.State.Lowered) return true;
                 }
             }
             return false;
@@ -490,7 +490,7 @@ namespace DefenseShields
             ShieldGridComponent c;
             if (Session.Instance.IdToBus.TryGetValue(entity.EntityId, out c) && c?.DefenseShields != null)
             {
-                if (onlyIfOnline && !c.DefenseShields.DsState.State.Online || c.DefenseShields.ReInforcedShield) return null;
+                if (onlyIfOnline && (!c.DefenseShields.DsState.State.Online || c.DefenseShields.DsState.State.Lowered) || c.DefenseShields.ReInforcedShield) return null;
                 return c.DefenseShields.Shield;
             }
 
@@ -527,7 +527,7 @@ namespace DefenseShields
             ShieldGridComponent c;
             if (Session.Instance.IdToBus.TryGetValue(entity.EntityId, out c) && c?.DefenseShields != null)
             {
-                if (onlyIfOnline && !c.DefenseShields.DsState.State.Online || c.DefenseShields.ReInforcedShield) return null;
+                if (onlyIfOnline && (!c.DefenseShields.DsState.State.Online || c.DefenseShields.DsState.State.Lowered) || c.DefenseShields.ReInforcedShield) return null;
                 var s = c.DefenseShields;
                 var state = s.DsState.State;
                 lock (s.MatrixLock)
@@ -566,7 +566,7 @@ namespace DefenseShields
                 ShieldGridComponent c;
                 if (Session.Instance.IdToBus.TryGetValue(ent.EntityId, out c) && c.DefenseShields != null)
                 {
-                    if (onlyIfOnline && !c.DefenseShields.DsState.State.Online) continue;
+                    if (onlyIfOnline && (!c.DefenseShields.DsState.State.Online || c.DefenseShields.DsState.State.Lowered)) continue;
                     var s = c.DefenseShields;
                     var intersectDist = CustomCollision.IntersectEllipsoid(s.DetectMatrixOutsideInv, s.DetectMatrixOutside, ray);
                     if (!intersectDist.HasValue) continue;
