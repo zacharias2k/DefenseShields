@@ -282,12 +282,65 @@ namespace DefenseShields.Support
                         }
                     }
                 }
+
                 if (collisionCnt == 0) return null;
                 collisionAvg = collision / collisionCnt;
             }
             catch (Exception ex) { Log.Line($"Exception in VoxelCollisionSphere: {ex}"); }
 
             return collisionAvg;
+        }
+
+        internal static Vector3D? PointsInsideVoxel(DefenseShields shield, Vector3D[] physicsVerts, MyVoxelBase voxel)
+        {
+            var voxelMatrix = voxel.PositionComp.WorldMatrixInvScaled;
+            var vecMax = new Vector3I(int.MaxValue);
+            var vecMin = new Vector3I(int.MinValue);
+
+            var collision = Vector3D.Zero;
+            var collisionCnt = 0;
+            for (int index = 0; index < physicsVerts.Length; ++index)
+            {
+                var point = physicsVerts[index];
+                Vector3D result;
+                Vector3D.Transform(ref point, ref voxelMatrix, out result);
+                var r = result + (Vector3D)(voxel.Size / 2);
+                var v1 = Vector3D.Floor(r);
+                Vector3D.Fract(ref r, out r);
+                var v2 = v1 + voxel.StorageMin;
+                var v3 = v2 + 1;
+                if (v2 != vecMax && v3 != vecMin)
+                {
+                    shield.TmpStorage.Resize(v2, v3);
+                    voxel.Storage.ReadRange(shield.TmpStorage, MyStorageDataTypeFlags.Content, 0, v2, v3);
+                    vecMax = v2;
+                    vecMin = v3;
+                }
+                var num1 = shield.TmpStorage.Content(0, 0, 0);
+                var num2 = shield.TmpStorage.Content(1, 0, 0);
+                var num3 = shield.TmpStorage.Content(0, 1, 0);
+                var num4 = shield.TmpStorage.Content(1, 1, 0);
+                var num5 = shield.TmpStorage.Content(0, 0, 1);
+                var num6 = shield.TmpStorage.Content(1, 0, 1);
+                var num7 = shield.TmpStorage.Content(0, 1, 1);
+                var num8 = shield.TmpStorage.Content(1, 1, 1);
+                var num9 = num1 + (num2 - num1) * r.X;
+                var num10 = num3 + (num4 - num3) * r.X;
+                var num11 = num5 + (num6 - num5) * r.X;
+                var num12 = num7 + (num8 - num7) * r.X;
+                var num13 = num9 + (num10 - num9) * r.Y;
+                var num14 = num11 + (num12 - num11) * r.Y;
+                if (num13 + (num14 - num13) * r.Z >= sbyte.MaxValue)
+                {
+                    collision += point;
+                    collisionCnt++;
+                }
+            }
+            shield.TmpStorage.Clear(MyStorageDataTypeEnum.Content, byte.MaxValue);
+            if (collisionCnt == 0) return null;
+            collision /= collisionCnt;
+
+            return collision;
         }
 
         public static MyVoxelBase AabbInsideVoxel(MatrixD worldMatrix, BoundingBoxD localAabb)

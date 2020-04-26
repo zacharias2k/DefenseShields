@@ -607,7 +607,7 @@ namespace DefenseShields
             while (WebWrapper.TryDequeue(out shield))
             {
                 if (shield == null || shield.MarkedForClose) continue;
-                if (!shield.VoxelsToIntersect.IsEmpty) MyAPIGateway.Parallel.Start(shield.VoxelIntersect);
+                if (!shield.VoxelsToIntersect.IsEmpty) MyAPIGateway.Parallel.StartBackground(shield.VoxelIntersect);
                 if (!shield.WebEnts.IsEmpty) MyAPIGateway.Parallel.ForEach(shield.WebEnts, shield.EntIntersectSelector);
             }
         }

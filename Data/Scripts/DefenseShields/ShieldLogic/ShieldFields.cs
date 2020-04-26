@@ -1,4 +1,6 @@
 ﻿
+using VRage.Voxels;
+
 namespace DefenseShields
 {
     using VRage.Game.ModAPI;
@@ -72,7 +74,7 @@ namespace DefenseShields
         internal BoundingBox ShieldAabbScaled = new BoundingBox(Vector3D.One, -Vector3D.One);
         internal BoundingSphereD ShieldSphere3K = new BoundingSphereD(Vector3D.Zero, 1f);
         internal BoundingSphereD WebSphere = new BoundingSphereD(Vector3D.Zero, 1f);
-
+        internal MyStorageData TmpStorage = new MyStorageData();
         internal bool InControlPanel => MyAPIGateway.Gui.GetCurrentScreen == MyTerminalPageEnum.ControlPanel;
         internal bool InThisTerminal => Session.Instance.LastTerminalId == Shield.EntityId;
 

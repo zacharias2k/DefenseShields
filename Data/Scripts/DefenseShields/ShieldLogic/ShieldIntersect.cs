@@ -196,6 +196,7 @@
                 }
 
                 var collision = CustomCollision.VoxelEllipsoidCheck(MyGrid, ShieldComp.PhysicsOutsideLow, voxelBase);
+                //var collision = CustomCollision.PointsInsideVoxel(this, ShieldComp.PhysicsOutsideLow, voxelBase);
                 if (collision.HasValue)
                 {
                     ComputeVoxelPhysics(voxelBase, MyGrid, collision.Value);
