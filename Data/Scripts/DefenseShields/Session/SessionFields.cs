@@ -267,6 +267,7 @@ namespace DefenseShields
         internal bool GameLoaded { get; set; }
         internal bool MiscLoaded { get; set; }
         internal bool Tick20 { get; set; }
+        internal bool Tick30 { get; set; }
         internal bool Tick60 { get; set; }
         internal bool Tick180 { get; set; }
         internal bool Tick300 { get; set; }

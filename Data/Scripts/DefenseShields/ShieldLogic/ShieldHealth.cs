@@ -10,13 +10,13 @@
         private void UpdateHeatRate()
         {
             var heat = DsState.State.Heat;
-            heat = heat / 10;
+            heat /= 10;
 
             if (heat >= 10) ShieldChargeRate = 0;
             else
             {
                 _expChargeReduction = ExpChargeReductions[heat];
-                ShieldChargeRate = ShieldChargeRate / _expChargeReduction;
+                ShieldChargeRate /= _expChargeReduction;
             }
         }
 
@@ -24,7 +24,7 @@
         {
             if (_isServer) Heating();
 
-            if (_count == 29)
+            if (_tick30)
             {
                 _runningDamage = _dpsAvg.Add((int)_damageReadOut);
                 _runningHeal = _hpsAvg.Add((int)(ShieldChargeRate * ConvToHp));
@@ -36,14 +36,14 @@
         {
             var hp = ShieldMaxCharge * ConvToHp;
             var oldHeat = DsState.State.Heat;
-            if (_count == 29 && _damageReadOut > 0 && _heatCycle == -1)
+            if (_tick30 && _damageReadOut > 0 && _heatCycle == -1)
             {
                 _accumulatedHeat += _damageReadOut;
                 _heatCycle = 0;
             }
             else if (_heatCycle > -1)
             {
-                if (_count == 29) _accumulatedHeat += _damageReadOut;
+                if (_tick30) _accumulatedHeat += _damageReadOut;
                 _heatCycle++;
             }
 
@@ -51,7 +51,7 @@
             if (empProt && _heatCycle == 0)
             {
                 _empScaleHp = 0.1f;
-                _empScaleTime = 10;
+                _empScaleTime = 5;
             }
             else if (!empProt && _heatCycle == 0)
             {
@@ -97,7 +97,7 @@
             }
             else if (nextCycle && afterOverload && !lastStep)
             {
-                if (_empScaleTime == 10)
+                if (_empScaleTime == 5)
                 {
                     if (_accumulatedHeat > 0)
                     {
@@ -162,16 +162,13 @@
                 _accumulatedHeat = 0;
             }
 
-            if (_heatCycle > (HeatingStep * 10) + OverHeat && _tick >= _heatVentingTick)
-            {
+            if (_heatCycle > (HeatingStep * 10) + OverHeat && _tick >= _heatVentingTick) {
                 if (Session.Enforced.Debug == 4) Log.Line($"HeatCycle over limit, resetting: heatCycle:{_heatCycle} - fallCycle:{_fallbackCycle}");
                 _heatCycle = -1;
                 _fallbackCycle = 0;
             }
 
-            if (!oldHeat.Equals(DsState.State.Heat))
-            {
-                if (Session.Enforced.Debug == 4) Log.Line($"StateUpdate: HeatChange - ShieldId [{Shield.EntityId}]");
+            if (oldHeat != DsState.State.Heat) {
                 ShieldChangeState();
             }
         }

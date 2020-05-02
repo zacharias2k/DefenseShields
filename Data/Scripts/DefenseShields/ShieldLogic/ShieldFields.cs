@@ -180,6 +180,7 @@ namespace DefenseShields
         private bool _forceBufferSync;
         private bool _comingOnline;
         private bool _tick20;
+        private bool _tick30;
         private bool _tick60;
         private bool _tick180;
         private bool _tick300;

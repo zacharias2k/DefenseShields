@@ -396,6 +396,7 @@ namespace DefenseShields
         {
             Tick = (uint)(Session.ElapsedPlayTime.TotalMilliseconds * TickTimeDiv);
             Tick20 = Tick % 20 == 0;
+            Tick30 = Tick % 30 == 0;
             Tick60 = Tick % 60 == 0;
             Tick60 = Tick % 60 == 0;
             Tick180 = Tick % 180 == 0;

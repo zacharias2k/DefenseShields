@@ -9,6 +9,7 @@
         {
             _tick = Session.Instance.Tick;
             _tick20 = Session.Instance.Tick20;
+            _tick30 = Session.Instance.Tick30;
             _tick60 = Session.Instance.Tick60;
             _tick180 = Session.Instance.Tick180;
             _tick300 = Session.Instance.Tick300;
