@@ -19,6 +19,7 @@ namespace DefenseShields
         {
             ["RayAttackShield"] = new Func<IMyTerminalBlock, RayD, long, float, bool, bool, Vector3D?>(TAPI_RayAttackShield),
             ["LineAttackShield"] = new Func<IMyTerminalBlock, LineD, long, float, bool, bool, Vector3D?>(TAPI_LineAttackShield),
+            ["IntersectEntToShieldFast"] = new Func<List<MyEntity>, RayD, bool, bool, MyCubeGrid, float, MyTuple<bool, float>>(TAPI_IntersectEntToShieldFast),
             ["PointAttackShield"] = new Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, bool>(TAPI_PointAttackShield),
             ["PointAttackShieldExt"] = new Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, float?>(TAPI_PointAttackShieldExt),
             ["SetShieldHeat"] = new Action<IMyTerminalBlock, int>(TAPI_SetShieldHeat),
@@ -495,6 +496,78 @@ namespace DefenseShields
             }
 
             return null;
+        }
+
+        private static MyTuple<bool, float> TAPI_IntersectEntToShieldFast(List<MyEntity> entities, RayD ray, bool onlyIfOnline, bool enenmyOnly = false, MyCubeGrid requester = null, float maxLengthSqr = float.MaxValue)
+        {
+            if (enenmyOnly)
+                if (requester == null)
+                    return new MyTuple<bool, float>(false, 0);
+
+            float closestOtherDist = float.MaxValue;
+            float closestFriendDist = float.MaxValue;
+            bool closestOther = false;
+            bool closestFriend = false;
+
+            for (int i = 0; i < entities.Count; i++) {
+
+                var entity = entities[i];
+                ShieldGridComponent c;
+                if (Session.Instance.IdToBus.TryGetValue(entity.EntityId, out c) && c?.DefenseShields != null) {
+                    
+                    var s = c.DefenseShields;
+                    if (onlyIfOnline && (!s.DsState.State.Online || s.DsState.State.Lowered) || s.ReInforcedShield)
+                        continue;
+
+                    lock (s.MatrixLock) {
+
+                        var normSphere = new BoundingSphereD(Vector3.Zero, 1f);
+                        var kRay = new RayD(Vector3D.Zero, Vector3D.Forward);
+
+                        var krayPos = Vector3D.Transform(ray.Position, (s.DetectMatrixOutsideInv));
+                        var krayDir = Vector3D.Normalize(Vector3D.TransformNormal(ray.Direction, (s.DetectMatrixOutsideInv)));
+
+                        kRay.Direction = krayDir;
+                        kRay.Position = krayPos;
+                        var nullDist = normSphere.Intersects(kRay);
+
+                        if (!nullDist.HasValue)
+                            continue;
+
+                        var hitPos = krayPos + (krayDir * -nullDist.Value);
+                        var worldHitPos = Vector3D.Transform(hitPos, s.DetectMatrixOutside);
+                        var intersectDist = Vector3.Distance(worldHitPos, ray.Position);
+                        if (intersectDist <= 0 || intersectDist * intersectDist > maxLengthSqr)
+                            continue;
+
+                        if (enenmyOnly && (!closestFriend || intersectDist < closestFriendDist) && !s.GridEnemy(requester)) {
+                            closestFriendDist = intersectDist;
+                            closestFriend = true;
+                        }
+                        else {
+                            closestOtherDist = intersectDist;
+                            closestOther = true;
+                        }
+                    }
+                }
+            }
+
+            if (!enenmyOnly && closestOther || closestOther && !closestFriend)
+            {
+                return new MyTuple<bool, float>(true, closestOtherDist);
+            }
+
+            if (closestFriend && !closestOther || closestFriendDist < closestOtherDist)
+            {
+                return new MyTuple<bool, float>(false, closestFriendDist);
+            }
+
+            if (!closestOther)
+            {
+                return new MyTuple<bool, float>(false, 0);
+            }
+
+            return new MyTuple<bool, float>(true, closestOtherDist);
         }
 
         private static MyTuple<bool, bool, float, float, float, int> TAPI_GetShieldInfo(MyEntity entity)

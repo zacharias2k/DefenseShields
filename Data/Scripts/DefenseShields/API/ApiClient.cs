@@ -4,7 +4,9 @@ using VRageMath;
 using Sandbox.ModAPI;
 using System;
 using System.Collections.Generic;
+using Sandbox.Game.Entities;
 using VRage;
+using VRage.Game.Entity;
 
 namespace DefenseShields
 {
@@ -13,9 +15,10 @@ namespace DefenseShields
         private bool _apiInit;
         private Func<IMyTerminalBlock, RayD, long, float, bool, bool, Vector3D?> _rayAttackShield; // negative damage values heal
         private Func<IMyTerminalBlock, LineD, long, float, bool, bool, Vector3D?> _lineAttackShield; // negative damage values heal
+        private Func<List<MyEntity>, RayD, bool, bool, MyCubeGrid, float, MyTuple<bool, float>> _intersectEntToShieldFast; // fast check of entities for shield
         private Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, bool> _pointAttackShield; // negative damage values heal
+        private Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, float?> _pointAttackShieldExt; // negative damage values heal
         private Action<IMyTerminalBlock, int> _setShieldHeat;
-        private Action<IMyTerminalBlock> _setSkipLos;
         private Action<IMyTerminalBlock> _overLoad;
         private Action<IMyTerminalBlock, float> _setCharge;
         private Func<IMyTerminalBlock, RayD, Vector3D?> _rayIntersectShield;
@@ -38,11 +41,12 @@ namespace DefenseShields
         private Func<IMyEntity, bool> _protectedByShield;
         private Func<IMyEntity, IMyTerminalBlock> _getShieldBlock;
         private Func<IMyEntity, bool, IMyTerminalBlock> _matchEntToShieldFast;
-        private Func<LineD, bool, MyTuple<float?, IMyTerminalBlock>> _closestShieldInLine;
+        private Func<MyEntity, bool, MyTuple<IMyTerminalBlock, MyTuple<bool, bool, float, float, float, int>, MyTuple<MatrixD, MatrixD>>?> _matchEntToShieldFastExt;
         private Func<IMyTerminalBlock, bool> _isShieldBlock;
         private Func<Vector3D, IMyTerminalBlock> _getClosestShield;
         private Func<IMyTerminalBlock, Vector3D, double> _getDistanceToShield;
         private Func<IMyTerminalBlock, Vector3D, Vector3D?> _getClosestShieldPoint;
+        private Func<MyEntity, MyTuple<bool, bool, float, float, float, int>> _getShieldInfo;
 
         private const long Channel = 1365616918;
 
@@ -87,9 +91,10 @@ namespace DefenseShields
             _apiInit = true;
             _rayAttackShield = (Func<IMyTerminalBlock, RayD, long, float, bool, bool, Vector3D?>)delegates["RayAttackShield"];
             _lineAttackShield = (Func<IMyTerminalBlock, LineD, long, float, bool, bool, Vector3D?>)delegates["LineAttackShield"];
+            _intersectEntToShieldFast = (Func<List<MyEntity>, RayD, bool, bool, MyCubeGrid, float, MyTuple<bool, float>>)delegates["IntersectEntToShieldFast"];
             _pointAttackShield = (Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, bool>)delegates["PointAttackShield"];
+            _pointAttackShieldExt = (Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, float?>)delegates["PointAttackShieldExt"];
             _setShieldHeat = (Action<IMyTerminalBlock, int>)delegates["SetShieldHeat"];
-            _setSkipLos = (Action<IMyTerminalBlock>)delegates["SetSkipLos"];
             _overLoad = (Action<IMyTerminalBlock>)delegates["OverLoadShield"];
             _setCharge = (Action<IMyTerminalBlock, float>)delegates["SetCharge"];
             _rayIntersectShield = (Func<IMyTerminalBlock, RayD, Vector3D?>)delegates["RayIntersectShield"];
@@ -112,21 +117,25 @@ namespace DefenseShields
             _protectedByShield = (Func<IMyEntity, bool>)delegates["ProtectedByShield"];
             _getShieldBlock = (Func<IMyEntity, IMyTerminalBlock>)delegates["GetShieldBlock"];
             _matchEntToShieldFast = (Func<IMyEntity, bool, IMyTerminalBlock>)delegates["MatchEntToShieldFast"];
-            _closestShieldInLine = (Func<LineD, bool, MyTuple<float?, IMyTerminalBlock>>)delegates["ClosestShieldInLine"];
+            _matchEntToShieldFastExt = (Func<MyEntity, bool, MyTuple<IMyTerminalBlock, MyTuple<bool, bool, float, float, float, int>, MyTuple<MatrixD, MatrixD>>?>)delegates["MatchEntToShieldFastExt"];
             _isShieldBlock = (Func<IMyTerminalBlock, bool>)delegates["IsShieldBlock"];
             _getClosestShield = (Func<Vector3D, IMyTerminalBlock>)delegates["GetClosestShield"];
             _getDistanceToShield = (Func<IMyTerminalBlock, Vector3D, double>)delegates["GetDistanceToShield"];
             _getClosestShieldPoint = (Func<IMyTerminalBlock, Vector3D, Vector3D?>)delegates["GetClosestShieldPoint"];
+            _getShieldInfo = (Func<MyEntity, MyTuple<bool, bool, float, float, float, int>>)delegates["GetShieldInfo"];
         }
 
         public Vector3D? RayAttackShield(IMyTerminalBlock block, RayD ray, long attackerId, float damage, bool energy, bool drawParticle) =>
             _rayAttackShield?.Invoke(block, ray, attackerId, damage, energy, drawParticle) ?? null;
         public Vector3D? LineAttackShield(IMyTerminalBlock block, LineD line, long attackerId, float damage, bool energy, bool drawParticle) =>
             _lineAttackShield?.Invoke(block, line, attackerId, damage, energy, drawParticle) ?? null;
+        public MyTuple<bool, float> IntersectEntToShieldFast(List<MyEntity> entities, RayD ray, bool onlyIfOnline, bool enemyOnly, MyCubeGrid grid, float maxRange) =>
+            _intersectEntToShieldFast?.Invoke(entities, ray, onlyIfOnline, enemyOnly, grid, maxRange) ?? new MyTuple<bool, float>(false, float.MaxValue);
         public bool PointAttackShield(IMyTerminalBlock block, Vector3D pos, long attackerId, float damage, bool energy, bool drawParticle, bool posMustBeInside = false) =>
             _pointAttackShield?.Invoke(block, pos, attackerId, damage, energy, drawParticle, posMustBeInside) ?? false;
+        public float? PointAttackShieldExt(IMyTerminalBlock block, Vector3D pos, long attackerId, float damage, bool energy, bool drawParticle, bool posMustBeInside = false) =>
+            _pointAttackShieldExt?.Invoke(block, pos, attackerId, damage, energy, drawParticle, posMustBeInside) ?? null;
         public void SetShieldHeat(IMyTerminalBlock block, int value) => _setShieldHeat?.Invoke(block, value);
-        public void SetSkipLos(IMyTerminalBlock block) => _setSkipLos?.Invoke(block);
         public void OverLoadShield(IMyTerminalBlock block) => _overLoad?.Invoke(block);
         public void SetCharge(IMyTerminalBlock block, float value) => _setCharge.Invoke(block, value);
         public Vector3D? RayIntersectShield(IMyTerminalBlock block, RayD ray) => _rayIntersectShield?.Invoke(block, ray) ?? null;
@@ -149,11 +158,11 @@ namespace DefenseShields
         public bool ProtectedByShield(IMyEntity entity) => _protectedByShield?.Invoke(entity) ?? false;
         public IMyTerminalBlock GetShieldBlock(IMyEntity entity) => _getShieldBlock?.Invoke(entity) ?? null;
         public IMyTerminalBlock MatchEntToShieldFast(IMyEntity entity, bool onlyIfOnline) => _matchEntToShieldFast?.Invoke(entity, onlyIfOnline) ?? null;
-        public MyTuple<float?, IMyTerminalBlock> ClosestShieldInLine(LineD line, bool onlyIfOnline) => _closestShieldInLine?.Invoke(line, onlyIfOnline) ?? new MyTuple<float?, IMyTerminalBlock>();
-
+        public MyTuple<IMyTerminalBlock, MyTuple<bool, bool, float, float, float, int>, MyTuple<MatrixD, MatrixD>>? MatchEntToShieldFastExt(MyEntity entity, bool onlyIfOnline) => _matchEntToShieldFastExt?.Invoke(entity, onlyIfOnline) ?? null;
         public bool IsShieldBlock(IMyTerminalBlock block) => _isShieldBlock?.Invoke(block) ?? false;
         public IMyTerminalBlock GetClosestShield(Vector3D pos) => _getClosestShield?.Invoke(pos) ?? null;
         public double GetDistanceToShield(IMyTerminalBlock block, Vector3D pos) => _getDistanceToShield?.Invoke(block, pos) ?? -1;
         public Vector3D? GetClosestShieldPoint(IMyTerminalBlock block, Vector3D pos) => _getClosestShieldPoint?.Invoke(block, pos) ?? null;
+        public MyTuple<bool, bool, float, float, float, int> GetShieldInfo(MyEntity entity) => _getShieldInfo?.Invoke(entity) ?? new MyTuple<bool, bool, float, float, float, int>();
     }
 }
