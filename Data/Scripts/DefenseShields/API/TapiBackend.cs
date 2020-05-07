@@ -5,6 +5,7 @@ using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Collections;
+using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
@@ -19,7 +20,7 @@ namespace DefenseShields
         {
             ["RayAttackShield"] = new Func<IMyTerminalBlock, RayD, long, float, bool, bool, Vector3D?>(TAPI_RayAttackShield),
             ["LineAttackShield"] = new Func<IMyTerminalBlock, LineD, long, float, bool, bool, Vector3D?>(TAPI_LineAttackShield),
-            ["IntersectEntToShieldFast"] = new Func<List<MyEntity>, RayD, bool, bool, MyCubeGrid, float, MyTuple<bool, float>>(TAPI_IntersectEntToShieldFast),
+            ["IntersectEntToShieldFast"] = new Func<List<MyEntity>, RayD, bool, bool, long, float, MyTuple<bool, float>>(TAPI_IntersectEntToShieldFast),
             ["PointAttackShield"] = new Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, bool>(TAPI_PointAttackShield),
             ["PointAttackShieldExt"] = new Func<IMyTerminalBlock, Vector3D, long, float, bool, bool, bool, float?>(TAPI_PointAttackShieldExt),
             ["SetShieldHeat"] = new Action<IMyTerminalBlock, int>(TAPI_SetShieldHeat),
@@ -498,10 +499,10 @@ namespace DefenseShields
             return null;
         }
 
-        private static MyTuple<bool, float> TAPI_IntersectEntToShieldFast(List<MyEntity> entities, RayD ray, bool onlyIfOnline, bool enenmyOnly = false, MyCubeGrid requester = null, float maxLengthSqr = float.MaxValue)
+        private static MyTuple<bool, float> TAPI_IntersectEntToShieldFast(List<MyEntity> entities, RayD ray, bool onlyIfOnline, bool enenmyOnly = false, long requesterId = 0, float maxLengthSqr = float.MaxValue)
         {
             if (enenmyOnly)
-                if (requester == null)
+                if (requesterId == 0)
                     return new MyTuple<bool, float>(false, 0);
 
             float closestOtherDist = float.MaxValue;
@@ -540,7 +541,17 @@ namespace DefenseShields
                         if (intersectDist <= 0 || intersectDist * intersectDist > maxLengthSqr)
                             continue;
 
-                        if (enenmyOnly && (!closestFriend || intersectDist < closestFriendDist) && !s.GridEnemy(requester)) {
+                        var firstOrLast = enenmyOnly && (!closestFriend || intersectDist < closestFriendDist);
+                        var enenmyOnlyCheck = false;
+                        
+                        if (firstOrLast)
+                        {
+                            var relationship = MyIDModule.GetRelation(requesterId, s.MyCube.OwnerId);
+                            var enemy = relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare;
+                            enenmyOnlyCheck = enemy;
+                        }
+
+                        if (enenmyOnlyCheck) {
                             closestFriendDist = intersectDist;
                             closestFriend = true;
                         }
