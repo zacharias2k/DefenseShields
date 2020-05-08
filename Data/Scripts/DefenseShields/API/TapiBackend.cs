@@ -492,8 +492,11 @@ namespace DefenseShields
             ShieldGridComponent c;
             if (Session.Instance.IdToBus.TryGetValue(entity.EntityId, out c) && c?.DefenseShields != null)
             {
-                if (onlyIfOnline && (!c.DefenseShields.DsState.State.Online || c.DefenseShields.DsState.State.Lowered) || c.DefenseShields.ReInforcedShield) return null;
-                return c.DefenseShields.Shield;
+                using (c.DefenseShields?.MyCube?.Pin())
+                {
+                    if (c.DefenseShields?.MyCube == null || c.DefenseShields.MyCube.MarkedForClose || onlyIfOnline && (!c.DefenseShields.DsState.State.Online || c.DefenseShields.DsState.State.Lowered) || c.DefenseShields.ReInforcedShield) return null;
+                    return c.DefenseShields.Shield;
+                }
             }
 
             return null;
@@ -537,21 +540,20 @@ namespace DefenseShields
 
                         var hitPos = krayPos + (krayDir * -nullDist.Value);
                         var worldHitPos = Vector3D.Transform(hitPos, s.DetectMatrixOutside);
-                        var intersectDist = Vector3.Distance(worldHitPos, ray.Position);
-                        if (intersectDist <= 0 || intersectDist * intersectDist > maxLengthSqr)
+                        var intersectDist = Vector3.DistanceSquared(worldHitPos, ray.Position);
+                        if (intersectDist <= 0 || intersectDist > maxLengthSqr)
                             continue;
 
                         var firstOrLast = enenmyOnly && (!closestFriend || intersectDist < closestFriendDist);
-                        var enenmyOnlyCheck = false;
-                        
+                        var notEnemyCheck = false;
                         if (firstOrLast)
                         {
-                            var relationship = MyIDModule.GetRelation(requesterId, s.MyCube.OwnerId);
+                            var relationship = MyIDModule.GetRelationPlayerBlock(requesterId, s.MyCube.OwnerId);
                             var enemy = relationship != MyRelationsBetweenPlayerAndBlock.Owner && relationship != MyRelationsBetweenPlayerAndBlock.FactionShare;
-                            enenmyOnlyCheck = enemy;
+                            notEnemyCheck = !enemy;
                         }
 
-                        if (enenmyOnlyCheck) {
+                        if (notEnemyCheck) {
                             closestFriendDist = intersectDist;
                             closestFriend = true;
                         }
