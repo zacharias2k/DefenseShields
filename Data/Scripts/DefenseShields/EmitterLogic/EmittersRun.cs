@@ -54,6 +54,7 @@ namespace DefenseShields
             {
                 MyGrid = (MyCubeGrid)Emitter.CubeGrid;
                 MyCube = Emitter as MyCubeBlock;
+                if (MyCube != null) MyCube.NeedsWorldMatrix = true;
                 SetEmitterType();
                 RegisterEvents();
                 if (Session.Enforced.Debug == 3) Log.Line($"OnAddedToScene: {EmitterMode} - EmitterId [{Emitter.EntityId}]");

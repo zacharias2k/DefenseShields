@@ -76,17 +76,27 @@ namespace DefenseShields.Support
             var normSphere = new BoundingSphereD(Vector3.Zero, 1f);
             var kRay = new RayD(Vector3D.Zero, Vector3D.Forward);
 
-            var krayPos = Vector3D.Transform(ray.Position, ellipsoidMatrixInv);
-            var krayDir = Vector3D.Normalize(Vector3D.TransformNormal(ray.Direction, ellipsoidMatrixInv));
+            Vector3D krayPos;
+            Vector3D.Transform(ref ray.Position, ref ellipsoidMatrixInv, out krayPos);
+            
+            Vector3D nDir;
+            Vector3D.TransformNormal(ref ray.Direction, ref ellipsoidMatrixInv, out nDir);
 
+            Vector3D krayDir;
+            Vector3D.Normalize(ref nDir, out krayDir);
+            
             kRay.Direction = krayDir;
             kRay.Position = krayPos;
             var nullDist = normSphere.Intersects(kRay);
             if (!nullDist.HasValue) return null;
 
             var hitPos = krayPos + (krayDir * -nullDist.Value);
-            var worldHitPos = Vector3D.Transform(hitPos, ellipsoidMatrix);
-            return Vector3.Distance(worldHitPos, ray.Position);
+            Vector3D worldHitPos;
+            Vector3D.Transform(ref hitPos, ref ellipsoidMatrix, out worldHitPos);
+
+            double distance;
+            Vector3D.Distance(ref worldHitPos, ref ray.Position, out distance);
+            return (float?)(double.IsNaN(distance) ? (double?)null : distance);
         }
 
 

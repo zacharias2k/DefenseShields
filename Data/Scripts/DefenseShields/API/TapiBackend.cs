@@ -517,7 +517,7 @@ namespace DefenseShields
 
                 var entity = entities[i];
                 ShieldGridComponent c;
-                if (Session.Instance.IdToBus.TryGetValue(entity.EntityId, out c) && c?.DefenseShields != null) {
+                if (entity != null && Session.Instance.IdToBus.TryGetValue(entity.EntityId, out c) && c?.DefenseShields?.DsState?.State != null && c.DefenseShields.MyCube != null) {
                     
                     var s = c.DefenseShields;
                     if (onlyIfOnline && (!s.DsState.State.Online || s.DsState.State.Lowered) || s.ReInforcedShield)
@@ -528,8 +528,15 @@ namespace DefenseShields
                         var normSphere = new BoundingSphereD(Vector3.Zero, 1f);
                         var kRay = new RayD(Vector3D.Zero, Vector3D.Forward);
 
-                        var krayPos = Vector3D.Transform(ray.Position, (s.DetectMatrixOutsideInv));
-                        var krayDir = Vector3D.Normalize(Vector3D.TransformNormal(ray.Direction, (s.DetectMatrixOutsideInv)));
+                        var ellipsoidMatrixInv = s.DetectMatrixOutsideInv;
+                        Vector3D krayPos;
+                        Vector3D.Transform(ref ray.Position, ref ellipsoidMatrixInv, out krayPos);
+
+                        Vector3D nDir;
+                        Vector3D.TransformNormal(ref ray.Direction, ref ellipsoidMatrixInv, out nDir);
+
+                        Vector3D krayDir;
+                        Vector3D.Normalize(ref nDir, out krayDir);
 
                         kRay.Direction = krayDir;
                         kRay.Position = krayPos;
@@ -539,7 +546,10 @@ namespace DefenseShields
                             continue;
 
                         var hitPos = krayPos + (krayDir * -nullDist.Value);
-                        var worldHitPos = Vector3D.Transform(hitPos, s.DetectMatrixOutside);
+
+                        var ellipsoidMatrix = s.DetectMatrixOutside;
+                        Vector3D worldHitPos;
+                        Vector3D.Transform(ref hitPos, ref ellipsoidMatrix, out worldHitPos);
                         var intersectDist = Vector3.DistanceSquared(worldHitPos, ray.Position);
                         if (intersectDist <= 0 || intersectDist > maxLengthSqr)
                             continue;

@@ -92,6 +92,7 @@ namespace DefenseShields
                     EmiState.State.Suspend = true;
                     return true;
                 }
+                SubpartRotor.NeedsWorldMatrix = true;
             }
 
             if (ShieldComp == null)

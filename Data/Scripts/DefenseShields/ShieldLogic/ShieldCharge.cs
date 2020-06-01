@@ -243,10 +243,11 @@ namespace DefenseShields
             if (DsState.State.Charge > ShieldMaxCharge) DsState.State.Charge = ShieldMaxCharge;
             if (_isServer)
             {
-                var powerLost = powerForShield <= 0 || _powerNeeded > ShieldMaxPower || (ShieldMaxPower - _powerNeeded) / Math.Abs(_powerNeeded) * 100 < 0.001;
+                var powerLost = powerForShield <= 0 || _powerNeeded > ShieldMaxPower || (ShieldMaxPower - _powerNeeded) / Math.Abs(_powerNeeded) * 100 < 0.00001;
                 var serverNoPower = DsState.State.NoPower;
                 if (powerLost || serverNoPower)
                 {
+                    Log.Line($"powerLoss: forShield:{powerForShield} - needed:{_powerNeeded} > Max:{ShieldMaxPower} - other:{(ShieldMaxPower - _powerNeeded)} / {Math.Abs(_powerNeeded) * 100 < 0.001}");
                     if (PowerLoss(powerForShield, powerLost, serverNoPower))
                     {
                         _powerFail = true;
