@@ -48,14 +48,12 @@ namespace DefenseShields
         internal readonly Guid O2GeneratorStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811504");
         internal readonly Guid ControllerStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811505");
         internal readonly Guid EmitterStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811506");
-        internal readonly Guid DisplaySettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811507");
         internal readonly Guid ControllerSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811508");
         internal readonly Guid ModulatorSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811509");
         internal readonly Guid ModulatorStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811510");
         internal readonly Guid ControllerEnforceGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811511");
         internal readonly Guid PlanetShieldSettingsGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811512");
         internal readonly Guid PlanetShieldStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811513");
-        internal readonly Guid DisplayStateGuid = new Guid("85BBB4F5-4FB9-4230-BEEF-BB79C9811514");
 
         internal readonly Type MissileObj = typeof(MyObjectBuilder_Missile);
 
@@ -80,7 +78,6 @@ namespace DefenseShields
 
         internal readonly List<PlanetShields> PlanetShields = new List<PlanetShields>();
         internal readonly List<Emitters> Emitters = new List<Emitters>();
-        internal readonly List<Displays> Displays = new List<Displays>();
         internal readonly List<Enhancers> Enhancers = new List<Enhancers>();
         internal readonly List<O2Generators> O2Generators = new List<O2Generators>();
         internal readonly List<Modulators> Modulators = new List<Modulators>();
@@ -223,11 +220,6 @@ namespace DefenseShields
 
         private MyParticleEffect _effect = new MyParticleEffect();
 
-        private MyEntity3DSoundEmitter SoundEmitter { get; set; } = new MyEntity3DSoundEmitter(null)
-        {
-            CustomMaxDistance = float.MaxValue,
-        };
-
         private int _count = -1;
         private int _lCount;
         private int _eCount;
@@ -244,7 +236,6 @@ namespace DefenseShields
         internal static bool EnforceInit { get; set; }
 
         internal uint Tick { get; set; }
-        internal uint SoundTick { get; set; }
 
         internal int OnCount { get; set; }
         internal int RefreshCycle { get; set; }
@@ -334,10 +325,6 @@ namespace DefenseShields
 
         internal IMyTerminalControlCheckbox PsSendToHudCheckBox { get; set; }
         internal IMyTerminalControlOnOffSwitch PsToggleShield { get; set; }
-
-        internal IMyTerminalControlSeparator DisSep1 { get; set; }
-        internal IMyTerminalControlCombobox DisplayReport { get; set; }
-        internal IMyTerminalControlSeparator DisSep2 { get; set; }
 
         internal IMyTerminalBlock WarTerminalReset { get; set; }
 

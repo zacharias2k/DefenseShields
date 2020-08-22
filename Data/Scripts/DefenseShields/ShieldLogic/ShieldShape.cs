@@ -83,12 +83,15 @@ namespace DefenseShields
                 {
                     foreach (var grid in ShieldComp.SubGrids)
                     {
-                        if (grid == shieldGrid) continue;
-                        var shieldMatrix = shieldGrid.PositionComp.WorldMatrixNormalizedInv;
-                        var gQuaternion = Quaternion.CreateFromRotationMatrix(grid.WorldMatrix);
-                        var gOriBBoxD = new MyOrientedBoundingBox(grid.PositionComp.WorldAABB.Center, grid.PositionComp.LocalAABB.HalfExtents, gQuaternion);
-                        gOriBBoxD.Transform(shieldMatrix);
-                        expandedAabb.Include(gOriBBoxD.GetAABB());
+                        using (grid.Pin())
+                        {
+                            if (grid == shieldGrid || grid.MarkedForClose) continue;
+                            var shieldMatrix = shieldGrid.PositionComp.WorldMatrixNormalizedInv;
+                            var gQuaternion = Quaternion.CreateFromRotationMatrix(grid.WorldMatrix);
+                            var gOriBBoxD = new MyOrientedBoundingBox(grid.PositionComp.WorldAABB.Center, grid.PositionComp.LocalAABB.HalfExtents, gQuaternion);
+                            gOriBBoxD.Transform(shieldMatrix);
+                            expandedAabb.Include(gOriBBoxD.GetAABB());
+                        }
                     }
                 }
             }
@@ -195,7 +198,6 @@ namespace DefenseShields
                 ShieldShapeMatrix = MatrixD.Rescale(offsetLMatrix, vectorScale);
 
                 ShieldSize = DetectionMatrix.Scale;
-
                 _sQuaternion = Quaternion.CreateFromRotationMatrix(OffsetEmitterWMatrix);
                 ShieldSphere.Center = DetectionCenter;
                 ShieldSphere.Radius = ShieldSize.AbsMax();

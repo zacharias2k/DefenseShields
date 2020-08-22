@@ -19,17 +19,6 @@ namespace DefenseShields
             return modPath;
         }
 
-        public MyEntity3DSoundEmitter AudioReady(MyEntity entity)
-        {
-            if (Tick - SoundTick < 600 && Tick > 600) return null;
-            SoundTick = Tick;
-
-            SoundEmitter.StopSound(false);
-            SoundEmitter.Entity = entity;
-            SoundEmitter.CustomVolume = MyAPIGateway.Session.Config.GameVolume * 0.75f;
-            return SoundEmitter;
-        }
-
         public bool TaskHasErrors(ref Task task, string taskName)
         {
             if (task.Exceptions != null && task.Exceptions.Length > 0)

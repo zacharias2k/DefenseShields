@@ -41,16 +41,6 @@
             catch (Exception ex) { Log.Line($"Exception in PacketizeEnforcementToServer: {ex}"); }
         }
 
-        internal void ClaimDisplay(ulong requestorId, long playerId, uint mId, long displayId, bool abandon)
-        {
-            try
-            {
-                var bytes = MyAPIGateway.Utilities.SerializeToBinary(new DataDisplayClaim(displayId, new DisplayClaimValues { PlayerId = playerId, Abandon = abandon}));
-                MyAPIGateway.Multiplayer.SendMessageToServer(PACKET_ID, bytes, true);
-            }
-            catch (Exception ex) { Log.Line($"Exception in ClaimDisplayToServer: {ex}"); }
-        }
-
         internal void PacketizeToClientsInRange(IMyFunctionalBlock block, PacketBase packet)
         {
             try

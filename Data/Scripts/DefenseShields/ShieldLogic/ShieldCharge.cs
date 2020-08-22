@@ -3,6 +3,7 @@ using System;
 using DefenseShields.Support;
 using Sandbox.ModAPI;
 using VRage;
+using VRage.Utils;
 
 namespace DefenseShields
 {
@@ -243,9 +244,9 @@ namespace DefenseShields
             if (DsState.State.Charge > ShieldMaxCharge) DsState.State.Charge = ShieldMaxCharge;
             if (_isServer)
             {
-                var powerLost = powerForShield <= 0 || _powerNeeded > ShieldMaxPower || (ShieldMaxPower - _powerNeeded) / Math.Abs(_powerNeeded) * 100 < 0.00001;
+                var powerLost = powerForShield <= 0 || _powerNeeded > ShieldMaxPower || MyUtils.IsZero(ShieldMaxPower - _powerNeeded);
                 var serverNoPower = DsState.State.NoPower;
-                if (powerLost || serverNoPower)
+                if (powerLost && _pLossTimer++ > 60 || serverNoPower)
                 {
                     Log.Line($"powerLoss: forShield:{powerForShield} - needed:{_powerNeeded} > Max:{ShieldMaxPower} - other:{(ShieldMaxPower - _powerNeeded)} / {Math.Abs(_powerNeeded) * 100 < 0.001}");
                     if (PowerLoss(powerForShield, powerLost, serverNoPower))
@@ -256,6 +257,7 @@ namespace DefenseShields
                 }
                 else
                 {
+                    _pLossTimer = 0;
                     if (_capacitorLoop != 0 && _tick - _capacitorTick > CapacitorStableCount)
                     {
                         _capacitorLoop = 0;

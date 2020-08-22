@@ -43,7 +43,7 @@ namespace DefenseShields
                     if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + "-- the shield's field cannot form when in contact with a solid body", 6720, "Blue");
                     break;
                 case PlayerNotice.OverLoad:
-                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 20 seconds!!", 8000, "Red");
+                    if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- shield has overloaded, restarting in 45 seconds!!", 8000, "Red");
                     break;
                 case PlayerNotice.EmpOverLoad:
                     if (sendMessage) MyAPIGateway.Utilities.ShowNotification("[ " + MyGrid.DisplayName + " ]" + " -- shield was EMPed, restarting in 60 seconds!!", 8000, "Red");
@@ -61,37 +61,39 @@ namespace DefenseShields
             if (Session.Enforced.Debug == 3) Log.Line($"[PlayerMessages] Sending:{sendMessage} - rangeToClinetPlayer:{Vector3D.Distance(sphere.Center, MyAPIGateway.Session.Player.Character.WorldVolume.Center)}");
         }
 
-        private static void BroadcastSound(IMyCharacter character, PlayerNotice notice)
+        private void BroadcastSound(IMyCharacter character, PlayerNotice notice)
         {
-            var soundEmitter = Session.Instance.AudioReady((MyEntity)character);
-            if (soundEmitter == null) return;
+            if (character == null || _alertAudio == null || _alertAudio.IsPlaying) return;
+            _alertAudio.CustomVolume = MyAPIGateway.Session.Config.GameVolume * 0.6f;
+            _alertAudio.CustomMaxDistance = (float?) ShieldSphere.Radius * 2;
 
+            _alertAudio.Entity = (MyEntity) character;
             MySoundPair pair = null;
             switch (notice)
             {
                 case PlayerNotice.EmitterInit:
-                    pair = new MySoundPair("Arc_reinitializing");
+                    pair = _audioReInit;
                     break;
                 case PlayerNotice.FieldBlocked:
-                    pair = new MySoundPair("Arc_solidbody");
+                    pair = _audioSolidBody;
                     break;
                 case PlayerNotice.OverLoad:
-                    pair = new MySoundPair("Arc_overloaded");
+                    pair = _audioOverload;
                     break;
                 case PlayerNotice.EmpOverLoad:
-                    pair = new MySoundPair("Arc_EMP");
+                    pair = _audioEmp;
                     break;
                 case PlayerNotice.Remodulate:
-                    pair = new MySoundPair("Arc_remodulating");
+                    pair = _audioRemod;
                     break;
                 case PlayerNotice.NoLos:
-                    pair = new MySoundPair("Arc_noLOS");
+                    pair = _audioLos;
                     break;
                 case PlayerNotice.NoPower:
-                    pair = new MySoundPair("Arc_insufficientpower");
+                    pair = _audioNoPower;
                     break;
             }
-            if (soundEmitter.Entity != null && pair != null) soundEmitter.PlaySingleSound(pair, true);
+            if (_alertAudio.Entity != null && pair != null) _alertAudio.PlaySingleSound(pair, true);
         }
 
         private void BroadcastMessage(bool forceNoPower = false)

@@ -11,14 +11,12 @@
         <guid>85BBB4F5-4FB9-4230-BEEF-BB79C9811504</guid>
         <guid>85BBB4F5-4FB9-4230-BEEF-BB79C9811505</guid>
         <guid>85BBB4F5-4FB9-4230-BEEF-BB79C9811506</guid>
-        <guid>85BBB4F5-4FB9-4230-BEEF-BB79C9811507</guid>
         <guid>85BBB4F5-4FB9-4230-BEEF-BB79C9811508</guid>
         <guid>85BBB4F5-4FB9-4230-BEEF-BB79C9811509</guid>
         <guid>85BBB4F5-4FB9-4230-BEEF-BB79C9811510</guid>
         <guid>85BBB4F5-4FB9-4230-BEEF-BB79C9811511</guid>
         <guid>85BBB4F5-4FB9-4230-BEEF-BB79C9811512</guid>
         <guid>85BBB4F5-4FB9-4230-BEEF-BB79C9811513</guid>
-        <guid>85BBB4F5-4FB9-4230-BEEF-BB79C9811514</guid>
       </RegisteredStorageGuids>
     </EntityComponent>
   </EntityComponents>

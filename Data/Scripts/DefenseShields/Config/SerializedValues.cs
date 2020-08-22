@@ -187,28 +187,6 @@
     }
 
     [ProtoContract]
-    public class DisplayStateValues
-    {
-        [ProtoMember(1)] public uint MId;
-        [ProtoMember(2), DefaultValue(-1)] public long ClientOwner;
-        [ProtoMember(3), DefaultValue(true)] public bool Release = true;
-    }
-
-    [ProtoContract]
-    public class DisplaySettingsValues
-    {
-        [ProtoMember(1)] public uint MId;
-        [ProtoMember(2)] public long Report; // 0 = off, 1 = stats, 2 = graphics
-    }
-
-    [ProtoContract]
-    public class DisplayClaimValues
-    {
-        [ProtoMember(1), DefaultValue(-1)] public long PlayerId;
-        [ProtoMember(2)] public bool Abandon;
-    }
-
-    [ProtoContract]
     public class ShieldHitValues
     {
         [ProtoMember(1)] public long AttackerId;

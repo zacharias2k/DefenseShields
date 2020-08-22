@@ -179,6 +179,18 @@ namespace DefenseShields
             _bInit = true;
             if (Session.Enforced.Debug == 3) Log.Line($"UpdateOnceBeforeFrame: ShieldId [{Shield.EntityId}]");
 
+            if (!_isDedicated)
+            {
+                _alertAudio = new MyEntity3DSoundEmitter(null, true, 1f);
+
+                _audioReInit = new MySoundPair("Arc_reinitializing");
+                _audioSolidBody = new MySoundPair("Arc_solidbody");
+                _audioOverload = new MySoundPair("Arc_overloaded");
+                _audioEmp = new MySoundPair("Arc_EMP");
+                _audioRemod = new MySoundPair("Arc_remodulating");
+                _audioLos = new MySoundPair("Arc_noLOS");
+                _audioNoPower = new MySoundPair("Arc_insufficientpower");
+            }
         }
 
         private bool PostInit()

@@ -79,7 +79,7 @@ namespace DefenseShields
         internal bool InThisTerminal => Session.Instance.LastTerminalId == Shield.EntityId;
 
         private const int ReModulationCount = 300;
-        private const int ShieldDownCount = 1200;
+        private const int ShieldDownCount = 2700;
         private const int EmpDownCount = 3600;
         private const int PowerNoticeCount = 600;
         private const int CapacitorDrainCount = 60;
@@ -117,7 +117,6 @@ namespace DefenseShields
         private readonly Vector3D[] _resetEntCorners = new Vector3D[8];
         private readonly Vector3D[] _obbCorners = new Vector3D[8];
         private readonly Vector3D[] _obbPoints = new Vector3D[9];
-
         private uint _tick;
         private uint _shieldEntRendId;
         private uint _subTick;
@@ -167,6 +166,7 @@ namespace DefenseShields
         private int _expChargeReduction;
         private int _bCount;
         private int _bTime;
+        private int _pLossTimer;
         private bool _bInit;
 
         private long _gridOwnerId = -1;
@@ -240,6 +240,14 @@ namespace DefenseShields
         private MyEntity _shellActive;
         private MyParticleEffect _effect1 = new MyParticleEffect();
         private MyParticleEffect _effect2 = new MyParticleEffect();
+        private MyEntity3DSoundEmitter _alertAudio;
+        private MySoundPair _audioReInit;
+        private MySoundPair _audioSolidBody;
+        private MySoundPair _audioOverload;
+        private MySoundPair _audioEmp;
+        private MySoundPair _audioRemod;
+        private MySoundPair _audioLos;
+        private MySoundPair _audioNoPower;
 
         private DSUtils Dsutil1 { get; set; } = new DSUtils();
         #endregion

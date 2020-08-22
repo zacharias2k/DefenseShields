@@ -20,9 +20,6 @@
     [ProtoInclude(13, typeof(DataEmitterState))]
     [ProtoInclude(14, typeof(DataShieldHit))]
     [ProtoInclude(15, typeof(DataEnforce))]
-    [ProtoInclude(16, typeof(DataDisplayState))]
-    [ProtoInclude(17, typeof(DataDisplayClaim))]
-    [ProtoInclude(18, typeof(DataDisplaySettings))]
 
     [ProtoContract]
     public abstract class PacketBase
@@ -336,87 +333,6 @@
         }
     }
 
-    [ProtoContract]
-    public class DataDisplayState : PacketBase
-    {
-        public DataDisplayState()
-        {
-        } // Empty constructor required for deserialization
-
-        [ProtoMember(1)] public DisplayStateValues State = null;
-
-        public DataDisplayState(long entityId, DisplayStateValues state) : base(entityId)
-        {
-            State = state;
-        }
-
-        public override bool Received(bool isServer)
-        {
-            if (!isServer)
-            {
-                if (Entity?.GameLogic == null) return false;
-                var logic = Entity.GameLogic.GetAs<Displays>();
-                logic?.UpdateState(State);
-                return false;
-            }
-            return true;
-        }
-    }
-
-    [ProtoContract]
-    public class DataDisplaySettings : PacketBase
-    {
-        public DataDisplaySettings()
-        {
-        } // Empty constructor required for deserialization
-
-        [ProtoMember(1)] public DisplaySettingsValues Settings = null;
-
-        public DataDisplaySettings(long entityId, DisplaySettingsValues settings) : base(entityId)
-        {
-            Settings = settings;
-        }
-
-        public override bool Received(bool isServer)
-        {
-            if (Entity?.GameLogic == null) return false;
-            var logic = Entity.GameLogic.GetAs<Displays>();
-            logic?.UpdateSettings(Settings);
-            return isServer;
-        }
-    }
-
-    [ProtoContract]
-    public class DataDisplayClaim : PacketBase
-    {
-        public DataDisplayClaim()
-        {
-        } // Empty constructor required for deserialization
-
-        [ProtoMember(1)] public DisplayClaimValues Claim = null;
-
-        public DataDisplayClaim(long entityId, DisplayClaimValues claim) : base(entityId)
-        {
-            Claim = claim;
-        }
-
-        public override bool Received(bool isServer)
-        {
-            if (!isServer || Entity?.GameLogic == null) return false;
-            var d = Entity.GameLogic.GetAs<Displays>();
-            if (d == null) return false;
-            if (Claim.Abandon)
-            {
-                d.AbandonDisplay();
-                return false;
-            }
-
-            if (Session.Enforced.Debug >= 2 && !d.State.Value.Release) Log.Line($"[ClaimRejected] Release:{d.State.Value.Release} - MyPlayerId:{Claim.PlayerId} - CurrentPlayerId:{d.State.Value.ClientOwner} - Tick:{Session.Instance.Tick}");
-
-            if (d.State.Value.Release) d.ClaimDisplay(Claim.PlayerId);
-            return false;
-        }
-    }
 
     [ProtoContract]
     public class DataShieldHit : PacketBase
